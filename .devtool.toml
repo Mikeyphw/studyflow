@@ -1,0 +1,75 @@
+[project]
+kind = "android"
+
+[execution]
+environment = "auto"
+chroot_name = "androidos"
+
+[targets.studyflow_android]
+type = "android"
+root = "."
+execution_environment = "auto"
+chroot_name = "androidos"
+
+[targets.studyflow_android.android]
+variant = "debug"
+aapt2_provider = "auto"
+prefer_native_termux = true
+
+[targets.studyflow_android.gradle]
+max_workers = 1
+parallel = false
+no_daemon = true
+build_cache = true
+structured_events = true
+
+[targets.studyflow_android.tasks]
+build = [":app:assembleDebug"]
+test = [
+    ":core:model:test",
+    ":core:domain:test",
+    ":core:data:testDebugUnitTest",
+    ":core:database:testDebugUnitTest",
+    ":core:navigation:test",
+    ":core:testing:test",
+    ":app:testDebugUnitTest",
+    ":feature:dashboard:testDebugUnitTest",
+    ":feature:plans:testDebugUnitTest",
+    ":feature:settings:testDebugUnitTest",
+]
+lint = [":app:lintDebug"]
+clean = ["clean"]
+
+[targets.studyflow_android.artifacts]
+required = true
+external_verification = "auto"
+
+[targets.studyflow_android.validation]
+android_safe = true
+max_workers = 1
+cpu_limit = 2
+parallel = false
+split_gradle = true
+no_daemon = true
+low_priority = true
+gradle_heap_mb = 1536
+memory_guard_mb = 640
+affected_module_lint = true
+
+[targets.studyflow_android.validation.phases]
+preflight = ["help"]
+compile = [
+    ":core:database:compileDebugKotlin",
+    ":core:data:compileDebugKotlin",
+    ":app:compileDebugKotlin",
+]
+resources = [":app:processDebugResources"]
+unit-test = [
+    ":core:model:test",
+    ":core:domain:test",
+    ":core:database:testDebugUnitTest",
+    ":core:data:testDebugUnitTest",
+    ":app:testDebugUnitTest",
+]
+package = [":app:assembleDebug"]
+lint = [":app:lintDebug"]
