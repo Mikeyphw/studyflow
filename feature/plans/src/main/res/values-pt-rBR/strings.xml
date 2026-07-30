@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plans_title">Planos de estudo</string>
+    <string name="plans_subtitle">Cada plano é um espaço de estudo completo e independente.</string>
+    <string name="create_plan">Criar plano</string>
+    <string name="empty_plans_title">Crie seu primeiro Plano de Estudo</string>
+    <string name="empty_plans_message">Mantenha juntos o cronograma, as sessões, as questões, os vídeos, os anexos e os resultados de um objetivo.</string>
+    <string name="open_plan">Abrir plano</string>
+    <string name="progress_percent">%1$d%%</string>
+    <string name="weekly_goal_hours">%1$d horas por semana</string>
+    <string name="no_exam_date">Sem data de prova</string>
+    <string name="status_draft">Rascunho</string>
+    <string name="status_active">Ativo</string>
+    <string name="status_paused">Pausado</string>
+    <string name="status_completed">Concluído</string>
+    <string name="status_archived">Arquivado</string>
+    <string name="create_plan_title">Criar Plano de Estudo</string>
+    <string name="create_plan_intro">Defina agora a base. Disciplinas, cronogramas e toda a biblioteca de estudo serão vinculados a este plano nas próximas fases.</string>
+    <string name="go_back">Voltar</string>
+    <string name="plan_name">Nome do plano</string>
+    <string name="plan_description">Descrição</string>
+    <string name="study_type">Tipo de estudo</string>
+    <string name="study_type_public_examination">Concurso público</string>
+    <string name="study_type_certification">Certificação</string>
+    <string name="study_type_university">Universidade</string>
+    <string name="study_type_entrance_examination">Vestibular</string>
+    <string name="study_type_free_study">Estudo livre</string>
+    <string name="exam_date_optional">Data da prova (opcional)</string>
+    <string name="iso_date_hint">Use AAAA-MM-DD nesta versão de fundação.</string>
+    <string name="weekly_goal">Meta semanal em horas</string>
+    <string name="weekly_goal_hint">Escolha um valor entre 1 e 100.</string>
+    <string name="cancel">Cancelar</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">StudyFlow</string>
+    <string name="navigation_plans">Planos de estudo</string>
+    <string name="navigation_settings">Configurações</string>
+    <string name="navigation_back">Voltar</string>
+    <string name="unknown_plan_error">Este Plano de Estudo não está disponível.</string>
+</resources>

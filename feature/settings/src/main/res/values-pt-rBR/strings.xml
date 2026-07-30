@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Configurações</string>
+    <string name="settings_subtitle">As configurações de idioma e aparência afetam o aplicativo, não o conteúdo criado pelo usuário.</string>
+    <string name="language_title">Idioma</string>
+    <string name="language_system">Padrão do sistema</string>
+    <string name="language_english">Inglês</string>
+    <string name="language_portuguese_brazil">Português do Brasil</string>
+    <string name="appearance_title">Aparência</string>
+    <string name="theme_system">Padrão do sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="dynamic_color">Cores dinâmicas</string>
+    <string name="dynamic_color_description">Usar a paleta de cores do dispositivo nas versões compatíveis do Android.</string>
+    <string name="foundation_contract_title">Contrato da fundação</string>
+    <string name="foundation_contract_message">O código e os valores serializados permanecem em inglês. A interface oferece inglês e português do Brasil, enquanto o conteúdo criado pelo usuário é preservado exatamente como foi digitado.</string>
+</resources>

@@ -1,0 +1,5 @@
+<resources>
+    <string name="loading">Carregando</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="unknown_error">Algo deu errado</string>
+</resources>

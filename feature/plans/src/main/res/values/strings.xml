@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plans_title">Study plans</string>
+    <string name="plans_subtitle">Each plan is a complete and independent study workspace.</string>
+    <string name="create_plan">Create plan</string>
+    <string name="empty_plans_title">Create your first Study Plan</string>
+    <string name="empty_plans_message">Keep the schedule, sessions, questions, videos, annexes and results for one goal together.</string>
+    <string name="open_plan">Open plan</string>
+    <string name="progress_percent">%1$d%%</string>
+    <string name="weekly_goal_hours">%1$d hours per week</string>
+    <string name="no_exam_date">No exam date</string>
+    <string name="status_draft">Draft</string>
+    <string name="status_active">Active</string>
+    <string name="status_paused">Paused</string>
+    <string name="status_completed">Completed</string>
+    <string name="status_archived">Archived</string>
+    <string name="create_plan_title">Create Study Plan</string>
+    <string name="create_plan_intro">Set the foundation now. Subjects, schedules and the complete study library will attach to this plan in later phases.</string>
+    <string name="go_back">Go back</string>
+    <string name="plan_name">Plan name</string>
+    <string name="plan_description">Description</string>
+    <string name="study_type">Study type</string>
+    <string name="study_type_public_examination">Public examination</string>
+    <string name="study_type_certification">Certification</string>
+    <string name="study_type_university">University</string>
+    <string name="study_type_entrance_examination">Entrance examination</string>
+    <string name="study_type_free_study">Free study</string>
+    <string name="exam_date_optional">Exam date (optional)</string>
+    <string name="iso_date_hint">Use YYYY-MM-DD for this foundation build.</string>
+    <string name="weekly_goal">Weekly goal in hours</string>
+    <string name="weekly_goal_hint">Choose a value from 1 to 100.</string>
+    <string name="cancel">Cancel</string>
+</resources>

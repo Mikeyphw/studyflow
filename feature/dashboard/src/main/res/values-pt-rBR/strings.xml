@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="go_back">Voltar</string>
+    <string name="next_best_action">Próxima melhor atividade</string>
+    <string name="foundation_recommendation">Defina as disciplinas e o tempo disponível</string>
+    <string name="foundation_recommendation_reason">O mecanismo de recomendação adaptativa será ativado quando as fases de planejamento e sessões fornecerem dados suficientes.</string>
+    <string name="start_session">Iniciar sessão</string>
+    <string name="plan_progress">Progresso do plano</string>
+    <string name="progress_value">%1$d%%</string>
+    <string name="no_description">Sem descrição</string>
+    <string name="foundation_scope_title">Estado da fundação</string>
+    <string name="foundation_scope_message">A Fase 1 estabelece o limite completo do Plano de Estudo, a estrutura responsiva, a localização e os repositórios substituíveis.</string>
+    <string name="weekly_study_time">Tempo de estudo nesta semana</string>
+    <string name="minutes_value">%1$d minutos</string>
+    <string name="questions_answered">Questões respondidas</string>
+    <string name="average_accuracy">Média de acertos</string>
+    <string name="weekly_goal">Meta semanal</string>
+    <string name="hours_value">%1$d horas</string>
+</resources>

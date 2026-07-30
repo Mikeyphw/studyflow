@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="go_back">Go back</string>
+    <string name="next_best_action">Next best action</string>
+    <string name="foundation_recommendation">Define subjects and available study time</string>
+    <string name="foundation_recommendation_reason">The adaptive recommendation engine will activate after the planning and session phases provide enough evidence.</string>
+    <string name="start_session">Start session</string>
+    <string name="plan_progress">Plan progress</string>
+    <string name="progress_value">%1$d%%</string>
+    <string name="no_description">No description</string>
+    <string name="foundation_scope_title">Foundation status</string>
+    <string name="foundation_scope_message">Phase 1 establishes the complete Study Plan boundary, responsive shell, localization and replaceable repositories.</string>
+    <string name="weekly_study_time">Study time this week</string>
+    <string name="minutes_value">%1$d minutes</string>
+    <string name="questions_answered">Questions answered</string>
+    <string name="average_accuracy">Average accuracy</string>
+    <string name="weekly_goal">Weekly goal</string>
+    <string name="hours_value">%1$d hours</string>
+</resources>

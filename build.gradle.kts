@@ -1,0 +1,69 @@
+plugins {
+    alias(libs.plugins.kotlin.serialization) apply false
+}
+
+val qualitySourceRoots = listOf(
+    "app",
+    "core",
+    "feature",
+    "build-logic",
+)
+
+val excludedDirectoryNames = setOf("build", ".gradle", ".idea")
+
+fun File.isQualitySource(): Boolean =
+    extension in setOf("kt", "kts", "xml") &&
+        none { it.name in excludedDirectoryNames }
+
+tasks.register("verifyFormatting") {
+    group = "verification"
+    description = "Checks source files for tabs, trailing whitespace, missing final newlines, and overlong Kotlin lines."
+
+    doLast {
+        val failures = mutableListOf<String>()
+        qualitySourceRoots
+            .map(::file)
+            .filter(File::exists)
+            .flatMap { sourceRoot -> sourceRoot.walkTopDown().filter(File::isQualitySource).toList() }
+            .forEach { sourceFile ->
+                val text = sourceFile.readText()
+                if (!text.endsWith("\n")) {
+                    failures += "${sourceFile.relativeTo(rootDir)}: missing final newline"
+                }
+                text.lineSequence().forEachIndexed { index, line ->
+                    val lineNumber = index + 1
+                    if ('\t' in line) {
+                        failures += "${sourceFile.relativeTo(rootDir)}:$lineNumber: tab character"
+                    }
+                    if (line != line.trimEnd()) {
+                        failures += "${sourceFile.relativeTo(rootDir)}:$lineNumber: trailing whitespace"
+                    }
+                    if (sourceFile.extension in setOf("kt", "kts") && line.length > 120) {
+                        failures += "${sourceFile.relativeTo(rootDir)}:$lineNumber: ${line.length} characters"
+                    }
+                }
+            }
+
+        if (failures.isNotEmpty()) {
+            throw GradleException(failures.joinToString(prefix = "Formatting violations:\n", separator = "\n"))
+        }
+    }
+}
+
+tasks.register("checkAll") {
+    group = "verification"
+    description = "Runs repository contracts, formatting, unit tests, and Android lint."
+    dependsOn(
+        "verifyFormatting",
+        ":core:data:test",
+        ":core:domain:test",
+        ":core:model:test",
+        ":core:navigation:test",
+        ":core:testing:test",
+        ":app:testDebugUnitTest",
+        ":feature:dashboard:testDebugUnitTest",
+        ":feature:plans:testDebugUnitTest",
+        ":feature:settings:testDebugUnitTest",
+        ":app:lintDebug",
+    )
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Language and appearance settings apply to the app, not to user-created content.</string>
+    <string name="language_title">Language</string>
+    <string name="language_system">System default</string>
+    <string name="language_english">English</string>
+    <string name="language_portuguese_brazil">Brazilian Portuguese</string>
+    <string name="appearance_title">Appearance</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="dynamic_color">Dynamic color</string>
+    <string name="dynamic_color_description">Use the device color palette on supported Android versions.</string>
+    <string name="foundation_contract_title">Foundation contract</string>
+    <string name="foundation_contract_message">Code and serialized values remain in English. The interface supports English and Brazilian Portuguese, while user-created content is preserved exactly as entered.</string>
+</resources>
