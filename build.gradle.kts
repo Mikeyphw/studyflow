@@ -13,7 +13,8 @@ fun File.isQualitySource(): Boolean =
 
 tasks.register("verifyFormatting") {
     group = "verification"
-    description = "Checks source files for tabs, trailing whitespace, missing final newlines, and overlong Kotlin lines."
+    description =
+        "Checks source files for tabs, trailing whitespace, missing final newlines, and overlong Kotlin lines."
 
     doLast {
         val failures = mutableListOf<String>()
@@ -56,11 +57,13 @@ tasks.register("checkAll") {
         ":core:domain:test",
         ":core:model:test",
         ":core:navigation:test",
+        ":core:portability:test",
         ":core:testing:test",
         ":app:testDebugUnitTest",
         ":feature:dashboard:testDebugUnitTest",
         ":feature:plans:testDebugUnitTest",
         ":feature:settings:testDebugUnitTest",
+        ":feature:subjects:testDebugUnitTest",
         ":app:lintDebug",
     )
 }

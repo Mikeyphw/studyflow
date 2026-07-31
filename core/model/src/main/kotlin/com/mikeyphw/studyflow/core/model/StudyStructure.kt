@@ -60,6 +60,7 @@ data class Subject(
     val status: ContentProgressStatus,
     val position: Int,
     val archived: Boolean,
+    val examStageId: ExamStageId? = null,
 )
 
 data class Topic(
@@ -78,4 +79,53 @@ data class Topic(
     val status: ContentProgressStatus,
     val position: Int,
     val archived: Boolean,
+    val examStageId: ExamStageId? = null,
 )
+
+enum class SyllabusFilter {
+    ALL,
+    ACTIVE,
+    NEEDS_ATTENTION,
+    MASTERED,
+    ARCHIVED,
+}
+
+enum class SyllabusSort {
+    POSITION,
+    PRIORITY,
+    NAME,
+    PROGRESS,
+}
+
+data class StudySyllabus(
+    val studyPlanId: StudyPlanId,
+    val subjects: List<Subject>,
+    val topics: List<Topic>,
+    val examStages: List<ExamStage> = emptyList(),
+) {
+    fun topicsFor(subjectId: SubjectId): List<Topic> = topics.filter { it.subjectId == subjectId }
+
+    fun topicTree(subjectId: SubjectId): List<TopicNode> = buildTopicTree(topicsFor(subjectId))
+}
+
+data class TopicNode(
+    val topic: Topic,
+    val children: List<TopicNode>,
+    val depth: Int,
+)
+
+fun buildTopicTree(topics: List<Topic>): List<TopicNode> {
+    val byParent = topics.groupBy { it.parentTopicId }
+    fun build(parentId: TopicId?, depth: Int, ancestry: Set<TopicId>): List<TopicNode> =
+        byParent[parentId].orEmpty()
+            .sortedWith(compareBy<Topic> { it.position }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+            .mapNotNull { topic ->
+                if (topic.id in ancestry) return@mapNotNull null
+                TopicNode(
+                    topic = topic,
+                    children = build(topic.id, depth + 1, ancestry + topic.id),
+                    depth = depth,
+                )
+            }
+    return build(parentId = null, depth = 0, ancestry = emptySet())
+}

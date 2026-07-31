@@ -49,6 +49,19 @@ interface StudyPlanDao {
     @Upsert
     suspend fun upsert(plan: StudyPlanEntity)
 
+    @Query(
+        """
+        UPDATE study_plans
+        SET progressPercent = :progressPercent, updatedAtEpochMillis = :updatedAtEpochMillis
+        WHERE id = :planId
+        """,
+    )
+    suspend fun updateProgress(
+        planId: String,
+        progressPercent: Int,
+        updatedAtEpochMillis: Long,
+    ): Int
+
     @Query("DELETE FROM study_plans WHERE id = :planId")
     suspend fun deleteById(planId: String): Int
 

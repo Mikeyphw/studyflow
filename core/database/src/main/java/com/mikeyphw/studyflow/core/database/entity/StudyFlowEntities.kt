@@ -90,7 +90,11 @@ data class ExamStageEntity(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("studyPlanId"), Index(value = ["studyPlanId", "position"])],
+    indices = [
+        Index("studyPlanId"),
+        Index("examStageId"),
+        Index(value = ["studyPlanId", "position"]),
+    ],
 )
 data class SubjectEntity(
     @PrimaryKey val id: String,
@@ -106,6 +110,7 @@ data class SubjectEntity(
     val status: String,
     val position: Int,
     val archived: Boolean,
+    val examStageId: String? = null,
 )
 
 @Entity(
@@ -130,7 +135,12 @@ data class SubjectEntity(
             onDelete = ForeignKey.SET_NULL,
         ),
     ],
-    indices = [Index("studyPlanId"), Index("subjectId"), Index("parentTopicId")],
+    indices = [
+        Index("studyPlanId"),
+        Index("subjectId"),
+        Index("parentTopicId"),
+        Index("examStageId"),
+    ],
 )
 data class TopicEntity(
     @PrimaryKey val id: String,
@@ -148,6 +158,7 @@ data class TopicEntity(
     val status: String,
     val position: Int,
     val archived: Boolean,
+    val examStageId: String? = null,
 )
 
 @Entity(

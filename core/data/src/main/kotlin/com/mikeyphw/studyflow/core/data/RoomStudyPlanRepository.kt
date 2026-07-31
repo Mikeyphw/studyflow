@@ -1,6 +1,5 @@
 package com.mikeyphw.studyflow.core.data
 
-import android.content.Context
 import androidx.room.withTransaction
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyPlanGraphDuplicator
@@ -15,7 +14,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class RoomStudyPlanRepository private constructor(
+internal class RoomStudyPlanRepository(
     private val database: StudyFlowDatabase,
     private val clock: () -> Long,
 ) : StudyPlanRepository {
@@ -203,15 +202,7 @@ class RoomStudyPlanRepository private constructor(
         }
     }
 
-    companion object {
-        private const val FOUNDATION_SEED_KEY = "foundation_samples_seeded"
-
-        fun create(
-            context: Context,
-            clock: () -> Long = System::currentTimeMillis,
-        ): RoomStudyPlanRepository = RoomStudyPlanRepository(
-            database = StudyFlowDatabase.create(context),
-            clock = clock,
-        )
+    private companion object {
+        const val FOUNDATION_SEED_KEY = "foundation_samples_seeded"
     }
 }

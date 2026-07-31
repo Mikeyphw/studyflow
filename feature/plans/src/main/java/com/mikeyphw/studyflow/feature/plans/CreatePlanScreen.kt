@@ -11,7 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -68,7 +69,7 @@ fun PlanEditorScreen(
     onSave: (PlanEditorForm) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var currentStep by rememberSaveable(initialPlan?.id?.value) { mutableStateOf(0) }
+    var currentStep by rememberSaveable(initialPlan?.id?.value) { mutableIntStateOf(0) }
     var name by rememberSaveable(initialPlan?.id?.value) { mutableStateOf(initialPlan?.name.orEmpty()) }
     var description by rememberSaveable(initialPlan?.id?.value) {
         mutableStateOf(initialPlan?.description.orEmpty())
@@ -124,7 +125,7 @@ fun PlanEditorScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Outlined.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = stringResource(R.string.go_back),
                         )
                     }

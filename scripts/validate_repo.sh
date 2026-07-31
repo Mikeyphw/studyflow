@@ -8,6 +8,8 @@ python3 scripts/verify_phase_0.py
 python3 scripts/verify_phase_1.py
 python3 scripts/verify_phase_2.py
 python3 scripts/verify_phase_3.py
+python3 scripts/verify_phase_4.py
+python3 scripts/verify_phase_5.py
 
 GRADLE_LAUNCHER=""
 if [[ -x ./gradlew ]]; then

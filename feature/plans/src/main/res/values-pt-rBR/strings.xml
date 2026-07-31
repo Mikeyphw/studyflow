@@ -17,10 +17,12 @@
     <plurals name="weekly_goal_hours">
         <item quantity="one">%1$d hora por semana</item>
         <item quantity="other">%1$d horas por semana</item>
+        <item quantity="many">%1$d horas por semana</item>
     </plurals>
     <plurals name="days_until_exam">
         <item quantity="one">%1$d dia até a prova</item>
         <item quantity="other">%1$d dias até a prova</item>
+        <item quantity="many">%1$d dias até a prova</item>
     </plurals>
     <string name="exam_today">Prova hoje</string>
     <string name="exam_date_passed">A data da prova passou</string>
@@ -95,4 +97,45 @@
     <string name="time_hint">HH:MM</string>
     <string name="invalid_time">Use um horário válido de 24 horas.</string>
     <string name="save_settings">Salvar configurações</string>
+
+    <string name="portability_title">Importação, exportação e snapshots</string>
+    <string name="import_plan">Importar Plano de Estudo</string>
+    <string name="import_plan_description">Inspecione um pacote .studyplan com checksum antes de criar, substituir ou mesclar um espaço.</string>
+    <string name="choose_studyplan_file">Escolher arquivo .studyplan</string>
+    <string name="export_plan">Exportar Plano de Estudo</string>
+    <string name="export_plan_description">Crie um pacote portátil com limites explícitos de privacidade e conteúdo.</string>
+    <string name="export_full_plan">Exportar plano completo</string>
+    <string name="export_without_private_history">Exportar sem histórico privado</string>
+    <string name="export_structure_only">Exportar somente a estrutura</string>
+    <string name="export_template">Exportar modelo reutilizável</string>
+    <string name="export_completed">Plano de Estudo exportado.</string>
+    <string name="import_completed">Plano de Estudo importado.</string>
+    <string name="portability_failed">Não foi possível concluir a operação de portabilidade.</string>
+    <string name="import_preview_title">Importar “%1$s”?</string>
+    <plurals name="import_preview_rows">
+        <item quantity="one">%1$d registro verificado</item>
+        <item quantity="many">%1$d registros verificados</item>
+        <item quantity="other">%1$d registros verificados</item>
+    </plurals>
+    <string name="import_preview_mode">Tipo do pacote: %1$s</string>
+    <string name="import_as_new">Criar como novo</string>
+    <string name="merge_into_plan">Mesclar</string>
+    <string name="replace_plan">Substituir</string>
+    <string name="annex_metadata_only_warning">Os nomes e metadados dos anexos estão incluídos, mas os arquivos físicos ficam fora do pacote até a implementação do armazenamento de anexos.</string>
+    <string name="template_import_warning">Este modelo não contém histórico pessoal de estudo.</string>
+    <string name="export_mode_full">Completo</string>
+    <string name="export_mode_private_stripped">Sem histórico privado</string>
+    <string name="export_mode_structure">Somente estrutura</string>
+    <string name="export_mode_template">Modelo</string>
+    <string name="snapshots_title">Snapshots do plano</string>
+    <string name="snapshots_description">Crie um ponto de restauração privado antes de grandes mudanças. Os pacotes ficam no armazenamento privado do aplicativo.</string>
+    <string name="create_snapshot">Criar snapshot</string>
+    <string name="manual_snapshot_label">Snapshot manual</string>
+    <string name="snapshot_created">Snapshot criado.</string>
+    <string name="snapshot_restored">Snapshot restaurado.</string>
+    <string name="snapshot_deleted">Snapshot excluído.</string>
+    <string name="restore_snapshot">Restaurar snapshot</string>
+    <string name="delete_snapshot">Excluir snapshot</string>
+    <string name="pre_import_snapshot_label">Antes da importação</string>
+    <string name="pre_restore_snapshot_label">Antes de restaurar o snapshot</string>
 </resources>

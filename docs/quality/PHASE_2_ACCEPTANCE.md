@@ -13,7 +13,7 @@ Phase 2 is accepted when all of the following are true:
 - Optional cross-entity links use `SET_NULL` where retaining history is safer.
 - Room stores stable English enum names instead of translated labels.
 - `RoomStudyPlanRepository` implements the existing `StudyPlanRepository` contract.
-- The application container uses `RoomStudyPlanRepository` rather than the in-memory repository.
+- The application container uses `createStudyFlowDataLayer`, which provides the Room-backed repository through the domain contract.
 - Initial sample seeding occurs at most once and does not resurrect deleted plans.
 - Plan create and replace operations execute in Room transactions.
 - A cascade integration test covers plan, subject, and topic deletion.

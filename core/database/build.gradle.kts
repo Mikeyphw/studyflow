@@ -8,6 +8,7 @@ android {
 
 dependencies {
     api(project(":core:model"))
+    implementation(project(":core:portability"))
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.kotlinx.coroutines.core)

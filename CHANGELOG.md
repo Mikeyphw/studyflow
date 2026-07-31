@@ -1,5 +1,43 @@
 # Changelog
 
+## Phase 5 - Syllabus, subjects and nested topics
+
+- Added the `:feature:subjects` module with a bilingual Study Content screen.
+- Added subject and nested-topic CRUD, search, active/mastered/attention/archive filters,
+  position/name/priority/progress sorting, selection, bulk edit, archive/restore, delete, and
+  topic reordering.
+- Added structured-text and CSV syllabus import with preview and per-plan transactional import.
+- Added `StudyContentRepository`, `ManageStudyContent`, `StudyProgressCalculator`, and
+  `SyllabusImportParser` in the domain layer.
+- Added Room-backed `RoomStudyContentRepository` through the public data-layer factory while
+  keeping `:core:database` hidden from `:app`.
+- Migrated Room schema from version 1 to 2 with nullable `examStageId` columns on subjects and
+  topics plus migration coverage.
+- Extended Phase 4 portability normalization so older `.studyplan` packages without exam-stage
+  links remain importable.
+- Added derived topic, subject, and plan progress based on topic tree completion and weights.
+- Added a dashboard entry point for syllabus management.
+- Fixed the Phase 4 portability lint issue by replacing `LocalContext.current` resource lookups with
+  `stringResource` and `pluralStringResource` while keeping `LocalContext` only for platform access.
+- Added Phase 5 validation seals for syllabus structure, migration wiring, Compose resource lookup
+  safety, scoped modifier imports, and data-layer boundaries.
+
+## Phase 4 - Portable Study Plans and warning seal
+
+- Added the pure Kotlin `:core:portability` module and versioned `.studyplan` ZIP format.
+- Added SHA-256 manifest and payload verification, bounded archive reading, path traversal defense,
+  duplicate-entry rejection, exact table-inventory validation, and schema consistency checks.
+- Added full, privacy-stripped, structure-only, and reusable-template exports.
+- Added import preview plus create-as-new, replace-existing, and compatible-merge strategies.
+- Added transactional Room graph import with complete primary- and foreign-key remapping.
+- Preserved all existing snapshot metadata when replacing a plan and added automatic pre-import and
+  pre-restore safety snapshots.
+- Added manual snapshot creation, restore, deletion, and app-private package storage.
+- Added Storage Access Framework import/export UI and plan-list/dashboard integration.
+- Sanitized annex references and explicitly deferred physical annex payloads to Phase 9.
+- Cleared all 15 Phase 3 warnings: AutoMirrored icons, modifier parameter ordering,
+  `mutableIntStateOf`, and Portuguese `many` plural quantities.
+
 ## Phase 3 r3 - Compose scoped-modifier import hotfix
 
 - Removed the explicit `androidx.compose.foundation.layout.align` import from `PlanListScreen`.
@@ -45,3 +83,21 @@
 - Add plan list, creation, dashboard and settings flows.
 - Add DataStore preferences and replaceable Study Plan repository contracts.
 - Add `.devtool.toml` with the `studyflow_android` target.
+
+## Phase 4 r3 BuildConfig generation seal
+
+- Enables `android.buildFeatures.buildConfig = true` in `:app`, the only module that reads `BuildConfig.VERSION_NAME`.
+- Adds a Phase 4 contract that rejects `BuildConfig` references when generation is disabled or the consumer package does not match the application namespace.
+- Keeps the data-layer boundary correction from r2 unchanged.
+
+## Phase 4 + 5 Bridge
+
+- Combines Phase 4 portability/snapshots and Phase 5 syllabus/content management for repositories that are still on the Phase 3 baseline.
+- Updates `.devtool.toml` with the Phase 5 focused validation tasks expected by the acceptance contract.
+
+## Phase 4+5 Bridge r2
+
+- Rebuilt the bridge against the uploaded Phase 3 baseline.
+- Added the missing `feature/subjects/consumer-rules.pro` required by the Android library convention plugin.
+- Kept `PlanPortabilityScreen` resource reads on `stringResource`/`pluralStringResource` and added a narrow lint suppression for the false-positive `LocalContextGetResourceValueCall` triggered by Storage Access Framework `ContentResolver` usage.
+- Removed `.devtool.toml` from the overlay payload; use repeated `--task` arguments for focused validation instead.

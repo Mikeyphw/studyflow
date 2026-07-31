@@ -57,13 +57,13 @@ class StudyPlanGraphDuplicator(
 
     private fun quoteIdentifier(identifier: String): String = "`$identifier`"
 
-    internal data class TableSpec(
+    data class TableSpec(
         val tableName: String,
         val columns: List<String>,
         val remappedIdentifierColumns: Set<String>,
     )
 
-    internal companion object {
+    companion object {
         val TableSpecs = listOf(
             table(
                 "study_targets",
@@ -82,14 +82,15 @@ class StudyPlanGraphDuplicator(
                 "subjects",
                 "id", "studyPlanId", "name", "description", "colorArgb", "priority", "examWeight",
                 "estimatedMinutes", "progressPercent", "accuracyPercent", "status", "position", "archived",
-                remap = setOf("id"),
+                "examStageId",
+                remap = setOf("id", "examStageId"),
             ),
             table(
                 "topics",
                 "id", "studyPlanId", "subjectId", "parentTopicId", "name", "description", "priority",
                 "difficulty", "examIncidencePercent", "estimatedMinutes", "progressPercent", "masteryPercent",
-                "status", "position", "archived",
-                remap = setOf("id", "subjectId", "parentTopicId"),
+                "status", "position", "archived", "examStageId",
+                remap = setOf("id", "subjectId", "parentTopicId", "examStageId"),
             ),
             table(
                 "study_strategies",

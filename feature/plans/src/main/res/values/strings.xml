@@ -95,4 +95,44 @@
     <string name="time_hint">HH:MM</string>
     <string name="invalid_time">Use a valid 24-hour time.</string>
     <string name="save_settings">Save settings</string>
+
+    <string name="portability_title">Import, export and snapshots</string>
+    <string name="import_plan">Import Study Plan</string>
+    <string name="import_plan_description">Inspect a checksum-verified .studyplan package before creating, replacing or merging a workspace.</string>
+    <string name="choose_studyplan_file">Choose .studyplan file</string>
+    <string name="export_plan">Export Study Plan</string>
+    <string name="export_plan_description">Create a portable package with explicit privacy and content boundaries.</string>
+    <string name="export_full_plan">Export complete plan</string>
+    <string name="export_without_private_history">Export without private history</string>
+    <string name="export_structure_only">Export structure only</string>
+    <string name="export_template">Export reusable template</string>
+    <string name="export_completed">Study Plan exported.</string>
+    <string name="import_completed">Study Plan imported.</string>
+    <string name="portability_failed">The portability operation could not be completed.</string>
+    <string name="import_preview_title">Import “%1$s”?</string>
+    <plurals name="import_preview_rows">
+        <item quantity="one">%1$d record verified</item>
+        <item quantity="other">%1$d records verified</item>
+    </plurals>
+    <string name="import_preview_mode">Package type: %1$s</string>
+    <string name="import_as_new">Create as new</string>
+    <string name="merge_into_plan">Merge</string>
+    <string name="replace_plan">Replace</string>
+    <string name="annex_metadata_only_warning">Annex names and metadata are included, but physical files remain outside the package until annex storage is implemented.</string>
+    <string name="template_import_warning">This template does not contain personal study history.</string>
+    <string name="export_mode_full">Complete</string>
+    <string name="export_mode_private_stripped">Without private history</string>
+    <string name="export_mode_structure">Structure only</string>
+    <string name="export_mode_template">Template</string>
+    <string name="snapshots_title">Plan snapshots</string>
+    <string name="snapshots_description">Create a private restore point before major changes. Snapshot packages are stored in app-private storage.</string>
+    <string name="create_snapshot">Create snapshot</string>
+    <string name="manual_snapshot_label">Manual snapshot</string>
+    <string name="snapshot_created">Snapshot created.</string>
+    <string name="snapshot_restored">Snapshot restored.</string>
+    <string name="snapshot_deleted">Snapshot deleted.</string>
+    <string name="restore_snapshot">Restore snapshot</string>
+    <string name="delete_snapshot">Delete snapshot</string>
+    <string name="pre_import_snapshot_label">Before import</string>
+    <string name="pre_restore_snapshot_label">Before snapshot restore</string>
 </resources>

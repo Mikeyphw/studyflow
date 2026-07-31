@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ListAlt
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,15 +49,19 @@ import com.mikeyphw.studyflow.core.navigation.CreatePlanRoute
 import com.mikeyphw.studyflow.core.navigation.DashboardRoute
 import com.mikeyphw.studyflow.core.navigation.EditPlanRoute
 import com.mikeyphw.studyflow.core.navigation.PlanListRoute
+import com.mikeyphw.studyflow.core.navigation.PlanPortabilityRoute
 import com.mikeyphw.studyflow.core.navigation.PlanSettingsRoute
 import com.mikeyphw.studyflow.core.navigation.SettingsRoute
+import com.mikeyphw.studyflow.core.navigation.SubjectsRoute
 import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
 import com.mikeyphw.studyflow.feature.plans.PlanEditorForm
 import com.mikeyphw.studyflow.feature.plans.PlanEditorScreen
 import com.mikeyphw.studyflow.feature.plans.PlanListScreen
+import com.mikeyphw.studyflow.feature.plans.PlanPortabilityScreen
 import com.mikeyphw.studyflow.feature.plans.PlanSettingsScreen
 import com.mikeyphw.studyflow.feature.plans.StudyPlanAction
 import com.mikeyphw.studyflow.feature.settings.SettingsScreen
+import com.mikeyphw.studyflow.feature.subjects.StudyContentScreen
 import java.util.UUID
 import kotlinx.coroutines.launch
 
@@ -126,7 +130,9 @@ private fun StudyFlowNavigation(
         destination?.hasRoute<DashboardRoute>() == true ||
         destination?.hasRoute<CreatePlanRoute>() == true ||
         destination?.hasRoute<EditPlanRoute>() == true ||
-        destination?.hasRoute<PlanSettingsRoute>() == true
+        destination?.hasRoute<PlanSettingsRoute>() == true ||
+        destination?.hasRoute<PlanPortabilityRoute>() == true ||
+        destination?.hasRoute<SubjectsRoute>() == true
     val showSettingsSelected = destination?.hasRoute<SettingsRoute>() == true
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -143,7 +149,7 @@ private fun StudyFlowNavigation(
                             NavigationDrawerItem(
                                 selected = showPlansSelected,
                                 onClick = { navController.navigateToPlans() },
-                                icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
+                                icon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null) },
                                 label = { Text(stringResource(R.string.navigation_plans)) },
                                 modifier = Modifier.padding(horizontal = 12.dp),
                             )
@@ -171,7 +177,7 @@ private fun StudyFlowNavigation(
                         NavigationRailItem(
                             selected = showPlansSelected,
                             onClick = { navController.navigateToPlans() },
-                            icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
+                            icon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null) },
                             label = { Text(stringResource(R.string.navigation_plans)) },
                         )
                         NavigationRailItem(
@@ -197,7 +203,7 @@ private fun StudyFlowNavigation(
                             NavigationBarItem(
                                 selected = showPlansSelected,
                                 onClick = { navController.navigateToPlans() },
-                                icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
+                                icon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null) },
                                 label = { Text(stringResource(R.string.navigation_plans)) },
                             )
                             NavigationBarItem(
@@ -244,9 +250,11 @@ private fun StudyFlowNavHost(
                 defaultPlanId = preferences.defaultStudyPlanId,
                 onPlanSelected = { plan -> navController.navigate(DashboardRoute(plan.id.value)) },
                 onCreatePlan = { navController.navigate(CreatePlanRoute) },
+                onImportPlan = { navController.navigate(PlanPortabilityRoute()) },
                 onPlanAction = { plan, action ->
                     when (action) {
                         StudyPlanAction.EDIT -> navController.navigate(EditPlanRoute(plan.id.value))
+                        StudyPlanAction.PORTABILITY -> navController.navigate(PlanPortabilityRoute(plan.id.value))
                         StudyPlanAction.DUPLICATE -> coroutineScope.launch {
                             val duplicate = container.manageStudyPlan.duplicate(
                                 sourcePlanId = plan.id,
@@ -364,6 +372,21 @@ private fun StudyFlowNavHost(
                 )
             }
         }
+        composable<PlanPortabilityRoute> { entry ->
+            val route = entry.toRoute<PlanPortabilityRoute>()
+            val planId = route.planId.takeIf { it.isNotBlank() }?.let(::StudyPlanId)
+            val plan = planId?.let { id -> plans.firstOrNull { it.id == id } }
+            PlanPortabilityScreen(
+                plan = plan,
+                portability = container.manageStudyPlanPortability,
+                onBack = navController::popBackStack,
+                onImported = { importedPlanId ->
+                    navController.navigate(DashboardRoute(importedPlanId)) {
+                        popUpTo<PlanListRoute>()
+                    }
+                },
+            )
+        }
         composable<DashboardRoute> { entry ->
             val route = entry.toRoute<DashboardRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
@@ -390,6 +413,12 @@ private fun StudyFlowNavHost(
                     onOpenPlanSettings = {
                         navController.navigate(PlanSettingsRoute(currentPlan.id.value))
                     },
+                    onOpenSyllabus = {
+                        navController.navigate(SubjectsRoute(currentPlan.id.value))
+                    },
+                    onOpenPortability = {
+                        navController.navigate(PlanPortabilityRoute(currentPlan.id.value))
+                    },
                     onToggleActiveState = {
                         coroutineScope.launch {
                             if (currentPlan.status == StudyPlanStatus.ACTIVE) {
@@ -399,6 +428,25 @@ private fun StudyFlowNavHost(
                             }
                         }
                     },
+                )
+            }
+        }
+        composable<SubjectsRoute> { entry ->
+            val route = entry.toRoute<SubjectsRoute>()
+            val planId = remember(route.planId) { StudyPlanId(route.planId) }
+            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
+            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val currentPlan = plan
+            if (currentPlan == null) {
+                StudyFlowErrorPane(
+                    message = stringResource(R.string.unknown_plan_error),
+                    onRetry = navController::popBackStack,
+                )
+            } else {
+                StudyContentScreen(
+                    plan = currentPlan,
+                    content = container.manageStudyContent,
+                    onBack = navController::popBackStack,
                 )
             }
         }

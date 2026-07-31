@@ -15,7 +15,13 @@ data class EditPlanRoute(val planId: String)
 data class PlanSettingsRoute(val planId: String)
 
 @Serializable
+data class PlanPortabilityRoute(val planId: String = "")
+
+@Serializable
 data class DashboardRoute(val planId: String)
+
+@Serializable
+data class SubjectsRoute(val planId: String)
 
 @Serializable
 data object SettingsRoute

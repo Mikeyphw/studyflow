@@ -217,8 +217,11 @@ if room_database.is_file():
         failures.append("StudyFlowDatabase does not declare a stable schema version")
     if "exportSchema = true" not in database_source:
         failures.append("Room schema export must be enabled")
-    if "const val SCHEMA_VERSION = 1" not in database_source:
-        failures.append("Phase 2 database schema version must be 1")
+    schema_match = re.search(r"const val SCHEMA_VERSION = (\d+)", database_source)
+    if not schema_match:
+        failures.append("StudyFlowDatabase does not expose SCHEMA_VERSION")
+    elif int(schema_match.group(1)) < 1:
+        failures.append("Room schema version must be at least the Phase 2 baseline")
 
 repository_path = ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanRepository.kt"
 if repository_path.is_file():
@@ -236,8 +239,27 @@ if repository_path.is_file():
 application = (
     ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt"
 ).read_text(encoding="utf-8")
-if "RoomStudyPlanRepository" not in application:
-    failures.append("application container does not use RoomStudyPlanRepository")
+data_layer_path = (
+    ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt"
+)
+if not data_layer_path.is_file():
+    failures.append("core:data does not expose the StudyFlowDataLayer composition boundary")
+else:
+    data_layer = data_layer_path.read_text(encoding="utf-8")
+    for contract in (
+        "createStudyFlowDataLayer",
+        "StudyFlowDatabase.create",
+        "RoomStudyPlanRepository",
+        "RoomStudyPlanPortabilityRepository",
+        "StudyPlanRepository",
+        "StudyPlanPortabilityRepository",
+    ):
+        if contract not in data_layer:
+            failures.append(f"StudyFlowDataLayer missing contract: {contract}")
+if "createStudyFlowDataLayer" not in application:
+    failures.append("application container does not use the core:data composition boundary")
+if "core.database" in application or "StudyFlowDatabase" in application:
+    failures.append("application container must not depend directly on the Room database implementation")
 if "InMemoryStudyPlanRepository" in application:
     failures.append("application container still uses InMemoryStudyPlanRepository")
 

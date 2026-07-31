@@ -184,8 +184,8 @@ if 'tools:targetApi="33"' not in manifest:
     failures.append("manifest does not scope localeConfig to API 33")
 
 app_build = (ROOT / "app/build.gradle.kts").read_text()
-if 'versionName = "0.3.0-phase03"' not in app_build:
-    failures.append("app version is not Phase 3")
+if not re.search(r'versionCode\s*=\s*(?:[4-9]|[1-9][0-9]+)', app_build):
+    failures.append("app version predates the landed Phase 3 baseline")
 for advisory in ("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable"):
     if advisory not in app_build:
         failures.append(f"version-advisory lint suppression missing: {advisory}")

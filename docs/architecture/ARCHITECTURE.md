@@ -23,13 +23,19 @@ feature modules
 core:data
 ├── core:database
 ├── core:domain
-└── core:model
+├── core:model
+└── core:portability
 
 core:database
-└── core:model
+├── core:model
+└── core:portability
 
 core:domain
-└── core:model
+├── core:model
+└── core:portability
+
+core:portability
+└── Kotlin/JVM + kotlinx.serialization
 
 core:testing
 ├── core:domain
@@ -40,13 +46,14 @@ Features do not depend on other feature implementations. The application module 
 
 ## Persistence
 
-`RoomStudyPlanRepository` is the production repository. `InMemoryStudyPlanRepository` remains a
+`StudyFlowDataLayer` constructs the production `RoomStudyPlanRepository` internally and exposes it through the domain contract. `InMemoryStudyPlanRepository` remains a
 test and preview tool. The Room schema treats `StudyPlan` as the ownership root and cascades plan
 deletion to every plan-owned table. Optional links to supporting children use `SET_NULL` when
 historical records should remain valid.
 
-File bytes never belong in Room. Future annex and snapshot phases will store file metadata and
-stable references in the database while keeping payloads in private or user-selected storage.
+File bytes never belong in Room. Snapshot package files live in app-private storage, while Room
+stores their metadata and stable relative references. Annex metadata is portable in Phase 4, but
+physical annex bytes remain deferred to Phase 9 and will use private or user-selected storage.
 
 ## UI state
 
@@ -67,3 +74,12 @@ never has to guess between Android debug and release variants.
 transactionally. `StudyPlanGraphDuplicator` copies the full structured child graph using a new plan
 namespace for primary and foreign identifiers. Default-plan selection remains an app-level DataStore
 preference, while behavioral settings remain plan-owned Room data.
+
+
+## Study Plan portability
+
+`:core:portability` defines the versioned package contract and performs bounded ZIP/JSON/checksum
+processing without Android dependencies. `StudyPlanGraphPortabilityStore` maps the supported logical
+Room graph to typed portable rows and imports it transactionally. `RoomStudyPlanPortabilityRepository`
+owns Storage Access Framework streams and private snapshot files. Replace imports update the root and
+clear children explicitly rather than deleting the root, preserving all existing snapshot metadata.

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
@@ -69,6 +70,7 @@ enum class StudyPlanAction {
     MOVE_TO_TRASH,
     RESTORE_FROM_TRASH,
     DELETE_PERMANENTLY,
+    PORTABILITY,
 }
 
 @Composable
@@ -77,6 +79,7 @@ fun PlanListScreen(
     defaultPlanId: StudyPlanId?,
     onPlanSelected: (StudyPlan) -> Unit,
     onCreatePlan: () -> Unit,
+    onImportPlan: () -> Unit,
     onPlanAction: (StudyPlan, StudyPlanAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -122,6 +125,13 @@ fun PlanListScreen(
                                 label = { Text(stringResource(filterLabel(filter))) },
                             )
                         }
+                    }
+                    OutlinedButton(onClick = onImportPlan) {
+                        Icon(Icons.Outlined.ImportExport, contentDescription = null)
+                        Text(
+                            text = stringResource(R.string.import_plan),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
                     }
                 }
             }
@@ -344,12 +354,14 @@ internal fun planActions(
     )
     StudyPlanStatus.ARCHIVED -> buildList {
         add(StudyPlanAction.RESTORE_ARCHIVED)
+        add(StudyPlanAction.PORTABILITY)
         add(StudyPlanAction.DUPLICATE)
         if (isDefault) add(StudyPlanAction.CLEAR_DEFAULT)
         add(StudyPlanAction.MOVE_TO_TRASH)
     }
     else -> buildList {
         add(StudyPlanAction.EDIT)
+        add(StudyPlanAction.PORTABILITY)
         add(StudyPlanAction.DUPLICATE)
         add(if (isDefault) StudyPlanAction.CLEAR_DEFAULT else StudyPlanAction.SET_DEFAULT)
         if (plan.status == StudyPlanStatus.ACTIVE) {
@@ -406,6 +418,7 @@ private fun actionLabel(action: StudyPlanAction): Int = when (action) {
     -> R.string.restore_plan
     StudyPlanAction.MOVE_TO_TRASH -> R.string.move_to_trash
     StudyPlanAction.DELETE_PERMANENTLY -> R.string.delete_permanently
+    StudyPlanAction.PORTABILITY -> R.string.portability_title
 }
 
 @StringRes

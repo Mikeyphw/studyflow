@@ -24,6 +24,7 @@
     <plurals name="minutes_value">
         <item quantity="one">%1$d minuto</item>
         <item quantity="other">%1$d minutos</item>
+        <item quantity="many">%1$d minutos</item>
     </plurals>
     <string name="questions_answered">Questões respondidas</string>
     <string name="average_accuracy">Média de acertos</string>
@@ -31,5 +32,8 @@
     <plurals name="hours_value">
         <item quantity="one">%1$d hora</item>
         <item quantity="other">%1$d horas</item>
+        <item quantity="many">%1$d horas</item>
     </plurals>
+    <string name="portability_title">Importação, exportação e snapshots</string>
+    <string name="syllabus">Conteúdo programático</string>
 </resources>

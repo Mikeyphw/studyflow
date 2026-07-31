@@ -28,6 +28,12 @@ interface StudySupportDao {
     @Query("SELECT * FROM study_plan_settings WHERE studyPlanId = :planId LIMIT 1")
     fun observePlanSettings(planId: String): Flow<StudyPlanSettingsEntity?>
 
+    @Query("SELECT * FROM plan_snapshots WHERE id = :snapshotId LIMIT 1")
+    suspend fun findSnapshot(snapshotId: String): PlanSnapshotEntity?
+
+    @Query("DELETE FROM plan_snapshots WHERE id = :snapshotId")
+    suspend fun deleteSnapshot(snapshotId: String): Int
+
     @Query("SELECT * FROM study_plan_settings WHERE studyPlanId = :planId LIMIT 1")
     suspend fun findPlanSettings(planId: String): StudyPlanSettingsEntity?
 }

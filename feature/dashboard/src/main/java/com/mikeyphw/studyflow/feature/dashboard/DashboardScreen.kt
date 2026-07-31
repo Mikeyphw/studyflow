@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
@@ -51,6 +53,8 @@ fun DashboardScreen(
     onSwitchPlan: (StudyPlan) -> Unit,
     onEditPlan: () -> Unit,
     onOpenPlanSettings: () -> Unit,
+    onOpenSyllabus: () -> Unit,
+    onOpenPortability: () -> Unit,
     onToggleActiveState: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -76,7 +80,7 @@ fun DashboardScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Outlined.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = stringResource(R.string.go_back),
                         )
                     }
@@ -128,6 +132,22 @@ fun DashboardScreen(
                             onClick = {
                                 actionsExpanded = false
                                 onOpenPlanSettings()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.syllabus)) },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenSyllabus()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.portability_title)) },
+                            leadingIcon = { Icon(Icons.Outlined.ImportExport, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenPortability()
                             },
                         )
                     }

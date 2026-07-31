@@ -32,4 +32,6 @@
         <item quantity="one">%1$d hour</item>
         <item quantity="other">%1$d hours</item>
     </plurals>
+    <string name="portability_title">Import, export and snapshots</string>
+    <string name="syllabus">Syllabus</string>
 </resources>

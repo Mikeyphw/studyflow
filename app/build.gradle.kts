@@ -7,8 +7,12 @@ android {
 
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow"
-        versionCode = 3
-        versionName = "0.3.0-phase03"
+        versionCode = 5
+        versionName = "0.5.0-phase05"
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -37,6 +41,7 @@ dependencies {
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:plans"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:subjects"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

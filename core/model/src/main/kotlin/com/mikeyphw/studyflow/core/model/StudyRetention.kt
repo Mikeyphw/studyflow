@@ -43,6 +43,11 @@ enum class StudyNoteType {
     CHECKLIST,
 }
 
+object PlanSnapshotLabels {
+    const val PRE_IMPORT = "snapshot.pre_import"
+    const val PRE_RESTORE = "snapshot.pre_restore"
+}
+
 enum class PlanSnapshotKind {
     AUTOMATIC,
     MANUAL,

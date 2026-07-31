@@ -14,6 +14,7 @@ REQUIRED_MODULES = [
     "core/i18n",
     "core/model",
     "core/navigation",
+    "core/portability",
     "core/testing",
     "feature/dashboard",
     "feature/plans",
