@@ -27,4 +27,7 @@ interface StudySupportDao {
 
     @Query("SELECT * FROM study_plan_settings WHERE studyPlanId = :planId LIMIT 1")
     fun observePlanSettings(planId: String): Flow<StudyPlanSettingsEntity?>
+
+    @Query("SELECT * FROM study_plan_settings WHERE studyPlanId = :planId LIMIT 1")
+    suspend fun findPlanSettings(planId: String): StudyPlanSettingsEntity?
 }

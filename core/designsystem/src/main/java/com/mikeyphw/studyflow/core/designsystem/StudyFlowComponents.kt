@@ -62,8 +62,8 @@ fun StudyFlowErrorPane(
 fun StudyFlowEmptyState(
     title: String,
     message: String,
-    actionLabel: String,
-    onAction: () -> Unit,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     MessagePane(

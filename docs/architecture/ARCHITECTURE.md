@@ -60,3 +60,10 @@ Serialization, and KSP are applied through convention plugins so their Gradle cl
 controlled classloader. Android modules retain AGP 9 built-in Kotlin and the new DSL. Plain JVM
 modules, including `:core:testing`, depend only on Android-free domain and model modules so Gradle
 never has to guess between Android debug and release variants.
+
+## Study Plan lifecycle
+
+`ManageStudyPlan` owns lifecycle transitions while `RoomStudyPlanRepository` performs every mutation
+transactionally. `StudyPlanGraphDuplicator` copies the full structured child graph using a new plan
+namespace for primary and foreign identifiers. Default-plan selection remains an app-level DataStore
+preference, while behavioral settings remain plan-owned Room data.

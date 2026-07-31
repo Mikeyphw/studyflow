@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow
 import android.app.Application
 import com.mikeyphw.studyflow.core.data.RoomStudyPlanRepository
 import com.mikeyphw.studyflow.core.domain.CreateStudyPlan
+import com.mikeyphw.studyflow.core.domain.ManageStudyPlan
 import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
 import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
@@ -25,6 +26,7 @@ interface AppContainer {
     val studyPlanRepository: StudyPlanRepository
     val appPreferencesRepository: AppPreferencesRepository
     val createStudyPlan: CreateStudyPlan
+    val manageStudyPlan: ManageStudyPlan
 }
 
 private class DefaultAppContainer(
@@ -37,6 +39,7 @@ private class DefaultAppContainer(
     override val appPreferencesRepository: AppPreferencesRepository =
         DataStoreAppPreferencesRepository(application)
     override val createStudyPlan = CreateStudyPlan(studyPlanRepository)
+    override val manageStudyPlan = ManageStudyPlan(studyPlanRepository)
 
     init {
         applicationScope.launch {

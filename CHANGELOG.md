@@ -1,5 +1,20 @@
 # Changelog
 
+## Phase 3 r3 - Compose scoped-modifier import hotfix
+
+- Removed the explicit `androidx.compose.foundation.layout.align` import from `PlanListScreen`.
+- Kept `Modifier.align(...)` inside `ColumnScope`, where the public scoped extension is available.
+- Expanded the Phase 3 validator to reject explicit imports of scoped Compose modifiers including `align`, `weight`, `matchParentSize`, and alignment helpers.
+
+## Phase 3 - Complete Study Plan management
+
+- Added guided create and edit flows with plan-specific preferences.
+- Added whole-graph transactional duplication across all plan-owned Room tables.
+- Added default-plan selection, dashboard switching, pause/resume, archive/restore, trash, recovery, and permanent deletion.
+- Added current, archived, and trash plan collections with destructive-action confirmations.
+- Added per-plan settings for adaptive planning, reviews, strict exam mode, preferred sessions, and quiet hours.
+- Sealed backup XML, plural resources, locale targeting, lint advisories, tests, documentation, and phased Devtool validation.
+
 ## Phase 2 r6 - JVM testing variant boundary
 
 - Removed the unnecessary `:core:testing` dependency on Android module `:core:data`.

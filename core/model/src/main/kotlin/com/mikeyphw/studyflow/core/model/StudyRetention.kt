@@ -133,4 +133,32 @@ data class StudyPlanSettings(
     val quietHoursStartMinute: Int?,
     val quietHoursEndMinute: Int?,
     val configurationJson: String,
-)
+) {
+    init {
+        require(preferredSessionMinutes in 5..240) {
+            "Preferred session duration must be between 5 and 240 minutes."
+        }
+        require(quietHoursStartMinute == null || quietHoursStartMinute in 0..1439) {
+            "Quiet-hours start must be a minute within the day."
+        }
+        require(quietHoursEndMinute == null || quietHoursEndMinute in 0..1439) {
+            "Quiet-hours end must be a minute within the day."
+        }
+        require((quietHoursStartMinute == null) == (quietHoursEndMinute == null)) {
+            "Quiet-hours start and end must both be set or both be absent."
+        }
+    }
+
+    companion object {
+        fun defaults(studyPlanId: StudyPlanId): StudyPlanSettings = StudyPlanSettings(
+            studyPlanId = studyPlanId,
+            adaptivePlanningEnabled = true,
+            reviewNotificationsEnabled = true,
+            strictExamModeEnabled = false,
+            preferredSessionMinutes = 45,
+            quietHoursStartMinute = null,
+            quietHoursEndMinute = null,
+            configurationJson = "{}",
+        )
+    }
+}

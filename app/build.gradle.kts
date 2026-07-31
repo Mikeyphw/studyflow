@@ -7,8 +7,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow"
-        versionCode = 2
-        versionName = "0.2.0-phase02"
+        versionCode = 3
+        versionName = "0.3.0-phase03"
     }
 
     buildTypes {
@@ -16,6 +16,14 @@ android {
             isMinifyEnabled = false
             proguardFiles("proguard-rules.pro")
         }
+    }
+
+    lint {
+        disable += setOf(
+            "AndroidGradlePluginVersion",
+            "GradleDependency",
+            "NewerVersionAvailable",
+        )
     }
 }
 

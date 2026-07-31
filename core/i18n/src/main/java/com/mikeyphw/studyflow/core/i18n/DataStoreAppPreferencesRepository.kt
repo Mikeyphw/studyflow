@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
+import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,6 +28,9 @@ class DataStoreAppPreferencesRepository(
                 ?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } }
                 ?: ThemeMode.SYSTEM_DEFAULT,
             dynamicColorEnabled = values[DynamicColorKey] ?: true,
+            defaultStudyPlanId = values[DefaultStudyPlanKey]
+                ?.takeIf(String::isNotBlank)
+                ?.let(::StudyPlanId),
         )
     }
 
@@ -43,9 +47,20 @@ class DataStoreAppPreferencesRepository(
         dataStore.edit { values -> values[DynamicColorKey] = enabled }
     }
 
+    override suspend fun setDefaultStudyPlan(planId: StudyPlanId?) {
+        dataStore.edit { values ->
+            if (planId == null) {
+                values.remove(DefaultStudyPlanKey)
+            } else {
+                values[DefaultStudyPlanKey] = planId.value
+            }
+        }
+    }
+
     private companion object {
         val LanguageKey = stringPreferencesKey("app_language")
         val ThemeModeKey = stringPreferencesKey("theme_mode")
         val DynamicColorKey = booleanPreferencesKey("dynamic_color_enabled")
+        val DefaultStudyPlanKey = stringPreferencesKey("default_study_plan_id")
     }
 }

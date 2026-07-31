@@ -1,19 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="go_back">Voltar</string>
+    <string name="switch_plan">Trocar Plano de Estudo</string>
+    <string name="edit_plan">Editar plano</string>
+    <string name="plan_settings">Configurações do plano</string>
+    <string name="more_actions">Mais ações</string>
+    <string name="default_plan">Plano padrão</string>
+    <string name="resume_plan">Retomar plano</string>
+    <string name="pause_plan">Pausar plano</string>
+    <string name="plan_paused_message">Este plano está pausado. Os dados continuam disponíveis, mas as atividades programadas devem permanecer silenciosas.</string>
+    <string name="plan_draft_message">Este plano duplicado ou recém-preparado ainda é um rascunho. Ative-o quando estiver pronto.</string>
+    <string name="plan_completed_message">Este plano está marcado como concluído. Você pode reativá-lo para outro ciclo de preparação.</string>
     <string name="next_best_action">Próxima melhor atividade</string>
-    <string name="foundation_recommendation">Defina as disciplinas e o tempo disponível</string>
-    <string name="foundation_recommendation_reason">O mecanismo de recomendação adaptativa será ativado quando as fases de planejamento e sessões fornecerem dados suficientes.</string>
+    <string name="foundation_recommendation">Defina disciplinas e o tempo disponível para estudar</string>
+    <string name="foundation_recommendation_reason">O mecanismo de recomendações adaptativas será ativado quando as fases de planejamento e sessões fornecerem evidências suficientes.</string>
     <string name="start_session">Iniciar sessão</string>
     <string name="plan_progress">Progresso do plano</string>
     <string name="progress_value">%1$d%%</string>
     <string name="no_description">Sem descrição</string>
-    <string name="foundation_scope_title">Estado da fundação</string>
-    <string name="foundation_scope_message">A Fase 1 estabelece o limite completo do Plano de Estudo, a estrutura responsiva, a localização e os repositórios substituíveis.</string>
-    <string name="weekly_study_time">Tempo de estudo nesta semana</string>
-    <string name="minutes_value">%1$d minutos</string>
+    <string name="foundation_scope_title">Gestão do plano pronta</string>
+    <string name="foundation_scope_message">Este espaço agora pode ser editado, duplicado, pausado, arquivado, restaurado, enviado à lixeira e configurado de forma independente.</string>
+    <string name="weekly_study_time">Tempo estudado nesta semana</string>
+    <plurals name="minutes_value">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
     <string name="questions_answered">Questões respondidas</string>
     <string name="average_accuracy">Média de acertos</string>
     <string name="weekly_goal">Meta semanal</string>
-    <string name="hours_value">%1$d horas</string>
+    <plurals name="hours_value">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
 </resources>

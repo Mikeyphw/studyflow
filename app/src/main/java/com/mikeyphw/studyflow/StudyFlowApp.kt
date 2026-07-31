@@ -10,19 +10,22 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.PermanentDrawerSheet
-import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -30,8 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowErrorPane
@@ -40,15 +43,20 @@ import com.mikeyphw.studyflow.core.i18n.AppLocaleController
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.navigation.CreatePlanRoute
 import com.mikeyphw.studyflow.core.navigation.DashboardRoute
+import com.mikeyphw.studyflow.core.navigation.EditPlanRoute
 import com.mikeyphw.studyflow.core.navigation.PlanListRoute
+import com.mikeyphw.studyflow.core.navigation.PlanSettingsRoute
 import com.mikeyphw.studyflow.core.navigation.SettingsRoute
 import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
-import com.mikeyphw.studyflow.feature.plans.CreatePlanForm
-import com.mikeyphw.studyflow.feature.plans.CreatePlanScreen
+import com.mikeyphw.studyflow.feature.plans.PlanEditorForm
+import com.mikeyphw.studyflow.feature.plans.PlanEditorScreen
 import com.mikeyphw.studyflow.feature.plans.PlanListScreen
+import com.mikeyphw.studyflow.feature.plans.PlanSettingsScreen
+import com.mikeyphw.studyflow.feature.plans.StudyPlanAction
 import com.mikeyphw.studyflow.feature.settings.SettingsScreen
 import java.util.UUID
 import kotlinx.coroutines.launch
@@ -95,9 +103,30 @@ private fun StudyFlowNavigation(
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val destination = currentBackStackEntry?.destination
+    var defaultPlanOpened by rememberSaveable { mutableStateOf(false) }
+    val defaultPlan = preferences.defaultStudyPlanId?.let { defaultId ->
+        plans.firstOrNull { plan ->
+            plan.id == defaultId && plan.status !in setOf(
+                StudyPlanStatus.ARCHIVED,
+                StudyPlanStatus.TRASHED,
+            )
+        }
+    }
+
+    LaunchedEffect(preferences.defaultStudyPlanId, plans, destination) {
+        if (!defaultPlanOpened && defaultPlan != null && destination?.hasRoute<PlanListRoute>() == true) {
+            defaultPlanOpened = true
+            navController.navigate(DashboardRoute(defaultPlan.id.value))
+        } else if (preferences.defaultStudyPlanId != null && defaultPlan == null && plans.isNotEmpty()) {
+            container.appPreferencesRepository.setDefaultStudyPlan(null)
+        }
+    }
+
     val showPlansSelected = destination?.hasRoute<PlanListRoute>() == true ||
         destination?.hasRoute<DashboardRoute>() == true ||
-        destination?.hasRoute<CreatePlanRoute>() == true
+        destination?.hasRoute<CreatePlanRoute>() == true ||
+        destination?.hasRoute<EditPlanRoute>() == true ||
+        destination?.hasRoute<PlanSettingsRoute>() == true
     val showSettingsSelected = destination?.hasRoute<SettingsRoute>() == true
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -202,6 +231,7 @@ private fun StudyFlowNavHost(
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val copySuffix = stringResource(R.string.plan_copy_suffix)
 
     NavHost(
         navController = navController,
@@ -211,17 +241,63 @@ private fun StudyFlowNavHost(
         composable<PlanListRoute> {
             PlanListScreen(
                 plans = plans,
+                defaultPlanId = preferences.defaultStudyPlanId,
                 onPlanSelected = { plan -> navController.navigate(DashboardRoute(plan.id.value)) },
                 onCreatePlan = { navController.navigate(CreatePlanRoute) },
+                onPlanAction = { plan, action ->
+                    when (action) {
+                        StudyPlanAction.EDIT -> navController.navigate(EditPlanRoute(plan.id.value))
+                        StudyPlanAction.DUPLICATE -> coroutineScope.launch {
+                            val duplicate = container.manageStudyPlan.duplicate(
+                                sourcePlanId = plan.id,
+                                newPlanId = StudyPlanId(UUID.randomUUID().toString()),
+                                newName = "${plan.name} $copySuffix",
+                            )
+                            navController.navigate(DashboardRoute(duplicate.id.value))
+                        }
+                        StudyPlanAction.SET_DEFAULT -> coroutineScope.launch {
+                            container.appPreferencesRepository.setDefaultStudyPlan(plan.id)
+                        }
+                        StudyPlanAction.CLEAR_DEFAULT -> coroutineScope.launch {
+                            container.appPreferencesRepository.setDefaultStudyPlan(null)
+                        }
+                        StudyPlanAction.ACTIVATE -> coroutineScope.launch {
+                            container.manageStudyPlan.activate(plan.id)
+                        }
+                        StudyPlanAction.PAUSE -> coroutineScope.launch {
+                            container.manageStudyPlan.pause(plan.id)
+                        }
+                        StudyPlanAction.ARCHIVE -> coroutineScope.launch {
+                            clearDefaultIfNeeded(container, preferences, plan.id)
+                            container.manageStudyPlan.archive(plan.id)
+                        }
+                        StudyPlanAction.RESTORE_ARCHIVED -> coroutineScope.launch {
+                            container.manageStudyPlan.restoreArchived(plan.id)
+                        }
+                        StudyPlanAction.MOVE_TO_TRASH -> coroutineScope.launch {
+                            clearDefaultIfNeeded(container, preferences, plan.id)
+                            container.manageStudyPlan.moveToTrash(plan.id)
+                        }
+                        StudyPlanAction.RESTORE_FROM_TRASH -> coroutineScope.launch {
+                            container.manageStudyPlan.restoreFromTrash(plan.id)
+                        }
+                        StudyPlanAction.DELETE_PERMANENTLY -> coroutineScope.launch {
+                            clearDefaultIfNeeded(container, preferences, plan.id)
+                            container.manageStudyPlan.deletePermanently(plan.id)
+                        }
+                    }
+                },
             )
         }
         composable<CreatePlanRoute> {
-            CreatePlanScreen(
+            PlanEditorScreen(
+                initialPlan = null,
+                initialSettings = null,
                 onBack = navController::popBackStack,
-                onCreate = { form ->
-                    val plan = form.toStudyPlan()
+                onSave = { form ->
+                    val plan = form.toNewStudyPlan()
                     coroutineScope.launch {
-                        container.createStudyPlan(plan)
+                        container.createStudyPlan(plan, form.toSettings(plan.id))
                         navController.navigate(DashboardRoute(plan.id.value)) {
                             popUpTo<PlanListRoute>()
                         }
@@ -229,44 +305,127 @@ private fun StudyFlowNavHost(
                 },
             )
         }
-        composable<DashboardRoute> { entry ->
-            val route = entry.toRoute<DashboardRoute>()
-            val planFlow = remember(route.planId) {
-                container.studyPlanRepository.observePlan(StudyPlanId(route.planId))
-            }
+        composable<EditPlanRoute> { entry ->
+            val route = entry.toRoute<EditPlanRoute>()
+            val planId = remember(route.planId) { StudyPlanId(route.planId) }
+            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
+            val settingsFlow = remember(planId) { container.studyPlanRepository.observePlanSettings(planId) }
             val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
-            if (plan == null) {
+            val settings by settingsFlow.collectAsStateWithLifecycle(
+                initialValue = StudyPlanSettings.defaults(planId),
+            )
+            val currentPlan = plan
+            if (currentPlan == null) {
                 StudyFlowErrorPane(
                     message = stringResource(R.string.unknown_plan_error),
                     onRetry = navController::popBackStack,
                 )
             } else {
-                DashboardScreen(
-                    plan = requireNotNull(plan),
+                PlanEditorScreen(
+                    initialPlan = currentPlan,
+                    initialSettings = settings,
                     onBack = navController::popBackStack,
+                    onSave = { form ->
+                        coroutineScope.launch {
+                            container.manageStudyPlan.update(currentPlan.withEditorForm(form))
+                            container.manageStudyPlan.updateSettings(form.toSettings(currentPlan.id, settings))
+                            navController.popBackStack()
+                        }
+                    },
+                )
+            }
+        }
+        composable<PlanSettingsRoute> { entry ->
+            val route = entry.toRoute<PlanSettingsRoute>()
+            val planId = remember(route.planId) { StudyPlanId(route.planId) }
+            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
+            val settingsFlow = remember(planId) { container.studyPlanRepository.observePlanSettings(planId) }
+            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val settings by settingsFlow.collectAsStateWithLifecycle(
+                initialValue = StudyPlanSettings.defaults(planId),
+            )
+            val currentPlan = plan
+            if (currentPlan == null) {
+                StudyFlowErrorPane(
+                    message = stringResource(R.string.unknown_plan_error),
+                    onRetry = navController::popBackStack,
+                )
+            } else {
+                PlanSettingsScreen(
+                    plan = currentPlan,
+                    settings = settings,
+                    onBack = navController::popBackStack,
+                    onSave = { updatedSettings ->
+                        coroutineScope.launch {
+                            container.manageStudyPlan.updateSettings(updatedSettings)
+                            navController.popBackStack()
+                        }
+                    },
+                )
+            }
+        }
+        composable<DashboardRoute> { entry ->
+            val route = entry.toRoute<DashboardRoute>()
+            val planId = remember(route.planId) { StudyPlanId(route.planId) }
+            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
+            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val currentPlan = plan
+            if (currentPlan == null || currentPlan.status in setOf(StudyPlanStatus.TRASHED, StudyPlanStatus.ARCHIVED)) {
+                StudyFlowErrorPane(
+                    message = stringResource(R.string.unknown_plan_error),
+                    onRetry = { navController.navigateToPlans() },
+                )
+            } else {
+                DashboardScreen(
+                    plan = currentPlan,
+                    availablePlans = plans,
+                    isDefaultPlan = preferences.defaultStudyPlanId == currentPlan.id,
+                    onBack = navController::popBackStack,
+                    onSwitchPlan = { candidate ->
+                        navController.navigate(DashboardRoute(candidate.id.value)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onEditPlan = { navController.navigate(EditPlanRoute(currentPlan.id.value)) },
+                    onOpenPlanSettings = {
+                        navController.navigate(PlanSettingsRoute(currentPlan.id.value))
+                    },
+                    onToggleActiveState = {
+                        coroutineScope.launch {
+                            if (currentPlan.status == StudyPlanStatus.ACTIVE) {
+                                container.manageStudyPlan.pause(currentPlan.id)
+                            } else {
+                                container.manageStudyPlan.activate(currentPlan.id)
+                            }
+                        }
+                    },
                 )
             }
         }
         composable<SettingsRoute> {
             SettingsScreen(
                 preferences = preferences,
-                onLanguageChanged = { language ->
-                    coroutineScope.launch {
-                        container.appPreferencesRepository.setLanguage(language)
-                    }
-                },
-                onThemeModeChanged = { themeMode ->
-                    coroutineScope.launch {
-                        container.appPreferencesRepository.setThemeMode(themeMode)
-                    }
-                },
-                onDynamicColorChanged = { enabled ->
-                    coroutineScope.launch {
-                        container.appPreferencesRepository.setDynamicColorEnabled(enabled)
-                    }
-                },
+                onLanguageChanged = { language -> coroutineScope.launch {
+                    container.appPreferencesRepository.setLanguage(language)
+                } },
+                onThemeModeChanged = { themeMode -> coroutineScope.launch {
+                    container.appPreferencesRepository.setThemeMode(themeMode)
+                } },
+                onDynamicColorChanged = { enabled -> coroutineScope.launch {
+                    container.appPreferencesRepository.setDynamicColorEnabled(enabled)
+                } },
             )
         }
+    }
+}
+
+private suspend fun clearDefaultIfNeeded(
+    container: AppContainer,
+    preferences: AppPreferences,
+    planId: StudyPlanId,
+) {
+    if (preferences.defaultStudyPlanId == planId) {
+        container.appPreferencesRepository.setDefaultStudyPlan(null)
     }
 }
 
@@ -278,21 +437,38 @@ private fun NavHostController.navigateToPlans() {
 }
 
 private fun NavHostController.navigateToSettings() {
-    navigate(SettingsRoute) {
-        launchSingleTop = true
-    }
+    navigate(SettingsRoute) { launchSingleTop = true }
 }
 
-private fun CreatePlanForm.toStudyPlan(): StudyPlan = StudyPlan(
+private fun PlanEditorForm.toNewStudyPlan(): StudyPlan = StudyPlan(
     id = StudyPlanId(UUID.randomUUID().toString()),
-    name = name.trim(),
-    description = description.trim(),
+    name = name,
+    description = description,
     type = studyType,
     status = StudyPlanStatus.ACTIVE,
-    examDateIso = examDateIso.trim().ifBlank { null },
+    examDateIso = examDateIso.ifBlank { null },
     weeklyGoalHours = weeklyGoalHours,
     progressPercent = 0,
     studiedMinutesThisWeek = 0,
     questionsAnswered = 0,
     averageAccuracyPercent = 0,
+)
+
+private fun StudyPlan.withEditorForm(form: PlanEditorForm): StudyPlan = copy(
+    name = form.name,
+    description = form.description,
+    type = form.studyType,
+    examDateIso = form.examDateIso.ifBlank { null },
+    weeklyGoalHours = form.weeklyGoalHours,
+)
+
+private fun PlanEditorForm.toSettings(
+    planId: StudyPlanId,
+    current: StudyPlanSettings = StudyPlanSettings.defaults(planId),
+): StudyPlanSettings = current.copy(
+    studyPlanId = planId,
+    adaptivePlanningEnabled = adaptivePlanningEnabled,
+    reviewNotificationsEnabled = reviewNotificationsEnabled,
+    strictExamModeEnabled = strictExamModeEnabled,
+    preferredSessionMinutes = preferredSessionMinutes,
 )

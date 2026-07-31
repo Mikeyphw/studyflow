@@ -11,7 +11,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,29 +29,106 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     plan: StudyPlan,
+    availablePlans: List<StudyPlan>,
+    isDefaultPlan: Boolean,
     onBack: () -> Unit,
+    onSwitchPlan: (StudyPlan) -> Unit,
+    onEditPlan: () -> Unit,
+    onOpenPlanSettings: () -> Unit,
+    onToggleActiveState: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var switcherExpanded by rememberSaveable(plan.id.value) { mutableStateOf(false) }
+    var actionsExpanded by rememberSaveable(plan.id.value) { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(text = plan.name) },
+                title = {
+                    Column {
+                        Text(text = plan.name)
+                        if (isDefaultPlan) {
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(stringResource(R.string.default_plan)) },
+                                leadingIcon = { Icon(Icons.Outlined.Star, contentDescription = null) },
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Outlined.ArrowBack,
                             contentDescription = stringResource(R.string.go_back),
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { switcherExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Outlined.SwapHoriz,
+                            contentDescription = stringResource(R.string.switch_plan),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = switcherExpanded,
+                        onDismissRequest = { switcherExpanded = false },
+                    ) {
+                        availablePlans
+                            .filter { it.id != plan.id && it.status != StudyPlanStatus.TRASHED }
+                            .forEach { candidate ->
+                                DropdownMenuItem(
+                                    text = { Text(candidate.name) },
+                                    onClick = {
+                                        switcherExpanded = false
+                                        onSwitchPlan(candidate)
+                                    },
+                                )
+                            }
+                    }
+                    IconButton(onClick = { actionsExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Outlined.MoreVert,
+                            contentDescription = stringResource(R.string.more_actions),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = actionsExpanded,
+                        onDismissRequest = { actionsExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.edit_plan)) },
+                            leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onEditPlan()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.plan_settings)) },
+                            leadingIcon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenPlanSettings()
+                            },
                         )
                     }
                 },
@@ -65,7 +150,11 @@ fun DashboardScreen(
                     modifier = contentModifier,
                     horizontalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
-                    DashboardPrimaryColumn(plan = plan, modifier = Modifier.weight(1.25f))
+                    DashboardPrimaryColumn(
+                        plan = plan,
+                        onToggleActiveState = onToggleActiveState,
+                        modifier = Modifier.weight(1.25f),
+                    )
                     DashboardMetricsColumn(plan = plan, modifier = Modifier.weight(0.75f))
                 }
             } else {
@@ -73,7 +162,7 @@ fun DashboardScreen(
                     modifier = contentModifier,
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
-                    DashboardPrimaryColumn(plan = plan)
+                    DashboardPrimaryColumn(plan = plan, onToggleActiveState = onToggleActiveState)
                     DashboardMetricsColumn(plan = plan)
                 }
             }
@@ -84,9 +173,22 @@ fun DashboardScreen(
 @Composable
 private fun DashboardPrimaryColumn(
     plan: StudyPlan,
+    onToggleActiveState: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        statusMessage(plan.status)?.let { message ->
+            StudyFlowSectionCard(title = stringResource(statusTitle(plan.status))) {
+                Text(text = stringResource(message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Button(onClick = onToggleActiveState) {
+                    Text(
+                        stringResource(
+                            if (plan.status == StudyPlanStatus.ACTIVE) R.string.pause_plan else R.string.resume_plan,
+                        ),
+                    )
+                }
+            }
+        }
         StudyFlowSectionCard(title = stringResource(R.string.next_best_action)) {
             Text(
                 text = stringResource(R.string.foundation_recommendation),
@@ -128,7 +230,11 @@ private fun DashboardMetricsColumn(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
         MetricCard(
             title = stringResource(R.string.weekly_study_time),
-            value = stringResource(R.string.minutes_value, plan.studiedMinutesThisWeek),
+            value = pluralStringResource(
+                R.plurals.minutes_value,
+                plan.studiedMinutesThisWeek,
+                plan.studiedMinutesThisWeek,
+            ),
         )
         MetricCard(
             title = stringResource(R.string.questions_answered),
@@ -140,7 +246,11 @@ private fun DashboardMetricsColumn(
         )
         MetricCard(
             title = stringResource(R.string.weekly_goal),
-            value = stringResource(R.string.hours_value, plan.weeklyGoalHours),
+            value = pluralStringResource(
+                R.plurals.hours_value,
+                plan.weeklyGoalHours,
+                plan.weeklyGoalHours,
+            ),
         )
     }
 }
@@ -153,4 +263,19 @@ private fun MetricCard(
     StudyFlowSectionCard(title = title) {
         Text(text = value, style = MaterialTheme.typography.headlineMedium)
     }
+}
+
+private fun statusMessage(status: StudyPlanStatus): Int? = when (status) {
+    StudyPlanStatus.ACTIVE -> null
+    StudyPlanStatus.DRAFT -> R.string.plan_draft_message
+    StudyPlanStatus.PAUSED -> R.string.plan_paused_message
+    StudyPlanStatus.COMPLETED -> R.string.plan_completed_message
+    StudyPlanStatus.ARCHIVED,
+    StudyPlanStatus.TRASHED,
+    -> null
+}
+
+private fun statusTitle(status: StudyPlanStatus): Int = when (status) {
+    StudyPlanStatus.ACTIVE -> R.string.pause_plan
+    else -> R.string.resume_plan
 }

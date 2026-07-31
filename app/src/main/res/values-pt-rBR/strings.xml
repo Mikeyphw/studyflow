@@ -3,6 +3,6 @@
     <string name="app_name">StudyFlow</string>
     <string name="navigation_plans">Planos de estudo</string>
     <string name="navigation_settings">Configurações</string>
-    <string name="navigation_back">Voltar</string>
     <string name="unknown_plan_error">Este Plano de Estudo não está disponível.</string>
+    <string name="plan_copy_suffix">Cópia</string>
 </resources>

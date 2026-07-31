@@ -16,4 +16,5 @@ data class AppPreferences(
     val language: AppLanguage = AppLanguage.SYSTEM_DEFAULT,
     val themeMode: ThemeMode = ThemeMode.SYSTEM_DEFAULT,
     val dynamicColorEnabled: Boolean = true,
+    val defaultStudyPlanId: StudyPlanId? = null,
 )

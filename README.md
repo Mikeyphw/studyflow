@@ -3,17 +3,17 @@
 StudyFlow is an offline-first Android study workspace for public examinations, certifications,
 university courses, entrance examinations, and independent study.
 
-This repository implements **Roadmap Phases 0, 1, and 2**:
+This repository implements **Roadmap Phases 0 through 3**:
 
 - an executable product and behavior contract;
 - an English-only codebase with English and Brazilian Portuguese UI resources;
 - a modular Kotlin and Jetpack Compose foundation;
 - responsive compact, medium, and expanded navigation;
-- plan list, empty state, plan creation, dashboard, and settings screens;
+- complete Study Plan creation, editing, lifecycle, dashboard, and settings screens;
 - system, light, and dark themes with optional dynamic color;
 - per-app language selection;
 - DataStore-backed app preferences;
-- Room-backed Study Plan persistence with a replaceable repository boundary;
+- Room-backed Study Plan persistence with complete graph duplication and lifecycle management;
 - reusable loading, error, and empty-state components;
 - unit tests, Android lint, formatting contracts, and repository validators;
 - a Devtool-ready `studyflow_android` target for future overlays.
@@ -81,6 +81,8 @@ Useful individual commands:
 ```bash
 python3 scripts/verify_phase_0.py
 python3 scripts/verify_phase_1.py
+python3 scripts/verify_phase_2.py
+python3 scripts/verify_phase_3.py
 gradle verifyFormatting
 gradle checkAll
 gradle :app:assembleDebug
@@ -100,7 +102,7 @@ core:model/             Stable domain and preference models
 core:navigation/        Type-safe navigation routes
 core:testing/           Reusable fixtures and test fakes
 feature:dashboard/      Initial Study Plan dashboard
-feature:plans/          Plan list, empty state, and creation flow
+feature:plans/          Plan lifecycle, guided editor, collections, and plan settings
 feature:settings/       Theme and language settings
 docs/                   Product, architecture, quality, and roadmap contracts
 scripts/                Repository validation entry points
@@ -110,7 +112,8 @@ scripts/                Repository validation entry points
 
 Structured Study Plan data is persisted with Room through `:core:database` and
 `RoomStudyPlanRepository`. Preferences remain in DataStore. Import/export packages, annex bytes,
-and media playback remain assigned to their later roadmap phases.
+and media playback remain assigned to their later roadmap phases. Plan duplication already clones the
+complete structured Room graph and remaps all internal identifiers.
 
 ## Languages
 
@@ -129,3 +132,11 @@ Structured Study Plan data is persisted in Room through `:core:database`. The ap
 uses `RoomStudyPlanRepository`, while `InMemoryStudyPlanRepository` remains available
 for focused tests and previews. Run `python3 scripts/verify_phase_2.py` for the static
 Phase 2 acceptance gate.
+
+## Phase 3 plan management
+
+Phase 3 r3 also seals AGP 9 built-in Kotlin compatibility for Compose scoped modifiers by relying on `RowScope`, `ColumnScope`, and `BoxScope` member extensions instead of importing those symbols directly.
+
+Study Plans now support guided create/edit, complete structured duplication, default-plan selection,
+pause/resume, archive/restore, trash/recovery, permanent deletion, dashboard switching, and isolated
+per-plan settings. Run `python3 scripts/verify_phase_3.py` for the static acceptance gate.

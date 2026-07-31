@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="go_back">Go back</string>
+    <string name="switch_plan">Switch Study Plan</string>
+    <string name="edit_plan">Edit plan</string>
+    <string name="plan_settings">Plan settings</string>
+    <string name="more_actions">More actions</string>
+    <string name="default_plan">Default plan</string>
+    <string name="resume_plan">Resume plan</string>
+    <string name="pause_plan">Pause plan</string>
+    <string name="plan_paused_message">This plan is paused. Its data remains available, but scheduled activity should stay quiet.</string>
+    <string name="plan_draft_message">This duplicated or newly prepared plan is still a draft. Activate it when it is ready.</string>
+    <string name="plan_completed_message">This plan is marked completed. You can reactivate it for another preparation cycle.</string>
     <string name="next_best_action">Next best action</string>
     <string name="foundation_recommendation">Define subjects and available study time</string>
     <string name="foundation_recommendation_reason">The adaptive recommendation engine will activate after the planning and session phases provide enough evidence.</string>
@@ -8,12 +18,18 @@
     <string name="plan_progress">Plan progress</string>
     <string name="progress_value">%1$d%%</string>
     <string name="no_description">No description</string>
-    <string name="foundation_scope_title">Foundation status</string>
-    <string name="foundation_scope_message">Phase 1 establishes the complete Study Plan boundary, responsive shell, localization and replaceable repositories.</string>
+    <string name="foundation_scope_title">Plan management ready</string>
+    <string name="foundation_scope_message">This workspace can now be edited, duplicated, paused, archived, restored, trashed and configured independently.</string>
     <string name="weekly_study_time">Study time this week</string>
-    <string name="minutes_value">%1$d minutes</string>
+    <plurals name="minutes_value">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
     <string name="questions_answered">Questions answered</string>
     <string name="average_accuracy">Average accuracy</string>
     <string name="weekly_goal">Weekly goal</string>
-    <string name="hours_value">%1$d hours</string>
+    <plurals name="hours_value">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
 </resources>
