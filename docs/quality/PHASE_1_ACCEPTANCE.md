@@ -3,7 +3,7 @@
 Phase 1 is complete when:
 
 - [x] The project uses Kotlin, Compose, Material 3, and convention plugins.
-- [x] Android modules use AGP built-in Kotlin.
+- [x] Android modules receive Kotlin through convention plugins; Phase 2 may use the documented external-Kotlin compatibility mode for KSP.
 - [x] Version catalog and reproducible wrapper configuration exist.
 - [x] `.devtool.toml` defines the `studyflow_android` Android target and phased validation tasks.
 - [x] Debug and release build types exist.

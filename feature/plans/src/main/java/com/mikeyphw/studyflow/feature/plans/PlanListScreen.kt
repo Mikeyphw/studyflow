@@ -150,4 +150,5 @@ private fun statusLabel(status: StudyPlanStatus): Int = when (status) {
     StudyPlanStatus.PAUSED -> R.string.status_paused
     StudyPlanStatus.COMPLETED -> R.string.status_completed
     StudyPlanStatus.ARCHIVED -> R.string.status_archived
+    StudyPlanStatus.TRASHED -> R.string.status_trashed
 }

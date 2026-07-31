@@ -1,7 +1,3 @@
-plugins {
-    alias(libs.plugins.kotlin.serialization) apply false
-}
-
 val qualitySourceRoots = listOf(
     "app",
     "core",
@@ -13,7 +9,7 @@ val excludedDirectoryNames = setOf("build", ".gradle", ".idea")
 
 fun File.isQualitySource(): Boolean =
     extension in setOf("kt", "kts", "xml") &&
-        none { it.name in excludedDirectoryNames }
+        toPath().none { pathSegment -> pathSegment.toString() in excludedDirectoryNames }
 
 tasks.register("verifyFormatting") {
     group = "verification"
@@ -55,7 +51,8 @@ tasks.register("checkAll") {
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
     dependsOn(
         "verifyFormatting",
-        ":core:data:test",
+        ":core:data:testDebugUnitTest",
+        ":core:database:testDebugUnitTest",
         ":core:domain:test",
         ":core:model:test",
         ":core:navigation:test",

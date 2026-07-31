@@ -13,6 +13,7 @@
     <string name="status_active">Ativo</string>
     <string name="status_paused">Pausado</string>
     <string name="status_completed">Concluído</string>
+    <string name="status_trashed">Na lixeira</string>
     <string name="status_archived">Arquivado</string>
     <string name="create_plan_title">Criar Plano de Estudo</string>
     <string name="create_plan_intro">Defina agora a base. Disciplinas, cronogramas e toda a biblioteca de estudo serão vinculados a este plano nas próximas fases.</string>

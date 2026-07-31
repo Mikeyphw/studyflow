@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 python3 scripts/verify_phase_0.py
 python3 scripts/verify_phase_1.py
+python3 scripts/verify_phase_2.py
 
 GRADLE_LAUNCHER=""
 if [[ -x ./gradlew ]]; then

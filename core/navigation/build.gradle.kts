@@ -1,6 +1,5 @@
 plugins {
-    id("studyflow.kotlin.library")
-    alias(libs.plugins.kotlin.serialization)
+    id("studyflow.kotlin.library.serialization")
 }
 
 dependencies {

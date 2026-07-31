@@ -1,14 +1,12 @@
 package com.mikeyphw.studyflow.core.model
 
-@JvmInline
-value class StudyPlanId(val value: String)
-
 enum class StudyPlanStatus {
     DRAFT,
     ACTIVE,
     PAUSED,
     COMPLETED,
     ARCHIVED,
+    TRASHED,
 }
 
 enum class StudyType {
@@ -31,4 +29,17 @@ data class StudyPlan(
     val studiedMinutesThisWeek: Int,
     val questionsAnswered: Int,
     val averageAccuracyPercent: Int,
-)
+    val createdAtEpochMillis: Long = 0L,
+    val updatedAtEpochMillis: Long = createdAtEpochMillis,
+    val trashedAtEpochMillis: Long? = null,
+) {
+    init {
+        require(id.value.isNotBlank()) { "Study Plan id cannot be blank." }
+        require(name.isNotBlank()) { "Study Plan name cannot be blank." }
+        require(weeklyGoalHours in 1..100) { "Weekly goal must be between 1 and 100 hours." }
+        require(progressPercent in 0..100) { "Progress must be between 0 and 100 percent." }
+        require(studiedMinutesThisWeek >= 0) { "Studied minutes cannot be negative." }
+        require(questionsAnswered >= 0) { "Question count cannot be negative." }
+        require(averageAccuracyPercent in 0..100) { "Accuracy must be between 0 and 100 percent." }
+    }
+}

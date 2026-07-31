@@ -1,61 +1,45 @@
 # Validation Report
 
 Date: 2026-07-30
-Artifact: StudyFlow Android Phase 0 and Phase 1 repository
+Artifact: StudyFlow Android Phase 2 r6 overlay
 
 ## Completed checks
 
 | Check | Result |
 |---|---|
-| Phase 0 product-contract validator | Passed, 10 required documents |
-| Phase 1 foundation validator | Passed, 11 required modules |
+| Phase 0 product-contract validator | Passed |
+| Phase 1 foundation validator | Passed |
+| Phase 2 domain/database validator | Passed, 22 domain roots |
 | English and pt-BR string-key parity | Passed |
 | Android locale configuration contract | Passed |
-| Hardcoded user-facing string scan | Passed |
-| AGP built-in Kotlin contract | Passed |
 | Source formatting contract | Passed |
 | Core model Kotlin compilation | Passed |
-| `.devtool.toml` TOML parsing | Passed |
-| Uploaded Devtool project-config parser | Passed |
+| Room/data compatibility syntax probe | Passed |
+| AGP 9 plugin topology contract | Passed |
+| JVM-to-Android dependency boundary | Passed |
+| `:core:testing` runtime variant contract | Passed |
+| Existing `.devtool.toml` preservation | Passed |
+| Overlay inventory and source hashes | Passed |
 
-## Devtool contract
+## AGP and Kotlin topology
 
-The repository includes the target:
+- `android.builtInKotlin=true`
+- AGP new DSL remains enabled
+- Android conventions do not apply `org.jetbrains.kotlin.android`
+- KSP 2.3.10 is applied only through `studyflow.android.library.room`
+- Compose and Serialization are supplied through the included convention build
 
-```text
-studyflow_android
-```
+This topology follows the AGP 9 built-in Kotlin migration path and avoids both failure modes seen in
+earlier revisions: split Kotlin/KSP classloaders and the invalid external-Kotlin/new-DSL hybrid.
 
-Configured validation phases:
+## Destination validation
 
-1. `preflight`
-2. `compile`
-3. `resources`
-4. `unit-test`
-5. `package`
-6. `lint`
-
-The configuration uses Android-safe execution defaults, one Gradle worker, no daemon, low-priority
-validation, split Gradle phases, and affected-module lint support.
-
-## Environment-limited check
-
-A full Android Gradle build was not executed in the artifact-generation container because it did not
-provide an Android SDK and compatible installed Gradle launcher. The repository contains a pinned
-Gradle 9.5.0 distribution configuration and is intended to be built or validated through Devtool using
-the `studyflow_android` target.
-
-Run the complete gate in the destination environment with:
+Run the complete gate with:
 
 ```bash
 devtool --copy --auto-hud --hud-mode desktop-window --yes \
-  -r /path/to/studyflow-android-phase01 \
+  -r /path/to/studyflow \
   --target studyflow_android \
-  validate
-```
-
-Or run the repository entry point:
-
-```bash
-./scripts/validate_repo.sh
+  apply-overlay /path/to/studyflow_android_phase2_domain_room_database_overlay_r6.zip \
+  --validate
 ```

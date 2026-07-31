@@ -3,7 +3,7 @@
 StudyFlow is an offline-first Android study workspace for public examinations, certifications,
 university courses, entrance examinations, and independent study.
 
-This repository implements **Roadmap Phase 0 and Phase 1**:
+This repository implements **Roadmap Phases 0, 1, and 2**:
 
 - an executable product and behavior contract;
 - an English-only codebase with English and Brazilian Portuguese UI resources;
@@ -13,7 +13,7 @@ This repository implements **Roadmap Phase 0 and Phase 1**:
 - system, light, and dark themes with optional dynamic color;
 - per-app language selection;
 - DataStore-backed app preferences;
-- in-memory Study Plan repository for the foundation milestone;
+- Room-backed Study Plan persistence with a replaceable repository boundary;
 - reusable loading, error, and empty-state components;
 - unit tests, Android lint, formatting contracts, and repository validators;
 - a Devtool-ready `studyflow_android` target for future overlays.
@@ -34,8 +34,9 @@ to that root object through `studyPlanId`.
 - Android SDK Build Tools 36.0.0
 - Compose BOM 2026.06.00
 
-AGP 9 built-in Kotlin support is used for Android modules. Do not apply
-`org.jetbrains.kotlin.android`.
+AGP 9 built-in Kotlin and the new Android DSL are used for Android modules. Do not apply
+`org.jetbrains.kotlin.android`, and do not set `android.builtInKotlin=false`. KSP, Compose, and
+Serialization are owned by the included convention build to avoid split plugin classloaders.
 
 The repository includes a pinned `gradle/wrapper/gradle-wrapper.properties`. Devtool can provision
 and select the matching managed Gradle distribution when a checked-in `gradlew` launcher is absent.
@@ -90,7 +91,8 @@ gradle :app:assembleDebug
 ```text
 app/                    Application shell, navigation, and app-level state
 build-logic/            Convention Gradle plugins
-core:data/              Foundation in-memory repository
+core:data/              Room-backed repository and data orchestration
+core:database/          Room entities, DAOs, schema, and database runtime
 core:designsystem/      Theme and reusable Compose components
 core:domain/            Repository contracts and use cases
 core:i18n/              DataStore preferences and app locale integration
@@ -106,9 +108,9 @@ scripts/                Repository validation entry points
 
 ## Current persistence boundary
 
-Phase 1 intentionally uses an in-memory Study Plan repository. Preferences are persisted with
-DataStore. Room persistence, migrations, import/export packages, videos, and annex storage begin in
-later roadmap phases. The repository contract prevents the UI from depending on the temporary store.
+Structured Study Plan data is persisted with Room through `:core:database` and
+`RoomStudyPlanRepository`. Preferences remain in DataStore. Import/export packages, annex bytes,
+and media playback remain assigned to their later roadmap phases.
 
 ## Languages
 
@@ -119,3 +121,11 @@ later roadmap phases. The repository contract prevents the UI from depending on 
 ## Package
 
 `com.mikeyphw.studyflow`
+
+## Phase 2 persistence
+Shared test fixtures remain Android-free to keep JVM test variant resolution deterministic.
+
+Structured Study Plan data is persisted in Room through `:core:database`. The app
+uses `RoomStudyPlanRepository`, while `InMemoryStudyPlanRepository` remains available
+for focused tests and previews. Run `python3 scripts/verify_phase_2.py` for the static
+Phase 2 acceptance gate.

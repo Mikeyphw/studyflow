@@ -45,11 +45,27 @@ for relative_path in required_files:
     if not (ROOT / relative_path).is_file():
         failures.append(f"missing foundation file: {relative_path}")
 
-if "org.jetbrains.kotlin.android" in "\n".join(
+module_build_scripts = "\n".join(
     path.read_text(encoding="utf-8")
-    for path in ROOT.rglob("*.gradle.kts")
-):
-    failures.append("Android Kotlin plugin is present; AGP built-in Kotlin is required")
+    for module in REQUIRED_MODULES
+    for path in [(ROOT / module / "build.gradle.kts")]
+    if path.is_file()
+)
+if "org.jetbrains.kotlin.android" in module_build_scripts:
+    failures.append("Android modules must receive Kotlin through convention plugins, not direct application")
+
+gradle_properties = (ROOT / "gradle.properties").read_text(encoding="utf-8")
+external_kotlin_mode = "android.builtInKotlin=false" in gradle_properties
+if external_kotlin_mode:
+    for convention in (
+        "AndroidApplicationConventionPlugin.kt",
+        "AndroidLibraryConventionPlugin.kt",
+    ):
+        source = (
+            ROOT / "build-logic/convention/src/main/kotlin" / convention
+        ).read_text(encoding="utf-8")
+        if 'pluginManager.apply("org.jetbrains.kotlin.android")' not in source:
+            failures.append(f"{convention}: external Kotlin compatibility mode is incomplete")
 
 android_namespace = "http://schemas.android.com/apk/res/android"
 def read_string_keys(path: Path) -> set[str]:

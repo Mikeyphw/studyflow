@@ -20,6 +20,7 @@ rootProject.name = "StudyFlow"
 include(
     ":app",
     ":core:data",
+    ":core:database",
     ":core:designsystem",
     ":core:domain",
     ":core:i18n",
