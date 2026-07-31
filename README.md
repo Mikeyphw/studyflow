@@ -172,3 +172,8 @@ structured-text or CSV syllabus import. Progress is derived from the topic tree 
 the owning Study Plan. Room schema version 2 adds nullable exam-stage links for subjects and topics
 through an explicit migration. Run `python3 scripts/verify_phase_5.py` for the Phase 5 contract.
 
+
+
+## Phase 6
+
+Adds schedule and study-strategy management, generated weekly activities, missed-work recovery and a lint warning seal for unused subject strings.

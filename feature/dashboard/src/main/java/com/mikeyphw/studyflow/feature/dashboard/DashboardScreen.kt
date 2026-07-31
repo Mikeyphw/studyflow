@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Settings
@@ -54,6 +55,7 @@ fun DashboardScreen(
     onEditPlan: () -> Unit,
     onOpenPlanSettings: () -> Unit,
     onOpenSyllabus: () -> Unit,
+    onOpenSchedule: () -> Unit,
     onOpenPortability: () -> Unit,
     onToggleActiveState: () -> Unit,
     modifier: Modifier = Modifier,
@@ -140,6 +142,14 @@ fun DashboardScreen(
                             onClick = {
                                 actionsExpanded = false
                                 onOpenSyllabus()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.schedule)) },
+                            leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenSchedule()
                             },
                         )
                         DropdownMenuItem(

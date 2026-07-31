@@ -24,4 +24,7 @@ data class DashboardRoute(val planId: String)
 data class SubjectsRoute(val planId: String)
 
 @Serializable
+data class ScheduleRoute(val planId: String)
+
+@Serializable
 data object SettingsRoute

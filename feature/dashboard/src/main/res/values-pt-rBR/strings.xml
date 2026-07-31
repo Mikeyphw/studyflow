@@ -35,5 +35,6 @@
         <item quantity="many">%1$d horas</item>
     </plurals>
     <string name="portability_title">Importação, exportação e snapshots</string>
+    <string name="schedule">Cronograma</string>
     <string name="syllabus">Conteúdo programático</string>
 </resources>

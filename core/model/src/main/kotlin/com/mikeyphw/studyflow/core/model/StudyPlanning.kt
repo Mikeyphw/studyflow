@@ -63,6 +63,14 @@ enum class GoalPeriod {
     CUSTOM,
 }
 
+enum class MissedActivityHandling {
+    POSTPONE,
+    REDISTRIBUTE,
+    RETURN_TO_BACKLOG,
+    SKIP,
+    KEEP_UNCHANGED,
+}
+
 data class StudyStrategy(
     val id: StudyStrategyId,
     val studyPlanId: StudyPlanId,
@@ -142,4 +150,34 @@ data class StudyGoal(
     val endsOnIso: String?,
     val completedAtEpochMillis: Long?,
     val archived: Boolean,
+)
+
+data class StudySchedule(
+    val studyPlanId: StudyPlanId,
+    val strategy: StudyStrategy?,
+    val scheduleRules: List<ScheduleRule>,
+    val plannedActivities: List<PlannedActivity>,
+) {
+    val pendingActivities: List<PlannedActivity> = plannedActivities.filter {
+        it.status == PlannedActivityStatus.PLANNED || it.status == PlannedActivityStatus.MISSED
+    }
+
+    val lockedActivities: List<PlannedActivity> = plannedActivities.filter(PlannedActivity::locked)
+}
+
+data class ScheduleGenerationRequest(
+    val studyPlanId: StudyPlanId,
+    val startEpochMillis: Long,
+    val days: Int,
+    val replaceUnlocked: Boolean,
+)
+
+data class ScheduleGenerationResult(
+    val generatedActivities: Int,
+    val removedUnlockedActivities: Int,
+)
+
+data class RebalanceResult(
+    val updatedActivities: Int,
+    val handling: MissedActivityHandling,
 )

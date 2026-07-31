@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.domain.StudyContentRepository
 import com.mikeyphw.studyflow.core.domain.StudyPlanPortabilityRepository
 import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
+import com.mikeyphw.studyflow.core.domain.StudyScheduleRepository
 
 /**
  * Public composition boundary for the data layer.
@@ -16,6 +17,7 @@ class StudyFlowDataLayer internal constructor(
     val studyPlanRepository: StudyPlanRepository,
     val studyPlanPortabilityRepository: StudyPlanPortabilityRepository,
     val studyContentRepository: StudyContentRepository,
+    val studyScheduleRepository: StudyScheduleRepository,
     private val initializeData: suspend () -> Unit,
 ) {
     suspend fun initialize() = initializeData()
@@ -29,6 +31,7 @@ fun createStudyFlowDataLayer(
     val database = StudyFlowDatabase.create(context)
     val studyPlanRepository = RoomStudyPlanRepository(database, clock)
     val studyContentRepository = RoomStudyContentRepository(database, clock)
+    val studyScheduleRepository = RoomStudyScheduleRepository(database)
     val portabilityRepository = RoomStudyPlanPortabilityRepository(
         context = context,
         database = database,
@@ -39,6 +42,7 @@ fun createStudyFlowDataLayer(
         studyPlanRepository = studyPlanRepository,
         studyPlanPortabilityRepository = portabilityRepository,
         studyContentRepository = studyContentRepository,
+        studyScheduleRepository = studyScheduleRepository,
         initializeData = studyPlanRepository::seedFoundationSamplesOnce,
     )
 }

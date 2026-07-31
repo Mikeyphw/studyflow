@@ -1,0 +1,403 @@
+package com.mikeyphw.studyflow.feature.schedule
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AutoFixHigh
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.EventNote
+import androidx.compose.material.icons.outlined.PendingActions
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
+import com.mikeyphw.studyflow.core.model.MissedActivityHandling
+import com.mikeyphw.studyflow.core.model.PlannedActivity
+import com.mikeyphw.studyflow.core.model.PlannedActivityId
+import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.ScheduleGenerationRequest
+import com.mikeyphw.studyflow.core.model.ScheduleRule
+import com.mikeyphw.studyflow.core.model.ScheduleRuleId
+import com.mikeyphw.studyflow.core.model.ScheduleRuleType
+import com.mikeyphw.studyflow.core.model.StudyActivityType
+import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudySchedule
+import com.mikeyphw.studyflow.core.model.StudyStrategy
+import com.mikeyphw.studyflow.core.model.StudyStrategyId
+import com.mikeyphw.studyflow.core.model.StudyStrategyType
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.UUID
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StudyScheduleScreen(
+    plan: StudyPlan,
+    scheduleManager: ManageStudySchedule,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+    val scheduleFlow = remember(plan.id) { scheduleManager.observeSchedule(plan.id) }
+    val schedule by scheduleFlow.collectAsStateWithLifecycle(
+        initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
+    )
+    var showRuleDialog by remember { mutableStateOf(false) }
+    var showActivityDialog by remember { mutableStateOf(false) }
+    var strategyName by rememberSaveable(schedule.strategy?.id?.value) {
+        mutableStateOf((schedule.strategy?.type ?: StudyStrategyType.FIXED_WEEKLY).name)
+    }
+
+    val operationFailed = stringResource(R.string.operation_failed)
+    val blockSaved = stringResource(R.string.block_saved)
+    val activitySaved = stringResource(R.string.activity_saved)
+    val activityCompleted = stringResource(R.string.activity_completed)
+    val activityMissed = stringResource(R.string.activity_missed)
+    val itemDeleted = stringResource(R.string.item_deleted)
+    val weekGenerated = stringResource(R.string.week_generated)
+    val missedRebalanced = stringResource(R.string.missed_rebalanced)
+
+    fun launchAction(success: String, action: suspend () -> Unit) {
+        scope.launch {
+            runCatching { action() }
+                .onSuccess { snackbar.showSnackbar(success) }
+                .onFailure { snackbar.showSnackbar(operationFailed) }
+        }
+    }
+
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbar) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.schedule_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.go_back),
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showRuleDialog = true }) {
+                        Icon(Icons.Outlined.EventNote, contentDescription = stringResource(R.string.add_block))
+                    }
+                    IconButton(onClick = { showActivityDialog = true }) {
+                        Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.add_activity))
+                    }
+                },
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showActivityDialog = true }) {
+                Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.add_activity))
+            }
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.schedule_subtitle, plan.name),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            item {
+                StudyFlowSectionCard(title = stringResource(R.string.study_strategy)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        StudyStrategyType.entries.take(4).forEach { candidate ->
+                            FilterChip(
+                                selected = strategyName == candidate.name,
+                                onClick = {
+                                    strategyName = candidate.name
+                                    val strategy = StudyStrategy(
+                                        id = schedule.strategy?.id ?: StudyStrategyId(UUID.randomUUID().toString()),
+                                        studyPlanId = plan.id,
+                                        type = candidate,
+                                        minimumSessionMinutes = 25,
+                                        maximumSessionMinutes = 120,
+                                        theoryRatioPercent = 50,
+                                        questionRatioPercent = 30,
+                                        reviewRatioPercent = 20,
+                                        adaptivePlanningEnabled = candidate == StudyStrategyType.ADAPTIVE,
+                                        configurationJson = "{}",
+                                    )
+                                    launchAction(blockSaved) { scheduleManager.saveStrategy(strategy) }
+                                },
+                                label = { Text(stringResource(candidate.labelKey())) },
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                StudyFlowSectionCard(title = stringResource(R.string.weekly_blocks)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Button(onClick = { showRuleDialog = true }) {
+                            Icon(Icons.Outlined.EventNote, contentDescription = null)
+                            Text(stringResource(R.string.add_block))
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                val start = LocalDate.now()
+                                    .atStartOfDay(ZoneId.systemDefault())
+                                    .toInstant()
+                                    .toEpochMilli()
+                                launchAction(weekGenerated) {
+                                    scheduleManager.generateActivities(
+                                        request = ScheduleGenerationRequest(
+                                            plan.id,
+                                            start,
+                                            days = 7,
+                                            replaceUnlocked = true,
+                                        ),
+                                        currentRules = schedule.scheduleRules,
+                                    )
+                                }
+                            },
+                        ) {
+                            Icon(Icons.Outlined.AutoFixHigh, contentDescription = null)
+                            Text(stringResource(R.string.generate_week))
+                        }
+                    }
+                }
+            }
+            if (schedule.scheduleRules.isEmpty()) {
+                item {
+                    StudyFlowEmptyState(
+                        title = stringResource(R.string.empty_blocks_title),
+                        message = stringResource(R.string.empty_blocks_message),
+                        actionLabel = stringResource(R.string.add_block),
+                        onAction = { showRuleDialog = true },
+                    )
+                }
+            } else {
+                items(schedule.scheduleRules, key = { it.id.value }) { rule ->
+                    ScheduleRuleCard(
+                        rule = rule,
+                        onDelete = {
+                            launchAction(itemDeleted) { scheduleManager.deleteRule(plan.id, rule.id) }
+                        },
+                    )
+                }
+            }
+            item {
+                StudyFlowSectionCard(title = stringResource(R.string.planned_activities)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        AssistChip(
+                            onClick = {},
+                            label = {
+                                Text(
+                                    pluralStringResource(
+                                        R.plurals.activity_count,
+                                        schedule.plannedActivities.size,
+                                        schedule.plannedActivities.size,
+                                    ),
+                                )
+                            },
+                            leadingIcon = { Icon(Icons.Outlined.PendingActions, contentDescription = null) },
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                launchAction(missedRebalanced) {
+                                    scheduleManager.rebalanceMissed(
+                                        plan.id,
+                                        schedule.plannedActivities,
+                                        MissedActivityHandling.RETURN_TO_BACKLOG,
+                                    )
+                                }
+                            },
+                        ) {
+                            Text(stringResource(R.string.rebalance_missed))
+                        }
+                    }
+                }
+            }
+            if (schedule.plannedActivities.isEmpty()) {
+                item {
+                    StudyFlowEmptyState(
+                        title = stringResource(R.string.empty_activities_title),
+                        message = stringResource(R.string.empty_activities_message),
+                        actionLabel = stringResource(R.string.add_activity),
+                        onAction = { showActivityDialog = true },
+                    )
+                }
+            } else {
+                items(schedule.plannedActivities, key = { it.id.value }) { activity ->
+                    PlannedActivityCard(
+                        activity = activity,
+                        onComplete = {
+                            launchAction(activityCompleted) { scheduleManager.completeActivity(plan.id, activity.id) }
+                        },
+                        onMissed = {
+                            launchAction(activityMissed) { scheduleManager.markActivityMissed(plan.id, activity.id) }
+                        },
+                        onDelete = {
+                            launchAction(itemDeleted) { scheduleManager.deleteActivity(plan.id, activity.id) }
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    if (showRuleDialog) {
+        ScheduleRuleDialog(
+            onDismiss = { showRuleDialog = false },
+            onSave = { draft ->
+                showRuleDialog = false
+                val rule = ScheduleRule(
+                    id = ScheduleRuleId(UUID.randomUUID().toString()),
+                    studyPlanId = plan.id,
+                    subjectId = null,
+                    type = ScheduleRuleType.RECURRING_BLOCK,
+                    dayOfWeek = draft.dayOfWeek,
+                    startMinuteOfDay = draft.startMinuteOfDay,
+                    durationMinutes = draft.durationMinutes,
+                    recurrenceRule = null,
+                    locked = draft.locked,
+                    enabled = draft.enabled,
+                    position = schedule.scheduleRules.size,
+                )
+                launchAction(blockSaved) { scheduleManager.saveRule(rule) }
+            },
+        )
+    }
+
+    if (showActivityDialog) {
+        PlannedActivityDialog(
+            onDismiss = { showActivityDialog = false },
+            onSave = { draft ->
+                showActivityDialog = false
+                val activity = PlannedActivity(
+                    id = PlannedActivityId(UUID.randomUUID().toString()),
+                    studyPlanId = plan.id,
+                    subjectId = null,
+                    topicId = null,
+                    materialId = null,
+                    videoResourceId = null,
+                    type = draft.type,
+                    title = draft.title,
+                    scheduledStartEpochMillis = null,
+                    plannedDurationMinutes = draft.durationMinutes,
+                    status = PlannedActivityStatus.PLANNED,
+                    locked = draft.locked,
+                    completedAtEpochMillis = null,
+                )
+                launchAction(activitySaved) { scheduleManager.saveActivity(activity) }
+            },
+        )
+    }
+}
+
+@Composable
+private fun ScheduleRuleCard(
+    rule: ScheduleRule,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(text = stringResource(dayLabelKey(rule.dayOfWeek)), style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(R.string.duration_label, rule.timeLabel(), rule.durationMinutes),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AssistChip(
+                    onClick = {},
+                    label = {
+                        Text(if (rule.enabled) stringResource(R.string.enabled) else stringResource(R.string.disabled))
+                    },
+                )
+                if (rule.locked) AssistChip(onClick = {}, label = { Text(stringResource(R.string.locked)) })
+                OutlinedButton(onClick = onDelete) {
+                    Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
+                    Text(stringResource(R.string.delete))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlannedActivityCard(
+    activity: PlannedActivity,
+    onComplete: () -> Unit,
+    onMissed: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(text = activity.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = stringResource(
+                    R.string.activity_status_label,
+                    activity.timeLabel(),
+                    activity.plannedDurationMinutes,
+                    stringResource(activity.status.labelKey()),
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (activity.isActionable()) {
+                    Button(onClick = onComplete) {
+                        Icon(Icons.Outlined.CheckCircle, contentDescription = null)
+                        Text(stringResource(R.string.mark_complete))
+                    }
+                    OutlinedButton(onClick = onMissed) {
+                        Text(stringResource(R.string.mark_missed))
+                    }
+                }
+                OutlinedButton(onClick = onDelete) {
+                    Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
+                    Text(stringResource(R.string.delete))
+                }
+            }
+        }
+    }
+}

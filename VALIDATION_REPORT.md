@@ -58,3 +58,10 @@ devtool --copy --auto-hud --hud-mode desktop-window --yes \
 
 The destination Android SDK and Gradle execution remain the authoritative compile, test, package,
 and lint gate.
+
+
+## Phase 6 local validation
+
+- Phase 6 contract: passed locally.
+- Warning cleanup seal: unused subject strings removed.
+- Schedule feature module contract: passed.

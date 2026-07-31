@@ -95,6 +95,14 @@
 - Combines Phase 4 portability/snapshots and Phase 5 syllabus/content management for repositories that are still on the Phase 3 baseline.
 - Updates `.devtool.toml` with the Phase 5 focused validation tasks expected by the acceptance contract.
 
+## Phase 6: Schedule and Study Strategy
+
+- Added schedule and study-strategy management through `:feature:schedule`.
+- Added Room-backed schedule repository and deterministic weekly activity generation.
+- Added missed-activity recovery while preserving locked activities.
+- Added dashboard navigation into schedule management.
+- Removed unused Phase 5 subject strings reported by lint.
+
 ## Phase 4+5 Bridge r2
 
 - Rebuilt the bridge against the uploaded Phase 3 baseline.
