@@ -1,0 +1,27 @@
+<resources>
+    <string name="go_back">Go back</string>
+    <string name="library_title">Study library</string>
+    <string name="library_summary">%1$d materials • %2$d videos • %3$d annexes</string>
+    <string name="library_progress">Library progress: %1$d%%</string>
+    <string name="add_material">Add material</string>
+    <string name="material_title">Material title</string>
+    <string name="material_description">Description</string>
+    <string name="material_source">Source URI</string>
+    <string name="material_units">Total units</string>
+    <string name="create_material">Create material</string>
+    <string name="materials">Materials</string>
+    <string name="videos">Videos</string>
+    <string name="annexes">Annexes</string>
+    <string name="no_materials">No materials yet.</string>
+    <string name="no_videos">No videos yet.</string>
+    <string name="no_annexes">No annexes yet.</string>
+    <string name="favorite">Favorite</string>
+    <string name="archive">Archive</string>
+    <string name="delete">Delete</string>
+    <string name="mark_complete">Mark complete</string>
+    <string name="progress_percent">%1$d%%</string>
+    <string name="add_video">Add video</string>
+    <string name="video_title">Video title</string>
+    <string name="video_uri">Video URI</string>
+    <string name="create_video">Create video</string>
+</resources>

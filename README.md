@@ -196,3 +196,7 @@ Students can create flashcards, automatically seed their first review, grade due
 and let the spaced-repetition scheduler compute the next interval. Review execution reuses the
 existing `review_items`, `flashcards`, and `error_entries` tables and keeps Room behind the
 `:core:data` boundary. Run `python3 scripts/verify_phase_9.py` for the Phase 9 contract.
+### Phase 10: Library and Study Resources
+
+StudyFlow now includes a resource library for study materials, video links, and annex metadata.
+The library is plan-scoped, Room-backed, and connected from the dashboard.

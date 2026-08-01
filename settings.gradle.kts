@@ -29,6 +29,7 @@ include(
     ":core:portability",
     ":core:testing",
     ":feature:dashboard",
+    ":feature:library",
     ":feature:plans",
     ":feature:practice",
     ":feature:reviews",

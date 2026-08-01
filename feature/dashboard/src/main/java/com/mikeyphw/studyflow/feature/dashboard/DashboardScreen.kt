@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventNote
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.MoreVert
@@ -58,6 +59,7 @@ fun DashboardScreen(
     onOpenPlanSettings: () -> Unit,
     onOpenSyllabus: () -> Unit,
     onOpenSchedule: () -> Unit,
+    onOpenLibrary: () -> Unit,
     onOpenSessions: () -> Unit,
     onOpenPractice: () -> Unit,
     onOpenReviews: () -> Unit,
@@ -155,6 +157,14 @@ fun DashboardScreen(
                             onClick = {
                                 actionsExpanded = false
                                 onOpenSchedule()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.library)) },
+                            leadingIcon = { Icon(Icons.Outlined.FolderOpen, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenLibrary()
                             },
                         )
                         DropdownMenuItem(
@@ -269,6 +279,12 @@ private fun DashboardPrimaryColumn(
             )
             Text(
                 text = plan.description.ifBlank { stringResource(R.string.no_description) },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.library_scope_title)) {
+            Text(
+                text = stringResource(R.string.library_scope_message),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

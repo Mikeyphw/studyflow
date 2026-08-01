@@ -1,0 +1,27 @@
+<resources>
+    <string name="go_back">Voltar</string>
+    <string name="library_title">Biblioteca de estudos</string>
+    <string name="library_summary">%1$d materiais • %2$d vídeos • %3$d anexos</string>
+    <string name="library_progress">Progresso da biblioteca: %1$d%%</string>
+    <string name="add_material">Adicionar material</string>
+    <string name="material_title">Título do material</string>
+    <string name="material_description">Descrição</string>
+    <string name="material_source">URI de origem</string>
+    <string name="material_units">Total de unidades</string>
+    <string name="create_material">Criar material</string>
+    <string name="materials">Materiais</string>
+    <string name="videos">Vídeos</string>
+    <string name="annexes">Anexos</string>
+    <string name="no_materials">Nenhum material ainda.</string>
+    <string name="no_videos">Nenhum vídeo ainda.</string>
+    <string name="no_annexes">Nenhum anexo ainda.</string>
+    <string name="favorite">Favoritar</string>
+    <string name="archive">Arquivar</string>
+    <string name="delete">Excluir</string>
+    <string name="mark_complete">Marcar como concluído</string>
+    <string name="progress_percent">%1$d%%</string>
+    <string name="add_video">Adicionar vídeo</string>
+    <string name="video_title">Título do vídeo</string>
+    <string name="video_uri">URI do vídeo</string>
+    <string name="create_video">Criar vídeo</string>
+</resources>

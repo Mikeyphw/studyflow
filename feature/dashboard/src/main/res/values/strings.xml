@@ -38,4 +38,7 @@
     <string name="practice">Questions and mocks</string>
     <string name="reviews">Reviews and flashcards</string>
     <string name="sessions">Study sessions</string>
+    <string name="library">Library</string>
+    <string name="library_scope_title">Resources ready</string>
+    <string name="library_scope_message">Organize books, PDFs, video links, courses, and annex metadata before a study session.</string>
 </resources>

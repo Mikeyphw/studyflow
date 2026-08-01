@@ -138,3 +138,8 @@
   failed-grade reset behavior.
 - Reused existing schema version 2 review tables; no Room migration was needed.
 - Added Phase 9 validators and included `validation.script.sha256` in the artifact manifest.
+## Phase 10 - Library and Study Resources
+
+- Added the study library execution layer for materials, video resources, and annex metadata.
+- Added a dashboard route and feature module for organizing resource lists without exposing Room to the app.
+- Added Phase 10 validation contracts and kept prior warning seals active.

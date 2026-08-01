@@ -40,4 +40,7 @@
     <string name="practice">Questões e simulados</string>
     <string name="reviews">Revisões e flashcards</string>
     <string name="sessions">Sessões de estudo</string>
+    <string name="library">Biblioteca</string>
+    <string name="library_scope_title">Recursos prontos</string>
+    <string name="library_scope_message">Organize livros, PDFs, links de vídeo, cursos e metadados de anexos antes de uma sessão de estudo.</string>
 </resources>
