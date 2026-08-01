@@ -48,4 +48,10 @@ data class ReviewsRoute(val planId: String)
 data class RemindersRoute(val planId: String)
 
 @Serializable
+data object PrivacyRoute
+
+@Serializable
+data object SearchRoute
+
+@Serializable
 data object SettingsRoute

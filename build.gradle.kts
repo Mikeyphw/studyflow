@@ -47,10 +47,26 @@ tasks.register("verifyFormatting") {
     }
 }
 
+tasks.register<Exec>("verifyRepositoryContracts") {
+    group = "verification"
+    description = "Runs the complete StudyFlow source-contract chain through Phase 23."
+    commandLine(
+        "bash",
+        "-lc",
+        """
+        set -euo pipefail
+        for phase in {0..20} 22 23; do
+            python3 "scripts/verify_phase_${'$'}{phase}.py"
+        done
+        """.trimIndent(),
+    )
+}
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
     dependsOn(
+        "verifyRepositoryContracts",
         "verifyFormatting",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -64,9 +80,11 @@ tasks.register("checkAll") {
         ":feature:analytics:testDebugUnitTest",
         ":feature:library:testDebugUnitTest",
         ":feature:progress:testDebugUnitTest",
+        ":feature:privacy:testDebugUnitTest",
         ":feature:plans:testDebugUnitTest",
         ":feature:practice:testDebugUnitTest",
         ":feature:reviews:testDebugUnitTest",
+        ":feature:search:testDebugUnitTest",
         ":feature:schedule:testDebugUnitTest",
         ":feature:sessions:testDebugUnitTest",
         ":feature:settings:testDebugUnitTest",

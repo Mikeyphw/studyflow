@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
+import com.mikeyphw.studyflow.core.model.RecentSearchHistory
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +32,7 @@ class DataStoreAppPreferencesRepository(
             defaultStudyPlanId = values[DefaultStudyPlanKey]
                 ?.takeIf(String::isNotBlank)
                 ?.let(::StudyPlanId),
+            recentSearches = RecentSearchHistory.decode(values[RecentSearchesKey]),
         )
     }
 
@@ -57,10 +59,24 @@ class DataStoreAppPreferencesRepository(
         }
     }
 
+    override suspend fun recordRecentSearch(query: String) {
+        dataStore.edit { values ->
+            val current = RecentSearchHistory.decode(values[RecentSearchesKey])
+            values[RecentSearchesKey] = RecentSearchHistory.encode(
+                RecentSearchHistory.record(current, query),
+            )
+        }
+    }
+
+    override suspend fun clearRecentSearches() {
+        dataStore.edit { values -> values.remove(RecentSearchesKey) }
+    }
+
     private companion object {
         val LanguageKey = stringPreferencesKey("app_language")
         val ThemeModeKey = stringPreferencesKey("theme_mode")
         val DynamicColorKey = booleanPreferencesKey("dynamic_color_enabled")
         val DefaultStudyPlanKey = stringPreferencesKey("default_study_plan_id")
+        val RecentSearchesKey = stringPreferencesKey("recent_searches")
     }
 }

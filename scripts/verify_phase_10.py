@@ -3,6 +3,8 @@ from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
 
+from phase_version import phase_version_at_least
+
 ROOT = Path(__file__).resolve().parents[1]
 failures: list[str] = []
 required = [
@@ -28,21 +30,7 @@ settings = (ROOT / "settings.gradle.kts").read_text(encoding="utf-8")
 if '":feature:library"' not in settings:
     failures.append("settings.gradle.kts does not include :feature:library")
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-expected_versions = [
-    'versionName = "0.10.0-phase10"',
-    'versionName = "0.11.0-phase11"',
-    'versionName = "0.12.0-phase12"',
-    'versionName = "0.13.0-phase13"',
-    'versionName = "0.14.0-phase14"',
-    'versionName = "0.15.0-phase15"',
-    'versionName = "0.16.0-phase16"',
-    'versionName = "0.17.0-phase17"',
-    'versionName = "0.18.0-phase18"',
-    'versionName = "0.19.0-phase19"',
-    'versionName = "0.20.0-phase20"',
-    'versionName = "0.21.0-phase21"',
-]
-if not any(marker in app_build for marker in expected_versions):
+if not phase_version_at_least(ROOT, 10):
     failures.append("app version is not Phase 10 or later")
 if 'implementation(project(":feature:library"))' not in app_build:
     failures.append(":app does not depend on :feature:library")

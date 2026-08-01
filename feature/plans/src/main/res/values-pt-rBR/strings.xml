@@ -52,7 +52,6 @@
     <string name="delete_confirmation_message">Isso remove o plano completo, incluindo todos os registros filhos. A ação não pode ser desfeita.</string>
     <string name="confirm">Confirmar</string>
     <string name="cancel">Cancelar</string>
-
     <string name="create_plan_title">Criar Plano de Estudo</string>
     <string name="edit_plan_title">Editar Plano de Estudo</string>
     <string name="wizard_step">Etapa %1$d de %2$d</string>
@@ -87,7 +86,6 @@
     <string name="previous">Anterior</string>
     <string name="next">Próxima</string>
     <string name="save_plan">Salvar plano</string>
-
     <string name="plan_settings_title">Configurações do plano</string>
     <string name="plan_settings_intro">Estas preferências afetam somente “%1$s”.</string>
     <string name="quiet_hours">Horário silencioso</string>
@@ -97,7 +95,6 @@
     <string name="time_hint">HH:MM</string>
     <string name="invalid_time">Use um horário válido de 24 horas.</string>
     <string name="save_settings">Salvar configurações</string>
-
     <string name="portability_title">Importação, exportação e snapshots</string>
     <string name="import_plan">Importar Plano de Estudo</string>
     <string name="import_plan_description">Inspecione um pacote .studyplan com checksum antes de criar, substituir ou mesclar um espaço.</string>
@@ -140,4 +137,27 @@
     <string name="delete_snapshot">Excluir snapshot</string>
     <string name="pre_import_snapshot_label">Antes da importação</string>
     <string name="pre_restore_snapshot_label">Antes de restaurar o snapshot</string>
+    <string name="import_password_optional">Senha do pacote criptografado (opcional)</string>
+    <string name="inspect_integrity">Inspecionar integridade</string>
+    <string name="preview_import">Pré-visualizar</string>
+    <string name="dry_run_new">Simular como novo</string>
+    <string name="dry_run_replace">Simular substituição</string>
+    <string name="integrity_report">%1$d linhas e %2$d anexo(s) verificados. Criptografado: %3$s.</string>
+    <string name="dry_run_report">A simulação verificou %1$d linhas e alterou %2$d linhas do banco.</string>
+    <string name="encrypt_export">Criptografar esta exportação com senha</string>
+    <string name="export_password">Senha da exportação</string>
+    <string name="password_too_short">Use pelo menos 8 caracteres na senha de exportação.</string>
+    <string name="metadata_privacy">Ocultar metadados identificadores do pacote</string>
+    <string name="redact_notes">Excluir notas privadas</string>
+    <string name="redact_history">Excluir sessões, testes, revisões, histórico de erros e rastros de progresso</string>
+    <string name="recovery_explanation_title">Proteções de recuperação</string>
+    <string name="recovery_explanation_message">A inspeção e a simulação não gravam no Room. Importações que substituem ou mesclam criam um snapshot privado antes de alterar o plano.</string>
+    <string name="encrypted_package_verified">Senha e autenticação do pacote verificadas.</string>
+    <string name="privacy_redactions_present">Esta exportação omite intencionalmente seções privadas selecionadas.</string>
+    <string name="password_required_for_encrypted">Informe a senha deste pacote criptografado.</string>
+    <string name="password_or_package_invalid">A senha está incorreta ou o pacote criptografado está danificado.</string>
+    <string name="yes">Sim</string>
+    <string name="no">Não</string>
+    <string name="annex_payloads_included">Os arquivos físicos dos anexos estão incluídos e serão copiados para o armazenamento privado do aplicativo.</string>
+    <string name="replace_creates_safety_snapshot">A substituição criará um snapshot privado de segurança antes de alterar o plano de destino.</string>
 </resources>

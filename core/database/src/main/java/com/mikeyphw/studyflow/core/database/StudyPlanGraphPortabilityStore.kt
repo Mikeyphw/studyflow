@@ -13,6 +13,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageManifest
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePayload
+import com.mikeyphw.studyflow.core.portability.StudyPlanPrivacyPolicy
 import java.util.UUID
 
 class StudyPlanGraphPortabilityStore(
@@ -28,12 +29,37 @@ class StudyPlanGraphPortabilityStore(
         val root = queryRows(database, RootSpec, planId)
         require(root.size == 1) { "Study Plan $planId does not exist." }
         val planName = root.single().values.getValue("name").value.orEmpty()
+        val exportedPlanId = if (options.metadataPrivacyMode) privatePlanId() else planId
         val selectedSpecs = selectedSpecs(options)
         val tables = buildList {
-            add(PortableTable(RootSpec.tableName, root.map { sanitizeRoot(it, options.mode) }))
+            val rootRows = root.map { row ->
+                StudyPlanPrivacyPolicy.sanitizeRoot(row, options).let { sanitized ->
+                    if (options.metadataPrivacyMode) {
+                        sanitized.withValues("id" to text(exportedPlanId))
+                    } else {
+                        sanitized
+                    }
+                }
+            }
+            add(PortableTable(RootSpec.tableName, rootRows))
             selectedSpecs.forEach { spec ->
                 val rows = queryRows(database, spec, planId).map { row ->
-                    if (spec.tableName == "annexes") sanitizeAnnex(row) else row
+                    val privacySanitized = StudyPlanPrivacyPolicy.sanitizeRow(spec.tableName, row, options)
+                    val sanitized = if (spec.tableName == "annexes") {
+                        sanitizeAnnex(privacySanitized)
+                    } else {
+                        privacySanitized
+                    }
+                    if (options.metadataPrivacyMode) {
+                        privatizeIdentifiers(
+                            row = sanitized,
+                            spec = spec,
+                            sourcePlanId = planId,
+                            exportedPlanId = exportedPlanId,
+                        )
+                    } else {
+                        sanitized
+                    }
                 }
                 add(PortableTable(spec.tableName, rows))
             }
@@ -41,21 +67,81 @@ class StudyPlanGraphPortabilityStore(
         val counts = tables.associate { it.name to it.rows.size }
         StudyPlanPackagePayload(
             manifest = StudyPlanPackageManifest(
-                applicationVersion = applicationVersion,
-                exportedAtEpochMillis = exportedAtEpochMillis,
-                sourceStudyPlanId = planId,
-                displayName = planName,
+                applicationVersion = if (options.metadataPrivacyMode) {
+                    StudyPlanPrivacyPolicy.PrivateApplicationVersion
+                } else {
+                    applicationVersion
+                },
+                exportedAtEpochMillis = if (options.metadataPrivacyMode) {
+                    exportedAtEpochMillis - exportedAtEpochMillis % MillisPerDay
+                } else {
+                    exportedAtEpochMillis
+                },
+                sourceStudyPlanId = exportedPlanId,
+                displayName = if (options.metadataPrivacyMode) {
+                    StudyPlanPrivacyPolicy.PrivateDisplayName
+                } else {
+                    planName
+                },
                 exportMode = options.mode,
-                includesPrivateHistory = options.mode == StudyPlanExportMode.FULL,
+                includesPrivateHistory = options.mode == StudyPlanExportMode.FULL && !options.redactHistory,
                 includesAnnexMetadata = options.includeAnnexMetadata &&
                     selectedSpecs.any { it.tableName == "annexes" },
                 includesAnnexPayloads = options.includeAnnexPayloads &&
                     options.includeAnnexMetadata &&
                     selectedSpecs.any { it.tableName == "annexes" },
                 tableRowCounts = counts,
+                metadataPrivacyMode = options.metadataPrivacyMode,
+                redactedSections = StudyPlanPrivacyPolicy.redactedSections(options),
             ),
             tables = tables,
         )
+    }
+
+    fun validatePayload(payload: StudyPlanPackagePayload): Int {
+        StudyPlanPrivacyPolicy.validatePayload(payload)
+        val supportedSpecs = StudyPlanGraphDuplicator.TableSpecs.associateBy { it.tableName }
+        val supportedTableNames = supportedSpecs.keys + RootSpec.tableName
+        val tableNames = payload.tables.map { it.name }
+        require(tableNames.size == tableNames.toSet().size) {
+            "Study Plan package contains duplicate table entries."
+        }
+        val unknownTables = tableNames.toSet() - supportedTableNames
+        require(unknownTables.isEmpty()) {
+            "Study Plan package contains unsupported tables: ${unknownTables.sorted().joinToString()}."
+        }
+        val tableMap = payload.tables.associateBy { it.name }
+        val expectedTables = expectedTableNames(payload.manifest)
+        require(tableMap.keys == expectedTables) {
+            "Study Plan package table inventory does not match its declared export mode."
+        }
+        val counts = payload.tables.associate { it.name to it.rows.size }
+        require(counts == payload.manifest.tableRowCounts) {
+            "Study Plan package row counts do not match its manifest."
+        }
+        val root = tableMap[RootSpec.tableName]?.rows?.singleOrNull()
+            ?: error("Study Plan package must contain exactly one root record.")
+        require(root.values["id"]?.value == payload.manifest.sourceStudyPlanId) {
+            "Study Plan package root identity does not match its manifest."
+        }
+        validateColumns(RootSpec, root)
+        supportedSpecs.forEach { (tableName, spec) ->
+            tableMap[tableName]?.rows.orEmpty().forEach { row ->
+                validateColumns(spec, row)
+                require(row.values["studyPlanId"]?.value == payload.manifest.sourceStudyPlanId) {
+                    "Study Plan package row in $tableName belongs to a different Study Plan."
+                }
+                if (payload.manifest.metadataPrivacyMode) {
+                    spec.remappedIdentifierColumns.forEach { column ->
+                        val identifier = row.values[column]?.value ?: return@forEach
+                        require(StudyPlanPrivacyPolicy.isPrivateIdentifier(identifier)) {
+                            "Private package row in $tableName contains a non-private $column identifier."
+                        }
+                    }
+                }
+            }
+        }
+        return counts.values.sum()
     }
 
     suspend fun importPayload(
@@ -63,101 +149,112 @@ class StudyPlanGraphPortabilityStore(
         strategy: StudyPlanImportStrategy,
         targetPlanId: String,
         importedAtEpochMillis: Long,
-    ): Int = roomDatabase.withTransaction {
-        val database = roomDatabase.openHelper.writableDatabase
-        val exists = countPlan(database, targetPlanId) == 1
-        when (strategy) {
-            StudyPlanImportStrategy.CREATE_AS_NEW -> require(!exists) {
-                "A Study Plan with id $targetPlanId already exists."
-            }
-            StudyPlanImportStrategy.REPLACE_EXISTING,
-            StudyPlanImportStrategy.MERGE_COMPATIBLE,
-            -> require(exists) { "Study Plan $targetPlanId does not exist." }
-        }
-
-        if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
-            clearPlanForReplacement(database, targetPlanId)
-        }
-
-        val importToken = UUID.randomUUID().toString()
-        val prefix = if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE) {
-            "$targetPlanId:import:$importToken"
-        } else {
-            targetPlanId
-        }
-        val sourcePlanId = payload.manifest.sourceStudyPlanId
-        var importedRows = 0
-
-        val supportedTableNames = StudyPlanGraphDuplicator.TableSpecs
-            .mapTo(mutableSetOf(RootSpec.tableName)) { it.tableName }
-        val unknownTables = payload.tables.map { it.name }.toSet() - supportedTableNames
-        require(unknownTables.isEmpty()) {
-            "Study Plan package contains unsupported tables: ${unknownTables.sorted().joinToString()}."
-        }
-        val tableMap = payload.tables.associateBy { it.name }
-        val expectedTables = expectedTableNames(
-            mode = payload.manifest.exportMode,
-            includeAnnexMetadata = payload.manifest.includesAnnexMetadata,
-        )
-        require(tableMap.keys == expectedTables) {
-            "Study Plan package table inventory does not match its declared export mode."
-        }
-        val root = tableMap[RootSpec.tableName]?.rows?.singleOrNull()
-            ?: error("Study Plan package must contain exactly one root record.")
-        require(root.values["id"]?.value == sourcePlanId) {
-            "Study Plan package root identity does not match its manifest."
-        }
-        if (strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE) {
-            val remappedRoot = remapRoot(root, targetPlanId, payload.manifest.exportMode, importedAtEpochMillis)
-            if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
-                updateRoot(database, remappedRoot, targetPlanId)
-            } else {
-                insertRow(database = database, spec = RootSpec, row = remappedRoot)
-            }
-            importedRows++
-        }
-
-        StudyPlanGraphDuplicator.TableSpecs
-            .filterNot { it.tableName == "plan_snapshots" }
-            .forEach { spec ->
-                if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE &&
-                    spec.tableName in MergeSkippedTables
-                ) return@forEach
-                tableMap[spec.tableName].orEmptyRows().forEach { row ->
-                    insertRow(
-                        database,
-                        spec,
-                        remapChild(row, spec, sourcePlanId, targetPlanId, prefix),
-                    )
-                    importedRows++
+    ): Int {
+        validatePayload(payload)
+        return roomDatabase.withTransaction {
+            val database = roomDatabase.openHelper.writableDatabase
+            val exists = countPlan(database, targetPlanId) == 1
+            when (strategy) {
+                StudyPlanImportStrategy.CREATE_AS_NEW -> require(!exists) {
+                    "A Study Plan with id $targetPlanId already exists."
                 }
+                StudyPlanImportStrategy.REPLACE_EXISTING,
+                StudyPlanImportStrategy.MERGE_COMPATIBLE,
+                -> require(exists) { "Study Plan $targetPlanId does not exist." }
             }
-        importedRows
+
+            if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
+                clearPlanForReplacement(database, targetPlanId)
+            }
+
+            val importToken = UUID.randomUUID().toString()
+            val prefix = if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE) {
+                "$targetPlanId:import:$importToken"
+            } else {
+                targetPlanId
+            }
+            val sourcePlanId = payload.manifest.sourceStudyPlanId
+            var importedRows = 0
+
+            val tableMap = payload.tables.associateBy { it.name }
+            val root = tableMap.getValue(RootSpec.tableName).rows.single()
+            if (strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE) {
+                val remappedRoot = remapRoot(
+                    row = root,
+                    targetPlanId = targetPlanId,
+                    exportMode = payload.manifest.exportMode,
+                    now = importedAtEpochMillis,
+                )
+                if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
+                    updateRoot(database, remappedRoot, targetPlanId)
+                } else {
+                    insertRow(database = database, spec = RootSpec, row = remappedRoot)
+                }
+                importedRows++
+            }
+
+            StudyPlanGraphDuplicator.TableSpecs
+                .filterNot { it.tableName == "plan_snapshots" }
+                .forEach { spec ->
+                    if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE &&
+                        spec.tableName in MergeSkippedTables
+                    ) return@forEach
+                    tableMap[spec.tableName].orEmptyRows().forEach { row ->
+                        insertRow(
+                            database,
+                            spec,
+                            remapChild(row, spec, sourcePlanId, targetPlanId, prefix),
+                        )
+                        importedRows++
+                    }
+                }
+            importedRows
+        }
+    }
+
+    private fun validateColumns(
+        spec: StudyPlanGraphDuplicator.TableSpec,
+        row: PortableRow,
+    ) {
+        val actual = row.values.keys
+        val expected = spec.columns.toSet()
+        val legacyExpected = if (spec.tableName in setOf("subjects", "topics")) {
+            expected - "examStageId"
+        } else {
+            emptySet()
+        }
+        require(actual == expected || actual == legacyExpected) {
+            "Columns for ${spec.tableName} do not match the supported schema."
+        }
     }
 
     private fun selectedSpecs(options: StudyPlanExportOptions): List<StudyPlanGraphDuplicator.TableSpec> =
-        StudyPlanGraphDuplicator.TableSpecs.filter {
-            it.tableName in selectedTableNames(options.mode, options.includeAnnexMetadata)
+        StudyPlanGraphDuplicator.TableSpecs.filter { it.tableName in selectedTableNames(options) }
+
+    private fun selectedTableNames(options: StudyPlanExportOptions): Set<String> {
+        var selected = baseTableNames(options.mode)
+        if (!options.includeAnnexMetadata) selected -= "annexes"
+        selected -= StudyPlanPrivacyPolicy.excludedTableNames(options)
+        return selected
+    }
+
+    private fun expectedTableNames(manifest: StudyPlanPackageManifest): Set<String> =
+        linkedSetOf(RootSpec.tableName).apply {
+            var selected = baseTableNames(manifest.exportMode)
+            if (!manifest.includesAnnexMetadata) selected -= "annexes"
+            if (StudyPlanPrivacyPolicy.NotesSection in manifest.redactedSections) selected -= "study_notes"
+            if (StudyPlanPrivacyPolicy.HistorySection in manifest.redactedSections) {
+                selected -= StudyPlanPrivacyPolicy.HistoryTableNames
+            }
+            addAll(selected)
         }
 
-    private fun selectedTableNames(
-        mode: StudyPlanExportMode,
-        includeAnnexMetadata: Boolean,
-    ): Set<String> = when (mode) {
+    private fun baseTableNames(mode: StudyPlanExportMode): Set<String> = when (mode) {
         StudyPlanExportMode.FULL -> FullTables
         StudyPlanExportMode.PRIVATE_STRIPPED -> PrivateStrippedTables
         StudyPlanExportMode.STRUCTURE_ONLY,
         StudyPlanExportMode.TEMPLATE,
         -> StructureTables
-    }.let { selected ->
-        if (includeAnnexMetadata) selected else selected - "annexes"
-    }
-
-    private fun expectedTableNames(
-        mode: StudyPlanExportMode,
-        includeAnnexMetadata: Boolean,
-    ): Set<String> = linkedSetOf(RootSpec.tableName).apply {
-        addAll(selectedTableNames(mode, includeAnnexMetadata))
     }
 
     private fun queryRows(
@@ -183,18 +280,6 @@ class StudyPlanGraphPortabilityStore(
             }
         },
     )
-
-    private fun sanitizeRoot(row: PortableRow, mode: StudyPlanExportMode): PortableRow {
-        if (mode == StudyPlanExportMode.FULL) return row
-        return row.withValues(
-            "status" to text("DRAFT"),
-            "progressPercent" to integer(0),
-            "studiedMinutesThisWeek" to integer(0),
-            "questionsAnswered" to integer(0),
-            "averageAccuracyPercent" to integer(0),
-            "trashedAtEpochMillis" to PortableValue(PortableValueType.NULL),
-        )
-    }
 
     private fun sanitizeAnnex(row: PortableRow): PortableRow = row.withValues(
         "storageReference" to text(""),
@@ -295,7 +380,35 @@ class StudyPlanGraphPortabilityStore(
     private fun text(value: String) = PortableValue(PortableValueType.TEXT, value)
     private fun integer(value: Number) = PortableValue(PortableValueType.INTEGER, value.toLong().toString())
 
+    private fun privatizeIdentifiers(
+        row: PortableRow,
+        spec: StudyPlanGraphDuplicator.TableSpec,
+        sourcePlanId: String,
+        exportedPlanId: String,
+    ): PortableRow {
+        val privateValues = row.values.toMutableMap()
+        privateValues["studyPlanId"] = text(exportedPlanId)
+        spec.remappedIdentifierColumns.forEach { column ->
+            val current = privateValues[column] ?: return@forEach
+            val rawIdentifier = current.value ?: return@forEach
+            privateValues[column] = text(
+                if (rawIdentifier == sourcePlanId) {
+                    exportedPlanId
+                } else {
+                    StudyPlanPrivacyPolicy.pseudonymizeIdentifier(exportedPlanId, rawIdentifier)
+                },
+            )
+        }
+        return PortableRow(privateValues)
+    }
+
+    private fun privatePlanId(): String = "private-" + UUID.randomUUID()
+        .toString()
+        .replace("-", "")
+        .take(20)
+
     private companion object {
+        const val MillisPerDay = 86_400_000L
         val RootSpec = StudyPlanGraphDuplicator.TableSpec(
             tableName = "study_plans",
             columns = listOf(

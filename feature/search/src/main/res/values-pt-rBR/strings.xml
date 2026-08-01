@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_title">Busca e recomendações</string>
+    <string name="search_hint">Buscar em todo o conteúdo do StudyFlow</string>
+    <string name="search_action">Buscar</string>
+    <string name="clear_search">Limpar busca</string>
+    <string name="recent_searches">Buscas recentes</string>
+    <string name="clear_recent_searches">Limpar buscas recentes</string>
+    <string name="recommendations_title">Próximo recomendado</string>
+    <string name="search_results">Resultados da busca (%1$d)</string>
+    <string name="no_search_results">Nenhum conteúdo ativo correspondente foi encontrado.</string>
+    <string name="type_plan">Plano</string>
+    <string name="type_subject">Disciplina</string>
+    <string name="type_topic">Tópico</string>
+    <string name="type_question">Questão</string>
+    <string name="type_note">Nota</string>
+    <string name="type_material">Material</string>
+    <string name="type_flashcard">Flashcard</string>
+    <string name="type_error">Caderno de erros</string>
+    <string name="next_study_item">Próximo estudo</string>
+    <string name="weak_topic_review">Revisão de tópico fraco</string>
+    <string name="practice_deck">Bloco de questões</string>
+    <string name="overdue_resource">Recurso atrasado</string>
+    <string name="searching">Buscando…</string>
+    <string name="search_failed">Não foi possível concluir a busca.</string>
+    <string name="recommendations_failed">Não foi possível atualizar as recomendações.</string>
+    <string name="reason_separator">; </string>
+    <string name="result_context">%1$s · %2$s</string>
+    <string name="recommendation_review_topic">Revisar %1$s</string>
+    <string name="recommendation_practice_topic">Praticar %1$s</string>
+    <string name="recommendation_continue_resource">Continuar %1$s</string>
+    <string name="reason_schedule_adherence">Aderência ao cronograma: %1$d%%</string>
+    <string name="reason_goal_deadline">A meta “%1$s” vence em %2$s</string>
+    <string name="reason_missed_activity">Esta atividade planejada foi perdida</string>
+    <string name="reason_next_activity">Esta é a próxima atividade planejada</string>
+    <string name="reason_mastery">Domínio: %1$d%%</string>
+    <string name="reason_question_accuracy">Precisão nas questões do plano: %1$d%%</string>
+    <string name="reason_overdue_study_block">Um bloco de estudo vinculado está atrasado</string>
+    <string name="reason_resource_progress">%1$d de %2$d unidades concluídas</string>
+    <string name="reason_resource_unfinished">O recurso ainda não foi concluído</string>
+    <plurals name="recommendation_due_reviews">
+        <item quantity="one">Revisar %1$d item vencido</item>
+        <item quantity="other">Revisar %1$d itens vencidos</item>
+        <item quantity="many">Revisar %1$d itens vencidos</item>
+    </plurals>
+    <plurals name="reason_due_reviews">
+        <item quantity="one">%1$d revisão está vencida</item>
+        <item quantity="other">%1$d revisões estão vencidas</item>
+        <item quantity="many">%1$d revisões estão vencidas</item>
+    </plurals>
+    <plurals name="reason_recurring_errors">
+        <item quantity="one">%1$d erro recorrente</item>
+        <item quantity="other">%1$d erros recorrentes</item>
+        <item quantity="many">%1$d erros recorrentes</item>
+    </plurals>
+    <plurals name="reason_available_questions">
+        <item quantity="one">%1$d questão disponível</item>
+        <item quantity="other">%1$d questões disponíveis</item>
+        <item quantity="many">%1$d questões disponíveis</item>
+    </plurals>
+</resources>

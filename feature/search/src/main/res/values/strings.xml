@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_title">Search and recommendations</string>
+    <string name="search_hint">Search all StudyFlow content</string>
+    <string name="search_action">Search</string>
+    <string name="clear_search">Clear search</string>
+    <string name="recent_searches">Recent searches</string>
+    <string name="clear_recent_searches">Clear recent searches</string>
+    <string name="recommendations_title">Recommended next</string>
+    <string name="search_results">Search results (%1$d)</string>
+    <string name="no_search_results">No matching active content was found.</string>
+    <string name="type_plan">Plan</string>
+    <string name="type_subject">Subject</string>
+    <string name="type_topic">Topic</string>
+    <string name="type_question">Question</string>
+    <string name="type_note">Note</string>
+    <string name="type_material">Material</string>
+    <string name="type_flashcard">Flashcard</string>
+    <string name="type_error">Error notebook</string>
+    <string name="next_study_item">Next study item</string>
+    <string name="weak_topic_review">Weak topic review</string>
+    <string name="practice_deck">Practice deck</string>
+    <string name="overdue_resource">Overdue resource</string>
+    <string name="searching">Searching…</string>
+    <string name="search_failed">Search could not be completed.</string>
+    <string name="recommendations_failed">Recommendations could not be refreshed.</string>
+    <string name="reason_separator">; </string>
+    <string name="result_context">%1$s · %2$s</string>
+    <string name="recommendation_review_topic">Review %1$s</string>
+    <string name="recommendation_practice_topic">Practice %1$s</string>
+    <string name="recommendation_continue_resource">Continue %1$s</string>
+    <string name="reason_schedule_adherence">Schedule adherence is %1$d%%</string>
+    <string name="reason_goal_deadline">Goal “%1$s” is due %2$s</string>
+    <string name="reason_missed_activity">This planned activity was missed</string>
+    <string name="reason_next_activity">This is the next planned activity</string>
+    <string name="reason_mastery">Mastery is %1$d%%</string>
+    <string name="reason_question_accuracy">Plan question accuracy is %1$d%%</string>
+    <string name="reason_overdue_study_block">A linked study block is overdue</string>
+    <string name="reason_resource_progress">%1$d of %2$d units are complete</string>
+    <string name="reason_resource_unfinished">The resource is unfinished</string>
+    <plurals name="recommendation_due_reviews">
+        <item quantity="one">Review %1$d due item</item>
+        <item quantity="other">Review %1$d due items</item>
+    </plurals>
+    <plurals name="reason_due_reviews">
+        <item quantity="one">%1$d review is due</item>
+        <item quantity="other">%1$d reviews are due</item>
+    </plurals>
+    <plurals name="reason_recurring_errors">
+        <item quantity="one">%1$d recurring error</item>
+        <item quantity="other">%1$d recurring errors</item>
+    </plurals>
+    <plurals name="reason_available_questions">
+        <item quantity="one">%1$d question is available</item>
+        <item quantity="other">%1$d questions are available</item>
+    </plurals>
+</resources>

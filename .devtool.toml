@@ -26,18 +26,42 @@ structured_events = true
 [targets.studyflow_android.tasks]
 build = [":app:assembleDebug"]
 test = [
+    "verifyRepositoryContracts",
+    "verifyFormatting",
     ":core:model:test",
     ":core:domain:test",
+    ":core:portability:test",
     ":core:data:testDebugUnitTest",
     ":core:database:testDebugUnitTest",
     ":core:navigation:test",
     ":core:testing:test",
     ":app:testDebugUnitTest",
+    ":feature:analytics:testDebugUnitTest",
     ":feature:dashboard:testDebugUnitTest",
+    ":feature:library:testDebugUnitTest",
     ":feature:plans:testDebugUnitTest",
+    ":feature:practice:testDebugUnitTest",
+    ":feature:privacy:testDebugUnitTest",
+    ":feature:reminders:testDebugUnitTest",
+    ":feature:progress:testDebugUnitTest",
+    ":feature:reviews:testDebugUnitTest",
+    ":feature:schedule:testDebugUnitTest",
+    ":feature:search:testDebugUnitTest",
+    ":feature:sessions:testDebugUnitTest",
     ":feature:settings:testDebugUnitTest",
+    ":feature:subjects:testDebugUnitTest",
 ]
-lint = [":app:lintDebug"]
+lint = [
+    ":core:data:lintDebug",
+    ":core:database:lintDebug",
+    ":core:i18n:lintDebug",
+    ":feature:plans:lintDebug",
+    ":feature:privacy:lintDebug",
+    ":feature:reminders:lintDebug",
+    ":feature:search:lintDebug",
+    ":feature:settings:lintDebug",
+    ":app:lintDebug",
+]
 clean = ["clean"]
 
 [targets.studyflow_android.artifacts]
@@ -59,17 +83,65 @@ affected_module_lint = true
 [targets.studyflow_android.validation.phases]
 preflight = ["help"]
 compile = [
+    ":core:model:compileKotlin",
+    ":core:portability:compileKotlin",
+    ":core:domain:compileKotlin",
+    ":core:i18n:compileDebugKotlin",
     ":core:database:compileDebugKotlin",
     ":core:data:compileDebugKotlin",
+    ":feature:plans:compileDebugKotlin",
+    ":feature:privacy:compileDebugKotlin",
+    ":feature:reminders:compileDebugKotlin",
+    ":feature:search:compileDebugKotlin",
+    ":feature:settings:compileDebugKotlin",
     ":app:compileDebugKotlin",
+    ":core:model:compileTestKotlin",
+    ":core:portability:compileTestKotlin",
+    ":core:domain:compileTestKotlin",
+    ":core:database:compileDebugUnitTestKotlin",
+    ":core:data:compileDebugUnitTestKotlin",
+    ":feature:plans:compileDebugUnitTestKotlin",
+    ":feature:privacy:compileDebugUnitTestKotlin",
+    ":feature:reminders:compileDebugUnitTestKotlin",
+    ":feature:search:compileDebugUnitTestKotlin",
+    ":app:compileDebugUnitTestKotlin",
 ]
 resources = [":app:processDebugResources"]
 unit-test = [
+    "verifyRepositoryContracts",
+    "verifyFormatting",
     ":core:model:test",
     ":core:domain:test",
-    ":core:database:testDebugUnitTest",
+    ":core:portability:test",
     ":core:data:testDebugUnitTest",
+    ":core:database:testDebugUnitTest",
+    ":core:navigation:test",
+    ":core:testing:test",
     ":app:testDebugUnitTest",
+    ":feature:analytics:testDebugUnitTest",
+    ":feature:dashboard:testDebugUnitTest",
+    ":feature:library:testDebugUnitTest",
+    ":feature:plans:testDebugUnitTest",
+    ":feature:practice:testDebugUnitTest",
+    ":feature:privacy:testDebugUnitTest",
+    ":feature:reminders:testDebugUnitTest",
+    ":feature:progress:testDebugUnitTest",
+    ":feature:reviews:testDebugUnitTest",
+    ":feature:schedule:testDebugUnitTest",
+    ":feature:search:testDebugUnitTest",
+    ":feature:sessions:testDebugUnitTest",
+    ":feature:settings:testDebugUnitTest",
+    ":feature:subjects:testDebugUnitTest",
 ]
 package = [":app:assembleDebug"]
-lint = [":app:lintDebug"]
+lint = [
+    ":core:data:lintDebug",
+    ":core:database:lintDebug",
+    ":core:i18n:lintDebug",
+    ":feature:plans:lintDebug",
+    ":feature:privacy:lintDebug",
+    ":feature:reminders:lintDebug",
+    ":feature:search:lintDebug",
+    ":feature:settings:lintDebug",
+    ":app:lintDebug",
+]

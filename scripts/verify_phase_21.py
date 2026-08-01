@@ -14,7 +14,7 @@ def text(path: str) -> str:
     return target.read_text(encoding="utf-8")
 
 app_build = text("app/build.gradle.kts")
-if 'versionName = "0.21.0-phase21"' not in app_build:
+if 'versionName = "0.23.0-phase23"' not in app_build:
     failures.append("app version is not Phase 21")
 
 settings = text("settings.gradle.kts")

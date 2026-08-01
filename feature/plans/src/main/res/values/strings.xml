@@ -50,7 +50,6 @@
     <string name="delete_confirmation_message">This removes the complete plan, including every child record. This action cannot be undone.</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
-
     <string name="create_plan_title">Create Study Plan</string>
     <string name="edit_plan_title">Edit Study Plan</string>
     <string name="wizard_step">Step %1$d of %2$d</string>
@@ -85,7 +84,6 @@
     <string name="previous">Previous</string>
     <string name="next">Next</string>
     <string name="save_plan">Save plan</string>
-
     <string name="plan_settings_title">Plan settings</string>
     <string name="plan_settings_intro">These preferences affect only “%1$s”.</string>
     <string name="quiet_hours">Quiet hours</string>
@@ -95,7 +93,6 @@
     <string name="time_hint">HH:MM</string>
     <string name="invalid_time">Use a valid 24-hour time.</string>
     <string name="save_settings">Save settings</string>
-
     <string name="portability_title">Import, export and snapshots</string>
     <string name="import_plan">Import Study Plan</string>
     <string name="import_plan_description">Inspect a checksum-verified .studyplan package before creating, replacing or merging a workspace.</string>
@@ -137,4 +134,27 @@
     <string name="delete_snapshot">Delete snapshot</string>
     <string name="pre_import_snapshot_label">Before import</string>
     <string name="pre_restore_snapshot_label">Before snapshot restore</string>
+    <string name="import_password_optional">Password for encrypted package (optional)</string>
+    <string name="inspect_integrity">Inspect integrity</string>
+    <string name="preview_import">Preview</string>
+    <string name="dry_run_new">Dry-run as new</string>
+    <string name="dry_run_replace">Dry-run replace</string>
+    <string name="integrity_report">Verified %1$d rows and %2$d annex file(s). Encrypted: %3$s.</string>
+    <string name="dry_run_report">Dry-run verified %1$d rows and changed %2$d database rows.</string>
+    <string name="encrypt_export">Password-encrypt this export</string>
+    <string name="export_password">Export password</string>
+    <string name="password_too_short">Use at least 8 characters for export encryption.</string>
+    <string name="metadata_privacy">Hide identifying package metadata</string>
+    <string name="redact_notes">Exclude private notes</string>
+    <string name="redact_history">Exclude sessions, tests, reviews, error history, and embedded progress traces</string>
+    <string name="recovery_explanation_title">Recovery safeguards</string>
+    <string name="recovery_explanation_message">Integrity checks and dry-runs do not write to Room. Replace and merge imports create a private safety snapshot before changing the target plan.</string>
+    <string name="encrypted_package_verified">Password and package authentication verified.</string>
+    <string name="privacy_redactions_present">This export intentionally omits selected private sections.</string>
+    <string name="password_required_for_encrypted">Enter the password for this encrypted package.</string>
+    <string name="password_or_package_invalid">The password is incorrect or the encrypted package is damaged.</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="annex_payloads_included">Physical annex files are included and will be copied into app-private storage.</string>
+    <string name="replace_creates_safety_snapshot">Replacement will create a private safety snapshot before changing the target plan.</string>
 </resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy_center_title">Privacy and local data</string>
+    <string name="go_back">Go back</string>
+    <string name="retention_policy_title">Local data retention policy</string>
+    <string name="retention_active_title">Active, paused, and archived plans</string>
+    <string name="retention_active_message">Remain on this device until you trash or permanently delete them.</string>
+    <string name="retention_trash_title">Trashed plans</string>
+    <string name="retention_trash_message">Remain recoverable until permanent deletion. StudyFlow does not silently purge them.</string>
+    <string name="retention_private_files_title">Snapshots and annex copies</string>
+    <string name="retention_private_files_message">Remain in app-private storage until their owner is deleted.</string>
+    <string name="retention_exports_title">Exported .studyplan files</string>
+    <string name="retention_exports_message">Remain in the location you selected and are managed outside StudyFlow.</string>
+    <string name="recovery_title">Recovery behavior</string>
+    <string name="recovery_explanation">Integrity inspection and restore dry-run never change the database. Replacing a plan creates a private safety snapshot before the first imported row is written.</string>
+    <string name="open_backup_center">Open backup center</string>
+    <string name="security_boundary_title">Security boundary</string>
+    <string name="security_boundary_message">Password encryption protects exported packages. StudyFlow does not claim cloud sync or protect an already unlocked device from its owner.</string>
+</resources>

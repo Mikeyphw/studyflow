@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +40,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowErrorPane
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTheme
+import com.mikeyphw.studyflow.core.domain.GlobalSearchDestination
+import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
+import com.mikeyphw.studyflow.core.domain.StudyRecommendation
+import com.mikeyphw.studyflow.core.domain.StudyRecommendationDestination
+import com.mikeyphw.studyflow.core.domain.destination
 import com.mikeyphw.studyflow.core.i18n.AppLocaleController
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -54,10 +60,12 @@ import com.mikeyphw.studyflow.core.navigation.PlanListRoute
 import com.mikeyphw.studyflow.core.navigation.PlanPortabilityRoute
 import com.mikeyphw.studyflow.core.navigation.PlanSettingsRoute
 import com.mikeyphw.studyflow.core.navigation.PracticeRoute
+import com.mikeyphw.studyflow.core.navigation.PrivacyRoute
 import com.mikeyphw.studyflow.core.navigation.ProgressRoute
 import com.mikeyphw.studyflow.core.navigation.RemindersRoute
 import com.mikeyphw.studyflow.core.navigation.ReviewsRoute
 import com.mikeyphw.studyflow.core.navigation.ScheduleRoute
+import com.mikeyphw.studyflow.core.navigation.SearchRoute
 import com.mikeyphw.studyflow.core.navigation.SessionsRoute
 import com.mikeyphw.studyflow.core.navigation.SettingsRoute
 import com.mikeyphw.studyflow.core.navigation.SubjectsRoute
@@ -71,10 +79,12 @@ import com.mikeyphw.studyflow.feature.plans.PlanPortabilityScreen
 import com.mikeyphw.studyflow.feature.plans.PlanSettingsScreen
 import com.mikeyphw.studyflow.feature.plans.StudyPlanAction
 import com.mikeyphw.studyflow.feature.practice.PracticeScreen
+import com.mikeyphw.studyflow.feature.privacy.PrivacyCenterScreen
 import com.mikeyphw.studyflow.feature.progress.StudyProgressScreen
 import com.mikeyphw.studyflow.feature.reminders.StudyRemindersScreen
 import com.mikeyphw.studyflow.feature.reviews.StudyReviewScreen
 import com.mikeyphw.studyflow.feature.schedule.StudyScheduleScreen
+import com.mikeyphw.studyflow.feature.search.StudySearchScreen
 import com.mikeyphw.studyflow.feature.sessions.StudySessionScreen
 import com.mikeyphw.studyflow.feature.settings.SettingsScreen
 import com.mikeyphw.studyflow.feature.subjects.StudyContentScreen
@@ -157,6 +167,7 @@ private fun StudyFlowNavigation(
         destination?.hasRoute<ProgressRoute>() == true ||
         destination?.hasRoute<ReviewsRoute>() == true ||
         destination?.hasRoute<RemindersRoute>() == true
+    val showSearchSelected = destination?.hasRoute<SearchRoute>() == true
     val showSettingsSelected = destination?.hasRoute<SettingsRoute>() == true
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -175,6 +186,13 @@ private fun StudyFlowNavigation(
                                 onClick = { navController.navigateToPlans() },
                                 icon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null) },
                                 label = { Text(stringResource(R.string.navigation_plans)) },
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                            )
+                            NavigationDrawerItem(
+                                selected = showSearchSelected,
+                                onClick = { navController.navigateToSearch() },
+                                icon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                                label = { Text(stringResource(R.string.navigation_search)) },
                                 modifier = Modifier.padding(horizontal = 12.dp),
                             )
                             NavigationDrawerItem(
@@ -205,6 +223,12 @@ private fun StudyFlowNavigation(
                             label = { Text(stringResource(R.string.navigation_plans)) },
                         )
                         NavigationRailItem(
+                            selected = showSearchSelected,
+                            onClick = { navController.navigateToSearch() },
+                            icon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                            label = { Text(stringResource(R.string.navigation_search)) },
+                        )
+                        NavigationRailItem(
                             selected = showSettingsSelected,
                             onClick = { navController.navigateToSettings() },
                             icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
@@ -229,6 +253,12 @@ private fun StudyFlowNavigation(
                                 onClick = { navController.navigateToPlans() },
                                 icon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null) },
                                 label = { Text(stringResource(R.string.navigation_plans)) },
+                            )
+                            NavigationBarItem(
+                                selected = showSearchSelected,
+                                onClick = { navController.navigateToSearch() },
+                                icon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                                label = { Text(stringResource(R.string.navigation_search)) },
                             )
                             NavigationBarItem(
                                 selected = showSettingsSelected,
@@ -271,7 +301,14 @@ private fun StudyFlowNavHost(
         composable<PlanListRoute> {
             PlanListScreen(
                 plans = plans,
-                defaultPlanId = preferences.defaultStudyPlanId,
+                recommendationPlanId = preferences.defaultStudyPlanId
+                    ?: plans.firstOrNull { plan ->
+                        plan.status !in setOf(
+                            StudyPlanStatus.ARCHIVED,
+                            StudyPlanStatus.TRASHED,
+                            StudyPlanStatus.COMPLETED,
+                        )
+                    }?.id,
                 onPlanSelected = { plan -> navController.navigate(DashboardRoute(plan.id.value)) },
                 onCreatePlan = { navController.navigate(CreatePlanRoute) },
                 onImportPlan = { navController.navigate(PlanPortabilityRoute()) },
@@ -668,6 +705,43 @@ private fun StudyFlowNavHost(
                 )
             }
         }
+        composable<PrivacyRoute> {
+            PrivacyCenterScreen(
+                hasDefaultPlan = preferences.defaultStudyPlanId != null,
+                onOpenBackupCenter = {
+                    navController.navigate(
+                        PlanPortabilityRoute(preferences.defaultStudyPlanId?.value.orEmpty()),
+                    )
+                },
+                onBack = navController::popBackStack,
+            )
+        }
+        composable<SearchRoute> {
+            StudySearchScreen(
+                discovery = container.manageStudyDiscovery,
+                recommendationPlanId = preferences.defaultStudyPlanId
+                    ?: plans.firstOrNull { plan ->
+                        plan.status !in setOf(
+                            StudyPlanStatus.ARCHIVED,
+                            StudyPlanStatus.TRASHED,
+                            StudyPlanStatus.COMPLETED,
+                        )
+                    }?.id,
+                recentSearches = preferences.recentSearches,
+                onRecordRecentSearch = { query -> coroutineScope.launch {
+                    container.appPreferencesRepository.recordRecentSearch(query)
+                } },
+                onClearRecentSearches = { coroutineScope.launch {
+                    container.appPreferencesRepository.clearRecentSearches()
+                } },
+                onOpenResult = { result ->
+                    navController.navigateToResult(result)
+                },
+                onOpenRecommendation = { recommendation ->
+                    navController.navigateToRecommendation(recommendation)
+                },
+            )
+        }
         composable<SettingsRoute> {
             SettingsScreen(
                 preferences = preferences,
@@ -689,6 +763,7 @@ private fun StudyFlowNavHost(
                 onOpenDefaultPlanReminders = {
                     navController.navigate(RemindersRoute(preferences.defaultStudyPlanId?.value.orEmpty()))
                 },
+                onOpenPrivacyCenter = { navController.navigate(PrivacyRoute) },
             )
         }
     }
@@ -711,8 +786,33 @@ private fun NavHostController.navigateToPlans() {
     }
 }
 
+private fun NavHostController.navigateToSearch() {
+    navigate(SearchRoute) { launchSingleTop = true }
+}
+
 private fun NavHostController.navigateToSettings() {
     navigate(SettingsRoute) { launchSingleTop = true }
+}
+
+private fun NavHostController.navigateToResult(result: GlobalSearchResult) {
+    when (result.type.destination()) {
+        GlobalSearchDestination.DASHBOARD -> navigate(DashboardRoute(result.studyPlanId.value))
+        GlobalSearchDestination.SUBJECTS -> navigate(SubjectsRoute(result.studyPlanId.value))
+        GlobalSearchDestination.PRACTICE -> navigate(PracticeRoute(result.studyPlanId.value))
+        GlobalSearchDestination.PROGRESS -> navigate(ProgressRoute(result.studyPlanId.value))
+        GlobalSearchDestination.LIBRARY -> navigate(LibraryRoute(result.studyPlanId.value))
+        GlobalSearchDestination.REVIEWS -> navigate(ReviewsRoute(result.studyPlanId.value))
+    }
+}
+
+private fun NavHostController.navigateToRecommendation(recommendation: StudyRecommendation) {
+    when (recommendation.destination) {
+        StudyRecommendationDestination.REVIEWS -> navigate(ReviewsRoute(recommendation.studyPlanId.value))
+        StudyRecommendationDestination.SCHEDULE -> navigate(ScheduleRoute(recommendation.studyPlanId.value))
+        StudyRecommendationDestination.SUBJECTS -> navigate(SubjectsRoute(recommendation.studyPlanId.value))
+        StudyRecommendationDestination.PRACTICE -> navigate(PracticeRoute(recommendation.studyPlanId.value))
+        StudyRecommendationDestination.LIBRARY -> navigate(LibraryRoute(recommendation.studyPlanId.value))
+    }
 }
 
 private fun PlanEditorForm.toNewStudyPlan(): StudyPlan = StudyPlan(

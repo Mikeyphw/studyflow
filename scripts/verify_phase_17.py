@@ -2,6 +2,8 @@
 from pathlib import Path
 import sys
 
+from phase_version import phase_version_at_least
+
 ROOT = Path(__file__).resolve().parents[1]
 failures = []
 
@@ -13,14 +15,7 @@ def text(path: str) -> str:
     return target.read_text(encoding="utf-8")
 
 app_build = text("app/build.gradle.kts")
-expected_versions = [
-    'versionName = "0.17.0-phase17"',
-    'versionName = "0.18.0-phase18"',
-    'versionName = "0.19.0-phase19"',
-    'versionName = "0.20.0-phase20"',
-    'versionName = "0.21.0-phase21"',
-]
-if not any(marker in app_build for marker in expected_versions):
+if not phase_version_at_least(ROOT, 17):
     failures.append("app version is not Phase 17 or later")
 
 models = text("core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageModels.kt")
@@ -66,7 +61,7 @@ for marker in ("ActivityResultContracts.OpenDocument", "annexFiles.importCopy", 
         failures.append(f"library screen missing marker: {marker}")
 
 plans = text("feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanPortabilityScreen.kt")
-if "StudyPlanExportOptions(StudyPlanExportMode.FULL, true, true)" not in plans:
+if "export(StudyPlanExportMode.FULL, true, true)" not in plans:
     failures.append("portability screen does not expose full export with annex payloads")
 
 if "python3 scripts/verify_phase_17.py" not in text("scripts/validate_repo.sh"):

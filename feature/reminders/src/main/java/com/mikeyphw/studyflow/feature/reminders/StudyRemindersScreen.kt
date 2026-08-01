@@ -307,7 +307,7 @@ private fun Context.hasPostNotificationsPermission(): Boolean =
         ContextCompat.checkSelfPermission(this, PostNotificationsPermission) == PackageManager.PERMISSION_GRANTED
 
 internal fun parseMinuteOfDay(value: String): Int? {
-    val match = Regex("^(\d{2}):(\d{2})$").matchEntire(value.trim()) ?: return null
+    val match = Regex("^(\\d{2}):(\\d{2})$").matchEntire(value.trim()) ?: return null
     val hour = match.groupValues[1].toIntOrNull() ?: return null
     val minute = match.groupValues[2].toIntOrNull() ?: return null
     if (hour !in 0..23 || minute !in 0..59) return null

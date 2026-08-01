@@ -17,4 +17,5 @@ data class AppPreferences(
     val themeMode: ThemeMode = ThemeMode.SYSTEM_DEFAULT,
     val dynamicColorEnabled: Boolean = true,
     val defaultStudyPlanId: StudyPlanId? = null,
+    val recentSearches: List<String> = emptyList(),
 )

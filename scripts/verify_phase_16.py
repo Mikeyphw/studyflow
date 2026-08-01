@@ -2,6 +2,8 @@
 from pathlib import Path
 import sys
 
+from phase_version import phase_version_at_least
+
 ROOT = Path(__file__).resolve().parents[1]
 failures = []
 
@@ -13,15 +15,7 @@ def text(path: str) -> str:
     return target.read_text(encoding="utf-8")
 
 app_build = text("app/build.gradle.kts")
-expected_versions = [
-    'versionName = "0.16.0-phase16"',
-    'versionName = "0.17.0-phase17"',
-    'versionName = "0.18.0-phase18"',
-    'versionName = "0.19.0-phase19"',
-    'versionName = "0.20.0-phase20"',
-    'versionName = "0.21.0-phase21"',
-]
-if not any(marker in app_build for marker in expected_versions):
+if not phase_version_at_least(ROOT, 16):
     failures.append("app version is not Phase 16 or later")
 
 roadmap = text("docs/roadmap/IMPLEMENTATION_ROADMAP.md")

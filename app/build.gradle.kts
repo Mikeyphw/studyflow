@@ -7,8 +7,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow"
-        versionCode = 21
-        versionName = "0.21.0-phase21"
+        versionCode = 23
+        versionName = "0.23.0-phase23"
     }
 
     buildFeatures {
@@ -42,10 +42,12 @@ dependencies {
     implementation(project(":feature:analytics"))
     implementation(project(":feature:library"))
     implementation(project(":feature:progress"))
+    implementation(project(":feature:privacy"))
     implementation(project(":feature:plans"))
     implementation(project(":feature:practice"))
     implementation(project(":feature:reminders"))
     implementation(project(":feature:reviews"))
+    implementation(project(":feature:search"))
     implementation(project(":feature:schedule"))
     implementation(project(":feature:sessions"))
     implementation(project(":feature:settings"))

@@ -3,7 +3,6 @@ package com.mikeyphw.studyflow.core.data
 import android.content.Context
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyPlanGraphPortabilityStore
-import com.mikeyphw.studyflow.core.database.entity.AnnexEntity
 import com.mikeyphw.studyflow.core.database.entity.PlanSnapshotEntity
 import com.mikeyphw.studyflow.core.domain.StudyPlanPortabilityRepository
 import com.mikeyphw.studyflow.core.model.AnnexStorageMode
@@ -15,6 +14,8 @@ import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.database.mapper.asEntity
 import com.mikeyphw.studyflow.core.portability.PortableAnnexPayload
+import com.mikeyphw.studyflow.core.portability.StudyPlanBackupIntegrityReport
+import com.mikeyphw.studyflow.core.portability.StudyPlanEncryptedPackageCodec
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportPreview
@@ -23,9 +24,15 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageArchive
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageCodec
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePayload
+import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePasswordRequiredException
+import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarning
+import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarningType
+import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarnings
+import com.mikeyphw.studyflow.core.portability.StudyPlanRestoreDryRun
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.PushbackInputStream
 import java.security.MessageDigest
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -35,10 +42,12 @@ internal class RoomStudyPlanPortabilityRepository(
     context: Context,
     private val database: StudyFlowDatabase,
     private val clock: () -> Long = System::currentTimeMillis,
-    private val applicationVersion: String = "0.17.0-phase17",
+    private val applicationVersion: String = "unknown",
     private val codec: StudyPlanPackageCodec = StudyPlanPackageCodec(),
+    private val encryptedCodec: StudyPlanEncryptedPackageCodec = StudyPlanEncryptedPackageCodec(),
 ) : StudyPlanPortabilityRepository {
     private val applicationFiles = context.applicationContext.filesDir
+    private val applicationCache = context.applicationContext.cacheDir
     private val graphStore = StudyPlanGraphPortabilityStore(database)
     private val supportDao = database.studySupportDao()
     private val libraryDao = database.studyLibraryDao()
@@ -52,6 +61,7 @@ internal class RoomStudyPlanPortabilityRepository(
         planId: StudyPlanId,
         options: StudyPlanExportOptions,
         output: OutputStream,
+        password: CharArray?,
     ) {
         val payload = graphStore.exportPayload(
             planId = planId.value,
@@ -59,17 +69,96 @@ internal class RoomStudyPlanPortabilityRepository(
             applicationVersion = applicationVersion,
             exportedAtEpochMillis = clock(),
         )
-        codec.writeArchive(prepareArchive(planId, options, payload), output)
+        val archive = prepareArchive(planId, options, payload)
+        if (password == null) {
+            codec.writeArchive(archive, output)
+        } else {
+            encryptedCodec.encrypt(output, password) { encryptedOutput ->
+                codec.writeArchive(archive, encryptedOutput)
+            }
+        }
     }
 
-    override suspend fun previewImport(input: InputStream): StudyPlanImportPreview = codec.preview(input)
+    override suspend fun previewImport(
+        input: InputStream,
+        password: CharArray?,
+    ): StudyPlanImportPreview {
+        val decoded = decodeArchive(input, password)
+        graphStore.validatePayload(decoded.archive.payload)
+        return codec.preview(decoded.archive).copy(encrypted = decoded.encrypted)
+    }
+
+    override suspend fun inspectBackup(
+        input: InputStream,
+        password: CharArray?,
+    ): StudyPlanBackupIntegrityReport {
+        val decoded = decodeArchive(input, password)
+        val archive = decoded.archive
+        graphStore.validatePayload(archive.payload)
+        val manifest = archive.payload.manifest
+        val warnings = StudyPlanPortabilityWarnings.forManifest(manifest)
+        return StudyPlanBackupIntegrityReport(
+            encrypted = decoded.encrypted,
+            schemaVersion = manifest.schemaVersion,
+            checksumVerified = true,
+            totalRows = archive.payload.tables.sumOf { it.rows.size },
+            annexPayloadCount = manifest.annexPayloads.size,
+            metadataPrivacyMode = manifest.metadataPrivacyMode,
+            redactedSections = manifest.redactedSections,
+            warnings = warnings,
+            canRestore = true,
+        )
+    }
+
+    override suspend fun dryRunImport(
+        input: InputStream,
+        strategy: StudyPlanImportStrategy,
+        targetPlanId: StudyPlanId?,
+        password: CharArray?,
+    ): StudyPlanRestoreDryRun {
+        val decoded = decodeArchive(input, password)
+        val archive = decoded.archive
+        graphStore.validatePayload(archive.payload)
+        require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.annexPayloadBytes.isEmpty()) {
+            "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
+        }
+        when (strategy) {
+            StudyPlanImportStrategy.CREATE_AS_NEW -> Unit
+            StudyPlanImportStrategy.REPLACE_EXISTING,
+            StudyPlanImportStrategy.MERGE_COMPATIBLE,
+            -> require(database.studyPlanDao().countById(requireNotNull(targetPlanId).value) == 1) {
+                "The target Study Plan does not exist."
+            }
+        }
+        return StudyPlanRestoreDryRun(
+            strategy = strategy,
+            targetStudyPlanId = targetPlanId?.value,
+            totalRows = archive.payload.tables.sumOf { it.rows.size },
+            tableRowCounts = archive.payload.manifest.tableRowCounts,
+            encrypted = decoded.encrypted,
+            wouldCreateSafetySnapshot = strategy != StudyPlanImportStrategy.CREATE_AS_NEW,
+            warnings = buildList {
+                addAll(StudyPlanPortabilityWarnings.forManifest(archive.payload.manifest))
+                if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
+                    add(
+                        StudyPlanPortabilityWarning(
+                            StudyPlanPortabilityWarningType.REPLACE_CREATES_SAFETY_SNAPSHOT,
+                        ),
+                    )
+                }
+            },
+            databaseRowsChanged = 0,
+        )
+    }
 
     override suspend fun importPlan(
         input: InputStream,
         strategy: StudyPlanImportStrategy,
         targetPlanId: StudyPlanId?,
+        password: CharArray?,
     ): StudyPlanImportResult {
-        val archive = codec.readArchive(input)
+        val decoded = decodeArchive(input, password)
+        val archive = decoded.archive
         require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.annexPayloadBytes.isEmpty()) {
             "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
         }
@@ -166,6 +255,74 @@ internal class RoomStudyPlanPortabilityRepository(
         supportDao.deleteSnapshot(snapshotId.value)
     }
 
+    private fun decodeArchive(input: InputStream, password: CharArray?): DecodedArchive {
+        val pushback = PushbackInputStream(input.buffered(), encryptedCodec.MagicSize)
+        val prefix = ByteArray(encryptedCodec.MagicSize)
+        val prefixSize = readPrefix(pushback, prefix)
+        if (prefixSize > 0) pushback.unread(prefix, 0, prefixSize)
+        val encrypted = prefixSize == encryptedCodec.MagicSize && encryptedCodec.isEncryptedPrefix(prefix)
+        prefix.fill(0)
+        if (!encrypted) {
+            return DecodedArchive(archive = codec.readArchive(pushback), encrypted = false)
+        }
+        val requiredPassword = password ?: throw StudyPlanPackagePasswordRequiredException(
+            "This Study Plan package is encrypted and requires a password.",
+        )
+        val temporaryPlainPackage = File.createTempFile(
+            "studyflow-authenticated-restore-",
+            ".studyplan",
+            applicationCache,
+        )
+        return try {
+            temporaryPlainPackage.outputStream().buffered().use { output ->
+                encryptedCodec.decrypt(
+                    input = pushback,
+                    output = output,
+                    password = requiredPassword,
+                    maximumEncryptedBytes = MaxEncryptedPackageBytes,
+                )
+            }
+            DecodedArchive(
+                archive = temporaryPlainPackage.inputStream().buffered().use(codec::readArchive),
+                encrypted = true,
+            )
+        } finally {
+            temporaryPlainPackage.delete()
+        }
+    }
+
+    private fun readPrefix(input: InputStream, prefix: ByteArray): Int {
+        var total = 0
+        while (total < prefix.size) {
+            val count = input.read(prefix, total, prefix.size - total)
+            if (count <= 0) break
+            total += count
+        }
+        return total
+    }
+
+    private fun readBounded(
+        input: InputStream,
+        limit: Long,
+        tooLargeMessage: String,
+    ): ByteArray {
+        val output = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        return try {
+            var total = 0L
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                total += count
+                require(total <= limit) { tooLargeMessage }
+                output.write(buffer, 0, count)
+            }
+            output.toByteArray()
+        } finally {
+            buffer.fill(0)
+        }
+    }
+
     private suspend fun prepareArchive(
         planId: StudyPlanId,
         options: StudyPlanExportOptions,
@@ -175,19 +332,35 @@ internal class RoomStudyPlanPortabilityRepository(
             return StudyPlanPackageArchive(payload)
         }
         val annexRows = payload.tables.firstOrNull { it.name == "annexes" }?.rows.orEmpty()
+        val sourceAnnexesByExportedId = libraryDao.findAnnexes(planId.value).associateBy { annex ->
+            if (options.metadataPrivacyMode) {
+                StudyPlanPrivacyPolicy.pseudonymizeIdentifier(payload.manifest.sourceStudyPlanId, annex.id)
+            } else {
+                annex.id
+            }
+        }
         val payloads = mutableListOf<PortableAnnexPayload>()
         val bytesByEntry = linkedMapOf<String, ByteArray>()
         annexRows.forEach { row ->
             val annexId = row.values["id"]?.value.orEmpty()
             if (annexId.isBlank()) return@forEach
-            val annex = libraryDao.findAnnex(planId.value, annexId) ?: return@forEach
+            val annex = sourceAnnexesByExportedId[annexId] ?: return@forEach
             val file = annex.storageReference.takeIf(String::isNotBlank)?.let(::resolveAnnexFile) ?: return@forEach
             if (annex.storageMode != AnnexStorageMode.IMPORTED_COPY.name || !file.isFile) return@forEach
-            val bytes = file.readBytes()
+            require(file.length() <= MaxAnnexPayloadBytes) {
+                "Annex payload exceeds the supported package entry size."
+            }
+            val bytes = file.inputStream().use { input ->
+                readBounded(
+                    input = input,
+                    limit = MaxAnnexPayloadBytes,
+                    tooLargeMessage = "Annex payload exceeds the supported package entry size.",
+                )
+            }
             val checksum = sha256(bytes)
-            val entryName = annexPayloadEntryName(annex)
+            val entryName = annexPayloadEntryName(annexId, annex.displayName)
             payloads += PortableAnnexPayload(
-                annexId = annex.id,
+                annexId = annexId,
                 entryName = entryName,
                 fileName = annex.displayName,
                 mimeType = annex.mimeType,
@@ -292,8 +465,8 @@ internal class RoomStudyPlanPortabilityRepository(
     private fun annexDirectory(planId: String, annexId: String): File =
         File(applicationFiles, "study-plans/${sanitizeSegment(planId)}/annexes/${sanitizeSegment(annexId)}")
 
-    private fun annexPayloadEntryName(annex: AnnexEntity): String =
-        "annex-payloads/${sanitizeSegment(annex.id)}/${sanitizeFileName(annex.displayName)}"
+    private fun annexPayloadEntryName(annexId: String, displayName: String): String =
+        "annex-payloads/${sanitizeSegment(annexId)}/${sanitizeFileName(displayName)}"
 
     private fun sanitizeSegment(value: String): String = value.replace(Regex("[^A-Za-z0-9._:-]"), "_")
 
@@ -319,6 +492,16 @@ internal class RoomStudyPlanPortabilityRepository(
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
         .digest(bytes)
         .joinToString("") { "%02x".format(it) }
+
+    private data class DecodedArchive(
+        val archive: StudyPlanPackageArchive,
+        val encrypted: Boolean,
+    )
+
+    private companion object {
+        const val MaxAnnexPayloadBytes = 64L * 1024L * 1024L
+        const val MaxEncryptedPackageBytes = 516L * 1024L * 1024L
+    }
 
     private fun PlanSnapshotEntity.asExternalModel() = PlanSnapshot(
         id = PlanSnapshotId(id),

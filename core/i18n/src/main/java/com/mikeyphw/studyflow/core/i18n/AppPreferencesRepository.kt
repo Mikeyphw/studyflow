@@ -16,4 +16,8 @@ interface AppPreferencesRepository {
     suspend fun setDynamicColorEnabled(enabled: Boolean)
 
     suspend fun setDefaultStudyPlan(planId: StudyPlanId?)
+
+    suspend fun recordRecentSearch(query: String)
+
+    suspend fun clearRecentSearches()
 }

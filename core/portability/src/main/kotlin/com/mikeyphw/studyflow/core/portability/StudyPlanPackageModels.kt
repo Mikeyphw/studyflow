@@ -20,6 +20,9 @@ data class StudyPlanExportOptions(
     val mode: StudyPlanExportMode = StudyPlanExportMode.FULL,
     val includeAnnexMetadata: Boolean = true,
     val includeAnnexPayloads: Boolean = false,
+    val metadataPrivacyMode: Boolean = false,
+    val redactNotes: Boolean = false,
+    val redactHistory: Boolean = false,
 )
 
 @Serializable
@@ -79,6 +82,8 @@ data class StudyPlanPackageManifest(
     val includesAnnexPayloads: Boolean = false,
     val annexPayloads: List<PortableAnnexPayload> = emptyList(),
     val tableRowCounts: Map<String, Int>,
+    val metadataPrivacyMode: Boolean = false,
+    val redactedSections: Set<String> = emptySet(),
 )
 
 @Serializable
@@ -105,10 +110,47 @@ data class StudyPlanPackageChecksums(
     val entries: Map<String, String>,
 )
 
+enum class StudyPlanPortabilityWarningType {
+    ANNEX_METADATA_ONLY,
+    ANNEX_PAYLOADS_INCLUDED,
+    TEMPLATE_WITHOUT_HISTORY,
+    PRIVACY_REDACTIONS,
+    REPLACE_CREATES_SAFETY_SNAPSHOT,
+}
+
+data class StudyPlanPortabilityWarning(
+    val type: StudyPlanPortabilityWarningType,
+    val redactedSections: Set<String> = emptySet(),
+)
+
 data class StudyPlanImportPreview(
     val manifest: StudyPlanPackageManifest,
     val totalRows: Int,
-    val warnings: List<String>,
+    val warnings: List<StudyPlanPortabilityWarning>,
+    val encrypted: Boolean = false,
+)
+
+data class StudyPlanBackupIntegrityReport(
+    val encrypted: Boolean,
+    val schemaVersion: Int,
+    val checksumVerified: Boolean,
+    val totalRows: Int,
+    val annexPayloadCount: Int,
+    val metadataPrivacyMode: Boolean,
+    val redactedSections: Set<String>,
+    val warnings: List<StudyPlanPortabilityWarning>,
+    val canRestore: Boolean,
+)
+
+data class StudyPlanRestoreDryRun(
+    val strategy: StudyPlanImportStrategy,
+    val targetStudyPlanId: String?,
+    val totalRows: Int,
+    val tableRowCounts: Map<String, Int>,
+    val encrypted: Boolean,
+    val wouldCreateSafetySnapshot: Boolean,
+    val warnings: List<StudyPlanPortabilityWarning>,
+    val databaseRowsChanged: Int = 0,
 )
 
 data class StudyPlanImportResult(

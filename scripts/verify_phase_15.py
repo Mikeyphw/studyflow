@@ -4,6 +4,8 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
+from phase_version import phase_version_at_least
+
 ROOT = Path(__file__).resolve().parents[1]
 failures: list[str] = []
 required = [
@@ -18,16 +20,7 @@ for relative in required:
     if not (ROOT / relative).is_file():
         failures.append(f"missing Phase 15 file: {relative}")
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-expected_versions = [
-    'versionName = "0.15.0-phase15"',
-    'versionName = "0.16.0-phase16"',
-    'versionName = "0.17.0-phase17"',
-    'versionName = "0.18.0-phase18"',
-    'versionName = "0.19.0-phase19"',
-    'versionName = "0.20.0-phase20"',
-    'versionName = "0.21.0-phase21"',
-]
-if not any(marker in app_build for marker in expected_versions):
+if not phase_version_at_least(ROOT, 15):
     failures.append("app version is not Phase 15 or later")
 settings_source = (ROOT / "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt").read_text(
     encoding="utf-8",
@@ -108,16 +101,7 @@ validate = (ROOT / "scripts/validate_repo.sh").read_text(encoding="utf-8")
 for phase in range(0, 16):
     if f"verify_phase_{phase}.py" not in validate:
         failures.append(f"validate_repo.sh does not run Phase {phase} contract")
-expected_versions = [
-    'versionName = "0.15.0-phase15"',
-    'versionName = "0.16.0-phase16"',
-    'versionName = "0.17.0-phase17"',
-    'versionName = "0.18.0-phase18"',
-    'versionName = "0.19.0-phase19"',
-    'versionName = "0.20.0-phase20"',
-    'versionName = "0.21.0-phase21"',
-]
-if not any(marker in app_build for marker in expected_versions):
+if not phase_version_at_least(ROOT, 15):
     failures.append("app version is not Phase 15 or later")
 if failures:
     print("PHASE_15_CONTRACT: FAILED")

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy_center_title">Privacidade e dados locais</string>
+    <string name="go_back">Voltar</string>
+    <string name="retention_policy_title">Política de retenção de dados locais</string>
+    <string name="retention_active_title">Planos ativos, pausados e arquivados</string>
+    <string name="retention_active_message">Permanecem no dispositivo até serem enviados à lixeira ou excluídos permanentemente.</string>
+    <string name="retention_trash_title">Planos na lixeira</string>
+    <string name="retention_trash_message">Continuam recuperáveis até a exclusão permanente. O StudyFlow não os apaga silenciosamente.</string>
+    <string name="retention_private_files_title">Snapshots e cópias de anexos</string>
+    <string name="retention_private_files_message">Permanecem no armazenamento privado até a exclusão do item proprietário.</string>
+    <string name="retention_exports_title">Arquivos .studyplan exportados</string>
+    <string name="retention_exports_message">Permanecem no local escolhido e são gerenciados fora do StudyFlow.</string>
+    <string name="recovery_title">Comportamento de recuperação</string>
+    <string name="recovery_explanation">A inspeção de integridade e a simulação de restauração nunca alteram o banco. A substituição cria um snapshot privado antes de gravar a primeira linha importada.</string>
+    <string name="open_backup_center">Abrir central de backup</string>
+    <string name="security_boundary_title">Limite de segurança</string>
+    <string name="security_boundary_message">A senha protege pacotes exportados. O StudyFlow não promete sincronização em nuvem nem proteção contra o proprietário de um dispositivo já desbloqueado.</string>
+</resources>

@@ -38,6 +38,7 @@ fun SettingsScreen(
     onDynamicColorChanged: (Boolean) -> Unit,
     onOpenDefaultPlanBackup: () -> Unit,
     onOpenDefaultPlanReminders: () -> Unit,
+    onOpenPrivacyCenter: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val readiness = AppShellReadinessAuditor.evaluate(
@@ -97,6 +98,15 @@ fun SettingsScreen(
             )
             Button(onClick = onOpenDefaultPlanReminders, enabled = hasDefaultPlan) {
                 Text(stringResource(R.string.open_reminders_center))
+            }
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.privacy_title)) {
+            Text(
+                text = stringResource(R.string.privacy_message),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onOpenPrivacyCenter) {
+                Text(stringResource(R.string.open_privacy_center))
             }
         }
         StudyFlowSectionCard(title = stringResource(R.string.language_title)) {

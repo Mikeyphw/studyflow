@@ -29,6 +29,7 @@ class StudyPlanPackageCodec(
     fun writeArchive(archive: StudyPlanPackageArchive, output: OutputStream) {
         val payload = archive.payload
         validateManifest(payload.manifest)
+        StudyPlanPrivacyPolicy.validatePayload(payload)
         val declaredPayloads = payload.manifest.annexPayloads.associateBy { it.entryName }
         if (archive.annexPayloadBytes.keys != declaredPayloads.keys) {
             throw StudyPlanPackageException("Annex payload bytes do not match the package manifest.")
@@ -150,24 +151,16 @@ class StudyPlanPackageCodec(
         if (actualCounts != manifest.tableRowCounts) {
             throw StudyPlanPackageException("Table counts do not match the package manifest.")
         }
+        StudyPlanPrivacyPolicy.validatePayload(payload)
         val annexBytes = manifest.annexPayloads.associate { it.entryName to entries.getValue(it.entryName) }
         return StudyPlanPackageArchive(payload = payload, annexPayloadBytes = annexBytes)
     }
 
-    fun preview(input: InputStream): StudyPlanImportPreview {
-        val archive = readArchive(input)
+    fun preview(input: InputStream): StudyPlanImportPreview = preview(readArchive(input))
+
+    fun preview(archive: StudyPlanPackageArchive): StudyPlanImportPreview {
         val payload = archive.payload
-        val warnings = buildList {
-            if (payload.manifest.includesAnnexMetadata && !payload.manifest.includesAnnexPayloads) {
-                add("Annex metadata is included, but physical annex files are not part of this package.")
-            }
-            if (payload.manifest.includesAnnexPayloads) {
-                add("Annex files are included and will be copied into app-private storage.")
-            }
-            if (payload.manifest.exportMode == StudyPlanExportMode.TEMPLATE) {
-                add("This package is a reusable template and does not contain personal study history.")
-            }
-        }
+        val warnings = StudyPlanPortabilityWarnings.forManifest(payload.manifest)
         return StudyPlanImportPreview(
             manifest = payload.manifest,
             totalRows = payload.tables.sumOf { it.rows.size },
@@ -216,7 +209,10 @@ class StudyPlanPackageCodec(
         if (manifest.tableRowCounts["study_plans"] != 1) {
             throw StudyPlanPackageException("Study Plan package must contain exactly one root record.")
         }
-        if (manifest.includesPrivateHistory != (manifest.exportMode == StudyPlanExportMode.FULL)) {
+        if (manifest.includesPrivateHistory !=
+            (manifest.exportMode == StudyPlanExportMode.FULL &&
+                StudyPlanPrivacyPolicy.HistorySection !in manifest.redactedSections)
+        ) {
             throw StudyPlanPackageException("Study Plan package privacy metadata is inconsistent.")
         }
         if (("annexes" in manifest.tableRowCounts) != manifest.includesAnnexMetadata) {
@@ -248,7 +244,7 @@ class StudyPlanPackageCodec(
 
     private fun validateEntryName(entry: ZipEntry) {
         val name = entry.name
-        if (name.startsWith('/') || name.startsWith('\') || ".." in name.split('/', '\')) {
+        if (name.startsWith('/') || name.startsWith('\\') || ".." in name.split('/', '\\')) {
             throw StudyPlanPackageException("Unsafe package entry path: $name")
         }
     }
