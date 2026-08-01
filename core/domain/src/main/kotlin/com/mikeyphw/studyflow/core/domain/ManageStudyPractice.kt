@@ -17,6 +17,8 @@ class ManageStudyPractice(
     private val repository: StudyPracticeRepository,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
+    private val execution = ManagePracticeExecution(repository, clock = clock)
+
     fun observeQuestions(planId: StudyPlanId) = repository.observeQuestions(planId)
 
     fun observeTests(planId: StudyPlanId) = repository.observeTests(planId)
@@ -192,6 +194,42 @@ class ManageStudyPractice(
 
     fun buildDeck(questions: List<Question>, request: PracticeDeckRequest): List<Question> =
         PracticeAnalytics.buildDeck(questions, request)
+
+    fun stateForTest(
+        test: StudyTest,
+        questions: List<Question>,
+    ) = execution.stateForTest(test, questions)
+
+    fun stateForMockExam(
+        mockExam: MockExam,
+        questions: List<Question>,
+    ) = execution.stateForMockExam(mockExam, questions)
+
+    suspend fun startPracticeTest(planId: StudyPlanId, testId: StudyTestId): StudyTest =
+        execution.startTest(planId, testId)
+
+    suspend fun answerPracticeQuestion(
+        planId: StudyPlanId,
+        testId: StudyTestId,
+        questionId: QuestionId,
+        chosenAnswer: String,
+    ): StudyTest = execution.answerTestQuestion(planId, testId, questionId, chosenAnswer)
+
+    suspend fun finishPracticeAttempt(planId: StudyPlanId, testId: StudyTestId): StudyTest =
+        execution.finishTest(planId, testId)
+
+    suspend fun startMockExamAttempt(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
+        execution.startMockExam(planId, mockExamId)
+
+    suspend fun answerMockQuestion(
+        planId: StudyPlanId,
+        mockExamId: MockExamId,
+        questionId: QuestionId,
+        chosenAnswer: String,
+    ): MockExam = execution.answerMockQuestion(planId, mockExamId, questionId, chosenAnswer)
+
+    suspend fun finishMockExamAttempt(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
+        execution.finishMockExam(planId, mockExamId)
 
     private suspend fun requireQuestion(planId: StudyPlanId, questionId: QuestionId): Question =
         requireNotNull(repository.findQuestion(planId, questionId)) { "Question does not exist." }

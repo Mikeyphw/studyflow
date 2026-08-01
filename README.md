@@ -242,3 +242,9 @@ for smaller or privacy-conscious packages.
 Library resources can now be opened from StudyFlow through safe Android view intents. Imported annex
 copies are shared through the app FileProvider, web/video sources use their matching viewer handoff,
 and open actions update resource activity metadata.
+
+### Phase 19: Practice/Test/Mock Execution Engine
+
+StudyFlow now supports executable practice and mock attempts. Practice decks persist an answer
+ledger inside the existing test/mock configuration payload, allowing answer, resume, finish, and
+summary flows without introducing a schema migration.

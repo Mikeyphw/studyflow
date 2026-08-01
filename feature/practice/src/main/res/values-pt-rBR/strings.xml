@@ -42,4 +42,18 @@
     <string name="test_count_value">%1$d treinos</string>
     <string name="mock_count_value">%1$d simulados</string>
     <string name="tags_value">Tags: %1$s</string>
+    <string name="mock_exam_created">Simulado criado</string>
+    <string name="create_mock_exam">Criar simulado</string>
+    <string name="active_practice_attempt">Prática ativa</string>
+    <string name="active_mock_attempt">Simulado ativo</string>
+    <string name="runner_progress">%1$d de %2$d respondidas</string>
+    <string name="answer_saved">Resposta salva</string>
+    <string name="attempt_finished">Tentativa finalizada</string>
+    <string name="finish_attempt">Finalizar tentativa</string>
+    <string name="close_runner">Fechar execução</string>
+    <string name="explanation_value">Explicação: %1$s</string>
+    <string name="correct_value">%1$d corretas</string>
+    <string name="recent_mocks">Simulados recentes</string>
+    <string name="no_mocks">Nenhum simulado ainda.</string>
+    <string name="start_or_resume">Iniciar ou retomar</string>
 </resources>

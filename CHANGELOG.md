@@ -194,3 +194,9 @@
 - Added material, video, and annex launch planning for safe viewer/playback handoff.
 - Added app package visibility queries and FileProvider routing for app-private annex copies.
 - Added library screen open actions and playback-open progress hooks.
+
+## Phase 19 - Practice/Test/Mock Execution Engine
+
+- Added persisted answer-ledger execution for practice tests and mock exams.
+- Added practice attempt start/resume, answer, finish, and summary support.
+- Added interactive runner controls to the practice screen for tests and mocks.

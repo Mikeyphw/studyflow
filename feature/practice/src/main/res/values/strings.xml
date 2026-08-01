@@ -42,4 +42,18 @@
     <string name="test_count_value">%1$d tests</string>
     <string name="mock_count_value">%1$d mocks</string>
     <string name="tags_value">Tags: %1$s</string>
+    <string name="mock_exam_created">Mock exam created</string>
+    <string name="create_mock_exam">Create mock exam</string>
+    <string name="active_practice_attempt">Active practice attempt</string>
+    <string name="active_mock_attempt">Active mock exam</string>
+    <string name="runner_progress">%1$d of %2$d answered</string>
+    <string name="answer_saved">Answer saved</string>
+    <string name="attempt_finished">Attempt finished</string>
+    <string name="finish_attempt">Finish attempt</string>
+    <string name="close_runner">Close runner</string>
+    <string name="explanation_value">Explanation: %1$s</string>
+    <string name="correct_value">%1$d correct</string>
+    <string name="recent_mocks">Recent mocks</string>
+    <string name="no_mocks">No mock exams yet.</string>
+    <string name="start_or_resume">Start or resume</string>
 </resources>

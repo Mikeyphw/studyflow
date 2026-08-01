@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
@@ -48,7 +47,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
+import com.mikeyphw.studyflow.core.domain.PracticeExecutionState
 import com.mikeyphw.studyflow.core.domain.PracticeSummary
+import com.mikeyphw.studyflow.core.model.MockExam
+import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -69,19 +71,24 @@ fun PracticeScreen(
     val snackbar = remember { SnackbarHostState() }
     val questionsFlow = remember(plan.id) { practice.observeQuestions(plan.id) }
     val testsFlow = remember(plan.id) { practice.observeTests(plan.id) }
+    val mocksFlow = remember(plan.id) { practice.observeMockExams(plan.id) }
     val summaryFlow = remember(plan.id) { practice.observeSummary(plan.id) }
     val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val tests by testsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val mocks by mocksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val summary by summaryFlow.collectAsStateWithLifecycle(
         initialValue = PracticeSummary(0, 0, 0, 0, 0, 0, 0, 0),
     )
     var showEditor by rememberSaveable { mutableStateOf(false) }
     var favoriteOnly by rememberSaveable { mutableStateOf(false) }
     var disputedOnly by rememberSaveable { mutableStateOf(false) }
+    var activeTestId by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeMockId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val screenState = PracticeScreenState(
         questions = questions,
         tests = tests,
+        mocks = mocks,
         summary = summary,
         favoriteOnly = favoriteOnly,
         disputedOnly = disputedOnly,
@@ -92,7 +99,10 @@ fun PracticeScreen(
     val favoriteUpdated = stringResource(R.string.favorite_updated)
     val disputedUpdated = stringResource(R.string.disputed_updated)
     val testCreated = stringResource(R.string.practice_test_created)
+    val mockCreated = stringResource(R.string.mock_exam_created)
     val needQuestions = stringResource(R.string.need_questions)
+    val answerSaved = stringResource(R.string.answer_saved)
+    val attemptFinished = stringResource(R.string.attempt_finished)
 
     fun launchAction(success: String, action: suspend () -> Unit) {
         scope.launch {
@@ -101,6 +111,9 @@ fun PracticeScreen(
                 .onFailure { snackbar.showSnackbar(operationFailed) }
         }
     }
+
+    val activeTest = activeTestId?.let { id -> tests.firstOrNull { it.id.value == id } }
+    val activeMock = activeMockId?.let { id -> mocks.firstOrNull { it.id.value == id } }
 
     Scaffold(
         modifier = modifier,
@@ -134,6 +147,48 @@ fun PracticeScreen(
                     text = stringResource(R.string.practice_subtitle, plan.name),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            activeTest?.let { test ->
+                item {
+                    val state = practice.stateForTest(test, questions)
+                    PracticeRunnerCard(
+                        title = stringResource(R.string.active_practice_attempt),
+                        state = state,
+                        onAnswer = { question, answer ->
+                            launchAction(answerSaved) {
+                                practice.answerPracticeQuestion(plan.id, test.id, question.id, answer)
+                            }
+                        },
+                        onFinish = {
+                            launchAction(attemptFinished) {
+                                practice.finishPracticeAttempt(plan.id, test.id)
+                                activeTestId = null
+                            }
+                        },
+                        onClose = { activeTestId = null },
+                    )
+                }
+            }
+            activeMock?.let { mock ->
+                item {
+                    val state = practice.stateForMockExam(mock, questions)
+                    PracticeRunnerCard(
+                        title = stringResource(R.string.active_mock_attempt),
+                        state = state,
+                        onAnswer = { question, answer ->
+                            launchAction(answerSaved) {
+                                practice.answerMockQuestion(plan.id, mock.id, question.id, answer)
+                            }
+                        },
+                        onFinish = {
+                            launchAction(attemptFinished) {
+                                practice.finishMockExamAttempt(plan.id, mock.id)
+                                activeMockId = null
+                            }
+                        },
+                        onClose = { activeMockId = null },
+                    )
+                }
             }
             item { PracticeSummaryCard(summary) }
             item {
@@ -169,24 +224,54 @@ fun PracticeScreen(
                         )
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Button(
-                                onClick = {
-                                    if (screenState.filteredQuestions.isEmpty()) {
-                                        scope.launch { snackbar.showSnackbar(needQuestions) }
-                                    } else {
-                                        launchAction(testCreated) {
-                                            practice.createPracticeTest(
-                                                id = StudyTestId(UUID.randomUUID().toString()),
-                                                planId = plan.id,
-                                                title = "${plan.name} practice",
-                                                questions = screenState.filteredQuestions.take(20),
-                                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        if (screenState.filteredQuestions.isEmpty()) {
+                                            scope.launch { snackbar.showSnackbar(needQuestions) }
+                                        } else {
+                                            scope.launch {
+                                                runCatching {
+                                                    practice.createPracticeTest(
+                                                        id = StudyTestId(UUID.randomUUID().toString()),
+                                                        planId = plan.id,
+                                                        title = "${plan.name} practice",
+                                                        questions = screenState.filteredQuestions.take(20),
+                                                    )
+                                                }.onSuccess { test ->
+                                                    activeMockId = null
+                                                    activeTestId = test.id.value
+                                                    snackbar.showSnackbar(testCreated)
+                                                }.onFailure {
+                                                    snackbar.showSnackbar(operationFailed)
+                                                }
+                                            }
                                         }
-                                    }
-                                },
-                            ) {
-                                Icon(Icons.Outlined.PlayArrow, contentDescription = null)
-                                Text(text = stringResource(R.string.create_practice_test))
+                                    },
+                                ) { Text(text = stringResource(R.string.create_practice_test)) }
+                                OutlinedButton(
+                                    onClick = {
+                                        scope.launch {
+                                            runCatching {
+                                                practice.createMockExam(
+                                                    id = MockExamId(UUID.randomUUID().toString()),
+                                                    planId = plan.id,
+                                                    title = "${plan.name} mock",
+                                                    questions = screenState.filteredQuestions.take(50),
+                                                    timeLimitSeconds = 7200,
+                                                    negativeMarking = 0.0,
+                                                    minimumScorePercent = null,
+                                                )
+                                            }.onSuccess { mock ->
+                                                activeTestId = null
+                                                activeMockId = mock.id.value
+                                                snackbar.showSnackbar(mockCreated)
+                                            }.onFailure {
+                                                snackbar.showSnackbar(operationFailed)
+                                            }
+                                        }
+                                    },
+                                ) { Text(text = stringResource(R.string.create_mock_exam)) }
                             }
                             screenState.filteredQuestions.forEach { question ->
                                 QuestionCard(
@@ -212,7 +297,30 @@ fun PracticeScreen(
                     }
                 }
             }
-            item { RecentTestsCard(tests) }
+            item {
+                RecentTestsCard(
+                    tests = tests,
+                    onStart = { test ->
+                        launchAction(testCreated) {
+                            practice.startPracticeTest(plan.id, test.id)
+                            activeMockId = null
+                            activeTestId = test.id.value
+                        }
+                    },
+                )
+            }
+            item {
+                RecentMocksCard(
+                    mocks = mocks,
+                    onStart = { mock ->
+                        launchAction(mockCreated) {
+                            practice.startMockExamAttempt(plan.id, mock.id)
+                            activeTestId = null
+                            activeMockId = mock.id.value
+                        }
+                    },
+                )
+            }
         }
     }
 
@@ -255,6 +363,47 @@ private fun PracticeSummaryCard(summary: PracticeSummary) {
             Text(stringResource(R.string.mock_count_value, summary.mockExamCount))
             Text(stringResource(R.string.answered_value, summary.answeredCount))
             Text(stringResource(R.string.accuracy_value, summary.accuracyPercent))
+        }
+    }
+}
+
+@Composable
+private fun PracticeRunnerCard(
+    title: String,
+    state: PracticeExecutionState,
+    onAnswer: (Question, String) -> Unit,
+    onFinish: () -> Unit,
+    onClose: () -> Unit,
+) {
+    StudyFlowSectionCard(title = title) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.runner_progress, state.answeredCount, state.questionIds.size))
+            val question = state.currentQuestion
+            if (question == null) {
+                Text(stringResource(R.string.no_questions_message))
+            } else {
+                Text(question.statement, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                val options = question.options.ifEmpty { listOf(question.correctAnswer) }
+                options.forEach { option ->
+                    OutlinedButton(
+                        enabled = !state.submitted,
+                        onClick = { onAnswer(question, option) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(option) }
+                }
+                if (state.answers.any { it.questionId == question.id }) {
+                    Text(
+                        text = stringResource(R.string.explanation_value, question.explanation.ifBlank { "—" }),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(enabled = !state.submitted, onClick = onFinish) {
+                    Text(stringResource(R.string.finish_attempt))
+                }
+                OutlinedButton(onClick = onClose) { Text(stringResource(R.string.close_runner)) }
+            }
         }
     }
 }
@@ -307,7 +456,7 @@ private fun QuestionCard(
 }
 
 @Composable
-private fun RecentTestsCard(tests: List<StudyTest>) {
+private fun RecentTestsCard(tests: List<StudyTest>, onStart: (StudyTest) -> Unit) {
     StudyFlowSectionCard(title = stringResource(R.string.recent_tests)) {
         if (tests.isEmpty()) {
             Text(stringResource(R.string.need_questions), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -319,6 +468,37 @@ private fun RecentTestsCard(tests: List<StudyTest>) {
                             Text(test.title, style = MaterialTheme.typography.titleSmall)
                             Text(stringResource(R.string.question_count_value, test.questionCount))
                             Text(stringResource(R.string.answered_value, test.answeredCount))
+                            Text(stringResource(R.string.correct_value, test.correctCount))
+                            OutlinedButton(onClick = { onStart(test) }) {
+                                Icon(Icons.Outlined.PlayArrow, contentDescription = null)
+                                Text(stringResource(R.string.start_or_resume))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentMocksCard(mocks: List<MockExam>, onStart: (MockExam) -> Unit) {
+    StudyFlowSectionCard(title = stringResource(R.string.recent_mocks)) {
+        if (mocks.isEmpty()) {
+            Text(stringResource(R.string.no_mocks), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                mocks.take(5).forEach { mock ->
+                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(mock.title, style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.question_count_value, mock.questionCount))
+                            Text(stringResource(R.string.answered_value, mock.answeredCount))
+                            Text(stringResource(R.string.correct_value, mock.correctCount))
+                            OutlinedButton(onClick = { onStart(mock) }) {
+                                Icon(Icons.Outlined.PlayArrow, contentDescription = null)
+                                Text(stringResource(R.string.start_or_resume))
+                            }
                         }
                     }
                 }

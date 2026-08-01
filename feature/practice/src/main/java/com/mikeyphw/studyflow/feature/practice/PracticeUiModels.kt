@@ -1,7 +1,9 @@
 package com.mikeyphw.studyflow.feature.practice
 
 import com.mikeyphw.studyflow.core.domain.PracticeSummary
+import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.Question
+import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyTest
 
@@ -31,6 +33,7 @@ internal data class QuestionEditorState(
 internal data class PracticeScreenState(
     val questions: List<Question>,
     val tests: List<StudyTest>,
+    val mocks: List<MockExam>,
     val summary: PracticeSummary,
     val favoriteOnly: Boolean,
     val disputedOnly: Boolean,

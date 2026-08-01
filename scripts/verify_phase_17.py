@@ -16,6 +16,7 @@ app_build = text("app/build.gradle.kts")
 expected_versions = [
     'versionName = "0.17.0-phase17"',
     'versionName = "0.18.0-phase18"',
+    'versionName = "0.19.0-phase19"',
 ]
 if not any(marker in app_build for marker in expected_versions):
     failures.append("app version is not Phase 17 or later")
