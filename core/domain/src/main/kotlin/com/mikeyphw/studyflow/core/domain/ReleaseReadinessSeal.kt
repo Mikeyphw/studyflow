@@ -9,7 +9,7 @@ data class ReleaseReadinessPhase(
 data class ReleaseReadinessReport(
     val phases: List<ReleaseReadinessPhase>,
     val polishReport: UserExperiencePolishReport,
-    val shellReadiness: AppShellReadiness,
+    val shellReadiness: AppShellReadinessReport,
 ) {
     val completedPhaseCount: Int = phases.count(ReleaseReadinessPhase::complete)
     val totalPhaseCount: Int = phases.size
@@ -20,7 +20,7 @@ data class ReleaseReadinessReport(
 }
 
 object ReleaseReadinessSeal {
-    fun evaluate(shellReadiness: AppShellReadiness): ReleaseReadinessReport = ReleaseReadinessReport(
+    fun evaluate(shellReadiness: AppShellReadinessReport): ReleaseReadinessReport = ReleaseReadinessReport(
         phases = listOf(
             ReleaseReadinessPhase(1, "Foundation and Compose app shell", true),
             ReleaseReadinessPhase(2, "Domain model and Room database", true),

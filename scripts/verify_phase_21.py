@@ -2,6 +2,7 @@
 from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
+from phase_version import phase_version_at_least
 
 ROOT = Path(__file__).resolve().parents[1]
 failures = []
@@ -13,9 +14,8 @@ def text(path: str) -> str:
         return ""
     return target.read_text(encoding="utf-8")
 
-app_build = text("app/build.gradle.kts")
-if 'versionName = "0.23.0-phase23"' not in app_build:
-    failures.append("app version is not Phase 21")
+if not phase_version_at_least(ROOT, 21):
+    failures.append("app version is below Phase 21")
 
 settings = text("settings.gradle.kts")
 if '":feature:reminders"' not in settings:

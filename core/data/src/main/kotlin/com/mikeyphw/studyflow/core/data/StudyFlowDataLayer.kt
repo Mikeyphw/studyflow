@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
 import com.mikeyphw.studyflow.core.domain.StudyContentRepository
+import com.mikeyphw.studyflow.core.domain.StudyCloudSyncRepository
 import com.mikeyphw.studyflow.core.domain.StudyDiscoveryRepository
 import com.mikeyphw.studyflow.core.domain.StudyLibraryRepository
 import com.mikeyphw.studyflow.core.domain.StudyPlanPortabilityRepository
@@ -26,6 +27,7 @@ class StudyFlowDataLayer internal constructor(
     val studyPlanPortabilityRepository: StudyPlanPortabilityRepository,
     val studyContentRepository: StudyContentRepository,
     val studyDiscoveryRepository: StudyDiscoveryRepository,
+    val studyCloudSyncRepository: StudyCloudSyncRepository,
     val studyScheduleRepository: StudyScheduleRepository,
     val studyPracticeRepository: StudyPracticeRepository,
     val studyLibraryRepository: StudyLibraryRepository,
@@ -48,6 +50,11 @@ fun createStudyFlowDataLayer(
     val studyPlanRepository = RoomStudyPlanRepository(database, clock)
     val studyContentRepository = RoomStudyContentRepository(database, clock)
     val studyDiscoveryRepository = RoomStudyDiscoveryRepository(database)
+    val studyCloudSyncRepository = LocalStudyCloudSyncRepository(
+        context = context,
+        database = database,
+        clock = clock,
+    )
     val studyScheduleRepository = RoomStudyScheduleRepository(database)
     val studySessionRepository = RoomStudySessionRepository(database)
     val studyPracticeRepository = RoomStudyPracticeRepository(database)
@@ -71,6 +78,7 @@ fun createStudyFlowDataLayer(
         studyPlanPortabilityRepository = portabilityRepository,
         studyContentRepository = studyContentRepository,
         studyDiscoveryRepository = studyDiscoveryRepository,
+        studyCloudSyncRepository = studyCloudSyncRepository,
         studyScheduleRepository = studyScheduleRepository,
         studyPracticeRepository = studyPracticeRepository,
         studyLibraryRepository = studyLibraryRepository,

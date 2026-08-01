@@ -35,4 +35,22 @@
     <string name="privacy_title">Privacy and local data</string>
     <string name="privacy_message">Review encryption, restore safeguards, and the exact local retention policy.</string>
     <string name="open_privacy_center">Open privacy center</string>
+    <string name="sync_title">Sync foundation</string>
+    <string name="sync_settings_message">Local sync state: %1$s · pending upload units: %2$d.</string>
+    <string name="open_sync_center">Open sync center</string>
+    <string name="sync_foundation_title">Local-only cloud-sync foundation</string>
+    <string name="sync_foundation_message">StudyFlow prepares local checkpoints, change tokens, and conflict policy before any real cloud provider is selected.</string>
+    <string name="sync_provider_value">Provider: %1$s</string>
+    <string name="sync_status_value">Status: %1$s</string>
+    <string name="sync_conflict_value">Conflict policy: %1$s</string>
+    <string name="sync_local_changes_title">Local changes</string>
+    <string name="sync_local_changes_unknown">Inspect local changes to prepare a provider-neutral checkpoint.</string>
+    <string name="sync_plan_count">Study Plans: %1$d</string>
+    <string name="sync_active_plan_count">Active or paused plans: %1$d</string>
+    <string name="sync_change_token">Local change token: %1$s</string>
+    <string name="sync_provider_gate_title">Provider gate</string>
+    <string name="sync_provider_gate_message">No network provider, account identity, or server merge is enabled in this phase.</string>
+    <string name="sync_prepare_foundation">Prepare local foundation</string>
+    <string name="sync_disable_foundation">Disable local foundation</string>
+    <string name="go_back">Go back</string>
 </resources>

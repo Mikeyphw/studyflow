@@ -35,4 +35,22 @@
     <string name="privacy_title">Privacidade e dados locais</string>
     <string name="privacy_message">Confira a criptografia, as proteções de restauração e a política exata de retenção local.</string>
     <string name="open_privacy_center">Abrir central de privacidade</string>
+    <string name="sync_title">Base de sincronização</string>
+    <string name="sync_settings_message">Estado local da sincronização: %1$s · unidades pendentes de envio: %2$d.</string>
+    <string name="open_sync_center">Abrir central de sincronização</string>
+    <string name="sync_foundation_title">Base local para sincronização em nuvem</string>
+    <string name="sync_foundation_message">O StudyFlow prepara checkpoints locais, tokens de alteração e política de conflito antes de qualquer provedor real de nuvem ser escolhido.</string>
+    <string name="sync_provider_value">Provedor: %1$s</string>
+    <string name="sync_status_value">Estado: %1$s</string>
+    <string name="sync_conflict_value">Política de conflito: %1$s</string>
+    <string name="sync_local_changes_title">Alterações locais</string>
+    <string name="sync_local_changes_unknown">Inspecione as alterações locais para preparar um checkpoint neutro de provedor.</string>
+    <string name="sync_plan_count">Planos de estudo: %1$d</string>
+    <string name="sync_active_plan_count">Planos ativos ou pausados: %1$d</string>
+    <string name="sync_change_token">Token local de alteração: %1$s</string>
+    <string name="sync_provider_gate_title">Portão de provedor</string>
+    <string name="sync_provider_gate_message">Nenhum provedor de rede, identidade de conta ou mesclagem de servidor é ativado nesta fase.</string>
+    <string name="sync_prepare_foundation">Preparar base local</string>
+    <string name="sync_disable_foundation">Desativar base local</string>
+    <string name="go_back">Voltar</string>
 </resources>

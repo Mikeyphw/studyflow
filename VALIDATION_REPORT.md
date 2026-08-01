@@ -49,3 +49,8 @@ processing, affected-module lint, and `:app:assembleDebug` for target `studyflow
 The artifact-generation container does not provide the project Android SDK or Gradle 9.5 execution environment.
 Android Gradle configuration, production/test compilation, resource merging, lint, APK assembly, installation, and
 device behavior are not claimed as locally completed. Devtool validation on the target machine remains authoritative.
+
+## Phase 24
+
+- Source-contract validator chain extended through Phase 24.
+- Android Gradle compile/lint/assemble remains a Devtool-side gate.

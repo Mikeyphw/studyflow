@@ -68,6 +68,7 @@ import com.mikeyphw.studyflow.core.navigation.ScheduleRoute
 import com.mikeyphw.studyflow.core.navigation.SearchRoute
 import com.mikeyphw.studyflow.core.navigation.SessionsRoute
 import com.mikeyphw.studyflow.core.navigation.SettingsRoute
+import com.mikeyphw.studyflow.core.navigation.SyncRoute
 import com.mikeyphw.studyflow.core.navigation.SubjectsRoute
 import com.mikeyphw.studyflow.feature.analytics.StudyAnalyticsScreen
 import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
@@ -87,6 +88,7 @@ import com.mikeyphw.studyflow.feature.schedule.StudyScheduleScreen
 import com.mikeyphw.studyflow.feature.search.StudySearchScreen
 import com.mikeyphw.studyflow.feature.sessions.StudySessionScreen
 import com.mikeyphw.studyflow.feature.settings.SettingsScreen
+import com.mikeyphw.studyflow.feature.settings.SyncFoundationScreen
 import com.mikeyphw.studyflow.feature.subjects.StudyContentScreen
 import java.util.UUID
 import kotlinx.coroutines.launch
@@ -103,6 +105,9 @@ fun StudyFlowApp(
         initialValue = AppPreferences(),
     )
     val plans by container.studyPlanRepository.plans.collectAsStateWithLifecycle(initialValue = emptyList())
+    val syncState by container.manageStudyCloudSync.syncState.collectAsStateWithLifecycle(
+        initialValue = com.mikeyphw.studyflow.core.model.StudySyncState.disabled(),
+    )
 
     LaunchedEffect(preferences.language) {
         if (AppLocaleController.currentLanguage() != preferences.language) {
@@ -118,6 +123,7 @@ fun StudyFlowApp(
             container = container,
             plans = plans,
             preferences = preferences,
+            syncState = syncState,
             modifier = modifier,
         )
     }
@@ -128,6 +134,7 @@ private fun StudyFlowNavigation(
     container: AppContainer,
     plans: List<StudyPlan>,
     preferences: AppPreferences,
+    syncState: com.mikeyphw.studyflow.core.model.StudySyncState,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -708,6 +715,7 @@ private fun StudyFlowNavHost(
         composable<PrivacyRoute> {
             PrivacyCenterScreen(
                 hasDefaultPlan = preferences.defaultStudyPlanId != null,
+                syncState = syncState,
                 onOpenBackupCenter = {
                     navController.navigate(
                         PlanPortabilityRoute(preferences.defaultStudyPlanId?.value.orEmpty()),
@@ -742,6 +750,31 @@ private fun StudyFlowNavHost(
                 },
             )
         }
+        composable<SyncRoute> {
+            var summary by androidx.compose.runtime.remember {
+                mutableStateOf<com.mikeyphw.studyflow.core.model.StudySyncChangeSummary?>(null)
+            }
+            LaunchedEffect(syncState.lastLocalChangeToken) {
+                summary = container.manageStudyCloudSync.inspectLocalChanges()
+            }
+            SyncFoundationScreen(
+                state = syncState,
+                summary = summary,
+                onPrepare = {
+                    coroutineScope.launch {
+                        container.manageStudyCloudSync.prepareLocalFoundation("This device")
+                        summary = container.manageStudyCloudSync.inspectLocalChanges()
+                    }
+                },
+                onDisable = {
+                    coroutineScope.launch {
+                        container.manageStudyCloudSync.clearLocalFoundation()
+                        summary = container.manageStudyCloudSync.inspectLocalChanges()
+                    }
+                },
+                onBack = navController::popBackStack,
+            )
+        }
         composable<SettingsRoute> {
             SettingsScreen(
                 preferences = preferences,
@@ -764,6 +797,7 @@ private fun StudyFlowNavHost(
                     navController.navigate(RemindersRoute(preferences.defaultStudyPlanId?.value.orEmpty()))
                 },
                 onOpenPrivacyCenter = { navController.navigate(PrivacyRoute) },
+                onOpenSyncCenter = { navController.navigate(SyncRoute) },
             )
         }
     }

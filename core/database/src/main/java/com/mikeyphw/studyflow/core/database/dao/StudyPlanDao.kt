@@ -40,6 +40,9 @@ interface StudyPlanDao {
     @Query("SELECT COUNT(*) FROM study_plans")
     suspend fun countAll(): Int
 
+    @Query("SELECT * FROM study_plans")
+    suspend fun snapshotAll(): List<StudyPlanEntity>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(plan: StudyPlanEntity)
 

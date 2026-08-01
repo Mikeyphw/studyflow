@@ -450,3 +450,7 @@
 - Added metadata privacy and selectable note/history redaction.
 - Added backup integrity reporting and zero-write restore dry-runs.
 - Added recovery explanations, local retention policy UI, and explicit backup-rule exclusions.
+
+## Phase 24 - Optional cloud-sync foundation
+
+- Added provider-neutral local sync state, change-token inspection, Settings sync entry, and local-only scope gates.

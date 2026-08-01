@@ -51,6 +51,9 @@ data class RemindersRoute(val planId: String)
 data object PrivacyRoute
 
 @Serializable
+data object SyncRoute
+
+@Serializable
 data object SearchRoute
 
 @Serializable

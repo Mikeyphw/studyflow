@@ -525,3 +525,7 @@ notebook from one screen. Deterministic recommendations explain the next study a
 
 StudyFlow can now password-encrypt `.studyplan` packages, redact notes/history/identifying metadata, inspect backup
 integrity, and simulate a restore with zero database writes. A privacy center documents recovery and retention truth.
+
+### Phase 24 sync foundation
+
+StudyFlow now exposes a local-only sync foundation. No cloud provider, account identity, token, or remote merge is implemented in this phase.

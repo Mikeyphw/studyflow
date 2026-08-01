@@ -27,18 +27,21 @@ import com.mikeyphw.studyflow.core.domain.ReleaseReadinessSeal
 import com.mikeyphw.studyflow.core.domain.UserExperiencePolishAuditor
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
+import com.mikeyphw.studyflow.core.model.StudySyncState
 import com.mikeyphw.studyflow.core.model.ThemeMode
 
 @Composable
 fun SettingsScreen(
     preferences: AppPreferences,
     hasDefaultPlan: Boolean,
+    syncState: StudySyncState,
     onLanguageChanged: (AppLanguage) -> Unit,
     onThemeModeChanged: (ThemeMode) -> Unit,
     onDynamicColorChanged: (Boolean) -> Unit,
     onOpenDefaultPlanBackup: () -> Unit,
     onOpenDefaultPlanReminders: () -> Unit,
     onOpenPrivacyCenter: () -> Unit,
+    onOpenSyncCenter: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val readiness = AppShellReadinessAuditor.evaluate(
@@ -107,6 +110,19 @@ fun SettingsScreen(
             )
             Button(onClick = onOpenPrivacyCenter) {
                 Text(stringResource(R.string.open_privacy_center))
+            }
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.sync_title)) {
+            Text(
+                text = stringResource(
+                    R.string.sync_settings_message,
+                    syncState.connectionStatus.name,
+                    syncState.pendingUploadCount,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onOpenSyncCenter) {
+                Text(stringResource(R.string.open_sync_center))
             }
         }
         StudyFlowSectionCard(title = stringResource(R.string.language_title)) {
