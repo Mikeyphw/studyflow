@@ -528,6 +528,7 @@ private fun StudyFlowNavHost(
                 StudyLibraryScreen(
                     plan = currentPlan,
                     library = container.manageStudyLibrary,
+                    annexFiles = container.manageAnnexFileStorage,
                     onBack = navController::popBackStack,
                 )
             }

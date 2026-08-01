@@ -49,7 +49,9 @@ class StudyPlanGraphPortabilityStore(
                 includesPrivateHistory = options.mode == StudyPlanExportMode.FULL,
                 includesAnnexMetadata = options.includeAnnexMetadata &&
                     selectedSpecs.any { it.tableName == "annexes" },
-                includesAnnexPayloads = false,
+                includesAnnexPayloads = options.includeAnnexPayloads &&
+                    options.includeAnnexMetadata &&
+                    selectedSpecs.any { it.tableName == "annexes" },
                 tableRowCounts = counts,
             ),
             tables = tables,

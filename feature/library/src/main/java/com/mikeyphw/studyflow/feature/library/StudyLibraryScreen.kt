@@ -1,5 +1,9 @@
 package com.mikeyphw.studyflow.feature.library
 
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,12 +37,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.StudyLibrarySnapshot
+import com.mikeyphw.studyflow.core.model.Annex
 import com.mikeyphw.studyflow.core.model.StudyMaterial
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.StudyMaterialType
@@ -54,12 +61,14 @@ import kotlinx.coroutines.launch
 fun StudyLibraryScreen(
     plan: StudyPlan,
     library: ManageStudyLibrary,
+    annexFiles: ManageAnnexFileStorage,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snapshot by library.observeSnapshot(plan.id).collectAsStateWithLifecycle(
         initialValue = StudyLibrarySnapshot(materials = emptyList(), videos = emptyList(), annexes = emptyList()),
     )
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var filter by rememberSaveable { mutableStateOf(LibraryFilter.MATERIALS) }
     var materialTitle by rememberSaveable { mutableStateOf("") }
@@ -68,6 +77,31 @@ fun StudyLibraryScreen(
     var materialUnits by rememberSaveable { mutableStateOf("") }
     var videoTitle by rememberSaveable { mutableStateOf("") }
     var videoUri by rememberSaveable { mutableStateOf("") }
+    var message by rememberSaveable { mutableStateOf<String?>(null) }
+    val annexImportedMessage = stringResource(R.string.annex_imported)
+    val annexDeletedMessage = stringResource(R.string.annex_deleted)
+    val annexFailedMessage = stringResource(R.string.annex_failed)
+    val annexPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            coroutineScope.launch {
+                runCatching {
+                    val displayName = context.contentResolver.displayName(uri)
+                    val byteSize = context.contentResolver.byteSize(uri)
+                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                    context.contentResolver.openInputStream(uri)!!.use { input ->
+                        annexFiles.importCopy(
+                            studyPlanId = plan.id,
+                            displayName = displayName,
+                            mimeType = mimeType,
+                            declaredByteSize = byteSize,
+                            input = input,
+                        )
+                    }
+                }.onSuccess { message = annexImportedMessage }
+                    .onFailure { message = annexFailedMessage }
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -107,6 +141,7 @@ fun StudyLibraryScreen(
                     onClick = {},
                     label = { Text(stringResource(R.string.library_progress, snapshot.progressPercent)) },
                 )
+                message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
             }
             StudyFlowSectionCard(title = stringResource(R.string.add_material)) {
                 OutlinedTextField(
@@ -197,16 +232,27 @@ fun StudyLibraryScreen(
                     Text(stringResource(R.string.create_video))
                 }
             }
+            StudyFlowSectionCard(title = stringResource(R.string.attach_annex)) {
+                Text(
+                    stringResource(R.string.attach_annex_description),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(onClick = { annexPicker.launch(arrayOf("*/*")) }) {
+                    Icon(Icons.Outlined.Add, contentDescription = null)
+                    Text(stringResource(R.string.choose_annex_file))
+                }
+            }
             StudyFlowSectionCard(title = stringResource(R.string.library_title)) {
                 LibraryFilterRow(selected = filter, onSelected = { filter = it })
                 when (filter) {
                     LibraryFilter.MATERIALS -> MaterialList(snapshot.activeMaterials, library, plan)
                     LibraryFilter.VIDEOS -> VideoList(snapshot.videos, library, plan)
-                    LibraryFilter.ANNEXES -> if (snapshot.annexes.isEmpty()) {
-                        Text(stringResource(R.string.no_annexes), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else {
-                        snapshot.annexes.forEach { annex -> Text(annex.displayName) }
-                    }
+                    LibraryFilter.ANNEXES -> AnnexList(
+                        annexes = snapshot.annexes,
+                        annexFiles = annexFiles,
+                        plan = plan,
+                        onDeleted = { message = annexDeletedMessage },
+                    )
                 }
             }
         }
@@ -245,9 +291,7 @@ private fun MaterialList(materials: List<StudyMaterial>, library: ManageStudyLib
                     }
                     OutlinedButton(
                         onClick = { coroutineScope.launch { library.archiveMaterial(plan.id, material.id) } },
-                    ) {
-                        Text(stringResource(R.string.archive))
-                    }
+                    ) { Text(stringResource(R.string.archive)) }
                     OutlinedButton(
                         onClick = { coroutineScope.launch { library.deleteMaterial(plan.id, material.id) } },
                     ) {
@@ -289,8 +333,63 @@ private fun VideoList(videos: List<VideoResource>, library: ManageStudyLibrary, 
     }
 }
 
+@Composable
+private fun AnnexList(
+    annexes: List<Annex>,
+    annexFiles: ManageAnnexFileStorage,
+    plan: StudyPlan,
+    onDeleted: () -> Unit,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    if (annexes.isEmpty()) {
+        Text(stringResource(R.string.no_annexes), color = MaterialTheme.colorScheme.onSurfaceVariant)
+    } else {
+        annexes.forEach { annex ->
+            StudyFlowSectionCard(title = annex.displayName) {
+                Text(
+                    stringResource(R.string.annex_size, annex.byteSize),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            annexFiles.deleteStoredAnnex(plan.id, annex.id)
+                            onDeleted()
+                        }
+                    },
+                ) {
+                    Icon(Icons.Outlined.Delete, contentDescription = null)
+                    Text(stringResource(R.string.delete))
+                }
+            }
+        }
+    }
+}
+
 private fun LibraryFilter.labelRes(): Int = when (this) {
     LibraryFilter.MATERIALS -> R.string.materials
     LibraryFilter.VIDEOS -> R.string.videos
     LibraryFilter.ANNEXES -> R.string.annexes
+}
+
+private fun android.content.ContentResolver.displayName(uri: Uri): String = query(
+    uri,
+    arrayOf(OpenableColumns.DISPLAY_NAME),
+    null,
+    null,
+    null,
+)?.use { cursor ->
+    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+    if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+}.orEmpty().ifBlank { uri.lastPathSegment ?: "annex.bin" }
+
+private fun android.content.ContentResolver.byteSize(uri: Uri): Long? = query(
+    uri,
+    arrayOf(OpenableColumns.SIZE),
+    null,
+    null,
+    null,
+)?.use { cursor ->
+    val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+    if (index >= 0 && cursor.moveToFirst() && !cursor.isNull(index)) cursor.getLong(index) else null
 }

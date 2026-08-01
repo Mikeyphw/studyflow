@@ -3,8 +3,10 @@ package com.mikeyphw.studyflow.core.data
 import android.content.Context
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyPlanGraphPortabilityStore
+import com.mikeyphw.studyflow.core.database.entity.AnnexEntity
 import com.mikeyphw.studyflow.core.database.entity.PlanSnapshotEntity
 import com.mikeyphw.studyflow.core.domain.StudyPlanPortabilityRepository
+import com.mikeyphw.studyflow.core.model.AnnexStorageMode
 import com.mikeyphw.studyflow.core.model.PlanSnapshot
 import com.mikeyphw.studyflow.core.model.PlanSnapshotId
 import com.mikeyphw.studyflow.core.model.PlanSnapshotKind
@@ -12,12 +14,15 @@ import com.mikeyphw.studyflow.core.model.PlanSnapshotLabels
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.database.mapper.asEntity
+import com.mikeyphw.studyflow.core.portability.PortableAnnexPayload
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportPreview
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportResult
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
+import com.mikeyphw.studyflow.core.portability.StudyPlanPackageArchive
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageCodec
+import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePayload
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -30,12 +35,13 @@ internal class RoomStudyPlanPortabilityRepository(
     context: Context,
     private val database: StudyFlowDatabase,
     private val clock: () -> Long = System::currentTimeMillis,
-    private val applicationVersion: String = "0.4.0-phase04",
+    private val applicationVersion: String = "0.17.0-phase17",
     private val codec: StudyPlanPackageCodec = StudyPlanPackageCodec(),
 ) : StudyPlanPortabilityRepository {
     private val applicationFiles = context.applicationContext.filesDir
     private val graphStore = StudyPlanGraphPortabilityStore(database)
     private val supportDao = database.studySupportDao()
+    private val libraryDao = database.studyLibraryDao()
 
     override fun observeSnapshots(planId: StudyPlanId): Flow<List<PlanSnapshot>> =
         supportDao.observeSnapshots(planId.value).map { entities ->
@@ -53,7 +59,7 @@ internal class RoomStudyPlanPortabilityRepository(
             applicationVersion = applicationVersion,
             exportedAtEpochMillis = clock(),
         )
-        codec.write(payload, output)
+        codec.writeArchive(prepareArchive(planId, options, payload), output)
     }
 
     override suspend fun previewImport(input: InputStream): StudyPlanImportPreview = codec.preview(input)
@@ -63,7 +69,10 @@ internal class RoomStudyPlanPortabilityRepository(
         strategy: StudyPlanImportStrategy,
         targetPlanId: StudyPlanId?,
     ): StudyPlanImportResult {
-        val payload = codec.read(input)
+        val archive = codec.readArchive(input)
+        require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.annexPayloadBytes.isEmpty()) {
+            "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
+        }
         val destinationId = when (strategy) {
             StudyPlanImportStrategy.CREATE_AS_NEW -> StudyPlanId(UUID.randomUUID().toString())
             StudyPlanImportStrategy.REPLACE_EXISTING,
@@ -83,11 +92,12 @@ internal class RoomStudyPlanPortabilityRepository(
 
         try {
             val importedRows = graphStore.importPayload(
-                payload = payload,
+                payload = archive.payload,
                 strategy = strategy,
                 targetPlanId = destinationId.value,
                 importedAtEpochMillis = clock(),
             )
+            restoreAnnexPayloads(destinationId, archive)
             if (supportDao.findPlanSettings(destinationId.value) == null) {
                 supportDao.upsertPlanSettings(StudyPlanSettings.defaults(destinationId).asEntity())
             }
@@ -129,13 +139,14 @@ internal class RoomStudyPlanPortabilityRepository(
             label = PlanSnapshotLabels.PRE_RESTORE,
         )
         try {
-            val payload = sourceFile.inputStream().use(codec::read)
+            val archive = sourceFile.inputStream().use(codec::readArchive)
             val importedRows = graphStore.importPayload(
-                payload = payload,
+                payload = archive.payload,
                 strategy = StudyPlanImportStrategy.REPLACE_EXISTING,
                 targetPlanId = snapshot.studyPlanId.value,
                 importedAtEpochMillis = clock(),
             )
+            restoreAnnexPayloads(snapshot.studyPlanId, archive)
             supportDao.upsertSnapshots(listOf(snapshot.asEntity(), safetySnapshot.asEntity()))
             return StudyPlanImportResult(
                 studyPlanId = snapshot.studyPlanId.value,
@@ -155,6 +166,68 @@ internal class RoomStudyPlanPortabilityRepository(
         supportDao.deleteSnapshot(snapshotId.value)
     }
 
+    private suspend fun prepareArchive(
+        planId: StudyPlanId,
+        options: StudyPlanExportOptions,
+        payload: StudyPlanPackagePayload,
+    ): StudyPlanPackageArchive {
+        if (!options.includeAnnexPayloads || !payload.manifest.includesAnnexMetadata) {
+            return StudyPlanPackageArchive(payload)
+        }
+        val annexRows = payload.tables.firstOrNull { it.name == "annexes" }?.rows.orEmpty()
+        val payloads = mutableListOf<PortableAnnexPayload>()
+        val bytesByEntry = linkedMapOf<String, ByteArray>()
+        annexRows.forEach { row ->
+            val annexId = row.values["id"]?.value.orEmpty()
+            if (annexId.isBlank()) return@forEach
+            val annex = libraryDao.findAnnex(planId.value, annexId) ?: return@forEach
+            val file = annex.storageReference.takeIf(String::isNotBlank)?.let(::resolveAnnexFile) ?: return@forEach
+            if (annex.storageMode != AnnexStorageMode.IMPORTED_COPY.name || !file.isFile) return@forEach
+            val bytes = file.readBytes()
+            val checksum = sha256(bytes)
+            val entryName = annexPayloadEntryName(annex)
+            payloads += PortableAnnexPayload(
+                annexId = annex.id,
+                entryName = entryName,
+                fileName = annex.displayName,
+                mimeType = annex.mimeType,
+                byteSize = bytes.size.toLong(),
+                checksumSha256 = checksum,
+            )
+            bytesByEntry[entryName] = bytes
+        }
+        val manifest = payload.manifest.copy(
+            includesAnnexPayloads = payloads.isNotEmpty(),
+            annexPayloads = payloads,
+        )
+        return StudyPlanPackageArchive(payload.copy(manifest = manifest), bytesByEntry)
+    }
+
+    private suspend fun restoreAnnexPayloads(
+        planId: StudyPlanId,
+        archive: StudyPlanPackageArchive,
+    ) {
+        archive.payload.manifest.annexPayloads.forEach { payload ->
+            val importedAnnexId = "${planId.value}:${payload.annexId}"
+            val bytes = archive.annexPayloadBytes.getValue(payload.entryName)
+            val directory = annexDirectory(planId.value, importedAnnexId).apply { mkdirs() }
+            val destination = File(directory, sanitizeFileName(payload.fileName)).canonicalFile
+            require(destination.path.startsWith(directory.canonicalPath + File.separator)) { "Unsafe annex file path." }
+            destination.writeBytes(bytes)
+            val reference = destination.relativeTo(applicationFiles).invariantSeparatorsPath
+            libraryDao.updateAnnexStorage(
+                planId = planId.value,
+                annexId = importedAnnexId,
+                storageMode = AnnexStorageMode.IMPORTED_COPY.name,
+                storageReference = reference,
+                persistedPermission = false,
+                byteSize = bytes.size.toLong(),
+                checksumSha256 = sha256(bytes),
+                updatedAtEpochMillis = clock(),
+            )
+        }
+    }
+
     private suspend fun writeSnapshotFile(
         planId: StudyPlanId,
         kind: PlanSnapshotKind,
@@ -166,24 +239,34 @@ internal class RoomStudyPlanPortabilityRepository(
         val temporary = File(directory, ".${id.value}.tmp")
         val payload = graphStore.exportPayload(
             planId = planId.value,
-            options = StudyPlanExportOptions(StudyPlanExportMode.FULL, includeAnnexMetadata = true),
+            options = StudyPlanExportOptions(
+                mode = StudyPlanExportMode.FULL,
+                includeAnnexMetadata = true,
+                includeAnnexPayloads = true,
+            ),
             applicationVersion = applicationVersion,
             exportedAtEpochMillis = clock(),
         )
         try {
-            temporary.outputStream().use { codec.write(payload, it) }
+            val archive = prepareArchive(
+                planId = planId,
+                options = StudyPlanExportOptions(StudyPlanExportMode.FULL, true, true),
+                payload = payload,
+            )
+            temporary.outputStream().use { codec.writeArchive(archive, it) }
             check(temporary.renameTo(destination)) { "Could not commit the Study Plan snapshot file." }
         } catch (error: Throwable) {
             temporary.delete()
             destination.delete()
             throw error
         }
+        val snapshotPayload = destination.inputStream().use(codec::read)
         return PlanSnapshot(
             id = id,
             studyPlanId = planId,
             kind = kind,
             label = label,
-            schemaVersion = payload.manifest.schemaVersion,
+            schemaVersion = snapshotPayload.manifest.schemaVersion,
             payloadReference = destination.relativeTo(applicationFiles).invariantSeparatorsPath,
             checksumSha256 = sha256(destination),
             createdAtEpochMillis = clock(),
@@ -198,6 +281,28 @@ internal class RoomStudyPlanPortabilityRepository(
         return candidate
     }
 
+    private fun resolveAnnexFile(reference: String): File {
+        val candidate = File(applicationFiles, reference).canonicalFile
+        require(candidate.path.startsWith(applicationFiles.canonicalPath + File.separator)) {
+            "Unsafe annex path."
+        }
+        return candidate
+    }
+
+    private fun annexDirectory(planId: String, annexId: String): File =
+        File(applicationFiles, "study-plans/${sanitizeSegment(planId)}/annexes/${sanitizeSegment(annexId)}")
+
+    private fun annexPayloadEntryName(annex: AnnexEntity): String =
+        "annex-payloads/${sanitizeSegment(annex.id)}/${sanitizeFileName(annex.displayName)}"
+
+    private fun sanitizeSegment(value: String): String = value.replace(Regex("[^A-Za-z0-9._:-]"), "_")
+
+    private fun sanitizeFileName(value: String): String = value
+        .replace(Regex("[\\/\u0000-\u001F]"), "_")
+        .trim()
+        .ifBlank { "annex.bin" }
+        .take(120)
+
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
@@ -210,6 +315,10 @@ internal class RoomStudyPlanPortabilityRepository(
         }
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
+
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+        .digest(bytes)
+        .joinToString("") { "%02x".format(it) }
 
     private fun PlanSnapshotEntity.asExternalModel() = PlanSnapshot(
         id = PlanSnapshotId(id),

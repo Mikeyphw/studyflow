@@ -181,3 +181,10 @@
 - Reconciled the final 15-phase MVP documentation with the post-MVP gap-closure roadmap.
 - Replaced stale validation-report language that referenced old Phase 5 lint warnings.
 - Added contracts that prevent the roadmap and validation report from drifting away from the implemented phase set.
+
+## Phase 17 - Annex File Storage and Portability
+
+- Added app-private annex byte storage with SHA-256 verification and orphan cleanup.
+- Added annex payload support to `.studyplan` packages while preserving metadata-only exports.
+- Added library UI actions for attaching and deleting stored annex files.
+- Added Phase 17 contracts, package safety checks, and validation coverage.

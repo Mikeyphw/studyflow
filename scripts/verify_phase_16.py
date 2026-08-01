@@ -13,10 +13,11 @@ def text(path: str) -> str:
     return target.read_text(encoding="utf-8")
 
 app_build = text("app/build.gradle.kts")
-if not any(marker in app_build for marker in (
+expected_versions = [
     'versionName = "0.16.0-phase16"',
     'versionName = "0.17.0-phase17"',
-)):
+]
+if not any(marker in app_build for marker in expected_versions):
     failures.append("app version is not Phase 16 or later")
 
 roadmap = text("docs/roadmap/IMPLEMENTATION_ROADMAP.md")

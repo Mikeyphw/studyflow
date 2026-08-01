@@ -19,6 +19,7 @@ enum class StudyPlanExportMode {
 data class StudyPlanExportOptions(
     val mode: StudyPlanExportMode = StudyPlanExportMode.FULL,
     val includeAnnexMetadata: Boolean = true,
+    val includeAnnexPayloads: Boolean = false,
 )
 
 @Serializable
@@ -54,6 +55,16 @@ data class PortableTable(
 )
 
 @Serializable
+data class PortableAnnexPayload(
+    val annexId: String,
+    val entryName: String,
+    val fileName: String,
+    val mimeType: String,
+    val byteSize: Long,
+    val checksumSha256: String,
+)
+
+@Serializable
 data class StudyPlanPackageManifest(
     val format: String = StudyPlanPackageFormat,
     val schemaVersion: Int = StudyPlanPackageSchemaVersion,
@@ -66,6 +77,7 @@ data class StudyPlanPackageManifest(
     val includesPrivateHistory: Boolean,
     val includesAnnexMetadata: Boolean,
     val includesAnnexPayloads: Boolean = false,
+    val annexPayloads: List<PortableAnnexPayload> = emptyList(),
     val tableRowCounts: Map<String, Int>,
 )
 
@@ -74,6 +86,18 @@ data class StudyPlanPackagePayload(
     val manifest: StudyPlanPackageManifest,
     val tables: List<PortableTable>,
 )
+
+data class StudyPlanPackageArchive(
+    val payload: StudyPlanPackagePayload,
+    val annexPayloadBytes: Map<String, ByteArray> = emptyMap(),
+) {
+    init {
+        val declared = payload.manifest.annexPayloads.map { it.entryName }.toSet()
+        require(annexPayloadBytes.keys == declared) {
+            "Annex payload bytes must match the manifest entries."
+        }
+    }
+}
 
 @Serializable
 data class StudyPlanPackageChecksums(

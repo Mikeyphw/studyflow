@@ -24,4 +24,11 @@
     <string name="video_title">Video title</string>
     <string name="video_uri">Video URI</string>
     <string name="create_video">Create video</string>
+    <string name="attach_annex">Attach annex file</string>
+    <string name="attach_annex_description">Copy a file into app-private storage so it can be exported with this Study Plan.</string>
+    <string name="choose_annex_file">Choose annex file</string>
+    <string name="annex_imported">Annex file attached.</string>
+    <string name="annex_deleted">Annex deleted.</string>
+    <string name="annex_failed">The annex file operation could not be completed.</string>
+    <string name="annex_size">%1$d bytes</string>
 </resources>

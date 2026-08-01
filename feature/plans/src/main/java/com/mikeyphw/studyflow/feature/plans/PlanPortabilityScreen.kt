@@ -202,9 +202,13 @@ fun PlanPortabilityScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Button(
-                                onClick = { export(StudyPlanExportOptions(StudyPlanExportMode.FULL, true)) },
+                                onClick = { export(StudyPlanExportOptions(StudyPlanExportMode.FULL, true, true)) },
                                 enabled = !busy,
-                            ) { Text(stringResource(R.string.export_full_plan)) }
+                            ) { Text(stringResource(R.string.export_full_plan_with_annexes)) }
+                            OutlinedButton(
+                                onClick = { export(StudyPlanExportOptions(StudyPlanExportMode.FULL, true, false)) },
+                                enabled = !busy,
+                            ) { Text(stringResource(R.string.export_full_plan_metadata_only)) }
                             OutlinedButton(
                                 onClick = {
                                     export(

@@ -2,7 +2,9 @@ package com.mikeyphw.studyflow
 
 import android.app.Application
 import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
+import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.CreateStudyPlan
+import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
@@ -49,6 +51,7 @@ interface AppContainer {
     val studyReviewRepository: StudyReviewRepository
     val studyProgressRepository: StudyProgressRepository
     val studyAnalyticsRepository: StudyAnalyticsRepository
+    val annexFileStorageRepository: AnnexFileStorageRepository
     val appPreferencesRepository: AppPreferencesRepository
     val createStudyPlan: CreateStudyPlan
     val manageStudyPlan: ManageStudyPlan
@@ -60,6 +63,7 @@ interface AppContainer {
     val manageStudyReview: ManageStudyReview
     val manageStudyProgress: ManageStudyProgress
     val manageStudyAnalytics: ManageStudyAnalytics
+    val manageAnnexFileStorage: ManageAnnexFileStorage
     val manageStudyPlanPortability: ManageStudyPlanPortability
 }
 
@@ -81,6 +85,7 @@ private class DefaultAppContainer(
     override val studyReviewRepository: StudyReviewRepository = dataLayer.studyReviewRepository
     override val studyProgressRepository: StudyProgressRepository = dataLayer.studyProgressRepository
     override val studyAnalyticsRepository: StudyAnalyticsRepository = dataLayer.studyAnalyticsRepository
+    override val annexFileStorageRepository: AnnexFileStorageRepository = dataLayer.annexFileStorageRepository
     override val appPreferencesRepository: AppPreferencesRepository =
         DataStoreAppPreferencesRepository(application)
     override val createStudyPlan = CreateStudyPlan(studyPlanRepository)
@@ -93,6 +98,7 @@ private class DefaultAppContainer(
     override val manageStudyReview = ManageStudyReview(studyReviewRepository, studyPracticeRepository)
     override val manageStudyProgress = ManageStudyProgress(studyProgressRepository)
     override val manageStudyAnalytics = ManageStudyAnalytics(studyAnalyticsRepository)
+    override val manageAnnexFileStorage = ManageAnnexFileStorage(annexFileStorageRepository)
     override val manageStudyPlanPortability =
         ManageStudyPlanPortability(dataLayer.studyPlanPortabilityRepository)
 

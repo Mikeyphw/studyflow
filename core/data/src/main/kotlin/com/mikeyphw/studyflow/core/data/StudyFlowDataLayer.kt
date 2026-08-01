@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.data
 
 import android.content.Context
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
 import com.mikeyphw.studyflow.core.domain.StudyContentRepository
 import com.mikeyphw.studyflow.core.domain.StudyLibraryRepository
@@ -30,6 +31,7 @@ class StudyFlowDataLayer internal constructor(
     val studyReviewRepository: StudyReviewRepository,
     val studyProgressRepository: StudyProgressRepository,
     val studyAnalyticsRepository: StudyAnalyticsRepository,
+    val annexFileStorageRepository: AnnexFileStorageRepository,
     private val initializeData: suspend () -> Unit,
 ) {
     suspend fun initialize() = initializeData()
@@ -50,6 +52,11 @@ fun createStudyFlowDataLayer(
     val studyReviewRepository = RoomStudyReviewRepository(database)
     val studyProgressRepository = RoomStudyProgressRepository(database)
     val studyAnalyticsRepository = RoomStudyAnalyticsRepository(database, clock)
+    val annexFileStorageRepository = RoomAnnexFileStorageRepository(
+        filesDir = context.applicationContext.filesDir,
+        database = database,
+        clock = clock,
+    )
     val portabilityRepository = RoomStudyPlanPortabilityRepository(
         context = context,
         database = database,
@@ -67,6 +74,7 @@ fun createStudyFlowDataLayer(
         studyReviewRepository = studyReviewRepository,
         studyProgressRepository = studyProgressRepository,
         studyAnalyticsRepository = studyAnalyticsRepository,
+        annexFileStorageRepository = annexFileStorageRepository,
         initializeData = studyPlanRepository::seedFoundationSamplesOnce,
     )
 }

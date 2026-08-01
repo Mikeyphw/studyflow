@@ -105,6 +105,8 @@
     <string name="export_plan">Exportar Plano de Estudo</string>
     <string name="export_plan_description">Crie um pacote portátil com limites explícitos de privacidade e conteúdo.</string>
     <string name="export_full_plan">Exportar plano completo</string>
+    <string name="export_full_plan_with_annexes">Exportar plano completo com anexos</string>
+    <string name="export_full_plan_metadata_only">Exportar plano completo somente metadados</string>
     <string name="export_without_private_history">Exportar sem histórico privado</string>
     <string name="export_structure_only">Exportar somente a estrutura</string>
     <string name="export_template">Exportar modelo reutilizável</string>

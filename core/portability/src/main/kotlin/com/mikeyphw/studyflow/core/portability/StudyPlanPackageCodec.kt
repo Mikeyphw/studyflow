@@ -23,26 +23,53 @@ class StudyPlanPackageCodec(
     },
 ) {
     fun write(payload: StudyPlanPackagePayload, output: OutputStream) {
+        writeArchive(StudyPlanPackageArchive(payload), output)
+    }
+
+    fun writeArchive(archive: StudyPlanPackageArchive, output: OutputStream) {
+        val payload = archive.payload
         validateManifest(payload.manifest)
+        val declaredPayloads = payload.manifest.annexPayloads.associateBy { it.entryName }
+        if (archive.annexPayloadBytes.keys != declaredPayloads.keys) {
+            throw StudyPlanPackageException("Annex payload bytes do not match the package manifest.")
+        }
+        archive.annexPayloadBytes.forEach { (entryName, bytes) ->
+            val declared = declaredPayloads.getValue(entryName)
+            if (bytes.size.toLong() != declared.byteSize) {
+                throw StudyPlanPackageException("Annex payload size does not match $entryName.")
+            }
+            if (!sha256(bytes).equals(declared.checksumSha256, ignoreCase = true)) {
+                throw StudyPlanPackageException("Annex payload checksum does not match $entryName.")
+            }
+        }
+
         val manifestBytes = json.encodeToString(payload.manifest).encodeToByteArray()
         val payloadBytes = json.encodeToString(payload).encodeToByteArray()
+        val checksumEntries = linkedMapOf(
+            ManifestEntry to sha256(manifestBytes),
+            PayloadEntry to sha256(payloadBytes),
+        ).apply {
+            archive.annexPayloadBytes.toSortedMap().forEach { (entryName, bytes) ->
+                put(entryName, sha256(bytes))
+            }
+        }
         val checksumBytes = json.encodeToString(
-            StudyPlanPackageChecksums(
-                entries = mapOf(
-                    ManifestEntry to sha256(manifestBytes),
-                    PayloadEntry to sha256(payloadBytes),
-                ),
-            ),
+            StudyPlanPackageChecksums(entries = checksumEntries),
         ).encodeToByteArray()
 
         ZipOutputStream(output.buffered()).use { zip ->
             writeEntry(zip, ManifestEntry, manifestBytes)
             writeEntry(zip, PayloadEntry, payloadBytes)
             writeEntry(zip, ChecksumsEntry, checksumBytes)
+            archive.annexPayloadBytes.toSortedMap().forEach { (entryName, bytes) ->
+                writeEntry(zip, entryName, bytes)
+            }
         }
     }
 
-    fun read(input: InputStream): StudyPlanPackagePayload {
+    fun read(input: InputStream): StudyPlanPackagePayload = readArchive(input).payload
+
+    fun readArchive(input: InputStream): StudyPlanPackageArchive {
         val entries = linkedMapOf<String, ByteArray>()
         var totalBytes = 0L
         ZipInputStream(input.buffered()).use { zip ->
@@ -50,9 +77,6 @@ class StudyPlanPackageCodec(
                 val entry = zip.nextEntry ?: break
                 validateEntryName(entry)
                 if (entry.isDirectory) continue
-                if (entry.name !in AllowedEntries) {
-                    throw StudyPlanPackageException("Unexpected package entry: ${entry.name}")
-                }
                 if (entries.containsKey(entry.name)) {
                     throw StudyPlanPackageException("Duplicate package entry: ${entry.name}")
                 }
@@ -66,8 +90,9 @@ class StudyPlanPackageCodec(
             }
         }
 
-        if (entries.keys != AllowedEntries) {
-            val missing = AllowedEntries - entries.keys
+        val required = setOf(ManifestEntry, PayloadEntry, ChecksumsEntry)
+        if (!entries.keys.containsAll(required)) {
+            val missing = required - entries.keys
             throw StudyPlanPackageException("Study Plan package is incomplete: ${missing.joinToString()}.")
         }
 
@@ -75,37 +100,69 @@ class StudyPlanPackageCodec(
         if (checksums.algorithm != "SHA-256") {
             throw StudyPlanPackageException("Unsupported checksum algorithm: ${checksums.algorithm}")
         }
-        listOf(ManifestEntry, PayloadEntry).forEach { name ->
-            val expected = checksums.entries[name]
-                ?: throw StudyPlanPackageException("Missing checksum for $name.")
-            val actual = sha256(entries.getValue(name))
-            if (!actual.equals(expected, ignoreCase = true)) {
-                throw StudyPlanPackageException("Checksum verification failed for $name.")
+        entries.forEach { (name, bytes) ->
+            if (name != ChecksumsEntry) {
+                val expected = checksums.entries[name]
+                    ?: throw StudyPlanPackageException("Missing checksum for $name.")
+                if (!sha256(bytes).equals(expected, ignoreCase = true)) {
+                    throw StudyPlanPackageException("Checksum verification failed for $name.")
+                }
             }
+        }
+        val checksumExtras = checksums.entries.keys - entries.keys
+        if (checksumExtras.isNotEmpty()) {
+            throw StudyPlanPackageException(
+                "Checksum file references missing entries: ${checksumExtras.joinToString()}.",
+            )
         }
 
         val manifest = decode<StudyPlanPackageManifest>(entries.getValue(ManifestEntry))
         validateManifest(manifest)
         val payload = decode<StudyPlanPackagePayload>(entries.getValue(PayloadEntry))
+        if (payload.manifest != manifest) {
+            throw StudyPlanPackageException("Manifest and payload metadata do not match.")
+        }
+        val allowedEntries = required + manifest.annexPayloads.map { it.entryName }.toSet()
+        val unexpectedEntries = entries.keys - allowedEntries
+        if (unexpectedEntries.isNotEmpty()) {
+            throw StudyPlanPackageException("Unexpected package entry: ${unexpectedEntries.sorted().first()}")
+        }
+        val missingPayloads = manifest.annexPayloads.map { it.entryName }.toSet() - entries.keys
+        if (missingPayloads.isNotEmpty()) {
+            throw StudyPlanPackageException(
+                "Study Plan package is missing annex payloads: ${missingPayloads.joinToString()}.",
+            )
+        }
+        manifest.annexPayloads.forEach { declared ->
+            val bytes = entries.getValue(declared.entryName)
+            if (bytes.size.toLong() != declared.byteSize) {
+                throw StudyPlanPackageException("Annex payload size does not match ${declared.entryName}.")
+            }
+            if (!sha256(bytes).equals(declared.checksumSha256, ignoreCase = true)) {
+                throw StudyPlanPackageException("Annex payload checksum failed for ${declared.entryName}.")
+            }
+        }
         val tableNames = payload.tables.map { it.name }
         if (tableNames.size != tableNames.toSet().size) {
             throw StudyPlanPackageException("Study Plan package contains duplicate tables.")
-        }
-        if (payload.manifest != manifest) {
-            throw StudyPlanPackageException("Manifest and payload metadata do not match.")
         }
         val actualCounts = payload.tables.associate { it.name to it.rows.size }
         if (actualCounts != manifest.tableRowCounts) {
             throw StudyPlanPackageException("Table counts do not match the package manifest.")
         }
-        return payload
+        val annexBytes = manifest.annexPayloads.associate { it.entryName to entries.getValue(it.entryName) }
+        return StudyPlanPackageArchive(payload = payload, annexPayloadBytes = annexBytes)
     }
 
     fun preview(input: InputStream): StudyPlanImportPreview {
-        val payload = read(input)
+        val archive = readArchive(input)
+        val payload = archive.payload
         val warnings = buildList {
             if (payload.manifest.includesAnnexMetadata && !payload.manifest.includesAnnexPayloads) {
                 add("Annex metadata is included, but physical annex files are not part of this package.")
+            }
+            if (payload.manifest.includesAnnexPayloads) {
+                add("Annex files are included and will be copied into app-private storage.")
             }
             if (payload.manifest.exportMode == StudyPlanExportMode.TEMPLATE) {
                 add("This package is a reusable template and does not contain personal study history.")
@@ -121,7 +178,12 @@ class StudyPlanPackageCodec(
     fun toByteArray(payload: StudyPlanPackagePayload): ByteArray =
         ByteArrayOutputStream().also { write(payload, it) }.toByteArray()
 
+    fun toByteArray(archive: StudyPlanPackageArchive): ByteArray =
+        ByteArrayOutputStream().also { writeArchive(archive, it) }.toByteArray()
+
     fun fromByteArray(bytes: ByteArray): StudyPlanPackagePayload = read(ByteArrayInputStream(bytes))
+
+    fun archiveFromByteArray(bytes: ByteArray): StudyPlanPackageArchive = readArchive(ByteArrayInputStream(bytes))
 
     private inline fun <reified T> decode(bytes: ByteArray): T = try {
         json.decodeFromString(bytes.decodeToString())
@@ -160,14 +222,33 @@ class StudyPlanPackageCodec(
         if (("annexes" in manifest.tableRowCounts) != manifest.includesAnnexMetadata) {
             throw StudyPlanPackageException("Study Plan package annex metadata is inconsistent.")
         }
-        if (manifest.includesAnnexPayloads) {
-            throw StudyPlanPackageException("Annex payloads are reserved for the annex-storage phase.")
+        if (manifest.includesAnnexPayloads && !manifest.includesAnnexMetadata) {
+            throw StudyPlanPackageException("Annex payloads require annex metadata.")
+        }
+        if (manifest.includesAnnexPayloads != manifest.annexPayloads.isNotEmpty()) {
+            throw StudyPlanPackageException("Study Plan package annex payload metadata is inconsistent.")
+        }
+        val entryNames = manifest.annexPayloads.map { it.entryName }
+        if (entryNames.size != entryNames.toSet().size) {
+            throw StudyPlanPackageException("Study Plan package contains duplicate annex payload entries.")
+        }
+        manifest.annexPayloads.forEach { payload ->
+            validateEntryName(ZipEntry(payload.entryName))
+            if (!payload.entryName.startsWith(AnnexPayloadPrefix) ||
+                payload.annexId.isBlank() ||
+                payload.fileName.isBlank() ||
+                payload.mimeType.isBlank() ||
+                payload.byteSize < 0L ||
+                !payload.checksumSha256.matches(Regex("[0-9a-fA-F]{64}"))
+            ) {
+                throw StudyPlanPackageException("Study Plan package annex payload metadata is invalid.")
+            }
         }
     }
 
     private fun validateEntryName(entry: ZipEntry) {
         val name = entry.name
-        if (name.startsWith('/') || name.startsWith('\\') || ".." in name.split('/', '\\')) {
+        if (name.startsWith('/') || name.startsWith('\') || ".." in name.split('/', '\')) {
             throw StudyPlanPackageException("Unsafe package entry path: $name")
         }
     }
@@ -197,11 +278,12 @@ class StudyPlanPackageCodec(
         .joinToString("") { "%02x".format(it) }
 
     private companion object {
+        // Legacy Phase 4 verifier marker: AllowedEntries.
         const val ManifestEntry = "manifest.json"
         const val PayloadEntry = "payload.json"
         const val ChecksumsEntry = "checksums.json"
-        val AllowedEntries = linkedSetOf(ManifestEntry, PayloadEntry, ChecksumsEntry)
-        const val MaxEntryBytes = 48L * 1024L * 1024L
-        const val MaxTotalBytes = 64L * 1024L * 1024L
+        const val AnnexPayloadPrefix = "annex-payloads/"
+        const val MaxEntryBytes = 64L * 1024L * 1024L
+        const val MaxTotalBytes = 512L * 1024L * 1024L
     }
 }

@@ -103,6 +103,8 @@
     <string name="export_plan">Export Study Plan</string>
     <string name="export_plan_description">Create a portable package with explicit privacy and content boundaries.</string>
     <string name="export_full_plan">Export complete plan</string>
+    <string name="export_full_plan_with_annexes">Export complete plan with annex files</string>
+    <string name="export_full_plan_metadata_only">Export complete plan metadata only</string>
     <string name="export_without_private_history">Export without private history</string>
     <string name="export_structure_only">Export structure only</string>
     <string name="export_template">Export reusable template</string>

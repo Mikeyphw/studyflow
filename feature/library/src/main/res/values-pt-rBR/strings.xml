@@ -24,4 +24,11 @@
     <string name="video_title">Título do vídeo</string>
     <string name="video_uri">URI do vídeo</string>
     <string name="create_video">Criar vídeo</string>
+    <string name="attach_annex">Anexar arquivo</string>
+    <string name="attach_annex_description">Copie um arquivo para o armazenamento privado do app para exportá-lo com este Plano de Estudos.</string>
+    <string name="choose_annex_file">Escolher arquivo anexo</string>
+    <string name="annex_imported">Arquivo anexo adicionado.</string>
+    <string name="annex_deleted">Anexo excluído.</string>
+    <string name="annex_failed">A operação do arquivo anexo não pôde ser concluída.</string>
+    <string name="annex_size">%1$d bytes</string>
 </resources>

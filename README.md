@@ -230,3 +230,9 @@ module wiring, bilingual resource parity, source-quality guards, and release-rea
 The repository now distinguishes the delivered 15-phase MVP baseline from the post-MVP gap-closure
 roadmap. Validation reports and roadmap docs are kept aligned with the source tree instead of old
 planning drafts.
+
+### Phase 17: Annex File Storage and Portability
+
+StudyFlow annexes now support real app-private file copies. Full exports can include annex payloads
+inside `.studyplan` packages with checksum verification, while metadata-only exports remain available
+for smaller or privacy-conscious packages.

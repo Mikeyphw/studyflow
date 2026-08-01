@@ -55,8 +55,34 @@ interface StudyLibraryDao {
     @Query("SELECT * FROM annexes WHERE studyPlanId = :planId ORDER BY displayName COLLATE NOCASE")
     fun observeAnnexes(planId: String): Flow<List<AnnexEntity>>
 
+    @Query("SELECT * FROM annexes WHERE studyPlanId = :planId ORDER BY displayName COLLATE NOCASE")
+    suspend fun findAnnexes(planId: String): List<AnnexEntity>
+
     @Query("SELECT * FROM annexes WHERE studyPlanId = :planId AND id = :annexId LIMIT 1")
     suspend fun findAnnex(planId: String, annexId: String): AnnexEntity?
+
+    @Query(
+        """
+        UPDATE annexes
+        SET storageMode = :storageMode,
+            storageReference = :storageReference,
+            persistedPermission = :persistedPermission,
+            byteSize = :byteSize,
+            checksumSha256 = :checksumSha256,
+            updatedAtEpochMillis = :updatedAtEpochMillis
+        WHERE studyPlanId = :planId AND id = :annexId
+        """,
+    )
+    suspend fun updateAnnexStorage(
+        planId: String,
+        annexId: String,
+        storageMode: String,
+        storageReference: String,
+        persistedPermission: Boolean,
+        byteSize: Long,
+        checksumSha256: String?,
+        updatedAtEpochMillis: Long,
+    ): Int
 
     @Query("DELETE FROM annexes WHERE studyPlanId = :planId AND id = :annexId")
     suspend fun deleteAnnex(planId: String, annexId: String): Int
