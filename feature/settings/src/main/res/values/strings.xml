@@ -26,4 +26,7 @@
 <string name="ux_polish_title">UX polish</string>
 <string name="ux_polish_value">%1$d%% polished</string>
 <string name="ux_polish_message">%1$d of %2$d MVP polish gates are ready.</string>
+<string name="final_seal_title">MVP release seal</string>
+<string name="final_seal_value">%1$d%% sealed</string>
+<string name="final_seal_message">%1$d of %2$d MVP phases are integrated.</string>
 </resources>

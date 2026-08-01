@@ -40,6 +40,7 @@ expected_versions = [
     'versionName = "0.12.0-phase12"',
     'versionName = "0.13.0-phase13"',
     'versionName = "0.14.0-phase14"',
+    'versionName = "0.15.0-phase15"',
 ]
 if not any(marker in app_build for marker in expected_versions):
     failures.append("app version is not Phase 6 or later")

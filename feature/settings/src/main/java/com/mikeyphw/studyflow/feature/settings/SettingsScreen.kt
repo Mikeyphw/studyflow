@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessAuditor
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessInput
+import com.mikeyphw.studyflow.core.domain.ReleaseReadinessSeal
 import com.mikeyphw.studyflow.core.domain.UserExperiencePolishAuditor
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
@@ -47,6 +48,7 @@ fun SettingsScreen(
         ),
     )
     val polishReport = UserExperiencePolishAuditor.evaluate()
+    val releaseReport = ReleaseReadinessSeal.evaluate(readiness)
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -139,6 +141,20 @@ StudyFlowSectionCard(title = stringResource(R.string.ux_polish_title)) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+StudyFlowSectionCard(title = stringResource(R.string.final_seal_title)) {
+    Text(
+        text = stringResource(R.string.final_seal_value, releaseReport.completionPercent),
+        style = MaterialTheme.typography.headlineMedium,
+    )
+    Text(
+        text = stringResource(
+            R.string.final_seal_message,
+            releaseReport.completedPhaseCount,
+            releaseReport.totalPhaseCount,
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
         StudyFlowSectionCard(title = stringResource(R.string.foundation_contract_title)) {
             Text(
                 text = stringResource(R.string.foundation_contract_message),

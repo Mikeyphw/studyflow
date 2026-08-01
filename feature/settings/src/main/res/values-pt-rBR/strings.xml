@@ -26,4 +26,7 @@
 <string name="ux_polish_title">Polimento da experiência</string>
 <string name="ux_polish_value">%1$d%% polido</string>
 <string name="ux_polish_message">%1$d de %2$d barreiras de polimento do MVP estão prontas.</string>
+<string name="final_seal_title">Selo de lançamento do MVP</string>
+<string name="final_seal_value">%1$d%% selado</string>
+<string name="final_seal_message">%1$d de %2$d fases do MVP estão integradas.</string>
 </resources>

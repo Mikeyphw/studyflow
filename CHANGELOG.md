@@ -168,3 +168,10 @@
   and navigation consistency.
 - Added settings readiness cards for MVP polish status without changing persistence.
 - Added Phase 14 contracts and documentation for the screen-by-screen polish pass.
+
+## Phase 15 - Final Integration Seal and Regression Suite
+
+- Added the MVP release-readiness seal and regression index.
+- Added final cross-feature repository contracts for feature modules, validators, resource parity,
+  database-boundary hygiene, and app-shell readiness.
+- Added Phase 15 release report and final acceptance documentation.

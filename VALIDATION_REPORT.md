@@ -47,3 +47,9 @@ Use focused repeated `--task` arguments if you run deferred validation.
 - The embedded validation script must include `validation.script.sha256`.
 - The overlay must not mutate `.devtool.toml`.
 - Compose screens must avoid resource lookup through `LocalContext.current`.
+
+## Phase 15 Local Contract Notes
+
+- Phase 15 is the final MVP integration seal.
+- All previous phase verifiers are expected to pass on the Phase 15 app version.
+- Devtool build, lint, and tests remain the authoritative Android gate.
