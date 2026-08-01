@@ -248,3 +248,8 @@ and open actions update resource activity metadata.
 StudyFlow now supports executable practice and mock attempts. Practice decks persist an answer
 ledger inside the existing test/mock configuration payload, allowing answer, resume, finish, and
 summary flows without introducing a schema migration.
+
+## Phase 20: Wrong-Answer Notebook
+
+StudyFlow now captures wrong answers from finished practice tests and mock exams, groups repeated mistakes
+by question, schedules error-based reviews, and exposes a dedicated wrong-answer notebook inside Reviews.

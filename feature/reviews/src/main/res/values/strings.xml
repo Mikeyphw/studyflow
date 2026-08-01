@@ -28,4 +28,15 @@
     <string name="good">Good</string>
     <string name="easy">Easy</string>
     <string name="skip">Skip</string>
+    <string name="wrong_answer_notebook">Wrong-answer notebook</string>
+    <string name="no_wrong_answers">No captured wrong answers yet. Finish a practice attempt with missed questions to build the notebook.</string>
+    <string name="error_entry_title">Repeated mistake · %1$d time(s)</string>
+    <string name="chosen_answer_value">Your answer: %1$s</string>
+    <string name="correct_answer_value">Correct answer: %1$s</string>
+    <string name="schedule_error_review">Schedule review</string>
+    <string name="resolve_error">Resolve</string>
+    <string name="priority_low">Low priority</string>
+    <string name="priority_medium">Medium priority</string>
+    <string name="priority_high">High priority</string>
+    <string name="priority_critical">Critical priority</string>
 </resources>

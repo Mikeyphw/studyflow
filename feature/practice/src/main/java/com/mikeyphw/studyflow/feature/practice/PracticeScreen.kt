@@ -47,9 +47,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
+import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionState
 import com.mikeyphw.studyflow.core.domain.PracticeSummary
 import com.mikeyphw.studyflow.core.model.MockExam
+import com.mikeyphw.studyflow.core.model.ErrorCategory
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
@@ -64,6 +66,7 @@ import kotlinx.coroutines.launch
 fun PracticeScreen(
     plan: StudyPlan,
     practice: ManageStudyPractice,
+    review: ManageStudyReview,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -162,6 +165,11 @@ fun PracticeScreen(
                         onFinish = {
                             launchAction(attemptFinished) {
                                 practice.finishPracticeAttempt(plan.id, test.id)
+                                review.captureWrongAnswersFromTest(
+                                    planId = plan.id,
+                                    testId = test.id,
+                                    category = ErrorCategory.CONCEPT_CONFUSION,
+                                )
                                 activeTestId = null
                             }
                         },
@@ -183,6 +191,11 @@ fun PracticeScreen(
                         onFinish = {
                             launchAction(attemptFinished) {
                                 practice.finishMockExamAttempt(plan.id, mock.id)
+                                review.captureWrongAnswersFromMockExam(
+                                    planId = plan.id,
+                                    mockExamId = mock.id,
+                                    category = ErrorCategory.CONCEPT_CONFUSION,
+                                )
                                 activeMockId = null
                             }
                         },

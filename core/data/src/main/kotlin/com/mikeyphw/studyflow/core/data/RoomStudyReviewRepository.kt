@@ -39,6 +39,11 @@ internal class RoomStudyReviewRepository(
     override suspend fun findErrorEntry(planId: StudyPlanId, errorEntryId: ErrorEntryId): ErrorEntry? =
         retentionDao.findErrorEntry(planId.value, errorEntryId.value)?.asExternalModel()
 
+    override suspend fun findErrorEntryForQuestion(
+        planId: StudyPlanId,
+        questionId: com.mikeyphw.studyflow.core.model.QuestionId,
+    ): ErrorEntry? = retentionDao.findErrorEntryForQuestion(planId.value, questionId.value)?.asExternalModel()
+
     override suspend fun upsertReviewItem(item: ReviewItem): ReviewItem = database.withTransaction {
         requirePlan(item.studyPlanId)
         item.subjectId?.let { subjectId -> requireSubject(item.studyPlanId, subjectId.value) }
@@ -75,6 +80,15 @@ internal class RoomStudyReviewRepository(
         database.withTransaction {
             require(retentionDao.deleteFlashcard(planId.value, flashcardId.value) == 1) {
                 "Flashcard does not belong to this Study Plan."
+            }
+        }
+    }
+
+    override suspend fun deleteErrorEntry(planId: StudyPlanId, errorEntryId: ErrorEntryId) {
+        database.withTransaction {
+            retentionDao.deleteReviewsForErrorEntry(planId.value, errorEntryId.value)
+            require(retentionDao.deleteErrorEntry(planId.value, errorEntryId.value) == 1) {
+                "Error entry does not belong to this Study Plan."
             }
         }
     }

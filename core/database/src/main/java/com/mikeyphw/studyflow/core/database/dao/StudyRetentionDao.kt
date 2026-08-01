@@ -57,4 +57,20 @@ interface StudyRetentionDao {
 
     @Query("SELECT * FROM error_entries WHERE studyPlanId = :planId AND id = :errorEntryId LIMIT 1")
     suspend fun findErrorEntry(planId: String, errorEntryId: String): ErrorEntryEntity?
+
+    @Query(
+        """
+        SELECT * FROM error_entries
+        WHERE studyPlanId = :planId AND questionId = :questionId
+        ORDER BY recurrenceCount DESC, updatedAtEpochMillis DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun findErrorEntryForQuestion(planId: String, questionId: String): ErrorEntryEntity?
+
+    @Query("DELETE FROM review_items WHERE studyPlanId = :planId AND errorEntryId = :errorEntryId")
+    suspend fun deleteReviewsForErrorEntry(planId: String, errorEntryId: String): Int
+
+    @Query("DELETE FROM error_entries WHERE studyPlanId = :planId AND id = :errorEntryId")
+    suspend fun deleteErrorEntry(planId: String, errorEntryId: String): Int
 }

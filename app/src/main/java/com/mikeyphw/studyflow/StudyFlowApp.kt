@@ -570,6 +570,7 @@ private fun StudyFlowNavHost(
                 PracticeScreen(
                     plan = currentPlan,
                     practice = container.manageStudyPractice,
+                    review = container.manageStudyReview,
                     onBack = navController::popBackStack,
                 )
             }

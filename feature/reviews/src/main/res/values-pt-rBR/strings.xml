@@ -28,4 +28,15 @@
     <string name="good">Bom</string>
     <string name="easy">Fácil</string>
     <string name="skip">Pular</string>
+    <string name="wrong_answer_notebook">Caderno de erros</string>
+    <string name="no_wrong_answers">Ainda não há erros capturados. Finalize uma prática com questões erradas para alimentar o caderno.</string>
+    <string name="error_entry_title">Erro repetido · %1$d vez(es)</string>
+    <string name="chosen_answer_value">Sua resposta: %1$s</string>
+    <string name="correct_answer_value">Resposta correta: %1$s</string>
+    <string name="schedule_error_review">Agendar revisão</string>
+    <string name="resolve_error">Resolver</string>
+    <string name="priority_low">Baixa prioridade</string>
+    <string name="priority_medium">Prioridade média</string>
+    <string name="priority_high">Alta prioridade</string>
+    <string name="priority_critical">Prioridade crítica</string>
 </resources>

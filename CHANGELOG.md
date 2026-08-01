@@ -1,3 +1,13 @@
+
+## Phase 20: Wrong-Answer Notebook and Remediation Loop
+
+- Added automatic wrong-answer capture from completed practice tests and mock exams.
+- Added recurrence-aware error entries, error-review scheduling, and resolve/delete flows.
+- Added wrong-answer notebook UI inside Reviews and flashcards.
+- Added `WrongAnswerRemediator` for priority and remediation suggestions.
+- Added DAO/repository support for finding recurring question errors and deleting resolved errors.
+- Added Phase 20 verifier.
+
 # Changelog
 
 ## Phase 5 - Syllabus, subjects and nested topics

@@ -22,6 +22,11 @@ interface StudyReviewRepository {
 
     suspend fun findErrorEntry(planId: StudyPlanId, errorEntryId: ErrorEntryId): ErrorEntry?
 
+    suspend fun findErrorEntryForQuestion(
+        planId: StudyPlanId,
+        questionId: com.mikeyphw.studyflow.core.model.QuestionId,
+    ): ErrorEntry?
+
     suspend fun upsertReviewItem(item: ReviewItem): ReviewItem
 
     suspend fun upsertFlashcard(flashcard: Flashcard): Flashcard
@@ -31,4 +36,6 @@ interface StudyReviewRepository {
     suspend fun deleteReviewItem(planId: StudyPlanId, reviewItemId: ReviewItemId)
 
     suspend fun deleteFlashcard(planId: StudyPlanId, flashcardId: FlashcardId)
+
+    suspend fun deleteErrorEntry(planId: StudyPlanId, errorEntryId: ErrorEntryId)
 }

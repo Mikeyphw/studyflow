@@ -38,8 +38,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ReviewQueue
+import com.mikeyphw.studyflow.core.model.ErrorEntry
 import com.mikeyphw.studyflow.core.model.FlashcardId
 import com.mikeyphw.studyflow.core.model.FlashcardType
+import com.mikeyphw.studyflow.core.domain.RemediationPriority
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.ReviewItemId
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -95,6 +97,16 @@ fun StudyReviewScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             ReviewSummaryCard(queue = queue)
+            WrongAnswerNotebookCard(
+                errors = queue.errors,
+                reviewItems = queue.due + queue.upcoming,
+                onScheduleReview = { error ->
+                    coroutineScope.launch { review.scheduleErrorReview(plan.id, error.id) }
+                },
+                onResolve = { error ->
+                    coroutineScope.launch { review.resolveErrorEntry(plan.id, error.id) }
+                },
+            )
             StudyFlowSectionCard(title = stringResource(R.string.add_flashcard)) {
                 OutlinedTextField(
                     value = front,
@@ -267,6 +279,83 @@ private fun createFlashcard(
         )
         onCreated()
     }
+}
+
+
+@Composable
+private fun WrongAnswerNotebookCard(
+    errors: List<ErrorEntry>,
+    reviewItems: List<ReviewItem>,
+    onScheduleReview: (ErrorEntry) -> Unit,
+    onResolve: (ErrorEntry) -> Unit,
+) {
+    StudyFlowSectionCard(title = stringResource(R.string.wrong_answer_notebook)) {
+        if (errors.isEmpty()) {
+            Text(
+                text = stringResource(R.string.no_wrong_answers),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                errors.sortedWith(
+                    compareByDescending<ErrorEntry> { it.recurrenceCount }
+                        .thenByDescending { it.updatedAtEpochMillis },
+                ).forEach { error ->
+                    val priority = com.mikeyphw.studyflow.core.domain.WrongAnswerRemediator.priorityFor(
+                        error = error,
+                        nowEpochMillis = System.currentTimeMillis(),
+                        linkedReviews = reviewItems.filter { it.errorEntryId == error.id },
+                    )
+                    WrongAnswerRow(
+                        error = error,
+                        priority = priority,
+                        onScheduleReview = { onScheduleReview(error) },
+                        onResolve = { onResolve(error) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WrongAnswerRow(
+    error: ErrorEntry,
+    priority: RemediationPriority,
+    onScheduleReview: () -> Unit,
+    onResolve: () -> Unit,
+) {
+    StudyFlowSectionCard(
+        title = stringResource(R.string.error_entry_title, error.recurrenceCount),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+    ) {
+        AssistChip(onClick = {}, label = { Text(priority.label()) })
+        error.chosenAnswer?.let { chosen ->
+            Text(stringResource(R.string.chosen_answer_value, chosen))
+        }
+        error.correctAnswer?.let { correct ->
+            Text(stringResource(R.string.correct_answer_value, correct))
+        }
+        if (error.explanation.isNotBlank()) {
+            Text(error.explanation, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onScheduleReview) {
+                Text(stringResource(R.string.schedule_error_review))
+            }
+            OutlinedButton(onClick = onResolve) {
+                Text(stringResource(R.string.resolve_error))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RemediationPriority.label(): String = when (this) {
+    RemediationPriority.LOW -> stringResource(R.string.priority_low)
+    RemediationPriority.MEDIUM -> stringResource(R.string.priority_medium)
+    RemediationPriority.HIGH -> stringResource(R.string.priority_high)
+    RemediationPriority.CRITICAL -> stringResource(R.string.priority_critical)
 }
 
 private fun ReviewFilter.labelRes(): Int = when (this) {
