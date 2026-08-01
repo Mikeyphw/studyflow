@@ -34,6 +34,7 @@ include(
     ":feature:progress",
     ":feature:plans",
     ":feature:practice",
+    ":feature:reminders",
     ":feature:reviews",
     ":feature:schedule",
     ":feature:sessions",

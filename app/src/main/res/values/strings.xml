@@ -5,4 +5,8 @@
     <string name="navigation_settings">Settings</string>
     <string name="unknown_plan_error">This Study Plan is unavailable.</string>
     <string name="plan_copy_suffix">Copy</string>
+    <string name="widget_today_title">StudyFlow today</string>
+<string name="widget_today_body">Open StudyFlow to review due items and planned study blocks.</string>
+<string name="widget_today_footer">Reviews · Schedule · Progress</string>
+<string name="widget_today_description">Shows today's StudyFlow reminders and progress summary.</string>
 </resources>

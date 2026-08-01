@@ -29,4 +29,7 @@
 <string name="final_seal_title">MVP release seal</string>
 <string name="final_seal_value">%1$d%% sealed</string>
 <string name="final_seal_message">%1$d of %2$d MVP phases are integrated.</string>
+    <string name="reminders_title">Reminders and widgets</string>
+<string name="reminders_settings_message">Review alerts, planned-study reminders, quiet hours, and the Today widget are managed per Study Plan.</string>
+<string name="open_reminders_center">Open reminders center</string>
 </resources>

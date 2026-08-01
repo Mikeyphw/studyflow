@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reminders_title">Reminders and widgets</string>
+    <string name="go_back">Go back</string>
+    <string name="reminders_summary">%1$d active notification candidates. %2$d review item(s) due.</string>
+    <string name="quiet_hours_active">Quiet hours active</string>
+    <string name="notification_permission_title">Notification permission</string>
+    <string name="notification_permission_needed">Android requires notification permission before StudyFlow can send reminders.</string>
+    <string name="notification_permission_ready">Notification permission is ready or not required on this Android version.</string>
+    <string name="request_notification_permission">Request permission</string>
+    <string name="reminder_preferences_title">Reminder preferences</string>
+    <string name="review_reminders">Review reminders</string>
+    <string name="review_reminders_description">Notify when flashcards, review items, or wrong-answer repairs are due.</string>
+    <string name="quiet_hours">Quiet hours</string>
+    <string name="quiet_hours_description">Suppress immediate reminders during rest hours.</string>
+    <string name="quiet_hours_start">Start</string>
+    <string name="quiet_hours_end">End</string>
+    <string name="save_reminder_settings">Save reminder settings</string>
+    <string name="notification_preview_title">Notification preview</string>
+    <string name="candidate_due_reviews">Due reviews</string>
+    <string name="candidate_planned_activity">Planned activity</string>
+    <string name="candidate_missed_activity">Missed activity recovery</string>
+    <string name="candidate_daily_summary">Daily summary</string>
+    <string name="suppressed_by_quiet_hours">Suppressed by quiet hours</string>
+    <string name="widget_preview_title">Today widget preview</string>
+    <string name="widget_plan_name">Plan: %1$s</string>
+    <string name="widget_due_reviews">Due reviews: %1$d</string>
+    <string name="widget_planned_today">Planned today: %1$d</string>
+    <string name="widget_missed">Missed: %1$d</string>
+    <string name="widget_next_activity">Next: %1$s</string>
+    <string name="widget_progress">Progress: %1$d%%</string>
+    <string name="no_activity_scheduled">No activity scheduled</string>
+</resources>

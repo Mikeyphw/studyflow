@@ -253,3 +253,7 @@ summary flows without introducing a schema migration.
 
 StudyFlow now captures wrong answers from finished practice tests and mock exams, groups repeated mistakes
 by question, schedules error-based reviews, and exposes a dedicated wrong-answer notebook inside Reviews.
+
+### Phase 21: Reminders, Notifications, and Study Widgets
+
+StudyFlow now includes a per-plan reminders center, Android notification-permission handling, quiet-hour suppression, notification candidate previews, and a home-screen Today widget entry point. The feature is deliberately local/offline-first and derives reminders from existing schedule and review state.

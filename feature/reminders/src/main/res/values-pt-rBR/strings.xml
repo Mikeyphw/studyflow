@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reminders_title">Lembretes e widgets</string>
+    <string name="go_back">Voltar</string>
+    <string name="reminders_summary">%1$d candidatos ativos de notificação. %2$d revisão(ões) pendente(s).</string>
+    <string name="quiet_hours_active">Horário silencioso ativo</string>
+    <string name="notification_permission_title">Permissão de notificações</string>
+    <string name="notification_permission_needed">O Android exige permissão antes que o StudyFlow envie lembretes.</string>
+    <string name="notification_permission_ready">A permissão de notificações está pronta ou não é exigida nesta versão do Android.</string>
+    <string name="request_notification_permission">Solicitar permissão</string>
+    <string name="reminder_preferences_title">Preferências de lembretes</string>
+    <string name="review_reminders">Lembretes de revisão</string>
+    <string name="review_reminders_description">Notificar quando flashcards, revisões ou reparos de erros vencerem.</string>
+    <string name="quiet_hours">Horário silencioso</string>
+    <string name="quiet_hours_description">Silenciar lembretes imediatos durante horários de descanso.</string>
+    <string name="quiet_hours_start">Início</string>
+    <string name="quiet_hours_end">Fim</string>
+    <string name="save_reminder_settings">Salvar lembretes</string>
+    <string name="notification_preview_title">Prévia das notificações</string>
+    <string name="candidate_due_reviews">Revisões pendentes</string>
+    <string name="candidate_planned_activity">Atividade planejada</string>
+    <string name="candidate_missed_activity">Recuperação de atividade perdida</string>
+    <string name="candidate_daily_summary">Resumo diário</string>
+    <string name="suppressed_by_quiet_hours">Silenciado pelo horário silencioso</string>
+    <string name="widget_preview_title">Prévia do widget de hoje</string>
+    <string name="widget_plan_name">Plano: %1$s</string>
+    <string name="widget_due_reviews">Revisões pendentes: %1$d</string>
+    <string name="widget_planned_today">Planejadas hoje: %1$d</string>
+    <string name="widget_missed">Perdidas: %1$d</string>
+    <string name="widget_next_activity">Próxima: %1$s</string>
+    <string name="widget_progress">Progresso: %1$d%%</string>
+    <string name="no_activity_scheduled">Nenhuma atividade agendada</string>
+</resources>

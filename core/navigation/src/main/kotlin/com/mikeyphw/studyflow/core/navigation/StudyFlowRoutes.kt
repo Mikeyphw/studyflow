@@ -45,4 +45,7 @@ data class ProgressRoute(val planId: String)
 data class ReviewsRoute(val planId: String)
 
 @Serializable
+data class RemindersRoute(val planId: String)
+
+@Serializable
 data object SettingsRoute

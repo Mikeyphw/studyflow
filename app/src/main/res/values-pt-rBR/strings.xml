@@ -5,4 +5,8 @@
     <string name="navigation_settings">Configurações</string>
     <string name="unknown_plan_error">Este Plano de Estudo não está disponível.</string>
     <string name="plan_copy_suffix">Cópia</string>
+    <string name="widget_today_title">StudyFlow hoje</string>
+<string name="widget_today_body">Abra o StudyFlow para ver revisões pendentes e estudos planejados.</string>
+<string name="widget_today_footer">Revisões · Agenda · Progresso</string>
+<string name="widget_today_description">Mostra os lembretes e o resumo de progresso de hoje no StudyFlow.</string>
 </resources>

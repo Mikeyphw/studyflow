@@ -47,4 +47,5 @@
 <string name="analytics">Analytics</string>
 <string name="analytics_scope_title">Analytics command center</string>
 <string name="analytics_scope_message">Open analytics to inspect consistency, weak areas, review backlog, and schedule adherence.</string>
+    <string name="reminders">Reminders and widgets</string>
 </resources>

@@ -1,4 +1,3 @@
-
 ## Phase 20: Wrong-Answer Notebook and Remediation Loop
 
 - Added automatic wrong-answer capture from completed practice tests and mock exams.
@@ -210,3 +209,11 @@
 - Added persisted answer-ledger execution for practice tests and mock exams.
 - Added practice attempt start/resume, answer, finish, and summary support.
 - Added interactive runner controls to the practice screen for tests and mocks.
+
+## Phase 21 - Reminders, Notifications, and Study Widgets
+
+- Added the reminders center for review reminders, quiet hours, notification permission readiness, and Today widget preview.
+- Added Android POST_NOTIFICATIONS declaration with API-aware runtime request flow.
+- Added a home-screen Today widget provider and metadata.
+- Added deterministic reminder planning for due reviews, planned study blocks, missed activity recovery, and daily summaries.
+- Added Phase 21 validation coverage and fixed a pre-existing duplicate Settings navigation icon parameter.

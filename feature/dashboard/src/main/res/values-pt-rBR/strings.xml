@@ -49,4 +49,5 @@
 <string name="analytics">Análises</string>
 <string name="analytics_scope_title">Central de análises</string>
 <string name="analytics_scope_message">Abra as análises para ver constância, pontos fracos, revisões pendentes e aderência ao cronograma.</string>
+    <string name="reminders">Lembretes e widgets</string>
 </resources>

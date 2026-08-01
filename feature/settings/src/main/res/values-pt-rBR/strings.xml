@@ -29,4 +29,7 @@
 <string name="final_seal_title">Selo de lançamento do MVP</string>
 <string name="final_seal_value">%1$d%% selado</string>
 <string name="final_seal_message">%1$d de %2$d fases do MVP estão integradas.</string>
+    <string name="reminders_title">Lembretes e widgets</string>
+<string name="reminders_settings_message">Alertas de revisão, lembretes de estudo, horário silencioso e o widget de hoje são gerenciados por plano.</string>
+<string name="open_reminders_center">Abrir central de lembretes</string>
 </resources>

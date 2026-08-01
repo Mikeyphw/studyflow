@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
@@ -65,6 +66,7 @@ fun DashboardScreen(
     onOpenSessions: () -> Unit,
     onOpenPractice: () -> Unit,
     onOpenReviews: () -> Unit,
+    onOpenReminders: () -> Unit,
     onOpenProgress: () -> Unit,
     onOpenPortability: () -> Unit,
     onToggleActiveState: () -> Unit,
@@ -208,6 +210,14 @@ fun DashboardScreen(
                             onClick = {
                                 actionsExpanded = false
                                 onOpenReviews()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.reminders)) },
+                            leadingIcon = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenReminders()
                             },
                         )
                         DropdownMenuItem(
