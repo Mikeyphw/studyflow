@@ -28,8 +28,12 @@ settings = (ROOT / "settings.gradle.kts").read_text(encoding="utf-8")
 if '":feature:progress"' not in settings:
     failures.append("settings.gradle.kts does not include :feature:progress")
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-if 'versionName = "0.11.0-phase11"' not in app_build:
-    failures.append("app version is not Phase 11")
+expected_versions = [
+    'versionName = "0.11.0-phase11"',
+    'versionName = "0.12.0-phase12"',
+]
+if not any(marker in app_build for marker in expected_versions):
+    failures.append("app version is not Phase 11 or later")
 if 'implementation(project(":feature:progress"))' not in app_build:
     failures.append(":app does not depend on :feature:progress")
 root_build = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")

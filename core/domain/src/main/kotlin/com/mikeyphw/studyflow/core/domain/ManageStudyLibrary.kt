@@ -74,10 +74,16 @@ class ManageStudyLibrary(
         return repository.upsertMaterial(material.copy(favorite = !material.favorite, updatedAtEpochMillis = clock()))
     }
 
-    suspend fun updateMaterialProgress(planId: StudyPlanId, materialId: StudyMaterialId, completedUnits: Int): StudyMaterial {
+    suspend fun updateMaterialProgress(
+        planId: StudyPlanId,
+        materialId: StudyMaterialId,
+        completedUnits: Int,
+    ): StudyMaterial {
         val material = requireNotNull(repository.findMaterial(planId, materialId)) { "Material does not exist." }
         require(completedUnits >= 0) { "Completed units cannot be negative." }
-        material.totalUnits?.let { total -> require(completedUnits <= total) { "Completed units cannot exceed total units." } }
+        material.totalUnits?.let { total ->
+            require(completedUnits <= total) { "Completed units cannot exceed total units." }
+        }
         return repository.upsertMaterial(material.copy(completedUnits = completedUnits, updatedAtEpochMillis = clock()))
     }
 
@@ -128,7 +134,13 @@ class ManageStudyLibrary(
     ): VideoResource {
         val video = requireNotNull(repository.findVideo(planId, videoId)) { "Video does not exist." }
         require(playbackPositionMillis >= 0L) { "Playback position cannot be negative." }
-        return repository.upsertVideo(video.copy(playbackPositionMillis = playbackPositionMillis, completed = completed, updatedAtEpochMillis = clock()))
+        return repository.upsertVideo(
+            video.copy(
+                playbackPositionMillis = playbackPositionMillis,
+                completed = completed,
+                updatedAtEpochMillis = clock(),
+            ),
+        )
     }
 
     suspend fun createLinkedAnnex(
@@ -167,7 +179,10 @@ class ManageStudyLibrary(
         )
     }
 
-    suspend fun deleteMaterial(planId: StudyPlanId, materialId: StudyMaterialId) = repository.deleteMaterial(planId, materialId)
+    suspend fun deleteMaterial(
+        planId: StudyPlanId,
+        materialId: StudyMaterialId,
+    ) = repository.deleteMaterial(planId, materialId)
     suspend fun deleteVideo(planId: StudyPlanId, videoId: VideoResourceId) = repository.deleteVideo(planId, videoId)
     suspend fun deleteAnnex(planId: StudyPlanId, annexId: AnnexId) = repository.deleteAnnex(planId, annexId)
 

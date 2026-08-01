@@ -61,6 +61,7 @@ tasks.register("checkAll") {
         ":core:testing:test",
         ":app:testDebugUnitTest",
         ":feature:dashboard:testDebugUnitTest",
+        ":feature:analytics:testDebugUnitTest",
         ":feature:library:testDebugUnitTest",
         ":feature:progress:testDebugUnitTest",
         ":feature:plans:testDebugUnitTest",

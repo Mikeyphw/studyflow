@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="go_back">Voltar</string>
+    <string name="analytics_title">Análises e insights</string>
+    <string name="analytics_summary">%1$d minutos • %2$d sessões • %3$d%% de constância</string>
+    <string name="study_consistency">Constância de estudo</string>
+    <string name="schedule_adherence">Aderência ao cronograma</string>
+    <string name="question_accuracy">Acerto em questões</string>
+    <string name="review_backlog">Revisões pendentes</string>
+    <string name="goal_completion">Conclusão de metas</string>
+    <string name="content_progress">Progresso do conteúdo</string>
+    <string name="library_progress">Progresso da biblioteca</string>
+    <string name="retention_ease">Facilidade de retenção</string>
+    <string name="weak_areas">Pontos fracos</string>
+    <string name="no_weak_areas">Nenhum ponto fraco detectado ainda.</string>
+    <string name="insights">Insights</string>
+    <string name="due_reviews">%1$d devidas • %2$d atrasadas</string>
+    <string name="answered_questions">%1$d respondidas</string>
+    <string name="percent_value">%1$d%%</string>
+    <string name="ease_value">%1$.2f</string>
+</resources>

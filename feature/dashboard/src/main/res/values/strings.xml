@@ -44,4 +44,7 @@
     <string name="progress_center">Goals and notes</string>
     <string name="progress_scope_title">Goals and notes ready</string>
     <string name="progress_scope_message">Track measurable goals and pin notes that keep study decisions close to the plan.</string>
+<string name="analytics">Analytics</string>
+<string name="analytics_scope_title">Analytics command center</string>
+<string name="analytics_scope_message">Open analytics to inspect consistency, weak areas, review backlog, and schedule adherence.</string>
 </resources>

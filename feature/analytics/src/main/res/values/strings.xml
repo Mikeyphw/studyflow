@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="go_back">Go back</string>
+    <string name="analytics_title">Analytics and insights</string>
+    <string name="analytics_summary">%1$d minutes • %2$d sessions • %3$d%% consistency</string>
+    <string name="study_consistency">Study consistency</string>
+    <string name="schedule_adherence">Schedule adherence</string>
+    <string name="question_accuracy">Question accuracy</string>
+    <string name="review_backlog">Review backlog</string>
+    <string name="goal_completion">Goal completion</string>
+    <string name="content_progress">Content progress</string>
+    <string name="library_progress">Library progress</string>
+    <string name="retention_ease">Retention ease</string>
+    <string name="weak_areas">Weak areas</string>
+    <string name="no_weak_areas">No weak areas detected yet.</string>
+    <string name="insights">Insights</string>
+    <string name="due_reviews">%1$d due • %2$d overdue</string>
+    <string name="answered_questions">%1$d answered</string>
+    <string name="percent_value">%1$d%%</string>
+    <string name="ease_value">%1$.2f</string>
+</resources>

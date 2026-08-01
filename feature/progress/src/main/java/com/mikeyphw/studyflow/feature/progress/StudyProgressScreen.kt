@@ -75,7 +75,10 @@ fun StudyProgressScreen(
                 title = { Text(stringResource(R.string.progress_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.go_back))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.go_back),
+                        )
                     }
                 },
             )
@@ -237,7 +240,9 @@ private fun NoteList(notes: List<StudyNote>, progress: ManageStudyProgress, plan
             StudyFlowSectionCard(title = note.title) {
                 Text(note.content, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { coroutineScope.launch { progress.togglePinnedNote(plan.id, note.id) } }) {
+                    OutlinedButton(
+                        onClick = { coroutineScope.launch { progress.togglePinnedNote(plan.id, note.id) } },
+                    ) {
                         Icon(Icons.Outlined.PushPin, contentDescription = null)
                         Text(stringResource(R.string.pin))
                     }

@@ -76,7 +76,10 @@ fun StudyLibraryScreen(
                 title = { Text(stringResource(R.string.library_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.go_back))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.go_back),
+                        )
                     }
                 },
             )
@@ -234,14 +237,20 @@ private fun MaterialList(materials: List<StudyMaterial>, library: ManageStudyLib
             StudyFlowSectionCard(title = row.title) {
                 Text(stringResource(R.string.progress_percent, row.progressPercent))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { coroutineScope.launch { library.toggleFavorite(plan.id, material.id) } }) {
+                    OutlinedButton(
+                        onClick = { coroutineScope.launch { library.toggleFavorite(plan.id, material.id) } },
+                    ) {
                         Icon(Icons.Outlined.Star, contentDescription = null)
                         Text(stringResource(R.string.favorite))
                     }
-                    OutlinedButton(onClick = { coroutineScope.launch { library.archiveMaterial(plan.id, material.id) } }) {
+                    OutlinedButton(
+                        onClick = { coroutineScope.launch { library.archiveMaterial(plan.id, material.id) } },
+                    ) {
                         Text(stringResource(R.string.archive))
                     }
-                    OutlinedButton(onClick = { coroutineScope.launch { library.deleteMaterial(plan.id, material.id) } }) {
+                    OutlinedButton(
+                        onClick = { coroutineScope.launch { library.deleteMaterial(plan.id, material.id) } },
+                    ) {
                         Icon(Icons.Outlined.Delete, contentDescription = null)
                         Text(stringResource(R.string.delete))
                     }
@@ -261,7 +270,13 @@ private fun VideoList(videos: List<VideoResource>, library: ManageStudyLibrary, 
             StudyFlowSectionCard(title = video.title) {
                 Text(video.sourceUri, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { coroutineScope.launch { library.updateVideoProgress(plan.id, video.id, 0L, true) } }) {
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                library.updateVideoProgress(plan.id, video.id, 0L, true)
+                            }
+                        },
+                    ) {
                         Icon(Icons.Outlined.CheckCircle, contentDescription = null)
                         Text(stringResource(R.string.mark_complete))
                     }

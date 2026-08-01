@@ -45,6 +45,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
+import com.mikeyphw.studyflow.core.navigation.AnalyticsRoute
 import com.mikeyphw.studyflow.core.navigation.CreatePlanRoute
 import com.mikeyphw.studyflow.core.navigation.DashboardRoute
 import com.mikeyphw.studyflow.core.navigation.EditPlanRoute
@@ -59,6 +60,7 @@ import com.mikeyphw.studyflow.core.navigation.ScheduleRoute
 import com.mikeyphw.studyflow.core.navigation.SessionsRoute
 import com.mikeyphw.studyflow.core.navigation.SettingsRoute
 import com.mikeyphw.studyflow.core.navigation.SubjectsRoute
+import com.mikeyphw.studyflow.feature.analytics.StudyAnalyticsScreen
 import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
 import com.mikeyphw.studyflow.feature.library.StudyLibraryScreen
 import com.mikeyphw.studyflow.feature.plans.PlanEditorForm
@@ -140,6 +142,7 @@ private fun StudyFlowNavigation(
 
     val showPlansSelected = destination?.hasRoute<PlanListRoute>() == true ||
         destination?.hasRoute<DashboardRoute>() == true ||
+        destination?.hasRoute<AnalyticsRoute>() == true ||
         destination?.hasRoute<CreatePlanRoute>() == true ||
         destination?.hasRoute<EditPlanRoute>() == true ||
         destination?.hasRoute<PlanSettingsRoute>() == true ||
@@ -431,6 +434,9 @@ private fun StudyFlowNavHost(
                     onOpenPlanSettings = {
                         navController.navigate(PlanSettingsRoute(currentPlan.id.value))
                     },
+                    onOpenAnalytics = {
+                        navController.navigate(AnalyticsRoute(currentPlan.id.value))
+                    },
                     onOpenSyllabus = {
                         navController.navigate(SubjectsRoute(currentPlan.id.value))
                     },
@@ -467,6 +473,26 @@ private fun StudyFlowNavHost(
                 )
             }
         }
+        composable<AnalyticsRoute> { entry ->
+            val route = entry.toRoute<AnalyticsRoute>()
+            val planId = remember(route.planId) { StudyPlanId(route.planId) }
+            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
+            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val currentPlan = plan
+            if (currentPlan == null) {
+                StudyFlowErrorPane(
+                    message = stringResource(R.string.unknown_plan_error),
+                    onRetry = navController::popBackStack,
+                )
+            } else {
+                StudyAnalyticsScreen(
+                    plan = currentPlan,
+                    analytics = container.manageStudyAnalytics,
+                    onBack = navController::popBackStack,
+                )
+            }
+        }
+
         composable<ScheduleRoute> { entry ->
             val route = entry.toRoute<ScheduleRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }

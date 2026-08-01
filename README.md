@@ -204,3 +204,8 @@ The library is plan-scoped, Room-backed, and connected from the dashboard.
 
 StudyFlow now includes plan-scoped goals and notes with a dashboard route. Goals can track time,
 question, accuracy, topic-completion, and custom progress while notes can be pinned and searched in later phases.
+
+### Phase 12: Analytics and Insights
+
+StudyFlow now has an analytics view that combines sessions, schedule execution, practice results,
+reviews, goals, content progress, and library progress into actionable insights.

@@ -57,6 +57,7 @@ fun DashboardScreen(
     onBack: () -> Unit,
     onSwitchPlan: (StudyPlan) -> Unit,
     onEditPlan: () -> Unit,
+    onOpenAnalytics: () -> Unit,
     onOpenPlanSettings: () -> Unit,
     onOpenSyllabus: () -> Unit,
     onOpenSchedule: () -> Unit,
@@ -135,6 +136,14 @@ fun DashboardScreen(
                             onClick = {
                                 actionsExpanded = false
                                 onEditPlan()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.analytics)) },
+                            leadingIcon = { Icon(Icons.Outlined.Flag, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenAnalytics()
                             },
                         )
                         DropdownMenuItem(
@@ -267,6 +276,12 @@ private fun DashboardPrimaryColumn(
                     )
                 }
             }
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.analytics_scope_title)) {
+            Text(
+                text = stringResource(R.string.analytics_scope_message),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         StudyFlowSectionCard(title = stringResource(R.string.next_best_action)) {
             Text(

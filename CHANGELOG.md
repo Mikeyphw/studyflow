@@ -148,3 +148,10 @@
 - Added a progress command center for plan-scoped goals and notes.
 - Added Room-backed support for creating, updating, pinning, archiving, and deleting goals and notes.
 - Added progress summary calculations that are independent of UI text and safe for tests.
+
+## Phase 12 - Analytics and Insights
+
+- Added the unified analytics feature for study consistency, weak-area detection, review backlog,
+  practice trends, and schedule adherence.
+- Added a Room-backed analytics repository behind the data-layer boundary.
+- Added a dashboard route and Phase 12 contracts without changing the Room schema.

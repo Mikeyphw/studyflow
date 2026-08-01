@@ -28,7 +28,13 @@ interface StudyLibraryDao {
     @Upsert
     suspend fun upsertAnnexes(annexes: List<AnnexEntity>)
 
-    @Query("SELECT * FROM study_materials WHERE studyPlanId = :planId ORDER BY archived, favorite DESC, title COLLATE NOCASE")
+    @Query(
+        """
+        SELECT * FROM study_materials
+        WHERE studyPlanId = :planId
+        ORDER BY archived, favorite DESC, title COLLATE NOCASE
+        """,
+    )
     fun observeMaterials(planId: String): Flow<List<StudyMaterialEntity>>
 
     @Query("SELECT * FROM study_materials WHERE studyPlanId = :planId AND id = :materialId LIMIT 1")

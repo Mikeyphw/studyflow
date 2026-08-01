@@ -28,7 +28,12 @@ settings = (ROOT / "settings.gradle.kts").read_text(encoding="utf-8")
 if '":feature:library"' not in settings:
     failures.append("settings.gradle.kts does not include :feature:library")
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-if not any(marker in app_build for marker in ('versionName = "0.10.0-phase10"', 'versionName = "0.11.0-phase11"')):
+expected_versions = [
+    'versionName = "0.10.0-phase10"',
+    'versionName = "0.11.0-phase11"',
+    'versionName = "0.12.0-phase12"',
+]
+if not any(marker in app_build for marker in expected_versions):
     failures.append("app version is not Phase 10 or later")
 if 'implementation(project(":feature:library"))' not in app_build:
     failures.append(":app does not depend on :feature:library")

@@ -46,4 +46,7 @@
     <string name="progress_center">Metas e notas</string>
     <string name="progress_scope_title">Metas e notas prontas</string>
     <string name="progress_scope_message">Acompanhe metas mensuráveis e fixe notas que mantêm as decisões de estudo perto do plano.</string>
+<string name="analytics">Análises</string>
+<string name="analytics_scope_title">Central de análises</string>
+<string name="analytics_scope_message">Abra as análises para ver constância, pontos fracos, revisões pendentes e aderência ao cronograma.</string>
 </resources>

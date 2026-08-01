@@ -32,12 +32,14 @@ if '":feature:practice"' not in settings:
     failures.append("settings.gradle.kts does not include :feature:practice")
 
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-if not any(marker in app_build for marker in (
+expected_versions = [
     'versionName = "0.8.0-phase08"',
     'versionName = "0.9.0-phase09"',
-    'versionName = "0.11.0-phase11"',
     'versionName = "0.10.0-phase10"',
-)):
+    'versionName = "0.11.0-phase11"',
+    'versionName = "0.12.0-phase12"',
+]
+if not any(marker in app_build for marker in expected_versions):
     failures.append("app version is not Phase 8 or later")
 if 'implementation(project(":feature:practice"))' not in app_build:
     failures.append(":app does not depend on :feature:practice")
