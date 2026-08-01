@@ -188,3 +188,11 @@ The dashboard now links to a practice cockpit. Users can add multiple-choice que
 or disputed items, delete questions, view practice summary metrics, and create aggregate practice tests
 from the filtered question bank. The implementation uses the existing practice tables and keeps Room
 behind the `:core:data` boundary.
+
+## Phase 9 reviews and spaced repetition
+
+StudyFlow now includes a review cockpit for due, upcoming, and recently completed review items.
+Students can create flashcards, automatically seed their first review, grade due items, skip items,
+and let the spaced-repetition scheduler compute the next interval. Review execution reuses the
+existing `review_items`, `flashcards`, and `error_entries` tables and keeps Room behind the
+`:core:data` boundary. Run `python3 scripts/verify_phase_9.py` for the Phase 9 contract.

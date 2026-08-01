@@ -6,6 +6,7 @@ import com.mikeyphw.studyflow.core.domain.StudyContentRepository
 import com.mikeyphw.studyflow.core.domain.StudyPlanPortabilityRepository
 import com.mikeyphw.studyflow.core.domain.StudyPracticeRepository
 import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
+import com.mikeyphw.studyflow.core.domain.StudyReviewRepository
 import com.mikeyphw.studyflow.core.domain.StudyScheduleRepository
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
 
@@ -22,6 +23,7 @@ class StudyFlowDataLayer internal constructor(
     val studyScheduleRepository: StudyScheduleRepository,
     val studyPracticeRepository: StudyPracticeRepository,
     val studySessionRepository: StudySessionRepository,
+    val studyReviewRepository: StudyReviewRepository,
     private val initializeData: suspend () -> Unit,
 ) {
     suspend fun initialize() = initializeData()
@@ -38,6 +40,7 @@ fun createStudyFlowDataLayer(
     val studyScheduleRepository = RoomStudyScheduleRepository(database)
     val studySessionRepository = RoomStudySessionRepository(database)
     val studyPracticeRepository = RoomStudyPracticeRepository(database)
+    val studyReviewRepository = RoomStudyReviewRepository(database)
     val portabilityRepository = RoomStudyPlanPortabilityRepository(
         context = context,
         database = database,
@@ -51,6 +54,7 @@ fun createStudyFlowDataLayer(
         studyScheduleRepository = studyScheduleRepository,
         studyPracticeRepository = studyPracticeRepository,
         studySessionRepository = studySessionRepository,
+        studyReviewRepository = studyReviewRepository,
         initializeData = studyPlanRepository::seedFoundationSamplesOnce,
     )
 }

@@ -60,6 +60,7 @@ fun DashboardScreen(
     onOpenSchedule: () -> Unit,
     onOpenSessions: () -> Unit,
     onOpenPractice: () -> Unit,
+    onOpenReviews: () -> Unit,
     onOpenPortability: () -> Unit,
     onToggleActiveState: () -> Unit,
     modifier: Modifier = Modifier,
@@ -170,6 +171,14 @@ fun DashboardScreen(
                             onClick = {
                                 actionsExpanded = false
                                 onOpenPractice()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.reviews)) },
+                            leadingIcon = { Icon(Icons.Outlined.Star, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenReviews()
                             },
                         )
                         DropdownMenuItem(

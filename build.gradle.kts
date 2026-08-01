@@ -63,6 +63,7 @@ tasks.register("checkAll") {
         ":feature:dashboard:testDebugUnitTest",
         ":feature:plans:testDebugUnitTest",
         ":feature:practice:testDebugUnitTest",
+        ":feature:reviews:testDebugUnitTest",
         ":feature:schedule:testDebugUnitTest",
         ":feature:sessions:testDebugUnitTest",
         ":feature:settings:testDebugUnitTest",

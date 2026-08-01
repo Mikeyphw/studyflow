@@ -33,4 +33,7 @@ data class SessionsRoute(val planId: String)
 data class PracticeRoute(val planId: String)
 
 @Serializable
+data class ReviewsRoute(val planId: String)
+
+@Serializable
 data object SettingsRoute

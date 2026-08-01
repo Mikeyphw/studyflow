@@ -33,7 +33,13 @@ if '":feature:subjects"' not in settings:
     failures.append("settings.gradle.kts does not include :feature:subjects")
 
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-if not any(marker in app_build for marker in ('versionName = "0.5.0-phase05"', 'versionName = "0.6.0-phase06"', 'versionName = "0.7.0-phase07"', 'versionName = "0.8.0-phase08"')):
+if not any(marker in app_build for marker in (
+    'versionName = "0.5.0-phase05"',
+    'versionName = "0.6.0-phase06"',
+    'versionName = "0.7.0-phase07"',
+    'versionName = "0.8.0-phase08"',
+    'versionName = "0.9.0-phase09"',
+)):
     failures.append("app version is not Phase 5 or newer")
 if 'implementation(project(":feature:subjects"))' not in app_build:
     failures.append(":app does not depend on :feature:subjects")

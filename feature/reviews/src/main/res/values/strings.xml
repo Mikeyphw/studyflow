@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="go_back">Go back</string>
+    <string name="reviews_title">Reviews and flashcards</string>
+    <string name="today_reviews">Today&apos;s review pulse</string>
+    <string name="due_count">%1$d due</string>
+    <string name="upcoming_count">%1$d upcoming</string>
+    <string name="flashcard_count">%1$d flashcards</string>
+    <string name="error_count">%1$d errors</string>
+    <string name="add_flashcard">Add flashcard</string>
+    <string name="flashcard_front">Front</string>
+    <string name="flashcard_back">Back</string>
+    <string name="create_flashcard">Create flashcard</string>
+    <string name="review_queue">Review queue</string>
+    <string name="filter_due">Due</string>
+    <string name="filter_upcoming">Upcoming</string>
+    <string name="filter_completed">Completed</string>
+    <string name="no_reviews_for_filter">No review items in this section yet.</string>
+    <string name="review_kind_flashcard">Flashcard</string>
+    <string name="review_kind_error">Error</string>
+    <string name="review_kind_question">Question</string>
+    <string name="review_kind_topic">Topic</string>
+    <string name="review_kind_subject">Subject</string>
+    <string name="review_kind_manual">Manual</string>
+    <string name="review_item_title">%1$s review</string>
+    <string name="review_item_details">Repetitions: %1$d · Interval: %2$d days · Ease: %3$.2f</string>
+    <string name="again">Again</string>
+    <string name="good">Good</string>
+    <string name="easy">Easy</string>
+    <string name="skip">Skip</string>
+</resources>

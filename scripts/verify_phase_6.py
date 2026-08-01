@@ -34,6 +34,7 @@ if not any(marker in app_build for marker in (
     'versionName = "0.6.0-phase06"',
     'versionName = "0.7.0-phase07"',
     'versionName = "0.8.0-phase08"',
+    'versionName = "0.9.0-phase09"',
 )):
     failures.append("app version is not Phase 6 or newer")
 if 'implementation(project(":feature:schedule"))' not in app_build:

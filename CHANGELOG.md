@@ -124,3 +124,17 @@
 - Added Room-backed practice repository and entity mappers for questions, tests and mock exams.
 - Added dashboard navigation to Questions and mocks.
 - Kept Room schema version 2; no migration required.
+
+## Phase 9: Reviews and Spaced Repetition
+
+- Added the `:feature:reviews` module with a bilingual review queue and flashcard creation screen.
+- Added `StudyReviewRepository`, `ManageStudyReview`, `ReviewQueue`, `ReviewSummary`, and
+  `SpacedRepetitionScheduler`.
+- Added Room-backed review persistence through `RoomStudyReviewRepository` and retention mappers.
+- Extended `StudyRetentionDao` with find, upsert, and delete operations for review items and
+  flashcards plus error-entry lookup.
+- Added dashboard navigation for reviews and flashcards.
+- Added a deterministic spaced-repetition algorithm with ease-factor, interval, repetition, and
+  failed-grade reset behavior.
+- Reused existing schema version 2 review tables; no Room migration was needed.
+- Added Phase 9 validators and included `validation.script.sha256` in the artifact manifest.

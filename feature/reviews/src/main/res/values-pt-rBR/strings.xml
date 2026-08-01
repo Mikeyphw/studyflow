@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="go_back">Voltar</string>
+    <string name="reviews_title">Revisões e flashcards</string>
+    <string name="today_reviews">Pulso das revisões de hoje</string>
+    <string name="due_count">%1$d vencidas</string>
+    <string name="upcoming_count">%1$d próximas</string>
+    <string name="flashcard_count">%1$d flashcards</string>
+    <string name="error_count">%1$d erros</string>
+    <string name="add_flashcard">Adicionar flashcard</string>
+    <string name="flashcard_front">Frente</string>
+    <string name="flashcard_back">Verso</string>
+    <string name="create_flashcard">Criar flashcard</string>
+    <string name="review_queue">Fila de revisão</string>
+    <string name="filter_due">Vencidas</string>
+    <string name="filter_upcoming">Próximas</string>
+    <string name="filter_completed">Concluídas</string>
+    <string name="no_reviews_for_filter">Ainda não há itens de revisão nesta seção.</string>
+    <string name="review_kind_flashcard">Flashcard</string>
+    <string name="review_kind_error">Erro</string>
+    <string name="review_kind_question">Questão</string>
+    <string name="review_kind_topic">Tópico</string>
+    <string name="review_kind_subject">Disciplina</string>
+    <string name="review_kind_manual">Manual</string>
+    <string name="review_item_title">Revisão: %1$s</string>
+    <string name="review_item_details">Repetições: %1$d · Intervalo: %2$d dias · Facilidade: %3$.2f</string>
+    <string name="again">Repetir</string>
+    <string name="good">Bom</string>
+    <string name="easy">Fácil</string>
+    <string name="skip">Pular</string>
+</resources>

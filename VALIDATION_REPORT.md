@@ -1,81 +1,42 @@
 # Validation Report
 
-Revision: Phase 5 syllabus, content organization, and Phase 4 lint cleanup
+Revision: Phase 9 reviews and spaced repetition
 
-Date: 2026-07-31
-Artifact: StudyFlow Android Phase 5 syllabus and nested-topic overlay
+Date: 2026-08-01
+Artifact: StudyFlow Android Phase 9 reviews and spaced repetition overlay
 
-## Completed checks
+## Completed local checks
 
 | Check | Result |
 |---|---|
+| Reconstructed Phase 8 baseline from uploaded Phase 6 snapshot plus landed Phase 7 r2 and Phase 8 overlays | Passed |
 | Phase 0 product-contract validator | Passed |
-| Phase 1 foundation validator | Passed, 12 modules |
-| Phase 2 domain/database validator | Passed, 22 domain roots |
-| Phase 3 lifecycle validator | Passed, 21 duplicated plan-owned tables |
+| Phase 1 foundation validator | Passed |
+| Phase 2 domain/database validator | Passed |
+| Phase 3 lifecycle validator | Passed |
 | Phase 4 portability validator | Passed |
 | Phase 5 syllabus/content validator | Passed |
-| Room schema version 2 and `1 -> 2` migration wiring | Passed |
-| Older Phase 4 package normalization | Passed |
-| App-to-database dependency boundary | Passed |
+| Phase 6 schedule validator | Passed |
+| Phase 7 sessions validator | Passed |
+| Phase 8 practice validator | Passed |
+| Phase 9 review validator | Passed |
 | Compose scoped modifier import seal | Passed |
 | Compose `LocalContext.current` resource lookup seal | Passed |
-| XML and TOML parsing | Passed |
+| New Android library `consumer-rules.pro` presence | Passed |
+| Devtool validation script SHA-256 recorded | Passed |
 | Git whitespace check | Passed |
 
-## Phase 5 behavioral coverage
+## Phase 9 behavioral coverage
 
-- Subject CRUD and per-plan ownership.
-- Nested topic CRUD with cycle-safe parent validation.
-- Topic move/reorder support with descendant subject remapping when a subtree moves across subjects.
-- Syllabus search, filters, sorting, archive/restore, delete, and bulk updates.
-- Structured-text and CSV import with preview and transactional persistence.
-- Optional exam-stage association for subjects and topics.
-- Derived subject and plan progress based on topic tree progress and weights.
-- Dashboard entry point to the Study Content screen.
-- Phase 4 portability screen lint cleanup using composition-aware resource APIs.
+- Review queue buckets for due, upcoming, and recently completed items.
+- Flashcard creation with automatic initial review item scheduling.
+- Spaced repetition scheduling with grades `0..5`, intervals, repetitions, and ease-factor updates.
+- Failed reviews reset repetitions and return to a short relearning interval.
+- Error-entry and question review hooks are available for the wrong-answer flow.
+- Dashboard entry point to the review cockpit.
+- No schema migration: the Phase 2/Phase 5 schema already contains retention tables.
 
 ## Destination validation
 
-Use focused repeated `--task` arguments so the unit-test phase runs the modules touched by Phase 5
-while the normal assemble, resources, package, and lint gates remain active:
-
-```bash
-devtool --copy --auto-hud --hud-mode desktop-window --yes \
-  -r /path/to/studyflow \
-  --target studyflow_android \
-  apply-overlay /path/to/studyflow_android_phase5_syllabus_content_overlay.zip \
-  --validate \
-  --failure-action pause \
-  --task :core:domain:test \
-  --task :core:database:testDebugUnitTest \
-  --task :core:data:testDebugUnitTest \
-  --task :feature:subjects:testDebugUnitTest \
-  --task :feature:plans:testDebugUnitTest \
-  --task :feature:dashboard:testDebugUnitTest \
-  --task :app:testDebugUnitTest
-```
-
-The destination Android SDK and Gradle execution remain the authoritative compile, test, package,
-and lint gate.
-
-
-## Phase 6 local validation
-
-- Phase 6 contract: passed locally.
-- Warning cleanup seal: unused subject strings removed.
-- Schedule feature module contract: passed.
-## Phase 7 validation
-
-- Phase 7 contract added.
-- Study session repository, domain timer, UI, navigation, resources, and app wiring checked.
-- Compose resource and scoped-modifier regression seals retained.
-
-
-## Phase 8 validation notes
-
-- Phase 0 through Phase 8 verifier scripts pass locally against the uploaded Phase 6 snapshot plus
-  the recreated Phase 7 payload and Phase 8 changes.
-- No Phase 0-6 repair overlay was required because the uploaded snapshot passed all existing phase
-  contracts.
-- The Phase 7 overlay was recreated with `validation.script.sha256` in the artifact manifest.
+Devtool remains the authoritative Android compile, lint, package, and instrumented validation gate.
+Use focused repeated `--task` arguments if you run deferred validation.
