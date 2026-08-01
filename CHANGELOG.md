@@ -155,3 +155,9 @@
   practice trends, and schedule adherence.
 - Added a Room-backed analytics repository behind the data-layer boundary.
 - Added a dashboard route and Phase 12 contracts without changing the Room schema.
+
+## Phase 13 - Settings, Backup Polish, and App Shell Seal
+
+- Added app-shell readiness checks for language, theme, default plan, backup access, and accessibility polish.
+- Added a backup entry from Settings for the current default Study Plan.
+- Added Phase 13 validation contracts and warning-seal documentation.

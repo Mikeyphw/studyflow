@@ -14,4 +14,13 @@
     <string name="dynamic_color_description">Use the device color palette on supported Android versions.</string>
     <string name="foundation_contract_title">Foundation contract</string>
     <string name="foundation_contract_message">Code and serialized values remain in English. The interface supports English and Brazilian Portuguese, while user-created content is preserved exactly as entered.</string>
+<string name="app_shell_readiness_title">App shell readiness</string>
+<string name="app_shell_readiness_value">%1$d%% ready</string>
+<string name="app_shell_readiness_message">Language, appearance, backup access, and accessibility are checked before release polish.</string>
+<string name="backup_title">Backup and snapshots</string>
+<string name="backup_ready">Default Study Plan backup is ready.</string>
+<string name="backup_needs_default_plan">Set a default Study Plan to enable one-tap backup access.</string>
+<string name="open_backup_center">Open backup center</string>
+<string name="accessibility_title">Accessibility baseline</string>
+<string name="accessibility_message">StudyFlow keeps text labels, content descriptions, and warning-free resources as release gates.</string>
 </resources>

@@ -209,3 +209,8 @@ question, accuracy, topic-completion, and custom progress while notes can be pin
 
 StudyFlow now has an analytics view that combines sessions, schedule execution, practice results,
 reviews, goals, content progress, and library progress into actionable insights.
+
+### Phase 13: Settings, Backup Polish, and App Shell Seal
+
+Settings now include an app-shell readiness section and a backup entry for the default Study Plan.
+This phase closes navigation, accessibility, settings, and snapshot-discovery seams before later release polish.

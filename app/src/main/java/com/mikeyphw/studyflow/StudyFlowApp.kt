@@ -634,6 +634,7 @@ private fun StudyFlowNavHost(
         composable<SettingsRoute> {
             SettingsScreen(
                 preferences = preferences,
+                hasDefaultPlan = preferences.defaultStudyPlanId != null,
                 onLanguageChanged = { language -> coroutineScope.launch {
                     container.appPreferencesRepository.setLanguage(language)
                 } },
@@ -643,6 +644,11 @@ private fun StudyFlowNavHost(
                 onDynamicColorChanged = { enabled -> coroutineScope.launch {
                     container.appPreferencesRepository.setDynamicColorEnabled(enabled)
                 } },
+                onOpenDefaultPlanBackup = {
+                    navController.navigate(
+                        PlanPortabilityRoute(preferences.defaultStudyPlanId?.value.orEmpty()),
+                    )
+                },
             )
         }
     }

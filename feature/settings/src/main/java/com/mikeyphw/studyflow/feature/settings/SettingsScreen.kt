@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
@@ -20,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.domain.AppShellReadinessAuditor
+import com.mikeyphw.studyflow.core.domain.AppShellReadinessInput
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.ThemeMode
@@ -27,11 +30,21 @@ import com.mikeyphw.studyflow.core.model.ThemeMode
 @Composable
 fun SettingsScreen(
     preferences: AppPreferences,
+    hasDefaultPlan: Boolean,
     onLanguageChanged: (AppLanguage) -> Unit,
     onThemeModeChanged: (ThemeMode) -> Unit,
     onDynamicColorChanged: (Boolean) -> Unit,
+    onOpenDefaultPlanBackup: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val readiness = AppShellReadinessAuditor.evaluate(
+        AppShellReadinessInput(
+            language = preferences.language,
+            themeMode = preferences.themeMode,
+            dynamicColorEnabled = preferences.dynamicColorEnabled,
+            hasDefaultPlan = hasDefaultPlan,
+        ),
+    )
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -48,6 +61,29 @@ fun SettingsScreen(
                 text = stringResource(R.string.settings_subtitle),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.app_shell_readiness_title)) {
+            Text(
+                text = stringResource(R.string.app_shell_readiness_value, readiness.readyPercent),
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            Text(
+                text = stringResource(R.string.app_shell_readiness_message),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.backup_title)) {
+            Text(
+                text = if (readiness.backupEntryAvailable) {
+                    stringResource(R.string.backup_ready)
+                } else {
+                    stringResource(R.string.backup_needs_default_plan)
+                },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onOpenDefaultPlanBackup, enabled = hasDefaultPlan) {
+                Text(stringResource(R.string.open_backup_center))
+            }
         }
         StudyFlowSectionCard(title = stringResource(R.string.language_title)) {
             AppLanguage.entries.forEach { language ->
@@ -84,6 +120,12 @@ fun SettingsScreen(
                     onCheckedChange = onDynamicColorChanged,
                 )
             }
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.accessibility_title)) {
+            Text(
+                text = stringResource(R.string.accessibility_message),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         StudyFlowSectionCard(title = stringResource(R.string.foundation_contract_title)) {
             Text(
