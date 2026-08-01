@@ -116,3 +116,11 @@
 - Added pause, resume, finish, cancel, notes, ratings, and history.
 - Added Room-backed study-session repository and domain timer rules.
 
+
+## Phase 8: Question bank and practice execution
+
+- Added `:feature:practice` for question-bank management and practice-test launching.
+- Added `ManageStudyPractice`, `PracticeAnalytics` and `StudyPracticeRepository`.
+- Added Room-backed practice repository and entity mappers for questions, tests and mock exams.
+- Added dashboard navigation to Questions and mocks.
+- Kept Room schema version 2; no migration required.

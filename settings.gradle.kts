@@ -30,6 +30,7 @@ include(
     ":core:testing",
     ":feature:dashboard",
     ":feature:plans",
+    ":feature:practice",
     ":feature:schedule",
     ":feature:sessions",
     ":feature:settings",

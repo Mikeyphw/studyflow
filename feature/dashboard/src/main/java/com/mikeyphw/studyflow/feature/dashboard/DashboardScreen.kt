@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.ImportExport
+import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
@@ -58,6 +59,7 @@ fun DashboardScreen(
     onOpenSyllabus: () -> Unit,
     onOpenSchedule: () -> Unit,
     onOpenSessions: () -> Unit,
+    onOpenPractice: () -> Unit,
     onOpenPortability: () -> Unit,
     onToggleActiveState: () -> Unit,
     modifier: Modifier = Modifier,
@@ -160,6 +162,14 @@ fun DashboardScreen(
                             onClick = {
                                 actionsExpanded = false
                                 onOpenSessions()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.practice)) },
+                            leadingIcon = { Icon(Icons.Outlined.Quiz, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenPractice()
                             },
                         )
                         DropdownMenuItem(

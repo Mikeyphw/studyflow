@@ -30,8 +30,11 @@ if '":feature:sessions"' not in settings:
     failures.append("settings.gradle.kts does not include :feature:sessions")
 
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-if 'versionName = "0.7.0-phase07"' not in app_build:
-    failures.append("app version is not Phase 7")
+if not any(marker in app_build for marker in (
+    'versionName = "0.7.0-phase07"',
+    'versionName = "0.8.0-phase08"',
+)):
+    failures.append("app version is not Phase 7 or later")
 if 'implementation(project(":feature:sessions"))' not in app_build:
     failures.append(":app does not depend on :feature:sessions")
 

@@ -181,3 +181,10 @@ Adds schedule and study-strategy management, generated weekly activities, missed
 
 StudyFlow now supports active study sessions, quick timers, planned activity execution, completion notes, ratings, and history.
 
+
+### Phase 8: Questions and mocks
+
+The dashboard now links to a practice cockpit. Users can add multiple-choice questions, mark favorites
+or disputed items, delete questions, view practice summary metrics, and create aggregate practice tests
+from the filtered question bank. The implementation uses the existing practice tables and keeps Room
+behind the `:core:data` boundary.

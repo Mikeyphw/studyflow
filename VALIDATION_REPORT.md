@@ -71,3 +71,11 @@ and lint gate.
 - Study session repository, domain timer, UI, navigation, resources, and app wiring checked.
 - Compose resource and scoped-modifier regression seals retained.
 
+
+## Phase 8 validation notes
+
+- Phase 0 through Phase 8 verifier scripts pass locally against the uploaded Phase 6 snapshot plus
+  the recreated Phase 7 payload and Phase 8 changes.
+- No Phase 0-6 repair overlay was required because the uploaded snapshot passed all existing phase
+  contracts.
+- The Phase 7 overlay was recreated with `validation.script.sha256` in the artifact manifest.

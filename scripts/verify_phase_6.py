@@ -33,6 +33,7 @@ app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
 if not any(marker in app_build for marker in (
     'versionName = "0.6.0-phase06"',
     'versionName = "0.7.0-phase07"',
+    'versionName = "0.8.0-phase08"',
 )):
     failures.append("app version is not Phase 6 or newer")
 if 'implementation(project(":feature:schedule"))' not in app_build:

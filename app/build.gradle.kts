@@ -7,8 +7,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow"
-        versionCode = 7
-        versionName = "0.7.0-phase07"
+        versionCode = 8
+        versionName = "0.8.0-phase08"
     }
 
     buildFeatures {
@@ -40,6 +40,7 @@ dependencies {
     implementation(project(":core:navigation"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:plans"))
+    implementation(project(":feature:practice"))
     implementation(project(":feature:schedule"))
     implementation(project(":feature:sessions"))
     implementation(project(":feature:settings"))

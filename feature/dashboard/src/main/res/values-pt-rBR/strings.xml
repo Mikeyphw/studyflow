@@ -37,5 +37,6 @@
     <string name="portability_title">Importação, exportação e snapshots</string>
     <string name="schedule">Cronograma</string>
     <string name="syllabus">Conteúdo programático</string>
+    <string name="practice">Questões e simulados</string>
     <string name="sessions">Sessões de estudo</string>
 </resources>
