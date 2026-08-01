@@ -15,6 +15,7 @@ python3 scripts/verify_phase_7.py
 python3 scripts/verify_phase_8.py
 python3 scripts/verify_phase_9.py
 python3 scripts/verify_phase_10.py
+python3 scripts/verify_phase_11.py
 
 GRADLE_LAUNCHER=""
 if [[ -x ./gradlew ]]; then

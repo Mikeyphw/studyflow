@@ -34,6 +34,9 @@ interface StudyPlanningDao {
     suspend fun upsertStudySessions(sessions: List<StudySessionEntity>)
 
     @Upsert
+    suspend fun upsertStudyGoal(goal: StudyGoalEntity)
+
+    @Upsert
     suspend fun upsertStudyGoals(goals: List<StudyGoalEntity>)
 
     @Query("SELECT * FROM study_strategies WHERE studyPlanId = :planId LIMIT 1")
@@ -80,6 +83,15 @@ interface StudyPlanningDao {
 
     @Query("SELECT * FROM study_sessions WHERE studyPlanId = :planId ORDER BY startedAtEpochMillis DESC")
     fun observeStudySessions(planId: String): Flow<List<StudySessionEntity>>
+
+    @Query("SELECT * FROM study_goals WHERE studyPlanId = :planId ORDER BY archived, completedAtEpochMillis, startsOnIso DESC")
+    fun observeStudyGoals(planId: String): Flow<List<StudyGoalEntity>>
+
+    @Query("SELECT * FROM study_goals WHERE studyPlanId = :planId AND id = :goalId LIMIT 1")
+    suspend fun findStudyGoal(planId: String, goalId: String): StudyGoalEntity?
+
+    @Query("DELETE FROM study_goals WHERE studyPlanId = :planId AND id = :goalId")
+    suspend fun deleteStudyGoal(planId: String, goalId: String): Int
 
     @Query("SELECT * FROM study_sessions WHERE studyPlanId = :planId AND id = :sessionId LIMIT 1")
     suspend fun findStudySession(planId: String, sessionId: String): StudySessionEntity?

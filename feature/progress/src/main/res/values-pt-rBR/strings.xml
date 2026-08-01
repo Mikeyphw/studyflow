@@ -1,0 +1,23 @@
+<resources>
+    <string name="go_back">Voltar</string>
+    <string name="progress_title">Metas e notas</string>
+    <string name="progress_summary">%1$d metas ativas • %2$d notas fixadas</string>
+    <string name="goal_progress">Progresso das metas: %1$d%%</string>
+    <string name="add_goal">Adicionar meta</string>
+    <string name="goal_title">Título da meta</string>
+    <string name="target_value">Valor-alvo</string>
+    <string name="current_value">Valor atual</string>
+    <string name="create_goal">Criar meta</string>
+    <string name="goals">Metas</string>
+    <string name="notes">Notas</string>
+    <string name="no_goals">Nenhuma meta ainda.</string>
+    <string name="no_notes">Nenhuma nota ainda.</string>
+    <string name="archive">Arquivar</string>
+    <string name="delete">Excluir</string>
+    <string name="pin">Fixar</string>
+    <string name="add_note">Adicionar nota</string>
+    <string name="note_title">Título da nota</string>
+    <string name="note_content">Conteúdo da nota</string>
+    <string name="create_note">Criar nota</string>
+    <string name="progress_percent">%1$d%%</string>
+</resources>

@@ -36,6 +36,9 @@ data class LibraryRoute(val planId: String)
 data class PracticeRoute(val planId: String)
 
 @Serializable
+data class ProgressRoute(val planId: String)
+
+@Serializable
 data class ReviewsRoute(val planId: String)
 
 @Serializable

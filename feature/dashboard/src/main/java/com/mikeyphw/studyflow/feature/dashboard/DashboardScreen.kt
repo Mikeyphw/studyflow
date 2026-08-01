@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
@@ -63,6 +64,7 @@ fun DashboardScreen(
     onOpenSessions: () -> Unit,
     onOpenPractice: () -> Unit,
     onOpenReviews: () -> Unit,
+    onOpenProgress: () -> Unit,
     onOpenPortability: () -> Unit,
     onToggleActiveState: () -> Unit,
     modifier: Modifier = Modifier,
@@ -184,6 +186,14 @@ fun DashboardScreen(
                             },
                         )
                         DropdownMenuItem(
+                            text = { Text(stringResource(R.string.progress_center)) },
+                            leadingIcon = { Icon(Icons.Outlined.Flag, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenProgress()
+                            },
+                        )
+                        DropdownMenuItem(
                             text = { Text(stringResource(R.string.reviews)) },
                             leadingIcon = { Icon(Icons.Outlined.Star, contentDescription = null) },
                             onClick = {
@@ -279,6 +289,12 @@ private fun DashboardPrimaryColumn(
             )
             Text(
                 text = plan.description.ifBlank { stringResource(R.string.no_description) },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.progress_scope_title)) {
+            Text(
+                text = stringResource(R.string.progress_scope_message),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

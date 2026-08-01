@@ -143,3 +143,8 @@
 - Added the study library execution layer for materials, video resources, and annex metadata.
 - Added a dashboard route and feature module for organizing resource lists without exposing Room to the app.
 - Added Phase 10 validation contracts and kept prior warning seals active.
+## Phase 11 - Goals, Notes, and Progress Command Center
+
+- Added a progress command center for plan-scoped goals and notes.
+- Added Room-backed support for creating, updating, pinning, archiving, and deleting goals and notes.
+- Added progress summary calculations that are independent of UI text and safe for tests.

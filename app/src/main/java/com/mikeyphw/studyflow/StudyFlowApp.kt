@@ -53,6 +53,7 @@ import com.mikeyphw.studyflow.core.navigation.PlanListRoute
 import com.mikeyphw.studyflow.core.navigation.PlanPortabilityRoute
 import com.mikeyphw.studyflow.core.navigation.PlanSettingsRoute
 import com.mikeyphw.studyflow.core.navigation.PracticeRoute
+import com.mikeyphw.studyflow.core.navigation.ProgressRoute
 import com.mikeyphw.studyflow.core.navigation.ReviewsRoute
 import com.mikeyphw.studyflow.core.navigation.ScheduleRoute
 import com.mikeyphw.studyflow.core.navigation.SessionsRoute
@@ -67,6 +68,7 @@ import com.mikeyphw.studyflow.feature.plans.PlanPortabilityScreen
 import com.mikeyphw.studyflow.feature.plans.PlanSettingsScreen
 import com.mikeyphw.studyflow.feature.plans.StudyPlanAction
 import com.mikeyphw.studyflow.feature.practice.PracticeScreen
+import com.mikeyphw.studyflow.feature.progress.StudyProgressScreen
 import com.mikeyphw.studyflow.feature.reviews.StudyReviewScreen
 import com.mikeyphw.studyflow.feature.schedule.StudyScheduleScreen
 import com.mikeyphw.studyflow.feature.sessions.StudySessionScreen
@@ -147,6 +149,7 @@ private fun StudyFlowNavigation(
         destination?.hasRoute<LibraryRoute>() == true ||
         destination?.hasRoute<SessionsRoute>() == true ||
         destination?.hasRoute<PracticeRoute>() == true ||
+        destination?.hasRoute<ProgressRoute>() == true ||
         destination?.hasRoute<ReviewsRoute>() == true
     val showSettingsSelected = destination?.hasRoute<SettingsRoute>() == true
 
@@ -446,6 +449,9 @@ private fun StudyFlowNavHost(
                     onOpenReviews = {
                         navController.navigate(ReviewsRoute(currentPlan.id.value))
                     },
+                    onOpenProgress = {
+                        navController.navigate(ProgressRoute(currentPlan.id.value))
+                    },
                     onOpenPortability = {
                         navController.navigate(PlanPortabilityRoute(currentPlan.id.value))
                     },
@@ -541,6 +547,26 @@ private fun StudyFlowNavHost(
             }
         }
 
+
+        composable<ProgressRoute> { entry ->
+            val route = entry.toRoute<ProgressRoute>()
+            val planId = remember(route.planId) { StudyPlanId(route.planId) }
+            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
+            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val currentPlan = plan
+            if (currentPlan == null) {
+                StudyFlowErrorPane(
+                    message = stringResource(R.string.unknown_plan_error),
+                    onRetry = navController::popBackStack,
+                )
+            } else {
+                StudyProgressScreen(
+                    plan = currentPlan,
+                    progress = container.manageStudyProgress,
+                    onBack = navController::popBackStack,
+                )
+            }
+        }
         composable<ReviewsRoute> { entry ->
             val route = entry.toRoute<ReviewsRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }

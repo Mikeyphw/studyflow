@@ -200,3 +200,7 @@ existing `review_items`, `flashcards`, and `error_entries` tables and keeps Room
 
 StudyFlow now includes a resource library for study materials, video links, and annex metadata.
 The library is plan-scoped, Room-backed, and connected from the dashboard.
+### Phase 11: Goals, Notes, and Progress Command Center
+
+StudyFlow now includes plan-scoped goals and notes with a dashboard route. Goals can track time,
+question, accuracy, topic-completion, and custom progress while notes can be pinned and searched in later phases.

@@ -1,0 +1,23 @@
+<resources>
+    <string name="go_back">Go back</string>
+    <string name="progress_title">Goals and notes</string>
+    <string name="progress_summary">%1$d active goals • %2$d pinned notes</string>
+    <string name="goal_progress">Goal progress: %1$d%%</string>
+    <string name="add_goal">Add goal</string>
+    <string name="goal_title">Goal title</string>
+    <string name="target_value">Target value</string>
+    <string name="current_value">Current value</string>
+    <string name="create_goal">Create goal</string>
+    <string name="goals">Goals</string>
+    <string name="notes">Notes</string>
+    <string name="no_goals">No goals yet.</string>
+    <string name="no_notes">No notes yet.</string>
+    <string name="archive">Archive</string>
+    <string name="delete">Delete</string>
+    <string name="pin">Pin</string>
+    <string name="add_note">Add note</string>
+    <string name="note_title">Note title</string>
+    <string name="note_content">Note content</string>
+    <string name="create_note">Create note</string>
+    <string name="progress_percent">%1$d%%</string>
+</resources>
