@@ -214,3 +214,8 @@ reviews, goals, content progress, and library progress into actionable insights.
 
 Settings now include an app-shell readiness section and a backup entry for the default Study Plan.
 This phase closes navigation, accessibility, settings, and snapshot-discovery seams before later release polish.
+
+### Phase 14: Polish, Accessibility, and UX Consistency
+
+StudyFlow now tracks the final MVP polish surface: accessibility labels, bilingual copy parity,
+empty/error/loading state behavior, action feedback, and navigation consistency.

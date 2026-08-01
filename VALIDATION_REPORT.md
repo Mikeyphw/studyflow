@@ -40,3 +40,10 @@ Artifact: StudyFlow Android Phase 9 reviews and spaced repetition overlay
 
 Devtool remains the authoritative Android compile, lint, package, and instrumented validation gate.
 Use focused repeated `--task` arguments if you run deferred validation.
+
+## Phase 14 Local Contract Notes
+
+- Manifest inventory format must remain the integer `1`.
+- The embedded validation script must include `validation.script.sha256`.
+- The overlay must not mutate `.devtool.toml`.
+- Compose screens must avoid resource lookup through `LocalContext.current`.

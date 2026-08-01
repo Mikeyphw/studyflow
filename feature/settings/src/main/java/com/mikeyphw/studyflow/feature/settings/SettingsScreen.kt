@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessAuditor
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessInput
+import com.mikeyphw.studyflow.core.domain.UserExperiencePolishAuditor
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.ThemeMode
@@ -45,6 +46,7 @@ fun SettingsScreen(
             hasDefaultPlan = hasDefaultPlan,
         ),
     )
+    val polishReport = UserExperiencePolishAuditor.evaluate()
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -121,6 +123,16 @@ fun SettingsScreen(
                 )
             }
         }
+StudyFlowSectionCard(title = stringResource(R.string.ux_polish_title)) {
+    Text(
+        text = stringResource(R.string.ux_polish_value, polishReport.readyPercent),
+        style = MaterialTheme.typography.headlineMedium,
+    )
+    Text(
+        text = stringResource(R.string.ux_polish_message, polishReport.readyCount, polishReport.totalCount),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
         StudyFlowSectionCard(title = stringResource(R.string.accessibility_title)) {
             Text(
                 text = stringResource(R.string.accessibility_message),

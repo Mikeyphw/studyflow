@@ -161,3 +161,10 @@
 - Added app-shell readiness checks for language, theme, default plan, backup access, and accessibility polish.
 - Added a backup entry from Settings for the current default Study Plan.
 - Added Phase 13 validation contracts and warning-seal documentation.
+
+## Phase 14 - Polish, Accessibility, and UX Consistency
+
+- Added the final UX polish auditor for accessibility, localization, feedback, empty states,
+  and navigation consistency.
+- Added settings readiness cards for MVP polish status without changing persistence.
+- Added Phase 14 contracts and documentation for the screen-by-screen polish pass.

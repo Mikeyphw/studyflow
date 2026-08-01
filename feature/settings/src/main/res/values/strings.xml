@@ -23,4 +23,7 @@
 <string name="open_backup_center">Open backup center</string>
 <string name="accessibility_title">Accessibility baseline</string>
 <string name="accessibility_message">StudyFlow keeps text labels, content descriptions, and warning-free resources as release gates.</string>
+<string name="ux_polish_title">UX polish</string>
+<string name="ux_polish_value">%1$d%% polished</string>
+<string name="ux_polish_message">%1$d of %2$d MVP polish gates are ready.</string>
 </resources>

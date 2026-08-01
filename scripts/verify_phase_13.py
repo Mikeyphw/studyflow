@@ -16,8 +16,12 @@ for relative in required:
     if not (ROOT / relative).is_file():
         failures.append(f"missing Phase 13 file: {relative}")
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-if 'versionName = "0.13.0-phase13"' not in app_build:
-    failures.append("app version is not Phase 13")
+expected_versions = [
+    'versionName = "0.13.0-phase13"',
+    'versionName = "0.14.0-phase14"',
+]
+if not any(marker in app_build for marker in expected_versions):
+    failures.append("app version is not Phase 13 or later")
 settings_build = (ROOT / "feature/settings/build.gradle.kts").read_text(encoding="utf-8")
 if 'implementation(project(":core:domain"))' not in settings_build:
     failures.append("feature:settings does not depend on :core:domain for shell readiness")

@@ -23,4 +23,7 @@
 <string name="open_backup_center">Abrir central de backup</string>
 <string name="accessibility_title">Base de acessibilidade</string>
 <string name="accessibility_message">O StudyFlow mantém rótulos, descrições de conteúdo e recursos sem avisos como barreiras de lançamento.</string>
+<string name="ux_polish_title">Polimento da experiência</string>
+<string name="ux_polish_value">%1$d%% polido</string>
+<string name="ux_polish_message">%1$d de %2$d barreiras de polimento do MVP estão prontas.</string>
 </resources>
