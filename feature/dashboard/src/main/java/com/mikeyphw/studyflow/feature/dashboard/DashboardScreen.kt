@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.SwapHoriz
@@ -56,6 +57,7 @@ fun DashboardScreen(
     onOpenPlanSettings: () -> Unit,
     onOpenSyllabus: () -> Unit,
     onOpenSchedule: () -> Unit,
+    onOpenSessions: () -> Unit,
     onOpenPortability: () -> Unit,
     onToggleActiveState: () -> Unit,
     modifier: Modifier = Modifier,
@@ -150,6 +152,14 @@ fun DashboardScreen(
                             onClick = {
                                 actionsExpanded = false
                                 onOpenSchedule()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.sessions)) },
+                            leadingIcon = { Icon(Icons.Outlined.PlayCircle, contentDescription = null) },
+                            onClick = {
+                                actionsExpanded = false
+                                onOpenSessions()
                             },
                         )
                         DropdownMenuItem(

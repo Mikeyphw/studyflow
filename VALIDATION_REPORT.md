@@ -65,3 +65,9 @@ and lint gate.
 - Phase 6 contract: passed locally.
 - Warning cleanup seal: unused subject strings removed.
 - Schedule feature module contract: passed.
+## Phase 7 validation
+
+- Phase 7 contract added.
+- Study session repository, domain timer, UI, navigation, resources, and app wiring checked.
+- Compose resource and scoped-modifier regression seals retained.
+

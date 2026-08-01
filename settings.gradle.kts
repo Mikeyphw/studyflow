@@ -31,6 +31,7 @@ include(
     ":feature:dashboard",
     ":feature:plans",
     ":feature:schedule",
+    ":feature:sessions",
     ":feature:settings",
     ":feature:subjects",
 )

@@ -109,3 +109,10 @@
 - Added the missing `feature/subjects/consumer-rules.pro` required by the Android library convention plugin.
 - Kept `PlanPortabilityScreen` resource reads on `stringResource`/`pluralStringResource` and added a narrow lint suppression for the false-positive `LocalContextGetResourceValueCall` triggered by Storage Access Framework `ContentResolver` usage.
 - Removed `.devtool.toml` from the overlay payload; use repeated `--task` arguments for focused validation instead.
+## Phase 7 - Study Sessions and Timer Execution
+
+- Added active study-session timer execution.
+- Added quick sessions and planned-activity session starts.
+- Added pause, resume, finish, cancel, notes, ratings, and history.
+- Added Room-backed study-session repository and domain timer rules.
+

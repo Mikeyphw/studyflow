@@ -18,6 +18,10 @@ import com.mikeyphw.studyflow.core.model.StudyStrategyType
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.VideoResourceId
+import com.mikeyphw.studyflow.core.database.entity.StudySessionEntity
+import com.mikeyphw.studyflow.core.model.StudySession
+import com.mikeyphw.studyflow.core.model.StudySessionId
+import com.mikeyphw.studyflow.core.model.StudySessionStatus
 
 fun StudyStrategyEntity.asExternalModel(): StudyStrategy = StudyStrategy(
     id = StudyStrategyId(id),
@@ -103,4 +107,47 @@ fun PlannedActivity.asEntity(): PlannedActivityEntity = PlannedActivityEntity(
     status = status.name,
     locked = locked,
     completedAtEpochMillis = completedAtEpochMillis,
+)
+fun StudySessionEntity.asExternalModel(): StudySession = StudySession(
+    id = StudySessionId(id),
+    studyPlanId = StudyPlanId(studyPlanId),
+    plannedActivityId = plannedActivityId?.let(::PlannedActivityId),
+    subjectId = subjectId?.let(::SubjectId),
+    topicId = topicId?.let(::TopicId),
+    materialId = materialId?.let(::StudyMaterialId),
+    videoResourceId = videoResourceId?.let(::VideoResourceId),
+    type = enumValueOf<StudyActivityType>(type),
+    status = enumValueOf<StudySessionStatus>(status),
+    startedAtEpochMillis = startedAtEpochMillis,
+    endedAtEpochMillis = endedAtEpochMillis,
+    grossDurationSeconds = grossDurationSeconds,
+    pauseDurationSeconds = pauseDurationSeconds,
+    pagesCompleted = pagesCompleted,
+    questionsAnswered = questionsAnswered,
+    correctAnswers = correctAnswers,
+    concentrationRating = concentrationRating,
+    difficultyRating = difficultyRating,
+    notes = notes,
+)
+
+fun StudySession.asEntity(): StudySessionEntity = StudySessionEntity(
+    id = id.value,
+    studyPlanId = studyPlanId.value,
+    plannedActivityId = plannedActivityId?.value,
+    subjectId = subjectId?.value,
+    topicId = topicId?.value,
+    materialId = materialId?.value,
+    videoResourceId = videoResourceId?.value,
+    type = type.name,
+    status = status.name,
+    startedAtEpochMillis = startedAtEpochMillis,
+    endedAtEpochMillis = endedAtEpochMillis,
+    grossDurationSeconds = grossDurationSeconds,
+    pauseDurationSeconds = pauseDurationSeconds,
+    pagesCompleted = pagesCompleted,
+    questionsAnswered = questionsAnswered,
+    correctAnswers = correctAnswers,
+    concentrationRating = concentrationRating,
+    difficultyRating = difficultyRating,
+    notes = notes,
 )

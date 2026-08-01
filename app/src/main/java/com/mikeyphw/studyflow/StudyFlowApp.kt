@@ -52,6 +52,7 @@ import com.mikeyphw.studyflow.core.navigation.PlanListRoute
 import com.mikeyphw.studyflow.core.navigation.PlanPortabilityRoute
 import com.mikeyphw.studyflow.core.navigation.PlanSettingsRoute
 import com.mikeyphw.studyflow.core.navigation.ScheduleRoute
+import com.mikeyphw.studyflow.core.navigation.SessionsRoute
 import com.mikeyphw.studyflow.core.navigation.SettingsRoute
 import com.mikeyphw.studyflow.core.navigation.SubjectsRoute
 import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
@@ -62,6 +63,7 @@ import com.mikeyphw.studyflow.feature.plans.PlanPortabilityScreen
 import com.mikeyphw.studyflow.feature.plans.PlanSettingsScreen
 import com.mikeyphw.studyflow.feature.plans.StudyPlanAction
 import com.mikeyphw.studyflow.feature.schedule.StudyScheduleScreen
+import com.mikeyphw.studyflow.feature.sessions.StudySessionScreen
 import com.mikeyphw.studyflow.feature.settings.SettingsScreen
 import com.mikeyphw.studyflow.feature.subjects.StudyContentScreen
 import java.util.UUID
@@ -135,7 +137,8 @@ private fun StudyFlowNavigation(
         destination?.hasRoute<PlanSettingsRoute>() == true ||
         destination?.hasRoute<PlanPortabilityRoute>() == true ||
         destination?.hasRoute<SubjectsRoute>() == true ||
-        destination?.hasRoute<ScheduleRoute>() == true
+        destination?.hasRoute<ScheduleRoute>() == true ||
+        destination?.hasRoute<SessionsRoute>() == true
     val showSettingsSelected = destination?.hasRoute<SettingsRoute>() == true
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -422,6 +425,9 @@ private fun StudyFlowNavHost(
                     onOpenSchedule = {
                         navController.navigate(ScheduleRoute(currentPlan.id.value))
                     },
+                    onOpenSessions = {
+                        navController.navigate(SessionsRoute(currentPlan.id.value))
+                    },
                     onOpenPortability = {
                         navController.navigate(PlanPortabilityRoute(currentPlan.id.value))
                     },
@@ -451,6 +457,26 @@ private fun StudyFlowNavHost(
             } else {
                 StudyScheduleScreen(
                     plan = currentPlan,
+                    scheduleManager = container.manageStudySchedule,
+                    onBack = navController::popBackStack,
+                )
+            }
+        }
+        composable<SessionsRoute> { entry ->
+            val route = entry.toRoute<SessionsRoute>()
+            val planId = remember(route.planId) { StudyPlanId(route.planId) }
+            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
+            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val currentPlan = plan
+            if (currentPlan == null) {
+                StudyFlowErrorPane(
+                    message = stringResource(R.string.unknown_plan_error),
+                    onRetry = navController::popBackStack,
+                )
+            } else {
+                StudySessionScreen(
+                    plan = currentPlan,
+                    sessionManager = container.manageStudySession,
                     scheduleManager = container.manageStudySchedule,
                     onBack = navController::popBackStack,
                 )

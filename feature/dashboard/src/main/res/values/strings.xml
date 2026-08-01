@@ -35,4 +35,5 @@
     <string name="portability_title">Import, export and snapshots</string>
     <string name="schedule">Schedule</string>
     <string name="syllabus">Syllabus</string>
+    <string name="sessions">Study sessions</string>
 </resources>

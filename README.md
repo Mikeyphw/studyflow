@@ -177,3 +177,7 @@ through an explicit migration. Run `python3 scripts/verify_phase_5.py` for the P
 ## Phase 6
 
 Adds schedule and study-strategy management, generated weekly activities, missed-work recovery and a lint warning seal for unused subject strings.
+### Phase 7: Study sessions
+
+StudyFlow now supports active study sessions, quick timers, planned activity execution, completion notes, ratings, and history.
+

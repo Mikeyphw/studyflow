@@ -7,9 +7,11 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageStudyPlanPortability
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
+import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.StudyContentRepository
 import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
 import com.mikeyphw.studyflow.core.domain.StudyScheduleRepository
+import com.mikeyphw.studyflow.core.domain.StudySessionRepository
 import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
@@ -31,11 +33,13 @@ interface AppContainer {
     val studyPlanRepository: StudyPlanRepository
     val studyContentRepository: StudyContentRepository
     val studyScheduleRepository: StudyScheduleRepository
+    val studySessionRepository: StudySessionRepository
     val appPreferencesRepository: AppPreferencesRepository
     val createStudyPlan: CreateStudyPlan
     val manageStudyPlan: ManageStudyPlan
     val manageStudyContent: ManageStudyContent
     val manageStudySchedule: ManageStudySchedule
+    val manageStudySession: ManageStudySession
     val manageStudyPlanPortability: ManageStudyPlanPortability
 }
 
@@ -51,12 +55,14 @@ private class DefaultAppContainer(
     override val studyPlanRepository: StudyPlanRepository = dataLayer.studyPlanRepository
     override val studyContentRepository: StudyContentRepository = dataLayer.studyContentRepository
     override val studyScheduleRepository: StudyScheduleRepository = dataLayer.studyScheduleRepository
+    override val studySessionRepository: StudySessionRepository = dataLayer.studySessionRepository
     override val appPreferencesRepository: AppPreferencesRepository =
         DataStoreAppPreferencesRepository(application)
     override val createStudyPlan = CreateStudyPlan(studyPlanRepository)
     override val manageStudyPlan = ManageStudyPlan(studyPlanRepository)
     override val manageStudyContent = ManageStudyContent(studyContentRepository)
     override val manageStudySchedule = ManageStudySchedule(studyScheduleRepository)
+    override val manageStudySession = ManageStudySession(studySessionRepository)
     override val manageStudyPlanPortability =
         ManageStudyPlanPortability(dataLayer.studyPlanPortabilityRepository)
 

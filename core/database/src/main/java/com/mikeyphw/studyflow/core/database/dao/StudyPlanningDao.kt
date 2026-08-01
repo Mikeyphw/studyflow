@@ -28,6 +28,9 @@ interface StudyPlanningDao {
     suspend fun upsertPlannedActivities(activities: List<PlannedActivityEntity>)
 
     @Upsert
+    suspend fun upsertStudySession(session: StudySessionEntity)
+
+    @Upsert
     suspend fun upsertStudySessions(sessions: List<StudySessionEntity>)
 
     @Upsert
@@ -77,4 +80,17 @@ interface StudyPlanningDao {
 
     @Query("SELECT * FROM study_sessions WHERE studyPlanId = :planId ORDER BY startedAtEpochMillis DESC")
     fun observeStudySessions(planId: String): Flow<List<StudySessionEntity>>
+
+    @Query("SELECT * FROM study_sessions WHERE studyPlanId = :planId AND id = :sessionId LIMIT 1")
+    suspend fun findStudySession(planId: String, sessionId: String): StudySessionEntity?
+
+    @Query(
+        """
+        SELECT * FROM study_sessions
+        WHERE studyPlanId = :planId AND status IN ('RUNNING', 'PAUSED')
+        ORDER BY startedAtEpochMillis DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun findActiveStudySession(planId: String): StudySessionEntity?
 }
