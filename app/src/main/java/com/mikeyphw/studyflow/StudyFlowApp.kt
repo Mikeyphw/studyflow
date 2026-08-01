@@ -339,27 +339,34 @@ private fun StudyFlowNavHost(
                         }
                         StudyPlanAction.ACTIVATE -> coroutineScope.launch {
                             container.manageStudyPlan.activate(plan.id)
+                            container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.PAUSE -> coroutineScope.launch {
                             container.manageStudyPlan.pause(plan.id)
+                            container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.ARCHIVE -> coroutineScope.launch {
                             clearDefaultIfNeeded(container, preferences, plan.id)
                             container.manageStudyPlan.archive(plan.id)
+                            container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.RESTORE_ARCHIVED -> coroutineScope.launch {
                             container.manageStudyPlan.restoreArchived(plan.id)
+                            container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.MOVE_TO_TRASH -> coroutineScope.launch {
                             clearDefaultIfNeeded(container, preferences, plan.id)
                             container.manageStudyPlan.moveToTrash(plan.id)
+                            container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.RESTORE_FROM_TRASH -> coroutineScope.launch {
                             container.manageStudyPlan.restoreFromTrash(plan.id)
+                            container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.DELETE_PERMANENTLY -> coroutineScope.launch {
                             clearDefaultIfNeeded(container, preferences, plan.id)
                             container.manageStudyPlan.deletePermanently(plan.id)
+                            container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                     }
                 },
@@ -374,6 +381,7 @@ private fun StudyFlowNavHost(
                     val plan = form.toNewStudyPlan()
                     coroutineScope.launch {
                         container.createStudyPlan(plan, form.toSettings(plan.id))
+                        container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         navController.navigate(DashboardRoute(plan.id.value)) {
                             popUpTo<PlanListRoute>()
                         }
@@ -405,6 +413,7 @@ private fun StudyFlowNavHost(
                         coroutineScope.launch {
                             container.manageStudyPlan.update(currentPlan.withEditorForm(form))
                             container.manageStudyPlan.updateSettings(form.toSettings(currentPlan.id, settings))
+                            container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
                             navController.popBackStack()
                         }
                     },
@@ -434,6 +443,7 @@ private fun StudyFlowNavHost(
                     onSave = { updatedSettings ->
                         coroutineScope.launch {
                             container.manageStudyPlan.updateSettings(updatedSettings)
+                            container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
                             navController.popBackStack()
                         }
                     },
@@ -515,8 +525,10 @@ private fun StudyFlowNavHost(
                         coroutineScope.launch {
                             if (currentPlan.status == StudyPlanStatus.ACTIVE) {
                                 container.manageStudyPlan.pause(currentPlan.id)
+                                container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
                             } else {
                                 container.manageStudyPlan.activate(currentPlan.id)
+                                container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
                             }
                         }
                     },
@@ -688,6 +700,7 @@ private fun StudyFlowNavHost(
                     review = container.manageStudyReview,
                     onSettingsChanged = { updatedSettings -> coroutineScope.launch {
                         container.manageStudyPlan.updateSettings(updatedSettings)
+                        container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
                     } },
                     onBack = navController::popBackStack,
                 )

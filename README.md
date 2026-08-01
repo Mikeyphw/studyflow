@@ -529,3 +529,12 @@ integrity, and simulate a restore with zero database writes. A privacy center do
 ### Phase 24 sync foundation
 
 StudyFlow now exposes a local-only sync foundation. No cloud provider, account identity, token, or remote merge is implemented in this phase.
+
+### Phase 25 post-MVP gap closure
+
+Phase 25 seals the post-MVP roadmap by completing local reminder delivery and dynamic widgets while keeping
+cloud sync provider work gated behind the Phase 24 local-only foundation.
+
+## Phase 25 r2 correction
+
+Phase 25 reminder delivery now suppresses daily summaries during quiet hours and prevents immediate due-review reminder loops after delivery.

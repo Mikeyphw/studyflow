@@ -8,6 +8,8 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.mikeyphw.studyflow.MainActivity
 import com.mikeyphw.studyflow.R
+import com.mikeyphw.studyflow.core.domain.TodayWidgetSummary
+import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 
 class StudyFlowTodayWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(
@@ -15,7 +17,8 @@ class StudyFlowTodayWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        appWidgetIds.forEach { appWidgetId -> updateWidget(context, appWidgetManager, appWidgetId) }
+        appWidgetIds.forEach { appWidgetId -> updateWidget(context, appWidgetManager, appWidgetId, null) }
+        StudyFlowWidgetUpdateCoordinator.refreshAll(context)
     }
 
     companion object {
@@ -23,13 +26,42 @@ class StudyFlowTodayWidgetProvider : AppWidgetProvider() {
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int,
+            summary: TodayWidgetSummary?,
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_today)
-            views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_today_title))
-            views.setTextViewText(R.id.widget_body, context.getString(R.string.widget_today_body))
-            views.setTextViewText(R.id.widget_footer, context.getString(R.string.widget_today_footer))
-            views.setOnClickPendingIntent(R.id.widget_root, openAppPendingIntent(context))
+            if (summary == null) {
+                views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_no_plan_title))
+                views.setTextViewText(R.id.widget_body, context.getString(R.string.widget_no_plan_body))
+                views.setTextViewText(R.id.widget_footer, context.getString(R.string.widget_today_footer))
+            } else {
+                views.setTextViewText(R.id.widget_title, summary.studyPlanName)
+                views.setTextViewText(
+                    R.id.widget_body,
+                    context.getString(
+                        R.string.widget_due_reviews_format,
+                        summary.dueReviewCount,
+                        summary.plannedActivityCount,
+                    ),
+                )
+                views.setTextViewText(
+                    R.id.widget_footer,
+                    buildFooter(context, summary),
+                )
+            }
+            views.setOnClickPendingIntent(android.R.id.background, openAppPendingIntent(context))
             appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+        private fun buildFooter(context: Context, summary: TodayWidgetSummary): String {
+            val next = summary.nextActivityTitle ?: context.getString(R.string.widget_next_activity_empty)
+            return listOf(
+                context.getString(
+                    R.string.widget_progress_format,
+                    summary.missedActivityCount,
+                    summary.progressPercent,
+                ),
+                context.getString(R.string.widget_next_activity_format, next),
+            ).joinToString(separator = "\n")
         }
 
         private fun openAppPendingIntent(context: Context): PendingIntent {

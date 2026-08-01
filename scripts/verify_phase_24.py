@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+from phase_version import phase_version_at_least
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -12,7 +13,8 @@ def require(path: str, *needles: str) -> None:
     if missing:
         raise SystemExit(f"{path} missing: {missing}")
 
-require("app/build.gradle.kts", "versionCode = 24", "versionName = \"0.24.0-phase24\"")
+if not phase_version_at_least(ROOT, 24):
+    raise SystemExit("app version is below Phase 24")
 require("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
         "StudySyncProviderKind", "LOCAL_ONLY", "StudySyncState", "StudySyncChangeSummary")
 require("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",

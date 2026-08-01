@@ -454,3 +454,16 @@
 ## Phase 24 - Optional cloud-sync foundation
 
 - Added provider-neutral local sync state, change-token inspection, Settings sync entry, and local-only scope gates.
+
+## 0.25.0-phase25
+
+- Close the Phase 21 reminder delivery gap with inexact alarm scheduling, notification channel creation,
+  boot recovery, and fresh-state suppression before posting.
+- Replace the static Today widget placeholder with repository-backed live summaries.
+- Extend the release readiness seal through Phase 25 and preserve Phase 24's local-only sync provider gate.
+
+## Phase 25 r2 correction
+
+- Fixed daily summary reminder quiet-hour suppression.
+- Added a planner-level guard to prevent immediate due-review reminders from rearming into a one-minute loop after delivery.
+- Added tests and verifier checks for quiet-hour and anti-spam reminder behavior.

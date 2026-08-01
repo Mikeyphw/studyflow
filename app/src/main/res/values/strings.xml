@@ -10,4 +10,13 @@
     <string name="widget_today_footer">Reviews · Schedule · Progress</string>
     <string name="widget_today_description">Shows today's StudyFlow reminders and progress summary.</string>
     <string name="navigation_search">Search</string>
+
+    <string name="notification_channel_study_reminders_name">Study reminders</string>
+    <string name="notification_channel_study_reminders_description">Review, schedule, and daily summary reminders.</string>
+    <string name="widget_no_plan_title">StudyFlow today</string>
+    <string name="widget_no_plan_body">Choose a default active plan to show due reviews and study blocks here.</string>
+    <string name="widget_due_reviews_format">Due reviews: %1$d · Planned today: %2$d</string>
+    <string name="widget_progress_format">Missed: %1$d · Progress: %2$d%%</string>
+    <string name="widget_next_activity_format">Next: %1$s</string>
+    <string name="widget_next_activity_empty">No upcoming block</string>
 </resources>

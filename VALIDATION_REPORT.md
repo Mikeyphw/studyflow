@@ -54,3 +54,15 @@ device behavior are not claimed as locally completed. Devtool validation on the 
 
 - Source-contract validator chain extended through Phase 24.
 - Android Gradle compile/lint/assemble remains a Devtool-side gate.
+
+## Phase 25
+
+- Source-contract validator chain extended through Phase 25.
+- Phase 25 promise audit confirms reminder delivery, dynamic widget updates, boot recovery, and final gap closure.
+- Android Gradle compile/lint/assemble and notification/widget device smoke checks remain Devtool-side gates.
+
+## Phase 25 r2 validation delta
+
+- Added source contract checks for daily-summary quiet-hour suppression.
+- Added source contract checks for the due-review anti-spam reschedule guard.
+- Added pure planner tests covering all reminder types inside quiet hours and immediate due-review delivery.

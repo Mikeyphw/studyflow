@@ -10,4 +10,13 @@
     <string name="widget_today_footer">Revisões · Agenda · Progresso</string>
     <string name="widget_today_description">Mostra os lembretes e o resumo de progresso de hoje no StudyFlow.</string>
     <string name="navigation_search">Buscar</string>
+
+    <string name="notification_channel_study_reminders_name">Lembretes de estudo</string>
+    <string name="notification_channel_study_reminders_description">Lembretes de revisão, agenda e resumo diário.</string>
+    <string name="widget_no_plan_title">StudyFlow hoje</string>
+    <string name="widget_no_plan_body">Escolha um plano ativo padrão para mostrar revisões e blocos de estudo aqui.</string>
+    <string name="widget_due_reviews_format">Revisões: %1$d · Hoje: %2$d</string>
+    <string name="widget_progress_format">Perdidos: %1$d · Progresso: %2$d%%</string>
+    <string name="widget_next_activity_format">Próximo: %1$s</string>
+    <string name="widget_next_activity_empty">Nenhum bloco próximo</string>
 </resources>

@@ -31,6 +31,8 @@ import com.mikeyphw.studyflow.core.domain.StudyScheduleRepository
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
 import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
+import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
+import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -60,6 +62,7 @@ interface AppContainer {
     val studyAnalyticsRepository: StudyAnalyticsRepository
     val annexFileStorageRepository: AnnexFileStorageRepository
     val appPreferencesRepository: AppPreferencesRepository
+    val reminderDeliveryCoordinator: StudyReminderDeliveryCoordinator
     val createStudyPlan: CreateStudyPlan
     val manageStudyPlan: ManageStudyPlan
     val manageStudyContent: ManageStudyContent
@@ -100,6 +103,13 @@ private class DefaultAppContainer(
     override val annexFileStorageRepository: AnnexFileStorageRepository = dataLayer.annexFileStorageRepository
     override val appPreferencesRepository: AppPreferencesRepository =
         DataStoreAppPreferencesRepository(application)
+    override val reminderDeliveryCoordinator = StudyReminderDeliveryCoordinator(
+        context = application,
+        studyPlanRepository = studyPlanRepository,
+        studyScheduleRepository = studyScheduleRepository,
+        studyReviewRepository = studyReviewRepository,
+        studyPracticeRepository = studyPracticeRepository,
+    )
     override val createStudyPlan = CreateStudyPlan(studyPlanRepository)
     override val manageStudyPlan = ManageStudyPlan(studyPlanRepository)
     override val manageStudyContent = ManageStudyContent(studyContentRepository)
@@ -118,8 +128,11 @@ private class DefaultAppContainer(
         ManageStudyPlanPortability(dataLayer.studyPlanPortabilityRepository)
 
     init {
+        reminderDeliveryCoordinator.createNotificationChannels()
         applicationScope.launch {
             dataLayer.initialize()
+            reminderDeliveryCoordinator.reconcileAll()
+            StudyFlowWidgetUpdateCoordinator.refreshAll(application)
         }
     }
 }

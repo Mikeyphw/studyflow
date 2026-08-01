@@ -62,7 +62,7 @@ object StudyReminderPlanner {
                     title = input.plan.name,
                     body = "Daily study summary is available.",
                     scheduledAtEpochMillis = startOfNextDay(input.nowEpochMillis),
-                    suppressedByQuietHours = false,
+                    suppressedByQuietHours = suppressed,
                 ),
             )
         }
@@ -85,6 +85,17 @@ object StudyReminderPlanner {
                 progressPercent = input.plan.progressPercent,
             ),
         )
+    }
+
+
+    fun shouldRescheduleAfterDelivery(
+        candidate: ReminderNotificationCandidate,
+        deliveredAtEpochMillis: Long,
+    ): Boolean = when (candidate.type) {
+        ReminderNotificationType.DUE_REVIEWS -> false
+        ReminderNotificationType.PLANNED_ACTIVITY -> candidate.scheduledAtEpochMillis > deliveredAtEpochMillis
+        ReminderNotificationType.MISSED_ACTIVITY,
+        ReminderNotificationType.DAILY_SUMMARY -> true
     }
 
     fun notificationPermissionRequired(apiLevel: Int, permissionGranted: Boolean): Boolean =
