@@ -10,8 +10,7 @@ and optionally embedded in `.studyplan` packages.
 
 ## Phase 18: Material viewer and media playback
 
-Material and video resources become directly usable through safe file intents, local/direct media
-handling, and clear unsupported-source states.
+Material and video resources become directly usable through safe Android viewer/playback handoff, app-private FileProvider access, and clear unsupported-source states.
 
 ## Phase 19: Practice, test, and mock execution engine
 

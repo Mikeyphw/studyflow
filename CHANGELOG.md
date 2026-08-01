@@ -188,3 +188,9 @@
 - Added annex payload support to `.studyplan` packages while preserving metadata-only exports.
 - Added library UI actions for attaching and deleting stored annex files.
 - Added Phase 17 contracts, package safety checks, and validation coverage.
+
+## Phase 18 - Material Viewer and Media Playback
+
+- Added material, video, and annex launch planning for safe viewer/playback handoff.
+- Added app package visibility queries and FileProvider routing for app-private annex copies.
+- Added library screen open actions and playback-open progress hooks.

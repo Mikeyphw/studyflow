@@ -31,4 +31,9 @@
     <string name="annex_deleted">Annex deleted.</string>
     <string name="annex_failed">The annex file operation could not be completed.</string>
     <string name="annex_size">%1$d bytes</string>
+    <string name="open_resource">Open</string>
+    <string name="open_video">Open video</string>
+    <string name="open_annex">Open annex</string>
+    <string name="resource_opened">Resource opened.</string>
+    <string name="resource_open_failed">No compatible app could open this resource.</string>
 </resources>

@@ -529,6 +529,7 @@ private fun StudyFlowNavHost(
                     plan = currentPlan,
                     library = container.manageStudyLibrary,
                     annexFiles = container.manageAnnexFileStorage,
+                    resourceViewer = container.manageStudyResourceViewer,
                     onBack = navController::popBackStack,
                 )
             }

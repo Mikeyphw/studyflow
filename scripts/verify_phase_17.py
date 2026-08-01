@@ -13,8 +13,12 @@ def text(path: str) -> str:
     return target.read_text(encoding="utf-8")
 
 app_build = text("app/build.gradle.kts")
-if 'versionName = "0.17.0-phase17"' not in app_build:
-    failures.append("app version is not Phase 17")
+expected_versions = [
+    'versionName = "0.17.0-phase17"',
+    'versionName = "0.18.0-phase18"',
+]
+if not any(marker in app_build for marker in expected_versions):
+    failures.append("app version is not Phase 17 or later")
 
 models = text("core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageModels.kt")
 for marker in (

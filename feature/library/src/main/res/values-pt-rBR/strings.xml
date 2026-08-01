@@ -31,4 +31,9 @@
     <string name="annex_deleted">Anexo excluído.</string>
     <string name="annex_failed">A operação do arquivo anexo não pôde ser concluída.</string>
     <string name="annex_size">%1$d bytes</string>
+    <string name="open_resource">Abrir</string>
+    <string name="open_video">Abrir vídeo</string>
+    <string name="open_annex">Abrir anexo</string>
+    <string name="resource_opened">Recurso aberto.</string>
+    <string name="resource_open_failed">Nenhum app compatível conseguiu abrir este recurso.</string>
 </resources>

@@ -236,3 +236,9 @@ planning drafts.
 StudyFlow annexes now support real app-private file copies. Full exports can include annex payloads
 inside `.studyplan` packages with checksum verification, while metadata-only exports remain available
 for smaller or privacy-conscious packages.
+
+### Phase 18: Material Viewer and Media Playback
+
+Library resources can now be opened from StudyFlow through safe Android view intents. Imported annex
+copies are shared through the app FileProvider, web/video sources use their matching viewer handoff,
+and open actions update resource activity metadata.

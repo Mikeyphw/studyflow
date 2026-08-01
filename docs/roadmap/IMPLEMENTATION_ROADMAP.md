@@ -26,7 +26,7 @@ post-MVP gap-closure track.
 
 - Phase 16: Roadmap and validation truth cleanup.
 - Phase 17: Annex file storage and portability.
-- Phase 18: Material viewer and media playback.
+- Phase 18: Material viewer and media playback. Delivered in the post-MVP track.
 - Phase 19: Practice, test, and mock execution engine.
 - Phase 20: Wrong-answer notebook and remediation loop.
 - Phase 21: Reminders, notifications, and study widgets.

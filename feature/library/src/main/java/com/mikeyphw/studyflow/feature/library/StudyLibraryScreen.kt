@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
+import com.mikeyphw.studyflow.core.domain.ManageStudyResourceViewer
 import com.mikeyphw.studyflow.core.domain.StudyLibrarySnapshot
 import com.mikeyphw.studyflow.core.model.Annex
 import com.mikeyphw.studyflow.core.model.StudyMaterial
@@ -62,6 +63,7 @@ fun StudyLibraryScreen(
     plan: StudyPlan,
     library: ManageStudyLibrary,
     annexFiles: ManageAnnexFileStorage,
+    resourceViewer: ManageStudyResourceViewer,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -81,6 +83,8 @@ fun StudyLibraryScreen(
     val annexImportedMessage = stringResource(R.string.annex_imported)
     val annexDeletedMessage = stringResource(R.string.annex_deleted)
     val annexFailedMessage = stringResource(R.string.annex_failed)
+    val resourceOpenedMessage = stringResource(R.string.resource_opened)
+    val resourceOpenFailedMessage = stringResource(R.string.resource_open_failed)
     val annexPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             coroutineScope.launch {
@@ -245,13 +249,33 @@ fun StudyLibraryScreen(
             StudyFlowSectionCard(title = stringResource(R.string.library_title)) {
                 LibraryFilterRow(selected = filter, onSelected = { filter = it })
                 when (filter) {
-                    LibraryFilter.MATERIALS -> MaterialList(snapshot.activeMaterials, library, plan)
-                    LibraryFilter.VIDEOS -> VideoList(snapshot.videos, library, plan)
+                    LibraryFilter.MATERIALS -> MaterialList(
+                        materials = snapshot.activeMaterials,
+                        library = library,
+                        resourceViewer = resourceViewer,
+                        plan = plan,
+                        onLaunchResult = { opened ->
+                            message = if (opened) resourceOpenedMessage else resourceOpenFailedMessage
+                        },
+                    )
+                    LibraryFilter.VIDEOS -> VideoList(
+                        videos = snapshot.videos,
+                        library = library,
+                        resourceViewer = resourceViewer,
+                        plan = plan,
+                        onLaunchResult = { opened ->
+                            message = if (opened) resourceOpenedMessage else resourceOpenFailedMessage
+                        },
+                    )
                     LibraryFilter.ANNEXES -> AnnexList(
                         annexes = snapshot.annexes,
                         annexFiles = annexFiles,
+                        resourceViewer = resourceViewer,
                         plan = plan,
                         onDeleted = { message = annexDeletedMessage },
+                        onLaunchResult = { opened ->
+                            message = if (opened) resourceOpenedMessage else resourceOpenFailedMessage
+                        },
                     )
                 }
             }
@@ -273,7 +297,14 @@ private fun LibraryFilterRow(selected: LibraryFilter, onSelected: (LibraryFilter
 }
 
 @Composable
-private fun MaterialList(materials: List<StudyMaterial>, library: ManageStudyLibrary, plan: StudyPlan) {
+private fun MaterialList(
+    materials: List<StudyMaterial>,
+    library: ManageStudyLibrary,
+    resourceViewer: ManageStudyResourceViewer,
+    plan: StudyPlan,
+    onLaunchResult: (Boolean) -> Unit,
+) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     if (materials.isEmpty()) {
         Text(stringResource(R.string.no_materials), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -283,6 +314,16 @@ private fun MaterialList(materials: List<StudyMaterial>, library: ManageStudyLib
             StudyFlowSectionCard(title = row.title) {
                 Text(stringResource(R.string.progress_percent, row.progressPercent))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val launchPlan = resourceViewer.planForMaterial(plan.id, material.id)
+                                val opened = context.launchStudyResource(launchPlan)
+                                if (opened) resourceViewer.markMaterialOpened(plan.id, material.id)
+                                onLaunchResult(opened)
+                            }
+                        },
+                    ) { Text(stringResource(R.string.open_resource)) }
                     OutlinedButton(
                         onClick = { coroutineScope.launch { library.toggleFavorite(plan.id, material.id) } },
                     ) {
@@ -305,7 +346,14 @@ private fun MaterialList(materials: List<StudyMaterial>, library: ManageStudyLib
 }
 
 @Composable
-private fun VideoList(videos: List<VideoResource>, library: ManageStudyLibrary, plan: StudyPlan) {
+private fun VideoList(
+    videos: List<VideoResource>,
+    library: ManageStudyLibrary,
+    resourceViewer: ManageStudyResourceViewer,
+    plan: StudyPlan,
+    onLaunchResult: (Boolean) -> Unit,
+) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     if (videos.isEmpty()) {
         Text(stringResource(R.string.no_videos), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -314,6 +362,16 @@ private fun VideoList(videos: List<VideoResource>, library: ManageStudyLibrary, 
             StudyFlowSectionCard(title = video.title) {
                 Text(video.sourceUri, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                val launchPlan = resourceViewer.planForVideo(plan.id, video.id)
+                                val opened = context.launchStudyResource(launchPlan)
+                                if (opened) resourceViewer.markVideoOpened(plan.id, video.id)
+                                onLaunchResult(opened)
+                            }
+                        },
+                    ) { Text(stringResource(R.string.open_video)) }
                     Button(
                         onClick = {
                             coroutineScope.launch {
@@ -337,9 +395,12 @@ private fun VideoList(videos: List<VideoResource>, library: ManageStudyLibrary, 
 private fun AnnexList(
     annexes: List<Annex>,
     annexFiles: ManageAnnexFileStorage,
+    resourceViewer: ManageStudyResourceViewer,
     plan: StudyPlan,
     onDeleted: () -> Unit,
+    onLaunchResult: (Boolean) -> Unit,
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     if (annexes.isEmpty()) {
         Text(stringResource(R.string.no_annexes), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -350,16 +411,28 @@ private fun AnnexList(
                     stringResource(R.string.annex_size, annex.byteSize),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                OutlinedButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            annexFiles.deleteStoredAnnex(plan.id, annex.id)
-                            onDeleted()
-                        }
-                    },
-                ) {
-                    Icon(Icons.Outlined.Delete, contentDescription = null)
-                    Text(stringResource(R.string.delete))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                val opened = context.launchStudyResource(
+                                    resourceViewer.planForAnnex(annex),
+                                )
+                                onLaunchResult(opened)
+                            }
+                        },
+                    ) { Text(stringResource(R.string.open_annex)) }
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                annexFiles.deleteStoredAnnex(plan.id, annex.id)
+                                onDeleted()
+                            }
+                        },
+                    ) {
+                        Icon(Icons.Outlined.Delete, contentDescription = null)
+                        Text(stringResource(R.string.delete))
+                    }
                 }
             }
         }

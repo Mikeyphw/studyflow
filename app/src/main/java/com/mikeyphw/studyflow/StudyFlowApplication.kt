@@ -13,6 +13,7 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyPlanPortability
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
+import com.mikeyphw.studyflow.core.domain.ManageStudyResourceViewer
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
@@ -61,6 +62,7 @@ interface AppContainer {
     val manageStudyPractice: ManageStudyPractice
     val manageStudyLibrary: ManageStudyLibrary
     val manageStudyReview: ManageStudyReview
+    val manageStudyResourceViewer: ManageStudyResourceViewer
     val manageStudyProgress: ManageStudyProgress
     val manageStudyAnalytics: ManageStudyAnalytics
     val manageAnnexFileStorage: ManageAnnexFileStorage
@@ -96,6 +98,7 @@ private class DefaultAppContainer(
     override val manageStudyPractice = ManageStudyPractice(studyPracticeRepository)
     override val manageStudyLibrary = ManageStudyLibrary(studyLibraryRepository)
     override val manageStudyReview = ManageStudyReview(studyReviewRepository, studyPracticeRepository)
+    override val manageStudyResourceViewer = ManageStudyResourceViewer(studyLibraryRepository)
     override val manageStudyProgress = ManageStudyProgress(studyProgressRepository)
     override val manageStudyAnalytics = ManageStudyAnalytics(studyAnalyticsRepository)
     override val manageAnnexFileStorage = ManageAnnexFileStorage(annexFileStorageRepository)
