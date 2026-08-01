@@ -18,8 +18,12 @@ for relative in required:
     if not (ROOT / relative).is_file():
         failures.append(f"missing Phase 15 file: {relative}")
 app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-if 'versionName = "0.15.0-phase15"' not in app_build:
-    failures.append("app version is not Phase 15")
+expected_versions = [
+    'versionName = "0.15.0-phase15"',
+    'versionName = "0.16.0-phase16"',
+]
+if not any(marker in app_build for marker in expected_versions):
+    failures.append("app version is not Phase 15 or later")
 settings_source = (ROOT / "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt").read_text(
     encoding="utf-8",
 )
@@ -99,9 +103,12 @@ validate = (ROOT / "scripts/validate_repo.sh").read_text(encoding="utf-8")
 for phase in range(0, 16):
     if f"verify_phase_{phase}.py" not in validate:
         failures.append(f"validate_repo.sh does not run Phase {phase} contract")
-version_match = re.search(r'versionName = "0\.(\d+)\.0-phase(\d+)"', app_build)
-if not version_match or int(version_match.group(1)) != 15 or int(version_match.group(2)) != 15:
-    failures.append("version name does not use Phase 15 numbering")
+expected_versions = [
+    'versionName = "0.15.0-phase15"',
+    'versionName = "0.16.0-phase16"',
+]
+if not any(marker in app_build for marker in expected_versions):
+    failures.append("app version is not Phase 15 or later")
 if failures:
     print("PHASE_15_CONTRACT: FAILED")
     print("\n".join(f"- {failure}" for failure in failures))

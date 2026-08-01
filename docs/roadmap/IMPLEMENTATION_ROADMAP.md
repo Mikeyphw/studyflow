@@ -1,63 +1,42 @@
-# Implementation Roadmap
+# StudyFlow Implementation Roadmap
 
-## Milestone A: Foundation
+This document is the current source of truth for the delivered StudyFlow Android MVP and the
+post-MVP gap-closure track.
 
-- Phase 0: product and behavior contract
-- Phase 1: Android project foundation
-- Phase 2: complete domain model and Room database
+## Delivered 15-phase MVP baseline
 
-## Milestone B: Study Plan lifecycle
+- Phase 0: Product, architecture, localization, and validation contracts.
+- Phase 1: Android Compose foundation and module shell.
+- Phase 2: Domain model, Room database, and offline-first persistence.
+- Phase 3: Complete Study Plan lifecycle management.
+- Phase 4: Study Plan portability, snapshots, import, and export foundation.
+- Phase 5: Subjects, topics, syllabus structure, and progress derivation.
+- Phase 6: Schedule strategy and planned activities.
+- Phase 7: Study sessions, timer execution, and planned-activity linkage.
+- Phase 8: Question bank and practice-deck foundation.
+- Phase 9: Reviews, flashcards, and spaced repetition.
+- Phase 10: Library and study-resource metadata.
+- Phase 11: Goals, notes, and progress command center.
+- Phase 12: Analytics and insights.
+- Phase 13: Settings, backup polish, and app-shell readiness.
+- Phase 14: Polish, accessibility, and UX consistency.
+- Phase 15: Final integration seal and regression suite.
 
-- Phase 3: create, edit, duplicate, pause, archive, trash, and restore
-- Phase 4: portable import, export, templates, and snapshots
+## Post-MVP gap-closure track
 
-## Milestone C: Study organization
+- Phase 16: Roadmap and validation truth cleanup.
+- Phase 17: Annex file storage and portability.
+- Phase 18: Material viewer and media playback.
+- Phase 19: Practice, test, and mock execution engine.
+- Phase 20: Wrong-answer notebook and remediation loop.
+- Phase 21: Reminders, notifications, and study widgets.
+- Phase 22: Global search and smart recommendations.
+- Phase 23: Privacy, encryption, and backup hardening.
+- Phase 24: Optional cloud-sync foundation.
+- Phase 25: Post-MVP gap-closure seal.
 
-- Phase 5: subjects, topics, and syllabus
-- Phase 6: schedule and study strategies
-- Phase 7: sessions and focus timer
+## Roadmap rule
 
-## Milestone D: Library, video, and annexes
-
-- Phase 8: materials library
-- Phase 9: imported and linked annex storage
-- Phase 10: YouTube, direct media, local video, and WebView playback
-
-## Milestone E: Practice engine
-
-- Phase 11: question bank
-- Phase 12: tests
-- Phase 13: mock exams
-
-## Milestone F: Retention
-
-- Phase 14: reviews, flashcards, and error notebook
-
-## Milestone G: Guidance and analytics
-
-- Phase 15: goals and progress
-- Phase 16: statistics and diagnostics
-- Phase 17: next-best-activity recommendation engine
-
-## Milestone H: Android integration
-
-- Phase 18: notifications, widgets, and background work
-
-## Milestone I: Search, security, and resilience
-
-- Phase 19: global search
-- Phase 20: WebView hardening
-- Phase 21: privacy, backups, and encryption
-
-## Milestone J: Quality and release
-
-- Phase 22: accessibility and localization seal
-- Phase 23: reliability and performance
-- Phase 24: release preparation
-
-## Post-1.0
-
-- Phase 25: encrypted cloud synchronization
-- Phase 26: shared templates
-- Phase 27: syllabus and edital intelligence
-- Phase 28: desktop or web companion
+The delivered MVP and post-MVP track must not be described as competing phase systems. New phases
+extend the Phase 15 baseline and must keep their verifier names, phase docs, and roadmap entries in
+sync.

@@ -224,3 +224,9 @@ empty/error/loading state behavior, action feedback, and navigation consistency.
 
 The StudyFlow MVP baseline is sealed with an integration report covering all 15 phases, feature
 module wiring, bilingual resource parity, source-quality guards, and release-readiness contracts.
+
+### Phase 16: Roadmap and Validation Truth Cleanup
+
+The repository now distinguishes the delivered 15-phase MVP baseline from the post-MVP gap-closure
+roadmap. Validation reports and roadmap docs are kept aligned with the source tree instead of old
+planning drafts.

@@ -175,3 +175,9 @@
 - Added final cross-feature repository contracts for feature modules, validators, resource parity,
   database-boundary hygiene, and app-shell readiness.
 - Added Phase 15 release report and final acceptance documentation.
+
+## Phase 16 - Roadmap and Validation Truth Cleanup
+
+- Reconciled the final 15-phase MVP documentation with the post-MVP gap-closure roadmap.
+- Replaced stale validation-report language that referenced old Phase 5 lint warnings.
+- Added contracts that prevent the roadmap and validation report from drifting away from the implemented phase set.
