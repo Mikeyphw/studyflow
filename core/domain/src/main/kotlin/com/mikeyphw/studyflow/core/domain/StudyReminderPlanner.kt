@@ -11,13 +11,27 @@ private const val HourMillis = 3_600_000L
 private const val PostNotificationsApi = 33
 
 object StudyReminderPlanner {
+    /**
+     * Mirrors the inexact AlarmManager delivery window. A planned-activity alarm that fires late
+     * still deserves one fresh-state delivery, while old stale alarms are suppressed.
+     */
+    const val PlannedActivityDeliveryGraceMillis: Long = 15 * 60 * 1000L
+
     fun buildPlan(input: StudyReminderInput): StudyReminderPlan {
         val activeActivities = input.schedule.plannedActivities.filter { activity ->
             activity.status in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED)
         }
-        val nextActivity = activeActivities
+        val plannedActivities = activeActivities.filter { activity ->
+            activity.status == PlannedActivityStatus.PLANNED
+        }
+        val nextActivity = plannedActivities
             .filter { activity -> activity.scheduledStartEpochMillis != null }
-            .filter { activity -> requireNotNull(activity.scheduledStartEpochMillis) >= input.nowEpochMillis }
+            .filter { activity ->
+                plannedActivityWithinDeliveryWindow(
+                    scheduledStartEpochMillis = requireNotNull(activity.scheduledStartEpochMillis),
+                    nowEpochMillis = input.nowEpochMillis,
+                )
+            }
             .minByOrNull { activity -> requireNotNull(activity.scheduledStartEpochMillis) }
         val missedActivities = activeActivities.filter { activity -> activity.status == PlannedActivityStatus.MISSED }
         val dueReviews = input.reviewQueue.dueCount
@@ -110,6 +124,11 @@ object StudyReminderPlanner {
             minuteOfDay >= start || minuteOfDay < end
         }
     }
+
+    fun plannedActivityWithinDeliveryWindow(
+        scheduledStartEpochMillis: Long,
+        nowEpochMillis: Long,
+    ): Boolean = scheduledStartEpochMillis >= nowEpochMillis - PlannedActivityDeliveryGraceMillis
 
     private fun startOfNextDay(nowEpochMillis: Long): Long =
         ((nowEpochMillis / DayMillis) + 1) * DayMillis

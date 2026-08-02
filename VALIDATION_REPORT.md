@@ -87,3 +87,11 @@ device behavior are not claimed as locally completed. Devtool validation on the 
 ## Phase 29 r2
 
 - Corrected the double-audit misses: no generated Python cache payloads, no literal NUL bytes, and behavior checks strengthened beyond marker validation.
+
+
+## Phase 29 reminder delivery grace hotfix
+
+- Added shared planned-activity delivery grace between planner and AlarmManager window.
+- Added focused planner tests for inexact planned reminders.
+- Strengthened Phase 29 verifier to require the grace helper and tests.
+- Artifact hygiene checks: no `__pycache__`, no `.pyc`, no NUL bytes, no reserved `.devtool-artifact/*` inventory entries.

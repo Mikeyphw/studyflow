@@ -30,7 +30,6 @@ import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import java.util.Calendar
 import kotlinx.coroutines.flow.first
 
-private const val AlarmWindowMillis = 15 * 60 * 1000L
 private const val MinimumFutureDelayMillis = 60 * 1000L
 const val StudyReminderAction = "com.mikeyphw.studyflow.action.STUDY_REMINDER"
 const val StudyReminderExtraPlanId = "plan_id"
@@ -119,7 +118,7 @@ class StudyReminderDeliveryCoordinator(
         alarmManager.setWindow(
             AlarmManager.RTC_WAKEUP,
             triggerAt,
-            AlarmWindowMillis,
+            StudyReminderPlanner.PlannedActivityDeliveryGraceMillis,
             pendingIntent(planId, candidate.type),
         )
     }

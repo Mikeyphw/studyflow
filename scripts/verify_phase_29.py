@@ -88,6 +88,26 @@ for key in [
 if not {'release_candidate_polish_title','release_candidate_polish_value','release_candidate_polish_message'} <= (en_keys & pt_keys):
     raise AssertionError('release-candidate resource parity failed')
 
+
+reminder_planner = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt")
+require(reminder_planner, 'const val PlannedActivityDeliveryGraceMillis: Long = 15 * 60 * 1000L', 'planned activity inexact-alarm grace constant')
+require(reminder_planner, 'plannedActivityWithinDeliveryWindow(', 'planned activity delivery grace helper')
+require(reminder_planner, 'scheduledStartEpochMillis >= nowEpochMillis - PlannedActivityDeliveryGraceMillis', 'late planned activity acceptance window')
+require(reminder_planner, 'activity.status == PlannedActivityStatus.PLANNED', 'completed/missed planned activity suppression for planned reminders')
+
+reminder_delivery = read("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt")
+require(reminder_delivery, 'StudyReminderPlanner.PlannedActivityDeliveryGraceMillis', 'delivery coordinator uses domain grace as alarm window')
+forbid(reminder_delivery, 'private const val AlarmWindowMillis = 15 * 60 * 1000L', 'duplicated alarm window constant')
+
+reminder_hotfix_tests = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerPhase29HotfixTest.kt")
+for hotfix_test in [
+    'plannedActivityStillDeliversWhenInexactAlarmFiresInsideWindow',
+    'stalePlannedActivityAlarmOutsideWindowIsSuppressed',
+    'quietHoursStillSuppressLatePlannedActivityDelivery',
+    'completedActivitiesRemainSuppressedEvenInsideDeliveryWindow',
+]:
+    require(reminder_hotfix_tests, hotfix_test, f'planned activity delivery grace test {hotfix_test}')
+
 docs = read("docs/quality/PHASE_29_RELEASE_CANDIDATE_POLISH.md")
 require(docs, 'settings polish', 'settings polish docs')
 require(docs, 'empty/error/loading states pass', 'empty/error/loading docs')
@@ -99,7 +119,7 @@ require(docs, 'final roadmap index', 'roadmap index docs')
 require(read("docs/product/FIRST_RUN_AND_UPGRADE_NOTES.md"), 'Local-first by default', 'first-run notes')
 require(read("docs/roadmap/FINAL_ROADMAP_INDEX.md"), 'Phase 29', 'final roadmap index through Phase 29')
 
-print('PHASE_29_CONTRACT: PASSED (release candidate polish r2)')
+print('PHASE_29_CONTRACT: PASSED (release candidate polish r2 + reminder delivery grace hotfix)')
 
 if __name__ == '__main__':
     sys.exit(0)

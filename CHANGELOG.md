@@ -508,3 +508,10 @@
 ## Phase 29 r2
 
 - Corrected the double-audit misses: no generated Python cache payloads, no literal NUL bytes, and behavior checks strengthened beyond marker validation.
+
+
+## Phase 29 reminder delivery grace hotfix
+
+- Fixed planned-activity reminders so inexact alarms that fire inside the delivery window still post after the fresh-state recheck.
+- Suppressed stale planned-activity alarms outside the delivery window.
+- Added reminder planner tests for late delivery, quiet hours, and completed-activity suppression.
