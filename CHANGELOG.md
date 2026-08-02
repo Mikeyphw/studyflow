@@ -1,5 +1,11 @@
 # Changelog
 
+## Debug Workbench D6 - Study engine lab
+
+- Added aggregate-only Study Engine Lab diagnostics for schedule expansion, review queues, practice decks, mock exams, recommendations, search, progress, analytics, and sync foundation.
+- Added missing-plan, cancellation, fatal-error, duplicate-kind, and bounded aggregate model tests.
+- Kept the lab read-only and rejected labels, names, notes, questions, answers, and raw search/recommendation titles from diagnostics.
+
 ## Debug Workbench D5 - Database and portability lab
 
 - Added aggregate-only Room health inspection with schema, quick-check, foreign-key, table/count, metadata, and migration-chain evidence.
@@ -66,6 +72,12 @@
 - Added Phase 20 verifier.
 
 # Changelog
+
+## Debug Workbench D6 - Study engine lab
+
+- Added aggregate-only Study Engine Lab diagnostics for schedule expansion, review queues, practice decks, mock exams, recommendations, search, progress, analytics, and sync foundation.
+- Added missing-plan, cancellation, fatal-error, duplicate-kind, and bounded aggregate model tests.
+- Kept the lab read-only and rejected labels, names, notes, questions, answers, and raw search/recommendation titles from diagnostics.
 
 ## Phase 5 - Syllabus, subjects and nested topics
 
@@ -288,6 +300,12 @@
 - Added Phase 20 verifier.
 
 # Changelog
+
+## Debug Workbench D6 - Study engine lab
+
+- Added aggregate-only Study Engine Lab diagnostics for schedule expansion, review queues, practice decks, mock exams, recommendations, search, progress, analytics, and sync foundation.
+- Added missing-plan, cancellation, fatal-error, duplicate-kind, and bounded aggregate model tests.
+- Kept the lab read-only and rejected labels, names, notes, questions, answers, and raw search/recommendation titles from diagnostics.
 
 ## Phase 22+23 r3 annex payload privacy repair
 

@@ -19,10 +19,13 @@ import com.mikeyphw.studyflow.core.diagnostics.DatabasePortabilityLabActionResul
 import com.mikeyphw.studyflow.core.diagnostics.DatabasePortabilityLabReport
 import com.mikeyphw.studyflow.core.diagnostics.ReminderLabActionResult
 import com.mikeyphw.studyflow.core.diagnostics.ReminderNotificationLabReport
+import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabActionResult
+import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabReport
 
 private enum class DebugLabPage {
     REMINDERS,
     DATABASE_PORTABILITY,
+    STUDY_ENGINE,
 }
 
 @Composable
@@ -38,6 +41,10 @@ fun DebugLabsPanel(
     databasePortabilityRunning: Boolean,
     onInspectDatabase: () -> Unit,
     onRunPortabilityDrills: () -> Unit,
+    studyEngineReport: StudyEngineLabReport,
+    studyEngineActionResult: StudyEngineLabActionResult?,
+    studyEngineRunning: Boolean,
+    onInspectStudyEngine: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var pageName by rememberSaveable { mutableStateOf(DebugLabPage.REMINDERS.name) }
@@ -57,6 +64,11 @@ fun DebugLabsPanel(
                 onClick = { pageName = DebugLabPage.DATABASE_PORTABILITY.name },
                 label = { Text(stringResource(R.string.debug_lab_page_database)) },
             )
+            FilterChip(
+                selected = page == DebugLabPage.STUDY_ENGINE,
+                onClick = { pageName = DebugLabPage.STUDY_ENGINE.name },
+                label = { Text(stringResource(R.string.debug_lab_page_study_engine)) },
+            )
         }
         when (page) {
             DebugLabPage.REMINDERS -> ReminderNotificationLabPanel(
@@ -74,6 +86,13 @@ fun DebugLabsPanel(
                 running = databasePortabilityRunning,
                 onInspectDatabase = onInspectDatabase,
                 onRunPortabilityDrills = onRunPortabilityDrills,
+                modifier = Modifier.fillMaxSize(),
+            )
+            DebugLabPage.STUDY_ENGINE -> StudyEngineLabPanel(
+                report = studyEngineReport,
+                actionResult = studyEngineActionResult,
+                running = studyEngineRunning,
+                onInspect = onInspectStudyEngine,
                 modifier = Modifier.fillMaxSize(),
             )
         }

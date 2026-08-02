@@ -312,4 +312,24 @@
     <string name="debug_portability_drill_blocked">Bloqueado ou reprovado</string>
     <string name="debug_portability_drill_destructive">Destrutivo</string>
     <string name="debug_portability_drill_annex">Anexo com metadados privados</string>
+    <string name="debug_lab_page_study_engine">Motor de estudos</string>
+    <string name="debug_study_engine_lab_title">Laboratório do motor de estudos</string>
+    <string name="debug_study_engine_lab_message">Executa diagnósticos somente leitura em agenda, revisões, prática, recomendações, busca, progresso, análise e base de sincronização. Os valores são apenas agregados.</string>
+    <string name="debug_study_engine_lab_inspect">Inspecionar motor de estudos</string>
+    <string name="debug_study_engine_lab_summary">Aprovados: %1$d · Alertas: %2$d · Bloqueados: %3$d</string>
+    <string name="debug_study_engine_lab_failed">A inspeção do motor de estudos falhou.</string>
+    <string name="debug_study_engine_action_inspected">Inspeção do motor de estudos concluída.</string>
+    <string name="debug_study_engine_primary_count">Contagem primária: %1$d</string>
+    <string name="debug_study_engine_secondary_count">Contagem secundária: %1$d</string>
+    <string name="debug_study_engine_percent">Percentual: %1$d%%</string>
+    <string name="debug_study_engine_score">Pontuação principal: %1$d</string>
+    <string name="debug_study_engine_kind_schedule">Expansão da agenda</string>
+    <string name="debug_study_engine_kind_review">Fila de revisões</string>
+    <string name="debug_study_engine_kind_practice">Baralho de prática</string>
+    <string name="debug_study_engine_kind_mock">Simulado</string>
+    <string name="debug_study_engine_kind_recommendations">Recomendações</string>
+    <string name="debug_study_engine_kind_search">Consulta de busca</string>
+    <string name="debug_study_engine_kind_progress">Resumo de progresso</string>
+    <string name="debug_study_engine_kind_analytics">Resumo analítico</string>
+    <string name="debug_study_engine_kind_sync">Base de sincronização</string>
 </resources>

@@ -312,4 +312,24 @@
     <string name="debug_portability_drill_blocked">Blocked or failed</string>
     <string name="debug_portability_drill_destructive">Destructive</string>
     <string name="debug_portability_drill_annex">Metadata-private annex</string>
+    <string name="debug_lab_page_study_engine">Study engine</string>
+    <string name="debug_study_engine_lab_title">Study engine lab</string>
+    <string name="debug_study_engine_lab_message">Runs read-only diagnostics through schedule, review, practice, recommendations, search, progress, analytics, and sync foundation. Values are aggregate-only.</string>
+    <string name="debug_study_engine_lab_inspect">Inspect study engine</string>
+    <string name="debug_study_engine_lab_summary">Passed: %1$d · Warnings: %2$d · Blocked: %3$d</string>
+    <string name="debug_study_engine_lab_failed">Study engine inspection failed.</string>
+    <string name="debug_study_engine_action_inspected">Study engine inspection completed.</string>
+    <string name="debug_study_engine_primary_count">Primary count: %1$d</string>
+    <string name="debug_study_engine_secondary_count">Secondary count: %1$d</string>
+    <string name="debug_study_engine_percent">Percent: %1$d%%</string>
+    <string name="debug_study_engine_score">Top score: %1$d</string>
+    <string name="debug_study_engine_kind_schedule">Schedule expansion</string>
+    <string name="debug_study_engine_kind_review">Review queue</string>
+    <string name="debug_study_engine_kind_practice">Practice deck</string>
+    <string name="debug_study_engine_kind_mock">Mock exam</string>
+    <string name="debug_study_engine_kind_recommendations">Recommendations</string>
+    <string name="debug_study_engine_kind_search">Search query</string>
+    <string name="debug_study_engine_kind_progress">Progress snapshot</string>
+    <string name="debug_study_engine_kind_analytics">Analytics snapshot</string>
+    <string name="debug_study_engine_kind_sync">Sync foundation</string>
 </resources>

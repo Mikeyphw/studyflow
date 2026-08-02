@@ -85,6 +85,53 @@ class DebugWorkbenchLabsTest {
         assertTrue(report.migrationPathComplete)
     }
 
+
+    @Test
+    fun `study engine report counts statuses and keeps aggregate evidence only`() {
+        val report = StudyEngineLabReport(
+            status = DebugLabStatus.PASSED,
+            inspectedAtEpochMillis = 100L,
+            diagnostics = listOf(
+                StudyEngineDiagnostic(
+                    kind = StudyEngineDiagnosticKind.SCHEDULE_EXPANSION,
+                    status = DebugLabStatus.PASSED,
+                    primaryCount = 3,
+                    secondaryCount = 7,
+                ),
+                StudyEngineDiagnostic(
+                    kind = StudyEngineDiagnosticKind.PRACTICE_DECK,
+                    status = DebugLabStatus.WARNING,
+                    primaryCount = 0,
+                    percent = 0,
+                ),
+            ),
+        )
+
+        assertEquals(1, report.passedCount)
+        assertEquals(1, report.warningCount)
+        assertEquals(0, report.blockedCount)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `study engine report rejects duplicate diagnostic kinds`() {
+        StudyEngineLabReport(
+            status = DebugLabStatus.PASSED,
+            diagnostics = listOf(
+                StudyEngineDiagnostic(StudyEngineDiagnosticKind.SEARCH_QUERY, DebugLabStatus.PASSED),
+                StudyEngineDiagnostic(StudyEngineDiagnosticKind.SEARCH_QUERY, DebugLabStatus.WARNING),
+            ),
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `study engine diagnostics reject unbounded percentages`() {
+        StudyEngineDiagnostic(
+            kind = StudyEngineDiagnosticKind.ANALYTICS_SNAPSHOT,
+            status = DebugLabStatus.PASSED,
+            percent = 101,
+        )
+    }
+
     private fun candidate(
         kind: ReminderCandidateKind,
         suppressed: Boolean,

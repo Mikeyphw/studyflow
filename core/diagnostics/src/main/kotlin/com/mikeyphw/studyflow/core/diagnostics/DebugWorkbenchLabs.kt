@@ -160,3 +160,61 @@ data class DatabasePortabilityLabReport(
         }
     }
 }
+
+enum class StudyEngineLabMessage {
+    NONE,
+    MISSING_DEFAULT_PLAN,
+    INSPECTION_FAILED,
+}
+
+enum class StudyEngineLabActionResult {
+    INSPECTED,
+    MISSING_DEFAULT_PLAN,
+    FAILED,
+}
+
+enum class StudyEngineDiagnosticKind {
+    SCHEDULE_EXPANSION,
+    REVIEW_QUEUE,
+    PRACTICE_DECK,
+    MOCK_EXAM,
+    RECOMMENDATIONS,
+    SEARCH_QUERY,
+    PROGRESS_SNAPSHOT,
+    ANALYTICS_SNAPSHOT,
+    SYNC_FOUNDATION,
+}
+
+data class StudyEngineDiagnostic(
+    val kind: StudyEngineDiagnosticKind,
+    val status: DebugLabStatus,
+    val primaryCount: Int = 0,
+    val secondaryCount: Int = 0,
+    val percent: Int? = null,
+    val score: Int? = null,
+) {
+    init {
+        require(status != DebugLabStatus.RUNNING) { "Completed study-engine diagnostics cannot remain running." }
+        require(primaryCount >= 0)
+        require(secondaryCount >= 0)
+        percent?.let { require(it in 0..100) }
+        score?.let { require(it >= 0) }
+    }
+}
+
+data class StudyEngineLabReport(
+    val status: DebugLabStatus,
+    val message: StudyEngineLabMessage = StudyEngineLabMessage.NONE,
+    val inspectedAtEpochMillis: Long = 0L,
+    val diagnostics: List<StudyEngineDiagnostic> = emptyList(),
+) {
+    init {
+        require(inspectedAtEpochMillis >= 0L)
+        require(diagnostics.distinctBy(StudyEngineDiagnostic::kind).size == diagnostics.size)
+        require(diagnostics.none { it.kind.name.contains("TITLE") || it.kind.name.contains("NAME") })
+    }
+
+    val passedCount: Int = diagnostics.count { it.status == DebugLabStatus.PASSED }
+    val warningCount: Int = diagnostics.count { it.status == DebugLabStatus.WARNING }
+    val blockedCount: Int = diagnostics.count { it.status == DebugLabStatus.BLOCKED }
+}

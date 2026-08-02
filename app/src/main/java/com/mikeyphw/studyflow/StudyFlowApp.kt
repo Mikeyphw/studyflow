@@ -59,6 +59,9 @@ import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DatabasePortabilityLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DatabasePortabilityLabActionResult
 import com.mikeyphw.studyflow.core.diagnostics.DebugLabStatus
+import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabActionResult
+import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabMessage
+import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabReport
 import com.mikeyphw.studyflow.core.domain.GlobalSearchDestination
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
@@ -889,6 +892,11 @@ private fun StudyFlowNavHost(
                 mutableStateOf<DatabasePortabilityLabActionResult?>(null)
             }
             var databasePortabilityRunning by rememberSaveable { mutableStateOf(false) }
+            var studyEngineReport by remember {
+                mutableStateOf(StudyEngineLabReport(status = DebugLabStatus.NOT_RUN))
+            }
+            var studyEngineAction by rememberSaveable { mutableStateOf<StudyEngineLabActionResult?>(null) }
+            var studyEngineRunning by rememberSaveable { mutableStateOf(false) }
             val reminderLab = remember(container, preferences.defaultStudyPlanId) {
                 StudyFlowReminderNotificationLab(
                     context = context,
@@ -898,6 +906,12 @@ private fun StudyFlowNavHost(
             }
             val databasePortabilityLab = remember(container, preferences.defaultStudyPlanId) {
                 StudyFlowDatabasePortabilityLab(
+                    container = container,
+                    defaultPlanId = { preferences.defaultStudyPlanId },
+                )
+            }
+            val studyEngineLab = remember(container, preferences.defaultStudyPlanId) {
+                StudyFlowStudyEngineLab(
                     container = container,
                     defaultPlanId = { preferences.defaultStudyPlanId },
                 )
@@ -1085,6 +1099,28 @@ private fun StudyFlowNavHost(
                                     refreshDiagnostics()
                                 } finally {
                                     databasePortabilityRunning = false
+                                }
+                            }
+                        },
+                        studyEngineReport = studyEngineReport,
+                        studyEngineActionResult = studyEngineAction,
+                        studyEngineRunning = studyEngineRunning,
+                        onInspectStudyEngine = {
+                            if (!studyEngineRunning) coroutineScope.launch {
+                                studyEngineRunning = true
+                                try {
+                                    val (report, result) = studyEngineLab.inspect()
+                                    studyEngineReport = report
+                                    studyEngineAction = result
+                                    refreshDiagnostics()
+                                } catch (cancelled: CancellationException) {
+                                    studyEngineReport = studyEngineReport.copy(
+                                        status = DebugLabStatus.CANCELLED,
+                                        message = StudyEngineLabMessage.INSPECTION_FAILED,
+                                    )
+                                    throw cancelled
+                                } finally {
+                                    studyEngineRunning = false
                                 }
                             }
                         },
