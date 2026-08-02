@@ -21,6 +21,9 @@
     <string name="backup_ready">O backup do Plano de Estudo padrão está pronto.</string>
     <string name="backup_needs_default_plan">Defina um Plano de Estudo padrão para ativar o acesso rápido ao backup.</string>
     <string name="open_backup_center">Abrir central de backup</string>
+    <string name="release_candidate_polish_title">Polimento do candidato a lançamento</string>
+    <string name="release_candidate_polish_value">%1$d%% pronto para RC</string>
+    <string name="release_candidate_polish_message">%1$d de %2$d critérios de polimento do candidato a lançamento estão prontos.</string>
     <string name="accessibility_title">Base de acessibilidade</string>
     <string name="accessibility_message">O StudyFlow mantém rótulos, descrições de conteúdo e recursos sem avisos como barreiras de lançamento.</string>
     <string name="ux_polish_title">Polimento da experiência</string>

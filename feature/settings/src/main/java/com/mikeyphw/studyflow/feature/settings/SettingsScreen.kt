@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessAuditor
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessInput
+import com.mikeyphw.studyflow.core.domain.ReleaseCandidatePolishAuditor
+import com.mikeyphw.studyflow.core.domain.ReleaseCandidatePolishEvidence
 import com.mikeyphw.studyflow.core.domain.ReleaseReadinessSeal
 import com.mikeyphw.studyflow.core.domain.UserExperiencePolishAuditor
 import com.mikeyphw.studyflow.core.model.AppLanguage
@@ -54,6 +56,9 @@ fun SettingsScreen(
         ),
     )
     val polishReport = UserExperiencePolishAuditor.evaluate()
+    val releaseCandidateReport = ReleaseCandidatePolishAuditor.evaluate(
+        ReleaseCandidatePolishEvidence.verifiedForReleaseCandidateDocs(),
+    )
     val releaseReport = ReleaseReadinessSeal.evaluate(readiness)
     Column(
         modifier = modifier
@@ -181,6 +186,23 @@ StudyFlowSectionCard(title = stringResource(R.string.ux_polish_title)) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+        StudyFlowSectionCard(title = stringResource(R.string.release_candidate_polish_title)) {
+            Text(
+                text = stringResource(
+                    R.string.release_candidate_polish_value,
+                    releaseCandidateReport.readyPercent,
+                ),
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            Text(
+                text = stringResource(
+                    R.string.release_candidate_polish_message,
+                    releaseCandidateReport.readyCount,
+                    releaseCandidateReport.totalCount,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         StudyFlowSectionCard(title = stringResource(R.string.accessibility_title)) {
             Text(
                 text = stringResource(R.string.accessibility_message),

@@ -3,7 +3,7 @@
 StudyFlow is an offline-first Android study workspace for public examinations, certifications,
 university courses, entrance examinations, and independent study.
 
-This repository implements **Roadmap Phases 0 through 28**:
+This repository implements **Roadmap Phases 0 through 29**:
 
 - an executable product and behavior contract;
 - an English-only codebase with English and Brazilian Portuguese UI resources;
@@ -20,6 +20,7 @@ This repository implements **Roadmap Phases 0 through 28**:
 - unit tests, Android lint, formatting contracts, and repository validators;
 - backup/restore drill seals covering encrypted packages, wrong passwords, tamper detection,
   metadata-private annex payloads, restore dry-runs, retention truthfulness, and recovery reports;
+- release-candidate polish with first-run notes, upgrade notes, resource parity, and final roadmap index;
 - a Devtool-ready `studyflow_android` target for future overlays.
 
 ## Product invariant
@@ -267,7 +268,7 @@ StudyFlow now includes a per-plan reminders center, Android notification-permiss
 StudyFlow is an offline-first Android study workspace for public examinations, certifications,
 university courses, entrance examinations, and independent study.
 
-This repository implements **Roadmap Phases 0 through 28**:
+This repository implements **Roadmap Phases 0 through 29**:
 
 - an executable product and behavior contract;
 - an English-only codebase with English and Brazilian Portuguese UI resources;
@@ -284,6 +285,7 @@ This repository implements **Roadmap Phases 0 through 28**:
 - unit tests, Android lint, formatting contracts, and repository validators;
 - backup/restore drill seals covering encrypted packages, wrong passwords, tamper detection,
   metadata-private annex payloads, restore dry-runs, retention truthfulness, and recovery reports;
+- release-candidate polish with first-run notes, upgrade notes, resource parity, and final roadmap index;
 - a Devtool-ready `studyflow_android` target for future overlays.
 
 ## Product invariant

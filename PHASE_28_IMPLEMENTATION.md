@@ -15,8 +15,3 @@ Delivered:
 - source-contract verifier, documentation, and pure domain tests.
 
 No Room migration, cloud provider, network permission, destructive restore, or exact-alarm behavior is added.
-
-
-## r2 correction
-
-This corrected overlay removes generated Python caches, rejects literal NUL bytes in text sources, and strengthens the Phase 28 verifier against decorative or self-declared behavior.

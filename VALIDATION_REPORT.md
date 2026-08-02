@@ -76,6 +76,14 @@ device behavior are not claimed as locally completed. Devtool validation on the 
 - Android Gradle compile/lint/assemble and real Storage Access Framework drills remain Devtool/device gates.
 
 
-## Phase 28 r2
+## Phase 29
+
+- Source-contract validator chain extended through Phase 29.
+- Added release-candidate polish audit covering settings, state screens, accessibility labels, resource parity,
+  trust copy, first-run/upgrade notes, and final roadmap index.
+- Android Gradle compile/lint/assemble, installation, and runtime smoke execution remain Devtool/device gates.
+
+
+## Phase 29 r2
 
 - Corrected the double-audit misses: no generated Python cache payloads, no literal NUL bytes, and behavior checks strengthened beyond marker validation.

@@ -21,6 +21,9 @@
     <string name="backup_ready">Default Study Plan backup is ready.</string>
     <string name="backup_needs_default_plan">Set a default Study Plan to enable one-tap backup access.</string>
     <string name="open_backup_center">Open backup center</string>
+    <string name="release_candidate_polish_title">Release candidate polish</string>
+    <string name="release_candidate_polish_value">%1$d%% RC ready</string>
+    <string name="release_candidate_polish_message">%1$d of %2$d release-candidate polish gates are ready.</string>
     <string name="accessibility_title">Accessibility baseline</string>
     <string name="accessibility_message">StudyFlow keeps text labels, content descriptions, and warning-free resources as release gates.</string>
     <string name="ux_polish_title">UX polish</string>

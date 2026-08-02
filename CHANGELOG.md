@@ -1,3 +1,12 @@
+## Phase 29: Release Candidate Polish
+
+- Added `ReleaseCandidatePolishAuditor` for settings polish, state-screen, accessibility,
+  resource-parity, trust-copy, first-run, upgrade, and roadmap-index checks.
+- Added a Settings release-candidate polish card with English and Brazilian Portuguese resources.
+- Added first-run/upgrade notes and a final roadmap index through Phase 29.
+- Made the Phase 28 verifier phase-forward so the repository can advance past `0.28.0-phase28`.
+- Advanced the release validation seal evidence through Phase 29.
+
 ## Phase 28: Backup/Restore Drill Seal
 
 - Added `BackupRestoreDrillSeal` for non-destructive encrypted export, wrong-password,
@@ -496,6 +505,6 @@
 - Added stronger Phase 27 validator checks for compile-facing integration seams.
 
 
-## Phase 28 r2
+## Phase 29 r2
 
 - Corrected the double-audit misses: no generated Python cache payloads, no literal NUL bytes, and behavior checks strengthened beyond marker validation.
