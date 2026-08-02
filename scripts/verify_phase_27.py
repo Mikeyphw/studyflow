@@ -57,8 +57,11 @@ require(screen, 'probe.safeForManualRun', 'safe manual gate')
 
 settings = read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt")
 require(settings, 'syncState: StudySyncState', 'sync state setting parameter')
-require(settings, 'onOpenRuntimeSmokeWorkbench', 'settings runtime smoke callback')
-require(settings, 'open_runtime_smoke_workbench', 'settings runtime smoke button')
+require(settings, 'onOpenDebugWorkbench', 'settings Debug Workbench callback')
+require(settings, 'open_debug_workbench', 'settings Debug Workbench button')
+debug_screen = read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugWorkbenchScreen.kt")
+require(debug_screen, 'onOpenRuntimeSmokeWorkbench', 'runtime smoke compatibility action')
+require(debug_screen, 'debug_open_runtime_smoke', 'runtime smoke compatibility button')
 
 app = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
 require(app, 'import com.mikeyphw.studyflow.core.domain.RuntimeSmokeWorkbench', 'runtime smoke workbench import')

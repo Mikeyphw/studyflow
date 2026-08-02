@@ -54,6 +54,9 @@ data object PrivacyRoute
 data object SyncRoute
 
 @Serializable
+data object DebugWorkbenchRoute
+
+@Serializable
 data object RuntimeSmokeRoute
 
 @Serializable

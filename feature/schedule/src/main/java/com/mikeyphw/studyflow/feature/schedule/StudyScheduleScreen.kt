@@ -120,7 +120,10 @@ fun StudyScheduleScreen(
                 },
                 actions = {
                     IconButton(onClick = { showRuleDialog = true }) {
-                        Icon(Icons.AutoMirrored.Outlined.EventNote, contentDescription = stringResource(R.string.add_block))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.EventNote,
+                            contentDescription = stringResource(R.string.add_block),
+                        )
                     }
                     IconButton(onClick = { showActivityDialog = true }) {
                         Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.add_activity))

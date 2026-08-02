@@ -1,3 +1,33 @@
+# Changelog
+
+## Debug Workbench D5 - Database and portability lab
+
+- Added aggregate-only Room health inspection with schema, quick-check, foreign-key, table/count, metadata, and migration-chain evidence.
+- Added non-destructive portability drills through the production backup/restore drill seal.
+- Added cancellation, fatal-error, missing-plan, event-pairing, migration-chain, and destructive-drill rejection tests.
+
+## Debug Workbench D2/D3 corrective seal
+
+- Moved timeline, clear-history, and support-bundle preparation work onto an injected I/O context.
+- Added explicit unavailable and share-failed outcomes while preserving cancellation and fatal-error semantics.
+- Made the typed probe registry independently testable with injected suspend operations and execution context.
+- Added start/terminal event pairing for blocked probes plus cooperative and interruptible timeout coverage.
+- Added real widget registration/metadata/enabled checks and manifest-linked backup-rule evidence.
+- Added platform-policy, registry, and workbench-action behavior tests plus a new corrective validator.
+
+## Debug Workbench D3 - typed runtime probes
+
+- Added a typed probe registry with read-only platform health and bounded StudyFlow runtime checks.
+- Kept reminder reconciliation and widget refresh out of the read-only suite.
+- Added explicit blocked, warning, timeout and privacy-safe result contracts.
+
+## Debug Workbench D2 — Shell
+
+- Added a Settings-only Debug Workbench with overview, redacted timeline, probes placeholder, and reports surfaces.
+- Added robust object-only JSONL decoding and recorder-health policy models with behavior tests.
+- Added local copy, clear, refresh, and checksummed support-bundle sharing through a narrowly scoped cache FileProvider path.
+- Preserved the no-upload, no-new-permission, no-Room-migration privacy boundary.
+
 ## Debug Workbench D1 r2: Recorder and privacy foundation seal
 
 - Superseded the original unsealed D1 artifact after an adversarial promise audit.

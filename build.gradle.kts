@@ -49,7 +49,7 @@ tasks.register("verifyFormatting") {
 
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
-    description = "Runs the complete StudyFlow source-contract chain through Phase 29 plus Debug Workbench D1 r2."
+    description = "Runs StudyFlow contracts through Phase 29 and Debug Workbench D1 through D5."
     commandLine(
         "bash",
         "-lc",
@@ -59,6 +59,11 @@ tasks.register<Exec>("verifyRepositoryContracts") {
             python3 "scripts/verify_phase_${'$'}{phase}.py"
         done
         python3 scripts/verify_debug_workbench_d1_r2.py
+        python3 scripts/verify_debug_workbench_d2.py
+        python3 scripts/verify_debug_workbench_d3.py
+        python3 scripts/verify_debug_workbench_d2_d3_corrective_seal.py
+        python3 scripts/verify_debug_workbench_d4.py
+        python3 scripts/verify_debug_workbench_d5.py
         """.trimIndent(),
     )
 }

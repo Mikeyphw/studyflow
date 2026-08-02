@@ -19,4 +19,8 @@
     <string name="widget_progress_format">Missed: %1$d · Progress: %2$d%%</string>
     <string name="widget_next_activity_format">Next: %1$s</string>
     <string name="widget_next_activity_empty">No upcoming block</string>
+    <string name="debug_bundle_chooser_title">Share StudyFlow diagnostics</string>
+    <string name="debug_clipboard_label">StudyFlow diagnostics</string>
+    <string name="debug_diagnostic_notification_title">StudyFlow diagnostic notification</string>
+    <string name="debug_diagnostic_notification_body">Notification delivery is available. No study content is included.</string>
 </resources>

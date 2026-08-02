@@ -1,3 +1,14 @@
+val studyFlowManifestText = file("src/main/AndroidManifest.xml").readText()
+
+fun manifestLinksXml(attribute: String, resourceName: String): Boolean = Regex(
+    "android:$attribute\\s*=\\s*\"@xml/$resourceName\"",
+).containsMatchIn(studyFlowManifestText)
+
+val legacyBackupRuleLinked = manifestLinksXml("fullBackupContent", "backup_rules") &&
+    file("src/main/res/xml/backup_rules.xml").isFile
+val modernBackupRuleLinked = manifestLinksXml("dataExtractionRules", "data_extraction_rules") &&
+    file("src/main/res/xml/data_extraction_rules.xml").isFile
+
 plugins {
     id("studyflow.android.application")
 }
@@ -9,6 +20,8 @@ android {
         applicationId = "com.mikeyphw.studyflow"
         versionCode = 29
         versionName = "0.29.0-phase29"
+        buildConfigField("boolean", "BACKUP_LEGACY_RULE_LINKED", legacyBackupRuleLinked.toString())
+        buildConfigField("boolean", "BACKUP_MODERN_RULE_LINKED", modernBackupRuleLinked.toString())
     }
 
     buildFeatures {

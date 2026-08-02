@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.data
 
 import android.content.Context
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
 import com.mikeyphw.studyflow.core.domain.StudyContentRepository
@@ -37,8 +38,11 @@ class StudyFlowDataLayer internal constructor(
     val studyAnalyticsRepository: StudyAnalyticsRepository,
     val annexFileStorageRepository: AnnexFileStorageRepository,
     private val initializeData: suspend () -> Unit,
+    private val inspectDatabase: suspend () -> DatabaseHealthLabReport,
 ) {
     suspend fun initialize() = initializeData()
+
+    suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport = inspectDatabase()
 }
 
 fun createStudyFlowDataLayer(
@@ -88,5 +92,6 @@ fun createStudyFlowDataLayer(
         studyAnalyticsRepository = studyAnalyticsRepository,
         annexFileStorageRepository = annexFileStorageRepository,
         initializeData = studyPlanRepository::seedFoundationSamplesOnce,
+        inspectDatabase = { inspectStudyFlowDatabase(database) },
     )
 }

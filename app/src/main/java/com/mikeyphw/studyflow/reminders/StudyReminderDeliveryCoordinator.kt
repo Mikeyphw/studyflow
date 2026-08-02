@@ -124,7 +124,7 @@ class StudyReminderDeliveryCoordinator(
     }
 
     private fun cancelPlanAlarms(planId: StudyPlanId) {
-        ReminderNotificationType.values().forEach { type ->
+        ReminderNotificationType.entries.forEach { type ->
             alarmManager.cancel(pendingIntent(planId, type))
         }
     }
@@ -142,7 +142,10 @@ class StudyReminderDeliveryCoordinator(
             .setLocalOnly(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
-        NotificationManagerCompat.from(appContext).notify(notificationId(planId, candidate.type), notification)
+        NotificationManagerCompat.from(appContext).notify(
+            notificationId(planId, candidate.type),
+            notification,
+        )
     }
 
     private fun notificationsAllowed(): Boolean {
@@ -187,4 +190,25 @@ class StudyReminderDeliveryCoordinator(
 }
 
 private fun notificationId(planId: StudyPlanId, type: ReminderNotificationType): Int =
+    studyReminderRequestCode(planId, type)
+
+internal fun studyReminderRequestCode(planId: StudyPlanId, type: ReminderNotificationType): Int =
     24_000 + kotlin.math.abs((planId.value + type.name).hashCode() % 10_000)
+
+internal fun studyReminderPendingIntentIdentityExists(
+    context: Context,
+    planId: StudyPlanId,
+    type: ReminderNotificationType,
+): Boolean {
+    val intent = Intent(context.applicationContext, StudyReminderReceiver::class.java).apply {
+        action = StudyReminderAction
+        putExtra(StudyReminderExtraPlanId, planId.value)
+        putExtra(StudyReminderExtraType, type.name)
+    }
+    return PendingIntent.getBroadcast(
+        context.applicationContext,
+        studyReminderRequestCode(planId, type),
+        intent,
+        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+    ) != null
+}

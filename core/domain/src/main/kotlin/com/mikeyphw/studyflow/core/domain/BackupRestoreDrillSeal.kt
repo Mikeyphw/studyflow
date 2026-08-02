@@ -189,7 +189,9 @@ object BackupRestoreDrillSeal {
                 ),
                 result(
                     BackupRestoreDrillKind.RESTORE_DRY_RUN,
-                    dryRunValue?.databaseRowsChanged == 0 && (dryRunValue?.totalRows ?: 0) > 0,
+                    dryRunValue != null &&
+                        dryRunValue.databaseRowsChanged == 0 &&
+                        dryRunValue.totalRows > 0,
                     "Restore dry-run uses dryRunImport and reports zero database writes before import.",
                 ),
                 result(

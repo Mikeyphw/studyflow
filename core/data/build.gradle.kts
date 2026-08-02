@@ -7,6 +7,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:diagnostics"))
     implementation(project(":core:database"))
     implementation(project(":core:domain"))
     implementation(project(":core:model"))

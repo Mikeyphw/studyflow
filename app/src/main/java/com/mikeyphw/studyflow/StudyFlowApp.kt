@@ -1,5 +1,9 @@
 package com.mikeyphw.studyflow
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +45,20 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowErrorPane
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTheme
+import com.mikeyphw.studyflow.core.diagnostics.DebugProbeCatalog
+import com.mikeyphw.studyflow.core.diagnostics.DebugProbeId
+import com.mikeyphw.studyflow.core.diagnostics.DebugProbeReport
+import com.mikeyphw.studyflow.core.diagnostics.DebugProbeReportPolicy
+import com.mikeyphw.studyflow.core.diagnostics.DebugProbeResult
+import com.mikeyphw.studyflow.core.diagnostics.DebugProbeStatus
+import com.mikeyphw.studyflow.core.diagnostics.DebugWorkbenchShellPolicy
+import com.mikeyphw.studyflow.core.diagnostics.DiagnosticTimelineSnapshot
+import com.mikeyphw.studyflow.core.diagnostics.ReminderLabActionResult
+import com.mikeyphw.studyflow.core.diagnostics.ReminderNotificationLabReport
+import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
+import com.mikeyphw.studyflow.core.diagnostics.DatabasePortabilityLabReport
+import com.mikeyphw.studyflow.core.diagnostics.DatabasePortabilityLabActionResult
+import com.mikeyphw.studyflow.core.diagnostics.DebugLabStatus
 import com.mikeyphw.studyflow.core.domain.GlobalSearchDestination
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
@@ -55,6 +73,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.navigation.AnalyticsRoute
 import com.mikeyphw.studyflow.core.navigation.CreatePlanRoute
 import com.mikeyphw.studyflow.core.navigation.DashboardRoute
+import com.mikeyphw.studyflow.core.navigation.DebugWorkbenchRoute
 import com.mikeyphw.studyflow.core.navigation.EditPlanRoute
 import com.mikeyphw.studyflow.core.navigation.LibraryRoute
 import com.mikeyphw.studyflow.core.navigation.PlanListRoute
@@ -98,11 +117,16 @@ import com.mikeyphw.studyflow.feature.reviews.StudyReviewScreen
 import com.mikeyphw.studyflow.feature.schedule.StudyScheduleScreen
 import com.mikeyphw.studyflow.feature.search.StudySearchScreen
 import com.mikeyphw.studyflow.feature.sessions.StudySessionScreen
+import com.mikeyphw.studyflow.feature.settings.DebugWorkbenchActionResult
+import com.mikeyphw.studyflow.feature.settings.DebugProbePanel
+import com.mikeyphw.studyflow.feature.settings.DebugWorkbenchScreen
+import com.mikeyphw.studyflow.feature.settings.DebugLabsPanel
 import com.mikeyphw.studyflow.feature.settings.RuntimeSmokeWorkbenchScreen
 import com.mikeyphw.studyflow.feature.settings.SettingsScreen
 import com.mikeyphw.studyflow.feature.settings.SyncFoundationScreen
 import com.mikeyphw.studyflow.feature.subjects.StudyContentScreen
 import java.util.UUID
+import java.util.concurrent.CancellationException
 import kotlinx.coroutines.launch
 
 private val MediumNavigationWidth = 600.dp
@@ -345,6 +369,8 @@ private fun StudyFlowNavHost(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val copySuffix = stringResource(R.string.plan_copy_suffix)
+    val debugClipboardLabel = stringResource(R.string.debug_clipboard_label)
+    val debugBundleChooserTitle = stringResource(R.string.debug_bundle_chooser_title)
 
     NavHost(
         navController = navController,
@@ -840,6 +866,232 @@ private fun StudyFlowNavHost(
                 onBack = navController::popBackStack,
             )
         }
+        composable<DebugWorkbenchRoute> {
+            var timeline by remember {
+                mutableStateOf(DiagnosticTimelineSnapshot(emptyList(), 0, 0))
+            }
+            var probeReport by remember { mutableStateOf(DebugProbeReport.empty()) }
+            var safeSuiteRunning by rememberSaveable { mutableStateOf(false) }
+            var actionResult by rememberSaveable { mutableStateOf<DebugWorkbenchActionResult?>(null) }
+            var reminderLabReport by remember {
+                mutableStateOf(ReminderNotificationLabReport(status = DebugLabStatus.NOT_RUN))
+            }
+            var reminderLabAction by rememberSaveable { mutableStateOf<ReminderLabActionResult?>(null) }
+            var reminderLabRunning by rememberSaveable { mutableStateOf(false) }
+            var databasePortabilityReport by remember {
+                mutableStateOf(
+                    DatabasePortabilityLabReport(
+                        database = DatabaseHealthLabReport(status = DebugLabStatus.NOT_RUN),
+                    ),
+                )
+            }
+            var databasePortabilityAction by rememberSaveable {
+                mutableStateOf<DatabasePortabilityLabActionResult?>(null)
+            }
+            var databasePortabilityRunning by rememberSaveable { mutableStateOf(false) }
+            val reminderLab = remember(container, preferences.defaultStudyPlanId) {
+                StudyFlowReminderNotificationLab(
+                    context = context,
+                    container = container,
+                    defaultPlanId = { preferences.defaultStudyPlanId },
+                )
+            }
+            val databasePortabilityLab = remember(container, preferences.defaultStudyPlanId) {
+                StudyFlowDatabasePortabilityLab(
+                    container = container,
+                    defaultPlanId = { preferences.defaultStudyPlanId },
+                )
+            }
+            val probeRegistry = remember(container, preferences.defaultStudyPlanId) {
+                StudyFlowDebugProbeRegistry(
+                    context = context,
+                    container = container,
+                    defaultPlanId = { preferences.defaultStudyPlanId },
+                )
+            }
+            val debugActions = remember(
+                container,
+                context,
+                debugClipboardLabel,
+                debugBundleChooserTitle,
+            ) {
+                StudyFlowDebugWorkbenchActions.android(
+                    context = context,
+                    store = container.diagnosticRecorder,
+                    clipboardLabel = debugClipboardLabel,
+                    chooserTitle = debugBundleChooserTitle,
+                )
+            }
+
+            suspend fun refreshDiagnostics() {
+                timeline = debugActions.loadTimeline()
+            }
+
+            suspend fun executeProbe(id: DebugProbeId) {
+                probeReport = DebugProbeReportPolicy.markRunning(probeReport, id)
+                try {
+                    val result = probeRegistry.run(id)
+                    probeReport = DebugProbeReportPolicy.complete(probeReport, result)
+                } catch (cancelled: CancellationException) {
+                    probeReport = DebugProbeReportPolicy.complete(
+                        probeReport,
+                        DebugProbeResult(
+                            id = id,
+                            status = DebugProbeStatus.CANCELLED,
+                            completedAtEpochMillis = System.currentTimeMillis(),
+                        ),
+                    )
+                    throw cancelled
+                } finally {
+                    refreshDiagnostics()
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                refreshDiagnostics()
+            }
+
+            val shellReport = DebugWorkbenchShellPolicy.evaluate(
+                store = container.diagnosticRecorder,
+                timeline = timeline,
+            )
+            DebugWorkbenchScreen(
+                shellReport = shellReport,
+                timeline = timeline,
+                actionResult = actionResult,
+                onRefresh = {
+                    coroutineScope.launch {
+                        refreshDiagnostics()
+                        actionResult = DebugWorkbenchActionResult.REFRESHED
+                    }
+                },
+                onCopyStatus = {
+                    copyDebugText(context, debugClipboardLabel, shellReport.toClipboardReport())
+                    actionResult = DebugWorkbenchActionResult.STATUS_COPIED
+                },
+                onCopyTimeline = {
+                    coroutineScope.launch {
+                        val text = debugActions.copyTimeline()
+                        copyDebugText(context, debugClipboardLabel, text)
+                        actionResult = DebugWorkbenchActionResult.TIMELINE_COPIED
+                    }
+                },
+                onClearHistory = {
+                    coroutineScope.launch {
+                        val cleared = debugActions.clearHistory()
+                        actionResult = if (cleared) {
+                            refreshDiagnostics()
+                            DebugWorkbenchActionResult.HISTORY_CLEARED
+                        } else {
+                            DebugWorkbenchActionResult.HISTORY_BUSY
+                        }
+                    }
+                },
+                onExportSupportBundle = {
+                    coroutineScope.launch {
+                        actionResult = debugActions.exportAndShare()
+                    }
+                },
+                onOpenRuntimeSmokeWorkbench = { navController.navigate(RuntimeSmokeRoute) },
+                onBack = navController::popBackStack,
+                probeContent = {
+                    DebugProbePanel(
+                        report = probeReport,
+                        safeSuiteRunning = safeSuiteRunning,
+                        onRunProbe = { id -> coroutineScope.launch { executeProbe(id) } },
+                        onRunSafeSuite = {
+                            if (!safeSuiteRunning) {
+                                coroutineScope.launch {
+                                    safeSuiteRunning = true
+                                    try {
+                                        DebugProbeCatalog.safeSuiteIds.forEach { id -> executeProbe(id) }
+                                    } finally {
+                                        safeSuiteRunning = false
+                                    }
+                                }
+                            }
+                        },
+                    )
+                },
+                labContent = {
+                    DebugLabsPanel(
+                        reminderReport = reminderLabReport,
+                        reminderActionResult = reminderLabAction,
+                        reminderRunning = reminderLabRunning,
+                        onInspectReminders = {
+                            if (!reminderLabRunning) coroutineScope.launch {
+                                reminderLabRunning = true
+                                try {
+                                    val (report, result) = reminderLab.inspect()
+                                    reminderLabReport = report
+                                    reminderLabAction = result
+                                    refreshDiagnostics()
+                                } finally {
+                                    reminderLabRunning = false
+                                }
+                            }
+                        },
+                        onReconcileReminders = {
+                            if (!reminderLabRunning) coroutineScope.launch {
+                                reminderLabRunning = true
+                                try {
+                                    reminderLabAction = reminderLab.reconcile()
+                                    reminderLabReport = reminderLab.inspect().first
+                                    refreshDiagnostics()
+                                } finally {
+                                    reminderLabRunning = false
+                                }
+                            }
+                        },
+                        onPostDiagnosticNotification = {
+                            if (!reminderLabRunning) coroutineScope.launch {
+                                reminderLabRunning = true
+                                try {
+                                    reminderLabAction = reminderLab.postDiagnosticNotification()
+                                    reminderLabReport = reminderLab.inspect().first
+                                    refreshDiagnostics()
+                                } finally {
+                                    reminderLabRunning = false
+                                }
+                            }
+                        },
+                        databasePortabilityReport = databasePortabilityReport,
+                        databasePortabilityActionResult = databasePortabilityAction,
+                        databasePortabilityRunning = databasePortabilityRunning,
+                        onInspectDatabase = {
+                            if (!databasePortabilityRunning) coroutineScope.launch {
+                                databasePortabilityRunning = true
+                                try {
+                                    val (report, result) = databasePortabilityLab.inspectDatabase(
+                                        databasePortabilityReport,
+                                    )
+                                    databasePortabilityReport = report
+                                    databasePortabilityAction = result
+                                    refreshDiagnostics()
+                                } finally {
+                                    databasePortabilityRunning = false
+                                }
+                            }
+                        },
+                        onRunPortabilityDrills = {
+                            if (!databasePortabilityRunning) coroutineScope.launch {
+                                databasePortabilityRunning = true
+                                try {
+                                    val (report, result) = databasePortabilityLab.runPortabilityDrills(
+                                        databasePortabilityReport,
+                                    )
+                                    databasePortabilityReport = report
+                                    databasePortabilityAction = result
+                                    refreshDiagnostics()
+                                } finally {
+                                    databasePortabilityRunning = false
+                                }
+                            }
+                        },
+                    )
+                },
+            )
+        }
         composable<RuntimeSmokeRoute> {
             var report by androidx.compose.runtime.remember {
                 mutableStateOf(
@@ -978,10 +1230,21 @@ private fun StudyFlowNavHost(
                 },
                 onOpenPrivacyCenter = { navController.navigate(PrivacyRoute) },
                 onOpenSyncCenter = { navController.navigate(SyncRoute) },
-                onOpenRuntimeSmokeWorkbench = { navController.navigate(RuntimeSmokeRoute) },
+                onOpenDebugWorkbench = { navController.navigate(DebugWorkbenchRoute) },
             )
         }
     }
+}
+
+
+private fun copyDebugText(context: Context, label: String, text: String) {
+    val clipboard = context.getSystemService(ClipboardManager::class.java)
+    clipboard?.setPrimaryClip(
+        ClipData.newPlainText(
+            label,
+            text,
+        ),
+    )
 }
 
 private suspend fun clearDefaultIfNeeded(

@@ -4,6 +4,7 @@ import android.app.Application
 import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorderProvider
+import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.CreateStudyPlan
@@ -94,6 +95,7 @@ interface AppContainer : DiagnosticRecorderProvider {
     val manageStudyAnalytics: ManageStudyAnalytics
     val manageAnnexFileStorage: ManageAnnexFileStorage
     val manageStudyPlanPortability: ManageStudyPlanPortability
+    suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport
 }
 
 private class DefaultAppContainer(
@@ -143,6 +145,9 @@ private class DefaultAppContainer(
     override val manageAnnexFileStorage = ManageAnnexFileStorage(annexFileStorageRepository)
     override val manageStudyPlanPortability =
         ManageStudyPlanPortability(dataLayer.studyPlanPortabilityRepository)
+
+    override suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport =
+        dataLayer.inspectDatabaseHealth()
 
     init {
         diagnosticRecorder.recordStep(

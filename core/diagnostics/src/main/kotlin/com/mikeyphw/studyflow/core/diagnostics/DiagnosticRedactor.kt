@@ -126,6 +126,7 @@ object DiagnosticRedactor {
             + "|(?:UTC(?:[+-][0-9]{1,2}(?::[0-9]{2})?)?)",
     )
     private val safeFingerprintPattern = Regex("[0-9a-f]{16}")
+    private val wrappedFingerprintPattern = Regex("<fingerprint:[0-9a-f]{16}>")
     private val credentialPattern = Regex(
         pattern = "(?i)\\b(bearer|basic)\\s+[A-Za-z0-9._~+/=-]{8,}",
     )
@@ -311,6 +312,7 @@ object DiagnosticRedactor {
 
     private fun fingerprintValue(value: String?): String {
         val normalized = value?.trim()?.takeIf(String::isNotBlank) ?: return ""
+        if (wrappedFingerprintPattern.matches(normalized)) return normalized
         return "<fingerprint:${fingerprint(normalized)}>"
     }
 

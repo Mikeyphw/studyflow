@@ -9,6 +9,7 @@ android {
 dependencies {
     api(project(":core:model"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:diagnostics"))
     implementation(project(":core:domain"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation)
