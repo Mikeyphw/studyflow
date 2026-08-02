@@ -467,3 +467,9 @@
 - Fixed daily summary reminder quiet-hour suppression.
 - Added a planner-level guard to prevent immediate due-review reminders from rearming into a one-minute loop after delivery.
 - Added tests and verifier checks for quiet-hour and anti-spam reminder behavior.
+## Phase 26 - Release validation seal
+
+- Added the Phase 26 release validation seal model and source-contract auditor.
+- Added validation blind-spot documentation for Gradle parity, Room schema validation, lint/resource checks, and packaging evidence.
+- Extended repository contract verification through Phase 26 without introducing a Room migration or network capability.
+

@@ -538,3 +538,9 @@ cloud sync provider work gated behind the Phase 24 local-only foundation.
 ## Phase 25 r2 correction
 
 Phase 25 reminder delivery now suppresses daily summaries during quiet hours and prevents immediate due-review reminder loops after delivery.
+
+## Phase 26: Release validation seal
+
+- Adds a release validation model that separates marker validators from Gradle-backed evidence.
+- Documents the exact remaining gates: configuration, compilation, unit tests, resource merge, lint, assemble, and device smoke.
+- Extends the source-contract chain through Phase 26.
