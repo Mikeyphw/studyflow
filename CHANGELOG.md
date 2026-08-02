@@ -1,3 +1,14 @@
+## Debug Workbench D1 r2: Recorder and privacy foundation seal
+
+- Superseded the original unsealed D1 artifact after an adversarial promise audit.
+- Fingerprint free-form values under generic diagnostic keys while preserving only narrowly typed machine metadata.
+- Re-sanitize caller-created exception summaries at event serialization so forged model values cannot leak.
+- Added collision-safe rotation filenames with a monotonic sequence and deterministic five-session retention.
+- Added writer-failure fallback export with explicit flush/timeline completeness evidence.
+- Expanded the behavior suite from 13 to 18 tests, including queue overflow, fixed-clock rotation collisions, forged
+  exceptions, generic-key privacy, and failed-writer support export.
+- Preserved Debug-only app-private recording, Release no-op behavior, fixed bundle allowlist, and no network upload.
+
 ## Phase 29: Release Candidate Polish
 
 - Added `ReleaseCandidatePolishAuditor` for settings polish, state-screen, accessibility,

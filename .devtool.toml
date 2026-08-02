@@ -28,6 +28,7 @@ build = [":app:assembleDebug"]
 test = [
     "verifyRepositoryContracts",
     "verifyFormatting",
+    ":core:diagnostics:test",
     ":core:model:test",
     ":core:domain:test",
     ":core:portability:test",
@@ -83,6 +84,7 @@ affected_module_lint = true
 [targets.studyflow_android.validation.phases]
 preflight = ["help"]
 compile = [
+    ":core:diagnostics:compileKotlin",
     ":core:model:compileKotlin",
     ":core:portability:compileKotlin",
     ":core:domain:compileKotlin",
@@ -95,6 +97,7 @@ compile = [
     ":feature:search:compileDebugKotlin",
     ":feature:settings:compileDebugKotlin",
     ":app:compileDebugKotlin",
+    ":core:diagnostics:compileTestKotlin",
     ":core:model:compileTestKotlin",
     ":core:portability:compileTestKotlin",
     ":core:domain:compileTestKotlin",
@@ -110,6 +113,7 @@ resources = [":app:processDebugResources"]
 unit-test = [
     "verifyRepositoryContracts",
     "verifyFormatting",
+    ":core:diagnostics:test",
     ":core:model:test",
     ":core:domain:test",
     ":core:portability:test",

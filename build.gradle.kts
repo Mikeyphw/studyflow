@@ -49,7 +49,7 @@ tasks.register("verifyFormatting") {
 
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
-    description = "Runs the complete StudyFlow source-contract chain through Phase 29."
+    description = "Runs the complete StudyFlow source-contract chain through Phase 29 plus Debug Workbench D1 r2."
     commandLine(
         "bash",
         "-lc",
@@ -58,6 +58,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         for phase in {0..29}; do
             python3 "scripts/verify_phase_${'$'}{phase}.py"
         done
+        python3 scripts/verify_debug_workbench_d1_r2.py
         """.trimIndent(),
     )
 }
@@ -68,6 +69,7 @@ tasks.register("checkAll") {
     dependsOn(
         "verifyRepositoryContracts",
         "verifyFormatting",
+        ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
         ":core:domain:test",

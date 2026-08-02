@@ -33,6 +33,7 @@ android {
 
 dependencies {
     implementation(project(":core:data"))
+    implementation(project(":core:diagnostics"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:domain"))
     implementation(project(":core:i18n"))

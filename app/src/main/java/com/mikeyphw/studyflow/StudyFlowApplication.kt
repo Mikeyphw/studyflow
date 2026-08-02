@@ -2,6 +2,9 @@ package com.mikeyphw.studyflow
 
 import android.app.Application
 import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
+import com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea
+import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorderProvider
+import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.CreateStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
@@ -44,11 +47,24 @@ class StudyFlowApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = DefaultAppContainer(this)
+        val diagnosticRecorder = createStudyFlowDiagnosticRecorder(this)
+        container = diagnosticRecorder.recordStep(
+            area = DiagnosticArea.APP_LIFECYCLE,
+            action = "application-container-create",
+            safeDetails = mapOf(
+                "version" to BuildConfig.VERSION_NAME,
+                "buildType" to BuildConfig.BUILD_TYPE,
+            ),
+        ) {
+            DefaultAppContainer(
+                application = this,
+                diagnosticRecorder = diagnosticRecorder,
+            )
+        }
     }
 }
 
-interface AppContainer {
+interface AppContainer : DiagnosticRecorderProvider {
     val studyPlanRepository: StudyPlanRepository
     val studyContentRepository: StudyContentRepository
     val studyDiscoveryRepository: StudyDiscoveryRepository
@@ -82,6 +98,7 @@ interface AppContainer {
 
 private class DefaultAppContainer(
     application: Application,
+    override val diagnosticRecorder: DiagnosticStore,
 ) : AppContainer {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val dataLayer = createStudyFlowDataLayer(
@@ -128,11 +145,31 @@ private class DefaultAppContainer(
         ManageStudyPlanPortability(dataLayer.studyPlanPortabilityRepository)
 
     init {
-        reminderDeliveryCoordinator.createNotificationChannels()
+        diagnosticRecorder.recordStep(
+            area = DiagnosticArea.NOTIFICATIONS,
+            action = "notification-channel-bootstrap",
+        ) {
+            reminderDeliveryCoordinator.createNotificationChannels()
+        }
         applicationScope.launch {
-            dataLayer.initialize()
-            reminderDeliveryCoordinator.reconcileAll()
-            StudyFlowWidgetUpdateCoordinator.refreshAll(application)
+            diagnosticRecorder.recordSuspendStep(
+                area = DiagnosticArea.INITIALIZATION,
+                action = "data-layer-initialize",
+            ) {
+                dataLayer.initialize()
+            }
+            diagnosticRecorder.recordSuspendStep(
+                area = DiagnosticArea.REMINDERS,
+                action = "startup-reminder-reconciliation",
+            ) {
+                reminderDeliveryCoordinator.reconcileAll()
+            }
+            diagnosticRecorder.recordSuspendStep(
+                area = DiagnosticArea.WIDGET,
+                action = "startup-widget-refresh",
+            ) {
+                StudyFlowWidgetUpdateCoordinator.refreshAll(application)
+            }
         }
     }
 }
