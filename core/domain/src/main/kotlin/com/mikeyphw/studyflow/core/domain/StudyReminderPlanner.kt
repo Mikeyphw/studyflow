@@ -5,8 +5,8 @@ import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudySchedule
+import java.util.Calendar
 
-private const val DayMillis = 86_400_000L
 private const val HourMillis = 3_600_000L
 private const val PostNotificationsApi = 33
 
@@ -16,6 +16,14 @@ object StudyReminderPlanner {
      * still deserves one fresh-state delivery, while old stale alarms are suppressed.
      */
     const val PlannedActivityDeliveryGraceMillis: Long = 15 * 60 * 1000L
+
+    /**
+     * Doze, App Standby, and wall-clock adjustments can deliver an inexact planned-activity
+     * reminder later than its requested alarm window. Keep a recently scheduled block eligible
+     * during this bounded late-delivery window so the fresh-state recheck degrades safely instead
+     * of dropping the notification. Old planned blocks remain suppressed.
+     */
+    const val PlannedActivityLateDeliveryGraceMillis: Long = 2 * 60 * 60 * 1000L
 
     fun buildPlan(input: StudyReminderInput): StudyReminderPlan {
         val activeActivities = input.schedule.plannedActivities.filter { activity ->
@@ -75,7 +83,7 @@ object StudyReminderPlanner {
                     type = ReminderNotificationType.DAILY_SUMMARY,
                     title = input.plan.name,
                     body = "Daily study summary is available.",
-                    scheduledAtEpochMillis = startOfNextDay(input.nowEpochMillis),
+                    scheduledAtEpochMillis = startOfNextLocalDay(input.nowEpochMillis),
                     suppressedByQuietHours = suppressed,
                 ),
             )
@@ -128,14 +136,30 @@ object StudyReminderPlanner {
     fun plannedActivityWithinDeliveryWindow(
         scheduledStartEpochMillis: Long,
         nowEpochMillis: Long,
-    ): Boolean = scheduledStartEpochMillis >= nowEpochMillis - PlannedActivityDeliveryGraceMillis
+    ): Boolean = scheduledStartEpochMillis >= nowEpochMillis - PlannedActivityLateDeliveryGraceMillis
 
-    private fun startOfNextDay(nowEpochMillis: Long): Long =
-        ((nowEpochMillis / DayMillis) + 1) * DayMillis
+    fun startOfNextLocalDay(nowEpochMillis: Long): Long {
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = nowEpochMillis
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        return calendar.timeInMillis
+    }
+
+    fun sameLocalDay(firstEpochMillis: Long, secondEpochMillis: Long): Boolean {
+        val first = Calendar.getInstance().apply { timeInMillis = firstEpochMillis }
+        val second = Calendar.getInstance().apply { timeInMillis = secondEpochMillis }
+        return first.get(Calendar.YEAR) == second.get(Calendar.YEAR) &&
+            first.get(Calendar.DAY_OF_YEAR) == second.get(Calendar.DAY_OF_YEAR)
+    }
 
     private fun PlannedActivity.isToday(nowEpochMillis: Long): Boolean {
         val start = scheduledStartEpochMillis ?: return false
-        return start / DayMillis == nowEpochMillis / DayMillis
+        return sameLocalDay(start, nowEpochMillis)
     }
 }
 

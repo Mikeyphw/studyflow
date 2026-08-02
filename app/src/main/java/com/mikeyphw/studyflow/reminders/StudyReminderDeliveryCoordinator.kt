@@ -137,7 +137,7 @@ class StudyReminderDeliveryCoordinator(
             .setContentTitle(candidate.title)
             .setContentText(candidate.body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(candidate.body))
-            .setContentIntent(openAppPendingIntent(planId))
+            .setContentIntent(openAppPendingIntent(planId, candidate.type))
             .setAutoCancel(true)
             .setLocalOnly(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -167,14 +167,15 @@ class StudyReminderDeliveryCoordinator(
         )
     }
 
-    private fun openAppPendingIntent(planId: StudyPlanId): PendingIntent {
+    private fun openAppPendingIntent(planId: StudyPlanId, type: ReminderNotificationType): PendingIntent {
         val intent = Intent(appContext, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(StudyReminderExtraPlanId, planId.value)
+            putExtra(StudyReminderExtraType, type.name)
         }
         return PendingIntent.getActivity(
             appContext,
-            planId.value.hashCode(),
+            notificationId(planId, type),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

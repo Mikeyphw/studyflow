@@ -34,7 +34,7 @@ class StudyReminderReceiver : BroadcastReceiver() {
 
 class StudyReminderBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        if (intent.action !in ReconcileReminderScheduleActions) return
         val result = goAsync()
         ReminderReceiverScope.launch {
             try {
@@ -46,6 +46,14 @@ class StudyReminderBootReceiver : BroadcastReceiver() {
         }
     }
 }
+
+private val ReconcileReminderScheduleActions = setOf(
+    Intent.ACTION_BOOT_COMPLETED,
+    Intent.ACTION_TIME_CHANGED,
+    Intent.ACTION_TIMEZONE_CHANGED,
+    Intent.ACTION_DATE_CHANGED,
+    Intent.ACTION_MY_PACKAGE_REPLACED,
+)
 
 fun createCoordinator(context: Context): StudyReminderDeliveryCoordinator {
     val dataLayer = createStudyFlowDataLayer(context.applicationContext, BuildConfig.VERSION_NAME)

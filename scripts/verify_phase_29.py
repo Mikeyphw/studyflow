@@ -92,7 +92,7 @@ if not {'release_candidate_polish_title','release_candidate_polish_value','relea
 reminder_planner = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt")
 require(reminder_planner, 'const val PlannedActivityDeliveryGraceMillis: Long = 15 * 60 * 1000L', 'planned activity inexact-alarm grace constant')
 require(reminder_planner, 'plannedActivityWithinDeliveryWindow(', 'planned activity delivery grace helper')
-require(reminder_planner, 'scheduledStartEpochMillis >= nowEpochMillis - PlannedActivityDeliveryGraceMillis', 'late planned activity acceptance window')
+require(reminder_planner, 'scheduledStartEpochMillis >= nowEpochMillis - PlannedActivityLateDeliveryGraceMillis', 'late planned activity acceptance window')
 require(reminder_planner, 'activity.status == PlannedActivityStatus.PLANNED', 'completed/missed planned activity suppression for planned reminders')
 
 reminder_delivery = read("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt")
@@ -108,6 +108,50 @@ for hotfix_test in [
 ]:
     require(reminder_hotfix_tests, hotfix_test, f'planned activity delivery grace test {hotfix_test}')
 
+
+# Phase 29B reminder/time/backup hardening checks.
+require(reminder_planner, 'import java.util.Calendar', 'local Calendar import for day boundaries')
+require(reminder_planner, 'PlannedActivityLateDeliveryGraceMillis: Long = 2 * 60 * 60 * 1000L', 'late planned-activity delivery grace')
+require(reminder_planner, 'startOfNextLocalDay(', 'local next-day calculation')
+require(reminder_planner, 'sameLocalDay(', 'local today calculation')
+require(reminder_planner, 'Calendar.DAY_OF_YEAR', 'local day comparison')
+forbid(reminder_planner, 'DayMillis', 'UTC epoch-day math')
+require(reminder_delivery, 'openAppPendingIntent(planId, candidate.type)', 'notification content intent carries reminder type')
+require(reminder_delivery, 'putExtra(StudyReminderExtraType, type.name)', 'notification deep-link reminder type extra')
+require(reminder_delivery, 'notificationId(planId, type)', 'per-reminder notification content PendingIntent request code')
+main_activity = read("app/src/main/java/com/mikeyphw/studyflow/MainActivity.kt")
+require(main_activity, 'data class StudyReminderLaunch', 'notification launch bridge model')
+require(main_activity, 'onNewIntent(intent: Intent)', 'notification tap new-intent handling')
+require(main_activity, 'toStudyReminderLaunch()', 'notification intent extraction')
+app_source = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
+require(app_source, 'reminderLaunch: StudyReminderLaunch?', 'StudyFlowApp reminder launch parameter')
+require(app_source, 'ReminderNotificationType.DUE_REVIEWS -> navController.navigate(ReviewsRoute', 'due-review notification route')
+require(app_source, 'ReminderNotificationType.PLANNED_ACTIVITY,', 'planned notification route')
+require(app_source, 'ReminderNotificationType.MISSED_ACTIVITY -> navController.navigate(ScheduleRoute', 'missed notification route')
+require(app_source, 'ReminderNotificationType.DAILY_SUMMARY -> navController.navigate(DashboardRoute', 'daily summary notification route')
+require(app_source, 'onNotificationPermissionResult = { granted ->', 'notification permission reconcile callback wiring')
+require(app_source, 'container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)', 'permission grant reminder reconciliation')
+reminder_screen = read("feature/reminders/src/main/java/com/mikeyphw/studyflow/feature/reminders/StudyRemindersScreen.kt")
+require(reminder_screen, 'onNotificationPermissionResult: (Boolean) -> Unit = {}', 'reminders permission result callback API')
+require(reminder_screen, 'onNotificationPermissionResult(granted)', 'permission launcher callback dispatch')
+receivers = read("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderReceivers.kt")
+require(receivers, 'ReconcileReminderScheduleActions', 'shared reconcile actions set')
+for action in ['ACTION_BOOT_COMPLETED', 'ACTION_TIME_CHANGED', 'ACTION_TIMEZONE_CHANGED', 'ACTION_DATE_CHANGED', 'ACTION_MY_PACKAGE_REPLACED']:
+    require(receivers, action, f'receiver reconcile action {action}')
+manifest = read("app/src/main/AndroidManifest.xml")
+for action_name in ['BOOT_COMPLETED', 'TIME_SET', 'TIMEZONE_CHANGED', 'DATE_CHANGED', 'MY_PACKAGE_REPLACED']:
+    require(manifest, f'android.intent.action.{action_name}', f'manifest reminder recovery action {action_name}')
+data_rules = read("app/src/main/res/xml/data_extraction_rules.xml")
+require(data_rules, 'disableIfNoEncryptionCapabilities="true"', 'encrypted cloud backup capability requirement')
+phase29b_tests = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerPhase29BHardeningTest.kt")
+for test_name in [
+    'dailySummaryUsesNextLocalMidnightInsteadOfUtcBucket',
+    'latePlannedActivitySurvivesDozeDelayInsideLateDeliveryGrace',
+    'veryOldPlannedActivityStillSuppressedOutsideLateDeliveryGrace',
+]:
+    require(phase29b_tests, test_name, f'Phase 29B hardening test {test_name}')
+require(read("docs/quality/PHASE_29B_REMINDER_TIME_BACKUP_HARDENING.md"), 'local-time day math', 'Phase 29B hardening docs')
+
 docs = read("docs/quality/PHASE_29_RELEASE_CANDIDATE_POLISH.md")
 require(docs, 'settings polish', 'settings polish docs')
 require(docs, 'empty/error/loading states pass', 'empty/error/loading docs')
@@ -119,7 +163,7 @@ require(docs, 'final roadmap index', 'roadmap index docs')
 require(read("docs/product/FIRST_RUN_AND_UPGRADE_NOTES.md"), 'Local-first by default', 'first-run notes')
 require(read("docs/roadmap/FINAL_ROADMAP_INDEX.md"), 'Phase 29', 'final roadmap index through Phase 29')
 
-print('PHASE_29_CONTRACT: PASSED (release candidate polish r2 + reminder delivery grace hotfix)')
+print('PHASE_29_CONTRACT: PASSED (release candidate polish r2 + reminder delivery grace + Phase 29B hardening)')
 
 if __name__ == '__main__':
     sys.exit(0)

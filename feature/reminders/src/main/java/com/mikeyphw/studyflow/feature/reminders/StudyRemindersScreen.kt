@@ -69,6 +69,7 @@ fun StudyRemindersScreen(
     onSettingsChanged: (StudyPlanSettings) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onNotificationPermissionResult: (Boolean) -> Unit = {},
 ) {
     val currentSchedule by schedule.observeSchedule(plan.id).collectAsStateWithLifecycle(
         initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
@@ -82,7 +83,10 @@ fun StudyRemindersScreen(
     }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { granted -> notificationPermissionGranted = granted }
+    ) { granted ->
+        notificationPermissionGranted = granted
+        onNotificationPermissionResult(granted)
+    }
     val now = remember(currentSchedule, queue, settings, notificationPermissionGranted) {
         System.currentTimeMillis()
     }

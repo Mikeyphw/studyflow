@@ -73,6 +73,7 @@ import com.mikeyphw.studyflow.core.navigation.SettingsRoute
 import com.mikeyphw.studyflow.core.navigation.SyncRoute
 import com.mikeyphw.studyflow.core.navigation.SubjectsRoute
 import com.mikeyphw.studyflow.core.domain.RuntimeSmokeWorkbench
+import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.core.model.RuntimeSmokeProbeKind
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
@@ -111,6 +112,8 @@ private val ExpandedNavigationWidth = 1000.dp
 fun StudyFlowApp(
     container: AppContainer,
     modifier: Modifier = Modifier,
+    reminderLaunch: StudyReminderLaunch? = null,
+    onReminderLaunchConsumed: () -> Unit = {},
 ) {
     val preferences by container.appPreferencesRepository.preferences.collectAsStateWithLifecycle(
         initialValue = AppPreferences(),
@@ -136,6 +139,8 @@ fun StudyFlowApp(
             preferences = preferences,
             syncState = syncState,
             modifier = modifier,
+            reminderLaunch = reminderLaunch,
+            onReminderLaunchConsumed = onReminderLaunchConsumed,
         )
     }
 }
@@ -147,6 +152,8 @@ private fun StudyFlowNavigation(
     preferences: AppPreferences,
     syncState: com.mikeyphw.studyflow.core.model.StudySyncState,
     modifier: Modifier = Modifier,
+    reminderLaunch: StudyReminderLaunch? = null,
+    onReminderLaunchConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
@@ -168,6 +175,29 @@ private fun StudyFlowNavigation(
         } else if (preferences.defaultStudyPlanId != null && defaultPlan == null && plans.isNotEmpty()) {
             container.appPreferencesRepository.setDefaultStudyPlan(null)
         }
+    }
+
+    LaunchedEffect(reminderLaunch, plans) {
+        val launch = reminderLaunch ?: return@LaunchedEffect
+        if (plans.isEmpty()) return@LaunchedEffect
+        val planId = StudyPlanId(launch.planId)
+        val plan = plans.firstOrNull { candidate ->
+            candidate.id == planId && candidate.status !in setOf(
+                StudyPlanStatus.ARCHIVED,
+                StudyPlanStatus.TRASHED,
+            )
+        }
+        if (plan == null) {
+            onReminderLaunchConsumed()
+            return@LaunchedEffect
+        }
+        when (launch.type) {
+            ReminderNotificationType.DUE_REVIEWS -> navController.navigate(ReviewsRoute(plan.id.value))
+            ReminderNotificationType.PLANNED_ACTIVITY,
+            ReminderNotificationType.MISSED_ACTIVITY -> navController.navigate(ScheduleRoute(plan.id.value))
+            ReminderNotificationType.DAILY_SUMMARY -> navController.navigate(DashboardRoute(plan.id.value))
+        }
+        onReminderLaunchConsumed()
     }
 
     val showPlansSelected = destination?.hasRoute<PlanListRoute>() == true ||
@@ -714,6 +744,13 @@ private fun StudyFlowNavHost(
                         container.manageStudyPlan.updateSettings(updatedSettings)
                         container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
                     } },
+                    onNotificationPermissionResult = { granted ->
+                        if (granted) {
+                            coroutineScope.launch {
+                                container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
+                            }
+                        }
+                    },
                     onBack = navController::popBackStack,
                 )
             }

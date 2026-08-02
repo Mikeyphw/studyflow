@@ -58,7 +58,7 @@ class StudyReminderPlannerPhase29HotfixTest {
                 activities = listOf(
                     activity(
                         planId = plan.id,
-                        scheduledStart = now - StudyReminderPlanner.PlannedActivityDeliveryGraceMillis - 1L,
+                        scheduledStart = now - StudyReminderPlanner.PlannedActivityLateDeliveryGraceMillis - 1L,
                     ),
                 ),
             ),
@@ -69,7 +69,7 @@ class StudyReminderPlannerPhase29HotfixTest {
         })
         assertFalse(
             StudyReminderPlanner.plannedActivityWithinDeliveryWindow(
-                scheduledStartEpochMillis = now - StudyReminderPlanner.PlannedActivityDeliveryGraceMillis - 1L,
+                scheduledStartEpochMillis = now - StudyReminderPlanner.PlannedActivityLateDeliveryGraceMillis - 1L,
                 nowEpochMillis = now,
             ),
         )

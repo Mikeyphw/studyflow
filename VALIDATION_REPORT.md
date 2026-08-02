@@ -95,3 +95,10 @@ device behavior are not claimed as locally completed. Devtool validation on the 
 - Added focused planner tests for inexact planned reminders.
 - Strengthened Phase 29 verifier to require the grace helper and tests.
 - Artifact hygiene checks: no `__pycache__`, no `.pyc`, no NUL bytes, no reserved `.devtool-artifact/*` inventory entries.
+
+
+## Phase 29B reminder/time/backup hardening
+
+- Added Phase 29B planner tests for local-day boundaries and delayed planned-activity delivery.
+- Strengthened `verify_phase_29.py` to enforce local day math, notification deep-link routing, permission-grant reconciliation, recovery broadcast actions, and encrypted cloud-backup capabilities.
+- Artifact hygiene checks include no `__pycache__`, no `.pyc`, no NUL bytes, and no reserved artifact metadata in inventory.

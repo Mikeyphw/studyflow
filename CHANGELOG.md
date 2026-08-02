@@ -515,3 +515,10 @@
 - Fixed planned-activity reminders so inexact alarms that fire inside the delivery window still post after the fresh-state recheck.
 - Suppressed stale planned-activity alarms outside the delivery window.
 - Added reminder planner tests for late delivery, quiet hours, and completed-activity suppression.
+
+
+## Phase 29B reminder/time/backup hardening
+
+- Switched reminder day boundaries and Today widget planned counts from UTC epoch buckets to local calendar days.
+- Added bounded late planned-activity reminder grace for Doze/App Standby delivery delays while preserving stale reminder suppression.
+- Added notification-tap routing, permission-grant reminder reconciliation, time/timezone/package replacement recovery, and encrypted cloud-backup capability hardening.
