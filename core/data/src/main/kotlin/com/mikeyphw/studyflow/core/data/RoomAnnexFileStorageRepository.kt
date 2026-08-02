@@ -107,13 +107,15 @@ internal class RoomAnnexFileStorageRepository(
         }
     }
 
-    override suspend fun deleteStoredAnnex(studyPlanId: StudyPlanId, annexId: AnnexId) = withContext(Dispatchers.IO) {
-        database.withTransaction {
-            val annex = libraryDao.findAnnex(studyPlanId.value, annexId.value)
-            annex?.storageReference?.takeIf(String::isNotBlank)?.let { reference ->
-                resolveAnnexReference(reference).delete()
+    override suspend fun deleteStoredAnnex(studyPlanId: StudyPlanId, annexId: AnnexId) {
+        withContext(Dispatchers.IO) {
+            database.withTransaction {
+                val annex = libraryDao.findAnnex(studyPlanId.value, annexId.value)
+                annex?.storageReference?.takeIf(String::isNotBlank)?.let { reference ->
+                    resolveAnnexReference(reference).delete()
+                }
+                libraryDao.deleteAnnex(studyPlanId.value, annexId.value)
             }
-            libraryDao.deleteAnnex(studyPlanId.value, annexId.value)
         }
     }
 

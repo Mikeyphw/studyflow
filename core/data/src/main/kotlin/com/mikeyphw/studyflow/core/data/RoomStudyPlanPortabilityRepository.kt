@@ -25,6 +25,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanPackageArchive
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageCodec
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePayload
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePasswordRequiredException
+import com.mikeyphw.studyflow.core.portability.StudyPlanPrivacyPolicy
 import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarning
 import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarningType
 import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarnings
@@ -256,11 +257,12 @@ internal class RoomStudyPlanPortabilityRepository(
     }
 
     private fun decodeArchive(input: InputStream, password: CharArray?): DecodedArchive {
-        val pushback = PushbackInputStream(input.buffered(), encryptedCodec.MagicSize)
-        val prefix = ByteArray(encryptedCodec.MagicSize)
+        val magicSize = StudyPlanEncryptedPackageCodec.MagicSize
+        val pushback = PushbackInputStream(input.buffered(), magicSize)
+        val prefix = ByteArray(magicSize)
         val prefixSize = readPrefix(pushback, prefix)
         if (prefixSize > 0) pushback.unread(prefix, 0, prefixSize)
-        val encrypted = prefixSize == encryptedCodec.MagicSize && encryptedCodec.isEncryptedPrefix(prefix)
+        val encrypted = prefixSize == magicSize && encryptedCodec.isEncryptedPrefix(prefix)
         prefix.fill(0)
         if (!encrypted) {
             return DecodedArchive(archive = codec.readArchive(pushback), encrypted = false)

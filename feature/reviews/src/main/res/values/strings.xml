@@ -2,7 +2,7 @@
 <resources>
     <string name="go_back">Go back</string>
     <string name="reviews_title">Reviews and flashcards</string>
-    <string name="today_reviews">Today&apos;s review pulse</string>
+    <string name="today_reviews">Today\'s review pulse</string>
     <string name="due_count">%1$d due</string>
     <string name="upcoming_count">%1$d upcoming</string>
     <string name="flashcard_count">%1$d flashcards</string>

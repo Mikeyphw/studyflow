@@ -13,7 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.EventNote
+import androidx.compose.material.icons.automirrored.outlined.EventNote
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.Quiz
@@ -166,7 +166,7 @@ fun DashboardScreen(
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.schedule)) },
-                            leadingIcon = { Icon(Icons.Outlined.EventNote, contentDescription = null) },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.EventNote, contentDescription = null) },
                             onClick = {
                                 actionsExpanded = false
                                 onOpenSchedule()

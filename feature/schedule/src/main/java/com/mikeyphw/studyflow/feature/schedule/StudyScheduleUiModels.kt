@@ -13,7 +13,7 @@ fun ScheduleRule.timeLabel(): String = startMinuteOfDay?.let { minute ->
 } ?: "--:--"
 
 fun PlannedActivity.timeLabel(): String = scheduledStartEpochMillis?.let { millis ->
-    val totalMinutes = (millis / 60_000L).mod(24 * 60).toInt()
+    val totalMinutes = (millis / 60_000L).mod(24 * 60)
     val hour = (totalMinutes / 60).toString().padStart(2, '0')
     val minutes = (totalMinutes % 60).toString().padStart(2, '0')
     "$hour:$minutes"

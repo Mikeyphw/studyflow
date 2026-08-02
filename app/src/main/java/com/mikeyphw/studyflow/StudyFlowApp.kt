@@ -258,6 +258,7 @@ private fun StudyFlowNavigation(
                         container = container,
                         plans = plans,
                         preferences = preferences,
+                        syncState = syncState,
                     )
                 }
             }
@@ -288,6 +289,7 @@ private fun StudyFlowNavigation(
                         container = container,
                         plans = plans,
                         preferences = preferences,
+                        syncState = syncState,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -322,6 +324,7 @@ private fun StudyFlowNavigation(
                         container = container,
                         plans = plans,
                         preferences = preferences,
+                        syncState = syncState,
                         modifier = Modifier.padding(padding),
                     )
                 }
@@ -336,6 +339,7 @@ private fun StudyFlowNavHost(
     container: AppContainer,
     plans: List<StudyPlan>,
     preferences: AppPreferences,
+    syncState: com.mikeyphw.studyflow.core.model.StudySyncState,
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -350,7 +354,7 @@ private fun StudyFlowNavHost(
         composable<PlanListRoute> {
             PlanListScreen(
                 plans = plans,
-                recommendationPlanId = preferences.defaultStudyPlanId
+                defaultPlanId = preferences.defaultStudyPlanId
                     ?: plans.firstOrNull { plan ->
                         plan.status !in setOf(
                             StudyPlanStatus.ARCHIVED,
@@ -777,7 +781,6 @@ private fun StudyFlowNavHost(
         composable<PrivacyRoute> {
             PrivacyCenterScreen(
                 hasDefaultPlan = preferences.defaultStudyPlanId != null,
-                syncState = syncState,
                 onOpenBackupCenter = {
                     navController.navigate(
                         PlanPortabilityRoute(preferences.defaultStudyPlanId?.value.orEmpty()),
@@ -929,7 +932,7 @@ private fun StudyFlowNavHost(
                                 val summary = container.manageStudyCloudSync.inspectLocalChanges()
                                 markPassed(
                                     kind,
-                                    "Local sync inspection completed for ${summary.changeCount} change(s).",
+                                    "Local sync inspection completed for ${summary.planCount} plan(s).",
                                 )
                             }
                         }

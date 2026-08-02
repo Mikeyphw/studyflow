@@ -8,7 +8,7 @@
     <string name="widget_today_title">StudyFlow today</string>
     <string name="widget_today_body">Open StudyFlow to review due items and planned study blocks.</string>
     <string name="widget_today_footer">Reviews · Schedule · Progress</string>
-    <string name="widget_today_description">Shows today's StudyFlow reminders and progress summary.</string>
+    <string name="widget_today_description">Shows today\'s StudyFlow reminders and progress summary.</string>
     <string name="navigation_search">Search</string>
 
     <string name="notification_channel_study_reminders_name">Study reminders</string>

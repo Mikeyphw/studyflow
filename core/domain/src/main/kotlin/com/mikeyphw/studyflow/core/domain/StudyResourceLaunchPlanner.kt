@@ -11,20 +11,26 @@ import com.mikeyphw.studyflow.core.model.VideoResourceId
 import com.mikeyphw.studyflow.core.model.VideoSourceType
 
 class StudyResourceLaunchPlanner {
-    fun planForMaterial(material: StudyMaterial): StudyResourceLaunchPlan = when {
-        material.sourceUri.isNullOrBlank() -> StudyResourceLaunchPlan.MissingSource
-        material.type == StudyMaterialType.LOCAL_FILE -> StudyResourceLaunchPlan.ExternalDocument(
-            uri = material.sourceUri,
-            mimeType = "*/*",
-        )
-        material.type == StudyMaterialType.PDF -> StudyResourceLaunchPlan.ExternalDocument(
-            uri = material.sourceUri,
-            mimeType = "application/pdf",
-        )
-        material.type == StudyMaterialType.VIDEO -> StudyResourceLaunchPlan.ExternalVideo(material.sourceUri)
-        material.type == StudyMaterialType.WEBSITE || material.sourceUri.isWebUri() ->
-            StudyResourceLaunchPlan.WebPage(material.sourceUri)
-        else -> StudyResourceLaunchPlan.ExternalDocument(uri = material.sourceUri, mimeType = "*/*")
+    fun planForMaterial(material: StudyMaterial): StudyResourceLaunchPlan {
+        val sourceUri = material.sourceUri
+        return when {
+            sourceUri.isNullOrBlank() -> StudyResourceLaunchPlan.MissingSource
+            material.type == StudyMaterialType.LOCAL_FILE -> StudyResourceLaunchPlan.ExternalDocument(
+                uri = sourceUri,
+                mimeType = "*/*",
+            )
+            material.type == StudyMaterialType.PDF -> StudyResourceLaunchPlan.ExternalDocument(
+                uri = sourceUri,
+                mimeType = "application/pdf",
+            )
+            material.type == StudyMaterialType.VIDEO -> StudyResourceLaunchPlan.ExternalVideo(sourceUri)
+            material.type == StudyMaterialType.WEBSITE || sourceUri.isWebUri() ->
+                StudyResourceLaunchPlan.WebPage(sourceUri)
+            else -> StudyResourceLaunchPlan.ExternalDocument(
+                uri = sourceUri,
+                mimeType = "*/*",
+            )
+        }
     }
 
     fun planForVideo(video: VideoResource): StudyResourceLaunchPlan = when (video.sourceType) {

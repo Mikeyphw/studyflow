@@ -15,7 +15,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.EventNote
+import androidx.compose.material.icons.automirrored.outlined.EventNote
 import androidx.compose.material.icons.outlined.PendingActions
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -120,7 +120,7 @@ fun StudyScheduleScreen(
                 },
                 actions = {
                     IconButton(onClick = { showRuleDialog = true }) {
-                        Icon(Icons.Outlined.EventNote, contentDescription = stringResource(R.string.add_block))
+                        Icon(Icons.AutoMirrored.Outlined.EventNote, contentDescription = stringResource(R.string.add_block))
                     }
                     IconButton(onClick = { showActivityDialog = true }) {
                         Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.add_activity))
@@ -177,7 +177,7 @@ fun StudyScheduleScreen(
                 StudyFlowSectionCard(title = stringResource(R.string.weekly_blocks)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         Button(onClick = { showRuleDialog = true }) {
-                            Icon(Icons.Outlined.EventNote, contentDescription = null)
+                            Icon(Icons.AutoMirrored.Outlined.EventNote, contentDescription = null)
                             Text(stringResource(R.string.add_block))
                         }
                         OutlinedButton(

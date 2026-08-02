@@ -1,27 +1,27 @@
 {
   "schema_version": 5,
-  "session_id": "20260731T182741Z-b371146c8d",
-  "status": "completed",
+  "session_id": "20260802T163519Z-b36798746f",
+  "status": "paused",
   "validation_mode": "standalone",
   "artifact": "",
   "resource_profile": "automatic",
   "transaction_path": "",
   "recovery_available": false,
-  "revision": 56,
+  "revision": 4,
   "failure_action": "pause",
   "required_checkpoint_name": "finalize",
   "required_checkpoint_keys": [
     "android-resumable:finalize:1"
   ],
-  "required_checkpoint_satisfied": true,
-  "plan_fingerprint": "694575abf9918c977a9c53d8d45f43bd6ad4e035e524f9602229be8e665c2415",
+  "required_checkpoint_satisfied": false,
+  "plan_fingerprint": "f630cf95f9de67e2ea09a0402a1fbd966806b0901f9f473527fbcab861d9a8ec",
   "plan_drift_status": "",
   "phases": [
     {
       "key": "android-resumable:preflight:1",
       "name": "preflight",
       "label": "android-resumable: preflight",
-      "status": "passed",
+      "status": "interrupted",
       "depends_on": [],
       "input_domains": [
         "config"
@@ -33,7 +33,7 @@
       "key": "android-resumable:dependencies:1",
       "name": "dependencies",
       "label": "android-resumable: dependencies",
-      "status": "passed",
+      "status": "pending",
       "depends_on": [
         "android-resumable:preflight:1"
       ],
@@ -47,7 +47,7 @@
       "key": "android-resumable:compile:1",
       "name": "compile",
       "label": "android-resumable: compile",
-      "status": "passed",
+      "status": "pending",
       "depends_on": [
         "android-resumable:dependencies:1"
       ],
@@ -63,7 +63,7 @@
       "key": "android-resumable:resources:1",
       "name": "resources",
       "label": "android-resumable: resources",
-      "status": "passed",
+      "status": "pending",
       "depends_on": [
         "android-resumable:compile:1"
       ],
@@ -78,7 +78,7 @@
       "key": "android-resumable:unit-test:1",
       "name": "unit-test",
       "label": "android-resumable: unit-test",
-      "status": "passed",
+      "status": "pending",
       "depends_on": [
         "android-resumable:compile:1"
       ],
@@ -95,7 +95,7 @@
       "key": "android-resumable:package:1",
       "name": "package",
       "label": "android-resumable: package",
-      "status": "passed",
+      "status": "pending",
       "depends_on": [
         "android-resumable:compile:1",
         "android-resumable:unit-test:1"
@@ -112,7 +112,7 @@
       "key": "android-resumable:lint:1",
       "name": "lint",
       "label": "android-resumable: lint",
-      "status": "passed",
+      "status": "pending",
       "depends_on": [
         "android-resumable:compile:1"
       ],
@@ -128,7 +128,7 @@
       "key": "android-resumable:finalize:1",
       "name": "finalize",
       "label": "android-resumable: finalize",
-      "status": "passed",
+      "status": "pending",
       "depends_on": [
         "android-resumable:preflight:1",
         "android-resumable:dependencies:1",
@@ -148,5 +148,5 @@
       "scope": "android-resumable"
     }
   ],
-  "updated_at": "2026-07-31T18:50:26.849825Z"
+  "updated_at": "2026-08-02T16:35:33.472792Z"
 }

@@ -348,7 +348,8 @@ class ManageStudyReview(
         val due = activeItems.filter { item -> item.dueAtEpochMillis <= now }.sortedBy(ReviewItem::dueAtEpochMillis)
         val upcoming = activeItems.filter { item -> item.dueAtEpochMillis > now }.sortedBy(ReviewItem::dueAtEpochMillis)
         val completedToday = items.filter { item ->
-            item.completedAtEpochMillis != null && now - item.completedAtEpochMillis < 86_400_000L
+            val completedAtEpochMillis = item.completedAtEpochMillis
+            completedAtEpochMillis != null && now - completedAtEpochMillis < 86_400_000L
         }.sortedByDescending(ReviewItem::completedAtEpochMillis)
         return ReviewQueue(
             due = due,
