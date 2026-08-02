@@ -2,6 +2,7 @@
 from pathlib import Path
 import re
 import sys
+from phase_version import phase_version_at_least
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,13 +20,12 @@ def forbid(text, needle, label):
     if needle in text:
         raise AssertionError(f"forbidden {label}: {needle}")
 
-app_build = read("app/build.gradle.kts")
-require(app_build, 'versionCode = 27', 'Phase 27 versionCode')
-require(app_build, 'versionName = "0.27.0-phase27"', 'Phase 27 versionName')
+if not phase_version_at_least(ROOT, 27):
+    raise AssertionError("app version must be Phase 27 or later")
 
 root_build = read("build.gradle.kts")
-require(root_build, 'through Phase 27', 'repository contract description')
-require(root_build, 'for phase in {0..27}; do', 'contract phase loop')
+require(root_build, 'through Phase', 'repository contract description')
+require(root_build, 'verify_phase_${', 'contract phase loop')
 
 routes = read("core/navigation/src/main/kotlin/com/mikeyphw/studyflow/core/navigation/StudyFlowRoutes.kt")
 require(routes, 'data object RuntimeSmokeRoute', 'runtime smoke route')
@@ -96,7 +96,7 @@ docs = read("docs/quality/PHASE_27_RUNTIME_SMOKE_WORKBENCH.md")
 require(docs, 'real backup inspect and dry-run', 'r2 backup promise audit')
 require(docs, 'blocked on exceptions', 'r2 blocked-exception promise audit')
 
-print('PHASE_27_CONTRACT: PASSED (runtime smoke workbench r3)')
+print('PHASE_27_CONTRACT: PASSED (runtime smoke workbench r3, phase-forward)')
 
 if __name__ == '__main__':
     sys.exit(0)

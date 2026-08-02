@@ -1,3 +1,11 @@
+## Phase 28: Backup/Restore Drill Seal
+
+- Added `BackupRestoreDrillSeal` for non-destructive encrypted export, wrong-password,
+  tamper-detection, metadata-private annex, restore dry-run, retention, and recovery-report drills.
+- Made the Phase 27 verifier phase-forward so the repository can advance past `0.27.0-phase27`.
+- Advanced the release validation seal evidence through Phase 28.
+- Added Phase 28 tests, quality notes, and validation documentation.
+
 ## Phase 20: Wrong-Answer Notebook and Remediation Loop
 
 - Added automatic wrong-answer capture from completed practice tests and mock exams.
@@ -486,3 +494,8 @@
 - Made the release validation seal phase-forward after Phase 27.
 - Replaced placeholder backup smoke with a real inspect/dry-run/zero-write probe.
 - Added stronger Phase 27 validator checks for compile-facing integration seams.
+
+
+## Phase 28 r2
+
+- Corrected the double-audit misses: no generated Python cache payloads, no literal NUL bytes, and behavior checks strengthened beyond marker validation.

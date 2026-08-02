@@ -49,13 +49,13 @@ tasks.register("verifyFormatting") {
 
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
-    description = "Runs the complete StudyFlow source-contract chain through Phase 27."
+    description = "Runs the complete StudyFlow source-contract chain through Phase 28."
     commandLine(
         "bash",
         "-lc",
         """
         set -euo pipefail
-        for phase in {0..27}; do
+        for phase in {0..28}; do
             python3 "scripts/verify_phase_${'$'}{phase}.py"
         done
         """.trimIndent(),

@@ -66,3 +66,16 @@ device behavior are not claimed as locally completed. Devtool validation on the 
 - Added source contract checks for daily-summary quiet-hour suppression.
 - Added source contract checks for the due-review anti-spam reschedule guard.
 - Added pure planner tests covering all reminder types inside quiet hours and immediate due-review delivery.
+
+
+## Phase 28
+
+- Source-contract validator chain extended through Phase 28.
+- Added pure backup/restore drill tests for encryption, wrong-password rejection, tamper detection,
+  metadata-private annex identity, restore dry-run zero writes, retention truthfulness, and recovery text.
+- Android Gradle compile/lint/assemble and real Storage Access Framework drills remain Devtool/device gates.
+
+
+## Phase 28 r2
+
+- Corrected the double-audit misses: no generated Python cache payloads, no literal NUL bytes, and behavior checks strengthened beyond marker validation.
