@@ -11,8 +11,8 @@ class ReleaseValidationSealFactoryTest {
     fun sourceOnlySealBlocksReleaseUntilRealBuildEvidenceExists() {
         val seal = ReleaseValidationSealFactory.sourceOnlySeal(generatedAtEpochMillis = 10L)
 
-        assertEquals(26, seal.currentPhase)
-        assertEquals(26, seal.validatedPhase)
+        assertTrue(seal.currentPhase >= 26)
+        assertEquals(seal.currentPhase, seal.validatedPhase)
         assertFalse(seal.releaseReady)
         assertTrue(seal.blockerCount > 0)
         assertTrue(seal.gates.any { gate ->

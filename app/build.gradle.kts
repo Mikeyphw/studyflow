@@ -7,8 +7,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow"
-        versionCode = 26
-        versionName = "0.26.0-phase26"
+        versionCode = 27
+        versionName = "0.27.0-phase27"
     }
 
     buildFeatures {

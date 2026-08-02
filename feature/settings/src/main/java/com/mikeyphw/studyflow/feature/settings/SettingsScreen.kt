@@ -42,6 +42,7 @@ fun SettingsScreen(
     onOpenDefaultPlanReminders: () -> Unit,
     onOpenPrivacyCenter: () -> Unit,
     onOpenSyncCenter: () -> Unit,
+    onOpenRuntimeSmokeWorkbench: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val readiness = AppShellReadinessAuditor.evaluate(
@@ -123,6 +124,15 @@ fun SettingsScreen(
             )
             Button(onClick = onOpenSyncCenter) {
                 Text(stringResource(R.string.open_sync_center))
+            }
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.runtime_smoke_title)) {
+            Text(
+                text = stringResource(R.string.runtime_smoke_settings_message),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onOpenRuntimeSmokeWorkbench) {
+                Text(stringResource(R.string.open_runtime_smoke_workbench))
             }
         }
         StudyFlowSectionCard(title = stringResource(R.string.language_title)) {

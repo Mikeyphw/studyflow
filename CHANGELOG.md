@@ -472,4 +472,17 @@
 - Added the Phase 26 release validation seal model and source-contract auditor.
 - Added validation blind-spot documentation for Gradle parity, Room schema validation, lint/resource checks, and packaging evidence.
 - Extended repository contract verification through Phase 26 without introducing a Room migration or network capability.
+## Phase 27 - Runtime smoke workbench
 
+- Added runtime smoke probe models for reminders, widgets, backup dry-runs, search, recommendations, and sync readiness.
+- Added a Debug/QA settings workbench with safe manual actions that reuse existing coordinators and avoid destructive writes.
+- Added release validation linkage so the device-smoke gate can be satisfied by structured runtime probe evidence.
+
+
+
+## Phase 27 r2
+
+- Fixed runtime smoke workbench app integration so Settings receives sync state and runtime smoke imports resolve.
+- Made the release validation seal phase-forward after Phase 27.
+- Replaced placeholder backup smoke with a real inspect/dry-run/zero-write probe.
+- Added stronger Phase 27 validator checks for compile-facing integration seams.

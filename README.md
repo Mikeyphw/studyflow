@@ -544,3 +544,9 @@ Phase 25 reminder delivery now suppresses daily summaries during quiet hours and
 - Adds a release validation model that separates marker validators from Gradle-backed evidence.
 - Documents the exact remaining gates: configuration, compilation, unit tests, resource merge, lint, assemble, and device smoke.
 - Extends the source-contract chain through Phase 26.
+
+## Phase 27: Runtime smoke workbench
+
+- Adds a settings-accessible QA workbench for reminder, widget, backup, search, recommendation, and sync smoke probes.
+- Keeps probes safe: widget refresh and reminder reconciliation are allowed, backup/import remains dry-run-oriented.
+- Extends the contract chain through Phase 27.

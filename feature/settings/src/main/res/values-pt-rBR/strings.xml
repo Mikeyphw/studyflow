@@ -53,4 +53,13 @@
     <string name="sync_prepare_foundation">Preparar base local</string>
     <string name="sync_disable_foundation">Desativar base local</string>
     <string name="go_back">Voltar</string>
+    <string name="runtime_smoke_title">Bancada de fumaça runtime</string>
+    <string name="runtime_smoke_settings_message">Execute sondas seguras de lembretes, widget, backup em simulação, busca, recomendações e sincronização antes do lançamento.</string>
+    <string name="open_runtime_smoke_workbench">Abrir bancada de fumaça</string>
+    <string name="runtime_smoke_message">Estas sondas exercitam caminhos runtime sem ativar provedores de nuvem nem gravar dados importados de backup.</string>
+    <string name="runtime_smoke_summary_title">Resumo das sondas</string>
+    <string name="runtime_smoke_passed_value">Sondas aprovadas: %1$d de %2$d</string>
+    <string name="runtime_smoke_blocked_value">Sondas bloqueadas: %1$d</string>
+    <string name="runtime_smoke_run_safe_set">Executar conjunto seguro</string>
+    <string name="runtime_smoke_run_probe">Executar sonda</string>
 </resources>

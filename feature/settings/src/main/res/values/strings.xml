@@ -53,4 +53,13 @@
     <string name="sync_prepare_foundation">Prepare local foundation</string>
     <string name="sync_disable_foundation">Disable local foundation</string>
     <string name="go_back">Go back</string>
+    <string name="runtime_smoke_title">Runtime smoke workbench</string>
+    <string name="runtime_smoke_settings_message">Run safe reminder, widget, backup dry-run, search, recommendation, and sync probes before release.</string>
+    <string name="open_runtime_smoke_workbench">Open runtime smoke workbench</string>
+    <string name="runtime_smoke_message">These probes exercise runtime paths without enabling cloud providers or writing imported backup data.</string>
+    <string name="runtime_smoke_summary_title">Smoke summary</string>
+    <string name="runtime_smoke_passed_value">Passed probes: %1$d of %2$d</string>
+    <string name="runtime_smoke_blocked_value">Blocked probes: %1$d</string>
+    <string name="runtime_smoke_run_safe_set">Run safe probe set</string>
+    <string name="runtime_smoke_run_probe">Run probe</string>
 </resources>
