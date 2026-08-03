@@ -98,8 +98,6 @@
     <string name="import_plan_description">Inspect a checksum-verified .studyplan package before creating, replacing or merging a workspace.</string>
     <string name="choose_studyplan_file">Choose .studyplan file</string>
     <string name="export_plan">Export Study Plan</string>
-    <string name="export_plan_description">Create a portable package with explicit privacy and content boundaries.</string>
-    <string name="export_full_plan">Export complete plan</string>
     <string name="export_full_plan_with_annexes">Export complete plan with annex files</string>
     <string name="export_full_plan_metadata_only">Export complete plan metadata only</string>
     <string name="export_without_private_history">Export without private history</string>
@@ -124,7 +122,6 @@
     <string name="export_mode_structure">Structure only</string>
     <string name="export_mode_template">Template</string>
     <string name="snapshots_title">Plan snapshots</string>
-    <string name="snapshots_description">Create a private restore point before major changes. Snapshot packages are stored in app-private storage.</string>
     <string name="create_snapshot">Create snapshot</string>
     <string name="manual_snapshot_label">Manual snapshot</string>
     <string name="snapshot_created">Snapshot created.</string>
@@ -139,8 +136,14 @@
     <string name="preview_import">Preview</string>
     <string name="dry_run_new">Dry-run as new</string>
     <string name="dry_run_replace">Dry-run replace</string>
-    <string name="integrity_report">Verified %1$d rows and %2$d annex file(s). Encrypted: %3$s.</string>
-    <string name="dry_run_report">Dry-run verified %1$d rows and changed %2$d database rows.</string>
+    <plurals name="integrity_report">
+        <item quantity="one">Verified %1$d row and %2$d annex file(s). Encrypted: %3$s.</item>
+        <item quantity="other">Verified %1$d rows and %2$d annex file(s). Encrypted: %3$s.</item>
+    </plurals>
+    <plurals name="dry_run_report">
+        <item quantity="one">Dry-run verified %1$d row and changed %2$d database rows.</item>
+        <item quantity="other">Dry-run verified %1$d rows and changed %2$d database rows.</item>
+    </plurals>
     <string name="encrypt_export">Password-encrypt this export</string>
     <string name="export_password">Export password</string>
     <string name="password_too_short">Use at least 8 characters for export encryption.</string>
@@ -157,4 +160,7 @@
     <string name="no">No</string>
     <string name="annex_payloads_included">Physical annex files are included and will be copied into app-private storage.</string>
     <string name="replace_creates_safety_snapshot">Replacement will create a private safety snapshot before changing the target plan.</string>
+    <string name="confirm_delete_title">Delete item?</string>
+    <string name="confirm_delete_message">This action cannot be undone.</string>
+    <string name="confirm_delete">Delete</string>
 </resources>

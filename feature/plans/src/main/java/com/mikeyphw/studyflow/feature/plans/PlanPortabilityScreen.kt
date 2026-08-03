@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -131,7 +132,7 @@ fun PlanPortabilityScreen(
         Result.success(block())
     } catch (error: CancellationException) {
         throw error
-    } catch (error: Throwable) {
+    } catch (error: Exception) {
         Result.failure(error)
     }
 
@@ -345,8 +346,9 @@ fun PlanPortabilityScreen(
                         }
                         integrityReport?.let { report ->
                             Text(
-                                stringResource(
-                                    R.string.integrity_report,
+                                pluralStringResource(
+                                    R.plurals.integrity_report,
+                                    report.totalRows,
                                     report.totalRows,
                                     report.annexPayloadCount,
                                     if (report.encrypted) yesLabel else noLabel,
@@ -361,8 +363,9 @@ fun PlanPortabilityScreen(
                         }
                         dryRun?.let { report ->
                             Text(
-                                stringResource(
-                                    R.string.dry_run_report,
+                                pluralStringResource(
+                                    R.plurals.dry_run_report,
+                                    report.totalRows,
                                     report.totalRows,
                                     report.databaseRowsChanged,
                                 ),
@@ -595,9 +598,7 @@ private fun SnapshotCard(
             IconButton(onClick = onRestore, enabled = enabled) {
                 Icon(Icons.Outlined.Restore, stringResource(R.string.restore_snapshot))
             }
-            IconButton(onClick = onDelete, enabled = enabled) {
-                Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.delete_snapshot))
-            }
+            ConfirmingSnapshotDeleteButton(enabled = enabled, onConfirmed = onDelete)
         }
     }
 }
@@ -620,4 +621,28 @@ private fun snapshotDisplayLabel(snapshot: PlanSnapshot): String = when (snapsho
     PlanSnapshotLabels.PRE_IMPORT -> stringResource(R.string.pre_import_snapshot_label)
     PlanSnapshotLabels.PRE_RESTORE -> stringResource(R.string.pre_restore_snapshot_label)
     else -> snapshot.label
+}
+
+
+@Composable
+private fun ConfirmingSnapshotDeleteButton(enabled: Boolean, onConfirmed: () -> Unit) {
+    var confirming by remember { mutableStateOf(false) }
+    IconButton(onClick = { confirming = true }, enabled = enabled) {
+        Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.delete_snapshot))
+    }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.confirm_delete_title)) },
+            text = { Text(stringResource(R.string.confirm_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onConfirmed() }) {
+                    Text(stringResource(R.string.confirm_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
 }

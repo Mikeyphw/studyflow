@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -28,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
@@ -38,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -133,8 +136,9 @@ fun StudyLibraryScreen(
         ) {
             StudyFlowSectionCard(title = plan.name) {
                 Text(
-                    text = stringResource(
-                        R.string.library_summary,
+                    text = pluralStringResource(
+                        R.plurals.library_summary,
+                        snapshot.materials.size,
                         snapshot.materials.size,
                         snapshot.videos.size,
                         snapshot.annexes.size,
@@ -333,11 +337,8 @@ private fun MaterialList(
                     OutlinedButton(
                         onClick = { coroutineScope.launch { library.archiveMaterial(plan.id, material.id) } },
                     ) { Text(stringResource(R.string.archive)) }
-                    OutlinedButton(
-                        onClick = { coroutineScope.launch { library.deleteMaterial(plan.id, material.id) } },
-                    ) {
-                        Icon(Icons.Outlined.Delete, contentDescription = null)
-                        Text(stringResource(R.string.delete))
+                    ConfirmingDeleteButton {
+                        coroutineScope.launch { library.deleteMaterial(plan.id, material.id) }
                     }
                 }
             }
@@ -382,8 +383,8 @@ private fun VideoList(
                         Icon(Icons.Outlined.CheckCircle, contentDescription = null)
                         Text(stringResource(R.string.mark_complete))
                     }
-                    OutlinedButton(onClick = { coroutineScope.launch { library.deleteVideo(plan.id, video.id) } }) {
-                        Text(stringResource(R.string.delete))
+                    ConfirmingDeleteButton {
+                        coroutineScope.launch { library.deleteVideo(plan.id, video.id) }
                     }
                 }
             }
@@ -408,7 +409,11 @@ private fun AnnexList(
         annexes.forEach { annex ->
             StudyFlowSectionCard(title = annex.displayName) {
                 Text(
-                    stringResource(R.string.annex_size, annex.byteSize),
+                    pluralStringResource(
+                        R.plurals.annex_size,
+                        annex.byteSize.toPluralQuantity(),
+                        annex.byteSize,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -445,6 +450,8 @@ private fun LibraryFilter.labelRes(): Int = when (this) {
     LibraryFilter.ANNEXES -> R.string.annexes
 }
 
+private fun Long.toPluralQuantity(): Int = coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+
 private fun android.content.ContentResolver.displayName(uri: Uri): String = query(
     uri,
     arrayOf(OpenableColumns.DISPLAY_NAME),
@@ -465,4 +472,29 @@ private fun android.content.ContentResolver.byteSize(uri: Uri): Long? = query(
 )?.use { cursor ->
     val index = cursor.getColumnIndex(OpenableColumns.SIZE)
     if (index >= 0 && cursor.moveToFirst() && !cursor.isNull(index)) cursor.getLong(index) else null
+}
+
+
+@Composable
+private fun ConfirmingDeleteButton(onConfirmed: () -> Unit) {
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    OutlinedButton(onClick = { confirming = true }) {
+        Icon(Icons.Outlined.Delete, contentDescription = null)
+        Text(stringResource(R.string.delete))
+    }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.confirm_delete_title)) },
+            text = { Text(stringResource(R.string.confirm_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onConfirmed() }) {
+                    Text(stringResource(R.string.confirm_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
 }

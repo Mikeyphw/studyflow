@@ -200,7 +200,12 @@ internal fun TopicEditorDialog(
                 NumberField(minutes, { minutes = it }, R.string.estimated_minutes)
                 NumberField(progress, { progress = it }, R.string.progress)
                 NumberField(mastery, { mastery = it }, R.string.mastery)
-                StatusChooser(ContentProgressStatus.valueOf(statusName)) { statusName = it.name }
+                StatusChooser(
+                    enumValueOrDefault<ContentProgressStatus>(
+                        statusName,
+                        ContentProgressStatus.NOT_STARTED,
+                    ),
+                ) { statusName = it.name }
                 ParentChooser(availableParents, parentId?.let(::TopicId)) { parentId = it?.value }
                 StageChooser(examStages, stageId?.let(::ExamStageId)) { stageId = it?.value }
             }
@@ -218,7 +223,10 @@ internal fun TopicEditorDialog(
                             estimatedMinutes = requireNotNull(minutesValue),
                             progressPercent = requireNotNull(progressValue),
                             masteryPercent = requireNotNull(masteryValue),
-                            status = ContentProgressStatus.valueOf(statusName),
+                            status = enumValueOrDefault<ContentProgressStatus>(
+                                statusName,
+                                ContentProgressStatus.NOT_STARTED,
+                            ),
                             parentTopicId = parentId?.let(::TopicId),
                             examStageId = stageId?.let(::ExamStageId),
                         ),
@@ -323,7 +331,7 @@ internal fun ImportSyllabusDialog(
     var formatName by rememberSaveable { mutableStateOf(SyllabusImportFormat.STRUCTURED_TEXT.name) }
     var input by rememberSaveable { mutableStateOf("") }
     var preview by remember { mutableStateOf<Result<SyllabusImportDraft>?>(null) }
-    val format = SyllabusImportFormat.valueOf(formatName)
+    val format = enumValueOrDefault<SyllabusImportFormat>(formatName, SyllabusImportFormat.STRUCTURED_TEXT)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.import_syllabus)) },
@@ -588,3 +596,7 @@ internal fun ContentProgressStatus.label(): Int = when (this) {
     ContentProgressStatus.MASTERED -> R.string.content_mastered
     ContentProgressStatus.ARCHIVED -> R.string.content_archived
 }
+
+
+private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
+    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue

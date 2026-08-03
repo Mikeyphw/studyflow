@@ -16,7 +16,7 @@ import com.mikeyphw.studyflow.core.model.VideoResource
 import com.mikeyphw.studyflow.core.model.VideoResourceId
 import com.mikeyphw.studyflow.core.model.VideoSourceType
 import java.nio.charset.StandardCharsets
-import java.util.Base64
+import android.util.Base64
 
 private const val ListSeparator = "\n"
 
@@ -129,13 +129,13 @@ fun Annex.asEntity(): AnnexEntity = AnnexEntity(
 )
 
 private fun List<String>.encodeStringList(): String = joinToString(ListSeparator) { value ->
-    Base64.getEncoder().encodeToString(value.toByteArray(StandardCharsets.UTF_8))
+    Base64.encodeToString(value.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
 }
 
 private fun String.decodeStringList(): List<String> = if (isBlank()) {
     emptyList()
 } else {
     lineSequence().mapNotNull { encoded ->
-        runCatching { String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8) }.getOrNull()
+        runCatching { String(Base64.decode(encoded, Base64.NO_WRAP), StandardCharsets.UTF_8) }.getOrNull()
     }.toList()
 }

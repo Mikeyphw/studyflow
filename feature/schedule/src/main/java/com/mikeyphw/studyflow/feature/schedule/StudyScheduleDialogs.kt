@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -43,7 +44,7 @@ internal fun ScheduleRuleDialog(
     onDismiss: () -> Unit,
     onSave: (ScheduleRuleDraft) -> Unit,
 ) {
-    var day by rememberSaveable { mutableStateOf(1) }
+    var day by rememberSaveable { mutableIntStateOf(1) }
     var start by rememberSaveable { mutableStateOf("08:00") }
     var duration by rememberSaveable { mutableStateOf("45") }
     var locked by rememberSaveable { mutableStateOf(false) }
@@ -229,3 +230,7 @@ private fun parseMinuteOfDay(value: String): Int? {
     if (hour !in 0..23 || minute !in 0..59) return null
     return hour * 60 + minute
 }
+
+
+private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
+    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue

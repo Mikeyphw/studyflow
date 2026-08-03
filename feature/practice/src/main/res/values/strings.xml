@@ -34,26 +34,53 @@
     <string name="practice_test_created">Practice test created</string>
     <string name="need_questions">Add at least one question first.</string>
     <string name="recent_tests">Recent tests</string>
-    <string name="answered_value">%1$d answered</string>
+    <plurals name="answered_value">
+        <item quantity="one">%1$d answered</item>
+        <item quantity="other">%1$d answered</item>
+    </plurals>
     <string name="accuracy_value">%1$d%% accuracy</string>
-    <string name="question_count_value">%1$d questions</string>
-    <string name="favorite_count_value">%1$d favorites</string>
-    <string name="disputed_count_value">%1$d disputed</string>
-    <string name="test_count_value">%1$d tests</string>
-    <string name="mock_count_value">%1$d mocks</string>
+    <plurals name="question_count_value">
+        <item quantity="one">%1$d question</item>
+        <item quantity="other">%1$d questions</item>
+    </plurals>
+    <plurals name="favorite_count_value">
+        <item quantity="one">%1$d favorite</item>
+        <item quantity="other">%1$d favorites</item>
+    </plurals>
+    <plurals name="disputed_count_value">
+        <item quantity="one">%1$d disputed</item>
+        <item quantity="other">%1$d disputed</item>
+    </plurals>
+    <plurals name="test_count_value">
+        <item quantity="one">%1$d test</item>
+        <item quantity="other">%1$d tests</item>
+    </plurals>
+    <plurals name="mock_count_value">
+        <item quantity="one">%1$d mock</item>
+        <item quantity="other">%1$d mocks</item>
+    </plurals>
     <string name="tags_value">Tags: %1$s</string>
     <string name="mock_exam_created">Mock exam created</string>
     <string name="create_mock_exam">Create mock exam</string>
     <string name="active_practice_attempt">Active practice attempt</string>
     <string name="active_mock_attempt">Active mock exam</string>
-    <string name="runner_progress">%1$d of %2$d answered</string>
+    <plurals name="runner_progress">
+        <item quantity="one">%1$d of %2$d answered</item>
+        <item quantity="other">%1$d of %2$d answered</item>
+    </plurals>
     <string name="answer_saved">Answer saved</string>
     <string name="attempt_finished">Attempt finished</string>
     <string name="finish_attempt">Finish attempt</string>
     <string name="close_runner">Close runner</string>
     <string name="explanation_value">Explanation: %1$s</string>
-    <string name="correct_value">%1$d correct</string>
+    <plurals name="correct_value">
+        <item quantity="one">%1$d correct</item>
+        <item quantity="other">%1$d correct</item>
+    </plurals>
     <string name="recent_mocks">Recent mocks</string>
     <string name="no_mocks">No mock exams yet.</string>
     <string name="start_or_resume">Start or resume</string>
+    <string name="confirm_delete_title">Delete item?</string>
+    <string name="confirm_delete_message">This action cannot be undone.</string>
+    <string name="confirm_delete">Delete</string>
 </resources>

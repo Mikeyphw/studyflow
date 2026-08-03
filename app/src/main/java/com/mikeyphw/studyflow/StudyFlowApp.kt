@@ -45,7 +45,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowErrorPane
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTheme
-import com.mikeyphw.studyflow.core.diagnostics.DebugProbeCatalog
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeId
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeReport
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeReportPolicy
@@ -54,6 +53,8 @@ import com.mikeyphw.studyflow.core.diagnostics.DebugProbeStatus
 import com.mikeyphw.studyflow.core.diagnostics.DebugWorkbenchShellPolicy
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticTimelineSnapshot
 import com.mikeyphw.studyflow.core.diagnostics.ReminderLabActionResult
+import com.mikeyphw.studyflow.core.diagnostics.RuntimeSelfCheckHistory
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealReport
 import com.mikeyphw.studyflow.core.diagnostics.ReminderNotificationLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DatabasePortabilityLabReport
@@ -876,6 +877,8 @@ private fun StudyFlowNavHost(
             var probeReport by remember { mutableStateOf(DebugProbeReport.empty()) }
             var safeSuiteRunning by rememberSaveable { mutableStateOf(false) }
             var actionResult by rememberSaveable { mutableStateOf<DebugWorkbenchActionResult?>(null) }
+            var selfCheckHistory by remember { mutableStateOf(RuntimeSelfCheckHistory()) }
+            var supportBundleSealReport by remember { mutableStateOf(SupportBundleSealReport.notRun()) }
             var reminderLabReport by remember {
                 mutableStateOf(ReminderNotificationLabReport(status = DebugLabStatus.NOT_RUN))
             }
@@ -921,6 +924,12 @@ private fun StudyFlowNavHost(
                     context = context,
                     container = container,
                     defaultPlanId = { preferences.defaultStudyPlanId },
+                )
+            }
+            val runtimeSelfCheckSuite = remember(container, preferences.defaultStudyPlanId) {
+                StudyFlowRuntimeSelfCheckSuite(
+                    runProbe = probeRegistry::run,
+                    recorder = container.diagnosticRecorder,
                 )
             }
             val debugActions = remember(
@@ -973,6 +982,8 @@ private fun StudyFlowNavHost(
                 shellReport = shellReport,
                 timeline = timeline,
                 actionResult = actionResult,
+                selfCheckHistory = selfCheckHistory,
+                supportBundleSealReport = supportBundleSealReport,
                 onRefresh = {
                     coroutineScope.launch {
                         refreshDiagnostics()
@@ -1004,6 +1015,7 @@ private fun StudyFlowNavHost(
                 onExportSupportBundle = {
                     coroutineScope.launch {
                         actionResult = debugActions.exportAndShare()
+                        supportBundleSealReport = debugActions.supportBundleSealReport()
                     }
                 },
                 onOpenRuntimeSmokeWorkbench = { navController.navigate(RuntimeSmokeRoute) },
@@ -1018,7 +1030,12 @@ private fun StudyFlowNavHost(
                                 coroutineScope.launch {
                                     safeSuiteRunning = true
                                     try {
-                                        DebugProbeCatalog.safeSuiteIds.forEach { id -> executeProbe(id) }
+                                        val (updatedReport, run) = runtimeSelfCheckSuite.run(probeReport)
+                                        probeReport = updatedReport
+                                        selfCheckHistory = selfCheckHistory.record(run)
+                                        refreshDiagnostics()
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
                                     } finally {
                                         safeSuiteRunning = false
                                     }
@@ -1267,6 +1284,7 @@ private fun StudyFlowNavHost(
                 onOpenPrivacyCenter = { navController.navigate(PrivacyRoute) },
                 onOpenSyncCenter = { navController.navigate(SyncRoute) },
                 onOpenDebugWorkbench = { navController.navigate(DebugWorkbenchRoute) },
+                diagnosticsAvailable = BuildConfig.DEBUG,
             )
         }
     }

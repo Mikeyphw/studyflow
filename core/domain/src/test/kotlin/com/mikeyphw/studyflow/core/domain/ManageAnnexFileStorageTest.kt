@@ -8,6 +8,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
 import java.io.InputStream
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -16,12 +17,14 @@ class ManageAnnexFileStorageTest {
     fun rejectsBlankName() {
         val manager = ManageAnnexFileStorage(FakeRepository())
         assertThrows(IllegalArgumentException::class.java) {
-            manager.importCopy(
-                studyPlanId = StudyPlanId("plan"),
-                displayName = " ",
-                mimeType = "application/pdf",
-                input = byteArrayOf(1).inputStream(),
-            )
+            runBlocking {
+                manager.importCopy(
+                    studyPlanId = StudyPlanId("plan"),
+                    displayName = " ",
+                    mimeType = "application/pdf",
+                    input = byteArrayOf(1).inputStream(),
+                )
+            }
         }
     }
 

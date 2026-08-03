@@ -20,11 +20,19 @@ object WrongAnswerRemediator {
             .groupBy { item -> item.errorEntryId }
         val entries = errors.map { error ->
             val reviews = reviewsByError[error.id].orEmpty()
+            val pendingReview = reviews
+                .filter { item -> item.status in setOf(ReviewStatus.SCHEDULED, ReviewStatus.DUE) }
+                .minByOrNull(ReviewItem::dueAtEpochMillis)
+                ?.let { item ->
+                    if (item.status == ReviewStatus.SCHEDULED && item.dueAtEpochMillis <= nowEpochMillis) {
+                        item.copy(status = ReviewStatus.DUE)
+                    } else {
+                        item
+                    }
+                }
             WrongAnswerRemediation(
                 error = error,
-                pendingReview = reviews
-                    .filter { item -> item.status in setOf(ReviewStatus.SCHEDULED, ReviewStatus.DUE) }
-                    .minByOrNull(ReviewItem::dueAtEpochMillis),
+                pendingReview = pendingReview,
                 priority = priorityFor(error, nowEpochMillis, reviews),
                 suggestion = suggestionFor(error),
             )

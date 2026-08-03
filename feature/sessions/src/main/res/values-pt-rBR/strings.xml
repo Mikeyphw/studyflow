@@ -30,7 +30,11 @@
     <string name="no_sessions_yet">Nenhuma sessão finalizada ainda</string>
     <string name="no_sessions_message">Suas sessões finalizadas e canceladas aparecerão aqui.</string>
     <string name="activity_duration_minutes">%1$d min</string>
-    <string name="session_summary">%1$s • %2$d questões • %3$d acertos</string>
+    <plurals name="session_summary">
+        <item quantity="one">%1$s • %2$d questão • %3$d acertos</item>
+        <item quantity="many">%1$s • %2$d questões • %3$d acertos</item>
+        <item quantity="other">%1$s • %2$d questões • %3$d acertos</item>
+    </plurals>
     <string name="filter_all_sessions">Todas</string>
     <string name="filter_completed_sessions">Concluídas</string>
     <string name="filter_cancelled_sessions">Canceladas</string>

@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
@@ -29,6 +30,7 @@ import com.mikeyphw.studyflow.core.domain.ReleaseReadinessSeal
 import com.mikeyphw.studyflow.core.domain.UserExperiencePolishAuditor
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
+import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
 import com.mikeyphw.studyflow.core.model.ThemeMode
 
@@ -46,6 +48,7 @@ fun SettingsScreen(
     onOpenSyncCenter: () -> Unit,
     onOpenDebugWorkbench: () -> Unit,
     modifier: Modifier = Modifier,
+    diagnosticsAvailable: Boolean = true,
 ) {
     val readiness = AppShellReadinessAuditor.evaluate(
         AppShellReadinessInput(
@@ -122,7 +125,7 @@ fun SettingsScreen(
             Text(
                 text = stringResource(
                     R.string.sync_settings_message,
-                    syncState.connectionStatus.name,
+                    stringResource(syncConnectionStatusLabel(syncState.connectionStatus)),
                     syncState.pendingUploadCount,
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -131,13 +134,15 @@ fun SettingsScreen(
                 Text(stringResource(R.string.open_sync_center))
             }
         }
-        StudyFlowSectionCard(title = stringResource(R.string.debug_workbench_title)) {
-            Text(
-                text = stringResource(R.string.debug_workbench_settings_message),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Button(onClick = onOpenDebugWorkbench) {
-                Text(stringResource(R.string.open_debug_workbench))
+        if (diagnosticsAvailable) {
+            StudyFlowSectionCard(title = stringResource(R.string.debug_workbench_title)) {
+                Text(
+                    text = stringResource(R.string.debug_workbench_settings_message),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(onClick = onOpenDebugWorkbench) {
+                    Text(stringResource(R.string.open_debug_workbench))
+                }
             }
         }
         StudyFlowSectionCard(title = stringResource(R.string.language_title)) {
@@ -195,8 +200,9 @@ StudyFlowSectionCard(title = stringResource(R.string.ux_polish_title)) {
                 style = MaterialTheme.typography.headlineMedium,
             )
             Text(
-                text = stringResource(
-                    R.string.release_candidate_polish_message,
+                text = pluralStringResource(
+                    R.plurals.release_candidate_polish_message,
+                    releaseCandidateReport.readyCount,
                     releaseCandidateReport.readyCount,
                     releaseCandidateReport.totalCount,
                 ),
@@ -262,4 +268,13 @@ private fun themeLabel(themeMode: ThemeMode): Int = when (themeMode) {
     ThemeMode.SYSTEM_DEFAULT -> R.string.theme_system
     ThemeMode.LIGHT -> R.string.theme_light
     ThemeMode.DARK -> R.string.theme_dark
+}
+
+
+@StringRes
+private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = when (status) {
+    StudySyncConnectionStatus.DISABLED -> R.string.sync_connection_local_only
+    StudySyncConnectionStatus.LOCAL_READY -> R.string.sync_connection_local_ready
+    StudySyncConnectionStatus.PROVIDER_REQUIRED -> R.string.sync_connection_provider_required
+    StudySyncConnectionStatus.BLOCKED -> R.string.sync_connection_provider_error
 }

@@ -7,7 +7,10 @@
     <string name="recent_searches">Recent searches</string>
     <string name="clear_recent_searches">Clear recent searches</string>
     <string name="recommendations_title">Recommended next</string>
-    <string name="search_results">Search results (%1$d)</string>
+    <plurals name="search_results">
+        <item quantity="one">Search result (%1$d)</item>
+        <item quantity="other">Search results (%1$d)</item>
+    </plurals>
     <string name="no_search_results">No matching active content was found.</string>
     <string name="type_plan">Plan</string>
     <string name="type_subject">Subject</string>
@@ -36,7 +39,10 @@
     <string name="reason_mastery">Mastery is %1$d%%</string>
     <string name="reason_question_accuracy">Plan question accuracy is %1$d%%</string>
     <string name="reason_overdue_study_block">A linked study block is overdue</string>
-    <string name="reason_resource_progress">%1$d of %2$d units are complete</string>
+    <plurals name="reason_resource_progress">
+        <item quantity="one">%1$d of %2$d unit is complete</item>
+        <item quantity="other">%1$d of %2$d units are complete</item>
+    </plurals>
     <string name="reason_resource_unfinished">The resource is unfinished</string>
     <plurals name="recommendation_due_reviews">
         <item quantity="one">Review %1$d due item</item>

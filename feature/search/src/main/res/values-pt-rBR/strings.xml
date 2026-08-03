@@ -7,7 +7,11 @@
     <string name="recent_searches">Buscas recentes</string>
     <string name="clear_recent_searches">Limpar buscas recentes</string>
     <string name="recommendations_title">Próximo recomendado</string>
-    <string name="search_results">Resultados da busca (%1$d)</string>
+    <plurals name="search_results">
+        <item quantity="one">Resultado da busca (%1$d)</item>
+        <item quantity="many">Resultados da busca (%1$d)</item>
+        <item quantity="other">Resultados da busca (%1$d)</item>
+    </plurals>
     <string name="no_search_results">Nenhum conteúdo ativo correspondente foi encontrado.</string>
     <string name="type_plan">Plano</string>
     <string name="type_subject">Disciplina</string>
@@ -36,7 +40,11 @@
     <string name="reason_mastery">Domínio: %1$d%%</string>
     <string name="reason_question_accuracy">Precisão nas questões do plano: %1$d%%</string>
     <string name="reason_overdue_study_block">Um bloco de estudo vinculado está atrasado</string>
-    <string name="reason_resource_progress">%1$d de %2$d unidades concluídas</string>
+    <plurals name="reason_resource_progress">
+        <item quantity="one">%1$d de %2$d unidade concluída</item>
+        <item quantity="many">%1$d de %2$d unidades concluídas</item>
+        <item quantity="other">%1$d de %2$d unidades concluídas</item>
+    </plurals>
     <string name="reason_resource_unfinished">O recurso ainda não foi concluído</string>
     <plurals name="recommendation_due_reviews">
         <item quantity="one">Revisar %1$d item vencido</item>

@@ -31,6 +31,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -77,7 +78,7 @@ fun StudySearchScreen(
     var searchFailed by remember { mutableStateOf(false) }
     var recommendationFailed by remember { mutableStateOf(false) }
     var searchJob by remember { mutableStateOf<Job?>(null) }
-    var searchGeneration by remember { mutableStateOf(0L) }
+    var searchGeneration by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(recommendationPlanId) {
         recommendations = emptyList()
@@ -87,7 +88,7 @@ fun StudySearchScreen(
                 recommendations = discovery.recommendations(planId)
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Throwable) {
+            } catch (_: Exception) {
                 recommendationFailed = true
             }
         }
@@ -122,7 +123,7 @@ fun StudySearchScreen(
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Throwable) {
+            } catch (_: Exception) {
                 if (searchGeneration == generation) {
                     results = emptyList()
                     searched = true
@@ -227,7 +228,9 @@ fun StudySearchScreen(
                 }
             }
             if (searched) {
-                StudyFlowSectionCard(title = stringResource(R.string.search_results, results.size)) {
+                StudyFlowSectionCard(
+                    title = pluralStringResource(R.plurals.search_results, results.size, results.size),
+                ) {
                     when {
                         searchFailed -> Text(
                             stringResource(R.string.search_failed),
@@ -320,11 +323,15 @@ private fun recommendationReason(reason: StudyRecommendationReason): String = wh
         pluralStringResource(R.plurals.reason_available_questions, count, count)
     }
     StudyRecommendationReasonType.OVERDUE_STUDY_BLOCK -> stringResource(R.string.reason_overdue_study_block)
-    StudyRecommendationReasonType.RESOURCE_PROGRESS -> stringResource(
-        R.string.reason_resource_progress,
-        reason.completedUnits.orZero(),
-        reason.totalUnits.orZero(),
-    )
+    StudyRecommendationReasonType.RESOURCE_PROGRESS -> {
+        val totalUnits = reason.totalUnits.orZero()
+        pluralStringResource(
+            R.plurals.reason_resource_progress,
+            totalUnits,
+            reason.completedUnits.orZero(),
+            totalUnits,
+        )
+    }
     StudyRecommendationReasonType.RESOURCE_UNFINISHED -> stringResource(R.string.reason_resource_unfinished)
 }
 

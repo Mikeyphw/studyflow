@@ -1,6 +1,7 @@
 {
   "failed": [
-    "com.mikeyphw.studyflow.StudyFlowDebugProbeRegistryTest.initializationError",
-    "com.mikeyphw.studyflow.StudyFlowDebugWorkbenchActionsTest.initializationError"
+    "com.mikeyphw.studyflow.core.domain.BackupRestoreDrillSealTest.dryRunDrillBlocksWhenDryRunWritesRows",
+    "com.mikeyphw.studyflow.core.domain.BackupRestoreDrillSealTest.packageDrillPassesEveryRequiredScenarioUsingRealDryRunCallback",
+    "com.mikeyphw.studyflow.core.domain.BackupRestoreDrillSealTest.drillResultsStayNonDestructive"
   ]
 }

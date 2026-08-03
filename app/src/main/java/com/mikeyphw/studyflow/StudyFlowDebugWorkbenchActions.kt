@@ -8,9 +8,15 @@ import androidx.core.content.FileProvider
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticTimelineReader
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticTimelineSnapshot
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealPolicy
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealReport
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealStatus
 import com.mikeyphw.studyflow.feature.settings.DebugWorkbenchActionResult
 import java.io.File
+import java.security.MessageDigest
 import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicReference
+import java.util.zip.ZipFile
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,9 +28,13 @@ import kotlinx.coroutines.withContext
 internal class StudyFlowDebugWorkbenchActions(
     private val store: DiagnosticStore,
     private val ioContext: CoroutineContext = Dispatchers.IO,
-    private val prepareBundleShare: (() -> Intent?)? = null,
+    private val prepareBundleShare: (() -> PreparedSupportBundle?)? = null,
     private val launchShare: ((Intent) -> Unit)? = null,
 ) {
+    private val lastSealReport = AtomicReference(SupportBundleSealReport.notRun())
+
+    fun supportBundleSealReport(): SupportBundleSealReport = lastSealReport.get()
+
     suspend fun loadTimeline(maxEntries: Int = 250): DiagnosticTimelineSnapshot = withContext(ioContext) {
         DiagnosticTimelineReader.read(
             jsonl = store.copySanitizedTimeline(),
@@ -41,7 +51,7 @@ internal class StudyFlowDebugWorkbenchActions(
     }
 
     suspend fun exportAndShare(): DebugWorkbenchActionResult {
-        val shareIntent = try {
+        val prepared = try {
             withContext(ioContext) {
                 prepareBundleShare?.invoke()
             }
@@ -49,7 +59,22 @@ internal class StudyFlowDebugWorkbenchActions(
             throw cancelled
         } catch (_: Exception) {
             null
-        } ?: return DebugWorkbenchActionResult.BUNDLE_UNAVAILABLE
+        } ?: run {
+            lastSealReport.set(
+                SupportBundleSealReport(
+                    status = SupportBundleSealStatus.FAILED,
+                    message = com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealMessage.BUNDLE_MISSING,
+                    checkedAtEpochMillis = System.currentTimeMillis(),
+                ),
+            )
+            return DebugWorkbenchActionResult.BUNDLE_UNAVAILABLE
+        }
+
+        val shareIntent = prepared.intent
+        lastSealReport.set(prepared.sealReport)
+        if (!prepared.sealReport.passed) {
+            return DebugWorkbenchActionResult.BUNDLE_SEAL_FAILED
+        }
 
         return try {
             requireNotNull(launchShare).invoke(shareIntent)
@@ -66,6 +91,11 @@ internal class StudyFlowDebugWorkbenchActions(
             DebugWorkbenchActionResult.BUNDLE_SHARE_FAILED
         }
     }
+
+    data class PreparedSupportBundle(
+        val intent: Intent,
+        val sealReport: SupportBundleSealReport,
+    )
 
     companion object {
         fun android(
@@ -88,6 +118,7 @@ internal class StudyFlowDebugWorkbenchActions(
                         "sdk" to android.os.Build.VERSION.SDK_INT.toString(),
                     ),
                 ) ?: return@prepare null
+                val sealReport = inspectSupportBundleFile(bundle)
                 val uri = FileProvider.getUriForFile(
                     context,
                     "${BuildConfig.APPLICATION_ID}.fileprovider",
@@ -99,9 +130,53 @@ internal class StudyFlowDebugWorkbenchActions(
                     clipData = ClipData.newRawUri(clipboardLabel, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                Intent.createChooser(shareIntent, chooserTitle)
+                PreparedSupportBundle(
+                    intent = Intent.createChooser(shareIntent, chooserTitle),
+                    sealReport = sealReport,
+                )
             },
             launchShare = context::startActivity,
         )
     }
 }
+
+
+private fun inspectSupportBundleFile(bundle: File): SupportBundleSealReport = try {
+    ZipFile(bundle).use { zip ->
+        SupportBundleSealPolicy.inspect(
+            entryNames = zip.entries().asSequence().map { entry -> entry.name }.toList(),
+            checkedAtEpochMillis = System.currentTimeMillis(),
+            checksums = zip.checksumManifest(),
+            actualChecksums = zip.actualPayloadChecksums(),
+        )
+    }
+} catch (_: Exception) {
+    SupportBundleSealReport(
+        status = SupportBundleSealStatus.FAILED,
+        message = com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealMessage.BUNDLE_MISSING,
+        checkedAtEpochMillis = System.currentTimeMillis(),
+    )
+}
+
+
+private fun ZipFile.checksumManifest(): Map<String, String>? {
+    val entry = getEntry("checksums.sha256") ?: return null
+    return getInputStream(entry).bufferedReader().useLines { lines ->
+        lines.filter(String::isNotBlank).associate { line ->
+            val digest = line.substringBefore("  ")
+            val name = line.substringAfter("  ", missingDelimiterValue = "")
+            name to digest
+        }
+    }
+}
+
+private fun ZipFile.actualPayloadChecksums(): Map<String, String> = entries().asSequence()
+    .filter { entry -> !entry.isDirectory && entry.name != "checksums.sha256" }
+    .associate { entry ->
+        val bytes = getInputStream(entry).use { input -> input.readBytes() }
+        entry.name to bytes.sha256Hex()
+    }
+
+private fun ByteArray.sha256Hex(): String = MessageDigest.getInstance("SHA-256")
+    .digest(this)
+    .joinToString("") { byte -> "%02x".format(byte) }

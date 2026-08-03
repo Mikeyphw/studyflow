@@ -242,8 +242,8 @@ object BackupRestoreDrillSeal {
         val privateAnnexId = StudyPlanPrivacyPolicy.pseudonymizeIdentifier(privatePlanId, rawAnnexId)
         val entryName = "annex-payloads/$privateAnnexId/private-annex.pdf"
         val manifest = StudyPlanPackageManifest(
-            applicationVersion = "0.28.0-phase28",
-            exportedAtEpochMillis = 28L,
+            applicationVersion = StudyPlanPrivacyPolicy.PrivateApplicationVersion,
+            exportedAtEpochMillis = 0L,
             sourceStudyPlanId = privatePlanId,
             displayName = StudyPlanPrivacyPolicy.PrivateDisplayName,
             exportMode = StudyPlanExportMode.PRIVATE_STRIPPED,
@@ -271,7 +271,20 @@ object BackupRestoreDrillSeal {
             tables = listOf(
                 PortableTable(
                     name = "study_plans",
-                    rows = listOf(row("id" to text(privatePlanId), "name" to text(manifest.displayName))),
+                    rows = listOf(
+                        row(
+                            "id" to text(privatePlanId),
+                            "name" to text(manifest.displayName),
+                            "description" to text(""),
+                            "examDateIso" to nullValue(),
+                            "status" to text("DRAFT"),
+                            "progressPercent" to integer(0),
+                            "studiedMinutesThisWeek" to integer(0),
+                            "questionsAnswered" to integer(0),
+                            "averageAccuracyPercent" to integer(0),
+                            "trashedAtEpochMillis" to nullValue(),
+                        ),
+                    ),
                 ),
                 PortableTable(
                     name = "annexes",
@@ -327,6 +340,11 @@ object BackupRestoreDrillSeal {
     private fun row(vararg values: Pair<String, PortableValue>): PortableRow = PortableRow(values.toMap())
 
     private fun text(value: String): PortableValue = PortableValue(PortableValueType.TEXT, value)
+
+    private fun integer(value: Number): PortableValue =
+        PortableValue(PortableValueType.INTEGER, value.toLong().toString())
+
+    private fun nullValue(): PortableValue = PortableValue(PortableValueType.NULL)
 
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
         .digest(bytes)

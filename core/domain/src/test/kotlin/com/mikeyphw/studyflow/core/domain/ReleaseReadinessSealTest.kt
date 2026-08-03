@@ -20,8 +20,8 @@ class ReleaseReadinessSealTest {
 
         val report = ReleaseReadinessSeal.evaluate(shell)
 
-        assertEquals(15, report.totalPhaseCount)
-        assertEquals(15, report.completedPhaseCount)
+        assertEquals(25, report.totalPhaseCount)
+        assertEquals(25, report.completedPhaseCount)
         assertEquals(100, report.completionPercent)
         assertTrue(report.mvpSealed)
     }

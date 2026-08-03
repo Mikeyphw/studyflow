@@ -130,7 +130,7 @@ class StudyFlowDebugProbeRegistryTest {
     }
 
     @Test(expected = AssertionError::class)
-    fun `fatal errors are never converted into probe failures`() {
+    fun `fatal errors are never converted into probe failures`(): Unit {
         runBlocking {
             val registry = registry(
                 recorder = RecordingRecorder(),
@@ -139,7 +139,6 @@ class StudyFlowDebugProbeRegistryTest {
                 },
             )
             registry.run(DebugProbeId.SEARCH_QUERY)
-            Unit
         }
     }
 

@@ -7,12 +7,13 @@ import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
+import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
-import java.util.Base64
 
 private const val QuestionIdsPrefix = "questionIds="
 private const val AnswerPrefix = "answer="
 private const val FieldSeparator = "|"
+private const val Base64UrlAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
 class PracticeExecutionEngine(
     private val clock: () -> Long = System::currentTimeMillis,
@@ -183,10 +184,52 @@ object PracticeAttemptCodec {
         }.getOrNull()
     }
 
-    private fun String.b64(): String = Base64.getUrlEncoder().withoutPadding()
-        .encodeToString(toByteArray(StandardCharsets.UTF_8))
+    private fun String.b64(): String = toByteArray(StandardCharsets.UTF_8).toBase64UrlNoPadding()
 
-    private fun String.fromB64(): String = String(Base64.getUrlDecoder().decode(this), StandardCharsets.UTF_8)
+    private fun String.fromB64(): String = String(fromBase64UrlNoPadding(), StandardCharsets.UTF_8)
+
+    private fun ByteArray.toBase64UrlNoPadding(): String = buildString((size * 4 + 2) / 3) {
+        var index = 0
+        while (index + 2 < size) {
+            val chunk = ((this@toBase64UrlNoPadding[index].toInt() and 0xFF) shl 16) or
+                ((this@toBase64UrlNoPadding[index + 1].toInt() and 0xFF) shl 8) or
+                (this@toBase64UrlNoPadding[index + 2].toInt() and 0xFF)
+            append(Base64UrlAlphabet[(chunk ushr 18) and 0x3F])
+            append(Base64UrlAlphabet[(chunk ushr 12) and 0x3F])
+            append(Base64UrlAlphabet[(chunk ushr 6) and 0x3F])
+            append(Base64UrlAlphabet[chunk and 0x3F])
+            index += 3
+        }
+        val remaining = size - index
+        if (remaining == 1) {
+            val chunk = (this@toBase64UrlNoPadding[index].toInt() and 0xFF) shl 4
+            append(Base64UrlAlphabet[(chunk ushr 6) and 0x3F])
+            append(Base64UrlAlphabet[chunk and 0x3F])
+        } else if (remaining == 2) {
+            val chunk = ((this@toBase64UrlNoPadding[index].toInt() and 0xFF) shl 10) or
+                ((this@toBase64UrlNoPadding[index + 1].toInt() and 0xFF) shl 2)
+            append(Base64UrlAlphabet[(chunk ushr 12) and 0x3F])
+            append(Base64UrlAlphabet[(chunk ushr 6) and 0x3F])
+            append(Base64UrlAlphabet[chunk and 0x3F])
+        }
+    }
+
+    private fun String.fromBase64UrlNoPadding(): ByteArray {
+        val output = ByteArrayOutputStream(length * 3 / 4)
+        var buffer = 0
+        var bits = 0
+        forEach { character ->
+            val value = Base64UrlAlphabet.indexOf(character)
+            require(value >= 0) { "Invalid Base64Url character." }
+            buffer = (buffer shl 6) or value
+            bits += 6
+            while (bits >= 8) {
+                bits -= 8
+                output.write((buffer shr bits) and 0xFF)
+            }
+        }
+        return output.toByteArray()
+    }
 }
 
 class ManagePracticeExecution(

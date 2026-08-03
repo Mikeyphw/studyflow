@@ -114,8 +114,8 @@ fun StudyContentScreen(
     var showBulkDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
 
-    val filter = SyllabusFilter.valueOf(filterName)
-    val sort = SyllabusSort.valueOf(sortName)
+    val filter = enumValueOrDefault<SyllabusFilter>(filterName, SyllabusFilter.ACTIVE)
+    val sort = enumValueOrDefault<SyllabusSort>(sortName, SyllabusSort.POSITION)
     val visibleSubjects = syllabus.visibleSubjects(query, filter, sort)
     val operationFailed = stringResource(R.string.operation_failed)
     val subjectSaved = stringResource(R.string.subject_saved)
@@ -654,3 +654,7 @@ private fun SyllabusSort.sortLabel(): Int = when (this) {
     SyllabusSort.NAME -> R.string.sort_name
     SyllabusSort.PROGRESS -> R.string.sort_progress
 }
+
+
+private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
+    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue

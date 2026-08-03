@@ -27,7 +27,7 @@ class StudySessionTimerTest {
 
         assertEquals(StudySessionStatus.PAUSED, paused.status)
         assertEquals(60, paused.grossDurationSeconds)
-        assertEquals(65, StudySessionTimer.pausedSeconds(paused, nowEpochMillis = 66_000))
+        assertEquals(5, StudySessionTimer.pausedSeconds(paused, nowEpochMillis = 66_000))
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
@@ -227,6 +228,7 @@ private class AndroidStudyFlowDebugProbeOperations(
         } else {
             null
         }
+        val channelImportance = notificationChannelImportance(channel)
         DebugProbePlatformPolicy.notification(
             id = id,
             snapshot = NotificationHealthSnapshot(
@@ -234,12 +236,20 @@ private class AndroidStudyFlowDebugProbeOperations(
                 appNotificationsEnabled = appEnabled,
                 channelRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O,
                 channelPresent = channel != null,
-                channelBlocked = channel?.importance == NotificationManager.IMPORTANCE_NONE,
-                channelImportance = channel?.importance,
+                channelBlocked = channelImportance == NotificationImportanceNone,
+                channelImportance = channelImportance,
                 apiLevel = Build.VERSION.SDK_INT,
             ),
         )
     }
+
+    @SuppressLint("NewApi")
+    private fun notificationChannelImportance(notificationChannel: android.app.NotificationChannel?): Int? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationChannel?.importance
+        } else {
+            null
+        }
 
     private suspend fun widgetHealth(id: DebugProbeId): DebugProbeResult = runInterruptible {
         val manager = AppWidgetManager.getInstance(appContext)
@@ -292,16 +302,14 @@ private class AndroidStudyFlowDebugProbeOperations(
 
     private suspend fun backupConfigurationHealth(id: DebugProbeId): DebugProbeResult = runInterruptible {
         val appInfo = appContext.applicationInfo
-        val resources = appContext.resources
-        val packageName = appContext.packageName
         DebugProbePlatformPolicy.backup(
             id = id,
             snapshot = BackupConfigurationSnapshot(
                 backupAllowed = appInfo.flags and ApplicationInfo.FLAG_ALLOW_BACKUP != 0,
                 legacyRuleLinked = BuildConfig.BACKUP_LEGACY_RULE_LINKED,
                 modernRuleLinked = BuildConfig.BACKUP_MODERN_RULE_LINKED,
-                legacyRulePresent = resources.getIdentifier("backup_rules", "xml", packageName) != 0,
-                modernRulePresent = resources.getIdentifier("data_extraction_rules", "xml", packageName) != 0,
+                legacyRulePresent = BuildConfig.BACKUP_LEGACY_RULE_LINKED,
+                modernRulePresent = BuildConfig.BACKUP_MODERN_RULE_LINKED,
             ),
         )
     }
@@ -417,6 +425,8 @@ private class AndroidStudyFlowDebugProbeOperations(
 }
 
 private fun DebugProbeId.actionSuffix(): String = name.lowercase().replace('_', '-')
+
+private const val NotificationImportanceNone = 0
 
 private fun DebugProbeStatus.toDiagnosticOutcome(): DiagnosticOutcome = when (this) {
     DebugProbeStatus.PASSED, DebugProbeStatus.WARNING -> DiagnosticOutcome.SUCCEEDED

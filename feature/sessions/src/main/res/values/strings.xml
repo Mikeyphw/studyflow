@@ -30,7 +30,10 @@
     <string name="no_sessions_yet">No finished sessions yet</string>
     <string name="no_sessions_message">Your finished and cancelled study sessions will appear here.</string>
     <string name="activity_duration_minutes">%1$d min</string>
-    <string name="session_summary">%1$s • %2$d questions • %3$d correct</string>
+    <plurals name="session_summary">
+        <item quantity="one">%1$s • %2$d question • %3$d correct</item>
+        <item quantity="other">%1$s • %2$d questions • %3$d correct</item>
+    </plurals>
     <string name="filter_all_sessions">All</string>
     <string name="filter_completed_sessions">Completed</string>
     <string name="filter_cancelled_sessions">Cancelled</string>

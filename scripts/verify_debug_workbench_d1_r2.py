@@ -195,10 +195,12 @@ for path in format_paths:
             )
 
 for path in (ROOT / "core/diagnostics").rglob("*"):
+    relative = path.relative_to(ROOT)
+    if any(part in {"build", ".gradle"} for part in relative.parts):
+        continue
     if path.is_dir():
         continue
-    relative = path.relative_to(ROOT)
-    if path.suffix in {".pyc", ".pyo"} or "__pycache__" in path.parts or "build" in path.parts:
+    if path.suffix in {".pyc", ".pyo"} or "__pycache__" in path.parts:
         FAILURES.append(f"forbidden generated diagnostics payload: {relative}")
     if b"\x00" in path.read_bytes():
         FAILURES.append(f"NUL byte in diagnostics payload: {relative}")

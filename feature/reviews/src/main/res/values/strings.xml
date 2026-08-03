@@ -3,10 +3,22 @@
     <string name="go_back">Go back</string>
     <string name="reviews_title">Reviews and flashcards</string>
     <string name="today_reviews">Today\'s review pulse</string>
-    <string name="due_count">%1$d due</string>
-    <string name="upcoming_count">%1$d upcoming</string>
-    <string name="flashcard_count">%1$d flashcards</string>
-    <string name="error_count">%1$d errors</string>
+    <plurals name="due_count">
+        <item quantity="one">%1$d due</item>
+        <item quantity="other">%1$d due</item>
+    </plurals>
+    <plurals name="upcoming_count">
+        <item quantity="one">%1$d upcoming</item>
+        <item quantity="other">%1$d upcoming</item>
+    </plurals>
+    <plurals name="flashcard_count">
+        <item quantity="one">%1$d flashcard</item>
+        <item quantity="other">%1$d flashcards</item>
+    </plurals>
+    <plurals name="error_count">
+        <item quantity="one">%1$d error</item>
+        <item quantity="other">%1$d errors</item>
+    </plurals>
     <string name="add_flashcard">Add flashcard</string>
     <string name="flashcard_front">Front</string>
     <string name="flashcard_back">Back</string>
@@ -23,14 +35,20 @@
     <string name="review_kind_subject">Subject</string>
     <string name="review_kind_manual">Manual</string>
     <string name="review_item_title">%1$s review</string>
-    <string name="review_item_details">Repetitions: %1$d · Interval: %2$d days · Ease: %3$.2f</string>
+    <plurals name="review_item_details">
+        <item quantity="one">Repetitions: %1$d · Interval: %2$d day · Ease: %3$.2f</item>
+        <item quantity="other">Repetitions: %1$d · Interval: %2$d days · Ease: %3$.2f</item>
+    </plurals>
     <string name="again">Again</string>
     <string name="good">Good</string>
     <string name="easy">Easy</string>
     <string name="skip">Skip</string>
     <string name="wrong_answer_notebook">Wrong-answer notebook</string>
     <string name="no_wrong_answers">No captured wrong answers yet. Finish a practice attempt with missed questions to build the notebook.</string>
-    <string name="error_entry_title">Repeated mistake · %1$d time(s)</string>
+    <plurals name="error_entry_title">
+        <item quantity="one">Repeated mistake · %1$d time</item>
+        <item quantity="other">Repeated mistake · %1$d times</item>
+    </plurals>
     <string name="chosen_answer_value">Your answer: %1$s</string>
     <string name="correct_answer_value">Correct answer: %1$s</string>
     <string name="schedule_error_review">Schedule review</string>

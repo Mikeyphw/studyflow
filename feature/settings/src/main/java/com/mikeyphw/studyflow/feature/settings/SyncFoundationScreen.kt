@@ -24,6 +24,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
+import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
+import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,8 +68,18 @@ fun SyncFoundationScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(text = stringResource(R.string.sync_provider_value, state.provider.displayName))
-                Text(text = stringResource(R.string.sync_status_value, state.connectionStatus.name))
-                Text(text = stringResource(R.string.sync_conflict_value, state.conflictPolicy.name))
+                Text(
+                    text = stringResource(
+                        R.string.sync_status_value,
+                        stringResource(syncConnectionStatusLabel(state.connectionStatus)),
+                    ),
+                )
+                Text(
+                    text = stringResource(
+                        R.string.sync_conflict_value,
+                        stringResource(syncConflictPolicyLabel(state.conflictPolicy)),
+                    ),
+                )
             }
             StudyFlowSectionCard(title = stringResource(R.string.sync_local_changes_title)) {
                 val currentSummary = summary
@@ -100,4 +112,17 @@ fun SyncFoundationScreen(
             }
         }
     }
+}
+
+
+private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = when (status) {
+    StudySyncConnectionStatus.DISABLED -> R.string.sync_connection_local_only
+    StudySyncConnectionStatus.LOCAL_READY -> R.string.sync_connection_local_ready
+    StudySyncConnectionStatus.PROVIDER_REQUIRED -> R.string.sync_connection_provider_required
+    StudySyncConnectionStatus.BLOCKED -> R.string.sync_connection_provider_error
+}
+
+private fun syncConflictPolicyLabel(policy: StudySyncConflictPolicy): Int = when (policy) {
+    StudySyncConflictPolicy.KEEP_LOCAL -> R.string.sync_conflict_local_only
+    StudySyncConflictPolicy.MANUAL_REVIEW -> R.string.sync_conflict_manual_review
 }

@@ -2,6 +2,8 @@ package com.mikeyphw.studyflow.feature.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -28,6 +30,7 @@ private enum class DebugLabPage {
     STUDY_ENGINE,
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DebugLabsPanel(
     reminderReport: ReminderNotificationLabReport,
@@ -50,9 +53,10 @@ fun DebugLabsPanel(
     var pageName by rememberSaveable { mutableStateOf(DebugLabPage.REMINDERS.name) }
     val page = DebugLabPage.entries.firstOrNull { it.name == pageName } ?: DebugLabPage.REMINDERS
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
+        FlowRow(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FilterChip(
                 selected = page == DebugLabPage.REMINDERS,

@@ -33,5 +33,6 @@ data class RuntimeSmokeReport(
     val blockedCount: Int = probes.count { probe -> probe.status == RuntimeSmokeProbeStatus.BLOCKED }
     val readyForReleaseSeal: Boolean = probes.isNotEmpty() &&
         blockedCount == 0 &&
-        probes.all(RuntimeSmokeProbe::safeForManualRun)
+        probes.all(RuntimeSmokeProbe::safeForManualRun) &&
+        probes.all { probe -> probe.status == RuntimeSmokeProbeStatus.PASS }
 }

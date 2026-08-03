@@ -7,23 +7,23 @@ import com.mikeyphw.studyflow.core.model.ScheduleRule
 import com.mikeyphw.studyflow.core.model.ScheduleRuleId
 import com.mikeyphw.studyflow.core.model.ScheduleRuleType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
-import java.time.LocalDate
-import java.time.ZoneId
+import java.util.Calendar
+import java.util.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StudySchedulePlannerTest {
     private val planId = StudyPlanId("plan")
-    private val zone = ZoneId.of("UTC")
-    private val planner = StudySchedulePlanner(zoneId = zone, idFactory = object {
+    private val timeZone = TimeZone.getTimeZone("UTC")
+    private val planner = StudySchedulePlanner(timeZone = timeZone, idFactory = object {
         var next = 0
         operator fun invoke() = "activity-${next++}"
     }::invoke)
 
     @Test
     fun generatesActivitiesFromEnabledWeeklyRules() {
-        val monday = LocalDate.of(2026, 8, 3).atStartOfDay(zone).toInstant().toEpochMilli()
+        val monday = utcMillis(2026, Calendar.AUGUST, 3)
         val activities = planner.generateActivities(
             request = ScheduleGenerationRequest(planId, monday, days = 7, replaceUnlocked = true),
             rules = listOf(rule(day = 1, minute = 8 * 60), rule(day = 3, minute = 19 * 60)),
@@ -37,7 +37,7 @@ class StudySchedulePlannerTest {
 
     @Test
     fun skipsDisabledAndNonTimedRules() {
-        val monday = LocalDate.of(2026, 8, 3).atStartOfDay(zone).toInstant().toEpochMilli()
+        val monday = utcMillis(2026, Calendar.AUGUST, 3)
         val activities = planner.generateActivities(
             request = ScheduleGenerationRequest(planId, monday, days = 2, replaceUnlocked = true),
             rules = listOf(
@@ -83,3 +83,14 @@ class StudySchedulePlannerTest {
         position = 0,
     )
 }
+
+private fun utcMillis(year: Int, zeroBasedMonth: Int, dayOfMonth: Int): Long =
+    Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        set(Calendar.YEAR, year)
+        set(Calendar.MONTH, zeroBasedMonth)
+        set(Calendar.DAY_OF_MONTH, dayOfMonth)
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis

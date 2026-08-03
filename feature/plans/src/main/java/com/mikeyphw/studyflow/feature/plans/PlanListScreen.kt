@@ -84,7 +84,7 @@ fun PlanListScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedFilterName by rememberSaveable { mutableStateOf(PlanCollectionFilter.CURRENT.name) }
-    val selectedFilter = PlanCollectionFilter.valueOf(selectedFilterName)
+    val selectedFilter = enumValueOrDefault<PlanCollectionFilter>(selectedFilterName, PlanCollectionFilter.CURRENT)
     val visiblePlans = plansForFilter(plans, selectedFilter)
 
     Scaffold(
@@ -430,3 +430,7 @@ internal fun statusLabel(status: StudyPlanStatus): Int = when (status) {
     StudyPlanStatus.ARCHIVED -> R.string.status_archived
     StudyPlanStatus.TRASHED -> R.string.status_trashed
 }
+
+
+private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
+    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue

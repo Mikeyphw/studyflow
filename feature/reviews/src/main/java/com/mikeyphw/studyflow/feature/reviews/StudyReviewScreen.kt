@@ -32,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -180,22 +181,26 @@ private fun ReviewSummaryCard(queue: ReviewQueue) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AssistChip(
                 onClick = {},
-                label = { Text(stringResource(R.string.due_count, queue.dueCount)) },
+                label = { Text(pluralStringResource(R.plurals.due_count, queue.dueCount, queue.dueCount)) },
                 leadingIcon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
             )
             AssistChip(
                 onClick = {},
-                label = { Text(stringResource(R.string.upcoming_count, queue.upcomingCount)) },
+                label = {
+                    Text(pluralStringResource(R.plurals.upcoming_count, queue.upcomingCount, queue.upcomingCount))
+                },
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AssistChip(
                 onClick = {},
-                label = { Text(stringResource(R.string.flashcard_count, queue.flashcardCount)) },
+                label = {
+                    Text(pluralStringResource(R.plurals.flashcard_count, queue.flashcardCount, queue.flashcardCount))
+                },
             )
             AssistChip(
                 onClick = {},
-                label = { Text(stringResource(R.string.error_count, queue.errorCount)) },
+                label = { Text(pluralStringResource(R.plurals.error_count, queue.errorCount, queue.errorCount)) },
             )
         }
     }
@@ -230,8 +235,9 @@ private fun ReviewItemRow(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
     ) {
         Text(
-            text = stringResource(
-                R.string.review_item_details,
+            text = pluralStringResource(
+                R.plurals.review_item_details,
+                item.intervalDays,
                 item.repetitionCount,
                 item.intervalDays,
                 item.easeFactor,
@@ -326,7 +332,11 @@ private fun WrongAnswerRow(
     onResolve: () -> Unit,
 ) {
     StudyFlowSectionCard(
-        title = stringResource(R.string.error_entry_title, error.recurrenceCount),
+        title = pluralStringResource(
+            R.plurals.error_entry_title,
+            error.recurrenceCount,
+            error.recurrenceCount,
+        ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
     ) {
         AssistChip(onClick = {}, label = { Text(priority.label()) })

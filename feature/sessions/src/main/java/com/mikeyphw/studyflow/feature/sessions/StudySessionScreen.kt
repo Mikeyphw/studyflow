@@ -57,9 +57,9 @@ import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -389,8 +389,9 @@ private fun StudySessionHistoryCard(session: StudySession) {
                 )
             }
             Text(
-                text = stringResource(
-                    R.string.session_summary,
+                text = pluralStringResource(
+                    R.plurals.session_summary,
+                    session.questionsAnswered,
                     formatSessionDuration(session.grossDurationSeconds),
                     session.questionsAnswered,
                     session.correctAnswers,
@@ -409,10 +410,10 @@ private fun List<StudySession>.filterHistory(filter: SessionHistoryFilter): List
     }
 }
 
-private fun formatStartedAt(epochMillis: Long): String = DateTimeFormatter
-    .ofPattern("yyyy-MM-dd HH:mm")
-    .withZone(ZoneId.systemDefault())
-    .format(Instant.ofEpochMilli(epochMillis))
+private fun formatStartedAt(epochMillis: Long): String = SimpleDateFormat(
+    "yyyy-MM-dd HH:mm",
+    Locale.getDefault(),
+).format(Date(epochMillis))
 
 private fun SessionHistoryFilter.labelKey(): Int = when (this) {
     SessionHistoryFilter.ALL -> R.string.filter_all_sessions

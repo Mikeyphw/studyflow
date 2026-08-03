@@ -100,8 +100,6 @@
     <string name="import_plan_description">Inspecione um pacote .studyplan com checksum antes de criar, substituir ou mesclar um espaço.</string>
     <string name="choose_studyplan_file">Escolher arquivo .studyplan</string>
     <string name="export_plan">Exportar Plano de Estudo</string>
-    <string name="export_plan_description">Crie um pacote portátil com limites explícitos de privacidade e conteúdo.</string>
-    <string name="export_full_plan">Exportar plano completo</string>
     <string name="export_full_plan_with_annexes">Exportar plano completo com anexos</string>
     <string name="export_full_plan_metadata_only">Exportar plano completo somente metadados</string>
     <string name="export_without_private_history">Exportar sem histórico privado</string>
@@ -127,7 +125,6 @@
     <string name="export_mode_structure">Somente estrutura</string>
     <string name="export_mode_template">Modelo</string>
     <string name="snapshots_title">Snapshots do plano</string>
-    <string name="snapshots_description">Crie um ponto de restauração privado antes de grandes mudanças. Os pacotes ficam no armazenamento privado do aplicativo.</string>
     <string name="create_snapshot">Criar snapshot</string>
     <string name="manual_snapshot_label">Snapshot manual</string>
     <string name="snapshot_created">Snapshot criado.</string>
@@ -142,8 +139,16 @@
     <string name="preview_import">Pré-visualizar</string>
     <string name="dry_run_new">Simular como novo</string>
     <string name="dry_run_replace">Simular substituição</string>
-    <string name="integrity_report">%1$d linhas e %2$d anexo(s) verificados. Criptografado: %3$s.</string>
-    <string name="dry_run_report">A simulação verificou %1$d linhas e alterou %2$d linhas do banco.</string>
+    <plurals name="integrity_report">
+        <item quantity="one">%1$d linha e %2$d anexo(s) verificados. Criptografado: %3$s.</item>
+        <item quantity="many">%1$d linhas e %2$d anexo(s) verificados. Criptografado: %3$s.</item>
+        <item quantity="other">%1$d linhas e %2$d anexo(s) verificados. Criptografado: %3$s.</item>
+    </plurals>
+    <plurals name="dry_run_report">
+        <item quantity="one">A simulação verificou %1$d linha e alterou %2$d linhas do banco.</item>
+        <item quantity="many">A simulação verificou %1$d linhas e alterou %2$d linhas do banco.</item>
+        <item quantity="other">A simulação verificou %1$d linhas e alterou %2$d linhas do banco.</item>
+    </plurals>
     <string name="encrypt_export">Criptografar esta exportação com senha</string>
     <string name="export_password">Senha da exportação</string>
     <string name="password_too_short">Use pelo menos 8 caracteres na senha de exportação.</string>
@@ -160,4 +165,7 @@
     <string name="no">Não</string>
     <string name="annex_payloads_included">Os arquivos físicos dos anexos estão incluídos e serão copiados para o armazenamento privado do aplicativo.</string>
     <string name="replace_creates_safety_snapshot">A substituição criará um snapshot privado de segurança antes de alterar o plano de destino.</string>
+    <string name="confirm_delete_title">Excluir item?</string>
+    <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
+    <string name="confirm_delete">Excluir</string>
 </resources>

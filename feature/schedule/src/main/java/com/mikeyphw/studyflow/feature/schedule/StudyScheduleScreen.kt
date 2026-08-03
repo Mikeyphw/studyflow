@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.automirrored.outlined.EventNote
 import androidx.compose.material.icons.outlined.PendingActions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
@@ -31,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,8 +64,7 @@ import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudyStrategy
 import com.mikeyphw.studyflow.core.model.StudyStrategyId
 import com.mikeyphw.studyflow.core.model.StudyStrategyType
-import java.time.LocalDate
-import java.time.ZoneId
+import java.util.Calendar
 import java.util.UUID
 import kotlinx.coroutines.launch
 
@@ -185,10 +186,7 @@ fun StudyScheduleScreen(
                         }
                         OutlinedButton(
                             onClick = {
-                                val start = LocalDate.now()
-                                    .atStartOfDay(ZoneId.systemDefault())
-                                    .toInstant()
-                                    .toEpochMilli()
+                                val start = startOfTodayEpochMillis()
                                 launchAction(weekGenerated) {
                                     scheduleManager.generateActivities(
                                         request = ScheduleGenerationRequest(
@@ -346,7 +344,12 @@ private fun ScheduleRuleCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = stringResource(dayLabelKey(rule.dayOfWeek)), style = MaterialTheme.typography.titleMedium)
             Text(
-                text = stringResource(R.string.duration_label, rule.timeLabel(), rule.durationMinutes),
+                text = pluralStringResource(
+                    R.plurals.duration_label,
+                    rule.durationMinutes,
+                    rule.timeLabel(),
+                    rule.durationMinutes,
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -357,10 +360,7 @@ private fun ScheduleRuleCard(
                     },
                 )
                 if (rule.locked) AssistChip(onClick = {}, label = { Text(stringResource(R.string.locked)) })
-                OutlinedButton(onClick = onDelete) {
-                    Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
-                    Text(stringResource(R.string.delete))
-                }
+                ConfirmingDeleteButton(onConfirmed = onDelete)
             }
         }
     }
@@ -396,11 +396,44 @@ private fun PlannedActivityCard(
                         Text(stringResource(R.string.mark_missed))
                     }
                 }
-                OutlinedButton(onClick = onDelete) {
-                    Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
-                    Text(stringResource(R.string.delete))
-                }
+                ConfirmingDeleteButton(onConfirmed = onDelete)
             }
         }
+    }
+}
+
+private fun startOfTodayEpochMillis(): Long = Calendar.getInstance().apply {
+    set(Calendar.HOUR_OF_DAY, 0)
+    set(Calendar.MINUTE, 0)
+    set(Calendar.SECOND, 0)
+    set(Calendar.MILLISECOND, 0)
+}.timeInMillis
+
+
+private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
+    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue
+
+
+@Composable
+private fun ConfirmingDeleteButton(onConfirmed: () -> Unit) {
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    OutlinedButton(onClick = { confirming = true }) {
+        Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
+        Text(stringResource(R.string.delete))
+    }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.confirm_delete_title)) },
+            text = { Text(stringResource(R.string.confirm_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onConfirmed() }) {
+                    Text(stringResource(R.string.confirm_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
     }
 }

@@ -24,10 +24,16 @@ def forbid(text, needle, label):
     if needle in text:
         raise AssertionError(f"forbidden {label}: {needle}")
 
-def string_names(rel):
+def resource_names(rel, tag):
     text = read(rel)
     root = ET.fromstring(text)
-    return {node.attrib['name'] for node in root.findall('string') if 'name' in node.attrib}
+    return {node.attrib['name'] for node in root.findall(tag) if 'name' in node.attrib}
+
+def string_names(rel):
+    return resource_names(rel, 'string')
+
+def plural_names(rel):
+    return resource_names(rel, 'plurals')
 
 if not phase_version_at_least(ROOT, 29):
     raise AssertionError("app version must be Phase 29 or later")
@@ -76,17 +82,24 @@ require(settings, 'releaseCandidateReport.readyPercent', 'settings release polis
 
 en_keys = string_names("feature/settings/src/main/res/values/strings.xml")
 pt_keys = string_names("feature/settings/src/main/res/values-pt-rBR/strings.xml")
+en_plurals = plural_names("feature/settings/src/main/res/values/strings.xml")
+pt_plurals = plural_names("feature/settings/src/main/res/values-pt-rBR/strings.xml")
 for key in [
     'release_candidate_polish_title',
     'release_candidate_polish_value',
-    'release_candidate_polish_message',
 ]:
     if key not in en_keys:
         raise AssertionError(f'missing English {key}')
     if key not in pt_keys:
         raise AssertionError(f'missing Portuguese {key}')
-if not {'release_candidate_polish_title','release_candidate_polish_value','release_candidate_polish_message'} <= (en_keys & pt_keys):
-    raise AssertionError('release-candidate resource parity failed')
+if 'release_candidate_polish_message' not in en_plurals:
+    raise AssertionError('missing English plural release_candidate_polish_message')
+if 'release_candidate_polish_message' not in pt_plurals:
+    raise AssertionError('missing Portuguese plural release_candidate_polish_message')
+if not {'release_candidate_polish_title','release_candidate_polish_value'} <= (en_keys & pt_keys):
+    raise AssertionError('release-candidate string resource parity failed')
+if 'release_candidate_polish_message' not in (en_plurals & pt_plurals):
+    raise AssertionError('release-candidate plural resource parity failed')
 
 
 reminder_planner = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt")

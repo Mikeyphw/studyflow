@@ -1,3 +1,11 @@
+
+## Debug Workbench D8 r4 Final Release Seal Hotfix
+
+- Supersedes D8 r3.
+- Keeps the D8 final release seal, r2 validator/JUnit fixes, and r3 DebugOverview state wiring.
+- Normalizes coroutine debug thread-name suffixes in the workbench action tests so injected I/O assertions remain deterministic under Gradle's coroutine debug names.
+- Hardens the D8 verifier to reject the brittle exact thread-name assertions that failed target-side validation.
+
 # Changelog
 
 ## Debug Workbench D6 - Study engine lab
@@ -581,3 +589,36 @@
 - Switched reminder day boundaries and Today widget planned counts from UTC epoch buckets to local calendar days.
 - Added bounded late planned-activity reminder grace for Doze/App Standby delivery delays while preserving stale reminder suppression.
 - Added notification-tap routing, permission-grant reminder reconciliation, time/timezone/package replacement recovery, and encrypted cloud-backup capability hardening.
+
+## Debug Workbench D7 Runtime Self-Check and Support Export Seal
+
+- Added bounded runtime self-check history for read-only Debug Workbench probe suites.
+- Added a support-bundle ZIP seal that rejects traversal entries, database payloads, missing manifests, missing checksums, and missing redaction reports before sharing.
+- Surfaced self-check history and support-bundle seal state in Debug Workbench reports.
+- Added D7 validators and behavior tests for safe-suite boundaries, cancellation, fatal errors, and corrupt support bundles.
+## Debug Workbench D8 Final Release Seal
+
+- Added the final Debug Workbench release-seal policy and tests.
+- Fixed D7 self-check and support-bundle seal state wiring in the workbench screen.
+- Expanded repository validation to cover Phase 0 through Phase 29 and Debug Workbench D1 through D8.
+- Added the D8 validator and release-seal documentation.
+## Debug Workbench D8 r2 hotfix
+
+- Fixed two JUnit `@Test(expected = ...)` tests so they expose explicit `Unit` block bodies and do not fail as `InvalidTestClassError`.
+- Hardened `verify_debug_workbench_d1_r2.py` to skip generated Gradle `build/` directories while preserving cache/bytecode source guards.
+- Extended the D8 verifier so those exact fixes are enforced by the final seal.
+
+
+## Debug Workbench D8 r3 final release seal hotfix
+
+- Supersedes the D8 r2 hotfix by forwarding D7 self-check history and support-bundle seal state into the Overview screen before the screen renders those cards.
+- Hardened the D8 verifier so the same screen-boundary compile regression is rejected before Gradle reaches `:feature:settings:compileDebugKotlin`.
+
+
+### D8 r5 lint-floor hotfix
+
+- Routes notification channel importance reads through an API-guarded helper so minSdk 23 lint does not flag `NotificationChannel.getImportance`.
+- Replaces `java.util.Base64` mapper use with `android.util.Base64` and `Base64.NO_WRAP` to preserve encoding while supporting the app minSdk.
+- Extends the D8 verifier to reject both regressions.
+
+D8 r6 lint-floor hotfix keeps every prior D8 fix and replaces Android UI java.time calls with minSdk-23-safe java.text/java.util date helpers in progress, schedule, and sessions screens.

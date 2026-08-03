@@ -2,6 +2,8 @@ package com.mikeyphw.studyflow.feature.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -29,6 +32,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.diagnostics.DebugWorkbenchShellReport
+import com.mikeyphw.studyflow.core.diagnostics.RuntimeSelfCheckHistory
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealMessage
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealReport
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealStatus
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticOutcome
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorderHealth
@@ -55,9 +62,11 @@ enum class DebugWorkbenchActionResult {
     BUNDLE_DIRECTORY_FAILED,
     BUNDLE_UNAVAILABLE,
     BUNDLE_SHARE_FAILED,
+    BUNDLE_SEAL_FAILED,
     BUNDLE_READY,
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DebugWorkbenchScreen(
     shellReport: DebugWorkbenchShellReport,
@@ -71,6 +80,8 @@ fun DebugWorkbenchScreen(
     onOpenRuntimeSmokeWorkbench: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    selfCheckHistory: RuntimeSelfCheckHistory = RuntimeSelfCheckHistory(),
+    supportBundleSealReport: SupportBundleSealReport = SupportBundleSealReport.notRun(),
     probeContent: @Composable () -> Unit = {
         DebugProbePlaceholder(onOpenRuntimeSmokeWorkbench)
     },
@@ -100,7 +111,10 @@ fun DebugWorkbenchScreen(
                     text = stringResource(R.string.debug_workbench_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     DebugWorkbenchSection.entries.forEach { candidate ->
                         FilterChip(
                             selected = section == candidate,
@@ -114,6 +128,8 @@ fun DebugWorkbenchScreen(
                 DebugWorkbenchSection.OVERVIEW -> DebugOverview(
                     shellReport = shellReport,
                     actionResult = actionResult,
+                    selfCheckHistory = selfCheckHistory,
+                    supportBundleSealReport = supportBundleSealReport,
                     onRefresh = onRefresh,
                     onBack = onBack,
                 )
@@ -126,6 +142,8 @@ fun DebugWorkbenchScreen(
                 DebugWorkbenchSection.REPORTS -> DebugReports(
                     shellReport = shellReport,
                     actionResult = actionResult,
+                    selfCheckHistory = selfCheckHistory,
+                    supportBundleSealReport = supportBundleSealReport,
                     onCopyStatus = onCopyStatus,
                     onCopyTimeline = onCopyTimeline,
                     onClearHistory = onClearHistory,
@@ -140,6 +158,8 @@ fun DebugWorkbenchScreen(
 private fun DebugOverview(
     shellReport: DebugWorkbenchShellReport,
     actionResult: DebugWorkbenchActionResult?,
+    selfCheckHistory: RuntimeSelfCheckHistory,
+    supportBundleSealReport: SupportBundleSealReport,
     onRefresh: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -157,7 +177,7 @@ private fun DebugOverview(
                         stringResource(if (shellReport.recordingEnabled) R.string.debug_yes else R.string.debug_no),
                     ),
                 )
-                Text(stringResource(R.string.debug_event_count, shellReport.eventCount))
+                Text(pluralStringResource(R.plurals.debug_event_count, shellReport.eventCount, shellReport.eventCount))
                 Text(
                     stringResource(
                         R.string.debug_warning_error_count,
@@ -190,6 +210,39 @@ private fun DebugOverview(
                 )
             }
         }
+        item {
+            StudyFlowSectionCard(title = stringResource(R.string.debug_self_check_history_title)) {
+                val latest = selfCheckHistory.latest
+                Text(
+                    text = stringResource(R.string.debug_self_check_history_count, selfCheckHistory.runs.size),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (latest == null) {
+                    Text(stringResource(R.string.debug_self_check_history_empty))
+                } else {
+                    Text(stringResource(R.string.debug_self_check_latest_passed, latest.passedCount))
+                    Text(stringResource(R.string.debug_self_check_latest_warning, latest.warningCount))
+                    Text(stringResource(R.string.debug_self_check_latest_blocked, latest.blockedCount))
+                    Text(stringResource(R.string.debug_self_check_latest_failed, latest.failedCount))
+                    Text(stringResource(R.string.debug_self_check_latest_cancelled, latest.cancelledCount))
+                }
+            }
+        }
+        item {
+            StudyFlowSectionCard(title = stringResource(R.string.debug_support_bundle_seal_title)) {
+                Text(supportBundleSealReport.status.label())
+                Text(supportBundleSealReport.message.label())
+                Text(stringResource(R.string.debug_support_bundle_seal_entries, supportBundleSealReport.entryCount))
+                supportBundleSealReport.failingEntryFingerprint?.let { fingerprint ->
+                    Text(
+                        text = stringResource(R.string.debug_support_bundle_seal_fingerprint, fingerprint),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+            }
+        }
+
         actionResult?.let { result ->
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.debug_last_action_title)) {
@@ -301,6 +354,8 @@ private fun DiagnosticTimelineCard(entry: DiagnosticTimelineEntry) {
 private fun DebugReports(
     shellReport: DebugWorkbenchShellReport,
     actionResult: DebugWorkbenchActionResult?,
+    selfCheckHistory: RuntimeSelfCheckHistory,
+    supportBundleSealReport: SupportBundleSealReport,
     onCopyStatus: () -> Unit,
     onCopyTimeline: () -> Unit,
     onClearHistory: () -> Unit,
@@ -343,6 +398,39 @@ private fun DebugReports(
                 }
             }
         }
+        item {
+            StudyFlowSectionCard(title = stringResource(R.string.debug_self_check_history_title)) {
+                val latest = selfCheckHistory.latest
+                Text(
+                    text = stringResource(R.string.debug_self_check_history_count, selfCheckHistory.runs.size),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (latest == null) {
+                    Text(stringResource(R.string.debug_self_check_history_empty))
+                } else {
+                    Text(stringResource(R.string.debug_self_check_latest_passed, latest.passedCount))
+                    Text(stringResource(R.string.debug_self_check_latest_warning, latest.warningCount))
+                    Text(stringResource(R.string.debug_self_check_latest_blocked, latest.blockedCount))
+                    Text(stringResource(R.string.debug_self_check_latest_failed, latest.failedCount))
+                    Text(stringResource(R.string.debug_self_check_latest_cancelled, latest.cancelledCount))
+                }
+            }
+        }
+        item {
+            StudyFlowSectionCard(title = stringResource(R.string.debug_support_bundle_seal_title)) {
+                Text(supportBundleSealReport.status.label())
+                Text(supportBundleSealReport.message.label())
+                Text(stringResource(R.string.debug_support_bundle_seal_entries, supportBundleSealReport.entryCount))
+                supportBundleSealReport.failingEntryFingerprint?.let { fingerprint ->
+                    Text(
+                        text = stringResource(R.string.debug_support_bundle_seal_fingerprint, fingerprint),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+            }
+        }
+
         actionResult?.let { result ->
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.debug_last_action_title)) {
@@ -477,7 +565,34 @@ private fun DebugWorkbenchActionResult.label(): String = when (this) {
         stringResource(R.string.debug_action_bundle_directory_failed)
     DebugWorkbenchActionResult.BUNDLE_UNAVAILABLE -> stringResource(R.string.debug_action_bundle_unavailable)
     DebugWorkbenchActionResult.BUNDLE_SHARE_FAILED -> stringResource(R.string.debug_action_bundle_share_failed)
+    DebugWorkbenchActionResult.BUNDLE_SEAL_FAILED -> stringResource(R.string.debug_action_bundle_seal_failed)
     DebugWorkbenchActionResult.BUNDLE_READY -> stringResource(R.string.debug_action_bundle_ready)
+}
+
+@Composable
+private fun SupportBundleSealStatus.label(): String = when (this) {
+    SupportBundleSealStatus.NOT_RUN -> stringResource(R.string.debug_support_bundle_seal_not_run)
+    SupportBundleSealStatus.PASSED -> stringResource(R.string.debug_support_bundle_seal_passed)
+    SupportBundleSealStatus.FAILED -> stringResource(R.string.debug_support_bundle_seal_failed)
+}
+
+@Composable
+private fun SupportBundleSealMessage.label(): String = when (this) {
+    SupportBundleSealMessage.NONE -> stringResource(R.string.debug_support_bundle_message_none)
+    SupportBundleSealMessage.BUNDLE_MISSING -> stringResource(R.string.debug_support_bundle_message_missing)
+    SupportBundleSealMessage.ENTRY_NOT_ALLOWED -> stringResource(R.string.debug_support_bundle_message_not_allowed)
+    SupportBundleSealMessage.ENTRY_TRAVERSAL -> stringResource(R.string.debug_support_bundle_message_traversal)
+    SupportBundleSealMessage.MANIFEST_MISSING -> stringResource(R.string.debug_support_bundle_message_manifest)
+    SupportBundleSealMessage.CHECKSUMS_MISSING -> stringResource(R.string.debug_support_bundle_message_checksums)
+    SupportBundleSealMessage.REDACTION_REPORT_MISSING -> stringResource(
+        R.string.debug_support_bundle_message_redaction,
+    )
+    SupportBundleSealMessage.CHECKSUM_INVALID -> stringResource(
+        R.string.debug_support_bundle_message_checksum_invalid,
+    )
+    SupportBundleSealMessage.CHECKSUM_MISMATCH -> stringResource(
+        R.string.debug_support_bundle_message_checksum_mismatch,
+    )
 }
 
 private fun String.displayAction(): String = replace('-', ' ')

@@ -98,7 +98,7 @@ fun PlanEditorScreen(
         mutableStateOf(initialSettings?.strictExamModeEnabled ?: false)
     }
 
-    val selectedStudyType = StudyType.valueOf(studyTypeName)
+    val selectedStudyType = enumValueOrDefault<StudyType>(studyTypeName, StudyType.UNIVERSITY)
     val weeklyGoalValue = weeklyGoal.toIntOrNull()
     val preferredSessionValue = preferredSession.toIntOrNull()
     val dateValid = isValidIsoDateOrBlank(examDate)
@@ -393,3 +393,7 @@ internal fun studyTypeLabel(type: StudyType): Int = when (type) {
     StudyType.ENTRANCE_EXAMINATION -> R.string.study_type_entrance_examination
     StudyType.FREE_STUDY -> R.string.study_type_free_study
 }
+
+
+private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
+    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue

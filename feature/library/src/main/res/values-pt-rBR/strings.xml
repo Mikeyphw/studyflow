@@ -1,7 +1,11 @@
 <resources>
     <string name="go_back">Voltar</string>
     <string name="library_title">Biblioteca de estudos</string>
-    <string name="library_summary">%1$d materiais • %2$d vídeos • %3$d anexos</string>
+    <plurals name="library_summary">
+        <item quantity="one">%1$d material • %2$d vídeos • %3$d anexos</item>
+        <item quantity="many">%1$d materiais • %2$d vídeos • %3$d anexos</item>
+        <item quantity="other">%1$d materiais • %2$d vídeos • %3$d anexos</item>
+    </plurals>
     <string name="library_progress">Progresso da biblioteca: %1$d%%</string>
     <string name="add_material">Adicionar material</string>
     <string name="material_title">Título do material</string>
@@ -30,10 +34,18 @@
     <string name="annex_imported">Arquivo anexo adicionado.</string>
     <string name="annex_deleted">Anexo excluído.</string>
     <string name="annex_failed">A operação do arquivo anexo não pôde ser concluída.</string>
-    <string name="annex_size">%1$d bytes</string>
+    <plurals name="annex_size">
+        <item quantity="one">%1$d byte</item>
+        <item quantity="many">%1$d bytes</item>
+        <item quantity="other">%1$d bytes</item>
+    </plurals>
     <string name="open_resource">Abrir</string>
     <string name="open_video">Abrir vídeo</string>
     <string name="open_annex">Abrir anexo</string>
     <string name="resource_opened">Recurso aberto.</string>
     <string name="resource_open_failed">Nenhum app compatível conseguiu abrir este recurso.</string>
+    <string name="confirm_delete_title">Excluir item?</string>
+    <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
+    <string name="confirm_delete">Excluir</string>
+    <string name="cancel">Cancelar</string>
 </resources>

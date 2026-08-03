@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+find . -path '*/build/reports/lint*' -type f -delete
+find . -path '*/build/reports/lint*' -type d -empty -delete || true
+
 python3 scripts/verify_phase_0.py
 python3 scripts/verify_phase_1.py
 python3 scripts/verify_phase_2.py
@@ -28,6 +31,23 @@ python3 scripts/verify_phase_20.py
 python3 scripts/verify_phase_21.py
 python3 scripts/verify_phase_22.py
 python3 scripts/verify_phase_23.py
+python3 scripts/verify_phase_24.py
+python3 scripts/verify_phase_25.py
+python3 scripts/verify_phase_26.py
+python3 scripts/verify_phase_27.py
+python3 scripts/verify_phase_28.py
+python3 scripts/verify_phase_29.py
+
+python3 scripts/verify_debug_workbench_d1_r2.py
+python3 scripts/verify_debug_workbench_d2.py
+python3 scripts/verify_debug_workbench_d3.py
+python3 scripts/verify_debug_workbench_d2_d3_corrective_seal.py
+python3 scripts/verify_debug_workbench_d4.py
+python3 scripts/verify_debug_workbench_d5.py
+python3 scripts/verify_debug_workbench_d6.py
+python3 scripts/verify_debug_workbench_d7.py
+python3 scripts/verify_debug_workbench_d8.py
+python3 scripts/verify_full_app_final_user_readiness.py
 
 GRADLE_LAUNCHER=""
 if [[ -x ./gradlew ]]; then

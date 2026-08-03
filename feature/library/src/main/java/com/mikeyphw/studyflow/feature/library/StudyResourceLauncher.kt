@@ -5,14 +5,15 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import com.mikeyphw.studyflow.core.domain.StudyResourceLaunchPlan
 import java.io.File
 
 internal fun Context.launchStudyResource(plan: StudyResourceLaunchPlan): Boolean = runCatching {
     val intent = when (plan) {
-        is StudyResourceLaunchPlan.WebPage -> viewIntent(Uri.parse(plan.uri), null)
-        is StudyResourceLaunchPlan.ExternalVideo -> viewIntent(Uri.parse(plan.uri), "video/*")
-        is StudyResourceLaunchPlan.ExternalDocument -> viewIntent(Uri.parse(plan.uri), plan.mimeType)
+        is StudyResourceLaunchPlan.WebPage -> viewIntent(plan.uri.toUri(), null)
+        is StudyResourceLaunchPlan.ExternalVideo -> viewIntent(plan.uri.toUri(), "video/*")
+        is StudyResourceLaunchPlan.ExternalDocument -> viewIntent(plan.uri.toUri(), plan.mimeType)
         is StudyResourceLaunchPlan.AppPrivateAnnex -> {
             val file = File(filesDir, plan.storageReference).canonicalFile
             val root = filesDir.canonicalFile

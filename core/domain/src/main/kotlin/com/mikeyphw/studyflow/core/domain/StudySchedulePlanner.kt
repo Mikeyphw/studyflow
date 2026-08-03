@@ -9,14 +9,12 @@ import com.mikeyphw.studyflow.core.model.ScheduleRule
 import com.mikeyphw.studyflow.core.model.ScheduleRuleType
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import java.util.Calendar
+import java.util.TimeZone
 import java.util.UUID
 
 class StudySchedulePlanner(
-    private val zoneId: ZoneId = ZoneId.systemDefault(),
+    private val timeZone: TimeZone = TimeZone.getDefault(),
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
     fun generateActivities(
@@ -24,7 +22,7 @@ class StudySchedulePlanner(
         rules: List<ScheduleRule>,
     ): List<PlannedActivity> {
         require(request.days in 1..366) { "Generated schedules must cover between 1 and 366 days." }
-        val startDate = Instant.ofEpochMilli(request.startEpochMillis).atZone(zoneId).toLocalDate()
+        val startDate = startOfLocalDay(request.startEpochMillis)
         val schedulableTypes = setOf(
             ScheduleRuleType.FIXED_BLOCK,
             ScheduleRuleType.RECURRING_BLOCK,
@@ -42,13 +40,9 @@ class StudySchedulePlanner(
         if (activeRules.isEmpty()) return emptyList()
 
         return (0 until request.days).flatMap { dayOffset ->
-            val date = startDate.plusDays(dayOffset.toLong())
-            activeRules.filter { it.dayOfWeek == date.studyFlowDayOfWeek }.map { rule ->
-                val start = date
-                    .atStartOfDay(zoneId)
-                    .plusMinutes(rule.startMinuteOfDay!!.toLong())
-                    .toInstant()
-                    .toEpochMilli()
+            val day = startDate.copyAndAddDays(dayOffset)
+            activeRules.filter { it.dayOfWeek == day.studyFlowDayOfWeek }.map { rule ->
+                val start = day.copyAndAddMinutes(rule.startMinuteOfDay!!).timeInMillis
                 PlannedActivity(
                     id = PlannedActivityId(idFactory()),
                     studyPlanId = request.studyPlanId,
@@ -102,6 +96,14 @@ class StudySchedulePlanner(
     private fun PlannedActivity.isPast(nowEpochMillis: Long): Boolean =
         scheduledStartEpochMillis?.let { it < nowEpochMillis } == true
 
+    private fun startOfLocalDay(epochMillis: Long): Calendar = Calendar.getInstance(timeZone).apply {
+        timeInMillis = epochMillis
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
     private fun activityTypeFor(ruleType: ScheduleRuleType): StudyActivityType = when (ruleType) {
         ScheduleRuleType.CYCLE_SLOT -> StudyActivityType.CUSTOM
         else -> StudyActivityType.THEORY
@@ -116,14 +118,22 @@ class StudySchedulePlanner(
     }
 }
 
-private val LocalDate.studyFlowDayOfWeek: Int
-    get() = when (dayOfWeek) {
-        DayOfWeek.MONDAY -> 1
-        DayOfWeek.TUESDAY -> 2
-        DayOfWeek.WEDNESDAY -> 3
-        DayOfWeek.THURSDAY -> 4
-        DayOfWeek.FRIDAY -> 5
-        DayOfWeek.SATURDAY -> 6
-        DayOfWeek.SUNDAY -> 7
-        else -> error("Unsupported day of week: $dayOfWeek")
+private fun Calendar.copyAndAddDays(days: Int): Calendar = (clone() as Calendar).apply {
+    add(Calendar.DAY_OF_YEAR, days)
+}
+
+private fun Calendar.copyAndAddMinutes(minutes: Int): Calendar = (clone() as Calendar).apply {
+    add(Calendar.MINUTE, minutes)
+}
+
+private val Calendar.studyFlowDayOfWeek: Int
+    get() = when (get(Calendar.DAY_OF_WEEK)) {
+        Calendar.MONDAY -> 1
+        Calendar.TUESDAY -> 2
+        Calendar.WEDNESDAY -> 3
+        Calendar.THURSDAY -> 4
+        Calendar.FRIDAY -> 5
+        Calendar.SATURDAY -> 6
+        Calendar.SUNDAY -> 7
+        else -> error("Unsupported day of week: ${get(Calendar.DAY_OF_WEEK)}")
     }

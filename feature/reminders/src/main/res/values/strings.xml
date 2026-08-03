@@ -2,7 +2,10 @@
 <resources>
     <string name="reminders_title">Reminders and widgets</string>
     <string name="go_back">Go back</string>
-    <string name="reminders_summary">%1$d active notification candidates. %2$d review item(s) due.</string>
+    <plurals name="reminders_summary">
+        <item quantity="one">%1$d active notification candidate. %2$d review item(s) due.</item>
+        <item quantity="other">%1$d active notification candidates. %2$d review item(s) due.</item>
+    </plurals>
     <string name="quiet_hours_active">Quiet hours active</string>
     <string name="notification_permission_title">Notification permission</string>
     <string name="notification_permission_needed">Android requires notification permission before StudyFlow can send reminders.</string>

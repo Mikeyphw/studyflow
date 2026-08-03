@@ -3,10 +3,26 @@
     <string name="go_back">Voltar</string>
     <string name="reviews_title">Revisões e flashcards</string>
     <string name="today_reviews">Pulso das revisões de hoje</string>
-    <string name="due_count">%1$d vencidas</string>
-    <string name="upcoming_count">%1$d próximas</string>
-    <string name="flashcard_count">%1$d flashcards</string>
-    <string name="error_count">%1$d erros</string>
+    <plurals name="due_count">
+        <item quantity="one">%1$d vencida</item>
+        <item quantity="many">%1$d vencidas</item>
+        <item quantity="other">%1$d vencidas</item>
+    </plurals>
+    <plurals name="upcoming_count">
+        <item quantity="one">%1$d próxima</item>
+        <item quantity="many">%1$d próximas</item>
+        <item quantity="other">%1$d próximas</item>
+    </plurals>
+    <plurals name="flashcard_count">
+        <item quantity="one">%1$d flashcard</item>
+        <item quantity="many">%1$d flashcards</item>
+        <item quantity="other">%1$d flashcards</item>
+    </plurals>
+    <plurals name="error_count">
+        <item quantity="one">%1$d erro</item>
+        <item quantity="many">%1$d erros</item>
+        <item quantity="other">%1$d erros</item>
+    </plurals>
     <string name="add_flashcard">Adicionar flashcard</string>
     <string name="flashcard_front">Frente</string>
     <string name="flashcard_back">Verso</string>
@@ -23,14 +39,22 @@
     <string name="review_kind_subject">Disciplina</string>
     <string name="review_kind_manual">Manual</string>
     <string name="review_item_title">Revisão: %1$s</string>
-    <string name="review_item_details">Repetições: %1$d · Intervalo: %2$d dias · Facilidade: %3$.2f</string>
+    <plurals name="review_item_details">
+        <item quantity="one">Repetições: %1$d · Intervalo: %2$d dia · Facilidade: %3$.2f</item>
+        <item quantity="many">Repetições: %1$d · Intervalo: %2$d dias · Facilidade: %3$.2f</item>
+        <item quantity="other">Repetições: %1$d · Intervalo: %2$d dias · Facilidade: %3$.2f</item>
+    </plurals>
     <string name="again">Repetir</string>
     <string name="good">Bom</string>
     <string name="easy">Fácil</string>
     <string name="skip">Pular</string>
     <string name="wrong_answer_notebook">Caderno de erros</string>
     <string name="no_wrong_answers">Ainda não há erros capturados. Finalize uma prática com questões erradas para alimentar o caderno.</string>
-    <string name="error_entry_title">Erro repetido · %1$d vez(es)</string>
+    <plurals name="error_entry_title">
+        <item quantity="one">Erro repetido · %1$d vez</item>
+        <item quantity="many">Erro repetido · %1$d vezes</item>
+        <item quantity="other">Erro repetido · %1$d vezes</item>
+    </plurals>
     <string name="chosen_answer_value">Sua resposta: %1$s</string>
     <string name="correct_answer_value">Resposta correta: %1$s</string>
     <string name="schedule_error_review">Agendar revisão</string>

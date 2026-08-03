@@ -38,6 +38,7 @@ import kotlinx.coroutines.withContext
 
 private const val MinimumFutureDelayMillis = 60_000L
 private const val DiagnosticNotificationId = 23_971
+private const val NotificationImportanceNone = 0
 
 internal fun interface ReminderLabInspectOperation {
     suspend fun inspect(planId: StudyPlanId?): ReminderNotificationLabReport
@@ -217,6 +218,7 @@ private class AndroidReminderLabInspectOperation(
         } else {
             null
         }
+        val channelImportance = notificationChannelImportance(channel)
         val planResult = StudyReminderPlanner.buildPlan(
             StudyReminderInput(
                 plan = plan,
@@ -234,7 +236,7 @@ private class AndroidReminderLabInspectOperation(
             !permissionGranted -> ReminderLabMessage.NOTIFICATION_PERMISSION_DENIED
             !appNotificationsEnabled -> ReminderLabMessage.NOTIFICATIONS_BLOCKED
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channel == null -> ReminderLabMessage.CHANNEL_MISSING
-            channel?.importance == NotificationManager.IMPORTANCE_NONE -> ReminderLabMessage.CHANNEL_BLOCKED
+            channelImportance == NotificationImportanceNone -> ReminderLabMessage.CHANNEL_BLOCKED
             planResult.notificationCandidates.isEmpty() -> ReminderLabMessage.NO_CANDIDATES
             else -> ReminderLabMessage.NONE
         }
@@ -254,8 +256,8 @@ private class AndroidReminderLabInspectOperation(
             notificationsEnabled = appNotificationsEnabled,
             notificationPermissionGranted = permissionGranted,
             channelPresent = channel != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O,
-            channelBlocked = channel?.importance == NotificationManager.IMPORTANCE_NONE,
-            channelImportance = channel?.importance,
+            channelBlocked = channelImportance == NotificationImportanceNone,
+            channelImportance = channelImportance,
             remindersEnabled = settings.reviewNotificationsEnabled,
             quietHoursActive = planResult.quietHoursActive,
             exactAlarmUsed = false,
@@ -297,6 +299,14 @@ private fun notificationPermissionGranted(context: Context): Boolean =
         Manifest.permission.POST_NOTIFICATIONS,
     ) == PackageManager.PERMISSION_GRANTED
 
+@SuppressLint("NewApi")
+private fun notificationChannelImportance(notificationChannel: android.app.NotificationChannel?): Int? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        notificationChannel?.importance
+    } else {
+        null
+    }
+
 @SuppressLint("MissingPermission")
 private fun postDiagnosticNotification(context: Context, container: AppContainer): Boolean {
     if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false
@@ -305,7 +315,11 @@ private fun postDiagnosticNotification(context: Context, container: AppContainer
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val channel = context.getSystemService(NotificationManager::class.java)
             .getNotificationChannel(StudyReminderChannelId)
-        if (channel == null || channel.importance == NotificationManager.IMPORTANCE_NONE) return false
+        if (channel == null ||
+            notificationChannelImportance(channel) == NotificationImportanceNone
+        ) {
+            return false
+        }
     }
     val openIntent = PendingIntent.getActivity(
         context,

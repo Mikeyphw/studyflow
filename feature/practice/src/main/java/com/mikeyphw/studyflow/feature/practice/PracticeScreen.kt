@@ -40,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -369,12 +370,12 @@ fun PracticeScreen(
 private fun PracticeSummaryCard(summary: PracticeSummary) {
     StudyFlowSectionCard(title = stringResource(R.string.practice_summary)) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.question_count_value, summary.questionCount))
-            Text(stringResource(R.string.favorite_count_value, summary.favoriteCount))
-            Text(stringResource(R.string.disputed_count_value, summary.disputedCount))
-            Text(stringResource(R.string.test_count_value, summary.testCount))
-            Text(stringResource(R.string.mock_count_value, summary.mockExamCount))
-            Text(stringResource(R.string.answered_value, summary.answeredCount))
+            Text(pluralStringResource(R.plurals.question_count_value, summary.questionCount, summary.questionCount))
+            Text(pluralStringResource(R.plurals.favorite_count_value, summary.favoriteCount, summary.favoriteCount))
+            Text(pluralStringResource(R.plurals.disputed_count_value, summary.disputedCount, summary.disputedCount))
+            Text(pluralStringResource(R.plurals.test_count_value, summary.testCount, summary.testCount))
+            Text(pluralStringResource(R.plurals.mock_count_value, summary.mockExamCount, summary.mockExamCount))
+            Text(pluralStringResource(R.plurals.answered_value, summary.answeredCount, summary.answeredCount))
             Text(stringResource(R.string.accuracy_value, summary.accuracyPercent))
         }
     }
@@ -390,7 +391,14 @@ private fun PracticeRunnerCard(
 ) {
     StudyFlowSectionCard(title = title) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.runner_progress, state.answeredCount, state.questionIds.size))
+            Text(
+                pluralStringResource(
+                    R.plurals.runner_progress,
+                    state.answeredCount,
+                    state.answeredCount,
+                    state.questionIds.size,
+                ),
+            )
             val question = state.currentQuestion
             if (question == null) {
                 Text(stringResource(R.string.no_questions_message))
@@ -459,10 +467,7 @@ private fun QuestionCard(
                     Icon(Icons.Outlined.Flag, contentDescription = null)
                     Text(stringResource(R.string.toggle_disputed))
                 }
-                OutlinedButton(onClick = onDelete) {
-                    Icon(Icons.Outlined.Delete, contentDescription = null)
-                    Text(stringResource(R.string.delete))
-                }
+                ConfirmingDeleteButton(onConfirmed = onDelete)
             }
         }
     }
@@ -479,9 +484,15 @@ private fun RecentTestsCard(tests: List<StudyTest>, onStart: (StudyTest) -> Unit
                     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(test.title, style = MaterialTheme.typography.titleSmall)
-                            Text(stringResource(R.string.question_count_value, test.questionCount))
-                            Text(stringResource(R.string.answered_value, test.answeredCount))
-                            Text(stringResource(R.string.correct_value, test.correctCount))
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.question_count_value,
+                                    test.questionCount,
+                                    test.questionCount,
+                                ),
+                            )
+                            Text(pluralStringResource(R.plurals.answered_value, test.answeredCount, test.answeredCount))
+                            Text(pluralStringResource(R.plurals.correct_value, test.correctCount, test.correctCount))
                             OutlinedButton(onClick = { onStart(test) }) {
                                 Icon(Icons.Outlined.PlayArrow, contentDescription = null)
                                 Text(stringResource(R.string.start_or_resume))
@@ -505,9 +516,15 @@ private fun RecentMocksCard(mocks: List<MockExam>, onStart: (MockExam) -> Unit) 
                     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(mock.title, style = MaterialTheme.typography.titleSmall)
-                            Text(stringResource(R.string.question_count_value, mock.questionCount))
-                            Text(stringResource(R.string.answered_value, mock.answeredCount))
-                            Text(stringResource(R.string.correct_value, mock.correctCount))
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.question_count_value,
+                                    mock.questionCount,
+                                    mock.questionCount,
+                                ),
+                            )
+                            Text(pluralStringResource(R.plurals.answered_value, mock.answeredCount, mock.answeredCount))
+                            Text(pluralStringResource(R.plurals.correct_value, mock.correctCount, mock.correctCount))
                             OutlinedButton(onClick = { onStart(mock) }) {
                                 Icon(Icons.Outlined.PlayArrow, contentDescription = null)
                                 Text(stringResource(R.string.start_or_resume))
@@ -600,4 +617,29 @@ private fun QuestionEditorDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
+}
+
+
+@Composable
+private fun ConfirmingDeleteButton(onConfirmed: () -> Unit) {
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    OutlinedButton(onClick = { confirming = true }) {
+        Icon(Icons.Outlined.Delete, contentDescription = null)
+        Text(stringResource(R.string.delete))
+    }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.confirm_delete_title)) },
+            text = { Text(stringResource(R.string.confirm_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onConfirmed() }) {
+                    Text(stringResource(R.string.confirm_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
 }

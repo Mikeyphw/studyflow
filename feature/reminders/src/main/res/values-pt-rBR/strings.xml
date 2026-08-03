@@ -2,7 +2,11 @@
 <resources>
     <string name="reminders_title">Lembretes e widgets</string>
     <string name="go_back">Voltar</string>
-    <string name="reminders_summary">%1$d candidatos ativos de notificação. %2$d revisão(ões) pendente(s).</string>
+    <plurals name="reminders_summary">
+        <item quantity="one">%1$d candidato ativo de notificação. %2$d revisão(ões) pendente(s).</item>
+        <item quantity="many">%1$d candidatos ativos de notificação. %2$d revisão(ões) pendente(s).</item>
+        <item quantity="other">%1$d candidatos ativos de notificação. %2$d revisão(ões) pendente(s).</item>
+    </plurals>
     <string name="quiet_hours_active">Horário silencioso ativo</string>
     <string name="notification_permission_title">Permissão de notificações</string>
     <string name="notification_permission_needed">O Android exige permissão antes que o StudyFlow envie lembretes.</string>

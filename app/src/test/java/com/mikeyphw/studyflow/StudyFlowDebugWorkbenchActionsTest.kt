@@ -4,6 +4,9 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticEvent
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealPolicy
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealReport
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealStatus
 import com.mikeyphw.studyflow.feature.settings.DebugWorkbenchActionResult
 import java.io.File
 import java.util.concurrent.CancellationException
@@ -35,8 +38,11 @@ class StudyFlowDebugWorkbenchActionsTest {
             }
 
             assertEquals(2, store.copyThreads.size)
-            assertTrue(store.copyThreads.all { thread -> thread == "studyflow-debug-io" })
-            assertEquals(listOf("studyflow-debug-io"), store.clearThreads)
+            assertEquals(
+                listOf("studyflow-debug-io", "studyflow-debug-io"),
+                store.copyThreads.map(::baseThreadName),
+            )
+            assertEquals(listOf("studyflow-debug-io"), store.clearThreads.map(::baseThreadName))
         } finally {
             dispatcher.close()
             executor.shutdownNow()
@@ -57,7 +63,7 @@ class StudyFlowDebugWorkbenchActionsTest {
                 ioContext = dispatcher,
                 prepareBundleShare = {
                     preparationThread = Thread.currentThread().name
-                    Intent("share")
+                    preparedShare()
                 },
                 launchShare = {
                     launchThread = Thread.currentThread().name
@@ -67,8 +73,9 @@ class StudyFlowDebugWorkbenchActionsTest {
             val result = runBlocking { actions.exportAndShare() }
 
             assertEquals(DebugWorkbenchActionResult.BUNDLE_READY, result)
-            assertEquals("studyflow-bundle-io", preparationThread)
-            assertTrue(launchThread != "studyflow-bundle-io")
+            assertEquals("studyflow-bundle-io", baseThreadName(preparationThread))
+            assertTrue(launchThread.isNotBlank())
+            assertTrue(baseThreadName(launchThread) != "studyflow-bundle-io")
         } finally {
             dispatcher.close()
             executor.shutdownNow()
@@ -93,7 +100,7 @@ class StudyFlowDebugWorkbenchActionsTest {
     fun `share launcher failure becomes explicit result`() = runBlocking {
         val actions = StudyFlowDebugWorkbenchActions(
             store = RecordingStore(),
-            prepareBundleShare = { Intent("share") },
+            prepareBundleShare = { preparedShare() },
             launchShare = { throw ActivityNotFoundException() },
         )
 
@@ -103,11 +110,34 @@ class StudyFlowDebugWorkbenchActionsTest {
         )
     }
 
+
+    @Test
+    fun `failed support bundle seal prevents share launch`() = runBlocking {
+        var launched = false
+        val actions = StudyFlowDebugWorkbenchActions(
+            store = RecordingStore(),
+            prepareBundleShare = {
+                StudyFlowDebugWorkbenchActions.PreparedSupportBundle(
+                    intent = Intent("share"),
+                    sealReport = SupportBundleSealReport(
+                        status = SupportBundleSealStatus.FAILED,
+                        checkedAtEpochMillis = 1L,
+                    ),
+                )
+            },
+            launchShare = { launched = true },
+        )
+
+        assertEquals(DebugWorkbenchActionResult.BUNDLE_SEAL_FAILED, actions.exportAndShare())
+        assertEquals(SupportBundleSealStatus.FAILED, actions.supportBundleSealReport().status)
+        assertTrue(!launched)
+    }
+
     @Test
     fun `unexpected recoverable share failure becomes explicit result`() = runBlocking {
         val actions = StudyFlowDebugWorkbenchActions(
             store = RecordingStore(),
-            prepareBundleShare = { Intent("share") },
+            prepareBundleShare = { preparedShare() },
             launchShare = { throw IllegalStateException("platform failure") },
         )
 
@@ -118,7 +148,7 @@ class StudyFlowDebugWorkbenchActionsTest {
     }
 
     @Test(expected = CancellationException::class)
-    fun `bundle cancellation is never converted into ordinary failure`() {
+    fun `bundle cancellation is never converted into ordinary failure`(): Unit {
         runBlocking {
             val actions = StudyFlowDebugWorkbenchActions(
                 store = RecordingStore(),
@@ -126,9 +156,26 @@ class StudyFlowDebugWorkbenchActionsTest {
                 launchShare = { error("must not launch") },
             )
             actions.exportAndShare()
-            Unit
         }
     }
+
+    private fun baseThreadName(name: String): String = name.substringBefore(" @coroutine#")
+
+
+    private fun preparedShare(): StudyFlowDebugWorkbenchActions.PreparedSupportBundle =
+        StudyFlowDebugWorkbenchActions.PreparedSupportBundle(
+            intent = Intent("share"),
+            sealReport = SupportBundleSealPolicy.inspect(
+                entryNames = listOf(
+                    "events/current.jsonl",
+                    "environment.json",
+                    "manifest.json",
+                    "redaction-report.txt",
+                    "checksums.sha256",
+                ),
+                checkedAtEpochMillis = 1L,
+            ),
+        )
 
     private class RecordingStore : DiagnosticStore {
         override val enabled: Boolean = true

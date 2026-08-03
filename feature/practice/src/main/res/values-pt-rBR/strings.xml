@@ -34,26 +34,61 @@
     <string name="practice_test_created">Treino criado</string>
     <string name="need_questions">Adicione pelo menos uma questão primeiro.</string>
     <string name="recent_tests">Treinos recentes</string>
-    <string name="answered_value">%1$d respondidas</string>
+    <plurals name="answered_value">
+        <item quantity="one">%1$d respondida</item>
+        <item quantity="many">%1$d respondidas</item>
+        <item quantity="other">%1$d respondidas</item>
+    </plurals>
     <string name="accuracy_value">%1$d%% de acerto</string>
-    <string name="question_count_value">%1$d questões</string>
-    <string name="favorite_count_value">%1$d favoritas</string>
-    <string name="disputed_count_value">%1$d contestadas</string>
-    <string name="test_count_value">%1$d treinos</string>
-    <string name="mock_count_value">%1$d simulados</string>
+    <plurals name="question_count_value">
+        <item quantity="one">%1$d questão</item>
+        <item quantity="many">%1$d questões</item>
+        <item quantity="other">%1$d questões</item>
+    </plurals>
+    <plurals name="favorite_count_value">
+        <item quantity="one">%1$d favorita</item>
+        <item quantity="many">%1$d favoritas</item>
+        <item quantity="other">%1$d favoritas</item>
+    </plurals>
+    <plurals name="disputed_count_value">
+        <item quantity="one">%1$d contestada</item>
+        <item quantity="many">%1$d contestadas</item>
+        <item quantity="other">%1$d contestadas</item>
+    </plurals>
+    <plurals name="test_count_value">
+        <item quantity="one">%1$d treino</item>
+        <item quantity="many">%1$d treinos</item>
+        <item quantity="other">%1$d treinos</item>
+    </plurals>
+    <plurals name="mock_count_value">
+        <item quantity="one">%1$d simulado</item>
+        <item quantity="many">%1$d simulados</item>
+        <item quantity="other">%1$d simulados</item>
+    </plurals>
     <string name="tags_value">Tags: %1$s</string>
     <string name="mock_exam_created">Simulado criado</string>
     <string name="create_mock_exam">Criar simulado</string>
     <string name="active_practice_attempt">Prática ativa</string>
     <string name="active_mock_attempt">Simulado ativo</string>
-    <string name="runner_progress">%1$d de %2$d respondidas</string>
+    <plurals name="runner_progress">
+        <item quantity="one">%1$d de %2$d respondida</item>
+        <item quantity="many">%1$d de %2$d respondidas</item>
+        <item quantity="other">%1$d de %2$d respondidas</item>
+    </plurals>
     <string name="answer_saved">Resposta salva</string>
     <string name="attempt_finished">Tentativa finalizada</string>
     <string name="finish_attempt">Finalizar tentativa</string>
     <string name="close_runner">Fechar execução</string>
     <string name="explanation_value">Explicação: %1$s</string>
-    <string name="correct_value">%1$d corretas</string>
+    <plurals name="correct_value">
+        <item quantity="one">%1$d correta</item>
+        <item quantity="many">%1$d corretas</item>
+        <item quantity="other">%1$d corretas</item>
+    </plurals>
     <string name="recent_mocks">Simulados recentes</string>
     <string name="no_mocks">Nenhum simulado ainda.</string>
     <string name="start_or_resume">Iniciar ou retomar</string>
+    <string name="confirm_delete_title">Excluir item?</string>
+    <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
+    <string name="confirm_delete">Excluir</string>
 </resources>

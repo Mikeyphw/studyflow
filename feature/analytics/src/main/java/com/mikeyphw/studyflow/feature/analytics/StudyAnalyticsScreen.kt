@@ -20,6 +20,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -79,8 +80,9 @@ fun StudyAnalyticsScreen(
         ) {
             StudyFlowSectionCard(title = plan.name) {
                 Text(
-                    text = stringResource(
-                        R.string.analytics_summary,
+                    text = pluralStringResource(
+                        R.plurals.analytics_summary,
+                        snapshot.studiedMinutesLastSevenDays,
                         snapshot.studiedMinutesLastSevenDays,
                         snapshot.completedSessionsLastSevenDays,
                         snapshot.consistencyScorePercent,
@@ -102,15 +104,20 @@ fun StudyAnalyticsScreen(
                     }
                 }
                 Text(
-                    text = stringResource(
-                        R.string.due_reviews,
+                    text = pluralStringResource(
+                        R.plurals.due_reviews,
+                        snapshot.dueReviewCount,
                         snapshot.dueReviewCount,
                         snapshot.overdueReviewCount,
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = stringResource(R.string.answered_questions, snapshot.answeredQuestions),
+                    text = pluralStringResource(
+                        R.plurals.answered_questions,
+                        snapshot.answeredQuestions,
+                        snapshot.answeredQuestions,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
