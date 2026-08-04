@@ -20,12 +20,14 @@ class ReleaseReadinessSealTest {
 
         val report = ReleaseReadinessSeal.evaluate(shell)
 
-        assertEquals(39, report.totalPhaseCount)
-        assertEquals(39, report.completedPhaseCount)
+        assertEquals(41, report.totalPhaseCount)
+        assertEquals(41, report.completedPhaseCount)
         assertEquals(100, report.completionPercent)
         assertTrue(report.phases.any { phase -> phase.number == 30 && phase.complete })
         assertTrue(report.phases.any { phase -> phase.number == 31 && phase.complete })
+        assertTrue(report.phases.any { phase -> phase.number == 32 && phase.complete })
+        assertTrue(report.phases.any { phase -> phase.number == 33 && phase.complete })
         assertTrue(report.phases.any { phase -> phase.number == 108 && phase.complete })
-        assertTrue(report.mvpSealed)
+        assertTrue(report.productSealed)
     }
 }

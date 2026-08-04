@@ -83,10 +83,10 @@ fun DebugWorkbenchScreen(
     selfCheckHistory: RuntimeSelfCheckHistory = RuntimeSelfCheckHistory(),
     supportBundleSealReport: SupportBundleSealReport = SupportBundleSealReport.notRun(),
     probeContent: @Composable () -> Unit = {
-        DebugProbePlaceholder(onOpenRuntimeSmokeWorkbench)
+        DebugProbeEntryPanel(onOpenRuntimeSmokeWorkbench)
     },
     labContent: @Composable () -> Unit = {
-        DebugLabPlaceholder()
+        DebugLabEmptyPanel()
     },
 ) {
     var sectionName by rememberSaveable { mutableStateOf(DebugWorkbenchSection.OVERVIEW.name) }
@@ -442,7 +442,7 @@ private fun DebugReports(
 }
 
 @Composable
-private fun DebugProbePlaceholder(onOpenRuntimeSmokeWorkbench: () -> Unit) {
+private fun DebugProbeEntryPanel(onOpenRuntimeSmokeWorkbench: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
@@ -450,7 +450,7 @@ private fun DebugProbePlaceholder(onOpenRuntimeSmokeWorkbench: () -> Unit) {
         item {
             StudyFlowSectionCard(title = stringResource(R.string.debug_probes_title)) {
                 Text(
-                    text = stringResource(R.string.debug_probes_placeholder),
+                    text = stringResource(R.string.debug_probes_entry_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Button(onClick = onOpenRuntimeSmokeWorkbench) {
@@ -462,16 +462,16 @@ private fun DebugProbePlaceholder(onOpenRuntimeSmokeWorkbench: () -> Unit) {
 }
 
 @Composable
-private fun DebugLabPlaceholder() {
+private fun DebugLabEmptyPanel() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            StudyFlowSectionCard(title = stringResource(R.string.debug_labs_placeholder_title)) {
+            StudyFlowSectionCard(title = stringResource(R.string.debug_labs_empty_title)) {
                 Text(
-                    text = stringResource(R.string.debug_labs_placeholder_message),
+                    text = stringResource(R.string.debug_labs_empty_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

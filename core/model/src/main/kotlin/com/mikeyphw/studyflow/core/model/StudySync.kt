@@ -2,14 +2,13 @@ package com.mikeyphw.studyflow.core.model
 
 enum class StudySyncProviderKind {
     LOCAL_ONLY,
-    CLOUD_PLACEHOLDER,
 }
 
 enum class StudySyncConnectionStatus {
     DISABLED,
     LOCAL_READY,
-    PROVIDER_REQUIRED,
-    BLOCKED,
+    CHECKPOINT_NEEDED,
+    CHECKPOINT_BLOCKED,
 }
 
 enum class StudySyncConflictPolicy {
@@ -21,8 +20,6 @@ data class StudySyncProviderDescriptor(
     val kind: StudySyncProviderKind,
     val displayName: String,
     val configured: Boolean,
-    val identityRequired: Boolean,
-    val conflictPolicyRequired: Boolean,
 )
 
 data class StudySyncState(
@@ -33,12 +30,11 @@ data class StudySyncState(
     val deviceName: String,
     val lastPreparedAtEpochMillis: Long?,
     val lastLocalChangeToken: String?,
-    val pendingUploadCount: Int,
-    val pendingDownloadCount: Int,
+    val pendingLocalChangeCount: Int,
     val blockedReason: String?,
 ) {
-    val readyForProviderSelection: Boolean = connectionStatus == StudySyncConnectionStatus.LOCAL_READY
-    val cloudProviderSelected: Boolean = provider.kind != StudySyncProviderKind.LOCAL_ONLY && provider.configured
+    val checkpointReady: Boolean = connectionStatus == StudySyncConnectionStatus.LOCAL_READY
+    val localBackupAvailable: Boolean = provider.kind == StudySyncProviderKind.LOCAL_ONLY && provider.configured
 
     companion object {
         fun disabled(deviceName: String = "This device"): StudySyncState = StudySyncState(
@@ -49,8 +45,7 @@ data class StudySyncState(
             deviceName = deviceName,
             lastPreparedAtEpochMillis = null,
             lastLocalChangeToken = null,
-            pendingUploadCount = 0,
-            pendingDownloadCount = 0,
+            pendingLocalChangeCount = 0,
             blockedReason = null,
         )
     }
@@ -59,9 +54,7 @@ data class StudySyncState(
 val LocalOnlyProvider = StudySyncProviderDescriptor(
     kind = StudySyncProviderKind.LOCAL_ONLY,
     displayName = "This device",
-    configured = false,
-    identityRequired = true,
-    conflictPolicyRequired = true,
+    configured = true,
 )
 
 data class StudySyncChangeSummary(

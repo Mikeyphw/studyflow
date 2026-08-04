@@ -71,11 +71,11 @@ runtime_smoke = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/mod
 require("probe.status == RuntimeSmokeProbeStatus.PASS" in runtime_smoke,
         "Runtime smoke reports must require every probe to pass before release-ready")
 release_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSealTest.kt")
-require("assertEquals(39, report.totalPhaseCount)" in release_test and
-        "assertEquals(39, report.completedPhaseCount)" in release_test,
-        "ReleaseReadinessSealTest must match the current 31-phase plus D1-D8 delivery report")
-require("phase.number == 30" in release_test and "phase.number == 31" in release_test,
-        "ReleaseReadinessSealTest must cover product truthfulness and dashboard action completion")
+require("assertEquals(41, report.totalPhaseCount)" in release_test and
+        "assertEquals(41, report.completedPhaseCount)" in release_test,
+        "ReleaseReadinessSealTest must match the current 33-phase plus D1-D8 delivery report")
+require("phase.number == 30" in release_test and "phase.number == 31" in release_test and "phase.number == 32" in release_test and "phase.number == 33" in release_test,
+        "ReleaseReadinessSealTest must cover product truthfulness, dashboard action completion, diagnostics de-scaffolding, and offline checkpoint completion")
 timer_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySessionTimerTest.kt")
 require("assertEquals(5, StudySessionTimer.pausedSeconds(paused, nowEpochMillis = 66_000))" in timer_test,
         "StudySessionTimerTest must assert pause elapsed seconds, not active plus paused seconds")
@@ -120,8 +120,8 @@ require("val changeCount: Int = planCount" in sync_model,
 for rel in ["feature/settings/src/main/res/values/strings.xml", "feature/settings/src/main/res/values-pt-rBR/strings.xml"]:
     text = read(rel)
     for key in [
-        "sync_connection_local_only", "sync_connection_local_ready", "sync_connection_provider_connected",
-        "sync_connection_provider_error", "sync_conflict_last_write_wins", "sync_conflict_manual_review",
+        "sync_connection_local_only", "sync_connection_local_ready", "sync_connection_checkpoint_prepared",
+        "sync_connection_checkpoint_error", "sync_conflict_last_write_wins", "sync_conflict_manual_review",
         "sync_conflict_local_only", "sync_change_count",
     ]:
         require(f'name="{key}"' in text, f"missing localized sync label {key} in {rel}")

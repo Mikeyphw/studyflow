@@ -18,11 +18,11 @@ if not phase_version_at_least(ROOT, 24):
 require("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
         "StudySyncProviderKind", "LOCAL_ONLY", "StudySyncState", "StudySyncChangeSummary")
 require("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
-        "StudyCloudSyncRepository", "ManageStudyCloudSync", "StudyCloudSyncReadinessAuditor")
+        "StudyCloudSyncRepository", "ManageStudyCloudSync", "StudyLocalCheckpointReadinessAuditor")
 require("core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
         "preferencesDataStore", "study_sync_foundation", "inspectLocalChanges", "prepareLocalFoundation")
 require("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-        "SyncFoundationScreen", "sync_provider_gate_message")
+        "SyncFoundationScreen", "sync_checkpoint_controls_message")
 require("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
         "syncState: StudySyncState", "onOpenSyncCenter", "sync_settings_message")
 require("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
@@ -31,7 +31,7 @@ require("core/navigation/src/main/kotlin/com/mikeyphw/studyflow/core/navigation/
 require("docs/architecture/ADR-0028-optional-cloud-sync-foundation.md", "No network permission", "No account identity")
 require("docs/quality/PHASE_24_ACCEPTANCE.md", "local-only scope")
 require("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSyncReadinessAuditorTest.kt",
-        "readyOnlyWhenFoundationTokenMatchesLocalData")
+        "readyOnlyWhenCheckpointTokenMatchesLocalData")
 
 repo_text = "\n".join(
     p.read_text(encoding="utf-8", errors="ignore")
@@ -44,4 +44,4 @@ for forbidden in ["google-services.json", "firebase", "OAuth", "http://", "https
     if forbidden in repo_text:
         raise SystemExit(f"Phase 24 local sync foundation must not contain provider/network token: {forbidden}")
 
-print("PHASE_24_CONTRACT: PASSED (local sync foundation, provider gate, no cloud claims)")
+print("PHASE_24_CONTRACT: PASSED (offline checkpoint foundation, no network provider claims)")

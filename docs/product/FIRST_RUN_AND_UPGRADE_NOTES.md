@@ -16,7 +16,7 @@ recommendations, and sync-preparation state are local unless the user explicitly
 ## Upgrade notes
 
 - Existing local Study Plans remain local.
-- The cloud-sync foundation is provider-neutral and does not upload data.
+- The local checkpoint foundation is offline-first and keeps checkpoint evidence on this device.
 - Reminder delivery uses local inexact scheduling and honors quiet hours.
 - Restore dry-run remains the safe pre-import step.
 - Metadata-private exports are recommended before sharing backups for support.

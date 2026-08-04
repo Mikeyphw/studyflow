@@ -6,7 +6,7 @@ import com.mikeyphw.studyflow.core.model.ReleaseValidationGateStatus
 import com.mikeyphw.studyflow.core.model.ReleaseValidationSeal
 
 object ReleaseValidationSealFactory {
-    private const val CurrentPhase = 31
+    private const val CurrentPhase = 33
 
     fun sourceOnlySeal(generatedAtEpochMillis: Long): ReleaseValidationSeal = ReleaseValidationSeal(
         currentPhase = CurrentPhase,
@@ -21,7 +21,7 @@ object ReleaseValidationSealFactory {
             pass(
                 ReleaseValidationGateKind.SOURCE_CONTRACTS,
                 "Source contracts",
-                "Phase 0 through 31 validators pass.",
+                "Phase 0 through 33 validators pass.",
             ),
             blocked(
                 ReleaseValidationGateKind.GRADLE_CONFIGURATION,

@@ -16,8 +16,8 @@ class ReleaseReadinessSealPhase25Test {
             ),
         )
 
-        assertEquals(39, report.totalPhaseCount)
-        assertEquals(39, report.completedPhaseCount)
+        assertEquals(41, report.totalPhaseCount)
+        assertEquals(41, report.completedPhaseCount)
         assertEquals(100, report.completionPercent)
         assertTrue(report.phases.any { phase -> phase.number == 21 && phase.complete })
         assertTrue(report.phases.any { phase -> phase.number == 24 && phase.complete })

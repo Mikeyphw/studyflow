@@ -1,19 +1,16 @@
-# ADR-0028: Optional Cloud-Sync Foundation
+# ADR-0028: Offline checkpoint foundation
 
 ## Decision
 
-StudyFlow adds only a local cloud-sync foundation in Phase 24. The app records local readiness, change tokens,
-pending upload units, device label, and conflict policy in DataStore while keeping Room as the source of truth.
+StudyFlow resolves the former optional sync foundation as an offline-first local checkpoint. The app records local readiness, change tokens, local change counts, device label, and restore conflict policy in DataStore while keeping Room as the source of truth.
 
 ## Rationale
 
-The roadmap explicitly defers provider, identity, and conflict policy selection. Adding Firebase, Drive, WebDAV,
-or a custom server now would create misleading security and data-ownership commitments. A local foundation keeps
-the UI truthful and prepares a seam for future sync code.
+The current product focus is offline. Adding online synchronization would create misleading security and data-ownership commitments. A local checkpoint gives users an honest backup-readiness surface without implying data transfer or shared-device behavior.
 
 ## Consequences
 
-- No network permission or cloud dependency is added.
-- No account identity, OAuth token, or server endpoint is stored.
-- Local checkpoints can become stale and must be refreshed before a real provider integration.
-- Future sync overlays must implement provider selection, authenticated identity, remote manifests, and conflict review.
+- No network permission or online dependency is added.
+- No account identity, OAuth token, or online endpoint is stored.
+- Local checkpoints can become stale and should be refreshed before export/restore decisions.
+- Future online synchronization must be designed as a separate major feature, not as hidden behavior inside the local checkpoint flow.

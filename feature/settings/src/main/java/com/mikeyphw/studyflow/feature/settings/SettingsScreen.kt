@@ -132,7 +132,7 @@ fun SettingsScreen(
                 text = stringResource(
                     R.string.sync_settings_message,
                     stringResource(syncConnectionStatusLabel(syncState.connectionStatus)),
-                    syncState.pendingUploadCount,
+                    syncState.pendingLocalChangeCount,
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -190,6 +190,6 @@ private fun themeLabel(themeMode: ThemeMode): Int = when (themeMode) {
 private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = when (status) {
     StudySyncConnectionStatus.DISABLED -> R.string.sync_connection_local_only
     StudySyncConnectionStatus.LOCAL_READY -> R.string.sync_connection_local_ready
-    StudySyncConnectionStatus.PROVIDER_REQUIRED -> R.string.sync_connection_provider_required
-    StudySyncConnectionStatus.BLOCKED -> R.string.sync_connection_provider_error
+    StudySyncConnectionStatus.CHECKPOINT_NEEDED -> R.string.sync_connection_checkpoint_needed
+    StudySyncConnectionStatus.CHECKPOINT_BLOCKED -> R.string.sync_connection_checkpoint_error
 }

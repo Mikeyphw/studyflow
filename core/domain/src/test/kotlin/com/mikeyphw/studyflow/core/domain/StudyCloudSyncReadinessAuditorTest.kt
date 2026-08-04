@@ -9,9 +9,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class StudyCloudSyncReadinessAuditorTest {
+class StudyLocalCheckpointReadinessAuditorTest {
     @Test
-    fun readyOnlyWhenFoundationTokenMatchesLocalData() {
+    fun readyOnlyWhenCheckpointTokenMatchesLocalData() {
         val summary = StudySyncChangeSummary(
             planCount = 2,
             activePlanCount = 1,
@@ -26,20 +26,19 @@ class StudyCloudSyncReadinessAuditorTest {
             deviceName = "Phone",
             lastPreparedAtEpochMillis = 84L,
             lastLocalChangeToken = summary.localChangeToken,
-            pendingUploadCount = 2,
-            pendingDownloadCount = 0,
+            pendingLocalChangeCount = 2,
             blockedReason = null,
         )
 
-        assertTrue(StudyCloudSyncReadinessAuditor.readyForProviderSelection(state, summary))
+        assertTrue(StudyLocalCheckpointReadinessAuditor.localCheckpointReady(state, summary))
         assertFalse(
-            StudyCloudSyncReadinessAuditor.readyForProviderSelection(
+            StudyLocalCheckpointReadinessAuditor.localCheckpointReady(
                 state.copy(lastLocalChangeToken = "old"),
                 summary,
             ),
         )
         assertFalse(
-            StudyCloudSyncReadinessAuditor.readyForProviderSelection(
+            StudyLocalCheckpointReadinessAuditor.localCheckpointReady(
                 state,
                 summary.copy(planCount = 0),
             ),

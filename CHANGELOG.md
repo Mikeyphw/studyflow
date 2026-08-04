@@ -8,10 +8,19 @@
 
 # Changelog
 
+## Phase 32-33 diagnostics de-scaffolding and offline checkpoint completion
+
+- Renamed the debug entry to Developer diagnostics and kept it gated to debug builds.
+- Replaced fallback probe/lab placeholder copy with concrete developer-support fallback states.
+- Completed the former sync foundation as an offline-first local checkpoint surface that keeps the user story on this device.
+- Reworked the local checkpoint model around checkpoint readiness and pending local changes instead of online transfer selection.
+- Advanced release readiness and source validation through Phase 33.
+
+
 ## Phase 30-31 product truthfulness and dashboard action completion
 
 - Removed normal-user Settings cards that exposed app-shell readiness, UX polish, release-candidate polish, and stale release seals.
-- Renamed local-only sync surfaces to local backup checkpoints and removed user-facing cloud/provider/phase promises.
+- Renamed local-only sync surfaces to local backup checkpoints and removed user-facing online-sync promises.
 - Advanced the release-readiness scope through Phase 31 plus Debug Workbench D1-D8 while keeping target-machine release gates evidence-based.
 - Wired the Dashboard primary session action to the existing Study Sessions route and converted the default-plan chip into a passive badge.
 - Added Phase 30 and Phase 31 verifiers plus source-level contract tests for Settings and Dashboard truthfulness.

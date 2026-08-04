@@ -14,7 +14,7 @@ data class ReleaseReadinessReport(
     val completedPhaseCount: Int = phases.count(ReleaseReadinessPhase::complete)
     val totalPhaseCount: Int = phases.size
     val completionPercent: Int = if (totalPhaseCount == 0) 0 else (completedPhaseCount * 100) / totalPhaseCount
-    val mvpSealed: Boolean = phases.all(ReleaseReadinessPhase::complete) &&
+    val productSealed: Boolean = phases.all(ReleaseReadinessPhase::complete) &&
         polishReport.releaseReady &&
         shellReadiness.accessibilityBaselineReady
 }
@@ -45,7 +45,7 @@ object ReleaseReadinessSeal {
             ReleaseReadinessPhase(21, "Reminder delivery and widgets", true),
             ReleaseReadinessPhase(22, "Global search and recommendations", true),
             ReleaseReadinessPhase(23, "Privacy, encryption, and backup hardening", true),
-            ReleaseReadinessPhase(24, "Optional cloud-sync foundation", true),
+            ReleaseReadinessPhase(24, "Offline checkpoint foundation", true),
             ReleaseReadinessPhase(25, "Post-MVP gap closure seal", true),
             ReleaseReadinessPhase(26, "Release validation seal", true),
             ReleaseReadinessPhase(27, "Runtime smoke workbench", true),
@@ -53,6 +53,8 @@ object ReleaseReadinessSeal {
             ReleaseReadinessPhase(29, "Reminder delivery grace and final-user readiness", true),
             ReleaseReadinessPhase(30, "Product truthfulness and user-facing settings cleanup", true),
             ReleaseReadinessPhase(31, "Dashboard action completion and session routing", true),
+            ReleaseReadinessPhase(32, "Developer diagnostics de-scaffolding", true),
+            ReleaseReadinessPhase(33, "Offline-first checkpoint completion", true),
             ReleaseReadinessPhase(101, "Debug Workbench D1 diagnostics baseline", true),
             ReleaseReadinessPhase(102, "Debug Workbench D2 timeline and report controls", true),
             ReleaseReadinessPhase(103, "Debug Workbench D3 typed runtime probes", true),

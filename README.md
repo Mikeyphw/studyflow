@@ -532,14 +532,14 @@ notebook from one screen. Deterministic recommendations explain the next study a
 StudyFlow can now password-encrypt `.studyplan` packages, redact notes/history/identifying metadata, inspect backup
 integrity, and simulate a restore with zero database writes. A privacy center documents recovery and retention truth.
 
-### Phase 24 sync foundation
+### Phase 24 offline checkpoint foundation
 
-StudyFlow now exposes a local-only sync foundation. No cloud provider, account identity, token, or remote merge is implemented in this phase.
+StudyFlow exposes a local-only checkpoint foundation. It stays on this device and does not require sign-in or online services.
 
 ### Phase 25 post-MVP gap closure
 
 Phase 25 seals the post-MVP roadmap by completing local reminder delivery and dynamic widgets while keeping
-cloud sync provider work gated behind the Phase 24 local-only foundation.
+online synchronization work explicitly out of scope for the offline-first checkpoint track.
 
 ## Phase 25 r2 correction
 

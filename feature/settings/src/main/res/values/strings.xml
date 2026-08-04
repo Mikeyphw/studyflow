@@ -26,8 +26,8 @@
     <string name="sync_settings_message">Checkpoint state: %1$s · local changes waiting for backup: %2$d.</string>
     <string name="open_sync_center">Open local checkpoint</string>
     <string name="sync_foundation_title">Local backup checkpoint</string>
-    <string name="sync_foundation_message">StudyFlow prepares local checkpoints and a restore-safe change summary on this device. No account or network sync is configured.</string>
-    <string name="sync_provider_value">Storage: %1$s</string>
+    <string name="sync_foundation_message">StudyFlow prepares local checkpoints and a restore-safe change summary entirely on this device.</string>
+    <string name="sync_device_value">Device: %1$s</string>
     <string name="sync_status_value">Status: %1$s</string>
     <string name="sync_conflict_value">Conflict policy: %1$s</string>
     <string name="sync_local_changes_title">Local changes</string>
@@ -35,23 +35,23 @@
     <string name="sync_plan_count">Study Plans: %1$d</string>
     <string name="sync_active_plan_count">Active or paused plans: %1$d</string>
     <string name="sync_change_count">Local changes: %1$d</string>
-    <string name="sync_provider_gate_title">Checkpoint controls</string>
-    <string name="sync_provider_gate_message">This build stores checkpoint evidence locally. It does not upload data, sign in to an account, or merge with a server.</string>
-    <string name="sync_prepare_foundation">Prepare local checkpoint</string>
-    <string name="sync_disable_foundation">Disable local checkpoint</string>
+    <string name="sync_checkpoint_controls_title">Checkpoint controls</string>
+    <string name="sync_checkpoint_controls_message">StudyFlow stores checkpoint evidence in app-private storage on this device for local backup and restore decisions.</string>
+    <string name="sync_prepare_checkpoint">Prepare local checkpoint</string>
+    <string name="sync_disable_checkpoint">Disable local checkpoint</string>
     <string name="go_back">Go back</string>
     <string name="runtime_smoke_title">Runtime smoke workbench</string>
-    <string name="runtime_smoke_message">These probes exercise runtime paths without network sync or imported backup writes.</string>
+    <string name="runtime_smoke_message">These probes exercise runtime paths without changing backup data.</string>
     <string name="runtime_smoke_summary_title">Smoke summary</string>
     <string name="runtime_smoke_passed_value">Passed probes: %1$d of %2$d</string>
     <string name="runtime_smoke_blocked_value">Blocked probes: %1$d</string>
     <string name="runtime_smoke_run_safe_set">Run safe probe set</string>
     <string name="runtime_smoke_run_probe">Run probe</string>
 
-    <string name="debug_workbench_title">Debug Workbench</string>
-    <string name="debug_workbench_settings_message">Inspect the private diagnostic timeline, run controlled probes, and export a redacted local support bundle.</string>
-    <string name="open_debug_workbench">Open Debug Workbench</string>
-    <string name="debug_workbench_message">Diagnostics stay in app-private storage. Nothing is uploaded automatically.</string>
+    <string name="debug_workbench_title">Developer diagnostics</string>
+    <string name="debug_workbench_settings_message">Open support-only diagnostics, controlled probes, and redacted local reports.</string>
+    <string name="open_debug_workbench">Open developer diagnostics</string>
+    <string name="debug_workbench_message">Diagnostics stay in app-private storage and are shown only from this developer/support area.</string>
     <string name="debug_section_overview">Overview</string>
     <string name="debug_section_timeline">Timeline</string>
     <string name="debug_section_probes">Probes</string>
@@ -84,7 +84,7 @@
     <string name="debug_export_bundle">Export support bundle</string>
     <string name="debug_clear_history">Clear diagnostic history</string>
     <string name="debug_probes_title">Runtime probes</string>
-    <string name="debug_probes_placeholder">Run the available typed runtime probes from this tab.</string>
+    <string name="debug_probes_entry_message">Open the runtime probe set connected to this build.</string>
     <string name="debug_health_disabled">Disabled</string>
     <string name="debug_health_healthy">Healthy</string>
     <string name="debug_health_degraded">Needs attention</string>
@@ -126,7 +126,7 @@
     <string name="debug_action_bundle_unavailable">Support bundle export is unavailable for this build.</string>
     <string name="debug_action_bundle_share_failed">Support bundle was created, but Android could not open a share target.</string>
     <string name="debug_action_bundle_ready">Checksummed support bundle prepared for sharing.</string>
-    <string name="debug_open_runtime_smoke">Open legacy runtime probes</string>
+    <string name="debug_open_runtime_smoke">Open runtime probes</string>
 
     <string name="debug_probes_d3_message">Run typed, bounded probes. The safe suite excludes operations that refresh widgets or reconcile alarms.</string>
     <string name="debug_probe_summary">Passed: %1$d · Warnings: %2$d · Blocked: %3$d · Failed: %4$d</string>
@@ -174,7 +174,7 @@
     <string name="debug_probe_backup_dry_run_description">Exports in memory, verifies integrity, and confirms restore planning changes zero database rows.</string>
     <string name="debug_probe_search_description">Executes the bounded global-search repository path.</string>
     <string name="debug_probe_recommendation_description">Executes recommendations for the default study plan.</string>
-    <string name="debug_probe_sync_description">Inspects local checkpoint state without account, upload, or server access.</string>
+    <string name="debug_probe_sync_description">Inspects local checkpoint state while staying on this device.</string>
     <string name="debug_probe_message_none">No additional note.</string>
     <string name="debug_probe_message_missing_plan">Set a default study plan before running this probe.</string>
     <string name="debug_probe_message_notification_permission">Notification permission is not granted.</string>
@@ -200,8 +200,8 @@
     <string name="debug_probe_fact_modern_present">Modern rules present</string>
     <string name="debug_probe_fact_path_metadata">Path metadata</string>
     <string name="debug_section_labs">Labs</string>
-    <string name="debug_labs_placeholder_title">Diagnostic labs</string>
-    <string name="debug_labs_placeholder_message">Specialist diagnostic labs appear here as they are installed.</string>
+    <string name="debug_labs_empty_title">Diagnostic labs</string>
+    <string name="debug_labs_empty_message">No diagnostic lab data is connected to this route.</string>
     <string name="debug_reminder_lab_title">Reminder and notification lab</string>
     <string name="debug_reminder_lab_message">Inspect the default plan’s current reminder decisions without enumerating system alarms or exposing study content.</string>
     <string name="debug_lab_status_value">Status: %1$s</string>
@@ -322,9 +322,9 @@
     <string name="debug_support_bundle_message_checksum_mismatch">A bundle entry checksum does not match the manifest.</string>
     <string name="sync_connection_local_only">Local only</string>
     <string name="sync_connection_local_ready">Local changes ready</string>
-    <string name="sync_connection_provider_required">Local checkpoint needed</string>
-    <string name="sync_connection_provider_connected">Checkpoint prepared</string>
-    <string name="sync_connection_provider_error">Checkpoint needs attention</string>
+    <string name="sync_connection_checkpoint_needed">Local checkpoint needed</string>
+    <string name="sync_connection_checkpoint_prepared">Checkpoint prepared</string>
+    <string name="sync_connection_checkpoint_error">Checkpoint needs attention</string>
     <string name="sync_conflict_last_write_wins">Use latest change</string>
     <string name="sync_conflict_manual_review">Review conflicts manually</string>
     <string name="sync_conflict_local_only">Keep this device only</string>

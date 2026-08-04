@@ -25,7 +25,7 @@ StudyFlow is complete through Phase 29 in this release-candidate branch.
 - Phase 21: reminders and widgets foundation.
 - Phase 22: global search and smart recommendations.
 - Phase 23: privacy, encryption, and backup hardening.
-- Phase 24: optional local-only cloud-sync foundation.
+- Phase 24: offline local checkpoint foundation.
 - Phase 25: post-MVP gap closure seal.
 - Phase 26: release validation seal.
 - Phase 27: runtime smoke workbench.

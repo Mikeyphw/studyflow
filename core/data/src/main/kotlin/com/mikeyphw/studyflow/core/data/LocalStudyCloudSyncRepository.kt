@@ -57,7 +57,7 @@ internal class LocalStudyCloudSyncRepository(
             preferences[DeviceNameKey] = deviceName
             preferences[PreparedAtKey] = clock()
             preferences[ChangeTokenKey] = summary.localChangeToken
-            preferences[PendingUploadKey] = summary.planCount.toLong()
+            preferences[PendingLocalChangeKey] = summary.planCount.toLong()
             preferences.remove(BlockedReasonKey)
         }
         return syncState.first()
@@ -75,7 +75,7 @@ internal class LocalStudyCloudSyncRepository(
             if (enabled && preferences[ChangeTokenKey] == null) {
                 preferences[ChangeTokenKey] = summary.localChangeToken
                 preferences[PreparedAtKey] = clock()
-                preferences[PendingUploadKey] = summary.planCount.toLong()
+                preferences[PendingLocalChangeKey] = summary.planCount.toLong()
             }
         }
         return syncState.first()
@@ -100,14 +100,18 @@ internal class LocalStudyCloudSyncRepository(
             deviceName = preferences[DeviceNameKey] ?: "This device",
             lastPreparedAtEpochMillis = preferences[PreparedAtKey],
             lastLocalChangeToken = preferences[ChangeTokenKey],
-            pendingUploadCount = preferences[PendingUploadKey]?.toInt() ?: 0,
-            pendingDownloadCount = 0,
+            pendingLocalChangeCount = preferences[PendingLocalChangeKey]?.toInt() ?: 0,
             blockedReason = preferences[BlockedReasonKey],
         )
 
-    private fun decodeStatus(value: String?): StudySyncConnectionStatus = runCatching {
-        value?.let { enumValueOf<StudySyncConnectionStatus>(it) }
-    }.getOrNull() ?: StudySyncConnectionStatus.DISABLED
+    private fun decodeStatus(value: String?): StudySyncConnectionStatus = when (value) {
+        StudySyncConnectionStatus.LOCAL_READY.name -> StudySyncConnectionStatus.LOCAL_READY
+        StudySyncConnectionStatus.CHECKPOINT_NEEDED.name, "PROVIDER_REQUIRED" ->
+            StudySyncConnectionStatus.CHECKPOINT_NEEDED
+        StudySyncConnectionStatus.CHECKPOINT_BLOCKED.name, "BLOCKED" ->
+            StudySyncConnectionStatus.CHECKPOINT_BLOCKED
+        else -> StudySyncConnectionStatus.DISABLED
+    }
 
     private fun decodeConflictPolicy(value: String?): StudySyncConflictPolicy = runCatching {
         value?.let { enumValueOf<StudySyncConflictPolicy>(it) }
@@ -120,7 +124,7 @@ internal class LocalStudyCloudSyncRepository(
         val DeviceNameKey = stringPreferencesKey("device_name")
         val PreparedAtKey = longPreferencesKey("prepared_at")
         val ChangeTokenKey = stringPreferencesKey("change_token")
-        val PendingUploadKey = longPreferencesKey("pending_upload")
+        val PendingLocalChangeKey = longPreferencesKey("pending_local_change_count")
         val BlockedReasonKey = stringPreferencesKey("blocked_reason")
     }
 }

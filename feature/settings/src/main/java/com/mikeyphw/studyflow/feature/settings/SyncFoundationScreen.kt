@@ -67,7 +67,7 @@ fun SyncFoundationScreen(
                     text = stringResource(R.string.sync_foundation_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(text = stringResource(R.string.sync_provider_value, state.deviceName))
+                Text(text = stringResource(R.string.sync_device_value, state.deviceName))
                 Text(
                     text = stringResource(
                         R.string.sync_status_value,
@@ -94,20 +94,20 @@ fun SyncFoundationScreen(
                     Text(text = stringResource(R.string.sync_change_count, currentSummary.changeCount))
                 }
             }
-            StudyFlowSectionCard(title = stringResource(R.string.sync_provider_gate_title)) {
+            StudyFlowSectionCard(title = stringResource(R.string.sync_checkpoint_controls_title)) {
                 Text(
-                    text = stringResource(R.string.sync_provider_gate_message),
+                    text = stringResource(R.string.sync_checkpoint_controls_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Button(onClick = onPrepare, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.sync_prepare_foundation))
+                    Text(stringResource(R.string.sync_prepare_checkpoint))
                 }
                 OutlinedButton(
                     onClick = onDisable,
                     enabled = state.enabled,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.sync_disable_foundation))
+                    Text(stringResource(R.string.sync_disable_checkpoint))
                 }
             }
         }
@@ -118,8 +118,8 @@ fun SyncFoundationScreen(
 private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = when (status) {
     StudySyncConnectionStatus.DISABLED -> R.string.sync_connection_local_only
     StudySyncConnectionStatus.LOCAL_READY -> R.string.sync_connection_local_ready
-    StudySyncConnectionStatus.PROVIDER_REQUIRED -> R.string.sync_connection_provider_required
-    StudySyncConnectionStatus.BLOCKED -> R.string.sync_connection_provider_error
+    StudySyncConnectionStatus.CHECKPOINT_NEEDED -> R.string.sync_connection_checkpoint_needed
+    StudySyncConnectionStatus.CHECKPOINT_BLOCKED -> R.string.sync_connection_checkpoint_error
 }
 
 private fun syncConflictPolicyLabel(policy: StudySyncConflictPolicy): Int = when (policy) {

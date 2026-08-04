@@ -181,7 +181,7 @@ private suspend fun inspectStudyEngine(
         ),
         StudyEngineDiagnostic(
             kind = StudyEngineDiagnosticKind.SYNC_FOUNDATION,
-            status = if (syncState.readyForProviderSelection || syncSummary.hasLocalData) {
+            status = if (syncState.checkpointReady || syncSummary.hasLocalData) {
                 DebugLabStatus.PASSED
             } else {
                 DebugLabStatus.WARNING

@@ -1237,7 +1237,7 @@ private fun StudyFlowNavHost(
                                 val summary = container.manageStudyCloudSync.inspectLocalChanges()
                                 markPassed(
                                     kind,
-                                    "Local sync inspection completed for ${summary.planCount} plan(s).",
+                                    "Local checkpoint inspection completed for ${summary.planCount} plan(s).",
                                 )
                             }
                         }

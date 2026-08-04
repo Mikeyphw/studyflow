@@ -32,7 +32,7 @@ post-MVP gap-closure track.
 - Phase 21: Reminders, notifications, and study widgets.
 - Phase 22: Global search and smart recommendations.
 - Phase 23: Privacy, encryption, and backup hardening.
-- Phase 24: Optional cloud-sync foundation.
+- Phase 24: Offline checkpoint foundation.
 - Phase 25: Post-MVP gap-closure seal.
 
 ## Roadmap rule

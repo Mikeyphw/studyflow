@@ -33,10 +33,9 @@ why a next action is suggested.
 
 Exports gain optional encryption, privacy modes, restore dry-runs, and backup integrity reporting.
 
-## Phase 24: Optional cloud-sync foundation
+## Phase 24: Offline checkpoint foundation
 
-Only a local sync foundation is planned until a real provider, identity model, and conflict policy are
-selected.
+Only an offline local checkpoint is planned for this track. The app keeps checkpoint evidence on this device and does not require online identity.
 
 ## Phase 25: Gap closure seal
 

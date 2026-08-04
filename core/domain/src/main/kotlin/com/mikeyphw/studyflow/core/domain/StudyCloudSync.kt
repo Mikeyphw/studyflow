@@ -39,11 +39,11 @@ class ManageStudyCloudSync(
     suspend fun clearLocalFoundation(): StudySyncState = repository.clearLocalFoundation()
 }
 
-object StudyCloudSyncReadinessAuditor {
-    fun readyForProviderSelection(
+object StudyLocalCheckpointReadinessAuditor {
+    fun localCheckpointReady(
         state: StudySyncState,
         summary: StudySyncChangeSummary,
-    ): Boolean = state.readyForProviderSelection &&
+    ): Boolean = state.checkpointReady &&
         summary.hasLocalData &&
         state.lastLocalChangeToken == summary.localChangeToken
 }

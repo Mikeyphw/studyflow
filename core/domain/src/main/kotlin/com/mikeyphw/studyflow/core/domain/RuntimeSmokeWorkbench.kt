@@ -48,7 +48,7 @@ object RuntimeSmokeWorkbench {
         RuntimeSmokeProbeKind.BACKUP_DRY_RUN -> "Backup dry-run"
         RuntimeSmokeProbeKind.SEARCH_QUERY -> "Search query"
         RuntimeSmokeProbeKind.RECOMMENDATION_QUERY -> "Recommendation query"
-        RuntimeSmokeProbeKind.SYNC_FOUNDATION -> "Sync foundation"
+        RuntimeSmokeProbeKind.SYNC_FOUNDATION -> "Local checkpoint"
     }
 
     private fun RuntimeSmokeProbeKind.defaultDetail(): String = when (this) {
@@ -57,7 +57,7 @@ object RuntimeSmokeWorkbench {
         RuntimeSmokeProbeKind.BACKUP_DRY_RUN -> "Use restore dry-run before any imported package writes data."
         RuntimeSmokeProbeKind.SEARCH_QUERY -> "Run a bounded global search query against local Room data."
         RuntimeSmokeProbeKind.RECOMMENDATION_QUERY -> "Load deterministic recommendations for the default Study Plan."
-        RuntimeSmokeProbeKind.SYNC_FOUNDATION -> "Inspect local sync readiness without network access."
+        RuntimeSmokeProbeKind.SYNC_FOUNDATION -> "Inspect local checkpoint readiness without network access."
     }
 
     private fun RuntimeSmokeProbeKind.defaultPassedDetail(): String = when (this) {
@@ -67,6 +67,6 @@ object RuntimeSmokeWorkbench {
         RuntimeSmokeProbeKind.BACKUP_DRY_RUN -> "Backup restore dry-run path is available and non-destructive."
         RuntimeSmokeProbeKind.SEARCH_QUERY -> "Global search repository query path is available."
         RuntimeSmokeProbeKind.RECOMMENDATION_QUERY -> "Recommendation repository query path is available."
-        RuntimeSmokeProbeKind.SYNC_FOUNDATION -> "Local sync foundation inspection completed without a provider."
+        RuntimeSmokeProbeKind.SYNC_FOUNDATION -> "Local checkpoint inspection completed without network access."
     }
 }

@@ -26,8 +26,8 @@
     <string name="sync_settings_message">Estado do checkpoint: %1$s · alterações locais aguardando backup: %2$d.</string>
     <string name="open_sync_center">Abrir checkpoint local</string>
     <string name="sync_foundation_title">Checkpoint local de backup</string>
-    <string name="sync_foundation_message">O StudyFlow prepara checkpoints locais e um resumo seguro para restauração neste dispositivo. Nenhuma conta ou sincronização pela rede está configurada.</string>
-    <string name="sync_provider_value">Armazenamento: %1$s</string>
+    <string name="sync_foundation_message">O StudyFlow prepara checkpoints locais e um resumo seguro para restauração inteiramente neste dispositivo.</string>
+    <string name="sync_device_value">Dispositivo: %1$s</string>
     <string name="sync_status_value">Estado: %1$s</string>
     <string name="sync_conflict_value">Política de conflito: %1$s</string>
     <string name="sync_local_changes_title">Alterações locais</string>
@@ -35,23 +35,23 @@
     <string name="sync_plan_count">Planos de estudo: %1$d</string>
     <string name="sync_active_plan_count">Planos ativos ou pausados: %1$d</string>
     <string name="sync_change_count">Alterações locais: %1$d</string>
-    <string name="sync_provider_gate_title">Controles do checkpoint</string>
-    <string name="sync_provider_gate_message">Esta compilação guarda evidência do checkpoint localmente. Ela não envia dados, não entra em conta e não mescla com servidor.</string>
-    <string name="sync_prepare_foundation">Preparar checkpoint local</string>
-    <string name="sync_disable_foundation">Desativar checkpoint local</string>
+    <string name="sync_checkpoint_controls_title">Controles do checkpoint</string>
+    <string name="sync_checkpoint_controls_message">O StudyFlow guarda evidência do checkpoint no armazenamento privado do app neste dispositivo para decisões locais de backup e restauração.</string>
+    <string name="sync_prepare_checkpoint">Preparar checkpoint local</string>
+    <string name="sync_disable_checkpoint">Desativar checkpoint local</string>
     <string name="go_back">Voltar</string>
     <string name="runtime_smoke_title">Bancada de fumaça runtime</string>
-    <string name="runtime_smoke_message">Estas sondas exercitam caminhos de runtime sem sincronização pela rede nem gravações de backup importado.</string>
+    <string name="runtime_smoke_message">Estas sondas exercitam caminhos de runtime sem alterar dados de backup.</string>
     <string name="runtime_smoke_summary_title">Resumo das sondas</string>
     <string name="runtime_smoke_passed_value">Sondas aprovadas: %1$d de %2$d</string>
     <string name="runtime_smoke_blocked_value">Sondas bloqueadas: %1$d</string>
     <string name="runtime_smoke_run_safe_set">Executar conjunto seguro</string>
     <string name="runtime_smoke_run_probe">Executar sonda</string>
 
-    <string name="debug_workbench_title">Bancada de depuração</string>
-    <string name="debug_workbench_settings_message">Inspecione a linha do tempo privada, execute sondas controladas e exporte um pacote local com dados redigidos.</string>
-    <string name="open_debug_workbench">Abrir bancada de depuração</string>
-    <string name="debug_workbench_message">Os diagnósticos ficam no armazenamento privado do app. Nada é enviado automaticamente.</string>
+    <string name="debug_workbench_title">Diagnósticos de desenvolvedor</string>
+    <string name="debug_workbench_settings_message">Abra diagnósticos de suporte, sondas controladas e relatórios locais sanitizados.</string>
+    <string name="open_debug_workbench">Abrir diagnósticos de desenvolvedor</string>
+    <string name="debug_workbench_message">Os diagnósticos ficam no armazenamento privado do app e aparecem apenas nesta área de suporte/desenvolvedor.</string>
     <string name="debug_section_overview">Visão geral</string>
     <string name="debug_section_timeline">Linha do tempo</string>
     <string name="debug_section_probes">Sondas</string>
@@ -85,7 +85,7 @@
     <string name="debug_export_bundle">Exportar pacote de suporte</string>
     <string name="debug_clear_history">Limpar histórico de diagnóstico</string>
     <string name="debug_probes_title">Sondas de runtime</string>
-    <string name="debug_probes_placeholder">Execute as sondas tipadas disponíveis nesta aba.</string>
+    <string name="debug_probes_entry_message">Abra o conjunto de sondas de runtime conectado a esta compilação.</string>
     <string name="debug_health_disabled">Desativado</string>
     <string name="debug_health_healthy">Saudável</string>
     <string name="debug_health_degraded">Precisa de atenção</string>
@@ -127,7 +127,7 @@
     <string name="debug_action_bundle_unavailable">A exportação do pacote de suporte não está disponível nesta compilação.</string>
     <string name="debug_action_bundle_share_failed">O pacote de suporte foi criado, mas o Android não conseguiu abrir um destino de compartilhamento.</string>
     <string name="debug_action_bundle_ready">Pacote de suporte com checksums preparado para compartilhamento.</string>
-    <string name="debug_open_runtime_smoke">Abrir sondas runtime existentes</string>
+    <string name="debug_open_runtime_smoke">Abrir sondas runtime</string>
 
     <string name="debug_probes_d3_message">Execute sondas tipadas e limitadas. O conjunto seguro exclui operações que atualizam widgets ou reconciliam alarmes.</string>
     <string name="debug_probe_summary">Aprovadas: %1$d · Avisos: %2$d · Bloqueadas: %3$d · Falhas: %4$d</string>
@@ -175,7 +175,7 @@
     <string name="debug_probe_backup_dry_run_description">Exporta em memória, verifica integridade e confirma zero alterações no banco.</string>
     <string name="debug_probe_search_description">Executa o caminho limitado do repositório de busca global.</string>
     <string name="debug_probe_recommendation_description">Executa recomendações para o plano de estudo padrão.</string>
-    <string name="debug_probe_sync_description">Inspeciona o estado do checkpoint local sem conta, envio ou acesso a servidor.</string>
+    <string name="debug_probe_sync_description">Inspeciona o estado do checkpoint local mantendo tudo neste dispositivo.</string>
     <string name="debug_probe_message_none">Nenhuma observação adicional.</string>
     <string name="debug_probe_message_missing_plan">Defina um plano de estudo padrão antes de executar esta sonda.</string>
     <string name="debug_probe_message_notification_permission">A permissão de notificações não foi concedida.</string>
@@ -201,8 +201,8 @@
     <string name="debug_probe_fact_modern_present">Regras modernas presentes</string>
     <string name="debug_probe_fact_path_metadata">Metadados de caminhos</string>
     <string name="debug_section_labs">Laboratórios</string>
-    <string name="debug_labs_placeholder_title">Laboratórios de diagnóstico</string>
-    <string name="debug_labs_placeholder_message">Laboratórios especializados aparecem aqui à medida que forem instalados.</string>
+    <string name="debug_labs_empty_title">Laboratórios de diagnóstico</string>
+    <string name="debug_labs_empty_message">Nenhum dado de laboratório de diagnóstico está conectado a esta rota.</string>
     <string name="debug_reminder_lab_title">Laboratório de lembretes e notificações</string>
     <string name="debug_reminder_lab_message">Inspecione as decisões atuais de lembrete do plano padrão sem enumerar alarmes do sistema nem expor conteúdo de estudo.</string>
     <string name="debug_lab_status_value">Status: %1$s</string>
@@ -323,9 +323,9 @@
     <string name="debug_support_bundle_message_checksum_mismatch">O checksum de uma entrada do pacote não corresponde ao manifesto.</string>
     <string name="sync_connection_local_only">Somente local</string>
     <string name="sync_connection_local_ready">Alterações locais prontas</string>
-    <string name="sync_connection_provider_required">Checkpoint local necessário</string>
-    <string name="sync_connection_provider_connected">Checkpoint preparado</string>
-    <string name="sync_connection_provider_error">Checkpoint precisa de atenção</string>
+    <string name="sync_connection_checkpoint_needed">Checkpoint local necessário</string>
+    <string name="sync_connection_checkpoint_prepared">Checkpoint preparado</string>
+    <string name="sync_connection_checkpoint_error">Checkpoint precisa de atenção</string>
     <string name="sync_conflict_last_write_wins">Usar alteração mais recente</string>
     <string name="sync_conflict_manual_review">Revisar conflitos manualmente</string>
     <string name="sync_conflict_local_only">Manter apenas neste dispositivo</string>
