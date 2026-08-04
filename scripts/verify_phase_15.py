@@ -26,8 +26,8 @@ settings_source = (ROOT / "feature/settings/src/main/java/com/mikeyphw/studyflow
     encoding="utf-8",
 )
 for marker in ("ReleaseReadinessSeal", "releaseReport", "final_seal_title"):
-    if marker not in settings_source:
-        failures.append(f"settings screen missing Phase 15 seal marker: {marker}")
+    if marker in settings_source:
+        failures.append(f"settings screen exposes internal Phase 15 seal marker after product truthfulness: {marker}")
 seal_source = (ROOT / "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSeal.kt").read_text(
     encoding="utf-8",
 )

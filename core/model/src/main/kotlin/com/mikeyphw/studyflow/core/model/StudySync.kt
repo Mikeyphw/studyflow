@@ -58,7 +58,7 @@ data class StudySyncState(
 
 val LocalOnlyProvider = StudySyncProviderDescriptor(
     kind = StudySyncProviderKind.LOCAL_ONLY,
-    displayName = "Local sync foundation",
+    displayName = "This device",
     configured = false,
     identityRequired = true,
     conflictPolicyRequired = true,
@@ -70,5 +70,6 @@ data class StudySyncChangeSummary(
     val latestUpdatedAtEpochMillis: Long?,
     val localChangeToken: String,
 ) {
+    val changeCount: Int = planCount
     val hasLocalData: Boolean = planCount > 0
 }

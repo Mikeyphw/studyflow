@@ -106,7 +106,7 @@ require(
 )
 require(
     "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSealPhase25Test.kt",
-    "evaluateMarksAllTwentyFivePhasesComplete",
+    "evaluateStillRepresentsPhaseTwentyFiveInsideCurrentDeliveryScope",
 )
 require(
     "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerPhase25Test.kt",

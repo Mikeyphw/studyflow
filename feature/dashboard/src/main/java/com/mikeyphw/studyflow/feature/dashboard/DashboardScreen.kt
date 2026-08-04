@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.feature.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +25,6 @@ import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.SwapHoriz
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -34,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -83,11 +85,7 @@ fun DashboardScreen(
                     Column {
                         Text(text = plan.name)
                         if (isDefaultPlan) {
-                            AssistChip(
-                                onClick = {},
-                                label = { Text(stringResource(R.string.default_plan)) },
-                                leadingIcon = { Icon(Icons.Outlined.Star, contentDescription = null) },
-                            )
+                            DefaultPlanBadge()
                         }
                     }
                 },
@@ -251,6 +249,7 @@ fun DashboardScreen(
                     DashboardPrimaryColumn(
                         plan = plan,
                         onToggleActiveState = onToggleActiveState,
+                        onStartSession = onOpenSessions,
                         modifier = Modifier.weight(1.25f),
                     )
                     DashboardMetricsColumn(plan = plan, modifier = Modifier.weight(0.75f))
@@ -260,7 +259,11 @@ fun DashboardScreen(
                     modifier = contentModifier,
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
-                    DashboardPrimaryColumn(plan = plan, onToggleActiveState = onToggleActiveState)
+                    DashboardPrimaryColumn(
+                        plan = plan,
+                        onToggleActiveState = onToggleActiveState,
+                        onStartSession = onOpenSessions,
+                    )
                     DashboardMetricsColumn(plan = plan)
                 }
             }
@@ -269,9 +272,34 @@ fun DashboardScreen(
 }
 
 @Composable
+private fun DefaultPlanBadge() {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Star,
+                contentDescription = null,
+            )
+            Text(
+                text = stringResource(R.string.default_plan),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+    }
+}
+
+@Composable
 private fun DashboardPrimaryColumn(
     plan: StudyPlan,
     onToggleActiveState: () -> Unit,
+    onStartSession: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -302,7 +330,7 @@ private fun DashboardPrimaryColumn(
                 text = stringResource(R.string.foundation_recommendation_reason),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = {}) {
+            Button(onClick = onStartSession) {
                 Text(text = stringResource(R.string.start_session))
             }
         }

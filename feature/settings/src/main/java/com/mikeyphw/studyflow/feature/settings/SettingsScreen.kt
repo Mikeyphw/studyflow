@@ -18,16 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
-import com.mikeyphw.studyflow.core.domain.AppShellReadinessAuditor
-import com.mikeyphw.studyflow.core.domain.AppShellReadinessInput
-import com.mikeyphw.studyflow.core.domain.ReleaseCandidatePolishAuditor
-import com.mikeyphw.studyflow.core.domain.ReleaseCandidatePolishEvidence
-import com.mikeyphw.studyflow.core.domain.ReleaseReadinessSeal
-import com.mikeyphw.studyflow.core.domain.UserExperiencePolishAuditor
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
@@ -50,19 +43,6 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     diagnosticsAvailable: Boolean = true,
 ) {
-    val readiness = AppShellReadinessAuditor.evaluate(
-        AppShellReadinessInput(
-            language = preferences.language,
-            themeMode = preferences.themeMode,
-            dynamicColorEnabled = preferences.dynamicColorEnabled,
-            hasDefaultPlan = hasDefaultPlan,
-        ),
-    )
-    val polishReport = UserExperiencePolishAuditor.evaluate()
-    val releaseCandidateReport = ReleaseCandidatePolishAuditor.evaluate(
-        ReleaseCandidatePolishEvidence.verifiedForReleaseCandidateDocs(),
-    )
-    val releaseReport = ReleaseReadinessSeal.evaluate(readiness)
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -80,19 +60,45 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        StudyFlowSectionCard(title = stringResource(R.string.app_shell_readiness_title)) {
-            Text(
-                text = stringResource(R.string.app_shell_readiness_value, readiness.readyPercent),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Text(
-                text = stringResource(R.string.app_shell_readiness_message),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        StudyFlowSectionCard(title = stringResource(R.string.language_title)) {
+            AppLanguage.entries.forEach { language ->
+                SelectionRow(
+                    label = stringResource(languageLabel(language)),
+                    selected = preferences.language == language,
+                    onClick = { onLanguageChanged(language) },
+                )
+            }
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.appearance_title)) {
+            ThemeMode.entries.forEach { themeMode ->
+                SelectionRow(
+                    label = stringResource(themeLabel(themeMode)),
+                    selected = preferences.themeMode == themeMode,
+                    onClick = { onThemeModeChanged(themeMode) },
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = stringResource(R.string.dynamic_color))
+                    Text(
+                        text = stringResource(R.string.dynamic_color_description),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(
+                    checked = preferences.dynamicColorEnabled,
+                    onCheckedChange = onDynamicColorChanged,
+                )
+            }
         }
         StudyFlowSectionCard(title = stringResource(R.string.backup_title)) {
             Text(
-                text = if (readiness.backupEntryAvailable) {
+                text = if (hasDefaultPlan) {
                     stringResource(R.string.backup_ready)
                 } else {
                     stringResource(R.string.backup_needs_default_plan)
@@ -145,96 +151,6 @@ fun SettingsScreen(
                 }
             }
         }
-        StudyFlowSectionCard(title = stringResource(R.string.language_title)) {
-            AppLanguage.entries.forEach { language ->
-                SelectionRow(
-                    label = stringResource(languageLabel(language)),
-                    selected = preferences.language == language,
-                    onClick = { onLanguageChanged(language) },
-                )
-            }
-        }
-        StudyFlowSectionCard(title = stringResource(R.string.appearance_title)) {
-            ThemeMode.entries.forEach { themeMode ->
-                SelectionRow(
-                    label = stringResource(themeLabel(themeMode)),
-                    selected = preferences.themeMode == themeMode,
-                    onClick = { onThemeModeChanged(themeMode) },
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = stringResource(R.string.dynamic_color))
-                    Text(
-                        text = stringResource(R.string.dynamic_color_description),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-                Switch(
-                    checked = preferences.dynamicColorEnabled,
-                    onCheckedChange = onDynamicColorChanged,
-                )
-            }
-        }
-StudyFlowSectionCard(title = stringResource(R.string.ux_polish_title)) {
-    Text(
-        text = stringResource(R.string.ux_polish_value, polishReport.readyPercent),
-        style = MaterialTheme.typography.headlineMedium,
-    )
-    Text(
-        text = stringResource(R.string.ux_polish_message, polishReport.readyCount, polishReport.totalCount),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-        StudyFlowSectionCard(title = stringResource(R.string.release_candidate_polish_title)) {
-            Text(
-                text = stringResource(
-                    R.string.release_candidate_polish_value,
-                    releaseCandidateReport.readyPercent,
-                ),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Text(
-                text = pluralStringResource(
-                    R.plurals.release_candidate_polish_message,
-                    releaseCandidateReport.readyCount,
-                    releaseCandidateReport.readyCount,
-                    releaseCandidateReport.totalCount,
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        StudyFlowSectionCard(title = stringResource(R.string.accessibility_title)) {
-            Text(
-                text = stringResource(R.string.accessibility_message),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-StudyFlowSectionCard(title = stringResource(R.string.final_seal_title)) {
-    Text(
-        text = stringResource(R.string.final_seal_value, releaseReport.completionPercent),
-        style = MaterialTheme.typography.headlineMedium,
-    )
-    Text(
-        text = stringResource(
-            R.string.final_seal_message,
-            releaseReport.completedPhaseCount,
-            releaseReport.totalPhaseCount,
-        ),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-        StudyFlowSectionCard(title = stringResource(R.string.foundation_contract_title)) {
-            Text(
-                text = stringResource(R.string.foundation_contract_message),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 
@@ -269,7 +185,6 @@ private fun themeLabel(themeMode: ThemeMode): Int = when (themeMode) {
     ThemeMode.LIGHT -> R.string.theme_light
     ThemeMode.DARK -> R.string.theme_dark
 }
-
 
 @StringRes
 private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = when (status) {

@@ -67,7 +67,7 @@ fun SyncFoundationScreen(
                     text = stringResource(R.string.sync_foundation_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(text = stringResource(R.string.sync_provider_value, state.provider.displayName))
+                Text(text = stringResource(R.string.sync_provider_value, state.deviceName))
                 Text(
                     text = stringResource(
                         R.string.sync_status_value,
@@ -91,7 +91,7 @@ fun SyncFoundationScreen(
                 } else {
                     Text(text = stringResource(R.string.sync_plan_count, currentSummary.planCount))
                     Text(text = stringResource(R.string.sync_active_plan_count, currentSummary.activePlanCount))
-                    Text(text = stringResource(R.string.sync_change_token, currentSummary.localChangeToken))
+                    Text(text = stringResource(R.string.sync_change_count, currentSummary.changeCount))
                 }
             }
             StudyFlowSectionCard(title = stringResource(R.string.sync_provider_gate_title)) {

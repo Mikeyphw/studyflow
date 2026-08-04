@@ -26,9 +26,12 @@ if 'implementation(project(":core:domain"))' not in settings_build:
 settings_source = (ROOT / "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt").read_text(
     encoding="utf-8",
 )
-for marker in ("AppShellReadinessAuditor", "hasDefaultPlan", "onOpenDefaultPlanBackup", "backupEntryAvailable"):
+for marker in ("hasDefaultPlan", "onOpenDefaultPlanBackup"):
     if marker not in settings_source:
-        failures.append(f"settings screen missing shell marker: {marker}")
+        failures.append(f"settings screen missing backup entry marker: {marker}")
+for marker in ("AppShellReadinessAuditor", "backupEntryAvailable", "app_shell_readiness_title"):
+    if marker in settings_source:
+        failures.append(f"settings screen exposes internal app-shell readiness marker after Phase 30: {marker}")
 app_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt").read_text(encoding="utf-8")
 for marker in ("hasDefaultPlan = preferences.defaultStudyPlanId != null", "onOpenDefaultPlanBackup", "PlanPortabilityRoute"):
     if marker not in app_source:

@@ -188,8 +188,8 @@ practice_screen = read("feature/practice/src/main/java/com/mikeyphw/studyflow/fe
 require("pluralStringResource(\n                                    R.plurals.question_count_value," in practice_screen,
         "Practice question count plurals must be wrapped for formatting seal")
 phase29 = read("scripts/verify_phase_29.py")
-require("plural_names" in phase29 and "missing English plural release_candidate_polish_message" in phase29,
-        "Phase 29 verifier must validate release_candidate_polish_message as a plural resource")
+require("plural_names" in phase29 and "settings plural resource parity failed" in phase29,
+        "Phase 29 verifier must validate Settings plural resource parity")
 planner = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySchedulePlanner.kt")
 require("java.time" not in planner and "Calendar" in planner and "TimeZone" in planner,
         "StudySchedulePlanner must avoid java.time for minSdk 23 runtime compatibility")
@@ -206,6 +206,8 @@ require("syncConflictPolicyLabel" in sync_screen and ".name" not in sync_screen,
         "Sync Foundation screen must not show raw enum names")
 require("currentSummary.changeCount" in sync_screen and "currentSummary.localChangeToken" not in sync_screen,
         "Sync Foundation screen must hide raw local change tokens")
+require("val changeCount: Int = planCount" in read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt"),
+        "Sync aggregate count must compile from StudySyncChangeSummary")
 require("FlowRow" in read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugWorkbenchScreen.kt"),
         "Debug Workbench section chips must wrap responsively")
 require("FlowRow" in read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugLabsPanel.kt"),

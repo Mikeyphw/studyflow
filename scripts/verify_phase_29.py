@@ -39,8 +39,12 @@ if not phase_version_at_least(ROOT, 29):
     raise AssertionError("app version must be Phase 29 or later")
 
 root_build = read("build.gradle.kts")
-require(root_build, 'through Phase 29', 'repository contract description')
-require(root_build, 'for phase in {0..29}; do', 'contract phase loop through Phase 29')
+match = re.search(r'through Phase (\d+)', root_build)
+if not match or int(match.group(1)) < 29:
+    raise AssertionError('repository contract description must cover Phase 29 or later')
+match = re.search(r'for phase in \{0\.\.(\d+)\}; do', root_build)
+if not match or int(match.group(1)) < 29:
+    raise AssertionError('contract phase loop must cover Phase 29 or later')
 
 phase28 = read("scripts/verify_phase_28.py")
 require(phase28, 'phase_version_at_least(ROOT, 28)', 'Phase 28 verifier phase-forward version check')
@@ -51,7 +55,9 @@ release_factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/
 match = re.search(r'private const val CurrentPhase = (\d+)', release_factory)
 if not match or int(match.group(1)) < 29:
     raise AssertionError('release validation seal must move to Phase 29 or later')
-require(release_factory, 'Phase 0 through 29 validators pass.', 'Phase 29 release-seal evidence')
+match = re.search(r'Phase 0 through (\d+) validators pass\.', release_factory)
+if not match or int(match.group(1)) < 29:
+    raise AssertionError('release-seal evidence must cover Phase 29 or later')
 
 polish = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseCandidatePolish.kt")
 for area in [
@@ -75,31 +81,23 @@ require(tests, 'assertEquals(100, report.readyPercent)', 'polish readiness asser
 require(tests, 'assertFalse(report.releaseReady)', 'blocking assertion')
 
 settings = read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt")
-require(settings, 'ReleaseCandidatePolishAuditor.evaluate(', 'settings release polish report')
-require(settings, 'ReleaseCandidatePolishEvidence.verifiedForReleaseCandidateDocs()', 'settings explicit release-candidate evidence')
-require(settings, 'release_candidate_polish_title', 'settings release candidate polish card')
-require(settings, 'releaseCandidateReport.readyPercent', 'settings release polish percent')
+for marker in [
+    'ReleaseCandidatePolishAuditor.evaluate(',
+    'ReleaseCandidatePolishEvidence.verifiedForReleaseCandidateDocs()',
+    'release_candidate_polish_title',
+    'releaseCandidateReport.readyPercent',
+]:
+    if marker in settings:
+        raise AssertionError(f'settings screen still exposes release-candidate polish marker: {marker}')
 
 en_keys = string_names("feature/settings/src/main/res/values/strings.xml")
 pt_keys = string_names("feature/settings/src/main/res/values-pt-rBR/strings.xml")
 en_plurals = plural_names("feature/settings/src/main/res/values/strings.xml")
 pt_plurals = plural_names("feature/settings/src/main/res/values-pt-rBR/strings.xml")
-for key in [
-    'release_candidate_polish_title',
-    'release_candidate_polish_value',
-]:
-    if key not in en_keys:
-        raise AssertionError(f'missing English {key}')
-    if key not in pt_keys:
-        raise AssertionError(f'missing Portuguese {key}')
-if 'release_candidate_polish_message' not in en_plurals:
-    raise AssertionError('missing English plural release_candidate_polish_message')
-if 'release_candidate_polish_message' not in pt_plurals:
-    raise AssertionError('missing Portuguese plural release_candidate_polish_message')
-if not {'release_candidate_polish_title','release_candidate_polish_value'} <= (en_keys & pt_keys):
-    raise AssertionError('release-candidate string resource parity failed')
-if 'release_candidate_polish_message' not in (en_plurals & pt_plurals):
-    raise AssertionError('release-candidate plural resource parity failed')
+if en_keys != pt_keys:
+    raise AssertionError('settings string resource parity failed')
+if en_plurals != pt_plurals:
+    raise AssertionError('settings plural resource parity failed')
 
 
 reminder_planner = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt")

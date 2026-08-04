@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ReleaseReadinessSealPhase25Test {
     @Test
-    fun evaluateMarksAllTwentyFivePhasesComplete() {
+    fun evaluateStillRepresentsPhaseTwentyFiveInsideCurrentDeliveryScope() {
         val report = ReleaseReadinessSeal.evaluate(
             AppShellReadinessReport(
                 languageConfigured = true,
@@ -16,8 +16,8 @@ class ReleaseReadinessSealPhase25Test {
             ),
         )
 
-        assertEquals(25, report.totalPhaseCount)
-        assertEquals(25, report.completedPhaseCount)
+        assertEquals(39, report.totalPhaseCount)
+        assertEquals(39, report.completedPhaseCount)
         assertEquals(100, report.completionPercent)
         assertTrue(report.phases.any { phase -> phase.number == 21 && phase.complete })
         assertTrue(report.phases.any { phase -> phase.number == 24 && phase.complete })

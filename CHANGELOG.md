@@ -8,6 +8,14 @@
 
 # Changelog
 
+## Phase 30-31 product truthfulness and dashboard action completion
+
+- Removed normal-user Settings cards that exposed app-shell readiness, UX polish, release-candidate polish, and stale release seals.
+- Renamed local-only sync surfaces to local backup checkpoints and removed user-facing cloud/provider/phase promises.
+- Advanced the release-readiness scope through Phase 31 plus Debug Workbench D1-D8 while keeping target-machine release gates evidence-based.
+- Wired the Dashboard primary session action to the existing Study Sessions route and converted the default-plan chip into a passive badge.
+- Added Phase 30 and Phase 31 verifiers plus source-level contract tests for Settings and Dashboard truthfulness.
+
 ## Debug Workbench D6 - Study engine lab
 
 - Added aggregate-only Study Engine Lab diagnostics for schedule expansion, review queues, practice decks, mock exams, recommendations, search, progress, analytics, and sync foundation.
@@ -561,7 +569,6 @@
 - Added runtime smoke probe models for reminders, widgets, backup dry-runs, search, recommendations, and sync readiness.
 - Added a Debug/QA settings workbench with safe manual actions that reuse existing coordinators and avoid destructive writes.
 - Added release validation linkage so the device-smoke gate can be satisfied by structured runtime probe evidence.
-
 
 
 ## Phase 27 r2

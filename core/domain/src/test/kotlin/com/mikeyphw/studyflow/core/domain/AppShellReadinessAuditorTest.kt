@@ -21,4 +21,20 @@ class AppShellReadinessAuditorTest {
         assertTrue(report.backupEntryAvailable)
         assertEquals(100, report.readyPercent)
     }
+
+    @Test
+    fun systemLanguageAndThemeDefaultsAreValidUserChoices() {
+        val report = AppShellReadinessAuditor.evaluate(
+            AppShellReadinessInput(
+                language = AppLanguage.SYSTEM_DEFAULT,
+                themeMode = ThemeMode.SYSTEM_DEFAULT,
+                dynamicColorEnabled = false,
+                hasDefaultPlan = true,
+            ),
+        )
+
+        assertTrue(report.languageConfigured)
+        assertTrue(report.appearanceConfigured)
+        assertEquals(100, report.readyPercent)
+    }
 }

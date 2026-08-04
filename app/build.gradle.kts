@@ -18,8 +18,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow"
-        versionCode = 29
-        versionName = "0.29.0-phase29"
+        versionCode = 31
+        versionName = "0.31.0-phase31"
         buildConfigField("boolean", "BACKUP_LEGACY_RULE_LINKED", legacyBackupRuleLinked.toString())
         buildConfigField("boolean", "BACKUP_MODERN_RULE_LINKED", modernBackupRuleLinked.toString())
     }

@@ -23,9 +23,9 @@ if not phase_version_at_least(ROOT, 14):
 settings_source = (ROOT / "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt").read_text(
     encoding="utf-8",
 )
-for marker in ("UserExperiencePolishAuditor", "polishReport", "ux_polish_title"):
-    if marker not in settings_source:
-        failures.append(f"settings screen missing Phase 14 UX marker: {marker}")
+for marker in ("ux_polish_title", "polishReport", "UserExperiencePolishAuditor"):
+    if marker in settings_source:
+        failures.append(f"settings screen exposes internal Phase 14 UX marker after product truthfulness: {marker}")
 polish_source = (ROOT / "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/UserExperiencePolish.kt").read_text(
     encoding="utf-8",
 )
