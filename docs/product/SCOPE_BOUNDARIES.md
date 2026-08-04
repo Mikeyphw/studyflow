@@ -10,30 +10,35 @@ Included:
 - responsive navigation;
 - English and Brazilian Portuguese UI;
 - theme and language preferences;
-- fake local plan repository;
+- local plan repository seams;
 - product and architecture contracts;
 - validation and testing foundation.
 
-## Portable MVP, Phases 2 through 10
+## Local product scope through Phase 35
 
-Adds structured persistence, plan lifecycle, import/export, subjects, scheduling, sessions, materials,
-videos, and annexes.
+Included:
 
-## Study Beta, Phases 11 through 14
-
-Adds questions, tests, mock exams, reviews, flashcards, and error notebook.
-
-## Guided Beta, Phases 15 through 18
-
-Adds goals, analytics, recommendation engine, notifications, widgets, and background work.
-
-## Release Candidate, Phases 19 through 23
-
-Adds global search, WebView hardening, privacy, backup, accessibility, reliability, and performance.
+- Room-backed plan persistence;
+- complete plan lifecycle;
+- import, export, encrypted package inspection, and restore dry-run;
+- subject/topic organization and syllabus import;
+- schedules, sessions, reminders, and widgets;
+- question bank, practice execution, reviews, wrong-answer notebook, and remediation;
+- library resources, videos, annex metadata, and copied annex payloads;
+- goals, notes, analytics, search, recommendations, privacy center, and local checkpoint status;
+- developer diagnostics gated to debug builds;
+- passive status UI for non-actionable labels;
+- current README, changelog, and validation report.
 
 ## Explicit post-1.0 scope
 
-- cloud synchronization;
+- online-provider synchronization;
 - public template marketplace;
 - automatic syllabus extraction;
 - desktop or web companion.
+
+## Release scope still pending
+
+- signed release or AAB policy;
+- release-version naming;
+- final install/upgrade/device acceptance report.

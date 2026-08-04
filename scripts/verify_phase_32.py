@@ -76,7 +76,7 @@ seal = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/Rele
 require("ReleaseReadinessPhase(32" in seal and "Developer diagnostics de-scaffolding" in seal,
         "Release readiness seal must include Phase 32")
 factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactory.kt")
-require("CurrentPhase = 33" in factory or "CurrentPhase = 32" in factory,
+require(any(f"CurrentPhase = {phase}" in factory for phase in range(32, 100)),
         "Release validation factory must advance beyond Phase 31")
 validate_repo = read("scripts/validate_repo.sh")
 require("python3 scripts/verify_phase_32.py" in validate_repo,

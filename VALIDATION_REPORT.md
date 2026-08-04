@@ -1,104 +1,50 @@
 # StudyFlow Validation Report
 
-Generated for the Phase 17 annex file storage and portability baseline.
+Generated for the source state implemented through **Phase 35**.
 
-## Source contracts
+## Source-contract status
 
-- Phase 0 through Phase 16 contracts remain present.
-- Phase 17 adds private annex file storage and optional annex payloads in `.studyplan` packages.
-- The app version advances to `0.17.0-phase17`.
+The repository contract chain is expected to run through:
 
-## Devtool note
+- Phase validators `scripts/verify_phase_0.py` through `scripts/verify_phase_35.py`
+- Debug Workbench validators D1 through D8
+- `scripts/verify_full_app_final_user_readiness.py`
 
-This report describes source-level checks only. Gradle build, Android lint, packaging, and device
-validation remain authoritative on the target machine.
+Phase 34 seals interaction honesty by replacing passive-but-clickable UI chips with the shared
+`StudyFlowStatusPill` display component and by rejecting empty click handlers in production source.
 
----
+Phase 35 seals documentation and artifact hygiene by requiring a single current README, a single
+current changelog heading, a current validation report, no stale generated Devtool state in overlay
+payloads, and no archived release-checklist language in normal user resources.
 
-# StudyFlow Validation Report
+## Artifact-state cleanup
 
-Generated for the combined Phase 22 global search/smart recommendations and Phase 23 privacy/encryption/backup
-hardening overlay. The source baseline is confirmed landed Phase 20; pending Phase 21 code is not required.
+Phase 35 r3 keeps overlay payloads free of stale Devtool reports, validation state, caches, and generated output. Devtool reserves `.devtool/` runtime metadata and rejects overlay inventory entries that target it, including delete entries. Existing stale local Devtool state is therefore cleaned outside the overlay with an explicit local command when needed.
 
-## Artifact and source validation completed
+## Target-machine gates
 
-- Complete historical repository verifier chain: Phase 0 through Phase 20, then Phase 22 and Phase 23.
-- Durable phase-version verifier helper, tested with the current `0.23.0-phase23` version.
-- Kotlin PSI syntax parsing for the complete source tree.
-- XML parsing for manifests, resources, backup rules, and data-extraction rules.
-- TOML parsing for `.devtool.toml`.
-- English and Portuguese (Brazil) resource-name parity for modified feature resources.
-- All 15 Phase 22 Room queries prepared against exported Room schema version 2.
-- Schema-backed recommendation fixtures proving archived-linked rows are excluded and topic subqueries are plan-scoped.
-- Focused Kotlin compilation for discovery, retention, portability, encryption, and privacy logic.
-- Focused Kotlin compilation and execution of 30 tests across all ten new Phase 22/23 test classes.
-- Deterministic PBKDF2-HMAC-SHA256/AES-GCM compatibility vector.
-- Streaming encryption/decryption, large-input boundary, wrong-password, and ciphertext-tamper checks.
-- Per-export identifier unlinkability, within-export foreign-key consistency, and annex payload ID privacy contracts.
-- Unencrypted compatibility, privacy-policy, integrity-report, and zero-write dry-run contracts.
-- Two promise audits documented in `docs/quality/PHASE_22_23_PROMISE_AUDIT.md`.
-- Clean-copy overlay application twice with source-state, output-hash, inventory, ZIP, and staging-path verification.
+The source-contract report is not a substitute for Android target validation. These gates remain
+Devtool or Android-build-host responsibilities:
 
-## Devtool validation plan
+- Gradle configuration resolution
+- affected Kotlin/JVM/Android compilation
+- Android resource merge
+- lint with zero unexpected diagnostics
+- unit test execution
+- Room schema and migration validation
+- APK assembly
+- install/upgrade smoke on a real device or emulator
+- notification, reminder, widget, backup, restore-dry-run, language, theme, and accessibility checks
 
-`.devtool.toml` configures real Gradle configuration, affected main/test compilation, historical tests, Android resource
-processing, affected-module lint, and `:app:assembleDebug` for target `studyflow_android`.
+## Current known boundary
 
-## Validation boundary
+The app is offline-first. Local checkpoint status is a device-local backup/readiness surface, not an
+online sync provider. Release packaging, signed artifacts, release version naming, and final device
+acceptance evidence are intentionally reserved for the release-packaging phase.
 
-The artifact-generation container does not provide the project Android SDK or Gradle 9.5 execution environment.
-Android Gradle configuration, production/test compilation, resource merging, lint, APK assembly, installation, and
-device behavior are not claimed as locally completed. Devtool validation on the target machine remains authoritative.
+## Artifact hygiene contract
 
-## Phase 24
-
-- Source-contract validator chain extended through Phase 24.
-- Android Gradle compile/lint/assemble remains a Devtool-side gate.
-
-## Phase 25
-
-- Source-contract validator chain extended through Phase 25.
-- Phase 25 promise audit confirms reminder delivery, dynamic widget updates, boot recovery, and final gap closure.
-- Android Gradle compile/lint/assemble and notification/widget device smoke checks remain Devtool-side gates.
-
-## Phase 25 r2 validation delta
-
-- Added source contract checks for daily-summary quiet-hour suppression.
-- Added source contract checks for the due-review anti-spam reschedule guard.
-- Added pure planner tests covering all reminder types inside quiet hours and immediate due-review delivery.
-
-
-## Phase 28
-
-- Source-contract validator chain extended through Phase 28.
-- Added pure backup/restore drill tests for encryption, wrong-password rejection, tamper detection,
-  metadata-private annex identity, restore dry-run zero writes, retention truthfulness, and recovery text.
-- Android Gradle compile/lint/assemble and real Storage Access Framework drills remain Devtool/device gates.
-
-
-## Phase 29
-
-- Source-contract validator chain extended through Phase 29.
-- Added release-candidate polish audit covering settings, state screens, accessibility labels, resource parity,
-  trust copy, first-run/upgrade notes, and final roadmap index.
-- Android Gradle compile/lint/assemble, installation, and runtime smoke execution remain Devtool/device gates.
-
-
-## Phase 29 r2
-
-- Corrected the double-audit misses: no generated Python cache payloads, no literal NUL bytes, and behavior checks strengthened beyond marker validation.
-
-
-## Phase 29 reminder delivery grace hotfix
-
-- Added shared planned-activity delivery grace between planner and AlarmManager window.
-- Added focused planner tests for inexact planned reminders.
-- Strengthened Phase 29 verifier to require the grace helper and tests.
-- Artifact hygiene checks: no `__pycache__`, no `.pyc`, no NUL bytes, no reserved `.devtool-artifact/*` inventory entries.
-
-
-## Phase 29B reminder/time/backup hardening
-
-- Added Phase 29B planner tests for local-day boundaries and delayed planned-activity delivery.
-- Strengthened `verify_phase_29.py` to enforce local day math, notification deep-link routing, permission-grant reconciliation, recovery broadcast actions, and encrypted cloud-backup capabilities.
-- Artifact hygiene checks include no `__pycache__`, no `.pyc`, no NUL bytes, and no reserved artifact metadata in inventory.
+Deliverable overlays must not include build outputs, Gradle caches, Python caches, generated Devtool
+state, old reports, NUL bytes, or inventory targets under `.devtool-artifact/*`. Embedded artifact
+validators may live under `.devtool-artifact/`, but those metadata files are not copied into the
+repository.

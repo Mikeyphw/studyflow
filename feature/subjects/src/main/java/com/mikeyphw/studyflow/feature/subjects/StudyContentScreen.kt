@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.SelectAll
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
@@ -211,29 +210,19 @@ fun StudyContentScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AssistChip(
-                            onClick = {},
-                            label = {
-                                Text(
-                                    pluralStringResource(
-                                        R.plurals.subject_count,
-                                        syllabus.subjects.size,
-                                        syllabus.subjects.size,
-                                    ),
-                                )
-                            },
+                        StudyFlowStatusPill(
+                            text = pluralStringResource(
+                                R.plurals.subject_count,
+                                syllabus.subjects.size,
+                                syllabus.subjects.size,
+                            ),
                         )
-                        AssistChip(
-                            onClick = {},
-                            label = {
-                                Text(
-                                    pluralStringResource(
-                                        R.plurals.topic_count,
-                                        syllabus.topics.size,
-                                        syllabus.topics.size,
-                                    ),
-                                )
-                            },
+                        StudyFlowStatusPill(
+                            text = pluralStringResource(
+                                R.plurals.topic_count,
+                                syllabus.topics.size,
+                                syllabus.topics.size,
+                            ),
                         )
                         if (bulkMode && selectedTopicIds.isNotEmpty()) {
                             Button(onClick = { showBulkDialog = true }) {
@@ -516,17 +505,12 @@ private fun SubjectCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                AssistChip(
-                    onClick = {},
-                    label = {
-                        Text(
-                            pluralStringResource(
-                                R.plurals.topic_count,
-                                visible.visibleTopicCount,
-                                visible.visibleTopicCount,
-                            ),
-                        )
-                    },
+                StudyFlowStatusPill(
+                    text = pluralStringResource(
+                        R.plurals.topic_count,
+                        visible.visibleTopicCount,
+                        visible.visibleTopicCount,
+                    ),
                 )
                 TextButton(onClick = { onAddTopic(null) }) {
                     Icon(Icons.Outlined.Add, contentDescription = null)

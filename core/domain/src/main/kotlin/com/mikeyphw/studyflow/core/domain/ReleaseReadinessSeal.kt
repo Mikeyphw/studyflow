@@ -55,6 +55,8 @@ object ReleaseReadinessSeal {
             ReleaseReadinessPhase(31, "Dashboard action completion and session routing", true),
             ReleaseReadinessPhase(32, "Developer diagnostics de-scaffolding", true),
             ReleaseReadinessPhase(33, "Offline-first checkpoint completion", true),
+            ReleaseReadinessPhase(34, "Interaction honesty and passive status UI", true),
+            ReleaseReadinessPhase(35, "Documentation and artifact cleanup", true),
             ReleaseReadinessPhase(101, "Debug Workbench D1 diagnostics baseline", true),
             ReleaseReadinessPhase(102, "Debug Workbench D2 timeline and report controls", true),
             ReleaseReadinessPhase(103, "Debug Workbench D3 typed runtime probes", true),

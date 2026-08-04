@@ -194,9 +194,9 @@
     <string name="debug_probe_message_backup_rules_invalid">Backup is enabled, but one or more rule files are missing or not linked from the app manifest.</string>
     <string name="debug_probe_fact_provider_registered">Provider registered</string>
     <string name="debug_probe_fact_provider_metadata">Provider metadata</string>
-    <string name="debug_probe_fact_legacy_linked">Legacy rules linked</string>
+    <string name="debug_probe_fact_legacy_linked">Compatibility rules linked</string>
     <string name="debug_probe_fact_modern_linked">Modern rules linked</string>
-    <string name="debug_probe_fact_legacy_present">Legacy rules present</string>
+    <string name="debug_probe_fact_legacy_present">Compatibility rules present</string>
     <string name="debug_probe_fact_modern_present">Modern rules present</string>
     <string name="debug_probe_fact_path_metadata">Path metadata</string>
     <string name="debug_section_labs">Labs</string>

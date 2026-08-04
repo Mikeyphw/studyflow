@@ -15,5 +15,5 @@
     <string name="recovery_explanation">A inspeção de integridade e a simulação de restauração nunca alteram o banco. A substituição cria um snapshot privado antes de gravar a primeira linha importada.</string>
     <string name="open_backup_center">Abrir central de backup</string>
     <string name="security_boundary_title">Limite de segurança</string>
-    <string name="security_boundary_message">A senha protege pacotes exportados. O StudyFlow não promete sincronização em nuvem nem proteção contra o proprietário de um dispositivo já desbloqueado.</string>
+    <string name="security_boundary_message">A senha protege pacotes exportados. Ela não protege contra o proprietário de um dispositivo já desbloqueado.</string>
 </resources>

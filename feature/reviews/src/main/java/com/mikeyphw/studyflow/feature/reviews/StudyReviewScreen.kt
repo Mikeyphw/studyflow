@@ -14,7 +14,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -37,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ReviewQueue
 import com.mikeyphw.studyflow.core.model.ErrorEntry
@@ -179,28 +179,20 @@ fun StudyReviewScreen(
 private fun ReviewSummaryCard(queue: ReviewQueue) {
     StudyFlowSectionCard(title = stringResource(R.string.today_reviews)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(
-                onClick = {},
-                label = { Text(pluralStringResource(R.plurals.due_count, queue.dueCount, queue.dueCount)) },
+            StudyFlowStatusPill(
+                text = pluralStringResource(R.plurals.due_count, queue.dueCount, queue.dueCount),
                 leadingIcon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
             )
-            AssistChip(
-                onClick = {},
-                label = {
-                    Text(pluralStringResource(R.plurals.upcoming_count, queue.upcomingCount, queue.upcomingCount))
-                },
+            StudyFlowStatusPill(
+                text = pluralStringResource(R.plurals.upcoming_count, queue.upcomingCount, queue.upcomingCount),
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(
-                onClick = {},
-                label = {
-                    Text(pluralStringResource(R.plurals.flashcard_count, queue.flashcardCount, queue.flashcardCount))
-                },
+            StudyFlowStatusPill(
+                text = pluralStringResource(R.plurals.flashcard_count, queue.flashcardCount, queue.flashcardCount),
             )
-            AssistChip(
-                onClick = {},
-                label = { Text(pluralStringResource(R.plurals.error_count, queue.errorCount, queue.errorCount)) },
+            StudyFlowStatusPill(
+                text = pluralStringResource(R.plurals.error_count, queue.errorCount, queue.errorCount),
             )
         }
     }
@@ -339,7 +331,7 @@ private fun WrongAnswerRow(
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
     ) {
-        AssistChip(onClick = {}, label = { Text(priority.label()) })
+        StudyFlowStatusPill(text = priority.label())
         error.chosenAnswer?.let { chosen ->
             Text(stringResource(R.string.chosen_answer_value, chosen))
         }

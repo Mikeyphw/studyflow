@@ -41,6 +41,8 @@ python3 scripts/verify_phase_30.py
 python3 scripts/verify_phase_31.py
 python3 scripts/verify_phase_32.py
 python3 scripts/verify_phase_33.py
+python3 scripts/verify_phase_34.py
+python3 scripts/verify_phase_35.py
 
 python3 scripts/verify_debug_workbench_d1_r2.py
 python3 scripts/verify_debug_workbench_d2.py

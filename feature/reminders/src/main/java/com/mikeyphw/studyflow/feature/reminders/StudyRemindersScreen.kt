@@ -17,7 +17,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationCandidate
@@ -154,9 +154,8 @@ fun StudyRemindersScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (reminderPlan.quietHoursActive) {
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(stringResource(R.string.quiet_hours_active)) },
+                    StudyFlowStatusPill(
+                        text = stringResource(R.string.quiet_hours_active),
                         leadingIcon = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
                     )
                 }

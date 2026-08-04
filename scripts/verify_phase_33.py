@@ -111,8 +111,8 @@ release = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/R
 require("ReleaseReadinessPhase(33" in release and "Offline-first checkpoint completion" in release,
         "Release readiness seal must include Phase 33")
 factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactory.kt")
-require("CurrentPhase = 33" in factory and "Phase 0 through 33 validators pass." in factory,
-        "Release validation factory must advance to Phase 33")
+require("CurrentPhase = 35" in factory and "Phase 0 through 35 validators pass." in factory,
+        "Release validation factory must advance to Phase 35 while preserving Phase 33")
 validate_repo = read("scripts/validate_repo.sh")
 require("python3 scripts/verify_phase_33.py" in validate_repo,
         "validate_repo must run Phase 33 verifier")

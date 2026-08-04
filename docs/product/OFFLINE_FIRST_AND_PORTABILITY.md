@@ -8,12 +8,13 @@
 - Linked documents clearly report unavailable providers or revoked permissions.
 - Direct and web media may require connectivity, but their metadata and progress remain local.
 - Background work must be retryable and must never silently discard local mutations.
+- Local checkpoint status stays on the device and reflects backup/readiness state.
 
 ## Export guarantees
 
-The final `.studyplan` package will contain a versioned manifest, stable English field names,
-structured JSON, checksums, and optional annex payloads. Imports are staged and validated before
-committing database or file changes.
+The `.studyplan` package contains a versioned manifest, stable English field names, structured JSON,
+checksums, privacy options, optional encryption, and optional annex payloads. Imports are staged,
+inspected, and validated before committing database or file changes.
 
 ## Conflict guarantees
 

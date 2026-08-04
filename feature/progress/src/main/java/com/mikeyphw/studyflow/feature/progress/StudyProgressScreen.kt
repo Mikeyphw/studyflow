@@ -14,7 +14,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -39,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.StudyProgressSnapshot
 import com.mikeyphw.studyflow.core.model.GoalPeriod
@@ -107,10 +107,7 @@ fun StudyProgressScreen(
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                AssistChip(
-                    onClick = {},
-                    label = { Text(stringResource(R.string.goal_progress, snapshot.goalProgressPercent)) },
-                )
+                StudyFlowStatusPill(text = stringResource(R.string.goal_progress, snapshot.goalProgressPercent))
             }
             StudyFlowSectionCard(title = stringResource(R.string.add_goal)) {
                 OutlinedTextField(

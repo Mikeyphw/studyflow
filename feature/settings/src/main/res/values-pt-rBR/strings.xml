@@ -195,9 +195,9 @@
     <string name="debug_probe_message_backup_rules_invalid">O backup está ativado, mas um ou mais arquivos de regras estão ausentes ou não estão vinculados no manifesto do app.</string>
     <string name="debug_probe_fact_provider_registered">Provedor registrado</string>
     <string name="debug_probe_fact_provider_metadata">Metadados do provedor</string>
-    <string name="debug_probe_fact_legacy_linked">Regras legadas vinculadas</string>
+    <string name="debug_probe_fact_legacy_linked">Regras de compatibilidade vinculadas</string>
     <string name="debug_probe_fact_modern_linked">Regras modernas vinculadas</string>
-    <string name="debug_probe_fact_legacy_present">Regras legadas presentes</string>
+    <string name="debug_probe_fact_legacy_present">Regras de compatibilidade presentes</string>
     <string name="debug_probe_fact_modern_present">Regras modernas presentes</string>
     <string name="debug_probe_fact_path_metadata">Metadados de caminhos</string>
     <string name="debug_section_labs">Laboratórios</string>

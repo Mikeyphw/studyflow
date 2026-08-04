@@ -9,7 +9,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsSnapshot
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -99,7 +99,7 @@ fun StudyAnalyticsScreen(
             StudyFlowSectionCard(title = stringResource(R.string.analytics_title)) {
                 snapshot.metricRows().forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        AssistChip(onClick = {}, label = { Text(stringResource(row.titleRes)) })
+                        StudyFlowStatusPill(text = stringResource(row.titleRes))
                         Text(text = row.value, style = MaterialTheme.typography.titleMedium)
                     }
                 }

@@ -16,7 +16,6 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionState
@@ -450,12 +450,12 @@ private fun QuestionCard(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(onClick = {}, label = { Text(stringResource(R.string.difficulty, question.difficulty)) })
+                StudyFlowStatusPill(text = stringResource(R.string.difficulty, question.difficulty))
                 if (question.favorite) {
-                    AssistChip(onClick = {}, label = { Text(stringResource(R.string.favorites)) })
+                    StudyFlowStatusPill(text = stringResource(R.string.favorites))
                 }
                 if (question.disputed) {
-                    AssistChip(onClick = {}, label = { Text(stringResource(R.string.disputed)) })
+                    StudyFlowStatusPill(text = stringResource(R.string.disputed))
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

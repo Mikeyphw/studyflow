@@ -18,7 +18,6 @@ import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.automirrored.outlined.EventNote
 import androidx.compose.material.icons.outlined.PendingActions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.model.MissedActivityHandling
 import com.mikeyphw.studyflow.core.model.PlannedActivity
@@ -228,17 +228,12 @@ fun StudyScheduleScreen(
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.planned_activities)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        AssistChip(
-                            onClick = {},
-                            label = {
-                                Text(
-                                    pluralStringResource(
-                                        R.plurals.activity_count,
-                                        schedule.plannedActivities.size,
-                                        schedule.plannedActivities.size,
-                                    ),
-                                )
-                            },
+                        StudyFlowStatusPill(
+                            text = pluralStringResource(
+                                R.plurals.activity_count,
+                                schedule.plannedActivities.size,
+                                schedule.plannedActivities.size,
+                            ),
                             leadingIcon = { Icon(Icons.Outlined.PendingActions, contentDescription = null) },
                         )
                         OutlinedButton(
@@ -353,13 +348,10 @@ private fun ScheduleRuleCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(
-                    onClick = {},
-                    label = {
-                        Text(if (rule.enabled) stringResource(R.string.enabled) else stringResource(R.string.disabled))
-                    },
+                StudyFlowStatusPill(
+                    text = if (rule.enabled) stringResource(R.string.enabled) else stringResource(R.string.disabled),
                 )
-                if (rule.locked) AssistChip(onClick = {}, label = { Text(stringResource(R.string.locked)) })
+                if (rule.locked) StudyFlowStatusPill(text = stringResource(R.string.locked))
                 ConfirmingDeleteButton(onConfirmed = onDelete)
             }
         }

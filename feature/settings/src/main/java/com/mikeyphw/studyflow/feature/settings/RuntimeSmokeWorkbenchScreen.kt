@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.model.RuntimeSmokeProbe
 import com.mikeyphw.studyflow.core.model.RuntimeSmokeProbeKind
 import com.mikeyphw.studyflow.core.model.RuntimeSmokeProbeStatus
@@ -84,10 +84,7 @@ private fun RuntimeSmokeProbeCard(
     onRunProbe: (RuntimeSmokeProbeKind) -> Unit,
 ) {
     StudyFlowSectionCard(title = probe.title) {
-        AssistChip(
-            onClick = {},
-            label = { Text(probe.status.label()) },
-        )
+        StudyFlowStatusPill(text = probe.status.label())
         Text(
             text = probe.detail,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

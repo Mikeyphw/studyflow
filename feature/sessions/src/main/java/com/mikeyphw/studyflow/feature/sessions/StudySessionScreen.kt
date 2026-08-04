@@ -16,7 +16,6 @@ import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.PauseCircle
 import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
@@ -306,9 +306,8 @@ private fun ActiveSessionCard(
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
             )
-            AssistChip(
-                onClick = {},
-                label = { Text(stringResource(session.status.labelKey())) },
+            StudyFlowStatusPill(
+                text = stringResource(session.status.labelKey()),
                 leadingIcon = { Icon(Icons.Outlined.PlayCircle, contentDescription = null) },
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -356,10 +355,7 @@ private fun PlannedActivityRow(
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                AssistChip(
-                    onClick = {},
-                    label = { Text(stringResource(activity.type.labelKey())) },
-                )
+                StudyFlowStatusPill(text = stringResource(activity.type.labelKey()))
             }
             Button(enabled = enabled, onClick = onStart) {
                 Text(stringResource(R.string.start_session))
@@ -383,10 +379,7 @@ private fun StudySessionHistoryCard(session: StudySession) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                AssistChip(
-                    onClick = {},
-                    label = { Text(stringResource(session.status.labelKey())) },
-                )
+                StudyFlowStatusPill(text = stringResource(session.status.labelKey()))
             }
             Text(
                 text = pluralStringResource(

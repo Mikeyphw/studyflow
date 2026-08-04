@@ -19,7 +19,6 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -45,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyResourceViewer
@@ -145,10 +145,7 @@ fun StudyLibraryScreen(
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                AssistChip(
-                    onClick = {},
-                    label = { Text(stringResource(R.string.library_progress, snapshot.progressPercent)) },
-                )
+                StudyFlowStatusPill(text = stringResource(R.string.library_progress, snapshot.progressPercent))
                 message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
             }
             StudyFlowSectionCard(title = stringResource(R.string.add_material)) {

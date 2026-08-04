@@ -1,6 +1,7 @@
 # Final Roadmap Index
 
-StudyFlow is complete through Phase 29 in this release-candidate branch.
+This file remains the final roadmap index through Phase 29 for historical validator compatibility and
+is updated with the current product-completion track through Phase 35.
 
 - Phase 0-1: product contract and Android foundation.
 - Phase 2: domain model and Room persistence.
@@ -14,22 +15,28 @@ StudyFlow is complete through Phase 29 in this release-candidate branch.
 - Phase 10: library resources and annex metadata.
 - Phase 11: goals, notes, and progress command center.
 - Phase 12: analytics and insights.
-- Phase 13: app shell settings and backup polish.
+- Phase 13: settings and backup access.
 - Phase 14: UX polish and accessibility baseline.
 - Phase 15: release-readiness baseline.
-- Phase 16: analytics depth.
-- Phase 17: annex file storage.
-- Phase 18: learning insights.
+- Phase 16: roadmap and validation truth cleanup.
+- Phase 17: annex file storage and portability.
+- Phase 18: material viewer and media playback.
 - Phase 19: practice execution engine.
 - Phase 20: wrong-answer notebook and remediation loop.
 - Phase 21: reminders and widgets foundation.
 - Phase 22: global search and smart recommendations.
 - Phase 23: privacy, encryption, and backup hardening.
 - Phase 24: offline local checkpoint foundation.
-- Phase 25: post-MVP gap closure seal.
+- Phase 25: gap-closure seal.
 - Phase 26: release validation seal.
 - Phase 27: runtime smoke workbench.
 - Phase 28: backup/restore drill seal.
-- Phase 29: release candidate polish.
+- Phase 29: release-candidate source polish.
+- Phase 30: product truthfulness and normal Settings cleanup.
+- Phase 31: dashboard action completion and session routing.
+- Phase 32: developer diagnostics de-scaffolding.
+- Phase 33: offline-first local checkpoint completion.
+- Phase 34: interaction honesty and passive status UI.
+- Phase 35: documentation and artifact cleanup.
 
-The next work should be target-machine validation, runtime smoke execution, and release packaging rather than new feature scope.
+The next work is release identity, packaging, signing policy, and device acceptance evidence.

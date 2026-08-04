@@ -17,7 +17,6 @@ import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -209,12 +208,9 @@ private fun StudyPlanCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         if (isDefault) {
-                            AssistChip(
-                                onClick = {},
-                                label = { Text(stringResource(R.string.default_plan)) },
-                                leadingIcon = {
-                                    Icon(Icons.Outlined.Star, contentDescription = null)
-                                },
+                            StudyFlowStatusPill(
+                                text = stringResource(R.string.default_plan),
+                                leadingIcon = { Icon(Icons.Outlined.Star, contentDescription = null) },
                             )
                         }
                     }

@@ -1,7 +1,7 @@
 # StudyFlow Implementation Roadmap
 
-This document is the current source of truth for the delivered StudyFlow Android MVP and the
-post-MVP gap-closure track.
+This document is the current source of truth for the delivered StudyFlow Android local MVP,
+gap-closure track, and product-completion track.
 
 ## Delivered 15-phase MVP baseline
 
@@ -18,7 +18,7 @@ post-MVP gap-closure track.
 - Phase 10: Library and study-resource metadata.
 - Phase 11: Goals, notes, and progress command center.
 - Phase 12: Analytics and insights.
-- Phase 13: Settings, backup polish, and app-shell readiness.
+- Phase 13: Settings, backup polish, and local app-shell setup.
 - Phase 14: Polish, accessibility, and UX consistency.
 - Phase 15: Final integration seal and regression suite.
 
@@ -33,10 +33,23 @@ post-MVP gap-closure track.
 - Phase 22: Global search and smart recommendations.
 - Phase 23: Privacy, encryption, and backup hardening.
 - Phase 24: Offline checkpoint foundation.
-- Phase 25: Post-MVP gap-closure seal.
+- Phase 25: Gap-closure seal.
+
+## Product-completion track
+
+- Phase 26: Evidence-based release validation seal.
+- Phase 27: Runtime smoke workbench.
+- Phase 28: Backup and restore drill seal.
+- Phase 29: source-level release-candidate polish.
+- Phase 30: Product truthfulness and normal Settings cleanup.
+- Phase 31: Dashboard action completion and session routing.
+- Phase 32: Developer diagnostics de-scaffolding.
+- Phase 33: Offline-first local checkpoint completion.
+- Phase 34: Interaction honesty and passive status UI.
+- Phase 35: Documentation and artifact cleanup.
 
 ## Roadmap rule
 
-The delivered MVP and post-MVP track must not be described as competing phase systems. New phases
-extend the Phase 15 baseline and must keep their verifier names, phase docs, and roadmap entries in
-sync.
+The delivered MVP, gap-closure track, and product-completion track must not be described as competing
+phase systems. New phases extend the Phase 15 baseline and must keep their verifier names, phase docs,
+and roadmap entries in sync.

@@ -71,11 +71,11 @@ runtime_smoke = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/mod
 require("probe.status == RuntimeSmokeProbeStatus.PASS" in runtime_smoke,
         "Runtime smoke reports must require every probe to pass before release-ready")
 release_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSealTest.kt")
-require("assertEquals(41, report.totalPhaseCount)" in release_test and
-        "assertEquals(41, report.completedPhaseCount)" in release_test,
-        "ReleaseReadinessSealTest must match the current 33-phase plus D1-D8 delivery report")
-require("phase.number == 30" in release_test and "phase.number == 31" in release_test and "phase.number == 32" in release_test and "phase.number == 33" in release_test,
-        "ReleaseReadinessSealTest must cover product truthfulness, dashboard action completion, diagnostics de-scaffolding, and offline checkpoint completion")
+require("assertEquals(43, report.totalPhaseCount)" in release_test and
+        "assertEquals(43, report.completedPhaseCount)" in release_test,
+        "ReleaseReadinessSealTest must match the current 35-phase plus D1-D8 delivery report")
+require("phase.number == 30" in release_test and "phase.number == 31" in release_test and "phase.number == 32" in release_test and "phase.number == 33" in release_test and "phase.number == 34" in release_test and "phase.number == 35" in release_test,
+        "ReleaseReadinessSealTest must cover product truthfulness, dashboard action completion, diagnostics de-scaffolding, offline checkpoint completion, interaction honesty, and documentation cleanup")
 timer_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySessionTimerTest.kt")
 require("assertEquals(5, StudySessionTimer.pausedSeconds(paused, nowEpochMillis = 66_000))" in timer_test,
         "StudySessionTimerTest must assert pause elapsed seconds, not active plus paused seconds")
@@ -100,6 +100,21 @@ require("Button(onClick = onStartSession)" in dashboard and "onStartSession = on
         "Dashboard primary session action must route to the sessions flow")
 require("Button(onClick = {})" not in dashboard,
         "Dashboard must not keep a no-op primary button")
+
+# Phase 34 interaction honesty: passive display surfaces must not masquerade as clickable controls.
+status_component = read("core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowComponents.kt")
+require("fun StudyFlowStatusPill(" in status_component and "RoundedCornerShape(percent = 50)" in status_component,
+        "StudyFlowStatusPill must exist for passive status display")
+for root_name in ["app/src/main", "core", "feature"]:
+    root_path = ROOT / root_name
+    if root_path.exists():
+        for path in root_path.rglob("*.kt"):
+            rel = path.relative_to(ROOT).as_posix()
+            if "/src/test/" in rel or "/src/androidTest/" in rel:
+                continue
+            text = path.read_text(encoding="utf-8")
+            require("onClick = {}" not in text and "onClick = { }" not in text,
+                    f"{rel} must not keep an empty click handler")
 app = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
 require("diagnosticsAvailable = BuildConfig.DEBUG" in app,
         "App must hide debug workbench entry when the recorder is disabled in release builds")
@@ -175,6 +190,18 @@ require("CHECKSUM_MISMATCH" in seal and "actualChecksums" in seal,
         "Support bundle seal must verify checksum contents")
 require("actualPayloadChecksums" in actions and "lastSealReport.set" in actions and "BUNDLE_MISSING" in actions,
         "Support bundle actions must verify ZIP payload digests and clear stale pass state")
+
+# Phase 35 documentation cleanup must keep current product docs single-headed and source truthful.
+readme = read("README.md")
+changelog = read("CHANGELOG.md")
+validation_report = read("VALIDATION_REPORT.md")
+require(readme.count("# StudyFlow Android") == 1 and "implemented through **Phase 35**" in readme,
+        "README must be current and single-headed through Phase 35")
+require(changelog.count("# Changelog") == 1 and
+        changelog.count("## Phase 34-35 interaction honesty and documentation cleanup") == 1,
+        "CHANGELOG must be current and single-headed through Phase 35")
+require("implemented through **Phase 35**" in validation_report and "Target-machine gates" in validation_report,
+        "VALIDATION_REPORT must reflect Phase 35 and target-machine gates")
 
 # XML parse and resource parity for touched modules.
 for path in ROOT.glob("feature/*/src/main/res/values*/strings.xml"):
