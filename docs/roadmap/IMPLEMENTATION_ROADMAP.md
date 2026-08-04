@@ -47,6 +47,8 @@ gap-closure track, and product-completion track.
 - Phase 33: Offline-first local checkpoint completion.
 - Phase 34: Interaction honesty and passive status UI.
 - Phase 35: Documentation and artifact cleanup.
+- Phase 36: Release identity and packaging policy.
+- Phase 37: Real-device acceptance seal framework.
 
 ## Roadmap rule
 

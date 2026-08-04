@@ -2,6 +2,8 @@
 from pathlib import Path
 import re
 import sys
+
+from phase_version import phase_version_at_least
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -133,8 +135,7 @@ for path in (
             failures.append(f"{path.relative_to(ROOT)}:{plurals.attrib['name']} missing quantity many")
 
 app_build = (ROOT / "app/build.gradle.kts").read_text()
-version_match = re.search(r'versionName = "0\.(\d+)\.0-phase(\d+)"', app_build)
-if not version_match or int(version_match.group(1)) < 4 or int(version_match.group(2)) < 4:
+if not phase_version_at_least(ROOT, 4):
     failures.append("app version is older than the Phase 4 baseline")
 
 # AGP 8+ disables BuildConfig generation unless the consuming module opts in.

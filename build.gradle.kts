@@ -49,7 +49,7 @@ tasks.register("verifyFormatting") {
 
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
-    description = "Runs StudyFlow contracts through Phase 35 and Debug Workbench D1 through D8."
+    description = "Runs StudyFlow contracts through Phase 37 and Debug Workbench D1 through D8."
     commandLine(
         "bash",
         "-lc",
@@ -57,7 +57,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         set -euo pipefail
         find . -path '*/build/reports/lint*' -type f -delete
         find . -path '*/build/reports/lint*' -type d -empty -delete || true
-        for phase in {0..35}; do
+        for phase in {0..37}; do
             python3 "scripts/verify_phase_${'$'}{phase}.py"
         done
         python3 scripts/verify_debug_workbench_d1_r2.py

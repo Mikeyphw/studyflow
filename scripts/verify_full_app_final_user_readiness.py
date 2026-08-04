@@ -71,11 +71,11 @@ runtime_smoke = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/mod
 require("probe.status == RuntimeSmokeProbeStatus.PASS" in runtime_smoke,
         "Runtime smoke reports must require every probe to pass before release-ready")
 release_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSealTest.kt")
-require("assertEquals(43, report.totalPhaseCount)" in release_test and
-        "assertEquals(43, report.completedPhaseCount)" in release_test,
+require("assertEquals(45, report.totalPhaseCount)" in release_test and
+        "assertEquals(45, report.completedPhaseCount)" in release_test,
         "ReleaseReadinessSealTest must match the current 35-phase plus D1-D8 delivery report")
 require("phase.number == 30" in release_test and "phase.number == 31" in release_test and "phase.number == 32" in release_test and "phase.number == 33" in release_test and "phase.number == 34" in release_test and "phase.number == 35" in release_test,
-        "ReleaseReadinessSealTest must cover product truthfulness, dashboard action completion, diagnostics de-scaffolding, offline checkpoint completion, interaction honesty, and documentation cleanup")
+        "ReleaseReadinessSealTest must cover product truthfulness, dashboard action completion, diagnostics de-scaffolding, offline checkpoint completion, interaction honesty, and documentation cleanup and release-candidate readiness")
 timer_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySessionTimerTest.kt")
 require("assertEquals(5, StudySessionTimer.pausedSeconds(paused, nowEpochMillis = 66_000))" in timer_test,
         "StudySessionTimerTest must assert pause elapsed seconds, not active plus paused seconds")
@@ -191,17 +191,18 @@ require("CHECKSUM_MISMATCH" in seal and "actualChecksums" in seal,
 require("actualPayloadChecksums" in actions and "lastSealReport.set" in actions and "BUNDLE_MISSING" in actions,
         "Support bundle actions must verify ZIP payload digests and clear stale pass state")
 
-# Phase 35 documentation cleanup must keep current product docs single-headed and source truthful.
+# Phase 35 documentation cleanup and release-candidate readiness must keep current product docs single-headed and source truthful.
 readme = read("README.md")
 changelog = read("CHANGELOG.md")
 validation_report = read("VALIDATION_REPORT.md")
-require(readme.count("# StudyFlow Android") == 1 and "implemented through **Phase 35**" in readme,
-        "README must be current and single-headed through Phase 35")
+require(readme.count("# StudyFlow Android") == 1 and "implemented through **Phase 37**" in readme,
+        "README must be current and single-headed through Phase 37")
 require(changelog.count("# Changelog") == 1 and
+        changelog.count("## Phase 36-37 release identity and real-device acceptance seal") == 1 and
         changelog.count("## Phase 34-35 interaction honesty and documentation cleanup") == 1,
-        "CHANGELOG must be current and single-headed through Phase 35")
-require("implemented through **Phase 35**" in validation_report and "Target-machine gates" in validation_report,
-        "VALIDATION_REPORT must reflect Phase 35 and target-machine gates")
+        "CHANGELOG must be current and single-headed through Phase 37")
+require("implemented through **Phase 37**" in validation_report and "Target-machine gates" in validation_report,
+        "VALIDATION_REPORT must reflect Phase 37 and target-machine gates")
 
 # XML parse and resource parity for touched modules.
 for path in ROOT.glob("feature/*/src/main/res/values*/strings.xml"):

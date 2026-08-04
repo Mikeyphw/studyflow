@@ -7,7 +7,7 @@ privacy controls, and local checkpoint status on the device.
 
 ## Current status
 
-This source tree is implemented through **Phase 35**:
+This source tree is implemented through **Phase 37**:
 
 - Phase 30 removed normal-user release checklist scaffolding from Settings.
 - Phase 31 wired the dashboard primary action to the Study Sessions flow.
@@ -15,10 +15,12 @@ This source tree is implemented through **Phase 35**:
 - Phase 33 completed the former sync surface as an offline-first local checkpoint.
 - Phase 34 replaces passive-but-clickable chips with non-clickable status pills.
 - Phase 35 refreshes README, changelog, validation notes, and artifact hygiene contracts.
+- Phase 36 sets the release-candidate identity, packaging policy, and signing boundary.
+- Phase 37 adds the real-device acceptance checklist and report template without claiming target evidence from source validation.
 
-The app is still before the dedicated release-packaging phase. Signed release/AAB policy,
-release-version naming, and device acceptance evidence are intentionally left to the next release
-phase instead of being claimed here.
+The app now uses a release-candidate version name, `1.0.0-rc1`, while keeping target-machine gates
+explicitly evidence-based. Source validators can prove repository contracts; Devtool or an Android
+build host must still produce build, install, upgrade, and device-smoke evidence.
 
 ## Product boundary
 
@@ -76,7 +78,7 @@ feature:search/         Global search and local recommendations
 feature:reminders/      Reminder scheduling, notification permission UI, and widget evidence
 feature:privacy/        Retention, local export security, and restore dry-run explanation
 feature:settings/       Language, appearance, local checkpoint, backup, privacy, diagnostics entry
-docs/                   Architecture, product, quality, and roadmap notes
+docs/                   Architecture, product, quality, roadmap, and release notes
 scripts/                Source-contract validation entry points
 ```
 
@@ -89,13 +91,7 @@ devtool -r /path/to/studyflow --target studyflow_android build
 Apply and validate overlays with explicit target selection:
 
 ```bash
-devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply overlay \
-  --validate \
-  --task :app:compileDebugKotlin \
-  --task :app:lintDebug \
-  --task :app:assembleDebug \
-  --commit "Apply StudyFlow overlay" \
-  /path/to/overlay.zip
+devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply overlay   --validate   --task :app:compileDebugKotlin   --task :app:lintDebug   --task :app:assembleDebug   --commit "Apply StudyFlow overlay"   /path/to/overlay.zip
 ```
 
 ## Validate source contracts
@@ -107,16 +103,31 @@ devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply over
 Without an Android SDK, the Python source-contract validators still run. With an Android SDK and a
 compatible Gradle launcher, `validate_repo.sh` also runs the Gradle verification chain. Devtool on
 the Android build host remains the source of truth for target-machine gates such as compile,
-resource merge, lint, assemble, and device-smoke evidence.
+resource merge, lint, assemble, package signing, install, upgrade, and device-smoke evidence.
 
 Useful focused checks:
 
 ```bash
-python3 scripts/verify_phase_34.py
-python3 scripts/verify_phase_35.py
+python3 scripts/verify_phase_36.py
+python3 scripts/verify_phase_37.py
 python3 scripts/verify_full_app_final_user_readiness.py
 gradle verifyRepositoryContracts
 ```
+
+## Release candidate package
+
+StudyFlow `1.0.0-rc1` uses `versionCode = 37`. Release-candidate packaging is documented in
+`docs/release/RELEASE_PACKAGING.md`. Signing keys, keystore passwords, and store credentials must
+remain outside the repository and outside overlay artifacts. Release shrinking remains disabled for
+this candidate until a separate R8/minification validation phase explicitly turns it on.
+
+## Real-device acceptance
+
+`docs/release/FINAL_ACCEPTANCE_CHECKLIST.md` and `FINAL_ACCEPTANCE_REPORT.md` define the required
+fresh-install, upgrade-install, notification, widget, backup, restore dry-run, locale, theme,
+background/foreground, kill/reopen, date/time, and accessibility checks. The checked-in report is a
+**PENDING TARGET EXECUTION** template. It must be filled from a real device or emulator before a
+release is claimed ready.
 
 ## Languages
 
@@ -144,7 +155,6 @@ must not show release checklists, phase scoreboards, or development placeholders
 ## Package
 
 `com.mikeyphw.studyflow`
-
 
 The source artifact is cleaned of stale Devtool validation state; fresh local Devtool runs may create new transient state on the target machine.
 

@@ -31,7 +31,7 @@ if not phase_version_at_least(ROOT, 35):
 readme = read("README.md")
 require(readme.count("# StudyFlow Android") == 1, "README must have one StudyFlow heading")
 for required in [
-    "implemented through **Phase 35**",
+    "implemented through **Phase 37**",
     "offline-first",
     "not an online synchronization service",
     "target-machine gates",
@@ -50,16 +50,18 @@ for stale in [
 
 changelog = read("CHANGELOG.md")
 require(changelog.count("# Changelog") == 1, "CHANGELOG must have one top-level heading")
+require(changelog.count("## Phase 36-37 release identity and real-device acceptance seal") == 1,
+        "CHANGELOG must contain exactly one Phase 36-37 entry")
 require(changelog.count("## Phase 34-35 interaction honesty and documentation cleanup") == 1,
-        "CHANGELOG must contain exactly one Phase 34-35 entry")
+        "CHANGELOG must preserve exactly one Phase 34-35 entry")
 require(changelog.count("## Phase 30-31 product truthfulness and dashboard action completion") == 1,
         "CHANGELOG must preserve exactly one Phase 30-31 entry")
 require("Earlier delivery history" in changelog, "CHANGELOG must preserve history pointer")
 
 validation = read("VALIDATION_REPORT.md")
 for required in [
-    "implemented through **Phase 35**",
-    "scripts/verify_phase_35.py",
+    "implemented through **Phase 37**",
+    "scripts/verify_phase_37.py",
     "Target-machine gates",
     "offline-first",
     "Artifact hygiene contract",
@@ -95,17 +97,14 @@ release = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/R
 require("ReleaseReadinessPhase(35" in release and "Documentation and artifact cleanup" in release,
         "Release readiness seal must include Phase 35")
 factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactory.kt")
-require("CurrentPhase = 35" in factory and "Phase 0 through 35 validators pass." in factory,
-        "Release validation factory must advance through Phase 35")
+require("CurrentPhase = 37" in factory and "Phase 0 through 37 validators pass." in factory,
+        "Release validation factory must advance through Phase 37")
 validate_repo = read("scripts/validate_repo.sh")
 require("python3 scripts/verify_phase_35.py" in validate_repo,
         "validate_repo must run Phase 35 verifier")
 build = read("build.gradle.kts")
-require("through Phase 35" in build and "for phase in {0..35}; do" in build,
-        "Gradle repository contract task must cover Phase 35")
-
-
-
+require("through Phase 37" in build and "for phase in {0..37}; do" in build,
+        "Gradle repository contract task must cover Phase 37")
 require("Devtool reserves `.devtool/` runtime metadata" in readme and "cleaned outside the overlay" in validation,
         "Phase 35 must document reserved Devtool workspace-state cleanup outside overlay inventory")
 

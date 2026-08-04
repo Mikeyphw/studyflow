@@ -57,6 +57,8 @@ object ReleaseReadinessSeal {
             ReleaseReadinessPhase(33, "Offline-first checkpoint completion", true),
             ReleaseReadinessPhase(34, "Interaction honesty and passive status UI", true),
             ReleaseReadinessPhase(35, "Documentation and artifact cleanup", true),
+            ReleaseReadinessPhase(36, "Release identity and packaging policy", true),
+            ReleaseReadinessPhase(37, "Real-device acceptance seal framework", true),
             ReleaseReadinessPhase(101, "Debug Workbench D1 diagnostics baseline", true),
             ReleaseReadinessPhase(102, "Debug Workbench D2 timeline and report controls", true),
             ReleaseReadinessPhase(103, "Debug Workbench D3 typed runtime probes", true),

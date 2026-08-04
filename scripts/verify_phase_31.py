@@ -65,8 +65,8 @@ require("primary session action is wired to dashboard callback" in dashboard_tes
 
 build = read("build.gradle.kts")
 validate_repo = read("scripts/validate_repo.sh")
-require("through Phase" in build and "Phase 35" in build, "repository contract description must cover Phase 35 or later")
-require("for phase in {0..35}; do" in build, "repository contract loop must cover Phase 35 or later")
+require("through Phase" in build and "Phase 37" in build, "repository contract description must cover Phase 37 or later")
+require("for phase in {0..37}; do" in build, "repository contract loop must cover Phase 37 or later")
 require("python3 scripts/verify_phase_30.py" in validate_repo, "validate_repo must run Phase 30")
 require("python3 scripts/verify_phase_31.py" in validate_repo, "validate_repo must run Phase 31")
 

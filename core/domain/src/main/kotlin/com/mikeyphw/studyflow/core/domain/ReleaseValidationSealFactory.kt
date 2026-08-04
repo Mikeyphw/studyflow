@@ -6,7 +6,7 @@ import com.mikeyphw.studyflow.core.model.ReleaseValidationGateStatus
 import com.mikeyphw.studyflow.core.model.ReleaseValidationSeal
 
 object ReleaseValidationSealFactory {
-    private const val CurrentPhase = 35
+    private const val CurrentPhase = 37
 
     fun sourceOnlySeal(generatedAtEpochMillis: Long): ReleaseValidationSeal = ReleaseValidationSeal(
         currentPhase = CurrentPhase,
@@ -16,12 +16,12 @@ object ReleaseValidationSealFactory {
             pass(
                 ReleaseValidationGateKind.ARTIFACT_MANIFEST,
                 "Artifact manifest",
-                "Inventory, hashes, and validator script are coherent.",
+                "Inventory, hashes, validator script, release-candidate docs, and acceptance templates are coherent.",
             ),
             pass(
                 ReleaseValidationGateKind.SOURCE_CONTRACTS,
                 "Source contracts",
-                "Phase 0 through 35 validators pass.",
+                "Phase 0 through 37 validators pass.",
             ),
             blocked(
                 ReleaseValidationGateKind.GRADLE_CONFIGURATION,
@@ -61,17 +61,19 @@ object ReleaseValidationSealFactory {
             blocked(
                 ReleaseValidationGateKind.ASSEMBLE,
                 "Assemble",
-                "Must assemble the debug or release candidate APK.",
+                "Must assemble the 1.0.0-rc1 debug or release-candidate APK on the target Android host.",
             ),
             blocked(
                 ReleaseValidationGateKind.DEVICE_SMOKE,
                 "Device smoke",
-                "Must run runtime smoke probes on a device or emulator.",
+                "Must run the Phase 37 install, upgrade, notification, widget, backup, " +
+                    "restore dry-run, locale, theme, and accessibility checks on a device or emulator.",
             ),
             pass(
                 ReleaseValidationGateKind.FINAL_STAGING,
                 "Final staging",
-                "Overlay payload paths can be staged without reserved metadata entries.",
+                "Overlay payload paths, release packaging notes, and acceptance templates can be " +
+                    "staged without reserved metadata entries.",
             ),
         ),
     )

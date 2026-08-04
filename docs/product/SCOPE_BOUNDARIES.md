@@ -14,7 +14,7 @@ Included:
 - product and architecture contracts;
 - validation and testing foundation.
 
-## Local product scope through Phase 35
+## Local product scope through Phase 37
 
 Included:
 
@@ -28,7 +28,8 @@ Included:
 - goals, notes, analytics, search, recommendations, privacy center, and local checkpoint status;
 - developer diagnostics gated to debug builds;
 - passive status UI for non-actionable labels;
-- current README, changelog, and validation report.
+- current README, changelog, and validation report;
+- release-candidate identity, package policy, signing boundary, and real-device acceptance template.
 
 ## Explicit post-1.0 scope
 
@@ -39,6 +40,6 @@ Included:
 
 ## Release scope still pending
 
-- signed release or AAB policy;
-- release-version naming;
-- final install/upgrade/device acceptance report.
+- actual target-machine Gradle validation results;
+- signed APK/AAB artifact generated with external credentials;
+- completed install/upgrade/device acceptance report with real evidence.

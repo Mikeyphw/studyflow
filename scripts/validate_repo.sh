@@ -43,6 +43,8 @@ python3 scripts/verify_phase_32.py
 python3 scripts/verify_phase_33.py
 python3 scripts/verify_phase_34.py
 python3 scripts/verify_phase_35.py
+python3 scripts/verify_phase_36.py
+python3 scripts/verify_phase_37.py
 
 python3 scripts/verify_debug_workbench_d1_r2.py
 python3 scripts/verify_debug_workbench_d2.py
@@ -65,5 +67,5 @@ fi
 if [[ -n "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}" ]] && [[ -n "$GRADLE_LAUNCHER" ]]; then
   "$GRADLE_LAUNCHER" --no-daemon verifyFormatting checkAll :app:assembleDebug
 else
-  echo "ANDROID VALIDATION: SKIPPED (use Devtool or provide Android SDK plus Gradle 9.5.x)"
+  echo "ANDROID VALIDATION: SKIPPED (use Devtool or provide Android SDK plus Gradle 9.5.x; Phase 37 device acceptance remains target-machine evidence)"
 fi

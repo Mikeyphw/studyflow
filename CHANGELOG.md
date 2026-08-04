@@ -1,5 +1,14 @@
 # Changelog
 
+## Phase 36-37 release identity and real-device acceptance seal
+
+- Moved the application identity to `versionCode = 37` and `versionName = "1.0.0-rc1"`.
+- Updated phase-version validation so release-candidate versioning remains compatible with historical source-contract validators.
+- Documented the release-candidate package path, signing boundary, minification decision, and external-secret policy.
+- Added `FINAL_ACCEPTANCE_REPORT.md` as a pending target-execution template instead of fake device evidence.
+- Added a real-device acceptance checklist covering fresh install, upgrade install, sessions, practice, reminders, widgets, backup, restore dry-run, locale, theme, background/foreground, kill/reopen, date/time, and accessibility checks.
+- Advanced release readiness, validation seals, source scripts, and repository contract loops through Phase 37 while keeping target-machine gates blocked until real evidence exists.
+
 ## Phase 34-35 interaction honesty and documentation cleanup
 
 - r3: Corrected the overlay contract so it no longer targets Devtool-reserved `.devtool/` runtime metadata. Generated Devtool workspace state must be cleaned with an explicit local command when needed, not through overlay inventory.
