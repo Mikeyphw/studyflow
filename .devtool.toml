@@ -79,9 +79,19 @@ parallel = false
 split_gradle = true
 no_daemon = true
 low_priority = true
-gradle_heap_mb = 1536
-memory_guard_mb = 640
+gradle_heap_mb = 512
+memory_guard_mb = 0
+gradle_packaging_heap_mb = 1536
 affected_module_lint = true
+
+[targets.studyflow_android.validation.phase_profiles.resources]
+gradle_heap_mb = 768
+
+[targets.studyflow_android.validation.phase_profiles.package]
+gradle_heap_mb = 1536
+
+[targets.studyflow_android.validation.phase_profiles.lint]
+gradle_heap_mb = 1024
 
 [targets.studyflow_android.validation.phases]
 preflight = ["help"]

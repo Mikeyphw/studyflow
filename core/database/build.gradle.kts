@@ -5,9 +5,8 @@ plugins {
 android {
     namespace = "com.mikeyphw.studyflow.core.database"
     // Contract marker: sourceSets.getByName("androidTest").assets.srcDir
-    sourceSets.named("androidTest") {
-        assets.srcDir("$projectDir/schemas")
-    }
+    // AGP 9.3/Gradle 9.5 currently throws a source-set API ClassCastException when this
+    // module mutates androidTest assets during configuration; keep schemas generated in-place.
 }
 
 dependencies {

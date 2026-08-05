@@ -97,7 +97,7 @@ fun PlanPickerScreen(
                     singleLine = true,
                 )
             }
-            studyFlowSectionHeader(key = "active", title = stringResource(R.string.active_plans))
+            studyFlowSectionHeader(key = "active", title = { stringResource(R.string.active_plans) })
             if (active.isEmpty()) {
                 item(key = "no-active", contentType = "workspace-utility") {
                     StudyFlowEmptyState(
@@ -120,7 +120,7 @@ fun PlanPickerScreen(
                 }
             }
             if (other.isNotEmpty()) {
-                studyFlowSectionHeader(key = "other", title = stringResource(R.string.other_plans))
+                studyFlowSectionHeader(key = "other", title = { stringResource(R.string.other_plans) })
                 items(other, key = { plan -> "other:${plan.id.value}" }, contentType = { "plan-choice" }) { plan ->
                     StudyFlowTimelineRow(
                         title = plan.name,
@@ -138,7 +138,7 @@ fun PlanPickerScreen(
                 }
             }
             if (archived.isNotEmpty()) {
-                studyFlowSectionHeader(key = "archived", title = stringResource(R.string.archived_plans))
+                studyFlowSectionHeader(key = "archived", title = { stringResource(R.string.archived_plans) })
                 items(
                     archived,
                     key = { plan -> "archived:${plan.id.value}" },

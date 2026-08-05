@@ -152,7 +152,7 @@ private fun PlanOverviewPane(
         contentPadding = workspaceContentPadding(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        studyFlowSectionHeader(key = "progress", title = stringResource(R.string.plan_progress))
+        studyFlowSectionHeader(key = "progress", title = { stringResource(R.string.plan_progress) })
         item(key = "plan-metrics", contentType = "metrics") {
             StudyFlowResponsivePair(
                 first = { childModifier ->
@@ -194,7 +194,7 @@ private fun PlanOverviewPane(
                 }
             }
         }
-        studyFlowSectionHeader(key = "actions", title = stringResource(R.string.plan_actions))
+        studyFlowSectionHeader(key = "actions", title = { stringResource(R.string.plan_actions) })
         item(key = "actions-card", contentType = "actions") {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 PlanActionButton(Icons.Outlined.Edit, stringResource(R.string.edit_plan), onEditPlan)
@@ -232,8 +232,8 @@ private fun PlanSchedulePane(
     ) {
         studyFlowSectionHeader(
             key = "schedule",
-            title = stringResource(R.string.plan_schedule),
-            actionLabel = stringResource(R.string.manage_schedule),
+            title = { stringResource(R.string.plan_schedule) },
+            actionLabel = { stringResource(R.string.manage_schedule) },
             onAction = onManage,
         )
         if (activities.isEmpty()) {
@@ -286,8 +286,8 @@ private fun PlanContentPane(
     ) {
         studyFlowSectionHeader(
             key = "content",
-            title = stringResource(R.string.plan_content),
-            actionLabel = stringResource(R.string.manage_content),
+            title = { stringResource(R.string.plan_content) },
+            actionLabel = { stringResource(R.string.manage_content) },
             onAction = onManage,
         )
         item(key = "content-counts", contentType = "metrics") {
@@ -369,8 +369,8 @@ private fun PlanLibraryPane(
     ) {
         studyFlowSectionHeader(
             key = "library",
-            title = stringResource(R.string.plan_library),
-            actionLabel = stringResource(R.string.manage_library),
+            title = { stringResource(R.string.plan_library) },
+            actionLabel = { stringResource(R.string.manage_library) },
             onAction = onManage,
         )
         item(key = "library-counts", contentType = "metrics") {

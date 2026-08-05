@@ -126,7 +126,7 @@ fun ProgressWorkspaceScreen(
                 contentPadding = workspaceContentPadding(),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                studyFlowSectionHeader(key = "period", title = stringResource(R.string.progress_title))
+                studyFlowSectionHeader(key = "period", title = { stringResource(R.string.progress_title) })
                 item(key = "period-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(
                         first = { childModifier ->
@@ -190,7 +190,7 @@ fun ProgressWorkspaceScreen(
                     )
                 }
 
-                studyFlowSectionHeader(key = "weak", title = stringResource(R.string.weak_areas))
+                studyFlowSectionHeader(key = "weak", title = { stringResource(R.string.weak_areas) })
                 if (analytics?.weakAreas.isNullOrEmpty()) {
                     item(key = "weak-empty", contentType = "empty") {
                         StudyFlowEmptyState(
@@ -216,7 +216,7 @@ fun ProgressWorkspaceScreen(
                     }
                 }
 
-                studyFlowSectionHeader(key = "goals", title = stringResource(R.string.goals_and_notes))
+                studyFlowSectionHeader(key = "goals", title = { stringResource(R.string.goals_and_notes) })
                 item(key = "goal-note-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(
                         first = { childModifier ->

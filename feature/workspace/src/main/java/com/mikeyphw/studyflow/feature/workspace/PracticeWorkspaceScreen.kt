@@ -184,7 +184,7 @@ private fun ReviewsPane(
                 )
             }
         }
-        studyFlowSectionHeader(key = "review-stats", title = stringResource(R.string.practice_reviews))
+        studyFlowSectionHeader(key = "review-stats", title = { stringResource(R.string.practice_reviews) })
         item(key = "review-metrics", contentType = "metrics") {
             StudyFlowResponsivePair(
                 first = { childModifier ->
@@ -205,7 +205,7 @@ private fun ReviewsPane(
             )
         }
         if (due.isNotEmpty()) {
-            studyFlowSectionHeader(key = "due-now", title = stringResource(R.string.review_due_now))
+            studyFlowSectionHeader(key = "due-now", title = { stringResource(R.string.review_due_now) })
             items(
                 items = due.take(5),
                 key = { item -> "due:${item.id.value}" },
@@ -244,8 +244,8 @@ private fun QuestionsPane(
     ) {
         studyFlowSectionHeader(
             key = "questions",
-            title = stringResource(R.string.practice_questions),
-            actionLabel = stringResource(R.string.open_question_bank),
+            title = { stringResource(R.string.practice_questions) },
+            actionLabel = { stringResource(R.string.open_question_bank) },
             onAction = onOpenQuestionBank,
         )
         item(key = "question-metrics", contentType = "metrics") {
@@ -281,7 +281,7 @@ private fun QuestionsPane(
             }
         }
         if (tests.isNotEmpty()) {
-            studyFlowSectionHeader(key = "tests", title = stringResource(R.string.tests))
+            studyFlowSectionHeader(key = "tests", title = { stringResource(R.string.tests) })
             items(
                 items = tests.take(5),
                 key = { test -> "test:${test.id.value}" },
@@ -297,7 +297,7 @@ private fun QuestionsPane(
             }
         }
         if (mocks.isNotEmpty()) {
-            studyFlowSectionHeader(key = "mocks", title = stringResource(R.string.mock_exams))
+            studyFlowSectionHeader(key = "mocks", title = { stringResource(R.string.mock_exams) })
             items(
                 items = mocks.take(5),
                 key = { mock -> "mock:${mock.id.value}" },
@@ -362,10 +362,22 @@ private fun ReviewExecutionCard(
 
 @Composable
 private fun reviewTitle(item: ReviewItem): String = when {
-    item.flashcardId != null -> stringResource(R.string.review_flashcard, item.flashcardId.value.take(8))
-    item.questionId != null -> stringResource(R.string.review_question, item.questionId.value.take(8))
-    item.errorEntryId != null -> stringResource(R.string.review_error, item.errorEntryId.value.take(8))
-    item.topicId != null -> stringResource(R.string.review_topic, item.topicId.value.take(8))
+    item.flashcardId != null -> {
+        val id = item.flashcardId
+        stringResource(R.string.review_flashcard, id?.value?.take(8).orEmpty())
+    }
+    item.questionId != null -> {
+        val id = item.questionId
+        stringResource(R.string.review_question, id?.value?.take(8).orEmpty())
+    }
+    item.errorEntryId != null -> {
+        val id = item.errorEntryId
+        stringResource(R.string.review_error, id?.value?.take(8).orEmpty())
+    }
+    item.topicId != null -> {
+        val id = item.topicId
+        stringResource(R.string.review_topic, id?.value?.take(8).orEmpty())
+    }
     else -> stringResource(R.string.review_generic, item.id.value.take(8))
 }
 
@@ -381,8 +393,8 @@ private fun ErrorsPane(
     ) {
         studyFlowSectionHeader(
             key = "errors",
-            title = stringResource(R.string.practice_errors),
-            actionLabel = stringResource(R.string.open_error_notebook),
+            title = { stringResource(R.string.practice_errors) },
+            actionLabel = { stringResource(R.string.open_error_notebook) },
             onAction = onOpenReviewCenter,
         )
         if (entries.isEmpty()) {

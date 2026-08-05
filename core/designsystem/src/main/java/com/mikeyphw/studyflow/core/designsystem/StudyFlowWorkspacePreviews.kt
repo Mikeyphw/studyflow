@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow.core.designsystem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.mikeyphw.studyflow.core.model.ThemeMode
 
 @Preview(name = "Workspace light", showBackground = true)
 @Composable

@@ -487,9 +487,12 @@ if len(string_sets) == 2:
     require(string_sets[0] == string_sets[1], "workspace English and pt-BR resource keys differ")
 
 source_roots = [ROOT / "app", ROOT / "core", ROOT / "feature/workspace"]
+excluded_directory_names = {"build", ".gradle", ".idea"}
 for source_root in source_roots:
     for source_path in source_root.rglob("*"):
         if not source_path.is_file() or source_path.suffix not in {".kt", ".kts", ".xml"}:
+            continue
+        if any(part in excluded_directory_names for part in source_path.relative_to(ROOT).parts):
             continue
         source = source_path.read_text(encoding="utf-8")
         require("\x00" not in source, f"NUL byte in {source_path.relative_to(ROOT)}")

@@ -26,7 +26,7 @@
     <string name="planned_next">Next planned block</string>
     <string name="free_study">Free study session</string>
     <string name="free_study_message">There is no urgent backlog. Start a focused block or refine your plan.</string>
-    <string name="today_timeline">Today&apos;s path</string>
+    <string name="today_timeline">Today\'s path</string>
     <string name="nothing_scheduled">Nothing scheduled for today.</string>
     <string name="weekly_pace">Weekly pace</string>
     <string name="studied_time">Studied</string>

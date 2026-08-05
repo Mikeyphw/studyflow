@@ -232,8 +232,8 @@ fun TodayWorkspaceScreen(
 
                 studyFlowSectionHeader(
                     key = "today-path",
-                    title = stringResource(R.string.today_timeline),
-                    actionLabel = stringResource(R.string.adjust_plan),
+                    title = { stringResource(R.string.today_timeline) },
+                    actionLabel = { stringResource(R.string.adjust_plan) },
                     onAction = onOpenSchedule,
                 )
                 if (todayActivities.isEmpty() && dueReviewCount == 0) {
@@ -295,7 +295,7 @@ fun TodayWorkspaceScreen(
 
                 studyFlowSectionHeader(
                     key = "weekly-pace",
-                    title = stringResource(R.string.weekly_pace),
+                    title = { stringResource(R.string.weekly_pace) },
                 )
                 item(key = "weekly-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(

@@ -528,6 +528,20 @@ fun LazyListScope.studyFlowSectionHeader(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
+    studyFlowSectionHeader(
+        key = key,
+        title = { title },
+        actionLabel = actionLabel?.let { label -> { label } },
+        onAction = onAction,
+    )
+}
+
+fun LazyListScope.studyFlowSectionHeader(
+    key: String,
+    title: @Composable () -> String,
+    actionLabel: (@Composable () -> String)? = null,
+    onAction: (() -> Unit)? = null,
+) {
     item(key = "section:$key", contentType = "workspace-section-header") {
         Row(
             modifier = Modifier
@@ -536,7 +550,7 @@ fun LazyListScope.studyFlowSectionHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = title,
+                text = title(),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
@@ -547,7 +561,7 @@ fun LazyListScope.studyFlowSectionHeader(
                 OutlinedButton(onClick = onAction) {
                     Icon(Icons.Outlined.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(actionLabel)
+                    Text(actionLabel())
                 }
             }
         }
