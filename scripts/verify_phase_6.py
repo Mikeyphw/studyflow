@@ -37,10 +37,21 @@ if not phase_version_at_least(ROOT, 6):
 if 'implementation(project(":feature:schedule"))' not in app_build:
     failures.append(":app does not depend on :feature:schedule")
 
-app_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt").read_text(encoding="utf-8")
-for marker in ("ScheduleRoute", "StudyScheduleScreen", "manageStudySchedule", "onOpenSchedule"):
-    if marker not in app_source:
-        failures.append(f"app navigation missing schedule marker: {marker}")
+app_source = "\n".join(
+    (ROOT / path).read_text(encoding="utf-8")
+    for path in (
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    )
+)
+if "ScheduleRoute" not in app_source:
+    failures.append("app navigation missing schedule marker: ScheduleRoute")
+if "StudyScheduleScreen" not in app_source:
+    failures.append("app navigation missing schedule marker: StudyScheduleScreen")
+if "manageStudySchedule" not in app_source:
+    failures.append("app navigation missing schedule marker: manageStudySchedule")
+if not any(marker in app_source for marker in ('onOpenSchedule', 'onManageSchedule',)):
+    failures.append("app navigation missing schedule action marker: one of onOpenSchedule, onManageSchedule")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
 for marker in ("StudyScheduleRepository", "ManageStudySchedule", "studyScheduleRepository"):

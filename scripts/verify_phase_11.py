@@ -37,10 +37,22 @@ if 'implementation(project(":feature:progress"))' not in app_build:
 root_build = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
 if ':feature:progress:testDebugUnitTest' not in root_build:
     failures.append("checkAll does not include feature:progress tests")
-app_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt").read_text(encoding="utf-8")
-for marker in ("ProgressRoute", "StudyProgressScreen", "manageStudyProgress", "onOpenProgress"):
-    if marker not in app_source:
-        failures.append(f"app navigation missing progress marker: {marker}")
+app_source = "\n".join(
+    (ROOT / path).read_text(encoding="utf-8")
+    for path in (
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    )
+)
+if "ProgressRoute" not in app_source:
+    failures.append("app navigation missing progress marker: ProgressRoute")
+if "StudyProgressScreen" not in app_source:
+    failures.append("app navigation missing progress marker: StudyProgressScreen")
+if "manageStudyProgress" not in app_source:
+    failures.append("app navigation missing progress marker: manageStudyProgress")
+if not any(marker in app_source for marker in ('onOpenProgress', 'onOpenProgressCenter',)):
+    failures.append("app navigation missing progress action marker: one of onOpenProgress, onOpenProgressCenter")
+
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
 for marker in ("StudyProgressRepository", "ManageStudyProgress", "studyProgressRepository"):
     if marker not in application_source:

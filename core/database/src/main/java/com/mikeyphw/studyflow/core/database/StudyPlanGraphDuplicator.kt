@@ -130,7 +130,7 @@ class StudyPlanGraphDuplicator(
                 "id", "studyPlanId", "plannedActivityId", "subjectId", "topicId", "materialId", "videoResourceId",
                 "type", "status", "startedAtEpochMillis", "endedAtEpochMillis", "grossDurationSeconds",
                 "pauseDurationSeconds", "pagesCompleted", "questionsAnswered", "correctAnswers",
-                "concentrationRating", "difficultyRating", "notes",
+                "concentrationRating", "difficultyRating", "notes", "targetDurationMinutes",
                 remap = setOf("id", "plannedActivityId", "subjectId", "topicId", "materialId", "videoResourceId"),
             ),
             table(

@@ -7,7 +7,16 @@ privacy controls, and local checkpoint status on the device.
 
 ## Current status
 
-This source tree is implemented through **Phase 37**:
+This source tree is implemented through **Phase 47**, including the complete UI/UX V2 workspace migration:
+
+- Phases 38-47 replace the feature-catalog shell with Today, Plan, Practice, and Progress workspaces.
+- The adaptive shell preserves root back stacks and legacy route compatibility.
+- Focus mode persists target duration through Room schema 3 and restores active sessions.
+- Global search, plan switching, quick add, settings, reminders, backup, privacy, and diagnostics remain reachable.
+
+The release-candidate identity and acceptance baseline was implemented through **Phase 37**; the UI/UX V2 migration then advances the source tree through Phase 47.
+
+The preceding release-identity and acceptance framework remains active:
 
 - Phase 30 removed normal-user release checklist scaffolding from Settings.
 - Phase 31 wired the dashboard primary action to the Study Sessions flow.
@@ -64,7 +73,8 @@ core:model/             Stable domain, preference, checkpoint, and runtime-smoke
 core:navigation/        Type-safe navigation routes
 core:portability/       Pure Kotlin package schema, codec, checksums, and preview models
 core:testing/           Reusable fixtures and test fakes
-feature:dashboard/      Study Plan dashboard and primary session action
+feature:dashboard/      Legacy dashboard implementation retained for compatibility
+feature:workspace/      Today, Plan, Practice, Progress, focus mode, and global workspace utilities
 feature:plans/          Plan lifecycle, editor, settings, portability, and snapshots
 feature:subjects/       Subject, nested-topic, syllabus import, filters, and bulk-edit UI
 feature:schedule/       Schedule rules, planned activities, recovery, and execution state

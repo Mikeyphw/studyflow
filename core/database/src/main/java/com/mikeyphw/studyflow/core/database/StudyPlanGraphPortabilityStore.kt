@@ -218,10 +218,10 @@ class StudyPlanGraphPortabilityStore(
     ) {
         val actual = row.values.keys
         val expected = spec.columns.toSet()
-        val legacyExpected = if (spec.tableName in setOf("subjects", "topics")) {
-            expected - "examStageId"
-        } else {
-            emptySet()
+        val legacyExpected = when (spec.tableName) {
+            "subjects", "topics" -> expected - "examStageId"
+            "study_sessions" -> expected - "targetDurationMinutes"
+            else -> emptySet()
         }
         require(actual == expected || actual == legacyExpected) {
             "Columns for ${spec.tableName} do not match the supported schema."
@@ -348,6 +348,9 @@ class StudyPlanGraphPortabilityStore(
         val normalizedValues = values.toMutableMap().apply {
             if (spec.tableName in setOf("subjects", "topics") && "examStageId" !in this) {
                 put("examStageId", PortableValue(PortableValueType.NULL))
+            }
+            if (spec.tableName == "study_sessions" && "targetDurationMinutes" !in this) {
+                put("targetDurationMinutes", PortableValue(PortableValueType.NULL))
             }
         }
         require(normalizedValues.keys == allowed) {

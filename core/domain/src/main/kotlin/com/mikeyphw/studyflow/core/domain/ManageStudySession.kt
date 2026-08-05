@@ -27,8 +27,12 @@ class ManageStudySession(
         topicId: TopicId? = null,
         materialId: StudyMaterialId? = null,
         videoResourceId: VideoResourceId? = null,
+        targetDurationMinutes: Int? = null,
     ): StudySession {
         require(title.isNotBlank()) { "Quick Study Session title cannot be blank." }
+        require(targetDurationMinutes == null || targetDurationMinutes in 5..240) {
+            "Target duration must be between 5 and 240 minutes."
+        }
         require(repository.findActiveSession(studyPlanId) == null) {
             "Finish or cancel the active Study Session before starting another one."
         }
@@ -53,6 +57,7 @@ class ManageStudySession(
                 concentrationRating = null,
                 difficultyRating = null,
                 notes = title.trim(),
+                targetDurationMinutes = targetDurationMinutes,
             ),
         )
     }
@@ -85,6 +90,7 @@ class ManageStudySession(
                 concentrationRating = null,
                 difficultyRating = null,
                 notes = activity.title,
+                targetDurationMinutes = activity.plannedDurationMinutes,
             ),
             linkedActivityStatus = PlannedActivityStatus.IN_PROGRESS,
         )
@@ -153,6 +159,18 @@ class ManageStudySession(
     }
 
     suspend fun activeSession(planId: StudyPlanId): StudySession? = repository.findActiveSession(planId)
+
+    suspend fun updateNotes(
+        planId: StudyPlanId,
+        sessionId: StudySessionId,
+        notes: String,
+    ): StudySession {
+        val session = requireSession(planId, sessionId)
+        require(session.status == StudySessionStatus.RUNNING || session.status == StudySessionStatus.PAUSED) {
+            "Only an active Study Session can update notes."
+        }
+        return repository.upsertSession(session.copy(notes = notes.trim()))
+    }
 
     private suspend fun requireSession(planId: StudyPlanId, sessionId: StudySessionId): StudySession =
         requireNotNull(repository.findSession(planId, sessionId)) {

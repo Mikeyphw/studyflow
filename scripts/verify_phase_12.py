@@ -36,10 +36,22 @@ if 'implementation(project(":feature:analytics"))' not in app_build:
 root_build = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
 if ':feature:analytics:testDebugUnitTest' not in root_build:
     failures.append("checkAll does not include feature:analytics tests")
-app_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt").read_text(encoding="utf-8")
-for marker in ("AnalyticsRoute", "StudyAnalyticsScreen", "manageStudyAnalytics", "onOpenAnalytics"):
-    if marker not in app_source:
-        failures.append(f"app navigation missing analytics marker: {marker}")
+app_source = "\n".join(
+    (ROOT / path).read_text(encoding="utf-8")
+    for path in (
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    )
+)
+if "AnalyticsRoute" not in app_source:
+    failures.append("app navigation missing analytics marker: AnalyticsRoute")
+if "StudyAnalyticsScreen" not in app_source:
+    failures.append("app navigation missing analytics marker: StudyAnalyticsScreen")
+if "manageStudyAnalytics" not in app_source:
+    failures.append("app navigation missing analytics marker: manageStudyAnalytics")
+if not any(marker in app_source for marker in ('onOpenAnalytics',)):
+    failures.append("app navigation missing analytics action marker: one of onOpenAnalytics")
+
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
 for marker in ("StudyAnalyticsRepository", "ManageStudyAnalytics", "studyAnalyticsRepository"):
     if marker not in application_source:

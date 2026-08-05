@@ -43,10 +43,21 @@ root_build = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
 if ':feature:reviews:testDebugUnitTest' not in root_build:
     failures.append("checkAll does not include feature:reviews tests")
 
-app_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt").read_text(encoding="utf-8")
-for marker in ("ReviewsRoute", "StudyReviewScreen", "manageStudyReview", "onOpenReviews"):
-    if marker not in app_source:
-        failures.append(f"app navigation missing review marker: {marker}")
+app_source = "\n".join(
+    (ROOT / path).read_text(encoding="utf-8")
+    for path in (
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    )
+)
+if "ReviewsRoute" not in app_source:
+    failures.append("app navigation missing review marker: ReviewsRoute")
+if "StudyReviewScreen" not in app_source:
+    failures.append("app navigation missing review marker: StudyReviewScreen")
+if "manageStudyReview" not in app_source:
+    failures.append("app navigation missing review marker: manageStudyReview")
+if not any(marker in app_source for marker in ('onOpenReviews', 'onOpenReviewCenter',)):
+    failures.append("app navigation missing review action marker: one of onOpenReviews, onOpenReviewCenter")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
 for marker in ("StudyReviewRepository", "ManageStudyReview", "studyReviewRepository"):

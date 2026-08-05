@@ -134,6 +134,7 @@ data class StudySession(
     val concentrationRating: Int?,
     val difficultyRating: Int?,
     val notes: String,
+    val targetDurationMinutes: Int? = null,
 )
 
 data class StudyGoal(

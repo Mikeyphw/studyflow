@@ -1,5 +1,16 @@
 # Changelog
 
+## Phases 38-47 complete UI/UX V2 workspace migration
+
+- Replaced the feature-catalog shell with adaptive Today, Plan, Practice, and Progress roots.
+- Added saved root back stacks, typed lightweight routes, legacy-route translation, and distinct full-editor routes.
+- Added repository-backed command-center, plan, practice, progress, plan-picker, system-hub, and contextual quick-add screens.
+- Added expandable subject/topic sections, direct V2 review grading and skipping, test/mock visibility, progress trend semantics, and actionable adaptation previews.
+- Added persistent focus mode with Room schema 3, migration 1 to 3 / 2 to 3 coverage, notes, pause/resume, completion, cancellation, and restoration.
+- Hardened the V2 source contract after audit so it rejects navigation compile defects, marker-only implementation, shell-wide back interception, schema-2 backup regressions, large-font clipping, weak pane semantics, and cross-plan stack leakage.
+- Added bilingual workspace resources, reusable design-system components, edge-to-edge setup, tests, source validators, and Devtool gates.
+- Preserved the existing release-candidate identity and real-device evidence boundary.
+
 ## Phase 36-37 release identity and real-device acceptance seal
 
 - Moved the application identity to `versionCode = 37` and `versionName = "1.0.0-rc1"`.

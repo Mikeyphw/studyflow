@@ -13,5 +13,13 @@ object StudyFlowMigrations {
         }
     }
 
-    val All = arrayOf(Migration1To2)
+    val Migration2To3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE study_sessions ADD COLUMN targetDurationMinutes INTEGER DEFAULT NULL",
+            )
+        }
+    }
+
+    val All = arrayOf(Migration1To2, Migration2To3)
 }

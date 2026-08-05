@@ -25,6 +25,44 @@ Phase 37 seals the real-device acceptance framework by adding a target-execution
 pending final acceptance report. Source validation must not mark install, upgrade, notification,
 widget, backup, restore, locale, theme, or accessibility checks as passed.
 
+
+## UI/UX V2 source-contract extension
+
+The Phase 37 release-candidate and target-execution baseline remains intact. The source tree now also
+implements the full **Phase 38 through Phase 47 UI/UX V2 roadmap**:
+
+- typed Today, Plan, Practice, Progress, focus, utility, and compatibility routes
+- adaptive compact/expanded navigation with destination-derived selection and restored root stacks
+- repository-backed Today, Plan, Practice, and Progress workspaces
+- persistent focus-session duration and notes with Room schema 3 migration coverage
+- global plan switching, search, quick-add, and system access
+- English and pt-BR resource parity
+- legacy route translation plus dedicated management/detail routes
+- accessibility, source-hygiene, migration, route, and workspace contract gates
+
+The V2 source contract is enforced by `scripts/verify_ui_ux_v2.py`, wired into the repository
+contract task, and supplemented by focused route, domain, migration, and workspace tests. Plan
+switching deliberately bypasses restored root-stack state so a newly selected plan cannot reopen a
+nested destination belonging to the previous plan.
+
+## UI/UX V2 post-delivery audit status
+
+The V2 contract was tightened after an independent promise audit found that marker-oriented checks
+could miss functional regressions. The current contract now fails if the source loses typed
+recommendation routing, direct review execution, subject expansion, quick-add workspace context,
+trend/adaptation semantics, scoped focus back handling, Room 1 to 3 / 2 to 3 migration coverage,
+schema-2 backup compatibility, large-font stacking, RTL-aware padding, pane/traversal semantics, or
+48 dp focusable controls.
+
+## UI/UX V2 validation boundary
+
+Source-level validators, deterministic Room schema verification, focused Kotlin compilation, and
+clean-overlay application simulation can run in the artifact-construction environment. The final
+Devtool target must still execute the configured Gradle compilation, Android resource, lint, unit,
+instrumentation/migration, assembly, install/upgrade, predictive-back, edge-to-edge, locale, font
+scaling, TalkBack, switch-access, and real-device acceptance gates. Those checks are not pre-marked
+as passed in this repository report.
+
 ## Artifact-state cleanup
 
 Phase 35 r3 keeps overlay payloads free of stale Devtool reports, validation state, caches, and generated output. Devtool reserves `.devtool/` runtime metadata and rejects overlay inventory entries that target it, including delete entries. Existing stale local Devtool state is therefore cleaned outside the overlay with an explicit local command when needed.

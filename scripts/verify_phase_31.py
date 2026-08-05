@@ -41,9 +41,25 @@ for forbidden in [
 ]:
     require(forbidden not in dashboard, f"dashboard still has fake interactive control: {forbidden}")
 
-app = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
-require("onOpenSessions = {" in app, "dashboard host must still pass sessions navigation callback")
-require("navController.navigate(SessionsRoute(currentPlan.id.value))" in app, "sessions callback must navigate")
+app = "\n".join(
+    read(path)
+    for path in (
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    )
+)
+require(
+    "onOpenSessions = {" in app or "onSessions = {" in app or "onOpenFocus = {" in app,
+    "active workspace host must expose a real study-session action",
+)
+require(
+    "navController.navigate(SessionsRoute(" in app or "navController.navigate(session.focusRoute())" in app,
+    "study-session action must navigate to sessions or focused execution",
+)
+require(
+    "composable<DashboardRoute>" in app and "LegacyWorkspaceRedirect" in app,
+    "legacy dashboard route must remain translated into the V2 workspace shell",
+)
 
 for rel in [
     "feature/dashboard/src/main/res/values/strings.xml",

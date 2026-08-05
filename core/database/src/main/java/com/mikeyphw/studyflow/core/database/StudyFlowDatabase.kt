@@ -89,7 +89,7 @@ abstract class StudyFlowDatabase : RoomDatabase() {
     abstract fun databaseMetadataDao(): DatabaseMetadataDao
 
     companion object {
-        const val SCHEMA_VERSION = 2
+        const val SCHEMA_VERSION = 3
         const val DATABASE_NAME = "studyflow.db"
 
         fun create(context: Context): StudyFlowDatabase =

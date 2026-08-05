@@ -49,7 +49,7 @@ tasks.register("verifyFormatting") {
 
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
-    description = "Runs StudyFlow contracts through Phase 37 and Debug Workbench D1 through D8."
+    description = "Runs StudyFlow contracts through Phase 37, UI/UX V2 through Phase 47, and Debug Workbench D1 through D8."
     commandLine(
         "bash",
         "-lc",
@@ -69,6 +69,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_debug_workbench_d6.py
         python3 scripts/verify_debug_workbench_d7.py
         python3 scripts/verify_debug_workbench_d8.py
+        python3 scripts/verify_ui_ux_v2.py
         """.trimIndent(),
     )
 }
@@ -102,6 +103,8 @@ tasks.register("checkAll") {
         ":feature:sessions:testDebugUnitTest",
         ":feature:settings:testDebugUnitTest",
         ":feature:subjects:testDebugUnitTest",
+        ":feature:workspace:testDebugUnitTest",
+        ":feature:workspace:lintDebug",
         ":app:lintDebug",
     )
 }

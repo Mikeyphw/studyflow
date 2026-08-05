@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateOf
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
@@ -19,6 +20,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         reminderLaunch.value = intent.toStudyReminderLaunch()
         val container = (application as StudyFlowApplication).container
         setContent {

@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.core.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -430,6 +431,8 @@ data class StudySessionEntity(
     val concentrationRating: Int?,
     val difficultyRating: Int?,
     val notes: String,
+    @ColumnInfo(defaultValue = "NULL")
+    val targetDurationMinutes: Int? = null,
 )
 
 @Entity(

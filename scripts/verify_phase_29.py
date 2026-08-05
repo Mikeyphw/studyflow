@@ -134,12 +134,29 @@ main_activity = read("app/src/main/java/com/mikeyphw/studyflow/MainActivity.kt")
 require(main_activity, 'data class StudyReminderLaunch', 'notification launch bridge model')
 require(main_activity, 'onNewIntent(intent: Intent)', 'notification tap new-intent handling')
 require(main_activity, 'toStudyReminderLaunch()', 'notification intent extraction')
-app_source = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
+app_source = "\n".join(
+    read(path)
+    for path in (
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    )
+)
 require(app_source, 'reminderLaunch: StudyReminderLaunch?', 'StudyFlowApp reminder launch parameter')
-require(app_source, 'ReminderNotificationType.DUE_REVIEWS -> navController.navigate(ReviewsRoute', 'due-review notification route')
+require(app_source, 'ReminderNotificationType.DUE_REVIEWS -> navController.navigate(', 'due-review notification dispatch')
+require(
+    app_source,
+    'PracticeWorkspaceRoute(plan.id.value, PracticeWorkspaceTab.REVIEWS)',
+    'due-review notification direct V2 route',
+)
 require(app_source, 'ReminderNotificationType.PLANNED_ACTIVITY,', 'planned notification route')
-require(app_source, 'ReminderNotificationType.MISSED_ACTIVITY -> navController.navigate(ScheduleRoute', 'missed notification route')
-require(app_source, 'ReminderNotificationType.DAILY_SUMMARY -> navController.navigate(DashboardRoute', 'daily summary notification route')
+require(app_source, 'ReminderNotificationType.MISSED_ACTIVITY -> navController.navigate(', 'missed notification dispatch')
+require(
+    app_source,
+    'PlanWorkspaceRoute(plan.id.value, PlanWorkspaceTab.SCHEDULE)',
+    'planned and missed notification direct V2 route',
+)
+require(app_source, 'ReminderNotificationType.DAILY_SUMMARY -> navController.navigate(', 'daily summary dispatch')
+require(app_source, 'TodayRoute(plan.id.value)', 'daily summary direct V2 route')
 require(app_source, 'onNotificationPermissionResult = { granted ->', 'notification permission reconcile callback wiring')
 require(app_source, 'container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)', 'permission grant reminder reconciliation')
 reminder_screen = read("feature/reminders/src/main/java/com/mikeyphw/studyflow/feature/reminders/StudyRemindersScreen.kt")

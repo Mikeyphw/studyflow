@@ -128,6 +128,7 @@ fun StudySessionEntity.asExternalModel(): StudySession = StudySession(
     concentrationRating = concentrationRating,
     difficultyRating = difficultyRating,
     notes = notes,
+    targetDurationMinutes = targetDurationMinutes,
 )
 
 fun StudySession.asEntity(): StudySessionEntity = StudySessionEntity(
@@ -150,4 +151,5 @@ fun StudySession.asEntity(): StudySessionEntity = StudySessionEntity(
     concentrationRating = concentrationRating,
     difficultyRating = difficultyRating,
     notes = notes,
+    targetDurationMinutes = targetDurationMinutes,
 )

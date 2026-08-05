@@ -40,15 +40,21 @@ if not phase_version_at_least(ROOT, 5):
 if 'implementation(project(":feature:subjects"))' not in app_build:
     failures.append(":app does not depend on :feature:subjects")
 
-app_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt").read_text(encoding="utf-8")
-for marker in (
-    "SubjectsRoute",
-    "StudyContentScreen",
-    "manageStudyContent",
-    "onOpenSyllabus",
-):
-    if marker not in app_source:
-        failures.append(f"app navigation missing syllabus marker: {marker}")
+app_source = "\n".join(
+    (ROOT / path).read_text(encoding="utf-8")
+    for path in (
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    )
+)
+if "SubjectsRoute" not in app_source:
+    failures.append("app navigation missing syllabus marker: SubjectsRoute")
+if "StudyContentScreen" not in app_source:
+    failures.append("app navigation missing syllabus marker: StudyContentScreen")
+if "manageStudyContent" not in app_source:
+    failures.append("app navigation missing syllabus marker: manageStudyContent")
+if not any(marker in app_source for marker in ('onOpenSyllabus', 'onManageContent',)):
+    failures.append("app navigation missing syllabus action marker: one of onOpenSyllabus, onManageContent")
 
 application_source = (
     ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt"
@@ -109,8 +115,8 @@ for marker in (
         failures.append(f"entity schema missing optional exam stage marker: {marker}")
 
 database = (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt").read_text()
-if "const val SCHEMA_VERSION = 2" not in database:
-    failures.append("Room schema version must be 2 for Phase 5")
+if "const val SCHEMA_VERSION = 3" not in database:
+    failures.append("Room schema version must preserve Phase 5 and include later migrations")
 if "addMigrations(*StudyFlowMigrations.All)" not in database:
     failures.append("database builder does not install Phase 5 migrations")
 

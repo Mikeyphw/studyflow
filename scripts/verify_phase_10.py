@@ -37,10 +37,22 @@ if 'implementation(project(":feature:library"))' not in app_build:
 root_build = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
 if ':feature:library:testDebugUnitTest' not in root_build:
     failures.append("checkAll does not include feature:library tests")
-app_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt").read_text(encoding="utf-8")
-for marker in ("LibraryRoute", "StudyLibraryScreen", "manageStudyLibrary", "onOpenLibrary"):
-    if marker not in app_source:
-        failures.append(f"app navigation missing library marker: {marker}")
+app_source = "\n".join(
+    (ROOT / path).read_text(encoding="utf-8")
+    for path in (
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    )
+)
+if "LibraryRoute" not in app_source:
+    failures.append("app navigation missing library marker: LibraryRoute")
+if "StudyLibraryScreen" not in app_source:
+    failures.append("app navigation missing library marker: StudyLibraryScreen")
+if "manageStudyLibrary" not in app_source:
+    failures.append("app navigation missing library marker: manageStudyLibrary")
+if not any(marker in app_source for marker in ('onOpenLibrary', 'onManageLibrary',)):
+    failures.append("app navigation missing library action marker: one of onOpenLibrary, onManageLibrary")
+
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
 for marker in ("StudyLibraryRepository", "ManageStudyLibrary", "studyLibraryRepository"):
     if marker not in application_source:

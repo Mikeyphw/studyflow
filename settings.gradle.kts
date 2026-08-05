@@ -43,4 +43,5 @@ include(
     ":feature:sessions",
     ":feature:settings",
     ":feature:subjects",
+    ":feature:workspace",
 )

@@ -4,6 +4,7 @@ plugins {
 
 android {
     namespace = "com.mikeyphw.studyflow.core.database"
+    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
 }
 
 dependencies {
