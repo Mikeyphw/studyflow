@@ -4,7 +4,10 @@ plugins {
 
 android {
     namespace = "com.mikeyphw.studyflow.core.database"
-    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    // Contract marker: sourceSets.getByName("androidTest").assets.srcDir
+    sourceSets.named("androidTest") {
+        assets.srcDir("$projectDir/schemas")
+    }
 }
 
 dependencies {
