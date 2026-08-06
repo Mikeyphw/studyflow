@@ -1,5 +1,10 @@
 # StudyFlow Validation Report
 
+## Phase 54-55 validation scope
+
+Repository source validation now includes `scripts/verify_phase_54_55.py`, Reminder Reliability Center tests, Evidence Timeline tests, and the existing Phase 0-53 contract chain. Android compile, lint, and APK assembly remain Devtool target gates.
+
+
 Generated for the source state implemented through **Phase 37**.
 
 ## Source-contract status
@@ -135,3 +140,9 @@ Phase 52/53 r2 source validation passed with disputed-question filtering, dynami
 ## Phase 52-53 r4 Kotlin compile hotfix
 
 Devtool r3 reached `:core:domain:compileKotlin` and failed because `MockExamStudioPlanner` referenced the private extension function as `Question::isExamEligible`. R4 uses an explicit lambda and extends `scripts/verify_phase_52_53.py` to reject that unsafe function-reference pattern. Source validators pass in this environment; Android compile/assemble remains the Devtool target gate.
+
+
+## Phase 54/55 r3 resource and lint hotfix
+
+- Fixed reminder reliability strings that failed Android resource flattening.
+- Added validation guards for risky reminder string escapes and widget `android:tint` lint regressions.

@@ -293,4 +293,23 @@
     <string name="mock_exam_tags_filter">Tags filter, comma-separated</string>
     <string name="mock_exam_include_disputed">Include disputed questions</string>
     <string name="mock_exam_created">Mock exam created.</string>
+    <string name="evidence_timeline">Evidence timeline</string>
+    <string name="evidence_empty">StudyFlow will show sessions, reviews, questions, tests, goals, notes, and missed blocks here as evidence appears.</string>
+    <string name="evidence_no_label">Study evidence</string>
+    <string name="evidence_minutes_and_count">%1$s - %2$d min - %3$d item(s)</string>
+    <string name="evidence_minutes">%1$s - %2$d min</string>
+    <string name="evidence_count">%1$s - %2$d item(s)</string>
+    <string name="evidence_session_completed">Session completed</string>
+    <string name="evidence_session_cancelled">Session cancelled</string>
+    <string name="evidence_activity_completed">Planned block completed</string>
+    <string name="evidence_activity_missed">Planned block missed</string>
+    <string name="evidence_review_due">Review due</string>
+    <string name="evidence_review_completed">Review completed</string>
+    <string name="evidence_question_added">Question added</string>
+    <string name="evidence_test_created">Practice test created</string>
+    <string name="evidence_test_submitted">Practice test submitted</string>
+    <string name="evidence_mock_created">Mock exam created</string>
+    <string name="evidence_mock_submitted">Mock exam submitted</string>
+    <string name="evidence_goal_completed">Goal completed</string>
+    <string name="evidence_note_pinned">Note pinned</string>
 </resources>

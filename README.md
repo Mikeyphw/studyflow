@@ -1,5 +1,10 @@
 # StudyFlow Android
 
+## Current status: Phase 55
+
+StudyFlow now includes UI/UX V2 through Phase 55: readiness, adaptive reschedule, weakness drills, question import, Mock Exam Studio, widget actions, Reminder Reliability Center, and Evidence Timeline. The app remains offline-first and uses the pinned Android toolchain.
+
+
 StudyFlow is an offline-first Android study workspace for public examinations, certifications,
 university courses, entrance examinations, and independent study. It keeps the study plan,
 content tree, schedule, sessions, practice, reviews, reminders, library resources, progress,
@@ -190,3 +195,8 @@ Phase 52/53 r2 closes the Mock Exam Studio audit by exposing source/board/tag/di
 ### Phase 52-53 r4 compile hotfix
 
 The Mock Exam Studio planner now uses a compile-safe explicit eligibility lambda instead of the prohibited `Question::isExamEligible` extension reference.
+
+
+### Phase 54/55 r3
+
+Resource/lint hotfix for reminder reliability strings and widget tint validation.

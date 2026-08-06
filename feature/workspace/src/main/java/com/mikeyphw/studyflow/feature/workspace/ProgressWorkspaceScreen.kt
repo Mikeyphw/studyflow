@@ -12,7 +12,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Insights
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material3.FilterChip
@@ -40,13 +42,22 @@ import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageAdaptiveReschedule
 import com.mikeyphw.studyflow.core.domain.ManageExamReadiness
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
+import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
+import com.mikeyphw.studyflow.core.domain.ManageStudyReview
+import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.StudyEvidenceEvent
+import com.mikeyphw.studyflow.core.domain.StudyEvidenceEventKind
+import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineBuilder
+import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineInput
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
 import com.mikeyphw.studyflow.core.model.AdaptiveRescheduleChangeType
 import com.mikeyphw.studyflow.core.model.ExamReadinessBand
 import com.mikeyphw.studyflow.core.model.ReadinessSignalKind
+import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.navigation.ProgressWorkspacePeriod
 import kotlinx.coroutines.CancellationException
@@ -61,6 +72,9 @@ fun ProgressWorkspaceScreen(
     readinessManager: ManageExamReadiness,
     adaptiveRescheduleManager: ManageAdaptiveReschedule,
     sessionManager: ManageStudySession,
+    scheduleManager: ManageStudySchedule,
+    reviewManager: ManageStudyReview,
+    practiceManager: ManageStudyPractice,
     onPeriodSelected: (ProgressWorkspacePeriod) -> Unit,
     onSwitchPlan: () -> Unit,
     onSearch: () -> Unit,
@@ -74,11 +88,23 @@ fun ProgressWorkspaceScreen(
     val analyticsFlow = remember(plan.id) { analyticsManager.observeSnapshot(plan.id) }
     val progressFlow = remember(plan.id) { progressManager.observeSnapshot(plan.id) }
     val sessionsFlow = remember(plan.id) { sessionManager.observeSessions(plan.id) }
+    val scheduleFlow = remember(plan.id) { scheduleManager.observeSchedule(plan.id) }
+    val reviewItemsFlow = remember(plan.id) { reviewManager.observeReviewItems(plan.id) }
+    val questionsFlow = remember(plan.id) { practiceManager.observeQuestions(plan.id) }
+    val testsFlow = remember(plan.id) { practiceManager.observeTests(plan.id) }
+    val mockExamsFlow = remember(plan.id) { practiceManager.observeMockExams(plan.id) }
     val readinessFlow = remember(plan.id) { readinessManager.observeReadiness(plan) }
     val rescheduleFlow = remember(plan.id) { adaptiveRescheduleManager.observePreview(plan) }
     val analytics by analyticsFlow.collectAsStateWithLifecycle(initialValue = null)
     val progress by progressFlow.collectAsStateWithLifecycle(initialValue = null)
     val sessions by sessionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val schedule by scheduleFlow.collectAsStateWithLifecycle(
+        initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
+    )
+    val reviewItems by reviewItemsFlow.collectAsStateWithLifecycle(initialValue = emptyList<ReviewItem>())
+    val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val tests by testsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val mockExams by mockExamsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val readiness by readinessFlow.collectAsStateWithLifecycle(initialValue = null)
     val reschedulePreview by rescheduleFlow.collectAsStateWithLifecycle(initialValue = null)
     val coroutineScope = rememberCoroutineScope()
@@ -105,6 +131,22 @@ fun ProgressWorkspaceScreen(
         StudySessionTimer.activeSeconds(session, session.endedAtEpochMillis ?: System.currentTimeMillis())
     } / 60
     val trendLabel = trendLabel(recentMinutes, earlierMinutes)
+    val evidenceTimeline = remember(schedule, sessions, reviewItems, questions, tests, mockExams, progress) {
+        StudyEvidenceTimelineBuilder.build(
+            StudyEvidenceTimelineInput(
+                studyPlanId = plan.id,
+                plannedActivities = schedule.plannedActivities,
+                sessions = sessions,
+                reviewItems = reviewItems,
+                questions = questions,
+                tests = tests,
+                mockExams = mockExams,
+                goals = progress?.activeGoals.orEmpty(),
+                notes = progress?.notes.orEmpty(),
+                nowEpochMillis = System.currentTimeMillis(),
+            ),
+        )
+    }
 
     Scaffold(modifier = modifier) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -440,6 +482,32 @@ fun ProgressWorkspaceScreen(
                         },
                     )
                 }
+                studyFlowSectionHeader(key = "evidence", title = { stringResource(R.string.evidence_timeline) })
+                if (evidenceTimeline.isEmpty()) {
+                    item(key = "evidence-empty", contentType = "empty") {
+                        StudyFlowEmptyState(
+                            title = stringResource(R.string.evidence_timeline),
+                            message = stringResource(R.string.evidence_empty),
+                            actionLabel = stringResource(R.string.open_progress_center),
+                            onAction = onOpenProgressCenter,
+                        )
+                    }
+                } else {
+                    items(
+                        items = evidenceTimeline,
+                        key = { event -> "evidence:${event.id}" },
+                        contentType = { "evidence-event" },
+                    ) { event ->
+                        StudyFlowTimelineRow(
+                            title = stringResource(event.kind.titleRes()),
+                            metadata = eventMetadata(event),
+                            icon = event.kind.icon(),
+                            status = eventStatus(event),
+                            onClick = onOpenProgressCenter,
+                        )
+                    }
+                }
+
                 item(key = "progress-actions", contentType = "actions") {
                     StudyFlowResponsivePair(
                         first = { childModifier ->
@@ -466,6 +534,48 @@ fun ProgressWorkspaceScreen(
     }
 }
 
+
+@Composable
+private fun eventMetadata(event: StudyEvidenceEvent): String {
+    val label = event.label.takeIf(String::isNotBlank) ?: stringResource(R.string.evidence_no_label)
+    val minutes = event.minutes
+    val count = event.count
+    return when {
+        minutes != null && count != null -> {
+            stringResource(R.string.evidence_minutes_and_count, label, minutes, count)
+        }
+        minutes != null -> stringResource(R.string.evidence_minutes, label, minutes)
+        count != null -> stringResource(R.string.evidence_count, label, count)
+        else -> label
+    }
+}
+
+@Composable
+private fun eventStatus(event: StudyEvidenceEvent): String? = event.percent?.let { percent ->
+    stringResource(R.string.percent_value, percent)
+}
+
+private fun StudyEvidenceEventKind.titleRes(): Int = when (this) {
+    StudyEvidenceEventKind.SESSION_COMPLETED -> R.string.evidence_session_completed
+    StudyEvidenceEventKind.SESSION_CANCELLED -> R.string.evidence_session_cancelled
+    StudyEvidenceEventKind.PLANNED_ACTIVITY_COMPLETED -> R.string.evidence_activity_completed
+    StudyEvidenceEventKind.PLANNED_ACTIVITY_MISSED -> R.string.evidence_activity_missed
+    StudyEvidenceEventKind.REVIEW_DUE -> R.string.evidence_review_due
+    StudyEvidenceEventKind.REVIEW_COMPLETED -> R.string.evidence_review_completed
+    StudyEvidenceEventKind.QUESTION_ADDED -> R.string.evidence_question_added
+    StudyEvidenceEventKind.PRACTICE_TEST_CREATED -> R.string.evidence_test_created
+    StudyEvidenceEventKind.PRACTICE_TEST_SUBMITTED -> R.string.evidence_test_submitted
+    StudyEvidenceEventKind.MOCK_EXAM_CREATED -> R.string.evidence_mock_created
+    StudyEvidenceEventKind.MOCK_EXAM_SUBMITTED -> R.string.evidence_mock_submitted
+    StudyEvidenceEventKind.GOAL_COMPLETED -> R.string.evidence_goal_completed
+    StudyEvidenceEventKind.NOTE_PINNED -> R.string.evidence_note_pinned
+}
+
+private fun StudyEvidenceEventKind.icon() = when (this) {
+    StudyEvidenceEventKind.REVIEW_DUE,
+    StudyEvidenceEventKind.PLANNED_ACTIVITY_MISSED -> Icons.Outlined.Notifications
+    else -> Icons.Outlined.History
+}
 
 private fun readinessBandLabel(band: ExamReadinessBand): Int = when (band) {
     ExamReadinessBand.ON_TRACK -> R.string.readiness_on_track

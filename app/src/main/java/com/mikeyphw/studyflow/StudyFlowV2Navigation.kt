@@ -391,6 +391,9 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 readinessManager = container.manageExamReadiness,
                 adaptiveRescheduleManager = container.manageAdaptiveReschedule,
                 sessionManager = container.manageStudySession,
+                scheduleManager = container.manageStudySchedule,
+                reviewManager = container.manageStudyReview,
+                practiceManager = container.manageStudyPractice,
                 onPeriodSelected = { period ->
                     navController.navigateWorkspaceTab(ProgressWorkspaceRoute(plan.id.value, period))
                 },

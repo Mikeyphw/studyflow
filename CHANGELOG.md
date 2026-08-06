@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 54-55 reminder reliability and evidence timeline
+
+- Added a Reminder Reliability Center that separates blocked reminder delivery, degraded timing, backlog pressure, quiet hours, and safe fallback behavior.
+- Added a V2 Progress Evidence Timeline from sessions, planned blocks, reviews, questions, practice tests, mock exams, completed goals, and pinned notes.
+- Kept the timeline localized in the UI and bounded/newest-first in the domain.
+- Added Phase 54/55 tests, documentation, and verifier wiring.
+
 ## Phase 52-53 r4 Mock Exam Studio compile hotfix
 
 - Replaced the `Question::isExamEligible` extension reference in `MockExamStudioPlanner` with an explicit lambda so Kotlin/JVM compilation accepts the planner.
@@ -115,3 +122,9 @@ copy.
 
 - Added the missing localized `open_plan` workspace string referenced by the Progress readiness surface.
 - Hardened the Phase 48-49 verifier so `ProgressWorkspaceScreen` `R.string.*` references must exist in workspace resources.
+
+
+## Phase 54/55 r3 resource and lint hotfix
+
+- Fixed reminder reliability strings that failed Android resource flattening.
+- Added validation guards for risky reminder string escapes and widget `android:tint` lint regressions.

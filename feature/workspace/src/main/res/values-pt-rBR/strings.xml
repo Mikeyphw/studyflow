@@ -293,4 +293,23 @@
     <string name="mock_exam_tags_filter">Tags separadas por vírgula</string>
     <string name="mock_exam_include_disputed">Incluir questões contestadas</string>
     <string name="mock_exam_created">Simulado criado.</string>
+    <string name="evidence_timeline">Linha do tempo de evidências</string>
+    <string name="evidence_empty">O StudyFlow mostrará sessões, revisões, questões, testes, metas, notas e blocos perdidos conforme houver evidências.</string>
+    <string name="evidence_no_label">Evidência de estudo</string>
+    <string name="evidence_minutes_and_count">%1$s - %2$d min - %3$d item(ns)</string>
+    <string name="evidence_minutes">%1$s - %2$d min</string>
+    <string name="evidence_count">%1$s - %2$d item(ns)</string>
+    <string name="evidence_session_completed">Sessão concluída</string>
+    <string name="evidence_session_cancelled">Sessão cancelada</string>
+    <string name="evidence_activity_completed">Bloco planejado concluído</string>
+    <string name="evidence_activity_missed">Bloco planejado perdido</string>
+    <string name="evidence_review_due">Revisão pendente</string>
+    <string name="evidence_review_completed">Revisão concluída</string>
+    <string name="evidence_question_added">Questão adicionada</string>
+    <string name="evidence_test_created">Teste de prática criado</string>
+    <string name="evidence_test_submitted">Teste de prática enviado</string>
+    <string name="evidence_mock_created">Simulado criado</string>
+    <string name="evidence_mock_submitted">Simulado enviado</string>
+    <string name="evidence_goal_completed">Meta concluída</string>
+    <string name="evidence_note_pinned">Nota fixada</string>
 </resources>

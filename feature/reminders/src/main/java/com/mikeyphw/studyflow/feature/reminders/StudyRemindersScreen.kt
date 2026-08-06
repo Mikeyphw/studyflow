@@ -1,8 +1,10 @@
 package com.mikeyphw.studyflow.feature.reminders
 
+import android.app.AlarmManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.PowerManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +50,12 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationCandidate
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
+import com.mikeyphw.studyflow.core.domain.ReminderReliabilityCenter
+import com.mikeyphw.studyflow.core.domain.ReminderReliabilityFallback
+import com.mikeyphw.studyflow.core.domain.ReminderReliabilityInput
+import com.mikeyphw.studyflow.core.domain.ReminderReliabilityIssue
+import com.mikeyphw.studyflow.core.domain.ReminderReliabilityIssueKind
+import com.mikeyphw.studyflow.core.domain.ReminderReliabilityStatus
 import com.mikeyphw.studyflow.core.domain.ReviewQueue
 import com.mikeyphw.studyflow.core.domain.StudyReminderInput
 import com.mikeyphw.studyflow.core.domain.StudyReminderPlanner
@@ -103,6 +111,29 @@ fun StudyRemindersScreen(
             notificationPermissionGranted = notificationPermissionGranted,
         ),
     )
+    val activeCandidates = reminderPlan.notificationCandidates.filter { candidate ->
+        !candidate.suppressedByQuietHours
+    }
+    val reliabilityReport = remember(reminderPlan, notificationPermissionGranted, context) {
+        ReminderReliabilityCenter.inspect(
+            ReminderReliabilityInput(
+                notificationPermissionGranted = notificationPermissionGranted,
+                exactAlarmAvailable = context.canScheduleStudyFlowExactAlarms(),
+                batteryOptimizationIgnored = context.isIgnoringBatteryOptimizations(),
+                quietHoursActive = reminderPlan.quietHoursActive,
+                activeCandidateCount = reminderPlan.activeCandidateCount,
+                dueReviewCount = reminderPlan.widgetSummary.dueReviewCount,
+                missedActivityCount = reminderPlan.widgetSummary.missedActivityCount,
+                plannedActivityCandidateCount = reminderPlan.notificationCandidates.count { candidate ->
+                    candidate.type == ReminderNotificationType.PLANNED_ACTIVITY
+                },
+                nextCandidateAtEpochMillis = activeCandidates.minOfOrNull { candidate ->
+                    candidate.scheduledAtEpochMillis
+                },
+                nowEpochMillis = now,
+            ),
+        )
+    }
     var remindersEnabled by rememberSaveable(plan.id.value, settings.reviewNotificationsEnabled) {
         mutableStateOf(settings.reviewNotificationsEnabled)
     }
@@ -178,6 +209,26 @@ fun StudyRemindersScreen(
                     enabled = reminderPlan.permissionRequired,
                 ) {
                     Text(stringResource(R.string.request_notification_permission))
+                }
+            }
+            StudyFlowSectionCard(title = stringResource(R.string.reminder_reliability_title)) {
+                Text(
+                    text = stringResource(reliabilityReport.status.labelRes()),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = stringResource(reliabilityReport.fallback.messageRes()),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                reliabilityReport.nextCandidateAtEpochMillis?.let { nextCandidateAt ->
+                    Text(
+                        text = stringResource(R.string.reminder_next_candidate_epoch, nextCandidateAt),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                reliabilityReport.issues.forEach { issue ->
+                    ReminderReliabilityIssueRow(issue)
                 }
             }
             StudyFlowSectionCard(title = stringResource(R.string.reminder_preferences_title)) {
@@ -277,6 +328,18 @@ private fun WidgetPreviewCard(summary: TodayWidgetSummary) {
 }
 
 @Composable
+private fun ReminderReliabilityIssueRow(issue: ReminderReliabilityIssue) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(text = stringResource(issue.kind.titleRes()), style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = stringResource(issue.kind.messageRes()),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+@Composable
 private fun PreferenceSwitch(
     title: String,
     description: String,
@@ -329,4 +392,52 @@ internal fun formatMinuteOfDay(value: Int): String = String.format(
 private fun currentMinuteOfDay(): Int {
     val calendar = Calendar.getInstance()
     return calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+}
+
+
+private fun ReminderReliabilityStatus.labelRes(): Int = when (this) {
+    ReminderReliabilityStatus.READY -> R.string.reminder_reliability_ready
+    ReminderReliabilityStatus.DEGRADED -> R.string.reminder_reliability_degraded
+    ReminderReliabilityStatus.ACTION_NEEDED -> R.string.reminder_reliability_action_needed
+    ReminderReliabilityStatus.BLOCKED -> R.string.reminder_reliability_blocked
+}
+
+private fun ReminderReliabilityFallback.messageRes(): Int = when (this) {
+    ReminderReliabilityFallback.NONE -> R.string.reminder_fallback_none
+    ReminderReliabilityFallback.WIDGET_AND_MANUAL_CHECK -> R.string.reminder_fallback_widget_manual
+    ReminderReliabilityFallback.INEXACT_ALARM_WINDOW -> R.string.reminder_fallback_inexact
+    ReminderReliabilityFallback.QUIET_HOURS_DELAY -> R.string.reminder_fallback_quiet_hours
+    ReminderReliabilityFallback.BACKLOG_RECOVERY -> R.string.reminder_fallback_backlog
+}
+
+private fun ReminderReliabilityIssueKind.titleRes(): Int = when (this) {
+    ReminderReliabilityIssueKind.NOTIFICATION_PERMISSION -> R.string.reminder_issue_permission
+    ReminderReliabilityIssueKind.EXACT_ALARM_ACCESS -> R.string.reminder_issue_exact_alarm
+    ReminderReliabilityIssueKind.BATTERY_OPTIMIZATION -> R.string.reminder_issue_battery
+    ReminderReliabilityIssueKind.QUIET_HOURS_ACTIVE -> R.string.reminder_issue_quiet_hours
+    ReminderReliabilityIssueKind.REVIEW_BACKLOG -> R.string.reminder_issue_reviews
+    ReminderReliabilityIssueKind.MISSED_ACTIVITY_BACKLOG -> R.string.reminder_issue_missed
+    ReminderReliabilityIssueKind.NO_SCHEDULED_CANDIDATES -> R.string.reminder_issue_no_candidates
+}
+
+private fun ReminderReliabilityIssueKind.messageRes(): Int = when (this) {
+    ReminderReliabilityIssueKind.NOTIFICATION_PERMISSION -> R.string.reminder_issue_permission_message
+    ReminderReliabilityIssueKind.EXACT_ALARM_ACCESS -> R.string.reminder_issue_exact_alarm_message
+    ReminderReliabilityIssueKind.BATTERY_OPTIMIZATION -> R.string.reminder_issue_battery_message
+    ReminderReliabilityIssueKind.QUIET_HOURS_ACTIVE -> R.string.reminder_issue_quiet_hours_message
+    ReminderReliabilityIssueKind.REVIEW_BACKLOG -> R.string.reminder_issue_reviews_message
+    ReminderReliabilityIssueKind.MISSED_ACTIVITY_BACKLOG -> R.string.reminder_issue_missed_message
+    ReminderReliabilityIssueKind.NO_SCHEDULED_CANDIDATES -> R.string.reminder_issue_no_candidates_message
+}
+
+private fun Context.canScheduleStudyFlowExactAlarms(): Boolean {
+    if (Build.VERSION.SDK_INT < 31) return true
+    val alarmManager = getSystemService(AlarmManager::class.java) ?: return false
+    return alarmManager.canScheduleExactAlarms()
+}
+
+private fun Context.isIgnoringBatteryOptimizations(): Boolean {
+    if (Build.VERSION.SDK_INT < 23) return true
+    val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return false
+    return powerManager.isIgnoringBatteryOptimizations(packageName)
 }
