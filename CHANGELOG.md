@@ -1,5 +1,27 @@
 # Changelog
 
+## Phase 50-51 r3 Kotlin compile hotfix
+
+- Fixed `PracticeWorkspaceScreen.reviewTitle` to snapshot cross-module nullable review IDs into local values before smart-casting.
+- Added a source-contract gate that rejects direct smart-casts of public `ReviewItem` properties from another module.
+- Preserved the complete Phase 50-51 r2 weakness-drill and question-import implementation.
+
+## Phase 50-51 r2 audit hotfix
+
+- Fixed the question importer to use valid escaped Kotlin regexes and no literal tab characters in source.
+- Fixed TSV/Anki-style rows without options to import as short-answer questions.
+- Fixed weakness-drill scoring so recurrence weight cannot pull unrelated questions into a generated drill.
+- Fixed import rejected-count math to count rejected drafts rather than individual issue rows.
+- Added focused tests and verifier checks for the audit gaps.
+
+## Phase 50-51 weakness drills and question import
+
+- Added a weakness-drill generator that builds targeted practice from repeated errors, overdue question reviews, matching topics, and matching subjects.
+- Added a question import pipeline for CSV, TSV/Anki-style rows, and Markdown blocks with validation and duplicate detection.
+- Wired weakness-drill creation and text question import into the V2 Practice workspace.
+- Fixed remaining AutoMirrored `TrendingUp` deprecation warnings in the V2 Progress workspace.
+- Added domain tests, bilingual workspace resources, documentation, and a Phase 50-51 verifier.
+
 ## Phase 48-49 readiness and adaptive reschedule
 
 - Added an explainable exam readiness score combining coverage, review health, practice, mock exams, consistency, schedule adherence, and time feasibility.

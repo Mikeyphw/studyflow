@@ -4,35 +4,41 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Quiz
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowPrimaryActionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowWorkspaceTabs
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
@@ -40,11 +46,18 @@ import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.RemediationPriority
-import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.domain.WeaknessDrillPlan
+import com.mikeyphw.studyflow.core.domain.WrongAnswerRemediation
+import com.mikeyphw.studyflow.core.model.MockExam
+import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.ReviewItem
+import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyTest
+import com.mikeyphw.studyflow.core.model.StudyTestId
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceTab
-import kotlinx.coroutines.launch
+import java.util.UUID
 import java.util.concurrent.CancellationException
+import kotlinx.coroutines.launch
 
 @Composable
 fun PracticeWorkspaceScreen(
@@ -71,9 +84,21 @@ fun PracticeWorkspaceScreen(
     val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val tests by testsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val mocks by mocksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val weaknessDrill = remember(questions, notebook, queue) {
+        practiceManager.buildWeaknessDrill(
+            questions = questions,
+            remediations = notebook?.entries.orEmpty(),
+            dueReviews = queue?.due.orEmpty(),
+        )
+    }
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val operationFailed = stringResource(R.string.operation_failed)
+    val weaknessDrillTitle = stringResource(R.string.weakness_drill_title)
+    val weaknessDrillCreated = stringResource(R.string.weakness_drill_created)
+    val weaknessDrillUnavailable = stringResource(R.string.weakness_drill_unavailable)
+    val questionsImported = stringResource(R.string.questions_imported)
+    val noNewQuestions = stringResource(R.string.question_import_no_new_questions)
 
     Scaffold(
         modifier = modifier,
@@ -141,9 +166,51 @@ fun PracticeWorkspaceScreen(
                     tests = tests,
                     mocks = mocks,
                     onOpenQuestionBank = onOpenQuestionBank,
+                    onImportQuestions = { rawText ->
+                        scope.launch {
+                            try {
+                                val result = practiceManager.importQuestionsFromText(
+                                    planId = plan.id,
+                                    rawText = rawText,
+                                    existingQuestions = questions,
+                                )
+                                snackbar.showSnackbar(
+                                    if (result.importedCount > 0) questionsImported else noNewQuestions,
+                                )
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Throwable) {
+                                snackbar.showSnackbar(operationFailed)
+                            }
+                        }
+                    },
                 )
                 PracticeWorkspaceTab.ERRORS -> ErrorsPane(
                     entries = notebook?.entries.orEmpty(),
+                    weaknessDrill = weaknessDrill,
+                    onCreateWeaknessDrill = {
+                        scope.launch {
+                            try {
+                                if (!weaknessDrill.executable) {
+                                    snackbar.showSnackbar(weaknessDrillUnavailable)
+                                    return@launch
+                                }
+                                practiceManager.createWeaknessDrillTest(
+                                    id = StudyTestId(UUID.randomUUID().toString()),
+                                    planId = plan.id,
+                                    title = weaknessDrillTitle,
+                                    questions = questions,
+                                    remediations = notebook?.entries.orEmpty(),
+                                    dueReviews = queue?.due.orEmpty(),
+                                )
+                                snackbar.showSnackbar(weaknessDrillCreated)
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Throwable) {
+                                snackbar.showSnackbar(operationFailed)
+                            }
+                        }
+                    },
                     onOpenReviewCenter = onOpenReviewCenter,
                 )
             }
@@ -232,11 +299,13 @@ private fun ReviewsPane(
 
 @Composable
 private fun QuestionsPane(
-    questions: List<com.mikeyphw.studyflow.core.model.Question>,
-    tests: List<com.mikeyphw.studyflow.core.model.StudyTest>,
-    mocks: List<com.mikeyphw.studyflow.core.model.MockExam>,
+    questions: List<Question>,
+    tests: List<StudyTest>,
+    mocks: List<MockExam>,
     onOpenQuestionBank: () -> Unit,
+    onImportQuestions: (String) -> Unit,
 ) {
+    var showImportDialog by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = workspaceContentPadding(),
@@ -254,6 +323,15 @@ private fun QuestionsPane(
                 value = stringResource(R.string.tests_count, tests.size),
                 supportingText = stringResource(R.string.mocks_count, mocks.size),
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        item(key = "question-importer", contentType = "importer") {
+            StudyFlowTimelineRow(
+                title = stringResource(R.string.question_importer_title),
+                metadata = stringResource(R.string.question_importer_message),
+                icon = Icons.Outlined.Quiz,
+                actionLabel = stringResource(R.string.import_questions),
+                onAction = { showImportDialog = true },
             )
         }
         if (questions.isEmpty()) {
@@ -313,6 +391,56 @@ private fun QuestionsPane(
             }
         }
     }
+    if (showImportDialog) {
+        QuestionImportDialog(
+            onDismiss = { showImportDialog = false },
+            onImport = { rawText ->
+                showImportDialog = false
+                onImportQuestions(rawText)
+            },
+        )
+    }
+}
+
+@Composable
+private fun QuestionImportDialog(
+    onDismiss: () -> Unit,
+    onImport: (String) -> Unit,
+) {
+    var rawText by rememberSaveable { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.question_importer_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.question_importer_help))
+                OutlinedTextField(
+                    value = rawText,
+                    onValueChange = { rawText = it },
+                    label = { Text(stringResource(R.string.import_questions)) },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp),
+                )
+                Text(
+                    text = stringResource(R.string.question_importer_formats),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onImport(rawText) },
+                enabled = rawText.isNotBlank(),
+            ) {
+                Text(stringResource(R.string.import_questions))
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text(stringResource(R.string.back))
+            }
+        },
+    )
 }
 
 @Composable
@@ -331,10 +459,7 @@ private fun ReviewExecutionCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = reviewTitle(item),
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Text(text = reviewTitle(item), style = MaterialTheme.typography.titleMedium)
             Text(
                 text = stringResource(R.string.review_method_and_interval, item.method.name, item.intervalDays),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -361,29 +486,26 @@ private fun ReviewExecutionCard(
 }
 
 @Composable
-private fun reviewTitle(item: ReviewItem): String = when {
-    item.flashcardId != null -> {
-        val id = item.flashcardId
-        stringResource(R.string.review_flashcard, id?.value?.take(8).orEmpty())
+private fun reviewTitle(item: ReviewItem): String {
+    val flashcardId = item.flashcardId
+    val questionId = item.questionId
+    val errorEntryId = item.errorEntryId
+    val topicId = item.topicId
+
+    return when {
+        flashcardId != null -> stringResource(R.string.review_flashcard, flashcardId.value.take(8))
+        questionId != null -> stringResource(R.string.review_question, questionId.value.take(8))
+        errorEntryId != null -> stringResource(R.string.review_error, errorEntryId.value.take(8))
+        topicId != null -> stringResource(R.string.review_topic, topicId.value.take(8))
+        else -> stringResource(R.string.review_generic, item.id.value.take(8))
     }
-    item.questionId != null -> {
-        val id = item.questionId
-        stringResource(R.string.review_question, id?.value?.take(8).orEmpty())
-    }
-    item.errorEntryId != null -> {
-        val id = item.errorEntryId
-        stringResource(R.string.review_error, id?.value?.take(8).orEmpty())
-    }
-    item.topicId != null -> {
-        val id = item.topicId
-        stringResource(R.string.review_topic, id?.value?.take(8).orEmpty())
-    }
-    else -> stringResource(R.string.review_generic, item.id.value.take(8))
 }
 
 @Composable
 private fun ErrorsPane(
-    entries: List<com.mikeyphw.studyflow.core.domain.WrongAnswerRemediation>,
+    entries: List<WrongAnswerRemediation>,
+    weaknessDrill: WeaknessDrillPlan,
+    onCreateWeaknessDrill: () -> Unit,
     onOpenReviewCenter: () -> Unit,
 ) {
     LazyColumn(
@@ -397,6 +519,16 @@ private fun ErrorsPane(
             actionLabel = { stringResource(R.string.open_error_notebook) },
             onAction = onOpenReviewCenter,
         )
+        item(key = "weakness-drill", contentType = "weakness-drill") {
+            StudyFlowTimelineRow(
+                title = stringResource(R.string.weakness_drill_title),
+                metadata = weaknessDrillMessage(weaknessDrill),
+                icon = Icons.Outlined.ErrorOutline,
+                status = stringResource(R.string.questions_value, weaknessDrill.questionCount),
+                actionLabel = stringResource(R.string.create_weakness_drill),
+                onAction = onCreateWeaknessDrill,
+            )
+        }
         if (entries.isEmpty()) {
             item(key = "errors-empty", contentType = "empty") {
                 StudyFlowEmptyState(
@@ -423,6 +555,13 @@ private fun ErrorsPane(
             }
         }
     }
+}
+
+@Composable
+private fun weaknessDrillMessage(plan: WeaknessDrillPlan): String = if (plan.executable) {
+    stringResource(R.string.weakness_drill_message, plan.questionCount, plan.driverCount)
+} else {
+    stringResource(R.string.weakness_drill_unavailable)
 }
 
 @Composable

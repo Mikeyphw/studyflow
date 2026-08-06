@@ -7,14 +7,18 @@ privacy controls, and local checkpoint status on the device.
 
 ## Current status
 
-This source tree is implemented through **Phase 47**, including the complete UI/UX V2 workspace migration:
+This source tree is implemented through **Phase 51**, including the complete UI/UX V2 workspace migration:
 
 - Phases 38-47 replace the feature-catalog shell with Today, Plan, Practice, and Progress workspaces.
 - The adaptive shell preserves root back stacks and legacy route compatibility.
 - Focus mode persists target duration through Room schema 3 and restores active sessions.
 - Global search, plan switching, quick add, settings, reminders, backup, privacy, and diagnostics remain reachable.
 
-The release-candidate identity and acceptance baseline was implemented through **Phase 37**; the UI/UX V2 migration then advances the source tree through Phase 47.
+- Phases 48-49 add explainable exam readiness and preview-first adaptive rescheduling.
+- Phases 50-51 add targeted weakness drills and a CSV/TSV/Markdown question import pipeline.
+- Phase 50-51 r2 hardens importer regexes, TSV/Anki short-answer defaults, recurrence-safe drill ranking, and audit tests.
+
+The release-candidate identity and acceptance baseline was implemented through **Phase 37**; the UI/UX V2 migration then advances the source tree through Phase 51.
 
 The preceding release-identity and acceptance framework remains active:
 
@@ -46,7 +50,7 @@ local checkpoint evidence are scoped through `studyPlanId`.
 - Android Gradle Plugin 9.3.0
 - Gradle 9.5.0
 - Kotlin 2.4.10
-- JDK 17 or newer
+- JDK 17
 - Android SDK 37
 - Android SDK Build Tools 36.0.0
 - Compose BOM 2026.06.00

@@ -110,3 +110,19 @@ The follow-on readiness/adaptive-reschedule overlay adds `scripts/verify_phase_4
 ## Phase 48-49 r5 resource validation hotfix
 
 Devtool r4 reached `:feature:workspace:compileDebugKotlin` and found that `ProgressWorkspaceScreen` referenced `R.string.open_plan` without a matching workspace resource. R5 adds the English and pt-BR string resources and extends `scripts/verify_phase_48_49.py` to fail on missing Progress workspace `R.string.*` references before Android compilation.
+
+## Phase 50-51 source validation
+
+The weakness-drill and question-import overlay adds `scripts/verify_phase_50_51.py`. Source validation in this environment covered the UI/UX V2 verifier, Phase 48-49 verifier, Phase 50-51 verifier, full-app final readiness verifier, and Debug Workbench D8 verifier. Android SDK/AGP compilation, lint, resource merge, APK assembly, and real-device checks remain Devtool host gates.
+
+The Phase 50-51 contract also verifies that V2 Progress uses `Icons.AutoMirrored.Outlined.TrendingUp`, so the previous deprecation warnings should not recur.
+
+
+## Phase 50-51 r2 audit hotfix
+
+The first Phase 50-51 package was audited against its promises before Devtool target execution. R2 fixes illegal Kotlin regex escapes, literal tab characters in the question importer, recurrence-only scoring that could include unrelated drill questions, optionless TSV/Anki import defaulting, and rejected-count math. `scripts/verify_phase_50_51.py` now checks those failure classes directly.
+
+## Phase 50-51 r3 Kotlin compile hotfix
+
+The workspace review-title formatter now copies nullable `ReviewItem` identifiers into local values before null checks. This is required because the identifiers are public properties declared in `core:domain`, while the formatter compiles in `feature:workspace`; Kotlin cannot smart-cast repeated reads of those cross-module properties. The Phase 50-51 verifier rejects the former direct-property pattern and requires all four stable local snapshots.
+

@@ -262,4 +262,17 @@
     <string name="reschedule_apply_result">Reschedule result</string>
     <string name="reschedule_apply_success">Applied %1$d safe change(s); skipped %2$d preview-only item(s).</string>
     <string name="reschedule_apply_failed">Safe changes could not be applied. Open the plan to adjust manually.</string>
+
+    <string name="weakness_drill_title">Weakness drill</string>
+    <string name="weakness_drill_message">%1$d targeted question(s) from %2$d weak signal(s).</string>
+    <string name="weakness_drill_unavailable">Add wrong answers or due question reviews before creating a drill.</string>
+    <string name="weakness_drill_created">Weakness drill created.</string>
+    <string name="create_weakness_drill">Create drill</string>
+    <string name="question_importer_title">Question importer</string>
+    <string name="question_importer_message">Paste CSV, TSV, or Markdown questions and skip duplicates.</string>
+    <string name="question_importer_help">Paste one or more questions. StudyFlow validates required answers before saving.</string>
+    <string name="question_importer_formats">CSV: statement, answer, explanation, options. TSV: question, answer, explanation. Markdown: Question/Answer/Explanation lines.</string>
+    <string name="import_questions">Import questions</string>
+    <string name="questions_imported">Questions imported.</string>
+    <string name="question_import_no_new_questions">No new valid questions were imported.</string>
 </resources>

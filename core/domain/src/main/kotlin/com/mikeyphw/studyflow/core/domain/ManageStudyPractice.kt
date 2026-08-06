@@ -6,11 +6,13 @@ import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TestMode
 import com.mikeyphw.studyflow.core.model.TopicId
+import java.util.UUID
 import kotlinx.coroutines.flow.combine
 
 class ManageStudyPractice(
@@ -230,6 +232,93 @@ class ManageStudyPractice(
 
     suspend fun finishMockExamAttempt(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
         execution.finishMockExam(planId, mockExamId)
+
+    fun previewQuestionImport(
+        planId: StudyPlanId,
+        rawText: String,
+        existingQuestions: List<Question>,
+        requestedFormat: QuestionImportFormat = QuestionImportFormat.AUTO,
+        defaultSubjectId: SubjectId? = null,
+        defaultTopicId: TopicId? = null,
+    ): QuestionImportPreview = QuestionImportPipeline.preview(
+        planId = planId,
+        rawText = rawText,
+        existingQuestions = existingQuestions,
+        requestedFormat = requestedFormat,
+        defaultSubjectId = defaultSubjectId,
+        defaultTopicId = defaultTopicId,
+    )
+
+    suspend fun importQuestionsFromText(
+        planId: StudyPlanId,
+        rawText: String,
+        existingQuestions: List<Question>,
+        requestedFormat: QuestionImportFormat = QuestionImportFormat.AUTO,
+        defaultSubjectId: SubjectId? = null,
+        defaultTopicId: TopicId? = null,
+    ): QuestionImportResult {
+        val preview = previewQuestionImport(
+            planId = planId,
+            rawText = rawText,
+            existingQuestions = existingQuestions,
+            requestedFormat = requestedFormat,
+            defaultSubjectId = defaultSubjectId,
+            defaultTopicId = defaultTopicId,
+        )
+        val imported = mutableListOf<Question>()
+        preview.drafts.filter(QuestionImportDraft::importable).forEach { draft ->
+            imported += createQuestion(
+                id = QuestionId(UUID.randomUUID().toString()),
+                studyPlanId = planId,
+                subjectId = draft.subjectId,
+                topicId = draft.topicId,
+                type = draft.type,
+                statement = draft.statement,
+                options = draft.options,
+                correctAnswer = draft.correctAnswer,
+                explanation = draft.explanation,
+                examBoard = draft.examBoard,
+                source = draft.source,
+                year = draft.year,
+                difficulty = draft.difficulty,
+                tags = draft.tags,
+            )
+        }
+        return QuestionImportResult(preview = preview, imported = imported)
+    }
+
+    fun buildWeaknessDrill(
+        questions: List<Question>,
+        remediations: List<WrongAnswerRemediation>,
+        dueReviews: List<ReviewItem>,
+        request: WeaknessDrillRequest = WeaknessDrillRequest(),
+    ): WeaknessDrillPlan = WeaknessDrillGenerator.build(
+        questions = questions,
+        remediations = remediations,
+        dueReviews = dueReviews,
+        request = request,
+    )
+
+    suspend fun createWeaknessDrillTest(
+        id: StudyTestId,
+        planId: StudyPlanId,
+        title: String,
+        questions: List<Question>,
+        remediations: List<WrongAnswerRemediation>,
+        dueReviews: List<ReviewItem>,
+        request: WeaknessDrillRequest = WeaknessDrillRequest(),
+    ): StudyTest {
+        val drill = buildWeaknessDrill(questions, remediations, dueReviews, request)
+        require(drill.executable) { "Weakness drill needs enough matching weak questions." }
+        return createPracticeTest(
+            id = id,
+            planId = planId,
+            title = title,
+            questions = drill.questions,
+            mode = TestMode.IMMEDIATE_FEEDBACK,
+            timeLimitSeconds = null,
+        )
+    }
 
     private suspend fun requireQuestion(planId: StudyPlanId, questionId: QuestionId): Question =
         requireNotNull(repository.findQuestion(planId, questionId)) { "Question does not exist." }

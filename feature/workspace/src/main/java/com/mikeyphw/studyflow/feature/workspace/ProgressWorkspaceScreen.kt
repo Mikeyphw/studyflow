@@ -14,7 +14,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.AutoFixHigh
-import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -137,7 +137,12 @@ fun ProgressWorkspaceScreen(
                             )
                         },
                         leadingIcon = if (period == selectedPeriod) {
-                            { androidx.compose.material3.Icon(Icons.Outlined.TrendingUp, contentDescription = null) }
+                            {
+                                androidx.compose.material3.Icon(
+                                    Icons.AutoMirrored.Outlined.TrendingUp,
+                                    contentDescription = null,
+                                )
+                            }
                         } else {
                             null
                         },
@@ -339,7 +344,7 @@ fun ProgressWorkspaceScreen(
                             earlierMinutes.toInt(),
                             recentMinutes.toInt(),
                         ),
-                        icon = Icons.Outlined.TrendingUp,
+                        icon = Icons.AutoMirrored.Outlined.TrendingUp,
                         status = stringResource(trendLabel),
                         onClick = onOpenAnalytics,
                     )

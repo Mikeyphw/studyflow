@@ -262,4 +262,17 @@
     <string name="reschedule_apply_result">Resultado do replanejamento</string>
     <string name="reschedule_apply_success">Aplicou %1$d ajuste(s) seguro(s); pulou %2$d item(ns) só de prévia.</string>
     <string name="reschedule_apply_failed">Não foi possível aplicar os ajustes seguros. Abra o plano para ajustar manualmente.</string>
+
+    <string name="weakness_drill_title">Treino de fraquezas</string>
+    <string name="weakness_drill_message">%1$d questão(ões) direcionada(s) por %2$d sinal(is) fraco(s).</string>
+    <string name="weakness_drill_unavailable">Adicione erros ou revisões de questões vencidas antes de criar o treino.</string>
+    <string name="weakness_drill_created">Treino de fraquezas criado.</string>
+    <string name="create_weakness_drill">Criar treino</string>
+    <string name="question_importer_title">Importador de questões</string>
+    <string name="question_importer_message">Cole questões em CSV, TSV ou Markdown e pule duplicadas.</string>
+    <string name="question_importer_help">Cole uma ou mais questões. O StudyFlow valida respostas obrigatórias antes de salvar.</string>
+    <string name="question_importer_formats">CSV: enunciado, resposta, explicação, opções. TSV: questão, resposta, explicação. Markdown: linhas Question/Answer/Explanation.</string>
+    <string name="import_questions">Importar questões</string>
+    <string name="questions_imported">Questões importadas.</string>
+    <string name="question_import_no_new_questions">Nenhuma questão nova válida foi importada.</string>
 </resources>
