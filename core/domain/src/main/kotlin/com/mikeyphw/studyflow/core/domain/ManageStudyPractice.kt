@@ -175,6 +175,31 @@ class ManageStudyPractice(
         )
     }
 
+
+    fun previewMockExamStudio(
+        questions: List<Question>,
+        request: MockExamStudioRequest = MockExamStudioRequest(),
+    ): MockExamStudioBlueprint = MockExamStudioPlanner.preview(questions, request)
+
+    suspend fun createMockExamFromStudio(
+        id: MockExamId,
+        planId: StudyPlanId,
+        questions: List<Question>,
+        request: MockExamStudioRequest = MockExamStudioRequest(),
+    ): MockExam {
+        val blueprint = previewMockExamStudio(questions, request)
+        require(blueprint.executable) { "Mock Exam Studio needs at least one eligible question." }
+        return createMockExam(
+            id = id,
+            planId = planId,
+            title = blueprint.title,
+            questions = blueprint.selectedQuestions,
+            timeLimitSeconds = blueprint.timeLimitSeconds,
+            negativeMarking = blueprint.negativeMarking,
+            minimumScorePercent = blueprint.minimumScorePercent,
+        )
+    }
+
     suspend fun submitMockExam(
         planId: StudyPlanId,
         mockExamId: MockExamId,

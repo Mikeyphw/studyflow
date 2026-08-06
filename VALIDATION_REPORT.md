@@ -126,3 +126,12 @@ The first Phase 50-51 package was audited against its promises before Devtool ta
 
 The workspace review-title formatter now copies nullable `ReviewItem` identifiers into local values before null checks. This is required because the identifiers are public properties declared in `core:domain`, while the formatter compiles in `feature:workspace`; Kotlin cannot smart-cast repeated reads of those cross-module properties. The Phase 50-51 verifier rejects the former direct-property pattern and requires all four stable local snapshots.
 
+## Phase 52-53 validation
+
+Source validators cover Mock Exam Studio contracts, workspace wiring, widget action routing, localized resources, and repository hygiene. Android compilation and instrumentation remain Devtool target gates.
+
+Phase 52/53 r2 source validation passed with disputed-question filtering, dynamic mock preview, and widget action contracts.
+
+## Phase 52-53 r4 Kotlin compile hotfix
+
+Devtool r3 reached `:core:domain:compileKotlin` and failed because `MockExamStudioPlanner` referenced the private extension function as `Question::isExamEligible`. R4 uses an explicit lambda and extends `scripts/verify_phase_52_53.py` to reject that unsafe function-reference pattern. Source validators pass in this environment; Android compile/assemble remains the Devtool target gate.

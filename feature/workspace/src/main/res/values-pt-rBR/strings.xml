@@ -275,4 +275,22 @@
     <string name="import_questions">Importar questões</string>
     <string name="questions_imported">Questões importadas.</string>
     <string name="question_import_no_new_questions">Nenhuma questão nova válida foi importada.</string>
+    <string name="mock_exam_studio_title">Estúdio de simulados</string>
+    <string name="mock_exam_studio_generated_title">Simulado de %1$s</string>
+    <string name="mock_exam_studio_message">%1$d questões elegíveis · cronômetro de %2$d min</string>
+    <string name="mock_exam_studio_help">Ajuste quantidade, tempo e nota mínima antes de criar o simulado.</string>
+    <string name="mock_exam_question_count">Quantidade de questões</string>
+    <string name="mock_exam_time_limit_minutes">Tempo limite em minutos</string>
+    <string name="mock_exam_minimum_score">Percentual mínimo</string>
+    <string name="mock_exam_studio_sections">%1$d seção(ões) · %2$d questão(ões) selecionada(s)</string>
+    <string name="mock_exam_warning_no_questions">Adicione questões antes de criar um simulado.</string>
+    <string name="mock_exam_warning_skipped">Algumas questões inelegíveis foram ignoradas.</string>
+    <string name="mock_exam_warning_not_enough">Não há questões compatíveis suficientes para o tamanho pedido.</string>
+    <string name="mock_exam_warning_narrow">A cobertura está estreita; adicione mais matérias para fortalecer o simulado.</string>
+    <string name="create_mock_exam">Criar simulado</string>
+    <string name="mock_exam_board_filter">Filtro de banca</string>
+    <string name="mock_exam_source_filter">Filtro de fonte</string>
+    <string name="mock_exam_tags_filter">Tags separadas por vírgula</string>
+    <string name="mock_exam_include_disputed">Incluir questões contestadas</string>
+    <string name="mock_exam_created">Simulado criado.</string>
 </resources>

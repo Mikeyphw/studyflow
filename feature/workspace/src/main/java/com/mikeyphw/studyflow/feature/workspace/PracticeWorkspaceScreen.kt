@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.feature.workspace
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -31,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -45,10 +48,14 @@ import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
+import com.mikeyphw.studyflow.core.domain.MockExamStudioBlueprint
+import com.mikeyphw.studyflow.core.domain.MockExamStudioRequest
+import com.mikeyphw.studyflow.core.domain.MockExamStudioWarning
 import com.mikeyphw.studyflow.core.domain.RemediationPriority
 import com.mikeyphw.studyflow.core.domain.WeaknessDrillPlan
 import com.mikeyphw.studyflow.core.domain.WrongAnswerRemediation
 import com.mikeyphw.studyflow.core.model.MockExam
+import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -99,6 +106,14 @@ fun PracticeWorkspaceScreen(
     val weaknessDrillUnavailable = stringResource(R.string.weakness_drill_unavailable)
     val questionsImported = stringResource(R.string.questions_imported)
     val noNewQuestions = stringResource(R.string.question_import_no_new_questions)
+    val mockExamCreated = stringResource(R.string.mock_exam_created)
+    val mockStudioDefaultTitle = stringResource(R.string.mock_exam_studio_generated_title, plan.name)
+    val mockStudio = remember(questions, mockStudioDefaultTitle) {
+        practiceManager.previewMockExamStudio(
+            questions = questions,
+            request = MockExamStudioRequest(title = mockStudioDefaultTitle),
+        )
+    }
 
     Scaffold(
         modifier = modifier,
@@ -165,7 +180,28 @@ fun PracticeWorkspaceScreen(
                     questions = questions,
                     tests = tests,
                     mocks = mocks,
+                    mockStudio = mockStudio,
                     onOpenQuestionBank = onOpenQuestionBank,
+                    onPreviewMockExam = { request ->
+                        practiceManager.previewMockExamStudio(questions, request)
+                    },
+                    onCreateMockExam = { request ->
+                        scope.launch {
+                            try {
+                                practiceManager.createMockExamFromStudio(
+                                    id = MockExamId(UUID.randomUUID().toString()),
+                                    planId = plan.id,
+                                    questions = questions,
+                                    request = request,
+                                )
+                                snackbar.showSnackbar(mockExamCreated)
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Throwable) {
+                                snackbar.showSnackbar(operationFailed)
+                            }
+                        }
+                    },
                     onImportQuestions = { rawText ->
                         scope.launch {
                             try {
@@ -302,10 +338,14 @@ private fun QuestionsPane(
     questions: List<Question>,
     tests: List<StudyTest>,
     mocks: List<MockExam>,
+    mockStudio: MockExamStudioBlueprint,
     onOpenQuestionBank: () -> Unit,
+    onPreviewMockExam: (MockExamStudioRequest) -> MockExamStudioBlueprint,
+    onCreateMockExam: (MockExamStudioRequest) -> Unit,
     onImportQuestions: (String) -> Unit,
 ) {
     var showImportDialog by rememberSaveable { mutableStateOf(false) }
+    var showMockStudioDialog by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = workspaceContentPadding(),
@@ -323,6 +363,20 @@ private fun QuestionsPane(
                 value = stringResource(R.string.tests_count, tests.size),
                 supportingText = stringResource(R.string.mocks_count, mocks.size),
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        item(key = "mock-exam-studio", contentType = "mock-exam-studio") {
+            StudyFlowTimelineRow(
+                title = stringResource(R.string.mock_exam_studio_title),
+                metadata = stringResource(
+                    R.string.mock_exam_studio_message,
+                    mockStudio.questionCount,
+                    mockStudio.timeLimitMinutes,
+                ),
+                icon = Icons.Outlined.Quiz,
+                status = mockStudioWarningLabel(mockStudio.warnings.firstOrNull()),
+                actionLabel = stringResource(R.string.create_mock_exam),
+                onAction = { showMockStudioDialog = true },
             )
         }
         item(key = "question-importer", contentType = "importer") {
@@ -391,6 +445,17 @@ private fun QuestionsPane(
             }
         }
     }
+    if (showMockStudioDialog) {
+        MockExamStudioDialog(
+            initialBlueprint = mockStudio,
+            onPreview = onPreviewMockExam,
+            onDismiss = { showMockStudioDialog = false },
+            onCreate = { request ->
+                showMockStudioDialog = false
+                onCreateMockExam(request)
+            },
+        )
+    }
     if (showImportDialog) {
         QuestionImportDialog(
             onDismiss = { showImportDialog = false },
@@ -400,6 +465,163 @@ private fun QuestionsPane(
             },
         )
     }
+}
+
+@Composable
+private fun MockExamStudioDialog(
+    initialBlueprint: MockExamStudioBlueprint,
+    onPreview: (MockExamStudioRequest) -> MockExamStudioBlueprint,
+    onDismiss: () -> Unit,
+    onCreate: (MockExamStudioRequest) -> Unit,
+) {
+    var questionCount by rememberSaveable { mutableStateOf(initialBlueprint.requestedQuestionCount.toString()) }
+    var minutes by rememberSaveable { mutableStateOf(initialBlueprint.timeLimitMinutes.toString()) }
+    var minimumScore by rememberSaveable { mutableStateOf(initialBlueprint.minimumScorePercent?.toString().orEmpty()) }
+    var examBoard by rememberSaveable { mutableStateOf("") }
+    var source by rememberSaveable { mutableStateOf("") }
+    var tags by rememberSaveable { mutableStateOf("") }
+    var includeDisputed by rememberSaveable { mutableStateOf(false) }
+    val parsedQuestionCount = questionCount.toIntOrNull()
+    val parsedMinutes = minutes.toIntOrNull()
+    val parsedMinimum = minimumScore.toIntOrNull()
+    val minimumScoreValid = minimumScore.isBlank() || parsedMinimum != null
+    val currentRequest = MockExamStudioRequest(
+        title = initialBlueprint.title,
+        questionCount = parsedQuestionCount ?: initialBlueprint.requestedQuestionCount,
+        timeLimitMinutes = parsedMinutes ?: initialBlueprint.timeLimitMinutes,
+        minimumScorePercent = if (minimumScore.isBlank()) null else parsedMinimum,
+        examBoard = examBoard,
+        source = source,
+        tags = tags.split(',').map(String::trim).filter(String::isNotBlank),
+        includeDisputed = includeDisputed,
+    )
+    val currentBlueprint = remember(currentRequest) { onPreview(currentRequest) }
+    val canCreate = parsedQuestionCount != null && parsedQuestionCount > 0 &&
+        parsedMinutes != null && parsedMinutes > 0 && minimumScoreValid && currentBlueprint.executable
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.mock_exam_studio_title)) },
+        text = {
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 460.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item(key = "mock-help") { Text(stringResource(R.string.mock_exam_studio_help)) }
+                item(key = "mock-question-count") {
+                    OutlinedTextField(
+                        value = questionCount,
+                        onValueChange = { questionCount = it },
+                        label = { Text(stringResource(R.string.mock_exam_question_count)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item(key = "mock-minutes") {
+                    OutlinedTextField(
+                        value = minutes,
+                        onValueChange = { minutes = it },
+                        label = { Text(stringResource(R.string.mock_exam_time_limit_minutes)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item(key = "mock-minimum") {
+                    OutlinedTextField(
+                        value = minimumScore,
+                        onValueChange = { minimumScore = it },
+                        label = { Text(stringResource(R.string.mock_exam_minimum_score)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item(key = "mock-board") {
+                    OutlinedTextField(
+                        value = examBoard,
+                        onValueChange = { examBoard = it },
+                        label = { Text(stringResource(R.string.mock_exam_board_filter)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item(key = "mock-source") {
+                    OutlinedTextField(
+                        value = source,
+                        onValueChange = { source = it },
+                        label = { Text(stringResource(R.string.mock_exam_source_filter)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item(key = "mock-tags") {
+                    OutlinedTextField(
+                        value = tags,
+                        onValueChange = { tags = it },
+                        label = { Text(stringResource(R.string.mock_exam_tags_filter)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item(key = "mock-disputed") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = includeDisputed, onCheckedChange = { includeDisputed = it })
+                        Text(stringResource(R.string.mock_exam_include_disputed))
+                    }
+                }
+                item(key = "mock-preview") {
+                    Text(
+                        text = stringResource(
+                            R.string.mock_exam_studio_sections,
+                            currentBlueprint.sections.size,
+                            currentBlueprint.questionCount,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                currentBlueprint.warnings.forEach { warning ->
+                    item(key = "mock-warning-${warning.name}") {
+                        mockStudioWarningLabel(warning)?.let { label ->
+                            Text(
+                                text = label,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = canCreate,
+                onClick = {
+                    onCreate(
+                        currentRequest.copy(
+                            questionCount = requireNotNull(parsedQuestionCount),
+                            timeLimitMinutes = requireNotNull(parsedMinutes),
+                        ),
+                    )
+                },
+            ) {
+                Text(stringResource(R.string.create_mock_exam))
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text(stringResource(R.string.back))
+            }
+        },
+    )
+}
+
+@Composable
+private fun mockStudioWarningLabel(warning: MockExamStudioWarning?): String? = warning?.let { value ->
+    stringResource(
+        when (value) {
+            MockExamStudioWarning.NO_QUESTIONS -> R.string.mock_exam_warning_no_questions
+            MockExamStudioWarning.INELIGIBLE_QUESTIONS_SKIPPED -> R.string.mock_exam_warning_skipped
+            MockExamStudioWarning.NOT_ENOUGH_MATCHING_QUESTIONS -> R.string.mock_exam_warning_not_enough
+            MockExamStudioWarning.NARROW_SUBJECT_COVERAGE -> R.string.mock_exam_warning_narrow
+        },
+    )
 }
 
 @Composable
@@ -491,7 +713,6 @@ private fun reviewTitle(item: ReviewItem): String {
     val questionId = item.questionId
     val errorEntryId = item.errorEntryId
     val topicId = item.topicId
-
     return when {
         flashcardId != null -> stringResource(R.string.review_flashcard, flashcardId.value.take(8))
         questionId != null -> stringResource(R.string.review_question, questionId.value.take(8))

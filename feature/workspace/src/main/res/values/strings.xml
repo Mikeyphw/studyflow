@@ -275,4 +275,22 @@
     <string name="import_questions">Import questions</string>
     <string name="questions_imported">Questions imported.</string>
     <string name="question_import_no_new_questions">No new valid questions were imported.</string>
+    <string name="mock_exam_studio_title">Mock Exam Studio</string>
+    <string name="mock_exam_studio_generated_title">%1$s mock exam</string>
+    <string name="mock_exam_studio_message">%1$d eligible questions · %2$d min timer</string>
+    <string name="mock_exam_studio_help">Tune question count, timer, and passing score before creating the simulated exam.</string>
+    <string name="mock_exam_question_count">Question count</string>
+    <string name="mock_exam_time_limit_minutes">Time limit in minutes</string>
+    <string name="mock_exam_minimum_score">Minimum score percent</string>
+    <string name="mock_exam_studio_sections">%1$d section(s) · %2$d selected question(s)</string>
+    <string name="mock_exam_warning_no_questions">Add questions before creating a mock exam.</string>
+    <string name="mock_exam_warning_skipped">Some ineligible questions were skipped.</string>
+    <string name="mock_exam_warning_not_enough">Not enough matching questions for the requested size.</string>
+    <string name="mock_exam_warning_narrow">Coverage is narrow; add more subjects for a stronger mock.</string>
+    <string name="create_mock_exam">Create mock exam</string>
+    <string name="mock_exam_board_filter">Exam board filter</string>
+    <string name="mock_exam_source_filter">Source filter</string>
+    <string name="mock_exam_tags_filter">Tags filter, comma-separated</string>
+    <string name="mock_exam_include_disputed">Include disputed questions</string>
+    <string name="mock_exam_created">Mock exam created.</string>
 </resources>

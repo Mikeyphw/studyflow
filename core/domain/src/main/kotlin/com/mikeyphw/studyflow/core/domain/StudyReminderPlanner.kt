@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow.core.domain
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import java.util.Calendar
@@ -97,6 +98,7 @@ object StudyReminderPlanner {
             quietHoursActive = suppressed,
             notificationCandidates = candidates,
             widgetSummary = TodayWidgetSummary(
+                studyPlanId = input.plan.id,
                 studyPlanName = input.plan.name,
                 dueReviewCount = dueReviews,
                 plannedActivityCount = activeActivities.count { activity ->
@@ -105,6 +107,12 @@ object StudyReminderPlanner {
                 missedActivityCount = missedActivities.size,
                 nextActivityTitle = nextActivity?.title,
                 progressPercent = input.plan.progressPercent,
+                primaryActionType = when {
+                    dueReviews > 0 -> ReminderNotificationType.DUE_REVIEWS
+                    nextActivity != null -> ReminderNotificationType.PLANNED_ACTIVITY
+                    missedActivities.isNotEmpty() -> ReminderNotificationType.MISSED_ACTIVITY
+                    else -> ReminderNotificationType.DAILY_SUMMARY
+                },
             ),
         )
     }
@@ -202,10 +210,12 @@ enum class ReminderNotificationType {
 }
 
 data class TodayWidgetSummary(
+    val studyPlanId: StudyPlanId,
     val studyPlanName: String,
     val dueReviewCount: Int,
     val plannedActivityCount: Int,
     val missedActivityCount: Int,
     val nextActivityTitle: String?,
     val progressPercent: Int,
+    val primaryActionType: ReminderNotificationType,
 )

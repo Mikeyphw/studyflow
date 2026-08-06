@@ -73,6 +73,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_ui_ux_v2.py
         python3 scripts/verify_phase_48_49.py
         python3 scripts/verify_phase_50_51.py
+        python3 scripts/verify_phase_52_53.py
         """.trimIndent(),
     )
 }

@@ -16,6 +16,10 @@
     <string name="widget_due_reviews_format">Revisões: %1$d · Hoje: %2$d</string>
     <string name="widget_progress_format">Perdidos: %1$d · Progresso: %2$d%%</string>
     <string name="widget_next_activity_format">Próximo: %1$s</string>
+    <string name="widget_action_reviews">Revisões</string>
+    <string name="widget_action_next_block">Próximo bloco</string>
+    <string name="widget_action_recover">Recuperar</string>
+    <string name="widget_action_today">Abrir hoje</string>
     <string name="widget_next_activity_empty">Nenhum bloco próximo</string>
     <string name="debug_bundle_chooser_title">Compartilhar diagnósticos do StudyFlow</string>
     <string name="debug_clipboard_label">Diagnósticos do StudyFlow</string>

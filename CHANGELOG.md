@@ -1,5 +1,18 @@
 # Changelog
 
+## Phase 52-53 r4 Mock Exam Studio compile hotfix
+
+- Replaced the `Question::isExamEligible` extension reference in `MockExamStudioPlanner` with an explicit lambda so Kotlin/JVM compilation accepts the planner.
+- Hardened the Phase 52/53 verifier so the prohibited extension-function reference cannot return.
+
+
+## Phase 52-53 - Mock Exam Studio and widget actions
+
+- Added a preview-first Mock Exam Studio for timed simulated exams.
+- Added localized Practice workspace controls for mock-exam creation.
+- Upgraded the Today widget with plan-aware primary and review actions.
+- Phase 52/53 r2: tightened Mock Exam Studio filtering, disputed-question handling, dynamic preview, and warning display.
+
 ## Phase 50-51 r3 Kotlin compile hotfix
 
 - Fixed `PracticeWorkspaceScreen.reviewTitle` to snapshot cross-module nullable review IDs into local values before smart-casting.

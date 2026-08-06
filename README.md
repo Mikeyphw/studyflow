@@ -180,3 +180,13 @@ StudyFlow overlays must not ship build outputs, Gradle caches, Python caches, NU
 ## Phase 48-49 readiness and adaptive reschedule
 
 StudyFlow now adds an explainable exam-readiness score and a preview-first adaptive reschedule wizard on top of UI/UX V2. The feature is repository-backed, keeps the existing toolchain, and mutates only safe existing unlocked schedule activities.
+
+### Phase 52-53: Mock Exam Studio and widget actions
+
+StudyFlow now includes a mock-exam studio in the V2 Practice workspace and richer Today widget actions. The studio previews eligible questions, timing, section coverage, and warnings before creating a persisted mock exam. Widget taps route through the same plan-aware launch extras as reminders.
+
+Phase 52/53 r2 closes the Mock Exam Studio audit by exposing source/board/tag/disputed filters and dynamic previews.
+
+### Phase 52-53 r4 compile hotfix
+
+The Mock Exam Studio planner now uses a compile-safe explicit eligibility lambda instead of the prohibited `Question::isExamEligible` extension reference.
