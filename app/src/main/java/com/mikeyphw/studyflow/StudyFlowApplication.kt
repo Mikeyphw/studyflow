@@ -8,6 +8,8 @@ import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.CreateStudyPlan
+import com.mikeyphw.studyflow.core.domain.ManageAdaptiveReschedule
+import com.mikeyphw.studyflow.core.domain.ManageExamReadiness
 import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.ManageStudyCloudSync
@@ -93,6 +95,8 @@ interface AppContainer : DiagnosticRecorderProvider {
     val manageStudyResourceViewer: ManageStudyResourceViewer
     val manageStudyProgress: ManageStudyProgress
     val manageStudyAnalytics: ManageStudyAnalytics
+    val manageExamReadiness: ManageExamReadiness
+    val manageAdaptiveReschedule: ManageAdaptiveReschedule
     val manageAnnexFileStorage: ManageAnnexFileStorage
     val manageStudyPlanPortability: ManageStudyPlanPortability
     suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport
@@ -142,6 +146,16 @@ private class DefaultAppContainer(
     override val manageStudyResourceViewer = ManageStudyResourceViewer(studyLibraryRepository)
     override val manageStudyProgress = ManageStudyProgress(studyProgressRepository)
     override val manageStudyAnalytics = ManageStudyAnalytics(studyAnalyticsRepository)
+    override val manageExamReadiness = ManageExamReadiness(
+        analyticsRepository = studyAnalyticsRepository,
+        scheduleRepository = studyScheduleRepository,
+        practiceRepository = studyPracticeRepository,
+    )
+    override val manageAdaptiveReschedule = ManageAdaptiveReschedule(
+        analyticsRepository = studyAnalyticsRepository,
+        scheduleRepository = studyScheduleRepository,
+        readinessManager = manageExamReadiness,
+    )
     override val manageAnnexFileStorage = ManageAnnexFileStorage(annexFileStorageRepository)
     override val manageStudyPlanPortability =
         ManageStudyPlanPortability(dataLayer.studyPlanPortabilityRepository)

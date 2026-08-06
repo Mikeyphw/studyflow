@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 48-49 readiness and adaptive reschedule
+
+- Added an explainable exam readiness score combining coverage, review health, practice, mock exams, consistency, schedule adherence, and time feasibility.
+- Added a preview-first adaptive reschedule wizard that updates only executable unlocked planned activities.
+- Surfaced readiness signals and safe reschedule previews inside the V2 Progress workspace.
+- Added domain tests, bilingual resources, documentation, and a Phase 48-49 repository verifier.
+
 ## Phases 38-47 complete UI/UX V2 workspace migration
 
 - Replaced the feature-catalog shell with adaptive Today, Plan, Practice, and Progress roots.
@@ -62,3 +69,14 @@ Detailed phase and Debug Workbench implementation notes remain in the root `PHAS
 `DEBUG_WORKBENCH_*`, and `docs/quality/*` files because historical validators still treat those files
 as source contracts. They are retained as implementation history, not as current user-facing product
 copy.
+
+## R4 Devtool test-contract hotfix
+
+- Fixed `ExamReadinessEngine.timeFeasibility` so an empty pending schedule is treated as "no explicit backlog" rather than fabricating uncovered work from coverage alone.
+- This keeps a well-covered, high-retention plan with strong mock/practice evidence in `ON_TRACK`, matching the domain test and the promised readiness semantics.
+- The pessimistic branch still applies when there are real pending planned minutes, and same-day exams still use coverage directly.
+
+## Phase 48-49 r5 workspace resource hotfix
+
+- Added the missing localized `open_plan` workspace string referenced by the Progress readiness surface.
+- Hardened the Phase 48-49 verifier so `ProgressWorkspaceScreen` `R.string.*` references must exist in workspace resources.

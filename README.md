@@ -171,3 +171,8 @@ The source artifact is cleaned of stale Devtool validation state; fresh local De
 ## Artifact hygiene
 
 StudyFlow overlays must not ship build outputs, Gradle caches, Python caches, NUL bytes, generated Devtool reports, or Devtool state payloads. Devtool reserves `.devtool/` runtime metadata and rejects overlay inventory entries that target it, so old local validation state is cleaned with an explicit command outside the overlay when needed.
+
+
+## Phase 48-49 readiness and adaptive reschedule
+
+StudyFlow now adds an explainable exam-readiness score and a preview-first adaptive reschedule wizard on top of UI/UX V2. The feature is repository-backed, keeps the existing toolchain, and mutates only safe existing unlocked schedule activities.

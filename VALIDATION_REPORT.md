@@ -95,3 +95,18 @@ Deliverable overlays must not include build outputs, Gradle caches, Python cache
 state, old reports, NUL bytes, or inventory targets under `.devtool-artifact/*`. Embedded artifact
 validators may live under `.devtool-artifact/`, but those metadata files are not copied into the
 repository.
+
+
+## Phase 48-49 source validation
+
+The follow-on readiness/adaptive-reschedule overlay adds `scripts/verify_phase_48_49.py`. Source validation in this environment covered the UI/UX V2 verifier, Phase 48-49 verifier, full-app final readiness verifier, and Debug Workbench D8 verifier. Android SDK/AGP target validation remains a Devtool host gate.
+
+## R4 Devtool test-contract hotfix
+
+- Fixed `ExamReadinessEngine.timeFeasibility` so an empty pending schedule is treated as "no explicit backlog" rather than fabricating uncovered work from coverage alone.
+- This keeps a well-covered, high-retention plan with strong mock/practice evidence in `ON_TRACK`, matching the domain test and the promised readiness semantics.
+- The pessimistic branch still applies when there are real pending planned minutes, and same-day exams still use coverage directly.
+
+## Phase 48-49 r5 resource validation hotfix
+
+Devtool r4 reached `:feature:workspace:compileDebugKotlin` and found that `ProgressWorkspaceScreen` referenced `R.string.open_plan` without a matching workspace resource. R5 adds the English and pt-BR string resources and extends `scripts/verify_phase_48_49.py` to fail on missing Progress workspace `R.string.*` references before Android compilation.
