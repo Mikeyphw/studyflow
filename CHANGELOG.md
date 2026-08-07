@@ -1,3 +1,16 @@
+# Final Full-App Acceptance Seal r2
+
+- Strengthened the final acceptance verifier after audit closure.
+- Added explicit guards for adaptive-reschedule preview/apply wiring, report/weekly-coach inputs, reminder blocked/degraded/action-needed/ready states, exact-alarm availability, battery optimization, notification permission inputs, and duplicate string/plurals resources.
+- Kept runtime app code and Android stack unchanged; this is a validator/doc-only closure over the final seal.
+
+# Final Full-App Acceptance Seal
+
+- Added a final source acceptance gate for the completed UI/UX V2 through Phase 62 roadmap.
+- Wired `verifyFinalAppAcceptanceSeal` into Gradle and Devtool default verification so future runs keep the full product chain sealed.
+- Added a final acceptance matrix documenting source coverage versus Devtool/real-device target gates.
+- Preserved the Android, Gradle, Kotlin, KSP, Compose, Room, and Navigation 2.9.8 stack.
+
 # Phase 62 Onboarding and Sample Plan Wizard
 
 - Added a local, preview-first onboarding wizard for users who do not want to start from a blank workspace.

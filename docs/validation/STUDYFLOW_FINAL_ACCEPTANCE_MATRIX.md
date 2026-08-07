@@ -1,0 +1,17 @@
+# StudyFlow final acceptance matrix
+
+This matrix maps the completed roadmap to the new source-level final acceptance seal.
+
+| Area | Source seal | Target-machine gate |
+| --- | --- | --- |
+| Startup and route graph | `verifyFinalAppAcceptanceSeal` checks V2 Today startup, typed roots, legacy redirects, picker, quick-add, system hub, and onboarding route wiring. | Devtool runs Android compile, assemble, release startup smoke, and back navigation checks. |
+| Today/Plan/Practice/Progress | The seal rejects decorative empty actions and requires concrete workspace callbacks, search, and system access. | Real device checks compact portrait, 200% font, TalkBack traversal, and scrolling sanity. |
+| Readiness/reschedule/drills/imports/mocks | The seal checks readiness signals, adaptive-reschedule preview/apply wiring, report/coach reschedule inputs, domain engines, and V2 entry points. | Devtool executes unit tests and Android UI/resource compilation. |
+| Widget and reminders | The seal checks widget route targets, `app:tint`, reminder diagnostics, launch routing, blocked/degraded/action-needed/ready states, exact-alarm availability, battery optimization, and notification permission inputs. | Device pass checks widget appearance, tap behavior, notification permission states, exact-alarm and battery-degraded states. |
+| Evidence/coach/cleanup/report | The seal checks Evidence Timeline inputs, weekly coach, cleanup issue kinds, preview-only cleanup, and local HTML/PDF report export. | Device pass checks report share sheets, local FileProvider access, and export results. |
+| Backup/export/import | The seal checks full export options, inspect/dry-run flow, and payload coverage for V2 domain data. | Device pass checks actual backup creation, inspect, dry-run restore, and upgrade from pre-V2 database. |
+| Localization/warnings | The seal checks principal English/pt-BR resource parity, duplicate string/plurals names, XML parsing, warning sentries, and stack versions. | Devtool lint remains the authority for diagnostics count and release/debug lint reports. |
+
+PENDING TARGET EXECUTION: this file is a source acceptance matrix, not device evidence. Devtool must still run lint, tests, assemble, and real-device smoke before any release claim.
+
+R2 audit closure: the final verifier explicitly covers adaptive reschedule wiring, reminder degraded-state dimensions, and duplicate resource names.

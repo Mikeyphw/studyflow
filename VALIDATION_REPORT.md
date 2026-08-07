@@ -1,3 +1,17 @@
+# Final acceptance validation update
+
+Source validation now includes `scripts/verify_final_app_acceptance.py` and the Gradle task
+`verifyFinalAppAcceptanceSeal`. The gate audits the completed V2 through Phase 62 contract across
+startup, route redirects, workspace actions, search/recommendations, readiness, reschedule, drills,
+imports, mocks, widget actions, reminders, Evidence Timeline, weekly coach review, smart cleanup,
+local exam report export, backup/export/import, onboarding, localization parity, warning sentries,
+and stack-version invariants.
+
+PENDING TARGET EXECUTION: Android Gradle compilation, resource merging, unit execution, APK assembly,
+debug/release lint, install/upgrade smoke, TalkBack, 200% font scaling, widget taps, notification
+permission states, exact-alarm/battery degradation, report share-sheet behavior, and real-device
+release startup remain Devtool target-machine gates.
+
 # Phase 62 validation update
 
 Source validation now includes `scripts/verify_phase_62.py`, focused Kotlin compilation for the new
@@ -210,3 +224,9 @@ Expected Devtool tasks include `:core:domain:test`, `:feature:settings:testDebug
 - Replayed against the Phase 60/61 landed baseline.
 - Verified the onboarding screen no longer redeclares `formatMinuteOfDay`.
 - Strengthened `scripts/verify_phase_62.py` to catch package-level helper collisions before Gradle.
+## Final full-app acceptance seal r2 audit closure
+
+- Replayed the final acceptance overlay against the reconstructed landed Phase 62 baseline.
+- Found r1 source validation passed, but two promised checks were too implicit: adaptive-reschedule coverage and reminder degraded-state coverage.
+- Strengthened `scripts/verify_final_app_acceptance.py` to require adaptive-reschedule preview/apply wiring, report and weekly-coach reschedule inputs, reminder blocked/degraded/action-needed/ready states, notification permission, exact-alarm availability, battery optimization, and duplicate string/plurals detection.
+- Runtime app code and Android stack remain unchanged. Android compile, lint, assemble, and real-device checks remain Devtool target gates.

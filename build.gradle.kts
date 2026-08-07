@@ -79,6 +79,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_58_59.py
         python3 scripts/verify_phase_60_61.py
         python3 scripts/verify_phase_62.py
+        python3 scripts/verify_final_app_acceptance.py
         """.trimIndent(),
     )
 }
@@ -218,6 +219,12 @@ tasks.register<Exec>("verifyPhase62OnboardingSeal") {
 }
 
 
+tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
+    group = "verification"
+    description = "Checks the final StudyFlow V2 through Phase 62 acceptance contract."
+    commandLine("python3", "scripts/verify_final_app_acceptance.py")
+}
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
@@ -227,6 +234,7 @@ tasks.register("checkAll") {
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",
         "verifyPhase62OnboardingSeal",
+        "verifyFinalAppAcceptanceSeal",
         "verifyFormatting",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",

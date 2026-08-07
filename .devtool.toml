@@ -28,6 +28,7 @@ build = [":app:assembleDebug"]
 test = [
     "verifyRepositoryContracts",
     "verifyFormatting",
+    "verifyFinalAppAcceptanceSeal",
     ":core:diagnostics:test",
     ":core:model:test",
     ":core:domain:test",
@@ -129,6 +130,7 @@ resources = [":app:processDebugResources"]
 unit-test = [
     "verifyRepositoryContracts",
     "verifyFormatting",
+    "verifyFinalAppAcceptanceSeal",
     ":core:diagnostics:test",
     ":core:model:test",
     ":core:domain:test",
