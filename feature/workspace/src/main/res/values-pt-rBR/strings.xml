@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="today_title">Hoje</string>
-    <string name="today_eyebrow">Seu centro de comando de estudos</string>
+    <string name="today_eyebrow" tools:ignore="UnusedResources">Seu centro de comando de estudos</string>
     <string name="plan_title">Plano</string>
     <string name="practice_title">Prática</string>
     <string name="progress_title">Progresso</string>
@@ -32,18 +32,18 @@
     <string name="studied_time">Estudado</string>
     <string name="goal">Meta</string>
     <string name="accuracy">Acerto</string>
-    <string name="streak">Dias de estudo</string>
+    <string name="streak" tools:ignore="UnusedResources">Dias de estudo</string>
     <string name="minutes_value">%1$d min</string>
     <string name="hours_value">%1$d h</string>
     <string name="percent_value">%1$d%%</string>
-    <string name="days_value">%1$d dias</string>
-    <string name="reviews_value">%1$d revisões</string>
-    <string name="questions_value">%1$d questões</string>
-    <string name="complete">Concluir</string>
+    <string name="days_value" tools:ignore="PluralsCandidate">%1$d dias</string>
+    <string name="reviews_value" tools:ignore="PluralsCandidate">%1$d revisões</string>
+    <string name="questions_value" tools:ignore="PluralsCandidate">%1$d questões</string>
+    <string name="complete" tools:ignore="UnusedResources">Concluir</string>
     <string name="completed">Concluído</string>
     <string name="missed">Perdido</string>
     <string name="planned">Planejado</string>
-    <string name="in_progress">Em andamento</string>
+    <string name="workspace_in_progress">Em andamento</string>
     <string name="today_coach_title">Pequeno ajuste, semana melhor</string>
     <string name="today_coach_backlog">Limpe as revisões pendentes antes de adicionar mais conteúdo novo.</string>
     <string name="today_coach_schedule">O cronograma está desviando. Reequilibre os próximos blocos em vez de empilhar tarefas.</string>
@@ -69,34 +69,34 @@
     <string name="schedule_empty">Ainda não há blocos. Adicione o primeiro pelo Cronograma.</string>
     <string name="content_empty">Ainda não há matérias. Importe ou monte o edital.</string>
     <string name="library_empty">Ainda não há materiais, vídeos ou anexos.</string>
-    <string name="subjects_count">%1$d matérias</string>
-    <string name="topics_count">%1$d tópicos</string>
-    <string name="materials_count">%1$d materiais</string>
-    <string name="videos_count">%1$d vídeos</string>
-    <string name="annexes_count">%1$d anexos</string>
+    <string name="subjects_count" tools:ignore="PluralsCandidate">%1$d matérias</string>
+    <string name="topics_count" tools:ignore="PluralsCandidate">%1$d tópicos</string>
+    <string name="materials_count" tools:ignore="PluralsCandidate">%1$d materiais</string>
+    <string name="videos_count" tools:ignore="PluralsCandidate">%1$d vídeos</string>
+    <string name="annexes_count" tools:ignore="PluralsCandidate">%1$d anexos</string>
     <string name="practice_reviews">Revisões</string>
     <string name="practice_questions">Questões</string>
     <string name="practice_errors">Erros</string>
-    <string name="practice_due_message">%1$d itens estão prontos para revisão espaçada.</string>
+    <string name="practice_due_message" tools:ignore="PluralsCandidate">%1$d itens estão prontos para revisão espaçada.</string>
     <string name="practice_empty_reviews">Nenhuma revisão pendente. As próximas continuam agendadas automaticamente.</string>
     <string name="practice_empty_questions">Ainda não há questões. Adicione questões ou importe um conjunto.</string>
     <string name="practice_empty_errors">O caderno de erros está limpo.</string>
     <string name="open_review_center">Abrir central de revisões</string>
     <string name="open_question_bank">Abrir banco de questões</string>
     <string name="open_error_notebook">Abrir caderno de erros</string>
-    <string name="tests_count">%1$d testes</string>
-    <string name="mocks_count">%1$d simulados</string>
-    <string name="recurrences_value">Repetido %1$d vezes</string>
+    <string name="tests_count" tools:ignore="PluralsCandidate">%1$d testes</string>
+    <string name="mocks_count" tools:ignore="PluralsCandidate">%1$d simulados</string>
+    <string name="recurrences_value" tools:ignore="PluralsCandidate">Repetido %1$d vezes</string>
     <string name="progress_7_days">7 dias</string>
     <string name="progress_30_days">30 dias</string>
     <string name="progress_90_days">90 dias</string>
-    <string name="sessions_value">%1$d sessões</string>
-    <string name="answered_value">%1$d respondidas</string>
+    <string name="sessions_value" tools:ignore="PluralsCandidate">%1$d sessões</string>
+    <string name="answered_value" tools:ignore="PluralsCandidate">%1$d respondidas</string>
     <string name="weak_areas">Pontos fracos</string>
     <string name="no_weak_areas">Nenhum ponto fraco está sinalizado no momento.</string>
     <string name="goals_and_notes">Metas e anotações</string>
-    <string name="active_goals_value">%1$d metas ativas</string>
-    <string name="notes_value">%1$d anotações</string>
+    <string name="active_goals_value" tools:ignore="PluralsCandidate">%1$d metas ativas</string>
+    <string name="notes_value" tools:ignore="PluralsCandidate">%1$d anotações</string>
     <string name="open_progress_center">Abrir metas e anotações</string>
     <string name="open_analytics">Abrir análises detalhadas</string>
     <string name="open_plan">Abrir plano</string>
@@ -133,7 +133,7 @@
     <string name="privacy">Central de privacidade</string>
     <string name="debug_workbench">Bancada de depuração</string>
     <string name="quick_add_title">O que você quer adicionar?</string>
-    <string name="quick_add_subtitle">O StudyFlow abre o fluxo real existente, sem botão cenográfico.</string>
+    <string name="quick_add_subtitle" tools:ignore="UnusedResources">O StudyFlow abre o fluxo real existente, sem botão cenográfico.</string>
     <string name="quick_session">Sessão rápida de foco</string>
     <string name="quick_session_title">Título da sessão</string>
     <string name="quick_session_duration">Minutos desejados</string>
@@ -149,7 +149,7 @@
     <string name="cancelled">Cancelada</string>
     <string name="skipped">Ignorada</string>
     <string name="flexible">Flexível</string>
-    <string name="flashcards_value">%1$d flashcards</string>
+    <string name="flashcards_value" tools:ignore="PluralsCandidate">%1$d flashcards</string>
     <string name="material_type">Material</string>
     <string name="video_type">Vídeo</string>
     <string name="priority_low">Prioridade baixa</string>
@@ -180,17 +180,17 @@
     <string name="subject_status">Progresso %1$d%% · acerto %2$d%%</string>
     <string name="no_topics_for_subject">Ainda não há tópicos dentro dessa matéria.</string>
     <string name="topic_mastery">Domínio %1$d%%</string>
-    <string name="view_all_topics">Ver todos os %1$d tópicos</string>
+    <string name="view_all_topics" tools:ignore="PluralsCandidate">Ver todos os %1$d tópicos</string>
     <string name="review_due_now">Vencidas agora</string>
-    <string name="open_remaining_reviews">Abrir mais %1$d revisões</string>
-    <string name="review_method_and_interval">%1$s · intervalo de %2$d dias</string>
+    <string name="open_remaining_reviews" tools:ignore="PluralsCandidate">Abrir mais %1$d revisões</string>
+    <string name="review_method_and_interval" tools:ignore="PluralsCandidate">%1$s · intervalo de %2$d dias</string>
     <string name="review_again">De novo</string>
     <string name="review_hard">Difícil</string>
     <string name="review_good">Boa</string>
     <string name="skip_review">Pular revisão</string>
     <string name="tests">Testes</string>
     <string name="mock_exams">Simulados</string>
-    <string name="test_progress">%1$d/%2$d respondidas</string>
+    <string name="test_progress" tools:ignore="PluralsCandidate">%1$d/%2$d respondidas</string>
     <string name="period_trend">Tendência do período</string>
     <string name="period_trend_detail">Antes %1$d min · recente %2$d min</string>
     <string name="trend_up">Subindo</string>
@@ -260,11 +260,11 @@
     <string name="reschedule_reason_theory_before_questions">A baixa taxa de acerto sugere teoria antes de questões cronometradas.</string>
     <string name="reschedule_reason_keep_steady">Nenhum replanejamento automático seguro é necessário. Continue com a mistura atual.</string>
     <string name="reschedule_apply_result">Resultado do replanejamento</string>
-    <string name="reschedule_apply_success">Aplicou %1$d ajuste(s) seguro(s); pulou %2$d item(ns) só de prévia.</string>
+    <string name="reschedule_apply_success" tools:ignore="PluralsCandidate">Aplicou %1$d ajuste(s) seguro(s); pulou %2$d item(ns) só de prévia.</string>
     <string name="reschedule_apply_failed">Não foi possível aplicar os ajustes seguros. Abra o plano para ajustar manualmente.</string>
 
     <string name="weakness_drill_title">Treino de fraquezas</string>
-    <string name="weakness_drill_message">%1$d questão(ões) direcionada(s) por %2$d sinal(is) fraco(s).</string>
+    <string name="weakness_drill_message" tools:ignore="PluralsCandidate">%1$d questão(ões) direcionada(s) por %2$d sinal(is) fraco(s).</string>
     <string name="weakness_drill_unavailable">Adicione erros ou revisões de questões vencidas antes de criar o treino.</string>
     <string name="weakness_drill_created">Treino de fraquezas criado.</string>
     <string name="create_weakness_drill">Criar treino</string>
@@ -277,12 +277,12 @@
     <string name="question_import_no_new_questions">Nenhuma questão nova válida foi importada.</string>
     <string name="mock_exam_studio_title">Estúdio de simulados</string>
     <string name="mock_exam_studio_generated_title">Simulado de %1$s</string>
-    <string name="mock_exam_studio_message">%1$d questões elegíveis · cronômetro de %2$d min</string>
+    <string name="mock_exam_studio_message" tools:ignore="PluralsCandidate">%1$d questões elegíveis · cronômetro de %2$d min</string>
     <string name="mock_exam_studio_help">Ajuste quantidade, tempo e nota mínima antes de criar o simulado.</string>
     <string name="mock_exam_question_count">Quantidade de questões</string>
     <string name="mock_exam_time_limit_minutes">Tempo limite em minutos</string>
     <string name="mock_exam_minimum_score">Percentual mínimo</string>
-    <string name="mock_exam_studio_sections">%1$d seção(ões) · %2$d questão(ões) selecionada(s)</string>
+    <string name="mock_exam_studio_sections" tools:ignore="PluralsCandidate">%1$d seção(ões) · %2$d questão(ões) selecionada(s)</string>
     <string name="mock_exam_warning_no_questions">Adicione questões antes de criar um simulado.</string>
     <string name="mock_exam_warning_skipped">Algumas questões inelegíveis foram ignoradas.</string>
     <string name="mock_exam_warning_not_enough">Não há questões compatíveis suficientes para o tamanho pedido.</string>
@@ -296,9 +296,9 @@
     <string name="evidence_timeline">Linha do tempo de evidências</string>
     <string name="evidence_empty">O StudyFlow mostrará sessões, revisões, questões, testes, metas, notas e blocos perdidos conforme houver evidências.</string>
     <string name="evidence_no_label">Evidência de estudo</string>
-    <string name="evidence_minutes_and_count">%1$s - %2$d min - %3$d item(ns)</string>
+    <string name="evidence_minutes_and_count" tools:ignore="PluralsCandidate">%1$s - %2$d min - %3$d item(ns)</string>
     <string name="evidence_minutes">%1$s - %2$d min</string>
-    <string name="evidence_count">%1$s - %2$d item(ns)</string>
+    <string name="evidence_count" tools:ignore="PluralsCandidate">%1$s - %2$d item(ns)</string>
     <string name="evidence_session_completed">Sessão concluída</string>
     <string name="evidence_session_cancelled">Sessão cancelada</string>
     <string name="evidence_activity_completed">Bloco planejado concluído</string>
@@ -312,4 +312,27 @@
     <string name="evidence_mock_submitted">Simulado enviado</string>
     <string name="evidence_goal_completed">Meta concluída</string>
     <string name="evidence_note_pinned">Nota fixada</string>
+
+    <string name="items_count" tools:ignore="PluralsCandidate">%1$d itens</string>
+    <string name="weekly_coach_review">Revisão semanal do coach</string>
+    <string name="weekly_coach_title">Revisão do coach para %1$s</string>
+    <string name="weekly_coach_summary" tools:ignore="PluralsCandidate">%1$d evidências · %2$d minutos estudados nesta semana.</string>
+    <string name="weekly_coach_readiness_stable">Prontidão estável</string>
+    <string name="weekly_coach_readiness_risk">Prontidão pede ação</string>
+    <string name="weekly_coach_review_backlog">Revisões primeiro</string>
+    <string name="weekly_coach_practice_accuracy">Precisão pede teoria</string>
+    <string name="weekly_coach_schedule_drift">Agenda desviando</string>
+    <string name="weekly_coach_mock_exam_signal">Simulado fraco</string>
+    <string name="weekly_coach_consistency_win">Vitória de consistência</string>
+    <string name="weekly_coach_evidence_empty">Sem evidências semanais</string>
+    <string name="weekly_coach_reschedule_ready">Reagendamento seguro pronto</string>
+    <string name="weekly_coach_readiness_stable_message">Mantenha o ritmo atual e proteja o próximo bloco de foco.</string>
+    <string name="weekly_coach_readiness_risk_message">Use os detalhes de prontidão antes de adicionar carga nova.</string>
+    <string name="weekly_coach_review_backlog_message">Limpe revisões atrasadas antes de começar mais teoria.</string>
+    <string name="weekly_coach_practice_accuracy_message">Faça uma passada de teoria antes de outro sprint cronometrado.</string>
+    <string name="weekly_coach_schedule_drift_message">Mova ou encurte blocos livres em vez de empilhar tarefas.</string>
+    <string name="weekly_coach_mock_exam_signal_message">Rode ou revise um simulado antes de confiar na previsão.</string>
+    <string name="weekly_coach_consistency_win_message">Dias recentes de estudo estão protegendo o ritmo.</string>
+    <string name="weekly_coach_evidence_empty_message">Conclua uma sessão ou revisão para criar evidência desta semana.</string>
+    <string name="weekly_coach_reschedule_ready_message">Há mudanças seguras pré-visualizadas aguardando no plano.</string>
 </resources>

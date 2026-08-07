@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="settings_title">Settings</string>
     <string name="settings_subtitle">Language and appearance settings apply to the app, not to user-created content.</string>
     <string name="language_title">Language</string>
@@ -71,7 +71,7 @@
     <string name="debug_privacy_boundary_message">The timeline stores fingerprints and machine-safe facts, never plan names, notes, questions, answers, raw paths, or raw URIs.</string>
     <string name="debug_last_action_title">Last action</string>
     <string name="debug_timeline_title">Diagnostic timeline</string>
-    <string name="debug_timeline_summary">%1$d event(s) · %2$d malformed line(s)</string>
+    <string name="debug_timeline_summary" tools:ignore="PluralsCandidate">%1$d event(s) · %2$d malformed line(s)</string>
     <string name="debug_filter_all">All</string>
     <string name="debug_timeline_empty_title">No recorded events</string>
     <string name="debug_timeline_empty_message">Use StudyFlow normally or run a probe, then refresh this page.</string>
@@ -323,9 +323,28 @@
     <string name="sync_connection_local_only">Local only</string>
     <string name="sync_connection_local_ready">Local changes ready</string>
     <string name="sync_connection_checkpoint_needed">Local checkpoint needed</string>
-    <string name="sync_connection_checkpoint_prepared">Checkpoint prepared</string>
+    <string name="sync_connection_checkpoint_prepared" tools:ignore="UnusedResources">Checkpoint prepared</string>
     <string name="sync_connection_checkpoint_error">Checkpoint needs attention</string>
-    <string name="sync_conflict_last_write_wins">Use latest change</string>
+    <string name="sync_conflict_last_write_wins" tools:ignore="UnusedResources">Use latest change</string>
     <string name="sync_conflict_manual_review">Review conflicts manually</string>
     <string name="sync_conflict_local_only">Keep this device only</string>
+
+    <string name="sync_queue_title">Cloudless backup queue</string>
+    <string name="sync_queue_waiting_for_inspection">Inspect local changes to build the queue.</string>
+    <string name="sync_queue_summary">Ready: %1$d · Blocked: %2$d · Waiting: %3$d</string>
+    <string name="sync_queue_prepare_checkpoint">Prepare checkpoint</string>
+    <string name="sync_queue_export_backup">Export local backup</string>
+    <string name="sync_queue_verify_freshness">Verify backup freshness</string>
+    <string name="sync_queue_review_policy">Review conflict policy</string>
+    <string name="sync_queue_wait_for_data">Wait for local data</string>
+    <string name="sync_queue_unblock_checkpoint">Unblock checkpoint</string>
+    <string name="sync_queue_prepare_checkpoint_message">Refresh the local checkpoint for %1$d tracked change(s).</string>
+    <string name="sync_queue_export_backup_message">Queue a local backup export for %1$d tracked change(s).</string>
+    <string name="sync_queue_verify_freshness_message">Confirm the latest backup still matches %1$d tracked change(s).</string>
+    <string name="sync_queue_review_policy_message">Review manual conflict handling for %1$d tracked change(s).</string>
+    <string name="sync_queue_wait_for_data_message">Create study data before backup work is useful.</string>
+    <string name="sync_queue_unblock_checkpoint_message">Fix checkpoint settings before %1$d tracked change(s) can be protected.</string>
+    <string name="sync_queue_status_ready">Ready</string>
+    <string name="sync_queue_status_waiting">Waiting</string>
+    <string name="sync_queue_status_blocked">Blocked</string>
 </resources>

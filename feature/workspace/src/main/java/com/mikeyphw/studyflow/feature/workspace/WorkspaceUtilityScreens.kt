@@ -113,7 +113,11 @@ fun PlanPickerScreen(
                         title = plan.name,
                         metadata = stringResource(R.string.percent_value, plan.progressPercent),
                         icon = Icons.AutoMirrored.Outlined.ListAlt,
-                        status = if (plan.id.value == selectedPlanId) stringResource(R.string.in_progress) else null,
+                        status = if (plan.id.value == selectedPlanId) {
+                            stringResource(R.string.workspace_in_progress)
+                        } else {
+                            null
+                        },
                         actionLabel = stringResource(R.string.open),
                         onAction = { selectPlan(plan) },
                     )

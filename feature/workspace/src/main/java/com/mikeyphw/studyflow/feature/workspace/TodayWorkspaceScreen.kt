@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -95,7 +96,7 @@ fun TodayWorkspaceScreen(
     val analytics by analyticsFlow.collectAsStateWithLifecycle(initialValue = null)
     var recommendations by remember(plan.id) { mutableStateOf<List<StudyRecommendation>>(emptyList()) }
     var recommendationUnavailable by remember(plan.id) { mutableStateOf(false) }
-    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
+    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val operationFailed = stringResource(R.string.operation_failed)
 
     LaunchedEffect(Unit) {
@@ -408,7 +409,7 @@ private fun recommendationPresentation(presentation: StudyRecommendationPresenta
 private fun activityStatus(status: PlannedActivityStatus): String = stringResource(
     when (status) {
         PlannedActivityStatus.PLANNED -> R.string.planned
-        PlannedActivityStatus.IN_PROGRESS -> R.string.in_progress
+        PlannedActivityStatus.IN_PROGRESS -> R.string.workspace_in_progress
         PlannedActivityStatus.COMPLETED -> R.string.completed
         PlannedActivityStatus.MISSED -> R.string.missed
         PlannedActivityStatus.SKIPPED,

@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.feature.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,14 +16,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueAction
+import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueItem
+import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueuePlanner
+import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueStatus
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
@@ -94,6 +101,7 @@ fun SyncFoundationScreen(
                     Text(text = stringResource(R.string.sync_change_count, currentSummary.changeCount))
                 }
             }
+            CloudlessBackupQueueCard(state = state, summary = summary)
             StudyFlowSectionCard(title = stringResource(R.string.sync_checkpoint_controls_title)) {
                 Text(
                     text = stringResource(R.string.sync_checkpoint_controls_message),
@@ -115,6 +123,70 @@ fun SyncFoundationScreen(
 }
 
 
+@Composable
+private fun CloudlessBackupQueueCard(
+    state: StudySyncState,
+    summary: StudySyncChangeSummary?,
+) {
+    StudyFlowSectionCard(title = stringResource(R.string.sync_queue_title)) {
+        val currentSummary = summary
+        if (currentSummary == null) {
+            Text(
+                text = stringResource(R.string.sync_queue_waiting_for_inspection),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            val queuePlan = CloudlessBackupQueuePlanner.plan(
+                state = state,
+                summary = currentSummary,
+                nowEpochMillis = System.currentTimeMillis(),
+            )
+            Text(
+                text = stringResource(
+                    R.string.sync_queue_summary,
+                    queuePlan.readyCount,
+                    queuePlan.blockedCount,
+                    queuePlan.waitingCount,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            queuePlan.items.take(4).forEach { item ->
+                CloudlessBackupQueueRow(item)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CloudlessBackupQueueRow(item: CloudlessBackupQueueItem) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        tonalElevation = 1.dp,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = stringResource(item.action.titleRes()), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = stringResource(item.action.messageRes(), item.pendingChangeCount),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Text(
+                text = stringResource(item.status.labelRes()),
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+    }
+}
+
+
 private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = when (status) {
     StudySyncConnectionStatus.DISABLED -> R.string.sync_connection_local_only
     StudySyncConnectionStatus.LOCAL_READY -> R.string.sync_connection_local_ready
@@ -125,4 +197,29 @@ private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = 
 private fun syncConflictPolicyLabel(policy: StudySyncConflictPolicy): Int = when (policy) {
     StudySyncConflictPolicy.KEEP_LOCAL -> R.string.sync_conflict_local_only
     StudySyncConflictPolicy.MANUAL_REVIEW -> R.string.sync_conflict_manual_review
+}
+
+
+private fun CloudlessBackupQueueAction.titleRes(): Int = when (this) {
+    CloudlessBackupQueueAction.PREPARE_CHECKPOINT -> R.string.sync_queue_prepare_checkpoint
+    CloudlessBackupQueueAction.EXPORT_LOCAL_BACKUP -> R.string.sync_queue_export_backup
+    CloudlessBackupQueueAction.VERIFY_BACKUP_FRESHNESS -> R.string.sync_queue_verify_freshness
+    CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY -> R.string.sync_queue_review_policy
+    CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA -> R.string.sync_queue_wait_for_data
+    CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT -> R.string.sync_queue_unblock_checkpoint
+}
+
+private fun CloudlessBackupQueueAction.messageRes(): Int = when (this) {
+    CloudlessBackupQueueAction.PREPARE_CHECKPOINT -> R.string.sync_queue_prepare_checkpoint_message
+    CloudlessBackupQueueAction.EXPORT_LOCAL_BACKUP -> R.string.sync_queue_export_backup_message
+    CloudlessBackupQueueAction.VERIFY_BACKUP_FRESHNESS -> R.string.sync_queue_verify_freshness_message
+    CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY -> R.string.sync_queue_review_policy_message
+    CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA -> R.string.sync_queue_wait_for_data_message
+    CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT -> R.string.sync_queue_unblock_checkpoint_message
+}
+
+private fun CloudlessBackupQueueStatus.labelRes(): Int = when (this) {
+    CloudlessBackupQueueStatus.READY -> R.string.sync_queue_status_ready
+    CloudlessBackupQueueStatus.WAITING -> R.string.sync_queue_status_waiting
+    CloudlessBackupQueueStatus.BLOCKED -> R.string.sync_queue_status_blocked
 }

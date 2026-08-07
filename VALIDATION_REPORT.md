@@ -171,3 +171,18 @@ manifest shape, widget AppCompat tint hygiene, and known reminder resource
 flattening traps without requiring signing credentials. Devtool validation also
 requests `:app:lintRelease` in addition to debug assemble/lint. Signed release
 packaging and device-only checks remain outside this source artifact.
+
+## Phase 58-59 validation update
+
+Phase 58 adds a local-only backup queue in Sync Foundation. Phase 59 adds a localized weekly coach review
+in Progress. The overlay adds `scripts/verify_phase_58_59.py` and `verifyPhase58_59WarningHygiene` so
+source hygiene is checked before Android lint.
+
+Expected Devtool tasks include `:core:domain:test`, `:feature:settings:testDebugUnitTest`,
+`:feature:workspace:testDebugUnitTest`, `:verifyPhase58_59WarningHygiene`, `:app:assembleDebug`,
+`:app:lintDebug`, and `:app:lintRelease`.
+
+
+## Phase 58-59 r2 audit closure
+
+- Scoped lint hygiene update: resource warning suppressions are now attached only to known compatibility strings instead of the entire resource file.

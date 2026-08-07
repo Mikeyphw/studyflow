@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    compileOnly(libs.androidx.annotation)
     implementation(libs.kotlinx.serialization.core)
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.serialization.json)

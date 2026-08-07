@@ -41,7 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -500,7 +500,7 @@ fun <T> StudyFlowWorkspaceTabs(
     onSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ScrollableTabRow(
+    PrimaryScrollableTabRow(
         selectedTabIndex = tabs.indexOf(selected).coerceAtLeast(0),
         modifier = modifier.fillMaxWidth(),
         edgePadding = 0.dp,

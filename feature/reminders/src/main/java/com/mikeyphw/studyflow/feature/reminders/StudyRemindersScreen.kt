@@ -437,7 +437,6 @@ private fun Context.canScheduleStudyFlowExactAlarms(): Boolean {
 }
 
 private fun Context.isIgnoringBatteryOptimizations(): Boolean {
-    if (Build.VERSION.SDK_INT < 23) return true
     val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return false
     return powerManager.isIgnoringBatteryOptimizations(packageName)
 }

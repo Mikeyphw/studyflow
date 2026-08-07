@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.core.navigation
 
+import androidx.annotation.Keep
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -65,6 +66,7 @@ data object SearchRoute
 @Serializable
 data object SettingsRoute
 
+@Keep
 @Serializable
 enum class StudyFlowWorkspaceRoot {
     TODAY,
@@ -73,6 +75,7 @@ enum class StudyFlowWorkspaceRoot {
     PROGRESS,
 }
 
+@Keep
 @Serializable
 enum class PlanWorkspaceTab {
     OVERVIEW,
@@ -81,6 +84,7 @@ enum class PlanWorkspaceTab {
     LIBRARY,
 }
 
+@Keep
 @Serializable
 enum class PracticeWorkspaceTab {
     REVIEWS,
@@ -88,6 +92,7 @@ enum class PracticeWorkspaceTab {
     ERRORS,
 }
 
+@Keep
 @Serializable
 enum class ProgressWorkspacePeriod(val days: Int) {
     SEVEN_DAYS(7),

@@ -12,6 +12,10 @@
 
 # Changelog
 
+## Phase 58-59 r2 audit closure
+
+- Scoped lint hygiene update: resource warning suppressions are now attached only to known compatibility strings instead of the entire resource file.
+
 ## Phase 54-55 reminder reliability and evidence timeline
 
 - Added a Reminder Reliability Center that separates blocked reminder delivery, degraded timing, backlog pressure, quiet hours, and safe fallback behavior.
@@ -140,3 +144,10 @@ copy.
 
 - Fixed reminder reliability strings that failed Android resource flattening.
 - Added validation guards for risky reminder string escapes and widget `android:tint` lint regressions.
+
+## Phase 58-59 - Cloudless queue, weekly coach, warning hygiene
+
+- Added a cloudless backup queue planner and Sync Foundation surface for local checkpoint/export work.
+- Added a Study Coach weekly review generated from readiness, reschedule preview, analytics, and evidence.
+- Cleaned the Phase 57 warning backlog: typed-route `@Keep`, current Material3 tabs, private-resource rename,
+  primitive time state, obsolete SDK branch removal, and explicit resource-lint suppression boundaries.

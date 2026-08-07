@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="settings_title">Configurações</string>
     <string name="settings_subtitle">As configurações de idioma e aparência afetam o aplicativo, não o conteúdo criado pelo usuário.</string>
     <string name="language_title">Idioma</string>
@@ -72,7 +72,7 @@
     <string name="debug_privacy_boundary_message">A linha do tempo guarda impressões e fatos seguros, nunca nomes de planos, notas, perguntas, respostas, caminhos ou URIs brutas.</string>
     <string name="debug_last_action_title">Última ação</string>
     <string name="debug_timeline_title">Linha do tempo de diagnóstico</string>
-    <string name="debug_timeline_summary">%1$d evento(s) · %2$d linha(s) inválida(s)</string>
+    <string name="debug_timeline_summary" tools:ignore="PluralsCandidate">%1$d evento(s) · %2$d linha(s) inválida(s)</string>
     <string name="debug_filter_all">Todos</string>
     <string name="debug_timeline_empty_title">Nenhum evento gravado</string>
     <string name="debug_timeline_empty_message">Use o StudyFlow normalmente ou execute uma sonda e atualize esta página.</string>
@@ -324,9 +324,28 @@
     <string name="sync_connection_local_only">Somente local</string>
     <string name="sync_connection_local_ready">Alterações locais prontas</string>
     <string name="sync_connection_checkpoint_needed">Checkpoint local necessário</string>
-    <string name="sync_connection_checkpoint_prepared">Checkpoint preparado</string>
+    <string name="sync_connection_checkpoint_prepared" tools:ignore="UnusedResources">Checkpoint preparado</string>
     <string name="sync_connection_checkpoint_error">Checkpoint precisa de atenção</string>
-    <string name="sync_conflict_last_write_wins">Usar alteração mais recente</string>
+    <string name="sync_conflict_last_write_wins" tools:ignore="UnusedResources">Usar alteração mais recente</string>
     <string name="sync_conflict_manual_review">Revisar conflitos manualmente</string>
     <string name="sync_conflict_local_only">Manter apenas neste dispositivo</string>
+
+    <string name="sync_queue_title">Fila de backup sem nuvem</string>
+    <string name="sync_queue_waiting_for_inspection">Inspecione as mudanças locais para montar a fila.</string>
+    <string name="sync_queue_summary">Prontas: %1$d · Bloqueadas: %2$d · Aguardando: %3$d</string>
+    <string name="sync_queue_prepare_checkpoint">Preparar checkpoint</string>
+    <string name="sync_queue_export_backup">Exportar backup local</string>
+    <string name="sync_queue_verify_freshness">Verificar backup recente</string>
+    <string name="sync_queue_review_policy">Revisar política de conflito</string>
+    <string name="sync_queue_wait_for_data">Aguardar dados locais</string>
+    <string name="sync_queue_unblock_checkpoint">Desbloquear checkpoint</string>
+    <string name="sync_queue_prepare_checkpoint_message">Atualize o checkpoint local para %1$d mudança(s) rastreada(s).</string>
+    <string name="sync_queue_export_backup_message">Enfileire um backup local para %1$d mudança(s) rastreada(s).</string>
+    <string name="sync_queue_verify_freshness_message">Confirme se o último backup ainda cobre %1$d mudança(s).</string>
+    <string name="sync_queue_review_policy_message">Revise conflitos manuais para %1$d mudança(s) rastreada(s).</string>
+    <string name="sync_queue_wait_for_data_message">Crie dados de estudo antes de enfileirar backups.</string>
+    <string name="sync_queue_unblock_checkpoint_message">Corrija o checkpoint antes de proteger %1$d mudança(s).</string>
+    <string name="sync_queue_status_ready">Pronta</string>
+    <string name="sync_queue_status_waiting">Aguardando</string>
+    <string name="sync_queue_status_blocked">Bloqueada</string>
 </resources>

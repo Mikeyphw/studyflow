@@ -50,7 +50,7 @@ tasks.register("verifyFormatting") {
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
     description =
-        "Runs StudyFlow contracts through Phase 37, UI/UX V2 through Phase 57, and Debug Workbench D1 through D8."
+        "Runs StudyFlow contracts through Phase 37, UI/UX V2 through Phase 59, and Debug Workbench D1 through D8."
     commandLine(
         "bash",
         "-lc",
@@ -76,6 +76,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_52_53.py
         python3 scripts/verify_phase_54_55.py
         python3 scripts/verify_phase_56_57.py
+        python3 scripts/verify_phase_58_59.py
         """.trimIndent(),
     )
 }
@@ -107,6 +108,21 @@ tasks.register("verifyPhase56_57ReleaseReadiness") {
         if ("android:tint" in widgetLayout) {
             failures += "widget_today.xml: android:tint is forbidden; use app:tint"
         }
+        listOf(
+            "app/src/main/res/values/strings.xml",
+            "app/src/main/res/values-pt-rBR/strings.xml",
+            "feature/settings/src/main/res/values/strings.xml",
+            "feature/settings/src/main/res/values-pt-rBR/strings.xml",
+            "feature/workspace/src/main/res/values/strings.xml",
+            "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
+        ).forEach { resourcePath ->
+            val firstLines = file(resourcePath).readLines().take(3).joinToString("\n")
+            if ("tools:ignore=\"PluralsCandidate,UnusedResources\"" in firstLines ||
+                "tools:ignore=\"UnusedResources\"" in firstLines) {
+                failures += "$resourcePath: must not suppress warning cleanup at file scope"
+            }
+        }
+
         if ("\\u" in reminderStrings || "app's safe" in reminderStrings || "plan's quiet" in reminderStrings) {
             failures += "reminder strings contain known release resource-flattening risks"
         }
@@ -117,12 +133,82 @@ tasks.register("verifyPhase56_57ReleaseReadiness") {
 }
 
 
+tasks.register("verifyPhase58_59WarningHygiene") {
+    group = "verification"
+    description =
+        "Checks Phase 58/59 warning cleanup boundaries before Android lint runs."
+
+    doLast {
+        val failures = mutableListOf<String>()
+        val routes = file("core/navigation/src/main/kotlin/com/mikeyphw/studyflow/core/navigation/StudyFlowRoutes.kt")
+            .readText()
+        val design = file(
+            "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/" +
+                "StudyFlowWorkspaceComponents.kt",
+        ).readText()
+        val workspaceStrings = file("feature/workspace/src/main/res/values/strings.xml").readText()
+        val reminders = file(
+            "feature/reminders/src/main/java/com/mikeyphw/studyflow/feature/reminders/StudyRemindersScreen.kt",
+        ).readText()
+        val widgetLayout = file("app/src/main/res/layout/widget_today.xml").readText()
+
+        listOf(
+            "StudyFlowWorkspaceRoot",
+            "PlanWorkspaceTab",
+            "PracticeWorkspaceTab",
+            "ProgressWorkspacePeriod",
+        ).forEach { enumName ->
+            if ("""@Keep
+@Serializable
+enum class $enumName""" !in routes) {
+                failures += "StudyFlowRoutes.kt: $enumName must be annotated with @Keep"
+            }
+        }
+        if ("import androidx.compose.material3.ScrollableTabRow" in design) {
+            failures += "StudyFlowWorkspaceComponents.kt: deprecated ScrollableTabRow remains"
+        }
+        if ("PrimaryScrollableTabRow(" !in design) {
+            failures += "StudyFlowWorkspaceComponents.kt: PrimaryScrollableTabRow is missing"
+        }
+        if ("name=\"in_progress\"" in workspaceStrings) {
+            failures += "workspace strings must not override private androidx.compose.ui:in_progress"
+        }
+        if ("Build.VERSION.SDK_INT < 23" in reminders) {
+            failures += "StudyRemindersScreen.kt: obsolete minSdk < 23 branch remains"
+        }
+        if ("android:tint" in widgetLayout) {
+            failures += "widget_today.xml: android:tint is forbidden; use app:tint"
+        }
+        listOf(
+            "app/src/main/res/values/strings.xml",
+            "app/src/main/res/values-pt-rBR/strings.xml",
+            "feature/settings/src/main/res/values/strings.xml",
+            "feature/settings/src/main/res/values-pt-rBR/strings.xml",
+            "feature/workspace/src/main/res/values/strings.xml",
+            "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
+        ).forEach { resourcePath ->
+            val firstLines = file(resourcePath).readLines().take(3).joinToString("\n")
+            if ("tools:ignore=\"PluralsCandidate,UnusedResources\"" in firstLines ||
+                "tools:ignore=\"UnusedResources\"" in firstLines) {
+                failures += "$resourcePath: must not suppress warning cleanup at file scope"
+            }
+        }
+
+        if (failures.isNotEmpty()) {
+            throw GradleException(
+                failures.joinToString(prefix = "Phase 58/59 warning hygiene violations:\n"),
+            )
+        }
+    }
+}
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
     dependsOn(
         "verifyRepositoryContracts",
         "verifyPhase56_57ReleaseReadiness",
+        "verifyPhase58_59WarningHygiene",
         "verifyFormatting",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",

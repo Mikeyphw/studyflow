@@ -211,3 +211,15 @@ Resource/lint hotfix for reminder reliability strings and widget tint validation
 The post-V2 seal now includes `verifyPhase56_57ReleaseReadiness` and Devtool
 `app:lintRelease` validation. This is a release-facing source/lint gate, not a
 claim that signed release packaging or real-device acceptance has run.
+
+
+### Phase 58-59: cloudless queue and weekly coach
+
+Phase 58 adds a local-only backup queue to Sync Foundation. Phase 59 adds the weekly coach review to
+Progress. See [Phase 58-59](PHASE_58_59_SYNC_QUEUE_WEEKLY_COACH.md) and
+[Phase 58-59 acceptance](docs/quality/PHASE_58_59_ACCEPTANCE.md).
+
+
+## Phase 58-59 r2 audit closure
+
+- Scoped lint hygiene update: resource warning suppressions are now attached only to known compatibility strings instead of the entire resource file.

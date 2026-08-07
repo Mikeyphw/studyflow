@@ -257,7 +257,7 @@ private fun PlanSchedulePane(
                     icon = Icons.Outlined.Event,
                     status = when (activity.status) {
                         PlannedActivityStatus.PLANNED -> stringResource(R.string.planned)
-                        PlannedActivityStatus.IN_PROGRESS -> stringResource(R.string.in_progress)
+                        PlannedActivityStatus.IN_PROGRESS -> stringResource(R.string.workspace_in_progress)
                         PlannedActivityStatus.COMPLETED -> stringResource(R.string.completed)
                         PlannedActivityStatus.MISSED -> stringResource(R.string.missed)
                         PlannedActivityStatus.SKIPPED -> stringResource(R.string.skipped)

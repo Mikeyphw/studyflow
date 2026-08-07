@@ -317,7 +317,7 @@ require("focus_overtime" in focus_source, "focus timer lacks overtime elapsed fa
 require("concentrationRating = concentration" in focus_source, "focus completion omits concentration")
 require("difficultyRating = difficulty" in focus_source, "focus completion omits difficulty")
 require("StudyFlowResponsivePair" in design_source, "large-font responsive pair component is missing")
-require("ScrollableTabRow(" in design_source, "workspace tabs can clip at large font scale")
+require("PrimaryScrollableTabRow(" in design_source, "workspace tabs must use the current Material3 API")
 require("fontScale >= 1.5f" in design_source, "200% font layouts are not forced to stack")
 require("MinimumTouchTarget = 48.dp" in design_source, "48dp interaction token is missing")
 require(

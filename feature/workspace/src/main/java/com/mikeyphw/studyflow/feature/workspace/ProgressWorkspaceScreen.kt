@@ -47,6 +47,10 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewBuilder
+import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewInput
+import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewItemKind
+import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewTone
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceEvent
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceEventKind
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineBuilder
@@ -144,6 +148,18 @@ fun ProgressWorkspaceScreen(
                 goals = progress?.activeGoals.orEmpty(),
                 notes = progress?.notes.orEmpty(),
                 nowEpochMillis = System.currentTimeMillis(),
+            ),
+        )
+    }
+    val weeklyReview = remember(plan, analytics, readiness, reschedulePreview, evidenceTimeline) {
+        StudyCoachWeeklyReviewBuilder.build(
+            StudyCoachWeeklyReviewInput(
+                plan = plan,
+                analytics = analytics,
+                readiness = readiness,
+                reschedulePreview = reschedulePreview,
+                evidence = evidenceTimeline,
+                generatedAtEpochMillis = System.currentTimeMillis(),
             ),
         )
     }
@@ -251,6 +267,46 @@ fun ProgressWorkspaceScreen(
                         icon = Icons.Outlined.CheckCircle,
                         status = stringResource(R.string.percent_value, signal.scorePercent),
                         onClick = onOpenAnalytics,
+                    )
+                }
+
+                studyFlowSectionHeader(key = "weekly-coach", title = { stringResource(R.string.weekly_coach_review) })
+                item(key = "weekly-coach-summary", contentType = "coach") {
+                    StudyFlowCoachCard(
+                        title = stringResource(R.string.weekly_coach_title, weeklyReview.studyPlanName),
+                        message = stringResource(
+                            R.string.weekly_coach_summary,
+                            weeklyReview.evidenceCount,
+                            weeklyReview.studiedMinutes,
+                        ),
+                        actionLabel = stringResource(R.string.open_analytics),
+                        onAction = onOpenAnalytics,
+                    )
+                }
+                items(
+                    items = weeklyReview.items,
+                    key = { item -> "weekly-coach:${item.kind}" },
+                    contentType = { "weekly-coach-item" },
+                ) { item ->
+                    StudyFlowTimelineRow(
+                        title = stringResource(item.kind.titleRes()),
+                        metadata = stringResource(item.kind.messageRes()),
+                        icon = when (item.tone) {
+                            StudyCoachWeeklyReviewTone.WIN -> Icons.Outlined.CheckCircle
+                            StudyCoachWeeklyReviewTone.WATCH -> Icons.Outlined.Insights
+                            StudyCoachWeeklyReviewTone.ACTION -> Icons.Outlined.AutoFixHigh
+                        },
+                        status = item.scorePercent?.let { score ->
+                            stringResource(R.string.percent_value, score)
+                        } ?: item.count?.let { count ->
+                            stringResource(R.string.items_count, count)
+                        },
+                        onClick = when (item.kind.destination()) {
+                            WeeklyCoachDestination.ANALYTICS -> onOpenAnalytics
+                            WeeklyCoachDestination.PLAN -> onOpenPlan
+                            WeeklyCoachDestination.PROGRESS -> onOpenProgressCenter
+                            WeeklyCoachDestination.REVIEWS -> onOpenReviews
+                        },
                     )
                 }
 
@@ -575,6 +631,46 @@ private fun StudyEvidenceEventKind.icon() = when (this) {
     StudyEvidenceEventKind.REVIEW_DUE,
     StudyEvidenceEventKind.PLANNED_ACTIVITY_MISSED -> Icons.Outlined.Notifications
     else -> Icons.Outlined.History
+}
+
+
+private enum class WeeklyCoachDestination {
+    ANALYTICS,
+    PLAN,
+    PROGRESS,
+    REVIEWS,
+}
+
+private fun StudyCoachWeeklyReviewItemKind.titleRes(): Int = when (this) {
+    StudyCoachWeeklyReviewItemKind.READINESS_STABLE -> R.string.weekly_coach_readiness_stable
+    StudyCoachWeeklyReviewItemKind.READINESS_RISK -> R.string.weekly_coach_readiness_risk
+    StudyCoachWeeklyReviewItemKind.REVIEW_BACKLOG -> R.string.weekly_coach_review_backlog
+    StudyCoachWeeklyReviewItemKind.PRACTICE_ACCURACY -> R.string.weekly_coach_practice_accuracy
+    StudyCoachWeeklyReviewItemKind.SCHEDULE_DRIFT -> R.string.weekly_coach_schedule_drift
+    StudyCoachWeeklyReviewItemKind.MOCK_EXAM_SIGNAL -> R.string.weekly_coach_mock_exam_signal
+    StudyCoachWeeklyReviewItemKind.CONSISTENCY_WIN -> R.string.weekly_coach_consistency_win
+    StudyCoachWeeklyReviewItemKind.EVIDENCE_EMPTY -> R.string.weekly_coach_evidence_empty
+    StudyCoachWeeklyReviewItemKind.RESCHEDULE_READY -> R.string.weekly_coach_reschedule_ready
+}
+
+private fun StudyCoachWeeklyReviewItemKind.messageRes(): Int = when (this) {
+    StudyCoachWeeklyReviewItemKind.READINESS_STABLE -> R.string.weekly_coach_readiness_stable_message
+    StudyCoachWeeklyReviewItemKind.READINESS_RISK -> R.string.weekly_coach_readiness_risk_message
+    StudyCoachWeeklyReviewItemKind.REVIEW_BACKLOG -> R.string.weekly_coach_review_backlog_message
+    StudyCoachWeeklyReviewItemKind.PRACTICE_ACCURACY -> R.string.weekly_coach_practice_accuracy_message
+    StudyCoachWeeklyReviewItemKind.SCHEDULE_DRIFT -> R.string.weekly_coach_schedule_drift_message
+    StudyCoachWeeklyReviewItemKind.MOCK_EXAM_SIGNAL -> R.string.weekly_coach_mock_exam_signal_message
+    StudyCoachWeeklyReviewItemKind.CONSISTENCY_WIN -> R.string.weekly_coach_consistency_win_message
+    StudyCoachWeeklyReviewItemKind.EVIDENCE_EMPTY -> R.string.weekly_coach_evidence_empty_message
+    StudyCoachWeeklyReviewItemKind.RESCHEDULE_READY -> R.string.weekly_coach_reschedule_ready_message
+}
+
+private fun StudyCoachWeeklyReviewItemKind.destination(): WeeklyCoachDestination = when (this) {
+    StudyCoachWeeklyReviewItemKind.REVIEW_BACKLOG -> WeeklyCoachDestination.REVIEWS
+    StudyCoachWeeklyReviewItemKind.RESCHEDULE_READY,
+    StudyCoachWeeklyReviewItemKind.SCHEDULE_DRIFT -> WeeklyCoachDestination.PLAN
+    StudyCoachWeeklyReviewItemKind.EVIDENCE_EMPTY -> WeeklyCoachDestination.PROGRESS
+    else -> WeeklyCoachDestination.ANALYTICS
 }
 
 private fun readinessBandLabel(band: ExamReadinessBand): Int = when (band) {
