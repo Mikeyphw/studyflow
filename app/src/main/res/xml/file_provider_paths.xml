@@ -6,4 +6,7 @@
     <cache-path
         name="studyflow_support_bundles"
         path="support-bundles/" />
+    <cache-path
+        name="studyflow_exam_reports"
+        path="exam-reports/" />
 </paths>

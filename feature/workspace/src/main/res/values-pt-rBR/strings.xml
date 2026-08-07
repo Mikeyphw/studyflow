@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <string name="today_title">Hoje</string>
-    <string name="today_eyebrow" tools:ignore="UnusedResources">Seu centro de comando de estudos</string>
     <string name="plan_title">Plano</string>
     <string name="practice_title">Prática</string>
     <string name="progress_title">Progresso</string>
@@ -32,14 +31,22 @@
     <string name="studied_time">Estudado</string>
     <string name="goal">Meta</string>
     <string name="accuracy">Acerto</string>
-    <string name="streak" tools:ignore="UnusedResources">Dias de estudo</string>
     <string name="minutes_value">%1$d min</string>
     <string name="hours_value">%1$d h</string>
     <string name="percent_value">%1$d%%</string>
-    <string name="days_value" tools:ignore="PluralsCandidate">%1$d dias</string>
-    <string name="reviews_value" tools:ignore="PluralsCandidate">%1$d revisões</string>
-    <string name="questions_value" tools:ignore="PluralsCandidate">%1$d questões</string>
-    <string name="complete" tools:ignore="UnusedResources">Concluir</string>
+    <plurals name="days_value">
+        <item quantity="one">%1$d dia</item>
+        <item quantity="other">%1$d dias</item>
+    </plurals>
+    <plurals name="reviews_value">
+        <item quantity="one">%1$d revisão</item>
+        <item quantity="other">%1$d revisões</item>
+    </plurals>
+    <plurals name="questions_value">
+        <item quantity="one">%1$d questão</item>
+        <item quantity="other">%1$d questões</item>
+    </plurals>
+    <string name="complete">Concluir</string>
     <string name="completed">Concluído</string>
     <string name="missed">Perdido</string>
     <string name="planned">Planejado</string>
@@ -69,34 +76,73 @@
     <string name="schedule_empty">Ainda não há blocos. Adicione o primeiro pelo Cronograma.</string>
     <string name="content_empty">Ainda não há matérias. Importe ou monte o edital.</string>
     <string name="library_empty">Ainda não há materiais, vídeos ou anexos.</string>
-    <string name="subjects_count" tools:ignore="PluralsCandidate">%1$d matérias</string>
-    <string name="topics_count" tools:ignore="PluralsCandidate">%1$d tópicos</string>
-    <string name="materials_count" tools:ignore="PluralsCandidate">%1$d materiais</string>
-    <string name="videos_count" tools:ignore="PluralsCandidate">%1$d vídeos</string>
-    <string name="annexes_count" tools:ignore="PluralsCandidate">%1$d anexos</string>
+    <plurals name="subjects_count">
+        <item quantity="one">%1$d matéria</item>
+        <item quantity="other">%1$d matérias</item>
+    </plurals>
+    <plurals name="topics_count">
+        <item quantity="one">%1$d tópico</item>
+        <item quantity="other">%1$d tópicos</item>
+    </plurals>
+    <plurals name="materials_count">
+        <item quantity="one">%1$d material</item>
+        <item quantity="other">%1$d materiais</item>
+    </plurals>
+    <plurals name="videos_count">
+        <item quantity="one">%1$d vídeo</item>
+        <item quantity="other">%1$d vídeos</item>
+    </plurals>
+    <plurals name="annexes_count">
+        <item quantity="one">%1$d anexo</item>
+        <item quantity="other">%1$d anexos</item>
+    </plurals>
     <string name="practice_reviews">Revisões</string>
     <string name="practice_questions">Questões</string>
     <string name="practice_errors">Erros</string>
-    <string name="practice_due_message" tools:ignore="PluralsCandidate">%1$d itens estão prontos para revisão espaçada.</string>
+    <plurals name="practice_due_message">
+        <item quantity="one">%1$d item está pronto para revisão espaçada.</item>
+        <item quantity="other">%1$d itens estão prontos para revisão espaçada.</item>
+    </plurals>
     <string name="practice_empty_reviews">Nenhuma revisão pendente. As próximas continuam agendadas automaticamente.</string>
     <string name="practice_empty_questions">Ainda não há questões. Adicione questões ou importe um conjunto.</string>
     <string name="practice_empty_errors">O caderno de erros está limpo.</string>
     <string name="open_review_center">Abrir central de revisões</string>
     <string name="open_question_bank">Abrir banco de questões</string>
     <string name="open_error_notebook">Abrir caderno de erros</string>
-    <string name="tests_count" tools:ignore="PluralsCandidate">%1$d testes</string>
-    <string name="mocks_count" tools:ignore="PluralsCandidate">%1$d simulados</string>
-    <string name="recurrences_value" tools:ignore="PluralsCandidate">Repetido %1$d vezes</string>
+    <plurals name="tests_count">
+        <item quantity="one">%1$d teste</item>
+        <item quantity="other">%1$d testes</item>
+    </plurals>
+    <plurals name="mocks_count">
+        <item quantity="one">%1$d simulado</item>
+        <item quantity="other">%1$d simulados</item>
+    </plurals>
+    <plurals name="recurrences_value">
+        <item quantity="one">Repetido %1$d vez</item>
+        <item quantity="other">Repetido %1$d vezes</item>
+    </plurals>
     <string name="progress_7_days">7 dias</string>
     <string name="progress_30_days">30 dias</string>
     <string name="progress_90_days">90 dias</string>
-    <string name="sessions_value" tools:ignore="PluralsCandidate">%1$d sessões</string>
-    <string name="answered_value" tools:ignore="PluralsCandidate">%1$d respondidas</string>
+    <plurals name="sessions_value">
+        <item quantity="one">%1$d sessão</item>
+        <item quantity="other">%1$d sessões</item>
+    </plurals>
+    <plurals name="answered_value">
+        <item quantity="one">%1$d respondida</item>
+        <item quantity="other">%1$d respondidas</item>
+    </plurals>
     <string name="weak_areas">Pontos fracos</string>
     <string name="no_weak_areas">Nenhum ponto fraco está sinalizado no momento.</string>
     <string name="goals_and_notes">Metas e anotações</string>
-    <string name="active_goals_value" tools:ignore="PluralsCandidate">%1$d metas ativas</string>
-    <string name="notes_value" tools:ignore="PluralsCandidate">%1$d anotações</string>
+    <plurals name="active_goals_value">
+        <item quantity="one">%1$d meta ativa</item>
+        <item quantity="other">%1$d metas ativas</item>
+    </plurals>
+    <plurals name="notes_value">
+        <item quantity="one">%1$d anotação</item>
+        <item quantity="other">%1$d anotações</item>
+    </plurals>
     <string name="open_progress_center">Abrir metas e anotações</string>
     <string name="open_analytics">Abrir análises detalhadas</string>
     <string name="open_plan">Abrir plano</string>
@@ -133,7 +179,6 @@
     <string name="privacy">Central de privacidade</string>
     <string name="debug_workbench">Bancada de depuração</string>
     <string name="quick_add_title">O que você quer adicionar?</string>
-    <string name="quick_add_subtitle" tools:ignore="UnusedResources">O StudyFlow abre o fluxo real existente, sem botão cenográfico.</string>
     <string name="quick_session">Sessão rápida de foco</string>
     <string name="quick_session_title">Título da sessão</string>
     <string name="quick_session_duration">Minutos desejados</string>
@@ -149,7 +194,10 @@
     <string name="cancelled">Cancelada</string>
     <string name="skipped">Ignorada</string>
     <string name="flexible">Flexível</string>
-    <string name="flashcards_value" tools:ignore="PluralsCandidate">%1$d flashcards</string>
+    <plurals name="flashcards_value">
+        <item quantity="one">%1$d flashcard</item>
+        <item quantity="other">%1$d flashcards</item>
+    </plurals>
     <string name="material_type">Material</string>
     <string name="video_type">Vídeo</string>
     <string name="priority_low">Prioridade baixa</string>
@@ -180,17 +228,29 @@
     <string name="subject_status">Progresso %1$d%% · acerto %2$d%%</string>
     <string name="no_topics_for_subject">Ainda não há tópicos dentro dessa matéria.</string>
     <string name="topic_mastery">Domínio %1$d%%</string>
-    <string name="view_all_topics" tools:ignore="PluralsCandidate">Ver todos os %1$d tópicos</string>
+    <plurals name="view_all_topics">
+        <item quantity="one">Ver %1$d tópico</item>
+        <item quantity="other">Ver todos os %1$d tópicos</item>
+    </plurals>
     <string name="review_due_now">Vencidas agora</string>
-    <string name="open_remaining_reviews" tools:ignore="PluralsCandidate">Abrir mais %1$d revisões</string>
-    <string name="review_method_and_interval" tools:ignore="PluralsCandidate">%1$s · intervalo de %2$d dias</string>
+    <plurals name="open_remaining_reviews">
+        <item quantity="one">Abrir mais %1$d revisão</item>
+        <item quantity="other">Abrir mais %1$d revisões</item>
+    </plurals>
+    <plurals name="review_method_and_interval">
+        <item quantity="one">%1$s · intervalo de %2$d dia</item>
+        <item quantity="other">%1$s · intervalo de %2$d dias</item>
+    </plurals>
     <string name="review_again">De novo</string>
     <string name="review_hard">Difícil</string>
     <string name="review_good">Boa</string>
     <string name="skip_review">Pular revisão</string>
     <string name="tests">Testes</string>
     <string name="mock_exams">Simulados</string>
-    <string name="test_progress" tools:ignore="PluralsCandidate">%1$d/%2$d respondidas</string>
+    <plurals name="test_progress">
+        <item quantity="one">%1$d/%2$d respondida</item>
+        <item quantity="other">%1$d/%2$d respondidas</item>
+    </plurals>
     <string name="period_trend">Tendência do período</string>
     <string name="period_trend_detail">Antes %1$d min · recente %2$d min</string>
     <string name="trend_up">Subindo</string>
@@ -260,11 +320,17 @@
     <string name="reschedule_reason_theory_before_questions">A baixa taxa de acerto sugere teoria antes de questões cronometradas.</string>
     <string name="reschedule_reason_keep_steady">Nenhum replanejamento automático seguro é necessário. Continue com a mistura atual.</string>
     <string name="reschedule_apply_result">Resultado do replanejamento</string>
-    <string name="reschedule_apply_success" tools:ignore="PluralsCandidate">Aplicou %1$d ajuste(s) seguro(s); pulou %2$d item(ns) só de prévia.</string>
+    <plurals name="reschedule_apply_success">
+        <item quantity="one">Aplicou %1$d ajuste seguro; pulou %2$d itens só de prévia.</item>
+        <item quantity="other">Aplicou %1$d ajustes seguros; pulou %2$d itens só de prévia.</item>
+    </plurals>
     <string name="reschedule_apply_failed">Não foi possível aplicar os ajustes seguros. Abra o plano para ajustar manualmente.</string>
 
     <string name="weakness_drill_title">Treino de fraquezas</string>
-    <string name="weakness_drill_message" tools:ignore="PluralsCandidate">%1$d questão(ões) direcionada(s) por %2$d sinal(is) fraco(s).</string>
+    <plurals name="weakness_drill_message">
+        <item quantity="one">%1$d questão direcionada por %2$d sinais fracos.</item>
+        <item quantity="other">%1$d questões direcionadas por %2$d sinais fracos.</item>
+    </plurals>
     <string name="weakness_drill_unavailable">Adicione erros ou revisões de questões vencidas antes de criar o treino.</string>
     <string name="weakness_drill_created">Treino de fraquezas criado.</string>
     <string name="create_weakness_drill">Criar treino</string>
@@ -277,12 +343,18 @@
     <string name="question_import_no_new_questions">Nenhuma questão nova válida foi importada.</string>
     <string name="mock_exam_studio_title">Estúdio de simulados</string>
     <string name="mock_exam_studio_generated_title">Simulado de %1$s</string>
-    <string name="mock_exam_studio_message" tools:ignore="PluralsCandidate">%1$d questões elegíveis · cronômetro de %2$d min</string>
+    <plurals name="mock_exam_studio_message">
+        <item quantity="one">%1$d questão elegível · cronômetro de %2$d min</item>
+        <item quantity="other">%1$d questões elegíveis · cronômetro de %2$d min</item>
+    </plurals>
     <string name="mock_exam_studio_help">Ajuste quantidade, tempo e nota mínima antes de criar o simulado.</string>
     <string name="mock_exam_question_count">Quantidade de questões</string>
     <string name="mock_exam_time_limit_minutes">Tempo limite em minutos</string>
     <string name="mock_exam_minimum_score">Percentual mínimo</string>
-    <string name="mock_exam_studio_sections" tools:ignore="PluralsCandidate">%1$d seção(ões) · %2$d questão(ões) selecionada(s)</string>
+    <plurals name="mock_exam_studio_sections">
+        <item quantity="one">%1$d seção · %2$d questões selecionadas</item>
+        <item quantity="other">%1$d seções · %2$d questões selecionadas</item>
+    </plurals>
     <string name="mock_exam_warning_no_questions">Adicione questões antes de criar um simulado.</string>
     <string name="mock_exam_warning_skipped">Algumas questões inelegíveis foram ignoradas.</string>
     <string name="mock_exam_warning_not_enough">Não há questões compatíveis suficientes para o tamanho pedido.</string>
@@ -296,9 +368,15 @@
     <string name="evidence_timeline">Linha do tempo de evidências</string>
     <string name="evidence_empty">O StudyFlow mostrará sessões, revisões, questões, testes, metas, notas e blocos perdidos conforme houver evidências.</string>
     <string name="evidence_no_label">Evidência de estudo</string>
-    <string name="evidence_minutes_and_count" tools:ignore="PluralsCandidate">%1$s - %2$d min - %3$d item(ns)</string>
+    <plurals name="evidence_minutes_and_count">
+        <item quantity="one">%1$s - %2$d min - %3$d item</item>
+        <item quantity="other">%1$s - %2$d min - %3$d itens</item>
+    </plurals>
     <string name="evidence_minutes">%1$s - %2$d min</string>
-    <string name="evidence_count" tools:ignore="PluralsCandidate">%1$s - %2$d item(ns)</string>
+    <plurals name="evidence_count">
+        <item quantity="one">%1$s - %2$d item</item>
+        <item quantity="other">%1$s - %2$d itens</item>
+    </plurals>
     <string name="evidence_session_completed">Sessão concluída</string>
     <string name="evidence_session_cancelled">Sessão cancelada</string>
     <string name="evidence_activity_completed">Bloco planejado concluído</string>
@@ -313,10 +391,16 @@
     <string name="evidence_goal_completed">Meta concluída</string>
     <string name="evidence_note_pinned">Nota fixada</string>
 
-    <string name="items_count" tools:ignore="PluralsCandidate">%1$d itens</string>
+    <plurals name="items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d itens</item>
+    </plurals>
     <string name="weekly_coach_review">Revisão semanal do coach</string>
     <string name="weekly_coach_title">Revisão do coach para %1$s</string>
-    <string name="weekly_coach_summary" tools:ignore="PluralsCandidate">%1$d evidências · %2$d minutos estudados nesta semana.</string>
+    <plurals name="weekly_coach_summary">
+        <item quantity="one">%1$d evidência · %2$d minutos estudados nesta semana.</item>
+        <item quantity="other">%1$d evidências · %2$d minutos estudados nesta semana.</item>
+    </plurals>
     <string name="weekly_coach_readiness_stable">Prontidão estável</string>
     <string name="weekly_coach_readiness_risk">Prontidão pede ação</string>
     <string name="weekly_coach_review_backlog">Revisões primeiro</string>
@@ -335,4 +419,79 @@
     <string name="weekly_coach_consistency_win_message">Dias recentes de estudo estão protegendo o ritmo.</string>
     <string name="weekly_coach_evidence_empty_message">Conclua uma sessão ou revisão para criar evidência desta semana.</string>
     <string name="weekly_coach_reschedule_ready_message">Há mudanças seguras pré-visualizadas aguardando no plano.</string>
+
+    <!-- Fase 60: saúde de conteúdo local com prévia primeiro -->
+    <string name="content_health_title">Saúde do conteúdo</string>
+    <string name="content_health_waiting">Verificando o conteúdo local de estudos.</string>
+    <string name="content_health_clean_message">Nenhum problema de limpeza foi detectado no plano local atual.</string>
+    <plurals name="content_health_summary">
+        <item quantity="one">%1$d problema de limpeza encontrado · %2$d exige ação.</item>
+        <item quantity="other">%1$d problemas de limpeza encontrados · %2$d exigem ação.</item>
+    </plurals>
+    <string name="review_cleanup">Revisar limpeza</string>
+    <string name="preview_cleanup_action">Prévia</string>
+    <string name="cleanup_preview_notice">Somente prévia. O StudyFlow não apaga nem reescreve conteúdo por este cartão.</string>
+    <string name="cleanup_duplicate_questions">Possíveis questões duplicadas</string>
+    <string name="cleanup_duplicate_questions_message">Questões com conteúdo e metadados iguais devem ser revisadas antes de qualquer arquivamento.</string>
+    <string name="cleanup_orphan_topics">Tópicos órfãos</string>
+    <string name="cleanup_orphan_topics_message">Tópicos ativos não têm conteúdo, revisões ou trabalho planejado vinculado.</string>
+    <string name="cleanup_stale_resources">Recursos antigos</string>
+    <string name="cleanup_stale_resources_message">Recursos antigos arquivados ou concluídos não estão mais ligados ao estudo ativo.</string>
+    <string name="cleanup_stale_plan">Atividade do plano parada</string>
+    <string name="cleanup_stale_plan_message">O plano ativo ou pausado não tem conteúdo recente nem evidência de conclusão.</string>
+    <string name="cleanup_inconsistent_tags">Tags inconsistentes</string>
+    <string name="cleanup_inconsistent_tags_message">Tags equivalentes diferem apenas por espaços ou maiúsculas e minúsculas.</string>
+    <string name="cleanup_stale_reviews">Links de revisão quebrados</string>
+    <string name="cleanup_stale_reviews_message">Revisões pendentes apontam para conteúdo que não está mais presente.</string>
+    <string name="cleanup_broken_schedule">Agenda e conteúdo desalinhados</string>
+    <string name="cleanup_broken_schedule_message">Trabalho futuro aponta para conteúdo inativo ou ausente.</string>
+    <string name="cleanup_severity_info">Informação</string>
+    <string name="cleanup_severity_review">Revisar</string>
+    <string name="cleanup_severity_action">Ação</string>
+
+    <!-- Fase 61: exportação local e iniciada pelo usuário -->
+    <string name="exam_report_export_title">Exportar relatório da prova</string>
+    <string name="exam_report_title">Relatório de prova: %1$s</string>
+    <string name="exam_report_export_message">Crie um retrato local em HTML ou PDF usando as evidências do StudyFlow. Nada é enviado para a nuvem.</string>
+    <string name="exam_report_share_chooser">Compartilhar relatório de prova do StudyFlow</string>
+    <string name="export_report_html">Exportar HTML</string>
+    <string name="export_report_pdf">Exportar PDF</string>
+    <string name="exam_report_export_success">Relatório criado localmente. Escolha onde compartilhar ou salvar.</string>
+    <string name="exam_report_export_failed">Não foi possível criar ou compartilhar o relatório local.</string>
+    <string name="exam_report_status_recorded">Registrado</string>
+    <string name="exam_report_weak_area_value">Progresso %1$d%% · domínio %2$d%%</string>
+    <string name="exam_report_next_action">Próxima ação</string>
+    <string name="exam_report_generated_at">Gerado em %1$s</string>
+    <string name="exam_report_overview_section">Visão geral</string>
+    <string name="exam_report_readiness_band">Faixa de prontidão</string>
+    <string name="exam_report_studied_minutes">Minutos estudados nos últimos 7 dias</string>
+    <string name="exam_report_evidence_count">Eventos de evidência</string>
+    <string name="exam_report_readiness_signals_section">Sinais de prontidão</string>
+    <string name="exam_report_no_weak_areas">Nenhuma área fraca está disponível no momento.</string>
+    <string name="exam_report_recovery_section">Recuperação e revisões</string>
+    <string name="exam_report_missed_activities">Atividades planejadas perdidas</string>
+    <string name="exam_report_due_reviews">Revisões pendentes</string>
+    <string name="exam_report_overdue_reviews">Revisões atrasadas</string>
+    <string name="exam_report_reschedule_changes">Mudanças seguras de reagendamento disponíveis</string>
+    <string name="exam_report_practice_section">Prática e simulados</string>
+    <string name="exam_report_practice_tests">Testes de prática</string>
+    <string name="exam_report_completed_tests">Testes de prática concluídos</string>
+    <string name="exam_report_test_accuracy">Precisão nos testes de prática</string>
+    <string name="exam_report_mock_exams">Simulados</string>
+    <string name="exam_report_completed_mocks">Simulados concluídos</string>
+    <string name="exam_report_best_mock_score">Melhor nota de simulado</string>
+    <string name="exam_report_average_mock_score">Média dos simulados</string>
+    <string name="exam_report_recent_questions">Questões adicionadas nos últimos 14 dias</string>
+    <string name="exam_report_health_score">Nota de saúde do conteúdo</string>
+    <string name="exam_report_cleanup_issues">Problemas de limpeza</string>
+    <string name="exam_report_cleanup_actions">Itens de limpeza que exigem ação</string>
+    <string name="exam_report_next_actions_section">Próximas ações seguras</string>
+    <string name="exam_report_action_review_backlog">Limpar a fila de revisões atrasadas.</string>
+    <string name="exam_report_action_recover_schedule">Recuperar ou redistribuir o trabalho planejado perdido.</string>
+    <string name="exam_report_action_practice_weak_areas">Praticar as áreas medidas como mais fracas.</string>
+    <string name="exam_report_action_run_mock">Fazer ou revisar um simulado antes da próxima previsão.</string>
+    <string name="exam_report_action_review_cleanup">Revisar a prévia de limpeza do conteúdo.</string>
+    <string name="exam_report_action_apply_reschedule">Revisar e aplicar mudanças seguras de reagendamento.</string>
+    <string name="exam_report_action_keep_plan">Continuar executando o plano atual.</string>
+    <string name="exam_report_privacy_notice">Gerado com dados locais do StudyFlow. A exportação é iniciada pelo usuário, não usa conta na nuvem e omite anotações livres por padrão.</string>
 </resources>

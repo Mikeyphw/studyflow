@@ -1,3 +1,11 @@
+# Phase 60-61 validation update
+
+Source validation now includes `scripts/verify_phase_60_61.py`, focused core-domain Kotlin compilation,
+Phase 60 cleanup tests, Phase 61 report-builder tests, bilingual resource/parity checks, local-export
+source checks, and clean-overlay apply simulation. The new `verifyPhase60_61ContentReportSeal` task is
+wired into `checkAll`. Android Gradle compilation, unit execution, assembly, and debug/release lint
+remain Devtool target-machine gates and are not pre-claimed by this report.
+
 # Phase 56-57 validation update
 
 Phase 56 adds the Post-V2 Integration Seal. Phase 57 adds the Real-Device Readiness and UX Polish Seal.

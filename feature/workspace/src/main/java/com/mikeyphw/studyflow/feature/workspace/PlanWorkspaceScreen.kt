@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Event
@@ -30,9 +31,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowCoachCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
@@ -43,7 +46,15 @@ import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
+import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
+import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
+import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
+import com.mikeyphw.studyflow.core.domain.StudyContentCleanupEngine
+import com.mikeyphw.studyflow.core.domain.StudyContentCleanupInput
+import com.mikeyphw.studyflow.core.domain.StudyContentCleanupIssueKind
+import com.mikeyphw.studyflow.core.domain.StudyContentCleanupReport
+import com.mikeyphw.studyflow.core.domain.StudyContentCleanupSeverity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
@@ -57,6 +68,9 @@ fun PlanWorkspaceScreen(
     scheduleManager: ManageStudySchedule,
     contentManager: ManageStudyContent,
     libraryManager: ManageStudyLibrary,
+    practiceManager: ManageStudyPractice,
+    reviewManager: ManageStudyReview,
+    progressManager: ManageStudyProgress,
     onTabSelected: (PlanWorkspaceTab) -> Unit,
     onSwitchPlan: () -> Unit,
     onSearch: () -> Unit,
@@ -74,11 +88,55 @@ fun PlanWorkspaceScreen(
     val scheduleFlow = remember(plan.id) { scheduleManager.observeSchedule(plan.id) }
     val syllabusFlow = remember(plan.id) { contentManager.observeSyllabus(plan.id) }
     val libraryFlow = remember(plan.id) { libraryManager.observeSnapshot(plan.id) }
+    val questionsFlow = remember(plan.id) { practiceManager.observeQuestions(plan.id) }
+    val reviewItemsFlow = remember(plan.id) { reviewManager.observeReviewItems(plan.id) }
+    val flashcardsFlow = remember(plan.id) { reviewManager.observeFlashcards(plan.id) }
+    val errorEntriesFlow = remember(plan.id) { reviewManager.observeErrorEntries(plan.id) }
+    val progressFlow = remember(plan.id) { progressManager.observeSnapshot(plan.id) }
     val schedule by scheduleFlow.collectAsStateWithLifecycle(
         initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
     )
     val syllabus by syllabusFlow.collectAsStateWithLifecycle(initialValue = null)
     val library by libraryFlow.collectAsStateWithLifecycle(initialValue = null)
+    val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val reviewItems by reviewItemsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val flashcards by flashcardsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val errorEntries by errorEntriesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val progress by progressFlow.collectAsStateWithLifecycle(initialValue = null)
+    val cleanupReport = remember(
+        plan,
+        syllabus,
+        library,
+        schedule,
+        questions,
+        reviewItems,
+        flashcards,
+        errorEntries,
+        progress,
+    ) {
+        val currentSyllabus = syllabus
+        val currentLibrary = library
+        if (currentSyllabus == null || currentLibrary == null) {
+            null
+        } else {
+            StudyContentCleanupEngine.inspect(
+                StudyContentCleanupInput(
+                    plan = plan,
+                    syllabus = currentSyllabus,
+                    questions = questions,
+                    materials = currentLibrary.materials,
+                    videos = currentLibrary.videos,
+                    annexes = currentLibrary.annexes,
+                    reviewItems = reviewItems,
+                    flashcards = flashcards,
+                    errorEntries = errorEntries,
+                    plannedActivities = schedule.plannedActivities,
+                    notes = progress?.notes.orEmpty(),
+                    nowEpochMillis = System.currentTimeMillis(),
+                ),
+            )
+        }
+    }
 
     Scaffold(modifier = modifier) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -122,6 +180,7 @@ fun PlanWorkspaceScreen(
                 )
                 PlanWorkspaceTab.CONTENT -> PlanContentPane(
                     syllabus = syllabus,
+                    cleanupReport = cleanupReport,
                     onManage = onManageContent,
                 )
                 PlanWorkspaceTab.LIBRARY -> PlanLibraryPane(
@@ -188,9 +247,9 @@ private fun PlanOverviewPane(
                         text = stringResource(R.string.exam_date) + ": " + examDate,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Text(stringResource(R.string.subjects_count, subjectCount))
+                    Text(pluralStringResource(R.plurals.subjects_count, subjectCount, subjectCount))
                     Text("$scheduleCount · ${stringResource(R.string.plan_schedule)}")
-                    Text(stringResource(R.string.materials_count, materialCount))
+                    Text(pluralStringResource(R.plurals.materials_count, materialCount, materialCount))
                 }
             }
         }
@@ -273,6 +332,7 @@ private fun PlanSchedulePane(
 @Composable
 private fun PlanContentPane(
     syllabus: StudySyllabus?,
+    cleanupReport: StudyContentCleanupReport?,
     onManage: () -> Unit,
 ) {
     val subjects = syllabus?.subjects.orEmpty().filterNot { it.archived }
@@ -285,6 +345,51 @@ private fun PlanContentPane(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         studyFlowSectionHeader(
+            key = "content-health",
+            title = { stringResource(R.string.content_health_title) },
+        )
+        item(key = "content-health-summary", contentType = "coach") {
+            val currentReport = cleanupReport
+            StudyFlowCoachCard(
+                title = currentReport?.let { report ->
+                    stringResource(R.string.percent_value, report.healthScorePercent)
+                } ?: stringResource(R.string.not_enough_data),
+                message = when {
+                    currentReport == null -> stringResource(R.string.content_health_waiting)
+                    currentReport.issueCount == 0 -> stringResource(R.string.content_health_clean_message)
+                    else -> pluralStringResource(
+                        R.plurals.content_health_summary,
+                        currentReport.issueCount,
+                        currentReport.issueCount,
+                        currentReport.actionCount,
+                    )
+                },
+                actionLabel = stringResource(R.string.review_cleanup),
+                onAction = onManage,
+            )
+        }
+        item(key = "content-health-safety", contentType = "notice") {
+            Text(
+                text = stringResource(R.string.cleanup_preview_notice),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        items(
+            items = cleanupReport?.issues.orEmpty().take(5),
+            key = { issue -> "cleanup:${issue.kind}" },
+            contentType = { "cleanup-issue" },
+        ) { issue ->
+            StudyFlowTimelineRow(
+                title = stringResource(issue.kind.titleRes()),
+                metadata = stringResource(issue.kind.messageRes()),
+                icon = Icons.Outlined.AutoFixHigh,
+                status = stringResource(issue.severity.labelRes()),
+                actionLabel = stringResource(R.string.preview_cleanup_action),
+                onClick = onManage,
+            )
+        }
+
+        studyFlowSectionHeader(
             key = "content",
             title = { stringResource(R.string.plan_content) },
             actionLabel = { stringResource(R.string.manage_content) },
@@ -293,8 +398,8 @@ private fun PlanContentPane(
         item(key = "content-counts", contentType = "metrics") {
             StudyFlowMetricPulse(
                 label = stringResource(R.string.plan_content),
-                value = stringResource(R.string.subjects_count, subjects.size),
-                supportingText = stringResource(R.string.topics_count, topics.size),
+                value = pluralStringResource(R.plurals.subjects_count, subjects.size, subjects.size),
+                supportingText = pluralStringResource(R.plurals.topics_count, topics.size, topics.size),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -313,7 +418,11 @@ private fun PlanContentPane(
                 val expanded = subject.id.value in expandedSubjectIds
                 StudyFlowSubjectAccordion(
                     title = subject.name,
-                    supportingText = stringResource(R.string.topics_count, subjectTopics.size),
+                    supportingText = pluralStringResource(
+                        R.plurals.topics_count,
+                        subjectTopics.size,
+                        subjectTopics.size,
+                    ),
                     status = stringResource(R.string.subject_status, subject.progressPercent, subject.accuracyPercent),
                     expanded = expanded,
                     expandedStateDescription = stringResource(R.string.expanded),
@@ -343,7 +452,13 @@ private fun PlanContentPane(
                         }
                         if (subjectTopics.size > 6) {
                             Button(onClick = onManage, modifier = Modifier.fillMaxWidth()) {
-                                Text(stringResource(R.string.view_all_topics, subjectTopics.size))
+                                Text(
+                                    pluralStringResource(
+                                        R.plurals.view_all_topics,
+                                        subjectTopics.size,
+                                        subjectTopics.size,
+                                    ),
+                                )
                             }
                         }
                     }
@@ -375,9 +490,9 @@ private fun PlanLibraryPane(
         )
         item(key = "library-counts", contentType = "metrics") {
             StudyFlowMetricPulse(
-                label = stringResource(R.string.materials_count, materialTitles.size),
-                value = stringResource(R.string.videos_count, videoTitles.size),
-                supportingText = stringResource(R.string.annexes_count, annexCount),
+                label = pluralStringResource(R.plurals.materials_count, materialTitles.size, materialTitles.size),
+                value = pluralStringResource(R.plurals.videos_count, videoTitles.size, videoTitles.size),
+                supportingText = pluralStringResource(R.plurals.annexes_count, annexCount, annexCount),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -401,4 +516,30 @@ private fun PlanLibraryPane(
             }
         }
     }
+}
+
+private fun StudyContentCleanupIssueKind.titleRes(): Int = when (this) {
+    StudyContentCleanupIssueKind.DUPLICATE_QUESTION -> R.string.cleanup_duplicate_questions
+    StudyContentCleanupIssueKind.ORPHAN_TOPIC -> R.string.cleanup_orphan_topics
+    StudyContentCleanupIssueKind.STALE_RESOURCE -> R.string.cleanup_stale_resources
+    StudyContentCleanupIssueKind.STALE_PLAN -> R.string.cleanup_stale_plan
+    StudyContentCleanupIssueKind.INCONSISTENT_TAG -> R.string.cleanup_inconsistent_tags
+    StudyContentCleanupIssueKind.STALE_REVIEW -> R.string.cleanup_stale_reviews
+    StudyContentCleanupIssueKind.BROKEN_SCHEDULE_ALIGNMENT -> R.string.cleanup_broken_schedule
+}
+
+private fun StudyContentCleanupIssueKind.messageRes(): Int = when (this) {
+    StudyContentCleanupIssueKind.DUPLICATE_QUESTION -> R.string.cleanup_duplicate_questions_message
+    StudyContentCleanupIssueKind.ORPHAN_TOPIC -> R.string.cleanup_orphan_topics_message
+    StudyContentCleanupIssueKind.STALE_RESOURCE -> R.string.cleanup_stale_resources_message
+    StudyContentCleanupIssueKind.STALE_PLAN -> R.string.cleanup_stale_plan_message
+    StudyContentCleanupIssueKind.INCONSISTENT_TAG -> R.string.cleanup_inconsistent_tags_message
+    StudyContentCleanupIssueKind.STALE_REVIEW -> R.string.cleanup_stale_reviews_message
+    StudyContentCleanupIssueKind.BROKEN_SCHEDULE_ALIGNMENT -> R.string.cleanup_broken_schedule_message
+}
+
+private fun StudyContentCleanupSeverity.labelRes(): Int = when (this) {
+    StudyContentCleanupSeverity.INFO -> R.string.cleanup_severity_info
+    StudyContentCleanupSeverity.REVIEW -> R.string.cleanup_severity_review
+    StudyContentCleanupSeverity.ACTION -> R.string.cleanup_severity_action
 }

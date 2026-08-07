@@ -271,8 +271,9 @@ private fun DebugTimeline(
         item {
             StudyFlowSectionCard(title = stringResource(R.string.debug_timeline_title)) {
                 Text(
-                    text = stringResource(
-                        R.string.debug_timeline_summary,
+                    text = pluralStringResource(
+                        R.plurals.debug_timeline_summary,
+                        timeline.eventCount,
                         timeline.eventCount,
                         timeline.malformedLineCount,
                     ),

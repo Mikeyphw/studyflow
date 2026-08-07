@@ -1,3 +1,12 @@
+# Phase 60-61 Smart Content Cleanup and Exam Report Export
+
+- Added a structured, preview-only content-health engine for duplicates, orphans, stale resources/plans, tag variants, broken review links, and schedule/content mismatches.
+- Added localized Plan and Progress content-health surfaces with no automatic mutation.
+- Added user-initiated local HTML and native PDF exam-report export through FileProvider.
+- Added structured report coverage for readiness, weekly coaching, evidence, recovery, practice tests, mock exams, adaptive reschedule, content health, and next safe actions.
+- Converted the remaining primary resource plural candidates to `<plurals>`, removed truly unused compatibility resources, and removed the targeted resource warning suppressions.
+- Added the Phase 60-61 source verifier and Gradle verification gate.
+
 # Phase 56-57 r2 promise-closure audit
 
 - Added `verifyPhase56_57ReleaseReadiness` as a release-facing source gate.

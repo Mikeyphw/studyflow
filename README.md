@@ -223,3 +223,11 @@ Progress. See [Phase 58-59](PHASE_58_59_SYNC_QUEUE_WEEKLY_COACH.md) and
 ## Phase 58-59 r2 audit closure
 
 - Scoped lint hygiene update: resource warning suppressions are now attached only to known compatibility strings instead of the entire resource file.
+## Phase 60-61: smart cleanup and local exam reports
+
+Phase 60 adds a preview-first local content-health engine to Plan and Progress. Phase 61 adds explicit
+HTML/PDF exam-report export from structured readiness, coach, evidence, practice, recovery, and
+content-health data. Export stays local and omits freeform notes by default. See
+[Phase 60-61 implementation](PHASE_60_61_SMART_CONTENT_CLEANUP_EXAM_REPORT.md) and
+[Phase 60-61 acceptance](docs/quality/PHASE_60_61_ACCEPTANCE.md).
+

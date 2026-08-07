@@ -135,8 +135,8 @@ require("val changeCount: Int = planCount" in sync_model,
 for rel in ["feature/settings/src/main/res/values/strings.xml", "feature/settings/src/main/res/values-pt-rBR/strings.xml"]:
     text = read(rel)
     for key in [
-        "sync_connection_local_only", "sync_connection_local_ready", "sync_connection_checkpoint_prepared",
-        "sync_connection_checkpoint_error", "sync_conflict_last_write_wins", "sync_conflict_manual_review",
+        "sync_connection_local_only", "sync_connection_local_ready",
+        "sync_connection_checkpoint_error", "sync_conflict_manual_review",
         "sync_conflict_local_only", "sync_change_count",
     ]:
         require(f'name="{key}"' in text, f"missing localized sync label {key} in {rel}")

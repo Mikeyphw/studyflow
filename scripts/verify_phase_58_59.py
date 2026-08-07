@@ -112,7 +112,7 @@ for path in (
     "app/src/main/res/values-pt-rBR/strings.xml",
 ):
     source = text(path)
-    require("tools:ignore" in source, f"{path} must document warning suppression boundary")
+    require("tools:ignore" not in source, f"{path} must not retain targeted warning suppressions")
     ET.fromstring(source)
 
 for path in (

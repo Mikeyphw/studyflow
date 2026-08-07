@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
@@ -289,6 +290,9 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 scheduleManager = container.manageStudySchedule,
                 contentManager = container.manageStudyContent,
                 libraryManager = container.manageStudyLibrary,
+                practiceManager = container.manageStudyPractice,
+                reviewManager = container.manageStudyReview,
+                progressManager = container.manageStudyProgress,
                 onTabSelected = { tab ->
                     navController.navigateWorkspaceTab(PlanWorkspaceRoute(plan.id.value, tab))
                 },
@@ -383,11 +387,17 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 onSystem = { navController.navigate(SystemHubRoute(route.planId)) },
             )
         } else {
+            val context = LocalContext.current
+            val reportExporter = remember(context) {
+                StudyFlowExamReportExporter(context.applicationContext)
+            }
             ProgressWorkspaceScreen(
                 plan = plan,
                 selectedPeriod = route.period,
                 analyticsManager = container.manageStudyAnalytics,
                 progressManager = container.manageStudyProgress,
+                contentManager = container.manageStudyContent,
+                libraryManager = container.manageStudyLibrary,
                 readinessManager = container.manageExamReadiness,
                 adaptiveRescheduleManager = container.manageAdaptiveReschedule,
                 sessionManager = container.manageStudySession,
@@ -415,10 +425,18 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                         PlanWorkspaceRoute(plan.id.value, PlanWorkspaceTab.SCHEDULE),
                     )
                 },
+                onOpenContent = {
+                    navController.navigate(
+                        PlanWorkspaceRoute(plan.id.value, PlanWorkspaceTab.CONTENT),
+                    )
+                },
                 onOpenReviews = {
                     navController.navigate(
                         PracticeWorkspaceRoute(plan.id.value, PracticeWorkspaceTab.REVIEWS),
                     )
+                },
+                onExportExamReport = { document, format, chooserTitle ->
+                    reportExporter.exportAndShare(document, format, chooserTitle)
                 },
             )
         }

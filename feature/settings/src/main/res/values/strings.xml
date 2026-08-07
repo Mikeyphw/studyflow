@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <string name="settings_title">Settings</string>
     <string name="settings_subtitle">Language and appearance settings apply to the app, not to user-created content.</string>
     <string name="language_title">Language</string>
@@ -71,7 +71,10 @@
     <string name="debug_privacy_boundary_message">The timeline stores fingerprints and machine-safe facts, never plan names, notes, questions, answers, raw paths, or raw URIs.</string>
     <string name="debug_last_action_title">Last action</string>
     <string name="debug_timeline_title">Diagnostic timeline</string>
-    <string name="debug_timeline_summary" tools:ignore="PluralsCandidate">%1$d event(s) · %2$d malformed line(s)</string>
+    <plurals name="debug_timeline_summary">
+        <item quantity="one">%1$d event · %2$d malformed lines</item>
+        <item quantity="other">%1$d events · %2$d malformed lines</item>
+    </plurals>
     <string name="debug_filter_all">All</string>
     <string name="debug_timeline_empty_title">No recorded events</string>
     <string name="debug_timeline_empty_message">Use StudyFlow normally or run a probe, then refresh this page.</string>
@@ -323,13 +326,11 @@
     <string name="sync_connection_local_only">Local only</string>
     <string name="sync_connection_local_ready">Local changes ready</string>
     <string name="sync_connection_checkpoint_needed">Local checkpoint needed</string>
-    <string name="sync_connection_checkpoint_prepared" tools:ignore="UnusedResources">Checkpoint prepared</string>
     <string name="sync_connection_checkpoint_error">Checkpoint needs attention</string>
-    <string name="sync_conflict_last_write_wins" tools:ignore="UnusedResources">Use latest change</string>
     <string name="sync_conflict_manual_review">Review conflicts manually</string>
     <string name="sync_conflict_local_only">Keep this device only</string>
 
-    <string name="sync_queue_title">Cloudless backup queue</string>
+    <string name="sync_queue_title">Local backup queue</string>
     <string name="sync_queue_waiting_for_inspection">Inspect local changes to build the queue.</string>
     <string name="sync_queue_summary">Ready: %1$d · Blocked: %2$d · Waiting: %3$d</string>
     <string name="sync_queue_prepare_checkpoint">Prepare checkpoint</string>

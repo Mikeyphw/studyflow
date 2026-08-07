@@ -50,7 +50,7 @@ tasks.register("verifyFormatting") {
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
     description =
-        "Runs StudyFlow contracts through Phase 37, UI/UX V2 through Phase 59, and Debug Workbench D1 through D8."
+        "Runs StudyFlow contracts through Phase 37, UI/UX V2 through Phase 61, and Debug Workbench D1 through D8."
     commandLine(
         "bash",
         "-lc",
@@ -77,6 +77,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_54_55.py
         python3 scripts/verify_phase_56_57.py
         python3 scripts/verify_phase_58_59.py
+        python3 scripts/verify_phase_60_61.py
         """.trimIndent(),
     )
 }
@@ -202,6 +203,13 @@ enum class $enumName""" !in routes) {
     }
 }
 
+tasks.register<Exec>("verifyPhase60_61ContentReportSeal") {
+    group = "verification"
+    description = "Checks Phase 60 smart cleanup, Phase 61 local report export, and warning cleanup."
+    commandLine("python3", "scripts/verify_phase_60_61.py")
+}
+
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
@@ -209,6 +217,7 @@ tasks.register("checkAll") {
         "verifyRepositoryContracts",
         "verifyPhase56_57ReleaseReadiness",
         "verifyPhase58_59WarningHygiene",
+        "verifyPhase60_61ContentReportSeal",
         "verifyFormatting",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",

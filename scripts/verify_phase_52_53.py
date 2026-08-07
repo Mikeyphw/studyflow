@@ -135,10 +135,10 @@ for path in (
     "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
 ):
     xml_root = ET.parse(ROOT / path).getroot()
-    names = {element.attrib["name"] for element in xml_root if element.tag == "string"}
+    string_names = {element.attrib["name"] for element in xml_root if element.tag == "string"}
+    plural_names = {element.attrib["name"] for element in xml_root if element.tag == "plurals"}
     for key in (
         "mock_exam_studio_title",
-        "mock_exam_studio_message",
         "mock_exam_warning_not_enough",
         "mock_exam_board_filter",
         "mock_exam_source_filter",
@@ -146,7 +146,11 @@ for path in (
         "mock_exam_include_disputed",
         "mock_exam_created",
     ):
-        require(key in names, f"workspace resource missing {key} in {path}")
+        require(key in string_names, f"workspace resource missing {key} in {path}")
+    require(
+        "mock_exam_studio_message" in string_names or "mock_exam_studio_message" in plural_names,
+        f"workspace resource missing mock_exam_studio_message in {path}",
+    )
 
 for path in (
     "app/src/main/res/values/strings.xml",

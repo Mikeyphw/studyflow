@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <string name="today_title">Today</string>
-    <string name="today_eyebrow" tools:ignore="UnusedResources">Your study command center</string>
     <string name="plan_title">Plan</string>
     <string name="practice_title">Practice</string>
     <string name="progress_title">Progress</string>
@@ -32,14 +31,22 @@
     <string name="studied_time">Studied</string>
     <string name="goal">Goal</string>
     <string name="accuracy">Accuracy</string>
-    <string name="streak" tools:ignore="UnusedResources">Study days</string>
     <string name="minutes_value">%1$d min</string>
     <string name="hours_value">%1$d h</string>
     <string name="percent_value">%1$d%%</string>
-    <string name="days_value" tools:ignore="PluralsCandidate">%1$d days</string>
-    <string name="reviews_value" tools:ignore="PluralsCandidate">%1$d reviews</string>
-    <string name="questions_value" tools:ignore="PluralsCandidate">%1$d questions</string>
-    <string name="complete" tools:ignore="UnusedResources">Complete</string>
+    <plurals name="days_value">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="reviews_value">
+        <item quantity="one">%1$d review</item>
+        <item quantity="other">%1$d reviews</item>
+    </plurals>
+    <plurals name="questions_value">
+        <item quantity="one">%1$d question</item>
+        <item quantity="other">%1$d questions</item>
+    </plurals>
+    <string name="complete">Complete</string>
     <string name="completed">Completed</string>
     <string name="missed">Missed</string>
     <string name="planned">Planned</string>
@@ -69,34 +76,73 @@
     <string name="schedule_empty">No study blocks yet. Add the first block from Schedule.</string>
     <string name="content_empty">No subjects yet. Import or build the syllabus.</string>
     <string name="library_empty">No materials, videos, or annexes yet.</string>
-    <string name="subjects_count" tools:ignore="PluralsCandidate">%1$d subjects</string>
-    <string name="topics_count" tools:ignore="PluralsCandidate">%1$d topics</string>
-    <string name="materials_count" tools:ignore="PluralsCandidate">%1$d materials</string>
-    <string name="videos_count" tools:ignore="PluralsCandidate">%1$d videos</string>
-    <string name="annexes_count" tools:ignore="PluralsCandidate">%1$d annexes</string>
+    <plurals name="subjects_count">
+        <item quantity="one">%1$d subject</item>
+        <item quantity="other">%1$d subjects</item>
+    </plurals>
+    <plurals name="topics_count">
+        <item quantity="one">%1$d topic</item>
+        <item quantity="other">%1$d topics</item>
+    </plurals>
+    <plurals name="materials_count">
+        <item quantity="one">%1$d material</item>
+        <item quantity="other">%1$d materials</item>
+    </plurals>
+    <plurals name="videos_count">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videos</item>
+    </plurals>
+    <plurals name="annexes_count">
+        <item quantity="one">%1$d annex</item>
+        <item quantity="other">%1$d annexes</item>
+    </plurals>
     <string name="practice_reviews">Reviews</string>
     <string name="practice_questions">Questions</string>
     <string name="practice_errors">Errors</string>
-    <string name="practice_due_message" tools:ignore="PluralsCandidate">%1$d items are ready for spaced review.</string>
+    <plurals name="practice_due_message">
+        <item quantity="one">%1$d item is ready for spaced review.</item>
+        <item quantity="other">%1$d items are ready for spaced review.</item>
+    </plurals>
     <string name="practice_empty_reviews">No reviews are due. Future reviews stay queued automatically.</string>
     <string name="practice_empty_questions">No questions yet. Add questions or import a deck.</string>
     <string name="practice_empty_errors">The wrong-answer notebook is clear.</string>
     <string name="open_review_center">Open review center</string>
     <string name="open_question_bank">Open question bank</string>
     <string name="open_error_notebook">Open error notebook</string>
-    <string name="tests_count" tools:ignore="PluralsCandidate">%1$d tests</string>
-    <string name="mocks_count" tools:ignore="PluralsCandidate">%1$d mock exams</string>
-    <string name="recurrences_value" tools:ignore="PluralsCandidate">Repeated %1$d times</string>
+    <plurals name="tests_count">
+        <item quantity="one">%1$d test</item>
+        <item quantity="other">%1$d tests</item>
+    </plurals>
+    <plurals name="mocks_count">
+        <item quantity="one">%1$d mock exam</item>
+        <item quantity="other">%1$d mock exams</item>
+    </plurals>
+    <plurals name="recurrences_value">
+        <item quantity="one">Repeated %1$d time</item>
+        <item quantity="other">Repeated %1$d times</item>
+    </plurals>
     <string name="progress_7_days">7 days</string>
     <string name="progress_30_days">30 days</string>
     <string name="progress_90_days">90 days</string>
-    <string name="sessions_value" tools:ignore="PluralsCandidate">%1$d sessions</string>
-    <string name="answered_value" tools:ignore="PluralsCandidate">%1$d answered</string>
+    <plurals name="sessions_value">
+        <item quantity="one">%1$d session</item>
+        <item quantity="other">%1$d sessions</item>
+    </plurals>
+    <plurals name="answered_value">
+        <item quantity="one">%1$d answered</item>
+        <item quantity="other">%1$d answered</item>
+    </plurals>
     <string name="weak_areas">Weak areas</string>
     <string name="no_weak_areas">No weak areas are currently flagged.</string>
     <string name="goals_and_notes">Goals and notes</string>
-    <string name="active_goals_value" tools:ignore="PluralsCandidate">%1$d active goals</string>
-    <string name="notes_value" tools:ignore="PluralsCandidate">%1$d notes</string>
+    <plurals name="active_goals_value">
+        <item quantity="one">%1$d active goal</item>
+        <item quantity="other">%1$d active goals</item>
+    </plurals>
+    <plurals name="notes_value">
+        <item quantity="one">%1$d note</item>
+        <item quantity="other">%1$d notes</item>
+    </plurals>
     <string name="open_progress_center">Open goals and notes</string>
     <string name="open_analytics">Open detailed analytics</string>
     <string name="open_plan">Open plan</string>
@@ -133,7 +179,6 @@
     <string name="privacy">Privacy center</string>
     <string name="debug_workbench">Debug workbench</string>
     <string name="quick_add_title">What are you adding?</string>
-    <string name="quick_add_subtitle" tools:ignore="UnusedResources">Choose what to add and continue in the complete StudyFlow workflow.</string>
     <string name="quick_session">Quick focus session</string>
     <string name="quick_session_title">Session title</string>
     <string name="quick_session_duration">Target minutes</string>
@@ -149,7 +194,10 @@
     <string name="cancelled">Cancelled</string>
     <string name="skipped">Skipped</string>
     <string name="flexible">Flexible</string>
-    <string name="flashcards_value" tools:ignore="PluralsCandidate">%1$d flashcards</string>
+    <plurals name="flashcards_value">
+        <item quantity="one">%1$d flashcard</item>
+        <item quantity="other">%1$d flashcards</item>
+    </plurals>
     <string name="material_type">Material</string>
     <string name="video_type">Video</string>
     <string name="priority_low">Low priority</string>
@@ -180,17 +228,29 @@
     <string name="subject_status">Progress %1$d%% · accuracy %2$d%%</string>
     <string name="no_topics_for_subject">No topics are nested under this subject yet.</string>
     <string name="topic_mastery">Mastery %1$d%%</string>
-    <string name="view_all_topics" tools:ignore="PluralsCandidate">View all %1$d topics</string>
+    <plurals name="view_all_topics">
+        <item quantity="one">View %1$d topic</item>
+        <item quantity="other">View all %1$d topics</item>
+    </plurals>
     <string name="review_due_now">Due now</string>
-    <string name="open_remaining_reviews" tools:ignore="PluralsCandidate">Open %1$d more reviews</string>
-    <string name="review_method_and_interval" tools:ignore="PluralsCandidate">%1$s · interval %2$d days</string>
+    <plurals name="open_remaining_reviews">
+        <item quantity="one">Open %1$d more review</item>
+        <item quantity="other">Open %1$d more reviews</item>
+    </plurals>
+    <plurals name="review_method_and_interval">
+        <item quantity="one">%1$s · interval %2$d day</item>
+        <item quantity="other">%1$s · interval %2$d days</item>
+    </plurals>
     <string name="review_again">Again</string>
     <string name="review_hard">Hard</string>
     <string name="review_good">Good</string>
     <string name="skip_review">Skip review</string>
     <string name="tests">Tests</string>
     <string name="mock_exams">Mock exams</string>
-    <string name="test_progress" tools:ignore="PluralsCandidate">%1$d/%2$d answered</string>
+    <plurals name="test_progress">
+        <item quantity="one">%1$d/%2$d answered</item>
+        <item quantity="other">%1$d/%2$d answered</item>
+    </plurals>
     <string name="period_trend">Period trend</string>
     <string name="period_trend_detail">Earlier %1$d min · recent %2$d min</string>
     <string name="trend_up">Rising</string>
@@ -260,11 +320,17 @@
     <string name="reschedule_reason_theory_before_questions">Low accuracy suggests a theory-first pass before timed questions.</string>
     <string name="reschedule_reason_keep_steady">No safe automatic reschedule is needed. Continue with the current mix.</string>
     <string name="reschedule_apply_result">Reschedule result</string>
-    <string name="reschedule_apply_success" tools:ignore="PluralsCandidate">Applied %1$d safe change(s); skipped %2$d preview-only item(s).</string>
+    <plurals name="reschedule_apply_success">
+        <item quantity="one">Applied %1$d safe change; skipped %2$d preview-only items.</item>
+        <item quantity="other">Applied %1$d safe changes; skipped %2$d preview-only items.</item>
+    </plurals>
     <string name="reschedule_apply_failed">Safe changes could not be applied. Open the plan to adjust manually.</string>
 
     <string name="weakness_drill_title">Weakness drill</string>
-    <string name="weakness_drill_message" tools:ignore="PluralsCandidate">%1$d targeted question(s) from %2$d weak signal(s).</string>
+    <plurals name="weakness_drill_message">
+        <item quantity="one">%1$d targeted question from %2$d weak signals.</item>
+        <item quantity="other">%1$d targeted questions from %2$d weak signals.</item>
+    </plurals>
     <string name="weakness_drill_unavailable">Add wrong answers or due question reviews before creating a drill.</string>
     <string name="weakness_drill_created">Weakness drill created.</string>
     <string name="create_weakness_drill">Create drill</string>
@@ -277,12 +343,18 @@
     <string name="question_import_no_new_questions">No new valid questions were imported.</string>
     <string name="mock_exam_studio_title">Mock Exam Studio</string>
     <string name="mock_exam_studio_generated_title">%1$s mock exam</string>
-    <string name="mock_exam_studio_message" tools:ignore="PluralsCandidate">%1$d eligible questions · %2$d min timer</string>
+    <plurals name="mock_exam_studio_message">
+        <item quantity="one">%1$d eligible question · %2$d min timer</item>
+        <item quantity="other">%1$d eligible questions · %2$d min timer</item>
+    </plurals>
     <string name="mock_exam_studio_help">Tune question count, timer, and passing score before creating the simulated exam.</string>
     <string name="mock_exam_question_count">Question count</string>
     <string name="mock_exam_time_limit_minutes">Time limit in minutes</string>
     <string name="mock_exam_minimum_score">Minimum score percent</string>
-    <string name="mock_exam_studio_sections" tools:ignore="PluralsCandidate">%1$d section(s) · %2$d selected question(s)</string>
+    <plurals name="mock_exam_studio_sections">
+        <item quantity="one">%1$d section · %2$d selected questions</item>
+        <item quantity="other">%1$d sections · %2$d selected questions</item>
+    </plurals>
     <string name="mock_exam_warning_no_questions">Add questions before creating a mock exam.</string>
     <string name="mock_exam_warning_skipped">Some ineligible questions were skipped.</string>
     <string name="mock_exam_warning_not_enough">Not enough matching questions for the requested size.</string>
@@ -296,9 +368,15 @@
     <string name="evidence_timeline">Evidence timeline</string>
     <string name="evidence_empty">StudyFlow will show sessions, reviews, questions, tests, goals, notes, and missed blocks here as evidence appears.</string>
     <string name="evidence_no_label">Study evidence</string>
-    <string name="evidence_minutes_and_count" tools:ignore="PluralsCandidate">%1$s - %2$d min - %3$d item(s)</string>
+    <plurals name="evidence_minutes_and_count">
+        <item quantity="one">%1$s - %2$d min - %3$d item</item>
+        <item quantity="other">%1$s - %2$d min - %3$d items</item>
+    </plurals>
     <string name="evidence_minutes">%1$s - %2$d min</string>
-    <string name="evidence_count" tools:ignore="PluralsCandidate">%1$s - %2$d item(s)</string>
+    <plurals name="evidence_count">
+        <item quantity="one">%1$s - %2$d item</item>
+        <item quantity="other">%1$s - %2$d items</item>
+    </plurals>
     <string name="evidence_session_completed">Session completed</string>
     <string name="evidence_session_cancelled">Session cancelled</string>
     <string name="evidence_activity_completed">Planned block completed</string>
@@ -313,10 +391,16 @@
     <string name="evidence_goal_completed">Goal completed</string>
     <string name="evidence_note_pinned">Note pinned</string>
 
-    <string name="items_count" tools:ignore="PluralsCandidate">%1$d items</string>
+    <plurals name="items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
     <string name="weekly_coach_review">Weekly coach review</string>
     <string name="weekly_coach_title">Coach review for %1$s</string>
-    <string name="weekly_coach_summary" tools:ignore="PluralsCandidate">%1$d evidence items · %2$d studied minutes this week.</string>
+    <plurals name="weekly_coach_summary">
+        <item quantity="one">%1$d evidence item · %2$d studied minutes this week.</item>
+        <item quantity="other">%1$d evidence items · %2$d studied minutes this week.</item>
+    </plurals>
     <string name="weekly_coach_readiness_stable">Readiness is stable</string>
     <string name="weekly_coach_readiness_risk">Readiness needs action</string>
     <string name="weekly_coach_review_backlog">Review backlog first</string>
@@ -335,4 +419,79 @@
     <string name="weekly_coach_consistency_win_message">Recent study days are protecting momentum.</string>
     <string name="weekly_coach_evidence_empty_message">Complete one session or review to create this week’s evidence trail.</string>
     <string name="weekly_coach_reschedule_ready_message">There are previewed safe changes waiting in the plan.</string>
+
+    <!-- Phase 60: preview-first local content health -->
+    <string name="content_health_title">Content health</string>
+    <string name="content_health_waiting">Checking local study content.</string>
+    <string name="content_health_clean_message">No cleanup issues were detected in the current local plan.</string>
+    <plurals name="content_health_summary">
+        <item quantity="one">%1$d cleanup issue found · %2$d needs action.</item>
+        <item quantity="other">%1$d cleanup issues found · %2$d need action.</item>
+    </plurals>
+    <string name="review_cleanup">Review cleanup</string>
+    <string name="preview_cleanup_action">Preview</string>
+    <string name="cleanup_preview_notice">Preview only. StudyFlow does not delete or rewrite content from this card.</string>
+    <string name="cleanup_duplicate_questions">Possible duplicate questions</string>
+    <string name="cleanup_duplicate_questions_message">Matching question content and metadata should be reviewed before archiving anything.</string>
+    <string name="cleanup_orphan_topics">Orphan topics</string>
+    <string name="cleanup_orphan_topics_message">Active topics have no linked study content, reviews, or planned work.</string>
+    <string name="cleanup_stale_resources">Stale resources</string>
+    <string name="cleanup_stale_resources_message">Old archived or completed resources are no longer linked to active study work.</string>
+    <string name="cleanup_stale_plan">Stale plan activity</string>
+    <string name="cleanup_stale_plan_message">The active or paused plan has no recent content or completion evidence.</string>
+    <string name="cleanup_inconsistent_tags">Inconsistent tags</string>
+    <string name="cleanup_inconsistent_tags_message">Equivalent tags differ only by spacing or letter case.</string>
+    <string name="cleanup_stale_reviews">Broken review links</string>
+    <string name="cleanup_stale_reviews_message">Pending reviews reference study content that is no longer present.</string>
+    <string name="cleanup_broken_schedule">Schedule and content mismatch</string>
+    <string name="cleanup_broken_schedule_message">Upcoming work references inactive or missing study content.</string>
+    <string name="cleanup_severity_info">Info</string>
+    <string name="cleanup_severity_review">Review</string>
+    <string name="cleanup_severity_action">Action</string>
+
+    <!-- Phase 61: local user-initiated exam report export -->
+    <string name="exam_report_export_title">Export exam report</string>
+    <string name="exam_report_title">%1$s exam report</string>
+    <string name="exam_report_export_message">Create a local HTML or PDF snapshot from StudyFlow evidence. Nothing is uploaded.</string>
+    <string name="exam_report_share_chooser">Share StudyFlow exam report</string>
+    <string name="export_report_html">Export HTML</string>
+    <string name="export_report_pdf">Export PDF</string>
+    <string name="exam_report_export_success">Report created locally. Choose where to share or save it.</string>
+    <string name="exam_report_export_failed">The local report could not be created or shared.</string>
+    <string name="exam_report_status_recorded">Recorded</string>
+    <string name="exam_report_weak_area_value">Progress %1$d%% · mastery %2$d%%</string>
+    <string name="exam_report_next_action">Next action</string>
+    <string name="exam_report_generated_at">Generated %1$s</string>
+    <string name="exam_report_overview_section">Overview</string>
+    <string name="exam_report_readiness_band">Readiness band</string>
+    <string name="exam_report_studied_minutes">Studied minutes, last 7 days</string>
+    <string name="exam_report_evidence_count">Evidence events</string>
+    <string name="exam_report_readiness_signals_section">Readiness signals</string>
+    <string name="exam_report_no_weak_areas">No weak areas are currently available.</string>
+    <string name="exam_report_recovery_section">Recovery and reviews</string>
+    <string name="exam_report_missed_activities">Missed planned activities</string>
+    <string name="exam_report_due_reviews">Due reviews</string>
+    <string name="exam_report_overdue_reviews">Overdue reviews</string>
+    <string name="exam_report_reschedule_changes">Safe reschedule changes available</string>
+    <string name="exam_report_practice_section">Practice and mock exams</string>
+    <string name="exam_report_practice_tests">Practice tests</string>
+    <string name="exam_report_completed_tests">Completed practice tests</string>
+    <string name="exam_report_test_accuracy">Practice test accuracy</string>
+    <string name="exam_report_mock_exams">Mock exams</string>
+    <string name="exam_report_completed_mocks">Completed mock exams</string>
+    <string name="exam_report_best_mock_score">Best mock score</string>
+    <string name="exam_report_average_mock_score">Average mock score</string>
+    <string name="exam_report_recent_questions">Questions added in the last 14 days</string>
+    <string name="exam_report_health_score">Content health score</string>
+    <string name="exam_report_cleanup_issues">Cleanup issues</string>
+    <string name="exam_report_cleanup_actions">Cleanup items needing action</string>
+    <string name="exam_report_next_actions_section">Next safe actions</string>
+    <string name="exam_report_action_review_backlog">Clear overdue review backlog.</string>
+    <string name="exam_report_action_recover_schedule">Recover or redistribute missed planned work.</string>
+    <string name="exam_report_action_practice_weak_areas">Practice the weakest measured areas.</string>
+    <string name="exam_report_action_run_mock">Run or review a mock exam before the next forecast.</string>
+    <string name="exam_report_action_review_cleanup">Review the content cleanup preview.</string>
+    <string name="exam_report_action_apply_reschedule">Review and apply safe reschedule changes.</string>
+    <string name="exam_report_action_keep_plan">Keep executing the current plan.</string>
+    <string name="exam_report_privacy_notice">Generated from local StudyFlow data. Export is user initiated, uses no cloud account, and omits freeform notes by default.</string>
 </resources>

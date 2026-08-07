@@ -35,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -274,7 +275,7 @@ private fun ReviewsPane(
                 StudyFlowPrimaryActionCard(
                     supportingLabel = stringResource(R.string.practice_reviews),
                     title = stringResource(R.string.due_reviews),
-                    message = stringResource(R.string.practice_due_message, dueCount),
+                    message = pluralStringResource(R.plurals.practice_due_message, dueCount, dueCount),
                     actionLabel = stringResource(R.string.review_now),
                     onAction = onOpenReviewCenter,
                 )
@@ -301,7 +302,11 @@ private fun ReviewsPane(
                     StudyFlowMetricPulse(
                         label = stringResource(R.string.planned),
                         value = upcomingCount.toString(),
-                        supportingText = stringResource(R.string.flashcards_value, flashcardCount),
+                        supportingText = pluralStringResource(
+                            R.plurals.flashcards_value,
+                            flashcardCount,
+                            flashcardCount,
+                        ),
                         modifier = childModifier,
                     )
                 },
@@ -325,7 +330,7 @@ private fun ReviewsPane(
             if (due.size > 5) {
                 item(key = "due-more", contentType = "actions") {
                     OutlinedButton(onClick = onOpenReviewCenter, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.open_remaining_reviews, due.size - 5))
+                        Text(pluralStringResource(R.plurals.open_remaining_reviews, due.size - 5, due.size - 5))
                     }
                 }
             }
@@ -359,17 +364,18 @@ private fun QuestionsPane(
         )
         item(key = "question-metrics", contentType = "metrics") {
             StudyFlowMetricPulse(
-                label = stringResource(R.string.questions_value, questions.size),
-                value = stringResource(R.string.tests_count, tests.size),
-                supportingText = stringResource(R.string.mocks_count, mocks.size),
+                label = pluralStringResource(R.plurals.questions_value, questions.size, questions.size),
+                value = pluralStringResource(R.plurals.tests_count, tests.size, tests.size),
+                supportingText = pluralStringResource(R.plurals.mocks_count, mocks.size, mocks.size),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
         item(key = "mock-exam-studio", contentType = "mock-exam-studio") {
             StudyFlowTimelineRow(
                 title = stringResource(R.string.mock_exam_studio_title),
-                metadata = stringResource(
-                    R.string.mock_exam_studio_message,
+                metadata = pluralStringResource(
+                    R.plurals.mock_exam_studio_message,
+                    mockStudio.questionCount,
                     mockStudio.questionCount,
                     mockStudio.timeLimitMinutes,
                 ),
@@ -421,7 +427,12 @@ private fun QuestionsPane(
             ) { test ->
                 StudyFlowTimelineRow(
                     title = test.title,
-                    metadata = stringResource(R.string.test_progress, test.answeredCount, test.questionCount),
+                    metadata = pluralStringResource(
+                        R.plurals.test_progress,
+                        test.answeredCount,
+                        test.answeredCount,
+                        test.questionCount,
+                    ),
                     icon = Icons.Outlined.Quiz,
                     status = test.submittedAtEpochMillis?.let { stringResource(R.string.completed) },
                     onClick = onOpenQuestionBank,
@@ -437,7 +448,12 @@ private fun QuestionsPane(
             ) { mock ->
                 StudyFlowTimelineRow(
                     title = mock.title,
-                    metadata = stringResource(R.string.test_progress, mock.answeredCount, mock.questionCount),
+                    metadata = pluralStringResource(
+                        R.plurals.test_progress,
+                        mock.answeredCount,
+                        mock.answeredCount,
+                        mock.questionCount,
+                    ),
                     icon = Icons.Outlined.Quiz,
                     status = mock.scorePercent?.toInt()?.let { stringResource(R.string.percent_value, it) },
                     onClick = onOpenQuestionBank,
@@ -567,8 +583,9 @@ private fun MockExamStudioDialog(
                 }
                 item(key = "mock-preview") {
                     Text(
-                        text = stringResource(
-                            R.string.mock_exam_studio_sections,
+                        text = pluralStringResource(
+                            R.plurals.mock_exam_studio_sections,
+                            currentBlueprint.sections.size,
                             currentBlueprint.sections.size,
                             currentBlueprint.questionCount,
                         ),
@@ -683,7 +700,12 @@ private fun ReviewExecutionCard(
         ) {
             Text(text = reviewTitle(item), style = MaterialTheme.typography.titleMedium)
             Text(
-                text = stringResource(R.string.review_method_and_interval, item.method.name, item.intervalDays),
+                text = pluralStringResource(
+                    R.plurals.review_method_and_interval,
+                    item.intervalDays,
+                    item.method.name,
+                    item.intervalDays,
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Column(
@@ -745,7 +767,11 @@ private fun ErrorsPane(
                 title = stringResource(R.string.weakness_drill_title),
                 metadata = weaknessDrillMessage(weaknessDrill),
                 icon = Icons.Outlined.ErrorOutline,
-                status = stringResource(R.string.questions_value, weaknessDrill.questionCount),
+                status = pluralStringResource(
+                    R.plurals.questions_value,
+                    weaknessDrill.questionCount,
+                    weaknessDrill.questionCount,
+                ),
                 actionLabel = stringResource(R.string.create_weakness_drill),
                 onAction = onCreateWeaknessDrill,
             )
@@ -767,7 +793,11 @@ private fun ErrorsPane(
             ) { entry ->
                 StudyFlowTimelineRow(
                     title = entry.error.explanation.ifBlank { entry.error.category.name.replace('_', ' ') },
-                    metadata = stringResource(R.string.recurrences_value, entry.error.recurrenceCount),
+                    metadata = pluralStringResource(
+                        R.plurals.recurrences_value,
+                        entry.error.recurrenceCount,
+                        entry.error.recurrenceCount,
+                    ),
                     icon = Icons.Outlined.ErrorOutline,
                     status = remediationPriorityLabel(entry.priority),
                     actionLabel = stringResource(R.string.open),
@@ -780,7 +810,7 @@ private fun ErrorsPane(
 
 @Composable
 private fun weaknessDrillMessage(plan: WeaknessDrillPlan): String = if (plan.executable) {
-    stringResource(R.string.weakness_drill_message, plan.questionCount, plan.driverCount)
+    pluralStringResource(R.plurals.weakness_drill_message, plan.questionCount, plan.questionCount, plan.driverCount)
 } else {
     stringResource(R.string.weakness_drill_unavailable)
 }

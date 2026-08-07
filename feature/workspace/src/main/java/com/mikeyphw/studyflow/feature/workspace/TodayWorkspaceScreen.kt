@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -195,7 +196,11 @@ fun TodayWorkspaceScreen(
                         dueReviewCount > 0 -> StudyFlowPrimaryActionCard(
                             supportingLabel = stringResource(R.string.recommended_next),
                             title = stringResource(R.string.due_reviews),
-                            message = stringResource(R.string.practice_due_message, dueReviewCount),
+                            message = pluralStringResource(
+                                R.plurals.practice_due_message,
+                                dueReviewCount,
+                                dueReviewCount,
+                            ),
                             actionLabel = stringResource(R.string.review_now),
                             onAction = onOpenReviews,
                             secondaryLabel = recommendation?.let { stringResource(R.string.open) },
@@ -285,7 +290,11 @@ fun TodayWorkspaceScreen(
                         item(key = "review-batch", contentType = "today-review-batch") {
                             StudyFlowTimelineRow(
                                 title = stringResource(R.string.due_reviews),
-                                metadata = stringResource(R.string.reviews_value, dueReviewCount),
+                                metadata = pluralStringResource(
+                                    R.plurals.reviews_value,
+                                    dueReviewCount,
+                                    dueReviewCount,
+                                ),
                                 icon = Icons.Outlined.Refresh,
                                 actionLabel = stringResource(R.string.review_now),
                                 onAction = onOpenReviews,
@@ -315,7 +324,11 @@ fun TodayWorkspaceScreen(
                                     stringResource(R.string.percent_value, snapshot.questionAccuracyPercent)
                                 } ?: stringResource(R.string.not_enough_data),
                                 supportingText = analytics?.let { snapshot ->
-                                    stringResource(R.string.questions_value, snapshot.answeredQuestions)
+                                    pluralStringResource(
+                                        R.plurals.questions_value,
+                                        snapshot.answeredQuestions,
+                                        snapshot.answeredQuestions,
+                                    )
                                 },
                                 modifier = childModifier,
                             )

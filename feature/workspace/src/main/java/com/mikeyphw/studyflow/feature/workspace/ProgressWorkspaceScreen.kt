@@ -28,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,12 +43,20 @@ import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageAdaptiveReschedule
 import com.mikeyphw.studyflow.core.domain.ManageExamReadiness
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
+import com.mikeyphw.studyflow.core.domain.ManageStudyContent
+import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewBuilder
+import com.mikeyphw.studyflow.core.domain.StudyContentCleanupEngine
+import com.mikeyphw.studyflow.core.domain.StudyContentCleanupInput
+import com.mikeyphw.studyflow.core.domain.StudyExamReportBuilder
+import com.mikeyphw.studyflow.core.domain.StudyExamReportInput
+import com.mikeyphw.studyflow.core.domain.StudyExamReportNextActionKind
+import com.mikeyphw.studyflow.core.domain.StudyExamReportSnapshot
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewInput
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewItemKind
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewTone
@@ -64,6 +73,8 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.navigation.ProgressWorkspacePeriod
+import java.text.DateFormat
+import java.util.Date
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -73,6 +84,8 @@ fun ProgressWorkspaceScreen(
     selectedPeriod: ProgressWorkspacePeriod,
     analyticsManager: ManageStudyAnalytics,
     progressManager: ManageStudyProgress,
+    contentManager: ManageStudyContent,
+    libraryManager: ManageStudyLibrary,
     readinessManager: ManageExamReadiness,
     adaptiveRescheduleManager: ManageAdaptiveReschedule,
     sessionManager: ManageStudySession,
@@ -86,14 +99,20 @@ fun ProgressWorkspaceScreen(
     onOpenProgressCenter: () -> Unit,
     onOpenAnalytics: () -> Unit,
     onOpenPlan: () -> Unit,
+    onOpenContent: () -> Unit,
     onOpenReviews: () -> Unit,
+    onExportExamReport: suspend (StudyExamReportDocument, StudyExamReportFormat, String) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     val analyticsFlow = remember(plan.id) { analyticsManager.observeSnapshot(plan.id) }
     val progressFlow = remember(plan.id) { progressManager.observeSnapshot(plan.id) }
+    val syllabusFlow = remember(plan.id) { contentManager.observeSyllabus(plan.id) }
+    val libraryFlow = remember(plan.id) { libraryManager.observeSnapshot(plan.id) }
     val sessionsFlow = remember(plan.id) { sessionManager.observeSessions(plan.id) }
     val scheduleFlow = remember(plan.id) { scheduleManager.observeSchedule(plan.id) }
     val reviewItemsFlow = remember(plan.id) { reviewManager.observeReviewItems(plan.id) }
+    val flashcardsFlow = remember(plan.id) { reviewManager.observeFlashcards(plan.id) }
+    val errorEntriesFlow = remember(plan.id) { reviewManager.observeErrorEntries(plan.id) }
     val questionsFlow = remember(plan.id) { practiceManager.observeQuestions(plan.id) }
     val testsFlow = remember(plan.id) { practiceManager.observeTests(plan.id) }
     val mockExamsFlow = remember(plan.id) { practiceManager.observeMockExams(plan.id) }
@@ -101,11 +120,15 @@ fun ProgressWorkspaceScreen(
     val rescheduleFlow = remember(plan.id) { adaptiveRescheduleManager.observePreview(plan) }
     val analytics by analyticsFlow.collectAsStateWithLifecycle(initialValue = null)
     val progress by progressFlow.collectAsStateWithLifecycle(initialValue = null)
+    val syllabus by syllabusFlow.collectAsStateWithLifecycle(initialValue = null)
+    val library by libraryFlow.collectAsStateWithLifecycle(initialValue = null)
     val sessions by sessionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val schedule by scheduleFlow.collectAsStateWithLifecycle(
         initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
     )
     val reviewItems by reviewItemsFlow.collectAsStateWithLifecycle(initialValue = emptyList<ReviewItem>())
+    val flashcards by flashcardsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val errorEntries by errorEntriesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val tests by testsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val mockExams by mockExamsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -115,6 +138,7 @@ fun ProgressWorkspaceScreen(
     var appliedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
     var skippedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
     var rescheduleApplyFailed by rememberSaveable(plan.id.value) { mutableStateOf(false) }
+    var reportExportResult by rememberSaveable(plan.id.value) { mutableStateOf<Boolean?>(null) }
     val cutoff = System.currentTimeMillis() - selectedPeriod.days * 86_400_000L
     val periodSessions = sessions.filter { session ->
         session.startedAtEpochMillis >= cutoff && session.status == StudySessionStatus.COMPLETED
@@ -162,6 +186,75 @@ fun ProgressWorkspaceScreen(
                 generatedAtEpochMillis = System.currentTimeMillis(),
             ),
         )
+    }
+    val cleanupReport = remember(
+        plan,
+        syllabus,
+        library,
+        schedule,
+        questions,
+        reviewItems,
+        flashcards,
+        errorEntries,
+        progress,
+    ) {
+        val currentSyllabus = syllabus
+        val currentLibrary = library
+        if (currentSyllabus == null || currentLibrary == null) {
+            null
+        } else {
+            StudyContentCleanupEngine.inspect(
+                StudyContentCleanupInput(
+                    plan = plan,
+                    syllabus = currentSyllabus,
+                    questions = questions,
+                    materials = currentLibrary.materials,
+                    videos = currentLibrary.videos,
+                    annexes = currentLibrary.annexes,
+                    reviewItems = reviewItems,
+                    flashcards = flashcards,
+                    errorEntries = errorEntries,
+                    plannedActivities = schedule.plannedActivities,
+                    notes = progress?.notes.orEmpty(),
+                    nowEpochMillis = System.currentTimeMillis(),
+                ),
+            )
+        }
+    }
+    val examReportSnapshot = cleanupReport?.let { currentCleanup ->
+        StudyExamReportBuilder.build(
+            StudyExamReportInput(
+                plan = plan,
+                analytics = analytics,
+                readiness = readiness,
+                weeklyReview = weeklyReview,
+                evidence = evidenceTimeline,
+                schedule = schedule,
+                reviewItems = reviewItems,
+                questions = questions,
+                tests = tests,
+                mockExams = mockExams,
+                reschedulePreview = reschedulePreview,
+                cleanupReport = currentCleanup,
+                generatedAtEpochMillis = System.currentTimeMillis(),
+            ),
+        )
+    }
+    val reportDocument = examReportSnapshot?.let { snapshot -> localizedExamReportDocument(snapshot) }
+    val reportChooserTitle = stringResource(R.string.exam_report_share_chooser)
+    val launchReportExport: (StudyExamReportFormat) -> Unit = { format ->
+        val currentDocument = reportDocument
+        if (currentDocument != null) {
+            coroutineScope.launch {
+                try {
+                    reportExportResult = onExportExamReport(currentDocument, format, reportChooserTitle)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: RuntimeException) {
+                    reportExportResult = false
+                }
+            }
+        }
     }
 
     Scaffold(modifier = modifier) { padding ->
@@ -249,7 +342,7 @@ fun ProgressWorkspaceScreen(
                                     stringResource(R.string.percent_value, score.timeFeasibilityPercent)
                                 } ?: stringResource(R.string.not_enough_data),
                                 supportingText = readiness?.daysUntilExam?.let { days ->
-                                    stringResource(R.string.days_value, days)
+                                    pluralStringResource(R.plurals.days_value, days, days)
                                 },
                                 modifier = childModifier,
                             )
@@ -274,8 +367,9 @@ fun ProgressWorkspaceScreen(
                 item(key = "weekly-coach-summary", contentType = "coach") {
                     StudyFlowCoachCard(
                         title = stringResource(R.string.weekly_coach_title, weeklyReview.studyPlanName),
-                        message = stringResource(
-                            R.string.weekly_coach_summary,
+                        message = pluralStringResource(
+                            R.plurals.weekly_coach_summary,
+                            weeklyReview.evidenceCount,
                             weeklyReview.evidenceCount,
                             weeklyReview.studiedMinutes,
                         ),
@@ -299,7 +393,7 @@ fun ProgressWorkspaceScreen(
                         status = item.scorePercent?.let { score ->
                             stringResource(R.string.percent_value, score)
                         } ?: item.count?.let { count ->
-                            stringResource(R.string.items_count, count)
+                            pluralStringResource(R.plurals.items_count, count, count)
                         },
                         onClick = when (item.kind.destination()) {
                             WeeklyCoachDestination.ANALYTICS -> onOpenAnalytics
@@ -308,6 +402,79 @@ fun ProgressWorkspaceScreen(
                             WeeklyCoachDestination.REVIEWS -> onOpenReviews
                         },
                     )
+                }
+
+                studyFlowSectionHeader(
+                    key = "content-health",
+                    title = { stringResource(R.string.content_health_title) },
+                )
+                item(key = "content-health-card", contentType = "coach") {
+                    val currentCleanup = cleanupReport
+                    StudyFlowCoachCard(
+                        title = currentCleanup?.let { report ->
+                            stringResource(R.string.percent_value, report.healthScorePercent)
+                        } ?: stringResource(R.string.not_enough_data),
+                        message = when {
+                            currentCleanup == null -> stringResource(R.string.content_health_waiting)
+                            currentCleanup.issueCount == 0 -> stringResource(R.string.content_health_clean_message)
+                            else -> pluralStringResource(
+                                R.plurals.content_health_summary,
+                                currentCleanup.issueCount,
+                                currentCleanup.issueCount,
+                                currentCleanup.actionCount,
+                            )
+                        },
+                        actionLabel = stringResource(R.string.review_cleanup),
+                        onAction = onOpenContent,
+                    )
+                }
+
+                studyFlowSectionHeader(
+                    key = "exam-report",
+                    title = { stringResource(R.string.exam_report_export_title) },
+                )
+                item(key = "exam-report-card", contentType = "report-export") {
+                    StudyFlowCoachCard(
+                        title = stringResource(R.string.exam_report_title, plan.name),
+                        message = stringResource(R.string.exam_report_export_message),
+                        actionLabel = stringResource(R.string.open_progress_center),
+                        onAction = onOpenProgressCenter,
+                    )
+                }
+                item(key = "exam-report-actions", contentType = "actions") {
+                    StudyFlowResponsivePair(
+                        first = { childModifier ->
+                            androidx.compose.material3.Button(
+                                onClick = { launchReportExport(StudyExamReportFormat.HTML) },
+                                enabled = reportDocument != null,
+                                modifier = childModifier,
+                            ) {
+                                Text(stringResource(R.string.export_report_html))
+                            }
+                        },
+                        second = { childModifier ->
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = { launchReportExport(StudyExamReportFormat.PDF) },
+                                enabled = reportDocument != null,
+                                modifier = childModifier,
+                            ) {
+                                Text(stringResource(R.string.export_report_pdf))
+                            }
+                        },
+                    )
+                }
+                reportExportResult?.let { exported ->
+                    item(key = "exam-report-result", contentType = "report-result") {
+                        Text(
+                            text = stringResource(
+                                if (exported) {
+                                    R.string.exam_report_export_success
+                                } else {
+                                    R.string.exam_report_export_failed
+                                },
+                            ),
+                        )
+                    }
                 }
 
                 studyFlowSectionHeader(
@@ -351,8 +518,9 @@ fun ProgressWorkspaceScreen(
                             message = if (rescheduleApplyFailed) {
                                 stringResource(R.string.reschedule_apply_failed)
                             } else {
-                                stringResource(
-                                    R.string.reschedule_apply_success,
+                                pluralStringResource(
+                                    R.plurals.reschedule_apply_success,
+                                    appliedRescheduleChanges ?: 0,
                                     appliedRescheduleChanges ?: 0,
                                     skippedRescheduleChanges ?: 0,
                                 )
@@ -391,7 +559,11 @@ fun ProgressWorkspaceScreen(
                             StudyFlowMetricPulse(
                                 label = stringResource(R.string.studied_time),
                                 value = stringResource(R.string.minutes_value, (studiedSeconds / 60).toInt()),
-                                supportingText = stringResource(R.string.sessions_value, periodSessions.size),
+                                supportingText = pluralStringResource(
+                                    R.plurals.sessions_value,
+                                    periodSessions.size,
+                                    periodSessions.size,
+                                ),
                                 modifier = childModifier,
                             )
                         },
@@ -402,7 +574,7 @@ fun ProgressWorkspaceScreen(
                                     stringResource(R.string.percent_value, value)
                                 } ?: stringResource(R.string.not_enough_data),
                                 supportingText = if (answered > 0) {
-                                    stringResource(R.string.answered_value, answered)
+                                    pluralStringResource(R.plurals.answered_value, answered, answered)
                                 } else {
                                     null
                                 },
@@ -479,8 +651,9 @@ fun ProgressWorkspaceScreen(
                     StudyFlowResponsivePair(
                         first = { childModifier ->
                             StudyFlowMetricPulse(
-                                label = stringResource(
-                                    R.string.active_goals_value,
+                                label = pluralStringResource(
+                                    R.plurals.active_goals_value,
+                                    progress?.activeGoals?.size ?: 0,
                                     progress?.activeGoals?.size ?: 0,
                                 ),
                                 value = progress?.goalProgressPercent?.let { value ->
@@ -491,7 +664,11 @@ fun ProgressWorkspaceScreen(
                         },
                         second = { childModifier ->
                             StudyFlowMetricPulse(
-                                label = stringResource(R.string.notes_value, progress?.notes?.size ?: 0),
+                                label = pluralStringResource(
+                                    R.plurals.notes_value,
+                                    progress?.notes?.size ?: 0,
+                                    progress?.notes?.size ?: 0,
+                                ),
                                 value = (progress?.pinnedNotes?.size ?: 0).toString(),
                                 supportingText = stringResource(R.string.open_progress_center),
                                 modifier = childModifier,
@@ -598,10 +775,10 @@ private fun eventMetadata(event: StudyEvidenceEvent): String {
     val count = event.count
     return when {
         minutes != null && count != null -> {
-            stringResource(R.string.evidence_minutes_and_count, label, minutes, count)
+            pluralStringResource(R.plurals.evidence_minutes_and_count, count, label, minutes, count)
         }
         minutes != null -> stringResource(R.string.evidence_minutes, label, minutes)
-        count != null -> stringResource(R.string.evidence_count, label, count)
+        count != null -> pluralStringResource(R.plurals.evidence_count, count, label, count)
         else -> label
     }
 }
@@ -797,4 +974,206 @@ private fun adaptationRows(
             ),
         )
     }
+}
+
+@Composable
+private fun localizedExamReportDocument(snapshot: StudyExamReportSnapshot): StudyExamReportDocument {
+    val readinessRows = snapshot.readinessSignals.map { signal ->
+        StudyExamReportRow(
+            label = stringResource(readinessSignalLabel(signal.kind)),
+            value = stringResource(R.string.percent_value, signal.scorePercent),
+        )
+    }
+    val coachRows = snapshot.weeklyCoachItems.map { item ->
+        StudyExamReportRow(
+            label = stringResource(item.kind.titleRes()),
+            value = item.scorePercent?.let { score ->
+                stringResource(R.string.percent_value, score)
+            } ?: item.count?.let { count ->
+                pluralStringResource(R.plurals.items_count, count, count)
+            } ?: stringResource(R.string.exam_report_status_recorded),
+        )
+    }
+    val weakAreaRows = snapshot.weakAreas.map { area ->
+        StudyExamReportRow(
+            label = area.label,
+            value = stringResource(
+                R.string.exam_report_weak_area_value,
+                area.progressPercent,
+                area.masteryPercent,
+            ),
+        )
+    }
+    val nextActionRows = snapshot.nextActions.map { action ->
+        StudyExamReportRow(
+            label = stringResource(R.string.exam_report_next_action),
+            value = stringResource(action.labelRes()),
+        )
+    }
+    return StudyExamReportDocument(
+        title = stringResource(R.string.exam_report_title, snapshot.studyPlanName),
+        fileStem = "studyflow-exam-report-${snapshot.studyPlanName}",
+        generatedAtLabel = stringResource(
+            R.string.exam_report_generated_at,
+            DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(
+                Date(snapshot.generatedAtEpochMillis),
+            ),
+        ),
+        sections = listOf(
+            StudyExamReportSection(
+                title = stringResource(R.string.exam_report_overview_section),
+                rows = listOf(
+                    StudyExamReportRow(
+                        stringResource(R.string.readiness_score),
+                        snapshot.readinessScorePercent?.let { score ->
+                            stringResource(R.string.percent_value, score)
+                        } ?: stringResource(R.string.not_enough_data),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_readiness_band),
+                        snapshot.readinessBand?.let { band ->
+                            stringResource(readinessBandLabel(band))
+                        } ?: stringResource(R.string.not_enough_data),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_studied_minutes),
+                        snapshot.studiedMinutesLastSevenDays.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_evidence_count),
+                        snapshot.evidenceCount.toString(),
+                    ),
+                ),
+            ),
+            StudyExamReportSection(
+                title = stringResource(R.string.exam_report_readiness_signals_section),
+                rows = readinessRows.ifEmpty {
+                    listOf(
+                        StudyExamReportRow(
+                            stringResource(R.string.readiness_score),
+                            stringResource(R.string.not_enough_data),
+                        ),
+                    )
+                },
+            ),
+            StudyExamReportSection(
+                title = stringResource(R.string.weekly_coach_review),
+                rows = coachRows.ifEmpty {
+                    listOf(
+                        StudyExamReportRow(
+                            stringResource(R.string.weekly_coach_review),
+                            stringResource(R.string.exam_report_status_recorded),
+                        ),
+                    )
+                },
+            ),
+            StudyExamReportSection(
+                title = stringResource(R.string.weak_areas),
+                rows = weakAreaRows.ifEmpty {
+                    listOf(
+                        StudyExamReportRow(
+                            stringResource(R.string.weak_areas),
+                            stringResource(R.string.exam_report_no_weak_areas),
+                        ),
+                    )
+                },
+            ),
+            StudyExamReportSection(
+                title = stringResource(R.string.exam_report_recovery_section),
+                rows = listOf(
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_missed_activities),
+                        snapshot.missedActivityCount.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_due_reviews),
+                        snapshot.dueReviewCount.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_overdue_reviews),
+                        snapshot.overdueReviewCount.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_reschedule_changes),
+                        snapshot.executableRescheduleChangeCount.toString(),
+                    ),
+                ),
+            ),
+            StudyExamReportSection(
+                title = stringResource(R.string.exam_report_practice_section),
+                rows = listOf(
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_practice_tests),
+                        snapshot.practiceTestCount.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_completed_tests),
+                        snapshot.completedPracticeTestCount.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_test_accuracy),
+                        snapshot.practiceTestAccuracyPercent?.let { score ->
+                            stringResource(R.string.percent_value, score)
+                        } ?: stringResource(R.string.not_enough_data),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_mock_exams),
+                        snapshot.mockExamCount.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_completed_mocks),
+                        snapshot.completedMockExamCount.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_best_mock_score),
+                        snapshot.bestMockScorePercent?.let { score ->
+                            stringResource(R.string.percent_value, score)
+                        } ?: stringResource(R.string.not_enough_data),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_average_mock_score),
+                        snapshot.averageMockScorePercent?.let { score ->
+                            stringResource(R.string.percent_value, score)
+                        } ?: stringResource(R.string.not_enough_data),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_recent_questions),
+                        snapshot.recentQuestionCount.toString(),
+                    ),
+                ),
+            ),
+            StudyExamReportSection(
+                title = stringResource(R.string.content_health_title),
+                rows = listOf(
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_health_score),
+                        stringResource(R.string.percent_value, snapshot.cleanupHealthScorePercent),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_cleanup_issues),
+                        snapshot.cleanupIssueCount.toString(),
+                    ),
+                    StudyExamReportRow(
+                        stringResource(R.string.exam_report_cleanup_actions),
+                        snapshot.cleanupActionCount.toString(),
+                    ),
+                ),
+            ),
+            StudyExamReportSection(
+                title = stringResource(R.string.exam_report_next_actions_section),
+                rows = nextActionRows,
+            ),
+        ),
+        privacyNotice = stringResource(R.string.exam_report_privacy_notice),
+    )
+}
+
+private fun StudyExamReportNextActionKind.labelRes(): Int = when (this) {
+    StudyExamReportNextActionKind.REVIEW_BACKLOG -> R.string.exam_report_action_review_backlog
+    StudyExamReportNextActionKind.RECOVER_SCHEDULE -> R.string.exam_report_action_recover_schedule
+    StudyExamReportNextActionKind.PRACTICE_WEAK_AREAS -> R.string.exam_report_action_practice_weak_areas
+    StudyExamReportNextActionKind.RUN_MOCK_EXAM -> R.string.exam_report_action_run_mock
+    StudyExamReportNextActionKind.REVIEW_CONTENT_CLEANUP -> R.string.exam_report_action_review_cleanup
+    StudyExamReportNextActionKind.APPLY_SAFE_RESCHEDULE -> R.string.exam_report_action_apply_reschedule
+    StudyExamReportNextActionKind.KEEP_PLAN -> R.string.exam_report_action_keep_plan
 }
