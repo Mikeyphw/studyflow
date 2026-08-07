@@ -1,3 +1,18 @@
+# Phase 56-57 validation update
+
+Phase 56 adds the Post-V2 Integration Seal. Phase 57 adds the Real-Device Readiness and UX Polish Seal.
+
+Container validation performed here:
+
+- `python3 scripts/verify_phase_48_49.py`
+- `python3 scripts/verify_phase_50_51.py`
+- `python3 scripts/verify_phase_52_53.py`
+- `python3 scripts/verify_phase_54_55.py`
+- `python3 scripts/verify_phase_56_57.py`
+- artifact clean-apply simulation
+
+Devtool remains responsible for Kotlin/Compose compilation, Android resource merging, lint, APK assembly, widget validation, and physical-device checks.
+
 # StudyFlow Validation Report
 
 ## Phase 54-55 validation scope
@@ -146,3 +161,13 @@ Devtool r3 reached `:core:domain:compileKotlin` and failed because `MockExamStud
 
 - Fixed reminder reliability strings that failed Android resource flattening.
 - Added validation guards for risky reminder string escapes and widget `android:tint` lint regressions.
+
+
+## Phase 56/57 r2 promise-closure audit
+
+The Phase 57 release-readiness promise now has an executable source gate.
+`verifyPhase56_57ReleaseReadiness` checks release identity visibility, launcher
+manifest shape, widget AppCompat tint hygiene, and known reminder resource
+flattening traps without requiring signing credentials. Devtool validation also
+requests `:app:lintRelease` in addition to debug assemble/lint. Signed release
+packaging and device-only checks remain outside this source artifact.

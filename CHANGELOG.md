@@ -1,3 +1,15 @@
+# Phase 56-57 r2 promise-closure audit
+
+- Added `verifyPhase56_57ReleaseReadiness` as a release-facing source gate.
+- Added `:app:lintRelease` to the overlay validation task list.
+- Updated the Phase 56/57 verifier, acceptance docs, README, and validation report so release-mode wording no longer rests on debug-only validation.
+
+# Phase 56-57 Post-V2 Integration and Real-Device Polish
+
+- Added a Post-V2 Integration Seal covering the full UI/UX V2 workspace, focus, readiness, reschedule, practice, mock exam, widget, reminder, timeline, backup, search, and localization chain.
+- Added a Device Readiness Polish Seal for compact portrait behavior, large fonts, TalkBack-facing labels, predictive back, edge-to-edge, widget taps, reminder permission states, upgrade/backup gates, and warning boundaries.
+- Added repository verification for the known post-V2 traps: route loops, missing workspace wiring, android:tint, bad resource escapes, deprecated TrendingUp icon usage, duplicate strings, and forbidden Kotlin extension references.
+
 # Changelog
 
 ## Phase 54-55 reminder reliability and evidence timeline

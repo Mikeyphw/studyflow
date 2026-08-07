@@ -50,7 +50,7 @@ tasks.register("verifyFormatting") {
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
     description =
-        "Runs StudyFlow contracts through Phase 37, UI/UX V2 through Phase 55, and Debug Workbench D1 through D8."
+        "Runs StudyFlow contracts through Phase 37, UI/UX V2 through Phase 57, and Debug Workbench D1 through D8."
     commandLine(
         "bash",
         "-lc",
@@ -75,15 +75,54 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_50_51.py
         python3 scripts/verify_phase_52_53.py
         python3 scripts/verify_phase_54_55.py
+        python3 scripts/verify_phase_56_57.py
         """.trimIndent(),
     )
 }
+
+tasks.register("verifyPhase56_57ReleaseReadiness") {
+    group = "verification"
+    description =
+        "Checks release-facing StudyFlow source gates that do not require signing credentials."
+
+    doLast {
+        val failures = mutableListOf<String>()
+        val appBuild = file("app/build.gradle.kts").readText()
+        val manifest = file("app/src/main/AndroidManifest.xml").readText()
+        val widgetLayout = file("app/src/main/res/layout/widget_today.xml").readText()
+        val reminderStrings = listOf(
+            file("feature/reminders/src/main/res/values/strings.xml"),
+            file("feature/reminders/src/main/res/values-pt-rBR/strings.xml"),
+        ).joinToString("\n") { resourceFile -> resourceFile.readText() }
+
+        if ("release" !in appBuild) {
+            failures += "app/build.gradle.kts: missing release build-type configuration"
+        }
+        if ("applicationId" !in appBuild || "versionCode" !in appBuild || "versionName" !in appBuild) {
+            failures += "app/build.gradle.kts: release identity fields are not visible"
+        }
+        if ("android.intent.action.MAIN" !in manifest || "android.intent.category.LAUNCHER" !in manifest) {
+            failures += "AndroidManifest.xml: launcher entry point is missing"
+        }
+        if ("android:tint" in widgetLayout) {
+            failures += "widget_today.xml: android:tint is forbidden; use app:tint"
+        }
+        if ("\\u" in reminderStrings || "app's safe" in reminderStrings || "plan's quiet" in reminderStrings) {
+            failures += "reminder strings contain known release resource-flattening risks"
+        }
+        if (failures.isNotEmpty()) {
+            throw GradleException(failures.joinToString(prefix = "Release-readiness violations:\n", separator = "\n"))
+        }
+    }
+}
+
 
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
     dependsOn(
         "verifyRepositoryContracts",
+        "verifyPhase56_57ReleaseReadiness",
         "verifyFormatting",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",

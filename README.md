@@ -200,3 +200,14 @@ The Mock Exam Studio planner now uses a compile-safe explicit eligibility lambda
 ### Phase 54/55 r3
 
 Resource/lint hotfix for reminder reliability strings and widget tint validation.
+
+## Project status
+
+- [Phase 56-57 Post-V2 Integration Release Seal](PHASE_56_57_POST_V2_INTEGRATION_RELEASE_SEAL.md)
+
+
+### Phase 56-57 r2 release-readiness gate
+
+The post-V2 seal now includes `verifyPhase56_57ReleaseReadiness` and Devtool
+`app:lintRelease` validation. This is a release-facing source/lint gate, not a
+claim that signed release packaging or real-device acceptance has run.
