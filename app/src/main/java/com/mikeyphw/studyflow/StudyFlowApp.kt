@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -54,21 +55,33 @@ import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabMessage
 import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabReport
 import com.mikeyphw.studyflow.core.domain.GlobalSearchDestination
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
+import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
+import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanInput
+import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
+import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
+import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
+import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
 import com.mikeyphw.studyflow.core.domain.StudyRecommendationDestination
 import com.mikeyphw.studyflow.core.domain.destination
 import com.mikeyphw.studyflow.core.i18n.AppLocaleController
 import com.mikeyphw.studyflow.core.model.AppPreferences
+import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.Subject
+import com.mikeyphw.studyflow.core.model.SubjectId
+import com.mikeyphw.studyflow.core.model.Topic
+import com.mikeyphw.studyflow.core.model.TopicId
+import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
-import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.navigation.AnalyticsRoute
 import com.mikeyphw.studyflow.core.navigation.CreatePlanRoute
 import com.mikeyphw.studyflow.core.navigation.DashboardRoute
 import com.mikeyphw.studyflow.core.navigation.DebugWorkbenchRoute
 import com.mikeyphw.studyflow.core.navigation.EditPlanRoute
 import com.mikeyphw.studyflow.core.navigation.LibraryRoute
+import com.mikeyphw.studyflow.core.navigation.OnboardingRoute
 import com.mikeyphw.studyflow.core.navigation.PlanListRoute
 import com.mikeyphw.studyflow.core.navigation.PlanPortabilityRoute
 import com.mikeyphw.studyflow.core.navigation.PlanSettingsRoute
@@ -104,9 +117,13 @@ import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
 import com.mikeyphw.studyflow.feature.library.StudyLibraryScreen
 import com.mikeyphw.studyflow.feature.plans.PlanEditorForm
 import com.mikeyphw.studyflow.feature.plans.PlanEditorScreen
+import com.mikeyphw.studyflow.feature.plans.OnboardingSamplePlanWizardScreen
 import com.mikeyphw.studyflow.feature.plans.PlanListScreen
 import com.mikeyphw.studyflow.feature.plans.PlanPortabilityScreen
 import com.mikeyphw.studyflow.feature.plans.PlanSettingsScreen
+import com.mikeyphw.studyflow.feature.plans.planDescriptionRes
+import com.mikeyphw.studyflow.feature.plans.planNameRes
+import com.mikeyphw.studyflow.feature.plans.titleRes
 import com.mikeyphw.studyflow.feature.plans.StudyPlanAction
 import com.mikeyphw.studyflow.feature.practice.PracticeScreen
 import com.mikeyphw.studyflow.feature.privacy.PrivacyCenterScreen
@@ -229,6 +246,7 @@ internal fun StudyFlowNavHost(
                 onPlanSelected = { plan -> navController.navigate(DashboardRoute(plan.id.value)) },
                 onCreatePlan = { navController.navigate(CreatePlanRoute) },
                 onImportPlan = { navController.navigate(PlanPortabilityRoute()) },
+                onStartSamplePlan = { navController.navigate(OnboardingRoute) },
                 onPlanAction = { plan, action ->
                     when (action) {
                         StudyPlanAction.EDIT -> navController.navigate(EditPlanRoute(plan.id.value))
@@ -293,6 +311,48 @@ internal fun StudyFlowNavHost(
                         container.createStudyPlan(plan, form.toSettings(plan.id))
                         container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         navController.navigate(DashboardRoute(plan.id.value)) {
+                            popUpTo<PlanListRoute>()
+                        }
+                    }
+                },
+            )
+        }
+        composable<OnboardingRoute> {
+            OnboardingSamplePlanWizardScreen(
+                onBack = navController::popBackStack,
+                onCreateSample = { template ->
+                    val blueprint = StudyOnboardingSamplePlanWizard.build(
+                        OnboardingSamplePlanInput(template = template),
+                    )
+                    val resources = context.resources
+                    coroutineScope.launch {
+                        val planId = StudyPlanId(UUID.randomUUID().toString())
+                        val plan = blueprint.toStudyPlan(
+                            planId = planId,
+                            name = resources.getString(template.planNameRes()),
+                            description = resources.getString(template.planDescriptionRes()),
+                        )
+                        container.createStudyPlan(
+                            plan,
+                            StudyOnboardingSamplePlanWizard.buildSettings(planId, blueprint),
+                        )
+                        val subjectIds = container.createLocalizedSampleSyllabus(
+                            planId = planId,
+                            blueprint = blueprint,
+                            subjectNames = localizedSubjectNames(resources),
+                            topicNames = localizedTopicNames(resources),
+                        )
+                        StudyOnboardingSamplePlanWizard.buildScheduleRules(
+                            planId = planId,
+                            blueprint = blueprint,
+                            subjectIdsByKind = subjectIds,
+                            idFactory = { UUID.randomUUID().toString() },
+                        ).forEach { rule -> container.manageStudySchedule.saveRule(rule) }
+                        if (preferences.defaultStudyPlanId == null) {
+                            container.appPreferencesRepository.setDefaultStudyPlan(planId)
+                        }
+                        container.reminderDeliveryCoordinator.reconcilePlan(planId)
+                        navController.navigate(DashboardRoute(planId.value)) {
                             popUpTo<PlanListRoute>()
                         }
                     }
@@ -1023,6 +1083,86 @@ private fun NavHostController.navigateToResult(result: GlobalSearchResult) {
 
 private fun NavHostController.navigateToRecommendation(recommendation: StudyRecommendation) {
     navigateToWorkspaceRecommendation(recommendation)
+}
+
+private fun localizedSubjectNames(resources: Resources): Map<OnboardingSampleSubjectKind, String> =
+    OnboardingSampleSubjectKind.entries.associateWith { subject ->
+        resources.getString(subject.titleRes())
+    }
+
+private fun localizedTopicNames(resources: Resources): Map<OnboardingSampleTopicKind, String> =
+    OnboardingSampleTopicKind.entries.associateWith { topic ->
+        resources.getString(topic.titleRes())
+    }
+
+private fun OnboardingSamplePlanBlueprint.toStudyPlan(
+    planId: StudyPlanId,
+    name: String,
+    description: String,
+): StudyPlan = StudyPlan(
+    id = planId,
+    name = name,
+    description = description,
+    type = studyType,
+    status = StudyPlanStatus.ACTIVE,
+    examDateIso = null,
+    weeklyGoalHours = weeklyGoalHours,
+    progressPercent = 0,
+    studiedMinutesThisWeek = 0,
+    questionsAnswered = 0,
+    averageAccuracyPercent = 0,
+)
+
+private suspend fun AppContainer.createLocalizedSampleSyllabus(
+    planId: StudyPlanId,
+    blueprint: OnboardingSamplePlanBlueprint,
+    subjectNames: Map<OnboardingSampleSubjectKind, String>,
+    topicNames: Map<OnboardingSampleTopicKind, String>,
+): Map<OnboardingSampleSubjectKind, SubjectId> {
+    val subjectIds = linkedMapOf<OnboardingSampleSubjectKind, SubjectId>()
+    blueprint.subjects.forEachIndexed { subjectIndex, subjectBlueprint ->
+        val subjectId = SubjectId(UUID.randomUUID().toString())
+        subjectIds[subjectBlueprint.kind] = subjectId
+        manageStudyContent.saveSubject(
+            Subject(
+                id = subjectId,
+                studyPlanId = planId,
+                name = subjectNames.getValue(subjectBlueprint.kind),
+                description = "",
+                colorArgb = null,
+                priority = subjectBlueprint.priority,
+                examWeight = subjectBlueprint.examWeight,
+                estimatedMinutes = subjectBlueprint.estimatedMinutes,
+                progressPercent = 0,
+                accuracyPercent = 0,
+                status = ContentProgressStatus.NOT_STARTED,
+                position = subjectIndex,
+                archived = false,
+            ),
+        )
+        subjectBlueprint.topics.forEachIndexed { topicIndex, topicBlueprint ->
+            manageStudyContent.saveTopic(
+                Topic(
+                    id = TopicId(UUID.randomUUID().toString()),
+                    studyPlanId = planId,
+                    subjectId = subjectId,
+                    parentTopicId = null,
+                    name = topicNames.getValue(topicBlueprint.kind),
+                    description = "",
+                    priority = topicBlueprint.priority,
+                    difficulty = topicBlueprint.difficulty,
+                    examIncidencePercent = null,
+                    estimatedMinutes = topicBlueprint.estimatedMinutes,
+                    progressPercent = 0,
+                    masteryPercent = 0,
+                    status = ContentProgressStatus.NOT_STARTED,
+                    position = topicIndex,
+                    archived = false,
+                ),
+            )
+        }
+    }
+    return subjectIds
 }
 
 private fun PlanEditorForm.toNewStudyPlan(): StudyPlan = StudyPlan(

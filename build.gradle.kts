@@ -78,6 +78,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_56_57.py
         python3 scripts/verify_phase_58_59.py
         python3 scripts/verify_phase_60_61.py
+        python3 scripts/verify_phase_62.py
         """.trimIndent(),
     )
 }
@@ -210,6 +211,13 @@ tasks.register<Exec>("verifyPhase60_61ContentReportSeal") {
 }
 
 
+tasks.register<Exec>("verifyPhase62OnboardingSeal") {
+    group = "verification"
+    description = "Checks Phase 62 onboarding and local sample plan wizard behavior."
+    commandLine("python3", "scripts/verify_phase_62.py")
+}
+
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
@@ -218,6 +226,7 @@ tasks.register("checkAll") {
         "verifyPhase56_57ReleaseReadiness",
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",
+        "verifyPhase62OnboardingSeal",
         "verifyFormatting",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",

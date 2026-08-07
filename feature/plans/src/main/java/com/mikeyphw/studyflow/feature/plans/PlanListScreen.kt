@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -80,6 +81,7 @@ fun PlanListScreen(
     onPlanSelected: (StudyPlan) -> Unit,
     onCreatePlan: () -> Unit,
     onImportPlan: () -> Unit,
+    onStartSamplePlan: () -> Unit,
     onPlanAction: (StudyPlan, StudyPlanAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -126,12 +128,21 @@ fun PlanListScreen(
                             )
                         }
                     }
-                    OutlinedButton(onClick = onImportPlan) {
-                        Icon(Icons.Outlined.ImportExport, contentDescription = null)
-                        Text(
-                            text = stringResource(R.string.import_plan),
-                            modifier = Modifier.padding(start = 8.dp),
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = onImportPlan) {
+                            Icon(Icons.Outlined.ImportExport, contentDescription = null)
+                            Text(
+                                text = stringResource(R.string.import_plan),
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                        OutlinedButton(onClick = onStartSamplePlan) {
+                            Icon(Icons.Outlined.School, contentDescription = null)
+                            Text(
+                                text = stringResource(R.string.onboarding_start_sample),
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
                     }
                 }
             }

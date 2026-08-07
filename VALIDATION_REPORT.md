@@ -1,3 +1,12 @@
+# Phase 62 validation update
+
+Source validation now includes `scripts/verify_phase_62.py`, focused Kotlin compilation for the new
+onboarding domain blueprint, XML resource parsing, feature/plans English and pt-BR resource parity,
+route/UI/app wiring checks, concrete weekly schedule-block preview checks, and clean-overlay apply simulation. The new
+`verifyPhase62OnboardingSeal` task is wired into `checkAll`. Android Gradle compilation, Compose
+resource merging, unit execution, assembly, and debug/release lint remain Devtool target-machine
+gates and are not pre-claimed by this report.
+
 # Phase 60-61 validation update
 
 Source validation now includes `scripts/verify_phase_60_61.py`, focused core-domain Kotlin compilation,
@@ -194,3 +203,10 @@ Expected Devtool tasks include `:core:domain:test`, `:feature:settings:testDebug
 ## Phase 58-59 r2 audit closure
 
 - Scoped lint hygiene update: resource warning suppressions are now attached only to known compatibility strings instead of the entire resource file.
+
+
+## Phase 62 r3 hotfix validation
+
+- Replayed against the Phase 60/61 landed baseline.
+- Verified the onboarding screen no longer redeclares `formatMinuteOfDay`.
+- Strengthened `scripts/verify_phase_62.py` to catch package-level helper collisions before Gradle.

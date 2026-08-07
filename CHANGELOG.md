@@ -1,3 +1,11 @@
+# Phase 62 Onboarding and Sample Plan Wizard
+
+- Added a local, preview-first onboarding wizard for users who do not want to start from a blank workspace.
+- Added four structured sample templates: public exam, university semester, certification bootcamp, and free-study habit.
+- Wired the Plan list to “Start with sample” and added a bilingual preview screen for subjects, topics and weekly blocks.
+- Seeded localized sample subjects, topics, plan settings and recurring schedule rules only after the user taps Create sample.
+- Added the Phase 62 source verifier and Gradle gate while preserving the cloudless/offline boundary.
+
 # Phase 60-61 Smart Content Cleanup and Exam Report Export
 
 - Added a structured, preview-only content-health engine for duplicates, orphans, stale resources/plans, tag variants, broken review links, and schedule/content mismatches.
@@ -160,3 +168,9 @@ copy.
 - Added a Study Coach weekly review generated from readiness, reschedule preview, analytics, and evidence.
 - Cleaned the Phase 57 warning backlog: typed-route `@Keep`, current Material3 tabs, private-resource rename,
   primitive time state, obsolete SDK branch removal, and explicit resource-lint suppression boundaries.
+
+
+### Phase 62 r3 compile hotfix
+
+- Fixed onboarding schedule preview Kotlin helper reuse so `:feature:plans:compileDebugKotlin` does not hit overload ambiguity with the existing plan settings time formatter.
+- Strengthened the Phase 62 validator to reject future duplicate `formatMinuteOfDay` helper declarations in the onboarding screen.
