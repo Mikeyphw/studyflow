@@ -31,9 +31,6 @@ internal fun ApplicationExtension.configureStudyFlowApplication() {
     lint {
         abortOnError = true
         checkDependencies = true
-        htmlReport = true
-        sarifReport = true
-        xmlReport = true
     }
 }
 
@@ -65,8 +62,5 @@ internal fun LibraryExtension.configureStudyFlowLibrary() {
 
     lint {
         abortOnError = true
-        htmlReport = true
-        sarifReport = true
-        xmlReport = true
     }
 }
