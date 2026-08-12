@@ -64,8 +64,8 @@ AGP 9 built-in Kotlin and the new Android DSL are used for Android modules. Do n
 `org.jetbrains.kotlin.android`, and do not set `android.builtInKotlin=false`. KSP, Compose, and
 Serialization are owned by the included convention build to avoid split plugin classloaders.
 
-The repository includes a pinned `gradle/wrapper/gradle-wrapper.properties`. Devtool can provision
-and select the matching managed Gradle distribution when a checked-in `gradlew` launcher is absent.
+The repository includes a complete Gradle wrapper (`gradlew`, `gradlew.bat`, wrapper JAR, and pinned
+wrapper properties). The wrapper verifies the declared Gradle distribution SHA-256 before use.
 
 ## Repository map
 
@@ -110,7 +110,16 @@ devtool -r /path/to/studyflow --target studyflow_android build
 Apply and validate overlays with explicit target selection:
 
 ```bash
-devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply overlay   --validate   --task :app:compileDebugKotlin   --task :app:lintDebug   --task :app:assembleDebug   --commit "Apply StudyFlow overlay"   /path/to/overlay.zip
+devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply overlay \
+  --validate \
+  --task :app:compileDebugKotlin \
+  --task :app:compileReleaseKotlin \
+  --task :app:lintDebug \
+  --task :app:lintRelease \
+  --task :app:assembleDebug \
+  --task :app:assembleRelease \
+  --commit "Apply StudyFlow overlay" \
+  /path/to/overlay.zip
 ```
 
 ## Validate source contracts
@@ -119,10 +128,11 @@ devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply over
 ./scripts/validate_repo.sh
 ```
 
-Without an Android SDK, the Python source-contract validators still run. With an Android SDK and a
-compatible Gradle launcher, `validate_repo.sh` also runs the Gradle verification chain. Devtool on
-the Android build host remains the source of truth for target-machine gates such as compile,
-resource merge, lint, assemble, package signing, install, upgrade, and device-smoke evidence.
+`validate_repo.sh` is a full Android validation entry point and now fails closed when no Gradle
+launcher or Android SDK is available. Source-only contract checks can still be run explicitly with
+the individual `scripts/verify_*.py` validators. Devtool on the Android build host remains the source
+of truth for target-machine gates such as compile, resource merge, lint, assemble, package signing,
+install, upgrade, and device-smoke evidence.
 
 Useful focused checks:
 
@@ -130,7 +140,7 @@ Useful focused checks:
 python3 scripts/verify_phase_36.py
 python3 scripts/verify_phase_37.py
 python3 scripts/verify_full_app_final_user_readiness.py
-gradle verifyRepositoryContracts
+./gradlew verifyRepositoryContracts
 ```
 
 ## Release candidate package

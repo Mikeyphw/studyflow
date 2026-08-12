@@ -353,9 +353,10 @@ require("AdaptationDestination.PROGRESS" in progress_source, "Adaptation preview
 
 require("targetDurationMinutes: Int? = null" in model, "session domain model lacks target duration")
 require("targetDurationMinutes: Int? = null" in entity, "session entity lacks target duration")
-require("const val SCHEMA_VERSION = 3" in database, "Room database version is not 3")
+require("const val SCHEMA_VERSION = 4" in database, "Room database version is not 4")
 require("StudyFlowMigrations.All" in database, "Room database does not register the migration array")
 require("Migration2To3" in migrations, "Room migration array lacks migration 2 to 3")
+require("Migration3To4" in migrations, "Room migration array lacks migration 3 to 4")
 require("ALTER TABLE study_sessions" in migrations, "migration 2 to 3 does not alter study_sessions")
 require("targetDurationMinutes INTEGER DEFAULT NULL" in migrations, "migration column definition differs")
 require("targetDurationMinutes" in session_manager, "session manager does not persist target duration")
@@ -374,11 +375,11 @@ require(
     "Room migration schemas are not exposed to tests",
 )
 
-schema_path = ROOT / "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/3.json"
+schema_path = ROOT / "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/4.json"
 require(schema_path.is_file(), "Room schema 3 is missing")
 if schema_path.is_file():
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
-    require(schema["database"]["version"] == 3, "Room schema JSON does not declare version 3")
+    require(schema["database"]["version"] == 4, "Room schema JSON does not declare version 4")
     sessions = next(
         (entity for entity in schema["database"]["entities"] if entity["tableName"] == "study_sessions"),
         None,
@@ -431,9 +432,9 @@ accessibility_test = text(
     "WorkspaceAccessibilityTest.kt",
 )
 for token in (
-    "migrationOneToThree",
+    "migrationOneToFour",
     "migrationTwoToThree",
-    "freshVersionThreeDatabase",
+    "freshVersionFourDatabaseContainsNullableTargetDuration",
     "activeFocusSessionRestoresAfterDatabaseReopen",
 ):
     require(token in migration_test, f"migration/restoration test missing: {token}")
@@ -542,6 +543,6 @@ if FAILURES:
 
 print("UI_UX_V2_VALIDATION_OK")
 print(
-    "4 adaptive roots, predictive-back contracts, accessibility semantics, Room 1->3/2->3, "
+    "4 adaptive roots, predictive-back contracts, accessibility semantics, Room 1->4/2->4/3->4, "
     "schema-2 backup compatibility, and bilingual resources verified",
 )

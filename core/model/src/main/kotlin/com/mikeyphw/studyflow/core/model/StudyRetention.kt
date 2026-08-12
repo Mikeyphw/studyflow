@@ -71,7 +71,13 @@ data class ReviewItem(
     val repetitionCount: Int,
     val easeFactor: Double,
     val completedAtEpochMillis: Long?,
-)
+) {
+    init {
+        require(intervalDays >= 0) { "Review interval cannot be negative." }
+        require(repetitionCount >= 0) { "Review repetition count cannot be negative." }
+        require(easeFactor > 0.0) { "Review ease factor must be positive." }
+    }
+}
 
 data class Flashcard(
     val id: FlashcardId,
@@ -86,7 +92,12 @@ data class Flashcard(
     val suspended: Boolean,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
-)
+) {
+    init {
+        require(front.isNotBlank()) { "Flashcard front cannot be blank." }
+        require(back.isNotBlank()) { "Flashcard back cannot be blank." }
+    }
+}
 
 data class ErrorEntry(
     val id: ErrorEntryId,
@@ -101,7 +112,11 @@ data class ErrorEntry(
     val recurrenceCount: Int,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
-)
+) {
+    init {
+        require(recurrenceCount >= 0) { "Error recurrence count cannot be negative." }
+    }
+}
 
 data class StudyNote(
     val id: StudyNoteId,
@@ -116,7 +131,11 @@ data class StudyNote(
     val tags: List<String>,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
-)
+) {
+    init {
+        require(title.isNotBlank()) { "Study note title cannot be blank." }
+    }
+}
 
 data class PlanSnapshot(
     val id: PlanSnapshotId,
@@ -127,7 +146,14 @@ data class PlanSnapshot(
     val payloadReference: String,
     val checksumSha256: String,
     val createdAtEpochMillis: Long,
-)
+) {
+    init {
+        require(label.isNotBlank()) { "Snapshot label cannot be blank." }
+        require(schemaVersion > 0) { "Snapshot schema version must be positive." }
+        require(payloadReference.isNotBlank()) { "Snapshot payload reference cannot be blank." }
+        require(checksumSha256.matches(Regex("[0-9a-fA-F]{64}"))) { "Snapshot checksum must be SHA-256." }
+    }
+}
 
 data class StudyPlanSettings(
     val studyPlanId: StudyPlanId,

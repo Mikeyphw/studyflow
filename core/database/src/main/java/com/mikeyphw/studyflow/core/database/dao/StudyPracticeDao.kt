@@ -43,6 +43,28 @@ interface StudyPracticeDao {
     @Query("SELECT * FROM study_tests WHERE studyPlanId = :planId AND id = :testId LIMIT 1")
     suspend fun findTest(planId: String, testId: String): StudyTestEntity?
 
+
+    @Query(
+        """
+        UPDATE study_tests
+        SET answeredCount = :answeredCount,
+            correctCount = :correctCount,
+            submittedAtEpochMillis = :submittedAtEpochMillis,
+            configurationJson = :configurationJson
+        WHERE studyPlanId = :planId
+          AND id = :testId
+          AND submittedAtEpochMillis IS NULL
+        """,
+    )
+    suspend fun submitStudyTestIfOpen(
+        planId: String,
+        testId: String,
+        answeredCount: Int,
+        correctCount: Int,
+        submittedAtEpochMillis: Long,
+        configurationJson: String,
+    ): Int
+
     @Query("SELECT * FROM mock_exams WHERE studyPlanId = :planId ORDER BY startedAtEpochMillis DESC")
     fun observeMockExams(planId: String): Flow<List<MockExamEntity>>
 

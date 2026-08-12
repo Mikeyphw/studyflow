@@ -32,7 +32,20 @@ data class Question(
     val tags: List<String>,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
-)
+) {
+    init {
+        require(statement.isNotBlank()) { "Question statement cannot be blank." }
+        require(correctAnswer.isNotBlank()) { "Correct answer cannot be blank." }
+        require(difficulty in 1..5) { "Question difficulty must be between 1 and 5." }
+        require(year == null || year in 1900..2200) { "Question year is outside the supported range." }
+        if (type == QuestionType.MULTIPLE_CHOICE) {
+            require(options.size >= 2) { "Multiple-choice questions need at least two options." }
+            require(options.any { option -> option.trim().equals(correctAnswer.trim(), ignoreCase = true) }) {
+                "Multiple-choice correct answer must be one of the options."
+            }
+        }
+    }
+}
 
 data class StudyTest(
     val id: StudyTestId,
@@ -46,7 +59,15 @@ data class StudyTest(
     val startedAtEpochMillis: Long?,
     val submittedAtEpochMillis: Long?,
     val configurationJson: String,
-)
+) {
+    init {
+        require(title.isNotBlank()) { "Study test title cannot be blank." }
+        require(timeLimitSeconds == null || timeLimitSeconds > 0) { "Time limit must be positive." }
+        require(questionCount >= 0) { "Question count cannot be negative." }
+        require(answeredCount in 0..questionCount) { "Answered count is outside question count." }
+        require(correctCount in 0..answeredCount) { "Correct count is outside answered count." }
+    }
+}
 
 data class MockExam(
     val id: MockExamId,
@@ -63,4 +84,15 @@ data class MockExam(
     val startedAtEpochMillis: Long?,
     val submittedAtEpochMillis: Long?,
     val configurationJson: String,
-)
+) {
+    init {
+        require(title.isNotBlank()) { "Mock exam title cannot be blank." }
+        require(timeLimitSeconds > 0) { "Mock exam time limit must be positive." }
+        require(questionCount > 0) { "Mock exam must contain at least one question." }
+        require(answeredCount in 0..questionCount) { "Answered count is outside question count." }
+        require(correctCount in 0..answeredCount) { "Correct count is outside answered count." }
+        require(scorePercent == null || scorePercent in 0.0..100.0) { "Mock exam score must be 0 to 100." }
+        require(negativeMarking >= 0.0) { "Negative marking cannot be negative." }
+        require(minimumScorePercent == null || minimumScorePercent in 0..100) { "Minimum score must be 0 to 100." }
+    }
+}

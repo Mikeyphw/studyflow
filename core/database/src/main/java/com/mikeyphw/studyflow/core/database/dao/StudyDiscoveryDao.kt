@@ -77,7 +77,7 @@ interface StudyDiscoveryDao {
             t.description AS subtitle, p.updatedAtEpochMillis AS updatedAtEpochMillis
         FROM topics t
         JOIN study_plans p ON p.id = t.studyPlanId
-        JOIN subjects s ON s.id = t.subjectId
+        JOIN subjects s ON s.id = t.subjectId AND s.studyPlanId = t.studyPlanId
         WHERE (:includeArchived OR (
             p.status NOT IN ('ARCHIVED', 'TRASHED') AND t.archived = 0 AND s.archived = 0
         ))
@@ -92,9 +92,9 @@ interface StudyDiscoveryDao {
             q.explanation AS subtitle, q.updatedAtEpochMillis AS updatedAtEpochMillis
         FROM questions q
         JOIN study_plans p ON p.id = q.studyPlanId
-        LEFT JOIN subjects s ON s.id = q.subjectId
-        LEFT JOIN topics t ON t.id = q.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+        LEFT JOIN subjects s ON s.id = q.subjectId AND s.studyPlanId = q.studyPlanId
+        LEFT JOIN topics t ON t.id = q.topicId AND t.studyPlanId = q.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
         WHERE (:includeArchived OR (
             p.status NOT IN ('ARCHIVED', 'TRASHED')
                 AND (q.subjectId IS NULL OR s.archived = 0)
@@ -112,13 +112,15 @@ interface StudyDiscoveryDao {
             substr(n.content, 1, 180) AS subtitle, n.updatedAtEpochMillis AS updatedAtEpochMillis
         FROM study_notes n
         JOIN study_plans p ON p.id = n.studyPlanId
-        LEFT JOIN subjects s ON s.id = n.subjectId
-        LEFT JOIN topics t ON t.id = n.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
-        LEFT JOIN study_materials m ON m.id = n.materialId
+        LEFT JOIN subjects s ON s.id = n.subjectId AND s.studyPlanId = n.studyPlanId
+        LEFT JOIN topics t ON t.id = n.topicId AND t.studyPlanId = n.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
+        LEFT JOIN study_materials m ON m.id = n.materialId AND m.studyPlanId = n.studyPlanId
         LEFT JOIN subjects materialSubject ON materialSubject.id = m.subjectId
-        LEFT JOIN topics materialTopic ON materialTopic.id = m.topicId
+            AND materialSubject.studyPlanId = m.studyPlanId
+        LEFT JOIN topics materialTopic ON materialTopic.id = m.topicId AND materialTopic.studyPlanId = m.studyPlanId
         LEFT JOIN subjects materialTopicSubject ON materialTopicSubject.id = materialTopic.subjectId
+            AND materialTopicSubject.studyPlanId = materialTopic.studyPlanId
         WHERE (:includeArchived OR (
             p.status NOT IN ('ARCHIVED', 'TRASHED')
                 AND (n.subjectId IS NULL OR s.archived = 0)
@@ -142,9 +144,9 @@ interface StudyDiscoveryDao {
             m.description AS subtitle, m.updatedAtEpochMillis AS updatedAtEpochMillis
         FROM study_materials m
         JOIN study_plans p ON p.id = m.studyPlanId
-        LEFT JOIN subjects s ON s.id = m.subjectId
-        LEFT JOIN topics t ON t.id = m.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+        LEFT JOIN subjects s ON s.id = m.subjectId AND s.studyPlanId = m.studyPlanId
+        LEFT JOIN topics t ON t.id = m.topicId AND t.studyPlanId = m.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
         WHERE (:includeArchived OR (
             p.status NOT IN ('ARCHIVED', 'TRASHED') AND m.archived = 0
                 AND (m.subjectId IS NULL OR s.archived = 0)
@@ -161,9 +163,9 @@ interface StudyDiscoveryDao {
             f.back AS subtitle, f.updatedAtEpochMillis AS updatedAtEpochMillis
         FROM flashcards f
         JOIN study_plans p ON p.id = f.studyPlanId
-        LEFT JOIN subjects s ON s.id = f.subjectId
-        LEFT JOIN topics t ON t.id = f.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+        LEFT JOIN subjects s ON s.id = f.subjectId AND s.studyPlanId = f.studyPlanId
+        LEFT JOIN topics t ON t.id = f.topicId AND t.studyPlanId = f.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
         WHERE (:includeArchived OR (
             p.status NOT IN ('ARCHIVED', 'TRASHED')
                 AND (f.subjectId IS NULL OR s.archived = 0)
@@ -182,13 +184,15 @@ interface StudyDiscoveryDao {
             e.updatedAtEpochMillis AS updatedAtEpochMillis
         FROM error_entries e
         JOIN study_plans p ON p.id = e.studyPlanId
-        LEFT JOIN questions q ON q.id = e.questionId
-        LEFT JOIN subjects s ON s.id = e.subjectId
-        LEFT JOIN topics t ON t.id = e.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+        LEFT JOIN questions q ON q.id = e.questionId AND q.studyPlanId = e.studyPlanId
+        LEFT JOIN subjects s ON s.id = e.subjectId AND s.studyPlanId = e.studyPlanId
+        LEFT JOIN topics t ON t.id = e.topicId AND t.studyPlanId = e.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
         LEFT JOIN subjects questionSubject ON questionSubject.id = q.subjectId
-        LEFT JOIN topics questionTopic ON questionTopic.id = q.topicId
+            AND questionSubject.studyPlanId = q.studyPlanId
+        LEFT JOIN topics questionTopic ON questionTopic.id = q.topicId AND questionTopic.studyPlanId = q.studyPlanId
         LEFT JOIN subjects questionTopicSubject ON questionTopicSubject.id = questionTopic.subjectId
+            AND questionTopicSubject.studyPlanId = questionTopic.studyPlanId
         WHERE (:includeArchived OR (
             p.status NOT IN ('ARCHIVED', 'TRASHED')
                 AND (e.subjectId IS NULL OR s.archived = 0)
@@ -218,7 +222,7 @@ interface StudyDiscoveryDao {
             (SELECT coalesce(sum(e.recurrenceCount), 0) FROM error_entries e
                 WHERE e.studyPlanId = :planId AND e.topicId = t.id) AS errorFrequency
         FROM topics t
-        JOIN subjects s ON s.id = t.subjectId
+        JOIN subjects s ON s.id = t.subjectId AND s.studyPlanId = t.studyPlanId
         WHERE t.studyPlanId = :planId AND t.archived = 0 AND s.archived = 0
         ORDER BY t.name COLLATE NOCASE, t.id
         """,
@@ -228,26 +232,34 @@ interface StudyDiscoveryDao {
     @Query(
         """
         SELECT COUNT(*) FROM review_items r
-        LEFT JOIN subjects s ON s.id = r.subjectId
-        LEFT JOIN topics t ON t.id = r.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
-        LEFT JOIN questions q ON q.id = r.questionId
+        LEFT JOIN subjects s ON s.id = r.subjectId AND s.studyPlanId = r.studyPlanId
+        LEFT JOIN topics t ON t.id = r.topicId AND t.studyPlanId = r.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
+        LEFT JOIN questions q ON q.id = r.questionId AND q.studyPlanId = r.studyPlanId
         LEFT JOIN subjects questionSubject ON questionSubject.id = q.subjectId
-        LEFT JOIN topics questionTopic ON questionTopic.id = q.topicId
+            AND questionSubject.studyPlanId = q.studyPlanId
+        LEFT JOIN topics questionTopic ON questionTopic.id = q.topicId AND questionTopic.studyPlanId = q.studyPlanId
         LEFT JOIN subjects questionTopicSubject ON questionTopicSubject.id = questionTopic.subjectId
-        LEFT JOIN error_entries e ON e.id = r.errorEntryId
-        LEFT JOIN subjects errorSubject ON errorSubject.id = e.subjectId
-        LEFT JOIN topics errorTopic ON errorTopic.id = e.topicId
+            AND questionTopicSubject.studyPlanId = questionTopic.studyPlanId
+        LEFT JOIN error_entries e ON e.id = r.errorEntryId AND e.studyPlanId = r.studyPlanId
+        LEFT JOIN subjects errorSubject ON errorSubject.id = e.subjectId AND errorSubject.studyPlanId = e.studyPlanId
+        LEFT JOIN topics errorTopic ON errorTopic.id = e.topicId AND errorTopic.studyPlanId = e.studyPlanId
         LEFT JOIN subjects errorTopicSubject ON errorTopicSubject.id = errorTopic.subjectId
+            AND errorTopicSubject.studyPlanId = errorTopic.studyPlanId
         LEFT JOIN questions errorQuestion ON errorQuestion.id = e.questionId
+            AND errorQuestion.studyPlanId = e.studyPlanId
         LEFT JOIN subjects errorQuestionSubject ON errorQuestionSubject.id = errorQuestion.subjectId
+            AND errorQuestionSubject.studyPlanId = errorQuestion.studyPlanId
         LEFT JOIN topics errorQuestionTopic ON errorQuestionTopic.id = errorQuestion.topicId
-        LEFT JOIN subjects errorQuestionTopicSubject ON
-            errorQuestionTopicSubject.id = errorQuestionTopic.subjectId
-        LEFT JOIN flashcards f ON f.id = r.flashcardId
+            AND errorQuestionTopic.studyPlanId = errorQuestion.studyPlanId
+        LEFT JOIN subjects errorQuestionTopicSubject ON errorQuestionTopicSubject.id = errorQuestionTopic.subjectId
+            AND errorQuestionTopicSubject.studyPlanId = errorQuestionTopic.studyPlanId
+        LEFT JOIN flashcards f ON f.id = r.flashcardId AND f.studyPlanId = r.studyPlanId
         LEFT JOIN subjects flashcardSubject ON flashcardSubject.id = f.subjectId
-        LEFT JOIN topics flashcardTopic ON flashcardTopic.id = f.topicId
+            AND flashcardSubject.studyPlanId = f.studyPlanId
+        LEFT JOIN topics flashcardTopic ON flashcardTopic.id = f.topicId AND flashcardTopic.studyPlanId = f.studyPlanId
         LEFT JOIN subjects flashcardTopicSubject ON flashcardTopicSubject.id = flashcardTopic.subjectId
+            AND flashcardTopicSubject.studyPlanId = flashcardTopic.studyPlanId
         WHERE r.studyPlanId = :planId AND r.status IN ('SCHEDULED', 'DUE')
             AND r.dueAtEpochMillis <= :now
             AND (r.subjectId IS NULL OR s.archived = 0)
@@ -288,13 +300,15 @@ interface StudyDiscoveryDao {
     @Query(
         """
         SELECT a.id, a.title, a.scheduledStartEpochMillis, a.status FROM planned_activities a
-        LEFT JOIN subjects s ON s.id = a.subjectId
-        LEFT JOIN topics t ON t.id = a.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
-        LEFT JOIN study_materials m ON m.id = a.materialId
+        LEFT JOIN subjects s ON s.id = a.subjectId AND s.studyPlanId = a.studyPlanId
+        LEFT JOIN topics t ON t.id = a.topicId AND t.studyPlanId = a.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
+        LEFT JOIN study_materials m ON m.id = a.materialId AND m.studyPlanId = a.studyPlanId
         LEFT JOIN subjects materialSubject ON materialSubject.id = m.subjectId
-        LEFT JOIN topics materialTopic ON materialTopic.id = m.topicId
+            AND materialSubject.studyPlanId = m.studyPlanId
+        LEFT JOIN topics materialTopic ON materialTopic.id = m.topicId AND materialTopic.studyPlanId = m.studyPlanId
         LEFT JOIN subjects materialTopicSubject ON materialTopicSubject.id = materialTopic.subjectId
+            AND materialTopicSubject.studyPlanId = materialTopic.studyPlanId
         WHERE a.studyPlanId = :planId AND a.status IN ('PLANNED', 'MISSED')
             AND (a.subjectId IS NULL OR s.archived = 0)
             AND (a.topicId IS NULL OR (t.archived = 0 AND topicSubject.archived = 0))
@@ -318,13 +332,15 @@ interface StudyDiscoveryDao {
         SELECT COUNT(*) AS elapsedCount,
             coalesce(sum(CASE WHEN a.status = 'COMPLETED' THEN 1 ELSE 0 END), 0) AS completedCount
         FROM planned_activities a
-        LEFT JOIN subjects s ON s.id = a.subjectId
-        LEFT JOIN topics t ON t.id = a.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
-        LEFT JOIN study_materials m ON m.id = a.materialId
+        LEFT JOIN subjects s ON s.id = a.subjectId AND s.studyPlanId = a.studyPlanId
+        LEFT JOIN topics t ON t.id = a.topicId AND t.studyPlanId = a.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
+        LEFT JOIN study_materials m ON m.id = a.materialId AND m.studyPlanId = a.studyPlanId
         LEFT JOIN subjects materialSubject ON materialSubject.id = m.subjectId
-        LEFT JOIN topics materialTopic ON materialTopic.id = m.topicId
+            AND materialSubject.studyPlanId = m.studyPlanId
+        LEFT JOIN topics materialTopic ON materialTopic.id = m.topicId AND materialTopic.studyPlanId = m.studyPlanId
         LEFT JOIN subjects materialTopicSubject ON materialTopicSubject.id = materialTopic.subjectId
+            AND materialTopicSubject.studyPlanId = materialTopic.studyPlanId
         WHERE a.studyPlanId = :planId AND a.scheduledStartEpochMillis IS NOT NULL
             AND a.scheduledStartEpochMillis <= :now
             AND (a.subjectId IS NULL OR s.archived = 0)
@@ -345,10 +361,10 @@ interface StudyDiscoveryDao {
         SELECT m.id AS id, m.title AS title, m.completedUnits AS completedUnits,
             m.totalUnits AS totalUnits, a.scheduledStartEpochMillis AS scheduledStartEpochMillis
         FROM planned_activities a
-        JOIN study_materials m ON m.id = a.materialId
-        LEFT JOIN subjects s ON s.id = m.subjectId
-        LEFT JOIN topics t ON t.id = m.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+        JOIN study_materials m ON m.id = a.materialId AND m.studyPlanId = a.studyPlanId
+        LEFT JOIN subjects s ON s.id = m.subjectId AND s.studyPlanId = m.studyPlanId
+        LEFT JOIN topics t ON t.id = m.topicId AND t.studyPlanId = m.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
         WHERE a.studyPlanId = :planId AND a.scheduledStartEpochMillis < :now
             AND a.status IN ('PLANNED', 'MISSED', 'IN_PROGRESS') AND m.archived = 0
             AND (m.subjectId IS NULL OR s.archived = 0)
@@ -363,9 +379,9 @@ interface StudyDiscoveryDao {
     @Query(
         """
         SELECT g.title, g.endsOnIso FROM study_goals g
-        LEFT JOIN subjects s ON s.id = g.subjectId
-        LEFT JOIN topics t ON t.id = g.topicId
-        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+        LEFT JOIN subjects s ON s.id = g.subjectId AND s.studyPlanId = g.studyPlanId
+        LEFT JOIN topics t ON t.id = g.topicId AND t.studyPlanId = g.studyPlanId
+        LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
         WHERE g.studyPlanId = :planId AND g.archived = 0 AND g.completedAtEpochMillis IS NULL
             AND g.endsOnIso IS NOT NULL
             AND (g.subjectId IS NULL OR s.archived = 0)

@@ -1,12 +1,12 @@
 package com.mikeyphw.studyflow
 
 import android.app.Application
+import android.content.Context
 import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorderProvider
 import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
-import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.CreateStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageAdaptiveReschedule
 import com.mikeyphw.studyflow.core.domain.ManageExamReadiness
@@ -24,25 +24,31 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudyResourceViewer
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
-import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
-import com.mikeyphw.studyflow.core.domain.StudyCloudSyncRepository
-import com.mikeyphw.studyflow.core.domain.StudyContentRepository
-import com.mikeyphw.studyflow.core.domain.StudyDiscoveryRepository
-import com.mikeyphw.studyflow.core.domain.StudyLibraryRepository
-import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
-import com.mikeyphw.studyflow.core.domain.StudyPracticeRepository
-import com.mikeyphw.studyflow.core.domain.StudyProgressRepository
-import com.mikeyphw.studyflow.core.domain.StudyReviewRepository
-import com.mikeyphw.studyflow.core.domain.StudyScheduleRepository
-import com.mikeyphw.studyflow.core.domain.StudySessionRepository
 import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+sealed interface AppInitializationState {
+    data object Initializing : AppInitializationState
+
+    data object Ready : AppInitializationState
+
+    data class Failed(val causeType: String) : AppInitializationState
+}
+
+internal fun Context.requireStudyFlowAppContainer(): AppContainer =
+    ((applicationContext as? StudyFlowApplication)?.container)
+        ?: error("StudyFlow process container is unavailable.")
 
 class StudyFlowApplication : Application() {
     lateinit var container: AppContainer
@@ -68,18 +74,8 @@ class StudyFlowApplication : Application() {
 }
 
 interface AppContainer : DiagnosticRecorderProvider {
-    val studyPlanRepository: StudyPlanRepository
-    val studyContentRepository: StudyContentRepository
-    val studyDiscoveryRepository: StudyDiscoveryRepository
-    val studyCloudSyncRepository: StudyCloudSyncRepository
-    val studyScheduleRepository: StudyScheduleRepository
-    val studySessionRepository: StudySessionRepository
-    val studyPracticeRepository: StudyPracticeRepository
-    val studyLibraryRepository: StudyLibraryRepository
-    val studyReviewRepository: StudyReviewRepository
-    val studyProgressRepository: StudyProgressRepository
-    val studyAnalyticsRepository: StudyAnalyticsRepository
-    val annexFileStorageRepository: AnnexFileStorageRepository
+    val initializationState: StateFlow<AppInitializationState>
+    fun retryInitialization()
     val appPreferencesRepository: AppPreferencesRepository
     val reminderDeliveryCoordinator: StudyReminderDeliveryCoordinator
     val createStudyPlan: CreateStudyPlan
@@ -107,23 +103,26 @@ private class DefaultAppContainer(
     override val diagnosticRecorder: DiagnosticStore,
 ) : AppContainer {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val _initializationState = MutableStateFlow<AppInitializationState>(AppInitializationState.Initializing)
+    override val initializationState: StateFlow<AppInitializationState> = _initializationState.asStateFlow()
+    private var initializationJob: Job? = null
     private val dataLayer = createStudyFlowDataLayer(
         context = application,
         applicationVersion = BuildConfig.VERSION_NAME,
     )
 
-    override val studyPlanRepository: StudyPlanRepository = dataLayer.studyPlanRepository
-    override val studyContentRepository: StudyContentRepository = dataLayer.studyContentRepository
-    override val studyDiscoveryRepository: StudyDiscoveryRepository = dataLayer.studyDiscoveryRepository
-    override val studyCloudSyncRepository: StudyCloudSyncRepository = dataLayer.studyCloudSyncRepository
-    override val studyScheduleRepository: StudyScheduleRepository = dataLayer.studyScheduleRepository
-    override val studySessionRepository: StudySessionRepository = dataLayer.studySessionRepository
-    override val studyPracticeRepository: StudyPracticeRepository = dataLayer.studyPracticeRepository
-    override val studyLibraryRepository: StudyLibraryRepository = dataLayer.studyLibraryRepository
-    override val studyReviewRepository: StudyReviewRepository = dataLayer.studyReviewRepository
-    override val studyProgressRepository: StudyProgressRepository = dataLayer.studyProgressRepository
-    override val studyAnalyticsRepository: StudyAnalyticsRepository = dataLayer.studyAnalyticsRepository
-    override val annexFileStorageRepository: AnnexFileStorageRepository = dataLayer.annexFileStorageRepository
+    private val studyPlanRepository = dataLayer.studyPlanRepository
+    private val studyContentRepository = dataLayer.studyContentRepository
+    private val studyDiscoveryRepository = dataLayer.studyDiscoveryRepository
+    private val studyCloudSyncRepository = dataLayer.studyCloudSyncRepository
+    private val studyScheduleRepository = dataLayer.studyScheduleRepository
+    private val studySessionRepository = dataLayer.studySessionRepository
+    private val studyPracticeRepository = dataLayer.studyPracticeRepository
+    private val studyLibraryRepository = dataLayer.studyLibraryRepository
+    private val studyReviewRepository = dataLayer.studyReviewRepository
+    private val studyProgressRepository = dataLayer.studyProgressRepository
+    private val studyAnalyticsRepository = dataLayer.studyAnalyticsRepository
+    private val annexFileStorageRepository = dataLayer.annexFileStorageRepository
     override val appPreferencesRepository: AppPreferencesRepository =
         DataStoreAppPreferencesRepository(application)
     override val reminderDeliveryCoordinator = StudyReminderDeliveryCoordinator(
@@ -170,24 +169,56 @@ private class DefaultAppContainer(
         ) {
             reminderDeliveryCoordinator.createNotificationChannels()
         }
-        applicationScope.launch {
-            diagnosticRecorder.recordSuspendStep(
-                area = DiagnosticArea.INITIALIZATION,
-                action = "data-layer-initialize",
-            ) {
-                dataLayer.initialize()
+        retryInitialization()
+    }
+
+    override fun retryInitialization() {
+        if (_initializationState.value is AppInitializationState.Ready) return
+        if (initializationJob?.isActive == true) return
+        _initializationState.value = AppInitializationState.Initializing
+        initializationJob = applicationScope.launch {
+            try {
+                diagnosticRecorder.recordSuspendStep(
+                    area = DiagnosticArea.INITIALIZATION,
+                    action = "data-layer-initialize",
+                ) {
+                    dataLayer.initialize()
+                }
+                _initializationState.value = AppInitializationState.Ready
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                _initializationState.value = AppInitializationState.Failed(error.javaClass.simpleName)
+                return@launch
             }
-            diagnosticRecorder.recordSuspendStep(
-                area = DiagnosticArea.REMINDERS,
-                action = "startup-reminder-reconciliation",
-            ) {
-                reminderDeliveryCoordinator.reconcileAll()
+
+            var reconciliationCompleted = false
+            try {
+                diagnosticRecorder.recordSuspendStep(
+                    area = DiagnosticArea.REMINDERS,
+                    action = "startup-reminder-reconciliation",
+                ) {
+                    reminderDeliveryCoordinator.reconcileAll()
+                }
+                reconciliationCompleted = true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // The core data layer is ready; diagnostics capture optional startup service failures.
             }
-            diagnosticRecorder.recordSuspendStep(
-                area = DiagnosticArea.WIDGET,
-                action = "startup-widget-refresh",
-            ) {
-                StudyFlowWidgetUpdateCoordinator.refreshAll(application)
+            if (!reconciliationCompleted) {
+                try {
+                    diagnosticRecorder.recordSuspendStep(
+                        area = DiagnosticArea.WIDGET,
+                        action = "startup-widget-refresh-fallback",
+                    ) {
+                        StudyFlowWidgetUpdateCoordinator.refreshAll(application)
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // The widget is a recoverable secondary surface and must not invalidate data readiness.
+                }
             }
         }
     }

@@ -15,30 +15,28 @@ import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.VideoResource
 import com.mikeyphw.studyflow.core.model.VideoResourceId
 import com.mikeyphw.studyflow.core.model.VideoSourceType
-import java.nio.charset.StandardCharsets
-import android.util.Base64
 
-private const val ListSeparator = "\n"
-
-fun StudyMaterialEntity.asExternalModel(): StudyMaterial = StudyMaterial(
-    id = StudyMaterialId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    subjectId = subjectId?.let(::SubjectId),
-    topicId = topicId?.let(::TopicId),
-    type = enumValueOf<StudyMaterialType>(type),
-    title = title,
-    description = description,
-    sourceUri = sourceUri,
-    author = author,
-    totalUnits = totalUnits,
-    completedUnits = completedUnits,
-    primary = primary,
-    favorite = favorite,
-    archived = archived,
-    tags = tagsJson.decodeStringList(),
-    createdAtEpochMillis = createdAtEpochMillis,
-    updatedAtEpochMillis = updatedAtEpochMillis,
-)
+fun StudyMaterialEntity.asExternalModel(): StudyMaterial = decodeModel("StudyMaterialEntity") {
+    StudyMaterial(
+        id = StudyMaterialId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        subjectId = subjectId?.let(::SubjectId),
+        topicId = topicId?.let(::TopicId),
+        type = type.decodeEnum<StudyMaterialType>("StudyLibraryEntityMapper.type"),
+        title = title,
+        description = description,
+        sourceUri = sourceUri,
+        author = author,
+        totalUnits = totalUnits,
+        completedUnits = completedUnits,
+        primary = primary,
+        favorite = favorite,
+        archived = archived,
+        tags = tagsJson.decodeStringListStable("StudyLibraryEntityMapper.tagsJson"),
+        createdAtEpochMillis = createdAtEpochMillis,
+        updatedAtEpochMillis = updatedAtEpochMillis,
+    )
+}
 
 fun StudyMaterial.asEntity(): StudyMaterialEntity = StudyMaterialEntity(
     id = id.value,
@@ -55,27 +53,29 @@ fun StudyMaterial.asEntity(): StudyMaterialEntity = StudyMaterialEntity(
     primary = primary,
     favorite = favorite,
     archived = archived,
-    tagsJson = tags.encodeStringList(),
+    tagsJson = tags.encodeStringListStable(),
     createdAtEpochMillis = createdAtEpochMillis,
     updatedAtEpochMillis = updatedAtEpochMillis,
 )
 
-fun VideoResourceEntity.asExternalModel(): VideoResource = VideoResource(
-    id = VideoResourceId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    subjectId = subjectId?.let(::SubjectId),
-    topicId = topicId?.let(::TopicId),
-    title = title,
-    sourceType = enumValueOf<VideoSourceType>(sourceType),
-    sourceUri = sourceUri,
-    canonicalSourceId = canonicalSourceId,
-    thumbnailUri = thumbnailUri,
-    durationMillis = durationMillis,
-    playbackPositionMillis = playbackPositionMillis,
-    completed = completed,
-    createdAtEpochMillis = createdAtEpochMillis,
-    updatedAtEpochMillis = updatedAtEpochMillis,
-)
+fun VideoResourceEntity.asExternalModel(): VideoResource = decodeModel("VideoResourceEntity") {
+    VideoResource(
+        id = VideoResourceId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        subjectId = subjectId?.let(::SubjectId),
+        topicId = topicId?.let(::TopicId),
+        title = title,
+        sourceType = sourceType.decodeEnum<VideoSourceType>("StudyLibraryEntityMapper.sourceType"),
+        sourceUri = sourceUri,
+        canonicalSourceId = canonicalSourceId,
+        thumbnailUri = thumbnailUri,
+        durationMillis = durationMillis,
+        playbackPositionMillis = playbackPositionMillis,
+        completed = completed,
+        createdAtEpochMillis = createdAtEpochMillis,
+        updatedAtEpochMillis = updatedAtEpochMillis,
+    )
+}
 
 fun VideoResource.asEntity(): VideoResourceEntity = VideoResourceEntity(
     id = id.value,
@@ -94,22 +94,24 @@ fun VideoResource.asEntity(): VideoResourceEntity = VideoResourceEntity(
     updatedAtEpochMillis = updatedAtEpochMillis,
 )
 
-fun AnnexEntity.asExternalModel(): Annex = Annex(
-    id = AnnexId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    subjectId = subjectId?.let(::SubjectId),
-    topicId = topicId?.let(::TopicId),
-    materialId = materialId?.let(::StudyMaterialId),
-    displayName = displayName,
-    mimeType = mimeType,
-    byteSize = byteSize,
-    checksumSha256 = checksumSha256,
-    storageMode = enumValueOf<AnnexStorageMode>(storageMode),
-    storageReference = storageReference,
-    persistedPermission = persistedPermission,
-    createdAtEpochMillis = createdAtEpochMillis,
-    updatedAtEpochMillis = updatedAtEpochMillis,
-)
+fun AnnexEntity.asExternalModel(): Annex = decodeModel("AnnexEntity") {
+    Annex(
+        id = AnnexId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        subjectId = subjectId?.let(::SubjectId),
+        topicId = topicId?.let(::TopicId),
+        materialId = materialId?.let(::StudyMaterialId),
+        displayName = displayName,
+        mimeType = mimeType,
+        byteSize = byteSize,
+        checksumSha256 = checksumSha256,
+        storageMode = storageMode.decodeEnum<AnnexStorageMode>("StudyLibraryEntityMapper.storageMode"),
+        storageReference = storageReference,
+        persistedPermission = persistedPermission,
+        createdAtEpochMillis = createdAtEpochMillis,
+        updatedAtEpochMillis = updatedAtEpochMillis,
+    )
+}
 
 fun Annex.asEntity(): AnnexEntity = AnnexEntity(
     id = id.value,
@@ -127,15 +129,3 @@ fun Annex.asEntity(): AnnexEntity = AnnexEntity(
     createdAtEpochMillis = createdAtEpochMillis,
     updatedAtEpochMillis = updatedAtEpochMillis,
 )
-
-private fun List<String>.encodeStringList(): String = joinToString(ListSeparator) { value ->
-    Base64.encodeToString(value.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
-}
-
-private fun String.decodeStringList(): List<String> = if (isBlank()) {
-    emptyList()
-} else {
-    lineSequence().mapNotNull { encoded ->
-        runCatching { String(Base64.decode(encoded, Base64.NO_WRAP), StandardCharsets.UTF_8) }.getOrNull()
-    }.toList()
-}

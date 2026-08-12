@@ -28,6 +28,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,6 +50,7 @@ import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
+import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.MockExamStudioBlueprint
 import com.mikeyphw.studyflow.core.domain.MockExamStudioRequest
 import com.mikeyphw.studyflow.core.domain.MockExamStudioWarning
@@ -62,6 +64,7 @@ import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
+import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceTab
 import java.util.UUID
 import java.util.concurrent.CancellationException
@@ -82,21 +85,44 @@ fun PracticeWorkspaceScreen(
     onOpenQuestionBank: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val reviewFlow = remember(plan.id) { reviewManager.observeQueue(plan.id) }
-    val notebookFlow = remember(plan.id) { reviewManager.observeWrongAnswerNotebook(plan.id) }
-    val questionsFlow = remember(plan.id) { practiceManager.observeQuestions(plan.id) }
-    val testsFlow = remember(plan.id) { practiceManager.observeTests(plan.id) }
-    val mocksFlow = remember(plan.id) { practiceManager.observeMockExams(plan.id) }
-    val queue by reviewFlow.collectAsStateWithLifecycle(initialValue = null)
-    val notebook by notebookFlow.collectAsStateWithLifecycle(initialValue = null)
-    val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val tests by testsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val mocks by mocksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
+    val reviewFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeQueue(plan.id).asStudyFlowLoadState()
+    }
+    val notebookFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeWrongAnswerNotebook(plan.id).asStudyFlowLoadState()
+    }
+    val questionsFlow = remember(plan.id, loadAttempt) {
+        practiceManager.observeQuestions(plan.id).asStudyFlowLoadState()
+    }
+    val testsFlow = remember(plan.id, loadAttempt) {
+        practiceManager.observeTests(plan.id).asStudyFlowLoadState()
+    }
+    val mocksFlow = remember(plan.id, loadAttempt) {
+        practiceManager.observeMockExams(plan.id).asStudyFlowLoadState()
+    }
+    val queueState by reviewFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val notebookState by notebookFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val questionsState by questionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val testsState by testsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val mocksState by mocksFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    if (
+        !WorkspaceLoadGate(
+            states = listOf(queueState, notebookState, questionsState, testsState, mocksState),
+            onRetry = { loadAttempt += 1 },
+            modifier = modifier,
+        )
+    ) return
+    val queue = queueState.readyValue()
+    val notebook = notebookState.readyValue()
+    val questions = questionsState.readyValue()
+    val tests = testsState.readyValue()
+    val mocks = mocksState.readyValue()
     val weaknessDrill = remember(questions, notebook, queue) {
         practiceManager.buildWeaknessDrill(
             questions = questions,
-            remediations = notebook?.entries.orEmpty(),
-            dueReviews = queue?.due.orEmpty(),
+            remediations = notebook.entries,
+            dueReviews = queue.due,
         )
     }
     val scope = rememberCoroutineScope()
@@ -149,10 +175,10 @@ fun PracticeWorkspaceScreen(
             )
             when (selectedTab) {
                 PracticeWorkspaceTab.REVIEWS -> ReviewsPane(
-                    due = queue?.due.orEmpty(),
-                    dueCount = queue?.dueCount ?: 0,
-                    upcomingCount = queue?.upcomingCount ?: 0,
-                    flashcardCount = queue?.flashcardCount ?: 0,
+                    due = queue.due,
+                    dueCount = queue.dueCount,
+                    upcomingCount = queue.upcomingCount,
+                    flashcardCount = queue.flashcardCount,
                     onGrade = { item, grade ->
                         scope.launch {
                             try {
@@ -223,7 +249,7 @@ fun PracticeWorkspaceScreen(
                     },
                 )
                 PracticeWorkspaceTab.ERRORS -> ErrorsPane(
-                    entries = notebook?.entries.orEmpty(),
+                    entries = notebook.entries,
                     weaknessDrill = weaknessDrill,
                     onCreateWeaknessDrill = {
                         scope.launch {
@@ -237,8 +263,8 @@ fun PracticeWorkspaceScreen(
                                     planId = plan.id,
                                     title = weaknessDrillTitle,
                                     questions = questions,
-                                    remediations = notebook?.entries.orEmpty(),
-                                    dueReviews = queue?.due.orEmpty(),
+                                    remediations = notebook.entries,
+                                    dueReviews = queue.due,
                                 )
                                 snackbar.showSnackbar(weaknessDrillCreated)
                             } catch (cancelled: CancellationException) {

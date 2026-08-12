@@ -113,9 +113,9 @@ private suspend fun inspectStudyEngine(
         rules = schedule.scheduleRules,
     )
     val reviewQueue = container.manageStudyReview.observeQueue(planId).first()
-    val questions = container.studyPracticeRepository.observeQuestions(planId).first()
-    val tests = container.studyPracticeRepository.observeTests(planId).first()
-    val mockExams = container.studyPracticeRepository.observeMockExams(planId).first()
+    val questions = container.manageStudyPractice.observeQuestions(planId).first()
+    val tests = container.manageStudyPractice.observeTests(planId).first()
+    val mockExams = container.manageStudyPractice.observeMockExams(planId).first()
     val practiceSummary = PracticeAnalytics.summarize(questions, tests, mockExams)
     val practiceDeck = container.manageStudyPractice.buildDeck(
         questions = questions,

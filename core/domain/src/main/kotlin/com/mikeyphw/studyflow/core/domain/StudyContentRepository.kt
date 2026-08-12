@@ -1,7 +1,9 @@
 package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
+import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.ExamStageId
+import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.Subject
@@ -22,6 +24,8 @@ data class TopicBulkUpdate(
 interface StudyContentRepository {
     fun observeSyllabus(planId: StudyPlanId): Flow<StudySyllabus>
 
+    suspend fun upsertStudyTarget(target: StudyTarget): StudyTarget
+    suspend fun upsertExamStage(stage: ExamStage): ExamStage
     suspend fun upsertSubject(subject: Subject): Subject
     suspend fun upsertTopic(topic: Topic): Topic
     suspend fun deleteSubject(planId: StudyPlanId, subjectId: SubjectId)

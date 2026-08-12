@@ -60,9 +60,11 @@ if not any(marker in app_source for marker in ('onOpenPractice', 'onOpenQuestion
     failures.append("app navigation missing practice action marker: one of onOpenPractice, onOpenQuestionBank")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
-for marker in ("StudyPracticeRepository", "ManageStudyPractice", "studyPracticeRepository"):
+for marker in ("ManageStudyPractice", "manageStudyPractice", "private val studyPracticeRepository"):
     if marker not in application_source:
-        failures.append(f"application container missing practice marker: {marker}")
+        failures.append(f"application container missing practice boundary marker: {marker}")
+if "val studyPracticeRepository:" in application_source:
+    failures.append("application container must not publicly expose StudyPracticeRepository")
 if "core.database" in application_source:
     failures.append("app module leaks database implementation after Phase 8")
 
@@ -95,9 +97,11 @@ for marker in (
     "Question.asEntity",
     "StudyTestEntity.asExternalModel",
     "MockExam.asEntity",
-    "Base64",
+    "encodeStringListStable",
+    "decodeStringListStable",
 ):
-    if marker not in practice_mapper:
+    mapper_scope = practice_mapper + (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/MapperSafety.kt").read_text(encoding="utf-8")
+    if marker not in mapper_scope:
         failures.append(f"practice mapper missing marker: {marker}")
 
 repo = (ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPracticeRepository.kt").read_text(

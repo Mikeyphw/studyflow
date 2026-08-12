@@ -51,21 +51,25 @@ class StudyReminderDeliveryCoordinator(
     suspend fun reconcileAll() {
         createNotificationChannels()
         val plans = studyPlanRepository.plans.first()
-        plans.forEach { plan -> reconcilePlan(plan.id) }
+        plans.forEach { plan -> reconcilePlanInternal(plan.id) }
+        StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
     }
 
     suspend fun reconcilePlan(planId: StudyPlanId) {
+        reconcilePlanInternal(planId)
+        StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
+    }
+
+    private suspend fun reconcilePlanInternal(planId: StudyPlanId) {
         val runtimePlan = buildRuntimePlan(planId)
         if (runtimePlan == null || runtimePlan.permissionRequired) {
             cancelPlanAlarms(planId)
-            StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
             return
         }
         cancelPlanAlarms(planId)
         runtimePlan.notificationCandidates
             .filterNot(ReminderNotificationCandidate::suppressedByQuietHours)
             .forEach { candidate -> scheduleCandidate(planId, candidate) }
-        StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
     }
 
     suspend fun deliver(planId: StudyPlanId, type: ReminderNotificationType) {

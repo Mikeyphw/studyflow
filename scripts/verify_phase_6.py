@@ -54,9 +54,11 @@ if not any(marker in app_source for marker in ('onOpenSchedule', 'onManageSchedu
     failures.append("app navigation missing schedule action marker: one of onOpenSchedule, onManageSchedule")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
-for marker in ("StudyScheduleRepository", "ManageStudySchedule", "studyScheduleRepository"):
+for marker in ("ManageStudySchedule", "manageStudySchedule", "private val studyScheduleRepository"):
     if marker not in application_source:
-        failures.append(f"application container missing schedule marker: {marker}")
+        failures.append(f"application container missing schedule boundary marker: {marker}")
+if "val studyScheduleRepository:" in application_source:
+    failures.append("application container must not publicly expose StudyScheduleRepository")
 if "core.database" in application_source:
     failures.append("app module leaks database implementation after Phase 6")
 
@@ -82,7 +84,7 @@ for marker in (
     "observeScheduleRules",
     "findScheduleRules",
     "findPlannedActivities",
-    "deleteUnlockedPlannedActivities",
+    "deleteReplaceablePlannedActivities",
     "deleteScheduleRule",
     "deletePlannedActivity",
 ):

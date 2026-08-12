@@ -192,7 +192,7 @@ private class AndroidReminderLabInspectOperation(
                 apiLevel = Build.VERSION.SDK_INT,
             )
         }
-        val plan = container.studyPlanRepository.observePlan(planId).first()
+        val plan = container.manageStudyPlan.observePlan(planId).first()
             ?: return ReminderNotificationLabReport(
                 status = DebugLabStatus.BLOCKED,
                 message = ReminderLabMessage.PLAN_UNAVAILABLE,
@@ -207,8 +207,8 @@ private class AndroidReminderLabInspectOperation(
                 apiLevel = Build.VERSION.SDK_INT,
             )
         }
-        val settings = container.studyPlanRepository.observePlanSettings(planId).first()
-        val schedule = container.studyScheduleRepository.observeSchedule(planId).first()
+        val settings = container.manageStudyPlan.observeSettings(planId).first()
+        val schedule = container.manageStudySchedule.observeSchedule(planId).first()
         val reviewQueue = container.manageStudyReview.observeQueue(planId).first()
         val permissionGranted = notificationPermissionGranted(appContext)
         val appNotificationsEnabled = NotificationManagerCompat.from(appContext).areNotificationsEnabled()

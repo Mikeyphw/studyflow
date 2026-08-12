@@ -14,31 +14,29 @@ import com.mikeyphw.studyflow.core.model.StudyTestId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TestMode
 import com.mikeyphw.studyflow.core.model.TopicId
-import java.nio.charset.StandardCharsets
-import android.util.Base64
 
-private const val ListSeparator = "\n"
-
-fun QuestionEntity.asExternalModel(): Question = Question(
-    id = QuestionId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    subjectId = subjectId?.let(::SubjectId),
-    topicId = topicId?.let(::TopicId),
-    type = enumValueOf<QuestionType>(type),
-    statement = statement,
-    options = optionsJson.decodeStringList(),
-    correctAnswer = correctAnswer,
-    explanation = explanation,
-    examBoard = examBoard,
-    source = source,
-    year = year,
-    difficulty = difficulty,
-    favorite = favorite,
-    disputed = disputed,
-    tags = tagsJson.decodeStringList(),
-    createdAtEpochMillis = createdAtEpochMillis,
-    updatedAtEpochMillis = updatedAtEpochMillis,
-)
+fun QuestionEntity.asExternalModel(): Question = decodeModel("QuestionEntity") {
+    Question(
+        id = QuestionId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        subjectId = subjectId?.let(::SubjectId),
+        topicId = topicId?.let(::TopicId),
+        type = type.decodeEnum<QuestionType>("StudyPracticeEntityMapper.type"),
+        statement = statement,
+        options = optionsJson.decodeStringListStable("StudyPracticeEntityMapper.optionsJson"),
+        correctAnswer = correctAnswer,
+        explanation = explanation,
+        examBoard = examBoard,
+        source = source,
+        year = year,
+        difficulty = difficulty,
+        favorite = favorite,
+        disputed = disputed,
+        tags = tagsJson.decodeStringListStable("StudyPracticeEntityMapper.tagsJson"),
+        createdAtEpochMillis = createdAtEpochMillis,
+        updatedAtEpochMillis = updatedAtEpochMillis,
+    )
+}
 
 fun Question.asEntity(): QuestionEntity = QuestionEntity(
     id = id.value,
@@ -47,7 +45,7 @@ fun Question.asEntity(): QuestionEntity = QuestionEntity(
     topicId = topicId?.value,
     type = type.name,
     statement = statement,
-    optionsJson = options.encodeStringList(),
+    optionsJson = options.encodeStringListStable(),
     correctAnswer = correctAnswer,
     explanation = explanation,
     examBoard = examBoard,
@@ -56,24 +54,26 @@ fun Question.asEntity(): QuestionEntity = QuestionEntity(
     difficulty = difficulty,
     favorite = favorite,
     disputed = disputed,
-    tagsJson = tags.encodeStringList(),
+    tagsJson = tags.encodeStringListStable(),
     createdAtEpochMillis = createdAtEpochMillis,
     updatedAtEpochMillis = updatedAtEpochMillis,
 )
 
-fun StudyTestEntity.asExternalModel(): StudyTest = StudyTest(
-    id = StudyTestId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    title = title,
-    mode = enumValueOf<TestMode>(mode),
-    timeLimitSeconds = timeLimitSeconds,
-    questionCount = questionCount,
-    answeredCount = answeredCount,
-    correctCount = correctCount,
-    startedAtEpochMillis = startedAtEpochMillis,
-    submittedAtEpochMillis = submittedAtEpochMillis,
-    configurationJson = configurationJson,
-)
+fun StudyTestEntity.asExternalModel(): StudyTest = decodeModel("StudyTestEntity") {
+    StudyTest(
+        id = StudyTestId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        title = title,
+        mode = mode.decodeEnum<TestMode>("StudyPracticeEntityMapper.mode"),
+        timeLimitSeconds = timeLimitSeconds,
+        questionCount = questionCount,
+        answeredCount = answeredCount,
+        correctCount = correctCount,
+        startedAtEpochMillis = startedAtEpochMillis,
+        submittedAtEpochMillis = submittedAtEpochMillis,
+        configurationJson = configurationJson,
+    )
+}
 
 fun StudyTest.asEntity(): StudyTestEntity = StudyTestEntity(
     id = id.value,
@@ -89,22 +89,24 @@ fun StudyTest.asEntity(): StudyTestEntity = StudyTestEntity(
     configurationJson = configurationJson,
 )
 
-fun MockExamEntity.asExternalModel(): MockExam = MockExam(
-    id = MockExamId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    title = title,
-    mode = enumValueOf<TestMode>(mode),
-    timeLimitSeconds = timeLimitSeconds,
-    questionCount = questionCount,
-    answeredCount = answeredCount,
-    correctCount = correctCount,
-    scorePercent = scorePercent,
-    negativeMarking = negativeMarking,
-    minimumScorePercent = minimumScorePercent,
-    startedAtEpochMillis = startedAtEpochMillis,
-    submittedAtEpochMillis = submittedAtEpochMillis,
-    configurationJson = configurationJson,
-)
+fun MockExamEntity.asExternalModel(): MockExam = decodeModel("MockExamEntity") {
+    MockExam(
+        id = MockExamId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        title = title,
+        mode = mode.decodeEnum<TestMode>("StudyPracticeEntityMapper.mode"),
+        timeLimitSeconds = timeLimitSeconds,
+        questionCount = questionCount,
+        answeredCount = answeredCount,
+        correctCount = correctCount,
+        scorePercent = scorePercent,
+        negativeMarking = negativeMarking,
+        minimumScorePercent = minimumScorePercent,
+        startedAtEpochMillis = startedAtEpochMillis,
+        submittedAtEpochMillis = submittedAtEpochMillis,
+        configurationJson = configurationJson,
+    )
+}
 
 fun MockExam.asEntity(): MockExamEntity = MockExamEntity(
     id = id.value,
@@ -122,19 +124,3 @@ fun MockExam.asEntity(): MockExamEntity = MockExamEntity(
     submittedAtEpochMillis = submittedAtEpochMillis,
     configurationJson = configurationJson,
 )
-
-private fun List<String>.encodeStringList(): String = joinToString(ListSeparator) { value ->
-    Base64.encodeToString(value.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
-}
-
-private fun String.decodeStringList(): List<String> = if (isBlank()) {
-    emptyList()
-} else {
-    lineSequence()
-        .mapNotNull { encoded ->
-            runCatching {
-                String(Base64.decode(encoded, Base64.NO_WRAP), StandardCharsets.UTF_8)
-            }.getOrNull()
-        }
-        .toList()
-}

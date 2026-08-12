@@ -13,7 +13,16 @@ Use Devtool with explicit target selection for the source tree on the Android bu
 release-candidate pass should include at least:
 
 ```bash
-devtool --yes --copy -r "$HOME/Code/studyflow" --target studyflow_android apply overlay   --validate   --task :app:compileDebugKotlin   --task :app:lintDebug   --task :app:assembleDebug   --commit "Apply StudyFlow release identity and acceptance seal"   "$HOME/Downloads/studyflow_release_identity_acceptance_phase36_37_overlay.zip"
+devtool --yes --copy -r "$HOME/Code/studyflow" --target studyflow_android apply overlay \
+  --validate \
+  --task :app:compileDebugKotlin \
+  --task :app:compileReleaseKotlin \
+  --task :app:lintDebug \
+  --task :app:lintRelease \
+  --task :app:assembleDebug \
+  --task :app:assembleRelease \
+  --commit "Apply StudyFlow release identity and acceptance seal" \
+  "$HOME/Downloads/studyflow_release_identity_acceptance_phase36_37_overlay.zip"
 ```
 
 For a signed distribution candidate, run the matching release assemble or bundle task on the target

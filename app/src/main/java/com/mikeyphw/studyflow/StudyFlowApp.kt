@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,6 +35,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowErrorPane
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowLoadingPane
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTheme
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeId
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeReport
@@ -64,10 +66,13 @@ import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
 import com.mikeyphw.studyflow.core.domain.StudyRecommendationDestination
 import com.mikeyphw.studyflow.core.domain.destination
+import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
+import com.mikeyphw.studyflow.core.domain.asStudyFlowOptionalLoadState
 import com.mikeyphw.studyflow.core.i18n.AppLocaleController
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.Topic
@@ -75,6 +80,7 @@ import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
+import com.mikeyphw.studyflow.core.model.ThemeMode
 import com.mikeyphw.studyflow.core.navigation.AnalyticsRoute
 import com.mikeyphw.studyflow.core.navigation.CreatePlanRoute
 import com.mikeyphw.studyflow.core.navigation.DashboardRoute
@@ -149,35 +155,134 @@ private val MediumNavigationWidth = 600.dp
 private val ExpandedNavigationWidth = 1000.dp
 
 @Composable
+private fun LoadedPlanDestination(
+    container: AppContainer,
+    planId: StudyPlanId,
+    modifier: Modifier = Modifier,
+    content: @Composable (StudyPlan) -> Unit,
+) {
+    var loadAttempt by remember(planId) { mutableIntStateOf(0) }
+    val planFlow = remember(planId, loadAttempt) {
+        container.manageStudyPlan.observePlan(planId).asStudyFlowOptionalLoadState()
+    }
+    val planState by planFlow.collectAsStateWithLifecycle(
+        initialValue = StudyFlowLoadState.Loading,
+    )
+
+    when (val current = planState) {
+        StudyFlowLoadState.Loading -> StudyFlowLoadingPane(modifier = modifier)
+        StudyFlowLoadState.Missing -> {
+            StudyFlowErrorPane(
+                message = stringResource(R.string.unknown_plan_error),
+                onRetry = null,
+                modifier = modifier,
+            )
+        }
+        is StudyFlowLoadState.Failed -> {
+            StudyFlowErrorPane(
+                message = stringResource(R.string.app_initialization_failed),
+                onRetry = { loadAttempt += 1 },
+                modifier = modifier,
+            )
+        }
+        is StudyFlowLoadState.Ready -> content(current.value)
+    }
+}
+
+@Composable
 fun StudyFlowApp(
     container: AppContainer,
     modifier: Modifier = Modifier,
     reminderLaunch: StudyReminderLaunch? = null,
     onReminderLaunchConsumed: () -> Unit = {},
 ) {
-    val preferences by container.appPreferencesRepository.preferences.collectAsStateWithLifecycle(
-        initialValue = AppPreferences(),
-    )
-    val plans by container.studyPlanRepository.plans.collectAsStateWithLifecycle(initialValue = emptyList())
-    val syncState by container.manageStudyCloudSync.syncState.collectAsStateWithLifecycle(
-        initialValue = com.mikeyphw.studyflow.core.model.StudySyncState.disabled(),
-    )
+    val initializationState by container.initializationState.collectAsStateWithLifecycle()
+    if (initializationState is AppInitializationState.Initializing) {
+        StudyFlowTheme(
+            themeMode = ThemeMode.SYSTEM_DEFAULT,
+            dynamicColorEnabled = true,
+        ) {
+            StudyFlowLoadingPane(modifier = modifier)
+        }
+        return
+    }
+    if (initializationState is AppInitializationState.Failed) {
+        StudyFlowTheme(
+            themeMode = ThemeMode.SYSTEM_DEFAULT,
+            dynamicColorEnabled = true,
+        ) {
+            StudyFlowErrorPane(
+                message = stringResource(R.string.app_initialization_failed),
+                onRetry = container::retryInitialization,
+                modifier = modifier,
+            )
+        }
+        return
+    }
 
-    LaunchedEffect(preferences.language) {
-        if (AppLocaleController.currentLanguage() != preferences.language) {
-            AppLocaleController.apply(preferences.language)
+    var rootLoadAttempt by remember { mutableIntStateOf(0) }
+    val preferencesFlow = remember(rootLoadAttempt) {
+        container.appPreferencesRepository.preferences.asStudyFlowLoadState()
+    }
+    val plansFlow = remember(rootLoadAttempt) {
+        container.manageStudyPlan.plans.asStudyFlowLoadState()
+    }
+    val syncFlow = remember(rootLoadAttempt) {
+        container.manageStudyCloudSync.syncState.asStudyFlowLoadState()
+    }
+    val preferencesState by preferencesFlow.collectAsStateWithLifecycle(
+        initialValue = StudyFlowLoadState.Loading,
+    )
+    val plansState by plansFlow.collectAsStateWithLifecycle(
+        initialValue = StudyFlowLoadState.Loading,
+    )
+    val syncStateResult by syncFlow.collectAsStateWithLifecycle(
+        initialValue = StudyFlowLoadState.Loading,
+    )
+    val rootStates = listOf(preferencesState, plansState, syncStateResult)
+    if (rootStates.any { state -> state is StudyFlowLoadState.Failed }) {
+        StudyFlowTheme(
+            themeMode = ThemeMode.SYSTEM_DEFAULT,
+            dynamicColorEnabled = true,
+        ) {
+            StudyFlowErrorPane(
+                message = stringResource(R.string.app_initialization_failed),
+                onRetry = { rootLoadAttempt += 1 },
+                modifier = modifier,
+            )
+        }
+        return
+    }
+    if (rootStates.any { state -> state !is StudyFlowLoadState.Ready<*> }) {
+        StudyFlowTheme(
+            themeMode = ThemeMode.SYSTEM_DEFAULT,
+            dynamicColorEnabled = true,
+        ) {
+            StudyFlowLoadingPane(modifier = modifier)
+        }
+        return
+    }
+
+    val readyPreferences = (preferencesState as StudyFlowLoadState.Ready<AppPreferences>).value
+    val readyPlans = (plansState as StudyFlowLoadState.Ready<List<StudyPlan>>).value
+    val readySyncState =
+        (syncStateResult as StudyFlowLoadState.Ready<com.mikeyphw.studyflow.core.model.StudySyncState>).value
+
+    LaunchedEffect(readyPreferences.language) {
+        if (AppLocaleController.currentLanguage() != readyPreferences.language) {
+            AppLocaleController.apply(readyPreferences.language)
         }
     }
 
     StudyFlowTheme(
-        themeMode = preferences.themeMode,
-        dynamicColorEnabled = preferences.dynamicColorEnabled,
+        themeMode = readyPreferences.themeMode,
+        dynamicColorEnabled = readyPreferences.dynamicColorEnabled,
     ) {
         StudyFlowNavigation(
             container = container,
-            plans = plans,
-            preferences = preferences,
-            syncState = syncState,
+            plans = readyPlans,
+            preferences = readyPreferences,
+            syncState = readySyncState,
             modifier = modifier,
             reminderLaunch = reminderLaunch,
             onReminderLaunchConsumed = onReminderLaunchConsumed,
@@ -362,19 +467,11 @@ internal fun StudyFlowNavHost(
         composable<EditPlanRoute> { entry ->
             val route = entry.toRoute<EditPlanRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
-            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
-            val settingsFlow = remember(planId) { container.studyPlanRepository.observePlanSettings(planId) }
-            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val settingsFlow = remember(planId) { container.manageStudyPlan.observeSettings(planId) }
             val settings by settingsFlow.collectAsStateWithLifecycle(
                 initialValue = StudyPlanSettings.defaults(planId),
             )
-            val currentPlan = plan
-            if (currentPlan == null) {
-                StudyFlowErrorPane(
-                    message = stringResource(R.string.unknown_plan_error),
-                    onRetry = navController::popBackStack,
-                )
-            } else {
+            LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
                 PlanEditorScreen(
                     initialPlan = currentPlan,
                     initialSettings = settings,
@@ -393,19 +490,11 @@ internal fun StudyFlowNavHost(
         composable<PlanSettingsRoute> { entry ->
             val route = entry.toRoute<PlanSettingsRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
-            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
-            val settingsFlow = remember(planId) { container.studyPlanRepository.observePlanSettings(planId) }
-            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val settingsFlow = remember(planId) { container.manageStudyPlan.observeSettings(planId) }
             val settings by settingsFlow.collectAsStateWithLifecycle(
                 initialValue = StudyPlanSettings.defaults(planId),
             )
-            val currentPlan = plan
-            if (currentPlan == null) {
-                StudyFlowErrorPane(
-                    message = stringResource(R.string.unknown_plan_error),
-                    onRetry = navController::popBackStack,
-                )
-            } else {
+            LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
                 PlanSettingsScreen(
                     plan = currentPlan,
                     settings = settings,
@@ -462,15 +551,7 @@ internal fun StudyFlowNavHost(
         composable<SessionsRoute> { entry ->
             val route = entry.toRoute<SessionsRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
-            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
-            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
-            val currentPlan = plan
-            if (currentPlan == null) {
-                StudyFlowErrorPane(
-                    message = stringResource(R.string.unknown_plan_error),
-                    onRetry = navController::popBackStack,
-                )
-            } else {
+            LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
                 StudySessionScreen(
                     plan = currentPlan,
                     sessionManager = container.manageStudySession,
@@ -503,28 +584,22 @@ internal fun StudyFlowNavHost(
         composable<RemindersRoute> { entry ->
             val route = entry.toRoute<RemindersRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
-            val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
-            val settingsFlow = remember(planId) { container.studyPlanRepository.observePlanSettings(planId) }
-            val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
+            val settingsFlow = remember(planId) { container.manageStudyPlan.observeSettings(planId) }
             val settings by settingsFlow.collectAsStateWithLifecycle(
                 initialValue = StudyPlanSettings.defaults(planId),
             )
-            val currentPlan = plan
-            if (currentPlan == null) {
-                StudyFlowErrorPane(
-                    message = stringResource(R.string.unknown_plan_error),
-                    onRetry = navController::popBackStack,
-                )
-            } else {
+            LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
                 StudyRemindersScreen(
                     plan = currentPlan,
                     settings = settings,
                     schedule = container.manageStudySchedule,
                     review = container.manageStudyReview,
-                    onSettingsChanged = { updatedSettings -> coroutineScope.launch {
-                        container.manageStudyPlan.updateSettings(updatedSettings)
-                        container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
-                    } },
+                    onSettingsChanged = { updatedSettings ->
+                        coroutineScope.launch {
+                            container.manageStudyPlan.updateSettings(updatedSettings)
+                            container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
+                        }
+                    },
                     onNotificationPermissionResult = { granted ->
                         if (granted) {
                             coroutineScope.launch {

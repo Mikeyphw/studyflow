@@ -133,7 +133,7 @@ require(reminder_delivery, 'notificationId(planId, type)', 'per-reminder notific
 main_activity = read("app/src/main/java/com/mikeyphw/studyflow/MainActivity.kt")
 require(main_activity, 'data class StudyReminderLaunch', 'notification launch bridge model')
 require(main_activity, 'onNewIntent(intent: Intent)', 'notification tap new-intent handling')
-require(main_activity, 'toStudyReminderLaunch()', 'notification intent extraction')
+require(main_activity, 'consumeStudyReminderLaunch()', 'notification intent extraction and one-shot consumption')
 app_source = "\n".join(
     read(path)
     for path in (

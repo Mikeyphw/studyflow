@@ -54,9 +54,11 @@ if not any(marker in app_source for marker in ('onOpenLibrary', 'onManageLibrary
     failures.append("app navigation missing library action marker: one of onOpenLibrary, onManageLibrary")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
-for marker in ("StudyLibraryRepository", "ManageStudyLibrary", "studyLibraryRepository"):
+for marker in ("ManageStudyLibrary", "manageStudyLibrary", "private val studyLibraryRepository"):
     if marker not in application_source:
-        failures.append(f"application container missing library marker: {marker}")
+        failures.append(f"application container missing library boundary marker: {marker}")
+if "val studyLibraryRepository:" in application_source:
+    failures.append("application container must not publicly expose StudyLibraryRepository")
 if "core.database" in application_source:
     failures.append("app module leaks database implementation after Phase 10")
 data_layer = (ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt").read_text(encoding="utf-8")
@@ -68,7 +70,8 @@ for marker in ("upsertMaterial", "findMaterial", "deleteMaterial", "upsertVideo"
     if marker not in library_dao:
         failures.append(f"library DAO missing operation: {marker}")
 mapper = (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/StudyLibraryEntityMapper.kt").read_text(encoding="utf-8")
-for marker in ("StudyMaterialEntity.asExternalModel", "StudyMaterial.asEntity", "VideoResourceEntity.asExternalModel", "Annex.asEntity", "Base64"):
+mapper += (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/MapperSafety.kt").read_text(encoding="utf-8")
+for marker in ("StudyMaterialEntity.asExternalModel", "StudyMaterial.asEntity", "VideoResourceEntity.asExternalModel", "Annex.asEntity", "encodeStringListStable"):
     if marker not in mapper:
         failures.append(f"library mapper missing marker: {marker}")
 repo = (ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyLibraryRepository.kt").read_text(encoding="utf-8")

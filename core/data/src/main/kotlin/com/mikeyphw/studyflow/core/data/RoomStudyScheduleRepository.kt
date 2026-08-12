@@ -92,7 +92,7 @@ internal class RoomStudyScheduleRepository(
     ): Int = database.withTransaction {
         requirePlan(planId)
         require(activities.all { it.studyPlanId == planId }) { "Generated activities must belong to one Study Plan." }
-        val removed = planningDao.deleteUnlockedPlannedActivities(planId.value)
+        val removed = planningDao.deleteReplaceablePlannedActivities(planId.value)
         planningDao.upsertPlannedActivities(activities.map { it.asEntity() })
         removed
     }

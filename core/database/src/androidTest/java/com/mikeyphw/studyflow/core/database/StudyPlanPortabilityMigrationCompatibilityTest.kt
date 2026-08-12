@@ -42,9 +42,9 @@ class StudyPlanPortabilityMigrationCompatibilityTest {
         }
         migrationHelper.runMigrationsAndValidate(
             databaseName,
-            3,
+            4,
             true,
-            StudyFlowMigrations.Migration2To3,
+            *StudyFlowMigrations.All,
         ).close()
 
         Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
@@ -109,7 +109,7 @@ class StudyPlanPortabilityMigrationCompatibilityTest {
                 averageAccuracyPercent, createdAtEpochMillis, updatedAtEpochMillis,
                 trashedAtEpochMillis
             ) VALUES (
-                'plan', 'Plan', '', 'EXAM', 'ACTIVE', NULL, 10,
+                'plan', 'Plan', '', 'FREE_STUDY', 'ACTIVE', NULL, 10,
                 0, 0, 0, 0, 1, 1, NULL
             )
             """.trimIndent(),

@@ -10,6 +10,8 @@ import com.mikeyphw.studyflow.core.domain.SyllabusImportDraft
 import com.mikeyphw.studyflow.core.domain.SyllabusImportResult
 import com.mikeyphw.studyflow.core.domain.TopicBulkUpdate
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
+import com.mikeyphw.studyflow.core.model.ExamStage
+import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.Subject
@@ -38,6 +40,21 @@ internal class RoomStudyContentRepository(
             topics = topics.map { it.asExternalModel() },
             examStages = stages.map { it.asExternalModel() },
         )
+    }
+
+    override suspend fun upsertStudyTarget(target: StudyTarget): StudyTarget = database.withTransaction {
+        requirePlan(target.studyPlanId)
+        structureDao.upsertTarget(target.asEntity())
+        requireNotNull(structureDao.findTarget(target.studyPlanId.value, target.id.value)).asExternalModel()
+    }
+
+    override suspend fun upsertExamStage(stage: ExamStage): ExamStage = database.withTransaction {
+        requirePlan(stage.studyPlanId)
+        requireNotNull(structureDao.findTarget(stage.studyPlanId.value, stage.studyTargetId.value)) {
+            "Study target does not belong to this Study Plan."
+        }
+        structureDao.upsertExamStage(stage.asEntity())
+        requireNotNull(structureDao.findExamStage(stage.studyPlanId.value, stage.id.value)).asExternalModel()
     }
 
     override suspend fun upsertSubject(subject: Subject): Subject = database.withTransaction {

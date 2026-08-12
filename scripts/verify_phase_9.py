@@ -60,9 +60,11 @@ if not any(marker in app_source for marker in ('onOpenReviews', 'onOpenReviewCen
     failures.append("app navigation missing review action marker: one of onOpenReviews, onOpenReviewCenter")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
-for marker in ("StudyReviewRepository", "ManageStudyReview", "studyReviewRepository"):
+for marker in ("ManageStudyReview", "manageStudyReview", "private val studyReviewRepository"):
     if marker not in application_source:
-        failures.append(f"application container missing review marker: {marker}")
+        failures.append(f"application container missing review boundary marker: {marker}")
+if "val studyReviewRepository:" in application_source:
+    failures.append("application container must not publicly expose StudyReviewRepository")
 if "core.database" in application_source:
     failures.append("app module leaks database implementation after Phase 9")
 
@@ -91,13 +93,14 @@ for marker in (
 mapper = (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/StudyRetentionEntityMapper.kt").read_text(
     encoding="utf-8",
 )
+mapper += (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/MapperSafety.kt").read_text(encoding="utf-8")
 for marker in (
     "ReviewItemEntity.asExternalModel",
     "ReviewItem.asEntity",
     "FlashcardEntity.asExternalModel",
     "Flashcard.asEntity",
     "ErrorEntryEntity.asExternalModel",
-    "Base64",
+    "encodeStringListStable",
 ):
     if marker not in mapper:
         failures.append(f"retention mapper missing marker: {marker}")

@@ -36,7 +36,7 @@ class ManageStudySession(
         require(repository.findActiveSession(studyPlanId) == null) {
             "Finish or cancel the active Study Session before starting another one."
         }
-        return repository.upsertSession(
+        return repository.createSession(
             StudySession(
                 id = sessionId,
                 studyPlanId = studyPlanId,
@@ -69,7 +69,7 @@ class ManageStudySession(
         require(repository.findActiveSession(activity.studyPlanId) == null) {
             "Finish or cancel the active Study Session before starting another one."
         }
-        return repository.upsertSession(
+        return repository.createSession(
             StudySession(
                 id = sessionId,
                 studyPlanId = activity.studyPlanId,
@@ -92,18 +92,24 @@ class ManageStudySession(
                 notes = activity.title,
                 targetDurationMinutes = activity.plannedDurationMinutes,
             ),
-            linkedActivityStatus = PlannedActivityStatus.IN_PROGRESS,
+            linkedActivityExpectedStatus = activity.status,
         )
     }
 
     suspend fun pause(planId: StudyPlanId, sessionId: StudySessionId): StudySession {
         val session = requireSession(planId, sessionId)
-        return repository.upsertSession(StudySessionTimer.markPaused(session, clock()))
+        return repository.transitionSession(
+            expectedStatus = StudySessionStatus.RUNNING,
+            session = StudySessionTimer.markPaused(session, clock()),
+        )
     }
 
     suspend fun resume(planId: StudyPlanId, sessionId: StudySessionId): StudySession {
         val session = requireSession(planId, sessionId)
-        return repository.upsertSession(StudySessionTimer.markResumed(session, clock()))
+        return repository.transitionSession(
+            expectedStatus = StudySessionStatus.PAUSED,
+            session = StudySessionTimer.markResumed(session, clock()),
+        )
     }
 
     suspend fun complete(
@@ -126,8 +132,9 @@ class ManageStudySession(
             "Difficulty rating must be between 1 and 5."
         }
         val now = clock()
+        val current = requireSession(planId, sessionId)
         val finished = StudySessionTimer.markEnded(
-            session = requireSession(planId, sessionId),
+            session = current,
             status = StudySessionStatus.COMPLETED,
             nowEpochMillis = now,
         ).copy(
@@ -138,21 +145,26 @@ class ManageStudySession(
             difficultyRating = difficultyRating,
             notes = notes.trim(),
         )
-        return repository.upsertSession(
+        return repository.transitionSession(
+            expectedStatus = current.status,
             session = finished,
+            linkedActivityExpectedStatus = PlannedActivityStatus.IN_PROGRESS,
             linkedActivityStatus = PlannedActivityStatus.COMPLETED,
             linkedActivityCompletedAtEpochMillis = now,
         )
     }
 
     suspend fun cancel(planId: StudyPlanId, sessionId: StudySessionId): StudySession {
+        val current = requireSession(planId, sessionId)
         val cancelled = StudySessionTimer.markEnded(
-            session = requireSession(planId, sessionId),
+            session = current,
             status = StudySessionStatus.CANCELLED,
             nowEpochMillis = clock(),
         )
-        return repository.upsertSession(
+        return repository.transitionSession(
+            expectedStatus = current.status,
             session = cancelled,
+            linkedActivityExpectedStatus = PlannedActivityStatus.IN_PROGRESS,
             linkedActivityStatus = PlannedActivityStatus.PLANNED,
             linkedActivityCompletedAtEpochMillis = null,
         )
@@ -165,11 +177,11 @@ class ManageStudySession(
         sessionId: StudySessionId,
         notes: String,
     ): StudySession {
-        val session = requireSession(planId, sessionId)
-        require(session.status == StudySessionStatus.RUNNING || session.status == StudySessionStatus.PAUSED) {
-            "Only an active Study Session can update notes."
-        }
-        return repository.upsertSession(session.copy(notes = notes.trim()))
+        return repository.updateNotes(
+            planId = planId,
+            sessionId = sessionId,
+            notes = notes.trim(),
+        )
     }
 
     private suspend fun requireSession(planId: StudyPlanId, sessionId: StudySessionId): StudySession =

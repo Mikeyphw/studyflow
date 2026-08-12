@@ -53,9 +53,11 @@ if not any(marker in app_source for marker in ('onOpenAnalytics',)):
     failures.append("app navigation missing analytics action marker: one of onOpenAnalytics")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
-for marker in ("StudyAnalyticsRepository", "ManageStudyAnalytics", "studyAnalyticsRepository"):
+for marker in ("ManageStudyAnalytics", "manageStudyAnalytics", "private val studyAnalyticsRepository"):
     if marker not in application_source:
-        failures.append(f"application container missing analytics marker: {marker}")
+        failures.append(f"application container missing analytics boundary marker: {marker}")
+if "val studyAnalyticsRepository:" in application_source:
+    failures.append("application container must not publicly expose StudyAnalyticsRepository")
 if "core.database" in application_source:
     failures.append("app module leaks database implementation after Phase 12")
 data_layer = (ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt").read_text(encoding="utf-8")

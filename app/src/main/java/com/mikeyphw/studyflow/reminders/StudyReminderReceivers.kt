@@ -3,8 +3,7 @@ package com.mikeyphw.studyflow.reminders
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.mikeyphw.studyflow.BuildConfig
-import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
+import com.mikeyphw.studyflow.requireStudyFlowAppContainer
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +23,7 @@ class StudyReminderReceiver : BroadcastReceiver() {
         val result = goAsync()
         ReminderReceiverScope.launch {
             try {
-                createCoordinator(context).deliver(StudyPlanId(planId), type)
+                context.requireStudyFlowAppContainer().reminderDeliveryCoordinator.deliver(StudyPlanId(planId), type)
             } finally {
                 result.finish()
             }
@@ -38,8 +37,7 @@ class StudyReminderBootReceiver : BroadcastReceiver() {
         val result = goAsync()
         ReminderReceiverScope.launch {
             try {
-                createCoordinator(context).reconcileAll()
-                StudyFlowWidgetUpdateCoordinator.refreshAll(context)
+                context.requireStudyFlowAppContainer().reminderDeliveryCoordinator.reconcileAll()
             } finally {
                 result.finish()
             }
@@ -54,14 +52,3 @@ private val ReconcileReminderScheduleActions = setOf(
     Intent.ACTION_DATE_CHANGED,
     Intent.ACTION_MY_PACKAGE_REPLACED,
 )
-
-fun createCoordinator(context: Context): StudyReminderDeliveryCoordinator {
-    val dataLayer = createStudyFlowDataLayer(context.applicationContext, BuildConfig.VERSION_NAME)
-    return StudyReminderDeliveryCoordinator(
-        context = context.applicationContext,
-        studyPlanRepository = dataLayer.studyPlanRepository,
-        studyScheduleRepository = dataLayer.studyScheduleRepository,
-        studyReviewRepository = dataLayer.studyReviewRepository,
-        studyPracticeRepository = dataLayer.studyPracticeRepository,
-    )
-}

@@ -58,9 +58,11 @@ if not any(marker in app_source for marker in ('onOpenSessions', 'onSessions', '
     failures.append("app navigation missing session action marker: one of onOpenSessions, onSessions, onOpenFocus")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
-for marker in ("StudySessionRepository", "ManageStudySession", "studySessionRepository"):
+for marker in ("ManageStudySession", "manageStudySession", "private val studySessionRepository"):
     if marker not in application_source:
-        failures.append(f"application container missing session marker: {marker}")
+        failures.append(f"application container missing session boundary marker: {marker}")
+if "val studySessionRepository:" in application_source:
+    failures.append("application container must not publicly expose StudySessionRepository")
 if "core.database" in application_source:
     failures.append("app module leaks database implementation after Phase 7")
 
@@ -74,7 +76,7 @@ for marker in ("val studySessionRepository: StudySessionRepository", "RoomStudyS
 planning_dao = (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyPlanningDao.kt").read_text(
     encoding="utf-8",
 )
-for marker in ("upsertStudySession", "findStudySession", "findActiveStudySession", "observeStudySessions"):
+for marker in ("upsertStudySession", "findStudySession", "findActiveStudySessions", "observeStudySessions"):
     if marker not in planning_dao:
         failures.append(f"planning DAO missing session marker: {marker}")
 

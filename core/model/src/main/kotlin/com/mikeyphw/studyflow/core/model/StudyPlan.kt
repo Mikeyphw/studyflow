@@ -34,8 +34,8 @@ data class StudyPlan(
     val trashedAtEpochMillis: Long? = null,
 ) {
     init {
-        require(id.value.isNotBlank()) { "Study Plan id cannot be blank." }
         require(name.isNotBlank()) { "Study Plan name cannot be blank." }
+        examDateIso?.let { date -> requireValidIsoDate(date, "Exam date") }
         require(weeklyGoalHours in 1..100) { "Weekly goal must be between 1 and 100 hours." }
         require(progressPercent in 0..100) { "Progress must be between 0 and 100 percent." }
         require(studiedMinutesThisWeek >= 0) { "Studied minutes cannot be negative." }

@@ -32,7 +32,19 @@ data class StudyTarget(
     val estimatedCutoffPercent: Int?,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
-)
+) {
+    init {
+        require(organization.isNotBlank()) { "Study target organization cannot be blank." }
+        require(role.isNotBlank()) { "Study target role cannot be blank." }
+        require(examBoard.isNotBlank()) { "Exam board cannot be blank." }
+        require(openings == null || openings >= 0) { "Openings cannot be negative." }
+        require(estimatedCutoffPercent == null || estimatedCutoffPercent in 0..100) {
+            "Estimated cutoff must be 0 to 100."
+        }
+        confirmedExamDateIso?.let { date -> requireValidIsoDate(date, "Confirmed exam date") }
+        expectedExamDateIso?.let { date -> requireValidIsoDate(date, "Expected exam date") }
+    }
+}
 
 data class ExamStage(
     val id: ExamStageId,
@@ -44,7 +56,15 @@ data class ExamStage(
     val weight: Double,
     val minimumScorePercent: Int?,
     val position: Int,
-)
+) {
+    init {
+        require(name.isNotBlank()) { "Exam stage name cannot be blank." }
+        require(weight >= 0.0) { "Exam stage weight cannot be negative." }
+        require(minimumScorePercent == null || minimumScorePercent in 0..100) { "Minimum score must be 0 to 100." }
+        require(position >= 0) { "Exam stage position cannot be negative." }
+        scheduledDateIso?.let { date -> requireValidIsoDate(date, "Exam stage date") }
+    }
+}
 
 data class Subject(
     val id: SubjectId,
@@ -61,7 +81,17 @@ data class Subject(
     val position: Int,
     val archived: Boolean,
     val examStageId: ExamStageId? = null,
-)
+) {
+    init {
+        require(name.isNotBlank()) { "Subject name cannot be blank." }
+        require(priority in 1..5) { "Subject priority must be 1 to 5." }
+        require(examWeight >= 0.0) { "Subject exam weight cannot be negative." }
+        require(estimatedMinutes >= 0) { "Subject estimate cannot be negative." }
+        require(progressPercent in 0..100) { "Subject progress must be 0 to 100." }
+        require(accuracyPercent in 0..100) { "Subject accuracy must be 0 to 100." }
+        require(position >= 0) { "Subject position cannot be negative." }
+    }
+}
 
 data class Topic(
     val id: TopicId,
@@ -80,7 +110,18 @@ data class Topic(
     val position: Int,
     val archived: Boolean,
     val examStageId: ExamStageId? = null,
-)
+) {
+    init {
+        require(name.isNotBlank()) { "Topic name cannot be blank." }
+        require(priority in 1..5) { "Topic priority must be 1 to 5." }
+        require(difficulty in 1..5) { "Topic difficulty must be 1 to 5." }
+        require(examIncidencePercent == null || examIncidencePercent in 0..100) { "Exam incidence must be 0 to 100." }
+        require(estimatedMinutes >= 0) { "Topic estimate cannot be negative." }
+        require(progressPercent in 0..100) { "Topic progress must be 0 to 100." }
+        require(masteryPercent in 0..100) { "Topic mastery must be 0 to 100." }
+        require(position >= 0) { "Topic position cannot be negative." }
+    }
+}
 
 enum class SyllabusFilter {
     ALL,

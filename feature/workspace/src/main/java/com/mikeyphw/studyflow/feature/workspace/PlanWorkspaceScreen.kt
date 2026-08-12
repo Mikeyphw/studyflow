@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowCoachCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowLoadingPane
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSubjectAccordion
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
@@ -50,15 +52,21 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
+import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupEngine
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupInput
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupIssueKind
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupReport
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupSeverity
+import com.mikeyphw.studyflow.core.model.ErrorEntry
+import com.mikeyphw.studyflow.core.model.Flashcard
+import com.mikeyphw.studyflow.core.model.Question
+import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySyllabus
+import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.navigation.PlanWorkspaceTab
 
 @Composable
@@ -85,57 +93,90 @@ fun PlanWorkspaceScreen(
     onManageLibrary: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scheduleFlow = remember(plan.id) { scheduleManager.observeSchedule(plan.id) }
-    val syllabusFlow = remember(plan.id) { contentManager.observeSyllabus(plan.id) }
-    val libraryFlow = remember(plan.id) { libraryManager.observeSnapshot(plan.id) }
-    val questionsFlow = remember(plan.id) { practiceManager.observeQuestions(plan.id) }
-    val reviewItemsFlow = remember(plan.id) { reviewManager.observeReviewItems(plan.id) }
-    val flashcardsFlow = remember(plan.id) { reviewManager.observeFlashcards(plan.id) }
-    val errorEntriesFlow = remember(plan.id) { reviewManager.observeErrorEntries(plan.id) }
-    val progressFlow = remember(plan.id) { progressManager.observeSnapshot(plan.id) }
-    val schedule by scheduleFlow.collectAsStateWithLifecycle(
-        initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
-    )
-    val syllabus by syllabusFlow.collectAsStateWithLifecycle(initialValue = null)
-    val library by libraryFlow.collectAsStateWithLifecycle(initialValue = null)
-    val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val reviewItems by reviewItemsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val flashcards by flashcardsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val errorEntries by errorEntriesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val progress by progressFlow.collectAsStateWithLifecycle(initialValue = null)
+    var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
+    val scheduleFlow = remember(plan.id, loadAttempt) {
+        scheduleManager.observeSchedule(plan.id).asStudyFlowLoadState()
+    }
+    val syllabusFlow = remember(plan.id, loadAttempt) {
+        contentManager.observeSyllabus(plan.id).asStudyFlowLoadState()
+    }
+    val libraryFlow = remember(plan.id, loadAttempt) {
+        libraryManager.observeSnapshot(plan.id).asStudyFlowLoadState()
+    }
+    val questionsFlow = remember(plan.id, loadAttempt) {
+        practiceManager.observeQuestions(plan.id).asStudyFlowLoadState()
+    }
+    val reviewItemsFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeReviewItems(plan.id).asStudyFlowLoadState()
+    }
+    val flashcardsFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeFlashcards(plan.id).asStudyFlowLoadState()
+    }
+    val errorEntriesFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeErrorEntries(plan.id).asStudyFlowLoadState()
+    }
+    val progressFlow = remember(plan.id, loadAttempt) {
+        progressManager.observeSnapshot(plan.id).asStudyFlowLoadState()
+    }
+    val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val libraryState by libraryFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val questionsState by questionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val reviewItemsState by reviewItemsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val flashcardsState by flashcardsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val errorEntriesState by errorEntriesFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val progressState by progressFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    if (
+        !WorkspaceLoadGate(
+            states = listOf(
+                scheduleState,
+                syllabusState,
+                libraryState,
+                questionsState,
+                reviewItemsState,
+                flashcardsState,
+                errorEntriesState,
+                progressState,
+            ),
+            onRetry = { loadAttempt += 1 },
+            modifier = modifier,
+        )
+    ) return
+    val readySchedule = scheduleState.readyValue()
+    val readySyllabus = syllabusState.readyValue()
+    val readyLibrary = libraryState.readyValue()
+    val readyQuestions = questionsState.readyValue()
+    val readyReviewItems = reviewItemsState.readyValue()
+    val readyFlashcards = flashcardsState.readyValue()
+    val readyErrorEntries = errorEntriesState.readyValue()
+    val readyProgress = progressState.readyValue()
     val cleanupReport = remember(
         plan,
-        syllabus,
-        library,
-        schedule,
-        questions,
-        reviewItems,
-        flashcards,
-        errorEntries,
-        progress,
+        readySyllabus,
+        readyLibrary,
+        readySchedule,
+        readyQuestions,
+        readyReviewItems,
+        readyFlashcards,
+        readyErrorEntries,
+        readyProgress,
     ) {
-        val currentSyllabus = syllabus
-        val currentLibrary = library
-        if (currentSyllabus == null || currentLibrary == null) {
-            null
-        } else {
-            StudyContentCleanupEngine.inspect(
-                StudyContentCleanupInput(
-                    plan = plan,
-                    syllabus = currentSyllabus,
-                    questions = questions,
-                    materials = currentLibrary.materials,
-                    videos = currentLibrary.videos,
-                    annexes = currentLibrary.annexes,
-                    reviewItems = reviewItems,
-                    flashcards = flashcards,
-                    errorEntries = errorEntries,
-                    plannedActivities = schedule.plannedActivities,
-                    notes = progress?.notes.orEmpty(),
-                    nowEpochMillis = System.currentTimeMillis(),
-                ),
-            )
-        }
+        StudyContentCleanupEngine.inspect(
+            StudyContentCleanupInput(
+                plan = plan,
+                syllabus = readySyllabus,
+                questions = readyQuestions,
+                materials = readyLibrary.materials,
+                videos = readyLibrary.videos,
+                annexes = readyLibrary.annexes,
+                reviewItems = readyReviewItems,
+                flashcards = readyFlashcards,
+                errorEntries = readyErrorEntries,
+                plannedActivities = readySchedule.plannedActivities,
+                notes = readyProgress.notes,
+                nowEpochMillis = System.currentTimeMillis(),
+            ),
+        )
     }
 
     Scaffold(modifier = modifier) { padding ->
@@ -165,9 +206,9 @@ fun PlanWorkspaceScreen(
             when (selectedTab) {
                 PlanWorkspaceTab.OVERVIEW -> PlanOverviewPane(
                     plan = plan,
-                    scheduleCount = schedule.plannedActivities.size,
-                    subjectCount = syllabus?.subjects?.size ?: 0,
-                    materialCount = library?.materials?.size ?: 0,
+                    scheduleCount = readySchedule.plannedActivities.size,
+                    subjectCount = readySyllabus.subjects.size,
+                    materialCount = readyLibrary.materials.size,
                     onEditPlan = onEditPlan,
                     onPlanSettings = onPlanSettings,
                     onSessions = onSessions,
@@ -175,18 +216,18 @@ fun PlanWorkspaceScreen(
                     onPortability = onPortability,
                 )
                 PlanWorkspaceTab.SCHEDULE -> PlanSchedulePane(
-                    schedule = schedule,
+                    schedule = readySchedule,
                     onManage = onManageSchedule,
                 )
                 PlanWorkspaceTab.CONTENT -> PlanContentPane(
-                    syllabus = syllabus,
+                    syllabus = readySyllabus,
                     cleanupReport = cleanupReport,
                     onManage = onManageContent,
                 )
                 PlanWorkspaceTab.LIBRARY -> PlanLibraryPane(
-                    materialTitles = library?.materials.orEmpty().filterNot { it.archived }.map { it.title },
-                    videoTitles = library?.videos.orEmpty().map { it.title },
-                    annexCount = library?.annexes?.size ?: 0,
+                    materialTitles = readyLibrary.materials.filterNot { it.archived }.map { it.title },
+                    videoTitles = readyLibrary.videos.map { it.title },
+                    annexCount = readyLibrary.annexes.size,
                     onManage = onManageLibrary,
                 )
             }

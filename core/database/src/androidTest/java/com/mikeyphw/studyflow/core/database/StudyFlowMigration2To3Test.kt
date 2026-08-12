@@ -33,8 +33,8 @@ class StudyFlowMigration2To3Test {
     }
 
     @Test
-    fun migrationOneToThreePreservesLegacySessionAndAddsNullableDuration() {
-        val databaseName = trackedDatabase("studyflow-migration-1-3.db")
+    fun migrationOneToFourPreservesLegacySessionAndAddsNullableDuration() {
+        val databaseName = trackedDatabase("studyflow-migration-1-4.db")
         migrationHelper.createDatabase(databaseName, 1).apply {
             insertPlanAndLegacySession(this)
             close()
@@ -42,7 +42,7 @@ class StudyFlowMigration2To3Test {
 
         migrationHelper.runMigrationsAndValidate(
             databaseName,
-            3,
+            4,
             true,
             *StudyFlowMigrations.All,
         ).use { database ->
@@ -69,8 +69,55 @@ class StudyFlowMigration2To3Test {
     }
 
     @Test
-    fun freshVersionThreeDatabaseContainsNullableTargetDuration() {
-        val databaseName = trackedDatabase("studyflow-fresh-3.db")
+    fun migrationTwoToThreeBackfillsLinkedFocusTargetDuration() {
+        val databaseName = trackedDatabase("studyflow-migration-2-3-linked.db")
+        migrationHelper.createDatabase(databaseName, 2).apply {
+            insertPlan(this)
+            execSQL(
+                """
+                INSERT INTO planned_activities (
+                    id, studyPlanId, subjectId, topicId, materialId, videoResourceId, type, title,
+                    scheduledStartEpochMillis, plannedDurationMinutes, status, locked, completedAtEpochMillis
+                ) VALUES (
+                    'activity', 'plan', NULL, NULL, NULL, NULL, 'THEORY', 'Focus block',
+                    1000, 55, 'IN_PROGRESS', 0, NULL
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO study_sessions (
+                    id, studyPlanId, plannedActivityId, subjectId, topicId, materialId, videoResourceId,
+                    type, status, startedAtEpochMillis, endedAtEpochMillis, grossDurationSeconds,
+                    pauseDurationSeconds, pagesCompleted, questionsAnswered, correctAnswers,
+                    concentrationRating, difficultyRating, notes
+                ) VALUES (
+                    'linked', 'plan', 'activity', NULL, NULL, NULL, NULL, 'THEORY', 'RUNNING',
+                    1000, NULL, 0, 0, 0, 0, 0, NULL, NULL, 'legacy focus'
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        migrationHelper.runMigrationsAndValidate(
+            databaseName,
+            3,
+            true,
+            StudyFlowMigrations.Migration2To3,
+        ).use { database ->
+            database.query(
+                "SELECT targetDurationMinutes FROM study_sessions WHERE id = 'linked'",
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(55, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun freshVersionFourDatabaseContainsNullableTargetDuration() {
+        val databaseName = trackedDatabase("studyflow-fresh-4.db")
         Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
             .addMigrations(*StudyFlowMigrations.All)
             .allowMainThreadQueries()
@@ -97,8 +144,7 @@ class StudyFlowMigration2To3Test {
             .allowMainThreadQueries()
             .build()
             .use { reopened ->
-                val restored = reopened.studyPlanningDao().findActiveStudySession("plan")
-                requireNotNull(restored)
+                val restored = reopened.studyPlanningDao().findActiveStudySessions("plan").single()
                 assertEquals("RUNNING", restored.status)
                 assertEquals(45, restored.targetDurationMinutes)
                 assertEquals(1_000L, restored.startedAtEpochMillis)
@@ -162,7 +208,7 @@ class StudyFlowMigration2To3Test {
                 averageAccuracyPercent, createdAtEpochMillis, updatedAtEpochMillis,
                 trashedAtEpochMillis
             ) VALUES (
-                'plan', 'Plan', '', 'EXAM', 'ACTIVE', NULL, 10,
+                'plan', 'Plan', '', 'FREE_STUDY', 'ACTIVE', NULL, 10,
                 0, 0, 0, 0, 1, 1, NULL
             )
             """.trimIndent(),

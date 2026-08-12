@@ -15,6 +15,9 @@ interface StudyStructureDao {
     suspend fun upsertTarget(target: StudyTargetEntity)
 
     @Upsert
+    suspend fun upsertExamStage(stage: ExamStageEntity)
+
+    @Upsert
     suspend fun upsertExamStages(stages: List<ExamStageEntity>)
 
     @Upsert
@@ -52,6 +55,12 @@ interface StudyStructureDao {
 
     @Query("SELECT * FROM topics WHERE id = :topicId AND studyPlanId = :planId LIMIT 1")
     suspend fun findTopic(planId: String, topicId: String): TopicEntity?
+
+    @Query("SELECT * FROM study_targets WHERE id = :targetId AND studyPlanId = :planId LIMIT 1")
+    suspend fun findTarget(planId: String, targetId: String): StudyTargetEntity?
+
+    @Query("SELECT * FROM exam_stages WHERE id = :stageId AND studyPlanId = :planId LIMIT 1")
+    suspend fun findExamStage(planId: String, stageId: String): ExamStageEntity?
 
     @Query("SELECT COUNT(*) FROM exam_stages WHERE id = :stageId AND studyPlanId = :planId")
     suspend fun countExamStage(planId: String, stageId: String): Int

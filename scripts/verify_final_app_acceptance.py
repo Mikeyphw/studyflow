@@ -380,11 +380,11 @@ require("Backup inspect and restore dry-run completed with zero writes." in app,
         "debug portability dry-run evidence message is missing")
 
 # Database, upgrade, backup rules and local file-sharing boundaries.
-require("SCHEMA_VERSION = 3" in database, "Room schema version must stay at the V2 migrated schema")
+require("SCHEMA_VERSION = 4" in database, "Room schema version must include the remediation integrity migration")
 migrations = text("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt")
-for migration in ("Migration1To2", "Migration2To3"):
+for migration in ("Migration1To2", "Migration2To3", "Migration3To4"):
     require(migration in migrations, f"database upgrade migration missing: {migration}")
-require("All = arrayOf(Migration1To2, Migration2To3)" in migrations, "database migration chain is incomplete")
+require("All = arrayOf(Migration1To2, Migration2To3, Migration3To4)" in migrations, "database migration chain is incomplete")
 require("@xml/backup_rules" in manifest, "manifest backup rules reference missing")
 require("@xml/data_extraction_rules" in manifest, "manifest data extraction rules reference missing")
 require("no_backup" in backup_rules + data_extraction, "backup/data-extraction must exclude no_backup")

@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowCoachCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowLoadingPane
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowPrimaryActionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
@@ -46,6 +48,7 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyDiscovery
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
 import com.mikeyphw.studyflow.core.domain.StudyRecommendationPresentation
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
@@ -56,6 +59,7 @@ import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
+import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
@@ -85,20 +89,38 @@ fun TodayWorkspaceScreen(
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    val scheduleFlow = remember(plan.id) { scheduleManager.observeSchedule(plan.id) }
-    val sessionsFlow = remember(plan.id) { sessionManager.observeSessions(plan.id) }
-    val reviewFlow = remember(plan.id) { reviewManager.observeSummary(plan.id) }
-    val analyticsFlow = remember(plan.id) { analyticsManager.observeSnapshot(plan.id) }
-    val schedule by scheduleFlow.collectAsStateWithLifecycle(
-        initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
-    )
-    val sessions by sessionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val reviewSummary by reviewFlow.collectAsStateWithLifecycle(initialValue = null)
-    val analytics by analyticsFlow.collectAsStateWithLifecycle(initialValue = null)
+    var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
+    val scheduleFlow = remember(plan.id, loadAttempt) {
+        scheduleManager.observeSchedule(plan.id).asStudyFlowLoadState()
+    }
+    val sessionsFlow = remember(plan.id, loadAttempt) {
+        sessionManager.observeSessions(plan.id).asStudyFlowLoadState()
+    }
+    val reviewFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeSummary(plan.id).asStudyFlowLoadState()
+    }
+    val analyticsFlow = remember(plan.id, loadAttempt) {
+        analyticsManager.observeSnapshot(plan.id).asStudyFlowLoadState()
+    }
+    val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val reviewState by reviewFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val analyticsState by analyticsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     var recommendations by remember(plan.id) { mutableStateOf<List<StudyRecommendation>>(emptyList()) }
     var recommendationUnavailable by remember(plan.id) { mutableStateOf(false) }
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val operationFailed = stringResource(R.string.operation_failed)
+    if (
+        !WorkspaceLoadGate(
+            states = listOf(scheduleState, sessionsState, reviewState, analyticsState),
+            onRetry = { loadAttempt += 1 },
+            modifier = modifier,
+        )
+    ) return
+    val readySchedule = scheduleState.readyValue()
+    val readySessions = sessionsState.readyValue()
+    val readyReviewSummary = reviewState.readyValue()
+    val readyAnalytics = analyticsState.readyValue()
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -107,7 +129,7 @@ fun TodayWorkspaceScreen(
         }
     }
 
-    LaunchedEffect(plan.id, schedule.plannedActivities.size, reviewSummary?.dueCount) {
+    LaunchedEffect(plan.id, readySchedule.plannedActivities.size, readyReviewSummary.dueCount) {
         try {
             recommendations = discoveryManager.recommendations(plan.id)
             recommendationUnavailable = false
@@ -119,24 +141,24 @@ fun TodayWorkspaceScreen(
         }
     }
 
-    val activeSession = sessions.firstOrNull { session ->
+    val activeSession = readySessions.firstOrNull { session ->
         session.status == StudySessionStatus.RUNNING || session.status == StudySessionStatus.PAUSED
     }
-    val todayActivities = remember(schedule.plannedActivities, currentTime) {
+    val todayActivities = remember(readySchedule.plannedActivities, currentTime) {
         val (start, end) = localDayBounds(currentTime)
-        schedule.plannedActivities.filter { activity ->
+        readySchedule.plannedActivities.filter { activity ->
             val startAt = activity.scheduledStartEpochMillis
             startAt != null && startAt in start until end && activity.status != PlannedActivityStatus.CANCELLED
         }.sortedBy { it.scheduledStartEpochMillis }
     }
     val nextActivity = todayActivities.firstOrNull { activity ->
         activity.status == PlannedActivityStatus.PLANNED || activity.status == PlannedActivityStatus.MISSED
-    } ?: schedule.pendingActivities.minByOrNull { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
-    val dueReviewCount = reviewSummary?.dueCount ?: 0
+    } ?: readySchedule.pendingActivities.minByOrNull { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
+    val dueReviewCount = readyReviewSummary.dueCount
     val recommendation = recommendations.firstOrNull()
     val weeklyGoalMinutes = (plan.weeklyGoalHours * 60).coerceAtLeast(1)
     val weekStart = localWeekStart(currentTime)
-    val weeklyStudiedMinutes = sessions
+    val weeklyStudiedMinutes = readySessions
         .filter { session ->
             session.status == StudySessionStatus.COMPLETED && session.startedAtEpochMillis >= weekStart
         }
@@ -320,16 +342,15 @@ fun TodayWorkspaceScreen(
                         second = { childModifier ->
                             StudyFlowMetricPulse(
                                 label = stringResource(R.string.accuracy),
-                                value = analytics?.let { snapshot ->
-                                    stringResource(R.string.percent_value, snapshot.questionAccuracyPercent)
-                                } ?: stringResource(R.string.not_enough_data),
-                                supportingText = analytics?.let { snapshot ->
-                                    pluralStringResource(
-                                        R.plurals.questions_value,
-                                        snapshot.answeredQuestions,
-                                        snapshot.answeredQuestions,
-                                    )
-                                },
+                                value = stringResource(
+                                    R.string.percent_value,
+                                    readyAnalytics.questionAccuracyPercent,
+                                ),
+                                supportingText = pluralStringResource(
+                                    R.plurals.questions_value,
+                                    readyAnalytics.answeredQuestions,
+                                    readyAnalytics.answeredQuestions,
+                                ),
                                 modifier = childModifier,
                             )
                         },
@@ -338,7 +359,7 @@ fun TodayWorkspaceScreen(
                 item(key = "coach", contentType = "coach") {
                     val coachMessage = when {
                         dueReviewCount > 0 -> stringResource(R.string.today_coach_backlog)
-                        (analytics?.scheduleAdherencePercent ?: 100) < 60 -> {
+                        (readyAnalytics.scheduleAdherencePercent ?: 100) < 60 -> {
                             stringResource(R.string.today_coach_schedule)
                         }
                         else -> stringResource(R.string.today_coach_stable)

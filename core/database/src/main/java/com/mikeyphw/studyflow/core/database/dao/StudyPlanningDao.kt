@@ -78,8 +78,120 @@ interface StudyPlanningDao {
     @Query("DELETE FROM planned_activities WHERE studyPlanId = :planId AND id = :activityId")
     suspend fun deletePlannedActivity(planId: String, activityId: String): Int
 
-    @Query("DELETE FROM planned_activities WHERE studyPlanId = :planId AND locked = 0")
-    suspend fun deleteUnlockedPlannedActivities(planId: String): Int
+    @Query(
+        """
+        DELETE FROM planned_activities
+        WHERE studyPlanId = :planId
+          AND locked = 0
+          AND status IN ('PLANNED', 'MISSED')
+        """,
+    )
+    suspend fun deleteReplaceablePlannedActivities(planId: String): Int
+
+
+    @Query(
+        """
+        UPDATE planned_activities
+        SET scheduledStartEpochMillis = :newStartEpochMillis,
+            plannedDurationMinutes = :newDurationMinutes,
+            status = :newStatus,
+            completedAtEpochMillis = :newCompletedAtEpochMillis
+        WHERE studyPlanId = :planId
+          AND id = :activityId
+          AND status = :expectedStatus
+          AND plannedDurationMinutes = :expectedDurationMinutes
+          AND (
+            scheduledStartEpochMillis = :expectedStartEpochMillis
+            OR (scheduledStartEpochMillis IS NULL AND :expectedStartEpochMillis IS NULL)
+          )
+        """,
+    )
+    suspend fun compareAndSetPlannedActivity(
+        planId: String,
+        activityId: String,
+        expectedStatus: String,
+        expectedStartEpochMillis: Long?,
+        expectedDurationMinutes: Int,
+        newStatus: String,
+        newStartEpochMillis: Long?,
+        newDurationMinutes: Int,
+        newCompletedAtEpochMillis: Long?,
+    ): Int
+
+
+    @Query(
+        """
+        UPDATE planned_activities
+        SET status = :newStatus,
+            completedAtEpochMillis = :newCompletedAtEpochMillis
+        WHERE studyPlanId = :planId
+          AND id = :activityId
+          AND status = :expectedStatus
+        """,
+    )
+    suspend fun compareAndSetPlannedActivityStatus(
+        planId: String,
+        activityId: String,
+        expectedStatus: String,
+        newStatus: String,
+        newCompletedAtEpochMillis: Long?,
+    ): Int
+
+    @Query(
+        """
+        UPDATE study_sessions
+        SET status = :newStatus,
+            endedAtEpochMillis = :endedAtEpochMillis,
+            grossDurationSeconds = :grossDurationSeconds,
+            pauseDurationSeconds = :pauseDurationSeconds
+        WHERE studyPlanId = :planId
+          AND id = :sessionId
+          AND status = :expectedStatus
+        """,
+    )
+    suspend fun compareAndSetStudySessionStatus(
+        planId: String,
+        sessionId: String,
+        expectedStatus: String,
+        newStatus: String,
+        endedAtEpochMillis: Long?,
+        grossDurationSeconds: Long,
+        pauseDurationSeconds: Long,
+    ): Int
+
+
+    @Query(
+        """
+        UPDATE study_sessions
+        SET status = 'COMPLETED',
+            endedAtEpochMillis = :endedAtEpochMillis,
+            grossDurationSeconds = :grossDurationSeconds,
+            pauseDurationSeconds = :pauseDurationSeconds,
+            pagesCompleted = :pagesCompleted,
+            questionsAnswered = :questionsAnswered,
+            correctAnswers = :correctAnswers,
+            concentrationRating = :concentrationRating,
+            difficultyRating = :difficultyRating,
+            notes = :notes
+        WHERE studyPlanId = :planId
+          AND id = :sessionId
+          AND status = :expectedStatus
+        """,
+    )
+    suspend fun completeStudySessionIfStatus(
+        planId: String,
+        sessionId: String,
+        expectedStatus: String,
+        endedAtEpochMillis: Long,
+        grossDurationSeconds: Long,
+        pauseDurationSeconds: Long,
+        pagesCompleted: Int,
+        questionsAnswered: Int,
+        correctAnswers: Int,
+        concentrationRating: Int?,
+        difficultyRating: Int?,
+        notes: String,
+    ): Int
 
     @Query("SELECT * FROM study_sessions WHERE studyPlanId = :planId ORDER BY startedAtEpochMillis DESC")
     fun observeStudySessions(planId: String): Flow<List<StudySessionEntity>>
@@ -107,8 +219,22 @@ interface StudyPlanningDao {
         SELECT * FROM study_sessions
         WHERE studyPlanId = :planId AND status IN ('RUNNING', 'PAUSED')
         ORDER BY startedAtEpochMillis DESC
-        LIMIT 1
         """,
     )
-    suspend fun findActiveStudySession(planId: String): StudySessionEntity?
+    suspend fun findActiveStudySessions(planId: String): List<StudySessionEntity>
+
+    @Query(
+        """
+        UPDATE study_sessions
+        SET notes = :notes
+        WHERE studyPlanId = :planId
+          AND id = :sessionId
+          AND status IN ('RUNNING', 'PAUSED')
+        """,
+    )
+    suspend fun updateActiveStudySessionNotes(
+        planId: String,
+        sessionId: String,
+        notes: String,
+    ): Int
 }

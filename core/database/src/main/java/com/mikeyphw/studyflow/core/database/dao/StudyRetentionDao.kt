@@ -52,6 +52,47 @@ interface StudyRetentionDao {
     @Query("DELETE FROM flashcards WHERE studyPlanId = :planId AND id = :flashcardId")
     suspend fun deleteFlashcard(planId: String, flashcardId: String): Int
 
+
+    @Query(
+        """
+        UPDATE error_entries
+        SET recurrenceCount = recurrenceCount + 1,
+            updatedAtEpochMillis = :updatedAtEpochMillis
+        WHERE studyPlanId = :planId AND id = :errorEntryId
+        """,
+    )
+    suspend fun incrementErrorRecurrence(
+        planId: String,
+        errorEntryId: String,
+        updatedAtEpochMillis: Long,
+    ): Int
+
+    @Query(
+        """
+        UPDATE review_items
+        SET status = :newStatus,
+            dueAtEpochMillis = :newDueAtEpochMillis,
+            intervalDays = :newIntervalDays,
+            repetitionCount = :newRepetitionCount,
+            easeFactor = :newEaseFactor,
+            completedAtEpochMillis = :completedAtEpochMillis
+        WHERE studyPlanId = :planId
+          AND id = :reviewItemId
+          AND status = :expectedStatus
+        """,
+    )
+    suspend fun compareAndSetReviewState(
+        planId: String,
+        reviewItemId: String,
+        expectedStatus: String,
+        newStatus: String,
+        newDueAtEpochMillis: Long,
+        newIntervalDays: Int,
+        newRepetitionCount: Int,
+        newEaseFactor: Double,
+        completedAtEpochMillis: Long?,
+    ): Int
+
     @Query("SELECT * FROM error_entries WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
     fun observeErrorEntries(planId: String): Flow<List<ErrorEntryEntity>>
 

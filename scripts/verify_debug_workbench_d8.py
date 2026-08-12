@@ -158,11 +158,14 @@ database_mappers = [
     "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/StudyProgressEntityMapper.kt",
     "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/StudyRetentionEntityMapper.kt",
 ]
+mapper_safety = read("core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/MapperSafety.kt")
+require("import android.util.Base64" in mapper_safety, "shared MapperSafety must use Android Base64 for minSdk 23")
+require("java.util.Base64" not in mapper_safety, "shared MapperSafety must not use java.util.Base64")
+require("Base64.NO_WRAP" in mapper_safety, "shared MapperSafety must preserve no-wrap Base64 semantics")
 for mapper in database_mappers:
     mapper_text = read(mapper)
-    require("import android.util.Base64" in mapper_text, f"{mapper} must use Android Base64 for minSdk 23")
+    require("encodeStringListStable" in mapper_text, f"{mapper} must use shared stable Base64 list encoding")
     require("java.util.Base64" not in mapper_text, f"{mapper} must not use java.util.Base64")
-    require("Base64.NO_WRAP" in mapper_text, f"{mapper} must preserve no-wrap Base64 semantics")
 
 
 # D8 r6 lint seal: Android UI modules must not use java.time APIs without desugaring on minSdk 23.

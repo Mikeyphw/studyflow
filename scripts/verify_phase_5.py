@@ -59,9 +59,11 @@ if not any(marker in app_source for marker in ('onOpenSyllabus', 'onManageConten
 application_source = (
     ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt"
 ).read_text(encoding="utf-8")
-for marker in ("StudyContentRepository", "ManageStudyContent", "studyContentRepository"):
+for marker in ("ManageStudyContent", "manageStudyContent", "private val studyContentRepository"):
     if marker not in application_source:
-        failures.append(f"application container missing content marker: {marker}")
+        failures.append(f"application container missing content boundary marker: {marker}")
+if "val studyContentRepository:" in application_source:
+    failures.append("application container must not publicly expose StudyContentRepository")
 if "core.database" in application_source:
     failures.append("app module leaks database implementation after Phase 5")
 
@@ -115,7 +117,7 @@ for marker in (
         failures.append(f"entity schema missing optional exam stage marker: {marker}")
 
 database = (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt").read_text()
-if "const val SCHEMA_VERSION = 3" not in database:
+if "const val SCHEMA_VERSION = 4" not in database:
     failures.append("Room schema version must preserve Phase 5 and include later migrations")
 if "addMigrations(*StudyFlowMigrations.All)" not in database:
     failures.append("database builder does not install Phase 5 migrations")

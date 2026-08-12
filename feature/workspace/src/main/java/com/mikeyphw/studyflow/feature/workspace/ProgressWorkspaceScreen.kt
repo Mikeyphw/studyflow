@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,6 +51,7 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewBuilder
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupEngine
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupInput
@@ -71,6 +73,7 @@ import com.mikeyphw.studyflow.core.model.ReadinessSignalKind
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
+import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.navigation.ProgressWorkspacePeriod
 import java.text.DateFormat
@@ -104,36 +107,99 @@ fun ProgressWorkspaceScreen(
     onExportExamReport: suspend (StudyExamReportDocument, StudyExamReportFormat, String) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val analyticsFlow = remember(plan.id) { analyticsManager.observeSnapshot(plan.id) }
-    val progressFlow = remember(plan.id) { progressManager.observeSnapshot(plan.id) }
-    val syllabusFlow = remember(plan.id) { contentManager.observeSyllabus(plan.id) }
-    val libraryFlow = remember(plan.id) { libraryManager.observeSnapshot(plan.id) }
-    val sessionsFlow = remember(plan.id) { sessionManager.observeSessions(plan.id) }
-    val scheduleFlow = remember(plan.id) { scheduleManager.observeSchedule(plan.id) }
-    val reviewItemsFlow = remember(plan.id) { reviewManager.observeReviewItems(plan.id) }
-    val flashcardsFlow = remember(plan.id) { reviewManager.observeFlashcards(plan.id) }
-    val errorEntriesFlow = remember(plan.id) { reviewManager.observeErrorEntries(plan.id) }
-    val questionsFlow = remember(plan.id) { practiceManager.observeQuestions(plan.id) }
-    val testsFlow = remember(plan.id) { practiceManager.observeTests(plan.id) }
-    val mockExamsFlow = remember(plan.id) { practiceManager.observeMockExams(plan.id) }
-    val readinessFlow = remember(plan.id) { readinessManager.observeReadiness(plan) }
-    val rescheduleFlow = remember(plan.id) { adaptiveRescheduleManager.observePreview(plan) }
-    val analytics by analyticsFlow.collectAsStateWithLifecycle(initialValue = null)
-    val progress by progressFlow.collectAsStateWithLifecycle(initialValue = null)
-    val syllabus by syllabusFlow.collectAsStateWithLifecycle(initialValue = null)
-    val library by libraryFlow.collectAsStateWithLifecycle(initialValue = null)
-    val sessions by sessionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val schedule by scheduleFlow.collectAsStateWithLifecycle(
-        initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
-    )
-    val reviewItems by reviewItemsFlow.collectAsStateWithLifecycle(initialValue = emptyList<ReviewItem>())
-    val flashcards by flashcardsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val errorEntries by errorEntriesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val tests by testsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val mockExams by mockExamsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val readiness by readinessFlow.collectAsStateWithLifecycle(initialValue = null)
-    val reschedulePreview by rescheduleFlow.collectAsStateWithLifecycle(initialValue = null)
+    var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
+    val analyticsFlow = remember(plan.id, loadAttempt) {
+        analyticsManager.observeSnapshot(plan.id).asStudyFlowLoadState()
+    }
+    val progressFlow = remember(plan.id, loadAttempt) {
+        progressManager.observeSnapshot(plan.id).asStudyFlowLoadState()
+    }
+    val syllabusFlow = remember(plan.id, loadAttempt) {
+        contentManager.observeSyllabus(plan.id).asStudyFlowLoadState()
+    }
+    val libraryFlow = remember(plan.id, loadAttempt) {
+        libraryManager.observeSnapshot(plan.id).asStudyFlowLoadState()
+    }
+    val sessionsFlow = remember(plan.id, loadAttempt) {
+        sessionManager.observeSessions(plan.id).asStudyFlowLoadState()
+    }
+    val scheduleFlow = remember(plan.id, loadAttempt) {
+        scheduleManager.observeSchedule(plan.id).asStudyFlowLoadState()
+    }
+    val reviewItemsFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeReviewItems(plan.id).asStudyFlowLoadState()
+    }
+    val flashcardsFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeFlashcards(plan.id).asStudyFlowLoadState()
+    }
+    val errorEntriesFlow = remember(plan.id, loadAttempt) {
+        reviewManager.observeErrorEntries(plan.id).asStudyFlowLoadState()
+    }
+    val questionsFlow = remember(plan.id, loadAttempt) {
+        practiceManager.observeQuestions(plan.id).asStudyFlowLoadState()
+    }
+    val testsFlow = remember(plan.id, loadAttempt) {
+        practiceManager.observeTests(plan.id).asStudyFlowLoadState()
+    }
+    val mockExamsFlow = remember(plan.id, loadAttempt) {
+        practiceManager.observeMockExams(plan.id).asStudyFlowLoadState()
+    }
+    val readinessFlow = remember(plan.id, loadAttempt) {
+        readinessManager.observeReadiness(plan).asStudyFlowLoadState()
+    }
+    val rescheduleFlow = remember(plan.id, loadAttempt) {
+        adaptiveRescheduleManager.observePreview(plan).asStudyFlowLoadState()
+    }
+    val analyticsState by analyticsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val progressState by progressFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val libraryState by libraryFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val reviewItemsState by reviewItemsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val flashcardsState by flashcardsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val errorEntriesState by errorEntriesFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val questionsState by questionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val testsState by testsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val mockExamsState by mockExamsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val readinessState by readinessFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val rescheduleState by rescheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    if (
+        !WorkspaceLoadGate(
+            states = listOf(
+                analyticsState,
+                progressState,
+                syllabusState,
+                libraryState,
+                sessionsState,
+                scheduleState,
+                reviewItemsState,
+                flashcardsState,
+                errorEntriesState,
+                questionsState,
+                testsState,
+                mockExamsState,
+                readinessState,
+                rescheduleState,
+            ),
+            onRetry = { loadAttempt += 1 },
+            modifier = modifier,
+        )
+    ) return
+    val analytics = analyticsState.readyValue()
+    val progress = progressState.readyValue()
+    val syllabus = syllabusState.readyValue()
+    val library = libraryState.readyValue()
+    val sessions = sessionsState.readyValue()
+    val schedule = scheduleState.readyValue()
+    val reviewItems = reviewItemsState.readyValue()
+    val flashcards = flashcardsState.readyValue()
+    val errorEntries = errorEntriesState.readyValue()
+    val questions = questionsState.readyValue()
+    val tests = testsState.readyValue()
+    val mockExams = mockExamsState.readyValue()
+    val readiness = readinessState.readyValue()
+    val reschedulePreview = rescheduleState.readyValue()
     val coroutineScope = rememberCoroutineScope()
     var appliedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
     var skippedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }

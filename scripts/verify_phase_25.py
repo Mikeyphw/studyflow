@@ -69,8 +69,8 @@ if "fun shouldRescheduleAfterDelivery" not in planner or "ReminderNotificationTy
 require(
     "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderReceivers.kt",
     "goAsync()",
-    "createCoordinator(context).deliver",
-    "createCoordinator(context).reconcileAll",
+    "context.requireStudyFlowAppContainer().reminderDeliveryCoordinator.deliver",
+    "context.requireStudyFlowAppContainer().reminderDeliveryCoordinator.reconcileAll",
 )
 require(
     "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyFlowWidgetUpdateCoordinator.kt",

@@ -54,9 +54,11 @@ if not any(marker in app_source for marker in ('onOpenProgress', 'onOpenProgress
     failures.append("app navigation missing progress action marker: one of onOpenProgress, onOpenProgressCenter")
 
 application_source = (ROOT / "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt").read_text(encoding="utf-8")
-for marker in ("StudyProgressRepository", "ManageStudyProgress", "studyProgressRepository"):
+for marker in ("ManageStudyProgress", "manageStudyProgress", "private val studyProgressRepository"):
     if marker not in application_source:
-        failures.append(f"application container missing progress marker: {marker}")
+        failures.append(f"application container missing progress boundary marker: {marker}")
+if "val studyProgressRepository:" in application_source:
+    failures.append("application container must not publicly expose StudyProgressRepository")
 if "core.database" in application_source:
     failures.append("app module leaks database implementation after Phase 11")
 data_layer = (ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt").read_text(encoding="utf-8")
@@ -72,7 +74,8 @@ for marker in ("upsertNote", "findNote", "deleteNote", "observeNotes"):
     if marker not in support_dao:
         failures.append(f"support DAO missing note operation: {marker}")
 mapper = (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/StudyProgressEntityMapper.kt").read_text(encoding="utf-8")
-for marker in ("StudyGoalEntity.asExternalModel", "StudyGoal.asEntity", "StudyNoteEntity.asExternalModel", "StudyNote.asEntity", "Base64"):
+mapper += (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/MapperSafety.kt").read_text(encoding="utf-8")
+for marker in ("StudyGoalEntity.asExternalModel", "StudyGoal.asEntity", "StudyNoteEntity.asExternalModel", "StudyNote.asEntity", "encodeStringListStable"):
     if marker not in mapper:
         failures.append(f"progress mapper missing marker: {marker}")
 manager = (ROOT / "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyProgress.kt").read_text(encoding="utf-8")

@@ -1,3 +1,15 @@
+# Remediation Phase 1-2 — Build/runtime and database foundation
+
+- Restored a complete pinned Gradle wrapper and made Android validation fail closed instead of silently skipping build gates.
+- Added Debug and Release compile/lint/package gates to repository and Devtool validation.
+- Consolidated receivers/widgets onto the process-owned AppContainer/Room graph and added explicit startup loading/failure state.
+- Consumed reminder launch extras one-shot so Activity recreation cannot replay notification navigation.
+- Advanced Room to schema v4 with plan-scoped ownership triggers, single-active-session enforcement, value guards, and v2→v3 Focus-duration backfill.
+- Replaced destructive unlocked schedule cleanup with replaceable-state cleanup and added atomic/CAS mutation primitives.
+- Hardened Study Session ownership/state transitions and changed Focus note persistence to a field-specific active-session update.
+- Added fail-closed mapper enum/list decoding, stable list serialization, complete StudyTarget/ExamStage mappings, and core model invariants.
+- Added migration/integrity/mapper/model regression tests and a dedicated Phase 1-2 remediation source contract.
+
 # Final Full-App Acceptance Seal r2
 
 - Strengthened the final acceptance verifier after audit closure.

@@ -8,6 +8,12 @@ import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 class ManageStudyPlan(
     private val repository: StudyPlanRepository,
 ) {
+    val plans = repository.plans
+
+    fun observePlan(planId: StudyPlanId) = repository.observePlan(planId)
+
+    fun observeSettings(planId: StudyPlanId) = repository.observePlanSettings(planId)
+
     suspend fun update(plan: StudyPlan) {
         require(plan.status != StudyPlanStatus.TRASHED) {
             "Trashed Study Plans must be restored before editing."

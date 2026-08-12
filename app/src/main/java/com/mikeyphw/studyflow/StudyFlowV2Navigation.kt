@@ -12,8 +12,10 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -29,11 +31,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowErrorPane
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowLoadingPane
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
+import com.mikeyphw.studyflow.core.domain.asStudyFlowOptionalLoadState
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
 import com.mikeyphw.studyflow.core.domain.StudyRecommendationDestination
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySession
@@ -444,16 +449,11 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
 
     composable<FocusSessionRoute> { entry ->
         val route = entry.toRoute<FocusSessionRoute>()
-        val planId = remember(route.planId) { StudyPlanId(route.planId) }
-        val planFlow = remember(planId) { container.studyPlanRepository.observePlan(planId) }
-        val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
-        val currentPlan = plan
-        if (currentPlan == null) {
-            StudyFlowErrorPane(
-                message = stringResource(R.string.unknown_plan_error),
-                onRetry = navController::popBackStack,
-            )
-        } else {
+        WorkspacePlanDestination(
+            navController = navController,
+            container = container,
+            planId = route.planId,
+        ) { currentPlan ->
             FocusSessionScreen(
                 plan = currentPlan,
                 sessionId = StudySessionId(route.sessionId),
@@ -668,16 +668,22 @@ private fun WorkspacePlanDestination(
     content: @Composable (StudyPlan) -> Unit,
 ) {
     val typedPlanId = remember(planId) { StudyPlanId(planId) }
-    val planFlow = remember(typedPlanId) { container.studyPlanRepository.observePlan(typedPlanId) }
-    val plan by planFlow.collectAsStateWithLifecycle(initialValue = null)
-    val currentPlan = plan
-    if (currentPlan == null) {
-        StudyFlowErrorPane(
+    var loadAttempt by remember(typedPlanId) { mutableIntStateOf(0) }
+    val planFlow = remember(typedPlanId, loadAttempt) {
+        container.manageStudyPlan.observePlan(typedPlanId).asStudyFlowOptionalLoadState()
+    }
+    val planState by planFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    when (val state = planState) {
+        StudyFlowLoadState.Loading -> StudyFlowLoadingPane()
+        StudyFlowLoadState.Missing -> StudyFlowErrorPane(
             message = stringResource(R.string.unknown_plan_error),
-            onRetry = navController::popBackStack,
+            onRetry = null,
         )
-    } else {
-        content(currentPlan)
+        is StudyFlowLoadState.Failed -> StudyFlowErrorPane(
+            message = stringResource(R.string.app_initialization_failed),
+            onRetry = { loadAttempt += 1 },
+        )
+        is StudyFlowLoadState.Ready -> content(state.value)
     }
 }
 

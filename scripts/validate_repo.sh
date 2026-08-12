@@ -56,6 +56,7 @@ python3 scripts/verify_debug_workbench_d6.py
 python3 scripts/verify_debug_workbench_d7.py
 python3 scripts/verify_debug_workbench_d8.py
 python3 scripts/verify_full_app_final_user_readiness.py
+python3 scripts/verify_remediation_phase_1_2.py
 
 GRADLE_LAUNCHER=""
 if [[ -x ./gradlew ]]; then
@@ -64,8 +65,18 @@ elif command -v gradle >/dev/null 2>&1; then
   GRADLE_LAUNCHER="$(command -v gradle)"
 fi
 
-if [[ -n "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}" ]] && [[ -n "$GRADLE_LAUNCHER" ]]; then
-  "$GRADLE_LAUNCHER" --no-daemon verifyFormatting checkAll :app:assembleDebug
-else
-  echo "ANDROID VALIDATION: SKIPPED (use Devtool or provide Android SDK plus Gradle 9.5.x; Phase 37 device acceptance remains target-machine evidence)"
+ANDROID_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+if [[ -z "$GRADLE_LAUNCHER" ]]; then
+  echo "ANDROID VALIDATION: FAILED — no Gradle launcher is available." >&2
+  exit 2
 fi
+if [[ -z "$ANDROID_SDK" ]] || [[ ! -d "$ANDROID_SDK" ]]; then
+  echo "ANDROID VALIDATION: FAILED — ANDROID_HOME/ANDROID_SDK_ROOT does not point to an Android SDK." >&2
+  exit 3
+fi
+
+"$GRADLE_LAUNCHER" --no-daemon \
+  verifyFormatting \
+  checkAll \
+  :app:assembleDebug \
+  :app:assembleRelease

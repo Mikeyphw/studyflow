@@ -128,11 +128,36 @@ private class FakeStudySessionRepository : StudySessionRepository {
             )
         }
 
-    override suspend fun upsertSession(
+    override suspend fun updateNotes(
+        planId: StudyPlanId,
+        sessionId: StudySessionId,
+        notes: String,
+    ): StudySession {
+        val current = requireNotNull(findSession(planId, sessionId))
+        val updated = current.copy(notes = notes)
+        sessions.value = sessions.value.filterNot { it.id == sessionId } + updated
+        return updated
+    }
+
+    override suspend fun createSession(
         session: StudySession,
+        linkedActivityExpectedStatus: PlannedActivityStatus?,
+    ): StudySession {
+        require(findSession(session.studyPlanId, session.id) == null)
+        require(findActiveSession(session.studyPlanId) == null)
+        sessions.value = sessions.value + session
+        return session
+    }
+
+    override suspend fun transitionSession(
+        expectedStatus: StudySessionStatus,
+        session: StudySession,
+        linkedActivityExpectedStatus: PlannedActivityStatus?,
         linkedActivityStatus: PlannedActivityStatus?,
         linkedActivityCompletedAtEpochMillis: Long?,
     ): StudySession {
+        val current = requireNotNull(findSession(session.studyPlanId, session.id))
+        require(current.status == expectedStatus)
         sessions.value = sessions.value.filterNot { it.id == session.id } + session
         return session
     }

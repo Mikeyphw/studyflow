@@ -23,18 +23,20 @@ import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 
-fun StudyStrategyEntity.asExternalModel(): StudyStrategy = StudyStrategy(
-    id = StudyStrategyId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    type = enumValueOf<StudyStrategyType>(type),
-    minimumSessionMinutes = minimumSessionMinutes,
-    maximumSessionMinutes = maximumSessionMinutes,
-    theoryRatioPercent = theoryRatioPercent,
-    questionRatioPercent = questionRatioPercent,
-    reviewRatioPercent = reviewRatioPercent,
-    adaptivePlanningEnabled = adaptivePlanningEnabled,
-    configurationJson = configurationJson,
-)
+fun StudyStrategyEntity.asExternalModel(): StudyStrategy = decodeModel("StudyStrategyEntity") {
+    StudyStrategy(
+        id = StudyStrategyId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        type = type.decodeEnum<StudyStrategyType>("StudyPlanningEntityMapper.type"),
+        minimumSessionMinutes = minimumSessionMinutes,
+        maximumSessionMinutes = maximumSessionMinutes,
+        theoryRatioPercent = theoryRatioPercent,
+        questionRatioPercent = questionRatioPercent,
+        reviewRatioPercent = reviewRatioPercent,
+        adaptivePlanningEnabled = adaptivePlanningEnabled,
+        configurationJson = configurationJson,
+    )
+}
 
 fun StudyStrategy.asEntity(): StudyStrategyEntity = StudyStrategyEntity(
     id = id.value,
@@ -49,19 +51,21 @@ fun StudyStrategy.asEntity(): StudyStrategyEntity = StudyStrategyEntity(
     configurationJson = configurationJson,
 )
 
-fun ScheduleRuleEntity.asExternalModel(): ScheduleRule = ScheduleRule(
-    id = ScheduleRuleId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    subjectId = subjectId?.let(::SubjectId),
-    type = enumValueOf<ScheduleRuleType>(type),
-    dayOfWeek = dayOfWeek,
-    startMinuteOfDay = startMinuteOfDay,
-    durationMinutes = durationMinutes,
-    recurrenceRule = recurrenceRule,
-    locked = locked,
-    enabled = enabled,
-    position = position,
-)
+fun ScheduleRuleEntity.asExternalModel(): ScheduleRule = decodeModel("ScheduleRuleEntity") {
+    ScheduleRule(
+        id = ScheduleRuleId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        subjectId = subjectId?.let(::SubjectId),
+        type = type.decodeEnum<ScheduleRuleType>("StudyPlanningEntityMapper.type"),
+        dayOfWeek = dayOfWeek,
+        startMinuteOfDay = startMinuteOfDay,
+        durationMinutes = durationMinutes,
+        recurrenceRule = recurrenceRule,
+        locked = locked,
+        enabled = enabled,
+        position = position,
+    )
+}
 
 fun ScheduleRule.asEntity(): ScheduleRuleEntity = ScheduleRuleEntity(
     id = id.value,
@@ -77,21 +81,23 @@ fun ScheduleRule.asEntity(): ScheduleRuleEntity = ScheduleRuleEntity(
     position = position,
 )
 
-fun PlannedActivityEntity.asExternalModel(): PlannedActivity = PlannedActivity(
-    id = PlannedActivityId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    subjectId = subjectId?.let(::SubjectId),
-    topicId = topicId?.let(::TopicId),
-    materialId = materialId?.let(::StudyMaterialId),
-    videoResourceId = videoResourceId?.let(::VideoResourceId),
-    type = enumValueOf<StudyActivityType>(type),
-    title = title,
-    scheduledStartEpochMillis = scheduledStartEpochMillis,
-    plannedDurationMinutes = plannedDurationMinutes,
-    status = enumValueOf<PlannedActivityStatus>(status),
-    locked = locked,
-    completedAtEpochMillis = completedAtEpochMillis,
-)
+fun PlannedActivityEntity.asExternalModel(): PlannedActivity = decodeModel("PlannedActivityEntity") {
+    PlannedActivity(
+        id = PlannedActivityId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        subjectId = subjectId?.let(::SubjectId),
+        topicId = topicId?.let(::TopicId),
+        materialId = materialId?.let(::StudyMaterialId),
+        videoResourceId = videoResourceId?.let(::VideoResourceId),
+        type = type.decodeEnum<StudyActivityType>("StudyPlanningEntityMapper.type"),
+        title = title,
+        scheduledStartEpochMillis = scheduledStartEpochMillis,
+        plannedDurationMinutes = plannedDurationMinutes,
+        status = status.decodeEnum<PlannedActivityStatus>("StudyPlanningEntityMapper.status"),
+        locked = locked,
+        completedAtEpochMillis = completedAtEpochMillis,
+    )
+}
 
 fun PlannedActivity.asEntity(): PlannedActivityEntity = PlannedActivityEntity(
     id = id.value,
@@ -108,28 +114,30 @@ fun PlannedActivity.asEntity(): PlannedActivityEntity = PlannedActivityEntity(
     locked = locked,
     completedAtEpochMillis = completedAtEpochMillis,
 )
-fun StudySessionEntity.asExternalModel(): StudySession = StudySession(
-    id = StudySessionId(id),
-    studyPlanId = StudyPlanId(studyPlanId),
-    plannedActivityId = plannedActivityId?.let(::PlannedActivityId),
-    subjectId = subjectId?.let(::SubjectId),
-    topicId = topicId?.let(::TopicId),
-    materialId = materialId?.let(::StudyMaterialId),
-    videoResourceId = videoResourceId?.let(::VideoResourceId),
-    type = enumValueOf<StudyActivityType>(type),
-    status = enumValueOf<StudySessionStatus>(status),
-    startedAtEpochMillis = startedAtEpochMillis,
-    endedAtEpochMillis = endedAtEpochMillis,
-    grossDurationSeconds = grossDurationSeconds,
-    pauseDurationSeconds = pauseDurationSeconds,
-    pagesCompleted = pagesCompleted,
-    questionsAnswered = questionsAnswered,
-    correctAnswers = correctAnswers,
-    concentrationRating = concentrationRating,
-    difficultyRating = difficultyRating,
-    notes = notes,
-    targetDurationMinutes = targetDurationMinutes,
-)
+fun StudySessionEntity.asExternalModel(): StudySession = decodeModel("StudySessionEntity") {
+    StudySession(
+        id = StudySessionId(id),
+        studyPlanId = StudyPlanId(studyPlanId),
+        plannedActivityId = plannedActivityId?.let(::PlannedActivityId),
+        subjectId = subjectId?.let(::SubjectId),
+        topicId = topicId?.let(::TopicId),
+        materialId = materialId?.let(::StudyMaterialId),
+        videoResourceId = videoResourceId?.let(::VideoResourceId),
+        type = type.decodeEnum<StudyActivityType>("StudyPlanningEntityMapper.type"),
+        status = status.decodeEnum<StudySessionStatus>("StudyPlanningEntityMapper.status"),
+        startedAtEpochMillis = startedAtEpochMillis,
+        endedAtEpochMillis = endedAtEpochMillis,
+        grossDurationSeconds = grossDurationSeconds,
+        pauseDurationSeconds = pauseDurationSeconds,
+        pagesCompleted = pagesCompleted,
+        questionsAnswered = questionsAnswered,
+        correctAnswers = correctAnswers,
+        concentrationRating = concentrationRating,
+        difficultyRating = difficultyRating,
+        notes = notes,
+        targetDurationMinutes = targetDurationMinutes,
+    )
+}
 
 fun StudySession.asEntity(): StudySessionEntity = StudySessionEntity(
     id = id.value,

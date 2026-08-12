@@ -5,9 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.os.Build
 import androidx.core.content.ContextCompat
-import com.mikeyphw.studyflow.BuildConfig
-import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
-import com.mikeyphw.studyflow.core.domain.ManageStudyReview
+import com.mikeyphw.studyflow.requireStudyFlowAppContainer
 import com.mikeyphw.studyflow.core.domain.StudyReminderInput
 import com.mikeyphw.studyflow.core.domain.StudyReminderPlanner
 import com.mikeyphw.studyflow.core.domain.TodayWidgetSummary
@@ -35,20 +33,19 @@ object StudyFlowWidgetUpdateCoordinator {
     }
 
     private suspend fun buildSummary(context: Context): TodayWidgetSummary? {
-        val dataLayer = createStudyFlowDataLayer(context, BuildConfig.VERSION_NAME)
-        val plan = dataLayer.studyPlanRepository.plans.first()
+        val container = context.requireStudyFlowAppContainer()
+        val plan = container.manageStudyPlan.plans.first()
             .firstOrNull { candidate -> candidate.status == StudyPlanStatus.ACTIVE }
             ?: return null
-        val settings = dataLayer.studyPlanRepository.observePlanSettings(plan.id).first()
-        val review = ManageStudyReview(dataLayer.studyReviewRepository, dataLayer.studyPracticeRepository)
+        val settings = container.manageStudyPlan.observeSettings(plan.id).first()
         val calendar = Calendar.getInstance()
         val minuteOfDay = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
         return StudyReminderPlanner.buildPlan(
             StudyReminderInput(
                 plan = plan,
                 settings = settings,
-                schedule = dataLayer.studyScheduleRepository.observeSchedule(plan.id).first(),
-                reviewQueue = review.observeQueue(plan.id).first(),
+                schedule = container.manageStudySchedule.observeSchedule(plan.id).first(),
+                reviewQueue = container.manageStudyReview.observeQueue(plan.id).first(),
                 nowEpochMillis = System.currentTimeMillis(),
                 minuteOfDay = minuteOfDay,
                 apiLevel = Build.VERSION.SDK_INT,

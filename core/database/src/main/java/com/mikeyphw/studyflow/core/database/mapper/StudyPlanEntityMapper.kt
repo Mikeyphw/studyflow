@@ -6,22 +6,24 @@ import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudyType
 
-fun StudyPlanEntity.asExternalModel(): StudyPlan = StudyPlan(
-    id = StudyPlanId(id),
-    name = name,
-    description = description,
-    type = enumValueOf<StudyType>(type),
-    status = enumValueOf<StudyPlanStatus>(status),
-    examDateIso = examDateIso,
-    weeklyGoalHours = weeklyGoalHours,
-    progressPercent = progressPercent,
-    studiedMinutesThisWeek = studiedMinutesThisWeek,
-    questionsAnswered = questionsAnswered,
-    averageAccuracyPercent = averageAccuracyPercent,
-    createdAtEpochMillis = createdAtEpochMillis,
-    updatedAtEpochMillis = updatedAtEpochMillis,
-    trashedAtEpochMillis = trashedAtEpochMillis,
-)
+fun StudyPlanEntity.asExternalModel(): StudyPlan = decodeModel("StudyPlanEntity") {
+    StudyPlan(
+        id = StudyPlanId(id),
+        name = name,
+        description = description,
+        type = type.decodeEnum<StudyType>("StudyPlanEntityMapper.type"),
+        status = status.decodeEnum<StudyPlanStatus>("StudyPlanEntityMapper.status"),
+        examDateIso = examDateIso,
+        weeklyGoalHours = weeklyGoalHours,
+        progressPercent = progressPercent,
+        studiedMinutesThisWeek = studiedMinutesThisWeek,
+        questionsAnswered = questionsAnswered,
+        averageAccuracyPercent = averageAccuracyPercent,
+        createdAtEpochMillis = createdAtEpochMillis,
+        updatedAtEpochMillis = updatedAtEpochMillis,
+        trashedAtEpochMillis = trashedAtEpochMillis,
+    )
+}
 
 fun StudyPlan.asEntity(nowEpochMillis: Long): StudyPlanEntity {
     val normalizedCreatedAt = createdAtEpochMillis.takeIf { it > 0L } ?: nowEpochMillis

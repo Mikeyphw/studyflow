@@ -80,6 +80,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_60_61.py
         python3 scripts/verify_phase_62.py
         python3 scripts/verify_final_app_acceptance.py
+        python3 scripts/verify_remediation_phase_1_2.py
         """.trimIndent(),
     )
 }
@@ -262,5 +263,7 @@ tasks.register("checkAll") {
         ":feature:workspace:testDebugUnitTest",
         ":feature:workspace:lintDebug",
         ":app:lintDebug",
+        ":app:compileReleaseKotlin",
+        ":app:lintRelease",
     )
 }

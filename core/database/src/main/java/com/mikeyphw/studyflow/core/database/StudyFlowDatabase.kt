@@ -89,7 +89,7 @@ abstract class StudyFlowDatabase : RoomDatabase() {
     abstract fun databaseMetadataDao(): DatabaseMetadataDao
 
     companion object {
-        const val SCHEMA_VERSION = 3
+        const val SCHEMA_VERSION = 4
         const val DATABASE_NAME = "studyflow.db"
 
         fun create(context: Context): StudyFlowDatabase =
@@ -97,6 +97,15 @@ abstract class StudyFlowDatabase : RoomDatabase() {
                 context.applicationContext,
                 StudyFlowDatabase::class.java,
                 DATABASE_NAME,
-            ).addMigrations(*StudyFlowMigrations.All).build()
+            )
+                .addMigrations(*StudyFlowMigrations.All)
+                .addCallback(
+                    object : RoomDatabase.Callback() {
+                        override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                            StudyFlowIntegrity.install(db)
+                        }
+                    },
+                )
+                .build()
     }
 }

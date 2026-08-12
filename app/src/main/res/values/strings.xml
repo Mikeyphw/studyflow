@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StudyFlow</string>
+    <string name="app_initialization_failed">StudyFlow could not initialize its local data. Reopen the app to retry.</string>
     <string name="unknown_plan_error">This Study Plan is unavailable.</string>
     <string name="plan_copy_suffix">Copy</string>
     <string name="widget_today_footer">Reviews · Schedule · Progress</string>
