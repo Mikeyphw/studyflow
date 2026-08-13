@@ -20,6 +20,7 @@
     <string name="no_annexes">No annexes yet.</string>
     <string name="favorite">Favorite</string>
     <string name="archive">Archive</string>
+    <string name="restore">Restore</string>
     <string name="delete">Delete</string>
     <string name="mark_complete">Mark complete</string>
     <string name="progress_percent">%1$d%%</string>
@@ -30,6 +31,7 @@
     <string name="attach_annex">Attach annex file</string>
     <string name="attach_annex_description">Copy a file into app-private storage so it can be exported with this Study Plan.</string>
     <string name="choose_annex_file">Choose annex file</string>
+    <string name="link_annex_file">Link document</string>
     <string name="annex_imported">Annex file attached.</string>
     <string name="annex_deleted">Annex deleted.</string>
     <string name="annex_failed">The annex file operation could not be completed.</string>
@@ -46,4 +48,11 @@
     <string name="confirm_delete_message">This action cannot be undone.</string>
     <string name="confirm_delete">Delete</string>
     <string name="cancel">Cancel</string>
+    <string name="resource_missing_source">This resource has no source to open.</string>
+    <string name="resource_invalid_source">This resource source is invalid or unsupported.</string>
+    <string name="resource_missing_private_file">The imported file is missing from app storage.</string>
+    <string name="resource_unsafe_private_path">The imported file points outside the shareable annex area.</string>
+    <string name="resource_integrity_failure">The resource changed or failed its size/checksum verification.</string>
+    <string name="resource_no_handler">No installed app can open this resource.</string>
+    <string name="resource_launch_failed">Android could not open this resource.</string>
 </resources>

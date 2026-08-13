@@ -14,28 +14,52 @@ import com.mikeyphw.studyflow.core.model.StudySchedule
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 
 class ManageAdaptiveReschedule(
     private val analyticsRepository: StudyAnalyticsRepository,
     private val scheduleRepository: StudyScheduleRepository,
     private val readinessManager: ManageExamReadiness,
+    private val studyPlanRepository: StudyPlanRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun observePreview(plan: StudyPlan): Flow<AdaptiveReschedulePreview> = combine(
         analyticsRepository.observeSnapshot(plan.id),
         scheduleRepository.observeSchedule(plan.id),
         readinessManager.observeReadiness(plan),
-    ) { analytics, schedule, readiness ->
-        AdaptiveReschedulePlanner.preview(
-            plan = plan,
-            analytics = analytics,
-            schedule = schedule,
-            readinessScorePercent = readiness.scorePercent,
-            nowEpochMillis = clock(),
-        )
+        studyPlanRepository?.observeStoredPlanSettings(plan.id) ?: flowOf(null),
+    ) { analytics, schedule, readiness, settings ->
+        val persistedSettings = if (studyPlanRepository == null) null else requireNotNull(settings) {
+            "Study Plan settings must be persisted before adaptive rescheduling."
+        }
+        if (persistedSettings?.adaptivePlanningEnabled == false) {
+            AdaptiveReschedulePlanner.disabledPreview(
+                plan = plan,
+                analytics = analytics,
+                schedule = schedule,
+                readinessScorePercent = readiness.scorePercent,
+                nowEpochMillis = clock(),
+            )
+        } else {
+            AdaptiveReschedulePlanner.preview(
+                plan = plan,
+                analytics = analytics,
+                schedule = schedule,
+                readinessScorePercent = readiness.scorePercent,
+                nowEpochMillis = clock(),
+            )
+        }
     }
 
     suspend fun applySafePreview(plan: StudyPlan): AdaptiveRescheduleApplyResult {
+        val settings = studyPlanRepository?.let { plans ->
+            requireNotNull(plans.observeStoredPlanSettings(plan.id).first()) {
+                "Study Plan settings must be persisted before adaptive rescheduling."
+            }
+        }
+        require(settings?.adaptivePlanningEnabled != false) {
+            "Adaptive rescheduling is disabled in this Study Plan's settings."
+        }
         val analytics = analyticsRepository.observeSnapshot(plan.id).first()
         val schedule = scheduleRepository.observeSchedule(plan.id).first()
         val readiness = readinessManager.observeReadiness(plan).first()
@@ -58,6 +82,25 @@ class ManageAdaptiveReschedule(
 }
 
 object AdaptiveReschedulePlanner {
+    fun disabledPreview(
+        plan: StudyPlan,
+        analytics: StudyAnalyticsSnapshot,
+        schedule: StudySchedule,
+        readinessScorePercent: Int,
+        nowEpochMillis: Long,
+    ): AdaptiveReschedulePreview = AdaptiveReschedulePreview(
+        studyPlanId = plan.id,
+        generatedAtEpochMillis = nowEpochMillis,
+        readinessScorePercent = readinessScorePercent.coerceIn(0, 100),
+        missedUnlockedActivities = schedule.plannedActivities.count {
+            it.status == PlannedActivityStatus.MISSED && !it.locked
+        },
+        overdueReviewCount = analytics.overdueReviewCount,
+        scheduleAdherencePercent = analytics.scheduleAdherencePercent.coerceIn(0, 100),
+        actionSummary = "Adaptive planning is disabled for this Study Plan.",
+        changes = listOf(keepSteady(plan.id)),
+    )
+
     fun preview(
         plan: StudyPlan,
         analytics: StudyAnalyticsSnapshot,

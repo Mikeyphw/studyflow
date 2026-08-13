@@ -4,6 +4,7 @@ import android.content.Context
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
+import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
 import com.mikeyphw.studyflow.core.domain.StudyContentRepository
 import com.mikeyphw.studyflow.core.domain.StudyCloudSyncRepository
@@ -25,6 +26,7 @@ import com.mikeyphw.studyflow.core.domain.StudySessionRepository
  */
 class StudyFlowDataLayer internal constructor(
     val studyPlanRepository: StudyPlanRepository,
+    val samplePlanProvisioningRepository: SamplePlanProvisioningRepository,
     val studyPlanPortabilityRepository: StudyPlanPortabilityRepository,
     val studyContentRepository: StudyContentRepository,
     val studyDiscoveryRepository: StudyDiscoveryRepository,
@@ -51,7 +53,12 @@ fun createStudyFlowDataLayer(
     clock: () -> Long = System::currentTimeMillis,
 ): StudyFlowDataLayer {
     val database = StudyFlowDatabase.create(context)
-    val studyPlanRepository = RoomStudyPlanRepository(database, clock)
+    val studyPlanRepository = RoomStudyPlanRepository(
+        context = context.applicationContext,
+        database = database,
+        clock = clock,
+    )
+    val samplePlanProvisioningRepository = RoomSamplePlanProvisioningRepository(database, clock)
     val studyContentRepository = RoomStudyContentRepository(database, clock)
     val studyDiscoveryRepository = RoomStudyDiscoveryRepository(database)
     val studyCloudSyncRepository = LocalStudyCloudSyncRepository(
@@ -67,7 +74,7 @@ fun createStudyFlowDataLayer(
     val studyProgressRepository = RoomStudyProgressRepository(database)
     val studyAnalyticsRepository = RoomStudyAnalyticsRepository(database, clock)
     val annexFileStorageRepository = RoomAnnexFileStorageRepository(
-        filesDir = context.applicationContext.filesDir,
+        context = context.applicationContext,
         database = database,
         clock = clock,
     )
@@ -79,6 +86,7 @@ fun createStudyFlowDataLayer(
     )
     return StudyFlowDataLayer(
         studyPlanRepository = studyPlanRepository,
+        samplePlanProvisioningRepository = samplePlanProvisioningRepository,
         studyPlanPortabilityRepository = portabilityRepository,
         studyContentRepository = studyContentRepository,
         studyDiscoveryRepository = studyDiscoveryRepository,
@@ -91,7 +99,10 @@ fun createStudyFlowDataLayer(
         studyProgressRepository = studyProgressRepository,
         studyAnalyticsRepository = studyAnalyticsRepository,
         annexFileStorageRepository = annexFileStorageRepository,
-        initializeData = studyPlanRepository::seedFoundationSamplesOnce,
+        initializeData = {
+            studyPlanRepository.seedFoundationSamplesOnce()
+            annexFileStorageRepository.migrateOwnedAnnexesToShareableRoot()
+        },
         inspectDatabase = { inspectStudyFlowDatabase(database) },
     )
 }

@@ -246,4 +246,5 @@
     <string name="confirm_delete_title">Delete item?</string>
     <string name="confirm_delete_message">This action cannot be undone.</string>
     <string name="confirm_delete">Delete</string>
+    <string name="onboarding_create_failed">Could not create the sample Study Plan. Try again.</string>
 </resources>

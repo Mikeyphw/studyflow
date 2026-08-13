@@ -61,6 +61,12 @@ interface StudyLibraryDao {
     @Query("SELECT * FROM annexes WHERE studyPlanId = :planId AND id = :annexId LIMIT 1")
     suspend fun findAnnex(planId: String, annexId: String): AnnexEntity?
 
+    @Query("SELECT COALESCE(SUM(byteSize), 0) FROM annexes WHERE studyPlanId = :planId")
+    suspend fun totalAnnexBytes(planId: String): Long
+
+    @Query("SELECT COUNT(*) FROM annexes WHERE storageReference = :storageReference")
+    suspend fun countAnnexesByStorageReference(storageReference: String): Int
+
     @Query(
         """
         UPDATE annexes

@@ -9,6 +9,8 @@ import com.mikeyphw.studyflow.requireStudyFlowAppContainer
 import com.mikeyphw.studyflow.core.domain.StudyReminderInput
 import com.mikeyphw.studyflow.core.domain.StudyReminderPlanner
 import com.mikeyphw.studyflow.core.domain.TodayWidgetSummary
+import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.widget.StudyFlowTodayWidgetProvider
 import java.util.Calendar
@@ -34,10 +36,9 @@ object StudyFlowWidgetUpdateCoordinator {
 
     private suspend fun buildSummary(context: Context): TodayWidgetSummary? {
         val container = context.requireStudyFlowAppContainer()
-        val plan = container.manageStudyPlan.plans.first()
-            .firstOrNull { candidate -> candidate.status == StudyPlanStatus.ACTIVE }
-            ?: return null
-        val settings = container.manageStudyPlan.observeSettings(plan.id).first()
+        val defaultPlanId = container.appPreferencesRepository.preferences.first().defaultStudyPlanId ?: return null
+        val plan = resolveCanonicalWidgetPlan(container.manageStudyPlan.plans.first(), defaultPlanId) ?: return null
+        val settings = requireNotNull(container.manageStudyPlan.observeSettings(plan.id).first()) { "Study Plan settings are unavailable." }
         val calendar = Calendar.getInstance()
         val minuteOfDay = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
         return StudyReminderPlanner.buildPlan(
@@ -59,4 +60,12 @@ object StudyFlowWidgetUpdateCoordinator {
             context,
             android.Manifest.permission.POST_NOTIFICATIONS,
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+}
+
+internal fun resolveCanonicalWidgetPlan(
+    plans: List<StudyPlan>,
+    defaultPlanId: StudyPlanId,
+): StudyPlan? = plans.firstOrNull { candidate ->
+    candidate.id == defaultPlanId &&
+        candidate.status !in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)
 }

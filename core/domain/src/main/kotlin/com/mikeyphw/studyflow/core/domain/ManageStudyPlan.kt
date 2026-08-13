@@ -12,11 +12,11 @@ class ManageStudyPlan(
 
     fun observePlan(planId: StudyPlanId) = repository.observePlan(planId)
 
-    fun observeSettings(planId: StudyPlanId) = repository.observePlanSettings(planId)
+    fun observeSettings(planId: StudyPlanId) = repository.observeStoredPlanSettings(planId)
 
     suspend fun update(plan: StudyPlan) {
-        require(plan.status != StudyPlanStatus.TRASHED) {
-            "Trashed Study Plans must be restored before editing."
+        require(plan.status !in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)) {
+            "Archived or trashed Study Plans must be restored before editing."
         }
         repository.replace(plan)
     }

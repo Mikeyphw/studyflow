@@ -185,6 +185,46 @@ private fun LoadedPlanDestination(
                 modifier = modifier,
             )
         }
+        is StudyFlowLoadState.Ready -> {
+            if (current.value.status in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)) {
+                StudyFlowErrorPane(
+                    message = stringResource(R.string.unknown_plan_error),
+                    onRetry = null,
+                    modifier = modifier,
+                )
+            } else {
+                content(current.value)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadedPlanSettingsDestination(
+    container: AppContainer,
+    planId: StudyPlanId,
+    modifier: Modifier = Modifier,
+    content: @Composable (StudyPlanSettings) -> Unit,
+) {
+    var loadAttempt by remember(planId) { mutableIntStateOf(0) }
+    val settingsFlow = remember(planId, loadAttempt) {
+        container.manageStudyPlan.observeSettings(planId).asStudyFlowOptionalLoadState()
+    }
+    val settingsState by settingsFlow.collectAsStateWithLifecycle(
+        initialValue = StudyFlowLoadState.Loading,
+    )
+    when (val current = settingsState) {
+        StudyFlowLoadState.Loading -> StudyFlowLoadingPane(modifier = modifier)
+        StudyFlowLoadState.Missing -> StudyFlowErrorPane(
+            message = stringResource(R.string.app_initialization_failed),
+            onRetry = { loadAttempt += 1 },
+            modifier = modifier,
+        )
+        is StudyFlowLoadState.Failed -> StudyFlowErrorPane(
+            message = stringResource(R.string.app_initialization_failed),
+            onRetry = { loadAttempt += 1 },
+            modifier = modifier,
+        )
         is StudyFlowLoadState.Ready -> content(current.value)
     }
 }
@@ -340,14 +380,11 @@ internal fun StudyFlowNavHost(
         composable<PlanListRoute> {
             PlanListScreen(
                 plans = plans,
-                defaultPlanId = preferences.defaultStudyPlanId
-                    ?: plans.firstOrNull { plan ->
-                        plan.status !in setOf(
-                            StudyPlanStatus.ARCHIVED,
-                            StudyPlanStatus.TRASHED,
-                            StudyPlanStatus.COMPLETED,
-                        )
-                    }?.id,
+                defaultPlanId = preferences.defaultStudyPlanId?.takeIf { defaultId ->
+                    plans.any { plan ->
+                        plan.id == defaultId && plan.status !in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)
+                    }
+                },
                 onPlanSelected = { plan -> navController.navigate(DashboardRoute(plan.id.value)) },
                 onCreatePlan = { navController.navigate(CreatePlanRoute) },
                 onImportPlan = { navController.navigate(PlanPortabilityRoute()) },
@@ -379,8 +416,8 @@ internal fun StudyFlowNavHost(
                             container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.ARCHIVE -> coroutineScope.launch {
-                            clearDefaultIfNeeded(container, preferences, plan.id)
                             container.manageStudyPlan.archive(plan.id)
+                            container.appPreferencesRepository.clearDefaultStudyPlanIf(plan.id)
                             container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.RESTORE_ARCHIVED -> coroutineScope.launch {
@@ -388,8 +425,8 @@ internal fun StudyFlowNavHost(
                             container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.MOVE_TO_TRASH -> coroutineScope.launch {
-                            clearDefaultIfNeeded(container, preferences, plan.id)
                             container.manageStudyPlan.moveToTrash(plan.id)
+                            container.appPreferencesRepository.clearDefaultStudyPlanIf(plan.id)
                             container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.RESTORE_FROM_TRASH -> coroutineScope.launch {
@@ -397,8 +434,8 @@ internal fun StudyFlowNavHost(
                             container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                         StudyPlanAction.DELETE_PERMANENTLY -> coroutineScope.launch {
-                            clearDefaultIfNeeded(container, preferences, plan.id)
                             container.manageStudyPlan.deletePermanently(plan.id)
+                            container.appPreferencesRepository.clearDefaultStudyPlanIf(plan.id)
                             container.reminderDeliveryCoordinator.reconcilePlan(plan.id)
                         }
                     }
@@ -423,90 +460,75 @@ internal fun StudyFlowNavHost(
             )
         }
         composable<OnboardingRoute> {
+            val provisioningState by container.samplePlanProvisioner.state.collectAsStateWithLifecycle()
+            LaunchedEffect(provisioningState) {
+                val completed = provisioningState as? SamplePlanProvisioningState.Completed
+                    ?: return@LaunchedEffect
+                container.reminderDeliveryCoordinator.reconcilePlan(completed.planId)
+                container.samplePlanProvisioner.consumeCompletion(completed.planId)
+                navController.navigate(DashboardRoute(completed.planId.value)) {
+                    popUpTo<PlanListRoute>()
+                }
+            }
             OnboardingSamplePlanWizardScreen(
                 onBack = navController::popBackStack,
+                creating = provisioningState is SamplePlanProvisioningState.InFlight,
+                creationFailed = provisioningState is SamplePlanProvisioningState.Failed,
                 onCreateSample = { template ->
                     val blueprint = StudyOnboardingSamplePlanWizard.build(
                         OnboardingSamplePlanInput(template = template),
                     )
                     val resources = context.resources
-                    coroutineScope.launch {
-                        val planId = StudyPlanId(UUID.randomUUID().toString())
-                        val plan = blueprint.toStudyPlan(
-                            planId = planId,
-                            name = resources.getString(template.planNameRes()),
-                            description = resources.getString(template.planDescriptionRes()),
-                        )
-                        container.createStudyPlan(
-                            plan,
-                            StudyOnboardingSamplePlanWizard.buildSettings(planId, blueprint),
-                        )
-                        val subjectIds = container.createLocalizedSampleSyllabus(
-                            planId = planId,
-                            blueprint = blueprint,
-                            subjectNames = localizedSubjectNames(resources),
-                            topicNames = localizedTopicNames(resources),
-                        )
-                        StudyOnboardingSamplePlanWizard.buildScheduleRules(
-                            planId = planId,
-                            blueprint = blueprint,
-                            subjectIdsByKind = subjectIds,
-                            idFactory = { UUID.randomUUID().toString() },
-                        ).forEach { rule -> container.manageStudySchedule.saveRule(rule) }
-                        if (preferences.defaultStudyPlanId == null) {
-                            container.appPreferencesRepository.setDefaultStudyPlan(planId)
-                        }
-                        container.reminderDeliveryCoordinator.reconcilePlan(planId)
-                        navController.navigate(DashboardRoute(planId.value)) {
-                            popUpTo<PlanListRoute>()
-                        }
-                    }
+                    container.samplePlanProvisioner.clearFailure()
+                    container.samplePlanProvisioner.startProvisioning(
+                        blueprint = blueprint,
+                        planName = resources.getString(template.planNameRes()),
+                        planDescription = resources.getString(template.planDescriptionRes()),
+                        subjectNames = localizedSubjectNames(resources),
+                        topicNames = localizedTopicNames(resources),
+                    )
                 },
             )
         }
         composable<EditPlanRoute> { entry ->
             val route = entry.toRoute<EditPlanRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
-            val settingsFlow = remember(planId) { container.manageStudyPlan.observeSettings(planId) }
-            val settings by settingsFlow.collectAsStateWithLifecycle(
-                initialValue = StudyPlanSettings.defaults(planId),
-            )
             LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
-                PlanEditorScreen(
-                    initialPlan = currentPlan,
-                    initialSettings = settings,
-                    onBack = navController::popBackStack,
-                    onSave = { form ->
-                        coroutineScope.launch {
-                            container.manageStudyPlan.update(currentPlan.withEditorForm(form))
-                            container.manageStudyPlan.updateSettings(form.toSettings(currentPlan.id, settings))
-                            container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
-                            navController.popBackStack()
-                        }
-                    },
-                )
+                LoadedPlanSettingsDestination(container = container, planId = planId) { settings ->
+                    PlanEditorScreen(
+                        initialPlan = currentPlan,
+                        initialSettings = settings,
+                        onBack = navController::popBackStack,
+                        onSave = { form ->
+                            coroutineScope.launch {
+                                container.manageStudyPlan.update(currentPlan.withEditorForm(form))
+                                container.manageStudyPlan.updateSettings(form.toSettings(currentPlan.id, settings))
+                                container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
+                                navController.popBackStack()
+                            }
+                        },
+                    )
+                }
             }
         }
         composable<PlanSettingsRoute> { entry ->
             val route = entry.toRoute<PlanSettingsRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
-            val settingsFlow = remember(planId) { container.manageStudyPlan.observeSettings(planId) }
-            val settings by settingsFlow.collectAsStateWithLifecycle(
-                initialValue = StudyPlanSettings.defaults(planId),
-            )
             LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
-                PlanSettingsScreen(
-                    plan = currentPlan,
-                    settings = settings,
-                    onBack = navController::popBackStack,
-                    onSave = { updatedSettings ->
-                        coroutineScope.launch {
-                            container.manageStudyPlan.updateSettings(updatedSettings)
-                            container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
-                            navController.popBackStack()
-                        }
-                    },
-                )
+                LoadedPlanSettingsDestination(container = container, planId = planId) { settings ->
+                    PlanSettingsScreen(
+                        plan = currentPlan,
+                        settings = settings,
+                        onBack = navController::popBackStack,
+                        onSave = { updatedSettings ->
+                            coroutineScope.launch {
+                                container.manageStudyPlan.updateSettings(updatedSettings)
+                                container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
+                                navController.popBackStack()
+                            }
+                        },
+                    )
+                }
             }
         }
         composable<PlanPortabilityRoute> { entry ->
@@ -584,31 +606,29 @@ internal fun StudyFlowNavHost(
         composable<RemindersRoute> { entry ->
             val route = entry.toRoute<RemindersRoute>()
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
-            val settingsFlow = remember(planId) { container.manageStudyPlan.observeSettings(planId) }
-            val settings by settingsFlow.collectAsStateWithLifecycle(
-                initialValue = StudyPlanSettings.defaults(planId),
-            )
             LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
-                StudyRemindersScreen(
-                    plan = currentPlan,
-                    settings = settings,
-                    schedule = container.manageStudySchedule,
-                    review = container.manageStudyReview,
-                    onSettingsChanged = { updatedSettings ->
-                        coroutineScope.launch {
-                            container.manageStudyPlan.updateSettings(updatedSettings)
-                            container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
-                        }
-                    },
-                    onNotificationPermissionResult = { granted ->
-                        if (granted) {
+                LoadedPlanSettingsDestination(container = container, planId = planId) { settings ->
+                    StudyRemindersScreen(
+                        plan = currentPlan,
+                        settings = settings,
+                        schedule = container.manageStudySchedule,
+                        review = container.manageStudyReview,
+                        onSettingsChanged = { updatedSettings ->
                             coroutineScope.launch {
-                                container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
+                                container.manageStudyPlan.updateSettings(updatedSettings)
+                                container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
                             }
-                        }
-                    },
-                    onBack = navController::popBackStack,
-                )
+                        },
+                        onNotificationPermissionResult = { granted ->
+                            if (granted) {
+                                coroutineScope.launch {
+                                    container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
+                                }
+                            }
+                        },
+                        onBack = navController::popBackStack,
+                    )
+                }
             }
         }
         composable<SubjectsRoute> { entry ->
@@ -1111,16 +1131,6 @@ private fun copyDebugText(context: Context, label: String, text: String) {
     )
 }
 
-private suspend fun clearDefaultIfNeeded(
-    container: AppContainer,
-    preferences: AppPreferences,
-    planId: StudyPlanId,
-) {
-    if (preferences.defaultStudyPlanId == planId) {
-        container.appPreferencesRepository.setDefaultStudyPlan(null)
-    }
-}
-
 private fun NavHostController.navigateToPlans() {
     navigate(PlanListRoute) {
         popUpTo<PlanListRoute> { inclusive = false }
@@ -1169,76 +1179,6 @@ private fun localizedTopicNames(resources: Resources): Map<OnboardingSampleTopic
     OnboardingSampleTopicKind.entries.associateWith { topic ->
         resources.getString(topic.titleRes())
     }
-
-private fun OnboardingSamplePlanBlueprint.toStudyPlan(
-    planId: StudyPlanId,
-    name: String,
-    description: String,
-): StudyPlan = StudyPlan(
-    id = planId,
-    name = name,
-    description = description,
-    type = studyType,
-    status = StudyPlanStatus.ACTIVE,
-    examDateIso = null,
-    weeklyGoalHours = weeklyGoalHours,
-    progressPercent = 0,
-    studiedMinutesThisWeek = 0,
-    questionsAnswered = 0,
-    averageAccuracyPercent = 0,
-)
-
-private suspend fun AppContainer.createLocalizedSampleSyllabus(
-    planId: StudyPlanId,
-    blueprint: OnboardingSamplePlanBlueprint,
-    subjectNames: Map<OnboardingSampleSubjectKind, String>,
-    topicNames: Map<OnboardingSampleTopicKind, String>,
-): Map<OnboardingSampleSubjectKind, SubjectId> {
-    val subjectIds = linkedMapOf<OnboardingSampleSubjectKind, SubjectId>()
-    blueprint.subjects.forEachIndexed { subjectIndex, subjectBlueprint ->
-        val subjectId = SubjectId(UUID.randomUUID().toString())
-        subjectIds[subjectBlueprint.kind] = subjectId
-        manageStudyContent.saveSubject(
-            Subject(
-                id = subjectId,
-                studyPlanId = planId,
-                name = subjectNames.getValue(subjectBlueprint.kind),
-                description = "",
-                colorArgb = null,
-                priority = subjectBlueprint.priority,
-                examWeight = subjectBlueprint.examWeight,
-                estimatedMinutes = subjectBlueprint.estimatedMinutes,
-                progressPercent = 0,
-                accuracyPercent = 0,
-                status = ContentProgressStatus.NOT_STARTED,
-                position = subjectIndex,
-                archived = false,
-            ),
-        )
-        subjectBlueprint.topics.forEachIndexed { topicIndex, topicBlueprint ->
-            manageStudyContent.saveTopic(
-                Topic(
-                    id = TopicId(UUID.randomUUID().toString()),
-                    studyPlanId = planId,
-                    subjectId = subjectId,
-                    parentTopicId = null,
-                    name = topicNames.getValue(topicBlueprint.kind),
-                    description = "",
-                    priority = topicBlueprint.priority,
-                    difficulty = topicBlueprint.difficulty,
-                    examIncidencePercent = null,
-                    estimatedMinutes = topicBlueprint.estimatedMinutes,
-                    progressPercent = 0,
-                    masteryPercent = 0,
-                    status = ContentProgressStatus.NOT_STARTED,
-                    position = topicIndex,
-                    archived = false,
-                ),
-            )
-        }
-    }
-    return subjectIds
-}
 
 private fun PlanEditorForm.toNewStudyPlan(): StudyPlan = StudyPlan(
     id = StudyPlanId(UUID.randomUUID().toString()),

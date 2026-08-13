@@ -49,11 +49,21 @@ class ManageAnnexFileStorageTest {
             byteSize = 1,
             checksumSha256 = null,
             storageMode = AnnexStorageMode.IMPORTED_COPY,
-            storageReference = "study-plans/plan/annexes/annex/file.pdf",
+            storageReference = "shareable-annexes/plan/annex/file.pdf",
             persistedPermission = false,
             createdAtEpochMillis = 1,
             updatedAtEpochMillis = 1,
         )
+
+        override suspend fun linkDocument(
+            studyPlanId: StudyPlanId,
+            subjectId: SubjectId?,
+            topicId: TopicId?,
+            materialId: StudyMaterialId?,
+            displayName: String,
+            mimeType: String,
+            storageReference: String,
+        ): Annex = error("Not needed by this test")
 
         override suspend fun deleteStoredAnnex(studyPlanId: StudyPlanId, annexId: AnnexId) = Unit
 

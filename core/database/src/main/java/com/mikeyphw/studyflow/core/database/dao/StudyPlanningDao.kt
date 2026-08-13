@@ -225,6 +225,24 @@ interface StudyPlanningDao {
 
     @Query(
         """
+        SELECT * FROM study_sessions
+        WHERE status IN ('RUNNING', 'PAUSED')
+        ORDER BY startedAtEpochMillis DESC
+        """,
+    )
+    fun observeAllActiveStudySessions(): Flow<List<StudySessionEntity>>
+
+    @Query(
+        """
+        SELECT * FROM study_sessions
+        WHERE status IN ('RUNNING', 'PAUSED')
+        ORDER BY startedAtEpochMillis DESC
+        """,
+    )
+    suspend fun findAllActiveStudySessions(): List<StudySessionEntity>
+
+    @Query(
+        """
         UPDATE study_sessions
         SET notes = :notes
         WHERE studyPlanId = :planId

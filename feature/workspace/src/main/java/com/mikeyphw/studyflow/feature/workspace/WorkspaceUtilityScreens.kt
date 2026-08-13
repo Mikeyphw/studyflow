@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
@@ -69,7 +70,7 @@ fun PlanPickerScreen(
     val other = available.filterNot(active::contains)
     val archived = visiblePlans.filter { it.status == StudyPlanStatus.ARCHIVED }
     val selectPlan: (StudyPlan) -> Unit = { plan ->
-        if (activeSession != null && plan.id.value != selectedPlanId) {
+        if (activeSession != null && plan.id != activeSession.studyPlanId) {
             blockedPlan = plan
         } else {
             onPlanSelected(plan)
@@ -367,8 +368,12 @@ private fun QuickSessionDialog(
     onStarted: (StudySession) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val preferredSessionMinutes by remember(plan.id, sessionManager) {
+        sessionManager.observePreferredSessionMinutes(plan.id)
+    }.collectAsStateWithLifecycle(initialValue = null)
     var title by rememberSaveable { mutableStateOf(plan.name) }
-    var duration by rememberSaveable { mutableStateOf("25") }
+    var durationOverride by rememberSaveable { mutableStateOf<String?>(null) }
+    val duration = durationOverride ?: preferredSessionMinutes?.toString().orEmpty()
     var errorVisible by rememberSaveable { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -384,7 +389,7 @@ private fun QuickSessionDialog(
                 )
                 OutlinedTextField(
                     value = duration,
-                    onValueChange = { duration = it.filter(Char::isDigit).take(3) },
+                    onValueChange = { durationOverride = it.filter(Char::isDigit).take(3) },
                     label = { Text(stringResource(R.string.quick_session_duration)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -404,7 +409,7 @@ private fun QuickSessionDialog(
                                 studyPlanId = plan.id,
                                 title = title,
                                 type = StudyActivityType.CUSTOM,
-                                targetDurationMinutes = duration.toIntOrNull()?.coerceIn(5, 240),
+                                targetDurationMinutes = durationOverride?.toIntOrNull(),
                             )
                         }.onSuccess { session ->
                             onDismiss()

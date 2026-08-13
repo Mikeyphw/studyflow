@@ -79,6 +79,7 @@ interface AppContainer : DiagnosticRecorderProvider {
     val appPreferencesRepository: AppPreferencesRepository
     val reminderDeliveryCoordinator: StudyReminderDeliveryCoordinator
     val createStudyPlan: CreateStudyPlan
+    val samplePlanProvisioner: SamplePlanProvisioner
     val manageStudyPlan: ManageStudyPlan
     val manageStudyContent: ManageStudyContent
     val manageStudyDiscovery: ManageStudyDiscovery
@@ -133,13 +134,18 @@ private class DefaultAppContainer(
         studyPracticeRepository = studyPracticeRepository,
     )
     override val createStudyPlan = CreateStudyPlan(studyPlanRepository)
+    override val samplePlanProvisioner = SamplePlanProvisioner(
+        applicationScope = applicationScope,
+        repository = dataLayer.samplePlanProvisioningRepository,
+        preferencesRepository = appPreferencesRepository,
+    )
     override val manageStudyPlan = ManageStudyPlan(studyPlanRepository)
     override val manageStudyContent = ManageStudyContent(studyContentRepository)
     override val manageStudyDiscovery = ManageStudyDiscovery(studyDiscoveryRepository)
     override val manageStudyCloudSync = ManageStudyCloudSync(studyCloudSyncRepository)
     override val manageStudySchedule = ManageStudySchedule(studyScheduleRepository)
-    override val manageStudySession = ManageStudySession(studySessionRepository)
-    override val manageStudyPractice = ManageStudyPractice(studyPracticeRepository)
+    override val manageStudySession = ManageStudySession(studySessionRepository, studyPlanRepository)
+    override val manageStudyPractice = ManageStudyPractice(studyPracticeRepository, studyPlanRepository)
     override val manageStudyLibrary = ManageStudyLibrary(studyLibraryRepository)
     override val manageStudyReview = ManageStudyReview(studyReviewRepository, studyPracticeRepository)
     override val manageStudyResourceViewer = ManageStudyResourceViewer(studyLibraryRepository)
@@ -154,6 +160,7 @@ private class DefaultAppContainer(
         analyticsRepository = studyAnalyticsRepository,
         scheduleRepository = studyScheduleRepository,
         readinessManager = manageExamReadiness,
+        studyPlanRepository = studyPlanRepository,
     )
     override val manageAnnexFileStorage = ManageAnnexFileStorage(annexFileStorageRepository)
     override val manageStudyPlanPortability =

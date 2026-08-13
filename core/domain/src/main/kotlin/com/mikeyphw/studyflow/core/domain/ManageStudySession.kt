@@ -11,12 +11,23 @@ import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.VideoResourceId
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 class ManageStudySession(
     private val repository: StudySessionRepository,
+    private val studyPlanRepository: StudyPlanRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun observeSessions(planId: StudyPlanId) = repository.observeSessions(planId)
+
+    fun observeActiveSessions(): Flow<List<StudySession>> = repository.observeActiveSessions()
+
+    fun observePreferredSessionMinutes(planId: StudyPlanId): Flow<Int?> =
+        studyPlanRepository?.observeStoredPlanSettings(planId)?.map { settings -> settings?.preferredSessionMinutes }
+            ?: flowOf(null)
 
     suspend fun startQuickSession(
         sessionId: StudySessionId,
@@ -33,7 +44,12 @@ class ManageStudySession(
         require(targetDurationMinutes == null || targetDurationMinutes in 5..240) {
             "Target duration must be between 5 and 240 minutes."
         }
-        require(repository.findActiveSession(studyPlanId) == null) {
+        val resolvedTargetDurationMinutes = targetDurationMinutes ?: studyPlanRepository?.let { plans ->
+            requireNotNull(plans.observeStoredPlanSettings(studyPlanId).first()) {
+                "Study Plan settings must be persisted before starting a quick Study Session."
+            }.preferredSessionMinutes
+        }
+        require(repository.findAnyActiveSession() == null) {
             "Finish or cancel the active Study Session before starting another one."
         }
         return repository.createSession(
@@ -57,7 +73,7 @@ class ManageStudySession(
                 concentrationRating = null,
                 difficultyRating = null,
                 notes = title.trim(),
-                targetDurationMinutes = targetDurationMinutes,
+                targetDurationMinutes = resolvedTargetDurationMinutes,
             ),
         )
     }
@@ -66,7 +82,7 @@ class ManageStudySession(
         require(activity.status in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED)) {
             "Only planned or missed activities can start a Study Session."
         }
-        require(repository.findActiveSession(activity.studyPlanId) == null) {
+        require(repository.findAnyActiveSession() == null) {
             "Finish or cancel the active Study Session before starting another one."
         }
         return repository.createSession(
@@ -171,6 +187,8 @@ class ManageStudySession(
     }
 
     suspend fun activeSession(planId: StudyPlanId): StudySession? = repository.findActiveSession(planId)
+
+    suspend fun activeSession(): StudySession? = repository.findAnyActiveSession()
 
     suspend fun updateNotes(
         planId: StudyPlanId,

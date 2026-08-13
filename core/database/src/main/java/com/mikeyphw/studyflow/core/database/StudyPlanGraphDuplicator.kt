@@ -35,6 +35,10 @@ class StudyPlanGraphDuplicator(
                     arguments += newPlanId
                     "?"
                 }
+                spec.tableName == "planned_activities" && column == "status" ->
+                    "CASE WHEN $quotedColumn = 'IN_PROGRESS' THEN 'PLANNED' ELSE $quotedColumn END"
+                spec.tableName == "planned_activities" && column == "completedAtEpochMillis" ->
+                    "CASE WHEN `status` = 'IN_PROGRESS' THEN NULL ELSE $quotedColumn END"
                 column in spec.remappedIdentifierColumns -> {
                     arguments += newPlanId
                     "CASE WHEN $quotedColumn IS NULL THEN NULL ELSE ? || ':' || $quotedColumn END"
@@ -49,7 +53,9 @@ class StudyPlanGraphDuplicator(
             INSERT INTO ${quoteIdentifier(spec.tableName)} (${spec.columns.joinToString { quoteIdentifier(it) }})
             SELECT ${selections.joinToString()}
             FROM ${quoteIdentifier(spec.tableName)}
-            WHERE ${quoteIdentifier("studyPlanId")} = ?
+            WHERE ${quoteIdentifier("studyPlanId")} = ?${
+                if (spec.tableName == "study_sessions") " AND `status` NOT IN ('RUNNING', 'PAUSED')" else ""
+            }
             """.trimIndent(),
             arguments.toTypedArray(),
         )
@@ -140,13 +146,6 @@ class StudyPlanGraphDuplicator(
                 remap = setOf("id", "subjectId", "topicId"),
             ),
             table(
-                "annexes",
-                "id", "studyPlanId", "subjectId", "topicId", "materialId", "displayName", "mimeType", "byteSize",
-                "checksumSha256", "storageMode", "storageReference", "persistedPermission", "createdAtEpochMillis",
-                "updatedAtEpochMillis",
-                remap = setOf("id", "subjectId", "topicId", "materialId"),
-            ),
-            table(
                 "questions",
                 "id", "studyPlanId", "subjectId", "topicId", "type", "statement", "optionsJson", "correctAnswer",
                 "explanation", "examBoard", "source", "year", "difficulty", "favorite", "disputed", "tagsJson",
@@ -189,12 +188,6 @@ class StudyPlanGraphDuplicator(
                 "id", "studyPlanId", "subjectId", "topicId", "materialId", "type", "title", "content", "pinned",
                 "tagsJson", "createdAtEpochMillis", "updatedAtEpochMillis",
                 remap = setOf("id", "subjectId", "topicId", "materialId"),
-            ),
-            table(
-                "plan_snapshots",
-                "id", "studyPlanId", "kind", "label", "schemaVersion", "payloadReference", "checksumSha256",
-                "createdAtEpochMillis",
-                remap = setOf("id"),
             ),
             table(
                 "study_plan_settings",

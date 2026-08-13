@@ -59,6 +59,28 @@ class DataStoreAppPreferencesRepository(
         }
     }
 
+    override suspend fun clearDefaultStudyPlanIf(planId: StudyPlanId): Boolean {
+        var cleared = false
+        dataStore.edit { values ->
+            if (values[DefaultStudyPlanKey] == planId.value) {
+                values.remove(DefaultStudyPlanKey)
+                cleared = true
+            }
+        }
+        return cleared
+    }
+
+    override suspend fun setDefaultStudyPlanIfAbsent(planId: StudyPlanId): Boolean {
+        var stored = false
+        dataStore.edit { values ->
+            if (values[DefaultStudyPlanKey].isNullOrBlank()) {
+                values[DefaultStudyPlanKey] = planId.value
+                stored = true
+            }
+        }
+        return stored
+    }
+
     override suspend fun recordRecentSearch(query: String) {
         dataStore.edit { values ->
             val current = RecentSearchHistory.decode(values[RecentSearchesKey])

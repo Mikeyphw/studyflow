@@ -14,9 +14,11 @@ import com.mikeyphw.studyflow.core.model.TestMode
 import com.mikeyphw.studyflow.core.model.TopicId
 import java.util.UUID
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 
 class ManageStudyPractice(
     private val repository: StudyPracticeRepository,
+    private val studyPlanRepository: StudyPlanRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val execution = ManagePracticeExecution(repository, clock = clock)
@@ -103,13 +105,19 @@ class ManageStudyPractice(
         require(title.isNotBlank()) { "Practice Test title cannot be blank." }
         require(questions.isNotEmpty()) { "Practice Test needs at least one question." }
         require(questions.all { it.studyPlanId == planId }) { "All questions must belong to the Study Plan." }
+        val settings = studyPlanRepository?.let { plans ->
+            requireNotNull(plans.observeStoredPlanSettings(planId).first()) {
+                "Study Plan settings must be persisted before creating a Practice Test."
+            }
+        }
+        val effectiveMode = if (settings?.strictExamModeEnabled == true) TestMode.EXAM else mode
         val now = clock()
         return repository.upsertTest(
             StudyTest(
                 id = id,
                 studyPlanId = planId,
                 title = title.trim(),
-                mode = mode,
+                mode = effectiveMode,
                 timeLimitSeconds = timeLimitSeconds,
                 questionCount = questions.size,
                 answeredCount = 0,

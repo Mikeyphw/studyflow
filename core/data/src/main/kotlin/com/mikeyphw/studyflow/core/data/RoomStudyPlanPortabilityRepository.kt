@@ -199,7 +199,7 @@ internal class RoomStudyPlanPortabilityRepository(
                 snapshotId = safetySnapshot?.id?.value,
             )
         } catch (error: Throwable) {
-            safetySnapshot?.payloadReference?.let(::resolveSnapshotFile)?.delete()
+            safetySnapshot?.let { snapshot -> resolveSnapshotFile(snapshot.studyPlanId.value, snapshot.payloadReference).delete() }
             throw error
         }
     }
@@ -217,7 +217,7 @@ internal class RoomStudyPlanPortabilityRepository(
             "Snapshot ${snapshotId.value} does not exist."
         }
         val snapshot = stored.asExternalModel()
-        val sourceFile = resolveSnapshotFile(snapshot.payloadReference)
+        val sourceFile = resolveSnapshotFile(snapshot.studyPlanId.value, snapshot.payloadReference)
         require(sourceFile.isFile) { "Snapshot package is missing from private storage." }
         require(sha256(sourceFile).equals(snapshot.checksumSha256, ignoreCase = true)) {
             "Snapshot checksum verification failed."
@@ -245,14 +245,14 @@ internal class RoomStudyPlanPortabilityRepository(
                 snapshotId = safetySnapshot.id.value,
             )
         } catch (error: Throwable) {
-            resolveSnapshotFile(safetySnapshot.payloadReference).delete()
+            resolveSnapshotFile(safetySnapshot.studyPlanId.value, safetySnapshot.payloadReference).delete()
             throw error
         }
     }
 
     override suspend fun deleteSnapshot(snapshotId: PlanSnapshotId) {
         val snapshot = supportDao.findSnapshot(snapshotId.value) ?: return
-        resolveSnapshotFile(snapshot.payloadReference).delete()
+        resolveSnapshotFile(snapshot.studyPlanId, snapshot.payloadReference).delete()
         supportDao.deleteSnapshot(snapshotId.value)
     }
 
@@ -347,8 +347,18 @@ internal class RoomStudyPlanPortabilityRepository(
             val annexId = row.values["id"]?.value.orEmpty()
             if (annexId.isBlank()) return@forEach
             val annex = sourceAnnexesByExportedId[annexId] ?: return@forEach
-            val file = annex.storageReference.takeIf(String::isNotBlank)?.let(::resolveAnnexFile) ?: return@forEach
-            if (annex.storageMode != AnnexStorageMode.IMPORTED_COPY.name || !file.isFile) return@forEach
+            if (annex.storageMode != AnnexStorageMode.IMPORTED_COPY.name) return@forEach
+            val file = annex.storageReference.takeIf(String::isNotBlank)
+                ?.let { reference -> resolveAnnexFile(planId.value, reference) }
+                ?: return@forEach
+            require(file.isFile) { "Annex payload is missing from private storage." }
+            require(file.length() == annex.byteSize) { "Annex byte-size verification failed before export." }
+            val expectedChecksum = requireNotNull(annex.checksumSha256?.takeIf(String::isNotBlank)) {
+                "Annex checksum is missing; migrate or re-import the annex before export."
+            }
+            require(sha256(file).equals(expectedChecksum, ignoreCase = true)) {
+                "Annex checksum verification failed before export."
+            }
             require(file.length() <= MaxAnnexPayloadBytes) {
                 "Annex payload exceeds the supported package entry size."
             }
@@ -448,24 +458,26 @@ internal class RoomStudyPlanPortabilityRepository(
         )
     }
 
-    private fun resolveSnapshotFile(reference: String): File {
+    private fun resolveSnapshotFile(planId: String, reference: String): File {
         val candidate = File(applicationFiles, reference).canonicalFile
-        require(candidate.path.startsWith(applicationFiles.canonicalPath + File.separator)) {
+        val root = File(applicationFiles, "study-plans/${sanitizeSegment(planId)}/snapshots").canonicalFile
+        require(candidate.path.startsWith(root.path + File.separator)) {
             "Unsafe snapshot path."
         }
         return candidate
     }
 
-    private fun resolveAnnexFile(reference: String): File {
+    private fun resolveAnnexFile(planId: String, reference: String): File {
         val candidate = File(applicationFiles, reference).canonicalFile
-        require(candidate.path.startsWith(applicationFiles.canonicalPath + File.separator)) {
+        val root = File(applicationFiles, "shareable-annexes/${sanitizeSegment(planId)}").canonicalFile
+        require(candidate.path.startsWith(root.path + File.separator)) {
             "Unsafe annex path."
         }
         return candidate
     }
 
     private fun annexDirectory(planId: String, annexId: String): File =
-        File(applicationFiles, "study-plans/${sanitizeSegment(planId)}/annexes/${sanitizeSegment(annexId)}")
+        File(applicationFiles, "shareable-annexes/${sanitizeSegment(planId)}/${sanitizeSegment(annexId)}")
 
     private fun annexPayloadEntryName(annexId: String, displayName: String): String =
         "annex-payloads/${sanitizeSegment(annexId)}/${sanitizeFileName(displayName)}"

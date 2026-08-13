@@ -63,8 +63,17 @@ object SyllabusImportParser {
                 val subject = requireNotNull(currentSubject) {
                     "Line ${index + 1} defines a topic before any subject."
                 }
-                val level = (indent / 2).coerceAtLeast(1)
+                require(indent % 2 == 0) { "Line ${index + 1} uses partial indentation; use two spaces per level." }
+                val level = indent / 2
+                require(level >= 1) { "Line ${index + 1} has invalid topic indentation." }
+                val previousLevel = topicStack.lastOrNull()?.first ?: 0
+                require(level <= previousLevel + 1) {
+                    "Line ${index + 1} jumps from indentation level $previousLevel to $level."
+                }
                 while (topicStack.isNotEmpty() && topicStack.last().first >= level) topicStack.removeLast()
+                require(level == 1 || topicStack.lastOrNull()?.first == level - 1) {
+                    "Line ${index + 1} has no parent at indentation level ${level - 1}."
+                }
                 val key = "${subject.key}:topic:${subject.topics.size}"
                 val topic = SyllabusTopicDraft(
                     key = key,
@@ -82,46 +91,116 @@ object SyllabusImportParser {
     fun parseCsv(input: String): SyllabusImportDraft {
         val rows = input.lineSequence().filter { it.isNotBlank() }.map(::parseCsvLine).toList()
         require(rows.isNotEmpty()) { "The CSV syllabus is empty." }
-        val header = rows.first().map { it.trim().lowercase() }
+        val header = rows.first().mapIndexed { column, value ->
+            value.trim().let { normalized -> if (column == 0) normalized.removePrefix("\uFEFF") else normalized }.lowercase()
+        }
         val index = header.withIndex().associate { it.value to it.index }
         require("subject" in index && "topic" in index) { "CSV must include subject and topic columns." }
-        val subjects = linkedMapOf<String, MutableSubject>()
+
+        data class RawTopic(
+            val rowNumber: Int,
+            val key: String,
+            val name: String,
+            val parentName: String?,
+            val priority: Int,
+            val difficulty: Int,
+            val incidence: Int?,
+            val minutes: Int,
+            val status: ContentProgressStatus,
+        )
+        data class RawSubject(
+            val mutable: MutableSubject,
+            val topics: MutableList<RawTopic> = mutableListOf(),
+        )
+
+        val subjects = linkedMapOf<String, RawSubject>()
         rows.drop(1).forEachIndexed { rowIndex, row ->
+            val rowNumber = rowIndex + 2
             fun value(name: String): String = index[name]?.let { row.getOrNull(it) }.orEmpty().trim()
             val subjectName = value("subject")
-            require(subjectName.isNotBlank()) { "CSV row ${rowIndex + 2} has no subject." }
-            val subject = subjects.getOrPut(subjectName.lowercase()) {
-                MutableSubject(
-                    key = "subject:${subjects.size}",
-                    name = subjectName,
-                    priority = value("subject_priority").toIntOrNull()?.coerceIn(1, 5) ?: 3,
-                    examWeight = value("exam_weight").toDoubleOrNull()?.coerceAtLeast(0.0) ?: 1.0,
-                    estimatedMinutes = value("subject_minutes").toIntOrNull()?.coerceAtLeast(0) ?: 0,
+            require(subjectName.isNotBlank()) { "CSV row $rowNumber has no subject." }
+            val subjectKey = subjectName.lowercase()
+            val rawSubject = subjects.getOrPut(subjectKey) {
+                RawSubject(
+                    MutableSubject(
+                        key = "subject:${subjects.size}",
+                        name = subjectName,
+                        priority = strictInt(value("subject_priority"), "subject_priority", rowNumber, 1..5, 3),
+                        examWeight = strictDouble(value("exam_weight"), "exam_weight", rowNumber, minimum = 0.0, default = 1.0),
+                        estimatedMinutes = strictInt(value("subject_minutes"), "subject_minutes", rowNumber, 0..Int.MAX_VALUE, 0),
+                    ),
                 )
             }
             val topicName = value("topic")
             if (topicName.isBlank()) return@forEachIndexed
-            val key = "${subject.key}:topic:${subject.topics.size}"
-            val parentName = value("parent")
-            val parentKey = parentName.takeIf(String::isNotBlank)?.let { name ->
-                subject.topics.lastOrNull { it.name.equals(name, ignoreCase = true) }?.key
-                    ?: error("CSV row ${rowIndex + 2} references unknown parent topic '$name'.")
-            }
-            subject.topics += SyllabusTopicDraft(
-                key = key,
-                parentKey = parentKey,
+            rawSubject.topics += RawTopic(
+                rowNumber = rowNumber,
+                key = "${rawSubject.mutable.key}:topic:${rawSubject.topics.size}",
                 name = topicName,
-                priority = value("priority").toIntOrNull()?.coerceIn(1, 5) ?: 3,
-                difficulty = value("difficulty").toIntOrNull()?.coerceIn(1, 5) ?: 3,
-                examIncidencePercent = value("incidence").toIntOrNull()?.coerceIn(0, 100),
-                estimatedMinutes = value("minutes").toIntOrNull()?.coerceAtLeast(0) ?: 0,
-                status = value("status").takeIf(String::isNotBlank)?.let {
-                    runCatching { ContentProgressStatus.valueOf(it.uppercase()) }
-                        .getOrDefault(ContentProgressStatus.NOT_STARTED)
-                } ?: ContentProgressStatus.NOT_STARTED,
+                parentName = value("parent").takeIf(String::isNotBlank),
+                priority = strictInt(value("priority"), "priority", rowNumber, 1..5, 3),
+                difficulty = strictInt(value("difficulty"), "difficulty", rowNumber, 1..5, 3),
+                incidence = strictNullableInt(value("incidence"), "incidence", rowNumber, 0..100),
+                minutes = strictInt(value("minutes"), "minutes", rowNumber, 0..Int.MAX_VALUE, 0),
+                status = strictStatus(value("status"), rowNumber),
             )
         }
-        return SyllabusImportDraft(subjects.values.map(MutableSubject::freeze))
+
+        subjects.values.forEach { rawSubject ->
+            val byName = rawSubject.topics.groupBy { it.name.trim().lowercase() }
+            rawSubject.topics.forEach { rawTopic ->
+                val parentKey = rawTopic.parentName?.let { parentName ->
+                    val matches = byName[parentName.trim().lowercase()].orEmpty()
+                    require(matches.isNotEmpty()) {
+                        "CSV row ${rawTopic.rowNumber} references unknown parent topic '$parentName'."
+                    }
+                    require(matches.size == 1) {
+                        "CSV row ${rawTopic.rowNumber} references ambiguous parent topic '$parentName'."
+                    }
+                    require(matches.single().key != rawTopic.key) {
+                        "CSV row ${rawTopic.rowNumber} cannot make a topic its own parent."
+                    }
+                    matches.single().key
+                }
+                rawSubject.mutable.topics += SyllabusTopicDraft(
+                    key = rawTopic.key,
+                    parentKey = parentKey,
+                    name = rawTopic.name,
+                    priority = rawTopic.priority,
+                    difficulty = rawTopic.difficulty,
+                    examIncidencePercent = rawTopic.incidence,
+                    estimatedMinutes = rawTopic.minutes,
+                    status = rawTopic.status,
+                )
+            }
+        }
+        require(subjects.isNotEmpty()) { "The CSV syllabus does not contain any subjects." }
+        return SyllabusImportDraft(subjects.values.map { it.mutable.freeze() })
+    }
+
+    private fun strictInt(value: String, field: String, row: Int, range: IntRange, default: Int): Int {
+        if (value.isBlank()) return default
+        val parsed = value.toIntOrNull() ?: error("CSV row $row has invalid integer '$value' for $field.")
+        require(parsed in range) { "CSV row $row has out-of-range value '$value' for $field." }
+        return parsed
+    }
+
+    private fun strictNullableInt(value: String, field: String, row: Int, range: IntRange): Int? {
+        if (value.isBlank()) return null
+        return strictInt(value, field, row, range, range.first)
+    }
+
+    private fun strictDouble(value: String, field: String, row: Int, minimum: Double, default: Double): Double {
+        if (value.isBlank()) return default
+        val parsed = value.toDoubleOrNull() ?: error("CSV row $row has invalid number '$value' for $field.")
+        require(parsed.isFinite() && parsed >= minimum) { "CSV row $row has out-of-range value '$value' for $field." }
+        return parsed
+    }
+
+    private fun strictStatus(value: String, row: Int): ContentProgressStatus {
+        if (value.isBlank()) return ContentProgressStatus.NOT_STARTED
+        return runCatching { ContentProgressStatus.valueOf(value.uppercase()) }
+            .getOrElse { error("CSV row $row has invalid status '$value'.") }
     }
 
     private fun parseCsvLine(line: String): List<String> {

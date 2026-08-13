@@ -21,6 +21,7 @@
     <string name="no_annexes">Nenhum anexo ainda.</string>
     <string name="favorite">Favoritar</string>
     <string name="archive">Arquivar</string>
+    <string name="restore">Restaurar</string>
     <string name="delete">Excluir</string>
     <string name="mark_complete">Marcar como concluído</string>
     <string name="progress_percent">%1$d%%</string>
@@ -31,6 +32,7 @@
     <string name="attach_annex">Anexar arquivo</string>
     <string name="attach_annex_description">Copie um arquivo para o armazenamento privado do app para exportá-lo com este Plano de Estudos.</string>
     <string name="choose_annex_file">Escolher arquivo anexo</string>
+    <string name="link_annex_file">Vincular documento</string>
     <string name="annex_imported">Arquivo anexo adicionado.</string>
     <string name="annex_deleted">Anexo excluído.</string>
     <string name="annex_failed">A operação do arquivo anexo não pôde ser concluída.</string>
@@ -48,4 +50,11 @@
     <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
     <string name="confirm_delete">Excluir</string>
     <string name="cancel">Cancelar</string>
+    <string name="resource_missing_source">Este recurso não possui uma origem para abrir.</string>
+    <string name="resource_invalid_source">A origem deste recurso é inválida ou não compatível.</string>
+    <string name="resource_missing_private_file">O arquivo importado não está mais no armazenamento do aplicativo.</string>
+    <string name="resource_unsafe_private_path">O arquivo importado aponta para fora da área compartilhável de anexos.</string>
+    <string name="resource_integrity_failure">O recurso foi alterado ou falhou na verificação de tamanho/checksum.</string>
+    <string name="resource_no_handler">Nenhum aplicativo instalado pode abrir este recurso.</string>
+    <string name="resource_launch_failed">O Android não conseguiu abrir este recurso.</string>
 </resources>

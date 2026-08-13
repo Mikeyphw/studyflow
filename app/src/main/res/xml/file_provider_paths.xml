@@ -2,7 +2,7 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <files-path
         name="studyflow_annex_files"
-        path="study-plans/" />
+        path="shareable-annexes/" />
     <cache-path
         name="studyflow_support_bundles"
         path="support-bundles/" />

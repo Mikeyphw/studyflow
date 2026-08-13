@@ -1,8 +1,6 @@
 package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.Annex
-import com.mikeyphw.studyflow.core.model.AnnexId
-import com.mikeyphw.studyflow.core.model.AnnexStorageMode
 import com.mikeyphw.studyflow.core.model.StudyMaterial
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.StudyMaterialType
@@ -12,13 +10,13 @@ import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.VideoResource
 import com.mikeyphw.studyflow.core.model.VideoResourceId
 import com.mikeyphw.studyflow.core.model.VideoSourceType
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
 class ManageStudyLibrary(
     private val repository: StudyLibraryRepository,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val resourcePlanner: StudyResourceLaunchPlanner = StudyResourceLaunchPlanner(),
 ) {
     fun observeMaterials(planId: StudyPlanId): Flow<List<StudyMaterial>> = repository.observeMaterials(planId)
     fun observeVideos(planId: StudyPlanId): Flow<List<VideoResource>> = repository.observeVideos(planId)
@@ -29,6 +27,15 @@ class ManageStudyLibrary(
         repository.observeVideos(planId),
         repository.observeAnnexes(planId),
     ) { materials, videos, annexes -> StudyLibrarySnapshot(materials, videos, annexes) }
+
+    fun isValidMaterialSource(type: StudyMaterialType, sourceUri: String?): Boolean {
+        val normalized = sourceUri?.trim()?.ifBlank { null }
+        if (type in EXTERNALLY_LAUNCHED_MATERIAL_TYPES && normalized == null) return false
+        return normalized == null || resourcePlanner.planForMaterialSource(type, normalized).isLaunchable()
+    }
+
+    fun isValidVideoSource(sourceType: VideoSourceType, sourceUri: String?): Boolean =
+        resourcePlanner.planForVideoSource(sourceType, sourceUri).isLaunchable()
 
     suspend fun createMaterial(
         id: StudyMaterialId,
@@ -45,6 +52,15 @@ class ManageStudyLibrary(
     ): StudyMaterial {
         require(title.isNotBlank()) { "Material title cannot be blank." }
         require(totalUnits == null || totalUnits > 0) { "Total units must be positive when present." }
+        val normalizedSource = sourceUri?.trim()?.ifBlank { null }
+        if (type in EXTERNALLY_LAUNCHED_MATERIAL_TYPES) {
+            require(normalizedSource != null) { "This material type requires a launchable source URI." }
+        }
+        normalizedSource?.let { source ->
+            require(resourcePlanner.planForMaterialSource(type, source).isLaunchable()) {
+                "Material source URI is invalid for the selected material type."
+            }
+        }
         val now = clock()
         return repository.upsertMaterial(
             StudyMaterial(
@@ -55,7 +71,7 @@ class ManageStudyLibrary(
                 type = type,
                 title = title.trim(),
                 description = description.trim(),
-                sourceUri = sourceUri?.trim()?.ifBlank { null },
+                sourceUri = normalizedSource,
                 author = author?.trim()?.ifBlank { null },
                 totalUnits = totalUnits,
                 completedUnits = 0,
@@ -92,6 +108,11 @@ class ManageStudyLibrary(
         return repository.upsertMaterial(material.copy(archived = true, updatedAtEpochMillis = clock()))
     }
 
+    suspend fun restoreMaterial(planId: StudyPlanId, materialId: StudyMaterialId): StudyMaterial {
+        val material = requireNotNull(repository.findMaterial(planId, materialId)) { "Material does not exist." }
+        return repository.upsertMaterial(material.copy(archived = false, updatedAtEpochMillis = clock()))
+    }
+
     suspend fun createVideo(
         id: VideoResourceId,
         studyPlanId: StudyPlanId,
@@ -104,6 +125,9 @@ class ManageStudyLibrary(
     ): VideoResource {
         require(title.isNotBlank()) { "Video title cannot be blank." }
         require(sourceUri.isNotBlank()) { "Video source URI cannot be blank." }
+        require(resourcePlanner.planForVideoSource(sourceType, sourceUri).isLaunchable()) {
+            "Video source URI is invalid for the selected source type."
+        }
         require(durationMillis == null || durationMillis > 0L) { "Duration must be positive when present." }
         val now = clock()
         return repository.upsertVideo(
@@ -143,41 +167,6 @@ class ManageStudyLibrary(
         )
     }
 
-    suspend fun createLinkedAnnex(
-        id: AnnexId = AnnexId(UUID.randomUUID().toString()),
-        studyPlanId: StudyPlanId,
-        subjectId: SubjectId?,
-        topicId: TopicId?,
-        materialId: StudyMaterialId?,
-        displayName: String,
-        mimeType: String,
-        byteSize: Long,
-        storageReference: String,
-        checksumSha256: String? = null,
-    ): Annex {
-        require(displayName.isNotBlank()) { "Annex name cannot be blank." }
-        require(byteSize >= 0L) { "Annex size cannot be negative." }
-        require(storageReference.isNotBlank()) { "Annex storage reference cannot be blank." }
-        val now = clock()
-        return repository.upsertAnnex(
-            Annex(
-                id = id,
-                studyPlanId = studyPlanId,
-                subjectId = subjectId,
-                topicId = topicId,
-                materialId = materialId,
-                displayName = displayName.trim(),
-                mimeType = mimeType.ifBlank { "application/octet-stream" },
-                byteSize = byteSize,
-                checksumSha256 = checksumSha256?.trim()?.ifBlank { null },
-                storageMode = AnnexStorageMode.LINKED_DOCUMENT,
-                storageReference = storageReference.trim(),
-                persistedPermission = false,
-                createdAtEpochMillis = now,
-                updatedAtEpochMillis = now,
-            ),
-        )
-    }
 
     suspend fun deleteMaterial(
         planId: StudyPlanId,
@@ -186,5 +175,18 @@ class ManageStudyLibrary(
     suspend fun deleteVideo(planId: StudyPlanId, videoId: VideoResourceId) = repository.deleteVideo(planId, videoId)
     suspend fun deleteAnnex(planId: StudyPlanId, annexId: AnnexId) = repository.deleteAnnex(planId, annexId)
 
+    private fun StudyResourceLaunchPlan.isLaunchable(): Boolean =
+        this !is StudyResourceLaunchPlan.InvalidSource && this !is StudyResourceLaunchPlan.MissingSource
+
     private fun List<String>.cleanTags(): List<String> = map(String::trim).filter(String::isNotBlank).distinct()
+
+    private companion object {
+        val EXTERNALLY_LAUNCHED_MATERIAL_TYPES = setOf(
+            StudyMaterialType.PDF,
+            StudyMaterialType.WEBSITE,
+            StudyMaterialType.COURSE,
+            StudyMaterialType.VIDEO,
+            StudyMaterialType.LOCAL_FILE,
+        )
+    }
 }

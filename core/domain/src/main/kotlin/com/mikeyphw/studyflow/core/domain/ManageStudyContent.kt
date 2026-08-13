@@ -39,6 +39,29 @@ class ManageStudyContent(
         )
     }
 
+
+    suspend fun archiveSubject(subject: Subject): Subject = saveSubject(
+        subject.copy(status = com.mikeyphw.studyflow.core.model.ContentProgressStatus.ARCHIVED, archived = true),
+    )
+
+    suspend fun restoreSubject(subject: Subject): Subject = saveSubject(
+        subject.copy(
+            status = restoredStatus(subject.progressPercent),
+            archived = false,
+        ),
+    )
+
+    suspend fun archiveTopic(topic: Topic): Topic = saveTopic(
+        topic.copy(status = com.mikeyphw.studyflow.core.model.ContentProgressStatus.ARCHIVED, archived = true),
+    )
+
+    suspend fun restoreTopic(topic: Topic): Topic = saveTopic(
+        topic.copy(
+            status = restoredStatus(topic.progressPercent),
+            archived = false,
+        ),
+    )
+
     suspend fun deleteSubject(planId: StudyPlanId, subjectId: SubjectId) =
         repository.deleteSubject(planId, subjectId)
 
@@ -88,4 +111,10 @@ class ManageStudyContent(
         }
         return repository.importSyllabus(planId, draft)
     }
+    private fun restoredStatus(progressPercent: Int): com.mikeyphw.studyflow.core.model.ContentProgressStatus = when {
+        progressPercent >= 100 -> com.mikeyphw.studyflow.core.model.ContentProgressStatus.MASTERED
+        progressPercent > 0 -> com.mikeyphw.studyflow.core.model.ContentProgressStatus.STUDYING
+        else -> com.mikeyphw.studyflow.core.model.ContentProgressStatus.NOT_STARTED
+    }
+
 }

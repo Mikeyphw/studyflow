@@ -34,6 +34,81 @@ class StudyResourceLaunchPlannerTest {
         assertEquals(StudyResourceLaunchPlan.WebPage("https://youtu.be/demo"), plan)
     }
 
+
+    @Test
+    fun webClassificationWinsBeforePdfTypeAndIgnoresSchemeCase() {
+        val plan = planner.planForMaterial(
+            material(type = StudyMaterialType.PDF, sourceUri = "HTTPS://example.com/proof.pdf"),
+        )
+        assertEquals(StudyResourceLaunchPlan.WebPage("HTTPS://example.com/proof.pdf"), plan)
+    }
+
+    @Test
+    fun externalDocumentRejectsUnknownScheme() {
+        val plan = planner.planForMaterial(
+            material(type = StudyMaterialType.PDF, sourceUri = "ftp://example.com/proof.pdf"),
+        )
+        assertEquals(
+            StudyResourceLaunchPlan.InvalidSource(StudyResourceLaunchFailureReason.UNSUPPORTED_SCHEME),
+            plan,
+        )
+    }
+
+    @Test
+    fun websiteMaterialRejectsContentUri() {
+        val plan = planner.planForMaterial(
+            material(type = StudyMaterialType.WEBSITE, sourceUri = "content://file"),
+        )
+        assertEquals(
+            StudyResourceLaunchPlan.InvalidSource(StudyResourceLaunchFailureReason.EXPECTED_WEB_URI),
+            plan,
+        )
+    }
+
+    @Test
+    fun localFileMaterialRejectsWebUri() {
+        val plan = planner.planForMaterial(
+            material(type = StudyMaterialType.LOCAL_FILE, sourceUri = "https://example.com/file.pdf"),
+        )
+        assertEquals(
+            StudyResourceLaunchPlan.InvalidSource(StudyResourceLaunchFailureReason.EXPECTED_CONTENT_URI),
+            plan,
+        )
+    }
+
+    @Test
+    fun linkedAnnexRequiresContentUriAndCarriesIntegrityMetadata() {
+        val annex = Annex(
+            id = AnnexId("linked"),
+            studyPlanId = planId,
+            subjectId = null,
+            topicId = null,
+            materialId = null,
+            displayName = "proof.pdf",
+            mimeType = "application/pdf",
+            byteSize = 42,
+            checksumSha256 = "a".repeat(64),
+            storageMode = AnnexStorageMode.LINKED_DOCUMENT,
+            storageReference = "content://documents/proof",
+            persistedPermission = true,
+            createdAtEpochMillis = 1,
+            updatedAtEpochMillis = 1,
+        )
+        assertEquals(
+            StudyResourceLaunchPlan.LinkedDocument(
+                uri = "content://documents/proof",
+                mimeType = "application/pdf",
+                byteSize = 42,
+                checksumSha256 = "a".repeat(64),
+            ),
+            planner.planForAnnex(annex),
+        )
+        assertEquals(
+            StudyResourceLaunchPlan.InvalidSource(StudyResourceLaunchFailureReason.EXPECTED_CONTENT_URI),
+            planner.planForAnnex(annex.copy(storageReference = "https://example.com/proof.pdf")),
+        )
+    }
+
     @Test
     fun appPrivateAnnexUsesFileProviderLaunchPlan() {
         val plan = planner.planForAnnex(
@@ -48,7 +123,7 @@ class StudyResourceLaunchPlannerTest {
                 byteSize = 10,
                 checksumSha256 = null,
                 storageMode = AnnexStorageMode.IMPORTED_COPY,
-                storageReference = "study-plans/plan/annexes/annex/proof.pdf",
+                storageReference = "shareable-annexes/plan/annex/proof.pdf",
                 persistedPermission = false,
                 createdAtEpochMillis = 1,
                 updatedAtEpochMillis = 1,

@@ -100,7 +100,7 @@ class StudyReminderDeliveryCoordinator(
     private suspend fun buildRuntimePlan(planId: StudyPlanId): StudyReminderPlan? {
         val plan = studyPlanRepository.observePlan(planId).first() ?: return null
         if (plan.status != StudyPlanStatus.ACTIVE) return null
-        val settings = studyPlanRepository.observePlanSettings(planId).first()
+        val settings = studyPlanRepository.observeStoredPlanSettings(planId).first() ?: return null
         if (!settings.reviewNotificationsEnabled) return null
         val now = clock()
         return StudyReminderPlanner.buildPlan(

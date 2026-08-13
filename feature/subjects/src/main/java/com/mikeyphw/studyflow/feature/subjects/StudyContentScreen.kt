@@ -289,6 +289,20 @@ fun StudyContentScreen(
                                 topic.parentTopicId,
                             )
                         },
+                        onToggleSubjectArchived = {
+                            launchAction(subjectSaved) {
+                                if (visible.subject.archived) {
+                                    content.restoreSubject(visible.subject)
+                                } else {
+                                    content.archiveSubject(visible.subject)
+                                }
+                            }
+                        },
+                        onToggleTopicArchived = { topic ->
+                            launchAction(subjectSaved) {
+                                if (topic.archived) content.restoreTopic(topic) else content.archiveTopic(topic)
+                            }
+                        },
                         onDeleteSubject = { deleteRequest = DeleteRequest.SubjectRequest(visible.subject) },
                         onDeleteTopic = { deleteRequest = DeleteRequest.TopicRequest(it) },
                         onMoveSubject = { direction ->
@@ -461,6 +475,8 @@ private fun SubjectCard(
     onEditSubject: () -> Unit,
     onAddTopic: (TopicId?) -> Unit,
     onEditTopic: (Topic) -> Unit,
+    onToggleSubjectArchived: () -> Unit,
+    onToggleTopicArchived: (Topic) -> Unit,
     onDeleteSubject: () -> Unit,
     onDeleteTopic: (Topic) -> Unit,
     onMoveSubject: (Int) -> Unit,
@@ -497,7 +513,15 @@ private fun SubjectCard(
                 IconButton(onClick = { onMoveSubject(1) }) {
                     Icon(Icons.Outlined.KeyboardArrowDown, stringResource(R.string.move_down))
                 }
-                IconButton(onClick = onEditSubject) { Icon(Icons.Outlined.Edit, stringResource(R.string.edit_subject)) }
+                IconButton(onClick = onToggleSubjectArchived) {
+                    Icon(
+                        if (visible.subject.archived) Icons.Outlined.Restore else Icons.Outlined.Archive,
+                        stringResource(if (visible.subject.archived) R.string.restore else R.string.archive),
+                    )
+                }
+                IconButton(onClick = onEditSubject, enabled = !visible.subject.archived) {
+                    Icon(Icons.Outlined.Edit, stringResource(R.string.edit_subject))
+                }
                 IconButton(onClick = onDeleteSubject) {
                     Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.delete_subject))
                 }
@@ -532,6 +556,7 @@ private fun SubjectCard(
                         onToggleSelected = onToggleSelected,
                         onAddChild = { onAddTopic(it.id) },
                         onEdit = onEditTopic,
+                        onToggleArchived = onToggleTopicArchived,
                         onDelete = onDeleteTopic,
                         onMove = onMoveTopic,
                     )
@@ -550,6 +575,7 @@ private fun TopicNodeRow(
     onToggleSelected: (TopicId) -> Unit,
     onAddChild: (Topic) -> Unit,
     onEdit: (Topic) -> Unit,
+    onToggleArchived: (Topic) -> Unit,
     onDelete: (Topic) -> Unit,
     onMove: (Topic, Int) -> Unit,
 ) {
@@ -587,7 +613,15 @@ private fun TopicNodeRow(
             IconButton(onClick = { onAddChild(topic) }) {
                 Icon(Icons.Outlined.Add, stringResource(R.string.add_child_topic))
             }
-            IconButton(onClick = { onEdit(topic) }) { Icon(Icons.Outlined.Edit, stringResource(R.string.edit_topic)) }
+            IconButton(onClick = { onToggleArchived(topic) }) {
+                Icon(
+                    if (topic.archived) Icons.Outlined.Restore else Icons.Outlined.Archive,
+                    stringResource(if (topic.archived) R.string.restore else R.string.archive),
+                )
+            }
+            IconButton(onClick = { onEdit(topic) }, enabled = !topic.archived) {
+                Icon(Icons.Outlined.Edit, stringResource(R.string.edit_topic))
+            }
             IconButton(onClick = { onDelete(topic) }) {
                 Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.delete_topic))
             }
@@ -609,6 +643,7 @@ private fun TopicNodeRow(
             onToggleSelected = onToggleSelected,
             onAddChild = onAddChild,
             onEdit = onEdit,
+            onToggleArchived = onToggleArchived,
             onDelete = onDelete,
             onMove = onMove,
         )

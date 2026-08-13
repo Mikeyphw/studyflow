@@ -13,6 +13,7 @@ import com.mikeyphw.studyflow.core.model.StudyMaterial
 import com.mikeyphw.studyflow.core.model.StudyNote
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
+import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.VideoResource
 
@@ -102,6 +103,7 @@ data class StudyContentCleanupInput(
     val flashcards: List<Flashcard>,
     val errorEntries: List<ErrorEntry>,
     val plannedActivities: List<PlannedActivity>,
+    val studySessions: List<StudySession>,
     val notes: List<StudyNote>,
     val nowEpochMillis: Long,
 )
@@ -156,6 +158,7 @@ object StudyContentCleanupEngine {
             addAll(input.flashcards.mapNotNull { it.topicId })
             addAll(input.errorEntries.mapNotNull { it.topicId })
             addAll(input.plannedActivities.mapNotNull { it.topicId })
+            addAll(input.studySessions.mapNotNull { it.topicId })
             addAll(input.notes.mapNotNull { it.topicId })
         }
         val orphanIds = input.syllabus.topics.filter { topic ->
@@ -173,10 +176,14 @@ object StudyContentCleanupEngine {
     private fun staleResourceIssues(input: StudyContentCleanupInput): List<StudyContentCleanupIssue> {
         val referencedMaterialIds = buildSet {
             addAll(input.plannedActivities.mapNotNull { it.materialId })
+            addAll(input.studySessions.mapNotNull { it.materialId })
             addAll(input.annexes.mapNotNull { it.materialId })
             addAll(input.notes.mapNotNull { it.materialId })
         }
-        val referencedVideoIds = input.plannedActivities.mapNotNull { it.videoResourceId }.toSet()
+        val referencedVideoIds = buildSet {
+            addAll(input.plannedActivities.mapNotNull { it.videoResourceId })
+            addAll(input.studySessions.mapNotNull { it.videoResourceId })
+        }
         val cutoff = input.nowEpochMillis - STALE_RESOURCE_MILLIS
         val staleIds = buildList {
             input.materials.filter { material ->
@@ -209,6 +216,7 @@ object StudyContentCleanupEngine {
             addAll(input.notes.map(StudyNote::updatedAtEpochMillis))
             addAll(input.reviewItems.mapNotNull(ReviewItem::completedAtEpochMillis))
             addAll(input.plannedActivities.mapNotNull(PlannedActivity::completedAtEpochMillis))
+            addAll(input.studySessions.map { it.endedAtEpochMillis ?: it.startedAtEpochMillis })
         }.maxOrNull() ?: input.plan.updatedAtEpochMillis
         if (input.nowEpochMillis - latestEvidence < STALE_PLAN_MILLIS) return null
         return StudyContentCleanupIssue(
@@ -263,6 +271,7 @@ object StudyContentCleanupEngine {
             val flashcardId = review.flashcardId
             val errorEntryId = review.errorEntryId
             review.status in setOf(ReviewStatus.SCHEDULED, ReviewStatus.DUE) && (
+                listOf(subjectId, topicId, questionId, flashcardId, errorEntryId).all { it == null } ||
                 (subjectId != null && subjectId !in subjectIds) ||
                     (topicId != null && topicId !in topicIds) ||
                     (questionId != null && questionId !in questionIds) ||
@@ -300,10 +309,15 @@ object StudyContentCleanupEngine {
     }
 
     private fun duplicateQuestionKey(question: Question): String = listOf(
+        question.type.name,
         normalizedText(question.statement),
+        question.options.map(::normalizedText).joinToString("|"),
         normalizedText(question.correctAnswer),
+        normalizedText(question.explanation),
         normalizedText(question.source.orEmpty()),
         normalizedText(question.examBoard.orEmpty()),
+        question.year?.toString().orEmpty(),
+        question.difficulty.toString(),
         question.tags.map(::normalizedTag).filter { tag -> tag.isNotBlank() }.sorted().joinToString("|"),
     ).joinToString("\u001f")
 

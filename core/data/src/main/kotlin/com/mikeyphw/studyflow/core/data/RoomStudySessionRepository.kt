@@ -24,6 +24,14 @@ internal class RoomStudySessionRepository(
             sessions.map { it.asExternalModel() }
         }
 
+    override fun observeActiveSessions(): Flow<List<StudySession>> =
+        planningDao.observeAllActiveStudySessions().map { sessions ->
+            check(sessions.size <= 1) {
+                "StudyFlow database corruption: multiple active Study Sessions exist across Study Plans."
+            }
+            sessions.map { it.asExternalModel() }
+        }
+
     override suspend fun findSession(planId: StudyPlanId, sessionId: StudySessionId): StudySession? =
         planningDao.findStudySession(planId.value, sessionId.value)?.asExternalModel()
 
@@ -31,6 +39,14 @@ internal class RoomStudySessionRepository(
         val active = planningDao.findActiveStudySessions(planId.value)
         check(active.size <= 1) {
             "StudyFlow database corruption: multiple active Study Sessions exist for one Study Plan."
+        }
+        return active.singleOrNull()?.asExternalModel()
+    }
+
+    override suspend fun findAnyActiveSession(): StudySession? {
+        val active = planningDao.findAllActiveStudySessions()
+        check(active.size <= 1) {
+            "StudyFlow database corruption: multiple active Study Sessions exist across Study Plans."
         }
         return active.singleOrNull()?.asExternalModel()
     }
@@ -61,8 +77,8 @@ internal class RoomStudySessionRepository(
         require(planningDao.findStudySession(session.studyPlanId.value, session.id.value) == null) {
             "Study Session already exists."
         }
-        val active = planningDao.findActiveStudySessions(session.studyPlanId.value)
-        require(active.isEmpty()) { "Another Study Session is already active for this Study Plan." }
+        val active = planningDao.findAllActiveStudySessions()
+        require(active.isEmpty()) { "Another Study Session is already active. Finish or cancel it before starting a new one." }
 
         session.plannedActivityId?.let { activityId ->
             val expected = requireNotNull(linkedActivityExpectedStatus) {

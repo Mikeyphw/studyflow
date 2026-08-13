@@ -22,6 +22,22 @@ class StudyContentUiModelsTest {
         assertEquals(listOf("Individual rights"), visible.single().topicTree.single().children.map { it.topic.name })
     }
 
+
+    @Test
+    fun needsAttentionIncludesStrongSubjectWhenChildIsWeakAndKeepsAncestors() {
+        val base = sampleSyllabus()
+        val strongSubject = base.subjects.single().copy(progressPercent = 95)
+        val topics = base.topics.map { topic ->
+            if (topic.id == TopicId("individual")) topic.copy(masteryPercent = 40) else topic.copy(masteryPercent = 95)
+        }
+        val visible = base.copy(subjects = listOf(strongSubject), topics = topics)
+            .visibleSubjects("", SyllabusFilter.NEEDS_ATTENTION, SyllabusSort.POSITION)
+        assertEquals(listOf("Law"), visible.map { it.subject.name })
+        assertEquals(listOf("Rights"), visible.single().topicTree.map { it.topic.name })
+        assertEquals(listOf("Individual rights"), visible.single().topicTree.single().children.map { it.topic.name })
+        assertEquals(1, visible.single().visibleTopicCount)
+    }
+
     @Test
     fun moveItemPreservesEveryValue() {
         assertEquals(listOf("b", "c", "a"), moveItem(listOf("a", "b", "c"), 0, 2))

@@ -2,12 +2,16 @@ package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyActivityType
+import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.StudyPlanSettings
+import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
@@ -57,6 +61,52 @@ class ManageStudySessionFocusTest {
             fail("Expected a second active session to be rejected")
         } catch (_: IllegalArgumentException) {
             // Active focus ownership stays with the first session.
+        }
+    }
+
+    @Test
+    fun quickSessionUsesPreferredDurationWhenNoOverrideIsProvided() = runBlocking {
+        val planId = StudyPlanId("plan")
+        val settings = StudyPlanSettings.defaults(planId).copy(preferredSessionMinutes = 55)
+        val manager = ManageStudySession(
+            repository = FakeStudySessionRepository(),
+            studyPlanRepository = FakeStudyPlanSettingsRepository(settings),
+            clock = { 1_000L },
+        )
+
+        val session = manager.startQuickSession(
+            sessionId = StudySessionId("preferred"),
+            studyPlanId = planId,
+            title = "Preferred duration",
+            type = StudyActivityType.THEORY,
+        )
+
+        assertEquals(55, session.targetDurationMinutes)
+    }
+
+    @Test
+    fun activeSessionInAnotherPlanBlocksStartingFocus() = runBlocking {
+        val repository = FakeStudySessionRepository()
+        val manager = ManageStudySession(repository, clock = { 1_000L })
+        manager.startQuickSession(
+            sessionId = StudySessionId("plan-a-session"),
+            studyPlanId = StudyPlanId("plan-a"),
+            title = "Plan A",
+            type = StudyActivityType.THEORY,
+            targetDurationMinutes = 25,
+        )
+
+        try {
+            manager.startQuickSession(
+                sessionId = StudySessionId("plan-b-session"),
+                studyPlanId = StudyPlanId("plan-b"),
+                title = "Plan B",
+                type = StudyActivityType.QUESTIONS,
+                targetDurationMinutes = 25,
+            )
+            fail("Expected the process-wide active Study Session to block another plan")
+        } catch (_: IllegalArgumentException) {
+            // The application owns a single active focus session across Study Plans.
         }
     }
 
@@ -117,6 +167,8 @@ private class FakeStudySessionRepository : StudySessionRepository {
 
     override fun observeSessions(planId: StudyPlanId): Flow<List<StudySession>> = sessions
 
+    override fun observeActiveSessions(): Flow<List<StudySession>> = sessions
+
     override suspend fun findSession(planId: StudyPlanId, sessionId: StudySessionId): StudySession? =
         sessions.value.firstOrNull { it.studyPlanId == planId && it.id == sessionId }
 
@@ -127,6 +179,10 @@ private class FakeStudySessionRepository : StudySessionRepository {
                 StudySessionStatus.PAUSED,
             )
         }
+
+    override suspend fun findAnyActiveSession(): StudySession? = sessions.value.firstOrNull {
+        it.status in setOf(StudySessionStatus.RUNNING, StudySessionStatus.PAUSED)
+    }
 
     override suspend fun updateNotes(
         planId: StudyPlanId,
@@ -144,7 +200,7 @@ private class FakeStudySessionRepository : StudySessionRepository {
         linkedActivityExpectedStatus: PlannedActivityStatus?,
     ): StudySession {
         require(findSession(session.studyPlanId, session.id) == null)
-        require(findActiveSession(session.studyPlanId) == null)
+        require(findAnyActiveSession() == null)
         sessions.value = sessions.value + session
         return session
     }
@@ -161,4 +217,41 @@ private class FakeStudySessionRepository : StudySessionRepository {
         sessions.value = sessions.value.filterNot { it.id == session.id } + session
         return session
     }
+}
+
+
+private class FakeStudyPlanSettingsRepository(
+    private val settings: StudyPlanSettings,
+) : StudyPlanRepository {
+    override val plans: Flow<List<StudyPlan>> = flowOf(emptyList())
+
+    override fun observePlan(planId: StudyPlanId): Flow<StudyPlan?> = flowOf(null)
+
+    override fun observePlanSettings(planId: StudyPlanId): Flow<StudyPlanSettings> = flowOf(settings)
+
+    override fun observeStoredPlanSettings(planId: StudyPlanId): Flow<StudyPlanSettings?> = flowOf(settings)
+
+    override suspend fun create(plan: StudyPlan, settings: StudyPlanSettings) = Unit
+
+    override suspend fun replace(plan: StudyPlan) = Unit
+
+    override suspend fun duplicate(
+        sourcePlanId: StudyPlanId,
+        newPlanId: StudyPlanId,
+        newName: String,
+    ): StudyPlan = error("Not used")
+
+    override suspend fun updateStatus(planId: StudyPlanId, status: StudyPlanStatus) = Unit
+
+    override suspend fun moveToTrash(planId: StudyPlanId) = Unit
+
+    override suspend fun restoreFromTrash(planId: StudyPlanId) = Unit
+
+    override suspend fun updatePlanSettings(settings: StudyPlanSettings) = Unit
+
+    override suspend fun deletePermanently(planId: StudyPlanId) = Unit
+
+    override suspend fun clear() = Unit
+
+    override suspend fun restoreFoundationSamples() = Unit
 }

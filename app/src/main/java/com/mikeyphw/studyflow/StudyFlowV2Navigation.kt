@@ -14,7 +14,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -102,7 +101,6 @@ import com.mikeyphw.studyflow.feature.workspace.TodayWorkspaceScreen
 import com.mikeyphw.studyflow.feature.workspace.WorkspaceNoPlanScreen
 import com.mikeyphw.studyflow.feature.workspace.R as WorkspaceR
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 
 @Composable
 internal fun StudyFlowV2Navigation(
@@ -117,13 +115,15 @@ internal fun StudyFlowV2Navigation(
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val destination = entry?.destination
-    val defaultPlan = resolveWorkspacePlan(plans, preferences, "")
-    val currentPlanId = entry.workspacePlanId().ifBlank { defaultPlan?.id?.value.orEmpty() }
+    val canonicalDefaultPlan = resolveCanonicalDefaultPlan(plans, preferences)
+    val workspaceFallbackPlan = resolveWorkspacePlan(plans, preferences, "")
+    val currentPlanId = entry.workspacePlanId().ifBlank { workspaceFallbackPlan?.id?.value.orEmpty() }
     val selectedRoot = destination.workspaceRoot()
 
     LaunchedEffect(preferences.defaultStudyPlanId, plans) {
-        if (preferences.defaultStudyPlanId != null && defaultPlan == null && plans.isNotEmpty()) {
-            container.appPreferencesRepository.setDefaultStudyPlan(null)
+        val staleDefaultId = preferences.defaultStudyPlanId
+        if (staleDefaultId != null && canonicalDefaultPlan == null) {
+            container.appPreferencesRepository.clearDefaultStudyPlanIf(staleDefaultId)
         }
     }
 
@@ -298,6 +298,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 practiceManager = container.manageStudyPractice,
                 reviewManager = container.manageStudyReview,
                 progressManager = container.manageStudyProgress,
+                sessionManager = container.manageStudySession,
                 onTabSelected = { tab ->
                     navController.navigateWorkspaceTab(PlanWorkspaceRoute(plan.id.value, tab))
                 },
@@ -586,33 +587,25 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
 
     composable<PlanPickerRoute> { entry ->
         val route = entry.toRoute<PlanPickerRoute>()
-        val scope = rememberCoroutineScope()
         val selectedPlan = resolveWorkspacePlan(plans, preferences, route.planId)
-        val sessionsFlow = remember(selectedPlan?.id) {
-            selectedPlan?.let { plan -> container.manageStudySession.observeSessions(plan.id) }
-                ?: flowOf(emptyList())
-        }
-        val selectedSessions by sessionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-        val activeSession = selectedSessions.firstOrNull { session ->
-            session.status == StudySessionStatus.RUNNING || session.status == StudySessionStatus.PAUSED
-        }
+        val activeSessions by remember(container.manageStudySession) {
+            container.manageStudySession.observeActiveSessions()
+        }.collectAsStateWithLifecycle(initialValue = emptyList())
+        val activeSession = activeSessions.singleOrNull()
         PlanPickerScreen(
             plans = plans,
             selectedPlanId = selectedPlan?.id?.value ?: route.planId,
             activeSession = activeSession,
             onPlanSelected = { plan ->
-                scope.launch {
-                    container.appPreferencesRepository.setDefaultStudyPlan(plan.id)
-                    navController.clearWorkspaceSavedStacks()
-                    navController.navigateWorkspaceRoot(
-                        root = route.root,
-                        planId = plan.id.value,
-                        restoreSavedStack = false,
-                        planTab = route.planTab,
-                        practiceTab = route.practiceTab,
-                        progressPeriod = route.progressPeriod,
-                    )
-                }
+                navController.clearWorkspaceSavedStacks()
+                navController.navigateWorkspaceRoot(
+                    root = route.root,
+                    planId = plan.id.value,
+                    restoreSavedStack = false,
+                    planTab = route.planTab,
+                    practiceTab = route.practiceTab,
+                    progressPeriod = route.progressPeriod,
+                )
             },
             onCreatePlan = { navController.navigate(CreatePlanRoute) },
             onBack = navController::popBackStack,
@@ -683,7 +676,16 @@ private fun WorkspacePlanDestination(
             message = stringResource(R.string.app_initialization_failed),
             onRetry = { loadAttempt += 1 },
         )
-        is StudyFlowLoadState.Ready -> content(state.value)
+        is StudyFlowLoadState.Ready -> {
+            if (state.value.status in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)) {
+                StudyFlowErrorPane(
+                    message = stringResource(R.string.unknown_plan_error),
+                    onRetry = null,
+                )
+            } else {
+                content(state.value)
+            }
+        }
     }
 }
 
@@ -793,19 +795,31 @@ private fun androidx.navigation.NavDestination?.workspaceRoot(): StudyFlowWorksp
     else -> null
 }
 
-private fun resolveWorkspacePlan(
+internal fun resolveWorkspacePlan(
     plans: List<StudyPlan>,
     preferences: AppPreferences,
     requestedPlanId: String,
 ): StudyPlan? {
-    val visible = plans.filter { plan ->
-        plan.status != StudyPlanStatus.ARCHIVED && plan.status != StudyPlanStatus.TRASHED
+    val visible = plans.filter(::isWorkspaceEligiblePlan)
+    if (requestedPlanId.isNotBlank()) {
+        // An explicit route id is authoritative. A stale id must never display another plan.
+        return visible.firstOrNull { it.id.value == requestedPlanId }
     }
-    return visible.firstOrNull { it.id.value == requestedPlanId }
-        ?: preferences.defaultStudyPlanId?.let { defaultId -> visible.firstOrNull { it.id == defaultId } }
+    return preferences.defaultStudyPlanId
+        ?.let { defaultId -> visible.firstOrNull { it.id == defaultId } }
         ?: visible.firstOrNull { it.status == StudyPlanStatus.ACTIVE }
         ?: visible.firstOrNull()
 }
+
+internal fun resolveCanonicalDefaultPlan(
+    plans: List<StudyPlan>,
+    preferences: AppPreferences,
+): StudyPlan? = preferences.defaultStudyPlanId?.let { defaultId ->
+    plans.firstOrNull { plan -> plan.id == defaultId && isWorkspaceEligiblePlan(plan) }
+}
+
+internal fun isWorkspaceEligiblePlan(plan: StudyPlan): Boolean =
+    plan.status !in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)
 
 private fun StudySession.focusRoute(): FocusSessionRoute = FocusSessionRoute(
     planId = studyPlanId.value,

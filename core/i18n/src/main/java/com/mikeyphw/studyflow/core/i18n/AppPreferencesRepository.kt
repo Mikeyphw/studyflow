@@ -17,6 +17,12 @@ interface AppPreferencesRepository {
 
     suspend fun setDefaultStudyPlan(planId: StudyPlanId?)
 
+    /** Clears the default only if it still points at [planId]. */
+    suspend fun clearDefaultStudyPlanIf(planId: StudyPlanId): Boolean
+
+    /** Sets an initial default without overwriting a choice made concurrently elsewhere. */
+    suspend fun setDefaultStudyPlanIfAbsent(planId: StudyPlanId): Boolean
+
     suspend fun recordRecentSearch(query: String)
 
     suspend fun clearRecentSearches()

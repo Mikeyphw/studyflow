@@ -61,6 +61,16 @@ class StudyReminderPlannerPhase29BHardeningTest {
     }
 
     @Test
+    fun equalQuietHourBoundsMeanQuietHoursDisabled() {
+        val settings = StudyPlanSettings.defaults(PlanId).copy(
+            quietHoursStartMinute = 480,
+            quietHoursEndMinute = 480,
+        )
+        assertFalse(StudyReminderPlanner.isQuietNow(settings, 480))
+        assertFalse(StudyReminderPlanner.isQuietNow(settings, 0))
+    }
+
+    @Test
     fun veryOldPlannedActivityStillSuppressedOutsideLateDeliveryGrace() {
         val now = 10_000_000L
         val reminderPlan = StudyReminderPlanner.buildPlan(

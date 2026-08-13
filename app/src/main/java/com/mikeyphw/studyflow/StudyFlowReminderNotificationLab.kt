@@ -207,7 +207,7 @@ private class AndroidReminderLabInspectOperation(
                 apiLevel = Build.VERSION.SDK_INT,
             )
         }
-        val settings = container.manageStudyPlan.observeSettings(planId).first()
+        val settings = requireNotNull(container.manageStudyPlan.observeSettings(planId).first()) { "Study Plan settings are unavailable." }
         val schedule = container.manageStudySchedule.observeSchedule(planId).first()
         val reviewQueue = container.manageStudyReview.observeQueue(planId).first()
         val permissionGranted = notificationPermissionGranted(appContext)

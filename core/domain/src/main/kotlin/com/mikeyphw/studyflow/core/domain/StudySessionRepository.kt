@@ -10,9 +10,13 @@ import kotlinx.coroutines.flow.Flow
 interface StudySessionRepository {
     fun observeSessions(planId: StudyPlanId): Flow<List<StudySession>>
 
+    fun observeActiveSessions(): Flow<List<StudySession>>
+
     suspend fun findSession(planId: StudyPlanId, sessionId: StudySessionId): StudySession?
 
     suspend fun findActiveSession(planId: StudyPlanId): StudySession?
+
+    suspend fun findAnyActiveSession(): StudySession?
 
     suspend fun updateNotes(
         planId: StudyPlanId,

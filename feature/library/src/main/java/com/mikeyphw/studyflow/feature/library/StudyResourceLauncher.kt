@@ -8,34 +8,85 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.mikeyphw.studyflow.core.domain.StudyResourceLaunchPlan
 import java.io.File
+import java.io.InputStream
+import java.security.MessageDigest
 
-internal fun Context.launchStudyResource(plan: StudyResourceLaunchPlan): Boolean = runCatching {
+internal sealed interface StudyResourceLaunchResult {
+    data object Opened : StudyResourceLaunchResult
+    data object MissingSource : StudyResourceLaunchResult
+    data object InvalidSource : StudyResourceLaunchResult
+    data object MissingPrivateFile : StudyResourceLaunchResult
+    data object UnsafePrivatePath : StudyResourceLaunchResult
+    data object IntegrityFailure : StudyResourceLaunchResult
+    data object NoHandler : StudyResourceLaunchResult
+    data object LaunchFailed : StudyResourceLaunchResult
+}
+
+internal fun Context.launchStudyResource(plan: StudyResourceLaunchPlan): StudyResourceLaunchResult = try {
     val intent = when (plan) {
         is StudyResourceLaunchPlan.WebPage -> viewIntent(plan.uri.toUri(), null)
         is StudyResourceLaunchPlan.ExternalVideo -> viewIntent(plan.uri.toUri(), "video/*")
         is StudyResourceLaunchPlan.ExternalDocument -> viewIntent(plan.uri.toUri(), plan.mimeType)
-        is StudyResourceLaunchPlan.AppPrivateAnnex -> {
-            val file = File(filesDir, plan.storageReference).canonicalFile
-            val root = filesDir.canonicalFile
-            if (!file.path.startsWith(root.path + File.separator) || !file.exists()) return false
-            val contentUri = FileProvider.getUriForFile(
-                this,
-                "$packageName.fileprovider",
-                file,
-            )
-            viewIntent(contentUri, plan.mimeType).apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
+        is StudyResourceLaunchPlan.LinkedDocument -> {
+            val uri = plan.uri.toUri()
+            val matches = contentResolver.openInputStream(uri)?.use { input ->
+                streamIntegrityMatches(input, plan.byteSize, plan.checksumSha256)
+            } ?: false
+            if (!matches) return StudyResourceLaunchResult.IntegrityFailure
+            viewIntent(uri, plan.mimeType)
         }
-        StudyResourceLaunchPlan.MissingSource -> return false
+        is StudyResourceLaunchPlan.AppPrivateAnnex -> {
+            val shareableRoot = File(filesDir, "shareable-annexes").canonicalFile
+            val file = File(filesDir, plan.storageReference).canonicalFile
+            if (!file.path.startsWith(shareableRoot.path + File.separator)) {
+                return StudyResourceLaunchResult.UnsafePrivatePath
+            }
+            if (!file.isFile) return StudyResourceLaunchResult.MissingPrivateFile
+            val matches = file.inputStream().use { input ->
+                streamIntegrityMatches(input, plan.byteSize, plan.checksumSha256)
+            }
+            if (!matches) return StudyResourceLaunchResult.IntegrityFailure
+            val contentUri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+            viewIntent(contentUri, plan.mimeType)
+        }
+        is StudyResourceLaunchPlan.InvalidSource -> return StudyResourceLaunchResult.InvalidSource
+        StudyResourceLaunchPlan.MissingSource -> return StudyResourceLaunchResult.MissingSource
     }
     startActivity(intent)
-    true
-}.getOrElse { throwable ->
-    if (throwable is ActivityNotFoundException) false else false
+    StudyResourceLaunchResult.Opened
+} catch (_: ActivityNotFoundException) {
+    StudyResourceLaunchResult.NoHandler
+} catch (_: Exception) {
+    StudyResourceLaunchResult.LaunchFailed
 }
 
 private fun viewIntent(uri: Uri, mimeType: String?): Intent = Intent(Intent.ACTION_VIEW).apply {
     if (mimeType.isNullOrBlank()) setData(uri) else setDataAndType(uri, mimeType)
     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    if (uri.scheme.equals("content", ignoreCase = true)) {
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+}
+
+private fun streamIntegrityMatches(
+    input: InputStream,
+    expectedSize: Long,
+    expectedChecksum: String?,
+): Boolean {
+    val digest = expectedChecksum?.takeIf(String::isNotBlank)?.let { MessageDigest.getInstance("SHA-256") }
+    var bytes = 0L
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    while (true) {
+        val count = input.read(buffer)
+        if (count < 0) break
+        bytes += count
+        if (bytes > expectedSize) return false
+        digest?.update(buffer, 0, count)
+    }
+    if (bytes != expectedSize) return false
+    if (digest != null) {
+        val actual = digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+        if (!actual.equals(expectedChecksum, ignoreCase = true)) return false
+    }
+    return true
 }

@@ -20,9 +20,21 @@ interface AnnexFileStorageRepository {
         input: InputStream,
     ): Annex
 
+    suspend fun linkDocument(
+        studyPlanId: StudyPlanId,
+        subjectId: SubjectId?,
+        topicId: TopicId?,
+        materialId: StudyMaterialId?,
+        displayName: String,
+        mimeType: String,
+        storageReference: String,
+    ): Annex
+
     suspend fun deleteStoredAnnex(studyPlanId: StudyPlanId, annexId: AnnexId)
 
     suspend fun cleanupOrphanedAnnexFiles(studyPlanId: StudyPlanId): AnnexFileCleanupResult
+
+    suspend fun migrateOwnedAnnexesToShareableRoot(): Int = 0
 }
 
 data class AnnexFileCleanupResult(
@@ -54,6 +66,28 @@ class ManageAnnexFileStorage(
             mimeType = mimeType.ifBlank { "application/octet-stream" },
             declaredByteSize = declaredByteSize,
             input = input,
+        )
+    }
+
+    suspend fun linkDocument(
+        studyPlanId: StudyPlanId,
+        subjectId: SubjectId? = null,
+        topicId: TopicId? = null,
+        materialId: StudyMaterialId? = null,
+        displayName: String,
+        mimeType: String,
+        storageReference: String,
+    ): Annex {
+        require(displayName.isNotBlank()) { "Annex name cannot be blank." }
+        require(storageReference.isNotBlank()) { "Document URI cannot be blank." }
+        return repository.linkDocument(
+            studyPlanId = studyPlanId,
+            subjectId = subjectId,
+            topicId = topicId,
+            materialId = materialId,
+            displayName = displayName.trim(),
+            mimeType = mimeType.ifBlank { "application/octet-stream" },
+            storageReference = storageReference.trim(),
         )
     }
 

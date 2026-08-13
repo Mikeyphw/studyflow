@@ -49,6 +49,8 @@ import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
 fun OnboardingSamplePlanWizardScreen(
     onBack: () -> Unit,
     onCreateSample: (OnboardingSamplePlanTemplate) -> Unit,
+    creating: Boolean = false,
+    creationFailed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val choices = StudyOnboardingSamplePlanWizard.choices()
@@ -97,16 +99,29 @@ fun OnboardingSamplePlanWizardScreen(
             item {
                 OnboardingPreview(choice = selectedChoice)
             }
+            if (creationFailed) {
+                item {
+                    Text(
+                        text = stringResource(R.string.onboarding_create_failed),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f)) {
+                    OutlinedButton(
+                        onClick = onBack,
+                        enabled = !creating,
+                        modifier = Modifier.weight(1f),
+                    ) {
                         Text(stringResource(R.string.cancel))
                     }
                     Button(
                         onClick = { onCreateSample(selectedChoice.template) },
+                        enabled = !creating,
                         modifier = Modifier.weight(1f),
                     ) {
                         Text(stringResource(R.string.onboarding_create_sample))

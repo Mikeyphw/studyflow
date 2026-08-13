@@ -52,6 +52,7 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
+import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupEngine
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupInput
@@ -79,6 +80,7 @@ fun PlanWorkspaceScreen(
     practiceManager: ManageStudyPractice,
     reviewManager: ManageStudyReview,
     progressManager: ManageStudyProgress,
+    sessionManager: ManageStudySession,
     onTabSelected: (PlanWorkspaceTab) -> Unit,
     onSwitchPlan: () -> Unit,
     onSearch: () -> Unit,
@@ -118,6 +120,9 @@ fun PlanWorkspaceScreen(
     val progressFlow = remember(plan.id, loadAttempt) {
         progressManager.observeSnapshot(plan.id).asStudyFlowLoadState()
     }
+    val sessionsFlow = remember(plan.id, loadAttempt) {
+        sessionManager.observeSessions(plan.id).asStudyFlowLoadState()
+    }
     val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val libraryState by libraryFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
@@ -126,6 +131,7 @@ fun PlanWorkspaceScreen(
     val flashcardsState by flashcardsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val errorEntriesState by errorEntriesFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val progressState by progressFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     if (
         !WorkspaceLoadGate(
             states = listOf(
@@ -137,6 +143,7 @@ fun PlanWorkspaceScreen(
                 flashcardsState,
                 errorEntriesState,
                 progressState,
+                sessionsState,
             ),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,
@@ -150,6 +157,7 @@ fun PlanWorkspaceScreen(
     val readyFlashcards = flashcardsState.readyValue()
     val readyErrorEntries = errorEntriesState.readyValue()
     val readyProgress = progressState.readyValue()
+    val readySessions = sessionsState.readyValue()
     val cleanupReport = remember(
         plan,
         readySyllabus,
@@ -160,6 +168,7 @@ fun PlanWorkspaceScreen(
         readyFlashcards,
         readyErrorEntries,
         readyProgress,
+        readySessions,
     ) {
         StudyContentCleanupEngine.inspect(
             StudyContentCleanupInput(
@@ -173,6 +182,7 @@ fun PlanWorkspaceScreen(
                 flashcards = readyFlashcards,
                 errorEntries = readyErrorEntries,
                 plannedActivities = readySchedule.plannedActivities,
+                studySessions = readySessions,
                 notes = readyProgress.notes,
                 nowEpochMillis = System.currentTimeMillis(),
             ),
@@ -208,7 +218,7 @@ fun PlanWorkspaceScreen(
                     plan = plan,
                     scheduleCount = readySchedule.plannedActivities.size,
                     subjectCount = readySyllabus.subjects.size,
-                    materialCount = readyLibrary.materials.size,
+                    materialCount = readyLibrary.activeMaterials.size,
                     onEditPlan = onEditPlan,
                     onPlanSettings = onPlanSettings,
                     onSessions = onSessions,

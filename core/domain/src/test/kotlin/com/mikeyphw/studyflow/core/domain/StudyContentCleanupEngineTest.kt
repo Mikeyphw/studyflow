@@ -122,6 +122,89 @@ class StudyContentCleanupEngineTest {
     }
 
     @Test
+    fun targetlessDueReviewIsStale() {
+        val review = ReviewItem(
+            id = ReviewItemId("targetless-review"),
+            studyPlanId = PLAN_ID,
+            subjectId = null,
+            topicId = null,
+            questionId = null,
+            flashcardId = null,
+            errorEntryId = null,
+            method = ReviewMethod.SPACED_REPETITION,
+            status = ReviewStatus.DUE,
+            dueAtEpochMillis = NOW,
+            intervalDays = 1,
+            repetitionCount = 0,
+            easeFactor = 2.5,
+            completedAtEpochMillis = null,
+        )
+
+        val report = StudyContentCleanupEngine.inspect(input(reviewItems = listOf(review)))
+
+        assertTrue(report.issues.any { issue ->
+            issue.kind == StudyContentCleanupIssueKind.STALE_REVIEW && "targetless-review" in issue.affectedIds
+        })
+    }
+
+    @Test
+    fun studySessionReferenceKeepsLeafTopicFromBeingClassifiedAsOrphan() {
+        val retainedTopic = topic(id = "session-topic")
+        val report = StudyContentCleanupEngine.inspect(
+            input(
+                syllabus = StudySyllabus(PLAN_ID, listOf(subject()), listOf(retainedTopic)),
+                studySessions = listOf(session(topicId = retainedTopic.id)),
+            ),
+        )
+
+        assertFalse(report.issues.any { issue ->
+            issue.kind == StudyContentCleanupIssueKind.ORPHAN_TOPIC && retainedTopic.id.value in issue.affectedIds
+        })
+    }
+
+    @Test
+    fun studySessionReferencesKeepArchivedMaterialAndCompletedVideoFromStaleResourceCleanup() {
+        val retainedMaterial = material(
+            id = "session-material",
+            archived = true,
+            updatedAt = NOW - 100L * DAY_MILLIS,
+        )
+        val retainedVideo = video(
+            id = "session-video",
+            completed = true,
+            updatedAt = NOW - 100L * DAY_MILLIS,
+        )
+        val report = StudyContentCleanupEngine.inspect(
+            input(
+                materials = listOf(retainedMaterial),
+                videos = listOf(retainedVideo),
+                studySessions = listOf(
+                    session(
+                        topicId = null,
+                        materialId = retainedMaterial.id,
+                        videoResourceId = retainedVideo.id,
+                    ),
+                ),
+            ),
+        )
+
+        assertFalse(report.issues.any { issue -> issue.kind == StudyContentCleanupIssueKind.STALE_RESOURCE })
+    }
+
+    @Test
+    fun duplicateQuestionIdentityIncludesMeaningfulFields() {
+        val baseline = question(id = "q1", statement = "Ohm law", answer = "V = I R")
+        val differentDifficulty = baseline.copy(id = QuestionId("q2"), difficulty = 3)
+        val differentExplanation = baseline.copy(id = QuestionId("q3"), explanation = "Derived from resistance definition")
+
+        val report = StudyContentCleanupEngine.inspect(
+            input(questions = listOf(baseline, differentDifficulty, differentExplanation)),
+        )
+
+        assertFalse(report.issues.any { it.kind == StudyContentCleanupIssueKind.DUPLICATE_QUESTION })
+    }
+
+    @Test
     fun detectsTagVariantsAndStaleDetachedResources() {
         val taggedQuestion = question(id = "q1", tags = listOf("Circuits"))
         val staleMaterial = material(
@@ -160,6 +243,7 @@ class StudyContentCleanupEngineTest {
         videos: List<VideoResource> = emptyList(),
         reviewItems: List<ReviewItem> = emptyList(),
         plannedActivities: List<PlannedActivity> = emptyList(),
+        studySessions: List<StudySession> = emptyList(),
     ) = StudyContentCleanupInput(
         plan = plan(),
         syllabus = syllabus,
@@ -171,6 +255,7 @@ class StudyContentCleanupEngineTest {
         flashcards = emptyList(),
         errorEntries = emptyList(),
         plannedActivities = plannedActivities,
+        studySessions = studySessions,
         notes = emptyList(),
         nowEpochMillis = NOW,
     )
@@ -293,6 +378,32 @@ class StudyContentCleanupEngineTest {
         completed = completed,
         createdAtEpochMillis = updatedAt,
         updatedAtEpochMillis = updatedAt,
+    )
+
+    private fun session(
+        topicId: TopicId?,
+        materialId: StudyMaterialId? = null,
+        videoResourceId: VideoResourceId? = null,
+    ) = StudySession(
+        id = StudySessionId("session"),
+        studyPlanId = PLAN_ID,
+        plannedActivityId = null,
+        subjectId = SubjectId("subject"),
+        topicId = topicId,
+        materialId = materialId,
+        videoResourceId = videoResourceId,
+        type = StudyActivityType.THEORY,
+        status = StudySessionStatus.COMPLETED,
+        startedAtEpochMillis = NOW - 30_000L,
+        endedAtEpochMillis = NOW,
+        grossDurationSeconds = 30,
+        pauseDurationSeconds = 0,
+        pagesCompleted = 0,
+        questionsAnswered = 0,
+        correctAnswers = 0,
+        concentrationRating = null,
+        difficultyRating = null,
+        notes = "",
     )
 
     private fun activity(

@@ -60,10 +60,7 @@ internal class RoomStudyContentRepository(
     override suspend fun upsertSubject(subject: Subject): Subject = database.withTransaction {
         requirePlan(subject.studyPlanId)
         validateExamStage(subject.studyPlanId, subject.examStageId?.value)
-        val normalized = subject.copy(
-            progressPercent = subject.progressPercent.coerceIn(0, 100),
-            accuracyPercent = subject.accuracyPercent.coerceIn(0, 100),
-        )
+        val normalized = normalizeSubject(subject)
         structureDao.upsertSubject(normalized.asEntity())
         recalculateProgress(subject.studyPlanId)
         requireNotNull(structureDao.findSubject(subject.studyPlanId.value, subject.id.value)).asExternalModel()
@@ -149,34 +146,50 @@ internal class RoomStudyContentRepository(
             )
             validateParent(candidate, all)
 
-            val descendantIds = descendantsOf(topicId, all)
+            val subtreeIds = descendantsOf(topicId, all) + topicId
+            require(destinationParentTopicId == null || destinationParentTopicId !in subtreeIds) {
+                "A topic cannot be moved beneath its own descendant."
+            }
+            val subtree = all.filter { it.id in subtreeIds }
+            val originals = subtree.associateBy(Topic::id)
+
+            // The v4 integrity guard correctly forbids moving a parent away from children that still
+            // belong to the old subject. Detach the complete subtree first, move it as one logical
+            // unit, repair redundant subject ownership in linked rows, then restore hierarchy.
+            val detached = subtree.map { it.copy(parentTopicId = null) }
+            structureDao.upsertTopics(detached.map(Topic::asEntity))
+            val movedDetached = detached.map { it.copy(subjectId = destinationSubjectId) }
+            structureDao.upsertTopics(movedDetached.map(Topic::asEntity))
+            subtreeIds.forEach { movedTopicId ->
+                updateLinkedTopicSubject(planId, movedTopicId, destinationSubjectId)
+            }
+            val restored = movedDetached.map { moved ->
+                val original = originals.getValue(moved.id)
+                moved.copy(
+                    parentTopicId = if (moved.id == topicId) destinationParentTopicId else original.parentTopicId,
+                    position = if (moved.id == topicId) destinationPosition else original.position,
+                )
+            }
+            structureDao.upsertTopics(restored.map(Topic::asEntity))
+
             val oldSiblings = all
                 .filter {
-                    it.id != topicId &&
+                    it.id !in subtreeIds &&
                         it.subjectId == topic.subjectId &&
                         it.parentTopicId == topic.parentTopicId
                 }
                 .mapIndexed { index, sibling -> sibling.copy(position = index) }
+            val movedRoot = restored.first { it.id == topicId }
             val destinationSiblings = all
                 .filter {
-                    it.id != topicId &&
+                    it.id !in subtreeIds &&
                         it.subjectId == destinationSubjectId &&
                         it.parentTopicId == destinationParentTopicId
                 }
                 .toMutableList()
-            destinationSiblings.add(destinationPosition.coerceIn(0, destinationSiblings.size), candidate)
-            val movedRootAndSiblings = destinationSiblings.mapIndexed { index, sibling ->
-                sibling.copy(position = index)
-            }
-            val movedDescendants = all
-                .filter { it.id in descendantIds }
-                .map { descendant -> descendant.copy(subjectId = destinationSubjectId) }
-
-            structureDao.upsertTopics(
-                (movedRootAndSiblings + oldSiblings + movedDescendants)
-                    .distinctBy(Topic::id)
-                    .map(Topic::asEntity),
-            )
+            destinationSiblings.add(destinationPosition.coerceIn(0, destinationSiblings.size), movedRoot)
+            val reorderedDestination = destinationSiblings.mapIndexed { index, sibling -> sibling.copy(position = index) }
+            structureDao.upsertTopics((oldSiblings + reorderedDestination).map(Topic::asEntity))
             recalculateProgress(planId)
         }
     }
@@ -215,48 +228,67 @@ internal class RoomStudyContentRepository(
             draft.subjects.forEach { subjectDraft ->
                 val subjectId = SubjectId(UUID.randomUUID().toString())
                 structureDao.upsertSubject(
-                    Subject(
-                        id = subjectId,
-                        studyPlanId = planId,
-                        name = subjectDraft.name.trim(),
-                        description = "",
-                        colorArgb = null,
-                        priority = subjectDraft.priority.coerceIn(1, 5),
-                        examWeight = subjectDraft.examWeight.coerceAtLeast(0.0),
-                        estimatedMinutes = subjectDraft.estimatedMinutes.coerceAtLeast(0),
-                        progressPercent = 0,
-                        accuracyPercent = 0,
-                        status = ContentProgressStatus.NOT_STARTED,
-                        position = subjectPosition++,
-                        archived = false,
+                    normalizeSubject(
+                        Subject(
+                            id = subjectId,
+                            studyPlanId = planId,
+                            name = subjectDraft.name.trim(),
+                            description = "",
+                            colorArgb = null,
+                            priority = subjectDraft.priority,
+                            examWeight = subjectDraft.examWeight,
+                            estimatedMinutes = subjectDraft.estimatedMinutes,
+                            progressPercent = 0,
+                            accuracyPercent = 0,
+                            status = ContentProgressStatus.NOT_STARTED,
+                            position = subjectPosition++,
+                            archived = false,
+                        ),
                     ).asEntity(),
                 )
-                val topicIds = mutableMapOf<String, TopicId>()
-                subjectDraft.topics.forEachIndexed { index, topicDraft ->
-                    val topicId = TopicId(UUID.randomUUID().toString())
-                    topicIds[topicDraft.key] = topicId
-                    structureDao.upsertTopic(
-                        normalizeTopic(
-                            Topic(
-                                id = topicId,
-                                studyPlanId = planId,
-                                subjectId = subjectId,
-                                parentTopicId = topicDraft.parentKey?.let(topicIds::get),
-                                name = topicDraft.name.trim(),
-                                description = "",
-                                priority = topicDraft.priority.coerceIn(1, 5),
-                                difficulty = topicDraft.difficulty.coerceIn(1, 5),
-                                examIncidencePercent = topicDraft.examIncidencePercent?.coerceIn(0, 100),
-                                estimatedMinutes = topicDraft.estimatedMinutes.coerceAtLeast(0),
-                                progressPercent = topicDraft.progressPercent.coerceIn(0, 100),
-                                masteryPercent = topicDraft.masteryPercent.coerceIn(0, 100),
-                                status = topicDraft.status,
-                                position = index,
-                                archived = false,
-                            ),
-                        ).asEntity(),
-                    )
-                    importedTopics++
+                val topicIds = subjectDraft.topics.associate { draftTopic ->
+                    draftTopic.key to TopicId(UUID.randomUUID().toString())
+                }
+                require(topicIds.size == subjectDraft.topics.size) { "Imported topic keys must be unique within a subject." }
+                subjectDraft.topics.forEach { topicDraft ->
+                    require(topicDraft.parentKey == null || topicDraft.parentKey in topicIds) {
+                        "Imported topic '${topicDraft.name}' references an unknown parent key."
+                    }
+                }
+                val pending = subjectDraft.topics.toMutableList()
+                val inserted = mutableSetOf<String>()
+                while (pending.isNotEmpty()) {
+                    val ready = pending.filter { topicDraft ->
+                        topicDraft.parentKey == null || topicDraft.parentKey in inserted
+                    }
+                    require(ready.isNotEmpty()) { "Imported topic hierarchy contains a cycle." }
+                    ready.forEach { topicDraft ->
+                        val topicId = topicIds.getValue(topicDraft.key)
+                        structureDao.upsertTopic(
+                            normalizeTopic(
+                                Topic(
+                                    id = topicId,
+                                    studyPlanId = planId,
+                                    subjectId = subjectId,
+                                    parentTopicId = topicDraft.parentKey?.let(topicIds::getValue),
+                                    name = topicDraft.name.trim(),
+                                    description = "",
+                                    priority = topicDraft.priority,
+                                    difficulty = topicDraft.difficulty,
+                                    examIncidencePercent = topicDraft.examIncidencePercent,
+                                    estimatedMinutes = topicDraft.estimatedMinutes,
+                                    progressPercent = topicDraft.progressPercent,
+                                    masteryPercent = topicDraft.masteryPercent,
+                                    status = topicDraft.status,
+                                    position = subjectDraft.topics.indexOf(topicDraft),
+                                    archived = false,
+                                ),
+                            ).asEntity(),
+                        )
+                        inserted += topicDraft.key
+                        importedTopics++
+                    }
+                    pending.removeAll(ready.toSet())
                 }
             }
             recalculateProgress(planId)
@@ -319,13 +351,109 @@ internal class RoomStudyContentRepository(
         return result
     }
 
-    private fun normalizeTopic(topic: Topic): Topic = when (topic.status) {
-        ContentProgressStatus.MASTERED -> topic.copy(progressPercent = 100, masteryPercent = 100, archived = false)
-        ContentProgressStatus.NOT_STARTED -> topic.copy(progressPercent = 0, masteryPercent = 0, archived = false)
-        ContentProgressStatus.ARCHIVED -> topic.copy(archived = true)
-        else -> topic.copy(
-            progressPercent = topic.progressPercent.coerceIn(0, 100),
-            masteryPercent = topic.masteryPercent.coerceIn(0, 100),
+    private fun normalizeSubject(subject: Subject): Subject {
+        if (subject.archived) {
+            return subject.copy(
+                status = ContentProgressStatus.ARCHIVED,
+                progressPercent = subject.progressPercent.coerceIn(0, 100),
+                accuracyPercent = subject.accuracyPercent.coerceIn(0, 100),
+            )
+        }
+        val restoredStatus = if (subject.status == ContentProgressStatus.ARCHIVED) {
+            restoredStatus(subject.progressPercent)
+        } else {
+            subject.status
+        }
+        return when (restoredStatus) {
+            ContentProgressStatus.MASTERED -> subject.copy(
+                status = restoredStatus,
+                progressPercent = 100,
+                archived = false,
+            )
+            ContentProgressStatus.NOT_STARTED -> subject.copy(
+                status = restoredStatus,
+                progressPercent = 0,
+                archived = false,
+            )
+            ContentProgressStatus.ARCHIVED -> error("Unreachable restored Subject status.")
+            else -> subject.copy(
+                status = restoredStatus,
+                progressPercent = subject.progressPercent.coerceIn(0, 100),
+                accuracyPercent = subject.accuracyPercent.coerceIn(0, 100),
+                archived = false,
+            )
+        }
+    }
+
+    private fun updateLinkedTopicSubject(
+        planId: StudyPlanId,
+        topicId: TopicId,
+        destinationSubjectId: SubjectId,
+    ) {
+        val databaseHandle = database.openHelper.writableDatabase
+        LINKED_TOPIC_TABLES.forEach { table ->
+            databaseHandle.execSQL(
+                "UPDATE `$table` SET subjectId = ? WHERE studyPlanId = ? AND topicId = ?",
+                arrayOf(destinationSubjectId.value, planId.value, topicId.value),
+            )
+        }
+    }
+
+    private fun normalizeTopic(topic: Topic): Topic {
+        if (topic.archived) {
+            return topic.copy(
+                status = ContentProgressStatus.ARCHIVED,
+                progressPercent = topic.progressPercent.coerceIn(0, 100),
+                masteryPercent = topic.masteryPercent.coerceIn(0, 100),
+            )
+        }
+        val restoredStatus = if (topic.status == ContentProgressStatus.ARCHIVED) {
+            restoredStatus(topic.progressPercent)
+        } else {
+            topic.status
+        }
+        return when (restoredStatus) {
+            ContentProgressStatus.MASTERED -> topic.copy(
+                status = restoredStatus,
+                progressPercent = 100,
+                masteryPercent = 100,
+                archived = false,
+            )
+            ContentProgressStatus.NOT_STARTED -> topic.copy(
+                status = restoredStatus,
+                progressPercent = 0,
+                masteryPercent = 0,
+                archived = false,
+            )
+            ContentProgressStatus.ARCHIVED -> error("Unreachable restored Topic status.")
+            else -> topic.copy(
+                status = restoredStatus,
+                progressPercent = topic.progressPercent.coerceIn(0, 100),
+                masteryPercent = topic.masteryPercent.coerceIn(0, 100),
+                archived = false,
+            )
+        }
+    }
+
+    private fun restoredStatus(progressPercent: Int): ContentProgressStatus = when {
+        progressPercent >= 100 -> ContentProgressStatus.MASTERED
+        progressPercent > 0 -> ContentProgressStatus.STUDYING
+        else -> ContentProgressStatus.NOT_STARTED
+    }
+
+    private companion object {
+        val LINKED_TOPIC_TABLES = listOf(
+            "study_materials",
+            "video_resources",
+            "planned_activities",
+            "study_sessions",
+            "study_goals",
+            "annexes",
+            "questions",
+            "flashcards",
+            "error_entries",
+            "review_items",
+            "study_notes",
         )
     }
 

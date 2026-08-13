@@ -254,4 +254,5 @@
     <string name="confirm_delete_title">Excluir item?</string>
     <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
     <string name="confirm_delete">Excluir</string>
+    <string name="onboarding_create_failed">Não foi possível criar o plano de estudo de exemplo. Tente novamente.</string>
 </resources>

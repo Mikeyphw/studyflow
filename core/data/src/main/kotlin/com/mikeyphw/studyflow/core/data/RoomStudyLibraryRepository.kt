@@ -55,14 +55,10 @@ internal class RoomStudyLibraryRepository(
         requireNotNull(libraryDao.findVideo(video.studyPlanId.value, video.id.value)).asExternalModel()
     }
 
-    override suspend fun upsertAnnex(annex: Annex): Annex = database.withTransaction {
-        requirePlan(annex.studyPlanId)
-        annex.subjectId?.let { subjectId -> requireSubject(annex.studyPlanId, subjectId.value) }
-        annex.topicId?.let { topicId -> requireTopic(annex.studyPlanId, topicId.value) }
-        annex.materialId?.let { materialId -> requireMaterial(annex.studyPlanId, materialId.value) }
-        libraryDao.upsertAnnex(annex.asEntity())
-        requireNotNull(libraryDao.findAnnex(annex.studyPlanId.value, annex.id.value)).asExternalModel()
-    }
+    override suspend fun upsertAnnex(annex: Annex): Annex = error(
+        "Annex metadata cannot be written independently of its physical storage. " +
+            "Use AnnexFileStorageRepository to import or link an annex.",
+    )
 
     override suspend fun deleteMaterial(planId: StudyPlanId, materialId: StudyMaterialId) {
         database.withTransaction {
@@ -81,11 +77,10 @@ internal class RoomStudyLibraryRepository(
     }
 
     override suspend fun deleteAnnex(planId: StudyPlanId, annexId: AnnexId) {
-        database.withTransaction {
-            require(libraryDao.deleteAnnex(planId.value, annexId.value) == 1) {
-                "Annex does not belong to this Study Plan."
-            }
-        }
+        error(
+            "Annex metadata cannot be deleted independently of its physical storage. " +
+                "Use AnnexFileStorageRepository.deleteStoredAnnex instead.",
+        )
     }
 
     private suspend fun requirePlan(planId: StudyPlanId) {

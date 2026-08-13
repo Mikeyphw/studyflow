@@ -281,6 +281,7 @@ fun ProgressWorkspaceScreen(
                     flashcards = flashcards,
                     errorEntries = errorEntries,
                     plannedActivities = schedule.plannedActivities,
+                    studySessions = sessions,
                     notes = progress?.notes.orEmpty(),
                     nowEpochMillis = System.currentTimeMillis(),
                 ),

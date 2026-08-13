@@ -134,6 +134,7 @@ object StudyReminderPlanner {
     fun isQuietNow(settings: StudyPlanSettings, minuteOfDay: Int): Boolean {
         val start = settings.quietHoursStartMinute ?: return false
         val end = settings.quietHoursEndMinute ?: return false
+        if (start == end) return false
         return if (start < end) {
             minuteOfDay in start until end
         } else {

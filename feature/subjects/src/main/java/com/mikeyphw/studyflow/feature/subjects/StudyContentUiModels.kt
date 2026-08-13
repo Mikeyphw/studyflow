@@ -39,8 +39,10 @@ internal fun StudySyllabus.visibleSubjects(
         val subjectMatches = normalizedQuery.isBlank() ||
             subject.name.lowercase().contains(normalizedQuery) ||
             subject.description.lowercase().contains(normalizedQuery)
-        val hasMatchingTopic = topics.any { it.subjectId == subject.id && it.id in allowedTopicIds }
-        (subjectMatches || hasMatchingTopic) && subject.matches(filter)
+        val subjectTopics = topics.filter { it.subjectId == subject.id }
+        val hasMatchingTopic = subjectTopics.any { it.id in allowedTopicIds }
+        val hasFilterMatchingTopic = subjectTopics.any { it.matches(filter) }
+        (subjectMatches || hasMatchingTopic) && (subject.matches(filter) || hasFilterMatchingTopic)
     }
     val sorted = when (sort) {
         SyllabusSort.POSITION -> candidates.sortedWith(
@@ -55,14 +57,22 @@ internal fun StudySyllabus.visibleSubjects(
         )
     }
     return sorted.map { subject ->
-        val subjectTopics = topics.filter { topic ->
-            topic.subjectId == subject.id && topic.matches(filter) &&
-                (normalizedQuery.isBlank() || topic.id in allowedTopicIds)
+        val allSubjectTopics = topics.filter { topic -> topic.subjectId == subject.id }
+        val directlyVisible = allSubjectTopics.filter { topic ->
+            topic.matches(filter) && (normalizedQuery.isBlank() || topic.id in allowedTopicIds)
         }
+        val visibleIds = directlyVisible.mapTo(mutableSetOf(), Topic::id)
+        directlyVisible.forEach { topic ->
+            var parent = topic.parentTopicId
+            while (parent != null && visibleIds.add(parent)) {
+                parent = allSubjectTopics.firstOrNull { candidate -> candidate.id == parent }?.parentTopicId
+            }
+        }
+        val subjectTopics = allSubjectTopics.filter { it.id in visibleIds }
         VisibleSubject(
             subject = subject,
             topicTree = com.mikeyphw.studyflow.core.model.buildTopicTree(subjectTopics),
-            visibleTopicCount = subjectTopics.size,
+            visibleTopicCount = directlyVisible.size,
         )
     }
 }
