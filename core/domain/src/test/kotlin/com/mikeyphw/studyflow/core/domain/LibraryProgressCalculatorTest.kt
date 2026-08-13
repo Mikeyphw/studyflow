@@ -9,8 +9,8 @@ import org.junit.Test
 
 class LibraryProgressCalculatorTest {
     @Test
-    fun materialProgressClampsToTotalUnits() {
-        assertEquals(100, LibraryProgressCalculator.materialProgressPercent(material(completed = 12, total = 10)))
+    fun materialProgressReachesHundredAtTotalUnits() {
+        assertEquals(100, LibraryProgressCalculator.materialProgressPercent(material(completed = 10, total = 10)))
     }
 
     @Test

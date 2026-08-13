@@ -239,7 +239,7 @@ class StudyContentCleanupEngineTest {
         topicId = null,
         type = QuestionType.MULTIPLE_CHOICE,
         statement = statement,
-        options = listOf("A", "B"),
+        options = listOf(answer, "Distractor"),
         correctAnswer = answer,
         explanation = "",
         examBoard = "Board",

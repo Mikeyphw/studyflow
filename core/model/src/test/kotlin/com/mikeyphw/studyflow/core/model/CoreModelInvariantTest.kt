@@ -40,6 +40,31 @@ class CoreModelInvariantTest {
     }
 
     @Test
+    fun studyMaterialCompletedUnitsCannotExceedTotalUnits() {
+        assertThrows(IllegalArgumentException::class.java) {
+            StudyMaterial(
+                id = StudyMaterialId("material"),
+                studyPlanId = StudyPlanId("plan"),
+                subjectId = null,
+                topicId = null,
+                type = StudyMaterialType.BOOK,
+                title = "Book",
+                description = "",
+                sourceUri = null,
+                author = null,
+                totalUnits = 10,
+                completedUnits = 12,
+                primary = false,
+                favorite = false,
+                archived = false,
+                tags = emptyList(),
+                createdAtEpochMillis = 1L,
+                updatedAtEpochMillis = 1L,
+            )
+        }
+    }
+
+    @Test
     fun multipleChoiceCorrectAnswerMustBeOneOfTheOptions() {
         assertThrows(IllegalArgumentException::class.java) {
             Question(
