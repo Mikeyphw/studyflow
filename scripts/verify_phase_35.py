@@ -97,8 +97,13 @@ release = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/R
 require("ReleaseReadinessPhase(35" in release and "Documentation and artifact cleanup" in release,
         "Release readiness seal must include Phase 35")
 factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactory.kt")
-require("CurrentPhase = 37" in factory and "Phase 0 through 37 validators pass." in factory,
-        "Release validation factory must advance through Phase 37")
+require(
+    "CurrentPhase = 37" in factory
+    and "fun sourceOnlySeal(" in factory
+    and "fun evidenceSeal(" in factory
+    and "Required evidence was not supplied." in factory,
+    "Release validation factory must advance through Phase 37",
+)
 validate_repo = read("scripts/validate_repo.sh")
 require("python3 scripts/verify_phase_35.py" in validate_repo,
         "validate_repo must run Phase 35 verifier")

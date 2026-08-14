@@ -34,7 +34,8 @@ interface StudyPracticeRepository {
 
     suspend fun upsertTest(test: StudyTest): StudyTest
 
-    /** Atomically joins an existing open weakness drill for [key], or creates [test] without reusing submitted history. */
+    /** Atomically joins an existing open weakness drill for [key],
+        or creates [test] without reusing submitted history. */
     suspend fun createWeaknessDrillIfAbsent(test: StudyTest, key: String): StudyTest = upsertTest(test)
 
     suspend fun upsertMockExam(mockExam: MockExam): MockExam

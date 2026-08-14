@@ -13,8 +13,8 @@ Android build host.
 - [ ] Room schema and migration validation pass.
 - [ ] Android resources merge.
 - [ ] Lint completes with zero unexpected diagnostics.
-- [ ] APK or AAB is assembled for `versionName = 1.0.0-rc1`.
-- [ ] Signing or debug/internal distribution policy is recorded without committing secrets.
+- [ ] Release APK **and** AAB are assembled for `versionName = 1.0.0-rc1`.
+- [ ] Release APK and AAB are signed with external release credentials; no signing secrets are committed.
 
 ## Fresh install
 
@@ -63,3 +63,27 @@ Android build host.
 ## Result
 
 The release is not accepted until every required item above has evidence in `FINAL_ACCEPTANCE_REPORT.md`.
+
+## OV-13 evidence seal additions
+
+- [ ] `verifyFinalReleaseAutomatedGate` passes on the Android build host.
+- [ ] Host evidence binds signed Release APK and AAB paths and SHA-256 values in one validation session.
+- [ ] APK identity/version/non-debuggable state and signer certificate pass `apkanalyzer` + `apksigner`.
+- [ ] Release AAB signature integrity passes strict `jarsigner` verification.
+- [ ] Connected core-data, Room migration, Plans, Practice, Schedule, Workspace, and Release app suites pass.
+- [ ] The exact signed APK completes the full production-container journey with real
+  `REPLACE_EXISTING` and `CREATE_AS_NEW` restores.
+- [ ] A second instrumentation invocation after forced process restart re-reads the retained restored data.
+- [ ] For every required device check below, invoke `record_final_device_acceptance.py` with both
+  `--pass-check CHECK` and `--evidence 'CHECK=what was observed'`. Bare PASS flags are rejected.
+- [ ] `verifyFinalReleaseVerdict` reports `releaseReady=true`; WARNING/BLOCKED/FAIL/missing evidence
+  never counts as release-ready.
+
+Example attestation shape (repeat the two arguments for **every** required check):
+
+```bash
+python3 scripts/record_final_device_acceptance.py \
+  --pass-check accessibility_talkback_focus_touch_target \
+  --evidence 'accessibility_talkback_focus_touch_target=TalkBack traversal, visible focus, and touch targets verified'
+./gradlew verifyFinalReleaseVerdict
+```

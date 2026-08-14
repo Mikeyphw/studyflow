@@ -156,7 +156,8 @@ private suspend fun inspectStudyEngine(
                 activity.scheduledStartEpochMillis != null &&
                 activity.scheduledStartEpochMillis >= nowEpochMillis
         }
-    val schedulePersistenceValid = schedule.plannedActivities.map { it.id }.distinct().size == schedule.plannedActivities.size &&
+    val schedulePersistenceValid = schedule.plannedActivities.map { it.id }.distinct().size == schedule
+        .plannedActivities.size &&
         schedule.plannedActivities.all { activity ->
             activity.studyPlanId == planId && activity.plannedDurationMinutes > 0
         }
@@ -185,7 +186,8 @@ private suspend fun inspectStudyEngine(
     }
     val progressHasEvidence = progressSnapshot.goals.isNotEmpty() || progressSnapshot.notes.isNotEmpty()
     val progressValid = progressSnapshot.goalProgressPercent in 0..100 &&
-        progressSnapshot.goals.all { goal -> goal.studyPlanId == planId && goal.targetValue > 0.0 && goal.currentValue >= 0.0 } &&
+        progressSnapshot.goals.all { goal -> goal.studyPlanId == planId && goal.targetValue > 0.0 && goal
+            .currentValue >= 0.0 } &&
         progressSnapshot.notes.all { note -> note.studyPlanId == planId }
     val analyticsHasEvidence = analyticsSnapshot.studiedMinutesLastSevenDays > 0 ||
         analyticsSnapshot.completedSessionsLastSevenDays > 0 ||
@@ -227,8 +229,10 @@ private suspend fun inspectStudyEngine(
         easeFactor = 2.5,
         completedAtEpochMillis = null,
     )
-    val scheduledCanaryA = SpacedRepetitionScheduler.schedule(syntheticReview, grade = 5, reviewedAtEpochMillis = nowEpochMillis)
-    val scheduledCanaryB = SpacedRepetitionScheduler.schedule(syntheticReview, grade = 5, reviewedAtEpochMillis = nowEpochMillis)
+    val scheduledCanaryA = SpacedRepetitionScheduler.schedule(syntheticReview, grade = 5,
+        reviewedAtEpochMillis = nowEpochMillis)
+    val scheduledCanaryB = SpacedRepetitionScheduler.schedule(syntheticReview, grade = 5,
+        reviewedAtEpochMillis = nowEpochMillis)
     val srsCanaryValid = scheduledCanaryA == scheduledCanaryB &&
         scheduledCanaryA.status == ReviewStatus.SCHEDULED &&
         scheduledCanaryA.repetitionCount == 1 &&
@@ -328,7 +332,8 @@ private suspend fun inspectStudyEngine(
     )
     val passingMockSummary = executionEngine.finish(passingMockState)
     val terminalMockState = executionEngine.stateForMockExam(
-        mockExam.copy(submittedAtEpochMillis = nowEpochMillis + 20_000L, scorePercent = mockSummary.scorePercent.toDouble()),
+        mockExam.copy(submittedAtEpochMillis = nowEpochMillis + 20_000L, scorePercent = mockSummary
+            .scorePercent.toDouble()),
         syntheticQuestions,
     )
     val terminalMutationRejected = try {
@@ -473,7 +478,8 @@ private suspend fun inspectStudyEngine(
         diagnostics.any { it.status == DebugLabStatus.FAILED } -> DebugLabStatus.FAILED
         diagnostics.any { it.status == DebugLabStatus.BLOCKED } -> DebugLabStatus.BLOCKED
         diagnostics.any { it.status == DebugLabStatus.WARNING } -> DebugLabStatus.WARNING
-        diagnostics.all { it.status == DebugLabStatus.EMPTY || it.status == DebugLabStatus.NOT_APPLICABLE } -> DebugLabStatus.EMPTY
+        diagnostics.all { it.status == DebugLabStatus.EMPTY || it.status == DebugLabStatus
+            .NOT_APPLICABLE } -> DebugLabStatus.EMPTY
         else -> DebugLabStatus.PASSED
     }
     return StudyEngineLabReport(

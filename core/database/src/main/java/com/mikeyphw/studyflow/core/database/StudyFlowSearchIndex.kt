@@ -142,7 +142,8 @@ object StudyFlowSearchIndex {
             "ERROR",
             "NEW.studyPlanId",
             "coalesce((SELECT statement FROM questions q WHERE q.id = NEW.questionId " +
-                "AND q.studyPlanId = NEW.studyPlanId), '') || ' ' || NEW.explanation || ' ' || NEW.category || ' ' || " +
+                "AND q.studyPlanId = NEW.studyPlanId), '') || ' ' || NEW.explanation || ' ' || " +
+                "NEW.category || ' ' || " +
                 "coalesce(NEW.chosenAnswer, '') || ' ' || coalesce(NEW.correctAnswer, '')",
         ),
     )
@@ -151,10 +152,14 @@ object StudyFlowSearchIndex {
         "INSERT INTO $TableName SELECT 'PLAN', id, id, name || ' ' || description FROM study_plans",
         "INSERT INTO $TableName SELECT 'SUBJECT', id, studyPlanId, name || ' ' || description FROM subjects",
         "INSERT INTO $TableName SELECT 'TOPIC', id, studyPlanId, name || ' ' || description FROM topics",
-        "INSERT INTO $TableName SELECT 'QUESTION', id, studyPlanId, statement || ' ' || explanation || ' ' || coalesce(source, '') FROM questions",
-        "INSERT INTO $TableName SELECT 'NOTE', id, studyPlanId, title || ' ' || content || ' ' || tagsJson FROM study_notes",
-        "INSERT INTO $TableName SELECT 'MATERIAL', id, studyPlanId, title || ' ' || description || ' ' || tagsJson FROM study_materials",
-        "INSERT INTO $TableName SELECT 'FLASHCARD', id, studyPlanId, front || ' ' || back || ' ' || coalesce(clozeText, '') FROM flashcards",
+        "INSERT INTO $TableName SELECT 'QUESTION', id, studyPlanId, " +
+            "statement || ' ' || explanation || ' ' || coalesce(source, '') FROM questions",
+        "INSERT INTO $TableName SELECT 'NOTE', id, studyPlanId, " +
+            "title || ' ' || content || ' ' || tagsJson FROM study_notes",
+        "INSERT INTO $TableName SELECT 'MATERIAL', id, studyPlanId, " +
+            "title || ' ' || description || ' ' || tagsJson FROM study_materials",
+        "INSERT INTO $TableName SELECT 'FLASHCARD', id, studyPlanId, " +
+            "front || ' ' || back || ' ' || coalesce(clozeText, '') FROM flashcards",
         """INSERT INTO $TableName
             SELECT 'ERROR', e.id, e.studyPlanId,
                 coalesce(q.statement, '') || ' ' || e.explanation || ' ' || e.category || ' ' ||

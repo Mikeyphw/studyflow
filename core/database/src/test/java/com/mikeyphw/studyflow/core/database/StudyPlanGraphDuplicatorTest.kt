@@ -9,11 +9,13 @@ class StudyPlanGraphDuplicatorTest {
     fun `every plan-owned table is included exactly once`() {
         val names = StudyPlanGraphDuplicator.TableSpecs.map { it.tableName }
 
-        assertEquals(21, names.size)
+        assertEquals(19, names.size)
         assertEquals(names.size, names.toSet().size)
         assertTrue("study_plan_settings" in names)
         assertTrue("review_items" in names)
-        assertTrue("annexes" in names)
+        assertTrue("annexes" !in names)
+        assertTrue("plan_snapshots" !in names)
+        assertTrue("annexes" in StudyPlanGraphDuplicator.PortabilityTableSpecs.map { it.tableName })
     }
 
     @Test

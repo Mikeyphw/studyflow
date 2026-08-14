@@ -56,7 +56,8 @@ class ManageStudyReview(
     }
 
     fun observeWrongAnswerNotebook(planId: StudyPlanId): Flow<WrongAnswerNotebook> = combine(
-        combine(observeFreshErrorEntries(planId), repository.observeReviewItems(planId)) { errors, items -> errors to items },
+        combine(observeFreshErrorEntries(planId), repository.observeReviewItems(planId)) { errors, items ->
+            errors to items },
         tickingClockFlow(clock),
     ) { (errors, items), now ->
         WrongAnswerRemediator.buildNotebook(errors, items, now)

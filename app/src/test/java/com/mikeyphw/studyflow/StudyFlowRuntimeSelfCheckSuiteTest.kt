@@ -89,7 +89,8 @@ class StudyFlowRuntimeSelfCheckSuiteTest {
             assertEquals(RuntimeSelfCheckVerdict.CANCELLED, cancelled.run.verdict)
             assertEquals(2, cancelled.run.attemptedProbeIds.size)
             assertEquals(DebugProbeStatus.PASSED, cancelled.run.results.getValue(DebugProbeId.RECORDER_HEALTH).status)
-            assertEquals(DebugProbeStatus.CANCELLED, cancelled.run.results.getValue(DebugProbeId.NOTIFICATION_HEALTH).status)
+            assertEquals(DebugProbeStatus.CANCELLED, cancelled.run.results.getValue(DebugProbeId
+                .NOTIFICATION_HEALTH).status)
         }
     }
 

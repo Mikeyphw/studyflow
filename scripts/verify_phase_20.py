@@ -34,27 +34,41 @@ review_manager = text("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/d
 for marker in (
     "observeWrongAnswerNotebook",
     "recordWrongAnswer",
-    "captureWrongAnswersFromTest",
-    "captureWrongAnswersFromMockExam",
     "scheduleErrorReview",
     "resolveErrorEntry",
 ):
     if marker not in review_manager:
         failures.append(f"ManageStudyReview missing remediation marker: {marker}")
 
-practice_screen = text("feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeScreen.kt")
+practice_engine = text("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/PracticeExecutionEngine.kt")
 for marker in (
-    "review: ManageStudyReview",
-    "captureWrongAnswersFromTest",
-    "captureWrongAnswersFromMockExam",
-    "ErrorCategory.CONCEPT_CONFUSION",
+    "repository.submitTestIfOpen(",
+    "repository.submitMockExamIfOpen(",
+    "wrongAnswers = wrongAnswers(state)",
+    "PracticeWrongAnswerCapture",
 ):
-    if marker not in practice_screen:
-        failures.append(f"Practice screen missing auto-capture marker: {marker}")
+    if marker not in practice_engine:
+        failures.append(f"Practice execution engine missing atomic wrong-answer capture marker: {marker}")
+
+practice_repository = text("core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPracticeRepository.kt")
+for marker in (
+    "database.withTransaction",
+    "wrongAnswers.forEach { capture -> captureWrongAnswer(capture, submittedAt) }",
+    "private suspend fun captureWrongAnswer",
+    "ErrorEntry(",
+    "ReviewItem(",
+    ").asEntity()",
+):
+    if marker not in practice_repository:
+        failures.append(f"Room practice repository missing transactional remediation marker: {marker}")
+
+practice_screen = text("feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeScreen.kt")
+if "captureWrongAnswersFromTest" in practice_screen or "captureWrongAnswersFromMockExam" in practice_screen:
+    failures.append("Practice screen must not duplicate terminal wrong-answer capture outside the repository transaction")
 
 review_screen = text("feature/reviews/src/main/java/com/mikeyphw/studyflow/feature/reviews/StudyReviewScreen.kt")
 for marker in (
-    "WrongAnswerNotebookCard",
+    "StudyFlowSectionCard(title = stringResource(R.string.wrong_answer_notebook))",
     "WrongAnswerRow",
     "scheduleErrorReview",
     "resolveErrorEntry",

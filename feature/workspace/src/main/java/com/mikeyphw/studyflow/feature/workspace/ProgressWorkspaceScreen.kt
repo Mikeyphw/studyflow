@@ -152,7 +152,8 @@ fun ProgressWorkspaceScreen(
     }
     val planSettingsFlow = remember(plan.id, loadAttempt) {
         planManager.observeSettings(plan.id)
-            .map { settings -> requireNotNull(settings) { "Study Plan settings must be persisted before progress analysis." } }
+            .map { settings -> requireNotNull(
+                settings) { "Study Plan settings must be persisted before progress analysis." } }
             .asStudyFlowLoadState()
     }
     val analyticsState by analyticsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)

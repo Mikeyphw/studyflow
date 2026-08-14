@@ -188,7 +188,8 @@ internal class RoomStudyContentRepository(
                 }
                 .toMutableList()
             destinationSiblings.add(destinationPosition.coerceIn(0, destinationSiblings.size), movedRoot)
-            val reorderedDestination = destinationSiblings.mapIndexed { index, sibling -> sibling.copy(position = index) }
+            val reorderedDestination = destinationSiblings.mapIndexed { index, sibling -> sibling
+                .copy(position = index) }
             structureDao.upsertTopics((oldSiblings + reorderedDestination).map(Topic::asEntity))
             recalculateProgress(planId)
         }
@@ -249,7 +250,8 @@ internal class RoomStudyContentRepository(
                 val topicIds = subjectDraft.topics.associate { draftTopic ->
                     draftTopic.key to TopicId(UUID.randomUUID().toString())
                 }
-                require(topicIds.size == subjectDraft.topics.size) { "Imported topic keys must be unique within a subject." }
+                require(topicIds.size == subjectDraft.topics
+                    .size) { "Imported topic keys must be unique within a subject." }
                 subjectDraft.topics.forEach { topicDraft ->
                     require(topicDraft.parentKey == null || topicDraft.parentKey in topicIds) {
                         "Imported topic '${topicDraft.name}' references an unknown parent key."

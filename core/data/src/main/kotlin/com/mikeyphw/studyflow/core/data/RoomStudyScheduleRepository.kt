@@ -23,7 +23,8 @@ import kotlinx.coroutines.flow.combine
 
 internal class RoomStudyScheduleRepository(
     private val database: StudyFlowDatabase,
-    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com
+        .mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyScheduleRepository {
     private val planningDao = database.studyPlanningDao()
     private val planDao = database.studyPlanDao()
@@ -173,7 +174,8 @@ internal class RoomStudyScheduleRepository(
                 existing.status in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED)
             if (existing == null || replaceable) {
                 val withoutCandidate = current.filterNot { it.id == candidate.id }
-                planner.validateCandidate(candidate, withoutCandidate + candidate, planningDao.findScheduleRules(planId.value).map { it.asExternalModel() })
+                planner.validateCandidate(candidate, withoutCandidate + candidate, planningDao
+                    .findScheduleRules(planId.value).map { it.asExternalModel() })
                 planningDao.upsertPlannedActivity(candidate.asEntity())
                 current.removeAll { it.id == candidate.id }
                 current += candidate

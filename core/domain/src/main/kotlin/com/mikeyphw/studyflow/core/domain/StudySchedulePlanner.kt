@@ -211,7 +211,8 @@ class StudySchedulePlanner(
         val interval = Regex("FREQ=WEEKLY;INTERVAL=(\\d+)").matchEntire(raw)?.groupValues?.get(1)?.toIntOrNull()
             ?: Regex("EVERY_(\\d+)_WEEKS").matchEntire(raw)?.groupValues?.get(1)?.toIntOrNull()
             ?: Regex("EVERY_N_WEEKS:(\\d+)").matchEntire(raw)?.groupValues?.get(1)?.toIntOrNull()
-        require(interval != null && interval in 1..52) { "Unsupported schedule recurrence rule: ${rule.recurrenceRule}" }
+        require(interval != null
+            && interval in 1..52) { "Unsupported schedule recurrence rule: ${rule.recurrenceRule}" }
         return Recurrence(RecurrenceKind.EVERY_N_WEEKS, interval)
     }
 
@@ -243,7 +244,8 @@ class StudySchedulePlanner(
     }
 
     private fun activityTypeFor(rule: ScheduleRule, strategy: StudyStrategy?, start: Long): StudyActivityType {
-        if (strategy == null) return if (rule.type == ScheduleRuleType.CYCLE_SLOT) StudyActivityType.CUSTOM else StudyActivityType.THEORY
+        if (strategy == null) return if (rule.type == ScheduleRuleType.CYCLE_SLOT) StudyActivityType
+            .CUSTOM else StudyActivityType.THEORY
         val bucket = stableBucket("${rule.id.value}:$start")
         return when {
             bucket < strategy.theoryRatioPercent -> StudyActivityType.THEORY
@@ -298,8 +300,10 @@ class StudySchedulePlanner(
     }
 }
 
-private fun Calendar.copyAndAddDays(days: Int): Calendar = (clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, days) }
-private fun Calendar.copyAndAddMinutes(minutes: Int): Calendar = (clone() as Calendar).apply { add(Calendar.MINUTE, minutes) }
+private fun Calendar.copyAndAddDays(days: Int): Calendar = (clone() as Calendar).apply { add(Calendar
+    .DAY_OF_YEAR, days) }
+private fun Calendar.copyAndAddMinutes(minutes: Int): Calendar = (clone() as Calendar).apply { add(Calendar
+    .MINUTE, minutes) }
 private val Calendar.studyFlowDayOfWeek: Int
     get() = when (get(Calendar.DAY_OF_WEEK)) {
         Calendar.MONDAY -> 1

@@ -27,7 +27,8 @@ class DomainLocalizationGuardTest {
 
         forbidden.forEach { rawCopy ->
             assertFalse("Raw presentation copy leaked into reminder domain: $rawCopy", reminderSource.contains(rawCopy))
-            assertFalse("Raw presentation copy leaked into analytics domain: $rawCopy", analyticsSource.contains(rawCopy))
+            assertFalse("Raw presentation copy leaked into analytics domain: $rawCopy", analyticsSource
+                .contains(rawCopy))
         }
     }
 

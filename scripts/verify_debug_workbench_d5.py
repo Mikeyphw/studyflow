@@ -7,8 +7,9 @@ required = {
         'PRAGMA quick_check', 'PRAGMA foreign_key_check', 'StudyFlowMigrations.All',
         'catch (cancelled: CancellationException)', 'throw cancelled', 'userTableNames()'],
     'app/src/main/java/com/mikeyphw/studyflow/StudyFlowDatabasePortabilityLab.kt': [
-        'BackupRestoreDrillSeal.runManagedDrills(', 'DatabaseHealthOperation',
-        'PortabilityDrillOperation', 'catch (cancelled: CancellationException)'],
+        'runProductionPortabilityDrills(', 'DatabaseHealthOperation',
+        'PortabilityDrillOperation', 'manageStudyPlanPortability.exportPlan',
+        'StudyPlanImportStrategy.CREATE_AS_NEW', 'catch (cancelled: CancellationException)'],
     'feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DatabasePortabilityLabPanel.kt': [
         'fun DatabasePortabilityLabPanel(', 'debug_portability_lab_zero_write'],
     'feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugLabsPanel.kt': [

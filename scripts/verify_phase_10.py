@@ -16,6 +16,7 @@ required = [
     "feature/library/src/test/java/com/mikeyphw/studyflow/feature/library/LibraryUiModelsTest.kt",
     "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyLibraryRepository.kt",
     "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyLibrary.kt",
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/AnnexFileStorageRepository.kt",
     "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/LibraryProgressCalculator.kt",
     "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyLibraryRepository.kt",
     "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/StudyLibraryEntityMapper.kt",
@@ -79,9 +80,15 @@ for marker in ("database.withTransaction", "requireSubject", "requireTopic", "de
     if marker not in repo:
         failures.append(f"Room library repository missing: {marker}")
 manager = (ROOT / "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyLibrary.kt").read_text(encoding="utf-8")
-for marker in ("createMaterial", "toggleFavorite", "updateMaterialProgress", "createVideo", "createLinkedAnnex"):
+for marker in ("createMaterial", "toggleFavorite", "updateMaterialProgress", "createVideo"):
     if marker not in manager:
         failures.append(f"library manager missing operation: {marker}")
+annex_manager = (
+    ROOT / "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/AnnexFileStorageRepository.kt"
+).read_text(encoding="utf-8")
+for marker in ("class ManageAnnexFileStorage", "importCopy", "linkDocument", "deleteStoredAnnex"):
+    if marker not in annex_manager:
+        failures.append(f"annex storage boundary missing operation: {marker}")
 
 def resource_keys(path: Path) -> set[tuple[str, str]]:
     root = ET.parse(path).getroot()

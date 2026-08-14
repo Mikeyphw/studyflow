@@ -25,7 +25,8 @@ class DataStoreAppPreferencesRepositoryContractTest {
 
     private fun repositorySource(): String {
         val module = Paths.get("src/main/java/com/mikeyphw/studyflow/core/i18n/DataStoreAppPreferencesRepository.kt")
-        val root = Paths.get("core/i18n/src/main/java/com/mikeyphw/studyflow/core/i18n/DataStoreAppPreferencesRepository.kt")
+        val root = Paths.get(
+            "core/i18n/src/main/java/com/mikeyphw/studyflow/core/i18n/DataStoreAppPreferencesRepository.kt")
         val path: Path = listOf(module, root).first { it.toFile().isFile }
         return path.toFile().readText()
     }

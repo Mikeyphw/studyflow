@@ -83,7 +83,8 @@ internal class RoomStudyAnalyticsRepository(
     ): StudyAnalyticsSnapshot {
         val aggregate = inputs.aggregate
         val activeDays = inputs.sessions.asSequence()
-            .filter { session -> session.status == "COMPLETED" && session.startedAtEpochMillis >= inputs.sevenDayWindowStart }
+            .filter { session -> session.status == "COMPLETED" && session.startedAtEpochMillis >= inputs
+                .sevenDayWindowStart }
             .map { session -> Instant.ofEpochMilli(session.startedAtEpochMillis).atZone(zoneId).toLocalDate() }
             .distinct()
             .count()
@@ -99,7 +100,8 @@ internal class RoomStudyAnalyticsRepository(
         val goalPercent = GoalProgressCalculator.overallGoalPercent(evaluatedGoals)
         val activeTopics = inputs.topics.filterNot(TopicEntity::archived)
         val weakAreas = activeTopics
-            .filter { topic -> topic.masteryPercent < WeakMasteryThreshold || topic.progressPercent < WeakProgressThreshold }
+            .filter { topic -> topic.masteryPercent < WeakMasteryThreshold || topic
+                .progressPercent < WeakProgressThreshold }
             .sortedWith(compareBy<TopicEntity> { it.masteryPercent }.thenByDescending { it.priority })
             .take(5)
             .map { topic ->

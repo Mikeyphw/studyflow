@@ -21,6 +21,7 @@ seal = read("core/diagnostics/src/main/kotlin/com/mikeyphw/studyflow/core/diagno
 actions = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowDebugWorkbenchActions.kt")
 suite = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowRuntimeSelfCheckSuite.kt")
 app = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
+view_model = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowDebugWorkbenchViewModel.kt")
 ui = read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugWorkbenchScreen.kt")
 core_tests = read("core/diagnostics/src/test/kotlin/com/mikeyphw/studyflow/core/diagnostics/DebugWorkbenchSealTest.kt")
 action_tests = read("app/src/test/java/com/mikeyphw/studyflow/StudyFlowDebugWorkbenchActionsTest.kt")
@@ -45,13 +46,14 @@ for token in [
     require(token in seal, f"D7 invariant missing {token}")
 
 for entry in [
-    "events/current.jsonl",
     "environment.json",
     "manifest.json",
     "redaction-report.txt",
     "checksums.sha256",
 ]:
     require(entry in seal, f"Support bundle allowlist missing {entry}")
+require(r'Regex("events/(?:current|retained-[0-9]{3})\\.jsonl")' in seal,
+        "Support bundle allowlist is missing bounded current/retained event entries")
 
 for forbidden in ["studyflow.db", "shared_prefs", "datastore", "annex", "questions", "answers"]:
     require(forbidden not in seal.lower(), f"Support seal allowlist includes forbidden hint {forbidden}")
@@ -61,9 +63,11 @@ require("probeIds.all(DebugProbeCatalog.safeSuiteIds::contains)" in suite, "Suit
 require("catch (cancelled: CancellationException)" in suite, "Suite does not preserve cancellation")
 require("catch (fatal: Error)" in suite and "throw fatal" in suite, "Suite does not rethrow fatal errors")
 require("DiagnosticOutcome.STARTED" in suite and "DiagnosticOutcome.SUCCEEDED" in suite, "Suite events incomplete")
-require("RuntimeSelfCheckHistory" in app and "selfCheckHistory.record(run)" in app, "App does not retain self-check history")
-require("StudyFlowRuntimeSelfCheckSuite(" in app, "App does not use D7 suite")
-require("supportBundleSealReport" in app and "debugActions.supportBundleSealReport()" in app, "App does not surface seal result")
+require("RuntimeSelfCheckHistory" in view_model and "selfCheckHistory.record(run)" in view_model,
+        "ViewModel does not retain self-check history")
+require("StudyFlowRuntimeSelfCheckSuite(" in view_model, "ViewModel does not use D7 suite")
+require("supportBundleSealReport" in app and "debugActions.supportBundleSealSnapshot()" in view_model,
+        "Support-bundle seal state is not retained by the ViewModel and surfaced by the app")
 require("BUNDLE_SEAL_FAILED" in ui, "UI result missing bundle seal failure")
 require("SupportBundleSealStatus.label" in ui, "UI does not render seal status")
 require("debug_self_check_history_title" in ui, "UI does not render self-check history")

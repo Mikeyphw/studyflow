@@ -60,7 +60,6 @@ for marker in (
     "clearPlanForReplacement",
     "updateRoot",
     "MergeSkippedTables",
-    "plan_snapshots",
     "study_plan_settings",
 ):
     if marker not in store:
@@ -69,14 +68,27 @@ for marker in (
 service = (ROOT / required[4]).read_text()
 for marker in (
     "PRE_IMPORT",
+    "createSnapshot",
     "writeSnapshotFile",
     "restoreSnapshot",
+    "supportDao.upsertSnapshots",
     "canonicalFile",
     "StudyPlanExportMode.FULL",
     "includeAnnexMetadata = true",
 ):
     if marker not in service:
         failures.append(f"Room portability repository missing: {marker}")
+
+# Snapshot packages are local recovery artifacts, not recursively portable graph rows.
+# Their payload files are created/restored by the data-layer portability repository.
+graph_duplicator = (
+    ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphDuplicator.kt"
+).read_text()
+table_specs_body = graph_duplicator.split("val TableSpecs = listOf(", 1)[1].split(
+    "val AnnexSpec", 1
+)[0]
+if '"plan_snapshots"' in table_specs_body:
+    failures.append("plan_snapshots must remain outside portable SQL graph rows")
 
 screen = (ROOT / required[6]).read_text()
 for marker in (

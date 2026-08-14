@@ -1,8 +1,10 @@
 # StudyFlow Android
 
-## Current status: Phase 55
+## Current status: OV-13 final remediation source implemented
 
-StudyFlow now includes UI/UX V2 through Phase 55: readiness, adaptive reschedule, weakness drills, question import, Mock Exam Studio, widget actions, Reminder Reliability Center, and Evidence Timeline. The app remains offline-first and uses the pinned Android toolchain.
+StudyFlow includes the completed remediation roadmap through OV-13. Source/static contracts do not
+claim release readiness: the automated signed-artifact/connected-device gate and explicit manual
+device observations must still produce one fail-closed final verdict.
 
 
 StudyFlow is an offline-first Android study workspace for public examinations, certifications,
@@ -10,9 +12,10 @@ university courses, entrance examinations, and independent study. It keeps the s
 content tree, schedule, sessions, practice, reviews, reminders, library resources, progress,
 privacy controls, and local checkpoint status on the device.
 
-## Current status
+## Historical implementation baseline
 
-This source tree is implemented through **Phase 51**, including the complete UI/UX V2 workspace migration:
+The source tree includes the complete UI/UX V2 workspace migration and later remediation overlays.
+The historical Phase 48-62 features include:
 
 - Phases 38-47 replace the feature-catalog shell with Today, Plan, Practice, and Progress workspaces.
 - The adaptive shell preserves root back stacks and legacy route compatibility.
@@ -118,6 +121,7 @@ devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply over
   --task :app:lintRelease \
   --task :app:assembleDebug \
   --task :app:assembleRelease \
+  --task :app:bundleRelease \
   --commit "Apply StudyFlow overlay" \
   /path/to/overlay.zip
 ```
@@ -241,3 +245,12 @@ content-health data. Export stays local and omits freeform notes by default. See
 [Phase 60-61 implementation](PHASE_60_61_SMART_CONTENT_CLEANUP_EXAM_REPORT.md) and
 [Phase 60-61 acceptance](docs/quality/PHASE_60_61_ACCEPTANCE.md).
 
+
+## OV-13 final release/full-regression evidence
+
+The final remediation overlay adds `verifyFinalReleaseAutomatedGate`: mandatory external signing, signed
+Release APK + AAB packaging, exact APK identity/certificate/hash verification, AAB signature-integrity verification,
+session-bound connected data/database/feature/Release-app suites, and an exact-APK real-restore journey that must
+survive a forced process restart. `verifyFinalReleaseVerdict` remains fail-closed until the separate manual device
+observations also carry explicit evidence. Source/static validators never imply artifact or device acceptance.
+Signing credentials and generated acceptance evidence remain outside source control.

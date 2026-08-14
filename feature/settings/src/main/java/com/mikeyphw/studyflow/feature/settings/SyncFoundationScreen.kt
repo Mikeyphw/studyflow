@@ -179,7 +179,8 @@ fun SyncFoundationScreen(
                     text = stringResource(R.string.sync_checkpoint_controls_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = { execute(SyncMutation.PREPARE) }, enabled = !operationRunning, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { execute(SyncMutation.PREPARE) }, enabled = !operationRunning,
+                    modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.sync_prepare_checkpoint))
                 }
                 OutlinedButton(

@@ -168,7 +168,8 @@ object AdaptiveReschedulePlanner {
                 scheduledStartEpochMillis = change.proposedStartEpochMillis ?: activity.scheduledStartEpochMillis,
                 plannedDurationMinutes = change.proposedDurationMinutes ?: activity.plannedDurationMinutes,
                 status = change.proposedStatus ?: activity.status,
-                completedAtEpochMillis = if (change.proposedStatus == PlannedActivityStatus.PLANNED) null else activity.completedAtEpochMillis,
+                completedAtEpochMillis = if (change.proposedStatus == PlannedActivityStatus
+                    .PLANNED) null else activity.completedAtEpochMillis,
             )
         }
     }
@@ -199,7 +200,8 @@ object AdaptiveReschedulePlanner {
             .sortedBy { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
             .take(5)
             .mapNotNull { activity ->
-                val proposed = findSafeRecovery(activity, schedule, accepted, planner, nowEpochMillis) ?: return@mapNotNull null
+                val proposed = findSafeRecovery(activity, schedule, accepted, planner, nowEpochMillis)
+                    ?: return@mapNotNull null
                 accepted += proposed
                 AdaptiveRescheduleChange(
                     id = "redistribute:${activity.id.value}",
@@ -245,7 +247,8 @@ object AdaptiveReschedulePlanner {
                 completedAtEpochMillis = null,
             )
             val all = schedule.plannedActivities.filterNot { it.id == activity.id } + accepted + candidate
-            if (runCatching { planner.validateCandidate(candidate, all, schedule.scheduleRules) }.isSuccess) return candidate
+            if (runCatching { planner.validateCandidate(candidate, all, schedule.scheduleRules) }
+                .isSuccess) return candidate
         }
         return null
     }
@@ -261,7 +264,8 @@ object AdaptiveReschedulePlanner {
         val overloadedDays = minutesByDay.filterValues { it > 180 }.keys
         return nextWeek
             .filter { localDayKey(requireNotNull(it.scheduledStartEpochMillis)) in overloadedDays }
-            .filter { it.type !in setOf(StudyActivityType.REVIEW, StudyActivityType.QUESTIONS) && it.plannedDurationMinutes >= 40 }
+            .filter { it.type !in setOf(StudyActivityType.REVIEW, StudyActivityType.QUESTIONS) && it
+                .plannedDurationMinutes >= 40 }
             .take(3)
             .map { activity ->
                 AdaptiveRescheduleChange(
@@ -290,7 +294,8 @@ object AdaptiveReschedulePlanner {
         nowEpochMillis: Long,
     ): List<AdaptiveRescheduleChange> = schedule.plannedActivities
         .filter { !it.locked && it.status == PlannedActivityStatus.PLANNED &&
-            it.type == StudyActivityType.QUESTIONS && (it.scheduledStartEpochMillis ?: Long.MAX_VALUE) >= nowEpochMillis }
+            it.type == StudyActivityType.QUESTIONS && (it.scheduledStartEpochMillis ?: Long
+                .MAX_VALUE) >= nowEpochMillis }
         .sortedBy { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
         .take(1)
         .map { activity ->
@@ -352,7 +357,8 @@ object AdaptiveReschedulePlanner {
         (change.currentType == null || change.currentType == change.proposedType)
 
     private fun summaryFor(score: Int, changes: List<AdaptiveRescheduleChange>): String = when {
-        changes.any { it.type == AdaptiveRescheduleChangeType.REDISTRIBUTE_MISSED } -> "Recover missed work before adding new load."
+        changes.any { it.type == AdaptiveRescheduleChangeType.REDISTRIBUTE_MISSED } ->
+            "Recover missed work before adding new load."
         changes.any { it.type == AdaptiveRescheduleChangeType.PROTECT_REVIEWS } -> "Protect review debt first."
         score < 65 -> "The plan is risky; accept only safe, reversible changes."
         else -> "The plan is stable; no major reshuffle is needed."

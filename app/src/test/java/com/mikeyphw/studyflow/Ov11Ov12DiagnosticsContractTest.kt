@@ -27,7 +27,8 @@ class Ov11Ov12DiagnosticsContractTest {
         assertTrue("viewModelScope" in viewModel)
         assertTrue("probeMutex" in viewModel)
         assertTrue("suiteRunning" in viewModel)
-        assertFalse(Regex("rememberSaveable[\\s\\S]{0,160}(suite|probe|lab).*Running", RegexOption.IGNORE_CASE).containsMatchIn(app))
+        assertFalse(Regex("rememberSaveable[\\s\\S]{0,160}(suite|probe|lab).*Running", RegexOption
+            .IGNORE_CASE).containsMatchIn(app))
         assertTrue("Status snapshot" in strings)
         assertFalse(">Live status<" in strings)
     }
@@ -35,7 +36,8 @@ class Ov11Ov12DiagnosticsContractTest {
     @Test
     fun `routine repository mutations emit sanitized diagnostic boundaries`() {
         val dataLayer = repoFile("core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt")
-        val helper = repoFile("core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/DiagnosticRepositoryMutation.kt")
+        val helper = repoFile(
+            "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/DiagnosticRepositoryMutation.kt")
         val files = listOf(
             "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanRepository.kt",
             "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudySessionRepository.kt",

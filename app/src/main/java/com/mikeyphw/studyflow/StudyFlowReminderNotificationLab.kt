@@ -217,7 +217,8 @@ private class AndroidReminderLabInspectOperation(
                 apiLevel = Build.VERSION.SDK_INT,
             )
         }
-        val settings = requireNotNull(container.manageStudyPlan.observeSettings(planId).first()) { "Study Plan settings are unavailable." }
+        val settings = requireNotNull(container.manageStudyPlan.observeSettings(planId)
+            .first()) { "Study Plan settings are unavailable." }
         val schedule = container.manageStudySchedule.observeSchedule(planId).first()
         val reviewQueue = container.manageStudyReview.observeQueue(planId).first()
         val permissionGranted = notificationPermissionGranted(appContext)
@@ -298,8 +299,10 @@ private class AndroidReminderLabInspectOperation(
             else -> ReminderLabMessage.NONE
         }
         val status = when {
-            platformStatus == DebugLabStatus.FAILED || schedulingStatus == DebugLabStatus.FAILED -> DebugLabStatus.FAILED
-            platformStatus == DebugLabStatus.WARNING || schedulingStatus == DebugLabStatus.WARNING -> DebugLabStatus.WARNING
+            platformStatus == DebugLabStatus.FAILED || schedulingStatus == DebugLabStatus.FAILED ->
+                DebugLabStatus.FAILED
+            platformStatus == DebugLabStatus.WARNING || schedulingStatus == DebugLabStatus.WARNING ->
+                DebugLabStatus.WARNING
             plannerStatus == DebugLabStatus.EMPTY -> DebugLabStatus.EMPTY
             else -> DebugLabStatus.PASSED
         }

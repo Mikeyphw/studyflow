@@ -23,7 +23,8 @@ internal class RoomStudyPlanRepository(
     context: Context,
     private val database: StudyFlowDatabase,
     private val clock: () -> Long,
-    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com
+        .mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyPlanRepository {
     private val appContext = context.applicationContext
     private val studyPlanDao = database.studyPlanDao()

@@ -21,6 +21,7 @@ def forbid(path: str, needle: str) -> None:
 
 actions = "app/src/main/java/com/mikeyphw/studyflow/StudyFlowDebugWorkbenchActions.kt"
 app = "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt"
+view_model = "app/src/main/java/com/mikeyphw/studyflow/StudyFlowDebugWorkbenchViewModel.kt"
 registry = "app/src/main/java/com/mikeyphw/studyflow/StudyFlowDebugProbeRegistry.kt"
 registry_test = "app/src/test/java/com/mikeyphw/studyflow/StudyFlowDebugProbeRegistryTest.kt"
 actions_test = "app/src/test/java/com/mikeyphw/studyflow/StudyFlowDebugWorkbenchActionsTest.kt"
@@ -43,7 +44,7 @@ for needle in (
     "BUNDLE_SHARE_FAILED",
 ):
     require(actions, needle)
-require(app, "StudyFlowDebugWorkbenchActions.android(")
+require(view_model, "StudyFlowDebugWorkbenchActions.android(")
 forbid(app, "copySanitizedTimeline()")
 forbid(app, 'File(context.cacheDir, "support-bundles")')
 
@@ -119,7 +120,7 @@ for needle in (
     require(actions_test, needle)
 for needle in (
     "widget policy verifies device provider metadata enabled state and instances",
-    "backup policy fails when either manifest link or resource is missing",
+    "backup policy fails when actual backup differs from fail closed intent",
 ):
     require(policy_test, needle)
 

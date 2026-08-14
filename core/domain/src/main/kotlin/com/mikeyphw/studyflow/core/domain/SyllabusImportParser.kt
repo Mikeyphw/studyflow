@@ -92,7 +92,8 @@ object SyllabusImportParser {
         val rows = input.lineSequence().filter { it.isNotBlank() }.map(::parseCsvLine).toList()
         require(rows.isNotEmpty()) { "The CSV syllabus is empty." }
         val header = rows.first().mapIndexed { column, value ->
-            value.trim().let { normalized -> if (column == 0) normalized.removePrefix("\uFEFF") else normalized }.lowercase()
+            value.trim().let { normalized -> if (column == 0) normalized
+                .removePrefix("\uFEFF") else normalized }.lowercase()
         }
         val index = header.withIndex().associate { it.value to it.index }
         require("subject" in index && "topic" in index) { "CSV must include subject and topic columns." }
@@ -126,8 +127,10 @@ object SyllabusImportParser {
                         key = "subject:${subjects.size}",
                         name = subjectName,
                         priority = strictInt(value("subject_priority"), "subject_priority", rowNumber, 1..5, 3),
-                        examWeight = strictDouble(value("exam_weight"), "exam_weight", rowNumber, minimum = 0.0, default = 1.0),
-                        estimatedMinutes = strictInt(value("subject_minutes"), "subject_minutes", rowNumber, 0..Int.MAX_VALUE, 0),
+                        examWeight = strictDouble(value("exam_weight"), "exam_weight", rowNumber,
+                            minimum = 0.0, default = 1.0),
+                        estimatedMinutes = strictInt(value("subject_minutes"), "subject_minutes", rowNumber,
+                            0..Int.MAX_VALUE, 0),
                     ),
                 )
             }

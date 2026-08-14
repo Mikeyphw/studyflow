@@ -18,6 +18,7 @@ required = [
     "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyAnalytics.kt",
     "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyAnalyticsRepository.kt",
     "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyAnalyticsRepository.kt",
+    "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyAnalyticsDao.kt",
     "docs/architecture/ADR-0017-analytics-insights.md",
     "docs/quality/PHASE_12_ACCEPTANCE.md",
     "PHASE_12_IMPLEMENTATION.md",
@@ -65,9 +66,15 @@ for marker in ("val studyAnalyticsRepository: StudyAnalyticsRepository", "RoomSt
     if marker not in data_layer:
         failures.append(f"data layer does not expose analytics repository correctly: {marker}")
 analytics_repo = (ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyAnalyticsRepository.kt").read_text(encoding="utf-8")
-for marker in ("observeStudySessions", "observePlannedActivities", "observeReviewItems", "WeakStudyArea"):
+for marker in ("analyticsDao.snapshot", "findStudySessions", "WeakStudyArea", "shareIn"):
     if marker not in analytics_repo:
         failures.append(f"analytics repository missing aggregate marker: {marker}")
+analytics_dao = (
+    ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyAnalyticsDao.kt"
+).read_text(encoding="utf-8")
+for marker in ("StudyAnalyticsAggregateRow", "planned_activities", "review_items", "study_sessions", "suspend fun snapshot"):
+    if marker not in analytics_dao:
+        failures.append(f"analytics SQL aggregate missing marker: {marker}")
 
 def resource_keys(path: Path) -> set[tuple[str, str]]:
     root = ET.parse(path).getroot()

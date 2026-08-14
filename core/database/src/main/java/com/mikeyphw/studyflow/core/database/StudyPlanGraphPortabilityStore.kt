@@ -458,7 +458,8 @@ class StudyPlanGraphPortabilityStore(
     )
 
     private fun sanitizeAnnex(row: PortableRow, metadataPrivacyMode: Boolean): PortableRow = row.withValues(
-        "displayName" to text(if (metadataPrivacyMode) "private-annex.bin" else row.values["displayName"]?.value.orEmpty()),
+        "displayName" to text(if (metadataPrivacyMode) "private-annex.bin" else row
+            .values["displayName"]?.value.orEmpty()),
         "storageReference" to text(""),
         "persistedPermission" to integer(0),
     )

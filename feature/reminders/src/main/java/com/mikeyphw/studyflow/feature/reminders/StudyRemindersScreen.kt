@@ -198,7 +198,8 @@ fun StudyRemindersScreen(
                 Text(
                     text = when {
                         !notificationPermissionGranted -> stringResource(R.string.notification_permission_needed)
-                        !notificationDeliveryAllowed -> stringResource(R.string.notification_permission_disabled_by_system)
+                        !notificationDeliveryAllowed -> stringResource(R.string
+                            .notification_permission_disabled_by_system)
                         else -> stringResource(R.string.notification_permission_ready)
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

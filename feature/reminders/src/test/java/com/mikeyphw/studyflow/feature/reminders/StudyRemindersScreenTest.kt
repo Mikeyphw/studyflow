@@ -21,7 +21,8 @@ class StudyRemindersScreenTest {
     @Test
     fun preferenceSwitchUsesOneMergedLabeledTarget() {
         val module = Paths.get("src/main/java/com/mikeyphw/studyflow/feature/reminders/StudyRemindersScreen.kt")
-        val root = Paths.get("feature/reminders/src/main/java/com/mikeyphw/studyflow/feature/reminders/StudyRemindersScreen.kt")
+        val root = Paths.get(
+            "feature/reminders/src/main/java/com/mikeyphw/studyflow/feature/reminders/StudyRemindersScreen.kt")
         val source = listOf(module, root).first { it.toFile().isFile }.toFile().readText()
         assertTrue(source.contains(".semantics(mergeDescendants = true) {}"))
         assertTrue(source.contains("role = Role.Switch"))

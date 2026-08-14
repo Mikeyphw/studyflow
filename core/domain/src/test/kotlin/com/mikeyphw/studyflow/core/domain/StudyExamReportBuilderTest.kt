@@ -36,7 +36,8 @@ class StudyExamReportBuilderTest {
         assertFalse(snapshot.toString().contains("Legacy English message"))
         assertFalse(snapshot.freeformNotesIncluded)
         assertEquals(37, snapshot.evidenceCount)
-        assertTrue(snapshot.metricProvenance.any { it.metric == "evidence_count" && it.source == StudyExamReportMetricSource.RAW_EVIDENCE })
+        assertTrue(snapshot.metricProvenance.any { it.metric == "evidence_count" && it
+            .source == StudyExamReportMetricSource.RAW_EVIDENCE })
         assertEquals(1, snapshot.practiceTestCount)
         assertEquals(1, snapshot.completedPracticeTestCount)
         assertEquals(75, snapshot.practiceTestAccuracyPercent)

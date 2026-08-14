@@ -87,7 +87,7 @@ for token in (
     require(token in routes, f"Legacy route compatibility missing {token}")
 
 for token in (
-    "ManageExamReadiness",
+    "ExamReadinessEngine.calculate(",
     "ManageAdaptiveReschedule",
     "StudyEvidenceTimelineBuilder.build",
     "studyPlanId = plan.id",
@@ -109,16 +109,17 @@ for token in (
 
 for token in (
     "ReminderReliabilityCenter.inspect",
-    "notificationPermissionGranted = notificationPermissionGranted",
-    "canScheduleStudyFlowExactAlarms",
+    "notificationPermissionGranted = notificationDeliveryAllowed",
+    "isIgnoringBatteryOptimizations",
     "isIgnoringBatteryOptimizations",
     "ReminderReliabilityIssueRow",
 ):
     require(token in reminders, f"Reminder reliability surface missing {token}")
 
 for token in (
-    "StudyReminderExtraPlanId",
-    "StudyReminderExtraType",
+    "studyReminderOpenIntent",
+    '.authority("widget-open")',
+    '.appendPath(summary?.studyPlanId?.value ?: "app")',
     "widget_primary_action",
     "widget_reviews_action",
     "ReminderNotificationType.DUE_REVIEWS",

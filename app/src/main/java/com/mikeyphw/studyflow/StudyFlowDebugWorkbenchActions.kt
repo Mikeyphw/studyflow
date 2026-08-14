@@ -110,7 +110,8 @@ internal class StudyFlowDebugWorkbenchActions(
             prepareBundleShare = prepare@{
                 val directory = File(context.cacheDir, "support-bundles")
                 if (!directory.mkdirs() && !directory.isDirectory) return@prepare null
-                pruneGeneratedFiles(directory, System.currentTimeMillis(), maxFiles = 5, maxAgeMillis = 7L * 24L * 60L * 60L * 1000L)
+                pruneGeneratedFiles(directory, System.currentTimeMillis(), maxFiles = 5,
+                    maxAgeMillis = 7L * 24L * 60L * 60L * 1000L)
 
                 val destination = File(directory, "studyflow-debug-${System.currentTimeMillis()}.zip")
                 val bundle = store.exportSupportBundle(
@@ -186,7 +187,8 @@ private fun ZipFile.inspectTextPayloadPrivacy(): Pair<Boolean, Boolean> {
     var privacyPassed = true
     var reportValid = false
     entries().asSequence()
-        .filter { entry -> !entry.isDirectory && (entry.name.endsWith(".json") || entry.name.endsWith(".jsonl") || entry.name.endsWith(".txt")) }
+        .filter { entry -> !entry.isDirectory && (entry.name.endsWith(".json") || entry.name
+            .endsWith(".jsonl") || entry.name.endsWith(".txt")) }
         .forEach { entry ->
             val bytes = getInputStream(entry).use { input -> input.readBounded(MaxSupportBundleTextEntryBytes) }
                 ?: run {

@@ -68,7 +68,8 @@ class AdaptiveReschedulePlannerTest {
         val update = AdaptiveReschedulePlanner.applyPreview(schedule.plannedActivities, preview).single()
 
         assertEquals(StudyActivityType.THEORY, update.type)
-        assertTrue(preview.changes.any { it.type == AdaptiveRescheduleChangeType.ADD_THEORY_BEFORE_QUESTIONS && it.executable })
+        assertTrue(preview.changes.any { it.type == AdaptiveRescheduleChangeType
+            .ADD_THEORY_BEFORE_QUESTIONS && it.executable })
     }
 
     @Test

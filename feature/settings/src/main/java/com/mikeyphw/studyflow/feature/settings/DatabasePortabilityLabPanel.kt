@@ -61,7 +61,8 @@ fun DatabasePortabilityLabPanel(
                 )
                 Text(booleanFact(R.string.debug_database_quick_check, report.database.quickCheckPassed))
                 Text(stringResource(R.string.debug_database_fk_violations, report.database.foreignKeyViolationCount))
-                Text(stringResource(R.string.debug_database_logical_violations, report.database.logicalIntegrityViolationCount))
+                Text(stringResource(R.string.debug_database_logical_violations, report.database
+                    .logicalIntegrityViolationCount))
                 Text(stringResource(R.string.debug_database_table_count, report.database.userTableCount))
                 Text(stringResource(R.string.debug_database_row_count, report.database.totalEntityRows))
                 Text(booleanFact(R.string.debug_database_metadata, report.database.metadataPresent))

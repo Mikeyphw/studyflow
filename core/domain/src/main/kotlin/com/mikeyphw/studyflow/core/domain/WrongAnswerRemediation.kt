@@ -23,7 +23,8 @@ object WrongAnswerRemediator {
             val pendingReview = reviews
                 .filter(ReviewDuePolicy::isActive)
                 .minByOrNull(ReviewItem::dueAtEpochMillis)
-                ?.let { item -> if (ReviewDuePolicy.isDue(item, nowEpochMillis)) item.copy(status = ReviewStatus.DUE) else item }
+                ?.let { item -> if (ReviewDuePolicy.isDue(item, nowEpochMillis)) item
+                    .copy(status = ReviewStatus.DUE) else item }
             WrongAnswerRemediation(
                 error = error,
                 pendingReview = pendingReview,

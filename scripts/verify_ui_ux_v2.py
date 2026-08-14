@@ -196,9 +196,14 @@ for route_name in ("TodayRoute", "PlanWorkspaceRoute", "PracticeWorkspaceRoute",
         f"clearBackStack<{route_name}>()" in v2,
         f"plan switching does not clear the saved {route_name} stack",
     )
+plan_picker_block = v2[v2.index("composable<PlanPickerRoute>"):v2.index("composable<QuickAddRoute>")]
 require(
-    "setDefaultStudyPlan(plan.id)" in v2,
-    "plan switching does not persist the selected default plan",
+    "setDefaultStudyPlan(" not in plan_picker_block,
+    "temporary workspace plan switching must not mutate the canonical default plan",
+)
+require(
+    "planId = plan.id.value" in plan_picker_block and "restoreSavedStack = false" in plan_picker_block,
+    "plan switching must navigate the selected workspace without restoring another plan stack",
 )
 require("launchSingleTop = true" in v2, "root navigation does not use launchSingleTop")
 for root in ("TODAY", "PLAN", "PRACTICE", "PROGRESS"):
@@ -211,12 +216,19 @@ require("rememberSaveable" not in v2, "app shell should not keep duplicate selec
 require("startDestination = TodayRoute()" in app, "Today is not the application start destination")
 require("StudyFlowV2Navigation(" in app, "application shell does not delegate to V2")
 for direct_search_target in (
-    "GlobalSearchDestination.DASHBOARD -> navigate(TodayRoute(planId))",
-    "PlanWorkspaceRoute(planId, PlanWorkspaceTab.CONTENT)",
-    "PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.QUESTIONS)",
-    "GlobalSearchDestination.PROGRESS -> navigate(ProgressWorkspaceRoute(planId))",
-    "PlanWorkspaceRoute(planId, PlanWorkspaceTab.LIBRARY)",
-    "PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.REVIEWS)",
+    "GlobalSearchContentType.PLAN -> navigate(TodayRoute(planId))",
+    "GlobalSearchContentType.SUBJECT,",
+    "GlobalSearchContentType.TOPIC,",
+    "PlanWorkspaceRoute(planId, PlanWorkspaceTab.CONTENT, result.id)",
+    "GlobalSearchContentType.MATERIAL ->",
+    "PlanWorkspaceRoute(planId, PlanWorkspaceTab.LIBRARY, result.id)",
+    "GlobalSearchContentType.QUESTION ->",
+    "PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.QUESTIONS, result.id)",
+    "GlobalSearchContentType.NOTE -> navigate(ProgressWorkspaceRoute(planId, targetId = result.id))",
+    "GlobalSearchContentType.FLASHCARD ->",
+    "PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.REVIEWS, result.id)",
+    "GlobalSearchContentType.ERROR ->",
+    "PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.ERRORS, result.id)",
 ):
     require(direct_search_target in app, f"search result does not enter V2 directly: {direct_search_target}")
 require("LegacyWorkspaceRedirect" in app, "legacy route compatibility redirects are missing")
@@ -292,8 +304,8 @@ require("stateDescription = timerDescription" in focus_source, "focus timer lack
 require("accessibilityTimerBucket" in focus_source, "focus timer announces every raw second")
 require("performFocusMutation" in focus_source, "focus mutations do not share cancellation-safe handling")
 require(
-    "rememberSaveable(session?.id?.value)" not in focus_source,
-    "persisted focus notes are duplicated into the saved-state Bundle",
+    "rememberSaveable(session?.id?.value)" in focus_source,
+    "focus note drafts must survive recreation/process death until their debounced Room write completes",
 )
 require(
     "catch (cancelled: CancellationException)" in focus_source,

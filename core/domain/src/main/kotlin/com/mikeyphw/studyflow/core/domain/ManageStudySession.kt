@@ -297,7 +297,8 @@ private class StudySessionRuntimeClock(
                 pausedSeconds = previous.pausedSeconds + deltaSeconds,
                 lastMonotonicMillis = monotonicNow,
             )
-            StudySessionStatus.COMPLETED, StudySessionStatus.CANCELLED -> previous.copy(lastMonotonicMillis = monotonicNow)
+            StudySessionStatus.COMPLETED, StudySessionStatus.CANCELLED -> previous
+                .copy(lastMonotonicMillis = monotonicNow)
         }
         states[session.id] = updated
         return updated

@@ -27,7 +27,7 @@ model = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/Relea
 for gate in [
     'ARTIFACT_MANIFEST', 'SOURCE_CONTRACTS', 'GRADLE_CONFIGURATION', 'MAIN_COMPILATION',
     'TEST_COMPILATION', 'UNIT_TESTS', 'ROOM_SCHEMA', 'RESOURCE_MERGE', 'LINT', 'ASSEMBLE',
-    'DEVICE_SMOKE', 'FINAL_STAGING'
+    'SIGNED_ARTIFACT_IDENTITY', 'FULL_JOURNEY', 'DEVICE_ACCEPTANCE', 'FINAL_STAGING'
 ]:
     require(model, gate, f'release gate {gate}')
 
@@ -36,15 +36,15 @@ match = re.search(r'private const val CurrentPhase = (\d+)', factory)
 if not match or int(match.group(1)) < 26:
     raise AssertionError('release validation current phase must be 26 or later')
 require(factory, 'sourceOnlySeal', 'source-only seal')
-require(factory, 'completedSeal', 'completed seal')
+require(factory, 'evidenceSeal', 'evidence-backed seal')
 require(factory, 'ReleaseValidationGateKind.GRADLE_CONFIGURATION', 'Gradle gate')
-require(factory, 'blocked(', 'blocked gate helper usage')
-require(factory, 'ReleaseValidationGateKind.DEVICE_SMOKE', 'device smoke gate')
-require(factory, 'ReleaseValidationGateKind.values().toSet()', 'all gate coverage')
+require(factory, 'ReleaseValidationGateStatus.BLOCKED', 'missing-evidence blocking status')
+require(factory, 'ReleaseValidationGateKind.DEVICE_ACCEPTANCE', 'device acceptance gate')
+require(factory, 'ReleaseValidationGateKind.entries.toSet()', 'all gate coverage')
 
 tests = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactoryTest.kt")
-require(tests, 'sourceOnlySealBlocksReleaseUntilRealBuildEvidenceExists', 'source-only blocking test')
-require(tests, 'completedSealCoversEveryRequiredGate', 'completed gate coverage test')
+require(tests, 'sourceOnlySealBlocksReleaseUntilEveryRealGateHasPassEvidence', 'source-only blocking test')
+require(tests, 'evidenceSummaryCannotGrantAuthoritativeReleaseReadiness', 'evidence gate coverage test')
 require(tests, 'assertEquals(seal.currentPhase, seal.validatedPhase)', 'phase-forward release seal test')
 
 docs = read("docs/quality/PHASE_26_RELEASE_VALIDATION_SEAL.md")

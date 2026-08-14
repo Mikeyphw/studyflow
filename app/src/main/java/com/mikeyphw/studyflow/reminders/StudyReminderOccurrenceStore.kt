@@ -47,7 +47,8 @@ class StudyReminderOccurrenceStore(context: Context) {
         val encoded = preferences.getStringSet(scheduledKey(planId), emptySet()).orEmpty()
             .filterTo(linkedSetOf()) { value -> decodeScheduled(value)?.occurrenceId != occurrenceId }
         val editor = preferences.edit()
-        if (encoded.isEmpty()) editor.remove(scheduledKey(planId)) else editor.putStringSet(scheduledKey(planId), encoded)
+        if (encoded.isEmpty()) editor.remove(scheduledKey(planId)) else editor
+            .putStringSet(scheduledKey(planId), encoded)
         editor.commit()
     }
 
@@ -76,7 +77,8 @@ class StudyReminderOccurrenceStore(context: Context) {
         val delivered = LinkedHashSet(preferences.getStringSet(deliveredKey(planId), emptySet()).orEmpty())
         if (!delivered.remove(occurrenceId)) return
         val editor = preferences.edit()
-        if (delivered.isEmpty()) editor.remove(deliveredKey(planId)) else editor.putStringSet(deliveredKey(planId), delivered)
+        if (delivered.isEmpty()) editor.remove(deliveredKey(planId)) else editor
+            .putStringSet(deliveredKey(planId), delivered)
         editor.commit()
     }
 

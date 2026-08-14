@@ -26,7 +26,8 @@ import kotlinx.coroutines.flow.map
 
 internal class RoomStudyPracticeRepository(
     private val database: StudyFlowDatabase,
-    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com
+        .mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyPracticeRepository {
     private val practiceDao = database.studyPracticeDao()
     private val retentionDao = database.studyRetentionDao()
@@ -52,11 +53,13 @@ internal class RoomStudyPracticeRepository(
         requireNotNull(practiceDao.findQuestion(question.studyPlanId.value, question.id.value)).asExternalModel()
     }
 
-    override suspend fun importQuestionsAtomically(questions: List<Question>): List<Question> = database.withTransaction {
+    override suspend fun importQuestionsAtomically(questions: List<Question>): List<Question> = database
+        .withTransaction {
         require(questions.isNotEmpty()) { "Question import batch cannot be empty." }
         val planId = questions.first().studyPlanId
         require(questions.all { it.studyPlanId == planId }) { "Question import batch must belong to one Study Plan." }
-        require(questions.map(Question::id).distinct().size == questions.size) { "Question import contains duplicate IDs." }
+        require(questions.map(Question::id).distinct().size == questions
+            .size) { "Question import contains duplicate IDs." }
         questions.forEach { validateQuestionOwnership(it) }
         practiceDao.upsertQuestions(questions.map { question -> question.asEntity() })
         questions.map { question ->
@@ -86,7 +89,8 @@ internal class RoomStudyPracticeRepository(
         requireNotNull(practiceDao.findTest(test.studyPlanId.value, test.id.value)).asExternalModel()
     }
 
-    override suspend fun createWeaknessDrillIfAbsent(test: StudyTest, key: String): StudyTest = database.withTransaction {
+    override suspend fun createWeaknessDrillIfAbsent(test: StudyTest, key: String): StudyTest = database
+        .withTransaction {
         requirePlan(test.studyPlanId)
         val marker = "weaknessDrillKey=$key"
         practiceDao.findAllTests(test.studyPlanId.value)
@@ -111,7 +115,8 @@ internal class RoomStudyPracticeRepository(
         testId: StudyTestId,
         startedAtEpochMillis: Long,
     ): StudyTest = database.withTransaction {
-        val existing = requireNotNull(practiceDao.findTest(planId.value, testId.value)) { "Practice Test does not exist." }
+        val existing = requireNotNull(practiceDao.findTest(planId.value, testId
+            .value)) { "Practice Test does not exist." }
         require(existing.submittedAtEpochMillis == null) { "Submitted Practice Tests cannot be restarted." }
         if (existing.startedAtEpochMillis == null) {
             require(practiceDao.startStudyTestIfNotStarted(planId.value, testId.value, startedAtEpochMillis) == 1) {
@@ -169,7 +174,8 @@ internal class RoomStudyPracticeRepository(
         mockExamId: MockExamId,
         startedAtEpochMillis: Long,
     ): MockExam = database.withTransaction {
-        val existing = requireNotNull(practiceDao.findMockExam(planId.value, mockExamId.value)) { "Mock Exam does not exist." }
+        val existing = requireNotNull(practiceDao.findMockExam(planId.value, mockExamId
+            .value)) { "Mock Exam does not exist." }
         require(existing.submittedAtEpochMillis == null) { "Submitted Mock Exams cannot be restarted." }
         if (existing.startedAtEpochMillis == null) {
             require(practiceDao.startMockExamIfNotStarted(planId.value, mockExamId.value, startedAtEpochMillis) == 1) {
@@ -226,7 +232,8 @@ internal class RoomStudyPracticeRepository(
 
     private suspend fun captureWrongAnswer(capture: PracticeWrongAnswerCapture, now: Long) {
         val question = capture.question
-        val existing = retentionDao.findErrorEntryForQuestion(question.studyPlanId.value, question.id.value)?.asExternalModel()
+        val existing = retentionDao.findErrorEntryForQuestion(question.studyPlanId.value, question.id
+            .value)?.asExternalModel()
         val entry = existing?.copy(
             subjectId = question.subjectId,
             topicId = question.topicId,

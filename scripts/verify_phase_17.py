@@ -40,7 +40,9 @@ for marker in (
 storage = text("core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomAnnexFileStorageRepository.kt")
 for marker in (
     "class RoomAnnexFileStorageRepository",
-    "study-plans/${sanitizeSegment(planId)}/annexes",
+    "shareable-annexes/${sanitizeSegment(planId)}/${sanitizeSegment(annexId)}",
+    "migrateOwnedAnnexesToShareableRoot",
+    "resolveLegacyAnnexReference",
     'MessageDigest.getInstance("SHA-256")',
     "cleanupOrphanedAnnexFiles",
 ):

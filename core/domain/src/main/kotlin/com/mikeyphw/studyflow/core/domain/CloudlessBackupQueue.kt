@@ -58,20 +58,25 @@ object CloudlessBackupQueuePlanner {
         require(nowEpochMillis >= 0L) { "Readiness inspection time cannot be negative." }
         val items = buildList {
             if (!summary.hasLocalData) {
-                add(item(CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA, CloudlessBackupQueueStatus.WAITING, 10, state, summary, nowEpochMillis))
+                add(item(CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA, CloudlessBackupQueueStatus.WAITING,
+                    10, state, summary, nowEpochMillis))
                 return@buildList
             }
             if (state.connectionStatus == StudySyncConnectionStatus.CHECKPOINT_BLOCKED) {
-                add(item(CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT, CloudlessBackupQueueStatus.BLOCKED, 100, state, summary, nowEpochMillis))
+                add(item(CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT, CloudlessBackupQueueStatus.BLOCKED,
+                    100, state, summary, nowEpochMillis))
                 return@buildList
             }
             if (!StudyLocalCheckpointReadinessAuditor.localCheckpointReady(state, summary)) {
-                add(item(CloudlessBackupQueueAction.PREPARE_CHECKPOINT, CloudlessBackupQueueStatus.READY, 90, state, summary, nowEpochMillis))
+                add(item(CloudlessBackupQueueAction.PREPARE_CHECKPOINT, CloudlessBackupQueueStatus.READY,
+                    90, state, summary, nowEpochMillis))
             } else {
-                add(item(CloudlessBackupQueueAction.CHECKPOINT_CURRENT, CloudlessBackupQueueStatus.WAITING, 20, state, summary, nowEpochMillis))
+                add(item(CloudlessBackupQueueAction.CHECKPOINT_CURRENT, CloudlessBackupQueueStatus.WAITING,
+                    20, state, summary, nowEpochMillis))
             }
             if (state.conflictPolicy == StudySyncConflictPolicy.MANUAL_REVIEW && summary.activePlanCount > 1) {
-                add(item(CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY, CloudlessBackupQueueStatus.READY, 55, state, summary, nowEpochMillis))
+                add(item(CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY, CloudlessBackupQueueStatus
+                    .READY, 55, state, summary, nowEpochMillis))
             }
         }
         return CloudlessBackupQueuePlan(

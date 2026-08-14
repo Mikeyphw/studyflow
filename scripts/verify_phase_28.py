@@ -38,9 +38,9 @@ release_factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/
 match = re.search(r'private const val CurrentPhase = (\d+)', release_factory)
 if not match or int(match.group(1)) < 28:
     raise AssertionError('release validation seal must move to Phase 28 or later')
-match = re.search(r'Phase 0 through (\d+) validators pass\.', release_factory)
-if not match or int(match.group(1)) < 28:
-    raise AssertionError('release-seal evidence must cover Phase 28 or later')
+require(release_factory, 'fun sourceOnlySeal(', 'source-only validation seal')
+require(release_factory, 'fun evidenceSeal(', 'evidence-backed release seal')
+require(release_factory, 'Required evidence was not supplied.', 'fail-closed missing evidence')
 
 phase27 = read("scripts/verify_phase_27.py")
 require(phase27, 'phase_version_at_least(ROOT, 27)', 'Phase 27 verifier phase-forward version check')

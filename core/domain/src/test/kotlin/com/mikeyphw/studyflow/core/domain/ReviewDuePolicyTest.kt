@@ -15,7 +15,8 @@ class ReviewDuePolicyTest {
         val scheduled = review(ReviewStatus.SCHEDULED, dueAt = 100L)
         assertFalse(ReviewDuePolicy.isDue(scheduled, 99L))
         assertTrue(ReviewDuePolicy.isDue(scheduled, 100L))
-        assertFalse(ReviewDuePolicy.isDue(scheduled.copy(status = ReviewStatus.COMPLETED, completedAtEpochMillis = 100L), 200L))
+        assertFalse(ReviewDuePolicy.isDue(scheduled.copy(status = ReviewStatus.COMPLETED,
+            completedAtEpochMillis = 100L), 200L))
     }
 
     private fun review(status: ReviewStatus, dueAt: Long) = ReviewItem(

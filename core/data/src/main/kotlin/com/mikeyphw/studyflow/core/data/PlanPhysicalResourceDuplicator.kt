@@ -32,10 +32,12 @@ internal class PlanPhysicalResourceDuplicator(
                         filesDir,
                         "shareable-annexes/${sanitizeSegment(newPlanId)}/${sanitizeSegment(newAnnexId)}",
                     ).canonicalFile
-                    require(directory.mkdirs() || directory.isDirectory) { "Could not create duplicated annex directory." }
+                    require(directory.mkdirs() || directory
+                        .isDirectory) { "Could not create duplicated annex directory." }
                     createdDirectories += directory
                     val destination = File(directory, sourceFile.name).canonicalFile
-                    require(destination.path.startsWith(directory.path + File.separator)) { "Unsafe duplicated annex path." }
+                    require(destination.path.startsWith(directory.path + File
+                        .separator)) { "Unsafe duplicated annex path." }
                     sourceFile.copyTo(destination, overwrite = false)
                     createdFiles += destination
                     verifyFile(destination, source.byteSize, source.checksumSha256, "duplicated annex")
@@ -57,11 +59,13 @@ internal class PlanPhysicalResourceDuplicator(
                 verifyFile(sourceFile, sourceFile.length(), source.checksumSha256, "snapshot")
                 val newSnapshotId = remap(newPlanId, source.id)
                 val directory = File(filesDir, "study-plans/${sanitizeSegment(newPlanId)}/snapshots").canonicalFile
-                require(directory.mkdirs() || directory.isDirectory) { "Could not create duplicated snapshot directory." }
+                require(directory.mkdirs() || directory
+                    .isDirectory) { "Could not create duplicated snapshot directory." }
                 createdDirectories += directory
                 val extension = sourceFile.extension.takeIf(String::isNotBlank)?.let { ".$it" }.orEmpty()
                 val destination = File(directory, "${sanitizeSegment(newSnapshotId)}$extension").canonicalFile
-                require(destination.path.startsWith(directory.path + File.separator)) { "Unsafe duplicated snapshot path." }
+                require(destination.path.startsWith(directory.path + File
+                    .separator)) { "Unsafe duplicated snapshot path." }
                 sourceFile.copyTo(destination, overwrite = false)
                 createdFiles += destination
                 verifyFile(destination, sourceFile.length(), source.checksumSha256, "duplicated snapshot")

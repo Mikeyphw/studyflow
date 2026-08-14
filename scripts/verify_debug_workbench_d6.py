@@ -22,6 +22,7 @@ app = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowStudyEngineLab.kt"
 ui = read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/StudyEngineLabPanel.kt")
 panel = read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugLabsPanel.kt")
 main = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
+view_model = read("app/src/main/java/com/mikeyphw/studyflow/StudyFlowDebugWorkbenchViewModel.kt")
 tests = read("app/src/test/java/com/mikeyphw/studyflow/StudyFlowStudyEngineLabTest.kt")
 core_tests = read("core/diagnostics/src/test/kotlin/com/mikeyphw/studyflow/core/diagnostics/DebugWorkbenchLabsTest.kt")
 
@@ -40,13 +41,13 @@ for call in [
     "PracticeAnalytics.summarize",
     "buildDeck(",
     "recommendations(planId",
-    "search(\"study\")",
+    "manageStudyDiscovery.search(searchQuery)",
     "observeSnapshot(planId).first()",
     "inspectLocalChanges()",
 ]:
     require(call in app, f"Production study-engine call missing: {call}")
 
-for forbidden in ["targetLabel", ".title", ".subtitle", "configurationJson", "localChangeToken", "deviceName", "blockedReason"]:
+for forbidden in ["targetLabel", ".title", ".subtitle", "localChangeToken", "deviceName", "blockedReason"]:
     require(forbidden not in app, f"D6 app lab exposes forbidden raw value or token: {forbidden}")
 require("defaultPlanId()" in app and "MISSING_DEFAULT_PLAN" in app, "missing-plan boundary absent")
 require("catch (cancelled: CancellationException)" in app, "cancellation not preserved")
@@ -55,9 +56,13 @@ require("catch (_: Exception)" in app, "recoverable exceptions not handled expli
 require("DiagnosticOutcome.STARTED" in app and "DiagnosticOutcome.SUCCEEDED" in app and "DiagnosticOutcome.BLOCKED" in app, "diagnostic events incomplete")
 
 require("STUDY_ENGINE" in panel and "debug_lab_page_study_engine" in panel, "DebugLabsPanel lacks Study Engine page")
-require("StudyFlowStudyEngineLab(" in main and "studyEngineReport" in main, "StudyFlowApp does not wire Study Engine lab")
+require("StudyFlowStudyEngineLab(" in view_model and "studyEngineReport" in main,
+        "Study Engine lab is not ViewModel-owned and surfaced by StudyFlowApp")
 require("StudyEngineLabPanel" in panel, "DebugLabsPanel does not render StudyEngineLabPanel")
-require("studyEngineRunning" in main and "onInspectStudyEngine" in main, "Study Engine action not guarded in app")
+require("studyEngineRunning" in view_model and "onInspectStudyEngine" in main,
+        "Study Engine action is not guarded in the ViewModel and surfaced by the app")
+require(app.count("configurationJson = questionIdsConfig") == 2,
+        "Study Engine canary may use configurationJson only for its two synthetic execution inputs")
 
 for phrase in ["without default plan", "forwards exact default plan", "recoverable inspection error", "cancellation is never", "fatal errors are never"]:
     require(phrase in tests, f"App test missing: {phrase}")

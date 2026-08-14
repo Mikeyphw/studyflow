@@ -111,7 +111,8 @@ data class MockExamStudioRequest(
     val includeDisputed: Boolean = false,
 ) {
     init {
-        require(questionCount in 1..MaxQuestionCount) { "Mock exam question count must be between 1 and $MaxQuestionCount." }
+        require(questionCount in 1..MaxQuestionCount) {
+            "Mock exam question count must be between 1 and $MaxQuestionCount." }
         require(timeLimitMinutes > 0) { "Mock exam time limit must be positive." }
         require(minimumScorePercent == null || minimumScorePercent in 0..100) {
             "Mock exam minimum score must be between 0 and 100."

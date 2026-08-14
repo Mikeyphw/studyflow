@@ -1,6 +1,5 @@
 package com.mikeyphw.studyflow
 
-import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -16,7 +15,7 @@ import org.junit.Test
 
 class SyncRecoveryInstrumentationTest {
     @get:Rule
-    val composeRule = createAndroidComposeRule<ComponentActivity>()
+    val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun failedSyncPrepareRetriesTheSameOperationInPlace() {
@@ -42,10 +41,13 @@ class SyncRecoveryInstrumentationTest {
             }
         }
 
-        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.sync_prepare_checkpoint)).performClick()
-        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.sync_operation_failed)).assertIsDisplayed()
+        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.sync_prepare_checkpoint))
+            .performClick()
+        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.sync_operation_failed))
+            .assertIsDisplayed()
         composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.retry)).performClick()
         composeRule.waitUntil(timeoutMillis = 3_000L) { attempts.get() == 2 }
-        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.sync_operation_succeeded)).assertIsDisplayed()
+        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string
+            .sync_operation_succeeded)).assertIsDisplayed()
     }
 }

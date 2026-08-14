@@ -66,7 +66,7 @@ for token in (
     "REDUCE_OVERLOAD",
     "ADD_THEORY_BEFORE_QUESTIONS",
     "!it.locked",
-    "updatePlannedActivities",
+    "scheduleRepository.applyAdaptivePreview(plan.id, approvedPreview)",
 ):
     require(token in reschedule, f"adaptive reschedule missing: {token}")
 
@@ -74,17 +74,19 @@ require("val manageExamReadiness: ManageExamReadiness" in app_container, "AppCon
 require("val manageAdaptiveReschedule: ManageAdaptiveReschedule" in app_container, "AppContainer lacks reschedule manager")
 require("override val manageExamReadiness" in app_container, "Default container does not create readiness manager")
 require("override val manageAdaptiveReschedule" in app_container, "Default container does not create reschedule manager")
-require("readinessManager = container.manageExamReadiness" in navigation, "Progress route misses readiness manager")
+require("planManager = container.manageStudyPlan" in navigation,
+        "Progress route misses the plan/settings source needed for local readiness preview")
 require(
     "adaptiveRescheduleManager = container.manageAdaptiveReschedule" in navigation,
     "Progress route misses adaptive manager",
 )
 
 for token in (
-    "readinessManager: ManageExamReadiness",
     "adaptiveRescheduleManager: ManageAdaptiveReschedule",
-    "readinessFlow",
-    "rescheduleFlow",
+    "planSettingsFlow",
+    "ExamReadinessEngine.calculate(",
+    "AdaptiveReschedulePlanner.preview(",
+    "AdaptiveReschedulePlanner.disabledPreview(",
     "readiness_score",
     "adaptive_reschedule",
     "applySafePreview(plan, approvedPreview)",

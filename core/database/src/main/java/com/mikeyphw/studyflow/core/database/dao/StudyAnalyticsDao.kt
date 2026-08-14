@@ -37,7 +37,8 @@ interface StudyAnalyticsDao {
                 WHERE a.studyPlanId = :planId AND a.status = 'COMPLETED') AS completedPlannedCount,
             (SELECT count(*) FROM planned_activities a
                 WHERE a.studyPlanId = :planId AND a.scheduledStartEpochMillis IS NOT NULL
-                    AND a.scheduledStartEpochMillis <= :nowEpochMillis AND a.status <> 'CANCELLED') AS elapsedPlannedCount,
+                    AND a.scheduledStartEpochMillis <= :nowEpochMillis
+                    AND a.status <> 'CANCELLED') AS elapsedPlannedCount,
             ((SELECT coalesce(sum(t.answeredCount), 0) FROM study_tests t
                 WHERE t.studyPlanId = :planId AND t.submittedAtEpochMillis IS NOT NULL) +
              (SELECT coalesce(sum(s.questionsAnswered), 0) FROM study_sessions s

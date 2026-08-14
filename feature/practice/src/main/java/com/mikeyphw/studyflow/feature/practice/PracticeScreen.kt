@@ -411,7 +411,8 @@ private fun PracticeRunnerCard(
             )
             deadline?.let { deadlineEpochMillis ->
                 val remainingSeconds = ((deadlineEpochMillis - nowEpochMillis).coerceAtLeast(0L) + 999L) / 1_000L
-                Text(stringResource(R.string.time_remaining_seconds, remainingSeconds), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.time_remaining_seconds, remainingSeconds),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             val question = state.currentQuestion
             if (question == null) {
@@ -424,7 +425,8 @@ private fun PracticeRunnerCard(
                     OutlinedButton(
                         enabled = !state.submitted && !state.deadlinePassed(nowEpochMillis),
                         onClick = {
-                            val elapsedSeconds = ((SystemClock.elapsedRealtime() - questionStartedAt) / 1_000L).coerceAtLeast(0L)
+                            val elapsedSeconds = ((SystemClock
+                                .elapsedRealtime() - questionStartedAt) / 1_000L).coerceAtLeast(0L)
                             onAnswer(question, option, elapsedSeconds)
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -546,7 +548,8 @@ private fun RecentMocksCard(mocks: List<MockExam>, onStart: (MockExam) -> Unit) 
                             mock.scorePercent?.let { score ->
                                 val threshold = mock.minimumScorePercent
                                 val outcome = threshold?.let {
-                                    stringResource(if (score >= it) R.string.exam_pass else R.string.exam_below_threshold)
+                                    stringResource(if (score >= it) R.string.exam_pass else R.string
+                                        .exam_below_threshold)
                                 }
                                 Text(
                                     if (outcome == null) {

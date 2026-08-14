@@ -188,7 +188,8 @@ fun StudyProgressScreen(
             StudyFlowSectionCard(title = stringResource(R.string.progress_title)) {
                 ProgressFilterRow(selected = filter, onSelected = { filter = it })
                 when (filter) {
-                    ProgressFilter.GOALS -> GoalList(snapshot.activeGoals + snapshot.completedGoals + snapshot.archivedGoals, progress, plan)
+                    ProgressFilter.GOALS -> GoalList(snapshot.activeGoals + snapshot
+                        .completedGoals + snapshot.archivedGoals, progress, plan)
                     ProgressFilter.NOTES -> NoteList(snapshot.notes, progress, plan)
                 }
             }
@@ -223,7 +224,8 @@ private fun GoalList(goals: List<StudyGoal>, progress: ManageStudyProgress, plan
                     OutlinedButton(
                         onClick = {
                             coroutineScope.launch {
-                                if (goal.archived) progress.restoreGoal(plan.id, goal.id) else progress.archiveGoal(plan.id, goal.id)
+                                if (goal.archived) progress.restoreGoal(plan.id, goal.id) else progress
+                                    .archiveGoal(plan.id, goal.id)
                             }
                         },
                     ) {

@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.map
 
 internal class RoomStudySessionRepository(
     private val database: StudyFlowDatabase,
-    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com
+        .mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudySessionRepository {
     private val planningDao = database.studyPlanningDao()
     private val planDao = database.studyPlanDao()
@@ -85,7 +86,8 @@ internal class RoomStudySessionRepository(
             "Study Session already exists."
         }
         val active = planningDao.findAllActiveStudySessions()
-        require(active.isEmpty()) { "Another Study Session is already active. Finish or cancel it before starting a new one." }
+        require(active.isEmpty(
+            )) { "Another Study Session is already active. Finish or cancel it before starting a new one." }
 
         session.plannedActivityId?.let { activityId ->
             val expected = requireNotNull(linkedActivityExpectedStatus) {
@@ -211,7 +213,8 @@ internal class RoomStudySessionRepository(
         session.materialId?.let { materialId -> requireMaterial(session.studyPlanId, materialId.value) }
         session.videoResourceId?.let { videoId -> requireVideo(session.studyPlanId, videoId.value) }
         session.plannedActivityId?.let { activityId ->
-            val activity = requireNotNull(planningDao.findPlannedActivity(session.studyPlanId.value, activityId.value)) {
+            val activity = requireNotNull(planningDao.findPlannedActivity(session.studyPlanId.value,
+                activityId.value)) {
                 "Planned activity does not belong to this Study Plan."
             }
             require(activity.subjectId == session.subjectId?.value) {

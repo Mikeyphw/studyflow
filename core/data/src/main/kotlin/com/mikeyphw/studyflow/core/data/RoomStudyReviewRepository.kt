@@ -21,7 +21,8 @@ import kotlinx.coroutines.flow.map
 
 internal class RoomStudyReviewRepository(
     private val database: StudyFlowDatabase,
-    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com
+        .mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyReviewRepository {
     private val retentionDao = database.studyRetentionDao()
     private val planDao = database.studyPlanDao()
@@ -112,7 +113,8 @@ internal class RoomStudyReviewRepository(
     }
     }
 
-    override suspend fun skipReviewIfActive(current: ReviewItem, skipped: ReviewItem): ReviewItem = diagnosticRecorder.recordRepositoryMutation(
+    override suspend fun skipReviewIfActive(current: ReviewItem,
+        skipped: ReviewItem): ReviewItem = diagnosticRecorder.recordRepositoryMutation(
         area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.REVIEWS,
         action = "review-skip",
     ) {

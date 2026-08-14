@@ -20,17 +20,17 @@ if not phase_version_at_least(ROOT, 18):
 
 manifest = text("app/src/main/AndroidManifest.xml")
 for marker in (
-    "<queries>",
-    "android.intent.action.VIEW",
     "androidx.core.content.FileProvider",
     "@xml/file_provider_paths",
 ):
     if marker not in manifest:
         failures.append(f"manifest missing viewer marker: {marker}")
+if "<queries>" in manifest:
+    failures.append("viewer must not broaden package visibility when implicit ACTION_VIEW is sufficient")
 
 paths = text("app/src/main/res/xml/file_provider_paths.xml")
-if "study-plans/" not in paths or "<files-path" not in paths:
-    failures.append("file provider paths do not expose study plan annex copies")
+if "shareable-annexes/" not in paths or "<files-path" not in paths:
+    failures.append("file provider paths do not expose the narrow shareable annex root")
 
 planner = text("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyResourceLaunchPlanner.kt")
 for marker in (

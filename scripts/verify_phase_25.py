@@ -50,7 +50,9 @@ require(
     "StudyPlanStatus.ACTIVE",
     "notificationsAllowed()",
     "cancelPlanAlarms",
-    "StudyReminderPlanner.shouldRescheduleAfterDelivery",
+    "occurrenceStore.markDelivered",
+    "occurrenceStore.replaceScheduled",
+    "reconcilePlanInternal(planId)",
     "StudyFlowWidgetUpdateCoordinator.refreshAll",
 )
 coordinator = text("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt")
@@ -59,12 +61,16 @@ for forbidden in ("setExact(", "SCHEDULE_EXACT_ALARM", "USE_EXACT_ALARM"):
         failures.append(f"ordinary reminders must not use exact-alarm contract: {forbidden}")
 
 planner = text("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt")
-if "suppressedByQuietHours = false" in planner:
-    failures.append("daily summary and all ordinary reminder candidates must honor quiet hours")
-if planner.count("suppressedByQuietHours = suppressed") < 4:
-    failures.append("all four reminder candidate types must carry quiet-hour suppression")
-if "fun shouldRescheduleAfterDelivery" not in planner or "ReminderNotificationType.DUE_REVIEWS -> false" not in planner:
-    failures.append("planner missing due-review anti-spam reschedule guard")
+for marker in (
+    "delayUntilQuietHoursEnd",
+    "deliveredOccurrenceIds",
+    "persistedScheduledAtByOccurrenceId",
+    "delayedByQuietHours",
+    'occurrenceId = "planned:',
+    '"daily:${localDayIdentity',
+):
+    if marker not in planner:
+        failures.append(f"planner missing occurrence-based reminder marker: {marker}")
 
 require(
     "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderReceivers.kt",
@@ -77,7 +83,9 @@ require(
     "AppWidgetManager.getInstance",
     "TodayWidgetSummary",
     "StudyFlowTodayWidgetProvider.updateWidget",
-    "StudyPlanStatus.ACTIVE",
+    "resolveCanonicalWidgetPlan",
+    "StudyPlanStatus.ARCHIVED",
+    "StudyPlanStatus.TRASHED",
 )
 require(
     "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowTodayWidgetProvider.kt",
@@ -106,13 +114,18 @@ require(
 )
 require(
     "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSealPhase25Test.kt",
-    "evaluateStillRepresentsPhaseTwentyFiveInsideCurrentDeliveryScope",
+    "phaseTwentyFiveRequiresExplicitHistoricalCompletionEvidence",
 )
 require(
     "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerPhase25Test.kt",
-    "quietHoursSuppressEveryReminderCandidateIncludingDailySummary",
-    "dueReviewsAreNotImmediatelyRescheduledAfterDelivery",
-    "futureCadenceRemindersRemainEligibleForRescheduleAfterDelivery",
+    "quietHoursDelayCandidatesInsteadOfDroppingThem",
+    "equalQuietEndpointsDisableQuietHours",
+)
+require(
+    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerOv09Test.kt",
+    "deliveredPlannedOccurrenceAdvancesToLaterOccurrence",
+    "persistedDueAndMissedOccurrenceTimesDoNotSlideAcrossReconciliation",
+    "occurrenceIdentityIsStableAndContainsEntityIdentityNotHashBucket",
 )
 require("docs/quality/PHASE_25_GAP_CLOSURE_SEAL.md", "Phase 21 delivery closure", "Phase 24 provider gate")
 require("docs/quality/PHASE_25_PROMISE_AUDIT.md", "PROMISE_AUDIT_STATUS: PASSED")

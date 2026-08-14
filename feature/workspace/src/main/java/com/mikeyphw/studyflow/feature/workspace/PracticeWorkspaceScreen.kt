@@ -600,7 +600,8 @@ private fun MockExamStudioDialog(
         includeDisputed = includeDisputed,
     )
     val currentBlueprint = remember(currentRequest) { onPreview(currentRequest) }
-    val canCreate = questionCountValid && minutesValid && minimumScoreValid && negativeMarkingValid && currentBlueprint.executable
+    val canCreate = questionCountValid && minutesValid && minimumScoreValid && negativeMarkingValid
+        && currentBlueprint.executable
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -781,11 +782,13 @@ private fun QuestionImportDialog(
                             value.duplicateCount,
                             value.rejectedCount,
                         ),
-                        color = if (value.hasErrors) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        color = if (value.hasErrors) MaterialTheme.colorScheme.error else MaterialTheme
+                            .colorScheme.primary,
                         style = MaterialTheme.typography.bodySmall,
                     )
                     value.issues.take(5).forEach { issue ->
-                        Text(stringResource(R.string.question_import_issue_row, issue.rowNumber, issue.message), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.question_import_issue_row, issue.rowNumber, issue
+                            .message), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -858,7 +861,8 @@ private fun ReviewExecutionCard(
 }
 
 private fun ReviewItem.matchesTarget(targetId: String?): Boolean = targetId != null && (
-    id.value == targetId || questionId?.value == targetId || flashcardId?.value == targetId || errorEntryId?.value == targetId
+    id.value == targetId || questionId?.value == targetId || flashcardId?.value == targetId
+        || errorEntryId?.value == targetId
 )
 
 private data class ReviewContent(
@@ -997,12 +1001,16 @@ private fun remediationSuggestionLabel(suggestion: com.mikeyphw.studyflow.core.d
     stringResource(
         when (suggestion) {
             com.mikeyphw.studyflow.core.domain.RemediationSuggestion.REVIEW_THEORY -> R.string.remediation_review_theory
-            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.PRACTICE_SIMILAR_QUESTIONS -> R.string.remediation_practice_similar
-            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.RE_READ_STATEMENT -> R.string.remediation_reread_statement
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.PRACTICE_SIMILAR_QUESTIONS -> R.string
+                .remediation_practice_similar
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.RE_READ_STATEMENT -> R.string
+                .remediation_reread_statement
             com.mikeyphw.studyflow.core.domain.RemediationSuggestion.TIMED_DRILL -> R.string.remediation_timed_drill
-            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.SLOW_CHECKLIST -> R.string.remediation_slow_checklist
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.SLOW_CHECKLIST -> R.string
+                .remediation_slow_checklist
             com.mikeyphw.studyflow.core.domain.RemediationSuggestion.VERIFY_SOURCE -> R.string.remediation_verify_source
-            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.REVIEW_EXPLANATION -> R.string.remediation_review_explanation
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.REVIEW_EXPLANATION -> R.string
+                .remediation_review_explanation
         },
     )
 

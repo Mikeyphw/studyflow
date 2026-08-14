@@ -11,7 +11,7 @@ status to passed.
 - Application ID: `com.mikeyphw.studyflow`
 - Version code: `37`
 - Version name: `1.0.0-rc1`
-- Artifact type: pending APK/AAB path from target host
+- Artifact types: pending Release APK and AAB paths from target host
 - Build host: pending
 - Device/emulator: pending
 - Android API level: pending
@@ -27,7 +27,7 @@ status to passed.
 - Resource merge: pending
 - Lint: pending
 - Assemble/package: pending
-- Signing or debug/internal distribution policy: pending
+- Release signing and signer-certificate evidence: pending
 
 ## Device acceptance checklist
 
@@ -57,3 +57,19 @@ Use `docs/release/FINAL_ACCEPTANCE_CHECKLIST.md` and replace each pending item b
 
 Pending. Do not mark StudyFlow release-ready until this section names the exact artifact, device,
 validation commands, and completed checklist evidence.
+
+## OV-13 generated evidence (still pending until target execution)
+
+Do not synthesize success from source checks. The authoritative generated files are:
+
+- `build/reports/studyflow/release-host-gates.json`
+- `build/reports/studyflow/release-artifact-identity.json`
+- `build/reports/studyflow/connected-test-gates.json`
+- `build/reports/studyflow/full-journey.json`
+- `build/reports/studyflow/device-acceptance.json`
+- `build/reports/studyflow/final-release-verdict.json`
+
+Record exact APK/AAB SHA-256 values, signer-certificate SHA-256, and AAB signature verification. The connected
+journey must include real `REPLACE_EXISTING` and `CREATE_AS_NEW` restores and a post-restore process restart. Device evidence separately covers fresh install,
+upgrade/data survival, process restart, reminders, Today widget, EN/PT-BR, light/dark/system theme,
+and TalkBack/focus/touch-target behavior.

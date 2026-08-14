@@ -1,6 +1,6 @@
-# Debug Workbench D8 Final Release Seal
+# Debug Workbench D8 Final Source Seal
 
-Acceptance criteria:
+Acceptance criteria for the Debug Workbench source/diagnostic chain; this document does not certify the signed Release artifact or real-device acceptance:
 
 - D1 through D7 milestones remain present.
 - `DebugWorkbenchScreen` exposes self-check history and support-bundle seal state through explicit parameters.

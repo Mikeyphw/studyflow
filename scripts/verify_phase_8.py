@@ -107,9 +107,16 @@ for marker in (
 repo = (ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPracticeRepository.kt").read_text(
     encoding="utf-8",
 )
-for marker in ("database.withTransaction", "requireSubject", "requireTopic", "deleteQuestion"):
+for marker in ("database.withTransaction", "validateQuestionOwnership", "deleteQuestion"):
     if marker not in repo:
         failures.append(f"Room practice repository missing: {marker}")
+for marker in (
+    "studyStructureDao().findSubject(question.studyPlanId.value, id.value)",
+    "studyStructureDao().findTopic(question.studyPlanId.value, id.value)",
+    "topic.subjectId == subject.id",
+):
+    if marker not in repo:
+        failures.append(f"Room practice ownership validation missing: {marker}")
 
 manager = (ROOT / "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyPractice.kt").read_text(
     encoding="utf-8",

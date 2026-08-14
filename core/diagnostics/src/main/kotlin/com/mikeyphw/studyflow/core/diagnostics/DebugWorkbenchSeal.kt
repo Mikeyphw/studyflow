@@ -127,7 +127,8 @@ object RuntimeSelfCheckInvariantPolicy {
         results[DebugProbeId.BACKUP_CONFIGURATION]?.takeIf { it.status == DebugProbeStatus.PASSED }?.let { result ->
             if (result.safeFacts["enabled"] != result.safeFacts["expected_enabled"]) add("backup-policy-mismatch")
         }
-        results[DebugProbeId.FILE_PROVIDER_CONFIGURATION]?.takeIf { it.status == DebugProbeStatus.PASSED }?.let { result ->
+        results[DebugProbeId.FILE_PROVIDER_CONFIGURATION]?.takeIf { it.status == DebugProbeStatus
+            .PASSED }?.let { result ->
             if (result.safeFacts["allowed_root"] != "true" || result.safeFacts["private_root_rejected"] != "true") {
                 add("file-provider-policy-mismatch")
             }

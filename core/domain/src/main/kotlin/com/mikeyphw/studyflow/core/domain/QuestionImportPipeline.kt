@@ -100,7 +100,8 @@ object QuestionImportPipeline {
             val ownershipIssues = ownershipIssues(row.draft, ownership)
             row.copy(
                 draft = row.draft.copy(
-                    valid = row.draft.valid && ownershipIssues.none { it.severity == QuestionImportIssueSeverity.ERROR },
+                    valid = row.draft.valid && ownershipIssues.none { it
+                        .severity == QuestionImportIssueSeverity.ERROR },
                 ),
                 issues = row.issues + ownershipIssues,
             )
@@ -350,7 +351,8 @@ object QuestionImportPipeline {
             if (parsedOptions.size < 2) {
                 issues += error(rowNumber, "Multiple-choice questions need at least two options.")
             }
-            if (correctAnswer.isNotBlank() && parsedOptions.none { it.equals(correctAnswer.trim(), ignoreCase = true) }) {
+            if (correctAnswer.isNotBlank() && parsedOptions.none { it.equals(correctAnswer.trim(),
+                ignoreCase = true) }) {
                 issues += error(rowNumber, "Multiple-choice correct answer must be one of the options.")
             }
         }

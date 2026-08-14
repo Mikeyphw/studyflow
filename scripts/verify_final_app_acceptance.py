@@ -96,6 +96,8 @@ for token in (
     "versionName = \"1.0.0-rc1\"",
 ):
     require(token in text("app/build.gradle.kts"), f"release identity missing: {token}")
+require(":app:assembleRelease" in build + devtool, "Release APK assembly gate is missing")
+require(":app:bundleRelease" in build + devtool, "Release AAB bundle gate is missing")
 require("android.intent.action.MAIN" in manifest, "launcher MAIN intent is missing")
 require("android.intent.category.LAUNCHER" in manifest, "launcher category is missing")
 require("startDestination = TodayRoute()" in app, "V2 Today route must remain the release startup destination")
@@ -122,6 +124,8 @@ required_scripts = [
     "scripts/verify_phase_58_59.py",
     "scripts/verify_phase_60_61.py",
     "scripts/verify_phase_62.py",
+    "scripts/verify_full_app_final_user_readiness.py",
+    "scripts/verify_final_release_verdict_contract.py",
 ]
 for path in required_scripts:
     require((ROOT / path).is_file(), f"missing validator: {path}")
@@ -132,11 +136,11 @@ for task in (
     "verifyPhase58_59WarningHygiene",
     "verifyPhase60_61ContentReportSeal",
     "verifyPhase62OnboardingSeal",
-    "verifyFinalAppAcceptanceSeal",
 ):
     require(task in build, f"Gradle acceptance task missing: {task}")
-    if task == "verifyFinalAppAcceptanceSeal":
-        require(task in devtool, f"Devtool test defaults must include {task}")
+require("verifyFinalSourceAcceptance" in build, "truthful final source acceptance task is missing")
+require("verifyFinalSourceAcceptance" in devtool, "Devtool test defaults must include truthful source acceptance")
+require("verifyFinalAppAcceptanceSeal" in build, "legacy final-app acceptance alias must remain available")
 
 # Typed route graph, legacy redirect and no-loop route hygiene.
 for enum_name in (
@@ -221,7 +225,7 @@ for token in (
     "fun observePreview",
     "suspend fun applySafePreview",
     "AdaptiveReschedulePlanner.preview",
-    "AdaptiveReschedulePlanner.applyPreview",
+    "scheduleRepository.applyAdaptivePreview(plan.id, approvedPreview)",
     "AdaptiveRescheduleChangeType.REDISTRIBUTE_MISSED",
     "AdaptiveRescheduleChangeType.PROTECT_REVIEWS",
     "AdaptiveRescheduleChangeType.REDUCE_OVERLOAD",
@@ -237,7 +241,7 @@ for token in (
     "StudyEvidenceTimelineInput(",
     "tests = tests",
     "mockExams = mockExams",
-    "goals = progress?.activeGoals.orEmpty()",
+    "goals = progress?.let { snapshot -> snapshot.activeGoals + snapshot.completedGoals }.orEmpty()",
     "notes = progress?.notes.orEmpty()",
 ):
     require(token in progress_screen, f"evidence timeline coverage missing: {token}")
@@ -280,7 +284,8 @@ for token in (
     "ReminderReliabilityStatus.DEGRADED",
     "ReminderReliabilityStatus.ACTION_NEEDED",
     "ReminderReliabilityStatus.READY",
-    "exactAlarmAvailable",
+    "quietHoursActive",
+    "ReminderReliabilityFallback.QUIET_HOURS_DELAY",
     "batteryOptimizationIgnored",
     "notificationPermissionGranted",
 ):
@@ -343,10 +348,20 @@ for token in (
     "userInitiatedOnly: Boolean",
     "OnboardingSamplePlanWizardScreen",
     "onCreateSample",
-    "createLocalizedSampleSyllabus",
-    "preferences.defaultStudyPlanId == null",
+    "container.samplePlanProvisioner.startProvisioning(",
+    "SamplePlanProvisioningState.Completed",
 ):
     require(token in onboarding_domain + onboarding_screen + app, f"onboarding contract missing: {token}")
+provisioner = text("app/src/main/java/com/mikeyphw/studyflow/SamplePlanProvisioner.kt")
+for token in (
+    "StudyOnboardingSamplePlanWizard.buildScheduleRules(",
+    "repository.provision(request)",
+    "journal.begin(",
+    "journal.updateCommittedPlan(",
+    "preferencesRepository.setDefaultStudyPlanIfAbsent(",
+    "suspend fun recoverPendingCompletion()",
+):
+    require(token in provisioner, f"journaled sample-plan provisioner contract missing: {token}")
 onboarding_route_body = section_after(app, "composable<OnboardingRoute>", "composable<EditPlanRoute>")
 require("LaunchedEffect(Unit)" not in onboarding_route_body, "onboarding route must not auto-create sample plans")
 
@@ -376,8 +391,18 @@ for token in (
     "study_sessions",
 ):
     require(token in portability, f"portability payload must include {token}")
-require("Backup inspect and restore dry-run completed with zero writes." in app,
-        "debug portability dry-run evidence message is missing")
+portability_lab = text("app/src/main/java/com/mikeyphw/studyflow/StudyFlowDatabasePortabilityLab.kt")
+for token in (
+    "runProductionPortabilityDrills(",
+    "container.manageStudyPlanPortability.exportPlan",
+    "container.manageStudyPlanPortability.dryRunImport(",
+    "StudyPlanImportStrategy.CREATE_AS_NEW",
+    "dryRun.databaseRowsChanged == 0",
+    "PortabilityDrillKind.RESTORE_DRY_RUN",
+    "container.manageStudyPlan.deletePermanently(disposableId)",
+    "observePlan(disposableId).first() == null",
+):
+    require(token in portability_lab, f"production portability drill evidence missing: {token}")
 
 # Database, upgrade, backup rules and local file-sharing boundaries.
 require("SCHEMA_VERSION = 4" in database, "Room schema version must include the remediation integrity migration")
@@ -387,7 +412,15 @@ for migration in ("Migration1To2", "Migration2To3", "Migration3To4"):
 require("All = arrayOf(Migration1To2, Migration2To3, Migration3To4)" in migrations, "database migration chain is incomplete")
 require("@xml/backup_rules" in manifest, "manifest backup rules reference missing")
 require("@xml/data_extraction_rules" in manifest, "manifest data extraction rules reference missing")
-require("no_backup" in backup_rules + data_extraction, "backup/data-extraction must exclude no_backup")
+require('android:allowBackup="false"' in manifest, "platform backup must remain disabled")
+for token in (
+    '<exclude domain="root" path="." />',
+    '<exclude domain="file" path="." />',
+    '<exclude domain="database" path="." />',
+    '<exclude domain="sharedpref" path="." />',
+    '<exclude domain="external" path="." />',
+):
+    require(token in backup_rules and token in data_extraction, f"backup/data-extraction exclusion missing: {token}")
 require("cache-path" in provider_paths and "exam-reports" in provider_paths, "FileProvider must expose cached exam reports only")
 require("android:tint" not in widget, "widget must not use android:tint")
 require("android:text" in widget and "48dp" in widget, "widget must expose tappable text actions")
@@ -454,9 +487,9 @@ for source_path in (
             require(len(line) <= 120, f"{source_path}:{line_number} has {len(line)} characters")
 
 if FAILURES:
-    print("Final StudyFlow acceptance seal failed:")
+    print("Final StudyFlow source acceptance contract failed:")
     for failure in FAILURES:
         print(f" - {failure}")
     sys.exit(1)
 
-print("Final StudyFlow acceptance seal passed")
+print("Final StudyFlow source acceptance contract passed")

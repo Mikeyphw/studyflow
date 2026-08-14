@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -71,16 +72,22 @@ runtime_smoke = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/mod
 require("probe.status == RuntimeSmokeProbeStatus.PASS" in runtime_smoke,
         "Runtime smoke reports must require every probe to pass before release-ready")
 release_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSealTest.kt")
-require("assertEquals(45, report.totalPhaseCount)" in release_test and
-        "assertEquals(45, report.completedPhaseCount)" in release_test,
-        "ReleaseReadinessSealTest must match the current 35-phase plus D1-D8 delivery report")
-require("phase.number == 30" in release_test and "phase.number == 31" in release_test and "phase.number == 32" in release_test and "phase.number == 33" in release_test and "phase.number == 34" in release_test and "phase.number == 35" in release_test,
-        "ReleaseReadinessSealTest must cover product truthfulness, dashboard action completion, diagnostics de-scaffolding, offline checkpoint completion, interaction honesty, and documentation cleanup and release-candidate readiness")
+require(
+    "assertEquals(45, report.totalPhaseCount)" in release_test
+    and "assertEquals(0, report.completedPhaseCount)" in release_test,
+    "ReleaseReadinessSealTest must keep historical completion unproven without explicit evidence",
+)
+require(
+    "allPhaseNumbers = (1..37).toSet() + (101..108).toSet()" in release_test
+    and "completedPhaseNumbers = allPhaseNumbers" in release_test
+    and "authoritativeVerdictSeal" in release_test,
+    "ReleaseReadinessSealTest must cover all historical phases through an authoritative final verdict",
+)
 timer_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySessionTimerTest.kt")
 require("assertEquals(5, StudySessionTimer.pausedSeconds(paused, nowEpochMillis = 66_000))" in timer_test,
         "StudySessionTimerTest must assert pause elapsed seconds, not active plus paused seconds")
 remediator = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/WrongAnswerRemediation.kt")
-require("item.copy(status = ReviewStatus.DUE)" in remediator,
+require(re.search(r"item\s*\.copy\(status = ReviewStatus\.DUE\)", remediator) is not None,
         "WrongAnswerRemediator must surface overdue scheduled linked reviews as due in notebook entries")
 
 # Final-user diagnostics and responsive UI.
@@ -130,8 +137,8 @@ require("connectionStatus.name" not in sync and "conflictPolicy.name" not in syn
 require("currentSummary.localChangeToken" not in sync and "currentSummary.changeCount" in sync,
         "Sync screen must hide local change tokens")
 sync_model = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt")
-require("val changeCount: Int = planCount" in sync_model,
-        "StudySyncChangeSummary must expose a stable aggregate changeCount")
+require("val changeCount: Int = changesSinceCheckpoint" in sync_model,
+        "StudySyncChangeSummary must expose the durable aggregate change count since checkpoint")
 for rel in ["feature/settings/src/main/res/values/strings.xml", "feature/settings/src/main/res/values-pt-rBR/strings.xml"]:
     text = read(rel)
     for key in [

@@ -70,11 +70,12 @@ duplicator = (
 expected_tables = {
     "study_targets", "exam_stages", "subjects", "topics", "study_strategies",
     "schedule_rules", "study_materials", "video_resources", "planned_activities",
-    "study_sessions", "study_goals", "annexes", "questions", "study_tests",
+    "study_sessions", "study_goals", "questions", "study_tests",
     "mock_exams", "flashcards", "error_entries", "review_items", "study_notes",
-    "plan_snapshots", "study_plan_settings",
+    "study_plan_settings",
 }
-found_tables = set(re.findall(r'^\s*"([a-z_]+)",\s*$', duplicator, re.MULTILINE))
+table_specs_body = duplicator.split('val TableSpecs = listOf(', 1)[1].split('/**', 1)[0]
+found_tables = set(re.findall(r'^\s*"([a-z_]+)",\s*$', table_specs_body, re.MULTILINE))
 missing_tables = expected_tables - found_tables
 if missing_tables:
     failures.append(f"graph duplicator missing tables: {sorted(missing_tables)}")
@@ -86,6 +87,18 @@ for reference in (
         failures.append(f"graph duplicator missing reference remap: {reference}")
 if "quoteIdentifier" not in duplicator:
     failures.append("graph duplication SQL must quote identifiers")
+
+# File-backed annexes and snapshots require physical byte copies and therefore must not be copied by SQL.
+physical_duplicator = (
+    ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/PlanPhysicalResourceDuplicator.kt"
+).read_text()
+for marker in ("findAnnexes(sourcePlanId)", "findSnapshots(sourcePlanId)", "sourceFile.copyTo(destination",
+               "payloadReference = destination.relativeTo(filesDir)"):
+    if marker not in physical_duplicator:
+        failures.append(f"physical plan duplication missing file-backed ownership contract: {marker}")
+for table in ("annexes", "plan_snapshots"):
+    if f'"{table}",' in table_specs_body:
+        failures.append(f"file-backed table must not be SQL-duplicated: {table}")
 
 preferences_model = (ROOT / "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/AppPreferences.kt").read_text()
 preferences_repo = (

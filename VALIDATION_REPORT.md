@@ -230,3 +230,13 @@ Expected Devtool tasks include `:core:domain:test`, `:feature:settings:testDebug
 - Found r1 source validation passed, but two promised checks were too implicit: adaptive-reschedule coverage and reminder degraded-state coverage.
 - Strengthened `scripts/verify_final_app_acceptance.py` to require adaptive-reschedule preview/apply wiring, report and weekly-coach reschedule inputs, reminder blocked/degraded/action-needed/ready states, notification permission, exact-alarm availability, battery optimization, and duplicate string/plurals detection.
 - Runtime app code and Android stack remain unchanged. Android compile, lint, assemble, and real-device checks remain Devtool target gates.
+
+## OV-13 release/full-regression seal
+
+OV-13 requires explicit PASS for every release gate; warning, failure, blocked, and missing evidence
+all block `releaseReady`. The generic completed-seal path is removed and `productSealed` consumes the
+evidence-backed release validation seal. Automated final validation requires signed APK + AAB packaging, exact APK/AAB identity and signature evidence,
+connected Room/data/feature/app suites, and an exact-APK production-container journey with real REPLACE_EXISTING
+and CREATE_AS_NEW restores followed by a forced process restart and durable re-read. Manual real-device acceptance
+remains a separate evidence class and each PASS requires a non-empty observation. Generated evidence
+stays under `build/reports/studyflow/` and is not pre-marked by source validation.

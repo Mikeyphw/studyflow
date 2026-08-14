@@ -98,7 +98,8 @@ data class StudyExamReportInput(
     val generatedAtEpochMillis: Long,
 ) {
     init {
-        require(totalEvidenceCount >= evidence.size) { "Total evidence count cannot be smaller than the report sample." }
+        require(totalEvidenceCount >= evidence
+            .size) { "Total evidence count cannot be smaller than the report sample." }
         require(generatedAtEpochMillis >= 0L) { "Report generation time cannot be negative." }
     }
 }
@@ -167,7 +168,8 @@ object StudyExamReportBuilder {
         StudyExamReportMetricProvenance("schedule", StudyExamReportMetricSource.SCHEDULE),
         StudyExamReportMetricProvenance(
             "reviews",
-            if (input.analytics != null) StudyExamReportMetricSource.ANALYTICS else StudyExamReportMetricSource.REVIEW_STATE,
+            if (input.analytics != null) StudyExamReportMetricSource
+                .ANALYTICS else StudyExamReportMetricSource.REVIEW_STATE,
         ),
         StudyExamReportMetricProvenance("content_health", StudyExamReportMetricSource.CONTENT_HEALTH),
     )

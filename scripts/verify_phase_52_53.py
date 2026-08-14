@@ -89,12 +89,14 @@ for token in (
     require(token in reminders, f"Today widget summary missing Phase 53 field/action: {token}")
 
 for token in (
-    "StudyReminderExtraPlanId",
-    "StudyReminderExtraType",
+    "studyReminderOpenIntent",
+    "Uri.Builder()",
+    '.authority("widget-open")',
+    '.appendPath(summary?.studyPlanId?.value ?: "app")',
+    '.appendPath(type?.name ?: "root")',
     "widget_primary_action",
     "widget_reviews_action",
     "primaryActionLabel",
-    "summary.studyPlanId.value",
     "ReminderNotificationType.DUE_REVIEWS",
 ):
     require(token in widget, f"Today widget provider missing Phase 53 action behavior: {token}")

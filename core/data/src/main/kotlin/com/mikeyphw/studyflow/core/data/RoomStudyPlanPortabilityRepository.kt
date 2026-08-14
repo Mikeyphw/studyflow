@@ -50,7 +50,8 @@ internal class RoomStudyPlanPortabilityRepository(
     private val codec: StudyPlanPackageCodec = StudyPlanPackageCodec(),
     private val encryptedCodec: StudyPlanEncryptedPackageCodec = StudyPlanEncryptedPackageCodec(),
     private val restoreFailureHook: suspend (RestoreFailurePoint) -> Unit = {},
-    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com
+        .mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyPlanPortabilityRepository {
     private val applicationContext = context.applicationContext
     private val applicationFiles = applicationContext.filesDir
@@ -147,7 +148,8 @@ internal class RoomStudyPlanPortabilityRepository(
         return try {
             val archive = decoded.archive
             graphStore.validatePayload(archive.payload)
-            require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.payload.manifest.annexPayloads.isEmpty()) {
+            require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.payload.manifest
+                .annexPayloads.isEmpty()) {
                 "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
             }
             when (strategy) {
@@ -196,7 +198,8 @@ internal class RoomStudyPlanPortabilityRepository(
         try {
             val archive = decoded.archive
             graphStore.validatePayload(archive.payload)
-            require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.payload.manifest.annexPayloads.isEmpty()) {
+            require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.payload.manifest
+                .annexPayloads.isEmpty()) {
             "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
         }
         val destinationId = when (strategy) {
@@ -268,7 +271,8 @@ internal class RoomStudyPlanPortabilityRepository(
         }
     }
 
-    override suspend fun restoreSnapshot(snapshotId: PlanSnapshotId): StudyPlanImportResult = diagnosticRecorder.recordRepositoryMutation(
+    override suspend fun restoreSnapshot(
+        snapshotId: PlanSnapshotId): StudyPlanImportResult = diagnosticRecorder.recordRepositoryMutation(
         area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.BACKUP_RESTORE,
         action = "snapshot-restore",
     ) {
@@ -310,7 +314,8 @@ internal class RoomStudyPlanPortabilityRepository(
                         beforeCommit = {
                             commitStagedAnnexPayloads(snapshot.studyPlanId, staged)
                             if (supportDao.findPlanSettings(snapshot.studyPlanId.value) == null) {
-                                supportDao.upsertPlanSettings(StudyPlanSettings.defaults(snapshot.studyPlanId).asEntity())
+                                supportDao.upsertPlanSettings(StudyPlanSettings.defaults(snapshot
+                                    .studyPlanId).asEntity())
                             }
                             restoreFailureHook(RestoreFailurePoint.BEFORE_DATABASE_COMMIT)
                         },
@@ -530,7 +535,8 @@ internal class RoomStudyPlanPortabilityRepository(
             archive.payload.manifest.annexPayloads.forEach { payload ->
                 val importedAnnexId = "${planId.value}:${payload.annexId}"
                 val stagedFile = File(stagingRoot, "${sanitizeSegment(importedAnnexId)}.bin").canonicalFile
-                require(stagedFile.path.startsWith(stagingRoot.path + File.separator)) { "Unsafe restore staging path." }
+                require(stagedFile.path.startsWith(stagingRoot.path + File
+                    .separator)) { "Unsafe restore staging path." }
                 val digest = MessageDigest.getInstance("SHA-256")
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                 var totalBytes = 0L
@@ -541,8 +547,10 @@ internal class RoomStudyPlanPortabilityRepository(
                                 val count = input.read(buffer)
                                 if (count < 0) break
                                 totalBytes += count
-                                require(totalBytes <= MaxAnnexPayloadBytes) { "Annex payload exceeds restore size limit." }
-                                require(totalBytes <= payload.byteSize) { "Annex staged byte-size verification failed." }
+                                require(totalBytes <= MaxAnnexPayloadBytes) {
+                                    "Annex payload exceeds restore size limit." }
+                                require(totalBytes <= payload
+                                    .byteSize) { "Annex staged byte-size verification failed." }
                                 digest.update(buffer, 0, count)
                                 output.write(buffer, 0, count)
                             }
@@ -584,9 +592,11 @@ internal class RoomStudyPlanPortabilityRepository(
             val directory = entry.destinationFile.parentFile
             require(directory.mkdirs() || directory.isDirectory) { "Could not create restored annex directory." }
             require(!entry.destinationFile.exists()) { "Restored annex destination already exists." }
-            check(entry.temporaryFile.renameTo(entry.destinationFile)) { "Could not atomically place restored annex bytes." }
+            check(entry.temporaryFile.renameTo(entry
+                .destinationFile)) { "Could not atomically place restored annex bytes." }
             staged.createdFinalFiles += entry.destinationFile
-            require(entry.destinationFile.length() == entry.byteSize) { "Restored annex byte-size verification failed." }
+            require(entry.destinationFile.length() == entry
+                .byteSize) { "Restored annex byte-size verification failed." }
             require(sha256(entry.destinationFile).equals(entry.checksumSha256, ignoreCase = true)) {
                 "Restored annex checksum verification failed."
             }

@@ -44,10 +44,20 @@ def verify_discovery_sql():
             flags=re.DOTALL,
         )
         queries = {name: multiline or single for multiline, single, name in query_matches}
-        expected_query_count = 15
-        if len(queries) != expected_query_count:
+        expected_queries = {
+            "findPlan",
+            "findPracticeAccuracy",
+            "findTopicRecommendations",
+            "countDueReviews",
+            "findNextActivity",
+            "findScheduleAdherence",
+            "findOverdueResource",
+            "findNearestGoal",
+        }
+        if set(queries) != expected_queries:
             failures.append(
-                f"StudyDiscoveryDao SQL extraction expected {expected_query_count} queries, found {len(queries)}"
+                "StudyDiscoveryDao recommendation SQL set drifted: "
+                f"expected {sorted(expected_queries)}, found {sorted(queries)}"
             )
             return
         parameters = {
@@ -237,16 +247,28 @@ require(
 )
 require(
     "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyDiscoveryDao.kt",
-    "searchPlans",
-    "searchSubjects",
-    "searchTopics",
-    "searchQuestions",
-    "searchNotes",
-    "searchMaterials",
-    "searchFlashcards",
-    "searchErrors",
+    "@RawQuery",
+    "searchIndexed",
     "findOverdueResource",
     "topicSubject",
+)
+require(
+    "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowSearchIndex.kt",
+    "object StudyFlowSearchIndex",
+    "fts4",
+    "fun install(db: SupportSQLiteDatabase)",
+)
+require(
+    "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/IndexedStudyDiscoveryQuery.kt",
+    "MATCH ?",
+    "CandidateLimit = 320",
+    "WITH hits AS",
+    "UNION ALL",
+)
+require(
+    "core/data/src/test/kotlin/com/mikeyphw/studyflow/core/data/IndexedStudyDiscoveryQueryTest.kt",
+    "search is fts backed sql bounded and rechecks ownership visibility",
+    "LIMIT 320",
 )
 require(
     "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyDiscoveryRepository.kt",
@@ -268,7 +290,9 @@ require(
     "navigateToResult",
     "navigateToRecommendation",
     "navigateToSearch",
-    "result.type.destination()",
+    "when (result.type)",
+    "GlobalSearchContentType.PLAN",
+    "GlobalSearchContentType.ERROR",
 )
 require(
     "core/i18n/src/main/java/com/mikeyphw/studyflow/core/i18n/DataStoreAppPreferencesRepository.kt",

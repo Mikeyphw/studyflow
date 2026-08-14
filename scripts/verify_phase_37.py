@@ -46,7 +46,7 @@ for required in [
     "Target execution status: **PENDING TARGET EXECUTION**",
     "Version code: `37`",
     "Version name: `1.0.0-rc1`",
-    "Artifact type: pending",
+    "Artifact types: pending",
     "Device/emulator: pending",
     "Fresh install: pending",
     "Upgrade install: pending",
@@ -74,15 +74,22 @@ for required in ["implemented through **Phase 37**", "PENDING TARGET EXECUTION",
     require(required in validation, f"validation report missing Phase 37 honesty marker: {required}")
 
 factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactory.kt")
-for required in ["CurrentPhase = 37", "DEVICE_SMOKE", "Must run the Phase 37 install", "sourceOnlySeal"]:
-    require(required in factory, f"release validation factory missing Phase 37 target gate: {required}")
-require("blocked(\n                ReleaseValidationGateKind.DEVICE_SMOKE" in factory,
-        "source-only seal must keep device smoke blocked")
+for required in [
+    "CurrentPhase = 37", "SIGNED_ARTIFACT_IDENTITY", "FULL_JOURNEY", "DEVICE_ACCEPTANCE",
+    "sourceOnlySeal", "evidenceSeal",
+]:
+    require(required in factory, f"release validation factory missing strengthened target gate: {required}")
+require("Required evidence was not supplied." in factory, "missing release evidence must fail closed")
 
+readiness = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSeal.kt")
 readiness_test = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSealTest.kt")
-require("assertEquals(45, report.totalPhaseCount)" in readiness_test and
-        "phase.number == 36" in readiness_test and "phase.number == 37" in readiness_test,
-        "release readiness test must cover 37 phases plus D1-D8")
+require(
+    "assertEquals(45, report.totalPhaseCount)" in readiness_test
+    and "ReleaseReadinessPhase(36," in readiness
+    and "ReleaseReadinessPhase(37," in readiness
+    and "completedPhaseNumbers" in readiness,
+    "release readiness must cover 37 phases plus D1-D8 using explicit completion evidence",
+)
 
 readme = read("README.md")
 for required in ["Real-device acceptance", "PENDING TARGET EXECUTION", "must be filled from a real device"]:

@@ -22,6 +22,7 @@ model = "core/diagnostics/src/main/kotlin/com/mikeyphw/studyflow/core/diagnostic
 registry = "app/src/main/java/com/mikeyphw/studyflow/StudyFlowDebugProbeRegistry.kt"
 panel = "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugProbePanel.kt"
 app = "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt"
+view_model = "app/src/main/java/com/mikeyphw/studyflow/StudyFlowDebugWorkbenchViewModel.kt"
 
 for probe in (
     "RECORDER_HEALTH", "NOTIFICATION_HEALTH", "WIDGET_HEALTH", "PROCESS_EXIT_HISTORY",
@@ -43,7 +44,7 @@ forbid(registry, "traceInputStream")
 require(panel, "fun DebugProbePanel(")
 forbid(panel, ".name)")
 forbid(panel, "onClick = {}")
-require(app, "StudyFlowRuntimeSelfCheckSuite(")
+require(view_model, "StudyFlowRuntimeSelfCheckSuite(")
 require(app, "probeContent = {")
 require(app, "composable<RuntimeSmokeRoute>")
 require("feature/settings/build.gradle.kts", 'implementation(project(":core:diagnostics"))')

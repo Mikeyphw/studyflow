@@ -49,7 +49,8 @@ internal class RoomAnnexFileStorageRepository(
         fileMutationMutex.withLock {
             declaredByteSize?.let { require(it <= MAX_ANNEX_BYTES) { "Annex exceeds the per-file import limit." } }
             val existingBytes = libraryDao.totalAnnexBytes(studyPlanId.value)
-            require(existingBytes <= MAX_PLAN_ANNEX_BYTES) { "Study Plan annex storage already exceeds the supported limit." }
+            require(existingBytes <= MAX_PLAN_ANNEX_BYTES) {
+                "Study Plan annex storage already exceeds the supported limit." }
             val annexId = AnnexId(UUID.randomUUID().toString())
             val now = clock()
             val directory = annexDirectory(studyPlanId.value, annexId.value).apply { mkdirs() }.canonicalFile
@@ -206,7 +207,8 @@ internal class RoomAnnexFileStorageRepository(
                         ownedFile.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
                     }
                     AnnexStorageMode.LINKED_DOCUMENT.name -> if (
-                        deleted.persistedPermission && libraryDao.countAnnexesByStorageReference(deleted.storageReference) == 0
+                        deleted.persistedPermission && libraryDao.countAnnexesByStorageReference(deleted
+                            .storageReference) == 0
                     ) {
                         releasePersistedReadPermission(deleted.storageReference)
                     }

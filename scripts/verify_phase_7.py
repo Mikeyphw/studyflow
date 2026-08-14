@@ -112,7 +112,6 @@ screen = (ROOT / "feature/sessions/src/main/java/com/mikeyphw/studyflow/feature/
     encoding="utf-8",
 )
 for marker in (
-    "StudySessionTimer.activeSeconds",
     "startFromActivity",
     "startQuickSession",
     "FinishSessionDialog",
@@ -120,6 +119,13 @@ for marker in (
 ):
     if marker not in screen:
         failures.append(f"session screen missing: {marker}")
+
+# Later lifecycle hardening moved timer authority behind ManageStudySession so the UI
+# cannot accidentally mix wall-clock and monotonic timing primitives.
+if "sessionManager::liveActiveSeconds" not in screen:
+    failures.append("session screen does not consume the lifecycle-safe live timer boundary")
+if "fun liveActiveSeconds(session: StudySession)" not in manager or "runtimeClock.activeSeconds(session)" not in manager:
+    failures.append("session manager does not own the lifecycle-safe live timer boundary")
 
 # Translation parity and Portuguese plural completeness.
 def resource_keys(path: Path) -> set[tuple[str, str]]:

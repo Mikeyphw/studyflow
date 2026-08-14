@@ -35,7 +35,9 @@ coordinator = (root / "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyR
 assert "AlarmManager.setWindow" not in coordinator
 assert "alarmManager.setWindow(" in coordinator
 assert "setExact" not in coordinator
-assert "studyReminderRequestCode" in coordinator
+assert "studyReminderIdentityUri" in coordinator
+assert "occurrenceId" in coordinator
+assert "PendingIntent.getBroadcast" in coordinator
 assert "PendingIntent.FLAG_NO_CREATE" in coordinator
 
 

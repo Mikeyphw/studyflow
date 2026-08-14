@@ -72,8 +72,10 @@ object StudyGoalProgressEngine {
                 sessions.sumOf(StudySession::questionsAnswered) + submittedTests.sumOf(StudyTest::answeredCount)
             ).toDouble()
             GoalType.ACCURACY -> {
-                val answered = sessions.sumOf(StudySession::questionsAnswered) + submittedTests.sumOf(StudyTest::answeredCount)
-                val correct = sessions.sumOf(StudySession::correctAnswers) + submittedTests.sumOf(StudyTest::correctCount)
+                val answered = sessions.sumOf(StudySession::questionsAnswered) + submittedTests
+                    .sumOf(StudyTest::answeredCount)
+                val correct = sessions.sumOf(StudySession::correctAnswers) + submittedTests
+                    .sumOf(StudyTest::correctCount)
                 if (answered == 0) 0.0 else correct * 100.0 / answered
             }
             GoalType.TOPIC_COMPLETION -> evidence.topics.count { topic ->
@@ -91,7 +93,8 @@ object StudyGoalProgressEngine {
                 GoalPeriod.CUSTOM -> goal.endsOnIso
                 else -> endExclusive.minusDays(1).toString()
             },
-            completedAtEpochMillis = if (current >= goal.targetValue) goal.completedAtEpochMillis ?: nowEpochMillis else null,
+            completedAtEpochMillis = if (current >= goal.targetValue) goal.completedAtEpochMillis
+                ?: nowEpochMillis else null,
         )
     }
 

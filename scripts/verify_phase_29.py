@@ -55,9 +55,9 @@ release_factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/
 match = re.search(r'private const val CurrentPhase = (\d+)', release_factory)
 if not match or int(match.group(1)) < 29:
     raise AssertionError('release validation seal must move to Phase 29 or later')
-match = re.search(r'Phase 0 through (\d+) validators pass\.', release_factory)
-if not match or int(match.group(1)) < 29:
-    raise AssertionError('release-seal evidence must cover Phase 29 or later')
+require(release_factory, 'fun sourceOnlySeal(', 'source-only validation seal')
+require(release_factory, 'fun evidenceSeal(', 'evidence-backed release seal')
+require(release_factory, 'Required evidence was not supplied.', 'fail-closed missing evidence')
 
 polish = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseCandidatePolish.kt")
 for area in [
@@ -127,13 +127,18 @@ require(reminder_planner, 'startOfNextLocalDay(', 'local next-day calculation')
 require(reminder_planner, 'sameLocalDay(', 'local today calculation')
 require(reminder_planner, 'Calendar.DAY_OF_YEAR', 'local day comparison')
 forbid(reminder_planner, 'DayMillis', 'UTC epoch-day math')
-require(reminder_delivery, 'openAppPendingIntent(planId, candidate.type)', 'notification content intent carries reminder type')
+require(reminder_delivery, 'openAppPendingIntent(planId, candidate.type, candidate.occurrenceId)', 'notification content intent carries reminder occurrence identity')
 require(reminder_delivery, 'putExtra(StudyReminderExtraType, type.name)', 'notification deep-link reminder type extra')
-require(reminder_delivery, 'notificationId(planId, type)', 'per-reminder notification content PendingIntent request code')
+require(reminder_delivery, 'studyReminderIdentityUri(appContext, planId, type, occurrenceId, openApp = true)', 'per-occurrence notification PendingIntent URI identity')
+require(reminder_delivery, 'NotificationManagerCompat.from(appContext).notify(candidate.occurrenceId, 0, notification)', 'per-occurrence notification manager identity')
 main_activity = read("app/src/main/java/com/mikeyphw/studyflow/MainActivity.kt")
 require(main_activity, 'data class StudyReminderLaunch', 'notification launch bridge model')
 require(main_activity, 'onNewIntent(intent: Intent)', 'notification tap new-intent handling')
-require(main_activity, 'consumeStudyReminderLaunch()', 'notification intent extraction and one-shot consumption')
+launch_bridge = read("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderLaunchActivity.kt")
+require(launch_bridge, 'StudyReminderLaunchStore.publish(launch)', 'private launch activity publishes validated reminder launch')
+require(launch_bridge, 'fun consume(): StudyReminderLaunch?', 'one-shot reminder launch store')
+require(launch_bridge, 'Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP', 'private launch bridge reuses main activity')
+require(main_activity, 'StudyReminderLaunchStore.consume()', 'notification launch store one-shot consumption')
 app_source = "\n".join(
     read(path)
     for path in (
@@ -170,7 +175,10 @@ manifest = read("app/src/main/AndroidManifest.xml")
 for action_name in ['BOOT_COMPLETED', 'TIME_SET', 'TIMEZONE_CHANGED', 'DATE_CHANGED', 'MY_PACKAGE_REPLACED']:
     require(manifest, f'android.intent.action.{action_name}', f'manifest reminder recovery action {action_name}')
 data_rules = read("app/src/main/res/xml/data_extraction_rules.xml")
-require(data_rules, 'disableIfNoEncryptionCapabilities="true"', 'encrypted cloud backup capability requirement')
+manifest_backup = read("app/src/main/AndroidManifest.xml")
+require(manifest_backup, 'android:allowBackup="false"', 'platform backup is disabled by security hardening')
+for domain in ['root', 'file', 'database', 'sharedpref', 'external']:
+    require(data_rules, f'<exclude domain="{domain}" path="." />', f'modern backup exclusion for {domain}')
 phase29b_tests = read("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerPhase29BHardeningTest.kt")
 for test_name in [
     'dailySummaryUsesNextLocalMidnightInsteadOfUtcBucket',

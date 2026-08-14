@@ -40,7 +40,7 @@ for token in (
     "UNBLOCK_CHECKPOINT",
     "StudyLocalCheckpointReadinessAuditor.localCheckpointReady",
     "fun plan(",
-    "BACKUP_STALE_MILLIS",
+    "actual Study Plan export",
 ):
     require(token in sync_queue, f"Phase 58 queue missing {token}")
 
@@ -69,10 +69,10 @@ require(
 )
 
 for token in (
-    "CloudlessBackupQueueCard",
+    "LocalCheckpointReadinessCard",
     "CloudlessBackupQueuePlanner.plan",
-    "sync_queue_title",
-    "sync_queue_summary",
+    "sync_checkpoint_readiness_title",
+    "sync_checkpoint_readiness_summary",
     "CloudlessBackupQueueAction.titleRes",
     "CloudlessBackupQueueStatus.labelRes",
 ):
@@ -168,4 +168,4 @@ if FAILURES:
     sys.exit(1)
 
 print("PHASE_58_59_VALIDATION_OK")
-print("Cloudless backup queue, weekly coach review, and warning hygiene verified")
+print("Local checkpoint readiness, weekly coach review, and warning hygiene verified")

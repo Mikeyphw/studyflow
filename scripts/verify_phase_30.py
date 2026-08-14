@@ -108,8 +108,12 @@ for marker in [
 factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactory.kt")
 match = re.search(r"private const val CurrentPhase = (\d+)", factory)
 require(match is not None and int(match.group(1)) >= 31, "release validation factory must advance to Phase 31")
-match = re.search(r"Phase 0 through (\d+) validators pass\.", factory)
-require(match is not None and int(match.group(1)) >= 31, "release validation evidence must cover Phase 31")
+require(
+    "fun sourceOnlySeal(" in factory
+    and "fun evidenceSeal(" in factory
+    and "Required evidence was not supplied." in factory,
+    "release validation must separate source checks from fail-closed release evidence",
+)
 
 bad_user_copy = [
     "MVP",

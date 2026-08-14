@@ -107,13 +107,23 @@ for token in (
     "composable<OnboardingRoute>",
     "OnboardingSamplePlanWizardScreen",
     "StudyOnboardingSamplePlanWizard.build",
-    "container.createStudyPlan",
-    "createLocalizedSampleSyllabus",
-    "buildScheduleRules",
-    "manageStudySchedule.saveRule",
-    "reminderDeliveryCoordinator.reconcilePlan",
+    "container.samplePlanProvisioner.state.collectAsStateWithLifecycle()",
+    "container.samplePlanProvisioner.startProvisioning(",
+    "reminderDeliveryCoordinator.reconcilePlan(completed.planId)",
+    "container.samplePlanProvisioner.consumeCompletion(completed.planId)",
 ):
-    require(token in app, f"App-level onboarding write path missing: {token}")
+    require(token in app, f"App-level onboarding provisioning path missing: {token}")
+
+provisioner = text("app/src/main/java/com/mikeyphw/studyflow/SamplePlanProvisioner.kt")
+for token in (
+    "journal.begin(",
+    "StudyOnboardingSamplePlanWizard.buildScheduleRules(",
+    "repository.provision(request)",
+    "journal.updateCommittedPlan(",
+    "preferencesRepository.setDefaultStudyPlanIfAbsent(",
+    "suspend fun recoverPendingCompletion()",
+):
+    require(token in provisioner, f"SamplePlanProvisioner missing durable/atomic behavior: {token}")
 
 onboarding_route_body = app.split("composable<OnboardingRoute>", 1)[-1].split(
     "composable<EditPlanRoute>",

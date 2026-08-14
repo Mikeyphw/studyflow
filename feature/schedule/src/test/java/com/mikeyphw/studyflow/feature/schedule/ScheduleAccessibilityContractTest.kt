@@ -17,7 +17,8 @@ class ScheduleAccessibilityContractTest {
 
     private fun readSource(): String {
         val module = Paths.get("src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleDialogs.kt")
-        val root = Paths.get("feature/schedule/src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleDialogs.kt")
+        val root = Paths.get(
+            "feature/schedule/src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleDialogs.kt")
         return listOf(module, root).first { it.toFile().isFile }.toFile().readText()
     }
 }

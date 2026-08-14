@@ -42,7 +42,8 @@ internal data class DebugWorkbenchUiState(
     val actionResult: DebugWorkbenchActionResult? = null,
     val selfCheckHistory: RuntimeSelfCheckHistory = RuntimeSelfCheckHistory(),
     val supportBundleSealReport: SupportBundleSealReport = SupportBundleSealReport.notRun(),
-    val reminderLabReport: ReminderNotificationLabReport = ReminderNotificationLabReport(status = DebugLabStatus.NOT_RUN),
+    val reminderLabReport: ReminderNotificationLabReport = ReminderNotificationLabReport(
+        status = DebugLabStatus.NOT_RUN),
     val reminderLabAction: ReminderLabActionResult? = null,
     val reminderLabRunning: Boolean = false,
     val databasePortabilityReport: DatabasePortabilityLabReport = DatabasePortabilityLabReport(
@@ -112,7 +113,8 @@ internal class StudyFlowDebugWorkbenchViewModel(
             _uiState.update { it.copy(actionResult = null) }
             val success = refreshDiagnosticsInternal()
             _uiState.update {
-                it.copy(actionResult = if (success) DebugWorkbenchActionResult.REFRESHED else DebugWorkbenchActionResult.REFRESH_FAILED)
+                it.copy(actionResult = if (success) DebugWorkbenchActionResult
+                    .REFRESHED else DebugWorkbenchActionResult.REFRESH_FAILED)
             }
         }
     }
@@ -136,7 +138,8 @@ internal class StudyFlowDebugWorkbenchViewModel(
         viewModelScope.launch {
             val result = try {
                 val text = debugActions.copyTimeline()
-                if (copyText(text)) DebugWorkbenchActionResult.TIMELINE_COPIED else DebugWorkbenchActionResult.COPY_FAILED
+                if (copyText(text)) DebugWorkbenchActionResult
+                    .TIMELINE_COPIED else DebugWorkbenchActionResult.COPY_FAILED
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -162,7 +165,8 @@ internal class StudyFlowDebugWorkbenchViewModel(
                 refreshDiagnosticsInternal()
             }
             _uiState.update {
-                it.copy(actionResult = if (cleared) DebugWorkbenchActionResult.HISTORY_CLEARED else DebugWorkbenchActionResult.HISTORY_BUSY)
+                it.copy(actionResult = if (cleared) DebugWorkbenchActionResult
+                    .HISTORY_CLEARED else DebugWorkbenchActionResult.HISTORY_BUSY)
             }
         }
     }
@@ -299,7 +303,8 @@ internal class StudyFlowDebugWorkbenchViewModel(
         }
     }
 
-    private fun recordSelfCheck(report: DebugProbeReport, run: com.mikeyphw.studyflow.core.diagnostics.RuntimeSelfCheckRun) {
+    private fun recordSelfCheck(report: DebugProbeReport, run: com.mikeyphw.studyflow.core.diagnostics
+        .RuntimeSelfCheckRun) {
         val history = _uiState.value.selfCheckHistory.record(run)
         historyStore.save(history)
         _uiState.update { it.copy(probeReport = report, selfCheckHistory = history) }

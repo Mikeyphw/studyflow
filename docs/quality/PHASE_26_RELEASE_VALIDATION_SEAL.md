@@ -1,6 +1,6 @@
-# Phase 26 Release Validation Seal
+# Phase 26 Release Validation Source Seal
 
-Status: source-level release validation seal implemented.
+Status: source-level release validation model implemented; this is not target Release acceptance.
 
 Phase 26 separates artifact/source validation from target-machine build validation. The app now models release gates as explicit evidence items so a green marker verifier cannot be mistaken for a completed Android build.
 
@@ -22,5 +22,5 @@ Required gates:
 Promise audit:
 
 - `ReleaseValidationSealFactory.sourceOnlySeal` intentionally blocks release until target-machine evidence exists.
-- `ReleaseValidationSealFactory.completedSeal` requires every gate kind to pass.
+- The historical generic completed-seal helper has been removed; OV-13 requires explicit PASS evidence for every required release gate.
 - No Room migration, network permission, sync provider, exact-alarm permission, or destructive validation behavior was added.

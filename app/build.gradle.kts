@@ -9,6 +9,17 @@ val legacyBackupRuleLinked = manifestLinksXml("fullBackupContent", "backup_rules
 val modernBackupRuleLinked = manifestLinksXml("dataExtractionRules", "data_extraction_rules") &&
     file("src/main/res/xml/data_extraction_rules.xml").isFile
 
+val releaseStoreFilePath = providers.environmentVariable("STUDYFLOW_RELEASE_STORE_FILE").orNull
+val releaseStorePassword = providers.environmentVariable("STUDYFLOW_RELEASE_STORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("STUDYFLOW_RELEASE_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("STUDYFLOW_RELEASE_KEY_PASSWORD").orNull
+val releaseSigningConfigured = listOf(
+    releaseStoreFilePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { value -> !value.isNullOrBlank() }
+
 plugins {
     id("studyflow.android.application")
 }
@@ -28,12 +39,28 @@ android {
         buildConfig = true
     }
 
+    if (releaseSigningConfigured) {
+        signingConfigs {
+            create("studyFlowRelease") {
+                storeFile = file(requireNotNull(releaseStoreFilePath))
+                storePassword = requireNotNull(releaseStorePassword)
+                keyAlias = requireNotNull(releaseKeyAlias)
+                keyPassword = requireNotNull(releaseKeyPassword)
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles("proguard-rules.pro")
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("studyFlowRelease")
+            }
         }
     }
+
+    testBuildType = "release"
 
     lint {
         disable += setOf(

@@ -4,6 +4,7 @@ enum class ReleaseValidationGateStatus {
     PASS,
     WARNING,
     BLOCKED,
+    FAIL,
 }
 
 enum class ReleaseValidationGateKind {
@@ -17,8 +18,17 @@ enum class ReleaseValidationGateKind {
     RESOURCE_MERGE,
     LINT,
     ASSEMBLE,
-    DEVICE_SMOKE,
+    BUNDLE,
+    SIGNED_ARTIFACT_IDENTITY,
+    FULL_JOURNEY,
+    DEVICE_ACCEPTANCE,
     FINAL_STAGING,
+}
+
+enum class ReleaseValidationProvenance {
+    SOURCE_ONLY,
+    EVIDENCE_SUMMARY,
+    AUTHORITATIVE_VERDICT,
 }
 
 data class ReleaseValidationGate(
@@ -28,7 +38,7 @@ data class ReleaseValidationGate(
     val evidence: String,
     val requiredForRelease: Boolean = true,
 ) {
-    val blocksRelease: Boolean = requiredForRelease && status == ReleaseValidationGateStatus.BLOCKED
+    val blocksRelease: Boolean = requiredForRelease && status != ReleaseValidationGateStatus.PASS
 }
 
 data class ReleaseValidationSeal(
@@ -36,9 +46,27 @@ data class ReleaseValidationSeal(
     val validatedPhase: Int,
     val gates: List<ReleaseValidationGate>,
     val generatedAtEpochMillis: Long,
+    val provenance: ReleaseValidationProvenance = ReleaseValidationProvenance.SOURCE_ONLY,
+    val validationSession: String? = null,
+    val artifactSha256: String? = null,
+    val signerCertificateSha256: List<String> = emptyList(),
 ) {
-    val releaseReady: Boolean = currentPhase == validatedPhase && gates.none(ReleaseValidationGate::blocksRelease)
+    private val artifactBound: Boolean = !validationSession.isNullOrBlank() &&
+        artifactSha256.isSha256() &&
+        signerCertificateSha256.isNotEmpty() &&
+        signerCertificateSha256.all(String::isSha256)
+
+    val releaseReady: Boolean = provenance == ReleaseValidationProvenance.AUTHORITATIVE_VERDICT &&
+        artifactBound &&
+        currentPhase == validatedPhase &&
+        gates.isNotEmpty() &&
+        gates.filter(ReleaseValidationGate::requiredForRelease).all { gate ->
+            gate.status == ReleaseValidationGateStatus.PASS
+        }
     val blockerCount: Int = gates.count(ReleaseValidationGate::blocksRelease)
     val warningCount: Int = gates.count { gate -> gate.status == ReleaseValidationGateStatus.WARNING }
+    val failureCount: Int = gates.count { gate -> gate.status == ReleaseValidationGateStatus.FAIL }
     val passedCount: Int = gates.count { gate -> gate.status == ReleaseValidationGateStatus.PASS }
+
+    private fun String?.isSha256(): Boolean = this?.matches(Regex("[0-9a-fA-F]{64}")) == true
 }

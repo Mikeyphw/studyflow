@@ -137,7 +137,7 @@ repository_path = ROOT / "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/
 repository_text = repository_path.read_text(encoding="utf-8")
 
 prepare_start = repository_text.find("private suspend fun prepareArchive(")
-prepare_end = repository_text.find("private suspend fun restoreAnnexPayloads(", prepare_start)
+prepare_end = repository_text.find("private fun stageAnnexPayloads(", prepare_start)
 if prepare_start < 0 or prepare_end < 0:
     failures.append("could not isolate prepareArchive for annex privacy validation")
 else:

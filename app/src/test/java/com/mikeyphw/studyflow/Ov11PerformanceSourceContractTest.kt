@@ -45,8 +45,10 @@ class Ov11PerformanceSourceContractTest {
 
     @Test
     fun `progress reuses loaded snapshots and review rendering is lazy preindexed`() {
-        val progress = repoFile("feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/ProgressWorkspaceScreen.kt")
-        val review = repoFile("feature/reviews/src/main/java/com/mikeyphw/studyflow/feature/reviews/StudyReviewScreen.kt")
+        val progress = repoFile(
+            "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/ProgressWorkspaceScreen.kt")
+        val review = repoFile(
+            "feature/reviews/src/main/java/com/mikeyphw/studyflow/feature/reviews/StudyReviewScreen.kt")
 
         assertFalse("observeReadiness(" in progress)
         assertFalse("observePreview(" in progress)
@@ -59,10 +61,14 @@ class Ov11PerformanceSourceContractTest {
 
     @Test
     fun `analytics uses sql aggregates and package annex reads have streaming staging`() {
-        val analytics = repoFile("core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyAnalyticsRepository.kt")
-        val analyticsDao = repoFile("core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyAnalyticsDao.kt")
-        val codec = repoFile("core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageCodec.kt")
-        val portability = repoFile("core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanPortabilityRepository.kt")
+        val analytics = repoFile(
+            "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyAnalyticsRepository.kt")
+        val analyticsDao = repoFile(
+            "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyAnalyticsDao.kt")
+        val codec = repoFile(
+            "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageCodec.kt")
+        val portability = repoFile(
+            "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanPortabilityRepository.kt")
 
         assertTrue("shareIn(" in analytics)
         assertTrue("StudyAnalyticsDao" in analytics)

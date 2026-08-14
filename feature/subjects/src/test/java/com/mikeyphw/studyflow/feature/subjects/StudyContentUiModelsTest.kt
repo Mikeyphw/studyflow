@@ -48,7 +48,8 @@ class StudyContentUiModelsTest {
     @Test
     fun bulkTopicSelectionUsesOneMergedCheckboxRow() {
         val module = Paths.get("src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt")
-        val root = Paths.get("feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt")
+        val root = Paths.get(
+            "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt")
         val source = listOf(module, root).first { it.toFile().isFile }.toFile().readText()
         val block = source.substringAfter("if (bulkMode) {").substringBefore("Column(modifier")
         assertTrue(block.contains(".semantics(mergeDescendants = true) {}"))

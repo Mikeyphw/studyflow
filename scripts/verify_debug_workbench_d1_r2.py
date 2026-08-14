@@ -151,8 +151,8 @@ require(
 
 if redactor_tests.count("@Test") != 8:
     FAILURES.append(f"expected 8 redactor behavior tests, found {redactor_tests.count('@Test')}")
-if recorder_tests.count("@Test") != 7:
-    FAILURES.append(f"expected 7 recorder behavior tests, found {recorder_tests.count('@Test')}")
+if recorder_tests.count("@Test") != 10:
+    FAILURES.append(f"expected 10 recorder behavior tests, found {recorder_tests.count('@Test')}")
 
 require(
     "docs/quality/DEBUG_WORKBENCH_D1_RECORDER_PRIVACY_FOUNDATION.md",
@@ -206,15 +206,18 @@ for path in (ROOT / "core/diagnostics").rglob("*"):
         FAILURES.append(f"NUL byte in diagnostics payload: {relative}")
 
 entry_names = set(re.findall(r'entries\["([^"]+)"\]', recorder))
-expected_entries = {
-    "events/current.jsonl",
+expected_static_entries = {
     "environment.json",
     "manifest.json",
     "redaction-report.txt",
     "checksums.sha256",
 }
-if entry_names != expected_entries:
-    FAILURES.append(f"support bundle allowlist mismatch: {sorted(entry_names)}")
+if entry_names != expected_static_entries:
+    FAILURES.append(f"support bundle static allowlist mismatch: {sorted(entry_names)}")
+if 'val name = "events/current.jsonl"' not in recorder:
+    FAILURES.append("support bundle no longer emits the current sanitized event segment")
+if 'val name = "events/retained-${index.toString().padStart(3, \'0\')}.jsonl"' not in recorder:
+    FAILURES.append("support bundle no longer emits bounded retained event segments")
 
 if FAILURES:
     print("DEBUG_WORKBENCH_D1_R2: FAILED")

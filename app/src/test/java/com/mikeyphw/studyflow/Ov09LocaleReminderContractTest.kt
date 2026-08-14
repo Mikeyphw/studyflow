@@ -27,8 +27,10 @@ class Ov09LocaleReminderContractTest {
         val reconcile = source.substringAfter("private suspend fun reconcilePlanInternal")
             .substringBefore("suspend fun deliver")
         assertTrue(reconcile.indexOf("buildRuntimePlan(planId)") < reconcile.indexOf("clearBookkeeping = false"))
-        assertTrue(reconcile.indexOf("clearBookkeeping = false") < reconcile.indexOf("occurrenceStore.replaceScheduled"))
-        assertTrue(reconcile.indexOf("occurrenceStore.replaceScheduled") < reconcile.indexOf("scheduleCandidate(planId, candidate)"))
+        assertTrue(reconcile.indexOf("clearBookkeeping = false") < reconcile
+            .indexOf("occurrenceStore.replaceScheduled"))
+        assertTrue(reconcile.indexOf("occurrenceStore.replaceScheduled") < reconcile
+            .indexOf("scheduleCandidate(planId, candidate)"))
         assertTrue(source.contains("persistedScheduledAtByOccurrenceId = persistedScheduledAt"))
     }
 

@@ -382,8 +382,10 @@ class ManagePracticeExecution(
         )
     }
 
-    fun stateForTest(test: StudyTest, questions: List<Question>): PracticeExecutionState = engine.stateForTest(test, questions)
-    fun stateForMockExam(mockExam: MockExam, questions: List<Question>): PracticeExecutionState = engine.stateForMockExam(mockExam, questions)
+    fun stateForTest(test: StudyTest, questions: List<Question>): PracticeExecutionState = engine
+        .stateForTest(test, questions)
+    fun stateForMockExam(mockExam: MockExam, questions: List<Question>): PracticeExecutionState = engine
+        .stateForMockExam(mockExam, questions)
 
     private fun wrongAnswers(state: PracticeExecutionState): List<PracticeWrongAnswerCapture> = state.answers
         .filterNot(PracticeAnswerRecord::correct)

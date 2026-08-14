@@ -87,7 +87,8 @@ class BackupRestoreDrillSealTest {
     @Test
     fun `annex privacy drill is not applicable when package declares no annex payloads`() = runBlocking {
         val fixture = BackupRestoreDrillSeal.metadataPrivateAnnexFixture()
-        val original = codec.archiveFromByteArray(encryptedCodec.decrypt(fixture.encryptedPackageBytes, fixture.password))
+        val original = codec.archiveFromByteArray(encryptedCodec.decrypt(fixture.encryptedPackageBytes,
+            fixture.password))
         val withoutAnnex = original.copy(
             payload = original.payload.copy(
                 manifest = original.payload.manifest.copy(

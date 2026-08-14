@@ -56,7 +56,13 @@ validate = text("scripts/validate_repo.sh")
 devtool = text(".devtool.toml")
 for token in (":app:compileReleaseKotlin", ":app:lintRelease"):
     require(token in build, f"checkAll is missing release gate {token}")
-require(":app:assembleRelease" in validate, "validate_repo.sh does not package Release")
+require("verifyFinalReleaseAutomatedGate" in validate, "validate_repo.sh does not run the final automated Release gate")
+require(
+    "verifyFinalReleaseAutomatedGate" in build
+    and "verifyFinalReleaseHostGate" in build
+    and ":app:assembleRelease" in build,
+    "final automated Release gate does not own the signed host gate and Release assembly",
+)
 require("ANDROID VALIDATION: SKIPPED" not in validate, "validate_repo.sh still permits a false-green Android skip")
 require(":app:assembleRelease" in devtool, "Devtool does not package the Release variant")
 
@@ -79,9 +85,13 @@ root_app = text("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
 main_activity = text("app/src/main/java/com/mikeyphw/studyflow/MainActivity.kt")
 require("initialValue = AppPreferences()" not in root_app, "root UI still treats default preferences as loaded state")
 require("StudyFlowLoadingPane" in root_app, "root UI has no loading state")
-require("consumeStudyReminderLaunch" in main_activity, "reminder launch extras are not consumed")
-require("removeExtra(StudyReminderExtraPlanId)" in main_activity, "reminder plan extra survives consumption")
-require("removeExtra(StudyReminderExtraType)" in main_activity, "reminder type extra survives consumption")
+reminder_launch = text("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderLaunchActivity.kt")
+require("StudyReminderLaunchStore.consume()" in main_activity, "private reminder launch is not consumed one-shot")
+require("StudyReminderLaunchStore.publish(launch)" in reminder_launch, "reminder trampoline does not publish validated routing")
+require("pending = null" in reminder_launch, "reminder launch store does not clear consumed routing")
+require("private fun Intent.toStudyReminderLaunch()" in reminder_launch, "private reminder routing is not validated")
+require("StudyReminderExtraPlanId" in reminder_launch and "StudyReminderExtraType" in reminder_launch,
+        "private reminder trampoline does not validate plan/type payload")
 today_workspace = text(
     "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt"
 )

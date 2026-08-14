@@ -57,7 +57,8 @@ class StudyReminderPlannerOv09Test {
         val first = activity("first", now + 60_000L)
         val second = activity("second", now + 120_000L)
         val initial = build(StudyPlanSettings.defaults(Plan.id), now, listOf(first, second))
-        val firstCandidate = initial.notificationCandidates.single { it.type == ReminderNotificationType.PLANNED_ACTIVITY }
+        val firstCandidate = initial.notificationCandidates.single { it.type == ReminderNotificationType
+            .PLANNED_ACTIVITY }
 
         val chained = build(
             StudyPlanSettings.defaults(Plan.id),
@@ -97,11 +98,13 @@ class StudyReminderPlannerOv09Test {
 
         assertEquals(
             due.scheduledAtEpochMillis,
-            reconciled.notificationCandidates.single { it.type == ReminderNotificationType.DUE_REVIEWS }.scheduledAtEpochMillis,
+            reconciled.notificationCandidates.single { it.type == ReminderNotificationType.DUE_REVIEWS }
+                .scheduledAtEpochMillis,
         )
         assertEquals(
             missed.scheduledAtEpochMillis,
-            reconciled.notificationCandidates.single { it.type == ReminderNotificationType.MISSED_ACTIVITY }.scheduledAtEpochMillis,
+            reconciled.notificationCandidates.single { it.type == ReminderNotificationType.MISSED_ACTIVITY }
+                .scheduledAtEpochMillis,
         )
     }
 

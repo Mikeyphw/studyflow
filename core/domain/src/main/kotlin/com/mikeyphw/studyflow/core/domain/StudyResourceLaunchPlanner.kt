@@ -59,7 +59,8 @@ class StudyResourceLaunchPlanner {
             return StudyResourceLaunchPlan.InvalidSource(StudyResourceLaunchFailureReason.UNSUPPORTED_SCHEME)
         }
         return when (sourceType) {
-            VideoSourceType.DIRECT_MEDIA, VideoSourceType.LOCAL_FILE -> StudyResourceLaunchPlan.ExternalVideo(source.value)
+            VideoSourceType.DIRECT_MEDIA, VideoSourceType.LOCAL_FILE -> StudyResourceLaunchPlan
+                .ExternalVideo(source.value)
             VideoSourceType.YOUTUBE, VideoSourceType.WEB_PAGE ->
                 StudyResourceLaunchPlan.InvalidSource(StudyResourceLaunchFailureReason.EXPECTED_WEB_URI)
         }

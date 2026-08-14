@@ -312,7 +312,8 @@ class ManageStudyPractice(
             defaultTopicId = defaultTopicId,
             ownership = ownership,
         )
-        require(!preview.hasErrors) { "Question import contains validation errors; review the preview before importing." }
+        require(!preview.hasErrors) {
+            "Question import contains validation errors; review the preview before importing." }
         val now = clock()
         val candidates = preview.drafts.filter(QuestionImportDraft::importable).map { draft ->
             Question(

@@ -1,6 +1,6 @@
-# StudyFlow Debug Workbench D8 Final Release Seal
+# StudyFlow Debug Workbench D8 Final Source Seal
 
-D8 closes the Debug Workbench chain after D1 through D7. It is a release-seal phase, not a new lab.
+D8 closes the Debug Workbench chain after D1 through D7. Its historical release-seal model is a source/diagnostic seal, not evidence that the Release artifact or device acceptance passed.
 
 Implemented scope:
 

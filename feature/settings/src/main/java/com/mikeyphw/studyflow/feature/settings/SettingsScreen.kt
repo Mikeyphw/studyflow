@@ -217,13 +217,16 @@ private fun SettingsOperationStatus(
 ) {
     when (state) {
         SettingsOperationState.Idle -> Unit
-        is SettingsOperationState.Running -> StudyFlowSectionCard(title = stringResource(R.string.settings_operation_title)) {
+        is SettingsOperationState.Running -> StudyFlowSectionCard(title = stringResource(R.string
+            .settings_operation_title)) {
             Text(stringResource(R.string.settings_operation_running))
         }
-        is SettingsOperationState.Succeeded -> StudyFlowSectionCard(title = stringResource(R.string.settings_operation_title)) {
+        is SettingsOperationState.Succeeded -> StudyFlowSectionCard(title = stringResource(R.string
+            .settings_operation_title)) {
             Text(stringResource(R.string.settings_operation_succeeded))
         }
-        is SettingsOperationState.Failed -> StudyFlowSectionCard(title = stringResource(R.string.settings_operation_title)) {
+        is SettingsOperationState.Failed -> StudyFlowSectionCard(title = stringResource(R.string
+            .settings_operation_title)) {
             Text(
                 text = stringResource(R.string.settings_operation_failed),
                 color = MaterialTheme.colorScheme.error,

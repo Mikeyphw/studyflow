@@ -1,6 +1,5 @@
 package com.mikeyphw.studyflow
 
-import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
@@ -28,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class SettingsAccessibilityInstrumentationTest {
     @get:Rule
-    val composeRule = createAndroidComposeRule<ComponentActivity>()
+    val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun radioAndSwitchRowsExposeOneInteractiveTargetPerControl() {
@@ -104,11 +103,14 @@ class SettingsAccessibilityInstrumentationTest {
             }
         }
 
-        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.language_portuguese_brazil)).performClick()
-        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.settings_operation_failed)).assertIsDisplayed()
+        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string
+            .language_portuguese_brazil)).performClick()
+        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string
+            .settings_operation_failed)).assertIsDisplayed()
         composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.retry)).performClick()
         composeRule.waitUntil(timeoutMillis = 3_000L) { attempts.get() == 2 }
-        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string.settings_operation_succeeded)).assertIsDisplayed()
+        composeRule.onNodeWithText(composeRule.activity.getString(SettingsR.string
+            .settings_operation_succeeded)).assertIsDisplayed()
     }
 
     private fun setSettingsContent() {

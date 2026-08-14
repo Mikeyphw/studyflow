@@ -1,6 +1,6 @@
 package com.mikeyphw.studyflow.core.diagnostics
 
-/** Final release seal for the StudyFlow Debug Workbench D1 through D8 chain. */
+/** Final source/diagnostic seal for the StudyFlow Debug Workbench D1 through D8 chain. */
 data class DebugWorkbenchFinalSealEvidence(
     val implementedMilestones: Set<DebugWorkbenchMilestone>,
     val validatorNames: Set<String>,

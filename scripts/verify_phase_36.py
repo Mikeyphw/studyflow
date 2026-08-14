@@ -64,8 +64,13 @@ for required in ["implemented through **Phase 37**", "1.0.0-rc1", "Release candi
     require(required in readme, f"README missing Phase 36 marker: {required}")
 
 factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactory.kt")
-require("CurrentPhase = 37" in factory and "Phase 0 through 37 validators pass." in factory,
-        "release validation factory must advance through Phase 37")
+require(
+    "CurrentPhase = 37" in factory
+    and "fun sourceOnlySeal(" in factory
+    and "fun evidenceSeal(" in factory
+    and "Required evidence was not supplied." in factory,
+    "release validation factory must advance through Phase 37",
+)
 readiness = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSeal.kt")
 require("ReleaseReadinessPhase(36" in readiness and "ReleaseReadinessPhase(37" in readiness,
         "release readiness seal must include Phases 36 and 37")

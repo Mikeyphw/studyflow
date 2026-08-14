@@ -55,8 +55,9 @@ require("selfCheckHistory: RuntimeSelfCheckHistory = RuntimeSelfCheckHistory()" 
         "DebugWorkbenchScreen does not expose self-check history parameter")
 require("supportBundleSealReport: SupportBundleSealReport = SupportBundleSealReport.notRun()" in screen,
         "DebugWorkbenchScreen does not expose support-bundle seal parameter")
-require("selfCheckHistory = selfCheckHistory" in app and "supportBundleSealReport = supportBundleSealReport" in app,
-        "StudyFlowApp does not pass D7 state through DebugWorkbenchScreen")
+require("selfCheckHistory = debugState.selfCheckHistory" in app
+        and "supportBundleSealReport = debugState.supportBundleSealReport" in app,
+        "StudyFlowApp does not pass ViewModel-owned D7 state through DebugWorkbenchScreen")
 require("private fun DebugOverview(" in screen
         and "selfCheckHistory: RuntimeSelfCheckHistory," in screen
         and "supportBundleSealReport: SupportBundleSealReport," in screen,
@@ -209,8 +210,9 @@ require("syncConflictPolicyLabel" in sync_screen and ".name" not in sync_screen,
         "Sync Foundation screen must not show raw enum names")
 require("currentSummary.changeCount" in sync_screen and "currentSummary.localChangeToken" not in sync_screen,
         "Sync Foundation screen must hide raw local change tokens")
-require("val changeCount: Int = planCount" in read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt"),
-        "Sync aggregate count must compile from StudySyncChangeSummary")
+require("val changeCount: Int = changesSinceCheckpoint" in read(
+        "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt"),
+        "Sync aggregate count must reflect durable changes since checkpoint")
 require("FlowRow" in read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugWorkbenchScreen.kt"),
         "Debug Workbench section chips must wrap responsively")
 require("FlowRow" in read("feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/DebugLabsPanel.kt"),

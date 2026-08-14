@@ -32,10 +32,9 @@ for token in (
     "object ReminderReliabilityCenter",
     "ReminderReliabilityStatus.BLOCKED",
     "ReminderReliabilityIssueKind.NOTIFICATION_PERMISSION",
-    "ReminderReliabilityIssueKind.EXACT_ALARM_ACCESS",
     "ReminderReliabilityIssueKind.BATTERY_OPTIMIZATION",
     "ReminderReliabilityFallback.WIDGET_AND_MANUAL_CHECK",
-    "ReminderReliabilityFallback.INEXACT_ALARM_WINDOW",
+    "ReminderReliabilityFallback.QUIET_HOURS_DELAY",
 ):
     require(token in reliability, f"Reminder Reliability Center missing: {token}")
 
@@ -61,10 +60,10 @@ for token in (
 
 for token in (
     "reminder_reliability_title",
-    "canScheduleStudyFlowExactAlarms",
+    "notificationDeliveryAllowed",
     "isIgnoringBatteryOptimizations",
     "ReminderReliabilityIssueRow",
-    "notificationPermissionGranted = notificationPermissionGranted",
+    "notificationPermissionGranted = notificationDeliveryAllowed",
     "plannedActivityCandidateCount",
 ):
     require(token in reminders_ui, f"Reminders UI missing Phase 54 behavior: {token}")
@@ -104,7 +103,7 @@ for path in (
         "reminder_reliability_action_needed",
         "reminder_reliability_blocked",
         "reminder_fallback_widget_manual",
-        "reminder_issue_exact_alarm",
+        "reminder_issue_quiet_hours_message",
         "reminder_issue_battery_message",
     ):
         require(key in names, f"reminders resource missing {key} in {path}")

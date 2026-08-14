@@ -89,7 +89,8 @@ internal object IndexedStudyDiscoveryQuery {
             JOIN study_plans p ON p.id = q.studyPlanId
             LEFT JOIN subjects s ON s.id = q.subjectId AND s.studyPlanId = q.studyPlanId
             LEFT JOIN topics t ON t.id = q.topicId AND t.studyPlanId = q.studyPlanId
-            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
+            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+                AND topicSubject.studyPlanId = t.studyPlanId
             WHERE ($archived OR (
                 p.status NOT IN ('ARCHIVED', 'TRASHED')
                     AND (q.subjectId IS NULL OR s.archived = 0)
@@ -103,9 +104,11 @@ internal object IndexedStudyDiscoveryQuery {
             JOIN study_plans p ON p.id = n.studyPlanId
             LEFT JOIN subjects s ON s.id = n.subjectId AND s.studyPlanId = n.studyPlanId
             LEFT JOIN topics t ON t.id = n.topicId AND t.studyPlanId = n.studyPlanId
-            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
+            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+                AND topicSubject.studyPlanId = t.studyPlanId
             LEFT JOIN study_materials m ON m.id = n.materialId AND m.studyPlanId = n.studyPlanId
-            LEFT JOIN subjects materialSubject ON materialSubject.id = m.subjectId AND materialSubject.studyPlanId = m.studyPlanId
+            LEFT JOIN subjects materialSubject ON materialSubject.id = m.subjectId
+                AND materialSubject.studyPlanId = m.studyPlanId
             LEFT JOIN topics materialTopic ON materialTopic.id = m.topicId AND materialTopic.studyPlanId = m.studyPlanId
             LEFT JOIN subjects materialTopicSubject ON materialTopicSubject.id = materialTopic.subjectId
                 AND materialTopicSubject.studyPlanId = materialTopic.studyPlanId
@@ -129,7 +132,8 @@ internal object IndexedStudyDiscoveryQuery {
             JOIN study_plans p ON p.id = m.studyPlanId
             LEFT JOIN subjects s ON s.id = m.subjectId AND s.studyPlanId = m.studyPlanId
             LEFT JOIN topics t ON t.id = m.topicId AND t.studyPlanId = m.studyPlanId
-            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
+            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+                AND topicSubject.studyPlanId = t.studyPlanId
             WHERE ($archived OR (
                 p.status NOT IN ('ARCHIVED', 'TRASHED') AND m.archived = 0
                     AND (m.subjectId IS NULL OR s.archived = 0)
@@ -143,7 +147,8 @@ internal object IndexedStudyDiscoveryQuery {
             JOIN study_plans p ON p.id = f.studyPlanId
             LEFT JOIN subjects s ON s.id = f.subjectId AND s.studyPlanId = f.studyPlanId
             LEFT JOIN topics t ON t.id = f.topicId AND t.studyPlanId = f.studyPlanId
-            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
+            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+                AND topicSubject.studyPlanId = t.studyPlanId
             WHERE ($archived OR (
                 p.status NOT IN ('ARCHIVED', 'TRASHED')
                     AND (f.subjectId IS NULL OR s.archived = 0)
@@ -159,8 +164,10 @@ internal object IndexedStudyDiscoveryQuery {
             LEFT JOIN questions q ON q.id = e.questionId AND q.studyPlanId = e.studyPlanId
             LEFT JOIN subjects s ON s.id = e.subjectId AND s.studyPlanId = e.studyPlanId
             LEFT JOIN topics t ON t.id = e.topicId AND t.studyPlanId = e.studyPlanId
-            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId AND topicSubject.studyPlanId = t.studyPlanId
-            LEFT JOIN subjects questionSubject ON questionSubject.id = q.subjectId AND questionSubject.studyPlanId = q.studyPlanId
+            LEFT JOIN subjects topicSubject ON topicSubject.id = t.subjectId
+                AND topicSubject.studyPlanId = t.studyPlanId
+            LEFT JOIN subjects questionSubject ON questionSubject.id = q.subjectId
+                AND questionSubject.studyPlanId = q.studyPlanId
             LEFT JOIN topics questionTopic ON questionTopic.id = q.topicId AND questionTopic.studyPlanId = q.studyPlanId
             LEFT JOIN subjects questionTopicSubject ON questionTopicSubject.id = questionTopic.subjectId
                 AND questionTopicSubject.studyPlanId = questionTopic.studyPlanId

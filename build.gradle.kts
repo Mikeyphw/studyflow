@@ -79,8 +79,11 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_58_59.py
         python3 scripts/verify_phase_60_61.py
         python3 scripts/verify_phase_62.py
+        python3 scripts/verify_full_app_final_user_readiness.py
         python3 scripts/verify_final_app_acceptance.py
         python3 scripts/verify_remediation_phase_1_2.py
+        python3 scripts/verify_remediation_ov_13.py
+        python3 scripts/verify_final_release_verdict_contract.py
         """.trimIndent(),
     )
 }
@@ -220,10 +223,212 @@ tasks.register<Exec>("verifyPhase62OnboardingSeal") {
 }
 
 
+tasks.register<Exec>("verifyFinalSourceAcceptance") {
+    group = "verification"
+    description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."
+    commandLine("python3", "scripts/verify_final_app_acceptance.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
-    description = "Checks the final StudyFlow V2 through Phase 62 acceptance contract."
+    description = "Compatibility alias for the final source/static acceptance contract."
     commandLine("python3", "scripts/verify_final_app_acceptance.py")
+}
+
+tasks.register<Exec>("verifyRemediationOv13") {
+    group = "verification"
+    description = "Checks OV-13 release-seal source contracts without synthesizing runtime evidence."
+    commandLine("python3", "scripts/verify_remediation_ov_13.py")
+}
+
+tasks.register("verifyFinalReleaseHostGate") {
+    group = "verification"
+    description = "Runs the signed host-side Release regression gate and records APK/AAB evidence."
+    dependsOn(
+        "checkAll",
+        ":app:compileReleaseAndroidTestKotlin",
+        ":app:processReleaseResources",
+        ":app:assembleRelease",
+        ":app:bundleRelease",
+    )
+    doLast {
+        fun sha256(source: File): String {
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            source.inputStream().buffered().use { input ->
+                val buffer = ByteArray(1024 * 1024)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    digest.update(buffer, 0, count)
+                }
+            }
+            return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+        }
+
+        val signingVariables = listOf(
+            "STUDYFLOW_RELEASE_STORE_FILE",
+            "STUDYFLOW_RELEASE_STORE_PASSWORD",
+            "STUDYFLOW_RELEASE_KEY_ALIAS",
+            "STUDYFLOW_RELEASE_KEY_PASSWORD",
+        )
+        val missingSigningVariables = signingVariables.filter { name -> System.getenv(name).isNullOrBlank() }
+        if (missingSigningVariables.isNotEmpty()) {
+            throw GradleException(
+                "Final Release validation requires signing credentials: ${missingSigningVariables.joinToString()}",
+            )
+        }
+        val releaseApk = file("app/build/outputs/apk/release/app-release.apk")
+        val releaseAab = file("app/build/outputs/bundle/release/app-release.aab")
+        if (!releaseApk.isFile) {
+            throw GradleException("Signed Release APK output is missing: ${releaseApk.absolutePath}")
+        }
+        if (!releaseAab.isFile) {
+            throw GradleException("Signed Release AAB output is missing: ${releaseAab.absolutePath}")
+        }
+        val validationSession = System.getenv("STUDYFLOW_RELEASE_VALIDATION_SESSION")
+            ?.trim()
+            ?.takeIf(String::isNotEmpty)
+            ?: "host-${java.util.UUID.randomUUID()}"
+        val report = file("build/reports/studyflow/release-host-gates.json")
+        report.parentFile.mkdirs()
+        val generatedAtUtc = java.time.Instant.now().toString()
+        report.writeText(
+            """
+            {
+              "schemaVersion": 2,
+              "status": "PASS",
+              "validationSession": "$validationSession",
+              "generatedAtUtc": "$generatedAtUtc",
+              "gates": [
+                {"name": "gradle_configuration", "status": "PASS"},
+                {"name": "source_contracts", "status": "PASS"},
+                {"name": "main_compilation", "status": "PASS"},
+                {"name": "test_compilation", "status": "PASS"},
+                {"name": "unit_tests", "status": "PASS"},
+                {"name": "resource_merge", "status": "PASS"},
+                {"name": "lint", "status": "PASS"},
+                {"name": "release_assemble", "status": "PASS"},
+                {"name": "release_bundle", "status": "PASS"}
+              ],
+              "artifacts": {
+                "releaseApk": {"path": "${releaseApk.absolutePath}", "sha256": "${sha256(releaseApk)}"},
+                "releaseAab": {"path": "${releaseAab.absolutePath}", "sha256": "${sha256(releaseAab)}"}
+              },
+              "scope": "signed host Release gate; connected Android evidence is recorded separately"
+            }
+            """.trimIndent() + "\n",
+        )
+        println("FINAL_RELEASE_HOST_GATES: PASS")
+        println("Evidence: ${report.absolutePath}")
+    }
+}
+
+tasks.register<Exec>("verifyFinalReleaseArtifact") {
+    group = "verification"
+    description = "Verifies exact signed APK/AAB identity, hashes, and signatures for this host session."
+    dependsOn("verifyFinalReleaseHostGate")
+    mustRunAfter(
+        ":core:data:connectedDebugAndroidTest",
+        ":core:database:connectedDebugAndroidTest",
+        ":feature:plans:connectedDebugAndroidTest",
+        ":feature:practice:connectedDebugAndroidTest",
+        ":feature:schedule:connectedDebugAndroidTest",
+        ":feature:workspace:connectedDebugAndroidTest",
+        ":app:connectedReleaseAndroidTest",
+    )
+    commandLine("python3", "scripts/verify_final_release_artifact.py")
+}
+
+tasks.register("recordConnectedReleaseTestGates") {
+    group = "verification"
+    description = "Runs required connected Android suites and records PASS only after every suite succeeds."
+    dependsOn(
+        "verifyFinalReleaseArtifact",
+        ":core:data:connectedDebugAndroidTest",
+        ":core:database:connectedDebugAndroidTest",
+        ":feature:plans:connectedDebugAndroidTest",
+        ":feature:practice:connectedDebugAndroidTest",
+        ":feature:schedule:connectedDebugAndroidTest",
+        ":feature:workspace:connectedDebugAndroidTest",
+        ":app:connectedReleaseAndroidTest",
+    )
+    doLast {
+        val host = file("build/reports/studyflow/release-host-gates.json").readText()
+        val artifact = file("build/reports/studyflow/release-artifact-identity.json").readText()
+        fun requiredMatch(text: String, pattern: Regex, label: String): String =
+            pattern.find(text)?.groupValues?.get(1)
+                ?: throw GradleException("Connected test evidence cannot resolve $label")
+
+        val validationSession = requiredMatch(
+            host,
+            Regex("\\\"validationSession\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""),
+            "validation session",
+        )
+        val artifactSession = requiredMatch(
+            artifact,
+            Regex("\\\"validationSession\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""),
+            "artifact validation session",
+        )
+        if (artifactSession != validationSession) {
+            throw GradleException("Connected test prerequisites came from mixed validation sessions")
+        }
+        val artifactSha = requiredMatch(
+            artifact,
+            Regex("\\\"artifact\\\"\\s*:\\s*\\{[\\s\\S]*?\\\"sha256\\\"\\s*:\\s*\\\"([0-9a-f]{64})\\\""),
+            "signed APK SHA-256",
+        )
+        val report = file("build/reports/studyflow/connected-test-gates.json")
+        report.parentFile.mkdirs()
+        report.writeText(
+            """
+            {
+              "schemaVersion": 1,
+              "status": "PASS",
+              "validationSession": "$validationSession",
+              "generatedAtUtc": "${java.time.Instant.now()}",
+              "artifactSha256": "$artifactSha",
+              "gates": [
+                {"name": "core_data", "status": "PASS"},
+                {"name": "core_database_migrations", "status": "PASS"},
+                {"name": "feature_plans", "status": "PASS"},
+                {"name": "feature_practice", "status": "PASS"},
+                {"name": "feature_schedule", "status": "PASS"},
+                {"name": "feature_workspace", "status": "PASS"},
+                {"name": "app_release_suite", "status": "PASS"}
+              ]
+            }
+            """.trimIndent() + "\n",
+        )
+        println("CONNECTED_RELEASE_TEST_GATES: PASS")
+        println("Evidence: ${report.absolutePath}")
+    }
+}
+
+tasks.register<Exec>("recordFullJourneyEvidence") {
+    group = "verification"
+    description = "Runs the exact signed Release restore/restart journey and records bound Android evidence."
+    dependsOn("recordConnectedReleaseTestGates")
+    commandLine("python3", "scripts/record_full_journey_evidence.py")
+}
+
+tasks.register("verifyFinalReleaseAutomatedGate") {
+    group = "verification"
+    description = "Mandatory automated final gate: signed artifacts, connected suites, and restore/restart journey."
+    dependsOn("recordFullJourneyEvidence")
+    doLast {
+        val journey = file("build/reports/studyflow/full-journey.json")
+        if (!journey.isFile || !Regex("\\\"status\\\"\\s*:\\s*\\\"PASS\\\"").containsMatchIn(journey.readText())) {
+            throw GradleException("Full restore/restart journey evidence is missing or not PASS")
+        }
+        println("FINAL_RELEASE_AUTOMATED_GATE: PASS")
+        println("Manual real-device observations remain required before productSealed=true.")
+    }
+}
+
+tasks.register<Exec>("verifyFinalReleaseVerdict") {
+    group = "verification"
+    description = "Fails closed until automated and manual final Release evidence all PASS."
+    commandLine("python3", "scripts/verify_final_release_verdict.py")
 }
 
 tasks.register("checkAll") {
@@ -235,7 +440,8 @@ tasks.register("checkAll") {
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",
         "verifyPhase62OnboardingSeal",
-        "verifyFinalAppAcceptanceSeal",
+        "verifyFinalSourceAcceptance",
+        "verifyRemediationOv13",
         "verifyFormatting",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
@@ -265,5 +471,7 @@ tasks.register("checkAll") {
         ":app:lintDebug",
         ":app:compileReleaseKotlin",
         ":app:lintRelease",
+        ":app:assembleRelease",
+        ":app:bundleRelease",
     )
 }

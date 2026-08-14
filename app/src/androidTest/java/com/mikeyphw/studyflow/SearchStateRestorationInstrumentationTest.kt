@@ -1,6 +1,5 @@
 package com.mikeyphw.studyflow
 
-import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertIsDisplayed
@@ -28,7 +27,7 @@ import org.junit.Test
 
 class SearchStateRestorationInstrumentationTest {
     @get:Rule
-    val composeRule = createAndroidComposeRule<ComponentActivity>()
+    val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun queryAndFilterIntentRestoreAndSearchIsRerunAfterSavedStateRecreation() {
@@ -108,7 +107,8 @@ class SearchStateRestorationInstrumentationTest {
             }
         }
 
-        composeRule.onNodeWithText(composeRule.activity.getString(SearchR.string.recommendations_failed)).assertIsDisplayed()
+        composeRule.onNodeWithText(composeRule.activity.getString(SearchR.string.recommendations_failed))
+            .assertIsDisplayed()
         composeRule.onNodeWithText(composeRule.activity.getString(SearchR.string.retry)).performClick()
         composeRule.waitUntil(timeoutMillis = 3_000L) { repository.recommendationCalls.value >= 2 }
         assertFalse(repository.recommendationCalls.value < 2)

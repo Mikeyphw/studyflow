@@ -3,119 +3,118 @@ package com.mikeyphw.studyflow.core.domain
 import com.mikeyphw.studyflow.core.model.ReleaseValidationGate
 import com.mikeyphw.studyflow.core.model.ReleaseValidationGateKind
 import com.mikeyphw.studyflow.core.model.ReleaseValidationGateStatus
+import com.mikeyphw.studyflow.core.model.ReleaseValidationProvenance
 import com.mikeyphw.studyflow.core.model.ReleaseValidationSeal
+
+data class ReleaseGateEvidence(
+    val status: ReleaseValidationGateStatus,
+    val evidence: String,
+)
 
 object ReleaseValidationSealFactory {
     private const val CurrentPhase = 37
+    private val sha256Pattern = Regex("[0-9a-fA-F]{64}")
 
-    fun sourceOnlySeal(generatedAtEpochMillis: Long): ReleaseValidationSeal = ReleaseValidationSeal(
-        currentPhase = CurrentPhase,
-        validatedPhase = CurrentPhase,
+    fun sourceOnlySeal(generatedAtEpochMillis: Long): ReleaseValidationSeal = buildSeal(
         generatedAtEpochMillis = generatedAtEpochMillis,
-        gates = listOf(
-            pass(
-                ReleaseValidationGateKind.ARTIFACT_MANIFEST,
-                "Artifact manifest",
-                "Inventory, hashes, validator script, release-candidate docs, and acceptance templates are coherent.",
+        evidence = mapOf(
+            ReleaseValidationGateKind.ARTIFACT_MANIFEST to passEvidence(
+                "Overlay inventory and fail-closed validation contract are coherent.",
             ),
-            pass(
-                ReleaseValidationGateKind.SOURCE_CONTRACTS,
-                "Source contracts",
-                "Phase 0 through 37 validators pass.",
+            ReleaseValidationGateKind.SOURCE_CONTRACTS to passEvidence(
+                "Source/static contracts passed; this is not Android artifact acceptance.",
             ),
-            blocked(
-                ReleaseValidationGateKind.GRADLE_CONFIGURATION,
-                "Gradle configuration",
-                "Must run on the Android build host.",
-            ),
-            blocked(
-                ReleaseValidationGateKind.MAIN_COMPILATION,
-                "Main source compilation",
-                "Must compile every affected Android and JVM module.",
-            ),
-            blocked(
-                ReleaseValidationGateKind.TEST_COMPILATION,
-                "Test source compilation",
-                "Must compile changed and historical test source sets.",
-            ),
-            blocked(
-                ReleaseValidationGateKind.UNIT_TESTS,
-                "Unit tests",
-                "Must run all tasks included by checkAll.",
-            ),
-            blocked(
-                ReleaseValidationGateKind.ROOM_SCHEMA,
-                "Room schema",
-                "Must verify exported schemas and migrations with Room validation.",
-            ),
-            blocked(
-                ReleaseValidationGateKind.RESOURCE_MERGE,
-                "Resource merge",
-                "Must process app and feature Android resources.",
-            ),
-            blocked(
-                ReleaseValidationGateKind.LINT,
-                "Lint",
-                "Must complete lint with zero unexpected diagnostics.",
-            ),
-            blocked(
-                ReleaseValidationGateKind.ASSEMBLE,
-                "Assemble",
-                "Must assemble the 1.0.0-rc1 debug or release-candidate APK on the target Android host.",
-            ),
-            blocked(
-                ReleaseValidationGateKind.DEVICE_SMOKE,
-                "Device smoke",
-                "Must run the Phase 37 install, upgrade, notification, widget, backup, " +
-                    "restore dry-run, locale, theme, and accessibility checks on a device or emulator.",
-            ),
-            pass(
-                ReleaseValidationGateKind.FINAL_STAGING,
-                "Final staging",
-                "Overlay payload paths, release packaging notes, and acceptance templates can be " +
-                    "staged without reserved metadata entries.",
+            ReleaseValidationGateKind.FINAL_STAGING to passEvidence(
+                "Release evidence files can be staged without committing generated artifacts or secrets.",
             ),
         ),
+        provenance = ReleaseValidationProvenance.SOURCE_ONLY,
     )
 
-    fun completedSeal(
+    /**
+     * Summarizes supplied gate statuses without granting product-release authority.
+     * Use [authoritativeVerdictSeal] only after the external final-verdict verifier has bound the
+     * exact artifact, signer certificate, validation session, journey, and device acceptance.
+     */
+    fun evidenceSeal(
         generatedAtEpochMillis: Long,
-        deviceSmokeEvidence: String,
+        evidence: Map<ReleaseValidationGateKind, ReleaseGateEvidence>,
+    ): ReleaseValidationSeal = buildSeal(
+        generatedAtEpochMillis = generatedAtEpochMillis,
+        evidence = evidence,
+        provenance = ReleaseValidationProvenance.EVIDENCE_SUMMARY,
+    )
+
+    fun authoritativeVerdictSeal(
+        generatedAtEpochMillis: Long,
+        validationSession: String,
+        artifactSha256: String,
+        signerCertificateSha256: List<String>,
+        evidence: Map<ReleaseValidationGateKind, ReleaseGateEvidence>,
     ): ReleaseValidationSeal {
-        val sourceSeal = sourceOnlySeal(generatedAtEpochMillis)
-        return sourceSeal.copy(
-            gates = sourceSeal.gates.map { gate -> gate.toCompletedGate(deviceSmokeEvidence) },
+        require(validationSession.isNotBlank()) { "Authoritative release evidence requires a validation session." }
+        require(sha256Pattern.matches(artifactSha256)) { "Authoritative release evidence requires an APK SHA-256." }
+        require(signerCertificateSha256.isNotEmpty() && signerCertificateSha256.all(sha256Pattern::matches)) {
+            "Authoritative release evidence requires signer-certificate SHA-256 values."
+        }
+        return buildSeal(
+            generatedAtEpochMillis = generatedAtEpochMillis,
+            evidence = evidence,
+            provenance = ReleaseValidationProvenance.AUTHORITATIVE_VERDICT,
+            validationSession = validationSession,
+            artifactSha256 = artifactSha256.lowercase(),
+            signerCertificateSha256 = signerCertificateSha256.map(String::lowercase),
         )
     }
 
-    fun requiredKinds(): Set<ReleaseValidationGateKind> = ReleaseValidationGateKind.values().toSet()
+    fun requiredKinds(): Set<ReleaseValidationGateKind> = ReleaseValidationGateKind.entries.toSet()
 
-    private fun ReleaseValidationGate.toCompletedGate(deviceSmokeEvidence: String): ReleaseValidationGate =
-        when (kind) {
-            ReleaseValidationGateKind.GRADLE_CONFIGURATION -> passed("Gradle configuration completed on target.")
-            ReleaseValidationGateKind.MAIN_COMPILATION -> passed("Main sources compiled on target.")
-            ReleaseValidationGateKind.TEST_COMPILATION -> passed("Test sources compiled on target.")
-            ReleaseValidationGateKind.UNIT_TESTS -> passed("checkAll unit tests completed on target.")
-            ReleaseValidationGateKind.ROOM_SCHEMA -> passed("Room schema and migration validation completed on target.")
-            ReleaseValidationGateKind.RESOURCE_MERGE -> passed("Android resources processed on target.")
-            ReleaseValidationGateKind.LINT -> passed("Lint completed on target.")
-            ReleaseValidationGateKind.ASSEMBLE -> passed("APK assembled on target.")
-            ReleaseValidationGateKind.DEVICE_SMOKE -> passed(deviceSmokeEvidence)
-            else -> this
+    private fun buildSeal(
+        generatedAtEpochMillis: Long,
+        evidence: Map<ReleaseValidationGateKind, ReleaseGateEvidence>,
+        provenance: ReleaseValidationProvenance,
+        validationSession: String? = null,
+        artifactSha256: String? = null,
+        signerCertificateSha256: List<String> = emptyList(),
+    ): ReleaseValidationSeal {
+        val gates = ReleaseValidationGateKind.entries.map { kind ->
+            val supplied = evidence[kind]
+            ReleaseValidationGate(
+                kind = kind,
+                status = supplied?.status ?: ReleaseValidationGateStatus.BLOCKED,
+                label = label(kind),
+                evidence = supplied?.evidence?.trim().orEmpty().ifBlank { "Required evidence was not supplied." },
+            )
         }
+        return ReleaseValidationSeal(
+            currentPhase = CurrentPhase,
+            validatedPhase = CurrentPhase,
+            generatedAtEpochMillis = generatedAtEpochMillis,
+            gates = gates,
+            provenance = provenance,
+            validationSession = validationSession,
+            artifactSha256 = artifactSha256,
+            signerCertificateSha256 = signerCertificateSha256,
+        )
+    }
 
-    private fun pass(
-        kind: ReleaseValidationGateKind,
-        label: String,
-        evidence: String,
-    ): ReleaseValidationGate = ReleaseValidationGate(kind, ReleaseValidationGateStatus.PASS, label, evidence)
+    private fun passEvidence(evidence: String) = ReleaseGateEvidence(ReleaseValidationGateStatus.PASS, evidence)
 
-    private fun blocked(
-        kind: ReleaseValidationGateKind,
-        label: String,
-        evidence: String,
-    ): ReleaseValidationGate = ReleaseValidationGate(kind, ReleaseValidationGateStatus.BLOCKED, label, evidence)
-
-    private fun ReleaseValidationGate.passed(evidence: String): ReleaseValidationGate =
-        copy(status = ReleaseValidationGateStatus.PASS, evidence = evidence)
+    private fun label(kind: ReleaseValidationGateKind): String = when (kind) {
+        ReleaseValidationGateKind.ARTIFACT_MANIFEST -> "Artifact manifest"
+        ReleaseValidationGateKind.SOURCE_CONTRACTS -> "Source contracts"
+        ReleaseValidationGateKind.GRADLE_CONFIGURATION -> "Gradle configuration"
+        ReleaseValidationGateKind.MAIN_COMPILATION -> "Main source compilation"
+        ReleaseValidationGateKind.TEST_COMPILATION -> "Test source compilation"
+        ReleaseValidationGateKind.UNIT_TESTS -> "Unit tests"
+        ReleaseValidationGateKind.ROOM_SCHEMA -> "Room schema and migration validation"
+        ReleaseValidationGateKind.RESOURCE_MERGE -> "Resource merge"
+        ReleaseValidationGateKind.LINT -> "Lint"
+        ReleaseValidationGateKind.ASSEMBLE -> "Release APK assembly"
+        ReleaseValidationGateKind.BUNDLE -> "Release app bundle"
+        ReleaseValidationGateKind.SIGNED_ARTIFACT_IDENTITY -> "Signed artifact identity"
+        ReleaseValidationGateKind.FULL_JOURNEY -> "Full Android journey"
+        ReleaseValidationGateKind.DEVICE_ACCEPTANCE -> "Device acceptance"
+        ReleaseValidationGateKind.FINAL_STAGING -> "Final staging"
+    }
 }

@@ -57,6 +57,7 @@ python3 scripts/verify_debug_workbench_d7.py
 python3 scripts/verify_debug_workbench_d8.py
 python3 scripts/verify_full_app_final_user_readiness.py
 python3 scripts/verify_remediation_phase_1_2.py
+python3 scripts/verify_remediation_ov_13.py
 
 GRADLE_LAUNCHER=""
 if [[ -x ./gradlew ]]; then
@@ -75,8 +76,6 @@ if [[ -z "$ANDROID_SDK" ]] || [[ ! -d "$ANDROID_SDK" ]]; then
   exit 3
 fi
 
-"$GRADLE_LAUNCHER" --no-daemon \
-  verifyFormatting \
-  checkAll \
-  :app:assembleDebug \
-  :app:assembleRelease
+"$GRADLE_LAUNCHER" --no-daemon verifyFinalReleaseAutomatedGate
+
+echo "AUTOMATED FINAL RELEASE VALIDATION: PASSED — manual device observations remain required for product sealing."

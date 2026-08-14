@@ -23,7 +23,8 @@ class ManifestSecuritySourceContractTest {
         assertTrue("@xml/backup_rules" in manifest)
         assertTrue("@xml/data_extraction_rules" in manifest)
         assertFalse("<queries" in manifest)
-        assertTrue(Regex("StudyReminderLaunchActivity[\\s\\S]*?android:exported=\\\"false\\\"").containsMatchIn(manifest))
+        assertTrue(Regex("StudyReminderLaunchActivity[\\s\\S]*?android:exported=\\\"false\\\"")
+            .containsMatchIn(manifest))
 
         val legacy = repoFile("app/src/main/res/xml/backup_rules.xml").readText()
         val modern = repoFile("app/src/main/res/xml/data_extraction_rules.xml").readText()

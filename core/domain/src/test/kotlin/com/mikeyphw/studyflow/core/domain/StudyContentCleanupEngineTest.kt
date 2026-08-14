@@ -195,7 +195,8 @@ class StudyContentCleanupEngineTest {
     fun duplicateQuestionIdentityIncludesMeaningfulFields() {
         val baseline = question(id = "q1", statement = "Ohm law", answer = "V = I R")
         val differentDifficulty = baseline.copy(id = QuestionId("q2"), difficulty = 3)
-        val differentExplanation = baseline.copy(id = QuestionId("q3"), explanation = "Derived from resistance definition")
+        val differentExplanation = baseline.copy(id = QuestionId("q3"),
+            explanation = "Derived from resistance definition")
 
         val report = StudyContentCleanupEngine.inspect(
             input(questions = listOf(baseline, differentDifficulty, differentExplanation)),

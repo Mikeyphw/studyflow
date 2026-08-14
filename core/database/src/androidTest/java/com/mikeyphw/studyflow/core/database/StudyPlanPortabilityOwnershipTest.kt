@@ -59,10 +59,14 @@ class StudyPlanPortabilityOwnershipTest {
         )
 
         val expectedQuestionId = "$RESTORED_PLAN_ID:$QUESTION_ID"
-        val restoredTest = requireNotNull(database.studyPracticeDao().findTest(RESTORED_PLAN_ID, "$RESTORED_PLAN_ID:$TEST_ID"))
-        val restoredMock = requireNotNull(database.studyPracticeDao().findMockExam(RESTORED_PLAN_ID, "$RESTORED_PLAN_ID:$MOCK_ID"))
-        assertEquals(setOf(expectedQuestionId), PracticeConfigurationReferences.referencedQuestionIds(restoredTest.configurationJson))
-        assertEquals(setOf(expectedQuestionId), PracticeConfigurationReferences.referencedQuestionIds(restoredMock.configurationJson))
+        val restoredTest = requireNotNull(database.studyPracticeDao().findTest(RESTORED_PLAN_ID,
+            "$RESTORED_PLAN_ID:$TEST_ID"))
+        val restoredMock = requireNotNull(database.studyPracticeDao().findMockExam(RESTORED_PLAN_ID,
+            "$RESTORED_PLAN_ID:$MOCK_ID"))
+        assertEquals(setOf(expectedQuestionId), PracticeConfigurationReferences
+            .referencedQuestionIds(restoredTest.configurationJson))
+        assertEquals(setOf(expectedQuestionId), PracticeConfigurationReferences
+            .referencedQuestionIds(restoredMock.configurationJson))
     }
 
     @Test
@@ -129,10 +133,12 @@ class StudyPlanPortabilityOwnershipTest {
             exportedAtEpochMillis = 172_800_123L,
         )
 
-        val privateQuestionId = payload.tables.single { it.name == "questions" }.rows.single().values.getValue("id").value!!
+        val privateQuestionId = payload.tables.single { it.name == "questions" }.rows.single().values
+            .getValue("id").value!!
         assertFalse(privateQuestionId.contains(QUESTION_ID))
         listOf("study_tests", "mock_exams").forEach { tableName ->
-            val configuration = payload.tables.single { it.name == tableName }.rows.single().values.getValue("configurationJson").value.orEmpty()
+            val configuration = payload.tables.single { it.name == tableName }.rows.single().values
+                .getValue("configurationJson").value.orEmpty()
             assertEquals(setOf(privateQuestionId), PracticeConfigurationReferences.referencedQuestionIds(configuration))
             assertFalse(configuration.contains(QUESTION_ID))
         }

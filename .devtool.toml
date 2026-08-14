@@ -24,11 +24,12 @@ build_cache = true
 structured_events = true
 
 [targets.studyflow_android.tasks]
-build = [":app:assembleDebug", ":app:assembleRelease"]
+build = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
 test = [
     "verifyRepositoryContracts",
     "verifyFormatting",
-    "verifyFinalAppAcceptanceSeal",
+    "verifyFinalSourceAcceptance",
+    "verifyRemediationOv13",
     ":core:diagnostics:test",
     ":core:model:test",
     ":core:domain:test",
@@ -127,12 +128,14 @@ compile = [
     ":core:database:compileDebugAndroidTestKotlin",
     ":feature:workspace:compileDebugAndroidTestKotlin",
     ":app:compileDebugUnitTestKotlin",
+    ":app:compileReleaseAndroidTestKotlin",
 ]
 resources = [":app:processDebugResources"]
 unit-test = [
     "verifyRepositoryContracts",
     "verifyFormatting",
-    "verifyFinalAppAcceptanceSeal",
+    "verifyFinalSourceAcceptance",
+    "verifyRemediationOv13",
     ":core:diagnostics:test",
     ":core:model:test",
     ":core:domain:test",
@@ -158,7 +161,7 @@ unit-test = [
     ":feature:subjects:testDebugUnitTest",
     ":feature:workspace:testDebugUnitTest",
 ]
-package = [":app:assembleDebug", ":app:assembleRelease"]
+package = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
 lint = [
     ":core:data:lintDebug",
     ":core:database:lintDebug",
