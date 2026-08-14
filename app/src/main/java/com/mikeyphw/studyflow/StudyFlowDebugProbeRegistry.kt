@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.app.ApplicationExitInfo
 import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -13,6 +14,7 @@ import android.os.Build
 import android.os.SystemClock
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.mikeyphw.studyflow.core.diagnostics.BackupConfigurationSnapshot
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeCatalog
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeDescriptor
@@ -29,6 +31,7 @@ import com.mikeyphw.studyflow.core.diagnostics.FileProviderHealthSnapshot
 import com.mikeyphw.studyflow.core.diagnostics.NotificationHealthSnapshot
 import com.mikeyphw.studyflow.core.diagnostics.ProcessExitHealthSnapshot
 import com.mikeyphw.studyflow.core.diagnostics.WidgetHealthSnapshot
+import com.mikeyphw.studyflow.core.domain.StudyLocalCheckpointReadinessAuditor
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
@@ -36,11 +39,11 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 import com.mikeyphw.studyflow.reminders.StudyReminderChannelId
 import com.mikeyphw.studyflow.widget.StudyFlowTodayWidgetProvider
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
@@ -283,18 +286,32 @@ private class AndroidStudyFlowDebugProbeOperations(
 
     private suspend fun processExitHealth(id: DebugProbeId): DebugProbeResult = runInterruptible {
         val supported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-        val count = if (supported) {
+        val reports = if (supported) {
             appContext.getSystemService(ActivityManager::class.java)
-                .getHistoricalProcessExitReasons(appContext.packageName, 0, 5)
-                .size
+                .getHistoricalProcessExitReasons(appContext.packageName, 0, 8)
         } else {
-            0
+            emptyList()
         }
+        val crashOrAnrReasons = setOf(
+            ApplicationExitInfo.REASON_CRASH,
+            ApplicationExitInfo.REASON_CRASH_NATIVE,
+            ApplicationExitInfo.REASON_ANR,
+        )
+        val abnormalReasons = crashOrAnrReasons + setOf(
+            ApplicationExitInfo.REASON_INITIALIZATION_FAILURE,
+            ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
+            ApplicationExitInfo.REASON_MEMORY_LIMITER,
+            ApplicationExitInfo.REASON_SIGNALED,
+            ApplicationExitInfo.REASON_UNKNOWN,
+        )
         DebugProbePlatformPolicy.processExit(
             id = id,
             snapshot = ProcessExitHealthSnapshot(
                 apiSupported = supported,
-                recentExitCount = count,
+                recentExitCount = reports.size,
+                crashOrAnrCount = reports.count { it.reason in crashOrAnrReasons },
+                abnormalExitCount = reports.count { it.reason in abnormalReasons },
+                lowMemoryCount = reports.count { it.reason == ApplicationExitInfo.REASON_LOW_MEMORY },
                 apiLevel = Build.VERSION.SDK_INT,
             ),
         )
@@ -306,6 +323,7 @@ private class AndroidStudyFlowDebugProbeOperations(
             id = id,
             snapshot = BackupConfigurationSnapshot(
                 backupAllowed = appInfo.flags and ApplicationInfo.FLAG_ALLOW_BACKUP != 0,
+                expectedBackupAllowed = false,
                 legacyRuleLinked = BuildConfig.BACKUP_LEGACY_RULE_LINKED,
                 modernRuleLinked = BuildConfig.BACKUP_MODERN_RULE_LINKED,
                 legacyRulePresent = BuildConfig.BACKUP_LEGACY_RULE_LINKED,
@@ -325,6 +343,29 @@ private class AndroidStudyFlowDebugProbeOperations(
         } else {
             appContext.packageManager.resolveContentProvider(authority, PackageManager.GET_META_DATA)
         }
+        val allowed = File(appContext.cacheDir, "support-bundles/provider-canary.txt").apply {
+            parentFile?.mkdirs()
+            writeText("provider-canary")
+        }
+        val privateFile = File(appContext.cacheDir, "provider-private-canary.txt").apply {
+            writeText("private-canary")
+        }
+        val allowedGranted = try {
+            FileProvider.getUriForFile(appContext, authority, allowed)
+            true
+        } catch (_: Exception) {
+            false
+        }
+        val privateRejected = try {
+            FileProvider.getUriForFile(appContext, authority, privateFile)
+            false
+        } catch (_: IllegalArgumentException) {
+            true
+        } catch (_: Exception) {
+            false
+        }
+        allowed.delete()
+        privateFile.delete()
         DebugProbePlatformPolicy.fileProvider(
             id = id,
             snapshot = FileProviderHealthSnapshot(
@@ -333,6 +374,8 @@ private class AndroidStudyFlowDebugProbeOperations(
                 grantsUriPermissions = provider?.grantUriPermissions == true,
                 pathMetadataPresent = provider?.metaData
                     ?.getInt("android.support.FILE_PROVIDER_PATHS", 0) != 0,
+                allowedRootGranted = allowedGranted,
+                privateRootRejected = privateRejected,
             ),
         )
     }
@@ -342,67 +385,124 @@ private class AndroidStudyFlowDebugProbeOperations(
         return DebugProbeResult(id = id, status = DebugProbeStatus.PASSED)
     }
 
-    private suspend fun widgetRefresh(id: DebugProbeId): DebugProbeResult = runInterruptible {
-        StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
-        DebugProbeResult(id = id, status = DebugProbeStatus.PASSED)
+    private suspend fun widgetRefresh(id: DebugProbeId): DebugProbeResult {
+        val refresh = StudyFlowWidgetUpdateCoordinator.refreshAllAndAwait(appContext)
+        val observed = refresh.boundInstanceCount > 0
+        return DebugProbeResult(
+            id = id,
+            status = if (observed) DebugProbeStatus.PASSED else DebugProbeStatus.BLOCKED,
+            message = if (observed) DebugProbeMessage.NONE else DebugProbeMessage.NO_WIDGET_INSTANCES,
+            safeFacts = mapOf(
+                "count" to refresh.boundInstanceCount.toString(),
+                "behavior_verified" to observed.toString(),
+                "status" to refresh.state,
+            ),
+        )
     }
 
     private suspend fun backupDryRun(id: DebugProbeId, planId: StudyPlanId): DebugProbeResult {
-        val output = ByteArrayOutputStream()
-        container.manageStudyPlanPortability.exportPlan(
-            planId = planId,
-            options = StudyPlanExportOptions(
-                mode = StudyPlanExportMode.FULL,
-                includeAnnexMetadata = true,
-                includeAnnexPayloads = false,
-                metadataPrivacyMode = true,
-                redactNotes = true,
-                redactHistory = true,
-            ),
-            output = output,
-        )
-        val bytes = output.toByteArray()
-        val integrity = container.manageStudyPlanPortability.inspectBackup(ByteArrayInputStream(bytes))
-        val dryRun = container.manageStudyPlanPortability.dryRunImport(
-            input = ByteArrayInputStream(bytes),
-            strategy = StudyPlanImportStrategy.CREATE_AS_NEW,
-        )
-        val passed = integrity.canRestore && dryRun.databaseRowsChanged == 0
-        return DebugProbeResult(
-            id = id,
-            status = if (passed) DebugProbeStatus.PASSED else DebugProbeStatus.WARNING,
-            message = if (passed) DebugProbeMessage.NONE else DebugProbeMessage.BACKUP_DRY_RUN_INTEGRITY_FAILED,
-            safeFacts = mapOf(
-                "count" to integrity.totalRows.toString(),
-                "enabled" to integrity.checksumVerified.toString(),
-            ),
-        )
+        val packageFile = File.createTempFile("debug-backup-canary-", ".studyflow", appContext.cacheDir)
+        return try {
+            packageFile.outputStream().buffered().use { output ->
+                container.manageStudyPlanPortability.exportPlan(
+                    planId = planId,
+                    options = StudyPlanExportOptions(
+                        mode = StudyPlanExportMode.FULL,
+                        includeAnnexMetadata = true,
+                        includeAnnexPayloads = true,
+                        metadataPrivacyMode = true,
+                        redactNotes = true,
+                        redactHistory = true,
+                    ),
+                    output = output,
+                )
+            }
+            val integrity = packageFile.inputStream().buffered().use { input ->
+                container.manageStudyPlanPortability.inspectBackup(input)
+            }
+            val dryRun = packageFile.inputStream().buffered().use { input ->
+                container.manageStudyPlanPortability.dryRunImport(
+                    input = input,
+                    strategy = StudyPlanImportStrategy.CREATE_AS_NEW,
+                )
+            }
+            val passed = integrity.canRestore && integrity.checksumVerified && dryRun.databaseRowsChanged == 0
+            DebugProbeResult(
+                id = id,
+                status = if (passed) DebugProbeStatus.PASSED else DebugProbeStatus.FAILED,
+                message = if (passed) DebugProbeMessage.NONE else DebugProbeMessage.BACKUP_DRY_RUN_INTEGRITY_FAILED,
+                safeFacts = mapOf(
+                    "count" to integrity.annexPayloadCount.toString(),
+                    "enabled" to integrity.checksumVerified.toString(),
+                    "behavior_verified" to passed.toString(),
+                ),
+            )
+        } finally {
+            packageFile.delete()
+        }
     }
 
     private suspend fun searchQuery(id: DebugProbeId): DebugProbeResult {
-        val results = container.manageStudyDiscovery.search("study")
+        val plan = container.manageStudyPlan.plans.first().firstOrNull { it.name.trim().length >= 2 }
+            ?: return DebugProbeResult(
+                id = id,
+                status = DebugProbeStatus.BLOCKED,
+                message = DebugProbeMessage.NO_SEARCH_EVIDENCE,
+            )
+        val results = container.manageStudyDiscovery.search(plan.name)
+        val verified = results.any { result ->
+            result.type == com.mikeyphw.studyflow.core.domain.GlobalSearchContentType.PLAN &&
+                result.studyPlanId == plan.id
+        }
         return DebugProbeResult(
             id = id,
-            status = DebugProbeStatus.PASSED,
-            safeFacts = mapOf("count" to results.size.toString()),
+            status = if (verified) DebugProbeStatus.PASSED else DebugProbeStatus.FAILED,
+            message = if (verified) DebugProbeMessage.NONE else DebugProbeMessage.SEARCH_CANARY_FAILED,
+            safeFacts = mapOf(
+                "count" to results.size.toString(),
+                "behavior_verified" to verified.toString(),
+            ),
         )
     }
 
     private suspend fun recommendationQuery(id: DebugProbeId, planId: StudyPlanId): DebugProbeResult {
         val results = container.manageStudyDiscovery.recommendations(planId)
+        if (results.isEmpty()) {
+            return DebugProbeResult(
+                id = id,
+                status = DebugProbeStatus.BLOCKED,
+                message = DebugProbeMessage.NO_RECOMMENDATION_EVIDENCE,
+                safeFacts = mapOf("count" to "0"),
+            )
+        }
+        val verified = results.all { recommendation ->
+            recommendation.studyPlanId == planId && recommendation.reasons.isNotEmpty()
+        } && results.map { it.id }.distinct().size == results.size
         return DebugProbeResult(
             id = id,
-            status = DebugProbeStatus.PASSED,
-            safeFacts = mapOf("count" to results.size.toString()),
+            status = if (verified) DebugProbeStatus.PASSED else DebugProbeStatus.FAILED,
+            message = if (verified) DebugProbeMessage.NONE else DebugProbeMessage.RECOMMENDATION_CANARY_FAILED,
+            safeFacts = mapOf(
+                "count" to results.size.toString(),
+                "behavior_verified" to verified.toString(),
+            ),
         )
     }
 
     private suspend fun syncFoundation(id: DebugProbeId): DebugProbeResult {
+        val state = container.manageStudyCloudSync.syncState.first()
         val summary = container.manageStudyCloudSync.inspectLocalChanges()
+        val canonicalReady = StudyLocalCheckpointReadinessAuditor.localCheckpointReady(state, summary)
+        val verified = !state.checkpointReady || canonicalReady
         return DebugProbeResult(
             id = id,
-            status = DebugProbeStatus.PASSED,
-            safeFacts = mapOf("count" to summary.planCount.toString()),
+            status = if (verified) DebugProbeStatus.PASSED else DebugProbeStatus.FAILED,
+            message = if (verified) DebugProbeMessage.NONE else DebugProbeMessage.SYNC_CANARY_FAILED,
+            safeFacts = mapOf(
+                "count" to summary.planCount.toString(),
+                "behavior_verified" to verified.toString(),
+                "enabled" to state.enabled.toString(),
+            ),
         )
     }
 

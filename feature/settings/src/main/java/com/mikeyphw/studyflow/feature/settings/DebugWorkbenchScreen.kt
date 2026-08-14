@@ -55,8 +55,10 @@ enum class DebugWorkbenchSection {
 
 enum class DebugWorkbenchActionResult {
     REFRESHED,
+    REFRESH_FAILED,
     STATUS_COPIED,
     TIMELINE_COPIED,
+    COPY_FAILED,
     HISTORY_CLEARED,
     HISTORY_BUSY,
     BUNDLE_DIRECTORY_FAILED,
@@ -225,6 +227,7 @@ private fun DebugOverview(
                     Text(stringResource(R.string.debug_self_check_latest_blocked, latest.blockedCount))
                     Text(stringResource(R.string.debug_self_check_latest_failed, latest.failedCount))
                     Text(stringResource(R.string.debug_self_check_latest_cancelled, latest.cancelledCount))
+                    Text(stringResource(R.string.debug_self_check_latest_verdict, latest.verdict.name))
                 }
             }
         }
@@ -414,6 +417,7 @@ private fun DebugReports(
                     Text(stringResource(R.string.debug_self_check_latest_blocked, latest.blockedCount))
                     Text(stringResource(R.string.debug_self_check_latest_failed, latest.failedCount))
                     Text(stringResource(R.string.debug_self_check_latest_cancelled, latest.cancelledCount))
+                    Text(stringResource(R.string.debug_self_check_latest_verdict, latest.verdict.name))
                 }
             }
         }
@@ -558,8 +562,10 @@ private fun DiagnosticOutcome.label(): String = when (this) {
 @Composable
 private fun DebugWorkbenchActionResult.label(): String = when (this) {
     DebugWorkbenchActionResult.REFRESHED -> stringResource(R.string.debug_action_refreshed)
+    DebugWorkbenchActionResult.REFRESH_FAILED -> stringResource(R.string.debug_action_refresh_failed)
     DebugWorkbenchActionResult.STATUS_COPIED -> stringResource(R.string.debug_action_status_copied)
     DebugWorkbenchActionResult.TIMELINE_COPIED -> stringResource(R.string.debug_action_timeline_copied)
+    DebugWorkbenchActionResult.COPY_FAILED -> stringResource(R.string.debug_action_copy_failed)
     DebugWorkbenchActionResult.HISTORY_CLEARED -> stringResource(R.string.debug_action_history_cleared)
     DebugWorkbenchActionResult.HISTORY_BUSY -> stringResource(R.string.debug_action_history_busy)
     DebugWorkbenchActionResult.BUNDLE_DIRECTORY_FAILED ->
@@ -593,6 +599,12 @@ private fun SupportBundleSealMessage.label(): String = when (this) {
     )
     SupportBundleSealMessage.CHECKSUM_MISMATCH -> stringResource(
         R.string.debug_support_bundle_message_checksum_mismatch,
+    )
+    SupportBundleSealMessage.PRIVACY_SCAN_FAILED -> stringResource(
+        R.string.debug_support_bundle_message_privacy_scan,
+    )
+    SupportBundleSealMessage.REDACTION_REPORT_INVALID -> stringResource(
+        R.string.debug_support_bundle_message_redaction_invalid,
     )
 }
 

@@ -81,6 +81,7 @@ fun DebugProbePanel(
                 descriptor = descriptor,
                 result = report.results[descriptor.id],
                 running = descriptor.id in report.running,
+                enabled = !safeSuiteRunning && report.running.isEmpty(),
                 onRun = { onRunProbe(descriptor.id) },
             )
         }
@@ -92,6 +93,7 @@ private fun DebugProbeCard(
     descriptor: DebugProbeDescriptor,
     result: DebugProbeResult?,
     running: Boolean,
+    enabled: Boolean,
     onRun: () -> Unit,
 ) {
     StudyFlowSectionCard(title = descriptor.id.label()) {
@@ -131,11 +133,11 @@ private fun DebugProbeCard(
             else -> stringResource(R.string.debug_probe_run)
         }
         if (descriptor.safety == DebugProbeSafety.VISIBLE_SIDE_EFFECT) {
-            OutlinedButton(onClick = onRun, enabled = !running, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = onRun, enabled = enabled && !running, modifier = Modifier.fillMaxWidth()) {
                 Text(buttonText)
             }
         } else {
-            Button(onClick = onRun, enabled = !running, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onRun, enabled = enabled && !running, modifier = Modifier.fillMaxWidth()) {
                 Text(buttonText)
             }
         }
@@ -230,10 +232,19 @@ private fun DebugProbeMessage.label(): String = stringResource(
         DebugProbeMessage.NO_WIDGET_INSTANCES -> R.string.debug_probe_message_no_widget
         DebugProbeMessage.PROCESS_HISTORY_UNAVAILABLE -> R.string.debug_probe_message_process_unavailable
         DebugProbeMessage.NO_PROCESS_EXIT_HISTORY -> R.string.debug_probe_message_no_process_history
-        DebugProbeMessage.BACKUP_DISABLED -> R.string.debug_probe_message_backup_disabled
+        DebugProbeMessage.RECENT_CRASH_OR_ANR -> R.string.debug_probe_message_recent_crash
+        DebugProbeMessage.RECENT_ABNORMAL_EXIT -> R.string.debug_probe_message_recent_abnormal_exit
+        DebugProbeMessage.RECENT_LOW_MEMORY_EXIT -> R.string.debug_probe_message_recent_low_memory_exit
+        DebugProbeMessage.BACKUP_POLICY_INVALID -> R.string.debug_probe_message_backup_policy_invalid
         DebugProbeMessage.BACKUP_RULES_INVALID -> R.string.debug_probe_message_backup_rules_invalid
         DebugProbeMessage.FILE_PROVIDER_INVALID -> R.string.debug_probe_message_file_provider
+        DebugProbeMessage.WIDGET_REFRESH_NOT_OBSERVED -> R.string.debug_probe_message_widget_refresh_not_observed
         DebugProbeMessage.BACKUP_DRY_RUN_INTEGRITY_FAILED -> R.string.debug_probe_message_backup_dry_run
+        DebugProbeMessage.SEARCH_CANARY_FAILED -> R.string.debug_probe_message_search_canary
+        DebugProbeMessage.NO_SEARCH_EVIDENCE -> R.string.debug_probe_message_no_search_evidence
+        DebugProbeMessage.RECOMMENDATION_CANARY_FAILED -> R.string.debug_probe_message_recommendation_canary
+        DebugProbeMessage.NO_RECOMMENDATION_EVIDENCE -> R.string.debug_probe_message_no_recommendation_evidence
+        DebugProbeMessage.SYNC_CANARY_FAILED -> R.string.debug_probe_message_sync_canary
         DebugProbeMessage.PROBE_TIMED_OUT -> R.string.debug_probe_message_timed_out
     },
 )

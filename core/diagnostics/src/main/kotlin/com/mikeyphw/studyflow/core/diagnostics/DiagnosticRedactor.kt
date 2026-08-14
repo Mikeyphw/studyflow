@@ -77,8 +77,36 @@ object DiagnosticRedactor {
         "variant",
         "version",
         "window",
+        "behavior_verified",
+        "expected_enabled",
+        "legacy_rule_linked",
+        "modern_rule_linked",
+        "legacy_rule_present",
+        "modern_rule_present",
+        "provider_registered",
+        "provider_metadata",
+        "path_metadata",
+        "allowed_root",
+        "private_root_rejected",
+        "crash_or_anr_count",
+        "abnormal_count",
+        "low_memory_count",
     )
-    private val booleanDetailKeys = setOf("available", "enabled")
+    private val booleanDetailKeys = setOf(
+        "available",
+        "enabled",
+        "behavior_verified",
+        "expected_enabled",
+        "legacy_rule_linked",
+        "modern_rule_linked",
+        "legacy_rule_present",
+        "modern_rule_present",
+        "provider_registered",
+        "provider_metadata",
+        "path_metadata",
+        "allowed_root",
+        "private_root_rejected",
+    )
     private val numericDetailKeys = setOf(
         "api_level",
         "count",
@@ -86,6 +114,9 @@ object DiagnosticRedactor {
         "importance",
         "sdk",
         "window",
+        "crash_or_anr_count",
+        "abnormal_count",
+        "low_memory_count",
     )
     private val buildTypeDetailKeys = setOf("build_type", "variant")
     private val allowedBuildTypes = setOf(

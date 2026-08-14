@@ -49,9 +49,54 @@ class DebugWorkbenchSealTest {
     }
 
     @Test
+    fun `self check verdict distinguishes warning blocked failure and invariant failure`() {
+        fun run(status: DebugProbeStatus, invariants: List<String> = emptyList()) = RuntimeSelfCheckRun(
+            startedAtEpochMillis = 1L,
+            completedAtEpochMillis = 2L,
+            attemptedProbeIds = listOf(DebugProbeId.RECORDER_HEALTH),
+            results = mapOf(
+                DebugProbeId.RECORDER_HEALTH to DebugProbeResult(
+                    id = DebugProbeId.RECORDER_HEALTH,
+                    status = status,
+                ),
+            ),
+            invariantFailures = invariants,
+        )
+
+        assertEquals(RuntimeSelfCheckVerdict.PASS, run(DebugProbeStatus.PASSED).verdict)
+        assertEquals(RuntimeSelfCheckVerdict.PASS_WITH_WARNINGS, run(DebugProbeStatus.WARNING).verdict)
+        assertEquals(RuntimeSelfCheckVerdict.BLOCKED, run(DebugProbeStatus.BLOCKED).verdict)
+        assertEquals(RuntimeSelfCheckVerdict.FAIL, run(DebugProbeStatus.FAILED).verdict)
+        assertEquals(RuntimeSelfCheckVerdict.CANCELLED, run(DebugProbeStatus.CANCELLED).verdict)
+        assertEquals(RuntimeSelfCheckVerdict.FAIL, run(DebugProbeStatus.PASSED, listOf("cross-probe-mismatch")).verdict)
+    }
+
+    @Test
+    fun `cross probe invariants reject false green behavioral claims`() {
+        val results = mapOf(
+            DebugProbeId.SEARCH_QUERY to DebugProbeResult(
+                id = DebugProbeId.SEARCH_QUERY,
+                status = DebugProbeStatus.PASSED,
+                safeFacts = mapOf("behavior_verified" to "false"),
+            ),
+            DebugProbeId.FILE_PROVIDER_CONFIGURATION to DebugProbeResult(
+                id = DebugProbeId.FILE_PROVIDER_CONFIGURATION,
+                status = DebugProbeStatus.PASSED,
+                safeFacts = mapOf("allowed_root" to "true", "private_root_rejected" to "false"),
+            ),
+        )
+
+        val failures = RuntimeSelfCheckInvariantPolicy.evaluate(results)
+
+        assertTrue("search-canary-not-behavioral" in failures)
+        assertTrue("file-provider-policy-mismatch" in failures)
+    }
+
+    @Test
     fun `support bundle seal allows only recorder support entries`() {
         val report = SupportBundleSealPolicy.inspect(
             entryNames = listOf(
+                "events/retained-000.jsonl",
                 "events/current.jsonl",
                 "environment.json",
                 "manifest.json",
@@ -63,7 +108,7 @@ class DebugWorkbenchSealTest {
 
         assertEquals(SupportBundleSealStatus.PASSED, report.status)
         assertTrue(report.passed)
-        assertEquals(5, report.entryCount)
+        assertEquals(6, report.entryCount)
     }
 
     @Test

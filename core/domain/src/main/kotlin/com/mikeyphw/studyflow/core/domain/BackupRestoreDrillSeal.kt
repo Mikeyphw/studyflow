@@ -20,6 +20,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanRestoreDryRun
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
+import java.util.concurrent.CancellationException
 import java.util.zip.ZipInputStream
 
 enum class BackupRestoreDrillKind {
@@ -35,6 +36,7 @@ enum class BackupRestoreDrillKind {
 enum class BackupRestoreDrillStatus {
     PASS,
     BLOCKED,
+    NOT_APPLICABLE,
 }
 
 data class BackupRestoreDrillResult(
@@ -44,6 +46,7 @@ data class BackupRestoreDrillResult(
     val destructive: Boolean = false,
 ) {
     val passed: Boolean = status == BackupRestoreDrillStatus.PASS
+    val applicable: Boolean = status != BackupRestoreDrillStatus.NOT_APPLICABLE
 }
 
 data class BackupRestoreDrillReport(
@@ -52,7 +55,8 @@ data class BackupRestoreDrillReport(
     val recoveryReport: List<String>,
 ) {
     val passedCount: Int = results.count(BackupRestoreDrillResult::passed)
-    val blockedCount: Int = results.size - passedCount
+    val blockedCount: Int = results.count { it.status == BackupRestoreDrillStatus.BLOCKED }
+    val notApplicableCount: Int = results.count { it.status == BackupRestoreDrillStatus.NOT_APPLICABLE }
     val releaseReady: Boolean = results.isNotEmpty() &&
         blockedCount == 0 &&
         results.none(BackupRestoreDrillResult::destructive)
@@ -136,8 +140,8 @@ object BackupRestoreDrillSeal {
         inspectBackup: suspend (ByteArray, CharArray?) -> StudyPlanBackupIntegrityReport,
         dryRunImport: suspend (ByteArray, StudyPlanImportStrategy, StudyPlanId?, CharArray?) -> StudyPlanRestoreDryRun,
     ): BackupRestoreDrillReport {
-        val integrity = runCatching { inspectBackup(encryptedPackageBytes, password) }
-        val dryRun = runCatching {
+        val integrity = captureDrillResult { inspectBackup(encryptedPackageBytes, password) }
+        val dryRun = captureDrillResult {
             dryRunImport(
                 encryptedPackageBytes,
                 StudyPlanImportStrategy.CREATE_AS_NEW,
@@ -145,15 +149,15 @@ object BackupRestoreDrillSeal {
                 password,
             )
         }
-        val decodedArchive = runCatching {
+        val decodedArchive = captureDrillResult {
             packageCodec.archiveFromByteArray(encryptedCodec.decrypt(encryptedPackageBytes, password))
         }.getOrNull()
-        val wrongPasswordBlocked = runCatching {
+        val wrongPasswordBlocked = expectedDrillFailure {
             inspectBackup(encryptedPackageBytes, wrongPassword)
-        }.isFailure
-        val tamperBlocked = runCatching {
+        }
+        val tamperBlocked = expectedDrillFailure {
             inspectBackup(encryptedPackageBytes.tamperedCopy(), password)
-        }.isFailure
+        }
         val annexPrivate = decodedArchive?.let { archive ->
             metadataPrivateAnnexInvariantHolds(
                 rawAnnexId = rawAnnexId,
@@ -182,11 +186,18 @@ object BackupRestoreDrillSeal {
                     tamperBlocked,
                     "Ciphertext tampering fails authenticated backup inspection.",
                 ),
-                result(
-                    BackupRestoreDrillKind.METADATA_PRIVATE_ANNEX,
-                    annexPrivate,
-                    "Metadata-private annex payload IDs and ZIP paths hide raw database IDs when annex payloads exist.",
-                ),
+                if (decodedArchive?.payload?.manifest?.annexPayloads.isNullOrEmpty()) {
+                    notApplicable(
+                        BackupRestoreDrillKind.METADATA_PRIVATE_ANNEX,
+                        "No annex payloads exist in this package, so annex privacy is not applicable.",
+                    )
+                } else {
+                    result(
+                        BackupRestoreDrillKind.METADATA_PRIVATE_ANNEX,
+                        annexPrivate,
+                        "Every metadata-private annex payload ID and ZIP path hides raw database IDs.",
+                    )
+                },
                 result(
                     BackupRestoreDrillKind.RESTORE_DRY_RUN,
                     dryRunValue != null &&
@@ -220,6 +231,27 @@ object BackupRestoreDrillSeal {
         "If password or tamper checks fail, keep the current local plan and ask for another export.",
     )
 
+    private suspend fun <T> captureDrillResult(block: suspend () -> T): Result<T> = try {
+        Result.success(block())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (fatal: Error) {
+        throw fatal
+    } catch (failure: Exception) {
+        Result.failure(failure)
+    }
+
+    private suspend fun expectedDrillFailure(block: suspend () -> Unit): Boolean = try {
+        block()
+        false
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (fatal: Error) {
+        throw fatal
+    } catch (_: Exception) {
+        true
+    }
+
     private fun result(
         kind: BackupRestoreDrillKind,
         passed: Boolean,
@@ -227,6 +259,16 @@ object BackupRestoreDrillSeal {
     ): BackupRestoreDrillResult = BackupRestoreDrillResult(
         kind = kind,
         status = if (passed) BackupRestoreDrillStatus.PASS else BackupRestoreDrillStatus.BLOCKED,
+        evidence = evidence,
+    )
+
+
+    private fun notApplicable(
+        kind: BackupRestoreDrillKind,
+        evidence: String,
+    ): BackupRestoreDrillResult = BackupRestoreDrillResult(
+        kind = kind,
+        status = BackupRestoreDrillStatus.NOT_APPLICABLE,
         evidence = evidence,
     )
 
@@ -308,17 +350,20 @@ object BackupRestoreDrillSeal {
         packageBytes: ByteArray,
     ): Boolean {
         val manifest = archive.payload.manifest
-        val annex = manifest.annexPayloads.singleOrNull() ?: return rawAnnexId == null
+        if (manifest.annexPayloads.isEmpty()) return false
         val entryNames = zipEntryNames(packageBytes)
-        val rawIdHidden = rawAnnexId == null ||
-            (rawAnnexId !in annex.annexId &&
+        val rawIdHidden = rawAnnexId == null || manifest.annexPayloads.all { annex ->
+            rawAnnexId !in annex.annexId &&
                 rawAnnexId !in annex.entryName &&
-                entryNames.none { name -> rawAnnexId in name })
+                entryNames.none { name -> rawAnnexId in name }
+        }
         return manifest.metadataPrivacyMode &&
-            StudyPlanPrivacyPolicy.isPrivateIdentifier(annex.annexId) &&
-            rawIdHidden &&
-            annex.entryName in entryNames &&
-            archive.annexPayloadBytes.containsKey(annex.entryName)
+            manifest.annexPayloads.all { annex ->
+                StudyPlanPrivacyPolicy.isPrivateIdentifier(annex.annexId) &&
+                    annex.entryName in entryNames &&
+                    archive.annexPayloadBytes.containsKey(annex.entryName)
+            } &&
+            rawIdHidden
     }
 
     private fun ByteArray.tamperedCopy(): ByteArray = copyOf().also { copy ->

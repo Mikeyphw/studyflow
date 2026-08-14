@@ -65,6 +65,21 @@ class StudyFlowReminderNotificationLabTest {
         )
     }
 
+    @Test
+    fun `diagnostic pipeline canary blocks without default plan`() = runBlocking {
+        val calls = AtomicInteger()
+        val lab = lab(
+            notification = {
+                calls.incrementAndGet()
+                true
+            },
+            defaultPlanId = { null },
+        )
+
+        assertEquals(ReminderLabActionResult.MISSING_DEFAULT_PLAN, lab.postDiagnosticNotification())
+        assertEquals(0, calls.get())
+    }
+
     @Test(expected = CancellationException::class)
     fun `inspection cancellation is never converted into failure`() {
         runBlocking {
@@ -88,7 +103,7 @@ class StudyFlowReminderNotificationLabTest {
             ReminderNotificationLabReport(status = DebugLabStatus.PASSED)
         },
         reconcile: suspend (StudyPlanId) -> Unit = {},
-        notification: suspend () -> Boolean = { true },
+        notification: suspend (StudyPlanId) -> Boolean = { true },
         defaultPlanId: () -> StudyPlanId? = { StudyPlanId("default") },
     ): StudyFlowReminderNotificationLab = StudyFlowReminderNotificationLab(
         inspectOperation = ReminderLabInspectOperation(inspect),

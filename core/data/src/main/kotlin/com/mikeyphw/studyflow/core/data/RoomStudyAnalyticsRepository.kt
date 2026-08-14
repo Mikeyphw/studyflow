@@ -1,134 +1,103 @@
 package com.mikeyphw.studyflow.core.data
 
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
-import com.mikeyphw.studyflow.core.database.entity.PlannedActivityEntity
+import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
 import com.mikeyphw.studyflow.core.database.entity.MockExamEntity
-import com.mikeyphw.studyflow.core.database.entity.ReviewItemEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyGoalEntity
-import com.mikeyphw.studyflow.core.database.entity.StudyMaterialEntity
 import com.mikeyphw.studyflow.core.database.entity.StudySessionEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyTestEntity
 import com.mikeyphw.studyflow.core.database.entity.TopicEntity
-import com.mikeyphw.studyflow.core.database.entity.VideoResourceEntity
 import com.mikeyphw.studyflow.core.database.mapper.asExternalModel
 import com.mikeyphw.studyflow.core.domain.GoalEvidence
 import com.mikeyphw.studyflow.core.domain.GoalProgressCalculator
-import com.mikeyphw.studyflow.core.domain.StudyGoalProgressEngine
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsCalculator
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsSnapshot
+import com.mikeyphw.studyflow.core.domain.StudyGoalProgressEngine
 import com.mikeyphw.studyflow.core.domain.WeakStudyArea
 import com.mikeyphw.studyflow.core.domain.tickingClockFlow
 import com.mikeyphw.studyflow.core.model.StudyPlanId
-import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 import java.time.ZoneId
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.shareIn
 
 internal class RoomStudyAnalyticsRepository(
     database: StudyFlowDatabase,
+    private val sharingScope: CoroutineScope,
     private val clock: () -> Long = System::currentTimeMillis,
     private val zoneId: ZoneId = ZoneId.systemDefault(),
 ) : StudyAnalyticsRepository {
+    private val analyticsDao = database.studyAnalyticsDao()
+    private val metadataDao = database.databaseMetadataDao()
     private val planningDao = database.studyPlanningDao()
     private val practiceDao = database.studyPracticeDao()
-    private val retentionDao = database.studyRetentionDao()
     private val structureDao = database.studyStructureDao()
-    private val libraryDao = database.studyLibraryDao()
+    private val sharedSnapshots = ConcurrentHashMap<String, Flow<StudyAnalyticsSnapshot>>()
 
-    override fun observeSnapshot(planId: StudyPlanId): Flow<StudyAnalyticsSnapshot> {
-        val plan = planId.value
-        val attempts = combine(
-            practiceDao.observeTests(plan),
-            practiceDao.observeMockExams(plan),
-        ) { tests, mockExams -> tests to mockExams }
-        val execution = combine(
-            planningDao.observeStudySessions(plan),
-            planningDao.observePlannedActivities(plan),
-            attempts,
-            retentionDao.observeReviewItems(plan),
-        ) { sessions, activities, practiceAttempts, reviews ->
-            ExecutionInputs(
-                sessions = sessions,
-                activities = activities,
-                tests = practiceAttempts.first,
-                mockExams = practiceAttempts.second,
-                reviews = reviews,
+    override fun observeSnapshot(planId: StudyPlanId): Flow<StudyAnalyticsSnapshot> = sharedSnapshots.computeIfAbsent(
+        planId.value,
+    ) {
+        val graphRevision = metadataDao.observeValue(StudyFlowIntegrity.GraphRevisionMetadataKey)
+            .map { value -> value?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L }
+            .distinctUntilChanged()
+        combine(graphRevision, tickingClockFlow(clock)) { _, now -> now }
+            .mapLatest { now -> buildSnapshot(planId, loadInputs(planId, now), now) }
+            .shareIn(
+                scope = sharingScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = SharedFlowStopTimeoutMillis),
+                replay = 1,
             )
-        }
-        val content = combine(
-            structureDao.observeTopics(plan),
-            libraryDao.observeMaterials(plan),
-            libraryDao.observeVideos(plan),
-            planningDao.observeStudyGoals(plan),
-        ) { topics, materials, videos, goals ->
-            ContentInputs(topics, materials, videos, goals)
-        }
-        val inputs = combine(execution, content) { executionInputs, contentInputs -> executionInputs to contentInputs }
-        return combine(inputs, tickingClockFlow(clock)) { (executionInputs, contentInputs), now ->
-            buildSnapshot(planId, executionInputs, contentInputs, now)
-        }
+    }
+
+    private suspend fun loadInputs(planId: StudyPlanId, now: Long): AnalyticsInputs {
+        val sevenDayWindowStart = localSevenDayWindowStart(now)
+        val plan = planId.value
+        return AnalyticsInputs(
+            aggregate = analyticsDao.snapshot(
+                planId = plan,
+                sevenDayWindowStart = sevenDayWindowStart,
+                nowEpochMillis = now,
+                overdueCutoffEpochMillis = now - DayMillis,
+            ),
+            sessions = planningDao.findStudySessions(plan),
+            tests = practiceDao.findAllTests(plan),
+            mockExams = practiceDao.findAllMockExams(plan),
+            topics = structureDao.findTopics(plan),
+            goals = planningDao.findStudyGoals(plan),
+            sevenDayWindowStart = sevenDayWindowStart,
+        )
     }
 
     private fun buildSnapshot(
         planId: StudyPlanId,
-        execution: ExecutionInputs,
-        content: ContentInputs,
+        inputs: AnalyticsInputs,
         now: Long,
     ): StudyAnalyticsSnapshot {
-        val sevenDayLocalWindowStart = Instant.ofEpochMilli(now)
-            .atZone(zoneId)
-            .toLocalDate()
-            .minusDays(6)
-            .atStartOfDay(zoneId)
-            .toInstant()
-            .toEpochMilli()
-        val recentCompletedSessions = execution.sessions.filter {
-            it.status == "COMPLETED" && it.startedAtEpochMillis >= sevenDayLocalWindowStart
-        }
-        val studiedMinutes = recentCompletedSessions.sumOf { session ->
-            ((session.grossDurationSeconds - session.pauseDurationSeconds).coerceAtLeast(0L) / 60L).toInt()
-        }
-        val activeDays = recentCompletedSessions.map { session ->
-            Instant.ofEpochMilli(session.startedAtEpochMillis).atZone(zoneId).toLocalDate()
-        }.distinct().size
-        val completedPlanned = execution.activities.count { it.status == "COMPLETED" }
-        val elapsedPlanned = execution.activities.count { activity ->
-            val start = activity.scheduledStartEpochMillis
-            start != null && start <= now && activity.status != "CANCELLED"
-        }
-        val submittedTests = execution.tests.filter { test -> test.submittedAtEpochMillis != null }
-        val completedEvidenceSessions = execution.sessions.filter { session -> session.status == "COMPLETED" }
-        val testsAnswered = submittedTests.sumOf(StudyTestEntity::answeredCount)
-        val testsCorrect = submittedTests.sumOf(StudyTestEntity::correctCount)
-        val sessionAnswered = completedEvidenceSessions.sumOf(StudySessionEntity::questionsAnswered)
-        val sessionCorrect = completedEvidenceSessions.sumOf(StudySessionEntity::correctAnswers)
-        val answered = testsAnswered + sessionAnswered
-        val correct = testsCorrect + sessionCorrect
-        val dueReviews = execution.reviews.count { review ->
-            review.status in setOf("SCHEDULED", "DUE") && review.dueAtEpochMillis <= now
-        }
-        val overdueReviews = execution.reviews.count { review ->
-            review.status in setOf("SCHEDULED", "DUE") && review.dueAtEpochMillis < now - DayMillis
-        }
-        val completedReviews = execution.reviews.filter { it.status == "COMPLETED" }
-        val easeAverage = completedReviews.map(ReviewItemEntity::easeFactor).average().takeIf { !it.isNaN() } ?: 0.0
+        val aggregate = inputs.aggregate
+        val activeDays = inputs.sessions.asSequence()
+            .filter { session -> session.status == "COMPLETED" && session.startedAtEpochMillis >= inputs.sevenDayWindowStart }
+            .map { session -> Instant.ofEpochMilli(session.startedAtEpochMillis).atZone(zoneId).toLocalDate() }
+            .distinct()
+            .count()
         val goalEvidence = GoalEvidence(
-            sessions = execution.sessions.map { session -> session.asExternalModel() },
-            tests = execution.tests.map { test -> test.asExternalModel() },
-            mockExams = execution.mockExams.map { mock -> mock.asExternalModel() },
-            topics = content.topics.map { topic -> topic.asExternalModel() },
+            sessions = inputs.sessions.map(StudySessionEntity::asExternalModel),
+            tests = inputs.tests.map(StudyTestEntity::asExternalModel),
+            mockExams = inputs.mockExams.map(MockExamEntity::asExternalModel),
+            topics = inputs.topics.map(TopicEntity::asExternalModel),
         )
-        val evaluatedGoals = content.goals.map { goal ->
+        val evaluatedGoals = inputs.goals.map { goal ->
             StudyGoalProgressEngine.evaluate(goal.asExternalModel(), goalEvidence, now, zoneId)
         }
         val goalPercent = GoalProgressCalculator.overallGoalPercent(evaluatedGoals)
-        val activeTopics = content.topics.filterNot(TopicEntity::archived)
-        val contentProgress = activeTopics
-            .map(TopicEntity::progressPercent)
-            .average()
-            .takeIf { !it.isNaN() }
-            ?.toInt() ?: 0
+        val activeTopics = inputs.topics.filterNot(TopicEntity::archived)
         val weakAreas = activeTopics
             .filter { topic -> topic.masteryPercent < WeakMasteryThreshold || topic.progressPercent < WeakProgressThreshold }
             .sortedWith(compareBy<TopicEntity> { it.masteryPercent }.thenByDescending { it.priority })
@@ -141,25 +110,28 @@ internal class RoomStudyAnalyticsRepository(
                     priority = topic.priority,
                 )
             }
-        val materialScores = content.materials.filterNot(StudyMaterialEntity::archived).map { material ->
-            val total = material.totalUnits ?: 0
-            if (total > 0) StudyAnalyticsCalculator.percent(material.completedUnits, total) else 0
+        val libraryItemCount = aggregate.materialCount + aggregate.videoCount
+        val libraryProgress = if (libraryItemCount == 0) 0 else {
+            (aggregate.materialProgressScoreSum + aggregate.completedVideoCount * 100) / libraryItemCount
         }
-        val videoScores = content.videos.map { video -> if (video.completed) 100 else 0 }
-        val libraryScores = materialScores + videoScores
-        val libraryProgress = libraryScores.average().takeIf { !it.isNaN() }?.toInt() ?: 0
         val snapshot = StudyAnalyticsSnapshot(
             studyPlanId = planId,
-            studiedMinutesLastSevenDays = studiedMinutes,
-            completedSessionsLastSevenDays = recentCompletedSessions.size,
-            scheduleAdherencePercent = StudyAnalyticsCalculator.percent(completedPlanned, elapsedPlanned),
-            questionAccuracyPercent = StudyAnalyticsCalculator.percent(correct, answered),
-            answeredQuestions = answered,
-            dueReviewCount = dueReviews,
-            overdueReviewCount = overdueReviews,
-            retentionEaseAverage = easeAverage,
+            studiedMinutesLastSevenDays = aggregate.studiedMinutesLastSevenDays,
+            completedSessionsLastSevenDays = aggregate.completedSessionsLastSevenDays,
+            scheduleAdherencePercent = StudyAnalyticsCalculator.percent(
+                aggregate.completedPlannedCount,
+                aggregate.elapsedPlannedCount,
+            ),
+            questionAccuracyPercent = StudyAnalyticsCalculator.percent(
+                aggregate.correctAnswers,
+                aggregate.answeredQuestions,
+            ),
+            answeredQuestions = aggregate.answeredQuestions,
+            dueReviewCount = aggregate.dueReviewCount,
+            overdueReviewCount = aggregate.overdueReviewCount,
+            retentionEaseAverage = aggregate.retentionEaseAverage,
             goalCompletionPercent = goalPercent,
-            contentProgressPercent = contentProgress,
+            contentProgressPercent = aggregate.contentProgressAverage.toInt(),
             libraryProgressPercent = libraryProgress,
             consistencyScorePercent = StudyAnalyticsCalculator.consistencyScore(activeDays),
             weakAreas = weakAreas,
@@ -168,24 +140,28 @@ internal class RoomStudyAnalyticsRepository(
         return snapshot.copy(insights = StudyAnalyticsCalculator.buildInsights(snapshot))
     }
 
-    private data class ExecutionInputs(
+    private fun localSevenDayWindowStart(now: Long): Long = Instant.ofEpochMilli(now)
+        .atZone(zoneId)
+        .toLocalDate()
+        .minusDays(6)
+        .atStartOfDay(zoneId)
+        .toInstant()
+        .toEpochMilli()
+
+    private data class AnalyticsInputs(
+        val aggregate: com.mikeyphw.studyflow.core.database.dao.StudyAnalyticsAggregateRow,
         val sessions: List<StudySessionEntity>,
-        val activities: List<PlannedActivityEntity>,
         val tests: List<StudyTestEntity>,
         val mockExams: List<MockExamEntity>,
-        val reviews: List<ReviewItemEntity>,
-    )
-
-    private data class ContentInputs(
         val topics: List<TopicEntity>,
-        val materials: List<StudyMaterialEntity>,
-        val videos: List<VideoResourceEntity>,
         val goals: List<StudyGoalEntity>,
+        val sevenDayWindowStart: Long,
     )
 
     private companion object {
         const val DayMillis = 86_400_000L
         const val WeakMasteryThreshold = 65
         const val WeakProgressThreshold = 50
+        const val SharedFlowStopTimeoutMillis = 5_000L
     }
 }

@@ -42,8 +42,8 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageAdaptiveReschedule
-import com.mikeyphw.studyflow.core.domain.ManageExamReadiness
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
+import com.mikeyphw.studyflow.core.domain.ManageStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
@@ -53,6 +53,8 @@ import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewBuilder
+import com.mikeyphw.studyflow.core.domain.AdaptiveReschedulePlanner
+import com.mikeyphw.studyflow.core.domain.ExamReadinessEngine
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupEngine
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupInput
 import com.mikeyphw.studyflow.core.domain.StudyExamReportBuilder
@@ -78,8 +80,10 @@ import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.navigation.ProgressWorkspacePeriod
 import java.text.DateFormat
+import java.time.ZoneId
 import java.util.Date
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Composable
@@ -88,10 +92,10 @@ fun ProgressWorkspaceScreen(
     selectedPeriod: ProgressWorkspacePeriod,
     targetId: String? = null,
     analyticsManager: ManageStudyAnalytics,
+    planManager: ManageStudyPlan,
     progressManager: ManageStudyProgress,
     contentManager: ManageStudyContent,
     libraryManager: ManageStudyLibrary,
-    readinessManager: ManageExamReadiness,
     adaptiveRescheduleManager: ManageAdaptiveReschedule,
     sessionManager: ManageStudySession,
     scheduleManager: ManageStudySchedule,
@@ -146,11 +150,10 @@ fun ProgressWorkspaceScreen(
     val mockExamsFlow = remember(plan.id, loadAttempt) {
         practiceManager.observeMockExams(plan.id).asStudyFlowLoadState()
     }
-    val readinessFlow = remember(plan.id, loadAttempt) {
-        readinessManager.observeReadiness(plan).asStudyFlowLoadState()
-    }
-    val rescheduleFlow = remember(plan.id, loadAttempt) {
-        adaptiveRescheduleManager.observePreview(plan).asStudyFlowLoadState()
+    val planSettingsFlow = remember(plan.id, loadAttempt) {
+        planManager.observeSettings(plan.id)
+            .map { settings -> requireNotNull(settings) { "Study Plan settings must be persisted before progress analysis." } }
+            .asStudyFlowLoadState()
     }
     val analyticsState by analyticsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val progressState by progressFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
@@ -164,8 +167,7 @@ fun ProgressWorkspaceScreen(
     val questionsState by questionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val testsState by testsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val mockExamsState by mockExamsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
-    val readinessState by readinessFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
-    val rescheduleState by rescheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val planSettingsState by planSettingsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     if (
         !WorkspaceLoadGate(
             states = listOf(
@@ -181,8 +183,7 @@ fun ProgressWorkspaceScreen(
                 questionsState,
                 testsState,
                 mockExamsState,
-                readinessState,
-                rescheduleState,
+                planSettingsState,
             ),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,
@@ -200,8 +201,7 @@ fun ProgressWorkspaceScreen(
     val questions = questionsState.readyValue()
     val tests = testsState.readyValue()
     val mockExams = mockExamsState.readyValue()
-    val readiness = readinessState.readyValue()
-    val reschedulePreview = rescheduleState.readyValue()
+    val planSettings = planSettingsState.readyValue()
     val targetNote = progress?.notes?.firstOrNull { note -> note.id.value == targetId }
     val coroutineScope = rememberCoroutineScope()
     var appliedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
@@ -210,6 +210,35 @@ fun ProgressWorkspaceScreen(
     var reportExportResult by rememberSaveable(plan.id.value) { mutableStateOf<Boolean?>(null) }
     val wallClockFlow = remember(plan.id) { tickingClockFlow() }
     val nowEpochMillis by wallClockFlow.collectAsStateWithLifecycle(initialValue = System.currentTimeMillis())
+    val readiness = remember(plan, analytics, schedule, mockExams, nowEpochMillis) {
+        ExamReadinessEngine.calculate(
+            plan = plan,
+            analytics = analytics,
+            schedule = schedule,
+            mockExams = mockExams,
+            nowEpochMillis = nowEpochMillis,
+            zoneId = ZoneId.systemDefault(),
+        )
+    }
+    val reschedulePreview = remember(plan, analytics, schedule, readiness, planSettings, nowEpochMillis) {
+        if (planSettings.adaptivePlanningEnabled) {
+            AdaptiveReschedulePlanner.preview(
+                plan = plan,
+                analytics = analytics,
+                schedule = schedule,
+                readinessScorePercent = readiness.scorePercent,
+                nowEpochMillis = nowEpochMillis,
+            )
+        } else {
+            AdaptiveReschedulePlanner.disabledPreview(
+                plan = plan,
+                analytics = analytics,
+                schedule = schedule,
+                readinessScorePercent = readiness.scorePercent,
+                nowEpochMillis = nowEpochMillis,
+            )
+        }
+    }
     val cutoff = nowEpochMillis - selectedPeriod.days * 86_400_000L
     val periodSessions = sessions.filter { session ->
         session.startedAtEpochMillis >= cutoff && session.status == StudySessionStatus.COMPLETED

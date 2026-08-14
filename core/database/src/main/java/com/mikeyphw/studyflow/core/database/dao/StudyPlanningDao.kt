@@ -275,6 +275,9 @@ interface StudyPlanningDao {
     @Query("SELECT * FROM study_sessions WHERE studyPlanId = :planId ORDER BY startedAtEpochMillis DESC")
     fun observeStudySessions(planId: String): Flow<List<StudySessionEntity>>
 
+    @Query("SELECT * FROM study_sessions WHERE studyPlanId = :planId ORDER BY startedAtEpochMillis DESC")
+    suspend fun findStudySessions(planId: String): List<StudySessionEntity>
+
     @Query(
         """
         SELECT * FROM study_goals
@@ -283,6 +286,15 @@ interface StudyPlanningDao {
         """,
     )
     fun observeStudyGoals(planId: String): Flow<List<StudyGoalEntity>>
+
+    @Query(
+        """
+        SELECT * FROM study_goals
+        WHERE studyPlanId = :planId
+        ORDER BY archived, completedAtEpochMillis, startsOnIso DESC
+        """,
+    )
+    suspend fun findStudyGoals(planId: String): List<StudyGoalEntity>
 
     @Query("SELECT * FROM study_goals WHERE studyPlanId = :planId AND id = :goalId LIMIT 1")
     suspend fun findStudyGoal(planId: String, goalId: String): StudyGoalEntity?

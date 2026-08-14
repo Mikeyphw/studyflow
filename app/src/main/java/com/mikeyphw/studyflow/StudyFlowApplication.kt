@@ -126,6 +126,7 @@ private class DefaultAppContainer(
     private val dataLayer = createStudyFlowDataLayer(
         context = application,
         applicationVersion = BuildConfig.VERSION_NAME,
+        diagnosticRecorder = diagnosticRecorder,
     )
 
     private val studyPlanRepository = dataLayer.studyPlanRepository

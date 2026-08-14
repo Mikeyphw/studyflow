@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.portability
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.MessageDigest
@@ -175,6 +176,145 @@ class StudyPlanPackageCodec(
         return StudyPlanPackageArchive(payload = payload, annexPayloadBytes = annexBytes)
     }
 
+    /**
+     * Reads a package while spooling annex payloads to [stagingDirectory] instead of materializing
+     * them as ByteArrays. The returned archive owns stream factories only; the caller owns and must
+     * eventually delete the staging directory after all annex streams have been consumed.
+     */
+    fun readArchiveStreaming(input: InputStream, stagingDirectory: File): StudyPlanPackageArchive {
+        val stagingRoot = stagingDirectory.canonicalFile
+        if (stagingRoot.exists()) {
+            if (!stagingRoot.isDirectory || !stagingRoot.listFiles().isNullOrEmpty()) {
+                throw StudyPlanPackageException("Package staging directory must be empty.")
+            }
+        } else if (!stagingRoot.mkdirs()) {
+            throw StudyPlanPackageException("Could not create package staging directory.")
+        }
+
+        val fixedEntries = linkedMapOf<String, ByteArray>()
+        val streamedEntries = linkedMapOf<String, StreamedReadEntry>()
+        val seenNames = linkedSetOf<String>()
+        var totalBytes = 0L
+        try {
+            ZipInputStream(input.buffered()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    validateEntryName(entry)
+                    if (entry.isDirectory) {
+                        zip.closeEntry()
+                        continue
+                    }
+                    if (seenNames.size >= MaxEntryCount) {
+                        throw StudyPlanPackageException("Study Plan package contains too many entries.")
+                    }
+                    if (!seenNames.add(entry.name)) {
+                        throw StudyPlanPackageException("Duplicate package entry: ${entry.name}")
+                    }
+                    when (entry.name) {
+                        ManifestEntry, PayloadEntry, ChecksumsEntry -> {
+                            val bytes = readBounded(zip, MaxEntryBytes)
+                            totalBytes += bytes.size
+                            fixedEntries[entry.name] = bytes
+                        }
+                        else -> {
+                            val stagedFile = File(stagingRoot, "entry-${streamedEntries.size}.bin").canonicalFile
+                            if (!stagedFile.path.startsWith(stagingRoot.path + File.separator)) {
+                                throw StudyPlanPackageException("Unsafe package staging path.")
+                            }
+                            val streamed = readStreamedEntry(zip, stagedFile, MaxEntryBytes)
+                            totalBytes += streamed.byteSize
+                            streamedEntries[entry.name] = streamed
+                        }
+                    }
+                    if (totalBytes > MaxTotalBytes) {
+                        throw StudyPlanPackageException("Study Plan package is larger than the supported limit.")
+                    }
+                    zip.closeEntry()
+                }
+            }
+
+            val required = setOf(ManifestEntry, PayloadEntry, ChecksumsEntry)
+            if (!fixedEntries.keys.containsAll(required)) {
+                val missing = required - fixedEntries.keys
+                throw StudyPlanPackageException("Study Plan package is incomplete: ${missing.joinToString()}.")
+            }
+            val allEntryNames = fixedEntries.keys + streamedEntries.keys
+            val checksums = decode<StudyPlanPackageChecksums>(fixedEntries.getValue(ChecksumsEntry))
+            if (checksums.algorithm != "SHA-256") {
+                throw StudyPlanPackageException("Unsupported checksum algorithm: ${checksums.algorithm}")
+            }
+            fixedEntries.forEach { (name, bytes) ->
+                if (name != ChecksumsEntry) {
+                    val expected = checksums.entries[name]
+                        ?: throw StudyPlanPackageException("Missing checksum for $name.")
+                    if (!sha256(bytes).equals(expected, ignoreCase = true)) {
+                        throw StudyPlanPackageException("Checksum verification failed for $name.")
+                    }
+                }
+            }
+            streamedEntries.forEach { (name, streamed) ->
+                val expected = checksums.entries[name]
+                    ?: throw StudyPlanPackageException("Missing checksum for $name.")
+                if (!streamed.checksumSha256.equals(expected, ignoreCase = true)) {
+                    throw StudyPlanPackageException("Checksum verification failed for $name.")
+                }
+            }
+            val checksumExtras = checksums.entries.keys - allEntryNames
+            if (checksumExtras.isNotEmpty()) {
+                throw StudyPlanPackageException(
+                    "Checksum file references missing entries: ${checksumExtras.joinToString()}.",
+                )
+            }
+
+            val manifest = decode<StudyPlanPackageManifest>(fixedEntries.getValue(ManifestEntry))
+            validateManifest(manifest)
+            val payload = decode<StudyPlanPackagePayload>(fixedEntries.getValue(PayloadEntry))
+            if (payload.manifest != manifest) {
+                throw StudyPlanPackageException("Manifest and payload metadata do not match.")
+            }
+            val allowedEntries = required + manifest.annexPayloads.map { it.entryName }.toSet()
+            val unexpectedEntries = allEntryNames - allowedEntries
+            if (unexpectedEntries.isNotEmpty()) {
+                throw StudyPlanPackageException("Unexpected package entry: ${unexpectedEntries.sorted().first()}")
+            }
+            val missingPayloads = manifest.annexPayloads.map { it.entryName }.toSet() - allEntryNames
+            if (missingPayloads.isNotEmpty()) {
+                throw StudyPlanPackageException(
+                    "Study Plan package is missing annex payloads: ${missingPayloads.joinToString()}.",
+                )
+            }
+            manifest.annexPayloads.forEach { declared ->
+                val streamed = streamedEntries[declared.entryName]
+                    ?: throw StudyPlanPackageException("Annex payload was not streamed: ${declared.entryName}.")
+                if (streamed.byteSize != declared.byteSize) {
+                    throw StudyPlanPackageException("Annex payload size does not match ${declared.entryName}.")
+                }
+                if (!streamed.checksumSha256.equals(declared.checksumSha256, ignoreCase = true)) {
+                    throw StudyPlanPackageException("Annex payload checksum failed for ${declared.entryName}.")
+                }
+            }
+            val tableNames = payload.tables.map { it.name }
+            if (tableNames.size != tableNames.toSet().size) {
+                throw StudyPlanPackageException("Study Plan package contains duplicate tables.")
+            }
+            val actualCounts = payload.tables.associate { it.name to it.rows.size }
+            if (actualCounts != manifest.tableRowCounts) {
+                throw StudyPlanPackageException("Table counts do not match the package manifest.")
+            }
+            StudyPlanPrivacyPolicy.validatePayload(payload)
+            return StudyPlanPackageArchive(
+                payload = payload,
+                annexPayloadStreams = manifest.annexPayloads.associate { declared ->
+                    val stagedFile = streamedEntries.getValue(declared.entryName).file
+                    declared.entryName to { stagedFile.inputStream().buffered() }
+                },
+            )
+        } catch (error: Throwable) {
+            stagingRoot.deleteRecursively()
+            throw error
+        }
+    }
+
     fun preview(input: InputStream): StudyPlanImportPreview = preview(readArchive(input))
 
     fun preview(archive: StudyPlanPackageArchive): StudyPlanImportPreview {
@@ -286,6 +426,46 @@ class StudyPlanPackageCodec(
             output.write(buffer, 0, count)
         }
         return output.toByteArray()
+    }
+
+    private data class StreamedReadEntry(
+        val file: File,
+        val byteSize: Long,
+        val checksumSha256: String,
+    )
+
+    private fun readStreamedEntry(
+        input: InputStream,
+        destination: File,
+        maxBytes: Long,
+    ): StreamedReadEntry {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        var total = 0L
+        try {
+            destination.outputStream().buffered().use { output ->
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    total += count
+                    if (total > maxBytes) {
+                        throw StudyPlanPackageException("Package entry exceeds the supported limit.")
+                    }
+                    digest.update(buffer, 0, count)
+                    output.write(buffer, 0, count)
+                }
+            }
+        } catch (error: Throwable) {
+            destination.delete()
+            throw error
+        } finally {
+            buffer.fill(0)
+        }
+        return StreamedReadEntry(
+            file = destination,
+            byteSize = total,
+            checksumSha256 = digest.digest().joinToString("") { "%02x".format(it) },
+        )
     }
 
     private data class StreamedEntryResult(

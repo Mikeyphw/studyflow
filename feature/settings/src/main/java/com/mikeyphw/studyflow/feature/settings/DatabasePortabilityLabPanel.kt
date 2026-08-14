@@ -61,6 +61,7 @@ fun DatabasePortabilityLabPanel(
                 )
                 Text(booleanFact(R.string.debug_database_quick_check, report.database.quickCheckPassed))
                 Text(stringResource(R.string.debug_database_fk_violations, report.database.foreignKeyViolationCount))
+                Text(stringResource(R.string.debug_database_logical_violations, report.database.logicalIntegrityViolationCount))
                 Text(stringResource(R.string.debug_database_table_count, report.database.userTableCount))
                 Text(stringResource(R.string.debug_database_row_count, report.database.totalEntityRows))
                 Text(booleanFact(R.string.debug_database_metadata, report.database.metadataPresent))
@@ -95,12 +96,7 @@ fun DatabasePortabilityLabPanel(
         }
         items(report.drills, key = PortabilityDrillDiagnostic::kind) { drill ->
             StudyFlowSectionCard(title = drill.kind.label()) {
-                Text(
-                    text = stringResource(
-                        if (drill.passed) R.string.debug_portability_drill_passed
-                        else R.string.debug_portability_drill_blocked,
-                    ),
-                )
+                Text(stringResource(R.string.debug_lab_status_value, drill.status.label()))
                 Text(booleanFact(R.string.debug_portability_drill_destructive, drill.destructive))
             }
         }
@@ -120,6 +116,8 @@ private fun DebugLabStatus.label(): String = stringResource(
         DebugLabStatus.NOT_RUN -> R.string.debug_probe_not_run
         DebugLabStatus.RUNNING -> R.string.debug_probe_running
         DebugLabStatus.PASSED -> R.string.debug_probe_passed
+        DebugLabStatus.EMPTY -> R.string.debug_probe_empty
+        DebugLabStatus.NOT_APPLICABLE -> R.string.debug_probe_not_applicable
         DebugLabStatus.WARNING -> R.string.debug_probe_warning
         DebugLabStatus.BLOCKED -> R.string.debug_probe_blocked
         DebugLabStatus.FAILED -> R.string.debug_probe_failed
@@ -135,6 +133,7 @@ private fun DatabaseHealthMessage.label(): String = stringResource(
         DatabaseHealthMessage.SCHEMA_MISMATCH -> R.string.debug_database_schema_mismatch
         DatabaseHealthMessage.QUICK_CHECK_FAILED -> R.string.debug_database_quick_check_failed
         DatabaseHealthMessage.FOREIGN_KEY_VIOLATIONS -> R.string.debug_database_fk_failed
+        DatabaseHealthMessage.LOGICAL_INTEGRITY_VIOLATIONS -> R.string.debug_database_logical_failed
         DatabaseHealthMessage.METADATA_MISSING -> R.string.debug_database_metadata_missing
         DatabaseHealthMessage.MIGRATION_PATH_INCOMPLETE -> R.string.debug_database_migration_incomplete
     },
@@ -171,5 +170,8 @@ private fun PortabilityDrillKind.label(): String = stringResource(
         PortabilityDrillKind.RESTORE_DRY_RUN -> R.string.debug_portability_drill_dry_run
         PortabilityDrillKind.RETENTION_CLEANUP -> R.string.debug_portability_drill_retention
         PortabilityDrillKind.RECOVERY_REPORT -> R.string.debug_portability_drill_recovery
+        PortabilityDrillKind.REAL_RESTORE -> R.string.debug_portability_drill_real_restore
+        PortabilityDrillKind.RESTORE_FAILURE_ISOLATION -> R.string.debug_portability_drill_failure_isolation
+        PortabilityDrillKind.LOGICAL_INTEGRITY -> R.string.debug_portability_drill_logical_integrity
     },
 )

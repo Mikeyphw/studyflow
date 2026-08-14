@@ -4,6 +4,8 @@ enum class DebugLabStatus {
     NOT_RUN,
     RUNNING,
     PASSED,
+    EMPTY,
+    NOT_APPLICABLE,
     WARNING,
     BLOCKED,
     FAILED,
@@ -48,7 +50,11 @@ data class ReminderCandidateDiagnostic(
     val deliveryWindowMillis: Long,
     val lateDeliveryGraceMillis: Long,
     val suppressedByQuietHours: Boolean,
+    val delayedByQuietHours: Boolean = false,
+    /** A matching immutable delivery PendingIntent identity exists; this does not prove AlarmManager installation. */
     val pendingIntentIdentityExists: Boolean,
+    /** Durable occurrence bookkeeping matches the planner candidate. */
+    val scheduledBookkeepingPresent: Boolean = false,
     val requestCode: Int,
 ) {
     init {
@@ -73,6 +79,10 @@ data class ReminderNotificationLabReport(
     val remindersEnabled: Boolean = false,
     val quietHoursActive: Boolean = false,
     val exactAlarmUsed: Boolean = false,
+    val plannerStatus: DebugLabStatus = DebugLabStatus.NOT_RUN,
+    val platformStatus: DebugLabStatus = DebugLabStatus.NOT_RUN,
+    val schedulingStatus: DebugLabStatus = DebugLabStatus.NOT_RUN,
+    val productionPipelineVerified: Boolean = false,
     val candidates: List<ReminderCandidateDiagnostic> = emptyList(),
 ) {
     init {
@@ -90,6 +100,7 @@ enum class DatabaseHealthMessage {
     SCHEMA_MISMATCH,
     QUICK_CHECK_FAILED,
     FOREIGN_KEY_VIOLATIONS,
+    LOGICAL_INTEGRITY_VIOLATIONS,
     METADATA_MISSING,
     MIGRATION_PATH_INCOMPLETE,
 }
@@ -101,6 +112,7 @@ data class DatabaseHealthLabReport(
     val expectedSchemaVersion: Int = 0,
     val quickCheckPassed: Boolean = false,
     val foreignKeyViolationCount: Int = 0,
+    val logicalIntegrityViolationCount: Int = 0,
     val userTableCount: Int = 0,
     val totalEntityRows: Long = 0L,
     val metadataPresent: Boolean = false,
@@ -110,6 +122,7 @@ data class DatabaseHealthLabReport(
         require(schemaVersion >= 0)
         require(expectedSchemaVersion >= 0)
         require(foreignKeyViolationCount >= 0)
+        require(logicalIntegrityViolationCount >= 0)
         require(userTableCount >= 0)
         require(totalEntityRows >= 0L)
     }
@@ -137,13 +150,19 @@ enum class PortabilityDrillKind {
     RESTORE_DRY_RUN,
     RETENTION_CLEANUP,
     RECOVERY_REPORT,
+    REAL_RESTORE,
+    RESTORE_FAILURE_ISOLATION,
+    LOGICAL_INTEGRITY,
 }
 
 data class PortabilityDrillDiagnostic(
     val kind: PortabilityDrillKind,
-    val passed: Boolean,
+    val status: DebugLabStatus,
     val destructive: Boolean,
-)
+) {
+    val passed: Boolean get() = status == DebugLabStatus.PASSED
+    val applicable: Boolean get() = status != DebugLabStatus.NOT_APPLICABLE
+}
 
 data class DatabasePortabilityLabReport(
     val database: DatabaseHealthLabReport,
@@ -175,9 +194,13 @@ enum class StudyEngineLabActionResult {
 
 enum class StudyEngineDiagnosticKind {
     SCHEDULE_EXPANSION,
+    SCHEDULE_PERSISTENCE,
     REVIEW_QUEUE,
+    SRS_SCHEDULER_CANARY,
     PRACTICE_DECK,
+    PRACTICE_CANARY,
     MOCK_EXAM,
+    MOCK_PLANNER_CANARY,
     RECOMMENDATIONS,
     SEARCH_QUERY,
     PROGRESS_SNAPSHOT,
@@ -217,4 +240,6 @@ data class StudyEngineLabReport(
     val passedCount: Int = diagnostics.count { it.status == DebugLabStatus.PASSED }
     val warningCount: Int = diagnostics.count { it.status == DebugLabStatus.WARNING }
     val blockedCount: Int = diagnostics.count { it.status == DebugLabStatus.BLOCKED }
+    val emptyCount: Int = diagnostics.count { it.status == DebugLabStatus.EMPTY }
+    val notApplicableCount: Int = diagnostics.count { it.status == DebugLabStatus.NOT_APPLICABLE }
 }

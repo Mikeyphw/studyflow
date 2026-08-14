@@ -3,12 +3,9 @@ package com.mikeyphw.studyflow
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.mikeyphw.studyflow.core.diagnostics.DebugLabStatus
@@ -27,16 +24,18 @@ import com.mikeyphw.studyflow.core.domain.StudyReminderPlanner
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.reminders.StudyReminderChannelId
+import com.mikeyphw.studyflow.reminders.StudyReminderOccurrenceStore
 import com.mikeyphw.studyflow.reminders.studyReminderPendingIntentIdentityExists
 import java.util.Calendar
+import java.util.UUID
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 private const val MinimumFutureDelayMillis = 60_000L
-private const val DiagnosticNotificationId = 23_971
 private const val NotificationImportanceNone = 0
 
 internal fun interface ReminderLabInspectOperation {
@@ -46,7 +45,7 @@ internal fun interface ReminderLabInspectOperation {
 internal class StudyFlowReminderNotificationLab(
     private val inspectOperation: ReminderLabInspectOperation,
     private val reconcileOperation: suspend (StudyPlanId) -> Unit,
-    private val notificationOperation: suspend () -> Boolean,
+    private val notificationOperation: suspend (StudyPlanId) -> Boolean,
     private val defaultPlanId: () -> StudyPlanId?,
     private val recorder: DiagnosticRecorder,
     private val executionContext: CoroutineContext = Dispatchers.IO,
@@ -59,7 +58,9 @@ internal class StudyFlowReminderNotificationLab(
     ) : this(
         inspectOperation = AndroidReminderLabInspectOperation(context.applicationContext, container),
         reconcileOperation = container.reminderDeliveryCoordinator::reconcilePlan,
-        notificationOperation = { postDiagnosticNotification(context.applicationContext, container) },
+        notificationOperation = { planId ->
+            runProductionPipelineNotificationCanary(context.applicationContext, container, planId)
+        },
         defaultPlanId = defaultPlanId,
         recorder = container.diagnosticRecorder,
         executionContext = executionContext,
@@ -115,8 +116,18 @@ internal class StudyFlowReminderNotificationLab(
     suspend fun postDiagnosticNotification(): ReminderLabActionResult = withContext(executionContext) {
         val action = "reminder-lab-diagnostic-notification"
         recordStarted(DiagnosticArea.NOTIFICATIONS, action)
+        val planId = defaultPlanId()
+        if (planId == null) {
+            recorder.record(
+                area = DiagnosticArea.NOTIFICATIONS,
+                action = action,
+                outcome = DiagnosticOutcome.BLOCKED,
+                severity = DiagnosticSeverity.WARNING,
+            )
+            return@withContext ReminderLabActionResult.MISSING_DEFAULT_PLAN
+        }
         try {
-            if (notificationOperation()) {
+            if (notificationOperation(planId)) {
                 recordSucceeded(DiagnosticArea.NOTIFICATIONS, action)
                 ReminderLabActionResult.DIAGNOSTIC_NOTIFICATION_POSTED
             } else {
@@ -230,22 +241,67 @@ private class AndroidReminderLabInspectOperation(
                 notificationPermissionGranted = permissionGranted,
             ),
         )
+        val occurrenceStore = StudyReminderOccurrenceStore(appContext)
+        val scheduledOccurrences = occurrenceStore.scheduled(planId)
+            .associateBy { occurrence -> occurrence.occurrenceId }
+        val pipelineCanaryVerified = occurrenceStore.productionPipelineCanaryAt(planId)
+            ?.let { verifiedAt -> now - verifiedAt in 0..ProductionPipelineCanaryFreshnessMillis } == true
+        val candidates = planResult.notificationCandidates.map { candidate ->
+            val scheduled = scheduledOccurrences[candidate.occurrenceId]
+            ReminderCandidateDiagnostic(
+                kind = candidate.type.toDiagnosticKind(),
+                scheduledAtEpochMillis = candidate.scheduledAtEpochMillis,
+                effectiveTriggerAtEpochMillis = candidate.fireAtEpochMillis
+                    .coerceAtLeast(now + MinimumFutureDelayMillis),
+                deliveryWindowMillis = StudyReminderPlanner.PlannedActivityDeliveryGraceMillis,
+                lateDeliveryGraceMillis = StudyReminderPlanner.PlannedActivityLateDeliveryGraceMillis,
+                suppressedByQuietHours = false,
+                delayedByQuietHours = candidate.delayedByQuietHours,
+                pendingIntentIdentityExists = studyReminderPendingIntentIdentityExists(
+                    appContext,
+                    planId,
+                    candidate.type,
+                    candidate.occurrenceId,
+                ),
+                scheduledBookkeepingPresent = scheduled?.let { occurrence ->
+                    occurrence.type == candidate.type &&
+                        occurrence.scheduledAtEpochMillis == candidate.scheduledAtEpochMillis &&
+                        occurrence.fireAtEpochMillis == candidate.fireAtEpochMillis
+                } == true,
+                requestCode = 0,
+            )
+        }
+        val desiredIds = planResult.notificationCandidates.mapTo(linkedSetOf()) { it.occurrenceId }
+        val recordedIds = scheduledOccurrences.keys
+        val plannerStatus = if (candidates.isEmpty()) DebugLabStatus.EMPTY else DebugLabStatus.PASSED
+        val platformStatus = when {
+            !permissionGranted -> DebugLabStatus.WARNING
+            !appNotificationsEnabled -> DebugLabStatus.WARNING
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channel == null -> DebugLabStatus.WARNING
+            channelImportance == NotificationImportanceNone -> DebugLabStatus.WARNING
+            else -> DebugLabStatus.PASSED
+        }
+        val schedulingAligned = desiredIds == recordedIds && candidates.all { candidate ->
+            candidate.scheduledBookkeepingPresent && candidate.pendingIntentIdentityExists
+        }
+        val schedulingStatus = when {
+            candidates.isEmpty() && recordedIds.isEmpty() -> DebugLabStatus.NOT_APPLICABLE
+            schedulingAligned && pipelineCanaryVerified -> DebugLabStatus.PASSED
+            else -> DebugLabStatus.WARNING
+        }
         val message = when {
-            !settings.reviewNotificationsEnabled -> ReminderLabMessage.REMINDERS_DISABLED
             !permissionGranted -> ReminderLabMessage.NOTIFICATION_PERMISSION_DENIED
             !appNotificationsEnabled -> ReminderLabMessage.NOTIFICATIONS_BLOCKED
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channel == null -> ReminderLabMessage.CHANNEL_MISSING
             channelImportance == NotificationImportanceNone -> ReminderLabMessage.CHANNEL_BLOCKED
-            planResult.notificationCandidates.isEmpty() -> ReminderLabMessage.NO_CANDIDATES
+            candidates.isEmpty() -> ReminderLabMessage.NO_CANDIDATES
             else -> ReminderLabMessage.NONE
         }
-        val status = when (message) {
-            ReminderLabMessage.NONE -> DebugLabStatus.PASSED
-            ReminderLabMessage.NO_CANDIDATES -> DebugLabStatus.BLOCKED
-            ReminderLabMessage.MISSING_DEFAULT_PLAN,
-            ReminderLabMessage.PLAN_UNAVAILABLE -> DebugLabStatus.BLOCKED
-            ReminderLabMessage.INSPECTION_FAILED -> DebugLabStatus.FAILED
-            else -> DebugLabStatus.WARNING
+        val status = when {
+            platformStatus == DebugLabStatus.FAILED || schedulingStatus == DebugLabStatus.FAILED -> DebugLabStatus.FAILED
+            platformStatus == DebugLabStatus.WARNING || schedulingStatus == DebugLabStatus.WARNING -> DebugLabStatus.WARNING
+            plannerStatus == DebugLabStatus.EMPTY -> DebugLabStatus.EMPTY
+            else -> DebugLabStatus.PASSED
         }
         return ReminderNotificationLabReport(
             status = status,
@@ -257,27 +313,14 @@ private class AndroidReminderLabInspectOperation(
             channelPresent = channel != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O,
             channelBlocked = channelImportance == NotificationImportanceNone,
             channelImportance = channelImportance,
-            remindersEnabled = settings.reviewNotificationsEnabled,
+            remindersEnabled = true,
             quietHoursActive = planResult.quietHoursActive,
             exactAlarmUsed = false,
-            candidates = planResult.notificationCandidates.map { candidate ->
-                ReminderCandidateDiagnostic(
-                    kind = candidate.type.toDiagnosticKind(),
-                    scheduledAtEpochMillis = candidate.scheduledAtEpochMillis,
-                    effectiveTriggerAtEpochMillis = candidate.fireAtEpochMillis
-                        .coerceAtLeast(now + MinimumFutureDelayMillis),
-                    deliveryWindowMillis = StudyReminderPlanner.PlannedActivityDeliveryGraceMillis,
-                    lateDeliveryGraceMillis = StudyReminderPlanner.PlannedActivityLateDeliveryGraceMillis,
-                    suppressedByQuietHours = false,
-                    pendingIntentIdentityExists = studyReminderPendingIntentIdentityExists(
-                        appContext,
-                        planId,
-                        candidate.type,
-                        candidate.occurrenceId,
-                    ),
-                    requestCode = 0,
-                )
-            },
+            plannerStatus = plannerStatus,
+            platformStatus = platformStatus,
+            schedulingStatus = schedulingStatus,
+            productionPipelineVerified = pipelineCanaryVerified,
+            candidates = candidates,
         )
     }
 }
@@ -308,36 +351,66 @@ private fun notificationChannelImportance(notificationChannel: android.app.Notif
     }
 
 @SuppressLint("MissingPermission")
-private fun postDiagnosticNotification(context: Context, container: AppContainer): Boolean {
+private suspend fun runProductionPipelineNotificationCanary(
+    context: Context,
+    container: AppContainer,
+    planId: StudyPlanId,
+): Boolean {
     if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false
     if (!notificationPermissionGranted(context)) return false
     container.reminderDeliveryCoordinator.createNotificationChannels()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val channel = context.getSystemService(NotificationManager::class.java)
             .getNotificationChannel(StudyReminderChannelId)
-        if (channel == null ||
-            notificationChannelImportance(channel) == NotificationImportanceNone
-        ) {
-            return false
-        }
+        if (channel == null || notificationChannelImportance(channel) == NotificationImportanceNone) return false
     }
-    val openIntent = PendingIntent.getActivity(
-        context,
-        DiagnosticNotificationId,
-        Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        },
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+
+    val occurrenceStore = StudyReminderOccurrenceStore(context)
+    val now = System.currentTimeMillis()
+    val occurrenceId = "debug-pipeline-${UUID.randomUUID()}"
+    val candidate = com.mikeyphw.studyflow.core.domain.ReminderNotificationCandidate(
+        type = ReminderNotificationType.DAILY_SUMMARY,
+        occurrenceId = occurrenceId,
+        content = com.mikeyphw.studyflow.core.domain.ReminderNotificationContent(
+            kind = com.mikeyphw.studyflow.core.domain.ReminderNotificationContentKind.DAILY_SUMMARY,
+            userLabel = "StudyFlow",
+        ),
+        scheduledAtEpochMillis = now,
+        fireAtEpochMillis = now,
+        delayedByQuietHours = false,
     )
-    val notification = NotificationCompat.Builder(context, StudyReminderChannelId)
-        .setSmallIcon(R.drawable.ic_launcher)
-        .setContentTitle(context.getString(R.string.debug_diagnostic_notification_title))
-        .setContentText(context.getString(R.string.debug_diagnostic_notification_body))
-        .setContentIntent(openIntent)
-        .setAutoCancel(true)
-        .setLocalOnly(true)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        .build()
-    NotificationManagerCompat.from(context).notify(DiagnosticNotificationId, notification)
-    return true
+    occurrenceStore.addScheduled(planId, candidate)
+    return try {
+        context.sendBroadcast(
+            com.mikeyphw.studyflow.reminders.reminderIntent(
+                context = context,
+                planId = planId,
+                type = ReminderNotificationType.DAILY_SUMMARY,
+                occurrenceId = occurrenceId,
+            ),
+        )
+        val delivered = waitForCanaryDelivery(occurrenceStore, planId, occurrenceId)
+        if (delivered) occurrenceStore.markProductionPipelineCanary(planId, System.currentTimeMillis())
+        delivered
+    } finally {
+        occurrenceStore.removeScheduled(planId, occurrenceId)
+        occurrenceStore.removeDelivered(planId, occurrenceId)
+        NotificationManagerCompat.from(context).cancel(occurrenceId, 0)
+    }
 }
+
+private suspend fun waitForCanaryDelivery(
+    occurrenceStore: StudyReminderOccurrenceStore,
+    planId: StudyPlanId,
+    occurrenceId: String,
+): Boolean {
+    repeat(ProductionPipelineCanaryPollCount) {
+        if (occurrenceId in occurrenceStore.deliveredOccurrenceIds(planId)) return true
+        delay(ProductionPipelineCanaryPollMillis)
+    }
+    return occurrenceId in occurrenceStore.deliveredOccurrenceIds(planId)
+}
+
+private const val ProductionPipelineCanaryPollCount = 100
+private const val ProductionPipelineCanaryPollMillis = 50L
+private const val ProductionPipelineCanaryFreshnessMillis = 24L * 60L * 60L * 1_000L

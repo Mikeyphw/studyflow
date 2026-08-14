@@ -33,6 +33,24 @@ class StudyReminderOccurrenceStore(context: Context) {
         preferences.edit().putStringSet(scheduledKey(planId), encoded).commit()
     }
 
+
+    @Synchronized
+    fun addScheduled(planId: StudyPlanId, candidate: ReminderNotificationCandidate) {
+        val encoded = LinkedHashSet(preferences.getStringSet(scheduledKey(planId), emptySet()).orEmpty())
+        encoded.removeAll { value -> decodeScheduled(value)?.occurrenceId == candidate.occurrenceId }
+        encoded += encodeScheduled(candidate)
+        preferences.edit().putStringSet(scheduledKey(planId), encoded).commit()
+    }
+
+    @Synchronized
+    fun removeScheduled(planId: StudyPlanId, occurrenceId: String) {
+        val encoded = preferences.getStringSet(scheduledKey(planId), emptySet()).orEmpty()
+            .filterTo(linkedSetOf()) { value -> decodeScheduled(value)?.occurrenceId != occurrenceId }
+        val editor = preferences.edit()
+        if (encoded.isEmpty()) editor.remove(scheduledKey(planId)) else editor.putStringSet(scheduledKey(planId), encoded)
+        editor.commit()
+    }
+
     @Synchronized
     fun clearScheduled(planId: StudyPlanId) {
         preferences.edit().remove(scheduledKey(planId)).commit()
@@ -52,16 +70,37 @@ class StudyReminderOccurrenceStore(context: Context) {
         preferences.edit().putStringSet(deliveredKey(planId), delivered).commit()
     }
 
+
+    @Synchronized
+    fun removeDelivered(planId: StudyPlanId, occurrenceId: String) {
+        val delivered = LinkedHashSet(preferences.getStringSet(deliveredKey(planId), emptySet()).orEmpty())
+        if (!delivered.remove(occurrenceId)) return
+        val editor = preferences.edit()
+        if (delivered.isEmpty()) editor.remove(deliveredKey(planId)) else editor.putStringSet(deliveredKey(planId), delivered)
+        editor.commit()
+    }
+
+    @Synchronized
+    fun markProductionPipelineCanary(planId: StudyPlanId, verifiedAtEpochMillis: Long) {
+        preferences.edit().putLong(canaryKey(planId), verifiedAtEpochMillis).commit()
+    }
+
+    @Synchronized
+    fun productionPipelineCanaryAt(planId: StudyPlanId): Long? =
+        preferences.getLong(canaryKey(planId), -1L).takeIf { it >= 0L }
+
     @Synchronized
     fun clearPlan(planId: StudyPlanId) {
         preferences.edit()
             .remove(scheduledKey(planId))
             .remove(deliveredKey(planId))
+            .remove(canaryKey(planId))
             .commit()
     }
 
     private fun scheduledKey(planId: StudyPlanId): String = "scheduled:${planId.value}"
     private fun deliveredKey(planId: StudyPlanId): String = "delivered:${planId.value}"
+    private fun canaryKey(planId: StudyPlanId): String = "pipeline-canary:${planId.value}"
 
     private fun encodeScheduled(candidate: ReminderNotificationCandidate): String = listOf(
         candidate.type.name,

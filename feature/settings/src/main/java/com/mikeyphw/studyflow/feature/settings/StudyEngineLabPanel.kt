@@ -88,6 +88,8 @@ private fun DebugLabStatus.label(): String = stringResource(
         DebugLabStatus.NOT_RUN -> R.string.debug_probe_not_run
         DebugLabStatus.RUNNING -> R.string.debug_probe_running
         DebugLabStatus.PASSED -> R.string.debug_probe_passed
+        DebugLabStatus.EMPTY -> R.string.debug_probe_empty
+        DebugLabStatus.NOT_APPLICABLE -> R.string.debug_probe_not_applicable
         DebugLabStatus.WARNING -> R.string.debug_probe_warning
         DebugLabStatus.BLOCKED -> R.string.debug_probe_blocked
         DebugLabStatus.FAILED -> R.string.debug_probe_failed
@@ -117,9 +119,13 @@ private fun StudyEngineLabActionResult.label(): String = stringResource(
 private fun StudyEngineDiagnosticKind.label(): String = stringResource(
     when (this) {
         StudyEngineDiagnosticKind.SCHEDULE_EXPANSION -> R.string.debug_study_engine_kind_schedule
+        StudyEngineDiagnosticKind.SCHEDULE_PERSISTENCE -> R.string.debug_study_engine_kind_schedule_persistence
         StudyEngineDiagnosticKind.REVIEW_QUEUE -> R.string.debug_study_engine_kind_review
+        StudyEngineDiagnosticKind.SRS_SCHEDULER_CANARY -> R.string.debug_study_engine_kind_srs_canary
         StudyEngineDiagnosticKind.PRACTICE_DECK -> R.string.debug_study_engine_kind_practice
+        StudyEngineDiagnosticKind.PRACTICE_CANARY -> R.string.debug_study_engine_kind_practice_canary
         StudyEngineDiagnosticKind.MOCK_EXAM -> R.string.debug_study_engine_kind_mock
+        StudyEngineDiagnosticKind.MOCK_PLANNER_CANARY -> R.string.debug_study_engine_kind_mock_canary
         StudyEngineDiagnosticKind.RECOMMENDATIONS -> R.string.debug_study_engine_kind_recommendations
         StudyEngineDiagnosticKind.SEARCH_QUERY -> R.string.debug_study_engine_kind_search
         StudyEngineDiagnosticKind.PROGRESS_SNAPSHOT -> R.string.debug_study_engine_kind_progress

@@ -146,6 +146,8 @@ data class StudyPlanBackupIntegrityReport(
     val totalRows: Int,
     val annexPayloadCount: Int,
     val metadataPrivacyMode: Boolean,
+    /** True only when metadata-private identifiers and annex paths were validated across the whole package. */
+    val privateIdentifiersVerified: Boolean = false,
     val redactedSections: Set<String>,
     val warnings: List<StudyPlanPortabilityWarning>,
     val canRestore: Boolean,

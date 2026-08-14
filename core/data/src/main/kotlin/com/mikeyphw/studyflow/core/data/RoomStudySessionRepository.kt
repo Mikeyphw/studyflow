@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.map
 
 internal class RoomStudySessionRepository(
     private val database: StudyFlowDatabase,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudySessionRepository {
     private val planningDao = database.studyPlanningDao()
     private val planDao = database.studyPlanDao()
@@ -71,7 +72,11 @@ internal class RoomStudySessionRepository(
     override suspend fun createSession(
         session: StudySession,
         linkedActivityExpectedStatus: PlannedActivityStatus?,
-    ): StudySession = database.withTransaction {
+    ): StudySession = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.STUDY_SESSIONS,
+        action = "session-create",
+    ) {
+        database.withTransaction {
         require(session.status == StudySessionStatus.RUNNING) {
             "A new Study Session must start in RUNNING state."
         }
@@ -113,6 +118,7 @@ internal class RoomStudySessionRepository(
         requireNotNull(planningDao.findStudySession(session.studyPlanId.value, session.id.value))
             .asExternalModel()
     }
+    }
 
     override suspend fun transitionSession(
         expectedStatus: StudySessionStatus,
@@ -120,7 +126,11 @@ internal class RoomStudySessionRepository(
         linkedActivityExpectedStatus: PlannedActivityStatus?,
         linkedActivityStatus: PlannedActivityStatus?,
         linkedActivityCompletedAtEpochMillis: Long?,
-    ): StudySession = database.withTransaction {
+    ): StudySession = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.STUDY_SESSIONS,
+        action = "session-transition",
+    ) {
+        database.withTransaction {
         validateOwnership(session)
         val current = requireNotNull(
             planningDao.findStudySession(session.studyPlanId.value, session.id.value),
@@ -191,6 +201,7 @@ internal class RoomStudySessionRepository(
         }
         requireNotNull(planningDao.findStudySession(session.studyPlanId.value, session.id.value))
             .asExternalModel()
+    }
     }
 
     private suspend fun validateOwnership(session: StudySession) {

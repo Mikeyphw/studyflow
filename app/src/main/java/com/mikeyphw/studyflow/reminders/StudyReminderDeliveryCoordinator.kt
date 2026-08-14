@@ -14,7 +14,6 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.mikeyphw.studyflow.MainActivity
 import com.mikeyphw.studyflow.R
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationCandidate
@@ -262,11 +261,12 @@ class StudyReminderDeliveryCoordinator(
         type: ReminderNotificationType,
         occurrenceId: String,
     ): PendingIntent {
-        val intent = Intent(appContext, MainActivity::class.java).apply {
-            data = studyReminderIdentityUri(appContext, planId, type, occurrenceId, openApp = true)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(StudyReminderExtraPlanId, planId.value)
-            putExtra(StudyReminderExtraType, type.name)
+        val intent = studyReminderOpenIntent(
+            context = appContext,
+            planId = planId,
+            type = type,
+            identity = studyReminderIdentityUri(appContext, planId, type, occurrenceId, openApp = true),
+        ).apply {
             putExtra(StudyReminderExtraOccurrenceId, occurrenceId)
         }
         return PendingIntent.getActivity(

@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 
 internal class RoomStudyPracticeRepository(
     private val database: StudyFlowDatabase,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyPracticeRepository {
     private val practiceDao = database.studyPracticeDao()
     private val retentionDao = database.studyRetentionDao()
@@ -141,7 +142,11 @@ internal class RoomStudyPracticeRepository(
         expectedConfiguration: String,
         next: StudyTest,
         wrongAnswers: List<PracticeWrongAnswerCapture>,
-    ): StudyTest = database.withTransaction {
+    ): StudyTest = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.PRACTICE,
+        action = "practice-submit",
+    ) {
+        database.withTransaction {
         val submittedAt = requireNotNull(next.submittedAtEpochMillis) { "Terminal submission requires a timestamp." }
         require(
             practiceDao.submitStudyTestIfOpen(
@@ -156,6 +161,7 @@ internal class RoomStudyPracticeRepository(
         ) { "Practice Test changed or was already submitted; refusing duplicate terminal submit." }
         wrongAnswers.forEach { capture -> captureWrongAnswer(capture, submittedAt) }
         requireNotNull(practiceDao.findTest(next.studyPlanId.value, next.id.value)).asExternalModel()
+    }
     }
 
     override suspend fun startMockExamIfNotStarted(
@@ -194,7 +200,11 @@ internal class RoomStudyPracticeRepository(
         expectedConfiguration: String,
         next: MockExam,
         wrongAnswers: List<PracticeWrongAnswerCapture>,
-    ): MockExam = database.withTransaction {
+    ): MockExam = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.PRACTICE,
+        action = "mock-exam-submit",
+    ) {
+        database.withTransaction {
         val submittedAt = requireNotNull(next.submittedAtEpochMillis) { "Terminal submission requires a timestamp." }
         val score = requireNotNull(next.scorePercent) { "Terminal Mock Exam submission requires a score." }
         require(
@@ -211,6 +221,7 @@ internal class RoomStudyPracticeRepository(
         ) { "Mock Exam changed or was already submitted; refusing duplicate terminal submit." }
         wrongAnswers.forEach { capture -> captureWrongAnswer(capture, submittedAt) }
         requireNotNull(practiceDao.findMockExam(next.studyPlanId.value, next.id.value)).asExternalModel()
+    }
     }
 
     private suspend fun captureWrongAnswer(capture: PracticeWrongAnswerCapture, now: Long) {

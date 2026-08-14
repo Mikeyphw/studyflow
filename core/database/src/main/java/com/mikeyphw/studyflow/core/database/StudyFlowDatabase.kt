@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import com.mikeyphw.studyflow.core.database.dao.DatabaseMetadataDao
 import com.mikeyphw.studyflow.core.database.dao.PlanOwnershipDao
 import com.mikeyphw.studyflow.core.database.dao.StudyDiscoveryDao
+import com.mikeyphw.studyflow.core.database.dao.StudyAnalyticsDao
 import com.mikeyphw.studyflow.core.database.dao.StudyLibraryDao
 import com.mikeyphw.studyflow.core.database.dao.StudyPlanDao
 import com.mikeyphw.studyflow.core.database.dao.StudyPlanningDao
@@ -77,6 +78,8 @@ abstract class StudyFlowDatabase : RoomDatabase() {
     abstract fun studyLibraryDao(): StudyLibraryDao
 
     abstract fun studyDiscoveryDao(): StudyDiscoveryDao
+
+    abstract fun studyAnalyticsDao(): StudyAnalyticsDao
 
     abstract fun studyPracticeDao(): StudyPracticeDao
 

@@ -100,6 +100,7 @@ object StudyFlowIntegrity {
         installSingleActiveSessionTriggers(db)
         installValueGuards(db)
         installGraphRevisionTriggers(db)
+        StudyFlowSearchIndex.install(db)
     }
 
     private fun installGraphRevisionTriggers(db: SupportSQLiteDatabase) {

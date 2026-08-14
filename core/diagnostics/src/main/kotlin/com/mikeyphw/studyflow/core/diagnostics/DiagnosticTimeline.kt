@@ -26,6 +26,12 @@ data class DiagnosticTimelineSnapshot(
     val latestTimestampEpochMillis: Long? = entries.maxOfOrNull(DiagnosticTimelineEntry::timestampEpochMillis)
 }
 
+data class DiagnosticTimelineSanitizationResult(
+    val jsonl: String,
+    val lineCount: Int,
+    val malformedLineCount: Int,
+)
+
 object DiagnosticTimelineReader {
     fun read(
         jsonl: String,
@@ -37,11 +43,12 @@ object DiagnosticTimelineReader {
             .lineSequence()
             .filter(String::isNotBlank)
             .mapNotNull { line ->
-                runCatching { decodeLine(line) }
-                    .getOrElse {
-                        malformed += 1
-                        null
-                    }
+                try {
+                    decodeLine(line)
+                } catch (_: Exception) {
+                    malformed += 1
+                    null
+                }
             }
             .toList()
             .takeLast(boundedMaxEntries)
@@ -53,8 +60,48 @@ object DiagnosticTimelineReader {
         )
     }
 
+    fun resanitizeCompleteJsonl(jsonl: String): DiagnosticTimelineSanitizationResult {
+        var malformed = 0
+        var lineCount = 0
+        val output = buildString {
+            jsonl.lineSequence().filter(String::isNotBlank).forEach { line ->
+                val entry = try {
+                    decodeLine(line)
+                } catch (_: Exception) {
+                    malformed += 1
+                    return@forEach
+                }
+                lineCount += 1
+                append(
+                    DiagnosticJson.encodeEvent(
+                        DiagnosticEvent(
+                            sessionId = "session-redacted",
+                            sequence = entry.sequence,
+                            timestampEpochMillis = entry.timestampEpochMillis,
+                            area = entry.area,
+                            severity = entry.severity,
+                            action = entry.action,
+                            outcome = entry.outcome,
+                            durationMillis = entry.durationMillis,
+                            correlationId = entry.correlationFingerprint,
+                            safeDetails = entry.safeDetails,
+                            exception = entry.exception,
+                        ),
+                    ),
+                )
+                append('\n')
+            }
+        }
+        return DiagnosticTimelineSanitizationResult(
+            jsonl = output,
+            lineCount = lineCount,
+            malformedLineCount = malformed,
+        )
+    }
+
     private fun decodeLine(line: String): DiagnosticTimelineEntry {
         val root = JsonObjectReader(line).readObject()
+        require(root.requireLong("schemaVersion") == 1L) { "Unsupported diagnostic timeline schema." }
         return DiagnosticTimelineEntry(
             sequence = root.requireLong("sequence"),
             timestampEpochMillis = root.requireLong("timestampEpochMillis"),
@@ -63,8 +110,9 @@ object DiagnosticTimelineReader {
             action = DiagnosticRedactor.safeAction(root.requireString("action")),
             outcome = enumValueOf(root.requireString("outcome")),
             durationMillis = root.optionalLong("durationMillis"),
-            correlationFingerprint = root.optionalString("correlationId")
-                ?.let(DiagnosticRedactor::fingerprint),
+            correlationFingerprint = root.optionalString("correlationId")?.let { value ->
+                value.takeIf { it.matches(Regex("[0-9a-f]{16}")) } ?: DiagnosticRedactor.fingerprint(value)
+            },
             safeDetails = DiagnosticRedactor.redactDetails(
                 root.optionalObject("safeDetails")
                     ?.entries

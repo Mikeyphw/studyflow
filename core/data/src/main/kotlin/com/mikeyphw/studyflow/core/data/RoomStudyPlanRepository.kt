@@ -23,6 +23,7 @@ internal class RoomStudyPlanRepository(
     context: Context,
     private val database: StudyFlowDatabase,
     private val clock: () -> Long,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyPlanRepository {
     private val appContext = context.applicationContext
     private val studyPlanDao = database.studyPlanDao()
@@ -187,7 +188,10 @@ internal class RoomStudyPlanRepository(
         }
     }
 
-    override suspend fun updatePlanSettings(settings: StudyPlanSettings) {
+    override suspend fun updatePlanSettings(settings: StudyPlanSettings) = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.PREFERENCES,
+        action = "plan-settings-write",
+    ) {
         database.withTransaction {
             val plan = requireNotNull(studyPlanDao.findById(settings.studyPlanId.value)) {
                 "Study Plan ${settings.studyPlanId.value} does not exist."
@@ -197,6 +201,7 @@ internal class RoomStudyPlanRepository(
             }
             studySupportDao.upsertPlanSettings(settings.asEntity())
         }
+
     }
 
     override suspend fun deletePermanently(planId: StudyPlanId) =

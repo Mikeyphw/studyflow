@@ -5,20 +5,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="http" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="https" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:mimeType="*/*" />
-        </intent>
-    </queries>
 
     <application
         android:name=".StudyFlowApplication"
@@ -77,6 +63,13 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/studyflow_today_widget_info" />
         </receiver>
+
+        <activity
+            android:name=".reminders.StudyReminderLaunchActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@style/Theme.StudyFlow" />
 
         <activity
             android:name=".MainActivity"

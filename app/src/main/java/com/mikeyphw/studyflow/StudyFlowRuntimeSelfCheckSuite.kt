@@ -5,12 +5,23 @@ import com.mikeyphw.studyflow.core.diagnostics.DebugProbeId
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeReport
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeReportPolicy
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeResult
+import com.mikeyphw.studyflow.core.diagnostics.DebugProbeStatus
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticOutcome
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticSeverity
+import com.mikeyphw.studyflow.core.diagnostics.RuntimeSelfCheckInvariantPolicy
 import com.mikeyphw.studyflow.core.diagnostics.RuntimeSelfCheckRun
+import com.mikeyphw.studyflow.core.diagnostics.RuntimeSelfCheckVerdict
 import java.util.concurrent.CancellationException
+
+internal class RuntimeSelfCheckCancellation(
+    val report: DebugProbeReport,
+    val run: RuntimeSelfCheckRun,
+    cause: CancellationException,
+) : CancellationException("Runtime self-check cancelled after partial evidence was captured.") {
+    init { initCause(cause) }
+}
 
 internal class StudyFlowRuntimeSelfCheckSuite(
     private val probeIds: List<DebugProbeId> = DebugProbeCatalog.safeSuiteIds,
@@ -37,32 +48,34 @@ internal class StudyFlowRuntimeSelfCheckSuite(
             safeDetails = mapOf("count" to probeIds.size.toString()),
         )
         var report = initialReport
+        val attempted = mutableListOf<DebugProbeId>()
         val results = linkedMapOf<DebugProbeId, DebugProbeResult>()
-        return try {
+        try {
             probeIds.forEach { id ->
+                attempted += id
                 report = DebugProbeReportPolicy.markRunning(report, id)
-                val result = runProbe(id).sanitized()
+                val result = try {
+                    runProbe(id).sanitized()
+                } catch (cancelled: CancellationException) {
+                    val terminal = DebugProbeResult(
+                        id = id,
+                        status = DebugProbeStatus.CANCELLED,
+                        completedAtEpochMillis = clock(),
+                    ).sanitized()
+                    report = DebugProbeReportPolicy.complete(report, terminal)
+                    results[id] = terminal
+                    val partial = buildRun(startedAt, attempted, results)
+                    recordTerminal(partial)
+                    throw RuntimeSelfCheckCancellation(report, partial, cancelled)
+                }
                 report = DebugProbeReportPolicy.complete(report, result)
                 results[id] = result
             }
-            val run = RuntimeSelfCheckRun(
-                startedAtEpochMillis = startedAt,
-                completedAtEpochMillis = clock(),
-                attemptedProbeIds = probeIds,
-                results = results,
-            )
-            recorder.record(
-                area = DiagnosticArea.VALIDATION,
-                action = "debug-runtime-self-check-suite",
-                outcome = if (run.successful) DiagnosticOutcome.SUCCEEDED else DiagnosticOutcome.FAILED,
-                severity = if (run.successful) DiagnosticSeverity.INFO else DiagnosticSeverity.WARNING,
-                safeDetails = mapOf(
-                    "count" to run.results.size.toString(),
-                    "failed" to run.failedCount.toString(),
-                    "blocked" to run.blockedCount.toString(),
-                ),
-            )
-            report to run
+            val run = buildRun(startedAt, attempted, results)
+            recordTerminal(run)
+            return report to run
+        } catch (cancelled: RuntimeSelfCheckCancellation) {
+            throw cancelled
         } catch (cancelled: CancellationException) {
             recorder.record(
                 area = DiagnosticArea.VALIDATION,
@@ -83,5 +96,37 @@ internal class StudyFlowRuntimeSelfCheckSuite(
             )
             throw failure
         }
+    }
+
+    private fun buildRun(
+        startedAt: Long,
+        attempted: List<DebugProbeId>,
+        results: Map<DebugProbeId, DebugProbeResult>,
+    ): RuntimeSelfCheckRun = RuntimeSelfCheckRun(
+        startedAtEpochMillis = startedAt,
+        completedAtEpochMillis = clock(),
+        attemptedProbeIds = attempted.toList(),
+        results = results.toMap(),
+        invariantFailures = RuntimeSelfCheckInvariantPolicy.evaluate(results),
+    )
+
+    private fun recordTerminal(run: RuntimeSelfCheckRun) {
+        val (outcome, severity) = when (run.verdict) {
+            RuntimeSelfCheckVerdict.PASS -> DiagnosticOutcome.SUCCEEDED to DiagnosticSeverity.INFO
+            RuntimeSelfCheckVerdict.PASS_WITH_WARNINGS -> DiagnosticOutcome.SUCCEEDED to DiagnosticSeverity.WARNING
+            RuntimeSelfCheckVerdict.BLOCKED -> DiagnosticOutcome.BLOCKED to DiagnosticSeverity.WARNING
+            RuntimeSelfCheckVerdict.FAIL -> DiagnosticOutcome.FAILED to DiagnosticSeverity.ERROR
+            RuntimeSelfCheckVerdict.CANCELLED -> DiagnosticOutcome.CANCELLED to DiagnosticSeverity.WARNING
+        }
+        recorder.record(
+            area = DiagnosticArea.VALIDATION,
+            action = "debug-runtime-self-check-suite",
+            outcome = outcome,
+            severity = severity,
+            safeDetails = mapOf(
+                "count" to run.results.size.toString(),
+                "status" to run.verdict.name.lowercase(),
+            ),
+        )
     }
 }

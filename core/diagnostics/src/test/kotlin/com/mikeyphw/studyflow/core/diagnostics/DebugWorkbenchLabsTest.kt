@@ -48,7 +48,7 @@ class DebugWorkbenchLabsTest {
             drills = listOf(
                 PortabilityDrillDiagnostic(
                     kind = PortabilityDrillKind.RESTORE_DRY_RUN,
-                    passed = true,
+                    status = DebugLabStatus.PASSED,
                     destructive = true,
                 ),
             ),
@@ -60,8 +60,8 @@ class DebugWorkbenchLabsTest {
         DatabasePortabilityLabReport(
             database = DatabaseHealthLabReport(status = DebugLabStatus.PASSED),
             drills = listOf(
-                PortabilityDrillDiagnostic(PortabilityDrillKind.WRONG_PASSWORD, true, false),
-                PortabilityDrillDiagnostic(PortabilityDrillKind.WRONG_PASSWORD, false, false),
+                PortabilityDrillDiagnostic(PortabilityDrillKind.WRONG_PASSWORD, DebugLabStatus.PASSED, false),
+                PortabilityDrillDiagnostic(PortabilityDrillKind.WRONG_PASSWORD, DebugLabStatus.FAILED, false),
             ),
         )
     }
@@ -110,6 +110,21 @@ class DebugWorkbenchLabsTest {
         assertEquals(1, report.passedCount)
         assertEquals(1, report.warningCount)
         assertEquals(0, report.blockedCount)
+    }
+
+    @Test
+    fun `empty and not applicable diagnostics stay distinct from warnings`() {
+        val report = StudyEngineLabReport(
+            status = DebugLabStatus.PASSED,
+            diagnostics = listOf(
+                StudyEngineDiagnostic(StudyEngineDiagnosticKind.SCHEDULE_EXPANSION, DebugLabStatus.EMPTY),
+                StudyEngineDiagnostic(StudyEngineDiagnosticKind.SEARCH_QUERY, DebugLabStatus.NOT_APPLICABLE),
+            ),
+        )
+
+        assertEquals(1, report.emptyCount)
+        assertEquals(1, report.notApplicableCount)
+        assertEquals(0, report.warningCount)
     }
 
     @Test(expected = IllegalArgumentException::class)

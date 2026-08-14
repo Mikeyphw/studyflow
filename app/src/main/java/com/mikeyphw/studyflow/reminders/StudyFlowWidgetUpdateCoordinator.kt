@@ -16,6 +16,8 @@ import com.mikeyphw.studyflow.widget.StudyFlowTodayWidgetProvider
 import com.mikeyphw.studyflow.widget.TodayWidgetRenderState
 import java.util.Calendar
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,31 +27,95 @@ import kotlinx.coroutines.launch
 private val WidgetUpdateScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 private val WidgetRefreshRunning = AtomicBoolean(false)
 private val WidgetRefreshDirty = AtomicBoolean(false)
+private val WidgetRefreshRequestedGeneration = AtomicLong(0L)
+private val WidgetRefreshWaiterLock = Any()
+private val WidgetRefreshWaiters = mutableListOf<WidgetRefreshWaiter>()
+
+data class WidgetRefreshResult(
+    val boundInstanceCount: Int,
+    val state: String,
+)
+
+private data class WidgetRefreshWaiter(
+    val generation: Long,
+    val deferred: CompletableDeferred<WidgetRefreshResult>,
+)
 
 object StudyFlowWidgetUpdateCoordinator {
     fun refreshAll(context: Context) {
-        val appContext = context.applicationContext
+        requestRefresh(context.applicationContext, waiter = null)
+    }
+
+    suspend fun refreshAllAndAwait(context: Context): WidgetRefreshResult {
+        val deferred = CompletableDeferred<WidgetRefreshResult>()
+        requestRefresh(context.applicationContext, deferred)
+        return deferred.await()
+    }
+
+    private fun requestRefresh(context: Context, waiter: CompletableDeferred<WidgetRefreshResult>?) {
+        val requestedGeneration = WidgetRefreshRequestedGeneration.incrementAndGet()
+        if (waiter != null) {
+            synchronized(WidgetRefreshWaiterLock) {
+                WidgetRefreshWaiters += WidgetRefreshWaiter(
+                    generation = requestedGeneration,
+                    deferred = waiter,
+                )
+            }
+        }
         WidgetRefreshDirty.set(true)
         if (!WidgetRefreshRunning.compareAndSet(false, true)) return
-        WidgetUpdateScope.launch {
-            try {
-                do {
-                    WidgetRefreshDirty.set(false)
-                    updateAllWidgets(appContext, buildState(appContext))
-                } while (WidgetRefreshDirty.get())
-            } finally {
-                WidgetRefreshRunning.set(false)
-                if (WidgetRefreshDirty.get()) refreshAll(appContext)
-            }
+        WidgetUpdateScope.launch { runRefreshLoop(context) }
+    }
+
+    private suspend fun runRefreshLoop(context: Context) {
+        try {
+            do {
+                WidgetRefreshDirty.set(false)
+                val refreshGeneration = WidgetRefreshRequestedGeneration.get()
+                val state = buildState(context)
+                val count = updateAllWidgets(context, state)
+                val result = WidgetRefreshResult(
+                    boundInstanceCount = count,
+                    state = when (state) {
+                        TodayWidgetRenderState.Loading -> "loading"
+                        TodayWidgetRenderState.NoPlan -> "no_plan"
+                        is TodayWidgetRenderState.Ready -> "ready"
+                    },
+                )
+                completeRefreshGeneration(refreshGeneration, result)
+            } while (WidgetRefreshDirty.get())
+        } catch (failure: Exception) {
+            failRefreshWaiters(failure)
+        } finally {
+            WidgetRefreshRunning.set(false)
+            if (WidgetRefreshDirty.get()) requestRefresh(context, waiter = null)
         }
     }
 
-    private fun updateAllWidgets(context: Context, state: TodayWidgetRenderState) {
+    private fun completeRefreshGeneration(generation: Long, result: WidgetRefreshResult) {
+        val completed = synchronized(WidgetRefreshWaiterLock) {
+            val ready = WidgetRefreshWaiters.filter { it.generation <= generation }
+            WidgetRefreshWaiters.removeAll(ready.toSet())
+            ready
+        }
+        completed.forEach { it.deferred.complete(result) }
+    }
+
+    private fun failRefreshWaiters(failure: Exception) {
+        val failed = synchronized(WidgetRefreshWaiterLock) {
+            WidgetRefreshWaiters.toList().also { WidgetRefreshWaiters.clear() }
+        }
+        failed.forEach { it.deferred.completeExceptionally(failure) }
+    }
+
+    private fun updateAllWidgets(context: Context, state: TodayWidgetRenderState): Int {
         val manager = AppWidgetManager.getInstance(context)
         val component = ComponentName(context, StudyFlowTodayWidgetProvider::class.java)
-        manager.getAppWidgetIds(component).forEach { id ->
+        val ids = manager.getAppWidgetIds(component)
+        ids.forEach { id ->
             StudyFlowTodayWidgetProvider.updateWidget(context, manager, id, state)
         }
+        return ids.size
     }
 
     private suspend fun buildState(context: Context): TodayWidgetRenderState {

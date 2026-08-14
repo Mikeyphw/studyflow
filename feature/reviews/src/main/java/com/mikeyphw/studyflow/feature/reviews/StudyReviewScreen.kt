@@ -1,13 +1,12 @@
 package com.mikeyphw.studyflow.feature.reviews
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
@@ -148,6 +147,24 @@ fun StudyReviewScreen(
     }
 
     val operationRunning = operationState is ReviewOperationState.Running
+    val contentIndex = remember(questions, queue.flashcards, queue.errors, syllabus?.topics) {
+        ReviewItemContentIndex(
+            questions = questions,
+            flashcards = queue.flashcards,
+            errors = queue.errors,
+            topics = syllabus?.topics.orEmpty(),
+        )
+    }
+    val activeReviewsByErrorId = remember(queue.due, queue.upcoming) {
+        (queue.due + queue.upcoming).groupBy { item -> item.errorEntryId }
+    }
+    val sortedErrors = remember(queue.errors) {
+        queue.errors.sortedWith(
+            compareByDescending<ErrorEntry> { it.recurrenceCount }
+                .thenByDescending { it.updatedAtEpochMillis },
+        )
+    }
+    val filteredItems = remember(queue, filter) { queue.itemsFor(filter) }
 
     Scaffold(
         modifier = modifier,
@@ -165,104 +182,127 @@ fun StudyReviewScreen(
             )
         },
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .padding(padding),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            when (val state = operationState) {
-                ReviewOperationState.Idle -> Unit
-                is ReviewOperationState.Running -> StudyFlowSectionCard(
-                    title = stringResource(R.string.review_operation_running),
-                ) {
-                    Text(stringResource(R.string.review_operation_running_message))
-                }
-                is ReviewOperationState.Succeeded -> StudyFlowSectionCard(
-                    title = stringResource(R.string.review_operation_succeeded),
-                ) {
-                    Text(stringResource(R.string.review_operation_succeeded_message))
-                }
-                is ReviewOperationState.Failed -> StudyFlowSectionCard(
-                    title = stringResource(R.string.review_operation_failed),
-                ) {
-                    Text(
-                        stringResource(R.string.review_operation_failed_message),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    OutlinedButton(onClick = { execute(state.mutation) }) {
-                        Text(stringResource(R.string.retry))
+            item(key = "operation-state") {
+                when (val state = operationState) {
+                    ReviewOperationState.Idle -> Unit
+                    is ReviewOperationState.Running -> StudyFlowSectionCard(
+                        title = stringResource(R.string.review_operation_running),
+                    ) {
+                        Text(stringResource(R.string.review_operation_running_message))
+                    }
+                    is ReviewOperationState.Succeeded -> StudyFlowSectionCard(
+                        title = stringResource(R.string.review_operation_succeeded),
+                    ) {
+                        Text(stringResource(R.string.review_operation_succeeded_message))
+                    }
+                    is ReviewOperationState.Failed -> StudyFlowSectionCard(
+                        title = stringResource(R.string.review_operation_failed),
+                    ) {
+                        Text(
+                            stringResource(R.string.review_operation_failed_message),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        OutlinedButton(onClick = { execute(state.mutation) }) {
+                            Text(stringResource(R.string.retry))
+                        }
                     }
                 }
             }
-            ReviewSummaryCard(queue = queue)
-            WrongAnswerNotebookCard(
-                errors = queue.errors,
-                reviewItems = queue.due + queue.upcoming,
-                enabled = !operationRunning,
-                onScheduleReview = { error -> execute(ReviewMutation.ScheduleError(error.id)) },
-                onResolve = { error -> execute(ReviewMutation.ResolveError(error.id)) },
-            )
-            StudyFlowSectionCard(title = stringResource(R.string.add_flashcard)) {
-                OutlinedTextField(
-                    value = front,
-                    onValueChange = { front = it },
-                    label = { Text(stringResource(R.string.flashcard_front)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2,
-                )
-                OutlinedTextField(
-                    value = back,
-                    onValueChange = { back = it },
-                    label = { Text(stringResource(R.string.flashcard_back)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2,
-                )
-                Button(
-                    onClick = {
-                        execute(
-                            ReviewMutation.CreateFlashcard(
-                                id = FlashcardId(UUID.randomUUID().toString()),
-                                front = front,
-                                back = back,
-                            ),
-                        )
-                    },
-                    enabled = front.isNotBlank() && back.isNotBlank() && !operationRunning,
-                ) {
-                    Icon(Icons.Outlined.Add, contentDescription = null)
-                    Text(text = stringResource(R.string.create_flashcard))
-                }
-            }
-            StudyFlowSectionCard(title = stringResource(R.string.review_queue)) {
-                ReviewFilterRow(selected = filter, onSelected = { filter = it })
-                val items = queue.itemsFor(filter)
-                if (items.isEmpty()) {
+            item(key = "review-summary") { ReviewSummaryCard(queue = queue) }
+            item(key = "wrong-answer-heading") {
+                StudyFlowSectionCard(title = stringResource(R.string.wrong_answer_notebook)) {
                     Text(
-                        text = stringResource(R.string.no_reviews_for_filter),
+                        text = if (sortedErrors.isEmpty()) {
+                            stringResource(R.string.no_wrong_answers)
+                        } else {
+                            pluralStringResource(R.plurals.error_count, sortedErrors.size, sortedErrors.size)
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                } else {
-                    items.forEach { item ->
-                        ReviewItemRow(
-                            item = item,
-                            content = reviewItemContent(
-                                item = item,
-                                questions = questions,
-                                flashcards = queue.flashcards,
-                                errors = queue.errors,
-                                topics = syllabus?.topics.orEmpty(),
-                            ),
-                            enabled = !operationRunning,
-                            onAgain = { execute(ReviewMutation.Grade(item.id, grade = 1)) },
-                            onGood = { execute(ReviewMutation.Grade(item.id, grade = 4)) },
-                            onEasy = { execute(ReviewMutation.Grade(item.id, grade = 5)) },
-                            onSkip = { execute(ReviewMutation.Skip(item.id)) },
+                }
+            }
+            items(
+                items = sortedErrors,
+                key = { error -> "error:${error.id.value}" },
+            ) { error ->
+                val priority = com.mikeyphw.studyflow.core.domain.WrongAnswerRemediator.priorityFor(
+                    error = error,
+                    nowEpochMillis = System.currentTimeMillis(),
+                    linkedReviews = activeReviewsByErrorId[error.id].orEmpty(),
+                )
+                WrongAnswerRow(
+                    error = error,
+                    priority = priority,
+                    suggestion = com.mikeyphw.studyflow.core.domain.WrongAnswerRemediator.suggestionFor(error),
+                    enabled = !operationRunning,
+                    onScheduleReview = { execute(ReviewMutation.ScheduleError(error.id)) },
+                    onResolve = { execute(ReviewMutation.ResolveError(error.id)) },
+                )
+            }
+            item(key = "add-flashcard") {
+                StudyFlowSectionCard(title = stringResource(R.string.add_flashcard)) {
+                    OutlinedTextField(
+                        value = front,
+                        onValueChange = { front = it },
+                        label = { Text(stringResource(R.string.flashcard_front)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                    )
+                    OutlinedTextField(
+                        value = back,
+                        onValueChange = { back = it },
+                        label = { Text(stringResource(R.string.flashcard_back)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                    )
+                    Button(
+                        onClick = {
+                            execute(
+                                ReviewMutation.CreateFlashcard(
+                                    id = FlashcardId(UUID.randomUUID().toString()),
+                                    front = front,
+                                    back = back,
+                                ),
+                            )
+                        },
+                        enabled = front.isNotBlank() && back.isNotBlank() && !operationRunning,
+                    ) {
+                        Icon(Icons.Outlined.Add, contentDescription = null)
+                        Text(text = stringResource(R.string.create_flashcard))
+                    }
+                }
+            }
+            item(key = "review-queue-heading") {
+                StudyFlowSectionCard(title = stringResource(R.string.review_queue)) {
+                    ReviewFilterRow(selected = filter, onSelected = { filter = it })
+                    if (filteredItems.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.no_reviews_for_filter),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
+            }
+            items(
+                items = filteredItems,
+                key = { item -> "review:${item.id.value}" },
+            ) { item ->
+                ReviewItemRow(
+                    item = item,
+                    content = contentIndex.contentFor(item),
+                    enabled = !operationRunning,
+                    onAgain = { execute(ReviewMutation.Grade(item.id, grade = 1)) },
+                    onGood = { execute(ReviewMutation.Grade(item.id, grade = 4)) },
+                    onEasy = { execute(ReviewMutation.Grade(item.id, grade = 5)) },
+                    onSkip = { execute(ReviewMutation.Skip(item.id)) },
+                )
             }
         }
     }
@@ -364,21 +404,25 @@ internal fun ReviewQueue.alreadyReflects(mutation: ReviewMutation): Boolean = wh
 
 private data class ReviewItemContent(val title: String, val body: String?)
 
-private fun reviewItemContent(
-    item: ReviewItem,
+private class ReviewItemContentIndex(
     questions: List<Question>,
     flashcards: List<Flashcard>,
     errors: List<ErrorEntry>,
     topics: List<Topic>,
-): ReviewItemContent {
-    item.questionId?.let { id ->
-        questions.firstOrNull { it.id == id }?.let { return ReviewItemContent(it.statement, null) }
-    }
-    item.flashcardId?.let { id ->
-        flashcards.firstOrNull { it.id == id }?.let { return ReviewItemContent(it.front, it.back) }
-    }
-    item.errorEntryId?.let { id ->
-        errors.firstOrNull { it.id == id }?.let { error ->
+) {
+    private val questionsById = questions.associateBy(Question::id)
+    private val flashcardsById = flashcards.associateBy(Flashcard::id)
+    private val errorsById = errors.associateBy(ErrorEntry::id)
+    private val topicsById = topics.associateBy(Topic::id)
+
+    fun contentFor(item: ReviewItem): ReviewItemContent {
+        item.questionId?.let(questionsById::get)?.let { question ->
+            return ReviewItemContent(question.statement, null)
+        }
+        item.flashcardId?.let(flashcardsById::get)?.let { flashcard ->
+            return ReviewItemContent(flashcard.front, flashcard.back)
+        }
+        item.errorEntryId?.let(errorsById::get)?.let { error ->
             val body = listOfNotNull(
                 error.chosenAnswer?.let { "Chosen: $it" },
                 error.correctAnswer?.let { "Correct: $it" },
@@ -389,51 +433,10 @@ private fun reviewItemContent(
                 body.takeIf(String::isNotBlank),
             )
         }
-    }
-    item.topicId?.let { id ->
-        topics.firstOrNull { it.id == id }?.let { topic ->
+        item.topicId?.let(topicsById::get)?.let { topic ->
             return ReviewItemContent(topic.name, topic.description.takeIf(String::isNotBlank))
         }
-    }
-    return ReviewItemContent(item.method.name.replace('_', ' '), null)
-}
-
-@Composable
-private fun WrongAnswerNotebookCard(
-    errors: List<ErrorEntry>,
-    reviewItems: List<ReviewItem>,
-    enabled: Boolean,
-    onScheduleReview: (ErrorEntry) -> Unit,
-    onResolve: (ErrorEntry) -> Unit,
-) {
-    StudyFlowSectionCard(title = stringResource(R.string.wrong_answer_notebook)) {
-        if (errors.isEmpty()) {
-            Text(
-                text = stringResource(R.string.no_wrong_answers),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                errors.sortedWith(
-                    compareByDescending<ErrorEntry> { it.recurrenceCount }
-                        .thenByDescending { it.updatedAtEpochMillis },
-                ).forEach { error ->
-                    val priority = com.mikeyphw.studyflow.core.domain.WrongAnswerRemediator.priorityFor(
-                        error = error,
-                        nowEpochMillis = System.currentTimeMillis(),
-                        linkedReviews = reviewItems.filter { it.errorEntryId == error.id },
-                    )
-                    WrongAnswerRow(
-                        error = error,
-                        priority = priority,
-                        suggestion = com.mikeyphw.studyflow.core.domain.WrongAnswerRemediator.suggestionFor(error),
-                        enabled = enabled,
-                        onScheduleReview = { onScheduleReview(error) },
-                        onResolve = { onResolve(error) },
-                    )
-                }
-            }
-        }
+        return ReviewItemContent(item.method.name.replace('_', ' '), null)
     }
 }
 

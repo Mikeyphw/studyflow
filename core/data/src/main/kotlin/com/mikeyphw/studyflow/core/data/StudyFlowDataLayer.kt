@@ -3,6 +3,8 @@ package com.mikeyphw.studyflow.core.data
 import android.content.Context
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
+import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder
+import com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
@@ -17,6 +19,9 @@ import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
 import com.mikeyphw.studyflow.core.domain.StudyReviewRepository
 import com.mikeyphw.studyflow.core.domain.StudyScheduleRepository
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Public composition boundary for the data layer.
@@ -51,12 +56,15 @@ fun createStudyFlowDataLayer(
     context: Context,
     applicationVersion: String,
     clock: () -> Long = System::currentTimeMillis,
+    diagnosticRecorder: DiagnosticRecorder = NoOpDiagnosticRecorder,
 ): StudyFlowDataLayer {
     val database = StudyFlowDatabase.create(context)
+    val dataSharingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val studyPlanRepository = RoomStudyPlanRepository(
         context = context.applicationContext,
         database = database,
         clock = clock,
+        diagnosticRecorder = diagnosticRecorder,
     )
     val samplePlanProvisioningRepository = RoomSamplePlanProvisioningRepository(database, clock)
     val studyContentRepository = RoomStudyContentRepository(database, clock)
@@ -66,13 +74,13 @@ fun createStudyFlowDataLayer(
         database = database,
         clock = clock,
     )
-    val studyScheduleRepository = RoomStudyScheduleRepository(database)
-    val studySessionRepository = RoomStudySessionRepository(database)
-    val studyPracticeRepository = RoomStudyPracticeRepository(database)
+    val studyScheduleRepository = RoomStudyScheduleRepository(database, diagnosticRecorder)
+    val studySessionRepository = RoomStudySessionRepository(database, diagnosticRecorder)
+    val studyPracticeRepository = RoomStudyPracticeRepository(database, diagnosticRecorder)
     val studyLibraryRepository = RoomStudyLibraryRepository(database)
-    val studyReviewRepository = RoomStudyReviewRepository(database)
+    val studyReviewRepository = RoomStudyReviewRepository(database, diagnosticRecorder)
     val studyProgressRepository = RoomStudyProgressRepository(database)
-    val studyAnalyticsRepository = RoomStudyAnalyticsRepository(database, clock)
+    val studyAnalyticsRepository = RoomStudyAnalyticsRepository(database, dataSharingScope, clock)
     val annexFileStorageRepository = RoomAnnexFileStorageRepository(
         context = context.applicationContext,
         database = database,
@@ -83,6 +91,7 @@ fun createStudyFlowDataLayer(
         database = database,
         clock = clock,
         applicationVersion = applicationVersion,
+        diagnosticRecorder = diagnosticRecorder,
     )
     return StudyFlowDataLayer(
         studyPlanRepository = studyPlanRepository,

@@ -8,6 +8,7 @@ import com.mikeyphw.studyflow.core.diagnostics.DebugProbeStatus
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticEvent
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticOutcome
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder
+import com.mikeyphw.studyflow.core.diagnostics.RuntimeSelfCheckVerdict
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -22,7 +23,7 @@ class StudyFlowRuntimeSelfCheckSuiteTest {
         val suite = StudyFlowRuntimeSelfCheckSuite(
             runProbe = { id ->
                 observed += id
-                DebugProbeResult(id, DebugProbeStatus.PASSED)
+                passingResult(id)
             },
             recorder = recorder,
             clock = tickingClock(),
@@ -69,6 +70,29 @@ class StudyFlowRuntimeSelfCheckSuiteTest {
         }
     }
 
+    @Test
+    fun `suite cancellation preserves partial terminal run`() = runBlocking {
+        val suite = StudyFlowRuntimeSelfCheckSuite(
+            probeIds = listOf(DebugProbeId.RECORDER_HEALTH, DebugProbeId.NOTIFICATION_HEALTH),
+            runProbe = { id ->
+                if (id == DebugProbeId.NOTIFICATION_HEALTH) throw CancellationException("cancel")
+                passingResult(id)
+            },
+            recorder = RecordingRecorder(),
+            clock = tickingClock(),
+        )
+
+        try {
+            suite.run(DebugProbeReport.empty())
+            throw AssertionError("Expected cancellation")
+        } catch (cancelled: RuntimeSelfCheckCancellation) {
+            assertEquals(RuntimeSelfCheckVerdict.CANCELLED, cancelled.run.verdict)
+            assertEquals(2, cancelled.run.attemptedProbeIds.size)
+            assertEquals(DebugProbeStatus.PASSED, cancelled.run.results.getValue(DebugProbeId.RECORDER_HEALTH).status)
+            assertEquals(DebugProbeStatus.CANCELLED, cancelled.run.results.getValue(DebugProbeId.NOTIFICATION_HEALTH).status)
+        }
+    }
+
     @Test(expected = AssertionError::class)
     fun `suite fatal errors are never converted into ordinary failure`() {
         runBlocking {
@@ -79,6 +103,23 @@ class StudyFlowRuntimeSelfCheckSuiteTest {
             )
             suite.run(DebugProbeReport.empty())
         }
+    }
+
+    private fun passingResult(id: DebugProbeId): DebugProbeResult {
+        val facts = when (id) {
+            DebugProbeId.SEARCH_QUERY,
+            DebugProbeId.RECOMMENDATION_QUERY,
+            DebugProbeId.SYNC_FOUNDATION,
+            DebugProbeId.WIDGET_REFRESH,
+            -> mapOf("behavior_verified" to "true")
+            DebugProbeId.BACKUP_CONFIGURATION -> mapOf("enabled" to "false", "expected_enabled" to "false")
+            DebugProbeId.FILE_PROVIDER_CONFIGURATION -> mapOf(
+                "allowed_root" to "true",
+                "private_root_rejected" to "true",
+            )
+            else -> emptyMap()
+        }
+        return DebugProbeResult(id, DebugProbeStatus.PASSED, safeFacts = facts)
     }
 
     private fun tickingClock(): () -> Long {

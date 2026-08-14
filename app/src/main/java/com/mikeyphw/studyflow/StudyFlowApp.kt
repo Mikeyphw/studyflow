@@ -114,12 +114,6 @@ import com.mikeyphw.studyflow.core.navigation.TodayRoute
 import com.mikeyphw.studyflow.core.domain.RuntimeSmokeWorkbench
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.core.model.RuntimeSmokeProbeKind
-import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
-import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
-import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
-import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import com.mikeyphw.studyflow.feature.analytics.StudyAnalyticsScreen
 import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
 import com.mikeyphw.studyflow.feature.library.StudyLibraryScreen
@@ -705,276 +699,68 @@ internal fun StudyFlowNavHost(
             )
         }
         composable<DebugWorkbenchRoute> {
-            var timeline by remember {
-                mutableStateOf(DiagnosticTimelineSnapshot(emptyList(), 0, 0))
-            }
-            var probeReport by remember { mutableStateOf(DebugProbeReport.empty()) }
-            var safeSuiteRunning by rememberSaveable { mutableStateOf(false) }
-            var actionResult by rememberSaveable { mutableStateOf<DebugWorkbenchActionResult?>(null) }
-            var selfCheckHistory by remember { mutableStateOf(RuntimeSelfCheckHistory()) }
-            var supportBundleSealReport by remember { mutableStateOf(SupportBundleSealReport.notRun()) }
-            var reminderLabReport by remember {
-                mutableStateOf(ReminderNotificationLabReport(status = DebugLabStatus.NOT_RUN))
-            }
-            var reminderLabAction by rememberSaveable { mutableStateOf<ReminderLabActionResult?>(null) }
-            var reminderLabRunning by rememberSaveable { mutableStateOf(false) }
-            var databasePortabilityReport by remember {
-                mutableStateOf(
-                    DatabasePortabilityLabReport(
-                        database = DatabaseHealthLabReport(status = DebugLabStatus.NOT_RUN),
-                    ),
-                )
-            }
-            var databasePortabilityAction by rememberSaveable {
-                mutableStateOf<DatabasePortabilityLabActionResult?>(null)
-            }
-            var databasePortabilityRunning by rememberSaveable { mutableStateOf(false) }
-            var studyEngineReport by remember {
-                mutableStateOf(StudyEngineLabReport(status = DebugLabStatus.NOT_RUN))
-            }
-            var studyEngineAction by rememberSaveable { mutableStateOf<StudyEngineLabActionResult?>(null) }
-            var studyEngineRunning by rememberSaveable { mutableStateOf(false) }
-            val reminderLab = remember(container, preferences.defaultStudyPlanId) {
-                StudyFlowReminderNotificationLab(
-                    context = context,
-                    container = container,
-                    defaultPlanId = { preferences.defaultStudyPlanId },
-                )
-            }
-            val databasePortabilityLab = remember(container, preferences.defaultStudyPlanId) {
-                StudyFlowDatabasePortabilityLab(
-                    container = container,
-                    defaultPlanId = { preferences.defaultStudyPlanId },
-                )
-            }
-            val studyEngineLab = remember(container, preferences.defaultStudyPlanId) {
-                StudyFlowStudyEngineLab(
-                    container = container,
-                    defaultPlanId = { preferences.defaultStudyPlanId },
-                )
-            }
-            val probeRegistry = remember(container, preferences.defaultStudyPlanId) {
-                StudyFlowDebugProbeRegistry(
-                    context = context,
-                    container = container,
-                    defaultPlanId = { preferences.defaultStudyPlanId },
-                )
-            }
-            val runtimeSelfCheckSuite = remember(container, preferences.defaultStudyPlanId) {
-                StudyFlowRuntimeSelfCheckSuite(
-                    runProbe = probeRegistry::run,
-                    recorder = container.diagnosticRecorder,
-                )
-            }
-            val debugActions = remember(
+            val debugViewModelFactory = remember(
                 container,
                 context,
                 debugClipboardLabel,
                 debugBundleChooserTitle,
             ) {
-                StudyFlowDebugWorkbenchActions.android(
+                StudyFlowDebugWorkbenchViewModel.factory(
                     context = context,
-                    store = container.diagnosticRecorder,
+                    container = container,
                     clipboardLabel = debugClipboardLabel,
                     chooserTitle = debugBundleChooserTitle,
                 )
             }
-
-            suspend fun refreshDiagnostics() {
-                timeline = debugActions.loadTimeline()
+            val debugViewModel: StudyFlowDebugWorkbenchViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = debugViewModelFactory,
+            )
+            LaunchedEffect(preferences.defaultStudyPlanId) {
+                debugViewModel.updateDefaultPlanId(preferences.defaultStudyPlanId)
             }
-
-            suspend fun executeProbe(id: DebugProbeId) {
-                probeReport = DebugProbeReportPolicy.markRunning(probeReport, id)
-                try {
-                    val result = probeRegistry.run(id)
-                    probeReport = DebugProbeReportPolicy.complete(probeReport, result)
-                } catch (cancelled: CancellationException) {
-                    probeReport = DebugProbeReportPolicy.complete(
-                        probeReport,
-                        DebugProbeResult(
-                            id = id,
-                            status = DebugProbeStatus.CANCELLED,
-                            completedAtEpochMillis = System.currentTimeMillis(),
-                        ),
-                    )
-                    throw cancelled
-                } finally {
-                    refreshDiagnostics()
-                }
-            }
-
-            LaunchedEffect(Unit) {
-                refreshDiagnostics()
-            }
-
+            val debugState by debugViewModel.uiState.collectAsStateWithLifecycle()
             val shellReport = DebugWorkbenchShellPolicy.evaluate(
                 store = container.diagnosticRecorder,
-                timeline = timeline,
+                timeline = debugState.timeline,
             )
             DebugWorkbenchScreen(
                 shellReport = shellReport,
-                timeline = timeline,
-                actionResult = actionResult,
-                selfCheckHistory = selfCheckHistory,
-                supportBundleSealReport = supportBundleSealReport,
-                onRefresh = {
-                    coroutineScope.launch {
-                        refreshDiagnostics()
-                        actionResult = DebugWorkbenchActionResult.REFRESHED
-                    }
-                },
-                onCopyStatus = {
-                    copyDebugText(context, debugClipboardLabel, shellReport.toClipboardReport())
-                    actionResult = DebugWorkbenchActionResult.STATUS_COPIED
-                },
-                onCopyTimeline = {
-                    coroutineScope.launch {
-                        val text = debugActions.copyTimeline()
-                        copyDebugText(context, debugClipboardLabel, text)
-                        actionResult = DebugWorkbenchActionResult.TIMELINE_COPIED
-                    }
-                },
-                onClearHistory = {
-                    coroutineScope.launch {
-                        val cleared = debugActions.clearHistory()
-                        actionResult = if (cleared) {
-                            refreshDiagnostics()
-                            DebugWorkbenchActionResult.HISTORY_CLEARED
-                        } else {
-                            DebugWorkbenchActionResult.HISTORY_BUSY
-                        }
-                    }
-                },
-                onExportSupportBundle = {
-                    coroutineScope.launch {
-                        actionResult = debugActions.exportAndShare()
-                        supportBundleSealReport = debugActions.supportBundleSealReport()
-                    }
-                },
+                timeline = debugState.timeline,
+                actionResult = debugState.actionResult,
+                selfCheckHistory = debugState.selfCheckHistory,
+                supportBundleSealReport = debugState.supportBundleSealReport,
+                onRefresh = debugViewModel::refresh,
+                onCopyStatus = debugViewModel::copyStatus,
+                onCopyTimeline = debugViewModel::copyTimeline,
+                onClearHistory = debugViewModel::clearHistory,
+                onExportSupportBundle = debugViewModel::exportSupportBundle,
                 onOpenRuntimeSmokeWorkbench = { navController.navigate(RuntimeSmokeRoute) },
                 onBack = navController::popBackStack,
                 probeContent = {
                     DebugProbePanel(
-                        report = probeReport,
-                        safeSuiteRunning = safeSuiteRunning,
-                        onRunProbe = { id -> coroutineScope.launch { executeProbe(id) } },
-                        onRunSafeSuite = {
-                            if (!safeSuiteRunning) {
-                                coroutineScope.launch {
-                                    safeSuiteRunning = true
-                                    try {
-                                        val (updatedReport, run) = runtimeSelfCheckSuite.run(probeReport)
-                                        probeReport = updatedReport
-                                        selfCheckHistory = selfCheckHistory.record(run)
-                                        refreshDiagnostics()
-                                    } catch (cancelled: CancellationException) {
-                                        throw cancelled
-                                    } finally {
-                                        safeSuiteRunning = false
-                                    }
-                                }
-                            }
-                        },
+                        report = debugState.probeReport,
+                        safeSuiteRunning = debugState.safeSuiteRunning,
+                        onRunProbe = debugViewModel::runProbe,
+                        onRunSafeSuite = debugViewModel::runSafeSuite,
                     )
                 },
                 labContent = {
                     DebugLabsPanel(
-                        reminderReport = reminderLabReport,
-                        reminderActionResult = reminderLabAction,
-                        reminderRunning = reminderLabRunning,
-                        onInspectReminders = {
-                            if (!reminderLabRunning) coroutineScope.launch {
-                                reminderLabRunning = true
-                                try {
-                                    val (report, result) = reminderLab.inspect()
-                                    reminderLabReport = report
-                                    reminderLabAction = result
-                                    refreshDiagnostics()
-                                } finally {
-                                    reminderLabRunning = false
-                                }
-                            }
-                        },
-                        onReconcileReminders = {
-                            if (!reminderLabRunning) coroutineScope.launch {
-                                reminderLabRunning = true
-                                try {
-                                    reminderLabAction = reminderLab.reconcile()
-                                    reminderLabReport = reminderLab.inspect().first
-                                    refreshDiagnostics()
-                                } finally {
-                                    reminderLabRunning = false
-                                }
-                            }
-                        },
-                        onPostDiagnosticNotification = {
-                            if (!reminderLabRunning) coroutineScope.launch {
-                                reminderLabRunning = true
-                                try {
-                                    reminderLabAction = reminderLab.postDiagnosticNotification()
-                                    reminderLabReport = reminderLab.inspect().first
-                                    refreshDiagnostics()
-                                } finally {
-                                    reminderLabRunning = false
-                                }
-                            }
-                        },
-                        databasePortabilityReport = databasePortabilityReport,
-                        databasePortabilityActionResult = databasePortabilityAction,
-                        databasePortabilityRunning = databasePortabilityRunning,
-                        onInspectDatabase = {
-                            if (!databasePortabilityRunning) coroutineScope.launch {
-                                databasePortabilityRunning = true
-                                try {
-                                    val (report, result) = databasePortabilityLab.inspectDatabase(
-                                        databasePortabilityReport,
-                                    )
-                                    databasePortabilityReport = report
-                                    databasePortabilityAction = result
-                                    refreshDiagnostics()
-                                } finally {
-                                    databasePortabilityRunning = false
-                                }
-                            }
-                        },
-                        onRunPortabilityDrills = {
-                            if (!databasePortabilityRunning) coroutineScope.launch {
-                                databasePortabilityRunning = true
-                                try {
-                                    val (report, result) = databasePortabilityLab.runPortabilityDrills(
-                                        databasePortabilityReport,
-                                    )
-                                    databasePortabilityReport = report
-                                    databasePortabilityAction = result
-                                    refreshDiagnostics()
-                                } finally {
-                                    databasePortabilityRunning = false
-                                }
-                            }
-                        },
-                        studyEngineReport = studyEngineReport,
-                        studyEngineActionResult = studyEngineAction,
-                        studyEngineRunning = studyEngineRunning,
-                        onInspectStudyEngine = {
-                            if (!studyEngineRunning) coroutineScope.launch {
-                                studyEngineRunning = true
-                                try {
-                                    val (report, result) = studyEngineLab.inspect()
-                                    studyEngineReport = report
-                                    studyEngineAction = result
-                                    refreshDiagnostics()
-                                } catch (cancelled: CancellationException) {
-                                    studyEngineReport = studyEngineReport.copy(
-                                        status = DebugLabStatus.CANCELLED,
-                                        message = StudyEngineLabMessage.INSPECTION_FAILED,
-                                    )
-                                    throw cancelled
-                                } finally {
-                                    studyEngineRunning = false
-                                }
-                            }
-                        },
+                        reminderReport = debugState.reminderLabReport,
+                        reminderActionResult = debugState.reminderLabAction,
+                        reminderRunning = debugState.reminderLabRunning,
+                        onInspectReminders = debugViewModel::inspectReminders,
+                        onReconcileReminders = debugViewModel::reconcileReminders,
+                        onPostDiagnosticNotification = debugViewModel::postDiagnosticNotification,
+                        databasePortabilityReport = debugState.databasePortabilityReport,
+                        databasePortabilityActionResult = debugState.databasePortabilityAction,
+                        databasePortabilityRunning = debugState.databasePortabilityRunning,
+                        onInspectDatabase = debugViewModel::inspectDatabase,
+                        onRunPortabilityDrills = debugViewModel::runPortabilityDrills,
+                        studyEngineReport = debugState.studyEngineReport,
+                        studyEngineActionResult = debugState.studyEngineAction,
+                        studyEngineRunning = debugState.studyEngineRunning,
+                        onInspectStudyEngine = debugViewModel::inspectStudyEngine,
                     )
                 },
             )
@@ -995,92 +781,40 @@ internal fun StudyFlowNavHost(
                 report = RuntimeSmokeWorkbench.markBlocked(report, kind, detail)
             }
 
-            suspend fun withDefaultPlan(
-                kind: RuntimeSmokeProbeKind,
-                block: suspend (StudyPlanId) -> Unit,
-            ) {
-                val planId = defaultPlanId
-                if (planId == null) {
-                    markBlocked(kind, "Set a default Study Plan before running this probe.")
-                    return
-                }
-                block(planId)
-            }
-
             fun runProbe(kind: RuntimeSmokeProbeKind) {
                 coroutineScope.launch {
-                    val result = runRecoverableOperation {
-                        when (kind) {
-                            RuntimeSmokeProbeKind.REMINDER_RECONCILIATION -> withDefaultPlan(kind) { planId ->
-                                container.reminderDeliveryCoordinator.reconcilePlan(planId)
-                                markPassed(
-                                    kind,
-                                    "Reminder reconciliation requested for the default Study Plan.",
-                                )
-                            }
-                            RuntimeSmokeProbeKind.WIDGET_REFRESH -> {
-                                StudyFlowWidgetUpdateCoordinator.refreshAll(context.applicationContext)
-                                markPassed(kind, "Today widget refresh requested.")
-                            }
-                            RuntimeSmokeProbeKind.BACKUP_DRY_RUN -> withDefaultPlan(kind) { planId ->
-                                val exported = ByteArrayOutputStream()
-                                container.manageStudyPlanPortability.exportPlan(
-                                    planId = planId,
-                                    options = StudyPlanExportOptions(
-                                        mode = StudyPlanExportMode.FULL,
-                                        includeAnnexMetadata = true,
-                                        includeAnnexPayloads = false,
-                                        metadataPrivacyMode = true,
-                                        redactNotes = true,
-                                        redactHistory = true,
-                                    ),
-                                    output = exported,
-                                )
-                                val backupBytes = exported.toByteArray()
-                                val integrity = container.manageStudyPlanPortability.inspectBackup(
-                                    ByteArrayInputStream(backupBytes),
-                                )
-                                val dryRun = container.manageStudyPlanPortability.dryRunImport(
-                                    input = ByteArrayInputStream(backupBytes),
-                                    strategy = StudyPlanImportStrategy.CREATE_AS_NEW,
-                                )
-                                if (integrity.canRestore && dryRun.databaseRowsChanged == 0) {
-                                    markPassed(
-                                        kind,
-                                        "Backup inspect and restore dry-run completed with zero writes.",
-                                    )
-                                } else {
-                                    markBlocked(
-                                        kind,
-                                        "Backup dry-run did not satisfy integrity or zero-write checks.",
-                                    )
-                                }
-                            }
-                            RuntimeSmokeProbeKind.SEARCH_QUERY -> {
-                                val results = container.manageStudyDiscovery.search("study")
-                                markPassed(kind, "Global search query completed with ${results.size} result(s).")
-                            }
-                            RuntimeSmokeProbeKind.RECOMMENDATION_QUERY -> withDefaultPlan(kind) { planId ->
-                                val recommendations = container.manageStudyDiscovery.recommendations(planId)
-                                markPassed(
-                                    kind,
-                                    "Recommendation query completed with ${recommendations.size} result(s).",
-                                )
-                            }
-                            RuntimeSmokeProbeKind.SYNC_FOUNDATION -> {
-                                val summary = container.manageStudyCloudSync.inspectLocalChanges()
-                                markPassed(
-                                    kind,
-                                    "Local checkpoint inspection completed for ${summary.planCount} plan(s).",
-                                )
-                            }
-                        }
+                    val probeId = when (kind) {
+                        RuntimeSmokeProbeKind.REMINDER_RECONCILIATION -> DebugProbeId.REMINDER_RECONCILIATION
+                        RuntimeSmokeProbeKind.WIDGET_REFRESH -> DebugProbeId.WIDGET_REFRESH
+                        RuntimeSmokeProbeKind.BACKUP_DRY_RUN -> DebugProbeId.BACKUP_DRY_RUN
+                        RuntimeSmokeProbeKind.SEARCH_QUERY -> DebugProbeId.SEARCH_QUERY
+                        RuntimeSmokeProbeKind.RECOMMENDATION_QUERY -> DebugProbeId.RECOMMENDATION_QUERY
+                        RuntimeSmokeProbeKind.SYNC_FOUNDATION -> DebugProbeId.SYNC_FOUNDATION
                     }
-                    result.exceptionOrNull()?.let { failure ->
-                        markBlocked(
+                    val registry = StudyFlowDebugProbeRegistry(
+                        context = context.applicationContext,
+                        container = container,
+                        defaultPlanId = { preferences.defaultStudyPlanId },
+                    )
+                    val result = try {
+                        registry.run(probeId)
+                    } catch (cancelled: java.util.concurrent.CancellationException) {
+                        throw cancelled
+                    } catch (fatal: Error) {
+                        throw fatal
+                    } catch (_: Exception) {
+                        null
+                    }
+                    if (result?.status == DebugProbeStatus.PASSED) {
+                        markPassed(
                             kind,
-                            failure.message ?: failure::class.java.simpleName,
+                            "Behavioral probe passed (${probeId.name.lowercase()}).",
                         )
+                    } else {
+                        val detail = result?.let { probeResult ->
+                            "${probeResult.status.name}: ${probeResult.message.name}"
+                        } ?: "FAILED: probe execution error"
+                        markBlocked(kind, detail)
                     }
                 }
             }

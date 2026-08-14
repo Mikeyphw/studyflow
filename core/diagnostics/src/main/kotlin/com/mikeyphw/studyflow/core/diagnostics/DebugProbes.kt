@@ -33,10 +33,19 @@ enum class DebugProbeMessage {
     NO_WIDGET_INSTANCES,
     PROCESS_HISTORY_UNAVAILABLE,
     NO_PROCESS_EXIT_HISTORY,
-    BACKUP_DISABLED,
+    RECENT_CRASH_OR_ANR,
+    RECENT_ABNORMAL_EXIT,
+    RECENT_LOW_MEMORY_EXIT,
+    BACKUP_POLICY_INVALID,
     BACKUP_RULES_INVALID,
     FILE_PROVIDER_INVALID,
+    WIDGET_REFRESH_NOT_OBSERVED,
     BACKUP_DRY_RUN_INTEGRITY_FAILED,
+    SEARCH_CANARY_FAILED,
+    NO_SEARCH_EVIDENCE,
+    RECOMMENDATION_CANARY_FAILED,
+    NO_RECOMMENDATION_EVIDENCE,
+    SYNC_CANARY_FAILED,
     PROBE_TIMED_OUT,
 }
 
@@ -120,11 +129,15 @@ data class WidgetHealthSnapshot(
 data class ProcessExitHealthSnapshot(
     val apiSupported: Boolean,
     val recentExitCount: Int,
+    val crashOrAnrCount: Int,
+    val abnormalExitCount: Int,
+    val lowMemoryCount: Int,
     val apiLevel: Int,
 )
 
 data class BackupConfigurationSnapshot(
     val backupAllowed: Boolean,
+    val expectedBackupAllowed: Boolean,
     val legacyRuleLinked: Boolean,
     val modernRuleLinked: Boolean,
     val legacyRulePresent: Boolean,
@@ -136,6 +149,8 @@ data class FileProviderHealthSnapshot(
     val providerExported: Boolean,
     val grantsUriPermissions: Boolean,
     val pathMetadataPresent: Boolean,
+    val allowedRootGranted: Boolean,
+    val privateRootRejected: Boolean,
 )
 
 object DebugProbePlatformPolicy {
@@ -193,15 +208,23 @@ object DebugProbePlatformPolicy {
                 safeFacts = mapOf("api_level" to snapshot.apiLevel.toString()),
             )
         }
+        val (status, message) = when {
+            snapshot.recentExitCount == 0 -> DebugProbeStatus.BLOCKED to DebugProbeMessage.NO_PROCESS_EXIT_HISTORY
+            snapshot.crashOrAnrCount > 0 -> DebugProbeStatus.WARNING to DebugProbeMessage.RECENT_CRASH_OR_ANR
+            snapshot.abnormalExitCount > 0 -> DebugProbeStatus.WARNING to DebugProbeMessage.RECENT_ABNORMAL_EXIT
+            snapshot.lowMemoryCount > 0 -> DebugProbeStatus.WARNING to DebugProbeMessage.RECENT_LOW_MEMORY_EXIT
+            else -> DebugProbeStatus.PASSED to DebugProbeMessage.NONE
+        }
         return DebugProbeResult(
             id = id,
-            status = if (snapshot.recentExitCount == 0) DebugProbeStatus.BLOCKED else DebugProbeStatus.PASSED,
-            message = if (snapshot.recentExitCount == 0) {
-                DebugProbeMessage.NO_PROCESS_EXIT_HISTORY
-            } else {
-                DebugProbeMessage.NONE
-            },
-            safeFacts = mapOf("count" to snapshot.recentExitCount.toString()),
+            status = status,
+            message = message,
+            safeFacts = mapOf(
+                "count" to snapshot.recentExitCount.toString(),
+                "crash_or_anr_count" to snapshot.crashOrAnrCount.toString(),
+                "abnormal_count" to snapshot.abnormalExitCount.toString(),
+                "low_memory_count" to snapshot.lowMemoryCount.toString(),
+            ),
         )
     }
 
@@ -211,7 +234,9 @@ object DebugProbePlatformPolicy {
             snapshot.legacyRulePresent &&
             snapshot.modernRulePresent
         val (status, message) = when {
-            !snapshot.backupAllowed -> DebugProbeStatus.WARNING to DebugProbeMessage.BACKUP_DISABLED
+            snapshot.backupAllowed != snapshot.expectedBackupAllowed -> {
+                DebugProbeStatus.FAILED to DebugProbeMessage.BACKUP_POLICY_INVALID
+            }
             !rulesValid -> DebugProbeStatus.FAILED to DebugProbeMessage.BACKUP_RULES_INVALID
             else -> DebugProbeStatus.PASSED to DebugProbeMessage.NONE
         }
@@ -221,6 +246,7 @@ object DebugProbePlatformPolicy {
             message = message,
             safeFacts = mapOf(
                 "enabled" to snapshot.backupAllowed.toString(),
+                "expected_enabled" to snapshot.expectedBackupAllowed.toString(),
                 "legacy_rule_linked" to snapshot.legacyRuleLinked.toString(),
                 "modern_rule_linked" to snapshot.modernRuleLinked.toString(),
                 "legacy_rule_present" to snapshot.legacyRulePresent.toString(),
@@ -233,7 +259,9 @@ object DebugProbePlatformPolicy {
         val valid = snapshot.providerPresent &&
             !snapshot.providerExported &&
             snapshot.grantsUriPermissions &&
-            snapshot.pathMetadataPresent
+            snapshot.pathMetadataPresent &&
+            snapshot.allowedRootGranted &&
+            snapshot.privateRootRejected
         return DebugProbeResult(
             id = id,
             status = if (valid) DebugProbeStatus.PASSED else DebugProbeStatus.FAILED,
@@ -242,6 +270,8 @@ object DebugProbePlatformPolicy {
                 "available" to snapshot.providerPresent.toString(),
                 "enabled" to valid.toString(),
                 "path_metadata" to snapshot.pathMetadataPresent.toString(),
+                "allowed_root" to snapshot.allowedRootGranted.toString(),
+                "private_root_rejected" to snapshot.privateRootRejected.toString(),
             ),
         )
     }

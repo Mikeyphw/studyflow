@@ -47,6 +47,10 @@ fun ReminderNotificationLabPanel(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(stringResource(R.string.debug_lab_status_value, report.status.label()))
+                Text(stringResource(R.string.debug_reminder_lab_planner_status, report.plannerStatus.label()))
+                Text(stringResource(R.string.debug_reminder_lab_platform_status, report.platformStatus.label()))
+                Text(stringResource(R.string.debug_reminder_lab_scheduling_status, report.schedulingStatus.label()))
+                Text(booleanFact(R.string.debug_reminder_lab_pipeline_verified, report.productionPipelineVerified))
                 if (report.message != ReminderLabMessage.NONE) {
                     Text(
                         text = report.message.label(),
@@ -124,16 +128,16 @@ private fun ReminderCandidateCard(candidate: ReminderCandidateDiagnostic) {
         )
         Text(
             stringResource(
-                R.string.debug_reminder_lab_effective_trigger,
+                R.string.debug_reminder_lab_projected_trigger,
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
                     .format(Date(candidate.effectiveTriggerAtEpochMillis)),
             ),
         )
         Text(stringResource(R.string.debug_reminder_lab_window, candidate.deliveryWindowMillis / 60_000L))
         Text(stringResource(R.string.debug_reminder_lab_late_grace, candidate.lateDeliveryGraceMillis / 60_000L))
-        Text(booleanFact(R.string.debug_reminder_lab_suppressed, candidate.suppressedByQuietHours))
+        Text(booleanFact(R.string.debug_reminder_lab_quiet_delay, candidate.delayedByQuietHours))
         Text(booleanFact(R.string.debug_reminder_lab_pending_identity, candidate.pendingIntentIdentityExists))
-        Text(stringResource(R.string.debug_reminder_lab_request_code, candidate.requestCode))
+        Text(booleanFact(R.string.debug_reminder_lab_bookkeeping, candidate.scheduledBookkeepingPresent))
     }
 }
 
@@ -150,6 +154,8 @@ private fun DebugLabStatus.label(): String = stringResource(
         DebugLabStatus.NOT_RUN -> R.string.debug_probe_not_run
         DebugLabStatus.RUNNING -> R.string.debug_probe_running
         DebugLabStatus.PASSED -> R.string.debug_probe_passed
+        DebugLabStatus.EMPTY -> R.string.debug_probe_empty
+        DebugLabStatus.NOT_APPLICABLE -> R.string.debug_probe_not_applicable
         DebugLabStatus.WARNING -> R.string.debug_probe_warning
         DebugLabStatus.BLOCKED -> R.string.debug_probe_blocked
         DebugLabStatus.FAILED -> R.string.debug_probe_failed

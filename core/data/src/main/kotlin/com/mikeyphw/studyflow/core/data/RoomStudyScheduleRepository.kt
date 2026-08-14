@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 
 internal class RoomStudyScheduleRepository(
     private val database: StudyFlowDatabase,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyScheduleRepository {
     private val planningDao = database.studyPlanningDao()
     private val planDao = database.studyPlanDao()
@@ -153,7 +154,11 @@ internal class RoomStudyScheduleRepository(
         planId: StudyPlanId,
         activities: List<PlannedActivity>,
         replaceUnlocked: Boolean,
-    ): ScheduleGenerationResult = database.withTransaction {
+    ): ScheduleGenerationResult = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.SCHEDULE,
+        action = "schedule-generate",
+    ) {
+        database.withTransaction {
         requirePlan(planId)
         require(activities.all { it.studyPlanId == planId }) { "Generated activities must belong to one Study Plan." }
         require(activities.none { it.status == PlannedActivityStatus.IN_PROGRESS }) {
@@ -176,6 +181,7 @@ internal class RoomStudyScheduleRepository(
             }
         }
         ScheduleGenerationResult(generatedActivities = applied, removedUnlockedActivities = removed)
+    }
     }
 
     override suspend fun applyAdaptivePreview(

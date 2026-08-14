@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.portability
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StudyPlanPackageCodecAnnexPayloadTest {
@@ -52,6 +53,36 @@ class StudyPlanPackageCodecAnnexPayloadTest {
         assertArrayEquals(bytes, decoded.annexPayloadBytes.getValue(payloadEntry.entryName))
     }
 
+
+    @Test
+    fun streamingReaderSpoolsAnnexPayloadWithoutByteArrayMaterialization() {
+        val bytes = ByteArray(2 * 1024 * 1024) { index -> (index % 251).toByte() }
+        val checksum = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(bytes)
+            .joinToString("") { "%02x".format(it) }
+        val payloadEntry = PortableAnnexPayload(
+            annexId = "annex-large",
+            entryName = "annex-payloads/annex-large/payload.bin",
+            fileName = "payload.bin",
+            mimeType = "application/octet-stream",
+            byteSize = bytes.size.toLong(),
+            checksumSha256 = checksum,
+        )
+        val payload = samplePayload(payloadEntry)
+        val encoded = codec.toByteArray(
+            StudyPlanPackageArchive(payload, mapOf(payloadEntry.entryName to bytes)),
+        )
+        val staging = kotlin.io.path.createTempDirectory("studyflow-package-stream-").toFile()
+        try {
+            val decoded = codec.readArchiveStreaming(encoded.inputStream(), staging)
+            assertTrue(decoded.annexPayloadBytes.isEmpty())
+            assertEquals(setOf(payloadEntry.entryName), decoded.annexPayloadStreams.keys)
+            assertArrayEquals(bytes, decoded.openAnnexPayload(payloadEntry.entryName).use { it.readBytes() })
+            assertEquals(1, staging.listFiles().orEmpty().size)
+        } finally {
+            staging.deleteRecursively()
+        }
+    }
 
     @Test(expected = StudyPlanPackageException::class)
     fun writerRejectsArchiveWhoseEntryCountWouldExceedReaderLimit() {

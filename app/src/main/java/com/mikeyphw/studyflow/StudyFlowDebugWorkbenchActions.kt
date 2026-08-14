@@ -8,11 +8,13 @@ import androidx.core.content.FileProvider
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticTimelineReader
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticTimelineSnapshot
+import com.mikeyphw.studyflow.core.diagnostics.SupportBundlePrivacyScanner
 import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealPolicy
 import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealReport
 import com.mikeyphw.studyflow.core.diagnostics.SupportBundleSealStatus
 import com.mikeyphw.studyflow.feature.settings.DebugWorkbenchActionResult
 import java.io.File
+import java.io.InputStream
 import java.security.MessageDigest
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicReference
@@ -33,7 +35,7 @@ internal class StudyFlowDebugWorkbenchActions(
 ) {
     private val lastSealReport = AtomicReference(SupportBundleSealReport.notRun())
 
-    fun supportBundleSealReport(): SupportBundleSealReport = lastSealReport.get()
+    fun supportBundleSealSnapshot(): SupportBundleSealReport = lastSealReport.get()
 
     suspend fun loadTimeline(maxEntries: Int = 250): DiagnosticTimelineSnapshot = withContext(ioContext) {
         DiagnosticTimelineReader.read(
@@ -144,11 +146,14 @@ internal class StudyFlowDebugWorkbenchActions(
 
 private fun inspectSupportBundleFile(bundle: File): SupportBundleSealReport = try {
     ZipFile(bundle).use { zip ->
+        val privacy = zip.inspectTextPayloadPrivacy()
         SupportBundleSealPolicy.inspect(
             entryNames = zip.entries().asSequence().map { entry -> entry.name }.toList(),
             checkedAtEpochMillis = System.currentTimeMillis(),
             checksums = zip.checksumManifest(),
             actualChecksums = zip.actualPayloadChecksums(),
+            privacyScanPassed = privacy.first,
+            redactionReportValid = privacy.second,
         )
     }
 } catch (_: Exception) {
@@ -174,13 +179,55 @@ private fun ZipFile.checksumManifest(): Map<String, String>? {
 private fun ZipFile.actualPayloadChecksums(): Map<String, String> = entries().asSequence()
     .filter { entry -> !entry.isDirectory && entry.name != "checksums.sha256" }
     .associate { entry ->
-        val bytes = getInputStream(entry).use { input -> input.readBytes() }
-        entry.name to bytes.sha256Hex()
+        entry.name to getInputStream(entry).use(InputStream::sha256Hex)
     }
 
-private fun ByteArray.sha256Hex(): String = MessageDigest.getInstance("SHA-256")
-    .digest(this)
-    .joinToString("") { byte -> "%02x".format(byte) }
+private fun ZipFile.inspectTextPayloadPrivacy(): Pair<Boolean, Boolean> {
+    var privacyPassed = true
+    var reportValid = false
+    entries().asSequence()
+        .filter { entry -> !entry.isDirectory && (entry.name.endsWith(".json") || entry.name.endsWith(".jsonl") || entry.name.endsWith(".txt")) }
+        .forEach { entry ->
+            val bytes = getInputStream(entry).use { input -> input.readBounded(MaxSupportBundleTextEntryBytes) }
+                ?: run {
+                    privacyPassed = false
+                    return@forEach
+                }
+            val scan = SupportBundlePrivacyScanner.sanitize(entry.name, bytes)
+            if (!scan.passed || !scan.sanitizedBytes.contentEquals(bytes)) privacyPassed = false
+            if (entry.name == "redaction-report.txt") {
+                reportValid = scan.passed && SupportBundlePrivacyScanner.redactionReportIsValid(
+                    scan.sanitizedBytes.toString(Charsets.UTF_8),
+                )
+            }
+        }
+    return privacyPassed to reportValid
+}
+
+private fun InputStream.readBounded(limit: Int): ByteArray? {
+    val output = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var total = 0
+    while (true) {
+        val count = read(buffer)
+        if (count < 0) break
+        total += count
+        if (total > limit) return null
+        output.write(buffer, 0, count)
+    }
+    return output.toByteArray()
+}
+
+private fun InputStream.sha256Hex(): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    while (true) {
+        val count = read(buffer)
+        if (count < 0) break
+        digest.update(buffer, 0, count)
+    }
+    return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+}
 
 
 private fun pruneGeneratedFiles(directory: File, nowEpochMillis: Long, maxFiles: Int, maxAgeMillis: Long) {
@@ -192,3 +239,5 @@ private fun pruneGeneratedFiles(directory: File, nowEpochMillis: Long, maxFiles:
         .drop(maxFiles)
         .forEach { runCatching { it.delete() } }
 }
+
+private const val MaxSupportBundleTextEntryBytes = 4 * 1024 * 1024

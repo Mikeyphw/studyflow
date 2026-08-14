@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 
 internal class RoomStudyReviewRepository(
     private val database: StudyFlowDatabase,
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyReviewRepository {
     private val retentionDao = database.studyRetentionDao()
     private val planDao = database.studyPlanDao()
@@ -84,7 +85,11 @@ internal class RoomStudyReviewRepository(
         current: ReviewItem,
         completed: ReviewItem,
         successor: ReviewItem,
-    ): ReviewItem = database.withTransaction {
+    ): ReviewItem = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.REVIEWS,
+        action = "review-grade",
+    ) {
+        database.withTransaction {
         require(current.studyPlanId == completed.studyPlanId && current.id == completed.id)
         require(successor.studyPlanId == current.studyPlanId)
         require(completed.status == ReviewStatus.COMPLETED)
@@ -105,8 +110,12 @@ internal class RoomStudyReviewRepository(
         retentionDao.upsertReviewItem(successor.asEntity())
         requireNotNull(retentionDao.findReviewItem(successor.studyPlanId.value, successor.id.value)).asExternalModel()
     }
+    }
 
-    override suspend fun skipReviewIfActive(current: ReviewItem, skipped: ReviewItem): ReviewItem =
+    override suspend fun skipReviewIfActive(current: ReviewItem, skipped: ReviewItem): ReviewItem = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.REVIEWS,
+        action = "review-skip",
+    ) {
         database.withTransaction {
             require(current.studyPlanId == skipped.studyPlanId && current.id == skipped.id)
             require(skipped.status == ReviewStatus.SKIPPED)
@@ -124,6 +133,7 @@ internal class RoomStudyReviewRepository(
             require(changed == 1) { "Review changed or was already terminal; refusing stale skip." }
             requireNotNull(retentionDao.findReviewItem(current.studyPlanId.value, current.id.value)).asExternalModel()
         }
+    }
 
     override suspend fun recordWrongAnswerAndEnsureReview(
         entry: ErrorEntry,

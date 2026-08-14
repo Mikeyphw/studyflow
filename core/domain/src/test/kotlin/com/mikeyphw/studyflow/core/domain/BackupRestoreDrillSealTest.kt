@@ -84,6 +84,60 @@ class BackupRestoreDrillSealTest {
         fixture.clearPasswords()
     }
 
+    @Test
+    fun `annex privacy drill is not applicable when package declares no annex payloads`() = runBlocking {
+        val fixture = BackupRestoreDrillSeal.metadataPrivateAnnexFixture()
+        val original = codec.archiveFromByteArray(encryptedCodec.decrypt(fixture.encryptedPackageBytes, fixture.password))
+        val withoutAnnex = original.copy(
+            payload = original.payload.copy(
+                manifest = original.payload.manifest.copy(
+                    includesAnnexPayloads = false,
+                    annexPayloads = emptyList(),
+                ),
+            ),
+            annexPayloadBytes = emptyMap(),
+            annexPayloadStreams = emptyMap(),
+        )
+        val encrypted = encryptedCodec.encrypt(codec.toByteArray(withoutAnnex), fixture.password)
+        val report = BackupRestoreDrillSeal.runPackageDrills(
+            generatedAtEpochMillis = 28L,
+            encryptedPackageBytes = encrypted,
+            password = fixture.password,
+            wrongPassword = fixture.wrongPassword,
+            rawAnnexId = fixture.rawAnnexId,
+            inspectBackup = ::inspectBackupThroughCodec,
+            dryRunImport = ::dryRunThroughCodec,
+        )
+
+        assertEquals(
+            BackupRestoreDrillStatus.NOT_APPLICABLE,
+            report.results.single { it.kind == BackupRestoreDrillKind.METADATA_PRIVATE_ANNEX }.status,
+        )
+        assertEquals(1, report.notApplicableCount)
+        assertTrue(report.releaseReady)
+        fixture.clearPasswords()
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `drill cancellation is never converted into blocked evidence`() {
+        runBlocking {
+            val fixture = BackupRestoreDrillSeal.metadataPrivateAnnexFixture()
+            try {
+                BackupRestoreDrillSeal.runPackageDrills(
+                    generatedAtEpochMillis = 28L,
+                    encryptedPackageBytes = fixture.encryptedPackageBytes,
+                    password = fixture.password,
+                    wrongPassword = fixture.wrongPassword,
+                    rawAnnexId = fixture.rawAnnexId,
+                    inspectBackup = { _, _ -> throw CancellationException("cancel") },
+                    dryRunImport = ::dryRunThroughCodec,
+                )
+            } finally {
+                fixture.clearPasswords()
+            }
+        }
+    }
+
     private fun inspectBackupThroughCodec(
         bytes: ByteArray,
         password: CharArray?,
@@ -97,6 +151,7 @@ class BackupRestoreDrillSealTest {
             totalRows = archive.payload.tables.sumOf { table -> table.rows.size },
             annexPayloadCount = manifest.annexPayloads.size,
             metadataPrivacyMode = manifest.metadataPrivacyMode,
+            privateIdentifiersVerified = true,
             redactedSections = manifest.redactedSections,
             warnings = StudyPlanPortabilityWarnings.forManifest(manifest),
             canRestore = true,

@@ -129,7 +129,7 @@ class StudyFlowDebugWorkbenchActionsTest {
         )
 
         assertEquals(DebugWorkbenchActionResult.BUNDLE_SEAL_FAILED, actions.exportAndShare())
-        assertEquals(SupportBundleSealStatus.FAILED, actions.supportBundleSealReport().status)
+        assertEquals(SupportBundleSealStatus.FAILED, actions.supportBundleSealSnapshot().status)
         assertTrue(!launched)
     }
 

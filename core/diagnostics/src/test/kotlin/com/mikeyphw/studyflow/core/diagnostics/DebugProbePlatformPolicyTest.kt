@@ -72,66 +72,117 @@ class DebugProbePlatformPolicyTest {
     }
 
     @Test
-    fun `backup policy fails when either manifest link or resource is missing`() {
-        val missingLink = DebugProbePlatformPolicy.backup(
+    fun `backup policy fails when actual backup differs from fail closed intent`() {
+        val unsafe = DebugProbePlatformPolicy.backup(
             DebugProbeId.BACKUP_CONFIGURATION,
             BackupConfigurationSnapshot(
                 backupAllowed = true,
-                legacyRuleLinked = false,
+                expectedBackupAllowed = false,
+                legacyRuleLinked = true,
                 modernRuleLinked = true,
                 legacyRulePresent = true,
                 modernRulePresent = true,
             ),
         )
-        assertEquals(DebugProbeStatus.FAILED, missingLink.status)
-        assertEquals(DebugProbeMessage.BACKUP_RULES_INVALID, missingLink.message)
+        assertEquals(DebugProbeStatus.FAILED, unsafe.status)
+        assertEquals(DebugProbeMessage.BACKUP_POLICY_INVALID, unsafe.message)
 
-        val missingResource = DebugProbePlatformPolicy.backup(
+        val missingRule = DebugProbePlatformPolicy.backup(
             DebugProbeId.BACKUP_CONFIGURATION,
-            BackupConfigurationSnapshot(true, true, true, true, false),
+            BackupConfigurationSnapshot(
+                backupAllowed = false,
+                expectedBackupAllowed = false,
+                legacyRuleLinked = true,
+                modernRuleLinked = true,
+                legacyRulePresent = true,
+                modernRulePresent = false,
+            ),
         )
-        assertEquals(DebugProbeStatus.FAILED, missingResource.status)
+        assertEquals(DebugProbeStatus.FAILED, missingRule.status)
+        assertEquals(DebugProbeMessage.BACKUP_RULES_INVALID, missingRule.message)
 
         val healthy = DebugProbePlatformPolicy.backup(
             DebugProbeId.BACKUP_CONFIGURATION,
-            BackupConfigurationSnapshot(true, true, true, true, true),
+            BackupConfigurationSnapshot(
+                backupAllowed = false,
+                expectedBackupAllowed = false,
+                legacyRuleLinked = true,
+                modernRuleLinked = true,
+                legacyRulePresent = true,
+                modernRulePresent = true,
+            ),
         )
         assertEquals(DebugProbeStatus.PASSED, healthy.status)
     }
 
     @Test
-    fun `file provider policy requires narrow provider metadata and grants`() {
-        val invalid = DebugProbePlatformPolicy.fileProvider(
+    fun `file provider policy fails when private path is grantable`() {
+        val exposedPrivatePath = DebugProbePlatformPolicy.fileProvider(
             DebugProbeId.FILE_PROVIDER_CONFIGURATION,
-            FileProviderHealthSnapshot(true, false, true, false),
+            FileProviderHealthSnapshot(
+                providerPresent = true,
+                providerExported = false,
+                grantsUriPermissions = true,
+                pathMetadataPresent = true,
+                allowedRootGranted = true,
+                privateRootRejected = false,
+            ),
         )
-        assertEquals(DebugProbeStatus.FAILED, invalid.status)
+        assertEquals(DebugProbeStatus.FAILED, exposedPrivatePath.status)
 
         val healthy = DebugProbePlatformPolicy.fileProvider(
             DebugProbeId.FILE_PROVIDER_CONFIGURATION,
-            FileProviderHealthSnapshot(true, false, true, true),
+            FileProviderHealthSnapshot(
+                providerPresent = true,
+                providerExported = false,
+                grantsUriPermissions = true,
+                pathMetadataPresent = true,
+                allowedRootGranted = true,
+                privateRootRejected = true,
+            ),
         )
         assertEquals(DebugProbeStatus.PASSED, healthy.status)
     }
 
     @Test
-    fun `process history policy treats unsupported and empty history as blocked`() {
+    fun `process history policy classifies crash and abnormal exits rather than passing on presence`() {
         val unsupported = DebugProbePlatformPolicy.processExit(
             DebugProbeId.PROCESS_EXIT_HISTORY,
-            ProcessExitHealthSnapshot(false, 0, 29),
+            ProcessExitHealthSnapshot(
+                apiSupported = false,
+                recentExitCount = 0,
+                crashOrAnrCount = 0,
+                abnormalExitCount = 0,
+                lowMemoryCount = 0,
+                apiLevel = 29,
+            ),
         )
         assertEquals(DebugProbeMessage.PROCESS_HISTORY_UNAVAILABLE, unsupported.message)
 
         val empty = DebugProbePlatformPolicy.processExit(
             DebugProbeId.PROCESS_EXIT_HISTORY,
-            ProcessExitHealthSnapshot(true, 0, 36),
+            ProcessExitHealthSnapshot(true, 0, 0, 0, 0, 36),
         )
         assertEquals(DebugProbeMessage.NO_PROCESS_EXIT_HISTORY, empty.message)
 
-        val present = DebugProbePlatformPolicy.processExit(
+        val crash = DebugProbePlatformPolicy.processExit(
             DebugProbeId.PROCESS_EXIT_HISTORY,
-            ProcessExitHealthSnapshot(true, 2, 36),
+            ProcessExitHealthSnapshot(true, 2, 1, 1, 0, 36),
         )
-        assertEquals(DebugProbeStatus.PASSED, present.status)
+        assertEquals(DebugProbeStatus.WARNING, crash.status)
+        assertEquals(DebugProbeMessage.RECENT_CRASH_OR_ANR, crash.message)
+
+        val lowMemory = DebugProbePlatformPolicy.processExit(
+            DebugProbeId.PROCESS_EXIT_HISTORY,
+            ProcessExitHealthSnapshot(true, 2, 0, 0, 1, 36),
+        )
+        assertEquals(DebugProbeStatus.WARNING, lowMemory.status)
+        assertEquals(DebugProbeMessage.RECENT_LOW_MEMORY_EXIT, lowMemory.message)
+
+        val healthyHistory = DebugProbePlatformPolicy.processExit(
+            DebugProbeId.PROCESS_EXIT_HISTORY,
+            ProcessExitHealthSnapshot(true, 2, 0, 0, 0, 36),
+        )
+        assertEquals(DebugProbeStatus.PASSED, healthyHistory.status)
     }
 }

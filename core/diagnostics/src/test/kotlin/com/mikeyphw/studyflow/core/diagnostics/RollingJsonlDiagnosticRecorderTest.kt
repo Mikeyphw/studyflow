@@ -175,6 +175,91 @@ class RollingJsonlDiagnosticRecorderTest {
     }
 
     @Test
+    fun newRecorderRotatesPreviousProcessSessionAndTimelineReadsOldestFirst() {
+        val root = createTempDirectory("studyflow-diagnostics-session-boundary").toFile()
+        try {
+            RollingJsonlDiagnosticRecorder(
+                rootDirectory = root,
+                policy = DiagnosticSessionPolicy.debug("session-one"),
+            ).use { recorder ->
+                recorder.record(DiagnosticArea.APP_LIFECYCLE, "old-session-marker", DiagnosticOutcome.SUCCEEDED)
+                assertTrue(recorder.flush())
+            }
+
+            RollingJsonlDiagnosticRecorder(
+                rootDirectory = root,
+                policy = DiagnosticSessionPolicy.debug("session-two"),
+            ).use { recorder ->
+                recorder.record(DiagnosticArea.APP_LIFECYCLE, "new-session-marker", DiagnosticOutcome.SUCCEEDED)
+                assertTrue(recorder.flush())
+                val timeline = recorder.copySanitizedTimeline(64 * 1024)
+                assertTrue(timeline.indexOf("old-session-marker") >= 0)
+                assertTrue(timeline.indexOf("new-session-marker") > timeline.indexOf("old-session-marker"))
+                assertEquals(1, File(root, "sessions").listFiles().orEmpty().size)
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun timelineTailIgnoresIncompleteFinalJsonlLine() {
+        val root = createTempDirectory("studyflow-diagnostics-incomplete-tail").toFile()
+        try {
+            RollingJsonlDiagnosticRecorder(
+                rootDirectory = root,
+                policy = DiagnosticSessionPolicy.debug("tail-session"),
+            ).use { recorder ->
+                recorder.record(DiagnosticArea.VALIDATION, "complete-marker", DiagnosticOutcome.SUCCEEDED)
+                assertTrue(recorder.flush())
+                File(root, "current.jsonl").appendText("{\"partial\":true")
+                val timeline = recorder.copySanitizedTimeline(64 * 1024)
+                assertTrue("complete-marker" in timeline)
+                assertFalse("partial" in timeline)
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun supportBundleExportsRetainedAndCurrentSegmentsInOrderWithGeneratedRedactionReport() {
+        val root = createTempDirectory("studyflow-diagnostics-retained-bundle").toFile()
+        try {
+            RollingJsonlDiagnosticRecorder(
+                rootDirectory = root,
+                policy = DiagnosticSessionPolicy.debug("retained-one"),
+            ).use { recorder ->
+                recorder.record(DiagnosticArea.SEARCH, "retained-marker", DiagnosticOutcome.SUCCEEDED)
+                assertTrue(recorder.flush())
+            }
+            val bundle = File(root, "support.zip")
+            RollingJsonlDiagnosticRecorder(
+                rootDirectory = root,
+                policy = DiagnosticSessionPolicy.debug("retained-two"),
+            ).use { recorder ->
+                recorder.record(DiagnosticArea.SEARCH, "current-marker", DiagnosticOutcome.SUCCEEDED)
+                recorder.exportSupportBundle(bundle)
+            }
+
+            ZipFile(bundle).use { zip ->
+                assertTrue(zip.getEntry("events/retained-000.jsonl") != null)
+                assertTrue(zip.getEntry("events/current.jsonl") != null)
+                assertTrue("retained-marker" in zip.readText("events/retained-000.jsonl"))
+                assertTrue("current-marker" in zip.readText("events/current.jsonl"))
+                val report = zip.readText("redaction-report.txt")
+                assertTrue("status=PASS" in report)
+                assertTrue("timelineSegments=2" in report)
+                assertTrue("privacyViolations=0" in report)
+                assertTrue("schemaViolations=0" in report)
+                assertTrue("automaticUpload=false" in report)
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun writerFailureCanStillExportAHealthManifest() {
         val root = createTempDirectory("studyflow-diagnostics-writer-failure").toFile()
         val invalidRoot = File(root, "not-a-directory").apply { writeText("occupied") }
@@ -259,7 +344,7 @@ class RollingJsonlDiagnosticRecorderTest {
                 assertTrue(events.contains("<redacted-content-uri>"))
                 assertTrue(events.contains("<fingerprint:"))
                 val manifest = zip.readText("manifest.json")
-                assertTrue(manifest.contains("\"schemaVersion\":\"2\""))
+                assertTrue(manifest.contains("\"schemaVersion\":\"3\""))
                 assertTrue(manifest.contains("\"flushCompleted\":\"true\""))
 
                 val checksumLines = zip.readText("checksums.sha256")

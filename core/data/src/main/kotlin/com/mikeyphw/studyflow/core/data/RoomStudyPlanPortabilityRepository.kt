@@ -50,6 +50,7 @@ internal class RoomStudyPlanPortabilityRepository(
     private val codec: StudyPlanPackageCodec = StudyPlanPackageCodec(),
     private val encryptedCodec: StudyPlanEncryptedPackageCodec = StudyPlanEncryptedPackageCodec(),
     private val restoreFailureHook: suspend (RestoreFailurePoint) -> Unit = {},
+    private val diagnosticRecorder: com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder = com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder,
 ) : StudyPlanPortabilityRepository {
     private val applicationContext = context.applicationContext
     private val applicationFiles = applicationContext.filesDir
@@ -61,6 +62,7 @@ internal class RoomStudyPlanPortabilityRepository(
 
     init {
         cleanupStaleAuthenticatedRestoreTemps()
+        cleanupStalePackageStagingDirectories()
     }
 
     override fun observeSnapshots(planId: StudyPlanId): Flow<List<PlanSnapshot>> =
@@ -73,7 +75,11 @@ internal class RoomStudyPlanPortabilityRepository(
         options: StudyPlanExportOptions,
         output: OutputStream,
         password: CharArray?,
-    ) = PhysicalStorageMutationCoordinator.mutex.withLock {
+    ) = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.BACKUP_RESTORE,
+        action = "plan-export",
+    ) {
+        PhysicalStorageMutationCoordinator.mutex.withLock {
         val payload = graphStore.exportPayload(
             planId = planId.value,
             options = options,
@@ -89,14 +95,19 @@ internal class RoomStudyPlanPortabilityRepository(
             }
         }
     }
+    }
 
     override suspend fun previewImport(
         input: InputStream,
         password: CharArray?,
     ): StudyPlanImportPreview {
         val decoded = decodeArchive(input, password)
-        graphStore.validatePayload(decoded.archive.payload)
-        return codec.preview(decoded.archive).copy(encrypted = decoded.encrypted)
+        return try {
+            graphStore.validatePayload(decoded.archive.payload)
+            codec.preview(decoded.archive).copy(encrypted = decoded.encrypted)
+        } finally {
+            decoded.cleanup()
+        }
     }
 
     override suspend fun inspectBackup(
@@ -104,21 +115,26 @@ internal class RoomStudyPlanPortabilityRepository(
         password: CharArray?,
     ): StudyPlanBackupIntegrityReport {
         val decoded = decodeArchive(input, password)
-        val archive = decoded.archive
-        graphStore.validatePayload(archive.payload)
-        val manifest = archive.payload.manifest
-        val warnings = StudyPlanPortabilityWarnings.forManifest(manifest)
-        return StudyPlanBackupIntegrityReport(
-            encrypted = decoded.encrypted,
-            schemaVersion = manifest.schemaVersion,
-            checksumVerified = true,
-            totalRows = archive.payload.tables.sumOf { it.rows.size },
-            annexPayloadCount = manifest.annexPayloads.size,
-            metadataPrivacyMode = manifest.metadataPrivacyMode,
-            redactedSections = manifest.redactedSections,
-            warnings = warnings,
-            canRestore = true,
-        )
+        return try {
+            val archive = decoded.archive
+            graphStore.validatePayload(archive.payload)
+            val manifest = archive.payload.manifest
+            val warnings = StudyPlanPortabilityWarnings.forManifest(manifest)
+            StudyPlanBackupIntegrityReport(
+                encrypted = decoded.encrypted,
+                schemaVersion = manifest.schemaVersion,
+                checksumVerified = true,
+                totalRows = archive.payload.tables.sumOf { it.rows.size },
+                annexPayloadCount = manifest.annexPayloads.size,
+                metadataPrivacyMode = manifest.metadataPrivacyMode,
+                privateIdentifiersVerified = manifest.metadataPrivacyMode,
+                redactedSections = manifest.redactedSections,
+                warnings = warnings,
+                canRestore = true,
+            )
+        } finally {
+            decoded.cleanup()
+        }
     }
 
     override suspend fun dryRunImport(
@@ -128,38 +144,42 @@ internal class RoomStudyPlanPortabilityRepository(
         password: CharArray?,
     ): StudyPlanRestoreDryRun {
         val decoded = decodeArchive(input, password)
-        val archive = decoded.archive
-        graphStore.validatePayload(archive.payload)
-        require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.annexPayloadBytes.isEmpty()) {
-            "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
-        }
-        when (strategy) {
-            StudyPlanImportStrategy.CREATE_AS_NEW -> Unit
-            StudyPlanImportStrategy.REPLACE_EXISTING,
-            StudyPlanImportStrategy.MERGE_COMPATIBLE,
-            -> require(database.studyPlanDao().countById(requireNotNull(targetPlanId).value) == 1) {
-                "The target Study Plan does not exist."
+        return try {
+            val archive = decoded.archive
+            graphStore.validatePayload(archive.payload)
+            require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.payload.manifest.annexPayloads.isEmpty()) {
+                "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
             }
-        }
-        return StudyPlanRestoreDryRun(
-            strategy = strategy,
-            targetStudyPlanId = targetPlanId?.value,
-            totalRows = archive.payload.tables.sumOf { it.rows.size },
-            tableRowCounts = archive.payload.manifest.tableRowCounts,
-            encrypted = decoded.encrypted,
-            wouldCreateSafetySnapshot = strategy != StudyPlanImportStrategy.CREATE_AS_NEW,
-            warnings = buildList {
-                addAll(StudyPlanPortabilityWarnings.forManifest(archive.payload.manifest))
-                if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
-                    add(
-                        StudyPlanPortabilityWarning(
-                            StudyPlanPortabilityWarningType.REPLACE_CREATES_SAFETY_SNAPSHOT,
-                        ),
-                    )
+            when (strategy) {
+                StudyPlanImportStrategy.CREATE_AS_NEW -> Unit
+                StudyPlanImportStrategy.REPLACE_EXISTING,
+                StudyPlanImportStrategy.MERGE_COMPATIBLE,
+                -> require(database.studyPlanDao().countById(requireNotNull(targetPlanId).value) == 1) {
+                    "The target Study Plan does not exist."
                 }
-            },
-            databaseRowsChanged = 0,
-        )
+            }
+            StudyPlanRestoreDryRun(
+                strategy = strategy,
+                targetStudyPlanId = targetPlanId?.value,
+                totalRows = archive.payload.tables.sumOf { it.rows.size },
+                tableRowCounts = archive.payload.manifest.tableRowCounts,
+                encrypted = decoded.encrypted,
+                wouldCreateSafetySnapshot = strategy != StudyPlanImportStrategy.CREATE_AS_NEW,
+                warnings = buildList {
+                    addAll(StudyPlanPortabilityWarnings.forManifest(archive.payload.manifest))
+                    if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
+                        add(
+                            StudyPlanPortabilityWarning(
+                                StudyPlanPortabilityWarningType.REPLACE_CREATES_SAFETY_SNAPSHOT,
+                            ),
+                        )
+                    }
+                },
+                databaseRowsChanged = 0,
+            )
+        } finally {
+            decoded.cleanup()
+        }
     }
 
     override suspend fun importPlan(
@@ -167,11 +187,16 @@ internal class RoomStudyPlanPortabilityRepository(
         strategy: StudyPlanImportStrategy,
         targetPlanId: StudyPlanId?,
         password: CharArray?,
-    ): StudyPlanImportResult = PhysicalStorageMutationCoordinator.mutex.withLock {
+    ): StudyPlanImportResult = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.BACKUP_RESTORE,
+        action = "plan-import",
+    ) {
+        PhysicalStorageMutationCoordinator.mutex.withLock {
         val decoded = decodeArchive(input, password)
-        val archive = decoded.archive
-        graphStore.validatePayload(archive.payload)
-        require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.annexPayloadBytes.isEmpty()) {
+        try {
+            val archive = decoded.archive
+            graphStore.validatePayload(archive.payload)
+            require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.payload.manifest.annexPayloads.isEmpty()) {
             "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
         }
         val destinationId = when (strategy) {
@@ -227,6 +252,10 @@ internal class RoomStudyPlanPortabilityRepository(
         } finally {
             staged.cleanupStagingDirectory()
         }
+        } finally {
+            decoded.cleanup()
+        }
+    }
     }
 
     override suspend fun createSnapshot(
@@ -239,7 +268,10 @@ internal class RoomStudyPlanPortabilityRepository(
         }
     }
 
-    override suspend fun restoreSnapshot(snapshotId: PlanSnapshotId): StudyPlanImportResult =
+    override suspend fun restoreSnapshot(snapshotId: PlanSnapshotId): StudyPlanImportResult = diagnosticRecorder.recordRepositoryMutation(
+        area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.BACKUP_RESTORE,
+        action = "snapshot-restore",
+    ) {
         PhysicalStorageMutationCoordinator.mutex.withLock {
             val stored = requireNotNull(supportDao.findSnapshot(snapshotId.value)) {
                 "Snapshot ${snapshotId.value} does not exist."
@@ -250,47 +282,59 @@ internal class RoomStudyPlanPortabilityRepository(
             require(sha256(sourceFile).equals(snapshot.checksumSha256, ignoreCase = true)) {
                 "Snapshot checksum verification failed."
             }
-            val archive = sourceFile.inputStream().use(codec::readArchive)
-            graphStore.validatePayload(archive.payload)
-            val staged = stageAnnexPayloads(snapshot.studyPlanId, archive)
-            val oldAnnexes = libraryDao.findAnnexes(snapshot.studyPlanId.value)
-            try {
-                restoreFailureHook(RestoreFailurePoint.AFTER_STAGING)
-                val safetySnapshot = createDurableSafetySnapshot(
-                    planId = snapshot.studyPlanId,
-                    kind = PlanSnapshotKind.AUTOMATIC,
-                    label = PlanSnapshotLabels.PRE_RESTORE,
-                )
-                val importedRows = graphStore.importPayload(
-                    payload = archive.payload,
-                    strategy = StudyPlanImportStrategy.REPLACE_EXISTING,
-                    targetPlanId = snapshot.studyPlanId.value,
-                    importedAtEpochMillis = clock(),
-                    beforeCommit = {
-                        commitStagedAnnexPayloads(snapshot.studyPlanId, staged)
-                        if (supportDao.findPlanSettings(snapshot.studyPlanId.value) == null) {
-                            supportDao.upsertPlanSettings(StudyPlanSettings.defaults(snapshot.studyPlanId).asEntity())
-                        }
-                        restoreFailureHook(RestoreFailurePoint.BEFORE_DATABASE_COMMIT)
-                    },
-                )
-                staged.markCommitted()
-                cleanupReplacedAnnexOwnership(oldAnnexes, staged.finalReferences)
-                supportDao.upsertSnapshots(listOf(snapshot.asEntity()))
-                StudyPlanImportResult(
-                    studyPlanId = snapshot.studyPlanId.value,
-                    strategy = StudyPlanImportStrategy.REPLACE_EXISTING,
-                    importedRows = importedRows,
-                    snapshotId = safetySnapshot.id.value,
-                )
+            val packageStaging = createPackageStagingDirectory()
+            val archive = try {
+                sourceFile.inputStream().buffered().use { input ->
+                    codec.readArchiveStreaming(input, packageStaging)
+                }
             } catch (error: Throwable) {
-                staged.rollbackCreatedFiles()
-                // Do not delete a pre-restore safety snapshot once it has been durably created.
+                packageStaging.deleteRecursively()
                 throw error
+            }
+            try {
+                graphStore.validatePayload(archive.payload)
+                val staged = stageAnnexPayloads(snapshot.studyPlanId, archive)
+                val oldAnnexes = libraryDao.findAnnexes(snapshot.studyPlanId.value)
+                try {
+                    restoreFailureHook(RestoreFailurePoint.AFTER_STAGING)
+                    val safetySnapshot = createDurableSafetySnapshot(
+                        planId = snapshot.studyPlanId,
+                        kind = PlanSnapshotKind.AUTOMATIC,
+                        label = PlanSnapshotLabels.PRE_RESTORE,
+                    )
+                    val importedRows = graphStore.importPayload(
+                        payload = archive.payload,
+                        strategy = StudyPlanImportStrategy.REPLACE_EXISTING,
+                        targetPlanId = snapshot.studyPlanId.value,
+                        importedAtEpochMillis = clock(),
+                        beforeCommit = {
+                            commitStagedAnnexPayloads(snapshot.studyPlanId, staged)
+                            if (supportDao.findPlanSettings(snapshot.studyPlanId.value) == null) {
+                                supportDao.upsertPlanSettings(StudyPlanSettings.defaults(snapshot.studyPlanId).asEntity())
+                            }
+                            restoreFailureHook(RestoreFailurePoint.BEFORE_DATABASE_COMMIT)
+                        },
+                    )
+                    staged.markCommitted()
+                    cleanupReplacedAnnexOwnership(oldAnnexes, staged.finalReferences)
+                    supportDao.upsertSnapshots(listOf(snapshot.asEntity()))
+                    StudyPlanImportResult(
+                        studyPlanId = snapshot.studyPlanId.value,
+                        strategy = StudyPlanImportStrategy.REPLACE_EXISTING,
+                        importedRows = importedRows,
+                        snapshotId = safetySnapshot.id.value,
+                    )
+                } catch (error: Throwable) {
+                    staged.rollbackCreatedFiles()
+                    throw error
+                } finally {
+                    staged.cleanupStagingDirectory()
+                }
             } finally {
-                staged.cleanupStagingDirectory()
+                packageStaging.deleteRecursively()
             }
         }
+    }
 
     override suspend fun deleteSnapshot(snapshotId: PlanSnapshotId) {
         PhysicalStorageMutationCoordinator.mutex.withLock {
@@ -310,12 +354,25 @@ internal class RoomStudyPlanPortabilityRepository(
         if (prefixSize > 0) pushback.unread(prefix, 0, prefixSize)
         val encrypted = prefixSize == magicSize && encryptedCodec.isEncryptedPrefix(prefix)
         prefix.fill(0)
+        val packageStaging = createPackageStagingDirectory()
         if (!encrypted) {
-            return DecodedArchive(archive = codec.readArchive(pushback), encrypted = false)
+            return try {
+                DecodedArchive(
+                    archive = codec.readArchiveStreaming(pushback, packageStaging),
+                    encrypted = false,
+                    stagingDirectory = packageStaging,
+                )
+            } catch (error: Throwable) {
+                packageStaging.deleteRecursively()
+                throw error
+            }
         }
-        val requiredPassword = password ?: throw StudyPlanPackagePasswordRequiredException(
-            "This Study Plan package is encrypted and requires a password.",
-        )
+        val requiredPassword = password ?: run {
+            packageStaging.deleteRecursively()
+            throw StudyPlanPackagePasswordRequiredException(
+                "This Study Plan package is encrypted and requires a password.",
+            )
+        }
         val temporaryPlainPackage = File.createTempFile(
             AuthenticatedRestoreTempPrefix,
             AuthenticatedRestoreTempSuffix,
@@ -331,13 +388,22 @@ internal class RoomStudyPlanPortabilityRepository(
                 )
             }
             DecodedArchive(
-                archive = temporaryPlainPackage.inputStream().buffered().use(codec::readArchive),
+                archive = temporaryPlainPackage.inputStream().buffered().use { plainInput ->
+                    codec.readArchiveStreaming(plainInput, packageStaging)
+                },
                 encrypted = true,
+                stagingDirectory = packageStaging,
             )
+        } catch (error: Throwable) {
+            packageStaging.deleteRecursively()
+            throw error
         } finally {
             securelyDiscardPlaintextTemp(temporaryPlainPackage)
         }
     }
+
+    private fun createPackageStagingDirectory(): File =
+        File(applicationCache, "$PackageStagingPrefix${UUID.randomUUID()}").canonicalFile
 
     private fun cleanupStaleAuthenticatedRestoreTemps() {
         applicationCache.listFiles()
@@ -348,6 +414,13 @@ internal class RoomStudyPlanPortabilityRepository(
                     file.name.endsWith(AuthenticatedRestoreTempSuffix)
             }
             .forEach(::securelyDiscardPlaintextTemp)
+    }
+
+    private fun cleanupStalePackageStagingDirectories() {
+        applicationCache.listFiles()
+            .orEmpty()
+            .filter { it.isDirectory && it.name.startsWith(PackageStagingPrefix) }
+            .forEach { directory -> runCatching { directory.deleteRecursively() } }
     }
 
     private fun securelyDiscardPlaintextTemp(file: File) {
@@ -366,27 +439,6 @@ internal class RoomStudyPlanPortabilityRepository(
         return total
     }
 
-    private fun readBounded(
-        input: InputStream,
-        limit: Long,
-        tooLargeMessage: String,
-    ): ByteArray {
-        val output = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        return try {
-            var total = 0L
-            while (true) {
-                val count = input.read(buffer)
-                if (count < 0) break
-                total += count
-                require(total <= limit) { tooLargeMessage }
-                output.write(buffer, 0, count)
-            }
-            output.toByteArray()
-        } finally {
-            buffer.fill(0)
-        }
-    }
 
     private suspend fun prepareArchive(
         planId: StudyPlanId,
@@ -477,18 +529,34 @@ internal class RoomStudyPlanPortabilityRepository(
         try {
             archive.payload.manifest.annexPayloads.forEach { payload ->
                 val importedAnnexId = "${planId.value}:${payload.annexId}"
-                val bytes = archive.annexPayloadBytes.getValue(payload.entryName)
-                require(bytes.size.toLong() == payload.byteSize) { "Annex staged byte-size verification failed." }
-                require(sha256(bytes).equals(payload.checksumSha256, ignoreCase = true)) {
-                    "Annex staged checksum verification failed."
-                }
                 val stagedFile = File(stagingRoot, "${sanitizeSegment(importedAnnexId)}.bin").canonicalFile
                 require(stagedFile.path.startsWith(stagingRoot.path + File.separator)) { "Unsafe restore staging path." }
-                stagedFile.outputStream().buffered().use { it.write(bytes) }
-                require(stagedFile.length() == payload.byteSize) { "Annex staging write was incomplete." }
-                require(sha256(stagedFile).equals(payload.checksumSha256, ignoreCase = true)) {
-                    "Annex staging checksum verification failed after write."
+                val digest = MessageDigest.getInstance("SHA-256")
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                var totalBytes = 0L
+                try {
+                    archive.openAnnexPayload(payload.entryName).buffered().use { input ->
+                        stagedFile.outputStream().buffered().use { output ->
+                            while (true) {
+                                val count = input.read(buffer)
+                                if (count < 0) break
+                                totalBytes += count
+                                require(totalBytes <= MaxAnnexPayloadBytes) { "Annex payload exceeds restore size limit." }
+                                require(totalBytes <= payload.byteSize) { "Annex staged byte-size verification failed." }
+                                digest.update(buffer, 0, count)
+                                output.write(buffer, 0, count)
+                            }
+                        }
+                    }
+                } finally {
+                    buffer.fill(0)
                 }
+                require(totalBytes == payload.byteSize) { "Annex staged byte-size verification failed." }
+                val checksum = digest.digest().joinToString("") { "%02x".format(it) }
+                require(checksum.equals(payload.checksumSha256, ignoreCase = true)) {
+                    "Annex staged checksum verification failed."
+                }
+                require(stagedFile.length() == payload.byteSize) { "Annex staging write was incomplete." }
                 val directory = annexDirectory(planId.value, importedAnnexId).canonicalFile
                 val destination = File(directory, sanitizeFileName(payload.fileName)).canonicalFile
                 require(destination.path.startsWith(directory.path + File.separator)) { "Unsafe annex restore path." }
@@ -602,13 +670,12 @@ internal class RoomStudyPlanPortabilityRepository(
             destination.delete()
             throw error
         }
-        val snapshotPayload = destination.inputStream().use(codec::read)
         return PlanSnapshot(
             id = id,
             studyPlanId = planId,
             kind = kind,
             label = label,
-            schemaVersion = snapshotPayload.manifest.schemaVersion,
+            schemaVersion = payload.manifest.schemaVersion,
             payloadReference = destination.relativeTo(applicationFiles).invariantSeparatorsPath,
             checksumSha256 = sha256(destination),
             createdAtEpochMillis = clock(),
@@ -660,9 +727,7 @@ internal class RoomStudyPlanPortabilityRepository(
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
-    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
-        .digest(bytes)
-        .joinToString("") { "%02x".format(it) }
+
 
     internal enum class RestoreFailurePoint { AFTER_STAGING, BEFORE_DATABASE_COMMIT }
 
@@ -703,11 +768,17 @@ internal class RoomStudyPlanPortabilityRepository(
     private data class DecodedArchive(
         val archive: StudyPlanPackageArchive,
         val encrypted: Boolean,
-    )
+        val stagingDirectory: File,
+    ) {
+        fun cleanup() {
+            runCatching { stagingDirectory.deleteRecursively() }
+        }
+    }
 
     private companion object {
         const val AuthenticatedRestoreTempPrefix = "studyflow-authenticated-restore-"
         const val AuthenticatedRestoreTempSuffix = ".studyplan"
+        const val PackageStagingPrefix = "studyflow-package-stage-"
         const val MaxAnnexPayloadBytes = 64L * 1024L * 1024L
         const val MaxEncryptedPackageBytes = 516L * 1024L * 1024L
     }

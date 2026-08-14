@@ -13,8 +13,7 @@ import com.mikeyphw.studyflow.R
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.core.domain.TodayWidgetSummary
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
-import com.mikeyphw.studyflow.reminders.StudyReminderExtraPlanId
-import com.mikeyphw.studyflow.reminders.StudyReminderExtraType
+import com.mikeyphw.studyflow.reminders.studyReminderOpenIntent
 
 sealed interface TodayWidgetRenderState {
     data object Loading : TodayWidgetRenderState
@@ -122,18 +121,19 @@ class StudyFlowTodayWidgetProvider : AppWidgetProvider() {
             summary: TodayWidgetSummary?,
             type: ReminderNotificationType?,
         ): PendingIntent {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                data = Uri.Builder()
-                    .scheme("studyflow")
-                    .authority("widget-open")
-                    .appendPath(context.packageName)
-                    .appendPath(summary?.studyPlanId?.value ?: "app")
-                    .appendPath(type?.name ?: "root")
-                    .build()
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                if (summary != null && type != null) {
-                    putExtra(StudyReminderExtraPlanId, summary.studyPlanId.value)
-                    putExtra(StudyReminderExtraType, type.name)
+            val identity = Uri.Builder()
+                .scheme("studyflow")
+                .authority("widget-open")
+                .appendPath(context.packageName)
+                .appendPath(summary?.studyPlanId?.value ?: "app")
+                .appendPath(type?.name ?: "root")
+                .build()
+            val intent = if (summary != null && type != null) {
+                studyReminderOpenIntent(context, summary.studyPlanId, type, identity)
+            } else {
+                Intent(context, MainActivity::class.java).apply {
+                    data = identity
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
             }
             return PendingIntent.getActivity(

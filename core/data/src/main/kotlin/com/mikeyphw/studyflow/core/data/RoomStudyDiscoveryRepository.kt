@@ -2,7 +2,7 @@ package com.mikeyphw.studyflow.core.data
 
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
-import com.mikeyphw.studyflow.core.database.dao.DiscoverySearchRow
+import com.mikeyphw.studyflow.core.database.dao.IndexedDiscoverySearchRow
 import com.mikeyphw.studyflow.core.domain.ActivityRecommendationInput
 import com.mikeyphw.studyflow.core.domain.GlobalSearchContentType
 import com.mikeyphw.studyflow.core.domain.GlobalSearchRanker
@@ -32,48 +32,37 @@ internal class RoomStudyDiscoveryRepository(
         query: String,
         contentTypes: Set<GlobalSearchContentType>,
         includeArchived: Boolean,
-    ): List<GlobalSearchResult> = contentTypes
-        .flatMap { type -> candidateRows(type, includeArchived).toResults(query, type) }
-        .filter { result -> result.score > 0 }
-        .sortedWith(
-            compareByDescending<GlobalSearchResult> { it.score }
-                .thenByDescending { it.updatedAtEpochMillis }
-                .thenBy { it.type.ordinal }
-                .thenBy { it.title.lowercase() }
-                .thenBy { it.id },
-        )
-        .take(MaximumSearchResults)
+    ): List<GlobalSearchResult> {
+        val indexedQuery = IndexedStudyDiscoveryQuery.search(query, contentTypes, includeArchived) ?: return emptyList()
+        return dao.searchIndexed(indexedQuery)
+            .mapNotNull { row -> row.toResult(query) }
+            .filter { result -> result.score > 0 }
+            .sortedWith(
+                compareByDescending<GlobalSearchResult> { it.score }
+                    .thenByDescending { it.updatedAtEpochMillis }
+                    .thenBy { it.type.ordinal }
+                    .thenBy { it.title.lowercase() }
+                    .thenBy { it.id },
+            )
+            .take(MaximumSearchResults)
+    }
 
     override suspend fun resolve(
         result: GlobalSearchResult,
         includeArchived: Boolean,
-    ): GlobalSearchResult? = candidateRows(result.type, includeArchived)
-        .firstOrNull { row -> row.id == result.id && row.planId == result.studyPlanId.value }
-        ?.let { row ->
-            GlobalSearchResult(
-                id = row.id,
-                studyPlanId = StudyPlanId(row.planId),
-                planName = row.planName,
-                type = result.type,
-                title = row.title,
-                subtitle = row.subtitle,
-                score = result.score,
-                updatedAtEpochMillis = row.updatedAtEpochMillis,
-            )
-        }
-
-    private suspend fun candidateRows(
-        type: GlobalSearchContentType,
-        includeArchived: Boolean,
-    ): List<DiscoverySearchRow> = when (type) {
-        GlobalSearchContentType.PLAN -> dao.searchPlans("", includeArchived)
-        GlobalSearchContentType.SUBJECT -> dao.searchSubjects("", includeArchived)
-        GlobalSearchContentType.TOPIC -> dao.searchTopics("", includeArchived)
-        GlobalSearchContentType.QUESTION -> dao.searchQuestions("", includeArchived)
-        GlobalSearchContentType.NOTE -> dao.searchNotes("", includeArchived)
-        GlobalSearchContentType.MATERIAL -> dao.searchMaterials("", includeArchived)
-        GlobalSearchContentType.FLASHCARD -> dao.searchFlashcards("", includeArchived)
-        GlobalSearchContentType.ERROR -> dao.searchErrors("", includeArchived)
+    ): GlobalSearchResult? = dao.searchIndexed(
+        IndexedStudyDiscoveryQuery.resolve(result.type, result.id, includeArchived),
+    ).firstOrNull { row -> row.planId == result.studyPlanId.value }?.let { row ->
+        GlobalSearchResult(
+            id = row.id,
+            studyPlanId = StudyPlanId(row.planId),
+            planName = row.planName,
+            type = result.type,
+            title = row.title,
+            subtitle = row.subtitle,
+            score = result.score,
+            updatedAtEpochMillis = row.updatedAtEpochMillis,
+        )
     }
 
     override suspend fun recommendations(
@@ -134,19 +123,17 @@ internal class RoomStudyDiscoveryRepository(
         return StudyRecommendationEngine.recommend(input)
     }
 
-    private fun List<DiscoverySearchRow>.toResults(
-        query: String,
-        type: GlobalSearchContentType,
-    ): List<GlobalSearchResult> = map { row ->
-        GlobalSearchResult(
-            id = row.id,
-            studyPlanId = StudyPlanId(row.planId),
-            planName = row.planName,
-            type = type,
-            title = row.title,
-            subtitle = row.subtitle,
-            score = GlobalSearchRanker.rank(query, row.title, row.subtitle),
-            updatedAtEpochMillis = row.updatedAtEpochMillis,
+    private fun IndexedDiscoverySearchRow.toResult(query: String): GlobalSearchResult? {
+        val contentType = enumValues<GlobalSearchContentType>().firstOrNull { it.name == type } ?: return null
+        return GlobalSearchResult(
+            id = id,
+            studyPlanId = StudyPlanId(planId),
+            planName = planName,
+            type = contentType,
+            title = title,
+            subtitle = subtitle,
+            score = GlobalSearchRanker.rank(query, title, subtitle),
+            updatedAtEpochMillis = updatedAtEpochMillis,
         )
     }
 
