@@ -7,6 +7,9 @@ import com.mikeyphw.studyflow.core.model.ReadinessSignal
 import com.mikeyphw.studyflow.core.model.ReadinessSignalKind
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -28,6 +31,7 @@ class ManageExamReadiness(
             schedule = schedule,
             mockExams = mockExams,
             nowEpochMillis = clock(),
+            zoneId = ZoneId.systemDefault(),
         )
     }
 }
@@ -39,8 +43,9 @@ object ExamReadinessEngine {
         schedule: StudySchedule,
         mockExams: List<MockExam>,
         nowEpochMillis: Long,
+        zoneId: ZoneId = ZoneId.systemDefault(),
     ): ExamReadinessScore {
-        val daysUntilExam = daysUntil(plan.examDateIso, nowEpochMillis)
+        val daysUntilExam = daysUntil(plan.examDateIso, nowEpochMillis, zoneId)
         val coverage = averagePercent(plan.progressPercent, analytics.contentProgressPercent)
         val reviewHealth = reviewHealth(analytics.dueReviewCount, analytics.overdueReviewCount)
         val practiceHealth = practiceHealth(analytics.questionAccuracyPercent, analytics.answeredQuestions)
@@ -96,16 +101,14 @@ object ExamReadinessEngine {
         else -> ExamReadinessBand.CRITICAL
     }
 
-    internal fun daysUntil(examDateIso: String?, nowEpochMillis: Long): Int? {
-        val parts = examDateIso?.split('-') ?: return null
-        if (parts.size != 3) return null
-        val year = parts[0].toIntOrNull() ?: return null
-        val month = parts[1].toIntOrNull() ?: return null
-        val day = parts[2].toIntOrNull() ?: return null
-        if (month !in 1..12 || day !in 1..31) return null
-        val currentDays = floorDiv(nowEpochMillis, MILLIS_PER_DAY)
-        val examDays = daysFromCivil(year, month, day)
-        return (examDays - currentDays).toInt().coerceAtLeast(0)
+    internal fun daysUntil(
+        examDateIso: String?,
+        nowEpochMillis: Long,
+        zoneId: ZoneId = ZoneId.systemDefault(),
+    ): Int? {
+        val examDate = examDateIso?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+        val currentDate = Instant.ofEpochMilli(nowEpochMillis).atZone(zoneId).toLocalDate()
+        return java.time.temporal.ChronoUnit.DAYS.between(currentDate, examDate).toInt().coerceAtLeast(0)
     }
 
     private fun buildSignals(

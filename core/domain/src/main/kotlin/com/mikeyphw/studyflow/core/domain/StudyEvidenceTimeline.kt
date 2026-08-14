@@ -59,8 +59,18 @@ data class StudyEvidenceTimelineInput(
 }
 
 object StudyEvidenceTimelineBuilder {
-    fun build(input: StudyEvidenceTimelineInput): List<StudyEvidenceEvent> {
+    fun build(input: StudyEvidenceTimelineInput): List<StudyEvidenceEvent> = buildAll(input).take(input.limit)
+
+    fun buildAll(input: StudyEvidenceTimelineInput): List<StudyEvidenceEvent> {
         val targetPlanId = input.studyPlanId
+        val linkedCompletedActivityIds = input.sessions
+            .asSequence()
+            .filter { session ->
+                (targetPlanId == null || session.studyPlanId == targetPlanId) &&
+                    session.status == StudySessionStatus.COMPLETED
+            }
+            .mapNotNull(StudySession::plannedActivityId)
+            .toSet()
         return buildList {
             addAll(
                 input.sessions
@@ -70,6 +80,9 @@ object StudyEvidenceTimelineBuilder {
             addAll(
                 input.plannedActivities
                     .filter { activity -> targetPlanId == null || activity.studyPlanId == targetPlanId }
+                    .filterNot { activity ->
+                        activity.status == PlannedActivityStatus.COMPLETED && activity.id in linkedCompletedActivityIds
+                    }
                     .mapNotNull(::plannedActivityEvent),
             )
             addAll(
@@ -108,7 +121,6 @@ object StudyEvidenceTimelineBuilder {
                 compareByDescending<StudyEvidenceEvent> { event -> event.occurredAtEpochMillis }
                     .thenBy { event -> event.id },
             )
-            .take(input.limit)
     }
 
     private fun sessionEvent(session: StudySession): StudyEvidenceEvent? {
@@ -164,7 +176,7 @@ object StudyEvidenceTimelineBuilder {
                 label = review.method.name,
                 count = review.repetitionCount,
             )
-        } else if (review.status == ReviewStatus.DUE) {
+        } else if (ReviewDuePolicy.isDue(review, review.dueAtEpochMillis)) {
             StudyEvidenceEvent(
                 id = "review:${review.id.value}:due",
                 kind = StudyEvidenceEventKind.REVIEW_DUE,
@@ -199,8 +211,8 @@ object StudyEvidenceTimelineBuilder {
             occurredAtEpochMillis = eventTime,
             label = test.title,
             count = test.questionCount,
-            percent = if (test.answeredCount > 0) {
-                StudyAnalyticsCalculator.percent(test.correctCount, test.answeredCount)
+            percent = if (submittedAt != null && test.questionCount > 0) {
+                StudyAnalyticsCalculator.percent(test.correctCount, test.questionCount)
             } else {
                 null
             },

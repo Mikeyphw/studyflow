@@ -17,6 +17,7 @@ class StudyExamReportBuilderTest {
                 readiness = readiness,
                 weeklyReview = weeklyReview,
                 evidence = listOf(evidence),
+                totalEvidenceCount = 37,
                 schedule = schedule,
                 reviewItems = listOf(dueReview),
                 questions = listOf(recentQuestion),
@@ -34,6 +35,8 @@ class StudyExamReportBuilderTest {
         assertFalse(snapshot.toString().contains("Legacy English label"))
         assertFalse(snapshot.toString().contains("Legacy English message"))
         assertFalse(snapshot.freeformNotesIncluded)
+        assertEquals(37, snapshot.evidenceCount)
+        assertTrue(snapshot.metricProvenance.any { it.metric == "evidence_count" && it.source == StudyExamReportMetricSource.RAW_EVIDENCE })
         assertEquals(1, snapshot.practiceTestCount)
         assertEquals(1, snapshot.completedPracticeTestCount)
         assertEquals(75, snapshot.practiceTestAccuracyPercent)
@@ -46,6 +49,35 @@ class StudyExamReportBuilderTest {
         assertTrue(snapshot.nextActions.contains(StudyExamReportNextActionKind.REVIEW_BACKLOG))
         assertTrue(snapshot.nextActions.contains(StudyExamReportNextActionKind.RECOVER_SCHEDULE))
         assertTrue(snapshot.nextActions.contains(StudyExamReportNextActionKind.REVIEW_CONTENT_CLEANUP))
+    }
+
+    @Test
+    fun partialSubmittedPracticeUsesTotalQuestionDenominator() {
+        val partial = practiceTest.copy(
+            questionCount = 10,
+            answeredCount = 1,
+            correctCount = 1,
+            submittedAtEpochMillis = NOW,
+        )
+        val snapshot = StudyExamReportBuilder.build(
+            StudyExamReportInput(
+                plan = plan,
+                analytics = analytics,
+                readiness = readiness,
+                weeklyReview = weeklyReview,
+                evidence = emptyList(),
+                schedule = schedule.copy(plannedActivities = emptyList()),
+                reviewItems = emptyList(),
+                questions = emptyList(),
+                tests = listOf(partial),
+                mockExams = emptyList(),
+                reschedulePreview = null,
+                cleanupReport = StudyContentCleanupReport(NOW, 100, emptyList(), emptyList()),
+                generatedAtEpochMillis = NOW,
+            ),
+        )
+
+        assertEquals(10, snapshot.practiceTestAccuracyPercent)
     }
 
     @Test

@@ -1,6 +1,9 @@
 package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import java.text.Normalizer
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 enum class GlobalSearchContentType {
     PLAN,
@@ -147,11 +150,19 @@ data class StudyRecommendationInput(
 )
 
 interface StudyDiscoveryRepository {
+    /** Emits whenever authoritative StudyFlow user data changes. */
+    fun observeRevision(): Flow<Long> = flowOf(0L)
+
     suspend fun search(
         query: String,
         contentTypes: Set<GlobalSearchContentType> = GlobalSearchContentType.entries.toSet(),
         includeArchived: Boolean = false,
     ): List<GlobalSearchResult>
+
+    suspend fun resolve(
+        result: GlobalSearchResult,
+        includeArchived: Boolean = false,
+    ): GlobalSearchResult? = result
 
     suspend fun recommendations(
         studyPlanId: StudyPlanId,
@@ -162,6 +173,8 @@ interface StudyDiscoveryRepository {
 class ManageStudyDiscovery(
     private val repository: StudyDiscoveryRepository,
 ) {
+    fun observeRevision(): Flow<Long> = repository.observeRevision()
+
     suspend fun search(
         query: String,
         contentTypes: Set<GlobalSearchContentType> = GlobalSearchContentType.entries.toSet(),
@@ -171,6 +184,11 @@ class ManageStudyDiscovery(
         if (normalized.length < MinimumSearchLength || contentTypes.isEmpty()) return emptyList()
         return repository.search(normalized, contentTypes, includeArchived)
     }
+
+    suspend fun resolveResult(
+        result: GlobalSearchResult,
+        includeArchived: Boolean = false,
+    ): GlobalSearchResult? = repository.resolve(result, includeArchived)
 
     suspend fun recommendations(
         studyPlanId: StudyPlanId,
@@ -182,11 +200,18 @@ class ManageStudyDiscovery(
     }
 }
 
+object UnicodeSearchNormalizer {
+    fun normalize(value: String): String = Normalizer.normalize(value, Normalizer.Form.NFKC)
+        .lowercase()
+        .trim()
+        .replace(Regex("\\s+"), " ")
+}
+
 object GlobalSearchRanker {
     fun rank(query: String, title: String, subtitle: String): Int {
-        val needle = query.trim().lowercase()
-        val normalizedTitle = title.trim().lowercase()
-        val normalizedSubtitle = subtitle.trim().lowercase()
+        val needle = UnicodeSearchNormalizer.normalize(query)
+        val normalizedTitle = UnicodeSearchNormalizer.normalize(title)
+        val normalizedSubtitle = UnicodeSearchNormalizer.normalize(subtitle)
         return when {
             normalizedTitle == needle -> 1_000
             normalizedTitle.startsWith(needle) -> 800

@@ -110,18 +110,21 @@ data class TodayRoute(val planId: String = "")
 data class PlanWorkspaceRoute(
     val planId: String = "",
     val tab: PlanWorkspaceTab = PlanWorkspaceTab.OVERVIEW,
+    val targetId: String? = null,
 )
 
 @Serializable
 data class PracticeWorkspaceRoute(
     val planId: String = "",
     val tab: PracticeWorkspaceTab = PracticeWorkspaceTab.REVIEWS,
+    val targetId: String? = null,
 )
 
 @Serializable
 data class ProgressWorkspaceRoute(
     val planId: String = "",
     val period: ProgressWorkspacePeriod = ProgressWorkspacePeriod.SEVEN_DAYS,
+    val targetId: String? = null,
 )
 
 @Serializable

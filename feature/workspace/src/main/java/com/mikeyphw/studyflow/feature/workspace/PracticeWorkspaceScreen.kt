@@ -48,15 +48,20 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowWorkspaceTabs
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
+import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.MockExamStudioBlueprint
 import com.mikeyphw.studyflow.core.domain.MockExamStudioRequest
 import com.mikeyphw.studyflow.core.domain.MockExamStudioWarning
+import com.mikeyphw.studyflow.core.domain.QuestionImportOwnership
+import com.mikeyphw.studyflow.core.domain.QuestionImportPreview
 import com.mikeyphw.studyflow.core.domain.RemediationPriority
 import com.mikeyphw.studyflow.core.domain.WeaknessDrillPlan
 import com.mikeyphw.studyflow.core.domain.WrongAnswerRemediation
+import com.mikeyphw.studyflow.core.model.ErrorEntry
+import com.mikeyphw.studyflow.core.model.Flashcard
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
@@ -64,6 +69,7 @@ import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
+import com.mikeyphw.studyflow.core.model.Topic
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceTab
 import java.util.UUID
@@ -74,8 +80,10 @@ import kotlinx.coroutines.launch
 fun PracticeWorkspaceScreen(
     plan: StudyPlan,
     selectedTab: PracticeWorkspaceTab,
+    targetId: String? = null,
     practiceManager: ManageStudyPractice,
     reviewManager: ManageStudyReview,
+    contentManager: ManageStudyContent,
     onTabSelected: (PracticeWorkspaceTab) -> Unit,
     onSwitchPlan: () -> Unit,
     onSearch: () -> Unit,
@@ -101,14 +109,18 @@ fun PracticeWorkspaceScreen(
     val mocksFlow = remember(plan.id, loadAttempt) {
         practiceManager.observeMockExams(plan.id).asStudyFlowLoadState()
     }
+    val syllabusFlow = remember(plan.id, loadAttempt) {
+        contentManager.observeSyllabus(plan.id).asStudyFlowLoadState()
+    }
     val queueState by reviewFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val notebookState by notebookFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val questionsState by questionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val testsState by testsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val mocksState by mocksFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     if (
         !WorkspaceLoadGate(
-            states = listOf(queueState, notebookState, questionsState, testsState, mocksState),
+            states = listOf(queueState, notebookState, questionsState, testsState, mocksState, syllabusState),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,
         )
@@ -118,6 +130,7 @@ fun PracticeWorkspaceScreen(
     val questions = questionsState.readyValue()
     val tests = testsState.readyValue()
     val mocks = mocksState.readyValue()
+    val syllabus = syllabusState.readyValue()
     val weaknessDrill = remember(questions, notebook, queue) {
         practiceManager.buildWeaknessDrill(
             questions = questions,
@@ -179,6 +192,11 @@ fun PracticeWorkspaceScreen(
                     dueCount = queue.dueCount,
                     upcomingCount = queue.upcomingCount,
                     flashcardCount = queue.flashcardCount,
+                    questions = questions,
+                    flashcards = queue.flashcards,
+                    errors = queue.errors,
+                    topics = syllabus.topics,
+                    targetId = targetId,
                     onGrade = { item, grade ->
                         scope.launch {
                             try {
@@ -208,9 +226,18 @@ fun PracticeWorkspaceScreen(
                     tests = tests,
                     mocks = mocks,
                     mockStudio = mockStudio,
+                    targetId = targetId,
                     onOpenQuestionBank = onOpenQuestionBank,
                     onPreviewMockExam = { request ->
                         practiceManager.previewMockExamStudio(questions, request)
+                    },
+                    onPreviewQuestionImport = { rawText ->
+                        practiceManager.previewQuestionImport(
+                            planId = plan.id,
+                            rawText = rawText,
+                            existingQuestions = questions,
+                            ownership = QuestionImportOwnership.from(syllabus),
+                        )
                     },
                     onCreateMockExam = { request ->
                         scope.launch {
@@ -236,6 +263,7 @@ fun PracticeWorkspaceScreen(
                                     planId = plan.id,
                                     rawText = rawText,
                                     existingQuestions = questions,
+                                    ownership = QuestionImportOwnership.from(syllabus),
                                 )
                                 snackbar.showSnackbar(
                                     if (result.importedCount > 0) questionsImported else noNewQuestions,
@@ -251,6 +279,7 @@ fun PracticeWorkspaceScreen(
                 PracticeWorkspaceTab.ERRORS -> ErrorsPane(
                     entries = notebook.entries,
                     weaknessDrill = weaknessDrill,
+                    targetId = targetId,
                     onCreateWeaknessDrill = {
                         scope.launch {
                             try {
@@ -287,15 +316,30 @@ private fun ReviewsPane(
     dueCount: Int,
     upcomingCount: Int,
     flashcardCount: Int,
+    questions: List<Question>,
+    flashcards: List<Flashcard>,
+    errors: List<ErrorEntry>,
+    topics: List<Topic>,
+    targetId: String?,
     onGrade: (ReviewItem, Int) -> Unit,
     onSkip: (ReviewItem) -> Unit,
     onOpenReviewCenter: () -> Unit,
 ) {
+    val targetedFlashcard = targetId?.let { id -> flashcards.firstOrNull { it.id.value == id } }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = workspaceContentPadding(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        targetedFlashcard?.let { flashcard ->
+            item(key = "target-flashcard:${flashcard.id.value}", contentType = "target-flashcard") {
+                StudyFlowTimelineRow(
+                    title = flashcard.front,
+                    metadata = flashcard.back,
+                    icon = Icons.Outlined.Quiz,
+                )
+            }
+        }
         item(key = "review-primary", contentType = "primary-action") {
             if (dueCount > 0) {
                 StudyFlowPrimaryActionCard(
@@ -341,12 +385,13 @@ private fun ReviewsPane(
         if (due.isNotEmpty()) {
             studyFlowSectionHeader(key = "due-now", title = { stringResource(R.string.review_due_now) })
             items(
-                items = due.take(5),
+                items = due.sortedByDescending { item -> item.matchesTarget(targetId) }.take(5),
                 key = { item -> "due:${item.id.value}" },
                 contentType = { "review-execution" },
             ) { item ->
                 ReviewExecutionCard(
                     item = item,
+                    content = reviewContent(item, questions, flashcards, errors, topics),
                     onAgain = { onGrade(item, 1) },
                     onHard = { onGrade(item, 3) },
                     onGood = { onGrade(item, 5) },
@@ -370,8 +415,10 @@ private fun QuestionsPane(
     tests: List<StudyTest>,
     mocks: List<MockExam>,
     mockStudio: MockExamStudioBlueprint,
+    targetId: String?,
     onOpenQuestionBank: () -> Unit,
     onPreviewMockExam: (MockExamStudioRequest) -> MockExamStudioBlueprint,
+    onPreviewQuestionImport: (String) -> QuestionImportPreview,
     onCreateMockExam: (MockExamStudioRequest) -> Unit,
     onImportQuestions: (String) -> Unit,
 ) {
@@ -431,7 +478,7 @@ private fun QuestionsPane(
             }
         } else {
             items(
-                items = questions.take(12),
+                items = questions.sortedByDescending { it.id.value == targetId }.take(12),
                 key = { question -> question.id.value },
                 contentType = { "question" },
             ) { question ->
@@ -500,6 +547,7 @@ private fun QuestionsPane(
     }
     if (showImportDialog) {
         QuestionImportDialog(
+            onPreview = onPreviewQuestionImport,
             onDismiss = { showImportDialog = false },
             onImport = { rawText ->
                 showImportDialog = false
@@ -519,6 +567,7 @@ private fun MockExamStudioDialog(
     var questionCount by rememberSaveable { mutableStateOf(initialBlueprint.requestedQuestionCount.toString()) }
     var minutes by rememberSaveable { mutableStateOf(initialBlueprint.timeLimitMinutes.toString()) }
     var minimumScore by rememberSaveable { mutableStateOf(initialBlueprint.minimumScorePercent?.toString().orEmpty()) }
+    var negativeMarking by rememberSaveable { mutableStateOf(initialBlueprint.negativeMarking.toString()) }
     var examBoard by rememberSaveable { mutableStateOf("") }
     var source by rememberSaveable { mutableStateOf("") }
     var tags by rememberSaveable { mutableStateOf("") }
@@ -526,20 +575,29 @@ private fun MockExamStudioDialog(
     val parsedQuestionCount = questionCount.toIntOrNull()
     val parsedMinutes = minutes.toIntOrNull()
     val parsedMinimum = minimumScore.toIntOrNull()
-    val minimumScoreValid = minimumScore.isBlank() || parsedMinimum != null
+    val parsedNegativeMarking = negativeMarking.toDoubleOrNull()
+    val questionCountValid = parsedQuestionCount != null && parsedQuestionCount in 1..120
+    val minutesValid = parsedMinutes != null && parsedMinutes > 0
+    val minimumScoreValid = minimumScore.isBlank() || parsedMinimum?.let { it in 0..100 } == true
+    val negativeMarkingValid = parsedNegativeMarking?.let { it.isFinite() && it >= 0.0 } == true
     val currentRequest = MockExamStudioRequest(
         title = initialBlueprint.title,
-        questionCount = parsedQuestionCount ?: initialBlueprint.requestedQuestionCount,
-        timeLimitMinutes = parsedMinutes ?: initialBlueprint.timeLimitMinutes,
-        minimumScorePercent = if (minimumScore.isBlank()) null else parsedMinimum,
+        questionCount = parsedQuestionCount?.takeIf { it in 1..120 } ?: initialBlueprint.requestedQuestionCount,
+        timeLimitMinutes = parsedMinutes?.takeIf { it > 0 } ?: initialBlueprint.timeLimitMinutes,
+        minimumScorePercent = if (minimumScore.isBlank()) {
+            null
+        } else {
+            parsedMinimum?.takeIf { it in 0..100 } ?: initialBlueprint.minimumScorePercent
+        },
+        negativeMarking = parsedNegativeMarking?.takeIf { it.isFinite() && it >= 0.0 }
+            ?: initialBlueprint.negativeMarking,
         examBoard = examBoard,
         source = source,
         tags = tags.split(',').map(String::trim).filter(String::isNotBlank),
         includeDisputed = includeDisputed,
     )
     val currentBlueprint = remember(currentRequest) { onPreview(currentRequest) }
-    val canCreate = parsedQuestionCount != null && parsedQuestionCount > 0 &&
-        parsedMinutes != null && parsedMinutes > 0 && minimumScoreValid && currentBlueprint.executable
+    val canCreate = questionCountValid && minutesValid && minimumScoreValid && negativeMarkingValid && currentBlueprint.executable
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -572,6 +630,18 @@ private fun MockExamStudioDialog(
                         onValueChange = { minimumScore = it },
                         label = { Text(stringResource(R.string.mock_exam_minimum_score)) },
                         modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item(key = "mock-negative-marking") {
+                    OutlinedTextField(
+                        value = negativeMarking,
+                        onValueChange = { negativeMarking = it },
+                        label = { Text(stringResource(R.string.mock_exam_negative_marking)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = if (negativeMarkingValid) null else {
+                            { Text(stringResource(R.string.mock_exam_negative_marking_invalid)) }
+                        },
+                        isError = !negativeMarkingValid,
                     )
                 }
                 item(key = "mock-board") {
@@ -640,6 +710,7 @@ private fun MockExamStudioDialog(
                         currentRequest.copy(
                             questionCount = requireNotNull(parsedQuestionCount),
                             timeLimitMinutes = requireNotNull(parsedMinutes),
+                            negativeMarking = requireNotNull(parsedNegativeMarking),
                         ),
                     )
                 },
@@ -669,10 +740,12 @@ private fun mockStudioWarningLabel(warning: MockExamStudioWarning?): String? = w
 
 @Composable
 private fun QuestionImportDialog(
+    onPreview: (String) -> QuestionImportPreview,
     onDismiss: () -> Unit,
     onImport: (String) -> Unit,
 ) {
     var rawText by rememberSaveable { mutableStateOf("") }
+    val preview = remember(rawText) { if (rawText.isBlank()) null else onPreview(rawText) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.question_importer_title)) },
@@ -690,12 +763,27 @@ private fun QuestionImportDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
+                preview?.let { value ->
+                    Text(
+                        text = stringResource(
+                            R.string.question_import_preview,
+                            value.acceptedCount,
+                            value.duplicateCount,
+                            value.rejectedCount,
+                        ),
+                        color = if (value.hasErrors) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    value.issues.take(5).forEach { issue ->
+                        Text(stringResource(R.string.question_import_issue_row, issue.rowNumber, issue.message), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = { onImport(rawText) },
-                enabled = rawText.isNotBlank(),
+                enabled = rawText.isNotBlank() && preview?.hasErrors == false && preview.acceptedCount > 0,
             ) {
                 Text(stringResource(R.string.import_questions))
             }
@@ -711,6 +799,7 @@ private fun QuestionImportDialog(
 @Composable
 private fun ReviewExecutionCard(
     item: ReviewItem,
+    content: ReviewContent,
     onAgain: () -> Unit,
     onHard: () -> Unit,
     onGood: () -> Unit,
@@ -724,7 +813,10 @@ private fun ReviewExecutionCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(text = reviewTitle(item), style = MaterialTheme.typography.titleMedium)
+            Text(text = content.title, style = MaterialTheme.typography.titleMedium)
+            content.body?.takeIf(String::isNotBlank)?.let { body ->
+                Text(text = body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Text(
                 text = pluralStringResource(
                     R.plurals.review_method_and_interval,
@@ -755,6 +847,54 @@ private fun ReviewExecutionCard(
     }
 }
 
+private fun ReviewItem.matchesTarget(targetId: String?): Boolean = targetId != null && (
+    id.value == targetId || questionId?.value == targetId || flashcardId?.value == targetId || errorEntryId?.value == targetId
+)
+
+private data class ReviewContent(
+    val title: String,
+    val body: String?,
+)
+
+@Composable
+private fun reviewContent(
+    item: ReviewItem,
+    questions: List<Question>,
+    flashcards: List<Flashcard>,
+    errors: List<ErrorEntry>,
+    topics: List<Topic>,
+): ReviewContent {
+    item.questionId?.let { id ->
+        questions.firstOrNull { it.id == id }?.let { question ->
+            return ReviewContent(question.statement, null)
+        }
+    }
+    item.flashcardId?.let { id ->
+        flashcards.firstOrNull { it.id == id }?.let { flashcard ->
+            return ReviewContent(flashcard.front, flashcard.back)
+        }
+    }
+    item.errorEntryId?.let { id ->
+        errors.firstOrNull { it.id == id }?.let { error ->
+            val body = listOfNotNull(
+                error.chosenAnswer?.let { stringResource(R.string.review_chosen_answer, it) },
+                error.correctAnswer?.let { stringResource(R.string.review_correct_answer, it) },
+                error.explanation.takeIf(String::isNotBlank),
+            ).joinToString(" • ")
+            return ReviewContent(
+                error.explanation.ifBlank { error.category.name.replace('_', ' ') },
+                body.takeIf(String::isNotBlank),
+            )
+        }
+    }
+    item.topicId?.let { id ->
+        topics.firstOrNull { it.id == id }?.let { topic ->
+            return ReviewContent(topic.name, topic.description.takeIf(String::isNotBlank))
+        }
+    }
+    return ReviewContent(reviewTitle(item), null)
+}
+
 @Composable
 private fun reviewTitle(item: ReviewItem): String {
     val flashcardId = item.flashcardId
@@ -774,6 +914,7 @@ private fun reviewTitle(item: ReviewItem): String {
 private fun ErrorsPane(
     entries: List<WrongAnswerRemediation>,
     weaknessDrill: WeaknessDrillPlan,
+    targetId: String?,
     onCreateWeaknessDrill: () -> Unit,
     onOpenReviewCenter: () -> Unit,
 ) {
@@ -813,7 +954,7 @@ private fun ErrorsPane(
             }
         } else {
             items(
-                items = entries,
+                items = entries.sortedByDescending { entry -> entry.error.id.value == targetId },
                 key = { entry -> entry.error.id.value },
                 contentType = { "error-entry" },
             ) { entry ->
@@ -823,7 +964,7 @@ private fun ErrorsPane(
                         R.plurals.recurrences_value,
                         entry.error.recurrenceCount,
                         entry.error.recurrenceCount,
-                    ),
+                    ) + " • " + remediationSuggestionLabel(entry.suggestion),
                     icon = Icons.Outlined.ErrorOutline,
                     status = remediationPriorityLabel(entry.priority),
                     actionLabel = stringResource(R.string.open),
@@ -840,6 +981,20 @@ private fun weaknessDrillMessage(plan: WeaknessDrillPlan): String = if (plan.exe
 } else {
     stringResource(R.string.weakness_drill_unavailable)
 }
+
+@Composable
+private fun remediationSuggestionLabel(suggestion: com.mikeyphw.studyflow.core.domain.RemediationSuggestion): String =
+    stringResource(
+        when (suggestion) {
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.REVIEW_THEORY -> R.string.remediation_review_theory
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.PRACTICE_SIMILAR_QUESTIONS -> R.string.remediation_practice_similar
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.RE_READ_STATEMENT -> R.string.remediation_reread_statement
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.TIMED_DRILL -> R.string.remediation_timed_drill
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.SLOW_CHECKLIST -> R.string.remediation_slow_checklist
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.VERIFY_SOURCE -> R.string.remediation_verify_source
+            com.mikeyphw.studyflow.core.domain.RemediationSuggestion.REVIEW_EXPLANATION -> R.string.remediation_review_explanation
+        },
+    )
 
 @Composable
 private fun remediationPriorityLabel(priority: RemediationPriority): String = stringResource(

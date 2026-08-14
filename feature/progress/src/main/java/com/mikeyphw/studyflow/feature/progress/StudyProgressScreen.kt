@@ -188,7 +188,7 @@ fun StudyProgressScreen(
             StudyFlowSectionCard(title = stringResource(R.string.progress_title)) {
                 ProgressFilterRow(selected = filter, onSelected = { filter = it })
                 when (filter) {
-                    ProgressFilter.GOALS -> GoalList(snapshot.activeGoals, progress, plan)
+                    ProgressFilter.GOALS -> GoalList(snapshot.activeGoals + snapshot.completedGoals + snapshot.archivedGoals, progress, plan)
                     ProgressFilter.NOTES -> NoteList(snapshot.notes, progress, plan)
                 }
             }
@@ -220,8 +220,14 @@ private fun GoalList(goals: List<StudyGoal>, progress: ManageStudyProgress, plan
             StudyFlowSectionCard(title = row.title) {
                 Text(stringResource(R.string.progress_percent, row.progressPercent))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { coroutineScope.launch { progress.archiveGoal(plan.id, goal.id) } }) {
-                        Text(stringResource(R.string.archive))
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                if (goal.archived) progress.restoreGoal(plan.id, goal.id) else progress.archiveGoal(plan.id, goal.id)
+                            }
+                        },
+                    ) {
+                        Text(stringResource(if (goal.archived) R.string.restore else R.string.archive))
                     }
                     ConfirmingDeleteButton {
                         coroutineScope.launch { progress.deleteGoal(plan.id, goal.id) }
@@ -246,7 +252,7 @@ private fun NoteList(notes: List<StudyNote>, progress: ManageStudyProgress, plan
                         onClick = { coroutineScope.launch { progress.togglePinnedNote(plan.id, note.id) } },
                     ) {
                         Icon(Icons.Outlined.PushPin, contentDescription = null)
-                        Text(stringResource(R.string.pin))
+                        Text(stringResource(if (note.pinned) R.string.unpin else R.string.pin))
                     }
                     ConfirmingDeleteButton {
                         coroutineScope.launch { progress.deleteNote(plan.id, note.id) }

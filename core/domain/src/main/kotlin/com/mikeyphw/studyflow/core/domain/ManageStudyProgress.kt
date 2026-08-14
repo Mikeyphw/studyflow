@@ -12,19 +12,25 @@ import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
 import kotlinx.coroutines.flow.Flow
+import java.time.ZoneId
 import kotlinx.coroutines.flow.combine
 
 class ManageStudyProgress(
     private val repository: StudyProgressRepository,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val zoneId: ZoneId = ZoneId.systemDefault(),
 ) {
     fun observeGoals(planId: StudyPlanId): Flow<List<StudyGoal>> = repository.observeGoals(planId)
     fun observeNotes(planId: StudyPlanId): Flow<List<StudyNote>> = repository.observeNotes(planId)
 
     fun observeSnapshot(planId: StudyPlanId): Flow<StudyProgressSnapshot> = combine(
-        repository.observeGoals(planId),
-        repository.observeNotes(planId),
-    ) { goals, notes -> StudyProgressSnapshot(goals, notes) }
+        combine(repository.observeGoals(planId), repository.observeNotes(planId)) { goals, notes -> goals to notes },
+        repository.observeGoalEvidence(planId),
+        tickingClockFlow(clock),
+    ) { (goals, notes), evidence, now ->
+        val evaluated = goals.map { goal -> StudyGoalProgressEngine.evaluate(goal, evidence, now, zoneId) }
+        StudyProgressSnapshot(evaluated, notes)
+    }
 
     suspend fun createGoal(
         id: StudyGoalId,
@@ -62,6 +68,9 @@ class ManageStudyProgress(
 
     suspend fun updateGoalProgress(planId: StudyPlanId, goalId: StudyGoalId, currentValue: Double): StudyGoal {
         val goal = requireNotNull(repository.findGoal(planId, goalId)) { "Goal does not exist." }
+        require(goal.type == GoalType.CUSTOM) {
+            "Evidence-backed goals cannot be manually overwritten; only CUSTOM goals accept manual progress."
+        }
         require(currentValue >= 0.0) { "Goal progress cannot be negative." }
         val completedAt = if (currentValue >= goal.targetValue) clock() else null
         return repository.upsertGoal(goal.copy(currentValue = currentValue, completedAtEpochMillis = completedAt))
@@ -70,6 +79,11 @@ class ManageStudyProgress(
     suspend fun archiveGoal(planId: StudyPlanId, goalId: StudyGoalId): StudyGoal {
         val goal = requireNotNull(repository.findGoal(planId, goalId)) { "Goal does not exist." }
         return repository.upsertGoal(goal.copy(archived = true))
+    }
+
+    suspend fun restoreGoal(planId: StudyPlanId, goalId: StudyGoalId): StudyGoal {
+        val goal = requireNotNull(repository.findGoal(planId, goalId)) { "Goal does not exist." }
+        return repository.upsertGoal(goal.copy(archived = false))
     }
 
     suspend fun createNote(

@@ -55,6 +55,7 @@ import com.mikeyphw.studyflow.core.diagnostics.DebugLabStatus
 import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabActionResult
 import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabMessage
 import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabReport
+import com.mikeyphw.studyflow.core.domain.GlobalSearchContentType
 import com.mikeyphw.studyflow.core.domain.GlobalSearchDestination
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
@@ -1148,21 +1149,20 @@ private fun NavHostController.navigateToSettings() {
 
 private fun NavHostController.navigateToResult(result: GlobalSearchResult) {
     val planId = result.studyPlanId.value
-    when (result.type.destination()) {
-        GlobalSearchDestination.DASHBOARD -> navigate(TodayRoute(planId))
-        GlobalSearchDestination.SUBJECTS -> navigate(
-            PlanWorkspaceRoute(planId, PlanWorkspaceTab.CONTENT),
-        )
-        GlobalSearchDestination.PRACTICE -> navigate(
-            PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.QUESTIONS),
-        )
-        GlobalSearchDestination.PROGRESS -> navigate(ProgressWorkspaceRoute(planId))
-        GlobalSearchDestination.LIBRARY -> navigate(
-            PlanWorkspaceRoute(planId, PlanWorkspaceTab.LIBRARY),
-        )
-        GlobalSearchDestination.REVIEWS -> navigate(
-            PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.REVIEWS),
-        )
+    when (result.type) {
+        GlobalSearchContentType.PLAN -> navigate(TodayRoute(planId))
+        GlobalSearchContentType.SUBJECT,
+        GlobalSearchContentType.TOPIC,
+        -> navigate(PlanWorkspaceRoute(planId, PlanWorkspaceTab.CONTENT, result.id))
+        GlobalSearchContentType.MATERIAL ->
+            navigate(PlanWorkspaceRoute(planId, PlanWorkspaceTab.LIBRARY, result.id))
+        GlobalSearchContentType.QUESTION ->
+            navigate(PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.QUESTIONS, result.id))
+        GlobalSearchContentType.NOTE -> navigate(ProgressWorkspaceRoute(planId, targetId = result.id))
+        GlobalSearchContentType.FLASHCARD ->
+            navigate(PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.REVIEWS, result.id))
+        GlobalSearchContentType.ERROR ->
+            navigate(PracticeWorkspaceRoute(planId, PracticeWorkspaceTab.ERRORS, result.id))
     }
 }
 

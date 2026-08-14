@@ -114,4 +114,30 @@ interface StudyRetentionDao {
 
     @Query("DELETE FROM error_entries WHERE studyPlanId = :planId AND id = :errorEntryId")
     suspend fun deleteErrorEntry(planId: String, errorEntryId: String): Int
+
+
+    @Query(
+        """
+        SELECT * FROM review_items
+        WHERE studyPlanId = :planId AND errorEntryId = :errorEntryId
+          AND status IN ('SCHEDULED', 'DUE')
+        ORDER BY dueAtEpochMillis, id
+        LIMIT 1
+        """,
+    )
+    suspend fun findPendingReviewForError(planId: String, errorEntryId: String): ReviewItemEntity?
+
+    @Query(
+        """
+        UPDATE review_items
+        SET status = 'CANCELLED', completedAtEpochMillis = :completedAtEpochMillis
+        WHERE studyPlanId = :planId AND flashcardId = :flashcardId
+          AND status IN ('SCHEDULED', 'DUE')
+        """,
+    )
+    suspend fun cancelActiveReviewsForFlashcard(
+        planId: String,
+        flashcardId: String,
+        completedAtEpochMillis: Long,
+    ): Int
 }

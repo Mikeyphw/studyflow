@@ -179,19 +179,29 @@ class StudyFlowExamReportExporter(
 
         private fun wrap(text: String, paint: Paint): List<String> {
             if (text.isBlank()) return listOf("")
-            val lines = mutableListOf<String>()
-            var current = ""
-            text.split(Regex("\\s+")).forEach { word ->
-                val candidate = if (current.isEmpty()) word else "$current $word"
-                if (paint.measureText(candidate) <= TEXT_WIDTH || current.isEmpty()) {
-                    current = candidate
-                } else {
-                    lines += current
-                    current = word
+            return buildList {
+                text.lineSequence().forEach { rawParagraph ->
+                    var remaining = rawParagraph.trim()
+                    if (remaining.isEmpty()) {
+                        add("")
+                        return@forEach
+                    }
+                    while (remaining.isNotEmpty()) {
+                        val measuredCount = paint.breakText(remaining, true, TEXT_WIDTH, null).coerceAtLeast(1)
+                        if (measuredCount >= remaining.length) {
+                            add(remaining)
+                            remaining = ""
+                        } else {
+                            val whitespaceBoundary = remaining.lastIndexOf(' ', measuredCount - 1)
+                                .takeIf { it > 0 }
+                            val splitAt = whitespaceBoundary ?: measuredCount
+                            val line = remaining.substring(0, splitAt).trimEnd()
+                            add(line.ifEmpty { remaining.substring(0, measuredCount) })
+                            remaining = remaining.substring(splitAt).trimStart()
+                        }
+                    }
                 }
             }
-            if (current.isNotEmpty()) lines += current
-            return lines
         }
 
         private fun ensurePage(requiredHeight: Float) {

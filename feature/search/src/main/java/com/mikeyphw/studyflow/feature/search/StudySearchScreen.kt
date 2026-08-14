@@ -42,6 +42,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.GlobalSearchContentType
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
@@ -54,6 +55,7 @@ import com.mikeyphw.studyflow.core.domain.StudyRecommendationType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +71,7 @@ fun StudySearchScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val dataRevision by discovery.observeRevision().collectAsStateWithLifecycle(initialValue = 0L)
     var query by rememberSaveable { mutableStateOf("") }
     var selectedTypes by remember { mutableStateOf(GlobalSearchContentType.entries.toSet()) }
     var results by remember { mutableStateOf(emptyList<GlobalSearchResult>()) }
@@ -80,16 +83,20 @@ fun StudySearchScreen(
     var searchJob by remember { mutableStateOf<Job?>(null) }
     var searchGeneration by remember { mutableLongStateOf(0L) }
 
-    LaunchedEffect(recommendationPlanId) {
+    LaunchedEffect(recommendationPlanId, dataRevision) {
         recommendations = emptyList()
         recommendationFailed = false
         recommendationPlanId?.let { planId ->
-            try {
-                recommendations = discovery.recommendations(planId)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                recommendationFailed = true
+            while (true) {
+                try {
+                    recommendations = discovery.recommendations(planId)
+                    recommendationFailed = false
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    recommendationFailed = true
+                }
+                delay(60_000L)
             }
         }
     }
@@ -132,6 +139,21 @@ fun StudySearchScreen(
             } finally {
                 if (searchGeneration == generation) searchBusy = false
             }
+        }
+    }
+
+    LaunchedEffect(searched, query, selectedTypes, dataRevision) {
+        if (!searched || query.trim().length < 2 || selectedTypes.isEmpty()) return@LaunchedEffect
+        while (true) {
+            try {
+                results = discovery.search(query, selectedTypes)
+                searchFailed = false
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                searchFailed = true
+            }
+            delay(30_000L)
         }
     }
 
@@ -249,7 +271,16 @@ fun StudySearchScreen(
                                     result.subtitle,
                                 ),
                                 badge = stringResource(result.type.labelResource()),
-                                onClick = { onOpenResult(result) },
+                                onClick = {
+                                    scope.launch {
+                                        val resolved = runCatching { discovery.resolveResult(result) }.getOrNull()
+                                        if (resolved != null) {
+                                            onOpenResult(resolved)
+                                        } else {
+                                            results = results.filterNot { it.id == result.id && it.type == result.type && it.studyPlanId == result.studyPlanId }
+                                        }
+                                    }
+                                },
                             )
                         }
                     }

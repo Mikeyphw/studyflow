@@ -89,10 +89,6 @@ object MockExamStudioPlanner {
 
     private fun MockExamStudioRequest.normalized(): MockExamStudioRequest = copy(
         title = title.trim().ifBlank { "Mock exam" },
-        questionCount = questionCount.coerceIn(1, MaxQuestionCount),
-        timeLimitMinutes = timeLimitMinutes.coerceAtLeast(1),
-        minimumScorePercent = minimumScorePercent?.coerceIn(0, 100),
-        negativeMarking = negativeMarking.coerceAtLeast(0.0),
         examBoard = examBoard?.trim()?.ifBlank { null },
         source = source?.trim()?.ifBlank { null },
         tags = tags.map(String::trim).filter(String::isNotBlank).distinct(),
@@ -113,7 +109,18 @@ data class MockExamStudioRequest(
     val source: String? = null,
     val tags: List<String> = emptyList(),
     val includeDisputed: Boolean = false,
-)
+) {
+    init {
+        require(questionCount in 1..MaxQuestionCount) { "Mock exam question count must be between 1 and $MaxQuestionCount." }
+        require(timeLimitMinutes > 0) { "Mock exam time limit must be positive." }
+        require(minimumScorePercent == null || minimumScorePercent in 0..100) {
+            "Mock exam minimum score must be between 0 and 100."
+        }
+        require(negativeMarking.isFinite() && negativeMarking >= 0.0) {
+            "Mock exam negative marking must be finite and non-negative."
+        }
+    }
+}
 
 data class MockExamStudioBlueprint(
     val title: String,

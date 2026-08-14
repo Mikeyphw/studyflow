@@ -14,9 +14,11 @@
     <string name="notes">Notes</string>
     <string name="no_goals">No goals yet.</string>
     <string name="no_notes">No notes yet.</string>
+    <string name="restore">Restore</string>
     <string name="archive">Archive</string>
     <string name="delete">Delete</string>
     <string name="pin">Pin</string>
+    <string name="unpin">Unpin</string>
     <string name="add_note">Add note</string>
     <string name="note_title">Note title</string>
     <string name="note_content">Note content</string>

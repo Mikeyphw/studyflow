@@ -65,6 +65,28 @@ class CoreModelInvariantTest {
     }
 
     @Test
+    fun mockExamRejectsNonFiniteNegativeMarking() {
+        assertThrows(IllegalArgumentException::class.java) {
+            MockExam(
+                id = MockExamId("mock"),
+                studyPlanId = StudyPlanId("plan"),
+                title = "Mock",
+                mode = TestMode.EXAM,
+                timeLimitSeconds = 3_600L,
+                questionCount = 10,
+                answeredCount = 0,
+                correctCount = 0,
+                scorePercent = null,
+                negativeMarking = Double.POSITIVE_INFINITY,
+                minimumScorePercent = 60,
+                startedAtEpochMillis = null,
+                submittedAtEpochMillis = null,
+                configurationJson = "questionIds=q1",
+            )
+        }
+    }
+
+    @Test
     fun multipleChoiceCorrectAnswerMustBeOneOfTheOptions() {
         assertThrows(IllegalArgumentException::class.java) {
             Question(

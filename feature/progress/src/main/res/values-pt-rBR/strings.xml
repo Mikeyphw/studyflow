@@ -15,9 +15,11 @@
     <string name="notes">Notas</string>
     <string name="no_goals">Nenhuma meta ainda.</string>
     <string name="no_notes">Nenhuma nota ainda.</string>
+    <string name="restore">Restaurar</string>
     <string name="archive">Arquivar</string>
     <string name="delete">Excluir</string>
     <string name="pin">Fixar</string>
+    <string name="unpin">Desafixar</string>
     <string name="add_note">Adicionar nota</string>
     <string name="note_title">Título da nota</string>
     <string name="note_content">Conteúdo da nota</string>

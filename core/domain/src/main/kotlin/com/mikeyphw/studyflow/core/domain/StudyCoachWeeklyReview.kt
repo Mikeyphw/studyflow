@@ -4,6 +4,10 @@ import com.mikeyphw.studyflow.core.model.AdaptiveReschedulePreview
 import com.mikeyphw.studyflow.core.model.ExamReadinessBand
 import com.mikeyphw.studyflow.core.model.ExamReadinessScore
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
 
 /** Phase 59 turns existing V2 evidence into one weekly coaching summary. */
@@ -64,6 +68,7 @@ data class StudyCoachWeeklyReviewInput(
     val reschedulePreview: AdaptiveReschedulePreview?,
     val evidence: List<StudyEvidenceEvent>,
     val generatedAtEpochMillis: Long,
+    val zoneId: ZoneId = ZoneId.systemDefault(),
 ) {
     init {
         require(generatedAtEpochMillis >= 0L) { "Weekly review time cannot be negative." }
@@ -72,14 +77,22 @@ data class StudyCoachWeeklyReviewInput(
 
 object StudyCoachWeeklyReviewBuilder {
     fun build(input: StudyCoachWeeklyReviewInput): StudyCoachWeeklyReview {
-        val studiedMinutes = input.evidence.sumOf { event -> event.minutes ?: 0 }
+        val generatedDate = Instant.ofEpochMilli(input.generatedAtEpochMillis).atZone(input.zoneId).toLocalDate()
+        val weekStartDate = generatedDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val weekStart = weekStartDate.atStartOfDay(input.zoneId).toInstant().toEpochMilli()
+        val weekEndExclusive = weekStartDate.plusDays(7).atStartOfDay(input.zoneId).toInstant().toEpochMilli()
+        val weeklyEvidence = input.evidence.filter { event ->
+            event.occurredAtEpochMillis in weekStart until weekEndExclusive
+        }
+        val weeklyInput = input.copy(evidence = weeklyEvidence)
+        val studiedMinutes = weeklyEvidence.sumOf { event -> event.minutes ?: 0 }
         return StudyCoachWeeklyReview(
             studyPlanName = input.plan.name,
             generatedAtEpochMillis = input.generatedAtEpochMillis,
             studiedMinutes = studiedMinutes,
-            evidenceCount = input.evidence.size,
+            evidenceCount = weeklyEvidence.size,
             readinessBand = input.readiness?.band,
-            items = itemsFor(input),
+            items = itemsFor(weeklyInput),
         )
     }
 

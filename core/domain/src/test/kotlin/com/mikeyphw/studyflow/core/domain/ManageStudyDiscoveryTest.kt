@@ -30,6 +30,12 @@ class ManageStudyDiscoveryTest {
         assertEquals(0, repository.searchCalls)
     }
 
+    @Test
+    fun unicodeNormalizerHandlesCompatibilityCharactersAndWhitespace() {
+        assertEquals("árvore abc", UnicodeSearchNormalizer.normalize("  ÁRVORE   ＡＢＣ  "))
+        assertTrue(GlobalSearchRanker.rank("árvore", "Árvore Constitucional", "") > 0)
+    }
+
     private class RecordingDiscoveryRepository : StudyDiscoveryRepository {
         var query: String? = null
         var contentTypes: Set<GlobalSearchContentType>? = null

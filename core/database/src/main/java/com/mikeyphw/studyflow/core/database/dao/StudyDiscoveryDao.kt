@@ -47,6 +47,11 @@ data class ScheduleAdherenceRow(
     val completedCount: Int,
 )
 
+data class PracticeAccuracyRow(
+    val answeredCount: Int,
+    val correctCount: Int,
+)
+
 @Dao
 interface StudyDiscoveryDao {
     @Query(
@@ -212,6 +217,23 @@ interface StudyDiscoveryDao {
 
     @Query("SELECT * FROM study_plans WHERE id = :planId LIMIT 1")
     suspend fun findPlan(planId: String): StudyPlanEntity?
+
+    @Query(
+        """
+        SELECT coalesce(sum(answeredCount), 0) AS answeredCount,
+            coalesce(sum(correctCount), 0) AS correctCount
+        FROM (
+            SELECT t.answeredCount AS answeredCount, t.correctCount AS correctCount
+            FROM study_tests t
+            WHERE t.studyPlanId = :planId AND t.submittedAtEpochMillis IS NOT NULL
+            UNION ALL
+            SELECT s.questionsAnswered AS answeredCount, s.correctAnswers AS correctCount
+            FROM study_sessions s
+            WHERE s.studyPlanId = :planId AND s.status = 'COMPLETED'
+        )
+        """,
+    )
+    suspend fun findPracticeAccuracy(planId: String): PracticeAccuracyRow
 
     @Query(
         """

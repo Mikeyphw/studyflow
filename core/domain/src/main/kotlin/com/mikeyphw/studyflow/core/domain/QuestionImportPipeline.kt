@@ -3,8 +3,10 @@ package com.mikeyphw.studyflow.core.domain
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
+import java.text.Normalizer
 
 enum class QuestionImportFormat {
     AUTO,
@@ -65,6 +67,18 @@ data class QuestionImportResult(
     val skippedCount: Int = preview.drafts.size - imported.size
 }
 
+data class QuestionImportOwnership(
+    val subjectIds: Set<SubjectId>,
+    val topicSubjects: Map<TopicId, SubjectId>,
+) {
+    companion object {
+        fun from(syllabus: StudySyllabus): QuestionImportOwnership = QuestionImportOwnership(
+            subjectIds = syllabus.subjects.mapTo(linkedSetOf()) { it.id },
+            topicSubjects = syllabus.topics.associate { it.id to it.subjectId },
+        )
+    }
+}
+
 object QuestionImportPipeline {
     fun preview(
         planId: StudyPlanId,
@@ -73,6 +87,7 @@ object QuestionImportPipeline {
         requestedFormat: QuestionImportFormat = QuestionImportFormat.AUTO,
         defaultSubjectId: SubjectId? = null,
         defaultTopicId: TopicId? = null,
+        ownership: QuestionImportOwnership? = null,
     ): QuestionImportPreview {
         val format = resolveFormat(rawText, requestedFormat)
         val parsed = when (format) {
@@ -81,11 +96,20 @@ object QuestionImportPipeline {
             QuestionImportFormat.MARKDOWN -> parseMarkdown(rawText, planId, defaultSubjectId, defaultTopicId)
             QuestionImportFormat.AUTO -> emptyList()
         }
+        val ownershipChecked = parsed.map { row ->
+            val ownershipIssues = ownershipIssues(row.draft, ownership)
+            row.copy(
+                draft = row.draft.copy(
+                    valid = row.draft.valid && ownershipIssues.none { it.severity == QuestionImportIssueSeverity.ERROR },
+                ),
+                issues = row.issues + ownershipIssues,
+            )
+        }
         val existingFingerprints = existingQuestions.map(::fingerprint).toSet()
         val seen = mutableSetOf<String>()
-        val drafts = parsed.map { row ->
+        val drafts = ownershipChecked.map { row ->
             val draft = row.draft
-            val print = fingerprint(draft.statement, draft.correctAnswer)
+            val print = fingerprint(draft)
             val existing = print in existingFingerprints
             val repeated = !seen.add(print)
             draft.copy(duplicateOfExisting = existing, duplicateWithinImport = repeated)
@@ -115,18 +139,76 @@ object QuestionImportPipeline {
         return QuestionImportPreview(
             format = format,
             drafts = drafts,
-            issues = parsed.flatMap { it.issues } + duplicateIssues,
+            issues = ownershipChecked.flatMap { it.issues } + duplicateIssues,
         )
     }
 
-    fun fingerprint(question: Question): String = fingerprint(question.statement, question.correctAnswer)
+    fun fingerprint(question: Question): String = semanticFingerprint(
+        type = question.type,
+        statement = question.statement,
+        options = question.options,
+        correctAnswer = question.correctAnswer,
+        explanation = question.explanation,
+        examBoard = question.examBoard,
+        source = question.source,
+        year = question.year,
+    )
 
-    private fun fingerprint(statement: String, answer: String): String =
-        listOf(statement, answer)
-            .joinToString("|")
-            .lowercase()
-            .replace(Regex("\\s+"), " ")
-            .trim()
+    private fun ownershipIssues(
+        draft: QuestionImportDraft,
+        ownership: QuestionImportOwnership?,
+    ): List<QuestionImportIssue> {
+        if (ownership == null) return emptyList()
+        return buildList {
+            val subjectId = draft.subjectId
+            if (subjectId != null && subjectId !in ownership.subjectIds) {
+                add(error(draft.rowNumber, "Subject does not belong to this Study Plan."))
+            }
+            val topicId = draft.topicId
+            val topicSubject = topicId?.let(ownership.topicSubjects::get)
+            if (topicId != null && topicSubject == null) {
+                add(error(draft.rowNumber, "Topic does not belong to this Study Plan."))
+            } else if (subjectId != null && topicSubject != null && topicSubject != subjectId) {
+                add(error(draft.rowNumber, "Topic does not belong to the selected subject."))
+            }
+        }
+    }
+
+    private fun fingerprint(draft: QuestionImportDraft): String = semanticFingerprint(
+        type = draft.type,
+        statement = draft.statement,
+        options = draft.options,
+        correctAnswer = draft.correctAnswer,
+        explanation = draft.explanation,
+        examBoard = draft.examBoard,
+        source = draft.source,
+        year = draft.year,
+    )
+
+    private fun semanticFingerprint(
+        type: QuestionType,
+        statement: String,
+        options: List<String>,
+        correctAnswer: String,
+        explanation: String,
+        examBoard: String?,
+        source: String?,
+        year: Int?,
+    ): String = listOf(
+        type.name,
+        normalizeFingerprintText(statement),
+        options.map(::normalizeFingerprintText).sorted().joinToString("~"),
+        normalizeFingerprintText(correctAnswer),
+        normalizeFingerprintText(explanation),
+        normalizeFingerprintText(examBoard.orEmpty()),
+        normalizeFingerprintText(source.orEmpty()),
+        year?.toString().orEmpty(),
+    ).joinToString("|")
+
+    private fun normalizeFingerprintText(value: String): String = Normalizer
+        .normalize(value.trim(), Normalizer.Form.NFKC)
+        .lowercase()
+        .replace(Regex("\\s+"), " ")
 
     private fun resolveFormat(rawText: String, requestedFormat: QuestionImportFormat): QuestionImportFormat {
         if (requestedFormat != QuestionImportFormat.AUTO) return requestedFormat
@@ -255,18 +337,33 @@ object QuestionImportPipeline {
         val parsedOptions = options.split('|', ';')
             .map(String::trim)
             .filter(String::isNotBlank)
-        val parsedType = type?.trim()?.uppercase()?.let { raw ->
+        val normalizedType = type?.trim()?.takeIf(String::isNotBlank)
+        val parsedType = normalizedType?.uppercase()?.let { raw ->
             QuestionType.entries.firstOrNull { it.name == raw.replace(' ', '_') }
-        } ?: if (parsedOptions.size >= 2) {
-            QuestionType.MULTIPLE_CHOICE
+        } ?: if (normalizedType == null) {
+            if (parsedOptions.size >= 2) QuestionType.MULTIPLE_CHOICE else QuestionType.SHORT_ANSWER
         } else {
+            issues += error(rowNumber, "Unknown question type: $normalizedType.")
             QuestionType.SHORT_ANSWER
         }
-        if (parsedType == QuestionType.MULTIPLE_CHOICE && parsedOptions.size < 2) {
-            issues += error(rowNumber, "Multiple-choice questions need at least two options.")
+        if (parsedType == QuestionType.MULTIPLE_CHOICE) {
+            if (parsedOptions.size < 2) {
+                issues += error(rowNumber, "Multiple-choice questions need at least two options.")
+            }
+            if (correctAnswer.isNotBlank() && parsedOptions.none { it.equals(correctAnswer.trim(), ignoreCase = true) }) {
+                issues += error(rowNumber, "Multiple-choice correct answer must be one of the options.")
+            }
         }
-        val parsedDifficulty = difficulty?.toIntOrNull()?.coerceIn(1, 5) ?: 3
-        val parsedYear = year?.toIntOrNull()?.takeIf { it in 1900..2200 }
+        val normalizedDifficulty = difficulty?.trim()?.takeIf(String::isNotBlank)
+        val parsedDifficulty = normalizedDifficulty?.toIntOrNull()?.takeIf { it in 1..5 } ?: 3
+        if (normalizedDifficulty != null && normalizedDifficulty.toIntOrNull()?.let { it in 1..5 } != true) {
+            issues += error(rowNumber, "Difficulty must be an integer between 1 and 5.")
+        }
+        val normalizedYear = year?.trim()?.takeIf(String::isNotBlank)
+        val parsedYear = normalizedYear?.toIntOrNull()?.takeIf { it in 1900..2200 }
+        if (normalizedYear != null && parsedYear == null) {
+            issues += error(rowNumber, "Year must be an integer between 1900 and 2200.")
+        }
         val accepted = issues.none { it.severity == QuestionImportIssueSeverity.ERROR }
         val draft = QuestionImportDraft(
             rowNumber = rowNumber,

@@ -55,6 +55,44 @@ class PracticeExecutionEngineTest {
         assertFalse(state.submitted)
     }
 
+    @Test
+    fun examModeHidesExplanationUntilTerminalSubmission() {
+        val engine = PracticeExecutionEngine(clock = { 50L })
+        val initial = engine.stateForTest(test("questionIds=q1").copy(mode = TestMode.EXAM), listOf(question))
+        val answered = engine.answer(initial, question, "B", elapsedSeconds = 7)
+
+        assertFalse(answered.explanationVisible(question.id))
+        assertEquals(7L, answered.answers.single().elapsedSeconds)
+        assertFalse(initial.explanationVisible(question.id))
+        assertEquals(true, answered.copy(submittedAtEpochMillis = 50L).explanationVisible(question.id))
+    }
+
+    @Test
+    fun scoringUsesTotalQuestionDenominatorAndNegativeMarking() {
+        val engine = PracticeExecutionEngine(clock = { 100L })
+        val second = question("q2", "A")
+        val base = PracticeAttemptCodec.decode(
+            attemptId = "mock",
+            title = "Mock",
+            mode = TestMode.EXAM,
+            questionCount = 2,
+            configuration = "questionIds=q1,q2",
+            questions = listOf(question, second),
+            startedAtEpochMillis = 1L,
+            submittedAtEpochMillis = null,
+            timeLimitSeconds = null,
+            negativeMarking = 0.25,
+            minimumScorePercent = 40,
+        )
+        val oneCorrect = engine.answer(base, question, "B", elapsedSeconds = 4)
+        val oneCorrectOneWrong = engine.answer(oneCorrect, second, "B", elapsedSeconds = 5)
+        val summary = engine.finish(oneCorrectOneWrong)
+
+        assertEquals(2, summary.totalCount)
+        assertEquals(38, summary.scorePercent)
+        assertEquals(false, summary.passed)
+    }
+
     private fun test(configuration: String) = StudyTest(
         id = StudyTestId("test"),
         studyPlanId = planId,

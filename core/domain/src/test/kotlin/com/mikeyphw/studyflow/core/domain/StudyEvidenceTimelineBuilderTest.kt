@@ -123,6 +123,32 @@ class StudyEvidenceTimelineBuilderTest {
         assertTrue(events.isEmpty())
     }
 
+    @Test
+    fun linkedCompletedActivityAndSessionCountAsOneEvidenceEvent() {
+        val linkedActivity = activity("linked").copy(
+            status = PlannedActivityStatus.COMPLETED,
+            completedAtEpochMillis = 2_000L,
+        )
+        val linkedSession = session("linked-session", 2_000L).copy(plannedActivityId = linkedActivity.id)
+
+        val events = StudyEvidenceTimelineBuilder.buildAll(
+            StudyEvidenceTimelineInput(
+                studyPlanId = planId,
+                plannedActivities = listOf(linkedActivity),
+                sessions = listOf(linkedSession),
+                reviewItems = emptyList(),
+                questions = emptyList(),
+                tests = emptyList(),
+                mockExams = emptyList(),
+                goals = emptyList(),
+                notes = emptyList(),
+                nowEpochMillis = 3_000L,
+            ),
+        )
+
+        assertEquals(listOf("session:linked-session"), events.map(StudyEvidenceEvent::id))
+    }
+
     private fun session(
         id: String = "session",
         endedAt: Long = 2_000L,
@@ -285,4 +311,38 @@ class StudyEvidenceTimelineBuilderTest {
         createdAtEpochMillis = 7_500L,
         updatedAtEpochMillis = 8_000L,
     )
+
+    @Test
+    fun submittedPracticeScoreUsesTotalQuestionCount() {
+        val test = StudyTest(
+            id = StudyTestId("test-score"),
+            studyPlanId = StudyPlanId("plan"),
+            title = "Ten questions",
+            mode = TestMode.EXAM,
+            questionCount = 10,
+            answeredCount = 1,
+            correctCount = 1,
+            startedAtEpochMillis = 1_000L,
+            submittedAtEpochMillis = 2_000L,
+            timeLimitSeconds = 600L,
+            configurationJson = "questionIds=q1,q2,q3,q4,q5,q6,q7,q8,q9,q10",
+        )
+        val event = StudyEvidenceTimelineBuilder.buildAll(
+            StudyEvidenceTimelineInput(
+                studyPlanId = StudyPlanId("plan"),
+                plannedActivities = emptyList(),
+                sessions = emptyList(),
+                reviewItems = emptyList(),
+                questions = emptyList(),
+                tests = listOf(test),
+                mockExams = emptyList(),
+                goals = emptyList(),
+                notes = emptyList(),
+                nowEpochMillis = 3_000L,
+            ),
+        ).single { it.kind == StudyEvidenceEventKind.PRACTICE_TEST_SUBMITTED }
+
+        assertEquals(10, event.percent)
+    }
+
 }

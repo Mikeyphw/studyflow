@@ -6,16 +6,15 @@ import com.mikeyphw.studyflow.core.model.ErrorEntryId
 import com.mikeyphw.studyflow.core.model.Flashcard
 import com.mikeyphw.studyflow.core.model.FlashcardId
 import com.mikeyphw.studyflow.core.model.FlashcardType
-import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.ReviewItemId
 import com.mikeyphw.studyflow.core.model.ReviewMethod
 import com.mikeyphw.studyflow.core.model.ReviewStatus
 import com.mikeyphw.studyflow.core.model.StudyPlanId
-import com.mikeyphw.studyflow.core.model.StudyTestId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
+import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -24,19 +23,23 @@ class ManageStudyReview(
     private val repository: StudyReviewRepository,
     private val practiceRepository: StudyPracticeRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val zoneId: ZoneId = ZoneId.systemDefault(),
 ) {
     fun observeReviewItems(planId: StudyPlanId): Flow<List<ReviewItem>> = repository.observeReviewItems(planId)
 
     fun observeFlashcards(planId: StudyPlanId): Flow<List<Flashcard>> = repository.observeFlashcards(planId)
 
-    fun observeErrorEntries(planId: StudyPlanId): Flow<List<ErrorEntry>> = repository.observeErrorEntries(planId)
+    fun observeErrorEntries(planId: StudyPlanId): Flow<List<ErrorEntry>> = observeFreshErrorEntries(planId)
 
     fun observeQueue(planId: StudyPlanId): Flow<ReviewQueue> = combine(
-        repository.observeReviewItems(planId),
-        repository.observeFlashcards(planId),
-        repository.observeErrorEntries(planId),
-    ) { items, flashcards, errors ->
-        buildQueue(items, flashcards, errors, clock())
+        combine(
+            repository.observeReviewItems(planId),
+            repository.observeFlashcards(planId),
+            observeFreshErrorEntries(planId),
+        ) { items, flashcards, errors -> Triple(items, flashcards, errors) },
+        tickingClockFlow(clock),
+    ) { (items, flashcards, errors), now ->
+        buildQueue(items, flashcards, errors, now)
     }
 
     fun observeSummary(planId: StudyPlanId): Flow<ReviewSummary> = observeQueue(planId).combine(
@@ -53,10 +56,10 @@ class ManageStudyReview(
     }
 
     fun observeWrongAnswerNotebook(planId: StudyPlanId): Flow<WrongAnswerNotebook> = combine(
-        repository.observeErrorEntries(planId),
-        repository.observeReviewItems(planId),
-    ) { errors, items ->
-        WrongAnswerRemediator.buildNotebook(errors, items, clock())
+        combine(observeFreshErrorEntries(planId), repository.observeReviewItems(planId)) { errors, items -> errors to items },
+        tickingClockFlow(clock),
+    ) { (errors, items), now ->
+        WrongAnswerRemediator.buildNotebook(errors, items, now)
     }
 
     suspend fun createFlashcard(
@@ -120,7 +123,11 @@ class ManageStudyReview(
         val flashcard = requireNotNull(repository.findFlashcard(planId, flashcardId)) {
             "Flashcard does not exist."
         }
-        return repository.upsertFlashcard(flashcard.copy(suspended = true, updatedAtEpochMillis = clock()))
+        val now = clock()
+        return repository.suspendFlashcardAndCancelReviews(
+            flashcard.copy(suspended = true, updatedAtEpochMillis = now),
+            completedAtEpochMillis = now,
+        )
     }
 
     suspend fun scheduleTopicReview(
@@ -191,16 +198,8 @@ class ManageStudyReview(
         newId: ErrorEntryId = ErrorEntryId(UUID.randomUUID().toString()),
     ): ErrorEntry {
         val now = clock()
-        val existing = repository.findErrorEntryForQuestion(question.studyPlanId, question.id)
-        val entry = repository.upsertErrorEntry(
-            existing?.copy(
-                category = category,
-                chosenAnswer = chosenAnswer?.trim()?.ifBlank { null },
-                correctAnswer = question.correctAnswer,
-                explanation = question.explanation,
-                recurrenceCount = existing.recurrenceCount + 1,
-                updatedAtEpochMillis = now,
-            ) ?: ErrorEntry(
+        return repository.recordWrongAnswerAndEnsureReview(
+            entry = ErrorEntry(
                 id = newId,
                 studyPlanId = question.studyPlanId,
                 questionId = question.id,
@@ -214,51 +213,8 @@ class ManageStudyReview(
                 createdAtEpochMillis = now,
                 updatedAtEpochMillis = now,
             ),
+            dueAtEpochMillis = now,
         )
-        scheduleErrorReview(question.studyPlanId, entry.id, now)
-        return entry
-    }
-
-    suspend fun captureWrongAnswersFromTest(
-        planId: StudyPlanId,
-        testId: StudyTestId,
-        category: ErrorCategory = ErrorCategory.CONCEPT_CONFUSION,
-    ): Int {
-        val test = requireNotNull(practiceRepository?.findTest(planId, testId)) {
-            "Practice Test does not exist."
-        }
-        val state = PracticeAttemptCodec.decode(
-            attemptId = test.id.value,
-            title = test.title,
-            questionCount = test.questionCount,
-            configuration = test.configurationJson,
-            questions = emptyList(),
-            startedAtEpochMillis = test.startedAtEpochMillis,
-            submittedAtEpochMillis = test.submittedAtEpochMillis,
-            timeLimitSeconds = test.timeLimitSeconds,
-        )
-        return captureWrongAnswers(planId, state.answers, category)
-    }
-
-    suspend fun captureWrongAnswersFromMockExam(
-        planId: StudyPlanId,
-        mockExamId: MockExamId,
-        category: ErrorCategory = ErrorCategory.CONCEPT_CONFUSION,
-    ): Int {
-        val mockExam = requireNotNull(practiceRepository?.findMockExam(planId, mockExamId)) {
-            "Mock Exam does not exist."
-        }
-        val state = PracticeAttemptCodec.decode(
-            attemptId = mockExam.id.value,
-            title = mockExam.title,
-            questionCount = mockExam.questionCount,
-            configuration = mockExam.configurationJson,
-            questions = emptyList(),
-            startedAtEpochMillis = mockExam.startedAtEpochMillis,
-            submittedAtEpochMillis = mockExam.submittedAtEpochMillis,
-            timeLimitSeconds = mockExam.timeLimitSeconds,
-        )
-        return captureWrongAnswers(planId, state.answers, category)
     }
 
     suspend fun scheduleErrorReview(
@@ -269,24 +225,7 @@ class ManageStudyReview(
         val entry = requireNotNull(repository.findErrorEntry(planId, errorEntryId)) {
             "Error entry does not exist."
         }
-        return repository.upsertReviewItem(
-            ReviewItem(
-                id = ReviewItemId(UUID.randomUUID().toString()),
-                studyPlanId = planId,
-                subjectId = entry.subjectId,
-                topicId = entry.topicId,
-                questionId = entry.questionId,
-                flashcardId = null,
-                errorEntryId = entry.id,
-                method = ReviewMethod.ERROR_BASED,
-                status = if (dueAtEpochMillis <= clock()) ReviewStatus.DUE else ReviewStatus.SCHEDULED,
-                dueAtEpochMillis = dueAtEpochMillis,
-                intervalDays = 0,
-                repetitionCount = 0,
-                easeFactor = 2.5,
-                completedAtEpochMillis = null,
-            ),
-        )
+        return repository.scheduleErrorReviewIfAbsent(entry, dueAtEpochMillis)
     }
 
     suspend fun resolveErrorEntry(planId: StudyPlanId, errorEntryId: ErrorEntryId) {
@@ -304,18 +243,29 @@ class ManageStudyReview(
         val item = requireNotNull(repository.findReviewItem(planId, reviewItemId)) {
             "Review item does not exist."
         }
-        return repository.upsertReviewItem(SpacedRepetitionScheduler.schedule(item, grade, clock()))
+        require(ReviewDuePolicy.isActive(item)) { "Terminal reviews cannot be graded or reopened." }
+        val reviewedAt = clock()
+        val scheduled = SpacedRepetitionScheduler.schedule(item, grade, reviewedAt)
+        val completed = item.copy(
+            status = ReviewStatus.COMPLETED,
+            completedAtEpochMillis = reviewedAt,
+        )
+        val successor = scheduled.copy(
+            id = ReviewItemId(UUID.randomUUID().toString()),
+            status = ReviewStatus.SCHEDULED,
+            completedAtEpochMillis = null,
+        )
+        return repository.completeReviewAndScheduleSuccessor(item, completed, successor)
     }
 
     suspend fun skipReview(planId: StudyPlanId, reviewItemId: ReviewItemId): ReviewItem {
         val item = requireNotNull(repository.findReviewItem(planId, reviewItemId)) {
             "Review item does not exist."
         }
-        return repository.upsertReviewItem(
-            item.copy(
-                status = ReviewStatus.SKIPPED,
-                completedAtEpochMillis = clock(),
-            ),
+        require(ReviewDuePolicy.isActive(item)) { "Terminal reviews cannot be skipped or reopened." }
+        return repository.skipReviewIfActive(
+            item,
+            item.copy(status = ReviewStatus.SKIPPED, completedAtEpochMillis = clock()),
         )
     }
 
@@ -323,18 +273,19 @@ class ManageStudyReview(
         repository.deleteReviewItem(planId, reviewItemId)
     }
 
-    private suspend fun captureWrongAnswers(
-        planId: StudyPlanId,
-        answers: List<PracticeAnswerRecord>,
-        category: ErrorCategory,
-    ): Int {
-        var captured = 0
-        answers.filterNot(PracticeAnswerRecord::correct).forEach { answer ->
-            val question = practiceRepository?.findQuestion(planId, answer.questionId) ?: return@forEach
-            recordWrongAnswer(question, category, answer.chosenAnswer)
-            captured += 1
+    private fun observeFreshErrorEntries(planId: StudyPlanId): Flow<List<ErrorEntry>> {
+        val questions = practiceRepository?.observeQuestions(planId) ?: return repository.observeErrorEntries(planId)
+        return combine(repository.observeErrorEntries(planId), questions) { errors, currentQuestions ->
+            val byId = currentQuestions.associateBy(Question::id)
+            errors.map { error ->
+                val question = error.questionId?.let(byId::get) ?: return@map error
+                if (error.subjectId == question.subjectId && error.topicId == question.topicId) {
+                    error
+                } else {
+                    error.copy(subjectId = question.subjectId, topicId = question.topicId)
+                }
+            }
         }
-        return captured
     }
 
     private fun buildQueue(
@@ -344,12 +295,15 @@ class ManageStudyReview(
         now: Long,
     ): ReviewQueue {
         val activeFlashcards = flashcards.filterNot(Flashcard::suspended)
-        val activeItems = items.filter { item -> item.status in setOf(ReviewStatus.SCHEDULED, ReviewStatus.DUE) }
-        val due = activeItems.filter { item -> item.dueAtEpochMillis <= now }.sortedBy(ReviewItem::dueAtEpochMillis)
-        val upcoming = activeItems.filter { item -> item.dueAtEpochMillis > now }.sortedBy(ReviewItem::dueAtEpochMillis)
+        val activeFlashcardIds = activeFlashcards.mapTo(mutableSetOf()) { it.id }
+        val activeItems = items.filter { item ->
+            ReviewDuePolicy.isActive(item) && (item.flashcardId == null || item.flashcardId in activeFlashcardIds)
+        }
+        val due = activeItems.filter { ReviewDuePolicy.isDue(it, now) }.sortedBy(ReviewItem::dueAtEpochMillis)
+        val upcoming = activeItems.filterNot { ReviewDuePolicy.isDue(it, now) }.sortedBy(ReviewItem::dueAtEpochMillis)
+        val localToday = ReviewDuePolicy.localDate(now, zoneId)
         val completedToday = items.filter { item ->
-            val completedAtEpochMillis = item.completedAtEpochMillis
-            completedAtEpochMillis != null && now - completedAtEpochMillis < 86_400_000L
+            ReviewDuePolicy.completedOnLocalDay(item, localToday, zoneId)
         }.sortedByDescending(ReviewItem::completedAtEpochMillis)
         return ReviewQueue(
             due = due,

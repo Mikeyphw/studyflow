@@ -111,7 +111,6 @@ class ManageStudyPractice(
             }
         }
         val effectiveMode = if (settings?.strictExamModeEnabled == true) TestMode.EXAM else mode
-        val now = clock()
         return repository.upsertTest(
             StudyTest(
                 id = id,
@@ -122,7 +121,7 @@ class ManageStudyPractice(
                 questionCount = questions.size,
                 answeredCount = 0,
                 correctCount = 0,
-                startedAtEpochMillis = now,
+                startedAtEpochMillis = null,
                 submittedAtEpochMillis = null,
                 configurationJson = questions.joinToString(prefix = "questionIds=", separator = ",") { it.id.value },
             ),
@@ -137,12 +136,15 @@ class ManageStudyPractice(
     ): StudyTest {
         val test = requireNotNull(repository.findTest(planId, testId)) { "Practice Test does not exist." }
         requireScores(answeredCount, correctCount, test.questionCount)
-        return repository.upsertTest(
-            test.copy(
+        require(test.startedAtEpochMillis != null) { "Practice Test must be explicitly started before submission." }
+        return repository.submitTestIfOpen(
+            expectedConfiguration = test.configurationJson,
+            next = test.copy(
                 answeredCount = answeredCount,
                 correctCount = correctCount,
                 submittedAtEpochMillis = clock(),
             ),
+            wrongAnswers = emptyList(),
         )
     }
 
@@ -158,11 +160,12 @@ class ManageStudyPractice(
         require(title.isNotBlank()) { "Mock Exam title cannot be blank." }
         require(questions.isNotEmpty()) { "Mock Exam needs at least one question." }
         require(timeLimitSeconds > 0) { "Mock Exam time limit must be positive." }
-        require(negativeMarking >= 0.0) { "Negative marking cannot be negative." }
+        require(negativeMarking.isFinite() && negativeMarking >= 0.0) {
+            "Negative marking must be finite and non-negative."
+        }
         require(minimumScorePercent == null || minimumScorePercent in 0..100) {
             "Minimum score must be between 0 and 100."
         }
-        val now = clock()
         return repository.upsertMockExam(
             MockExam(
                 id = id,
@@ -176,7 +179,7 @@ class ManageStudyPractice(
                 scorePercent = null,
                 negativeMarking = negativeMarking,
                 minimumScorePercent = minimumScorePercent,
-                startedAtEpochMillis = now,
+                startedAtEpochMillis = null,
                 submittedAtEpochMillis = null,
                 configurationJson = questions.joinToString(prefix = "questionIds=", separator = ",") { it.id.value },
             ),
@@ -216,14 +219,19 @@ class ManageStudyPractice(
     ): MockExam {
         val mockExam = requireNotNull(repository.findMockExam(planId, mockExamId)) { "Mock Exam does not exist." }
         requireScores(answeredCount, correctCount, mockExam.questionCount)
-        val score = PracticeAnalytics.accuracyPercent(correctCount, answeredCount).toDouble()
-        return repository.upsertMockExam(
-            mockExam.copy(
+        require(mockExam.startedAtEpochMillis != null) { "Mock Exam must be explicitly started before submission." }
+        val incorrectCount = answeredCount - correctCount
+        val score = (((correctCount - incorrectCount * mockExam.negativeMarking).coerceAtLeast(0.0) /
+            mockExam.questionCount.toDouble()) * 100.0).coerceIn(0.0, 100.0)
+        return repository.submitMockExamIfOpen(
+            expectedConfiguration = mockExam.configurationJson,
+            next = mockExam.copy(
                 answeredCount = answeredCount,
                 correctCount = correctCount,
                 scorePercent = score,
                 submittedAtEpochMillis = clock(),
             ),
+            wrongAnswers = emptyList(),
         )
     }
 
@@ -248,7 +256,8 @@ class ManageStudyPractice(
         testId: StudyTestId,
         questionId: QuestionId,
         chosenAnswer: String,
-    ): StudyTest = execution.answerTestQuestion(planId, testId, questionId, chosenAnswer)
+        elapsedSeconds: Long,
+    ): StudyTest = execution.answerTestQuestion(planId, testId, questionId, chosenAnswer, elapsedSeconds)
 
     suspend fun finishPracticeAttempt(planId: StudyPlanId, testId: StudyTestId): StudyTest =
         execution.finishTest(planId, testId)
@@ -261,7 +270,8 @@ class ManageStudyPractice(
         mockExamId: MockExamId,
         questionId: QuestionId,
         chosenAnswer: String,
-    ): MockExam = execution.answerMockQuestion(planId, mockExamId, questionId, chosenAnswer)
+        elapsedSeconds: Long,
+    ): MockExam = execution.answerMockQuestion(planId, mockExamId, questionId, chosenAnswer, elapsedSeconds)
 
     suspend fun finishMockExamAttempt(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
         execution.finishMockExam(planId, mockExamId)
@@ -273,6 +283,7 @@ class ManageStudyPractice(
         requestedFormat: QuestionImportFormat = QuestionImportFormat.AUTO,
         defaultSubjectId: SubjectId? = null,
         defaultTopicId: TopicId? = null,
+        ownership: QuestionImportOwnership? = null,
     ): QuestionImportPreview = QuestionImportPipeline.preview(
         planId = planId,
         rawText = rawText,
@@ -280,6 +291,7 @@ class ManageStudyPractice(
         requestedFormat = requestedFormat,
         defaultSubjectId = defaultSubjectId,
         defaultTopicId = defaultTopicId,
+        ownership = ownership,
     )
 
     suspend fun importQuestionsFromText(
@@ -289,6 +301,7 @@ class ManageStudyPractice(
         requestedFormat: QuestionImportFormat = QuestionImportFormat.AUTO,
         defaultSubjectId: SubjectId? = null,
         defaultTopicId: TopicId? = null,
+        ownership: QuestionImportOwnership? = null,
     ): QuestionImportResult {
         val preview = previewQuestionImport(
             planId = planId,
@@ -297,10 +310,12 @@ class ManageStudyPractice(
             requestedFormat = requestedFormat,
             defaultSubjectId = defaultSubjectId,
             defaultTopicId = defaultTopicId,
+            ownership = ownership,
         )
-        val imported = mutableListOf<Question>()
-        preview.drafts.filter(QuestionImportDraft::importable).forEach { draft ->
-            imported += createQuestion(
+        require(!preview.hasErrors) { "Question import contains validation errors; review the preview before importing." }
+        val now = clock()
+        val candidates = preview.drafts.filter(QuestionImportDraft::importable).map { draft ->
+            Question(
                 id = QuestionId(UUID.randomUUID().toString()),
                 studyPlanId = planId,
                 subjectId = draft.subjectId,
@@ -314,9 +329,14 @@ class ManageStudyPractice(
                 source = draft.source,
                 year = draft.year,
                 difficulty = draft.difficulty,
+                favorite = false,
+                disputed = false,
                 tags = draft.tags,
+                createdAtEpochMillis = now,
+                updatedAtEpochMillis = now,
             )
         }
+        val imported = if (candidates.isEmpty()) emptyList() else repository.importQuestionsAtomically(candidates)
         return QuestionImportResult(preview = preview, imported = imported)
     }
 
@@ -325,12 +345,25 @@ class ManageStudyPractice(
         remediations: List<WrongAnswerRemediation>,
         dueReviews: List<ReviewItem>,
         request: WeaknessDrillRequest = WeaknessDrillRequest(),
-    ): WeaknessDrillPlan = WeaknessDrillGenerator.build(
-        questions = questions,
-        remediations = remediations,
-        dueReviews = dueReviews,
-        request = request,
-    )
+    ): WeaknessDrillPlan {
+        val questionById = questions.associateBy(Question::id)
+        val refreshedRemediations = remediations.map { remediation ->
+            val currentQuestion = remediation.error.questionId?.let(questionById::get)
+            if (currentQuestion == null) remediation else remediation.copy(
+                error = remediation.error.copy(
+                    subjectId = currentQuestion.subjectId,
+                    topicId = currentQuestion.topicId,
+                ),
+            )
+        }
+        return WeaknessDrillGenerator.build(
+            questions = questions,
+            remediations = refreshedRemediations,
+            dueReviews = dueReviews,
+            request = request,
+            nowEpochMillis = clock(),
+        )
+    }
 
     suspend fun createWeaknessDrillTest(
         id: StudyTestId,
@@ -343,14 +376,30 @@ class ManageStudyPractice(
     ): StudyTest {
         val drill = buildWeaknessDrill(questions, remediations, dueReviews, request)
         require(drill.executable) { "Weakness drill needs enough matching weak questions." }
-        return createPracticeTest(
+        val key = drill.questions.map { it.id.value }.sorted().joinToString(",")
+        val settings = studyPlanRepository?.let { plans ->
+            requireNotNull(plans.observeStoredPlanSettings(planId).first()) {
+                "Study Plan settings must be persisted before creating a weakness drill."
+            }
+        }
+        val effectiveMode = if (settings?.strictExamModeEnabled == true) TestMode.EXAM else TestMode.IMMEDIATE_FEEDBACK
+        val candidate = StudyTest(
             id = id,
-            planId = planId,
-            title = title,
-            questions = drill.questions,
-            mode = TestMode.IMMEDIATE_FEEDBACK,
+            studyPlanId = planId,
+            title = title.trim(),
+            mode = effectiveMode,
             timeLimitSeconds = null,
+            questionCount = drill.questions.size,
+            answeredCount = 0,
+            correctCount = 0,
+            startedAtEpochMillis = null,
+            submittedAtEpochMillis = null,
+            configurationJson = drill.questions.joinToString(
+                prefix = "questionIds=",
+                separator = ",",
+            ) { it.id.value } + "\nweaknessDrillKey=$key",
         )
+        return repository.createWeaknessDrillIfAbsent(candidate, key)
     }
 
     private suspend fun requireQuestion(planId: StudyPlanId, questionId: QuestionId): Question =
@@ -362,6 +411,9 @@ class ManageStudyPractice(
         require(question.difficulty in 1..5) { "Question difficulty must be between 1 and 5." }
         if (question.type == QuestionType.MULTIPLE_CHOICE) {
             require(question.options.size >= 2) { "Multiple-choice questions need at least two options." }
+            require(question.options.any { it.trim().equals(question.correctAnswer.trim(), ignoreCase = true) }) {
+                "Multiple-choice correct answer must be one of the options."
+            }
         }
         require(question.year == null || question.year in 1900..2200) { "Question year is outside the accepted range." }
     }

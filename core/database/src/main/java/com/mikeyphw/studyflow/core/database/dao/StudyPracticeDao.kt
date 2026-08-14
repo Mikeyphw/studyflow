@@ -10,23 +10,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface StudyPracticeDao {
-    @Upsert
-    suspend fun upsertQuestion(question: QuestionEntity)
-
-    @Upsert
-    suspend fun upsertQuestions(questions: List<QuestionEntity>)
-
-    @Upsert
-    suspend fun upsertTest(test: StudyTestEntity)
-
-    @Upsert
-    suspend fun upsertTests(tests: List<StudyTestEntity>)
-
-    @Upsert
-    suspend fun upsertMockExam(mockExam: MockExamEntity)
-
-    @Upsert
-    suspend fun upsertMockExams(mockExams: List<MockExamEntity>)
+    @Upsert suspend fun upsertQuestion(question: QuestionEntity)
+    @Upsert suspend fun upsertQuestions(questions: List<QuestionEntity>)
+    @Upsert suspend fun upsertTest(test: StudyTestEntity)
+    @Upsert suspend fun upsertTests(tests: List<StudyTestEntity>)
+    @Upsert suspend fun upsertMockExam(mockExam: MockExamEntity)
+    @Upsert suspend fun upsertMockExams(mockExams: List<MockExamEntity>)
 
     @Query("SELECT * FROM questions WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
     fun observeQuestions(planId: String): Flow<List<QuestionEntity>>
@@ -40,9 +29,42 @@ interface StudyPracticeDao {
     @Query("SELECT * FROM study_tests WHERE studyPlanId = :planId ORDER BY startedAtEpochMillis DESC")
     fun observeTests(planId: String): Flow<List<StudyTestEntity>>
 
+    @Query("SELECT * FROM study_tests WHERE studyPlanId = :planId")
+    suspend fun findAllTests(planId: String): List<StudyTestEntity>
+
     @Query("SELECT * FROM study_tests WHERE studyPlanId = :planId AND id = :testId LIMIT 1")
     suspend fun findTest(planId: String, testId: String): StudyTestEntity?
 
+    @Query(
+        """
+        UPDATE study_tests SET startedAtEpochMillis = :startedAtEpochMillis
+        WHERE studyPlanId = :planId AND id = :testId
+          AND startedAtEpochMillis IS NULL AND submittedAtEpochMillis IS NULL
+        """,
+    )
+    suspend fun startStudyTestIfNotStarted(planId: String, testId: String, startedAtEpochMillis: Long): Int
+
+    @Query(
+        """
+        UPDATE study_tests
+        SET answeredCount = :answeredCount,
+            correctCount = :correctCount,
+            startedAtEpochMillis = :startedAtEpochMillis,
+            configurationJson = :nextConfiguration
+        WHERE studyPlanId = :planId AND id = :testId
+          AND submittedAtEpochMillis IS NULL
+          AND configurationJson = :expectedConfiguration
+        """,
+    )
+    suspend fun updateStudyTestAttemptIfOpen(
+        planId: String,
+        testId: String,
+        expectedConfiguration: String,
+        nextConfiguration: String,
+        answeredCount: Int,
+        correctCount: Int,
+        startedAtEpochMillis: Long?,
+    ): Int
 
     @Query(
         """
@@ -50,24 +72,83 @@ interface StudyPracticeDao {
         SET answeredCount = :answeredCount,
             correctCount = :correctCount,
             submittedAtEpochMillis = :submittedAtEpochMillis,
-            configurationJson = :configurationJson
-        WHERE studyPlanId = :planId
-          AND id = :testId
+            configurationJson = :nextConfiguration
+        WHERE studyPlanId = :planId AND id = :testId
           AND submittedAtEpochMillis IS NULL
+          AND configurationJson = :expectedConfiguration
         """,
     )
     suspend fun submitStudyTestIfOpen(
         planId: String,
         testId: String,
+        expectedConfiguration: String,
+        nextConfiguration: String,
         answeredCount: Int,
         correctCount: Int,
         submittedAtEpochMillis: Long,
-        configurationJson: String,
     ): Int
 
     @Query("SELECT * FROM mock_exams WHERE studyPlanId = :planId ORDER BY startedAtEpochMillis DESC")
     fun observeMockExams(planId: String): Flow<List<MockExamEntity>>
 
+    @Query("SELECT * FROM mock_exams WHERE studyPlanId = :planId")
+    suspend fun findAllMockExams(planId: String): List<MockExamEntity>
+
     @Query("SELECT * FROM mock_exams WHERE studyPlanId = :planId AND id = :mockExamId LIMIT 1")
     suspend fun findMockExam(planId: String, mockExamId: String): MockExamEntity?
+
+    @Query(
+        """
+        UPDATE mock_exams SET startedAtEpochMillis = :startedAtEpochMillis
+        WHERE studyPlanId = :planId AND id = :mockExamId
+          AND startedAtEpochMillis IS NULL AND submittedAtEpochMillis IS NULL
+        """,
+    )
+    suspend fun startMockExamIfNotStarted(planId: String, mockExamId: String, startedAtEpochMillis: Long): Int
+
+    @Query(
+        """
+        UPDATE mock_exams
+        SET answeredCount = :answeredCount,
+            correctCount = :correctCount,
+            startedAtEpochMillis = :startedAtEpochMillis,
+            configurationJson = :nextConfiguration
+        WHERE studyPlanId = :planId AND id = :mockExamId
+          AND submittedAtEpochMillis IS NULL
+          AND configurationJson = :expectedConfiguration
+        """,
+    )
+    suspend fun updateMockExamAttemptIfOpen(
+        planId: String,
+        mockExamId: String,
+        expectedConfiguration: String,
+        nextConfiguration: String,
+        answeredCount: Int,
+        correctCount: Int,
+        startedAtEpochMillis: Long?,
+    ): Int
+
+    @Query(
+        """
+        UPDATE mock_exams
+        SET answeredCount = :answeredCount,
+            correctCount = :correctCount,
+            scorePercent = :scorePercent,
+            submittedAtEpochMillis = :submittedAtEpochMillis,
+            configurationJson = :nextConfiguration
+        WHERE studyPlanId = :planId AND id = :mockExamId
+          AND submittedAtEpochMillis IS NULL
+          AND configurationJson = :expectedConfiguration
+        """,
+    )
+    suspend fun submitMockExamIfOpen(
+        planId: String,
+        mockExamId: String,
+        expectedConfiguration: String,
+        nextConfiguration: String,
+        answeredCount: Int,
+        correctCount: Int,
+        scorePercent: Double,
+        submittedAtEpochMillis: Long,
+    ): Int
 }

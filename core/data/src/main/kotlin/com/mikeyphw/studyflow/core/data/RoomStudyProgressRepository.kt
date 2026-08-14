@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.mapper.asEntity
 import com.mikeyphw.studyflow.core.database.mapper.asExternalModel
+import com.mikeyphw.studyflow.core.domain.GoalEvidence
 import com.mikeyphw.studyflow.core.domain.StudyProgressRepository
 import com.mikeyphw.studyflow.core.model.StudyGoal
 import com.mikeyphw.studyflow.core.model.StudyGoalId
@@ -11,6 +12,7 @@ import com.mikeyphw.studyflow.core.model.StudyNote
 import com.mikeyphw.studyflow.core.model.StudyNoteId
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 internal class RoomStudyProgressRepository(
@@ -25,6 +27,20 @@ internal class RoomStudyProgressRepository(
 
     override fun observeNotes(planId: StudyPlanId): Flow<List<StudyNote>> =
         supportDao.observeNotes(planId.value).map { notes -> notes.map { it.asExternalModel() } }
+
+    override fun observeGoalEvidence(planId: StudyPlanId): Flow<GoalEvidence> = combine(
+        planningDao.observeStudySessions(planId.value),
+        database.studyPracticeDao().observeTests(planId.value),
+        database.studyPracticeDao().observeMockExams(planId.value),
+        database.studyStructureDao().observeTopics(planId.value),
+    ) { sessions, tests, mocks, topics ->
+        GoalEvidence(
+            sessions = sessions.map { it.asExternalModel() },
+            tests = tests.map { it.asExternalModel() },
+            mockExams = mocks.map { it.asExternalModel() },
+            topics = topics.map { it.asExternalModel() },
+        )
+    }
 
     override suspend fun findGoal(planId: StudyPlanId, goalId: StudyGoalId): StudyGoal? =
         planningDao.findStudyGoal(planId.value, goalId.value)?.asExternalModel()

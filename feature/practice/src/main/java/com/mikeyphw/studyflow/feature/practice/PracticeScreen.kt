@@ -31,7 +31,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +54,6 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionState
 import com.mikeyphw.studyflow.core.domain.PracticeSummary
 import com.mikeyphw.studyflow.core.model.MockExam
-import com.mikeyphw.studyflow.core.model.ErrorCategory
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
@@ -60,6 +61,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
 import java.util.UUID
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,19 +160,14 @@ fun PracticeScreen(
                     PracticeRunnerCard(
                         title = stringResource(R.string.active_practice_attempt),
                         state = state,
-                        onAnswer = { question, answer ->
+                        onAnswer = { question, answer, elapsedSeconds ->
                             launchAction(answerSaved) {
-                                practice.answerPracticeQuestion(plan.id, test.id, question.id, answer)
+                                practice.answerPracticeQuestion(plan.id, test.id, question.id, answer, elapsedSeconds)
                             }
                         },
                         onFinish = {
                             launchAction(attemptFinished) {
                                 practice.finishPracticeAttempt(plan.id, test.id)
-                                review.captureWrongAnswersFromTest(
-                                    planId = plan.id,
-                                    testId = test.id,
-                                    category = ErrorCategory.CONCEPT_CONFUSION,
-                                )
                                 activeTestId = null
                             }
                         },
@@ -184,19 +181,14 @@ fun PracticeScreen(
                     PracticeRunnerCard(
                         title = stringResource(R.string.active_mock_attempt),
                         state = state,
-                        onAnswer = { question, answer ->
+                        onAnswer = { question, answer, elapsedSeconds ->
                             launchAction(answerSaved) {
-                                practice.answerMockQuestion(plan.id, mock.id, question.id, answer)
+                                practice.answerMockQuestion(plan.id, mock.id, question.id, answer, elapsedSeconds)
                             }
                         },
                         onFinish = {
                             launchAction(attemptFinished) {
                                 practice.finishMockExamAttempt(plan.id, mock.id)
-                                review.captureWrongAnswersFromMockExam(
-                                    planId = plan.id,
-                                    mockExamId = mock.id,
-                                    category = ErrorCategory.CONCEPT_CONFUSION,
-                                )
                                 activeMockId = null
                             }
                         },
@@ -252,9 +244,7 @@ fun PracticeScreen(
                                                         title = "${plan.name} practice",
                                                         questions = screenState.filteredQuestions.take(20),
                                                     )
-                                                }.onSuccess { test ->
-                                                    activeMockId = null
-                                                    activeTestId = test.id.value
+                                                }.onSuccess {
                                                     snackbar.showSnackbar(testCreated)
                                                 }.onFailure {
                                                     snackbar.showSnackbar(operationFailed)
@@ -276,9 +266,7 @@ fun PracticeScreen(
                                                     negativeMarking = 0.0,
                                                     minimumScorePercent = null,
                                                 )
-                                            }.onSuccess { mock ->
-                                                activeTestId = null
-                                                activeMockId = mock.id.value
+                                            }.onSuccess {
                                                 snackbar.showSnackbar(mockCreated)
                                             }.onFailure {
                                                 snackbar.showSnackbar(operationFailed)
@@ -385,10 +373,26 @@ private fun PracticeSummaryCard(summary: PracticeSummary) {
 private fun PracticeRunnerCard(
     title: String,
     state: PracticeExecutionState,
-    onAnswer: (Question, String) -> Unit,
+    onAnswer: (Question, String, Long) -> Unit,
     onFinish: () -> Unit,
     onClose: () -> Unit,
 ) {
+    var nowEpochMillis by remember(state.attemptId) { mutableStateOf(System.currentTimeMillis()) }
+    val deadline = state.deadlineEpochMillis
+    LaunchedEffect(state.attemptId, deadline, state.submitted) {
+        if (!state.submitted && deadline != null) {
+            val remaining = (deadline - System.currentTimeMillis()).coerceAtLeast(0L)
+            delay(remaining)
+            nowEpochMillis = System.currentTimeMillis()
+            if (!state.submitted) onFinish()
+        }
+    }
+    LaunchedEffect(state.attemptId, state.submitted) {
+        while (!state.submitted) {
+            nowEpochMillis = System.currentTimeMillis()
+            delay(1_000L)
+        }
+    }
     StudyFlowSectionCard(title = title) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
@@ -399,20 +403,28 @@ private fun PracticeRunnerCard(
                     state.questionIds.size,
                 ),
             )
+            deadline?.let { deadlineEpochMillis ->
+                val remainingSeconds = ((deadlineEpochMillis - nowEpochMillis).coerceAtLeast(0L) + 999L) / 1_000L
+                Text(stringResource(R.string.time_remaining_seconds, remainingSeconds), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             val question = state.currentQuestion
             if (question == null) {
                 Text(stringResource(R.string.no_questions_message))
             } else {
                 Text(question.statement, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                val questionStartedAt = remember(state.attemptId, question.id.value) { SystemClock.elapsedRealtime() }
                 val options = question.options.ifEmpty { listOf(question.correctAnswer) }
                 options.forEach { option ->
                     OutlinedButton(
-                        enabled = !state.submitted,
-                        onClick = { onAnswer(question, option) },
+                        enabled = !state.submitted && !state.deadlinePassed(nowEpochMillis),
+                        onClick = {
+                            val elapsedSeconds = ((SystemClock.elapsedRealtime() - questionStartedAt) / 1_000L).coerceAtLeast(0L)
+                            onAnswer(question, option, elapsedSeconds)
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(option) }
                 }
-                if (state.answers.any { it.questionId == question.id }) {
+                if (state.explanationVisible(question.id)) {
                     Text(
                         text = stringResource(R.string.explanation_value, question.explanation.ifBlank { "—" }),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -493,7 +505,7 @@ private fun RecentTestsCard(tests: List<StudyTest>, onStart: (StudyTest) -> Unit
                             )
                             Text(pluralStringResource(R.plurals.answered_value, test.answeredCount, test.answeredCount))
                             Text(pluralStringResource(R.plurals.correct_value, test.correctCount, test.correctCount))
-                            OutlinedButton(onClick = { onStart(test) }) {
+                            OutlinedButton(enabled = test.submittedAtEpochMillis == null, onClick = { onStart(test) }) {
                                 Icon(Icons.Outlined.PlayArrow, contentDescription = null)
                                 Text(stringResource(R.string.start_or_resume))
                             }
@@ -525,7 +537,20 @@ private fun RecentMocksCard(mocks: List<MockExam>, onStart: (MockExam) -> Unit) 
                             )
                             Text(pluralStringResource(R.plurals.answered_value, mock.answeredCount, mock.answeredCount))
                             Text(pluralStringResource(R.plurals.correct_value, mock.correctCount, mock.correctCount))
-                            OutlinedButton(onClick = { onStart(mock) }) {
+                            mock.scorePercent?.let { score ->
+                                val threshold = mock.minimumScorePercent
+                                val outcome = threshold?.let {
+                                    stringResource(if (score >= it) R.string.exam_pass else R.string.exam_below_threshold)
+                                }
+                                Text(
+                                    if (outcome == null) {
+                                        stringResource(R.string.score_value, score.toInt())
+                                    } else {
+                                        stringResource(R.string.score_outcome_value, score.toInt(), outcome)
+                                    },
+                                )
+                            }
+                            OutlinedButton(enabled = mock.submittedAtEpochMillis == null, onClick = { onStart(mock) }) {
                                 Icon(Icons.Outlined.PlayArrow, contentDescription = null)
                                 Text(stringResource(R.string.start_or_resume))
                             }

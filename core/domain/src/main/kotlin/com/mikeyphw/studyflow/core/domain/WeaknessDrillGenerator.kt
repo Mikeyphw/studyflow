@@ -60,13 +60,14 @@ object WeaknessDrillGenerator {
         remediations: List<WrongAnswerRemediation>,
         dueReviews: List<ReviewItem>,
         request: WeaknessDrillRequest = WeaknessDrillRequest(),
+        nowEpochMillis: Long = System.currentTimeMillis(),
     ): WeaknessDrillPlan {
         val usableQuestions = questions.filter { question -> question.statement.isNotBlank() }
         if (usableQuestions.isEmpty()) {
             return WeaknessDrillPlan(emptyList(), emptyList(), WeaknessDrillEmptyReason.NO_QUESTIONS)
         }
 
-        val drivers = buildDrivers(remediations, dueReviews)
+        val drivers = buildDrivers(remediations, dueReviews, nowEpochMillis)
         if (drivers.isEmpty()) {
             return WeaknessDrillPlan(emptyList(), emptyList(), WeaknessDrillEmptyReason.NO_WEAK_SIGNALS)
         }
@@ -93,6 +94,7 @@ object WeaknessDrillGenerator {
     private fun buildDrivers(
         remediations: List<WrongAnswerRemediation>,
         dueReviews: List<ReviewItem>,
+        nowEpochMillis: Long,
     ): List<WeaknessDrillDriver> {
         val errorDrivers = remediations.map { remediation ->
             WeaknessDrillDriver(
@@ -105,7 +107,7 @@ object WeaknessDrillGenerator {
             )
         }
         val reviewDrivers = dueReviews
-            .filter { item -> item.status == ReviewStatus.DUE }
+            .filter { item -> ReviewDuePolicy.isDue(item, nowEpochMillis) }
             .map { item ->
                 WeaknessDrillDriver(
                     questionId = item.questionId,

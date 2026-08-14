@@ -67,6 +67,7 @@ import com.mikeyphw.studyflow.core.domain.StudyEvidenceEventKind
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineBuilder
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineInput
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
+import com.mikeyphw.studyflow.core.domain.tickingClockFlow
 import com.mikeyphw.studyflow.core.model.AdaptiveRescheduleChangeType
 import com.mikeyphw.studyflow.core.model.ExamReadinessBand
 import com.mikeyphw.studyflow.core.model.ReadinessSignalKind
@@ -85,6 +86,7 @@ import kotlinx.coroutines.launch
 fun ProgressWorkspaceScreen(
     plan: StudyPlan,
     selectedPeriod: ProgressWorkspacePeriod,
+    targetId: String? = null,
     analyticsManager: ManageStudyAnalytics,
     progressManager: ManageStudyProgress,
     contentManager: ManageStudyContent,
@@ -200,17 +202,20 @@ fun ProgressWorkspaceScreen(
     val mockExams = mockExamsState.readyValue()
     val readiness = readinessState.readyValue()
     val reschedulePreview = rescheduleState.readyValue()
+    val targetNote = progress?.notes?.firstOrNull { note -> note.id.value == targetId }
     val coroutineScope = rememberCoroutineScope()
     var appliedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
     var skippedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
     var rescheduleApplyFailed by rememberSaveable(plan.id.value) { mutableStateOf(false) }
     var reportExportResult by rememberSaveable(plan.id.value) { mutableStateOf<Boolean?>(null) }
-    val cutoff = System.currentTimeMillis() - selectedPeriod.days * 86_400_000L
+    val wallClockFlow = remember(plan.id) { tickingClockFlow() }
+    val nowEpochMillis by wallClockFlow.collectAsStateWithLifecycle(initialValue = System.currentTimeMillis())
+    val cutoff = nowEpochMillis - selectedPeriod.days * 86_400_000L
     val periodSessions = sessions.filter { session ->
         session.startedAtEpochMillis >= cutoff && session.status == StudySessionStatus.COMPLETED
     }
     val studiedSeconds = periodSessions.sumOf { session ->
-        StudySessionTimer.activeSeconds(session, session.endedAtEpochMillis ?: System.currentTimeMillis())
+        StudySessionTimer.activeSeconds(session, session.endedAtEpochMillis ?: nowEpochMillis)
     }
     val answered = periodSessions.sumOf { it.questionsAnswered }
     val correct = periodSessions.sumOf { it.correctAnswers }
@@ -219,14 +224,14 @@ fun ProgressWorkspaceScreen(
     val earlierSessions = periodSessions.filter { it.startedAtEpochMillis < halfway }
     val recentSessions = periodSessions.filter { it.startedAtEpochMillis >= halfway }
     val earlierMinutes = earlierSessions.sumOf { session ->
-        StudySessionTimer.activeSeconds(session, session.endedAtEpochMillis ?: System.currentTimeMillis())
+        StudySessionTimer.activeSeconds(session, session.endedAtEpochMillis ?: nowEpochMillis)
     } / 60
     val recentMinutes = recentSessions.sumOf { session ->
-        StudySessionTimer.activeSeconds(session, session.endedAtEpochMillis ?: System.currentTimeMillis())
+        StudySessionTimer.activeSeconds(session, session.endedAtEpochMillis ?: nowEpochMillis)
     } / 60
     val trendLabel = trendLabel(recentMinutes, earlierMinutes)
-    val evidenceTimeline = remember(schedule, sessions, reviewItems, questions, tests, mockExams, progress) {
-        StudyEvidenceTimelineBuilder.build(
+    val allEvidence = remember(schedule, sessions, reviewItems, questions, tests, mockExams, progress, nowEpochMillis) {
+        StudyEvidenceTimelineBuilder.buildAll(
             StudyEvidenceTimelineInput(
                 studyPlanId = plan.id,
                 plannedActivities = schedule.plannedActivities,
@@ -235,21 +240,22 @@ fun ProgressWorkspaceScreen(
                 questions = questions,
                 tests = tests,
                 mockExams = mockExams,
-                goals = progress?.activeGoals.orEmpty(),
+                goals = progress?.let { snapshot -> snapshot.activeGoals + snapshot.completedGoals }.orEmpty(),
                 notes = progress?.notes.orEmpty(),
-                nowEpochMillis = System.currentTimeMillis(),
+                nowEpochMillis = nowEpochMillis,
             ),
         )
     }
-    val weeklyReview = remember(plan, analytics, readiness, reschedulePreview, evidenceTimeline) {
+    val evidenceTimeline = remember(allEvidence) { allEvidence.take(12) }
+    val weeklyReview = remember(plan, analytics, readiness, reschedulePreview, allEvidence, nowEpochMillis) {
         StudyCoachWeeklyReviewBuilder.build(
             StudyCoachWeeklyReviewInput(
                 plan = plan,
                 analytics = analytics,
                 readiness = readiness,
                 reschedulePreview = reschedulePreview,
-                evidence = evidenceTimeline,
-                generatedAtEpochMillis = System.currentTimeMillis(),
+                evidence = allEvidence,
+                generatedAtEpochMillis = nowEpochMillis,
             ),
         )
     }
@@ -263,6 +269,7 @@ fun ProgressWorkspaceScreen(
         flashcards,
         errorEntries,
         progress,
+        nowEpochMillis,
     ) {
         val currentSyllabus = syllabus
         val currentLibrary = library
@@ -283,12 +290,12 @@ fun ProgressWorkspaceScreen(
                     plannedActivities = schedule.plannedActivities,
                     studySessions = sessions,
                     notes = progress?.notes.orEmpty(),
-                    nowEpochMillis = System.currentTimeMillis(),
+                    nowEpochMillis = nowEpochMillis,
                 ),
             )
         }
     }
-    val examReportSnapshot = cleanupReport?.let { currentCleanup ->
+    val examReportSnapshot = if (cleanupReport != null && analytics != null && readiness != null) {
         StudyExamReportBuilder.build(
             StudyExamReportInput(
                 plan = plan,
@@ -296,16 +303,20 @@ fun ProgressWorkspaceScreen(
                 readiness = readiness,
                 weeklyReview = weeklyReview,
                 evidence = evidenceTimeline,
+                totalEvidenceCount = allEvidence.size,
+                requiredInputsReady = true,
                 schedule = schedule,
                 reviewItems = reviewItems,
                 questions = questions,
                 tests = tests,
                 mockExams = mockExams,
                 reschedulePreview = reschedulePreview,
-                cleanupReport = currentCleanup,
-                generatedAtEpochMillis = System.currentTimeMillis(),
+                cleanupReport = cleanupReport,
+                generatedAtEpochMillis = nowEpochMillis,
             ),
         )
+    } else {
+        null
     }
     val reportDocument = examReportSnapshot?.let { snapshot -> localizedExamReportDocument(snapshot) }
     val reportChooserTitle = stringResource(R.string.exam_report_share_chooser)
@@ -372,6 +383,17 @@ fun ProgressWorkspaceScreen(
                 contentPadding = workspaceContentPadding(),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
+                targetNote?.let { note ->
+                    item(key = "search-target:${note.id.value}", contentType = "search-target") {
+                        StudyFlowPrimaryActionCard(
+                            supportingLabel = stringResource(R.string.notes),
+                            title = note.title,
+                            message = note.content.take(180),
+                            actionLabel = stringResource(R.string.open_progress_center),
+                            onAction = onOpenProgressCenter,
+                        )
+                    }
+                }
                 studyFlowSectionHeader(key = "readiness", title = { stringResource(R.string.readiness_score) })
                 item(key = "readiness-card", contentType = "readiness") {
                     val currentReadiness = readiness
@@ -1080,6 +1102,12 @@ private fun localizedExamReportDocument(snapshot: StudyExamReportSnapshot): Stud
             value = stringResource(action.labelRes()),
         )
     }
+    val provenanceRows = snapshot.metricProvenance.map { provenance ->
+        StudyExamReportRow(
+            label = provenance.metric.replace('_', ' ').replaceFirstChar { char -> char.titlecase() },
+            value = provenance.source.name.replace('_', ' ').replaceFirstChar { char -> char.titlecase() },
+        )
+    }
     return StudyExamReportDocument(
         title = stringResource(R.string.exam_report_title, snapshot.studyPlanName),
         fileStem = "studyflow-exam-report-${snapshot.studyPlanName}",
@@ -1228,6 +1256,10 @@ private fun localizedExamReportDocument(snapshot: StudyExamReportSnapshot): Stud
                         snapshot.cleanupActionCount.toString(),
                     ),
                 ),
+            ),
+            StudyExamReportSection(
+                title = stringResource(R.string.exam_report_metric_provenance_section),
+                rows = provenanceRows,
             ),
             StudyExamReportSection(
                 title = stringResource(R.string.exam_report_next_actions_section),

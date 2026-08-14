@@ -351,6 +351,8 @@
     <string name="mock_exam_question_count">Question count</string>
     <string name="mock_exam_time_limit_minutes">Time limit in minutes</string>
     <string name="mock_exam_minimum_score">Minimum score percent</string>
+    <string name="mock_exam_negative_marking">Penalty per incorrect answer</string>
+    <string name="mock_exam_negative_marking_invalid">Enter a finite value of zero or more.</string>
     <plurals name="mock_exam_studio_sections">
         <item quantity="one">%1$d section · %2$d selected questions</item>
         <item quantity="other">%1$d sections · %2$d selected questions</item>
@@ -495,4 +497,17 @@
     <string name="exam_report_action_keep_plan">Keep executing the current plan.</string>
     <string name="exam_report_privacy_notice">Generated from local StudyFlow data. Export is user initiated, uses no cloud account, and omits freeform notes by default.</string>
     <string name="session_loading">Study Session is still loading. Focus controls will unlock when the session state is ready.</string>
+    <string name="exam_report_metric_provenance_section">Metric provenance</string>
+    <string name="notes">Notes</string>
+    <string name="question_import_issue_row">Row %1$d: %2$s</string>
+    <string name="question_import_preview">Preview: %1$d ready, %2$d duplicates, %3$d rejected</string>
+    <string name="review_chosen_answer">Chosen: %1$s</string>
+    <string name="review_correct_answer">Correct: %1$s</string>
+    <string name="remediation_review_theory">Review theory</string>
+    <string name="remediation_practice_similar">Practice similar questions</string>
+    <string name="remediation_reread_statement">Re-read the statement</string>
+    <string name="remediation_timed_drill">Run a timed drill</string>
+    <string name="remediation_slow_checklist">Use a slow-check checklist</string>
+    <string name="remediation_verify_source">Verify the source</string>
+    <string name="remediation_review_explanation">Review the explanation</string>
 </resources>

@@ -91,4 +91,9 @@
     <string name="confirm_delete_title">Excluir item?</string>
     <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
     <string name="confirm_delete">Excluir</string>
+    <string name="time_remaining_seconds">Tempo restante: %1$d s</string>
+    <string name="score_value">Pontuação %1$d%%</string>
+    <string name="score_outcome_value">Pontuação %1$d%%: %2$s</string>
+    <string name="exam_pass">Aprovado</string>
+    <string name="exam_below_threshold">Abaixo da nota mínima</string>
 </resources>

@@ -351,6 +351,8 @@
     <string name="mock_exam_question_count">Quantidade de questões</string>
     <string name="mock_exam_time_limit_minutes">Tempo limite em minutos</string>
     <string name="mock_exam_minimum_score">Percentual mínimo</string>
+    <string name="mock_exam_negative_marking">Penalidade por resposta incorreta</string>
+    <string name="mock_exam_negative_marking_invalid">Digite um valor finito maior ou igual a zero.</string>
     <plurals name="mock_exam_studio_sections">
         <item quantity="one">%1$d seção · %2$d questões selecionadas</item>
         <item quantity="other">%1$d seções · %2$d questões selecionadas</item>
@@ -495,4 +497,17 @@
     <string name="exam_report_action_keep_plan">Continuar executando o plano atual.</string>
     <string name="exam_report_privacy_notice">Gerado com dados locais do StudyFlow. A exportação é iniciada pelo usuário, não usa conta na nuvem e omite anotações livres por padrão.</string>
     <string name="session_loading">A sessão de estudo ainda está carregando. Os controles de foco serão liberados quando o estado da sessão estiver pronto.</string>
+    <string name="exam_report_metric_provenance_section">Proveniência das métricas</string>
+    <string name="notes">Notas</string>
+    <string name="question_import_issue_row">Linha %1$d: %2$s</string>
+    <string name="question_import_preview">Prévia: %1$d prontas, %2$d duplicadas, %3$d rejeitadas</string>
+    <string name="review_chosen_answer">Resposta escolhida: %1$s</string>
+    <string name="review_correct_answer">Resposta correta: %1$s</string>
+    <string name="remediation_review_theory">Revisar a teoria</string>
+    <string name="remediation_practice_similar">Praticar questões semelhantes</string>
+    <string name="remediation_reread_statement">Reler o enunciado</string>
+    <string name="remediation_timed_drill">Fazer um treino cronometrado</string>
+    <string name="remediation_slow_checklist">Usar uma lista de verificação cuidadosa</string>
+    <string name="remediation_verify_source">Verificar a fonte</string>
+    <string name="remediation_review_explanation">Revisar a explicação</string>
 </resources>

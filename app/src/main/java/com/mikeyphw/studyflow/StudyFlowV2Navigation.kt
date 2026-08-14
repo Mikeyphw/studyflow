@@ -292,6 +292,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
             PlanWorkspaceScreen(
                 plan = plan,
                 selectedTab = route.tab,
+                targetId = route.targetId,
                 scheduleManager = container.manageStudySchedule,
                 contentManager = container.manageStudyContent,
                 libraryManager = container.manageStudyLibrary,
@@ -348,8 +349,10 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
             PracticeWorkspaceScreen(
                 plan = plan,
                 selectedTab = route.tab,
+                targetId = route.targetId,
                 practiceManager = container.manageStudyPractice,
                 reviewManager = container.manageStudyReview,
+                contentManager = container.manageStudyContent,
                 onTabSelected = { tab ->
                     navController.navigateWorkspaceTab(PracticeWorkspaceRoute(plan.id.value, tab))
                 },
@@ -400,6 +403,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
             ProgressWorkspaceScreen(
                 plan = plan,
                 selectedPeriod = route.period,
+                targetId = route.targetId,
                 analyticsManager = container.manageStudyAnalytics,
                 progressManager = container.manageStudyProgress,
                 contentManager = container.manageStudyContent,
@@ -550,6 +554,8 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
             StudyReviewScreen(
                 plan = plan,
                 review = container.manageStudyReview,
+                practice = container.manageStudyPractice,
+                content = container.manageStudyContent,
                 onBack = navController::popBackStack,
             )
         }

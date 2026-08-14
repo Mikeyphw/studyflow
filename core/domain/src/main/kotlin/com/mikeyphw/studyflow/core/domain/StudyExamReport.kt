@@ -28,6 +28,20 @@ data class StudyExamReportSignal(
     val scorePercent: Int,
 )
 
+enum class StudyExamReportMetricSource {
+    ANALYTICS,
+    READINESS,
+    RAW_EVIDENCE,
+    SCHEDULE,
+    REVIEW_STATE,
+    CONTENT_HEALTH,
+}
+
+data class StudyExamReportMetricProvenance(
+    val metric: String,
+    val source: StudyExamReportMetricSource,
+)
+
 data class StudyExamReportSnapshot(
     val studyPlanName: String,
     val generatedAtEpochMillis: Long,
@@ -54,6 +68,7 @@ data class StudyExamReportSnapshot(
     val cleanupActionCount: Int,
     val cleanupHealthScorePercent: Int,
     val nextActions: List<StudyExamReportNextActionKind>,
+    val metricProvenance: List<StudyExamReportMetricProvenance>,
     val freeformNotesIncluded: Boolean = false,
 ) {
     init {
@@ -71,6 +86,8 @@ data class StudyExamReportInput(
     val readiness: ExamReadinessScore?,
     val weeklyReview: StudyCoachWeeklyReview,
     val evidence: List<StudyEvidenceEvent>,
+    val totalEvidenceCount: Int = evidence.size,
+    val requiredInputsReady: Boolean = true,
     val schedule: StudySchedule,
     val reviewItems: List<ReviewItem>,
     val questions: List<Question>,
@@ -79,14 +96,23 @@ data class StudyExamReportInput(
     val reschedulePreview: AdaptiveReschedulePreview?,
     val cleanupReport: StudyContentCleanupReport,
     val generatedAtEpochMillis: Long,
-)
+) {
+    init {
+        require(totalEvidenceCount >= evidence.size) { "Total evidence count cannot be smaller than the report sample." }
+        require(generatedAtEpochMillis >= 0L) { "Report generation time cannot be negative." }
+    }
+}
 
 object StudyExamReportBuilder {
     private const val RECENT_QUESTION_WINDOW_MILLIS = 14L * 86_400_000L
 
     fun build(input: StudyExamReportInput): StudyExamReportSnapshot {
+        require(input.requiredInputsReady) { "Exam report export requires every authoritative input to be Ready." }
+        require(input.analytics != null && input.readiness != null) {
+            "Exam report export requires analytics and readiness inputs."
+        }
         val completedTests = input.tests.filter { test -> test.submittedAtEpochMillis != null }
-        val testAnswered = completedTests.sumOf(StudyTest::answeredCount)
+        val testQuestionTotal = completedTests.sumOf(StudyTest::questionCount)
         val testCorrect = completedTests.sumOf(StudyTest::correctCount)
         val completedMockScores = input.mockExams.mapNotNull { mock ->
             mock.scorePercent?.takeIf { mock.submittedAtEpochMillis != null }
@@ -101,21 +127,21 @@ object StudyExamReportBuilder {
             },
             weeklyCoachItems = input.weeklyReview.items,
             studiedMinutesLastSevenDays = input.analytics?.studiedMinutesLastSevenDays ?: 0,
-            evidenceCount = input.evidence.size,
+            evidenceCount = input.totalEvidenceCount,
             weakAreas = input.analytics?.weakAreas.orEmpty(),
             missedActivityCount = input.schedule.plannedActivities.count { activity ->
                 activity.status == PlannedActivityStatus.MISSED
             },
             dueReviewCount = input.analytics?.dueReviewCount ?: input.reviewItems.count { review ->
-                review.dueAtEpochMillis <= input.generatedAtEpochMillis && review.completedAtEpochMillis == null
+                ReviewDuePolicy.isDue(review, input.generatedAtEpochMillis)
             },
             overdueReviewCount = input.analytics?.overdueReviewCount ?: 0,
             practiceTestCount = input.tests.size,
             completedPracticeTestCount = completedTests.size,
-            practiceTestAccuracyPercent = if (testAnswered == 0) {
+            practiceTestAccuracyPercent = if (testQuestionTotal == 0) {
                 null
             } else {
-                ((testCorrect.toDouble() / testAnswered) * 100.0).toInt().coerceIn(0, 100)
+                ((testCorrect.toDouble() / testQuestionTotal) * 100.0).toInt().coerceIn(0, 100)
             },
             mockExamCount = input.mockExams.size,
             completedMockExamCount = completedMockScores.size,
@@ -129,8 +155,22 @@ object StudyExamReportBuilder {
             cleanupActionCount = input.cleanupReport.actionCount,
             cleanupHealthScorePercent = input.cleanupReport.healthScorePercent,
             nextActions = nextActions(input),
+            metricProvenance = metricProvenance(input),
         )
     }
+
+    private fun metricProvenance(input: StudyExamReportInput): List<StudyExamReportMetricProvenance> = listOf(
+        StudyExamReportMetricProvenance("readiness", StudyExamReportMetricSource.READINESS),
+        StudyExamReportMetricProvenance("study_time", StudyExamReportMetricSource.ANALYTICS),
+        StudyExamReportMetricProvenance("question_accuracy", StudyExamReportMetricSource.ANALYTICS),
+        StudyExamReportMetricProvenance("evidence_count", StudyExamReportMetricSource.RAW_EVIDENCE),
+        StudyExamReportMetricProvenance("schedule", StudyExamReportMetricSource.SCHEDULE),
+        StudyExamReportMetricProvenance(
+            "reviews",
+            if (input.analytics != null) StudyExamReportMetricSource.ANALYTICS else StudyExamReportMetricSource.REVIEW_STATE,
+        ),
+        StudyExamReportMetricProvenance("content_health", StudyExamReportMetricSource.CONTENT_HEALTH),
+    )
 
     private fun nextActions(input: StudyExamReportInput): List<StudyExamReportNextActionKind> = buildList {
         val analytics = input.analytics

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 interface StudyProgressRepository {
     fun observeGoals(planId: StudyPlanId): Flow<List<StudyGoal>>
     fun observeNotes(planId: StudyPlanId): Flow<List<StudyNote>>
+    fun observeGoalEvidence(planId: StudyPlanId): Flow<GoalEvidence>
     suspend fun findGoal(planId: StudyPlanId, goalId: StudyGoalId): StudyGoal?
     suspend fun findNote(planId: StudyPlanId, noteId: StudyNoteId): StudyNote?
     suspend fun upsertGoal(goal: StudyGoal): StudyGoal

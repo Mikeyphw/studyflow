@@ -74,6 +74,13 @@ class MockExamStudioPlannerTest {
     }
 
     @Test
+    fun studioRejectsNonFiniteNegativeMarking() {
+        val result = runCatching { MockExamStudioRequest(negativeMarking = Double.POSITIVE_INFINITY) }
+
+        assertTrue(result.isFailure)
+    }
+
+    @Test
     fun studioExcludesDisputedUnlessRequestedAndFiltersSource() {
         val keep = question("keep", subjectA, source = "official")
         val disputed = question("disputed", subjectB, source = "official", disputed = true)

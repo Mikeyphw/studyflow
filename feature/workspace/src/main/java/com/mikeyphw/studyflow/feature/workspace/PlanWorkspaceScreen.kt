@@ -74,6 +74,7 @@ import com.mikeyphw.studyflow.core.navigation.PlanWorkspaceTab
 fun PlanWorkspaceScreen(
     plan: StudyPlan,
     selectedTab: PlanWorkspaceTab,
+    targetId: String? = null,
     scheduleManager: ManageStudySchedule,
     contentManager: ManageStudyContent,
     libraryManager: ManageStudyLibrary,
@@ -232,11 +233,13 @@ fun PlanWorkspaceScreen(
                 PlanWorkspaceTab.CONTENT -> PlanContentPane(
                     syllabus = readySyllabus,
                     cleanupReport = cleanupReport,
+                    targetId = targetId,
                     onManage = onManageContent,
                 )
                 PlanWorkspaceTab.LIBRARY -> PlanLibraryPane(
-                    materialTitles = readyLibrary.materials.filterNot { it.archived }.map { it.title },
-                    videoTitles = readyLibrary.videos.map { it.title },
+                    materials = readyLibrary.materials.filterNot { it.archived }.map { it.id.value to it.title },
+                    videos = readyLibrary.videos.map { it.id.value to it.title },
+                    targetId = targetId,
                     annexCount = readyLibrary.annexes.size,
                     onManage = onManageLibrary,
                 )
@@ -384,12 +387,22 @@ private fun PlanSchedulePane(
 private fun PlanContentPane(
     syllabus: StudySyllabus?,
     cleanupReport: StudyContentCleanupReport?,
+    targetId: String?,
     onManage: () -> Unit,
 ) {
-    val subjects = syllabus?.subjects.orEmpty().filterNot { it.archived }
+    val rawSubjects = syllabus?.subjects.orEmpty().filterNot { it.archived }
     val topics = syllabus?.topics.orEmpty().filterNot { it.archived }
-    val topicsBySubject = remember(topics) { topics.groupBy { it.subjectId } }
-    var expandedSubjectIds by rememberSaveable(syllabus?.studyPlanId?.value) { mutableStateOf(emptyList<String>()) }
+    val targetTopic = topics.firstOrNull { it.id.value == targetId }
+    val targetSubjectId = rawSubjects.firstOrNull { it.id.value == targetId }?.id ?: targetTopic?.subjectId
+    val subjects = rawSubjects.sortedByDescending { it.id == targetSubjectId }
+    val topicsBySubject = remember(topics, targetId) {
+        topics.groupBy { it.subjectId }.mapValues { (_, values) ->
+            values.sortedByDescending { it.id.value == targetId }
+        }
+    }
+    var expandedSubjectIds by rememberSaveable(syllabus?.studyPlanId?.value, targetId) {
+        mutableStateOf(listOfNotNull(targetSubjectId?.value))
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = workspaceContentPadding(),
@@ -521,13 +534,15 @@ private fun PlanContentPane(
 
 @Composable
 private fun PlanLibraryPane(
-    materialTitles: List<String>,
-    videoTitles: List<String>,
+    materials: List<Pair<String, String>>,
+    videos: List<Pair<String, String>>,
+    targetId: String?,
     annexCount: Int,
     onManage: () -> Unit,
 ) {
-    val rows = materialTitles.map { R.string.material_type to it } +
-        videoTitles.map { R.string.video_type to it }
+    val rows = (materials.map { (id, title) -> Triple(id, R.string.material_type, title) } +
+        videos.map { (id, title) -> Triple(id, R.string.video_type, title) })
+        .sortedByDescending { (id, _, _) -> id == targetId }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = workspaceContentPadding(),
@@ -541,8 +556,8 @@ private fun PlanLibraryPane(
         )
         item(key = "library-counts", contentType = "metrics") {
             StudyFlowMetricPulse(
-                label = pluralStringResource(R.plurals.materials_count, materialTitles.size, materialTitles.size),
-                value = pluralStringResource(R.plurals.videos_count, videoTitles.size, videoTitles.size),
+                label = pluralStringResource(R.plurals.materials_count, materials.size, materials.size),
+                value = pluralStringResource(R.plurals.videos_count, videos.size, videos.size),
                 supportingText = pluralStringResource(R.plurals.annexes_count, annexCount, annexCount),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -557,10 +572,10 @@ private fun PlanLibraryPane(
                 )
             }
         } else {
-            items(rows, key = { row -> "${row.first}:${row.second}" }, contentType = { "library-row" }) { row ->
+            items(rows, key = { row -> row.first }, contentType = { "library-row" }) { row ->
                 StudyFlowTimelineRow(
-                    title = row.second,
-                    metadata = stringResource(row.first),
+                    title = row.third,
+                    metadata = stringResource(row.second),
                     icon = Icons.Outlined.FolderOpen,
                     onClick = onManage,
                 )

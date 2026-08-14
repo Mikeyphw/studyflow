@@ -37,18 +37,25 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
+import com.mikeyphw.studyflow.core.domain.ManageStudyContent
+import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ReviewQueue
 import com.mikeyphw.studyflow.core.model.ErrorEntry
+import com.mikeyphw.studyflow.core.model.Flashcard
+import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.FlashcardId
 import com.mikeyphw.studyflow.core.model.FlashcardType
 import com.mikeyphw.studyflow.core.domain.RemediationPriority
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.ReviewItemId
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudySyllabus
+import com.mikeyphw.studyflow.core.model.Topic
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 import androidx.compose.runtime.rememberCoroutineScope
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,6 +63,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 fun StudyReviewScreen(
     plan: StudyPlan,
     review: ManageStudyReview,
+    practice: ManageStudyPractice,
+    content: ManageStudyContent,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -68,6 +77,10 @@ fun StudyReviewScreen(
             errors = emptyList(),
         ),
     )
+    val questions by practice.observeQuestions(plan.id).collectAsStateWithLifecycle(initialValue = emptyList())
+    val syllabus by content.observeSyllabus(plan.id)
+        .map<StudySyllabus, StudySyllabus?> { current -> current }
+        .collectAsStateWithLifecycle(initialValue = null)
     val coroutineScope = rememberCoroutineScope()
     var filter by rememberSaveable { mutableStateOf(ReviewFilter.DUE) }
     var front by rememberSaveable { mutableStateOf("") }
@@ -155,6 +168,13 @@ fun StudyReviewScreen(
                     items.forEach { item ->
                         ReviewItemRow(
                             item = item,
+                            content = reviewItemContent(
+                                item = item,
+                                questions = questions,
+                                flashcards = queue.flashcards,
+                                errors = queue.errors,
+                                topics = syllabus?.topics.orEmpty(),
+                            ),
                             onAgain = {
                                 coroutineScope.launch { review.gradeReview(plan.id, item.id, grade = 1) }
                             },
@@ -217,6 +237,7 @@ private fun ReviewFilterRow(
 @Composable
 private fun ReviewItemRow(
     item: ReviewItem,
+    content: ReviewItemContent,
     onAgain: () -> Unit,
     onGood: () -> Unit,
     onEasy: () -> Unit,
@@ -226,6 +247,10 @@ private fun ReviewItemRow(
         title = stringResource(R.string.review_item_title, stringResource(item.kindLabelRes())),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
     ) {
+        Text(content.title, style = MaterialTheme.typography.titleMedium)
+        content.body?.takeIf(String::isNotBlank)?.let { body ->
+            Text(body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Text(
             text = pluralStringResource(
                 R.plurals.review_item_details,
@@ -253,6 +278,42 @@ private fun ReviewItemRow(
             }
         }
     }
+}
+
+private data class ReviewItemContent(val title: String, val body: String?)
+
+private fun reviewItemContent(
+    item: ReviewItem,
+    questions: List<Question>,
+    flashcards: List<Flashcard>,
+    errors: List<ErrorEntry>,
+    topics: List<Topic>,
+): ReviewItemContent {
+    item.questionId?.let { id ->
+        questions.firstOrNull { it.id == id }?.let { return ReviewItemContent(it.statement, null) }
+    }
+    item.flashcardId?.let { id ->
+        flashcards.firstOrNull { it.id == id }?.let { return ReviewItemContent(it.front, it.back) }
+    }
+    item.errorEntryId?.let { id ->
+        errors.firstOrNull { it.id == id }?.let { error ->
+            val body = listOfNotNull(
+                error.chosenAnswer?.let { "Chosen: $it" },
+                error.correctAnswer?.let { "Correct: $it" },
+                error.explanation.takeIf(String::isNotBlank),
+            ).joinToString(" • ")
+            return ReviewItemContent(
+                error.explanation.ifBlank { error.category.name.replace('_', ' ') },
+                body.takeIf(String::isNotBlank),
+            )
+        }
+    }
+    item.topicId?.let { id ->
+        topics.firstOrNull { it.id == id }?.let { topic ->
+            return ReviewItemContent(topic.name, topic.description.takeIf(String::isNotBlank))
+        }
+    }
+    return ReviewItemContent(item.method.name.replace('_', ' '), null)
 }
 
 private fun createFlashcard(
@@ -307,6 +368,7 @@ private fun WrongAnswerNotebookCard(
                     WrongAnswerRow(
                         error = error,
                         priority = priority,
+                        suggestion = com.mikeyphw.studyflow.core.domain.WrongAnswerRemediator.suggestionFor(error),
                         onScheduleReview = { onScheduleReview(error) },
                         onResolve = { onResolve(error) },
                     )
@@ -320,6 +382,7 @@ private fun WrongAnswerNotebookCard(
 private fun WrongAnswerRow(
     error: ErrorEntry,
     priority: RemediationPriority,
+    suggestion: com.mikeyphw.studyflow.core.domain.RemediationSuggestion,
     onScheduleReview: () -> Unit,
     onResolve: () -> Unit,
 ) {
@@ -332,6 +395,10 @@ private fun WrongAnswerRow(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
     ) {
         StudyFlowStatusPill(text = priority.label())
+        Text(
+            suggestion.name.replace('_', ' ').lowercase().replaceFirstChar { char -> char.titlecase() },
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         error.chosenAnswer?.let { chosen ->
             Text(stringResource(R.string.chosen_answer_value, chosen))
         }

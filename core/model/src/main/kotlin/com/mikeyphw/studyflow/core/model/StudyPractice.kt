@@ -92,7 +92,9 @@ data class MockExam(
         require(answeredCount in 0..questionCount) { "Answered count is outside question count." }
         require(correctCount in 0..answeredCount) { "Correct count is outside answered count." }
         require(scorePercent == null || scorePercent in 0.0..100.0) { "Mock exam score must be 0 to 100." }
-        require(negativeMarking >= 0.0) { "Negative marking cannot be negative." }
+        require(negativeMarking.isFinite() && negativeMarking >= 0.0) {
+            "Negative marking must be finite and non-negative."
+        }
         require(minimumScorePercent == null || minimumScorePercent in 0..100) { "Minimum score must be 0 to 100." }
     }
 }

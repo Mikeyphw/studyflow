@@ -4,6 +4,8 @@ import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.SubjectId
+import com.mikeyphw.studyflow.core.model.TopicId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -89,6 +91,62 @@ class QuestionImportPipelineTest {
 
         assertTrue(preview.hasErrors)
         assertEquals(0, preview.acceptedCount)
+    }
+
+    @Test
+    fun multipleChoiceAnswerOutsideOptionsIsRejected() {
+        val raw = "statement,correctAnswer,options,type\nQuestion,C,A|B,MULTIPLE_CHOICE"
+
+        val preview = QuestionImportPipeline.preview(planId, raw, existingQuestions = emptyList())
+
+        assertTrue(preview.hasErrors)
+        assertEquals(0, preview.acceptedCount)
+    }
+
+    @Test
+    fun previewRejectsSubjectAndTopicOutsideCurrentPlanOwnership() {
+        val preview = QuestionImportPipeline.preview(
+            planId = planId,
+            rawText = "statement,answer,subjectId,topicId\nQuestion,Answer,unknown-subject,unknown-topic",
+            existingQuestions = emptyList(),
+            ownership = QuestionImportOwnership(
+                subjectIds = setOf(SubjectId("subject-a")),
+                topicSubjects = mapOf(TopicId("topic-a") to SubjectId("subject-a")),
+            ),
+        )
+
+        assertTrue(preview.hasErrors)
+        assertEquals(0, preview.acceptedCount)
+        assertTrue(preview.issues.any { it.message.contains("Subject does not belong") })
+        assertTrue(preview.issues.any { it.message.contains("Topic does not belong") })
+    }
+
+    @Test
+    fun previewRejectsTopicOwnedByDifferentSelectedSubject() {
+        val preview = QuestionImportPipeline.preview(
+            planId = planId,
+            rawText = "statement,answer,subjectId,topicId\nQuestion,Answer,subject-a,topic-b",
+            existingQuestions = emptyList(),
+            ownership = QuestionImportOwnership(
+                subjectIds = setOf(SubjectId("subject-a"), SubjectId("subject-b")),
+                topicSubjects = mapOf(TopicId("topic-b") to SubjectId("subject-b")),
+            ),
+        )
+
+        assertTrue(preview.hasErrors)
+        assertEquals(0, preview.acceptedCount)
+        assertTrue(preview.issues.any { it.message.contains("selected subject") })
+    }
+
+    @Test
+    fun duplicateFingerprintIncludesMeaningfulQuestionSemantics() {
+        val raw = "statement,correctAnswer,explanation,options,type\nSame,A,Changed explanation,A|B,MULTIPLE_CHOICE"
+        val existing = question("Same", "A")
+
+        val preview = QuestionImportPipeline.preview(planId, raw, existingQuestions = listOf(existing))
+
+        assertEquals(1, preview.acceptedCount)
+        assertFalse(preview.drafts.single().duplicateOfExisting)
     }
 
     private fun question(statement: String, answer: String) = Question(

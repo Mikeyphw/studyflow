@@ -21,15 +21,9 @@ object WrongAnswerRemediator {
         val entries = errors.map { error ->
             val reviews = reviewsByError[error.id].orEmpty()
             val pendingReview = reviews
-                .filter { item -> item.status in setOf(ReviewStatus.SCHEDULED, ReviewStatus.DUE) }
+                .filter(ReviewDuePolicy::isActive)
                 .minByOrNull(ReviewItem::dueAtEpochMillis)
-                ?.let { item ->
-                    if (item.status == ReviewStatus.SCHEDULED && item.dueAtEpochMillis <= nowEpochMillis) {
-                        item.copy(status = ReviewStatus.DUE)
-                    } else {
-                        item
-                    }
-                }
+                ?.let { item -> if (ReviewDuePolicy.isDue(item, nowEpochMillis)) item.copy(status = ReviewStatus.DUE) else item }
             WrongAnswerRemediation(
                 error = error,
                 pendingReview = pendingReview,
@@ -49,10 +43,7 @@ object WrongAnswerRemediator {
         nowEpochMillis: Long,
         linkedReviews: List<ReviewItem> = emptyList(),
     ): RemediationPriority {
-        val hasOverdueReview = linkedReviews.any { item ->
-            item.status == ReviewStatus.DUE ||
-                (item.status == ReviewStatus.SCHEDULED && item.dueAtEpochMillis <= nowEpochMillis)
-        }
+        val hasOverdueReview = linkedReviews.any { item -> ReviewDuePolicy.isDue(item, nowEpochMillis) }
         return when {
             error.recurrenceCount >= CriticalRecurrenceThreshold -> RemediationPriority.CRITICAL
             error.category in conceptualCategories && error.recurrenceCount >= HighRecurrenceThreshold ->
