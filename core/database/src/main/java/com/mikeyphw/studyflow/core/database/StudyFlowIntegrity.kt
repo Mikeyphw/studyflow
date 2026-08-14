@@ -11,6 +11,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * last line of defense for imports, future repository code, and concurrent writes.
  */
 object StudyFlowIntegrity {
+    const val GraphRevisionMetadataKey = "graph_revision"
+
     private data class ScopedReference(
         val table: String,
         val column: String,
@@ -97,6 +99,30 @@ object StudyFlowIntegrity {
         installExamStageDeleteCleanup(db)
         installSingleActiveSessionTriggers(db)
         installValueGuards(db)
+        installGraphRevisionTriggers(db)
+    }
+
+    private fun installGraphRevisionTriggers(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "INSERT OR IGNORE INTO database_metadata (`key`, value) VALUES ('$GraphRevisionMetadataKey', '0')",
+        )
+        val revisionTables = (listOf("study_plans") + planOwnedTables + "study_plan_settings").distinct()
+        revisionTables.forEach { table ->
+            listOf("INSERT", "UPDATE", "DELETE").forEach { event ->
+                val suffix = event.lowercase()
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS studyflow_graph_revision_${table}_${suffix}
+                    AFTER $event ON $table
+                    BEGIN
+                        UPDATE database_metadata
+                        SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT)
+                        WHERE `key` = '$GraphRevisionMetadataKey';
+                    END
+                    """.trimIndent(),
+                )
+            }
+        }
     }
 
 

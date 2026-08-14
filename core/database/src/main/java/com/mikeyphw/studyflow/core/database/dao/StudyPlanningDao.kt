@@ -42,6 +42,9 @@ interface StudyPlanningDao {
     @Query("SELECT * FROM study_strategies WHERE studyPlanId = :planId LIMIT 1")
     fun observeStrategy(planId: String): Flow<StudyStrategyEntity?>
 
+    @Query("SELECT * FROM study_strategies WHERE studyPlanId = :planId LIMIT 1")
+    suspend fun findStrategy(planId: String): StudyStrategyEntity?
+
     @Query("SELECT * FROM schedule_rules WHERE studyPlanId = :planId ORDER BY position, dayOfWeek, startMinuteOfDay")
     fun observeScheduleRules(planId: String): Flow<List<ScheduleRuleEntity>>
 
@@ -53,6 +56,16 @@ interface StudyPlanningDao {
 
     @Query("DELETE FROM schedule_rules WHERE studyPlanId = :planId AND id = :ruleId")
     suspend fun deleteScheduleRule(planId: String, ruleId: String): Int
+
+    @Query(
+        """
+        DELETE FROM planned_activities
+        WHERE studyPlanId = :planId
+          AND id LIKE :generatedIdPattern
+          AND status IN ('PLANNED', 'MISSED', 'SKIPPED', 'CANCELLED')
+        """,
+    )
+    suspend fun deleteGeneratedActivitiesForRule(planId: String, generatedIdPattern: String): Int
 
     @Query("SELECT * FROM planned_activities WHERE studyPlanId = :planId AND id = :activityId LIMIT 1")
     suspend fun findPlannedActivity(planId: String, activityId: String): PlannedActivityEntity?
@@ -112,6 +125,72 @@ interface StudyPlanningDao {
         expectedStatus: String,
         expectedStartEpochMillis: Long?,
         expectedDurationMinutes: Int,
+        newStatus: String,
+        newStartEpochMillis: Long?,
+        newDurationMinutes: Int,
+        newCompletedAtEpochMillis: Long?,
+    ): Int
+
+    @Query(
+        """
+        UPDATE planned_activities
+        SET scheduledStartEpochMillis = :newStartEpochMillis,
+            plannedDurationMinutes = :newDurationMinutes,
+            status = :newStatus,
+            completedAtEpochMillis = :newCompletedAtEpochMillis
+        WHERE studyPlanId = :planId
+          AND id = :activityId
+          AND locked = 0
+          AND type = :expectedType
+          AND status = :expectedStatus
+          AND plannedDurationMinutes = :expectedDurationMinutes
+          AND (
+            scheduledStartEpochMillis = :expectedStartEpochMillis
+            OR (scheduledStartEpochMillis IS NULL AND :expectedStartEpochMillis IS NULL)
+          )
+        """,
+    )
+    suspend fun compareAndSetMissedRebalanceActivity(
+        planId: String,
+        activityId: String,
+        expectedType: String,
+        expectedStatus: String,
+        expectedStartEpochMillis: Long?,
+        expectedDurationMinutes: Int,
+        newStatus: String,
+        newStartEpochMillis: Long?,
+        newDurationMinutes: Int,
+        newCompletedAtEpochMillis: Long?,
+    ): Int
+
+    @Query(
+        """
+        UPDATE planned_activities
+        SET type = :newType,
+            scheduledStartEpochMillis = :newStartEpochMillis,
+            plannedDurationMinutes = :newDurationMinutes,
+            status = :newStatus,
+            completedAtEpochMillis = :newCompletedAtEpochMillis
+        WHERE studyPlanId = :planId
+          AND id = :activityId
+          AND locked = 0
+          AND type = :expectedType
+          AND status = :expectedStatus
+          AND plannedDurationMinutes = :expectedDurationMinutes
+          AND (
+            scheduledStartEpochMillis = :expectedStartEpochMillis
+            OR (scheduledStartEpochMillis IS NULL AND :expectedStartEpochMillis IS NULL)
+          )
+        """,
+    )
+    suspend fun compareAndSetAdaptivePlannedActivity(
+        planId: String,
+        activityId: String,
+        expectedType: String,
+        expectedStatus: String,
+        expectedStartEpochMillis: Long?,
+        expectedDurationMinutes: Int,
+        newType: String,
         newStatus: String,
         newStartEpochMillis: Long?,
         newDurationMinutes: Int,

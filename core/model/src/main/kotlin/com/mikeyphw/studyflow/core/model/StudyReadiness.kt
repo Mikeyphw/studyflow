@@ -75,6 +75,8 @@ data class AdaptiveRescheduleChange(
     val proposedStatus: PlannedActivityStatus?,
     val locked: Boolean,
     val executable: Boolean,
+    val currentType: StudyActivityType? = null,
+    val proposedType: StudyActivityType? = null,
 )
 
 data class AdaptiveReschedulePreview(
@@ -86,6 +88,7 @@ data class AdaptiveReschedulePreview(
     val scheduleAdherencePercent: Int,
     val actionSummary: String,
     val changes: List<AdaptiveRescheduleChange>,
+    val scheduleVersionToken: String = "",
 ) {
     val executableChangeCount: Int = changes.count { it.executable }
 }

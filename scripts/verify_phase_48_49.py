@@ -87,7 +87,7 @@ for token in (
     "rescheduleFlow",
     "readiness_score",
     "adaptive_reschedule",
-    "applySafePreview(plan)",
+    "applySafePreview(plan, approvedPreview)",
     "CancellationException",
     "rescheduleChangeLabel",
     "readinessBandLabel",

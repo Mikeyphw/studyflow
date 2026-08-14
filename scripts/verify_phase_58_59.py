@@ -33,8 +33,8 @@ build = text("build.gradle.kts")
 for token in (
     "enum class CloudlessBackupQueueAction",
     "PREPARE_CHECKPOINT",
-    "EXPORT_LOCAL_BACKUP",
-    "VERIFY_BACKUP_FRESHNESS",
+    "PREPARE_CHECKPOINT",
+    "CHECKPOINT_CURRENT",
     "REVIEW_LOCAL_CONFLICT_POLICY",
     "WAIT_FOR_LOCAL_DATA",
     "UNBLOCK_CHECKPOINT",

@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.feature.workspace
 
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,8 +58,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
-import com.mikeyphw.studyflow.core.domain.StudySessionTimer
+import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
+import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import java.util.concurrent.CancellationException
@@ -75,24 +78,27 @@ fun FocusSessionScreen(
     onCancelled: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val sessionsFlow = remember(plan.id) { sessionManager.observeSessions(plan.id) }
-    val sessions by sessionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val session = sessions.firstOrNull { it.id == sessionId }
+    val sessionsFlow = remember(plan.id) { sessionManager.observeSessions(plan.id).asStudyFlowLoadState() }
+    val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val sessions = (sessionsState as? StudyFlowLoadState.Ready<List<StudySession>>)?.value
+    val sessionsLoading = sessionsState is StudyFlowLoadState.Loading
+    val session = sessions?.firstOrNull { it.id == sessionId }
     val activeSession = session?.takeIf { current ->
         current.status == StudySessionStatus.RUNNING || current.status == StudySessionStatus.PAUSED
     }
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var timerTick by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var showFinish by rememberSaveable { mutableStateOf(false) }
     var showCancel by rememberSaveable { mutableStateOf(false) }
-    var draftNotes by remember(session?.id?.value) { mutableStateOf(session?.notes.orEmpty()) }
+    var transitionInFlight by remember { mutableStateOf(false) }
+    var draftNotes by rememberSaveable(session?.id?.value) { mutableStateOf(session?.notes.orEmpty()) }
     val operationFailed = stringResource(R.string.operation_failed)
     val focusTitle = stringResource(R.string.focus_title)
 
     LaunchedEffect(session?.status) {
         while (session?.status == StudySessionStatus.RUNNING) {
-            now = System.currentTimeMillis()
+            timerTick = SystemClock.elapsedRealtime()
             delay(1_000)
         }
     }
@@ -109,8 +115,8 @@ fun FocusSessionScreen(
         }
     }
 
-    BackHandler(enabled = shouldInterceptFocusBack(session?.status)) {
-        showCancel = true
+    BackHandler(enabled = sessionsLoading || shouldInterceptFocusBack(session?.status)) {
+        if (!sessionsLoading && !transitionInFlight) showCancel = true
     }
 
     Scaffold(
@@ -123,6 +129,7 @@ fun FocusSessionScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = { if (activeSession == null) onFinished() else showCancel = true },
+                        enabled = !sessionsLoading && !transitionInFlight,
                     ) {
                         Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.cancel_session))
                     }
@@ -130,7 +137,15 @@ fun FocusSessionScreen(
             )
         },
     ) { padding ->
-        if (activeSession == null) {
+        if (sessionsLoading) {
+            StudyFlowEmptyState(
+                title = focusTitle,
+                message = stringResource(R.string.session_loading),
+                actionLabel = stringResource(R.string.back),
+                onAction = {},
+                modifier = Modifier.fillMaxSize().padding(padding),
+            )
+        } else if (activeSession == null) {
             StudyFlowEmptyState(
                 title = focusTitle,
                 message = stringResource(
@@ -141,7 +156,9 @@ fun FocusSessionScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
             )
         } else {
-            val elapsedSeconds = StudySessionTimer.activeSeconds(activeSession, now)
+            val elapsedSeconds = remember(activeSession, timerTick) {
+                sessionManager.liveActiveSeconds(activeSession)
+            }
             val targetSeconds = activeSession.targetDurationMinutes?.times(60L)
             val overtimeSeconds = targetSeconds?.let { (elapsedSeconds - it).coerceAtLeast(0L) }
             val remainingSeconds = targetSeconds?.let { (it - elapsedSeconds).coerceAtLeast(0L) }
@@ -218,12 +235,14 @@ fun FocusSessionScreen(
                                 onClick = {
                                     scope.launch {
                                         performFocusMutation(
+                                            onInFlightChange = { transitionInFlight = it },
                                             operation = { sessionManager.pause(plan.id, activeSession.id) },
                                             onFailure = { snackbar.showSnackbar(operationFailed) },
                                         )
                                     }
                                 },
                                 modifier = childModifier,
+                                enabled = !transitionInFlight,
                             ) {
                                 Icon(Icons.Outlined.PauseCircle, contentDescription = null)
                                 Text(stringResource(R.string.pause), modifier = Modifier.padding(start = 8.dp))
@@ -233,12 +252,14 @@ fun FocusSessionScreen(
                                 onClick = {
                                     scope.launch {
                                         performFocusMutation(
+                                            onInFlightChange = { transitionInFlight = it },
                                             operation = { sessionManager.resume(plan.id, activeSession.id) },
                                             onFailure = { snackbar.showSnackbar(operationFailed) },
                                         )
                                     }
                                 },
                                 modifier = childModifier,
+                                enabled = !transitionInFlight,
                             ) {
                                 Icon(Icons.Outlined.PlayCircle, contentDescription = null)
                                 Text(stringResource(R.string.resume), modifier = Modifier.padding(start = 8.dp))
@@ -246,7 +267,11 @@ fun FocusSessionScreen(
                         }
                     },
                     second = { childModifier ->
-                        Button(onClick = { showFinish = true }, modifier = childModifier) {
+                        Button(
+                            onClick = { showFinish = true },
+                            enabled = !transitionInFlight,
+                            modifier = childModifier,
+                        ) {
                             Icon(Icons.Outlined.StopCircle, contentDescription = null)
                             Text(stringResource(R.string.finish), modifier = Modifier.padding(start = 8.dp))
                         }
@@ -263,6 +288,7 @@ fun FocusSessionScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 OutlinedButton(
                     onClick = { showCancel = true },
+                    enabled = !transitionInFlight,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(R.string.cancel_session))
@@ -274,10 +300,12 @@ fun FocusSessionScreen(
     if (showFinish && activeSession != null) {
         FinishFocusDialog(
             initialNotes = draftNotes,
-            onDismiss = { showFinish = false },
+            onDismiss = { if (!transitionInFlight) showFinish = false },
+            enabled = !transitionInFlight,
             onFinish = { pages, answered, correct, concentration, difficulty, notes ->
                 scope.launch {
                     performFocusMutation(
+                        onInFlightChange = { transitionInFlight = it },
                         operation = {
                             sessionManager.complete(
                                 planId = plan.id,
@@ -302,14 +330,16 @@ fun FocusSessionScreen(
     }
     if (showCancel && activeSession != null) {
         AlertDialog(
-            onDismissRequest = { showCancel = false },
+            onDismissRequest = { if (!transitionInFlight) showCancel = false },
             title = { Text(stringResource(R.string.cancel_session_title)) },
             text = { Text(stringResource(R.string.cancel_session_message)) },
             confirmButton = {
                 Button(
+                    enabled = !transitionInFlight,
                     onClick = {
                         scope.launch {
                             performFocusMutation(
+                                onInFlightChange = { transitionInFlight = it },
                                 operation = { sessionManager.cancel(plan.id, activeSession.id) },
                                 onSuccess = {
                                     showCancel = false
@@ -324,7 +354,10 @@ fun FocusSessionScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showCancel = false }) {
+                OutlinedButton(
+                    onClick = { showCancel = false },
+                    enabled = !transitionInFlight,
+                ) {
                     Text(stringResource(R.string.keep_studying))
                 }
             },
@@ -334,10 +367,12 @@ fun FocusSessionScreen(
 
 
 private suspend fun performFocusMutation(
+    onInFlightChange: (Boolean) -> Unit,
     operation: suspend () -> Unit,
     onSuccess: () -> Unit = {},
     onFailure: suspend () -> Unit,
 ) {
+    onInFlightChange(true)
     try {
         operation()
         onSuccess()
@@ -345,6 +380,8 @@ private suspend fun performFocusMutation(
         throw cancelled
     } catch (_: Throwable) {
         onFailure()
+    } finally {
+        onInFlightChange(false)
     }
 }
 
@@ -352,6 +389,7 @@ private suspend fun performFocusMutation(
 private fun FinishFocusDialog(
     initialNotes: String,
     onDismiss: () -> Unit,
+    enabled: Boolean,
     onFinish: (Int, Int, Int, Int?, Int?, String) -> Unit,
 ) {
     var pages by rememberSaveable { mutableStateOf("0") }
@@ -359,7 +397,7 @@ private fun FinishFocusDialog(
     var correct by rememberSaveable { mutableStateOf("0") }
     var concentration by rememberSaveable { mutableStateOf("") }
     var difficulty by rememberSaveable { mutableStateOf("") }
-    var notes by remember(initialNotes) { mutableStateOf(initialNotes) }
+    var notes by rememberSaveable(initialNotes) { mutableStateOf(initialNotes) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.finish_session_title)) },
@@ -384,6 +422,7 @@ private fun FinishFocusDialog(
         },
         confirmButton = {
             Button(
+                enabled = enabled,
                 onClick = {
                     val pageValue = pages.toIntOrNull() ?: 0
                     val answeredValue = answered.toIntOrNull() ?: 0
@@ -404,7 +443,7 @@ private fun FinishFocusDialog(
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss, enabled = enabled) {
                 Text(stringResource(R.string.keep_studying))
             }
         },

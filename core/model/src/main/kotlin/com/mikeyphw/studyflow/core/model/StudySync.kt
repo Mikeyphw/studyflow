@@ -62,7 +62,9 @@ data class StudySyncChangeSummary(
     val activePlanCount: Int,
     val latestUpdatedAtEpochMillis: Long?,
     val localChangeToken: String,
+    val databaseRevision: Long = 0L,
+    val changesSinceCheckpoint: Int = 0,
 ) {
-    val changeCount: Int = planCount
+    val changeCount: Int = changesSinceCheckpoint
     val hasLocalData: Boolean = planCount > 0
 }

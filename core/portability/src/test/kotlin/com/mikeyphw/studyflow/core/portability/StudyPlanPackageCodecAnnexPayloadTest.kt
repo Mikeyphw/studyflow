@@ -25,7 +25,81 @@ class StudyPlanPackageCodecAnnexPayloadTest {
         assertArrayEquals(bytes, decoded.annexPayloadBytes.getValue(payloadEntry.entryName))
     }
 
-    private fun samplePayload(payload: PortableAnnexPayload) = StudyPlanPackagePayload(
+    @Test
+    fun archiveWriterAcceptsStreamingAnnexPayloadSource() {
+        val bytes = "annex body".encodeToByteArray()
+        val payloadEntry = PortableAnnexPayload(
+            annexId = "annex-1",
+            entryName = "annex-payloads/annex-1/file.txt",
+            fileName = "file.txt",
+            mimeType = "text/plain",
+            byteSize = bytes.size.toLong(),
+            checksumSha256 = "27b26252692cfc34e80c65150fc0b150487ed3ee4269920a991755f743a71799",
+        )
+        val payload = samplePayload(payloadEntry)
+        var opened = 0
+        val archive = StudyPlanPackageArchive(
+            payload = payload,
+            annexPayloadStreams = mapOf(payloadEntry.entryName to {
+                opened += 1
+                bytes.inputStream()
+            }),
+        )
+
+        val decoded = codec.archiveFromByteArray(codec.toByteArray(archive))
+
+        assertEquals(1, opened)
+        assertArrayEquals(bytes, decoded.annexPayloadBytes.getValue(payloadEntry.entryName))
+    }
+
+
+    @Test(expected = StudyPlanPackageException::class)
+    fun writerRejectsArchiveWhoseEntryCountWouldExceedReaderLimit() {
+        val emptyChecksum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        val payloads = (0 until 510).map { index ->
+            PortableAnnexPayload(
+                annexId = "annex-$index",
+                entryName = "annex-payloads/annex-$index/payload.bin",
+                fileName = "file-$index.bin",
+                mimeType = "application/octet-stream",
+                byteSize = 0L,
+                checksumSha256 = emptyChecksum,
+            )
+        }
+        val archive = StudyPlanPackageArchive(
+            payload = samplePayload(payloads),
+            annexPayloadBytes = payloads.associate { it.entryName to byteArrayOf() },
+        )
+
+        codec.toByteArray(archive)
+    }
+
+    @Test(expected = StudyPlanPackageException::class)
+    fun writerRejectsDeclaredArchiveLargerThanReaderTotalLimitBeforeOpeningStreams() {
+        val checksum = "0".repeat(64)
+        val payloads = (0 until 9).map { index ->
+            PortableAnnexPayload(
+                annexId = "annex-$index",
+                entryName = "annex-payloads/annex-$index/payload.bin",
+                fileName = "file-$index.bin",
+                mimeType = "application/octet-stream",
+                byteSize = 64L * 1024L * 1024L,
+                checksumSha256 = checksum,
+            )
+        }
+        val archive = StudyPlanPackageArchive(
+            payload = samplePayload(payloads),
+            annexPayloadStreams = payloads.associate { payload ->
+                payload.entryName to { error("oversized archive should fail before opening streams") }
+            },
+        )
+
+        codec.toByteArray(archive)
+    }
+
+    private fun samplePayload(payload: PortableAnnexPayload) = samplePayload(listOf(payload))
+
+    private fun samplePayload(payloads: List<PortableAnnexPayload>) = StudyPlanPackagePayload(
         manifest = StudyPlanPackageManifest(
             applicationVersion = "test",
             exportedAtEpochMillis = 1L,
@@ -35,8 +109,8 @@ class StudyPlanPackageCodecAnnexPayloadTest {
             includesPrivateHistory = true,
             includesAnnexMetadata = true,
             includesAnnexPayloads = true,
-            annexPayloads = listOf(payload),
-            tableRowCounts = mapOf("study_plans" to 1, "annexes" to 1),
+            annexPayloads = payloads,
+            tableRowCounts = mapOf("study_plans" to 1, "annexes" to payloads.size),
         ),
         tables = listOf(
             PortableTable(
@@ -45,7 +119,9 @@ class StudyPlanPackageCodecAnnexPayloadTest {
             ),
             PortableTable(
                 name = "annexes",
-                rows = listOf(PortableRow(mapOf("id" to PortableValue(PortableValueType.TEXT, "annex-1")))),
+                rows = payloads.map { payload ->
+                    PortableRow(mapOf("id" to PortableValue(PortableValueType.TEXT, payload.annexId)))
+                },
             ),
         ),
     )

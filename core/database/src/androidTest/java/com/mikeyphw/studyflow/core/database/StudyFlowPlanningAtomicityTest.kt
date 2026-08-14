@@ -31,6 +31,19 @@ class StudyFlowPlanningAtomicityTest {
     }
 
     @Test
+    fun graphRevisionAdvancesForRootAndPlanOwnedMutations() = runBlocking {
+        val metadata = database.databaseMetadataDao()
+        val before = metadata.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey)?.toLongOrNull() ?: 0L
+        database.studyPlanDao().insert(samplePlan())
+        val afterPlan = metadata.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey)?.toLongOrNull() ?: 0L
+        database.studyPlanningDao().upsertPlannedActivity(sampleActivity())
+        val afterActivity = metadata.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey)?.toLongOrNull() ?: 0L
+
+        assertEquals(before + 1L, afterPlan)
+        assertEquals(afterPlan + 1L, afterActivity)
+    }
+
+    @Test
     fun staleSessionStatusCannotOverwriteNewerTransition() = runBlocking {
         database.studyPlanDao().insert(samplePlan())
         database.studyPlanningDao().upsertStudySession(sampleSession(status = "RUNNING"))

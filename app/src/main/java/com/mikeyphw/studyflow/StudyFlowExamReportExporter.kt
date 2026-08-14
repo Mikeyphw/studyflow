@@ -28,6 +28,7 @@ class StudyFlowExamReportExporter(
         val output = withContext(Dispatchers.IO) {
             runCatching {
                 val directory = File(context.cacheDir, REPORT_DIRECTORY).apply { mkdirs() }
+                pruneCache(directory, System.currentTimeMillis())
                 val timestamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
                 val extension = when (format) {
                     StudyExamReportFormat.HTML -> "html"
@@ -111,6 +112,16 @@ class StudyFlowExamReportExporter(
         writer.finish()
         FileOutputStream(output).use(pdf::writeTo)
         pdf.close()
+    }
+
+    private fun pruneCache(directory: File, nowEpochMillis: Long) {
+        val files = directory.listFiles()?.filter(File::isFile).orEmpty()
+        files.filter { nowEpochMillis - it.lastModified() > REPORT_MAX_AGE_MILLIS }
+            .forEach { runCatching { it.delete() } }
+        directory.listFiles()?.filter(File::isFile).orEmpty()
+            .sortedByDescending(File::lastModified)
+            .drop(REPORT_MAX_FILES)
+            .forEach { runCatching { it.delete() } }
     }
 
     private fun safeFileStem(value: String): String = value
@@ -206,5 +217,7 @@ class StudyFlowExamReportExporter(
 
     private companion object {
         const val REPORT_DIRECTORY = "exam-reports"
+        const val REPORT_MAX_FILES = 5
+        const val REPORT_MAX_AGE_MILLIS = 7L * 24L * 60L * 60L * 1000L
     }
 }

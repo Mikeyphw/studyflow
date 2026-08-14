@@ -69,6 +69,14 @@ interface StudyLibraryDao {
 
     @Query(
         """
+        SELECT storageReference FROM annexes
+        WHERE storageMode = 'IMPORTED_COPY' AND storageReference <> ''
+        """,
+    )
+    suspend fun findImportedStorageReferences(): List<String>
+
+    @Query(
+        """
         UPDATE annexes
         SET storageMode = :storageMode,
             storageReference = :storageReference,

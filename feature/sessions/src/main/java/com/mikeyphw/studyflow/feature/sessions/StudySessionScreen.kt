@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.feature.sessions
 
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -50,8 +51,10 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
+import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySession
@@ -81,9 +84,11 @@ fun StudySessionScreen(
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    val sessionsFlow = remember(plan.id) { sessionManager.observeSessions(plan.id) }
+    val sessionsFlow = remember(plan.id) { sessionManager.observeSessions(plan.id).asStudyFlowLoadState() }
     val scheduleFlow = remember(plan.id) { scheduleManager.observeSchedule(plan.id) }
-    val sessions by sessionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val sessionsReady = sessionsState is StudyFlowLoadState.Ready
+    val sessions = (sessionsState as? StudyFlowLoadState.Ready<List<StudySession>>)?.value.orEmpty()
     val schedule by scheduleFlow.collectAsStateWithLifecycle(
         initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
     )
@@ -93,7 +98,8 @@ fun StudySessionScreen(
     val pendingActivities = schedule.plannedActivities.filter {
         it.status == PlannedActivityStatus.PLANNED || it.status == PlannedActivityStatus.MISSED
     }.take(6)
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var timerTick by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    var mutationInFlight by remember { mutableStateOf(false) }
     var showQuickDialog by rememberSaveable { mutableStateOf(false) }
     var finishingSession by remember { mutableStateOf<StudySession?>(null) }
     var historyFilter by rememberSaveable { mutableStateOf(SessionHistoryFilter.ALL) }
@@ -107,16 +113,25 @@ fun StudySessionScreen(
 
     LaunchedEffect(activeSession?.id, activeSession?.status) {
         while (activeSession?.status == StudySessionStatus.RUNNING) {
-            now = System.currentTimeMillis()
+            timerTick = SystemClock.elapsedRealtime()
             delay(1_000)
         }
     }
 
     fun launchAction(success: String, action: suspend () -> Unit) {
+        if (mutationInFlight || !sessionsReady) return
+        mutationInFlight = true
         scope.launch {
-            runCatching { action() }
-                .onSuccess { snackbar.showSnackbar(success) }
-                .onFailure { snackbar.showSnackbar(operationFailed) }
+            try {
+                action()
+                snackbar.showSnackbar(success)
+            } catch (cancelled: java.util.concurrent.CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                snackbar.showSnackbar(operationFailed)
+            } finally {
+                mutationInFlight = false
+            }
         }
     }
 
@@ -136,7 +151,7 @@ fun StudySessionScreen(
                 },
                 actions = {
                     IconButton(
-                        enabled = activeSession == null,
+                        enabled = sessionsReady && activeSession == null && !mutationInFlight,
                         onClick = { showQuickDialog = true },
                     ) {
                         Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.quick_session))
@@ -159,7 +174,10 @@ fun StudySessionScreen(
             item {
                 ActiveSessionCard(
                     session = activeSession,
-                    nowEpochMillis = now,
+                    activeSeconds = remember(activeSession, timerTick) {
+                        activeSession?.let(sessionManager::liveActiveSeconds)
+                    },
+                    controlsEnabled = sessionsReady && !mutationInFlight,
                     onStartQuick = { showQuickDialog = true },
                     onPause = { session ->
                         launchAction(sessionPaused) { sessionManager.pause(plan.id, session.id) }
@@ -185,7 +203,7 @@ fun StudySessionScreen(
                             pendingActivities.forEach { activity ->
                                 PlannedActivityRow(
                                     activity = activity,
-                                    enabled = activeSession == null,
+                                    enabled = sessionsReady && activeSession == null && !mutationInFlight,
                                     onStart = {
                                         launchAction(sessionStarted) {
                                             sessionManager.startFromActivity(
@@ -218,7 +236,7 @@ fun StudySessionScreen(
                         title = stringResource(R.string.no_sessions_yet),
                         message = stringResource(R.string.no_sessions_message),
                         actionLabel = stringResource(R.string.quick_session),
-                        onAction = { showQuickDialog = true },
+                        onAction = { if (sessionsReady && !mutationInFlight) showQuickDialog = true },
                     )
                 }
             } else {
@@ -239,7 +257,7 @@ fun StudySessionScreen(
         }
     }
 
-    if (showQuickDialog) {
+    if (showQuickDialog && sessionsReady && !mutationInFlight) {
         QuickSessionDialog(
             onDismiss = { showQuickDialog = false },
             onStart = { form ->
@@ -282,7 +300,8 @@ fun StudySessionScreen(
 @Composable
 private fun ActiveSessionCard(
     session: StudySession?,
-    nowEpochMillis: Long,
+    activeSeconds: Long?,
+    controlsEnabled: Boolean,
     onStartQuick: () -> Unit,
     onPause: (StudySession) -> Unit,
     onResume: (StudySession) -> Unit,
@@ -295,14 +314,14 @@ private fun ActiveSessionCard(
                 text = stringResource(R.string.no_active_session),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onStartQuick) {
+            Button(onClick = onStartQuick, enabled = controlsEnabled) {
                 Icon(Icons.Outlined.PlayCircle, contentDescription = null)
                 Text(stringResource(R.string.start_session))
             }
         } else {
             Text(text = session.notes.ifBlank { stringResource(session.type.labelKey()) })
             Text(
-                text = formatSessionDuration(StudySessionTimer.activeSeconds(session, nowEpochMillis)),
+                text = formatSessionDuration(activeSeconds ?: session.grossDurationSeconds),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -312,21 +331,21 @@ private fun ActiveSessionCard(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 if (session.status == StudySessionStatus.RUNNING) {
-                    OutlinedButton(onClick = { onPause(session) }) {
+                    OutlinedButton(onClick = { onPause(session) }, enabled = controlsEnabled) {
                         Icon(Icons.Outlined.PauseCircle, contentDescription = null)
                         Text(stringResource(R.string.pause_session))
                     }
                 } else {
-                    OutlinedButton(onClick = { onResume(session) }) {
+                    OutlinedButton(onClick = { onResume(session) }, enabled = controlsEnabled) {
                         Icon(Icons.Outlined.PlayCircle, contentDescription = null)
                         Text(stringResource(R.string.resume_session))
                     }
                 }
-                Button(onClick = { onFinish(session) }) {
+                Button(onClick = { onFinish(session) }, enabled = controlsEnabled) {
                     Icon(Icons.Outlined.CheckCircle, contentDescription = null)
                     Text(stringResource(R.string.finish_session))
                 }
-                OutlinedButton(onClick = { onCancel(session) }) {
+                OutlinedButton(onClick = { onCancel(session) }, enabled = controlsEnabled) {
                     Icon(Icons.Outlined.Cancel, contentDescription = null)
                     Text(stringResource(R.string.cancel_session))
                 }

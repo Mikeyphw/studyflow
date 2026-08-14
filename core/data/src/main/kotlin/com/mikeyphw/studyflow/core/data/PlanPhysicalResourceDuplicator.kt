@@ -78,15 +78,25 @@ internal class PlanPhysicalResourceDuplicator(
         }
     }
 
-    fun deletePlanOwnedFiles(planId: String) {
+    suspend fun deletePlanOwnedFiles(planId: String) {
+        // New copies have independent physical bytes, but old databases can contain rows in another
+        // plan that still point into this plan's legacy/snapshot/shareable directories. Query after
+        // the target plan's database cascade has committed and preserve every surviving reference.
+        val retainedPaths = (
+            database.studyLibraryDao().findImportedStorageReferences() +
+                database.studySupportDao().findSnapshotPayloadReferences()
+            )
+            .mapTo(linkedSetOf(), ::resolveOwnedReferencePath)
+
         val root = File(filesDir, "study-plans/${sanitizeSegment(planId)}").canonicalFile
         val ownedRoot = File(filesDir, "study-plans").canonicalFile
         require(root.path.startsWith(ownedRoot.path + File.separator)) { "Unsafe Study Plan storage path." }
-        if (root.exists()) root.deleteRecursively()
+        deleteTreeExceptRetainedFiles(root, retainedPaths)
+
         val annexRoot = File(filesDir, "shareable-annexes/${sanitizeSegment(planId)}").canonicalFile
         val shareableRoot = File(filesDir, "shareable-annexes").canonicalFile
         require(annexRoot.path.startsWith(shareableRoot.path + File.separator)) { "Unsafe annex storage path." }
-        if (annexRoot.exists()) annexRoot.deleteRecursively()
+        deleteTreeExceptRetainedFiles(annexRoot, retainedPaths)
     }
 
     data class Prepared(
@@ -112,6 +122,23 @@ internal class PlanPhysicalResourceDuplicator(
         require(file.path.startsWith(root.path + File.separator)) { "Unsafe duplicated snapshot source path." }
         require(file.isFile) { "Owned snapshot is missing from private storage." }
         return file
+    }
+
+    private fun resolveOwnedReferencePath(reference: String): String {
+        val candidate = File(filesDir, reference).canonicalFile
+        val root = filesDir.canonicalFile
+        require(candidate.path.startsWith(root.path + File.separator)) { "Unsafe persisted file reference." }
+        return candidate.canonicalPath
+    }
+
+    private fun deleteTreeExceptRetainedFiles(root: File, retainedPaths: Set<String>) {
+        if (!root.exists()) return
+        root.walkBottomUp().forEach { entry ->
+            when {
+                entry.isFile && entry.canonicalPath !in retainedPaths -> entry.delete()
+                entry.isDirectory && entry.listFiles().isNullOrEmpty() -> entry.delete()
+            }
+        }
     }
 
     private fun verifyFile(file: File, expectedSize: Long, expectedChecksum: String?, label: String) {

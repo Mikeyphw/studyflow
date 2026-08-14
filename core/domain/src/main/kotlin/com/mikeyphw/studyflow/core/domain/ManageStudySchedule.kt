@@ -34,8 +34,8 @@ class ManageStudySchedule(
 
     suspend fun saveRule(rule: ScheduleRule): ScheduleRule {
         require(rule.durationMinutes in 5..720) { "Schedule blocks must be between 5 and 720 minutes." }
+        require(rule.dayOfWeek in 1..7) { "Day of week must be between 1 and 7." }
         if (rule.type != ScheduleRuleType.DAY_OFF) {
-            require(rule.dayOfWeek in 1..7) { "Day of week must be between 1 and 7." }
             require(rule.startMinuteOfDay in 0..1439) { "Start time must be inside the day." }
         }
         return repository.upsertScheduleRule(rule)
@@ -72,12 +72,13 @@ class ManageStudySchedule(
     suspend fun generateActivities(
         request: ScheduleGenerationRequest,
         currentRules: List<ScheduleRule>,
+        strategy: StudyStrategy? = null,
     ): ScheduleGenerationResult {
-        val generated = planner.generateActivities(request, currentRules)
-        val removed = repository.replaceUnlockedActivities(request.studyPlanId, generated)
-        return ScheduleGenerationResult(
-            generatedActivities = generated.size,
-            removedUnlockedActivities = if (request.replaceUnlocked) removed else 0,
+        val generated = planner.generateActivities(request, currentRules, strategy)
+        return repository.applyGeneratedActivities(
+            planId = request.studyPlanId,
+            activities = generated,
+            replaceUnlocked = request.replaceUnlocked,
         )
     }
 
@@ -86,8 +87,8 @@ class ManageStudySchedule(
         currentActivities: List<PlannedActivity>,
         handling: MissedActivityHandling,
     ): RebalanceResult {
-        val updates = planner.rebalanceMissedActivities(currentActivities, handling, clock())
-        val changed = repository.updatePlannedActivities(planId, updates)
+        val mutations = planner.rebalanceMissedMutations(currentActivities, handling, clock())
+        val changed = repository.applyMissedRebalance(planId, mutations)
         return RebalanceResult(changed, handling)
     }
 }

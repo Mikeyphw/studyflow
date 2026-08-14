@@ -31,40 +31,56 @@ class StudyPlanPackageCodec(
         validateManifest(payload.manifest)
         StudyPlanPrivacyPolicy.validatePayload(payload)
         val declaredPayloads = payload.manifest.annexPayloads.associateBy { it.entryName }
-        if (archive.annexPayloadBytes.keys != declaredPayloads.keys) {
-            throw StudyPlanPackageException("Annex payload bytes do not match the package manifest.")
-        }
-        archive.annexPayloadBytes.forEach { (entryName, bytes) ->
-            val declared = declaredPayloads.getValue(entryName)
-            if (bytes.size.toLong() != declared.byteSize) {
-                throw StudyPlanPackageException("Annex payload size does not match $entryName.")
-            }
-            if (!sha256(bytes).equals(declared.checksumSha256, ignoreCase = true)) {
-                throw StudyPlanPackageException("Annex payload checksum does not match $entryName.")
-            }
+        val sourceEntries = archive.annexPayloadBytes.keys + archive.annexPayloadStreams.keys
+        if (sourceEntries != declaredPayloads.keys) {
+            throw StudyPlanPackageException("Annex payload sources do not match the package manifest.")
         }
 
         val manifestBytes = json.encodeToString(payload.manifest).encodeToByteArray()
         val payloadBytes = json.encodeToString(payload).encodeToByteArray()
+        requireWritableEntry(ManifestEntry, manifestBytes.size.toLong())
+        requireWritableEntry(PayloadEntry, payloadBytes.size.toLong())
         val checksumEntries = linkedMapOf(
             ManifestEntry to sha256(manifestBytes),
             PayloadEntry to sha256(payloadBytes),
         ).apply {
-            archive.annexPayloadBytes.toSortedMap().forEach { (entryName, bytes) ->
-                put(entryName, sha256(bytes))
+            declaredPayloads.toSortedMap().forEach { (entryName, declared) ->
+                requireWritableEntry(entryName, declared.byteSize)
+                put(entryName, declared.checksumSha256.lowercase())
             }
         }
         val checksumBytes = json.encodeToString(
             StudyPlanPackageChecksums(entries = checksumEntries),
         ).encodeToByteArray()
+        requireWritableEntry(ChecksumsEntry, checksumBytes.size.toLong())
+        val expectedEntryCount = FixedEntryCount + declaredPayloads.size
+        if (expectedEntryCount > MaxEntryCount) {
+            throw StudyPlanPackageException("Study Plan package contains too many entries.")
+        }
+        val expectedTotalBytes = manifestBytes.size.toLong() + payloadBytes.size.toLong() +
+            checksumBytes.size.toLong() + declaredPayloads.values.sumOf { it.byteSize }
+        if (expectedTotalBytes > MaxTotalBytes) {
+            throw StudyPlanPackageException("Study Plan package is larger than the supported limit.")
+        }
 
         ZipOutputStream(output.buffered()).use { zip ->
             writeEntry(zip, ManifestEntry, manifestBytes)
             writeEntry(zip, PayloadEntry, payloadBytes)
-            writeEntry(zip, ChecksumsEntry, checksumBytes)
-            archive.annexPayloadBytes.toSortedMap().forEach { (entryName, bytes) ->
-                writeEntry(zip, entryName, bytes)
+            declaredPayloads.toSortedMap().forEach { (entryName, declared) ->
+                archive.openAnnexPayload(entryName).buffered().use { input ->
+                    val streamed = writeStreamedEntry(
+                        zip = zip,
+                        name = entryName,
+                        input = input,
+                        expectedByteSize = declared.byteSize,
+                        maxBytes = MaxEntryBytes,
+                    )
+                    if (!streamed.checksumSha256.equals(checksumEntries.getValue(entryName), ignoreCase = true)) {
+                        throw StudyPlanPackageException("Annex payload checksum does not match $entryName.")
+                    }
+                }
             }
+            writeEntry(zip, ChecksumsEntry, checksumBytes)
         }
     }
 
@@ -78,6 +94,9 @@ class StudyPlanPackageCodec(
                 val entry = zip.nextEntry ?: break
                 validateEntryName(entry)
                 if (entry.isDirectory) continue
+                if (entries.size >= MaxEntryCount) {
+                    throw StudyPlanPackageException("Study Plan package contains too many entries.")
+                }
                 if (entries.containsKey(entry.name)) {
                     throw StudyPlanPackageException("Duplicate package entry: ${entry.name}")
                 }
@@ -242,6 +261,12 @@ class StudyPlanPackageCodec(
         }
     }
 
+    private fun requireWritableEntry(name: String, byteSize: Long) {
+        if (byteSize > MaxEntryBytes) {
+            throw StudyPlanPackageException("Package entry exceeds the supported limit: $name")
+        }
+    }
+
     private fun validateEntryName(entry: ZipEntry) {
         val name = entry.name
         if (name.startsWith('/') || name.startsWith('\\') || ".." in name.split('/', '\\')) {
@@ -263,6 +288,46 @@ class StudyPlanPackageCodec(
         return output.toByteArray()
     }
 
+    private data class StreamedEntryResult(
+        val byteSize: Long,
+        val checksumSha256: String,
+    )
+
+    private fun writeStreamedEntry(
+        zip: ZipOutputStream,
+        name: String,
+        input: InputStream,
+        expectedByteSize: Long,
+        maxBytes: Long,
+    ): StreamedEntryResult {
+        zip.putNextEntry(ZipEntry(name).apply { time = 0L })
+        val digest = MessageDigest.getInstance("SHA-256")
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        var total = 0L
+        try {
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                total += count
+                if (total > maxBytes) {
+                    throw StudyPlanPackageException("Package entry exceeds the supported limit.")
+                }
+                digest.update(buffer, 0, count)
+                zip.write(buffer, 0, count)
+            }
+            if (total != expectedByteSize) {
+                throw StudyPlanPackageException("Annex payload size does not match $name.")
+            }
+        } finally {
+            buffer.fill(0)
+            zip.closeEntry()
+        }
+        return StreamedEntryResult(
+            byteSize = total,
+            checksumSha256 = digest.digest().joinToString("") { "%02x".format(it) },
+        )
+    }
+
     private fun writeEntry(zip: ZipOutputStream, name: String, bytes: ByteArray) {
         zip.putNextEntry(ZipEntry(name).apply { time = 0L })
         zip.write(bytes)
@@ -279,6 +344,8 @@ class StudyPlanPackageCodec(
         const val PayloadEntry = "payload.json"
         const val ChecksumsEntry = "checksums.json"
         const val AnnexPayloadPrefix = "annex-payloads/"
+        const val FixedEntryCount = 3
+        const val MaxEntryCount = 512
         const val MaxEntryBytes = 64L * 1024L * 1024L
         const val MaxTotalBytes = 512L * 1024L * 1024L
     }

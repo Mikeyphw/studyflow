@@ -104,6 +104,10 @@ abstract class StudyFlowDatabase : RoomDatabase() {
                         override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                             StudyFlowIntegrity.install(db)
                         }
+
+                        override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                            StudyFlowIntegrity.install(db)
+                        }
                     },
                 )
                 .build()

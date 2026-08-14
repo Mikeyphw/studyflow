@@ -197,6 +197,21 @@ class StudyPlanGraphDuplicator(
             ),
         )
 
+        /**
+         * File-backed rows are deliberately excluded from [TableSpecs] so ordinary plan duplication can
+         * prepare physically independent bytes before its Room transaction. Portability still needs annex
+         * metadata, so its table inventory opts in explicitly through [PortabilityTableSpecs].
+         */
+        val AnnexSpec = table(
+            "annexes",
+            "id", "studyPlanId", "subjectId", "topicId", "materialId", "displayName", "mimeType", "byteSize",
+            "checksumSha256", "storageMode", "storageReference", "persistedPermission", "createdAtEpochMillis",
+            "updatedAtEpochMillis",
+            remap = setOf("id", "subjectId", "topicId", "materialId"),
+        )
+
+        val PortabilityTableSpecs: List<TableSpec> = TableSpecs + AnnexSpec
+
         private fun table(
             tableName: String,
             vararg columns: String,

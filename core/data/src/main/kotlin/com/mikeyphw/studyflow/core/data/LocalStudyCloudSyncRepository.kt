@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
 import com.mikeyphw.studyflow.core.domain.StudyCloudSyncRepository
 import com.mikeyphw.studyflow.core.model.LocalOnlyProvider
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
@@ -15,19 +16,29 @@ import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 
 private val Context.studySyncDataStore by preferencesDataStore(name = "study_sync_foundation")
 
+/**
+ * Local-only checkpoint state. The durable source of freshness is the Room graph revision, not a
+ * synthetic plan count. Every user-data mutation advances that revision through database triggers.
+ */
 internal class LocalStudyCloudSyncRepository(
     context: Context,
     private val database: StudyFlowDatabase,
     private val clock: () -> Long,
 ) : StudyCloudSyncRepository {
     private val dataStore = context.applicationContext.studySyncDataStore
+    private val metadataDao = database.databaseMetadataDao()
 
-    override val syncState: Flow<StudySyncState> = dataStore.data.map(::decodeState)
+    override val syncState: Flow<StudySyncState> = combine(
+        dataStore.data,
+        metadataDao.observeValue(StudyFlowIntegrity.GraphRevisionMetadataKey),
+    ) { preferences, revisionValue ->
+        decodeState(preferences, revisionValue.toRevision())
+    }
 
     override suspend fun inspectLocalChanges(): StudySyncChangeSummary {
         val plans = database.studyPlanDao().snapshotAll()
@@ -35,47 +46,45 @@ internal class LocalStudyCloudSyncRepository(
             enumValueOf<StudyPlanStatus>(entity.status) in setOf(StudyPlanStatus.ACTIVE, StudyPlanStatus.PAUSED)
         }
         val latestUpdated = plans.maxOfOrNull { entity -> entity.updatedAtEpochMillis }
-        val token = buildString {
-            append("plans=").append(plans.size)
-            append(";active=").append(activeCount)
-            append(";updated=").append(latestUpdated ?: 0L)
-        }
+        val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+        val preferences = dataStore.data.first()
+        val preparedRevision = preferences[ChangeTokenKey].revisionFromToken()
         return StudySyncChangeSummary(
             planCount = plans.size,
             activePlanCount = activeCount,
             latestUpdatedAtEpochMillis = latestUpdated,
-            localChangeToken = token,
+            localChangeToken = revisionToken(revision),
+            databaseRevision = revision,
+            changesSinceCheckpoint = revision.deltaSince(preparedRevision),
         )
     }
 
     override suspend fun prepareLocalFoundation(deviceName: String): StudySyncState {
-        val summary = inspectLocalChanges()
+        val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
         dataStore.edit { preferences ->
             preferences[EnabledKey] = true
             preferences[StatusKey] = StudySyncConnectionStatus.LOCAL_READY.name
-            preferences[ConflictPolicyKey] = StudySyncConflictPolicy.MANUAL_REVIEW.name
+            preferences[ConflictPolicyKey] = preferences[ConflictPolicyKey]
+                ?: StudySyncConflictPolicy.MANUAL_REVIEW.name
             preferences[DeviceNameKey] = deviceName
             preferences[PreparedAtKey] = clock()
-            preferences[ChangeTokenKey] = summary.localChangeToken
-            preferences[PendingLocalChangeKey] = summary.planCount.toLong()
+            preferences[ChangeTokenKey] = revisionToken(revision)
+            preferences[PendingLocalChangeKey] = 0L
             preferences.remove(BlockedReasonKey)
         }
         return syncState.first()
     }
 
     override suspend fun setSyncEnabled(enabled: Boolean): StudySyncState {
-        val summary = inspectLocalChanges()
+        val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
         dataStore.edit { preferences ->
             preferences[EnabledKey] = enabled
-            preferences[StatusKey] = if (enabled) {
+            preferences[StatusKey] = if (!enabled) {
+                StudySyncConnectionStatus.DISABLED.name
+            } else if (preferences[ChangeTokenKey].revisionFromToken() == revision) {
                 StudySyncConnectionStatus.LOCAL_READY.name
             } else {
-                StudySyncConnectionStatus.DISABLED.name
-            }
-            if (enabled && preferences[ChangeTokenKey] == null) {
-                preferences[ChangeTokenKey] = summary.localChangeToken
-                preferences[PreparedAtKey] = clock()
-                preferences[PendingLocalChangeKey] = summary.planCount.toLong()
+                StudySyncConnectionStatus.CHECKPOINT_NEEDED.name
             }
         }
         return syncState.first()
@@ -91,18 +100,31 @@ internal class LocalStudyCloudSyncRepository(
         return StudySyncState.disabled()
     }
 
-    private fun decodeState(preferences: androidx.datastore.preferences.core.Preferences): StudySyncState =
-        StudySyncState(
-            enabled = preferences[EnabledKey] ?: false,
+    private fun decodeState(
+        preferences: androidx.datastore.preferences.core.Preferences,
+        currentRevision: Long,
+    ): StudySyncState {
+        val enabled = preferences[EnabledKey] ?: false
+        val preparedRevision = preferences[ChangeTokenKey].revisionFromToken()
+        val persistedStatus = decodeStatus(preferences[StatusKey])
+        val status = when {
+            !enabled -> StudySyncConnectionStatus.DISABLED
+            persistedStatus == StudySyncConnectionStatus.CHECKPOINT_BLOCKED -> persistedStatus
+            preparedRevision == currentRevision -> StudySyncConnectionStatus.LOCAL_READY
+            else -> StudySyncConnectionStatus.CHECKPOINT_NEEDED
+        }
+        return StudySyncState(
+            enabled = enabled,
             provider = LocalOnlyProvider,
-            connectionStatus = decodeStatus(preferences[StatusKey]),
+            connectionStatus = status,
             conflictPolicy = decodeConflictPolicy(preferences[ConflictPolicyKey]),
             deviceName = preferences[DeviceNameKey] ?: "This device",
             lastPreparedAtEpochMillis = preferences[PreparedAtKey],
             lastLocalChangeToken = preferences[ChangeTokenKey],
-            pendingLocalChangeCount = preferences[PendingLocalChangeKey]?.toInt() ?: 0,
+            pendingLocalChangeCount = currentRevision.deltaSince(preparedRevision),
             blockedReason = preferences[BlockedReasonKey],
         )
+    }
 
     private fun decodeStatus(value: String?): StudySyncConnectionStatus = when (value) {
         StudySyncConnectionStatus.LOCAL_READY.name -> StudySyncConnectionStatus.LOCAL_READY
@@ -117,7 +139,22 @@ internal class LocalStudyCloudSyncRepository(
         value?.let { enumValueOf<StudySyncConflictPolicy>(it) }
     }.getOrNull() ?: StudySyncConflictPolicy.MANUAL_REVIEW
 
+    private fun String?.toRevision(): Long = this?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+
+    private fun String?.revisionFromToken(): Long? = this
+        ?.removePrefix(RevisionTokenPrefix)
+        ?.toLongOrNull()
+        ?.takeIf { it >= 0L }
+
+    private fun revisionToken(revision: Long): String = "$RevisionTokenPrefix$revision"
+
+    private fun Long.deltaSince(previous: Long?): Int {
+        if (previous == null) return coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        return (this - previous).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
     private companion object {
+        const val RevisionTokenPrefix = "revision="
         val EnabledKey = booleanPreferencesKey("enabled")
         val StatusKey = stringPreferencesKey("status")
         val ConflictPolicyKey = stringPreferencesKey("conflict_policy")

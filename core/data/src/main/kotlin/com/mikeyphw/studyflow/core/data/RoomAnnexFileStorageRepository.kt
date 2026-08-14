@@ -197,7 +197,10 @@ internal class RoomAnnexFileStorageRepository(
                 } ?: return@withLock
 
                 when (deleted.storageMode) {
-                    AnnexStorageMode.IMPORTED_COPY.name -> {
+                    AnnexStorageMode.IMPORTED_COPY.name -> if (
+                        deleted.storageReference.isNotBlank() &&
+                        libraryDao.countAnnexesByStorageReference(deleted.storageReference) == 0
+                    ) {
                         val ownedFile = resolveAnnexReference(deleted.storageReference)
                         if (ownedFile.exists()) ownedFile.delete()
                         ownedFile.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
@@ -217,10 +220,13 @@ internal class RoomAnnexFileStorageRepository(
             fileMutationMutex.withLock {
                 val root = planShareableRoot(studyPlanId.value)
                 if (!root.exists()) return@withLock AnnexFileCleanupResult(0, 0)
-                val referenced = libraryDao.findAnnexes(studyPlanId.value)
-                    .filter { it.storageMode == AnnexStorageMode.IMPORTED_COPY.name }
-                    .mapNotNull { annex -> annex.storageReference.takeIf(String::isNotBlank) }
-                    .map { reference -> resolveAnnexReference(reference).canonicalPath }
+                // Imported-copy references used to be assumed plan-local. Pre-remediation duplication could
+                // leave another plan pointing at bytes below this plan's shareable root, so orphan cleanup
+                // must honor every surviving imported-copy row before removing app-owned bytes.
+                val referenced = libraryDao.findImportedStorageReferences()
+                    .mapNotNull { reference ->
+                        runCatching { resolveAnnexReference(reference).canonicalPath }.getOrNull()
+                    }
                     .toSet()
                 var removedFiles = 0
                 var removedBytes = 0L
@@ -247,7 +253,7 @@ internal class RoomAnnexFileStorageRepository(
                             !annex.storageReference.startsWith("shareable-annexes/")
                     }
                     .forEach { annex ->
-                        val source = resolveLegacyAnnexReference(plan.id, annex.storageReference)
+                        val source = resolveLegacyAnnexReference(annex.storageReference)
                         if (!source.isFile) return@forEach
                         verifyFile(source, annex.byteSize, annex.checksumSha256)
                         val verifiedChecksum = annex.checksumSha256?.takeIf(String::isNotBlank)
@@ -274,8 +280,12 @@ internal class RoomAnnexFileStorageRepository(
                                     ) == 1,
                                 ) { "Annex disappeared while relocating private storage." }
                             }
-                            source.delete()
-                            source.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
+                            // A historical duplicated row may still reference the same legacy file. Keep
+                            // the source until the last database reference has moved away from it.
+                            if (libraryDao.countAnnexesByStorageReference(annex.storageReference) == 0) {
+                                source.delete()
+                                source.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
+                            }
                             migrated++
                         } catch (error: Throwable) {
                             destination.delete()
@@ -294,10 +304,14 @@ internal class RoomAnnexFileStorageRepository(
         return candidate
     }
 
-    private fun resolveLegacyAnnexReference(planId: String, reference: String): File {
+    private fun resolveLegacyAnnexReference(reference: String): File {
         val candidate = File(filesDir, reference).canonicalFile
-        val legacyRoot = File(filesDir, "study-plans/${sanitizeSegment(planId)}/annexes").canonicalFile
+        val legacyRoot = File(filesDir, "study-plans").canonicalFile
         requireWithin(candidate, legacyRoot, "Unsafe legacy annex path.")
+        val relativeParts = candidate.relativeTo(legacyRoot).invariantSeparatorsPath.split('/')
+        require(relativeParts.size >= 3 && relativeParts[1] == "annexes") {
+            "Legacy annex paths must remain inside a Study Plan annex directory."
+        }
         return candidate
     }
 

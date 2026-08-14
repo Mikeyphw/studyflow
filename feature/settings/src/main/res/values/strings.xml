@@ -348,4 +348,9 @@
     <string name="sync_queue_status_ready">Ready</string>
     <string name="sync_queue_status_waiting">Waiting</string>
     <string name="sync_queue_status_blocked">Blocked</string>
+    <string name="sync_checkpoint_readiness_title">Local checkpoint readiness</string>
+    <string name="sync_checkpoint_waiting_for_inspection">Inspect local changes to evaluate checkpoint readiness.</string>
+    <string name="sync_checkpoint_readiness_summary">Ready: %1$d · Blocked: %2$d · Current: %3$d</string>
+    <string name="sync_checkpoint_current">Checkpoint current</string>
+    <string name="sync_checkpoint_current_message">The prepared checkpoint includes all tracked local changes.</string>
 </resources>

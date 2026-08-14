@@ -37,6 +37,9 @@ interface StudySupportDao {
     @Query("SELECT * FROM plan_snapshots WHERE studyPlanId = :planId ORDER BY createdAtEpochMillis DESC")
     suspend fun findSnapshots(planId: String): List<PlanSnapshotEntity>
 
+    @Query("SELECT payloadReference FROM plan_snapshots WHERE payloadReference <> ''")
+    suspend fun findSnapshotPayloadReferences(): List<String>
+
     @Query("SELECT * FROM study_plan_settings WHERE studyPlanId = :planId LIMIT 1")
     fun observePlanSettings(planId: String): Flow<StudyPlanSettingsEntity?>
 

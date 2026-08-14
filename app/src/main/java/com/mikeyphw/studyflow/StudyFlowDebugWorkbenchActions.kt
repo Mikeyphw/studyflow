@@ -108,6 +108,7 @@ internal class StudyFlowDebugWorkbenchActions(
             prepareBundleShare = prepare@{
                 val directory = File(context.cacheDir, "support-bundles")
                 if (!directory.mkdirs() && !directory.isDirectory) return@prepare null
+                pruneGeneratedFiles(directory, System.currentTimeMillis(), maxFiles = 5, maxAgeMillis = 7L * 24L * 60L * 60L * 1000L)
 
                 val destination = File(directory, "studyflow-debug-${System.currentTimeMillis()}.zip")
                 val bundle = store.exportSupportBundle(
@@ -180,3 +181,14 @@ private fun ZipFile.actualPayloadChecksums(): Map<String, String> = entries().as
 private fun ByteArray.sha256Hex(): String = MessageDigest.getInstance("SHA-256")
     .digest(this)
     .joinToString("") { byte -> "%02x".format(byte) }
+
+
+private fun pruneGeneratedFiles(directory: File, nowEpochMillis: Long, maxFiles: Int, maxAgeMillis: Long) {
+    directory.listFiles()?.filter(File::isFile).orEmpty()
+        .filter { nowEpochMillis - it.lastModified() > maxAgeMillis }
+        .forEach { runCatching { it.delete() } }
+    directory.listFiles()?.filter(File::isFile).orEmpty()
+        .sortedByDescending(File::lastModified)
+        .drop(maxFiles)
+        .forEach { runCatching { it.delete() } }
+}

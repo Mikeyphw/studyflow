@@ -6,23 +6,19 @@ import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncState
 
 /**
- * Phase 58 keeps sync deliberately cloudless. This planner describes local backup/checkpoint work
- * that can be shown to the learner or scheduled by app-owned background code without accounts.
+ * Compatibility-named model for a local checkpoint *readiness list*. It is not a durable work queue,
+ * does not claim that an export was scheduled, and never substitutes checkpoint preparation for an
+ * actual Study Plan export.
  */
 enum class CloudlessBackupQueueAction {
     PREPARE_CHECKPOINT,
-    EXPORT_LOCAL_BACKUP,
-    VERIFY_BACKUP_FRESHNESS,
+    CHECKPOINT_CURRENT,
     REVIEW_LOCAL_CONFLICT_POLICY,
     WAIT_FOR_LOCAL_DATA,
     UNBLOCK_CHECKPOINT,
 }
 
-enum class CloudlessBackupQueueStatus {
-    READY,
-    WAITING,
-    BLOCKED,
-}
+enum class CloudlessBackupQueueStatus { READY, WAITING, BLOCKED }
 
 data class CloudlessBackupQueueItem(
     val id: String,
@@ -34,10 +30,10 @@ data class CloudlessBackupQueueItem(
     val dueAtEpochMillis: Long,
 ) {
     init {
-        require(id.isNotBlank()) { "Queue item id cannot be blank." }
-        require(priority in 0..100) { "Queue priority must be between 0 and 100." }
+        require(id.isNotBlank()) { "Readiness item id cannot be blank." }
+        require(priority in 0..100) { "Readiness priority must be between 0 and 100." }
         require(pendingChangeCount >= 0) { "Pending change count cannot be negative." }
-        require(dueAtEpochMillis >= 0L) { "Queue due time cannot be negative." }
+        require(dueAtEpochMillis >= 0L) { "Readiness inspection time cannot be negative." }
     }
 }
 
@@ -45,15 +41,11 @@ data class CloudlessBackupQueuePlan(
     val generatedAtEpochMillis: Long,
     val items: List<CloudlessBackupQueueItem>,
 ) {
-    init {
-        require(generatedAtEpochMillis >= 0L) { "Queue generation time cannot be negative." }
-    }
-
-    val readyCount: Int = items.count { it.status == CloudlessBackupQueueStatus.READY }
-    val blockedCount: Int = items.count { it.status == CloudlessBackupQueueStatus.BLOCKED }
-    val waitingCount: Int = items.count { it.status == CloudlessBackupQueueStatus.WAITING }
-    val highestPriority: Int = items.maxOfOrNull(CloudlessBackupQueueItem::priority) ?: 0
-    val actionable: Boolean = readyCount > 0 && blockedCount == 0
+    val readyCount = items.count { it.status == CloudlessBackupQueueStatus.READY }
+    val blockedCount = items.count { it.status == CloudlessBackupQueueStatus.BLOCKED }
+    val waitingCount = items.count { it.status == CloudlessBackupQueueStatus.WAITING }
+    val highestPriority = items.maxOfOrNull(CloudlessBackupQueueItem::priority) ?: 0
+    val actionable = readyCount > 0 && blockedCount == 0
 }
 
 object CloudlessBackupQueuePlanner {
@@ -61,99 +53,30 @@ object CloudlessBackupQueuePlanner {
         state: StudySyncState,
         summary: StudySyncChangeSummary,
         nowEpochMillis: Long,
-        lastExportedAtEpochMillis: Long? = state.lastPreparedAtEpochMillis,
+        @Suppress("UNUSED_PARAMETER") lastExportedAtEpochMillis: Long? = null,
     ): CloudlessBackupQueuePlan {
-        require(nowEpochMillis >= 0L) { "Queue inspection time cannot be negative." }
+        require(nowEpochMillis >= 0L) { "Readiness inspection time cannot be negative." }
         val items = buildList {
             if (!summary.hasLocalData) {
-                add(
-                    item(
-                        action = CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA,
-                        status = CloudlessBackupQueueStatus.WAITING,
-                        priority = 10,
-                        summary = summary,
-                        dueAtEpochMillis = nowEpochMillis,
-                    ),
-                )
+                add(item(CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA, CloudlessBackupQueueStatus.WAITING, 10, state, summary, nowEpochMillis))
                 return@buildList
             }
             if (state.connectionStatus == StudySyncConnectionStatus.CHECKPOINT_BLOCKED) {
-                add(
-                    item(
-                        action = CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT,
-                        status = CloudlessBackupQueueStatus.BLOCKED,
-                        priority = 100,
-                        summary = summary,
-                        dueAtEpochMillis = nowEpochMillis,
-                    ),
-                )
+                add(item(CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT, CloudlessBackupQueueStatus.BLOCKED, 100, state, summary, nowEpochMillis))
                 return@buildList
             }
             if (!StudyLocalCheckpointReadinessAuditor.localCheckpointReady(state, summary)) {
-                add(
-                    item(
-                        action = CloudlessBackupQueueAction.PREPARE_CHECKPOINT,
-                        status = CloudlessBackupQueueStatus.READY,
-                        priority = 90,
-                        summary = summary,
-                        dueAtEpochMillis = nowEpochMillis,
-                    ),
-                )
-            }
-            if (summary.localChangeToken != state.lastLocalChangeToken || state.pendingLocalChangeCount > 0) {
-                add(
-                    item(
-                        action = CloudlessBackupQueueAction.EXPORT_LOCAL_BACKUP,
-                        status = CloudlessBackupQueueStatus.READY,
-                        priority = 80,
-                        summary = summary,
-                        dueAtEpochMillis = nowEpochMillis + QUICK_BACKUP_DELAY_MILLIS,
-                    ),
-                )
+                add(item(CloudlessBackupQueueAction.PREPARE_CHECKPOINT, CloudlessBackupQueueStatus.READY, 90, state, summary, nowEpochMillis))
+            } else {
+                add(item(CloudlessBackupQueueAction.CHECKPOINT_CURRENT, CloudlessBackupQueueStatus.WAITING, 20, state, summary, nowEpochMillis))
             }
             if (state.conflictPolicy == StudySyncConflictPolicy.MANUAL_REVIEW && summary.activePlanCount > 1) {
-                add(
-                    item(
-                        action = CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY,
-                        status = CloudlessBackupQueueStatus.READY,
-                        priority = 55,
-                        summary = summary,
-                        dueAtEpochMillis = nowEpochMillis + REVIEW_POLICY_DELAY_MILLIS,
-                    ),
-                )
-            }
-            val backupStale = lastExportedAtEpochMillis == null ||
-                nowEpochMillis - lastExportedAtEpochMillis >= BACKUP_STALE_MILLIS
-            if (backupStale) {
-                add(
-                    item(
-                        action = CloudlessBackupQueueAction.VERIFY_BACKUP_FRESHNESS,
-                        status = CloudlessBackupQueueStatus.READY,
-                        priority = 45,
-                        summary = summary,
-                        dueAtEpochMillis = nowEpochMillis + FRESHNESS_CHECK_DELAY_MILLIS,
-                    ),
-                )
-            }
-            if (isEmpty()) {
-                add(
-                    item(
-                        action = CloudlessBackupQueueAction.VERIFY_BACKUP_FRESHNESS,
-                        status = CloudlessBackupQueueStatus.WAITING,
-                        priority = 20,
-                        summary = summary,
-                        dueAtEpochMillis = nowEpochMillis + BACKUP_STALE_MILLIS,
-                    ),
-                )
+                add(item(CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY, CloudlessBackupQueueStatus.READY, 55, state, summary, nowEpochMillis))
             }
         }
         return CloudlessBackupQueuePlan(
             generatedAtEpochMillis = nowEpochMillis,
-            items = items.sortedWith(
-                compareByDescending<CloudlessBackupQueueItem> { it.priority }
-                    .thenBy { it.dueAtEpochMillis }
-                    .thenBy { it.id },
-            ),
+            items = items.sortedWith(compareByDescending<CloudlessBackupQueueItem> { it.priority }.thenBy { it.id }),
         )
     }
 
@@ -161,20 +84,16 @@ object CloudlessBackupQueuePlanner {
         action: CloudlessBackupQueueAction,
         status: CloudlessBackupQueueStatus,
         priority: Int,
+        state: StudySyncState,
         summary: StudySyncChangeSummary,
-        dueAtEpochMillis: Long,
-    ): CloudlessBackupQueueItem = CloudlessBackupQueueItem(
-        id = "cloudless:${action.name.lowercase()}:${summary.localChangeToken}",
+        nowEpochMillis: Long,
+    ) = CloudlessBackupQueueItem(
+        id = "checkpoint:${action.name.lowercase()}:${summary.localChangeToken}",
         action = action,
         status = status,
         priority = priority,
-        pendingChangeCount = summary.changeCount,
+        pendingChangeCount = state.pendingLocalChangeCount,
         localChangeToken = summary.localChangeToken,
-        dueAtEpochMillis = dueAtEpochMillis,
+        dueAtEpochMillis = nowEpochMillis,
     )
-
-    private const val QUICK_BACKUP_DELAY_MILLIS = 15 * 60 * 1000L
-    private const val REVIEW_POLICY_DELAY_MILLIS = 60 * 60 * 1000L
-    private const val FRESHNESS_CHECK_DELAY_MILLIS = 2 * 60 * 60 * 1000L
-    private const val BACKUP_STALE_MILLIS = 7 * 24 * 60 * 60 * 1000L
 }

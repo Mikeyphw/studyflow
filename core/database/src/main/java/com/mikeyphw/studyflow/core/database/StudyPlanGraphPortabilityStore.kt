@@ -4,10 +4,12 @@ import android.content.ContentValues
 import android.database.Cursor
 import androidx.room.withTransaction
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.mikeyphw.studyflow.core.portability.PortableAnnexPayload
 import com.mikeyphw.studyflow.core.portability.PortableRow
 import com.mikeyphw.studyflow.core.portability.PortableTable
 import com.mikeyphw.studyflow.core.portability.PortableValue
 import com.mikeyphw.studyflow.core.portability.PortableValueType
+import com.mikeyphw.studyflow.core.portability.PracticeConfigurationReferences
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
@@ -43,10 +45,13 @@ class StudyPlanGraphPortabilityStore(
             }
             add(PortableTable(RootSpec.tableName, rootRows))
             selectedSpecs.forEach { spec ->
-                val rows = queryRows(database, spec, planId).map { row ->
+                val sourceRows = queryRows(database, spec, planId).filter { row ->
+                    spec.tableName != "annexes" || row.values["storageMode"]?.value == "IMPORTED_COPY"
+                }
+                val rows = sourceRows.map { row ->
                     val privacySanitized = StudyPlanPrivacyPolicy.sanitizeRow(spec.tableName, row, options)
                     val sanitized = if (spec.tableName == "annexes") {
-                        sanitizeAnnex(privacySanitized)
+                        sanitizeAnnex(privacySanitized, metadataPrivacyMode = options.metadataPrivacyMode)
                     } else {
                         privacySanitized
                     }
@@ -56,7 +61,9 @@ class StudyPlanGraphPortabilityStore(
                             spec = spec,
                             sourcePlanId = planId,
                             exportedPlanId = exportedPlanId,
-                        )
+                        ).remapPracticeConfiguration(spec.tableName) { rawQuestionId ->
+                            StudyPlanPrivacyPolicy.pseudonymizeIdentifier(exportedPlanId, rawQuestionId)
+                        }
                     } else {
                         sanitized
                     }
@@ -65,7 +72,7 @@ class StudyPlanGraphPortabilityStore(
             }
         }
         val counts = tables.associate { it.name to it.rows.size }
-        StudyPlanPackagePayload(
+        val payload = StudyPlanPackagePayload(
             manifest = StudyPlanPackageManifest(
                 applicationVersion = if (options.metadataPrivacyMode) {
                     StudyPlanPrivacyPolicy.PrivateApplicationVersion
@@ -87,20 +94,22 @@ class StudyPlanGraphPortabilityStore(
                 includesPrivateHistory = options.mode == StudyPlanExportMode.FULL && !options.redactHistory,
                 includesAnnexMetadata = options.includeAnnexMetadata &&
                     selectedSpecs.any { it.tableName == "annexes" },
-                includesAnnexPayloads = options.includeAnnexPayloads &&
-                    options.includeAnnexMetadata &&
-                    selectedSpecs.any { it.tableName == "annexes" },
+                // Payload entries are attached by the filesystem-aware repository after this
+                // database transaction. Keep the graph payload self-consistent until then.
+                includesAnnexPayloads = false,
                 tableRowCounts = counts,
                 metadataPrivacyMode = options.metadataPrivacyMode,
                 redactedSections = StudyPlanPrivacyPolicy.redactedSections(options),
             ),
             tables = tables,
         )
+        validatePayload(payload)
+        payload
     }
 
     fun validatePayload(payload: StudyPlanPackagePayload): Int {
         StudyPlanPrivacyPolicy.validatePayload(payload)
-        val supportedSpecs = StudyPlanGraphDuplicator.TableSpecs.associateBy { it.tableName }
+        val supportedSpecs = StudyPlanGraphDuplicator.PortabilityTableSpecs.associateBy { it.tableName }
         val supportedTableNames = supportedSpecs.keys + RootSpec.tableName
         val tableNames = payload.tables.map { it.name }
         require(tableNames.size == tableNames.toSet().size) {
@@ -141,6 +150,7 @@ class StudyPlanGraphPortabilityStore(
                 }
             }
         }
+        validateRelationalOwnership(payload, tableMap)
         return counts.values.sum()
     }
 
@@ -149,6 +159,7 @@ class StudyPlanGraphPortabilityStore(
         strategy: StudyPlanImportStrategy,
         targetPlanId: String,
         importedAtEpochMillis: Long,
+        beforeCommit: suspend () -> Unit = {},
     ): Int {
         validatePayload(payload)
         return roomDatabase.withTransaction {
@@ -193,8 +204,7 @@ class StudyPlanGraphPortabilityStore(
                 importedRows++
             }
 
-            StudyPlanGraphDuplicator.TableSpecs
-                .filterNot { it.tableName == "plan_snapshots" }
+            StudyPlanGraphDuplicator.PortabilityTableSpecs
                 .forEach { spec ->
                     if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE &&
                         spec.tableName in MergeSkippedTables
@@ -208,7 +218,173 @@ class StudyPlanGraphPortabilityStore(
                         importedRows++
                     }
                 }
+            beforeCommit()
             importedRows
+        }
+    }
+
+    private fun validateRelationalOwnership(
+        payload: StudyPlanPackagePayload,
+        tableMap: Map<String, PortableTable>,
+    ) {
+        val idsByTable = tableMap.mapValues { (_, table) ->
+            table.rows.mapNotNull { row -> row.values["id"]?.value }.toSet()
+        }
+
+        fun requireReference(
+            tableName: String,
+            row: PortableRow,
+            column: String,
+            targetTable: String,
+            required: Boolean = false,
+        ) {
+            val value = row.values[column]
+            val reference = value?.value
+            if (value == null || value.type == PortableValueType.NULL || reference.isNullOrBlank()) {
+                require(!required) { "$tableName.$column must reference $targetTable." }
+                return
+            }
+            require(reference in idsByTable[targetTable].orEmpty()) {
+                "$tableName.$column references a missing or cross-plan $targetTable row."
+            }
+        }
+
+        fun rows(tableName: String): List<PortableRow> = tableMap[tableName]?.rows.orEmpty()
+
+        rows("exam_stages").forEach { row ->
+            requireReference("exam_stages", row, "studyTargetId", "study_targets", required = true)
+        }
+        rows("subjects").forEach { row ->
+            requireReference("subjects", row, "examStageId", "exam_stages")
+        }
+        rows("topics").forEach { row ->
+            requireReference("topics", row, "subjectId", "subjects", required = true)
+            requireReference("topics", row, "parentTopicId", "topics")
+            requireReference("topics", row, "examStageId", "exam_stages")
+            val parentId = row.values["parentTopicId"]?.value
+            if (!parentId.isNullOrBlank()) {
+                val parent = rows("topics").first { it.values["id"]?.value == parentId }
+                require(parent.values["subjectId"]?.value == row.values["subjectId"]?.value) {
+                    "Topic parent must belong to the same subject."
+                }
+            }
+        }
+        val topicsById = rows("topics").associateBy { row -> row.values["id"]?.value.orEmpty() }
+        fun requireTopicSubjectConsistency(tableName: String, row: PortableRow) {
+            val topicId = row.values["topicId"]?.value?.takeIf(String::isNotBlank) ?: return
+            val topic = requireNotNull(topicsById[topicId]) {
+                "$tableName.topicId references a missing or cross-plan topic."
+            }
+            val subjectId = row.values["subjectId"]?.value?.takeIf(String::isNotBlank)
+            require(subjectId == topic.values["subjectId"]?.value) {
+                "$tableName subject/topic ownership is inconsistent."
+            }
+        }
+        rows("schedule_rules").forEach { row ->
+            requireReference("schedule_rules", row, "subjectId", "subjects")
+        }
+        rows("study_materials").forEach { row ->
+            requireReference("study_materials", row, "subjectId", "subjects")
+            requireReference("study_materials", row, "topicId", "topics")
+            requireTopicSubjectConsistency("study_materials", row)
+        }
+        rows("video_resources").forEach { row ->
+            requireReference("video_resources", row, "subjectId", "subjects")
+            requireReference("video_resources", row, "topicId", "topics")
+            requireTopicSubjectConsistency("video_resources", row)
+        }
+        rows("planned_activities").forEach { row ->
+            requireReference("planned_activities", row, "subjectId", "subjects")
+            requireReference("planned_activities", row, "topicId", "topics")
+            requireReference("planned_activities", row, "materialId", "study_materials")
+            requireReference("planned_activities", row, "videoResourceId", "video_resources")
+            requireTopicSubjectConsistency("planned_activities", row)
+        }
+        rows("study_sessions").forEach { row ->
+            requireReference("study_sessions", row, "plannedActivityId", "planned_activities")
+            requireReference("study_sessions", row, "subjectId", "subjects")
+            requireReference("study_sessions", row, "topicId", "topics")
+            requireReference("study_sessions", row, "materialId", "study_materials")
+            requireReference("study_sessions", row, "videoResourceId", "video_resources")
+            requireTopicSubjectConsistency("study_sessions", row)
+        }
+        rows("study_goals").forEach { row ->
+            requireReference("study_goals", row, "subjectId", "subjects")
+            requireReference("study_goals", row, "topicId", "topics")
+            requireTopicSubjectConsistency("study_goals", row)
+        }
+        rows("annexes").forEach { row ->
+            require(row.values["storageMode"]?.value == "IMPORTED_COPY") {
+                "Portable annex metadata may only describe app-owned imported copies."
+            }
+            require(row.values["storageReference"]?.value.orEmpty().isBlank()) {
+                "Portable annex metadata must not contain a device-local storage path."
+            }
+            require(row.values["persistedPermission"]?.value in setOf("0", null)) {
+                "Portable annex metadata must not claim a device-local persisted URI grant."
+            }
+            requireReference("annexes", row, "subjectId", "subjects")
+            requireReference("annexes", row, "topicId", "topics")
+            requireReference("annexes", row, "materialId", "study_materials")
+            requireTopicSubjectConsistency("annexes", row)
+        }
+        rows("questions").forEach { row ->
+            requireReference("questions", row, "subjectId", "subjects")
+            requireReference("questions", row, "topicId", "topics")
+            requireTopicSubjectConsistency("questions", row)
+        }
+        rows("flashcards").forEach { row ->
+            requireReference("flashcards", row, "subjectId", "subjects")
+            requireReference("flashcards", row, "topicId", "topics")
+            requireTopicSubjectConsistency("flashcards", row)
+        }
+        rows("error_entries").forEach { row ->
+            requireReference("error_entries", row, "questionId", "questions", required = true)
+            requireReference("error_entries", row, "subjectId", "subjects")
+            requireReference("error_entries", row, "topicId", "topics")
+            requireTopicSubjectConsistency("error_entries", row)
+        }
+        rows("review_items").forEach { row ->
+            requireReference("review_items", row, "subjectId", "subjects")
+            requireReference("review_items", row, "topicId", "topics")
+            requireReference("review_items", row, "questionId", "questions")
+            requireReference("review_items", row, "flashcardId", "flashcards")
+            requireReference("review_items", row, "errorEntryId", "error_entries")
+            val targetCount = listOf("questionId", "flashcardId", "errorEntryId").count { column ->
+                row.values[column]?.let { it.type != PortableValueType.NULL && !it.value.isNullOrBlank() } == true
+            }
+            require(targetCount == 1) { "Review item must reference exactly one review target." }
+            requireTopicSubjectConsistency("review_items", row)
+        }
+        rows("study_notes").forEach { row ->
+            requireReference("study_notes", row, "subjectId", "subjects")
+            requireReference("study_notes", row, "topicId", "topics")
+            requireReference("study_notes", row, "materialId", "study_materials")
+            requireTopicSubjectConsistency("study_notes", row)
+        }
+
+        val questionIds = idsByTable["questions"].orEmpty()
+        listOf("study_tests", "mock_exams").forEach { tableName ->
+            rows(tableName).forEach { row ->
+                val configuration = row.values["configurationJson"]?.value.orEmpty()
+                PracticeConfigurationReferences.referencedQuestionIds(configuration).forEach { questionId ->
+                    require(questionId in questionIds) {
+                        "$tableName.configurationJson references a missing or cross-plan question."
+                    }
+                }
+            }
+        }
+
+        require(rows("planned_activities").none { it.values["status"]?.value == "IN_PROGRESS" }) {
+            "Study Plan packages cannot capture an in-progress activity; finish or cancel the active session first."
+        }
+        require(rows("study_sessions").none { it.values["status"]?.value in setOf("RUNNING", "PAUSED") }) {
+            "Study Plan packages cannot capture a live Study Session; finish or cancel it first."
+        }
+
+        val manifestAnnexIds = payload.manifest.annexPayloads.map(PortableAnnexPayload::annexId).toSet()
+        require(manifestAnnexIds.all { it in idsByTable["annexes"].orEmpty() }) {
+            "Annex payload manifest references annex metadata that is not present in the package."
         }
     }
 
@@ -281,7 +457,8 @@ class StudyPlanGraphPortabilityStore(
         },
     )
 
-    private fun sanitizeAnnex(row: PortableRow): PortableRow = row.withValues(
+    private fun sanitizeAnnex(row: PortableRow, metadataPrivacyMode: Boolean): PortableRow = row.withValues(
+        "displayName" to text(if (metadataPrivacyMode) "private-annex.bin" else row.values["displayName"]?.value.orEmpty()),
         "storageReference" to text(""),
         "persistedPermission" to integer(0),
     )
@@ -315,12 +492,13 @@ class StudyPlanGraphPortabilityStore(
                 values[column] = text(if (raw == sourcePlanId) targetPlanId else "$prefix:$raw")
             }
         }
-        return PortableRow(values)
+        return PortableRow(values).remapPracticeConfiguration(spec.tableName) { rawQuestionId ->
+            "$prefix:$rawQuestionId"
+        }
     }
 
     private fun clearPlanForReplacement(database: SupportSQLiteDatabase, planId: String) {
-        StudyPlanGraphDuplicator.TableSpecs.asReversed()
-            .filterNot { it.tableName == "plan_snapshots" }
+        StudyPlanGraphDuplicator.PortabilityTableSpecs.asReversed()
             .forEach { spec -> database.delete(spec.tableName, "studyPlanId = ?", arrayOf(planId)) }
     }
 
@@ -367,6 +545,19 @@ class StudyPlanGraphPortabilityStore(
                 }
             }
         }
+    }
+
+    private fun PortableRow.remapPracticeConfiguration(
+        tableName: String,
+        transform: (String) -> String,
+    ): PortableRow {
+        if (tableName !in PracticeConfigurationTables) return this
+        val configuration = values["configurationJson"]?.value.orEmpty()
+        return withValues(
+            "configurationJson" to text(
+                PracticeConfigurationReferences.remapQuestionIds(configuration, transform),
+            ),
+        )
     }
 
     private fun countPlan(database: SupportSQLiteDatabase, planId: String): Int =
@@ -428,8 +619,8 @@ class StudyPlanGraphPortabilityStore(
         val PrivateStrippedTables = StructureTables + setOf(
             "study_materials", "video_resources", "annexes", "planned_activities", "study_goals",
         )
-        val FullTables = StudyPlanGraphDuplicator.TableSpecs.mapTo(linkedSetOf()) { it.tableName } -
-            "plan_snapshots"
+        val FullTables = StudyPlanGraphDuplicator.PortabilityTableSpecs.mapTo(linkedSetOf()) { it.tableName }
+        val PracticeConfigurationTables = setOf("study_tests", "mock_exams")
         val MergeSkippedTables = setOf(
             "study_targets",
             "exam_stages",

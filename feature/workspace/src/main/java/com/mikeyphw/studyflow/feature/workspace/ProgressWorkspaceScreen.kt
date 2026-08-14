@@ -563,7 +563,10 @@ fun ProgressWorkspaceScreen(
                         onAction = {
                             coroutineScope.launch {
                                 try {
-                                    val result = adaptiveRescheduleManager.applySafePreview(plan)
+                                    val approvedPreview = requireNotNull(reschedulePreview) {
+                                        "Adaptive preview is still loading. Refresh before applying."
+                                    }
+                                    val result = adaptiveRescheduleManager.applySafePreview(plan, approvedPreview)
                                     appliedRescheduleChanges = result.appliedChanges
                                     skippedRescheduleChanges = result.skippedChanges
                                     rescheduleApplyFailed = false

@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow
 
+import android.os.SystemClock
 import android.app.Application
 import android.content.Context
 import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
@@ -144,7 +145,11 @@ private class DefaultAppContainer(
     override val manageStudyDiscovery = ManageStudyDiscovery(studyDiscoveryRepository)
     override val manageStudyCloudSync = ManageStudyCloudSync(studyCloudSyncRepository)
     override val manageStudySchedule = ManageStudySchedule(studyScheduleRepository)
-    override val manageStudySession = ManageStudySession(studySessionRepository, studyPlanRepository)
+    override val manageStudySession = ManageStudySession(
+        repository = studySessionRepository,
+        studyPlanRepository = studyPlanRepository,
+        monotonicClockMillis = SystemClock::elapsedRealtime,
+    )
     override val manageStudyPractice = ManageStudyPractice(studyPracticeRepository, studyPlanRepository)
     override val manageStudyLibrary = ManageStudyLibrary(studyLibraryRepository)
     override val manageStudyReview = ManageStudyReview(studyReviewRepository, studyPracticeRepository)

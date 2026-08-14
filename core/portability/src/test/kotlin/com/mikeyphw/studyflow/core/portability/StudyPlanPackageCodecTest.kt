@@ -42,6 +42,23 @@ class StudyPlanPackageCodecTest {
         }
     }
 
+    @Test
+    fun rejectsArchivesWithTooManyEntries() {
+        val bytes = ByteArrayOutputStream().also { output ->
+            ZipOutputStream(output).use { zip ->
+                repeat(513) { index ->
+                    zip.putNextEntry(ZipEntry("entry-$index.bin"))
+                    zip.write(byteArrayOf(1))
+                    zip.closeEntry()
+                }
+            }
+        }.toByteArray()
+
+        assertThrows(StudyPlanPackageException::class.java) {
+            codec.read(ByteArrayInputStream(bytes))
+        }
+    }
+
     private fun samplePayload() = StudyPlanPackagePayload(
         manifest = StudyPlanPackageManifest(
             applicationVersion = "test",

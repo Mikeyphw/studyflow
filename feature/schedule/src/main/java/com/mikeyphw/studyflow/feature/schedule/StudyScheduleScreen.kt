@@ -157,8 +157,8 @@ fun StudyScheduleScreen(
                                 selected = strategyName == candidate.name,
                                 onClick = {
                                     strategyName = candidate.name
-                                    val strategy = StudyStrategy(
-                                        id = schedule.strategy?.id ?: StudyStrategyId(UUID.randomUUID().toString()),
+                                    val strategy = schedule.strategy?.copy(type = candidate) ?: StudyStrategy(
+                                        id = StudyStrategyId(UUID.randomUUID().toString()),
                                         studyPlanId = plan.id,
                                         type = candidate,
                                         minimumSessionMinutes = 25,
@@ -196,6 +196,7 @@ fun StudyScheduleScreen(
                                             replaceUnlocked = true,
                                         ),
                                         currentRules = schedule.scheduleRules,
+                                        strategy = schedule.strategy,
                                     )
                                 }
                             },
@@ -379,7 +380,7 @@ private fun PlannedActivityCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (activity.isActionable()) {
+                if (activity.status in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED)) {
                     Button(onClick = onComplete) {
                         Icon(Icons.Outlined.CheckCircle, contentDescription = null)
                         Text(stringResource(R.string.mark_complete))
@@ -388,7 +389,9 @@ private fun PlannedActivityCard(
                         Text(stringResource(R.string.mark_missed))
                     }
                 }
-                ConfirmingDeleteButton(onConfirmed = onDelete)
+                if (activity.status != PlannedActivityStatus.IN_PROGRESS) {
+                    ConfirmingDeleteButton(onConfirmed = onDelete)
+                }
             }
         }
     }

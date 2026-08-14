@@ -79,4 +79,6 @@
     <string name="confirm_delete_title">Excluir item?</string>
     <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
     <string name="confirm_delete">Excluir</string>
+    <string name="invalid_time">Informe um horário válido, como 08:30.</string>
+    <string name="invalid_duration">A duração deve ficar entre 5 e 720 minutos.</string>
 </resources>

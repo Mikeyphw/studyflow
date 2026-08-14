@@ -101,7 +101,7 @@ fun SyncFoundationScreen(
                     Text(text = stringResource(R.string.sync_change_count, currentSummary.changeCount))
                 }
             }
-            CloudlessBackupQueueCard(state = state, summary = summary)
+            LocalCheckpointReadinessCard(state = state, summary = summary)
             StudyFlowSectionCard(title = stringResource(R.string.sync_checkpoint_controls_title)) {
                 Text(
                     text = stringResource(R.string.sync_checkpoint_controls_message),
@@ -124,15 +124,15 @@ fun SyncFoundationScreen(
 
 
 @Composable
-private fun CloudlessBackupQueueCard(
+private fun LocalCheckpointReadinessCard(
     state: StudySyncState,
     summary: StudySyncChangeSummary?,
 ) {
-    StudyFlowSectionCard(title = stringResource(R.string.sync_queue_title)) {
+    StudyFlowSectionCard(title = stringResource(R.string.sync_checkpoint_readiness_title)) {
         val currentSummary = summary
         if (currentSummary == null) {
             Text(
-                text = stringResource(R.string.sync_queue_waiting_for_inspection),
+                text = stringResource(R.string.sync_checkpoint_waiting_for_inspection),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
@@ -143,7 +143,7 @@ private fun CloudlessBackupQueueCard(
             )
             Text(
                 text = stringResource(
-                    R.string.sync_queue_summary,
+                    R.string.sync_checkpoint_readiness_summary,
                     queuePlan.readyCount,
                     queuePlan.blockedCount,
                     queuePlan.waitingCount,
@@ -202,8 +202,7 @@ private fun syncConflictPolicyLabel(policy: StudySyncConflictPolicy): Int = when
 
 private fun CloudlessBackupQueueAction.titleRes(): Int = when (this) {
     CloudlessBackupQueueAction.PREPARE_CHECKPOINT -> R.string.sync_queue_prepare_checkpoint
-    CloudlessBackupQueueAction.EXPORT_LOCAL_BACKUP -> R.string.sync_queue_export_backup
-    CloudlessBackupQueueAction.VERIFY_BACKUP_FRESHNESS -> R.string.sync_queue_verify_freshness
+    CloudlessBackupQueueAction.CHECKPOINT_CURRENT -> R.string.sync_checkpoint_current
     CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY -> R.string.sync_queue_review_policy
     CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA -> R.string.sync_queue_wait_for_data
     CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT -> R.string.sync_queue_unblock_checkpoint
@@ -211,8 +210,7 @@ private fun CloudlessBackupQueueAction.titleRes(): Int = when (this) {
 
 private fun CloudlessBackupQueueAction.messageRes(): Int = when (this) {
     CloudlessBackupQueueAction.PREPARE_CHECKPOINT -> R.string.sync_queue_prepare_checkpoint_message
-    CloudlessBackupQueueAction.EXPORT_LOCAL_BACKUP -> R.string.sync_queue_export_backup_message
-    CloudlessBackupQueueAction.VERIFY_BACKUP_FRESHNESS -> R.string.sync_queue_verify_freshness_message
+    CloudlessBackupQueueAction.CHECKPOINT_CURRENT -> R.string.sync_checkpoint_current_message
     CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY -> R.string.sync_queue_review_policy_message
     CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA -> R.string.sync_queue_wait_for_data_message
     CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT -> R.string.sync_queue_unblock_checkpoint_message

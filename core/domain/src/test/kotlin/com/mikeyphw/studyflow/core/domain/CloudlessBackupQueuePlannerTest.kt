@@ -12,7 +12,7 @@ import org.junit.Test
 
 class CloudlessBackupQueuePlannerTest {
     @Test
-    fun queuePreparesCheckpointAndBackupWhenTokenChanged() {
+    fun readinessPreparesCheckpointWithoutClaimingAnExportQueue() {
         val plan = CloudlessBackupQueuePlanner.plan(
             state = syncState(lastToken = "old", pending = 3),
             summary = summary(token = "new", plans = 2),
@@ -22,7 +22,7 @@ class CloudlessBackupQueuePlannerTest {
         assertTrue(plan.actionable)
         assertEquals(0, plan.blockedCount)
         assertTrue(plan.items.any { it.action == CloudlessBackupQueueAction.PREPARE_CHECKPOINT })
-        assertTrue(plan.items.any { it.action == CloudlessBackupQueueAction.EXPORT_LOCAL_BACKUP })
+        assertFalse(plan.items.any { it.action == CloudlessBackupQueueAction.CHECKPOINT_CURRENT })
         assertTrue(plan.items.any { it.action == CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY })
     }
 

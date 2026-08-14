@@ -77,4 +77,6 @@
     <string name="confirm_delete_title">Delete item?</string>
     <string name="confirm_delete_message">This action cannot be undone.</string>
     <string name="confirm_delete">Delete</string>
+    <string name="invalid_time">Enter a valid time such as 08:30.</string>
+    <string name="invalid_duration">Duration must be between 5 and 720 minutes.</string>
 </resources>

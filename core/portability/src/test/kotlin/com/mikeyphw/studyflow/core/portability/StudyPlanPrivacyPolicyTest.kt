@@ -112,7 +112,7 @@ class StudyPlanPrivacyPolicyTest {
         val rawAnnexId = "annex-secret-123"
         val privatePlanId = "private-0123456789abcdefabcd"
         val privateAnnexId = StudyPlanPrivacyPolicy.pseudonymizeIdentifier(privatePlanId, rawAnnexId)
-        val entryName = "annex-payloads/$privateAnnexId/private-annex.pdf"
+        val entryName = "annex-payloads/$privateAnnexId/payload.bin"
         val annexBytes = "private annex bytes".encodeToByteArray()
         val payload = privatePayloadWithAnnex(
             planId = privatePlanId,
@@ -145,7 +145,7 @@ class StudyPlanPrivacyPolicyTest {
                 privatePayloadWithAnnex(
                     planId = "private-0123456789abcdefabcd",
                     annexId = rawAnnexId,
-                    entryName = "annex-payloads/$rawAnnexId/private-annex.pdf",
+                    entryName = "annex-payloads/$rawAnnexId/payload.bin",
                     annexBytes = "private annex bytes".encodeToByteArray(),
                 ),
             )
@@ -153,6 +153,21 @@ class StudyPlanPrivacyPolicyTest {
         } catch (_: IllegalArgumentException) {
             // Expected privacy-integrity failure.
         }
+    }
+
+    @Test
+    fun privateStrippedModeAlwaysRemovesHistoryEvenWithoutExplicitHistoryFlag() {
+        val options = StudyPlanExportOptions(mode = StudyPlanExportMode.PRIVATE_STRIPPED)
+        val excluded = StudyPlanPrivacyPolicy.excludedTableNames(options)
+        val material = StudyPlanPrivacyPolicy.sanitizeRow(
+            "study_materials",
+            row("completedUnits" to integer(7)),
+            options,
+        )
+
+        assertTrue(StudyPlanPrivacyPolicy.HistoryTableNames.all { it in excluded })
+        assertEquals("0", material.values.getValue("completedUnits").value)
+        assertTrue(StudyPlanPrivacyPolicy.HistorySection in StudyPlanPrivacyPolicy.redactedSections(options))
     }
 
     @Test
@@ -180,7 +195,7 @@ class StudyPlanPrivacyPolicyTest {
         val annexPayload = PortableAnnexPayload(
             annexId = annexId,
             entryName = entryName,
-            fileName = "private-annex.pdf",
+            fileName = "private-annex.bin",
             mimeType = "application/pdf",
             byteSize = annexBytes.size.toLong(),
             checksumSha256 = sha256(annexBytes),

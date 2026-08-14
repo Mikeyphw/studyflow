@@ -11,6 +11,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudyType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -48,6 +49,38 @@ class AdaptiveReschedulePlannerTest {
         assertEquals(1, updates.size)
         assertEquals(PlannedActivityStatus.PLANNED, updates.single().status)
         assertEquals(null, updates.single().completedAtEpochMillis)
+    }
+
+    @Test
+    fun theoryRecoveryIsARealTypeChangeInsteadOfAnExecutableNoOp() {
+        val questions = activity("questions", locked = false, status = PlannedActivityStatus.PLANNED).copy(
+            type = StudyActivityType.QUESTIONS,
+            scheduledStartEpochMillis = 2_000_000L,
+        )
+        val schedule = StudySchedule(StudyPlanId("plan"), null, emptyList(), listOf(questions))
+        val preview = AdaptiveReschedulePlanner.preview(
+            plan = plan(),
+            analytics = analytics(overdue = 0, accuracy = 40, adherence = 80),
+            schedule = schedule,
+            readinessScorePercent = 70,
+            nowEpochMillis = 1_000_000L,
+        )
+        val update = AdaptiveReschedulePlanner.applyPreview(schedule.plannedActivities, preview).single()
+
+        assertEquals(StudyActivityType.THEORY, update.type)
+        assertTrue(preview.changes.any { it.type == AdaptiveRescheduleChangeType.ADD_THEORY_BEFORE_QUESTIONS && it.executable })
+    }
+
+    @Test
+    fun scheduleVersionChangesWhenApprovedInputsChange() {
+        val activity = activity("one", locked = false, status = PlannedActivityStatus.PLANNED)
+        val first = StudySchedule(StudyPlanId("plan"), null, emptyList(), listOf(activity))
+        val second = first.copy(plannedActivities = listOf(activity.copy(plannedDurationMinutes = 60)))
+
+        assertNotEquals(
+            AdaptiveReschedulePlanner.scheduleVersionToken(first),
+            AdaptiveReschedulePlanner.scheduleVersionToken(second),
+        )
     }
 
     private fun plan() = StudyPlan(

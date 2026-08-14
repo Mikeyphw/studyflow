@@ -30,7 +30,7 @@ class StudySchedulePlannerTest {
         )
 
         assertEquals(2, activities.size)
-        assertTrue(activities.first().id.value.startsWith("activity-"))
+        assertTrue(activities.first().id.value.startsWith("generated:"))
         assertEquals(45, activities.first().plannedDurationMinutes)
         assertTrue(activities.all { it.studyPlanId == planId })
     }
@@ -42,11 +42,60 @@ class StudySchedulePlannerTest {
             request = ScheduleGenerationRequest(planId, monday, days = 2, replaceUnlocked = true),
             rules = listOf(
                 rule(day = 1, minute = 8 * 60, enabled = false),
-                rule(day = null, minute = null, type = ScheduleRuleType.DAY_OFF),
+                rule(day = 1, minute = null, type = ScheduleRuleType.DAY_OFF),
             ),
         )
 
         assertTrue(activities.isEmpty())
+    }
+
+    @Test
+    fun generationIdsAreDeterministicForTheSameRuleOccurrence() {
+        val monday = utcMillis(2026, Calendar.AUGUST, 3)
+        val request = ScheduleGenerationRequest(planId, monday, days = 7, replaceUnlocked = false)
+        val rules = listOf(rule(day = 1, minute = 8 * 60))
+
+        val first = planner.generateActivities(request, rules)
+        val second = planner.generateActivities(request, rules)
+
+        assertEquals(first.map { it.id }, second.map { it.id })
+    }
+
+    @Test
+    fun dayOffSuppressesTimedRulesOnThatLocalDay() {
+        val monday = utcMillis(2026, Calendar.AUGUST, 3)
+        val activities = planner.generateActivities(
+            request = ScheduleGenerationRequest(planId, monday, days = 1, replaceUnlocked = false),
+            rules = listOf(
+                rule(day = 1, minute = 8 * 60),
+                rule(day = 1, minute = null, type = ScheduleRuleType.DAY_OFF),
+            ),
+        )
+
+        assertTrue(activities.isEmpty())
+    }
+
+
+    @Test
+    fun acceptsExistingOnboardingWeeklyRruleSyntax() {
+        val monday = utcMillis(2026, Calendar.AUGUST, 3)
+        val activities = planner.generateActivities(
+            request = ScheduleGenerationRequest(planId, monday, days = 15, replaceUnlocked = false),
+            rules = listOf(rule(day = 1, minute = 8 * 60, recurrence = "FREQ=WEEKLY")),
+        )
+
+        assertEquals(3, activities.size)
+    }
+
+    @Test
+    fun supportsWeeklyRruleIntervalWithoutChangingLocalWeekSemantics() {
+        val monday = utcMillis(2026, Calendar.AUGUST, 3)
+        val activities = planner.generateActivities(
+            request = ScheduleGenerationRequest(planId, monday, days = 22, replaceUnlocked = false),
+            rules = listOf(rule(day = 1, minute = 8 * 60, recurrence = "FREQ=WEEKLY;INTERVAL=2")),
+        )
+
+        assertEquals(2, activities.size)
     }
 
     @Test
@@ -55,12 +104,33 @@ class StudySchedulePlannerTest {
             request = ScheduleGenerationRequest(planId, startEpochMillis = 0L, days = 7, replaceUnlocked = true),
             rules = listOf(rule(day = 1, minute = 0), rule(day = 2, minute = 0, locked = true)),
         )
-        val now = generated.maxOf { it.scheduledStartEpochMillis ?: 0L } + 1L
+        val now = generated.maxOf {
+            (it.scheduledStartEpochMillis ?: 0L) + it.plannedDurationMinutes * 60_000L
+        } + 5L * 60_000L
         val updates = planner.rebalanceMissedActivities(generated, MissedActivityHandling.RETURN_TO_BACKLOG, now)
 
         assertEquals(1, updates.size)
         assertEquals(PlannedActivityStatus.PLANNED, updates.single().status)
         assertEquals(null, updates.single().scheduledStartEpochMillis)
+    }
+
+
+    @Test
+    fun rebalanceMutationRetainsExpectedSnapshotForAtomicCas() {
+        val generated = planner.generateActivities(
+            request = ScheduleGenerationRequest(planId, startEpochMillis = 0L, days = 7, replaceUnlocked = false),
+            rules = listOf(rule(day = 1, minute = 0)),
+        )
+        val missed = generated.single().copy(status = PlannedActivityStatus.MISSED)
+        val mutations = planner.rebalanceMissedMutations(
+            activities = listOf(missed),
+            handling = MissedActivityHandling.SKIP,
+            nowEpochMillis = (missed.scheduledStartEpochMillis ?: 0L) + 10_000_000L,
+        )
+
+        assertEquals(PlannedActivityStatus.MISSED, mutations.single().expected.status)
+        assertEquals(PlannedActivityStatus.SKIPPED, mutations.single().proposed.status)
+        assertEquals(mutations.single().expected.id, mutations.single().proposed.id)
     }
 
     private fun rule(
@@ -69,6 +139,7 @@ class StudySchedulePlannerTest {
         type: ScheduleRuleType = ScheduleRuleType.RECURRING_BLOCK,
         enabled: Boolean = true,
         locked: Boolean = false,
+        recurrence: String? = null,
     ) = ScheduleRule(
         id = ScheduleRuleId("rule-${day ?: 0}-${minute ?: 0}-${enabled}-${locked}"),
         studyPlanId = planId,
@@ -77,7 +148,7 @@ class StudySchedulePlannerTest {
         dayOfWeek = day,
         startMinuteOfDay = minute,
         durationMinutes = 45,
-        recurrenceRule = null,
+        recurrenceRule = recurrence,
         locked = locked,
         enabled = enabled,
         position = 0,

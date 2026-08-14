@@ -144,6 +144,42 @@ class ManageStudySessionFocusTest {
     }
 
     @Test
+    fun monotonicRuntimeSurvivesWallClockMovingBackward() = runBlocking {
+        var wallNow = 10_000L
+        var monotonicNow = 1_000L
+        val repository = FakeStudySessionRepository()
+        val manager = ManageStudySession(
+            repository = repository,
+            clock = { wallNow },
+            monotonicClockMillis = { monotonicNow },
+        )
+        val planId = StudyPlanId("plan")
+        val started = manager.startQuickSession(
+            sessionId = StudySessionId("clock-jump"),
+            studyPlanId = planId,
+            title = "Monotonic runtime",
+            type = StudyActivityType.THEORY,
+            targetDurationMinutes = 5,
+        )
+
+        wallNow = 5_000L
+        monotonicNow = 61_000L
+        val completed = manager.complete(
+            planId = planId,
+            sessionId = started.id,
+            pagesCompleted = 0,
+            questionsAnswered = 0,
+            correctAnswers = 0,
+            concentrationRating = null,
+            difficultyRating = null,
+            notes = "",
+        )
+
+        assertEquals(60, completed.grossDurationSeconds)
+        assertEquals(started.startedAtEpochMillis, completed.endedAtEpochMillis)
+    }
+
+    @Test
     fun targetDurationRejectsValuesOutsideFocusBounds() = runBlocking {
         val manager = ManageStudySession(FakeStudySessionRepository())
 

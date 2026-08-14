@@ -308,7 +308,9 @@ internal class RoomStudyPlanRepository(
                 }
             }
         }
-        ownership.planIds.forEach(physicalResources::deletePlanOwnedFiles)
+        for (planId in ownership.planIds) {
+            physicalResources.deletePlanOwnedFiles(planId)
+        }
     }
 
     private data class PhysicalOwnership(

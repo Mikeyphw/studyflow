@@ -20,10 +20,14 @@ class ManageStudySession(
     private val repository: StudySessionRepository,
     private val studyPlanRepository: StudyPlanRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val monotonicClockMillis: () -> Long = clock,
 ) {
+    private val runtimeClock = StudySessionRuntimeClock(clock, monotonicClockMillis)
     fun observeSessions(planId: StudyPlanId) = repository.observeSessions(planId)
 
     fun observeActiveSessions(): Flow<List<StudySession>> = repository.observeActiveSessions()
+
+    fun liveActiveSeconds(session: StudySession): Long = runtimeClock.activeSeconds(session)
 
     fun observePreferredSessionMinutes(planId: StudyPlanId): Flow<Int?> =
         studyPlanRepository?.observeStoredPlanSettings(planId)?.map { settings -> settings?.preferredSessionMinutes }
@@ -52,7 +56,7 @@ class ManageStudySession(
         require(repository.findAnyActiveSession() == null) {
             "Finish or cancel the active Study Session before starting another one."
         }
-        return repository.createSession(
+        val created = repository.createSession(
             StudySession(
                 id = sessionId,
                 studyPlanId = studyPlanId,
@@ -76,6 +80,8 @@ class ManageStudySession(
                 targetDurationMinutes = resolvedTargetDurationMinutes,
             ),
         )
+        runtimeClock.register(created)
+        return created
     }
 
     suspend fun startFromActivity(sessionId: StudySessionId, activity: PlannedActivity): StudySession {
@@ -85,7 +91,7 @@ class ManageStudySession(
         require(repository.findAnyActiveSession() == null) {
             "Finish or cancel the active Study Session before starting another one."
         }
-        return repository.createSession(
+        val created = repository.createSession(
             StudySession(
                 id = sessionId,
                 studyPlanId = activity.studyPlanId,
@@ -110,13 +116,15 @@ class ManageStudySession(
             ),
             linkedActivityExpectedStatus = activity.status,
         )
+        runtimeClock.register(created)
+        return created
     }
 
     suspend fun pause(planId: StudyPlanId, sessionId: StudySessionId): StudySession {
         val session = requireSession(planId, sessionId)
         return repository.transitionSession(
             expectedStatus = StudySessionStatus.RUNNING,
-            session = StudySessionTimer.markPaused(session, clock()),
+            session = runtimeClock.markPaused(session),
         )
     }
 
@@ -124,7 +132,7 @@ class ManageStudySession(
         val session = requireSession(planId, sessionId)
         return repository.transitionSession(
             expectedStatus = StudySessionStatus.PAUSED,
-            session = StudySessionTimer.markResumed(session, clock()),
+            session = runtimeClock.markResumed(session),
         )
     }
 
@@ -147,12 +155,10 @@ class ManageStudySession(
         require(difficultyRating == null || difficultyRating in 1..5) {
             "Difficulty rating must be between 1 and 5."
         }
-        val now = clock()
         val current = requireSession(planId, sessionId)
-        val finished = StudySessionTimer.markEnded(
+        val finished = runtimeClock.markEnded(
             session = current,
             status = StudySessionStatus.COMPLETED,
-            nowEpochMillis = now,
         ).copy(
             pagesCompleted = pagesCompleted,
             questionsAnswered = questionsAnswered,
@@ -166,16 +172,15 @@ class ManageStudySession(
             session = finished,
             linkedActivityExpectedStatus = PlannedActivityStatus.IN_PROGRESS,
             linkedActivityStatus = PlannedActivityStatus.COMPLETED,
-            linkedActivityCompletedAtEpochMillis = now,
+            linkedActivityCompletedAtEpochMillis = finished.endedAtEpochMillis,
         )
     }
 
     suspend fun cancel(planId: StudyPlanId, sessionId: StudySessionId): StudySession {
         val current = requireSession(planId, sessionId)
-        val cancelled = StudySessionTimer.markEnded(
+        val cancelled = runtimeClock.markEnded(
             session = current,
             status = StudySessionStatus.CANCELLED,
-            nowEpochMillis = clock(),
         )
         return repository.transitionSession(
             expectedStatus = current.status,
@@ -206,4 +211,105 @@ class ManageStudySession(
         requireNotNull(repository.findSession(planId, sessionId)) {
             "Study Session does not belong to this Study Plan."
         }
+}
+
+
+private class StudySessionRuntimeClock(
+    private val wallClockMillis: () -> Long,
+    private val monotonicClockMillis: () -> Long,
+) {
+    private data class RuntimeState(
+        val status: StudySessionStatus,
+        val activeSeconds: Long,
+        val pausedSeconds: Long,
+        val lastMonotonicMillis: Long,
+    )
+
+    private val states = java.util.concurrent.ConcurrentHashMap<StudySessionId, RuntimeState>()
+
+    fun register(session: StudySession) {
+        states[session.id] = RuntimeState(
+            status = session.status,
+            activeSeconds = session.grossDurationSeconds.coerceAtLeast(0),
+            pausedSeconds = session.pauseDurationSeconds.coerceAtLeast(0),
+            lastMonotonicMillis = monotonicClockMillis(),
+        )
+    }
+
+    fun activeSeconds(session: StudySession): Long = snapshot(session).activeSeconds
+
+    fun markPaused(session: StudySession): StudySession {
+        require(session.status == StudySessionStatus.RUNNING) { "Only a running Study Session can be paused." }
+        val snapshot = snapshot(session)
+        val wallNow = wallClockMillis()
+        states[session.id] = snapshot.copy(
+            status = StudySessionStatus.PAUSED,
+            lastMonotonicMillis = monotonicClockMillis(),
+        )
+        return session.copy(
+            status = StudySessionStatus.PAUSED,
+            endedAtEpochMillis = wallNow.coerceAtLeast(session.startedAtEpochMillis),
+            grossDurationSeconds = snapshot.activeSeconds,
+            pauseDurationSeconds = snapshot.pausedSeconds,
+        )
+    }
+
+    fun markResumed(session: StudySession): StudySession {
+        require(session.status == StudySessionStatus.PAUSED) { "Only a paused Study Session can be resumed." }
+        val snapshot = snapshot(session)
+        states[session.id] = snapshot.copy(
+            status = StudySessionStatus.RUNNING,
+            lastMonotonicMillis = monotonicClockMillis(),
+        )
+        return session.copy(
+            status = StudySessionStatus.RUNNING,
+            endedAtEpochMillis = null,
+            grossDurationSeconds = snapshot.activeSeconds,
+            pauseDurationSeconds = snapshot.pausedSeconds,
+        )
+    }
+
+    fun markEnded(session: StudySession, status: StudySessionStatus): StudySession {
+        require(status in setOf(StudySessionStatus.COMPLETED, StudySessionStatus.CANCELLED)) {
+            "Study Session can only end as completed or cancelled."
+        }
+        val snapshot = snapshot(session)
+        states.remove(session.id)
+        return session.copy(
+            status = status,
+            endedAtEpochMillis = wallClockMillis().coerceAtLeast(session.startedAtEpochMillis),
+            grossDurationSeconds = snapshot.activeSeconds,
+            pauseDurationSeconds = snapshot.pausedSeconds,
+        )
+    }
+
+    @Synchronized
+    private fun snapshot(session: StudySession): RuntimeState {
+        val monotonicNow = monotonicClockMillis()
+        val previous = states[session.id]?.takeIf { it.status == session.status } ?: bootstrap(session, monotonicNow)
+        val deltaSeconds = ((monotonicNow - previous.lastMonotonicMillis).coerceAtLeast(0L) / 1_000L)
+        val updated = when (session.status) {
+            StudySessionStatus.RUNNING -> previous.copy(
+                activeSeconds = previous.activeSeconds + deltaSeconds,
+                lastMonotonicMillis = monotonicNow,
+            )
+            StudySessionStatus.PAUSED -> previous.copy(
+                pausedSeconds = previous.pausedSeconds + deltaSeconds,
+                lastMonotonicMillis = monotonicNow,
+            )
+            StudySessionStatus.COMPLETED, StudySessionStatus.CANCELLED -> previous.copy(lastMonotonicMillis = monotonicNow)
+        }
+        states[session.id] = updated
+        return updated
+    }
+
+    private fun bootstrap(session: StudySession, monotonicNow: Long): RuntimeState {
+        val wallNow = wallClockMillis()
+        return RuntimeState(
+            status = session.status,
+            activeSeconds = StudySessionTimer.activeSeconds(session, wallNow),
+            pausedSeconds = StudySessionTimer.pausedSeconds(session, wallNow),
+            lastMonotonicMillis = monotonicNow,
+        )
+    }
 }

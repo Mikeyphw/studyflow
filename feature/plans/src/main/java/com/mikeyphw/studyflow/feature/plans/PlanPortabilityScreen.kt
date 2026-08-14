@@ -1,6 +1,8 @@
 package com.mikeyphw.studyflow.feature.plans
 
+import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -152,7 +154,10 @@ fun PlanPortabilityScreen(
                     }.onSuccess {
                         message = exportCompleted
                         exportPassword = ""
-                    }.onFailure { message = operationFailure(it) }
+                    }.onFailure { error ->
+                        cleanupFailedExportDestination(context, uri)
+                        message = operationFailure(error)
+                    }
                 } finally {
                     pending.password?.fill('\u0000')
                     busy = false
@@ -644,5 +649,16 @@ private fun ConfirmingSnapshotDeleteButton(enabled: Boolean, onConfirmed: () -> 
                 TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) }
             },
         )
+    }
+}
+
+
+private fun cleanupFailedExportDestination(context: Context, uri: Uri) {
+    val resolver = context.contentResolver
+    val deleted = runCatching {
+        DocumentsContract.isDocumentUri(context, uri) && DocumentsContract.deleteDocument(resolver, uri)
+    }.getOrDefault(false)
+    if (!deleted) {
+        runCatching { resolver.openOutputStream(uri, "wt")?.use { } }
     }
 }

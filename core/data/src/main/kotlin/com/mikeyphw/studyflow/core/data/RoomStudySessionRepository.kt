@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.data
 
 import androidx.room.withTransaction
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.database.entity.DatabaseMetadataEntity
 import com.mikeyphw.studyflow.core.database.mapper.asEntity
 import com.mikeyphw.studyflow.core.database.mapper.asExternalModel
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
@@ -18,6 +19,7 @@ internal class RoomStudySessionRepository(
 ) : StudySessionRepository {
     private val planningDao = database.studyPlanningDao()
     private val planDao = database.studyPlanDao()
+    private val metadataDao = database.databaseMetadataDao()
 
     override fun observeSessions(planId: StudyPlanId): Flow<List<StudySession>> =
         planningDao.observeStudySessions(planId.value).map { sessions ->
@@ -99,6 +101,12 @@ internal class RoomStudySessionRepository(
                     newCompletedAtEpochMillis = null,
                 ) == 1,
             ) { "Planned activity changed before the Study Session could start." }
+            metadataDao.upsert(
+                DatabaseMetadataEntity(
+                    key = sourceActivityStatusKey(session.id),
+                    value = expected.name,
+                ),
+            )
         }
 
         planningDao.upsertStudySession(session.asEntity())
@@ -130,12 +138,20 @@ internal class RoomStudySessionRepository(
             val activityExpected = requireNotNull(linkedActivityExpectedStatus) {
                 "Linked activity transition requires an expected status."
             }
+            val resolvedLinkedStatus = if (session.status == StudySessionStatus.CANCELLED) {
+                metadataDao.findValue(sourceActivityStatusKey(session.id))
+                    ?.let { value -> runCatching { PlannedActivityStatus.valueOf(value) }.getOrNull() }
+                    ?.takeIf { it in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED) }
+                    ?: linkedActivityStatus
+            } else {
+                linkedActivityStatus
+            }
             require(
                 planningDao.compareAndSetPlannedActivityStatus(
                     planId = session.studyPlanId.value,
                     activityId = activityId.value,
                     expectedStatus = activityExpected.name,
-                    newStatus = linkedActivityStatus.name,
+                    newStatus = resolvedLinkedStatus.name,
                     newCompletedAtEpochMillis = linkedActivityCompletedAtEpochMillis,
                 ) == 1,
             ) { "Planned activity changed before the Study Session transition could be applied." }
@@ -170,6 +186,9 @@ internal class RoomStudySessionRepository(
         require(updated == 1) {
             "Study Session changed before the requested transition could be applied."
         }
+        if (session.status in setOf(StudySessionStatus.COMPLETED, StudySessionStatus.CANCELLED)) {
+            metadataDao.delete(sourceActivityStatusKey(session.id))
+        }
         requireNotNull(planningDao.findStudySession(session.studyPlanId.value, session.id.value))
             .asExternalModel()
     }
@@ -180,6 +199,26 @@ internal class RoomStudySessionRepository(
         session.topicId?.let { topicId -> requireTopic(session.studyPlanId, topicId.value) }
         session.materialId?.let { materialId -> requireMaterial(session.studyPlanId, materialId.value) }
         session.videoResourceId?.let { videoId -> requireVideo(session.studyPlanId, videoId.value) }
+        session.plannedActivityId?.let { activityId ->
+            val activity = requireNotNull(planningDao.findPlannedActivity(session.studyPlanId.value, activityId.value)) {
+                "Planned activity does not belong to this Study Plan."
+            }
+            require(activity.subjectId == session.subjectId?.value) {
+                "Study Session subject must match its linked planned activity."
+            }
+            require(activity.topicId == session.topicId?.value) {
+                "Study Session topic must match its linked planned activity."
+            }
+            require(activity.materialId == session.materialId?.value) {
+                "Study Session material must match its linked planned activity."
+            }
+            require(activity.videoResourceId == session.videoResourceId?.value) {
+                "Study Session video must match its linked planned activity."
+            }
+            require(activity.type == session.type.name) {
+                "Study Session type must match its linked planned activity."
+            }
+        }
     }
 
     private fun requireStableSessionIdentity(current: StudySession, proposed: StudySession) {
@@ -258,4 +297,8 @@ internal class RoomStudySessionRepository(
             require(current == proposed) { "A terminal Study Session is immutable." }
         }
     }
+
+    private fun sourceActivityStatusKey(sessionId: StudySessionId): String =
+        "session_source_activity_status:${sessionId.value}"
+
 }

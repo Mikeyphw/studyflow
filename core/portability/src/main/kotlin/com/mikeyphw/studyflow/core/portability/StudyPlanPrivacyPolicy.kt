@@ -36,12 +36,12 @@ object StudyPlanPrivacyPolicy {
     fun redactedSections(options: StudyPlanExportOptions): Set<String> = buildSet {
         if (options.metadataPrivacyMode) add(MetadataSection)
         if (options.redactNotes) add(NotesSection)
-        if (options.redactHistory) add(HistorySection)
+        if (options.redactHistory || options.mode == StudyPlanExportMode.PRIVATE_STRIPPED) add(HistorySection)
     }
 
     fun excludedTableNames(options: StudyPlanExportOptions): Set<String> = buildSet {
         if (options.redactNotes) add("study_notes")
-        if (options.redactHistory) addAll(HistoryTableNames)
+        if (options.redactHistory || options.mode == StudyPlanExportMode.PRIVATE_STRIPPED) addAll(HistoryTableNames)
     }
 
     fun sanitizeRoot(row: PortableRow, options: StudyPlanExportOptions): PortableRow {
@@ -71,7 +71,7 @@ object StudyPlanPrivacyPolicy {
         row: PortableRow,
         options: StudyPlanExportOptions,
     ): PortableRow {
-        if (!options.redactHistory) return row
+        if (!options.redactHistory && options.mode != StudyPlanExportMode.PRIVATE_STRIPPED) return row
         return when (tableName) {
             "subjects" -> row.withValues(
                 "progressPercent" to integer(0),
@@ -127,8 +127,11 @@ object StudyPlanPrivacyPolicy {
                 require(isPrivateIdentifier(annex.annexId)) {
                     "Private package annex identity is invalid."
                 }
-                require(annex.entryName.startsWith("annex-payloads/${annex.annexId}/")) {
-                    "Private package annex entry path does not use its pseudonymous identity."
+                require(annex.entryName == "annex-payloads/${annex.annexId}/payload.bin") {
+                    "Private package annex entry path must not expose the source filename."
+                }
+                require(annex.fileName == "private-annex.bin") {
+                    "Private package annex filename must not expose the source filename."
                 }
             }
             require(manifest.exportedAtEpochMillis % MillisPerDay == 0L) {

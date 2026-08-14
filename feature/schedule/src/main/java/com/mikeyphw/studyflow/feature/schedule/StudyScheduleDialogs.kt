@@ -49,6 +49,9 @@ internal fun ScheduleRuleDialog(
     var duration by rememberSaveable { mutableStateOf("45") }
     var locked by rememberSaveable { mutableStateOf(false) }
     var enabled by rememberSaveable { mutableStateOf(true) }
+    val parsedStart = parseMinuteOfDay(start)
+    val parsedDuration = duration.toIntOrNull()?.takeIf { it in 5..720 }
+    val inputValid = parsedStart != null && parsedDuration != null
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -62,6 +65,10 @@ internal fun ScheduleRuleDialog(
                     label = { Text(stringResource(R.string.start_time)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    isError = start.isNotBlank() && parsedStart == null,
+                    supportingText = if (start.isNotBlank() && parsedStart == null) {
+                        { Text(stringResource(R.string.invalid_time)) }
+                    } else null,
                 )
                 OutlinedTextField(
                     value = duration,
@@ -70,6 +77,10 @@ internal fun ScheduleRuleDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    isError = duration.isNotBlank() && parsedDuration == null,
+                    supportingText = if (duration.isNotBlank() && parsedDuration == null) {
+                        { Text(stringResource(R.string.invalid_duration)) }
+                    } else null,
                 )
                 BooleanRow(
                     label = stringResource(R.string.locked),
@@ -85,12 +96,13 @@ internal fun ScheduleRuleDialog(
         },
         confirmButton = {
             TextButton(
+                enabled = inputValid,
                 onClick = {
                     onSave(
                         ScheduleRuleDraft(
                             dayOfWeek = day,
-                            startMinuteOfDay = parseMinuteOfDay(start) ?: 8 * 60,
-                            durationMinutes = duration.toIntOrNull()?.coerceIn(5, 720) ?: 45,
+                            startMinuteOfDay = requireNotNull(parsedStart),
+                            durationMinutes = requireNotNull(parsedDuration),
                             locked = locked,
                             enabled = enabled,
                         ),
@@ -112,6 +124,7 @@ internal fun PlannedActivityDialog(
     var typeName by rememberSaveable { mutableStateOf(StudyActivityType.THEORY.name) }
     var locked by rememberSaveable { mutableStateOf(false) }
     val defaultActivityTitle = stringResource(R.string.default_activity_title)
+    val parsedActivityDuration = duration.toIntOrNull()?.takeIf { it in 5..720 }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -133,6 +146,10 @@ internal fun PlannedActivityDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    isError = duration.isNotBlank() && parsedActivityDuration == null,
+                    supportingText = if (duration.isNotBlank() && parsedActivityDuration == null) {
+                        { Text(stringResource(R.string.invalid_duration)) }
+                    } else null,
                 )
                 BooleanRow(
                     label = stringResource(R.string.locked),
@@ -143,11 +160,12 @@ internal fun PlannedActivityDialog(
         },
         confirmButton = {
             TextButton(
+                enabled = parsedActivityDuration != null,
                 onClick = {
                     onSave(
                         PlannedActivityDraft(
                             title = title.ifBlank { defaultActivityTitle },
-                            durationMinutes = duration.toIntOrNull()?.coerceIn(5, 720) ?: 45,
+                            durationMinutes = requireNotNull(parsedActivityDuration),
                             type = enumValueOf<StudyActivityType>(typeName),
                             locked = locked,
                         ),

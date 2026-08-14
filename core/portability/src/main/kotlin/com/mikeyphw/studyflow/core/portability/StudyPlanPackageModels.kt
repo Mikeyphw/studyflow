@@ -95,13 +95,22 @@ data class StudyPlanPackagePayload(
 data class StudyPlanPackageArchive(
     val payload: StudyPlanPackagePayload,
     val annexPayloadBytes: Map<String, ByteArray> = emptyMap(),
+    val annexPayloadStreams: Map<String, () -> java.io.InputStream> = emptyMap(),
 ) {
     init {
         val declared = payload.manifest.annexPayloads.map { it.entryName }.toSet()
-        require(annexPayloadBytes.keys == declared) {
-            "Annex payload bytes must match the manifest entries."
+        require(annexPayloadBytes.keys.intersect(annexPayloadStreams.keys).isEmpty()) {
+            "Annex payload entries must have exactly one byte or stream source."
+        }
+        require(annexPayloadBytes.keys + annexPayloadStreams.keys == declared) {
+            "Annex payload sources must match the manifest entries."
         }
     }
+
+    fun openAnnexPayload(entryName: String): java.io.InputStream =
+        annexPayloadBytes[entryName]?.inputStream()
+            ?: annexPayloadStreams[entryName]?.invoke()
+            ?: throw StudyPlanPackageException("Missing annex payload source for $entryName.")
 }
 
 @Serializable

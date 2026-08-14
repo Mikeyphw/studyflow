@@ -494,4 +494,5 @@
     <string name="exam_report_action_apply_reschedule">Revisar e aplicar mudanças seguras de reagendamento.</string>
     <string name="exam_report_action_keep_plan">Continuar executando o plano atual.</string>
     <string name="exam_report_privacy_notice">Gerado com dados locais do StudyFlow. A exportação é iniciada pelo usuário, não usa conta na nuvem e omite anotações livres por padrão.</string>
+    <string name="session_loading">A sessão de estudo ainda está carregando. Os controles de foco serão liberados quando o estado da sessão estiver pronto.</string>
 </resources>
