@@ -23,4 +23,20 @@
     <string name="debug_clipboard_label">Diagnósticos do StudyFlow</string>
     <string name="debug_diagnostic_notification_title">Notificação de diagnóstico do StudyFlow</string>
     <string name="debug_diagnostic_notification_body">A entrega de notificações está disponível. Nenhum conteúdo de estudo foi incluído.</string>
+    <string name="reminder_notification_due_reviews_title">Revisões pendentes</string>
+    <plurals name="reminder_notification_due_reviews_body">
+        <item quantity="one">%1$d item de revisão está pendente agora.</item>
+        <item quantity="many">%1$d itens de revisão estão pendentes agora.</item>
+        <item quantity="other">%1$d itens de revisão estão pendentes agora.</item>
+    </plurals>
+    <string name="reminder_notification_planned_activity_body">Seu bloco de estudo planejado está pronto.</string>
+    <string name="reminder_notification_missed_activity_title">Blocos de estudo perdidos</string>
+    <plurals name="reminder_notification_missed_activity_body">
+        <item quantity="one">%1$d atividade precisa de recuperação.</item>
+        <item quantity="many">%1$d atividades precisam de recuperação.</item>
+        <item quantity="other">%1$d atividades precisam de recuperação.</item>
+    </plurals>
+    <string name="reminder_notification_daily_summary_body">Seu resumo diário de estudos está disponível.</string>
+    <string name="widget_loading_title">StudyFlow</string>
+    <string name="widget_loading_body">Atualizando o resumo de estudos de hoje…</string>
 </resources>

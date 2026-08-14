@@ -15,6 +15,17 @@ class SettingsContractTest {
     }
 
     @Test
+    fun `dynamic color switch uses one merged labeled toggle target`() {
+        val source = readSource(
+            modulePath = "src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
+            rootPath = "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
+        )
+        assertTrue(source.contains(".semantics(mergeDescendants = true) {}"))
+        assertTrue(source.contains("role = Role.Switch"))
+        assertTrue(source.contains("onCheckedChange = null"))
+    }
+
+    @Test
     fun `normal settings hide release validation scaffolding`() {
         val source = readSource(
             modulePath = "src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",

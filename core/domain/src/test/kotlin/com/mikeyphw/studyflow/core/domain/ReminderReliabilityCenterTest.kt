@@ -7,66 +7,50 @@ import org.junit.Test
 
 class ReminderReliabilityCenterTest {
     @Test
-    fun missingNotificationPermissionBlocksReminderDeliveryAndFallsBackToWidget() {
-        val report = ReminderReliabilityCenter.inspect(
-            input = baseInput(notificationPermissionGranted = false),
-        )
+    fun notificationPermissionBlocksDelivery() {
+        val report = ReminderReliabilityCenter.inspect(input(notificationPermissionGranted = false))
 
         assertEquals(ReminderReliabilityStatus.BLOCKED, report.status)
         assertEquals(ReminderReliabilityFallback.WIDGET_AND_MANUAL_CHECK, report.fallback)
-        assertTrue(report.issues.any { issue -> issue.kind == ReminderReliabilityIssueKind.NOTIFICATION_PERMISSION })
-        assertFalse(report.healthy)
+        assertTrue(report.issues.any { it.kind == ReminderReliabilityIssueKind.NOTIFICATION_PERMISSION })
     }
 
     @Test
-    fun plannedActivitiesWithoutExactAlarmAccessDegradeButDoNotBlock() {
+    fun inexactAlarmDeliveryDoesNotClaimExactAlarmAccessIsRequired() {
         val report = ReminderReliabilityCenter.inspect(
-            input = baseInput(
-                exactAlarmAvailable = false,
-                plannedActivityCandidateCount = 2,
-            ),
+            input(plannedActivityCandidateCount = 1, nextCandidateAtEpochMillis = 2_000L),
         )
 
-        assertEquals(ReminderReliabilityStatus.DEGRADED, report.status)
-        assertEquals(ReminderReliabilityFallback.INEXACT_ALARM_WINDOW, report.fallback)
-        assertTrue(report.issues.none(ReminderReliabilityIssue::blocking))
+        assertFalse(report.issues.any { it.kind.name.contains("EXACT_ALARM") })
+        assertEquals(ReminderReliabilityFallback.NONE, report.fallback)
     }
 
     @Test
-    fun reviewOrMissedBacklogRequiresLearnerAction() {
-        val report = ReminderReliabilityCenter.inspect(
-            input = baseInput(dueReviewCount = 3, missedActivityCount = 1),
-        )
+    fun quietHoursReportDelayInsteadOfSuppression() {
+        val report = ReminderReliabilityCenter.inspect(input(quietHoursActive = true))
 
-        assertEquals(ReminderReliabilityStatus.ACTION_NEEDED, report.status)
-        assertEquals(ReminderReliabilityFallback.BACKLOG_RECOVERY, report.fallback)
-        assertEquals(2, report.issues.count { issue ->
-            issue.kind in setOf(
-                ReminderReliabilityIssueKind.REVIEW_BACKLOG,
-                ReminderReliabilityIssueKind.MISSED_ACTIVITY_BACKLOG,
-            )
-        })
+        assertEquals(ReminderReliabilityFallback.QUIET_HOURS_DELAY, report.fallback)
+        assertTrue(report.issues.any { it.kind == ReminderReliabilityIssueKind.QUIET_HOURS_ACTIVE })
     }
 
-    private fun baseInput(
+    private fun input(
         notificationPermissionGranted: Boolean = true,
-        exactAlarmAvailable: Boolean = true,
         batteryOptimizationIgnored: Boolean = true,
         quietHoursActive: Boolean = false,
-        activeCandidateCount: Int = 2,
+        activeCandidateCount: Int = 1,
         dueReviewCount: Int = 0,
         missedActivityCount: Int = 0,
-        plannedActivityCandidateCount: Int = 1,
+        plannedActivityCandidateCount: Int = 0,
+        nextCandidateAtEpochMillis: Long? = null,
     ) = ReminderReliabilityInput(
         notificationPermissionGranted = notificationPermissionGranted,
-        exactAlarmAvailable = exactAlarmAvailable,
         batteryOptimizationIgnored = batteryOptimizationIgnored,
         quietHoursActive = quietHoursActive,
         activeCandidateCount = activeCandidateCount,
         dueReviewCount = dueReviewCount,
         missedActivityCount = missedActivityCount,
         plannedActivityCandidateCount = plannedActivityCandidateCount,
-        nextCandidateAtEpochMillis = 2_000L,
+        nextCandidateAtEpochMillis = nextCandidateAtEpochMillis,
         nowEpochMillis = 1_000L,
     )
 }

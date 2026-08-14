@@ -1,7 +1,6 @@
 package com.mikeyphw.studyflow.feature.settings
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -16,25 +17,47 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
 import com.mikeyphw.studyflow.core.model.ThemeMode
+import kotlinx.coroutines.launch
+
+private sealed interface SettingsMutation {
+    data class Language(val value: AppLanguage) : SettingsMutation
+    data class Theme(val value: ThemeMode) : SettingsMutation
+    data class DynamicColor(val value: Boolean) : SettingsMutation
+}
+
+private sealed interface SettingsOperationState {
+    data object Idle : SettingsOperationState
+    data class Running(val mutation: SettingsMutation) : SettingsOperationState
+    data class Succeeded(val mutation: SettingsMutation) : SettingsOperationState
+    data class Failed(val mutation: SettingsMutation) : SettingsOperationState
+}
 
 @Composable
 fun SettingsScreen(
     preferences: AppPreferences,
     hasDefaultPlan: Boolean,
     syncState: StudySyncState,
-    onLanguageChanged: (AppLanguage) -> Unit,
-    onThemeModeChanged: (ThemeMode) -> Unit,
-    onDynamicColorChanged: (Boolean) -> Unit,
+    onLanguageChanged: suspend (AppLanguage) -> Unit,
+    onThemeModeChanged: suspend (ThemeMode) -> Unit,
+    onDynamicColorChanged: suspend (Boolean) -> Unit,
     onOpenDefaultPlanBackup: () -> Unit,
     onOpenDefaultPlanReminders: () -> Unit,
     onOpenPrivacyCenter: () -> Unit,
@@ -43,6 +66,28 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     diagnosticsAvailable: Boolean = true,
 ) {
+    val scope = rememberCoroutineScope()
+    var operationState by remember { mutableStateOf<SettingsOperationState>(SettingsOperationState.Idle) }
+
+    fun execute(mutation: SettingsMutation) {
+        if (operationState is SettingsOperationState.Running) return
+        operationState = SettingsOperationState.Running(mutation)
+        scope.launch {
+            val result = runRecoverableOperation {
+                when (mutation) {
+                    is SettingsMutation.Language -> onLanguageChanged(mutation.value)
+                    is SettingsMutation.Theme -> onThemeModeChanged(mutation.value)
+                    is SettingsMutation.DynamicColor -> onDynamicColorChanged(mutation.value)
+                }
+            }
+            operationState = if (result.isSuccess) {
+                SettingsOperationState.Succeeded(mutation)
+            } else {
+                SettingsOperationState.Failed(mutation)
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -60,12 +105,16 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        SettingsOperationStatus(
+            state = operationState,
+            onRetry = { failed -> execute(failed.mutation) },
+        )
         StudyFlowSectionCard(title = stringResource(R.string.language_title)) {
             AppLanguage.entries.forEach { language ->
                 SelectionRow(
                     label = stringResource(languageLabel(language)),
                     selected = preferences.language == language,
-                    onClick = { onLanguageChanged(language) },
+                    onClick = { execute(SettingsMutation.Language(language)) },
                 )
             }
         }
@@ -74,11 +123,18 @@ fun SettingsScreen(
                 SelectionRow(
                     label = stringResource(themeLabel(themeMode)),
                     selected = preferences.themeMode == themeMode,
-                    onClick = { onThemeModeChanged(themeMode) },
+                    onClick = { execute(SettingsMutation.Theme(themeMode)) },
                 )
             }
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {}
+                    .toggleable(
+                        value = preferences.dynamicColorEnabled,
+                        role = Role.Switch,
+                        onValueChange = { execute(SettingsMutation.DynamicColor(it)) },
+                    ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -92,7 +148,7 @@ fun SettingsScreen(
                 }
                 Switch(
                     checked = preferences.dynamicColorEnabled,
-                    onCheckedChange = onDynamicColorChanged,
+                    onCheckedChange = null,
                 )
             }
         }
@@ -155,6 +211,31 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun SettingsOperationStatus(
+    state: SettingsOperationState,
+    onRetry: (SettingsOperationState.Failed) -> Unit,
+) {
+    when (state) {
+        SettingsOperationState.Idle -> Unit
+        is SettingsOperationState.Running -> StudyFlowSectionCard(title = stringResource(R.string.settings_operation_title)) {
+            Text(stringResource(R.string.settings_operation_running))
+        }
+        is SettingsOperationState.Succeeded -> StudyFlowSectionCard(title = stringResource(R.string.settings_operation_title)) {
+            Text(stringResource(R.string.settings_operation_succeeded))
+        }
+        is SettingsOperationState.Failed -> StudyFlowSectionCard(title = stringResource(R.string.settings_operation_title)) {
+            Text(
+                text = stringResource(R.string.settings_operation_failed),
+                color = MaterialTheme.colorScheme.error,
+            )
+            Button(onClick = { onRetry(state) }) {
+                Text(stringResource(R.string.retry))
+            }
+        }
+    }
+}
+
+@Composable
 private fun SelectionRow(
     label: String,
     selected: Boolean,
@@ -163,11 +244,15 @@ private fun SelectionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .selectable(
+                selected = selected,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onClick)
+        RadioButton(selected = selected, onClick = null)
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
     }
 }

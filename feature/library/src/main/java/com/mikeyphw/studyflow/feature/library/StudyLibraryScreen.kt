@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyResourceViewer
@@ -89,7 +90,7 @@ fun StudyLibraryScreen(
     val annexPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             coroutineScope.launch {
-                runCatching {
+                runRecoverableOperation {
                     val displayName = context.contentResolver.displayName(uri)
                     val byteSize = context.contentResolver.byteSize(uri)
                     val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
@@ -110,7 +111,7 @@ fun StudyLibraryScreen(
     val annexLinkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             coroutineScope.launch {
-                runCatching {
+                runRecoverableOperation {
                     annexFiles.linkDocument(
                         studyPlanId = plan.id,
                         displayName = context.contentResolver.displayName(uri),

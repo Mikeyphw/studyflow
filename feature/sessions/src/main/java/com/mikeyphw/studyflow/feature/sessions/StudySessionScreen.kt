@@ -127,7 +127,7 @@ fun StudySessionScreen(
                 snackbar.showSnackbar(success)
             } catch (cancelled: java.util.concurrent.CancellationException) {
                 throw cancelled
-            } catch (_: Throwable) {
+            } catch (_: Exception) {
                 snackbar.showSnackbar(operationFailed)
             } finally {
                 mutationInFlight = false

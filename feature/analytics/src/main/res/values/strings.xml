@@ -25,4 +25,14 @@
     </plurals>
     <string name="percent_value">%1$d%%</string>
     <string name="ease_value">%1$.2f</string>
+    <string name="insight_overdue_reviews_title">Overdue reviews</string>
+    <string name="insight_overdue_reviews_message">Review backlog needs attention before adding more new content.</string>
+    <string name="insight_schedule_drift_title">Schedule drift</string>
+    <string name="insight_schedule_drift_message">Recent sessions are happening, but many planned blocks were missed.</string>
+    <string name="insight_accuracy_risk_title">Accuracy risk</string>
+    <string name="insight_accuracy_risk_message">Question accuracy suggests theory review before another timed set.</string>
+    <string name="insight_weak_areas_title">Weak areas detected</string>
+    <string name="insight_weak_areas_message">Focus the next study cycle on the lowest mastery topics.</string>
+    <string name="insight_stable_plan_title">Stable plan</string>
+    <string name="insight_stable_plan_message">No critical analytics alerts. Keep executing the plan.</string>
 </resources>

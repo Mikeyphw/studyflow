@@ -52,6 +52,7 @@ class SamplePlanProvisioner internal constructor(
     private val applicationScope: CoroutineScope,
     private val repository: SamplePlanProvisioningRepository,
     private val preferencesRepository: AppPreferencesRepository,
+    private val journal: SamplePlanProvisioningJournal = InMemorySamplePlanProvisioningJournal(),
 ) {
     private val mutex = Mutex()
     private var inFlight: InFlightProvisioning? = null
@@ -76,8 +77,8 @@ class SamplePlanProvisioner internal constructor(
                 )
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Throwable) {
-                // The process-scoped state already exposes the failure to the onboarding UI.
+            } catch (_: Exception) {
+                // The process-scoped state already exposes the recoverable failure to the onboarding UI.
             }
         }
     }
@@ -85,6 +86,7 @@ class SamplePlanProvisioner internal constructor(
     fun consumeCompletion(planId: StudyPlanId) {
         val current = _state.value
         if (current is SamplePlanProvisioningState.Completed && current.planId == planId) {
+            journal.consume(current.template, current.planId)
             _state.value = SamplePlanProvisioningState.Idle
         }
     }
@@ -125,7 +127,7 @@ class SamplePlanProvisioner internal constructor(
                 } catch (cancelled: CancellationException) {
                     _state.value = SamplePlanProvisioningState.Idle
                     throw cancelled
-                } catch (error: Throwable) {
+                } catch (error: Exception) {
                     _state.value = SamplePlanProvisioningState.Failed(
                         blueprint.template,
                         error.message ?: "Sample Study Plan provisioning failed.",
@@ -148,6 +150,22 @@ class SamplePlanProvisioner internal constructor(
         return job.await()
     }
 
+    suspend fun recoverPendingCompletion() {
+        val pending = journal.pending() ?: return
+        val provisioningKey = "onboarding-sample:${pending.template.name}"
+        val committedPlanId = repository.findProvisionedPlan(provisioningKey)
+        if (committedPlanId == null) {
+            journal.clearPending()
+            if (_state.value is SamplePlanProvisioningState.InFlight) {
+                _state.value = SamplePlanProvisioningState.Idle
+            }
+            return
+        }
+        journal.updateCommittedPlan(pending.template, committedPlanId)
+        preferencesRepository.setDefaultStudyPlanIfAbsent(committedPlanId)
+        _state.value = SamplePlanProvisioningState.Completed(pending.template, committedPlanId)
+    }
+
     private data class InFlightProvisioning(
         val template: OnboardingSamplePlanTemplate,
         val job: Deferred<StudyPlanId>,
@@ -161,6 +179,7 @@ class SamplePlanProvisioner internal constructor(
         topicNames: Map<OnboardingSampleTopicKind, String>,
     ): StudyPlanId {
         val planId = StudyPlanId(UUID.randomUUID().toString())
+        journal.begin(blueprint.template, planId)
         val plan = StudyPlan(
             id = planId,
             name = planName,
@@ -229,6 +248,7 @@ class SamplePlanProvisioner internal constructor(
             ),
         )
         val provisionedPlanId = repository.provision(request)
+        journal.updateCommittedPlan(blueprint.template, provisionedPlanId)
         preferencesRepository.setDefaultStudyPlanIfAbsent(provisionedPlanId)
         return provisionedPlanId
     }

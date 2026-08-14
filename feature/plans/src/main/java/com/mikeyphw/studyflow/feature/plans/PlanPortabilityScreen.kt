@@ -1,11 +1,13 @@
 package com.mikeyphw.studyflow.feature.plans
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,8 +39,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -69,11 +74,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
-private data class PendingExport(
-    val options: StudyPlanExportOptions,
-    val password: CharArray?,
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlanPortabilityScreen(
@@ -85,17 +85,25 @@ fun PlanPortabilityScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var pendingExport by remember { mutableStateOf<PendingExport?>(null) }
-    var selectedImportUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingExportModeName by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingExportIncludeAnnexMetadata by rememberSaveable { mutableStateOf(false) }
+    var pendingExportIncludeAnnexPayloads by rememberSaveable { mutableStateOf(false) }
+    var pendingExportMetadataPrivacy by rememberSaveable { mutableStateOf(false) }
+    var pendingExportRedactNotes by rememberSaveable { mutableStateOf(false) }
+    var pendingExportRedactHistory by rememberSaveable { mutableStateOf(false) }
+    var pendingExportRequiresPassword by rememberSaveable { mutableStateOf(false) }
+    var pendingExportPassword by remember { mutableStateOf<CharArray?>(null) }
+    var selectedImportUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedImportUri = selectedImportUriString?.let(Uri::parse)
     var importPreview by remember { mutableStateOf<StudyPlanImportPreview?>(null) }
     var integrityReport by remember { mutableStateOf<StudyPlanBackupIntegrityReport?>(null) }
     var dryRun by remember { mutableStateOf<StudyPlanRestoreDryRun?>(null) }
     var exportPassword by remember { mutableStateOf("") }
     var importPassword by remember { mutableStateOf("") }
-    var encryptExport by remember { mutableStateOf(false) }
-    var metadataPrivacy by remember { mutableStateOf(false) }
-    var redactNotes by remember { mutableStateOf(false) }
-    var redactHistory by remember { mutableStateOf(false) }
+    var encryptExport by rememberSaveable { mutableStateOf(false) }
+    var metadataPrivacy by rememberSaveable { mutableStateOf(false) }
+    var redactNotes by rememberSaveable { mutableStateOf(false) }
+    var redactHistory by rememberSaveable { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     val snapshotsFlow = remember(plan?.id) {
@@ -112,6 +120,7 @@ fun PlanPortabilityScreen(
     val passwordTooShort = stringResource(R.string.password_too_short)
     val passwordRequired = stringResource(R.string.password_required_for_encrypted)
     val passwordInvalid = stringResource(R.string.password_or_package_invalid)
+    val exportPasswordLost = stringResource(R.string.export_password_reenter_after_recreation)
     val yesLabel = stringResource(R.string.yes)
     val noLabel = stringResource(R.string.no)
 
@@ -138,33 +147,65 @@ fun PlanPortabilityScreen(
         Result.failure(error)
     }
 
+    fun clearPendingExport() {
+        pendingExportPassword?.fill('\u0000')
+        pendingExportPassword = null
+        pendingExportModeName = null
+        pendingExportIncludeAnnexMetadata = false
+        pendingExportIncludeAnnexPayloads = false
+        pendingExportMetadataPrivacy = false
+        pendingExportRedactNotes = false
+        pendingExportRedactHistory = false
+        pendingExportRequiresPassword = false
+    }
+
+    fun restoredPendingExportOptions(): StudyPlanExportOptions? {
+        val modeName = pendingExportModeName ?: return null
+        val mode = StudyPlanExportMode.entries.firstOrNull { it.name == modeName } ?: return null
+        return StudyPlanExportOptions(
+            mode = mode,
+            includeAnnexMetadata = pendingExportIncludeAnnexMetadata,
+            includeAnnexPayloads = pendingExportIncludeAnnexPayloads,
+            metadataPrivacyMode = pendingExportMetadataPrivacy,
+            redactNotes = pendingExportRedactNotes,
+            redactHistory = pendingExportRedactHistory,
+        )
+    }
+
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(StudyPlanPackageMimeType),
     ) { uri ->
-        val pending = pendingExport
-        pendingExport = null
-        if (uri != null && pending != null && plan != null) {
-            scope.launch {
-                busy = true
-                try {
-                    runPortabilityOperation {
-                        context.contentResolver.openOutputStream(uri, "wt")!!.use { output ->
-                            portability.exportPlan(plan.id, pending.options, output, pending.password)
-                        }
-                    }.onSuccess {
-                        message = exportCompleted
-                        exportPassword = ""
-                    }.onFailure { error ->
-                        cleanupFailedExportDestination(context, uri)
-                        message = operationFailure(error)
+        val options = restoredPendingExportOptions()
+        val requiresPassword = pendingExportRequiresPassword
+        val password = pendingExportPassword
+        if (uri == null || options == null || plan == null) {
+            clearPendingExport()
+            return@rememberLauncherForActivityResult
+        }
+        if (requiresPassword && password == null) {
+            cleanupFailedExportDestination(context, uri)
+            clearPendingExport()
+            message = exportPasswordLost
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            busy = true
+            try {
+                runPortabilityOperation {
+                    context.contentResolver.openOutputStream(uri, "wt")!!.use { output ->
+                        portability.exportPlan(plan.id, options, output, password)
                     }
-                } finally {
-                    pending.password?.fill('\u0000')
-                    busy = false
+                }.onSuccess {
+                    message = exportCompleted
+                    exportPassword = ""
+                }.onFailure { error ->
+                    cleanupFailedExportDestination(context, uri)
+                    message = operationFailure(error)
                 }
+            } finally {
+                clearPendingExport()
+                busy = false
             }
-        } else {
-            pending?.password?.fill('\u0000')
         }
     }
 
@@ -188,11 +229,20 @@ fun PlanPortabilityScreen(
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            selectedImportUri = uri
-            importPreview = null
-            integrityReport = null
-            dryRun = null
-            inspect(uri)
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+                selectedImportUriString = uri.toString()
+                importPreview = null
+                integrityReport = null
+                dryRun = null
+                inspect(uri)
+            } catch (_: SecurityException) {
+                selectedImportUriString = null
+                message = failedMessage
+            }
         }
     }
 
@@ -210,7 +260,15 @@ fun PlanPortabilityScreen(
             redactNotes = redactNotes,
             redactHistory = redactHistory,
         )
-        pendingExport = PendingExport(options, if (encryptExport) exportPassword.toCharArray() else null)
+        clearPendingExport()
+        pendingExportModeName = options.mode.name
+        pendingExportIncludeAnnexMetadata = options.includeAnnexMetadata
+        pendingExportIncludeAnnexPayloads = options.includeAnnexPayloads
+        pendingExportMetadataPrivacy = options.metadataPrivacyMode
+        pendingExportRedactNotes = options.redactNotes
+        pendingExportRedactHistory = options.redactHistory
+        pendingExportRequiresPassword = encryptExport
+        pendingExportPassword = if (encryptExport) exportPassword.toCharArray() else null
         val fileName = if (metadataPrivacy) {
             StudyPlanPrivacyPolicy.PrivateExportFileName
         } else {
@@ -270,7 +328,7 @@ fun PlanPortabilityScreen(
                     }
                 }.onSuccess { result ->
                     importPreview = null
-                    selectedImportUri = null
+                    selectedImportUriString = null
                     importPassword = ""
                     message = importCompleted
                     onImported(result.studyPlanId)
@@ -575,8 +633,17 @@ private fun PrivacyToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {}
+            .toggleable(
+                value = checked,
+                role = Role.Checkbox,
+                onValueChange = onCheckedChange,
+            ),
+    ) {
+        Checkbox(checked = checked, onCheckedChange = null)
         Text(label, modifier = Modifier.padding(top = 12.dp))
     }
 }

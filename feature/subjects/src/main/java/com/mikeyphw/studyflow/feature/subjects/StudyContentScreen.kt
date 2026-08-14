@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.feature.subjects
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -53,6 +56,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.SyllabusImportDraft
 import com.mikeyphw.studyflow.core.domain.TopicBulkUpdate
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
@@ -107,12 +113,39 @@ fun StudyContentScreen(
     var expandedSubjectIds by rememberSaveable { mutableStateOf(setOf<String>()) }
     var bulkMode by rememberSaveable { mutableStateOf(false) }
     var selectedTopicIds by rememberSaveable { mutableStateOf(setOf<String>()) }
-    var editingSubject by remember { mutableStateOf<Subject?>(null) }
-    var addingSubject by remember { mutableStateOf(false) }
-    var topicEditorRequest by remember { mutableStateOf<TopicEditorRequest?>(null) }
+    var editingSubjectId by rememberSaveable { mutableStateOf<String?>(null) }
+    var addingSubject by rememberSaveable { mutableStateOf(false) }
+    var topicEditorSubjectId by rememberSaveable { mutableStateOf<String?>(null) }
+    var topicEditorTopicId by rememberSaveable { mutableStateOf<String?>(null) }
+    var topicEditorParentId by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteRequest by remember { mutableStateOf<DeleteRequest?>(null) }
-    var showBulkDialog by remember { mutableStateOf(false) }
-    var showImportDialog by remember { mutableStateOf(false) }
+    var showBulkDialog by rememberSaveable { mutableStateOf(false) }
+    var showImportDialog by rememberSaveable { mutableStateOf(false) }
+
+    val editingSubject = editingSubjectId?.let { id -> syllabus.subjects.firstOrNull { it.id.value == id } }
+    val topicEditorRequest = topicEditorSubjectId?.let { subjectId ->
+        syllabus.subjects.firstOrNull { it.id.value == subjectId }?.let { subject ->
+            TopicEditorRequest(
+                subject = subject,
+                topic = topicEditorTopicId?.let { topicId ->
+                    syllabus.topics.firstOrNull { it.id.value == topicId }
+                },
+                defaultParentTopicId = topicEditorParentId?.let(::TopicId),
+            )
+        }
+    }
+
+    fun openTopicEditor(subject: Subject, topic: Topic?, parent: TopicId?) {
+        topicEditorSubjectId = subject.id.value
+        topicEditorTopicId = topic?.id?.value
+        topicEditorParentId = parent?.value
+    }
+
+    fun closeTopicEditor() {
+        topicEditorSubjectId = null
+        topicEditorTopicId = null
+        topicEditorParentId = null
+    }
 
     val filter = enumValueOrDefault<SyllabusFilter>(filterName, SyllabusFilter.ACTIVE)
     val sort = enumValueOrDefault<SyllabusSort>(sortName, SyllabusSort.POSITION)
@@ -127,7 +160,7 @@ fun StudyContentScreen(
 
     fun launchAction(success: String, action: suspend () -> Unit) {
         scope.launch {
-            runCatching { action() }
+            runRecoverableOperation { action() }
                 .onSuccess { snackbar.showSnackbar(success) }
                 .onFailure { snackbar.showSnackbar(operationFailed) }
         }
@@ -189,7 +222,10 @@ fun StudyContentScreen(
                         label = { Text(stringResource(R.string.search_content)) },
                         singleLine = true,
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         SyllabusFilter.entries.forEach { candidate ->
                             FilterChip(
                                 selected = candidate == filter,
@@ -198,7 +234,10 @@ fun StudyContentScreen(
                             )
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         SyllabusSort.entries.forEach { candidate ->
                             FilterChip(
                                 selected = candidate == sort,
@@ -278,16 +317,10 @@ fun StudyContentScreen(
                                 selectedTopicIds + topicId.value
                             }
                         },
-                        onEditSubject = { editingSubject = visible.subject },
-                        onAddTopic = { parent ->
-                            topicEditorRequest = TopicEditorRequest(visible.subject, null, parent)
-                        },
+                        onEditSubject = { editingSubjectId = visible.subject.id.value },
+                        onAddTopic = { parent -> openTopicEditor(visible.subject, null, parent) },
                         onEditTopic = { topic ->
-                            topicEditorRequest = TopicEditorRequest(
-                                visible.subject,
-                                topic,
-                                topic.parentTopicId,
-                            )
+                            openTopicEditor(visible.subject, topic, topic.parentTopicId)
                         },
                         onToggleSubjectArchived = {
                             launchAction(subjectSaved) {
@@ -335,7 +368,7 @@ fun StudyContentScreen(
         SubjectEditorDialog(
             subject = editingSubject,
             examStages = syllabus.examStages,
-            onDismiss = { addingSubject = false; editingSubject = null },
+            onDismiss = { addingSubject = false; editingSubjectId = null },
             onSave = { value ->
                 val existing = editingSubject
                 val subject = existing?.copy(
@@ -362,7 +395,7 @@ fun StudyContentScreen(
                     examStageId = value.examStageId,
                 )
                 addingSubject = false
-                editingSubject = null
+                editingSubjectId = null
                 launchAction(subjectSaved) { content.saveSubject(subject) }
             },
         )
@@ -375,7 +408,7 @@ fun StudyContentScreen(
             defaultParentTopicId = request.defaultParentTopicId,
             availableParents = syllabus.topics.filter { it.subjectId == request.subject.id && it.id !in excluded },
             examStages = syllabus.examStages,
-            onDismiss = { topicEditorRequest = null },
+            onDismiss = ::closeTopicEditor,
             onSave = { value ->
                 val existing = request.topic
                 val siblings = syllabus.topics.filter {
@@ -413,7 +446,7 @@ fun StudyContentScreen(
                     archived = value.status == ContentProgressStatus.ARCHIVED,
                     examStageId = value.examStageId,
                 )
-                topicEditorRequest = null
+                closeTopicEditor()
                 launchAction(topicSaved) { content.saveTopic(topic) }
             },
         )
@@ -580,12 +613,28 @@ private fun TopicNodeRow(
     onMove: (Topic, Int) -> Unit,
 ) {
     val topic = node.topic
+    val selected = topic.id.value in selectedTopicIds
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = (node.depth * 18).dp, top = 5.dp, bottom = 5.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (bulkMode) {
+                    Modifier
+                        .semantics(mergeDescendants = true) {}
+                        .toggleable(
+                            value = selected,
+                            role = Role.Checkbox,
+                            onValueChange = { onToggleSelected(topic.id) },
+                        )
+                } else {
+                    Modifier
+                },
+            )
+            .padding(start = (node.depth * 18).dp, top = 5.dp, bottom = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (bulkMode) {
-            Checkbox(checked = topic.id.value in selectedTopicIds, onCheckedChange = { onToggleSelected(topic.id) })
+            Checkbox(checked = selected, onCheckedChange = null)
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(topic.name, fontWeight = FontWeight.SemiBold)

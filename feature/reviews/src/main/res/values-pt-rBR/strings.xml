@@ -63,4 +63,11 @@
     <string name="priority_medium">Prioridade média</string>
     <string name="priority_high">Alta prioridade</string>
     <string name="priority_critical">Prioridade crítica</string>
+    <string name="review_operation_running">Salvando alteração de revisão</string>
+    <string name="review_operation_running_message">A alteração de revisão atual ainda está em andamento.</string>
+    <string name="review_operation_failed">Falha na alteração de revisão</string>
+    <string name="review_operation_failed_message">A alteração não foi confirmada. Tentar novamente repete a mesma operação com segurança.</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="review_operation_succeeded">Alteração de revisão salva</string>
+    <string name="review_operation_succeeded_message">A alteração de revisão foi confirmada.</string>
 </resources>

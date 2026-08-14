@@ -51,6 +51,15 @@ internal class RoomSamplePlanProvisioningRepository(
         planId
     }
 
+    override suspend fun findProvisionedPlan(provisioningKey: String): StudyPlanId? {
+        val committedPlanId = database.databaseMetadataDao()
+            .findValue(provisioningMetadataKey(provisioningKey))
+            ?: return null
+        return committedPlanId
+            .takeIf { database.studyPlanDao().countById(it) == 1 }
+            ?.let(::StudyPlanId)
+    }
+
     private fun provisioningMetadataKey(provisioningKey: String): String =
         "sample_provisioning:${provisioningKey.trim()}"
 }

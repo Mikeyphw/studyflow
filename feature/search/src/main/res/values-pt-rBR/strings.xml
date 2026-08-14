@@ -66,4 +66,5 @@
         <item quantity="other">%1$d questões disponíveis</item>
         <item quantity="many">%1$d questões disponíveis</item>
     </plurals>
+    <string name="retry">Tentar novamente</string>
 </resources>

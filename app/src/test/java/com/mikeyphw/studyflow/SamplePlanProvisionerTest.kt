@@ -109,6 +109,27 @@ class SamplePlanProvisionerTest {
         }
     }
 
+
+    @Test
+    fun pendingProvisioningRecoversCommittedPlanAfterProcessDeath() = runBlocking {
+        val committedPlanId = StudyPlanId("committed-sample")
+        val template = OnboardingSamplePlanTemplate.FREE_STUDY_HABIT
+        val repository = RecoveringProvisioningRepository(template, committedPlanId)
+        val preferences = FakeAppPreferencesRepository()
+        val journal = InMemorySamplePlanProvisioningJournal().apply {
+            begin(template, StudyPlanId("proposed-before-process-death"))
+        }
+        val provisioner = SamplePlanProvisioner(this, repository, preferences, journal)
+
+        provisioner.recoverPendingCompletion()
+
+        val completed = provisioner.state.value as SamplePlanProvisioningState.Completed
+        assertEquals(template, completed.template)
+        assertEquals(committedPlanId, completed.planId)
+        assertEquals(committedPlanId, preferences.current.defaultStudyPlanId)
+        assertEquals(committedPlanId, journal.pending()?.proposedPlanId)
+    }
+
     private fun blueprint(template: OnboardingSamplePlanTemplate): OnboardingSamplePlanBlueprint =
         StudyOnboardingSamplePlanWizard.build(OnboardingSamplePlanInput(template))
 
@@ -136,10 +157,24 @@ private class BlockingProvisioningRepository : SamplePlanProvisioningRepository 
         release.await()
         return request.plan.id
     }
+
+    override suspend fun findProvisionedPlan(provisioningKey: String): StudyPlanId? = null
+}
+
+private class RecoveringProvisioningRepository(
+    private val template: OnboardingSamplePlanTemplate,
+    private val committedPlanId: StudyPlanId,
+) : SamplePlanProvisioningRepository {
+    override suspend fun provision(request: SamplePlanProvisioningRequest): StudyPlanId =
+        error("Recovery must not start a second provisioning operation")
+
+    override suspend fun findProvisionedPlan(provisioningKey: String): StudyPlanId? =
+        committedPlanId.takeIf { provisioningKey == "onboarding-sample:${template.name}" }
 }
 
 private class FakeAppPreferencesRepository : AppPreferencesRepository {
     private val state = MutableStateFlow(AppPreferences())
+    val current: AppPreferences get() = state.value
     override val preferences: Flow<AppPreferences> = state
 
     override suspend fun setLanguage(language: AppLanguage) {

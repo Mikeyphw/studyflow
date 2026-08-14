@@ -28,7 +28,6 @@ import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.reminders.StudyReminderChannelId
 import com.mikeyphw.studyflow.reminders.studyReminderPendingIntentIdentityExists
-import com.mikeyphw.studyflow.reminders.studyReminderRequestCode
 import java.util.Calendar
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.CoroutineContext
@@ -265,17 +264,18 @@ private class AndroidReminderLabInspectOperation(
                 ReminderCandidateDiagnostic(
                     kind = candidate.type.toDiagnosticKind(),
                     scheduledAtEpochMillis = candidate.scheduledAtEpochMillis,
-                    effectiveTriggerAtEpochMillis = candidate.scheduledAtEpochMillis
+                    effectiveTriggerAtEpochMillis = candidate.fireAtEpochMillis
                         .coerceAtLeast(now + MinimumFutureDelayMillis),
                     deliveryWindowMillis = StudyReminderPlanner.PlannedActivityDeliveryGraceMillis,
                     lateDeliveryGraceMillis = StudyReminderPlanner.PlannedActivityLateDeliveryGraceMillis,
-                    suppressedByQuietHours = candidate.suppressedByQuietHours,
+                    suppressedByQuietHours = false,
                     pendingIntentIdentityExists = studyReminderPendingIntentIdentityExists(
                         appContext,
                         planId,
                         candidate.type,
+                        candidate.occurrenceId,
                     ),
-                    requestCode = studyReminderRequestCode(planId, candidate.type),
+                    requestCode = 0,
                 )
             },
         )

@@ -10,6 +10,7 @@ fun <T> Flow<T>.asStudyFlowLoadState(): Flow<StudyFlowLoadState<T>> =
     map<T, StudyFlowLoadState<T>> { value -> StudyFlowLoadState.Ready(value) }
         .catch { error ->
             if (error is CancellationException) throw error
+            if (error is Error) throw error
             emit(StudyFlowLoadState.Failed(error::class.java.simpleName.ifBlank { "Exception" }))
         }
 
@@ -18,5 +19,6 @@ fun <T : Any> Flow<T?>.asStudyFlowOptionalLoadState(): Flow<StudyFlowLoadState<T
         if (value == null) StudyFlowLoadState.Missing else StudyFlowLoadState.Ready(value)
     }.catch { error ->
         if (error is CancellationException) throw error
+        if (error is Error) throw error
         emit(StudyFlowLoadState.Failed(error::class.java.simpleName.ifBlank { "Exception" }))
     }

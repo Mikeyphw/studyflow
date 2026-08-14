@@ -354,4 +354,16 @@
     <string name="sync_checkpoint_readiness_summary">Pronto: %1$d · Bloqueado: %2$d · Atual: %3$d</string>
     <string name="sync_checkpoint_current">Checkpoint atualizado</string>
     <string name="sync_checkpoint_current_message">O checkpoint preparado inclui todas as alterações locais rastreadas.</string>
+    <string name="settings_operation_title">Atualização das configurações</string>
+    <string name="settings_operation_running">Salvando alterações…</string>
+    <string name="settings_operation_succeeded">Alterações salvas.</string>
+    <string name="settings_operation_failed">Não foi possível salvar a alteração. Tente novamente a mesma operação.</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="sync_local_changes_failed">Não foi possível inspecionar as alterações locais.</string>
+    <string name="sync_operation_running">Atualizando a base de sincronização</string>
+    <string name="sync_operation_running_message">A operação de sincronização local ainda está em andamento.</string>
+    <string name="sync_operation_failed">Falha na operação de sincronização</string>
+    <string name="sync_operation_failed_message">A operação não foi confirmada. Tentar novamente repete a mesma operação.</string>
+    <string name="sync_operation_succeeded">Operação de sincronização concluída</string>
+    <string name="sync_operation_succeeded_message">A operação de sincronização local foi confirmada.</string>
 </resources>

@@ -353,4 +353,16 @@
     <string name="sync_checkpoint_readiness_summary">Ready: %1$d · Blocked: %2$d · Current: %3$d</string>
     <string name="sync_checkpoint_current">Checkpoint current</string>
     <string name="sync_checkpoint_current_message">The prepared checkpoint includes all tracked local changes.</string>
+    <string name="settings_operation_title">Settings update</string>
+    <string name="settings_operation_running">Saving changes…</string>
+    <string name="settings_operation_succeeded">Changes saved.</string>
+    <string name="settings_operation_failed">The change could not be saved. Retry the same operation.</string>
+    <string name="retry">Retry</string>
+    <string name="sync_local_changes_failed">Could not inspect local changes.</string>
+    <string name="sync_operation_running">Updating sync foundation</string>
+    <string name="sync_operation_running_message">The local sync operation is still in progress.</string>
+    <string name="sync_operation_failed">Sync operation failed</string>
+    <string name="sync_operation_failed_message">The operation was not confirmed. Retry repeats the same operation.</string>
+    <string name="sync_operation_succeeded">Sync operation complete</string>
+    <string name="sync_operation_succeeded_message">The local sync operation was confirmed.</string>
 </resources>

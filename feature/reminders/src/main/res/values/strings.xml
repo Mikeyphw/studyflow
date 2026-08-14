@@ -58,4 +58,18 @@
     <string name="reminder_issue_missed_message">Missed study blocks need recovery before the schedule can feel reliable.</string>
     <string name="reminder_issue_no_candidates">No scheduled candidates</string>
     <string name="reminder_issue_no_candidates_message">There is nothing urgent to notify right now.</string>
+    <string name="notification_permission_disabled_by_system">Notifications are disabled for StudyFlow in system settings.</string>
+    <string name="reminder_due_reviews_title">Due reviews</string>
+    <plurals name="reminder_due_reviews_body">
+        <item quantity="one">%1$d review item is due now.</item>
+        <item quantity="other">%1$d review items are due now.</item>
+    </plurals>
+    <string name="reminder_planned_activity_body">Your next planned study block is ready.</string>
+    <string name="reminder_missed_activity_title">Missed study blocks</string>
+    <plurals name="reminder_missed_activity_body">
+        <item quantity="one">%1$d activity needs recovery.</item>
+        <item quantity="other">%1$d activities need recovery.</item>
+    </plurals>
+    <string name="reminder_daily_summary_body">Your daily study summary is available.</string>
+    <string name="delayed_by_quiet_hours">Delayed until quiet hours end</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.feature.workspace
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -73,7 +76,7 @@ import com.mikeyphw.studyflow.core.model.Topic
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceTab
 import java.util.UUID
-import java.util.concurrent.CancellationException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -203,7 +206,7 @@ fun PracticeWorkspaceScreen(
                                 reviewManager.gradeReview(plan.id, item.id, grade)
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
-                            } catch (_: Throwable) {
+                            } catch (_: Exception) {
                                 snackbar.showSnackbar(operationFailed)
                             }
                         }
@@ -214,7 +217,7 @@ fun PracticeWorkspaceScreen(
                                 reviewManager.skipReview(plan.id, item.id)
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
-                            } catch (_: Throwable) {
+                            } catch (_: Exception) {
                                 snackbar.showSnackbar(operationFailed)
                             }
                         }
@@ -251,7 +254,7 @@ fun PracticeWorkspaceScreen(
                                 snackbar.showSnackbar(mockExamCreated)
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
-                            } catch (_: Throwable) {
+                            } catch (_: Exception) {
                                 snackbar.showSnackbar(operationFailed)
                             }
                         }
@@ -270,7 +273,7 @@ fun PracticeWorkspaceScreen(
                                 )
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
-                            } catch (_: Throwable) {
+                            } catch (_: Exception) {
                                 snackbar.showSnackbar(operationFailed)
                             }
                         }
@@ -298,7 +301,7 @@ fun PracticeWorkspaceScreen(
                                 snackbar.showSnackbar(weaknessDrillCreated)
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
-                            } catch (_: Throwable) {
+                            } catch (_: Exception) {
                                 snackbar.showSnackbar(operationFailed)
                             }
                         }
@@ -670,10 +673,17 @@ private fun MockExamStudioDialog(
                 }
                 item(key = "mock-disputed") {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics(mergeDescendants = true) {}
+                            .toggleable(
+                                value = includeDisputed,
+                                role = Role.Checkbox,
+                                onValueChange = { includeDisputed = it },
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Checkbox(checked = includeDisputed, onCheckedChange = { includeDisputed = it })
+                        Checkbox(checked = includeDisputed, onCheckedChange = null)
                         Text(stringResource(R.string.mock_exam_include_disputed))
                     }
                 }

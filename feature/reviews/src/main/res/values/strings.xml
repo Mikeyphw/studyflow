@@ -57,4 +57,11 @@
     <string name="priority_medium">Medium priority</string>
     <string name="priority_high">High priority</string>
     <string name="priority_critical">Critical priority</string>
+    <string name="review_operation_running">Saving review change</string>
+    <string name="review_operation_running_message">The current review change is still in progress.</string>
+    <string name="review_operation_failed">Review change failed</string>
+    <string name="review_operation_failed_message">The change was not confirmed. Retry repeats the same operation safely.</string>
+    <string name="retry">Retry</string>
+    <string name="review_operation_succeeded">Review change saved</string>
+    <string name="review_operation_succeeded_message">The review change is confirmed.</string>
 </resources>

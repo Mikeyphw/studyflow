@@ -9,7 +9,6 @@ enum class ReminderReliabilityStatus {
 
 enum class ReminderReliabilityIssueKind {
     NOTIFICATION_PERMISSION,
-    EXACT_ALARM_ACCESS,
     BATTERY_OPTIMIZATION,
     QUIET_HOURS_ACTIVE,
     REVIEW_BACKLOG,
@@ -20,7 +19,6 @@ enum class ReminderReliabilityIssueKind {
 enum class ReminderReliabilityFallback {
     NONE,
     WIDGET_AND_MANUAL_CHECK,
-    INEXACT_ALARM_WINDOW,
     QUIET_HOURS_DELAY,
     BACKLOG_RECOVERY,
 }
@@ -32,7 +30,6 @@ data class ReminderReliabilityIssue(
 
 data class ReminderReliabilityInput(
     val notificationPermissionGranted: Boolean,
-    val exactAlarmAvailable: Boolean,
     val batteryOptimizationIgnored: Boolean,
     val quietHoursActive: Boolean,
     val activeCandidateCount: Int,
@@ -71,9 +68,6 @@ object ReminderReliabilityCenter {
             if (!input.notificationPermissionGranted) {
                 add(ReminderReliabilityIssue(ReminderReliabilityIssueKind.NOTIFICATION_PERMISSION, blocking = true))
             }
-            if (input.plannedActivityCandidateCount > 0 && !input.exactAlarmAvailable) {
-                add(ReminderReliabilityIssue(ReminderReliabilityIssueKind.EXACT_ALARM_ACCESS, blocking = false))
-            }
             if (!input.batteryOptimizationIgnored) {
                 add(ReminderReliabilityIssue(ReminderReliabilityIssueKind.BATTERY_OPTIMIZATION, blocking = false))
             }
@@ -92,13 +86,13 @@ object ReminderReliabilityCenter {
         }
         val status = when {
             issues.any(ReminderReliabilityIssue::blocking) -> ReminderReliabilityStatus.BLOCKED
-            issues.any { issue -> issue.kind == ReminderReliabilityIssueKind.MISSED_ACTIVITY_BACKLOG } -> {
+            issues.any { it.kind == ReminderReliabilityIssueKind.MISSED_ACTIVITY_BACKLOG } -> {
                 ReminderReliabilityStatus.ACTION_NEEDED
             }
-            issues.any { issue -> issue.kind == ReminderReliabilityIssueKind.REVIEW_BACKLOG } -> {
+            issues.any { it.kind == ReminderReliabilityIssueKind.REVIEW_BACKLOG } -> {
                 ReminderReliabilityStatus.ACTION_NEEDED
             }
-            issues.any { issue -> issue.kind != ReminderReliabilityIssueKind.NO_SCHEDULED_CANDIDATES } -> {
+            issues.any { it.kind != ReminderReliabilityIssueKind.NO_SCHEDULED_CANDIDATES } -> {
                 ReminderReliabilityStatus.DEGRADED
             }
             else -> ReminderReliabilityStatus.READY
@@ -107,9 +101,6 @@ object ReminderReliabilityCenter {
             !input.notificationPermissionGranted -> ReminderReliabilityFallback.WIDGET_AND_MANUAL_CHECK
             input.quietHoursActive -> ReminderReliabilityFallback.QUIET_HOURS_DELAY
             input.missedActivityCount > 0 || input.dueReviewCount > 0 -> ReminderReliabilityFallback.BACKLOG_RECOVERY
-            input.plannedActivityCandidateCount > 0 && !input.exactAlarmAvailable -> {
-                ReminderReliabilityFallback.INEXACT_ALARM_WINDOW
-            }
             else -> ReminderReliabilityFallback.NONE
         }
         return ReminderReliabilityReport(

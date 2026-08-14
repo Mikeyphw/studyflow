@@ -17,13 +17,19 @@ class StudyReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != StudyReminderAction) return
         val planId = intent.getStringExtra(StudyReminderExtraPlanId)?.takeIf(String::isNotBlank) ?: return
-        val type = intent.getStringExtra(StudyReminderExtraType)
-            ?.let { raw -> runCatching { ReminderNotificationType.valueOf(raw) }.getOrNull() }
+        val typeName = intent.getStringExtra(StudyReminderExtraType) ?: return
+        val type = ReminderNotificationType.entries.firstOrNull { it.name == typeName } ?: return
+        val occurrenceId = intent.getStringExtra(StudyReminderExtraOccurrenceId)
+            ?.takeIf(String::isNotBlank)
             ?: return
         val result = goAsync()
         ReminderReceiverScope.launch {
             try {
-                context.requireStudyFlowAppContainer().reminderDeliveryCoordinator.deliver(StudyPlanId(planId), type)
+                context.requireStudyFlowAppContainer().reminderDeliveryCoordinator.deliver(
+                    StudyPlanId(planId),
+                    type,
+                    occurrenceId,
+                )
             } finally {
                 result.finish()
             }

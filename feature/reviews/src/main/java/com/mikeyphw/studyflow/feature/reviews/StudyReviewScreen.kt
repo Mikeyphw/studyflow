@@ -28,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -41,7 +42,9 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ReviewQueue
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.ErrorEntry
+import com.mikeyphw.studyflow.core.model.ErrorEntryId
 import com.mikeyphw.studyflow.core.model.Flashcard
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.FlashcardId
@@ -53,10 +56,28 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.Topic
 import java.util.UUID
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import androidx.compose.runtime.rememberCoroutineScope
+
+internal sealed interface ReviewMutation {
+    data class ScheduleError(val errorId: ErrorEntryId) : ReviewMutation
+    data class ResolveError(val errorId: ErrorEntryId) : ReviewMutation
+    data class Grade(val reviewId: ReviewItemId, val grade: Int) : ReviewMutation
+    data class Skip(val reviewId: ReviewItemId) : ReviewMutation
+    data class CreateFlashcard(
+        val id: FlashcardId,
+        val front: String,
+        val back: String,
+    ) : ReviewMutation
+}
+
+private sealed interface ReviewOperationState {
+    data object Idle : ReviewOperationState
+    data class Running(val mutation: ReviewMutation) : ReviewOperationState
+    data class Succeeded(val mutation: ReviewMutation) : ReviewOperationState
+    data class Failed(val mutation: ReviewMutation) : ReviewOperationState
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,6 +106,48 @@ fun StudyReviewScreen(
     var filter by rememberSaveable { mutableStateOf(ReviewFilter.DUE) }
     var front by rememberSaveable { mutableStateOf("") }
     var back by rememberSaveable { mutableStateOf("") }
+    var operationState by remember { mutableStateOf<ReviewOperationState>(ReviewOperationState.Idle) }
+
+    fun execute(mutation: ReviewMutation) {
+        if (operationState is ReviewOperationState.Running) return
+        val recoveringFailedMutation = (operationState as? ReviewOperationState.Failed)?.mutation == mutation
+        coroutineScope.launch {
+            operationState = ReviewOperationState.Running(mutation)
+            if (recoveringFailedMutation && queue.alreadyReflects(mutation)) {
+                operationState = ReviewOperationState.Succeeded(mutation)
+                return@launch
+            }
+            runRecoverableOperation {
+                when (mutation) {
+                    is ReviewMutation.ScheduleError -> review.scheduleErrorReview(plan.id, mutation.errorId)
+                    is ReviewMutation.ResolveError -> review.resolveErrorEntry(plan.id, mutation.errorId)
+                    is ReviewMutation.Grade -> review.gradeReview(plan.id, mutation.reviewId, mutation.grade)
+                    is ReviewMutation.Skip -> review.skipReview(plan.id, mutation.reviewId)
+                    is ReviewMutation.CreateFlashcard -> review.createFlashcard(
+                        id = mutation.id,
+                        studyPlanId = plan.id,
+                        subjectId = null,
+                        topicId = null,
+                        type = FlashcardType.BASIC,
+                        front = mutation.front,
+                        back = mutation.back,
+                        clozeText = null,
+                        tags = emptyList(),
+                    )
+                }
+            }.onSuccess {
+                if (mutation is ReviewMutation.CreateFlashcard) {
+                    if (front == mutation.front) front = ""
+                    if (back == mutation.back) back = ""
+                }
+                operationState = ReviewOperationState.Succeeded(mutation)
+            }.onFailure {
+                operationState = ReviewOperationState.Failed(mutation)
+            }
+        }
+    }
+
+    val operationRunning = operationState is ReviewOperationState.Running
 
     Scaffold(
         modifier = modifier,
@@ -110,16 +173,37 @@ fun StudyReviewScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            when (val state = operationState) {
+                ReviewOperationState.Idle -> Unit
+                is ReviewOperationState.Running -> StudyFlowSectionCard(
+                    title = stringResource(R.string.review_operation_running),
+                ) {
+                    Text(stringResource(R.string.review_operation_running_message))
+                }
+                is ReviewOperationState.Succeeded -> StudyFlowSectionCard(
+                    title = stringResource(R.string.review_operation_succeeded),
+                ) {
+                    Text(stringResource(R.string.review_operation_succeeded_message))
+                }
+                is ReviewOperationState.Failed -> StudyFlowSectionCard(
+                    title = stringResource(R.string.review_operation_failed),
+                ) {
+                    Text(
+                        stringResource(R.string.review_operation_failed_message),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    OutlinedButton(onClick = { execute(state.mutation) }) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+            }
             ReviewSummaryCard(queue = queue)
             WrongAnswerNotebookCard(
                 errors = queue.errors,
                 reviewItems = queue.due + queue.upcoming,
-                onScheduleReview = { error ->
-                    coroutineScope.launch { review.scheduleErrorReview(plan.id, error.id) }
-                },
-                onResolve = { error ->
-                    coroutineScope.launch { review.resolveErrorEntry(plan.id, error.id) }
-                },
+                enabled = !operationRunning,
+                onScheduleReview = { error -> execute(ReviewMutation.ScheduleError(error.id)) },
+                onResolve = { error -> execute(ReviewMutation.ResolveError(error.id)) },
             )
             StudyFlowSectionCard(title = stringResource(R.string.add_flashcard)) {
                 OutlinedTextField(
@@ -138,19 +222,15 @@ fun StudyReviewScreen(
                 )
                 Button(
                     onClick = {
-                        createFlashcard(
-                            coroutineScope = coroutineScope,
-                            review = review,
-                            plan = plan,
-                            front = front,
-                            back = back,
-                            onCreated = {
-                                front = ""
-                                back = ""
-                            },
+                        execute(
+                            ReviewMutation.CreateFlashcard(
+                                id = FlashcardId(UUID.randomUUID().toString()),
+                                front = front,
+                                back = back,
+                            ),
                         )
                     },
-                    enabled = front.isNotBlank() && back.isNotBlank(),
+                    enabled = front.isNotBlank() && back.isNotBlank() && !operationRunning,
                 ) {
                     Icon(Icons.Outlined.Add, contentDescription = null)
                     Text(text = stringResource(R.string.create_flashcard))
@@ -175,18 +255,11 @@ fun StudyReviewScreen(
                                 errors = queue.errors,
                                 topics = syllabus?.topics.orEmpty(),
                             ),
-                            onAgain = {
-                                coroutineScope.launch { review.gradeReview(plan.id, item.id, grade = 1) }
-                            },
-                            onGood = {
-                                coroutineScope.launch { review.gradeReview(plan.id, item.id, grade = 4) }
-                            },
-                            onEasy = {
-                                coroutineScope.launch { review.gradeReview(plan.id, item.id, grade = 5) }
-                            },
-                            onSkip = {
-                                coroutineScope.launch { review.skipReview(plan.id, item.id) }
-                            },
+                            enabled = !operationRunning,
+                            onAgain = { execute(ReviewMutation.Grade(item.id, grade = 1)) },
+                            onGood = { execute(ReviewMutation.Grade(item.id, grade = 4)) },
+                            onEasy = { execute(ReviewMutation.Grade(item.id, grade = 5)) },
+                            onSkip = { execute(ReviewMutation.Skip(item.id)) },
                         )
                     }
                 }
@@ -238,6 +311,7 @@ private fun ReviewFilterRow(
 private fun ReviewItemRow(
     item: ReviewItem,
     content: ReviewItemContent,
+    enabled: Boolean,
     onAgain: () -> Unit,
     onGood: () -> Unit,
     onEasy: () -> Unit,
@@ -262,22 +336,30 @@ private fun ReviewItemRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onAgain) {
+            OutlinedButton(onClick = onAgain, enabled = enabled) {
                 Icon(Icons.Outlined.Close, contentDescription = null)
                 Text(text = stringResource(R.string.again))
             }
-            Button(onClick = onGood) {
+            Button(onClick = onGood, enabled = enabled) {
                 Icon(Icons.Outlined.CheckCircle, contentDescription = null)
                 Text(text = stringResource(R.string.good))
             }
-            OutlinedButton(onClick = onEasy) {
+            OutlinedButton(onClick = onEasy, enabled = enabled) {
                 Text(text = stringResource(R.string.easy))
             }
-            OutlinedButton(onClick = onSkip) {
+            OutlinedButton(onClick = onSkip, enabled = enabled) {
                 Text(text = stringResource(R.string.skip))
             }
         }
     }
+}
+
+internal fun ReviewQueue.alreadyReflects(mutation: ReviewMutation): Boolean = when (mutation) {
+    is ReviewMutation.ScheduleError -> (due + upcoming + completedToday).any { it.errorEntryId == mutation.errorId }
+    is ReviewMutation.ResolveError -> errors.none { it.id == mutation.errorId }
+    is ReviewMutation.Grade -> completedToday.any { it.id == mutation.reviewId }
+    is ReviewMutation.Skip -> (due + upcoming).none { it.id == mutation.reviewId }
+    is ReviewMutation.CreateFlashcard -> flashcards.any { it.id == mutation.id }
 }
 
 private data class ReviewItemContent(val title: String, val body: String?)
@@ -316,35 +398,11 @@ private fun reviewItemContent(
     return ReviewItemContent(item.method.name.replace('_', ' '), null)
 }
 
-private fun createFlashcard(
-    coroutineScope: CoroutineScope,
-    review: ManageStudyReview,
-    plan: StudyPlan,
-    front: String,
-    back: String,
-    onCreated: () -> Unit,
-) {
-    coroutineScope.launch {
-        review.createFlashcard(
-            id = FlashcardId(UUID.randomUUID().toString()),
-            studyPlanId = plan.id,
-            subjectId = null,
-            topicId = null,
-            type = FlashcardType.BASIC,
-            front = front,
-            back = back,
-            clozeText = null,
-            tags = emptyList(),
-        )
-        onCreated()
-    }
-}
-
-
 @Composable
 private fun WrongAnswerNotebookCard(
     errors: List<ErrorEntry>,
     reviewItems: List<ReviewItem>,
+    enabled: Boolean,
     onScheduleReview: (ErrorEntry) -> Unit,
     onResolve: (ErrorEntry) -> Unit,
 ) {
@@ -369,6 +427,7 @@ private fun WrongAnswerNotebookCard(
                         error = error,
                         priority = priority,
                         suggestion = com.mikeyphw.studyflow.core.domain.WrongAnswerRemediator.suggestionFor(error),
+                        enabled = enabled,
                         onScheduleReview = { onScheduleReview(error) },
                         onResolve = { onResolve(error) },
                     )
@@ -383,6 +442,7 @@ private fun WrongAnswerRow(
     error: ErrorEntry,
     priority: RemediationPriority,
     suggestion: com.mikeyphw.studyflow.core.domain.RemediationSuggestion,
+    enabled: Boolean,
     onScheduleReview: () -> Unit,
     onResolve: () -> Unit,
 ) {
@@ -409,10 +469,10 @@ private fun WrongAnswerRow(
             Text(error.explanation, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onScheduleReview) {
+            Button(onClick = onScheduleReview, enabled = enabled) {
                 Text(stringResource(R.string.schedule_error_review))
             }
-            OutlinedButton(onClick = onResolve) {
+            OutlinedButton(onClick = onResolve, enabled = enabled) {
                 Text(stringResource(R.string.resolve_error))
             }
         }

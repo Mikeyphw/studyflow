@@ -60,4 +60,5 @@
         <item quantity="one">%1$d question is available</item>
         <item quantity="other">%1$d questions are available</item>
     </plurals>
+    <string name="retry">Retry</string>
 </resources>

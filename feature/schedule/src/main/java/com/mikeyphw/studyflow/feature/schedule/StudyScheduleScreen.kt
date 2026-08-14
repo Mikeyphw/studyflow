@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.model.MissedActivityHandling
 import com.mikeyphw.studyflow.core.model.PlannedActivity
@@ -99,7 +100,7 @@ fun StudyScheduleScreen(
 
     fun launchAction(success: String, action: suspend () -> Unit) {
         scope.launch {
-            runCatching { action() }
+            runRecoverableOperation { action() }
                 .onSuccess { snackbar.showSnackbar(success) }
                 .onFailure { snackbar.showSnackbar(operationFailed) }
         }

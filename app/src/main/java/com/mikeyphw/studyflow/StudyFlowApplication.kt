@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow
 import android.os.SystemClock
 import android.app.Application
 import android.content.Context
+import android.content.res.Configuration
 import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorderProvider
@@ -27,14 +28,20 @@ import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
+import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -72,12 +79,19 @@ class StudyFlowApplication : Application() {
             )
         }
     }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (::container.isInitialized) container.refreshLocalizedSurfaces()
+    }
 }
 
 interface AppContainer : DiagnosticRecorderProvider {
     val initializationState: StateFlow<AppInitializationState>
     fun retryInitialization()
     val appPreferencesRepository: AppPreferencesRepository
+    suspend fun updateAppLanguage(language: AppLanguage)
+    fun refreshLocalizedSurfaces()
     val reminderDeliveryCoordinator: StudyReminderDeliveryCoordinator
     val createStudyPlan: CreateStudyPlan
     val samplePlanProvisioner: SamplePlanProvisioner
@@ -101,13 +115,14 @@ interface AppContainer : DiagnosticRecorderProvider {
 }
 
 private class DefaultAppContainer(
-    application: Application,
+    private val application: Application,
     override val diagnosticRecorder: DiagnosticStore,
 ) : AppContainer {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _initializationState = MutableStateFlow<AppInitializationState>(AppInitializationState.Initializing)
     override val initializationState: StateFlow<AppInitializationState> = _initializationState.asStateFlow()
     private var initializationJob: Job? = null
+    private var widgetInvalidationJob: Job? = null
     private val dataLayer = createStudyFlowDataLayer(
         context = application,
         applicationVersion = BuildConfig.VERSION_NAME,
@@ -127,6 +142,25 @@ private class DefaultAppContainer(
     private val annexFileStorageRepository = dataLayer.annexFileStorageRepository
     override val appPreferencesRepository: AppPreferencesRepository =
         DataStoreAppPreferencesRepository(application)
+    override suspend fun updateAppLanguage(language: AppLanguage) {
+        applicationScope.async {
+            appPreferencesRepository.setLanguage(language)
+            reminderDeliveryCoordinator.refreshLocalizedPresentation()
+        }.await()
+    }
+
+    override fun refreshLocalizedSurfaces() {
+        applicationScope.launch {
+            try {
+                reminderDeliveryCoordinator.refreshLocalizedPresentation()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Locale refresh is recoverable; startup/data readiness remains authoritative.
+            }
+        }
+    }
+
     override val reminderDeliveryCoordinator = StudyReminderDeliveryCoordinator(
         context = application,
         studyPlanRepository = studyPlanRepository,
@@ -139,6 +173,7 @@ private class DefaultAppContainer(
         applicationScope = applicationScope,
         repository = dataLayer.samplePlanProvisioningRepository,
         preferencesRepository = appPreferencesRepository,
+        journal = SharedPreferencesSamplePlanProvisioningJournal(application),
     )
     override val manageStudyPlan = ManageStudyPlan(studyPlanRepository)
     override val manageStudyContent = ManageStudyContent(studyContentRepository)
@@ -184,6 +219,33 @@ private class DefaultAppContainer(
         retryInitialization()
     }
 
+    private fun startWidgetInvalidationObserver() {
+        if (widgetInvalidationJob?.isActive == true) return
+        widgetInvalidationJob = applicationScope.launch {
+            combine(appPreferencesRepository.preferences, manageStudyPlan.plans) { preferences, plans ->
+                Triple(
+                    preferences.defaultStudyPlanId,
+                    preferences.language,
+                    plans.firstOrNull { it.id == preferences.defaultStudyPlanId },
+                )
+            }
+                .distinctUntilChanged()
+                .flatMapLatest { (defaultPlanId, _, canonicalPlan) ->
+                    if (defaultPlanId == null || canonicalPlan == null) {
+                        flowOf(Unit)
+                    } else {
+                        combine(
+                            manageStudySchedule.observeSchedule(defaultPlanId),
+                            manageStudyReview.observeQueue(defaultPlanId),
+                            manageStudySession.observeSessions(defaultPlanId),
+                            manageStudyPlan.observeSettings(defaultPlanId),
+                        ) { _, _, _, _ -> Unit }
+                    }
+                }
+                .collect { StudyFlowWidgetUpdateCoordinator.refreshAll(application) }
+        }
+    }
+
     override fun retryInitialization() {
         if (_initializationState.value is AppInitializationState.Ready) return
         if (initializationJob?.isActive == true) return
@@ -196,7 +258,9 @@ private class DefaultAppContainer(
                 ) {
                     dataLayer.initialize()
                 }
+                samplePlanProvisioner.recoverPendingCompletion()
                 _initializationState.value = AppInitializationState.Ready
+                startWidgetInvalidationObserver()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {

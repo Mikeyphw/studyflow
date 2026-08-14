@@ -55,8 +55,8 @@ class StudyReminderPlannerPhase29BHardeningTest {
         val planned = reminderPlan.notificationCandidates.single { candidate ->
             candidate.type == ReminderNotificationType.PLANNED_ACTIVITY
         }
-        assertEquals("Phase 29B local-time block", planned.title)
-        assertFalse(planned.suppressedByQuietHours)
+        assertEquals("Phase 29B local-time block", planned.content.userLabel)
+        assertFalse(planned.delayedByQuietHours)
         assertFalse(StudyReminderPlanner.shouldRescheduleAfterDelivery(planned, now))
     }
 

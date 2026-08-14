@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -38,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -49,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionState
@@ -57,6 +62,7 @@ import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
+import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
@@ -112,7 +118,7 @@ fun PracticeScreen(
 
     fun launchAction(success: String, action: suspend () -> Unit) {
         scope.launch {
-            runCatching { action() }
+            runRecoverableOperation { action() }
                 .onSuccess { snackbar.showSnackbar(success) }
                 .onFailure { snackbar.showSnackbar(operationFailed) }
         }
@@ -237,7 +243,7 @@ fun PracticeScreen(
                                             scope.launch { snackbar.showSnackbar(needQuestions) }
                                         } else {
                                             scope.launch {
-                                                runCatching {
+                                                runRecoverableOperation {
                                                     practice.createPracticeTest(
                                                         id = StudyTestId(UUID.randomUUID().toString()),
                                                         planId = plan.id,
@@ -256,7 +262,7 @@ fun PracticeScreen(
                                 OutlinedButton(
                                     onClick = {
                                         scope.launch {
-                                            runCatching {
+                                            runRecoverableOperation {
                                                 practice.createMockExam(
                                                     id = MockExamId(UUID.randomUUID().toString()),
                                                     planId = plan.id,
@@ -562,17 +568,54 @@ private fun RecentMocksCard(mocks: List<MockExam>, onStart: (MockExam) -> Unit) 
     }
 }
 
+private val QuestionEditorStateSaver = listSaver<QuestionEditorState, Any>(
+    save = { state ->
+        listOf(
+            state.statement,
+            state.optionA,
+            state.optionB,
+            state.optionC,
+            state.optionD,
+            state.correctAnswer,
+            state.explanation,
+            state.tags,
+            state.difficulty,
+            state.type.name,
+        )
+    },
+    restore = { values ->
+        QuestionEditorState(
+            statement = values[0] as String,
+            optionA = values[1] as String,
+            optionB = values[2] as String,
+            optionC = values[3] as String,
+            optionD = values[4] as String,
+            correctAnswer = values[5] as String,
+            explanation = values[6] as String,
+            tags = values[7] as String,
+            difficulty = values[8] as Int,
+            type = QuestionType.entries.firstOrNull { it.name == values[9] as String }
+                ?: QuestionType.MULTIPLE_CHOICE,
+        )
+    },
+)
+
 @Composable
-private fun QuestionEditorDialog(
+internal fun QuestionEditorDialog(
     onDismiss: () -> Unit,
     onSave: (QuestionEditorState) -> Unit,
 ) {
-    var state by remember { mutableStateOf(QuestionEditorState()) }
+    var state by rememberSaveable(stateSaver = QuestionEditorStateSaver) {
+        mutableStateOf(QuestionEditorState())
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.add_question)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 OutlinedTextField(
                     value = state.statement,
                     onValueChange = { state = state.copy(statement = it) },
@@ -622,7 +665,10 @@ private fun QuestionEditorDialog(
                     label = { Text(stringResource(R.string.tags_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     (1..5).forEach { value ->
                         FilterChip(
                             selected = state.difficulty == value,

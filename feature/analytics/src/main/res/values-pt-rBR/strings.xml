@@ -28,4 +28,14 @@
     </plurals>
     <string name="percent_value">%1$d%%</string>
     <string name="ease_value">%1$.2f</string>
+    <string name="insight_overdue_reviews_title">Revisões atrasadas</string>
+    <string name="insight_overdue_reviews_message">O acúmulo de revisões precisa de atenção antes de adicionar conteúdo novo.</string>
+    <string name="insight_schedule_drift_title">Desvio do cronograma</string>
+    <string name="insight_schedule_drift_message">Há sessões recentes, mas muitos blocos planejados foram perdidos.</string>
+    <string name="insight_accuracy_risk_title">Risco de acerto</string>
+    <string name="insight_accuracy_risk_message">O desempenho em questões sugere revisar a teoria antes de outro bloco cronometrado.</string>
+    <string name="insight_weak_areas_title">Pontos fracos detectados</string>
+    <string name="insight_weak_areas_message">Concentre o próximo ciclo de estudo nos tópicos com menor domínio.</string>
+    <string name="insight_stable_plan_title">Plano estável</string>
+    <string name="insight_stable_plan_message">Nenhum alerta crítico nas análises. Continue executando o plano.</string>
 </resources>

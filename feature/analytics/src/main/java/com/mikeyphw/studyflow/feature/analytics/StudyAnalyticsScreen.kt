@@ -27,6 +27,7 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsSnapshot
+import com.mikeyphw.studyflow.core.domain.StudyInsightKind
 import com.mikeyphw.studyflow.core.model.StudyPlan
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,8 +93,11 @@ fun StudyAnalyticsScreen(
             }
             StudyFlowSectionCard(title = stringResource(R.string.insights)) {
                 snapshot.insights.forEach { insight ->
-                    Text(text = insight.title, style = MaterialTheme.typography.titleMedium)
-                    Text(text = insight.message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = stringResource(insight.kind.titleRes()), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = stringResource(insight.kind.messageRes()),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
             StudyFlowSectionCard(title = stringResource(R.string.analytics_title)) {
@@ -140,4 +144,21 @@ fun StudyAnalyticsScreen(
             }
         }
     }
+}
+
+
+private fun StudyInsightKind.titleRes(): Int = when (this) {
+    StudyInsightKind.OVERDUE_REVIEWS -> R.string.insight_overdue_reviews_title
+    StudyInsightKind.SCHEDULE_DRIFT -> R.string.insight_schedule_drift_title
+    StudyInsightKind.ACCURACY_RISK -> R.string.insight_accuracy_risk_title
+    StudyInsightKind.WEAK_AREAS -> R.string.insight_weak_areas_title
+    StudyInsightKind.STABLE_PLAN -> R.string.insight_stable_plan_title
+}
+
+private fun StudyInsightKind.messageRes(): Int = when (this) {
+    StudyInsightKind.OVERDUE_REVIEWS -> R.string.insight_overdue_reviews_message
+    StudyInsightKind.SCHEDULE_DRIFT -> R.string.insight_schedule_drift_message
+    StudyInsightKind.ACCURACY_RISK -> R.string.insight_accuracy_risk_message
+    StudyInsightKind.WEAK_AREAS -> R.string.insight_weak_areas_message
+    StudyInsightKind.STABLE_PLAN -> R.string.insight_stable_plan_message
 }

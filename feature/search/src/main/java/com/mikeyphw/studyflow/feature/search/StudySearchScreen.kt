@@ -47,6 +47,7 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.GlobalSearchContentType
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
 import com.mikeyphw.studyflow.core.domain.ManageStudyDiscovery
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
 import com.mikeyphw.studyflow.core.domain.StudyRecommendationPresentation
 import com.mikeyphw.studyflow.core.domain.StudyRecommendationReason
@@ -73,17 +74,25 @@ fun StudySearchScreen(
     val scope = rememberCoroutineScope()
     val dataRevision by discovery.observeRevision().collectAsStateWithLifecycle(initialValue = 0L)
     var query by rememberSaveable { mutableStateOf("") }
-    var selectedTypes by remember { mutableStateOf(GlobalSearchContentType.entries.toSet()) }
+    var selectedTypeNames by rememberSaveable {
+        mutableStateOf(GlobalSearchContentType.entries.map { it.name })
+    }
+    val selectedTypes = selectedTypeNames.mapNotNullTo(linkedSetOf()) { name ->
+        GlobalSearchContentType.entries.firstOrNull { it.name == name }
+    }
     var results by remember { mutableStateOf(emptyList<GlobalSearchResult>()) }
     var recommendations by remember { mutableStateOf(emptyList<StudyRecommendation>()) }
     var searched by rememberSaveable { mutableStateOf(false) }
-    var searchBusy by remember { mutableStateOf(false) }
+    var searchBusy by remember {
+        mutableStateOf(searched && query.trim().length >= 2 && selectedTypes.isNotEmpty())
+    }
     var searchFailed by remember { mutableStateOf(false) }
     var recommendationFailed by remember { mutableStateOf(false) }
+    var recommendationRetryNonce by remember { mutableLongStateOf(0L) }
     var searchJob by remember { mutableStateOf<Job?>(null) }
     var searchGeneration by remember { mutableLongStateOf(0L) }
 
-    LaunchedEffect(recommendationPlanId, dataRevision) {
+    LaunchedEffect(recommendationPlanId, dataRevision, recommendationRetryNonce) {
         recommendations = emptyList()
         recommendationFailed = false
         recommendationPlanId?.let { planId ->
@@ -142,8 +151,9 @@ fun StudySearchScreen(
         }
     }
 
-    LaunchedEffect(searched, query, selectedTypes, dataRevision) {
+    LaunchedEffect(searched, query, selectedTypeNames, dataRevision) {
         if (!searched || query.trim().length < 2 || selectedTypes.isEmpty()) return@LaunchedEffect
+        searchBusy = true
         while (true) {
             try {
                 results = discovery.search(query, selectedTypes)
@@ -152,6 +162,8 @@ fun StudySearchScreen(
                 throw cancelled
             } catch (_: Exception) {
                 searchFailed = true
+            } finally {
+                searchBusy = false
             }
             delay(30_000L)
         }
@@ -214,7 +226,7 @@ fun StudySearchScreen(
                         selected = type in selectedTypes,
                         onClick = {
                             val updated = if (type in selectedTypes) selectedTypes - type else selectedTypes + type
-                            selectedTypes = updated
+                            selectedTypeNames = updated.map { it.name }
                             if (searched) runSearch(query, updated, recordHistory = false)
                         },
                         label = { Text(stringResource(type.labelResource())) },
@@ -232,10 +244,15 @@ fun StudySearchScreen(
                 }
             }
             if (recommendationFailed) {
-                Text(
-                    stringResource(R.string.recommendations_failed),
-                    color = MaterialTheme.colorScheme.error,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(R.string.recommendations_failed),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    OutlinedButton(onClick = { recommendationRetryNonce += 1 }) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
             }
             if (recommendations.isNotEmpty()) {
                 StudyFlowSectionCard(title = stringResource(R.string.recommendations_title)) {
@@ -254,10 +271,15 @@ fun StudySearchScreen(
                     title = pluralStringResource(R.plurals.search_results, results.size, results.size),
                 ) {
                     when {
-                        searchFailed -> Text(
-                            stringResource(R.string.search_failed),
-                            color = MaterialTheme.colorScheme.error,
-                        )
+                        searchFailed -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                stringResource(R.string.search_failed),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            OutlinedButton(onClick = { runSearch(query, selectedTypes, recordHistory = false) }) {
+                                Text(stringResource(R.string.retry))
+                            }
+                        }
                         results.isEmpty() && !searchBusy -> Text(
                             stringResource(R.string.no_search_results),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -273,12 +295,19 @@ fun StudySearchScreen(
                                 badge = stringResource(result.type.labelResource()),
                                 onClick = {
                                     scope.launch {
-                                        val resolved = runCatching { discovery.resolveResult(result) }.getOrNull()
-                                        if (resolved != null) {
-                                            onOpenResult(resolved)
-                                        } else {
-                                            results = results.filterNot { it.id == result.id && it.type == result.type && it.studyPlanId == result.studyPlanId }
-                                        }
+                                        runRecoverableOperation { discovery.resolveResult(result) }
+                                            .onSuccess { resolved ->
+                                                if (resolved != null) {
+                                                    onOpenResult(resolved)
+                                                } else {
+                                                    results = results.filterNot { candidate ->
+                                                        candidate.id == result.id &&
+                                                            candidate.type == result.type &&
+                                                            candidate.studyPlanId == result.studyPlanId
+                                                    }
+                                                }
+                                            }
+                                            .onFailure { searchFailed = true }
                                     }
                                 },
                             )

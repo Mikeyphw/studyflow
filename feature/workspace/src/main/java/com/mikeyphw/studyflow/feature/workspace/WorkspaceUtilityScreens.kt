@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -403,7 +404,7 @@ private fun QuickSessionDialog(
             Button(
                 onClick = {
                     scope.launch {
-                        runCatching {
+                        runRecoverableOperation {
                             sessionManager.startQuickSession(
                                 sessionId = StudySessionId(UUID.randomUUID().toString()),
                                 studyPlanId = plan.id,

@@ -34,6 +34,6 @@ class StudyAnalyticsCalculatorTest {
 
         val insights = StudyAnalyticsCalculator.buildInsights(snapshot)
 
-        assertTrue(insights.any { it.title == "Overdue reviews" })
+        assertTrue(insights.any { it.kind == StudyInsightKind.OVERDUE_REVIEWS })
     }
 }

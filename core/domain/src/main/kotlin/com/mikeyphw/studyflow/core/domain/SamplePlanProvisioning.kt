@@ -44,4 +44,6 @@ data class SamplePlanProvisioningRequest(
 
 interface SamplePlanProvisioningRepository {
     suspend fun provision(request: SamplePlanProvisioningRequest): StudyPlanId
+
+    suspend fun findProvisionedPlan(provisioningKey: String): StudyPlanId?
 }

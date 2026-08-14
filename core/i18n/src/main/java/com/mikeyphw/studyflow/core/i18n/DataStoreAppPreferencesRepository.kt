@@ -1,7 +1,9 @@
 package com.mikeyphw.studyflow.core.i18n
 
 import android.content.Context
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -10,35 +12,52 @@ import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.RecentSearchHistory
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.ThemeMode
+import java.io.IOException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
-private val Context.studyFlowPreferencesDataStore by preferencesDataStore(name = "studyflow_preferences")
+private val Context.studyFlowPreferencesDataStore by preferencesDataStore(
+    name = "studyflow_preferences",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
+
+internal class AppPreferencesStorageException(cause: IOException) :
+    IOException("StudyFlow preferences could not be read.", cause)
 
 class DataStoreAppPreferencesRepository(
     context: Context,
 ) : AppPreferencesRepository {
     private val dataStore = context.applicationContext.studyFlowPreferencesDataStore
 
-    override val preferences: Flow<AppPreferences> = dataStore.data.map { values ->
-        AppPreferences(
-            language = values[LanguageKey]
-                ?.let { stored -> AppLanguage.entries.firstOrNull { it.name == stored } }
-                ?: AppLanguage.SYSTEM_DEFAULT,
-            themeMode = values[ThemeModeKey]
-                ?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } }
-                ?: ThemeMode.SYSTEM_DEFAULT,
-            dynamicColorEnabled = values[DynamicColorKey] ?: true,
-            defaultStudyPlanId = values[DefaultStudyPlanKey]
-                ?.takeIf(String::isNotBlank)
-                ?.let(::StudyPlanId),
-            recentSearches = RecentSearchHistory.decode(values[RecentSearchesKey]),
-        )
-    }
+    override val preferences: Flow<AppPreferences> = dataStore.data
+        .catch { error ->
+            // Keep storage failures explicit so the root load-state boundary can surface Failed + Retry.
+            // Corruption is repaired separately by ReplaceFileCorruptionHandler above.
+            if (error is IOException) throw AppPreferencesStorageException(error)
+            throw error
+        }
+        .map { values ->
+            AppPreferences(
+                language = AppLocaleController.currentLanguage(),
+                themeMode = values[ThemeModeKey]
+                    ?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } }
+                    ?: ThemeMode.SYSTEM_DEFAULT,
+                dynamicColorEnabled = values[DynamicColorKey] ?: true,
+                defaultStudyPlanId = values[DefaultStudyPlanKey]
+                    ?.takeIf(String::isNotBlank)
+                    ?.let(::StudyPlanId),
+                recentSearches = RecentSearchHistory.decode(values[RecentSearchesKey]),
+            )
+        }
 
     override suspend fun setLanguage(language: AppLanguage) {
+        withContext(Dispatchers.Main.immediate) {
+            AppLocaleController.apply(language)
+        }
         dataStore.edit { values -> values[LanguageKey] = language.name }
-        AppLocaleController.apply(language)
     }
 
     override suspend fun setThemeMode(themeMode: ThemeMode) {

@@ -9,7 +9,9 @@ import com.mikeyphw.studyflow.core.model.SyllabusFilter
 import com.mikeyphw.studyflow.core.model.SyllabusSort
 import com.mikeyphw.studyflow.core.model.Topic
 import com.mikeyphw.studyflow.core.model.TopicId
+import java.nio.file.Paths
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StudyContentUiModelsTest {
@@ -41,6 +43,17 @@ class StudyContentUiModelsTest {
     @Test
     fun moveItemPreservesEveryValue() {
         assertEquals(listOf("b", "c", "a"), moveItem(listOf("a", "b", "c"), 0, 2))
+    }
+
+    @Test
+    fun bulkTopicSelectionUsesOneMergedCheckboxRow() {
+        val module = Paths.get("src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt")
+        val root = Paths.get("feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt")
+        val source = listOf(module, root).first { it.toFile().isFile }.toFile().readText()
+        val block = source.substringAfter("if (bulkMode) {").substringBefore("Column(modifier")
+        assertTrue(block.contains(".semantics(mergeDescendants = true) {}"))
+        assertTrue(block.contains("role = Role.Checkbox"))
+        assertTrue(block.contains("Checkbox(checked = selected, onCheckedChange = null)"))
     }
 
     private fun sampleSyllabus(): StudySyllabus {

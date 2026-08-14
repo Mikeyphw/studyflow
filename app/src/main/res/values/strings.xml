@@ -23,4 +23,18 @@
     <string name="debug_clipboard_label">StudyFlow diagnostics</string>
     <string name="debug_diagnostic_notification_title">StudyFlow diagnostic notification</string>
     <string name="debug_diagnostic_notification_body">Notification delivery is available. No study content is included.</string>
+    <string name="reminder_notification_due_reviews_title">Due reviews</string>
+    <plurals name="reminder_notification_due_reviews_body">
+        <item quantity="one">%1$d review item is due now.</item>
+        <item quantity="other">%1$d review items are due now.</item>
+    </plurals>
+    <string name="reminder_notification_planned_activity_body">Your planned study block is ready.</string>
+    <string name="reminder_notification_missed_activity_title">Missed study blocks</string>
+    <plurals name="reminder_notification_missed_activity_body">
+        <item quantity="one">%1$d activity needs recovery.</item>
+        <item quantity="other">%1$d activities need recovery.</item>
+    </plurals>
+    <string name="reminder_notification_daily_summary_body">Your daily study summary is available.</string>
+    <string name="widget_loading_title">StudyFlow</string>
+    <string name="widget_loading_body">Refreshing today’s study summary…</string>
 </resources>

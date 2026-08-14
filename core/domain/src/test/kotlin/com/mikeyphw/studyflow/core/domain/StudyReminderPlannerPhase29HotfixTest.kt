@@ -37,8 +37,8 @@ class StudyReminderPlannerPhase29HotfixTest {
         val planned = reminderPlan.notificationCandidates.single { candidate ->
             candidate.type == ReminderNotificationType.PLANNED_ACTIVITY
         }
-        assertEquals("Late but valid block", planned.title)
-        assertFalse(planned.suppressedByQuietHours)
+        assertEquals("Late but valid block", planned.content.userLabel)
+        assertFalse(planned.delayedByQuietHours)
         assertFalse(
             StudyReminderPlanner.shouldRescheduleAfterDelivery(
                 candidate = planned,
@@ -100,8 +100,8 @@ class StudyReminderPlannerPhase29HotfixTest {
         val planned = reminderPlan.notificationCandidates.single { candidate ->
             candidate.type == ReminderNotificationType.PLANNED_ACTIVITY
         }
-        assertTrue(planned.suppressedByQuietHours)
-        assertEquals(0, reminderPlan.activeCandidateCount)
+        assertTrue(planned.delayedByQuietHours)
+        assertTrue(reminderPlan.activeCandidateCount > 0)
     }
 
     @Test

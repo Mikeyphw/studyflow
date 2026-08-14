@@ -49,4 +49,22 @@ class StudyFlowLoadStateFlowTest {
             }
         }
     }
+    @Test
+    fun fatalErrorIsNeverConvertedIntoFailureState() {
+        assertThrows(AssertionError::class.java) {
+            runBlocking {
+                flow<String> {
+                    throw AssertionError("fatal")
+                }.asStudyFlowLoadState().first()
+            }
+        }
+        assertThrows(AssertionError::class.java) {
+            runBlocking {
+                flow<String?> {
+                    throw AssertionError("fatal")
+                }.asStudyFlowOptionalLoadState().first()
+            }
+        }
+    }
+
 }

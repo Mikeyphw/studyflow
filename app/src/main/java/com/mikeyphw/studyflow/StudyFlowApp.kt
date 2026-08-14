@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,7 +70,7 @@ import com.mikeyphw.studyflow.core.domain.StudyRecommendationDestination
 import com.mikeyphw.studyflow.core.domain.destination
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.asStudyFlowOptionalLoadState
-import com.mikeyphw.studyflow.core.i18n.AppLocaleController
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -309,11 +310,6 @@ fun StudyFlowApp(
     val readySyncState =
         (syncStateResult as StudyFlowLoadState.Ready<com.mikeyphw.studyflow.core.model.StudySyncState>).value
 
-    LaunchedEffect(readyPreferences.language) {
-        if (AppLocaleController.currentLanguage() != readyPreferences.language) {
-            AppLocaleController.apply(readyPreferences.language)
-        }
-    }
 
     StudyFlowTheme(
         themeMode = readyPreferences.themeMode,
@@ -677,26 +673,33 @@ internal fun StudyFlowNavHost(
             )
         }
         composable<SyncRoute> {
-            var summary by androidx.compose.runtime.remember {
+            var summary by remember {
                 mutableStateOf<com.mikeyphw.studyflow.core.model.StudySyncChangeSummary?>(null)
             }
-            LaunchedEffect(syncState.lastLocalChangeToken) {
-                summary = container.manageStudyCloudSync.inspectLocalChanges()
+            var summaryFailed by remember { mutableStateOf(false) }
+            var summaryRetryNonce by remember { mutableLongStateOf(0L) }
+            LaunchedEffect(syncState.lastLocalChangeToken, summaryRetryNonce) {
+                runRecoverableOperation { container.manageStudyCloudSync.inspectLocalChanges() }
+                    .onSuccess { value ->
+                        summary = value
+                        summaryFailed = false
+                    }
+                    .onFailure { summaryFailed = true }
             }
             SyncFoundationScreen(
                 state = syncState,
                 summary = summary,
+                summaryFailed = summaryFailed,
+                onRetrySummary = { summaryRetryNonce += 1 },
                 onPrepare = {
-                    coroutineScope.launch {
-                        container.manageStudyCloudSync.prepareLocalFoundation("This device")
-                        summary = container.manageStudyCloudSync.inspectLocalChanges()
-                    }
+                    container.manageStudyCloudSync.prepareLocalFoundation("This device")
+                    summary = container.manageStudyCloudSync.inspectLocalChanges()
+                    summaryFailed = false
                 },
                 onDisable = {
-                    coroutineScope.launch {
-                        container.manageStudyCloudSync.clearLocalFoundation()
-                        summary = container.manageStudyCloudSync.inspectLocalChanges()
-                    }
+                    container.manageStudyCloudSync.clearLocalFoundation()
+                    summary = container.manageStudyCloudSync.inspectLocalChanges()
+                    summaryFailed = false
                 },
                 onBack = navController::popBackStack,
             )
@@ -1006,7 +1009,7 @@ internal fun StudyFlowNavHost(
 
             fun runProbe(kind: RuntimeSmokeProbeKind) {
                 coroutineScope.launch {
-                    runCatching {
+                    val result = runRecoverableOperation {
                         when (kind) {
                             RuntimeSmokeProbeKind.REMINDER_RECONCILIATION -> withDefaultPlan(kind) { planId ->
                                 container.reminderDeliveryCoordinator.reconcilePlan(planId)
@@ -1072,7 +1075,8 @@ internal fun StudyFlowNavHost(
                                 )
                             }
                         }
-                    }.onFailure { failure ->
+                    }
+                    result.exceptionOrNull()?.let { failure ->
                         markBlocked(
                             kind,
                             failure.message ?: failure::class.java.simpleName,
@@ -1095,15 +1099,9 @@ internal fun StudyFlowNavHost(
                 preferences = preferences,
                 hasDefaultPlan = preferences.defaultStudyPlanId != null,
                 syncState = syncState,
-                onLanguageChanged = { language -> coroutineScope.launch {
-                    container.appPreferencesRepository.setLanguage(language)
-                } },
-                onThemeModeChanged = { themeMode -> coroutineScope.launch {
-                    container.appPreferencesRepository.setThemeMode(themeMode)
-                } },
-                onDynamicColorChanged = { enabled -> coroutineScope.launch {
-                    container.appPreferencesRepository.setDynamicColorEnabled(enabled)
-                } },
+                onLanguageChanged = container::updateAppLanguage,
+                onThemeModeChanged = container.appPreferencesRepository::setThemeMode,
+                onDynamicColorChanged = container.appPreferencesRepository::setDynamicColorEnabled,
                 onOpenDefaultPlanBackup = {
                     navController.navigate(
                         PlanPortabilityRoute(preferences.defaultStudyPlanId?.value.orEmpty()),

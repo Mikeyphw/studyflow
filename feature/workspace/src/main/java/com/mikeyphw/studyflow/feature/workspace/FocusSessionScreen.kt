@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.safeDrawing
@@ -64,7 +65,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
-import java.util.concurrent.CancellationException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -110,7 +111,7 @@ fun FocusSessionScreen(
             sessionManager.updateNotes(plan.id, current.id, draftNotes)
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Throwable) {
+        } catch (_: Exception) {
             snackbar.showSnackbar(operationFailed)
         }
     }
@@ -378,7 +379,7 @@ private suspend fun performFocusMutation(
         onSuccess()
     } catch (cancelled: CancellationException) {
         throw cancelled
-    } catch (_: Throwable) {
+    } catch (_: Exception) {
         onFailure()
     } finally {
         onInFlightChange(false)
@@ -402,7 +403,10 @@ private fun FinishFocusDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.finish_session_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 NumericField(stringResource(R.string.pages), pages) { pages = it }
                 NumericField(stringResource(R.string.questions), answered) { answered = it }
                 NumericField(stringResource(R.string.correct), correct) { correct = it }

@@ -624,7 +624,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
         if (plan == null) {
             StudyFlowErrorPane(
                 message = stringResource(R.string.unknown_plan_error),
-                onRetry = navController::popBackStack,
+                onRetry = null,
             )
         } else {
             QuickAddScreen(

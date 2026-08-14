@@ -8,9 +8,16 @@ enum class StudyInsightSeverity {
     CRITICAL,
 }
 
+enum class StudyInsightKind {
+    OVERDUE_REVIEWS,
+    SCHEDULE_DRIFT,
+    ACCURACY_RISK,
+    WEAK_AREAS,
+    STABLE_PLAN,
+}
+
 data class StudyInsight(
-    val title: String,
-    val message: String,
+    val kind: StudyInsightKind,
     val severity: StudyInsightSeverity,
 )
 
@@ -56,49 +63,19 @@ object StudyAnalyticsCalculator {
 
     fun buildInsights(snapshot: StudyAnalyticsSnapshot): List<StudyInsight> = buildList {
         if (snapshot.overdueReviewCount > 0) {
-            add(
-                StudyInsight(
-                    title = "Overdue reviews",
-                    message = "Review backlog needs attention before adding more new content.",
-                    severity = StudyInsightSeverity.WARNING,
-                ),
-            )
+            add(StudyInsight(StudyInsightKind.OVERDUE_REVIEWS, StudyInsightSeverity.WARNING))
         }
         if (snapshot.scheduleAdherencePercent < 60 && snapshot.completedSessionsLastSevenDays > 0) {
-            add(
-                StudyInsight(
-                    title = "Schedule drift",
-                    message = "Recent sessions are happening, but many planned blocks were missed.",
-                    severity = StudyInsightSeverity.WARNING,
-                ),
-            )
+            add(StudyInsight(StudyInsightKind.SCHEDULE_DRIFT, StudyInsightSeverity.WARNING))
         }
         if (snapshot.questionAccuracyPercent in 1..59) {
-            add(
-                StudyInsight(
-                    title = "Accuracy risk",
-                    message = "Question accuracy suggests theory review before another timed set.",
-                    severity = StudyInsightSeverity.CRITICAL,
-                ),
-            )
+            add(StudyInsight(StudyInsightKind.ACCURACY_RISK, StudyInsightSeverity.CRITICAL))
         }
         if (snapshot.weakAreas.isNotEmpty()) {
-            add(
-                StudyInsight(
-                    title = "Weak areas detected",
-                    message = "Focus the next study cycle on the lowest mastery topics.",
-                    severity = StudyInsightSeverity.INFO,
-                ),
-            )
+            add(StudyInsight(StudyInsightKind.WEAK_AREAS, StudyInsightSeverity.INFO))
         }
         if (isEmpty()) {
-            add(
-                StudyInsight(
-                    title = "Stable plan",
-                    message = "No critical analytics alerts. Keep executing the plan.",
-                    severity = StudyInsightSeverity.INFO,
-                ),
-            )
+            add(StudyInsight(StudyInsightKind.STABLE_PLAN, StudyInsightSeverity.INFO))
         }
     }
 }

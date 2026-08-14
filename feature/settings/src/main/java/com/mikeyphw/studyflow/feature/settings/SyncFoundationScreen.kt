@@ -21,6 +21,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
@@ -30,21 +35,56 @@ import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueAction
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueItem
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueuePlanner
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueStatus
+import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
+import kotlinx.coroutines.launch
+
+private enum class SyncMutation { PREPARE, DISABLE }
+
+private sealed interface SyncOperationState {
+    data object Idle : SyncOperationState
+    data class Running(val mutation: SyncMutation) : SyncOperationState
+    data class Succeeded(val mutation: SyncMutation) : SyncOperationState
+    data class Failed(val mutation: SyncMutation) : SyncOperationState
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SyncFoundationScreen(
     state: StudySyncState,
     summary: StudySyncChangeSummary?,
-    onPrepare: () -> Unit,
-    onDisable: () -> Unit,
+    summaryFailed: Boolean,
+    onRetrySummary: () -> Unit,
+    onPrepare: suspend () -> Unit,
+    onDisable: suspend () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scope = rememberCoroutineScope()
+    var operationState by remember { mutableStateOf<SyncOperationState>(SyncOperationState.Idle) }
+
+    fun execute(mutation: SyncMutation) {
+        if (operationState is SyncOperationState.Running) return
+        scope.launch {
+            operationState = SyncOperationState.Running(mutation)
+            runRecoverableOperation {
+                when (mutation) {
+                    SyncMutation.PREPARE -> onPrepare()
+                    SyncMutation.DISABLE -> onDisable()
+                }
+            }.onSuccess {
+                operationState = SyncOperationState.Succeeded(mutation)
+            }.onFailure {
+                operationState = SyncOperationState.Failed(mutation)
+            }
+        }
+    }
+
+    val operationRunning = operationState is SyncOperationState.Running
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -90,7 +130,15 @@ fun SyncFoundationScreen(
             }
             StudyFlowSectionCard(title = stringResource(R.string.sync_local_changes_title)) {
                 val currentSummary = summary
-                if (currentSummary == null) {
+                if (summaryFailed) {
+                    Text(
+                        text = stringResource(R.string.sync_local_changes_failed),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    OutlinedButton(onClick = onRetrySummary) {
+                        Text(stringResource(R.string.retry))
+                    }
+                } else if (currentSummary == null) {
                     Text(
                         text = stringResource(R.string.sync_local_changes_unknown),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -102,17 +150,41 @@ fun SyncFoundationScreen(
                 }
             }
             LocalCheckpointReadinessCard(state = state, summary = summary)
+            when (val operation = operationState) {
+                SyncOperationState.Idle -> Unit
+                is SyncOperationState.Running -> StudyFlowSectionCard(
+                    title = stringResource(R.string.sync_operation_running),
+                ) {
+                    Text(stringResource(R.string.sync_operation_running_message))
+                }
+                is SyncOperationState.Succeeded -> StudyFlowSectionCard(
+                    title = stringResource(R.string.sync_operation_succeeded),
+                ) {
+                    Text(stringResource(R.string.sync_operation_succeeded_message))
+                }
+                is SyncOperationState.Failed -> StudyFlowSectionCard(
+                    title = stringResource(R.string.sync_operation_failed),
+                ) {
+                    Text(
+                        stringResource(R.string.sync_operation_failed_message),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    OutlinedButton(onClick = { execute(operation.mutation) }) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+            }
             StudyFlowSectionCard(title = stringResource(R.string.sync_checkpoint_controls_title)) {
                 Text(
                     text = stringResource(R.string.sync_checkpoint_controls_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = onPrepare, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { execute(SyncMutation.PREPARE) }, enabled = !operationRunning, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.sync_prepare_checkpoint))
                 }
                 OutlinedButton(
-                    onClick = onDisable,
-                    enabled = state.enabled,
+                    onClick = { execute(SyncMutation.DISABLE) },
+                    enabled = state.enabled && !operationRunning,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(R.string.sync_disable_checkpoint))

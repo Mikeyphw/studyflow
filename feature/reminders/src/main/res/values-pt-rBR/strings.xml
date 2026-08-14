@@ -59,4 +59,20 @@
     <string name="reminder_issue_missed_message">Blocos perdidos precisam de recuperação antes de o cronograma parecer confiável.</string>
     <string name="reminder_issue_no_candidates">Sem candidatos agendados</string>
     <string name="reminder_issue_no_candidates_message">Não há nada urgente para notificar agora.</string>
+    <string name="notification_permission_disabled_by_system">As notificações do StudyFlow estão desativadas nas configurações do sistema.</string>
+    <string name="reminder_due_reviews_title">Revisões pendentes</string>
+    <plurals name="reminder_due_reviews_body">
+        <item quantity="one">%1$d item de revisão está pendente agora.</item>
+        <item quantity="many">%1$d itens de revisão estão pendentes agora.</item>
+        <item quantity="other">%1$d itens de revisão estão pendentes agora.</item>
+    </plurals>
+    <string name="reminder_planned_activity_body">Seu próximo bloco de estudo planejado está pronto.</string>
+    <string name="reminder_missed_activity_title">Blocos de estudo perdidos</string>
+    <plurals name="reminder_missed_activity_body">
+        <item quantity="one">%1$d atividade precisa de recuperação.</item>
+        <item quantity="many">%1$d atividades precisam de recuperação.</item>
+        <item quantity="other">%1$d atividades precisam de recuperação.</item>
+    </plurals>
+    <string name="reminder_daily_summary_body">Seu resumo diário de estudos está disponível.</string>
+    <string name="delayed_by_quiet_hours">Adiado até o fim do horário silencioso</string>
 </resources>

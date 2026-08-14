@@ -255,4 +255,5 @@
     <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
     <string name="confirm_delete">Excluir</string>
     <string name="onboarding_create_failed">Não foi possível criar o plano de estudo de exemplo. Tente novamente.</string>
+    <string name="export_password_reenter_after_recreation">Digite novamente a senha de exportação e tente de novo. A senha não é mantida após a recriação por segurança.</string>
 </resources>
