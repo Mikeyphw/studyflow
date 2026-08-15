@@ -4,18 +4,18 @@ Source/static coverage now includes `scripts/verify_phase_63_64.py`, pure-domain
 runbook and study sprint, bilingual workspace resource parity, version-bound sprint apply wiring,
 the revised Phase 62 historical boundary that prevents runbook behavior from leaking back into
 onboarding, nested ownership checks, bounded runbook priority, duplicate-Apply suppression, ordinary
-Exception recovery, sprint mutation-envelope validation, current-candidate rechecks and stale-preview rejection.
-No Gradle, lint, Android resource merge, instrumentation, emulator or device validation
-is claimed in this intermediate overlay; those remain deferred to the campaign's final validation.
+Exception recovery and sprint mutation-envelope validation. No Gradle, lint, Android resource merge, instrumentation, emulator or device validation
+was claimed by the intermediate Phase 63/64 overlay. The post-Phase-64 final refresh binds these
+features into the Workspace connected instrumentation suite, the signed Release restore/restart journey, and the final source acceptance chain. The corrected refresh also binds Phase 63/64 journey evidence to explicit initial/post-restart instrumentation status markers rather than an unconditional recorder flag.
 
 # Final acceptance validation update
 
 Source validation now includes `scripts/verify_final_app_acceptance.py` and the Gradle task
-`verifyFinalAppAcceptanceSeal`. The gate audits the completed V2 through Phase 62 contract across
+`verifyFinalAppAcceptanceSeal`. The gate audits the completed V2/post-V2 contract through Phase 64 across
 startup, route redirects, workspace actions, search/recommendations, readiness, reschedule, drills,
 imports, mocks, widget actions, reminders, Evidence Timeline, weekly coach review, smart cleanup,
 local exam report export, backup/export/import, onboarding, localization parity, warning sentries,
-and stack-version invariants.
+runbook/sprint behavior, and stack-version invariants.
 
 PENDING TARGET EXECUTION: Android Gradle compilation, resource merging, unit execution, APK assembly,
 debug/release lint, install/upgrade smoke, TalkBack, 200% font scaling, widget taps, notification

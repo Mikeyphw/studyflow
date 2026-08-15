@@ -135,6 +135,9 @@ def fixture(directory: Path) -> tuple[dict[str, Path], Path, Path]:
             "postRestartTestName": "restoredJourneySurvivesProcessRestartAndCleansUp",
             "processRestartVerified": True,
             "realRestoreVerified": True,
+            "phase63_64InitialVerified": True,
+            "phase63_64PostRestartVerified": True,
+            "phase63_64Verified": True,
             "artifactSha256": APK_SHA,
             "installedArtifactSha256": APK_SHA,
             "deviceSerial": "contract-device",
@@ -197,6 +200,24 @@ def main() -> None:
         journey["processRestartVerified"] = False
         write(paths["journey"], journey)
         require(run(paths, report).returncode != 0, "missing process restart falsely passed")
+
+        paths, _, _ = fixture(directory)
+        journey = json.loads(paths["journey"].read_text())
+        journey["phase63_64InitialVerified"] = False
+        write(paths["journey"], journey)
+        require(run(paths, report).returncode != 0, "missing initial Phase 63/64 marker falsely passed")
+
+        paths, _, _ = fixture(directory)
+        journey = json.loads(paths["journey"].read_text())
+        journey["phase63_64PostRestartVerified"] = False
+        write(paths["journey"], journey)
+        require(run(paths, report).returncode != 0, "missing post-restart Phase 63/64 marker falsely passed")
+
+        paths, _, _ = fixture(directory)
+        journey = json.loads(paths["journey"].read_text())
+        journey["phase63_64Verified"] = False
+        write(paths["journey"], journey)
+        require(run(paths, report).returncode != 0, "missing Phase 63/64 journey evidence falsely passed")
 
         paths, _, _ = fixture(directory)
         device = json.loads(paths["device"].read_text())

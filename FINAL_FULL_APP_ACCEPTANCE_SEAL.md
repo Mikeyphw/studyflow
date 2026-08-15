@@ -1,6 +1,6 @@
 # Final Full-App Acceptance Seal
 
-StudyFlow is source-sealed through the completed V2 through Phase 62 roadmap. This seal is not a new feature phase; it is a repository acceptance gate that proves the landed pieces still point at each other instead of becoming polished islands.
+StudyFlow is source-sealed through the completed V2 and post-V2 roadmap through Phase 64. This seal is not a new feature phase; it is a repository acceptance gate that proves the landed pieces still point at each other instead of becoming polished islands.
 
 ## Covered roadmap
 
@@ -13,6 +13,8 @@ StudyFlow is source-sealed through the completed V2 through Phase 62 roadmap. Th
 - Phase 58-59 cloudless local sync/checkpoint queue and weekly coach review.
 - Phase 60-61 smart content cleanup and local exam report HTML/PDF export.
 - Phase 62 onboarding and sample plan wizard.
+- Phase 63 exam runbook.
+- Phase 64 preview-first seven-day study sprint.
 
 ## Source gates added
 
@@ -23,7 +25,7 @@ StudyFlow is source-sealed through the completed V2 through Phase 62 roadmap. Th
 - Today, Plan, Practice, and Progress retain concrete actions;
 - search and recommendations reach the V2 destinations;
 - readiness and adaptive reschedule remain wired with preview/apply boundaries and report/coach inputs;
-- drills, imports, mocks, widget taps, reminders, timeline, weekly coach, cleanup, report export, backup, and onboarding remain wired;
+- drills, imports, mocks, widget taps, reminders, timeline, weekly coach, cleanup, report export, backup, onboarding, runbook, and sprint remain wired;
 - reminder reliability keeps explicit blocked, degraded, action-needed, ready, exact-alarm, battery, and permission states;
 - backup/export/import covers the post-V2 data surface and keeps restore dry-run semantics visible;
 - local-only boundaries remain intact for cloudless checkpointing, cleanup preview, report export, and onboarding;
@@ -40,4 +42,4 @@ R2 strengthens the source verifier after an audit found two weakly implied check
 
 ## Result
 
-The app is ready for a final Devtool acceptance run on the landed Phase 62 repository. Any future feature roadmap should start from this sealed baseline rather than replacing the completed V2 through Phase 62 chain.
+The app is ready for one final Devtool acceptance run on the landed Phase 64 repository. The signed Release journey now exercises the Phase 63 runbook and applies a Phase 64 sprint before export/restore, then verifies the sprint result after a forced process restart. No Phase 65 feature is defined by the current roadmap.

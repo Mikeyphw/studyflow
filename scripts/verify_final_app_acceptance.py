@@ -124,6 +124,7 @@ required_scripts = [
     "scripts/verify_phase_58_59.py",
     "scripts/verify_phase_60_61.py",
     "scripts/verify_phase_62.py",
+    "scripts/verify_phase_63_64.py",
     "scripts/verify_full_app_final_user_readiness.py",
     "scripts/verify_final_release_verdict_contract.py",
 ]
@@ -136,6 +137,7 @@ for task in (
     "verifyPhase58_59WarningHygiene",
     "verifyPhase60_61ContentReportSeal",
     "verifyPhase62OnboardingSeal",
+    "verifyPhase63_64ExamRunbookSprintSeal",
 ):
     require(task in build, f"Gradle acceptance task missing: {task}")
 require("verifyFinalSourceAcceptance" in build, "truthful final source acceptance task is missing")
@@ -403,6 +405,56 @@ for token in (
     "observePlan(disposableId).first() == null",
 ):
     require(token in portability_lab, f"production portability drill evidence missing: {token}")
+
+# Phase 63-64 final acceptance: runbook/sprint source plus signed journey durability.
+runbook_domain = text("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyExamRunbook.kt")
+sprint_domain = text("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySprintPlanner.kt")
+full_journey = text("app/src/androidTest/java/com/mikeyphw/studyflow/StudyFlowFullJourneyAcceptanceTest.kt")
+journey_evidence = text("scripts/record_full_journey_evidence.py")
+final_verdict = text("scripts/verify_final_release_verdict.py")
+workspace_phase_connected = text(
+    "feature/workspace/src/androidTest/java/com/mikeyphw/studyflow/feature/workspace/WorkspacePhase63_64ConnectedTest.kt",
+)
+for token in (
+    "StudyExamRunbookPlanner.build(",
+    "StudySprintPlanner.preview(",
+    "applyVersionedPreview(planId, sprintPreview)",
+    "KEY_SPRINT_ACTIVITY_ID",
+    "restoredSprintActivity",
+):
+    require(token in full_journey, f"Phase 63/64 signed Release journey coverage missing: {token}")
+for token in (
+    "Runbook schedule-rule evidence belongs to another Study Plan.",
+    "Runbook activity evidence belongs to another Study Plan.",
+):
+    require(token in runbook_domain, f"Phase 63 runbook ownership boundary missing: {token}")
+for token in (
+    "PreviewFreshnessMillis",
+    "Study sprint cannot mutate an activity outside the approved seven-day candidate set.",
+    "Study sprint cannot move an activity to another time.",
+):
+    require(token in sprint_domain, f"Phase 64 sprint safety boundary missing: {token}")
+for token in (
+    '"phase63_64InitialVerified": True',
+    '"phase63_64PostRestartVerified": True',
+    '"phase63_64Verified": True',
+    "require_status_marker(initial, INITIAL_PHASE_MARKER)",
+    "require_status_marker(restarted, POST_RESTART_PHASE_MARKER)",
+):
+    require(token in journey_evidence, f"full journey evidence must bind Phase 63/64 PASS to runtime status: {token}")
+for token in (
+    'journey.get("phase63_64InitialVerified") is not True',
+    'journey.get("phase63_64PostRestartVerified") is not True',
+    'journey.get("phase63_64Verified") is not True',
+):
+    require(token in final_verdict, f"authoritative final verdict must reject missing Phase 63/64 evidence: {token}")
+for token in (
+    "class WorkspacePhase63_64ConnectedTest",
+    "StudyExamRunbookPlanner.build(",
+    "StudySprintPlanner.preview(",
+    "manager.applyVersionedPreview(planId, sprint)",
+):
+    require(token in workspace_phase_connected, f"workspace connected Phase 63/64 acceptance missing: {token}")
 
 # Database, upgrade, backup rules and local file-sharing boundaries.
 require("SCHEMA_VERSION = 4" in database, "Room schema version must include the remediation integrity migration")

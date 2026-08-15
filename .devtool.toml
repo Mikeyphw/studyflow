@@ -28,6 +28,7 @@ build = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
 test = [
     "verifyRepositoryContracts",
     "verifyPhase63_64ExamRunbookSprintSeal",
+    "verifyPostPhase64FinalValidationRefresh",
     "verifyFormatting",
     "verifyFinalSourceAcceptance",
     "verifyRemediationOv13",
@@ -135,6 +136,7 @@ resources = [":app:processDebugResources"]
 unit-test = [
     "verifyRepositoryContracts",
     "verifyPhase63_64ExamRunbookSprintSeal",
+    "verifyPostPhase64FinalValidationRefresh",
     "verifyFormatting",
     "verifyFinalSourceAcceptance",
     "verifyRemediationOv13",

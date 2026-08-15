@@ -69,11 +69,13 @@ The release is not accepted until every required item above has evidence in `FIN
 - [ ] `verifyFinalReleaseAutomatedGate` passes on the Android build host.
 - [ ] Host evidence binds signed Release APK and AAB paths and SHA-256 values in one validation session.
 - [ ] APK identity/version/non-debuggable state and signer certificate pass `apkanalyzer` + `apksigner`.
-- [ ] Release AAB signature integrity passes strict `jarsigner` verification.
+- [ ] Release AAB signature integrity passes `jarsigner -verify`; CA-chain strictness is not required for Android app signing certificates.
 - [ ] Connected core-data, Room migration, Plans, Practice, Schedule, Workspace, and Release app suites pass.
+- [ ] Workspace connected instrumentation executes `WorkspacePhase63_64ConnectedTest` and reaches the version-bound sprint apply boundary.
 - [ ] The exact signed APK completes the full production-container journey with real
   `REPLACE_EXISTING` and `CREATE_AS_NEW` restores.
 - [ ] A second instrumentation invocation after forced process restart re-reads the retained restored data.
+- [ ] The signed Release journey derives a Phase 63 runbook, applies a Phase 64 sprint, emits explicit initial/post-restart Phase 63/64 status markers, and verifies that sprint mutation after restart.
 - [ ] For every required device check below, invoke `record_final_device_acceptance.py` with both
   `--pass-check CHECK` and `--evidence 'CHECK=what was observed'`. Bare PASS flags are rejected.
 - [ ] `verifyFinalReleaseVerdict` reports `releaseReady=true`; WARNING/BLOCKED/FAIL/missing evidence

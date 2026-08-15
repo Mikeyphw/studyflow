@@ -70,7 +70,9 @@ validation session:
 - connected data/database migration and feature instrumentation suites;
 - the connected Release app suite; and
 - an exact-signed-APK full journey with real `REPLACE_EXISTING` and `CREATE_AS_NEW` restores, followed
-  by a forced process restart and durable re-read in a second instrumentation invocation.
+  by a forced process restart and durable re-read in a second instrumentation invocation; and
+- Workspace connected instrumentation for Phase 63 runbook, Phase 64 sprint preview, and the version-bound apply boundary; and
+- Phase 63 runbook derivation plus Phase 64 sprint apply/durability inside that exact-artifact journey, with explicit initial/post-restart instrumentation status markers required before PASS evidence is written.
 
 Generated evidence stays below `build/reports/studyflow/`. The automated gate is intentionally not
 the final product verdict because TalkBack/theme/upgrade and other explicit device observations still

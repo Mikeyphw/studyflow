@@ -221,6 +221,12 @@ def main() -> None:
             errors.append("full journey did not verify a process restart")
         if journey.get("realRestoreVerified") is not True:
             errors.append("full journey did not verify real restore behavior")
+        if journey.get("phase63_64InitialVerified") is not True:
+            errors.append("full journey did not emit the initial Phase 63/64 verification marker")
+        if journey.get("phase63_64PostRestartVerified") is not True:
+            errors.append("full journey did not emit the post-restart Phase 63/64 verification marker")
+        if journey.get("phase63_64Verified") is not True:
+            errors.append("full journey did not verify Phase 63/64 runbook and sprint behavior")
         if journey.get("artifactSha256") != artifact_sha:
             errors.append("full journey is not bound to the signed artifact SHA-256")
         if journey.get("installedArtifactSha256") != artifact_sha:

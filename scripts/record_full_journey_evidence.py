@@ -18,6 +18,8 @@ POST_RESTART_TEST = "restoredJourneySurvivesProcessRestartAndCleansUp"
 APPLICATION_ID = "com.mikeyphw.studyflow"
 INITIAL_MODE = "restart_initial"
 POST_RESTART_MODE = "post_restart"
+INITIAL_PHASE_MARKER = "studyflowPhase63_64InitialVerified"
+POST_RESTART_PHASE_MARKER = "studyflowPhase63_64PostRestartVerified"
 
 
 def fail(message: str) -> None:
@@ -138,6 +140,12 @@ def assert_instrumentation_passed(result: subprocess.CompletedProcess[str], test
     return transcript
 
 
+def require_status_marker(transcript: str, key: str) -> None:
+    pattern = rf"^INSTRUMENTATION_STATUS: {re.escape(key)}=true$"
+    if not re.search(pattern, transcript, flags=re.MULTILINE):
+        fail(f"instrumentation transcript did not emit required status marker: {key}=true")
+
+
 def run_targeted_instrumentation(
     serial: str,
     component: str,
@@ -212,6 +220,7 @@ def main() -> None:
     component = instrumentation_component(serial)
 
     initial = run_targeted_instrumentation(serial, component, INITIAL_TEST, INITIAL_MODE)
+    require_status_marker(initial, INITIAL_PHASE_MARKER)
     initial_transcript_path.write_text(initial, encoding="utf-8")
     if installed_apk_sha256(serial, APPLICATION_ID) != expected_hash:
         fail("initial full journey changed or replaced the installed candidate APK")
@@ -221,6 +230,7 @@ def main() -> None:
     adb(serial, "shell", "am", "force-stop", APPLICATION_ID)
 
     restarted = run_targeted_instrumentation(serial, component, POST_RESTART_TEST, POST_RESTART_MODE)
+    require_status_marker(restarted, POST_RESTART_PHASE_MARKER)
     restart_transcript_path.write_text(restarted, encoding="utf-8")
     installed_hash = installed_apk_sha256(serial, APPLICATION_ID)
     if installed_hash != expected_hash:
@@ -239,6 +249,9 @@ def main() -> None:
                 "postRestartTestName": POST_RESTART_TEST,
                 "processRestartVerified": True,
                 "realRestoreVerified": True,
+                "phase63_64InitialVerified": True,
+                "phase63_64PostRestartVerified": True,
+                "phase63_64Verified": True,
                 "artifactSha256": expected_hash,
                 "installedArtifactSha256": installed_hash,
                 "deviceSerial": serial,

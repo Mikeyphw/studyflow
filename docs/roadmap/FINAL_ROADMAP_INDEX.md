@@ -1,7 +1,7 @@
 # Final Roadmap Index
 
-This file remains the final roadmap index through Phase 29 for historical validator compatibility and
-is updated with the current product-completion track through Phase 37.
+This file preserves the historical Phase 29 index contract while recording the current delivered
+StudyFlow product roadmap through Phase 64.
 
 - Phase 0-1: product contract and Android foundation.
 - Phase 2: domain model and Room persistence.
@@ -32,13 +32,18 @@ is updated with the current product-completion track through Phase 37.
 - Phase 27: runtime smoke workbench.
 - Phase 28: backup/restore drill seal.
 - Phase 29: release-candidate source polish.
-- Phase 30: product truthfulness and normal Settings cleanup.
-- Phase 31: dashboard action completion and session routing.
-- Phase 32: developer diagnostics de-scaffolding.
-- Phase 33: offline-first local checkpoint completion.
-- Phase 34: interaction honesty and passive status UI.
-- Phase 35: documentation and artifact cleanup.
-- Phase 36: release identity, packaging policy, and signing boundary.
-- Phase 37: real-device acceptance checklist and pending evidence report.
+- Phase 30-37: product truthfulness, interaction/documentation cleanup, release identity, and device seal framework.
+- Phase 38-47: complete UI/UX V2 workspace migration.
+- Phase 48-49: readiness and adaptive reschedule.
+- Phase 50-51: weakness drills and question import.
+- Phase 52-53: Mock Exam Studio and widget actions.
+- Phase 54-55: reminder reliability and evidence timeline.
+- Phase 56-57: post-V2 integration and device-readiness polish.
+- Phase 58-59: cloudless local checkpoint queue and weekly coach.
+- Phase 60-61: smart content cleanup and local exam report export.
+- Phase 62: onboarding and sample plan wizard.
+- Phase 63: exam runbook.
+- Phase 64: preview-first seven-day study sprint.
 
-The next work is running the target-machine validation and filling the final acceptance report with real device evidence.
+The next work is the final target-machine validation and evidence pass. No Phase 65 feature is
+currently defined by the roadmap.

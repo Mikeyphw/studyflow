@@ -1,9 +1,13 @@
 package com.mikeyphw.studyflow
 
 import android.content.Context
+import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.mikeyphw.studyflow.core.domain.ExamReadinessEngine
+import com.mikeyphw.studyflow.core.domain.StudyExamRunbookPlanner
+import com.mikeyphw.studyflow.core.domain.StudySprintPlanner
 import com.mikeyphw.studyflow.core.model.*
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
@@ -52,7 +56,7 @@ class StudyFlowFullJourneyAcceptanceTest {
                     "Final release acceptance journey",
                     StudyType.FREE_STUDY,
                     StudyPlanStatus.ACTIVE,
-                    null,
+                    LocalDate.now().plusDays(5).toString(),
                     5,
                     0,
                     0,
@@ -222,10 +226,67 @@ class StudyFlowFullJourneyAcceptanceTest {
                 "Acceptance content",
                 listOf("release"),
             )
+            val sprintActivity = container.manageStudySchedule.saveActivity(
+                PlannedActivity(
+                    id = PlannedActivityId("acceptance-sprint-$suffix"),
+                    studyPlanId = planId,
+                    subjectId = subject.id,
+                    topicId = topic.id,
+                    materialId = null,
+                    videoResourceId = null,
+                    type = StudyActivityType.QUESTIONS,
+                    title = "Acceptance sprint candidate $suffix",
+                    scheduledStartEpochMillis = now + 2L * 86_400_000L,
+                    plannedDurationMinutes = 90,
+                    status = PlannedActivityStatus.PLANNED,
+                    locked = false,
+                    completedAtEpochMillis = null,
+                ),
+            )
             val analytics = withTimeout(10_000L) {
                 container.manageStudyAnalytics.observeSnapshot(planId).first { it.completedSessionsLastSevenDays >= 1 }
             }
             assertTrue(analytics.answeredQuestions >= 2)
+            val scheduleBeforeSprint = container.manageStudySchedule.observeSchedule(planId).first()
+            val sprintNow = System.currentTimeMillis()
+            val readiness = ExamReadinessEngine.calculate(
+                plan = requireNotNull(container.manageStudyPlan.observePlan(planId).first()),
+                analytics = analytics,
+                schedule = scheduleBeforeSprint,
+                mockExams = container.manageStudyPractice.observeMockExams(planId).first(),
+                nowEpochMillis = sprintNow,
+                zoneId = java.time.ZoneId.systemDefault(),
+            )
+            val runbook = StudyExamRunbookPlanner.build(
+                plan = requireNotNull(container.manageStudyPlan.observePlan(planId).first()),
+                analytics = analytics,
+                readiness = readiness,
+                schedule = scheduleBeforeSprint,
+                mockExams = container.manageStudyPractice.observeMockExams(planId).first(),
+            )
+            assertTrue(runbook.applicable)
+            assertTrue(runbook.items.isNotEmpty())
+            val sprintPreview = StudySprintPlanner.preview(
+                plan = requireNotNull(container.manageStudyPlan.observePlan(planId).first()),
+                analytics = analytics,
+                readiness = readiness,
+                schedule = scheduleBeforeSprint,
+                nowEpochMillis = sprintNow,
+            )
+            assertTrue(sprintPreview.executable)
+            assertTrue(sprintPreview.schedulePreview.changes.any { change ->
+                change.plannedActivityId == sprintActivity.id && change.executable
+            })
+            assertTrue(container.manageStudySchedule.applyVersionedPreview(planId, sprintPreview) > 0)
+            val sprintAfterApply = container.manageStudySchedule.observeSchedule(planId).first()
+                .plannedActivities.single { candidate -> candidate.id == sprintActivity.id }
+            assertEquals(sprintActivity.scheduledStartEpochMillis, sprintAfterApply.scheduledStartEpochMillis)
+            assertEquals(PlannedActivityStatus.PLANNED, sprintAfterApply.status)
+            assertTrue(!sprintAfterApply.locked)
+            assertTrue(
+                sprintAfterApply.plannedDurationMinutes < sprintActivity.plannedDurationMinutes ||
+                    sprintAfterApply.type != sprintActivity.type,
+            )
             assertTrue(container.manageStudyDiscovery.search("Journey topic $suffix").any { it.studyPlanId == planId })
             container.reminderDeliveryCoordinator.reconcilePlan(planId)
             assertEquals("ready", StudyFlowWidgetUpdateCoordinator.refreshAllAndAwait(context).state)
@@ -264,12 +325,14 @@ class StudyFlowFullJourneyAcceptanceTest {
                 canonicalName,
                 requireNotNull(application.container.manageStudyPlan.observePlan(planId).first()).name,
             )
+            reportPhase63_64Status(KEY_PHASE63_64_INITIAL_STATUS)
             if (retainForRestart) {
                 acceptanceMarker(context).edit()
                     .clear()
                     .putString(KEY_PLAN_ID, planId.value)
                     .putString(KEY_IMPORTED_PLAN_ID, requireNotNull(importedPlanId).value)
                     .putString(KEY_CANONICAL_NAME, canonicalName)
+                    .putString(KEY_SPRINT_ACTIVITY_ID, sprintActivity.id.value)
                     .putString(KEY_PROCESS_TOKEN, processInstanceToken)
                     .putBoolean(KEY_OLD_DEFAULT_PRESENT, oldDefault != null)
                     .putString(KEY_OLD_DEFAULT_ID, oldDefault?.value.orEmpty())
@@ -298,6 +361,7 @@ class StudyFlowFullJourneyAcceptanceTest {
         val planId = StudyPlanId(requireNotNull(marker.getString(KEY_PLAN_ID, null)))
         val importedPlanId = StudyPlanId(requireNotNull(marker.getString(KEY_IMPORTED_PLAN_ID, null)))
         val canonicalName = requireNotNull(marker.getString(KEY_CANONICAL_NAME, null))
+        val sprintActivityId = PlannedActivityId(requireNotNull(marker.getString(KEY_SPRINT_ACTIVITY_ID, null)))
         val previousProcessToken = requireNotNull(marker.getString(KEY_PROCESS_TOKEN, null))
         val oldDefault = marker.getString(KEY_OLD_DEFAULT_ID, "")
             ?.takeIf { marker.getBoolean(KEY_OLD_DEFAULT_PRESENT, false) && it.isNotBlank() }
@@ -315,12 +379,23 @@ class StudyFlowFullJourneyAcceptanceTest {
                 container.manageStudyAnalytics.observeSnapshot(planId).first { it.completedSessionsLastSevenDays >= 1 }
             }
             assertTrue(analytics.answeredQuestions >= 2)
-            assertTrue(container.manageStudySchedule.observeSchedule(planId).first().plannedActivities.any { activity ->
+            val restoredSchedule = container.manageStudySchedule.observeSchedule(planId).first()
+            assertTrue(restoredSchedule.plannedActivities.any { activity ->
                 activity.status == PlannedActivityStatus.COMPLETED
             })
+            val restoredSprintActivity = restoredSchedule.plannedActivities.single { activity ->
+                activity.id == sprintActivityId
+            }
+            assertEquals(PlannedActivityStatus.PLANNED, restoredSprintActivity.status)
+            assertTrue(!restoredSprintActivity.locked)
+            assertTrue(
+                restoredSprintActivity.plannedDurationMinutes < 90 ||
+                    restoredSprintActivity.type != StudyActivityType.QUESTIONS,
+            )
             assertTrue(
                 container.manageStudyDiscovery.search(canonicalName).any { result -> result.studyPlanId == planId },
             )
+            reportPhase63_64Status(KEY_PHASE63_64_POST_RESTART_STATUS)
         } finally {
             container.appPreferencesRepository.setDefaultStudyPlan(oldDefault)
             runCatching { container.manageStudyPlan.deletePermanently(importedPlanId) }
@@ -338,6 +413,13 @@ class StudyFlowFullJourneyAcceptanceTest {
 
     private fun journeyMode(): String? = InstrumentationRegistry.getArguments().getString(ARG_JOURNEY_MODE)
 
+    private fun reportPhase63_64Status(key: String) {
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            0,
+            Bundle().apply { putString(key, "true") },
+        )
+    }
+
     private fun acceptanceMarker(context: Context) =
         context.getSharedPreferences(MARKER_PREFERENCES, Context.MODE_PRIVATE)
 
@@ -349,7 +431,10 @@ class StudyFlowFullJourneyAcceptanceTest {
         const val KEY_PLAN_ID = "plan_id"
         const val KEY_IMPORTED_PLAN_ID = "imported_plan_id"
         const val KEY_CANONICAL_NAME = "canonical_name"
+        const val KEY_SPRINT_ACTIVITY_ID = "sprint_activity_id"
         const val KEY_PROCESS_TOKEN = "process_token"
+        const val KEY_PHASE63_64_INITIAL_STATUS = "studyflowPhase63_64InitialVerified"
+        const val KEY_PHASE63_64_POST_RESTART_STATUS = "studyflowPhase63_64PostRestartVerified"
         const val KEY_OLD_DEFAULT_PRESENT = "old_default_present"
         const val KEY_OLD_DEFAULT_ID = "old_default_id"
         val processInstanceToken: String = UUID.randomUUID().toString()

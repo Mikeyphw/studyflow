@@ -81,6 +81,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_60_61.py
         python3 scripts/verify_phase_62.py
         python3 scripts/verify_phase_63_64.py
+        python3 scripts/verify_post_phase_64_final_validation.py
         python3 scripts/verify_full_app_final_user_readiness.py
         python3 scripts/verify_final_app_acceptance.py
         python3 scripts/verify_remediation_phase_1_2.py
@@ -229,6 +230,13 @@ tasks.register<Exec>("verifyPhase63_64ExamRunbookSprintSeal") {
     group = "verification"
     description = "Checks Phase 63 exam runbook and Phase 64 preview-first study sprint behavior."
     commandLine("python3", "scripts/verify_phase_63_64.py")
+}
+
+
+tasks.register<Exec>("verifyPostPhase64FinalValidationRefresh") {
+    group = "verification"
+    description = "Checks Phase 64 roadmap reconciliation and final signed-journey coverage."
+    commandLine("python3", "scripts/verify_post_phase_64_final_validation.py")
 }
 
 
@@ -450,6 +458,7 @@ tasks.register("checkAll") {
         "verifyPhase60_61ContentReportSeal",
         "verifyPhase62OnboardingSeal",
         "verifyPhase63_64ExamRunbookSprintSeal",
+        "verifyPostPhase64FinalValidationRefresh",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",

@@ -1,6 +1,6 @@
 # StudyFlow Android
 
-## Current status: OV-13 remediation + product Phase 64 implemented
+## Current status: Phase 64 implemented; final validation refresh ready
 
 StudyFlow includes the completed remediation roadmap through OV-13. Source/static contracts do not
 claim release readiness: the automated signed-artifact/connected-device gate and explicit manual
@@ -27,9 +27,10 @@ The historical Phase 48-64 features include:
 - Phase 50-51 r2 hardens importer regexes, TSV/Anki short-answer defaults, recurrence-safe drill ranking, and audit tests.
 - Phase 62 adds local preview-first onboarding and sample-plan provisioning.
 - Phase 63 adds an exam-date-aware, evidence-derived runbook without a new persistence source.
-- Phase 64 adds a version-bound seven-day sprint preview over existing unlocked planned activities, with a guarded Apply path that validates the sprint-only mutation envelope before the existing CAS transaction.
+- Phase 64 adds a version-bound seven-day sprint preview over existing unlocked planned activities.
+- The post-Phase-64 final refresh binds runbook/sprint behavior into the Workspace connected suite and the signed Release restore/restart journey.
 
-The release-candidate identity and acceptance baseline was implemented through **Phase 37**; the UI/UX V2 migration then advances the source tree through Phase 51.
+The release-candidate identity and acceptance baseline was implemented through **Phase 37**; the UI/UX V2 and post-V2 tracks advance the source tree through Phase 64.
 
 The preceding release-identity and acceptance framework remains active:
 
@@ -251,7 +252,7 @@ content-health data. Export stays local and omits freeform notes by default. See
 
 ## OV-13 final release/full-regression evidence
 
-The final remediation overlay adds `verifyFinalReleaseAutomatedGate`: mandatory external signing, signed
+The final validation chain exposes `verifyFinalReleaseAutomatedGate`: mandatory external signing, signed
 Release APK + AAB packaging, exact APK identity/certificate/hash verification, AAB signature-integrity verification,
 session-bound connected data/database/feature/Release-app suites, and an exact-APK real-restore journey that must
 survive a forced process restart. `verifyFinalReleaseVerdict` remains fail-closed until the separate manual device
