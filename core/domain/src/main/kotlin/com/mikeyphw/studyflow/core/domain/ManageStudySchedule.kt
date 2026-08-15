@@ -12,6 +12,7 @@ import com.mikeyphw.studyflow.core.model.ScheduleRuleId
 import com.mikeyphw.studyflow.core.model.ScheduleRuleType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyStrategy
+import kotlinx.coroutines.flow.first
 
 class ManageStudySchedule(
     private val repository: StudyScheduleRepository,
@@ -80,6 +81,23 @@ class ManageStudySchedule(
             activities = generated,
             replaceUnlocked = request.replaceUnlocked,
         )
+    }
+
+    suspend fun applyVersionedPreview(
+        planId: StudyPlanId,
+        preview: StudySprintPreview,
+    ): Int {
+        require(preview.studyPlanId == planId) { "Study sprint preview belongs to another Study Plan." }
+        require(preview.scheduleVersionToken.isNotBlank()) {
+            "Study sprint preview is missing its version token. Refresh before applying."
+        }
+        val currentSchedule = repository.observeSchedule(planId).first()
+        StudySprintPlanner.requireSafeApply(
+            preview = preview,
+            schedule = currentSchedule,
+            nowEpochMillis = clock(),
+        )
+        return repository.applyAdaptivePreview(planId, preview.schedulePreview)
     }
 
     suspend fun rebalanceMissed(

@@ -1,3 +1,13 @@
+# Phase 63-64 Exam Runbook and Study Sprint
+
+- Added a local, read-only exam runbook derived from readiness, review backlog, weak areas, schedule and mock evidence.
+- Added an explicit no-exam-date state instead of fabricating countdown guidance.
+- Added a preview-first seven-day sprint that only targets existing unlocked planned activities.
+- Reused the version-token/CAS schedule transaction for explicit sprint Apply; preview never writes.
+- Added English/pt-BR workspace resources, domain regression tests and the Phase 63/64 source seal.
+- Preserved Phase 62 onboarding isolation while allowing the deferred runbook/sprint direction to begin after Phase 62.
+- Re-audit correction: fail closed on nested cross-plan schedule evidence, preserve final-review priority under the runbook cap, guard duplicate sprint Apply, recover ordinary apply failures, validate the sprint mutation envelope, re-read the current seven-day candidate set, and reject stale previews before the existing CAS transaction.
+
 # Remediation Phase 1-2 — Build/runtime and database foundation
 
 - Restored a complete pinned Gradle wrapper and made Android validation fail closed instead of silently skipping build gates.

@@ -510,4 +510,62 @@
     <string name="remediation_slow_checklist">Usar uma lista de verificação cuidadosa</string>
     <string name="remediation_verify_source">Verificar a fonte</string>
     <string name="remediation_review_explanation">Revisar a explicação</string>
+
+    <!-- Fases 63-64: roteiro de prova e sprint de estudos com prévia -->
+    <string name="exam_runbook_title">Roteiro para a prova</string>
+    <string name="exam_runbook_message">Um caminho local e somente leitura das evidências atuais até o dia da prova.</string>
+    <string name="exam_runbook_not_applicable">Adicione a data da prova para criar um roteiro</string>
+    <string name="exam_runbook_no_date_message">O roteiro fica desativado até o plano ter uma data de prova confirmada.</string>
+    <string name="set_exam_date">Definir data da prova</string>
+    <plurals name="exam_runbook_days">
+        <item quantity="one">1 dia para a prova</item>
+        <item quantity="other">%d dias para a prova</item>
+    </plurals>
+    <string name="exam_runbook_now">Agora</string>
+    <string name="exam_runbook_this_week">Esta semana</string>
+    <string name="exam_runbook_exam_eve">Véspera</string>
+    <string name="exam_runbook_recover_reviews">Recuperar revisões atrasadas</string>
+    <string name="exam_runbook_recover_reviews_message">Elimine a dívida de retenção antes de adicionar conteúdo novo.</string>
+    <plurals name="exam_runbook_overdue_reviews">
+        <item quantity="one">1 revisão atrasada precisa ser recuperada.</item>
+        <item quantity="other">%d revisões atrasadas precisam ser recuperadas.</item>
+    </plurals>
+    <string name="exam_runbook_weak_area">Atacar uma área fraca</string>
+    <string name="exam_runbook_weak_area_message">Use questões focadas e revisão nas evidências atualmente mais fracas.</string>
+    <string name="exam_runbook_practice">Recuperar a aplicação do conteúdo</string>
+    <string name="exam_runbook_practice_message">Alterne reparo de conceito e questões enquanto a precisão estiver baixa.</string>
+    <string name="exam_runbook_mock">Ensaiar em condições de prova</string>
+    <string name="exam_runbook_mock_message">Faça um simulado cronometrado enquanto ainda há tempo para agir sobre o resultado.</string>
+    <string name="exam_runbook_schedule">Proteger o cronograma</string>
+    <string name="exam_runbook_schedule_message">Resolva atividades perdidas ou desvio do cronograma antes de aumentar a carga.</string>
+    <string name="exam_runbook_final_review">Revisão final</string>
+    <string name="exam_runbook_final_review_message">Mantenha a reta final focada em recordação, evidências e execução tranquila.</string>
+    <string name="exam_runbook_momentum">Manter o ritmo</string>
+    <string name="exam_runbook_momentum_message">Não há sinal urgente de recuperação; mantenha a combinação atual baseada em evidências.</string>
+    <string name="open_practice">Abrir prática</string>
+    <string name="open_content">Abrir conteúdo</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="study_sprint_title">Sprint de estudos de 7 dias</string>
+    <plurals name="study_sprint_summary">
+        <item quantity="one">1 bloco existente nos próximos 7 dias · %2$d min. Prévia primeiro; nada muda até Aplicar.</item>
+        <item quantity="other">%1$d blocos existentes nos próximos 7 dias · %2$d min. Prévia primeiro; nada muda até Aplicar.</item>
+    </plurals>
+    <string name="study_sprint_applying">Aplicando sprint…</string>
+    <string name="apply_study_sprint">Aplicar sprint com segurança</string>
+    <string name="study_sprint_apply_result">Sprint de estudos</string>
+    <string name="study_sprint_apply_failed">O cronograma mudou ou o sprint não pôde ser aplicado. Atualizando a prévia mais recente antes de tentar novamente.</string>
+    <plurals name="study_sprint_apply_success">
+        <item quantity="one">Aplicada 1 alteração de cronograma com versão verificada.</item>
+        <item quantity="other">Aplicadas %d alterações de cronograma com versão verificada.</item>
+    </plurals>
+    <string name="study_sprint_review_focus">Sprint de recuperação de revisões</string>
+    <string name="study_sprint_schedule_focus">Sprint de recuperação do cronograma</string>
+    <string name="study_sprint_practice_focus">Sprint para recuperar precisão</string>
+    <string name="study_sprint_weakness_focus">Sprint focado em pontos fracos</string>
+    <string name="study_sprint_balanced_focus">A combinação atual de 7 dias já está segura</string>
+    <string name="study_sprint_change_reviews">Direcione um bloco existente para recuperar revisões.</string>
+    <string name="study_sprint_change_overload">Encurte um bloco existente sem mover nem substituir histórico.</string>
+    <string name="study_sprint_change_practice">Reequilibre um bloco existente entre reparo de conceito e questões.</string>
+    <string name="study_sprint_change_schedule">Recupere um bloco agendado existente sem criar um plano paralelo.</string>
+    <string name="study_sprint_change_steady">Somente prévia; o bloco existente não precisa de alteração segura.</string>
 </resources>

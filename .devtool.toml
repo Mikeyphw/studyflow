@@ -27,6 +27,7 @@ structured_events = true
 build = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
 test = [
     "verifyRepositoryContracts",
+    "verifyPhase63_64ExamRunbookSprintSeal",
     "verifyFormatting",
     "verifyFinalSourceAcceptance",
     "verifyRemediationOv13",
@@ -133,6 +134,7 @@ compile = [
 resources = [":app:processDebugResources"]
 unit-test = [
     "verifyRepositoryContracts",
+    "verifyPhase63_64ExamRunbookSprintSeal",
     "verifyFormatting",
     "verifyFinalSourceAcceptance",
     "verifyRemediationOv13",

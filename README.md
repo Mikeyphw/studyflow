@@ -1,6 +1,6 @@
 # StudyFlow Android
 
-## Current status: OV-13 final remediation source implemented
+## Current status: OV-13 remediation + product Phase 64 implemented
 
 StudyFlow includes the completed remediation roadmap through OV-13. Source/static contracts do not
 claim release readiness: the automated signed-artifact/connected-device gate and explicit manual
@@ -15,7 +15,7 @@ privacy controls, and local checkpoint status on the device.
 ## Historical implementation baseline
 
 The source tree includes the complete UI/UX V2 workspace migration and later remediation overlays.
-The historical Phase 48-62 features include:
+The historical Phase 48-64 features include:
 
 - Phases 38-47 replace the feature-catalog shell with Today, Plan, Practice, and Progress workspaces.
 - The adaptive shell preserves root back stacks and legacy route compatibility.
@@ -25,6 +25,9 @@ The historical Phase 48-62 features include:
 - Phases 48-49 add explainable exam readiness and preview-first adaptive rescheduling.
 - Phases 50-51 add targeted weakness drills and a CSV/TSV/Markdown question import pipeline.
 - Phase 50-51 r2 hardens importer regexes, TSV/Anki short-answer defaults, recurrence-safe drill ranking, and audit tests.
+- Phase 62 adds local preview-first onboarding and sample-plan provisioning.
+- Phase 63 adds an exam-date-aware, evidence-derived runbook without a new persistence source.
+- Phase 64 adds a version-bound seven-day sprint preview over existing unlocked planned activities, with a guarded Apply path that validates the sprint-only mutation envelope before the existing CAS transaction.
 
 The release-candidate identity and acceptance baseline was implemented through **Phase 37**; the UI/UX V2 migration then advances the source tree through Phase 51.
 

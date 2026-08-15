@@ -61,6 +61,9 @@ import com.mikeyphw.studyflow.core.domain.StudyExamReportBuilder
 import com.mikeyphw.studyflow.core.domain.StudyExamReportInput
 import com.mikeyphw.studyflow.core.domain.StudyExamReportNextActionKind
 import com.mikeyphw.studyflow.core.domain.StudyExamReportSnapshot
+import com.mikeyphw.studyflow.core.domain.StudyExamRunbookAction
+import com.mikeyphw.studyflow.core.domain.StudyExamRunbookPlanner
+import com.mikeyphw.studyflow.core.domain.StudyExamRunbookWindow
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewInput
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewItemKind
 import com.mikeyphw.studyflow.core.domain.StudyCoachWeeklyReviewTone
@@ -69,6 +72,8 @@ import com.mikeyphw.studyflow.core.domain.StudyEvidenceEventKind
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineBuilder
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineInput
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
+import com.mikeyphw.studyflow.core.domain.StudySprintFocus
+import com.mikeyphw.studyflow.core.domain.StudySprintPlanner
 import com.mikeyphw.studyflow.core.domain.tickingClockFlow
 import com.mikeyphw.studyflow.core.model.AdaptiveRescheduleChangeType
 import com.mikeyphw.studyflow.core.model.ExamReadinessBand
@@ -107,8 +112,10 @@ fun ProgressWorkspaceScreen(
     onSystem: () -> Unit,
     onOpenProgressCenter: () -> Unit,
     onOpenAnalytics: () -> Unit,
+    onOpenPlanOverview: () -> Unit,
     onOpenPlan: () -> Unit,
     onOpenContent: () -> Unit,
+    onOpenPractice: () -> Unit,
     onOpenReviews: () -> Unit,
     onExportExamReport: suspend (StudyExamReportDocument, StudyExamReportFormat, String) -> Boolean,
     modifier: Modifier = Modifier,
@@ -169,6 +176,9 @@ fun ProgressWorkspaceScreen(
     val testsState by testsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val mockExamsState by mockExamsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val planSettingsState by planSettingsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    var appliedSprintChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
+    var sprintApplyFailed by rememberSaveable(plan.id.value) { mutableStateOf(false) }
+    var sprintApplyInFlight by remember(plan.id.value) { mutableStateOf(false) }
     if (
         !WorkspaceLoadGate(
             states = listOf(
@@ -238,6 +248,47 @@ fun ProgressWorkspaceScreen(
                 readinessScorePercent = readiness.scorePercent,
                 nowEpochMillis = nowEpochMillis,
             )
+        }
+    }
+    val examRunbook = remember(plan, analytics, readiness, schedule, mockExams) {
+        StudyExamRunbookPlanner.build(
+            plan = plan,
+            analytics = analytics,
+            readiness = readiness,
+            schedule = schedule,
+            mockExams = mockExams,
+        )
+    }
+    val sprintPreview = remember(plan, analytics, readiness, schedule, nowEpochMillis) {
+        StudySprintPlanner.preview(
+            plan = plan,
+            analytics = analytics,
+            readiness = readiness,
+            schedule = schedule,
+            nowEpochMillis = nowEpochMillis,
+        )
+    }
+    val applyCurrentSprintPreview: () -> Unit = {
+        if (!sprintApplyInFlight && sprintPreview.executable) {
+            val approvedPreview = sprintPreview
+            sprintApplyInFlight = true
+            sprintApplyFailed = false
+            appliedSprintChanges = null
+            coroutineScope.launch {
+                try {
+                    appliedSprintChanges = scheduleManager.applyVersionedPreview(
+                        planId = plan.id,
+                        preview = approvedPreview,
+                    )
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    sprintApplyFailed = true
+                    loadAttempt += 1
+                } finally {
+                    sprintApplyInFlight = false
+                }
+            }
         }
     }
     val cutoff = nowEpochMillis - selectedPeriod.days * 86_400_000L
@@ -479,6 +530,131 @@ fun ProgressWorkspaceScreen(
                         icon = Icons.Outlined.CheckCircle,
                         status = stringResource(R.string.percent_value, signal.scorePercent),
                         onClick = onOpenAnalytics,
+                    )
+                }
+
+                studyFlowSectionHeader(
+                    key = "exam-runbook",
+                    title = { stringResource(R.string.exam_runbook_title) },
+                )
+                item(key = "exam-runbook-summary", contentType = "runbook") {
+                    StudyFlowCoachCard(
+                        title = if (examRunbook.applicable) {
+                            examRunbook.daysUntilExam?.let { days ->
+                                pluralStringResource(R.plurals.exam_runbook_days, days, days)
+                            } ?: stringResource(R.string.exam_runbook_title)
+                        } else {
+                            stringResource(R.string.exam_runbook_not_applicable)
+                        },
+                        message = if (examRunbook.applicable) {
+                            stringResource(R.string.exam_runbook_message)
+                        } else {
+                            stringResource(R.string.exam_runbook_no_date_message)
+                        },
+                        actionLabel = if (examRunbook.applicable) {
+                            stringResource(R.string.open_plan)
+                        } else {
+                            stringResource(R.string.set_exam_date)
+                        },
+                        onAction = if (examRunbook.applicable) onOpenPlan else onOpenPlanOverview,
+                    )
+                }
+                items(
+                    items = examRunbook.items,
+                    key = { item -> "runbook:${item.id}" },
+                    contentType = { "runbook-item" },
+                ) { item ->
+                    StudyFlowTimelineRow(
+                        title = item.focusLabel ?: stringResource(runbookActionLabel(item.action)),
+                        metadata = runbookItemMetadata(item.action, item.count),
+                        icon = Icons.Outlined.Flag,
+                        status = stringResource(runbookWindowLabel(item.window)),
+                        actionLabel = stringResource(runbookActionCta(item.action)),
+                        onAction = {
+                            when (item.action) {
+                                StudyExamRunbookAction.RECOVER_REVIEWS,
+                                StudyExamRunbookAction.FINAL_REVIEW -> onOpenReviews()
+                                StudyExamRunbookAction.ATTACK_WEAK_AREA -> onOpenContent()
+                                StudyExamRunbookAction.PROTECT_SCHEDULE -> onOpenPlan()
+                                StudyExamRunbookAction.PRACTICE_RECALL,
+                                StudyExamRunbookAction.MOCK_REHEARSAL -> onOpenPractice()
+                                StudyExamRunbookAction.MAINTAIN_MOMENTUM -> onOpenAnalytics()
+                            }
+                        },
+                    )
+                }
+
+                studyFlowSectionHeader(
+                    key = "study-sprint",
+                    title = { stringResource(R.string.study_sprint_title) },
+                )
+                item(key = "study-sprint-summary", contentType = "sprint") {
+                    StudyFlowCoachCard(
+                        title = stringResource(sprintFocusLabel(sprintPreview.focus)),
+                        message = pluralStringResource(
+                            R.plurals.study_sprint_summary,
+                            sprintPreview.candidateCount,
+                            sprintPreview.candidateCount,
+                            sprintPreview.totalMinutes,
+                        ),
+                        actionLabel = when {
+                            sprintApplyInFlight -> stringResource(R.string.study_sprint_applying)
+                            sprintPreview.executable -> stringResource(R.string.apply_study_sprint)
+                            else -> stringResource(R.string.open_plan)
+                        },
+                        onAction = {
+                            if (sprintPreview.executable) applyCurrentSprintPreview() else onOpenPlan()
+                        },
+                    )
+                }
+                if (appliedSprintChanges != null || sprintApplyFailed) {
+                    item(key = "study-sprint-feedback", contentType = "sprint-feedback") {
+                        StudyFlowCoachCard(
+                            title = stringResource(R.string.study_sprint_apply_result),
+                            message = if (sprintApplyFailed) {
+                                stringResource(R.string.study_sprint_apply_failed)
+                            } else {
+                                pluralStringResource(
+                                    R.plurals.study_sprint_apply_success,
+                                    appliedSprintChanges ?: 0,
+                                    appliedSprintChanges ?: 0,
+                                )
+                            },
+                            actionLabel = if (sprintApplyFailed) {
+                                stringResource(R.string.retry)
+                            } else {
+                                stringResource(R.string.open_plan)
+                            },
+                            onAction = {
+                                if (sprintApplyFailed && sprintPreview.executable) {
+                                    applyCurrentSprintPreview()
+                                } else {
+                                    onOpenPlan()
+                                }
+                            },
+                        )
+                    }
+                }
+                items(
+                    items = sprintPreview.schedulePreview.changes,
+                    key = { change -> "sprint:${change.id}" },
+                    contentType = { "sprint-change" },
+                ) { change ->
+                    StudyFlowTimelineRow(
+                        title = if (change.plannedActivityId == null) {
+                            stringResource(sprintFocusLabel(sprintPreview.focus))
+                        } else {
+                            change.title
+                        },
+                        metadata = stringResource(sprintChangeMessage(change.type)),
+                        icon = Icons.Outlined.AutoFixHigh,
+                        status = if (change.executable) {
+                            stringResource(R.string.safe_change)
+                        } else {
+                            stringResource(R.string.preview_only)
+                        },
+                        actionLabel = stringResource(R.string.open_plan),
+                        onAction = onOpenPlan,
                     )
                 }
 
@@ -932,6 +1108,66 @@ private fun StudyEvidenceEventKind.icon() = when (this) {
     else -> Icons.Outlined.History
 }
 
+
+@Composable
+private fun runbookItemMetadata(action: StudyExamRunbookAction, count: Int?): String = when (action) {
+    StudyExamRunbookAction.RECOVER_REVIEWS -> count?.let { value ->
+        pluralStringResource(R.plurals.exam_runbook_overdue_reviews, value, value)
+    } ?: stringResource(R.string.exam_runbook_recover_reviews_message)
+    else -> stringResource(runbookActionMessage(action))
+}
+
+private fun runbookActionLabel(action: StudyExamRunbookAction): Int = when (action) {
+    StudyExamRunbookAction.RECOVER_REVIEWS -> R.string.exam_runbook_recover_reviews
+    StudyExamRunbookAction.ATTACK_WEAK_AREA -> R.string.exam_runbook_weak_area
+    StudyExamRunbookAction.PRACTICE_RECALL -> R.string.exam_runbook_practice
+    StudyExamRunbookAction.MOCK_REHEARSAL -> R.string.exam_runbook_mock
+    StudyExamRunbookAction.PROTECT_SCHEDULE -> R.string.exam_runbook_schedule
+    StudyExamRunbookAction.FINAL_REVIEW -> R.string.exam_runbook_final_review
+    StudyExamRunbookAction.MAINTAIN_MOMENTUM -> R.string.exam_runbook_momentum
+}
+
+private fun runbookActionMessage(action: StudyExamRunbookAction): Int = when (action) {
+    StudyExamRunbookAction.RECOVER_REVIEWS -> R.string.exam_runbook_recover_reviews_message
+    StudyExamRunbookAction.ATTACK_WEAK_AREA -> R.string.exam_runbook_weak_area_message
+    StudyExamRunbookAction.PRACTICE_RECALL -> R.string.exam_runbook_practice_message
+    StudyExamRunbookAction.MOCK_REHEARSAL -> R.string.exam_runbook_mock_message
+    StudyExamRunbookAction.PROTECT_SCHEDULE -> R.string.exam_runbook_schedule_message
+    StudyExamRunbookAction.FINAL_REVIEW -> R.string.exam_runbook_final_review_message
+    StudyExamRunbookAction.MAINTAIN_MOMENTUM -> R.string.exam_runbook_momentum_message
+}
+
+private fun runbookActionCta(action: StudyExamRunbookAction): Int = when (action) {
+    StudyExamRunbookAction.RECOVER_REVIEWS,
+    StudyExamRunbookAction.FINAL_REVIEW -> R.string.review_now
+    StudyExamRunbookAction.ATTACK_WEAK_AREA -> R.string.open_content
+    StudyExamRunbookAction.PROTECT_SCHEDULE -> R.string.open_plan
+    StudyExamRunbookAction.PRACTICE_RECALL,
+    StudyExamRunbookAction.MOCK_REHEARSAL -> R.string.open_practice
+    StudyExamRunbookAction.MAINTAIN_MOMENTUM -> R.string.open_analytics
+}
+
+private fun runbookWindowLabel(window: StudyExamRunbookWindow): Int = when (window) {
+    StudyExamRunbookWindow.NOW -> R.string.exam_runbook_now
+    StudyExamRunbookWindow.THIS_WEEK -> R.string.exam_runbook_this_week
+    StudyExamRunbookWindow.EXAM_EVE -> R.string.exam_runbook_exam_eve
+}
+
+private fun sprintFocusLabel(focus: StudySprintFocus): Int = when (focus) {
+    StudySprintFocus.REVIEW_RECOVERY -> R.string.study_sprint_review_focus
+    StudySprintFocus.SCHEDULE_RECOVERY -> R.string.study_sprint_schedule_focus
+    StudySprintFocus.PRACTICE_ACCURACY -> R.string.study_sprint_practice_focus
+    StudySprintFocus.WEAKNESS -> R.string.study_sprint_weakness_focus
+    StudySprintFocus.BALANCED -> R.string.study_sprint_balanced_focus
+}
+
+private fun sprintChangeMessage(type: AdaptiveRescheduleChangeType): Int = when (type) {
+    AdaptiveRescheduleChangeType.PROTECT_REVIEWS -> R.string.study_sprint_change_reviews
+    AdaptiveRescheduleChangeType.REDUCE_OVERLOAD -> R.string.study_sprint_change_overload
+    AdaptiveRescheduleChangeType.ADD_THEORY_BEFORE_QUESTIONS -> R.string.study_sprint_change_practice
+    AdaptiveRescheduleChangeType.REDISTRIBUTE_MISSED -> R.string.study_sprint_change_schedule
+    AdaptiveRescheduleChangeType.KEEP_STEADY -> R.string.study_sprint_change_steady
+}
 
 private enum class WeeklyCoachDestination {
     ANALYTICS,

@@ -1,3 +1,13 @@
+# Phase 63-64 validation update
+
+Source/static coverage now includes `scripts/verify_phase_63_64.py`, pure-domain tests for the exam
+runbook and study sprint, bilingual workspace resource parity, version-bound sprint apply wiring,
+the revised Phase 62 historical boundary that prevents runbook behavior from leaking back into
+onboarding, nested ownership checks, bounded runbook priority, duplicate-Apply suppression, ordinary
+Exception recovery, sprint mutation-envelope validation, current-candidate rechecks and stale-preview rejection.
+No Gradle, lint, Android resource merge, instrumentation, emulator or device validation
+is claimed in this intermediate overlay; those remain deferred to the campaign's final validation.
+
 # Final acceptance validation update
 
 Source validation now includes `scripts/verify_final_app_acceptance.py` and the Gradle task

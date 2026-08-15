@@ -50,7 +50,8 @@ tasks.register("verifyFormatting") {
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
     description =
-        "Runs StudyFlow contracts through Phase 37, UI/UX V2 through Phase 61, and Debug Workbench D1 through D8."
+        "Runs historical contracts through Phase 37, post-V2 features through Phase 64, " +
+            "and Debug Workbench D1 through D8."
     commandLine(
         "bash",
         "-lc",
@@ -79,6 +80,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_phase_58_59.py
         python3 scripts/verify_phase_60_61.py
         python3 scripts/verify_phase_62.py
+        python3 scripts/verify_phase_63_64.py
         python3 scripts/verify_full_app_final_user_readiness.py
         python3 scripts/verify_final_app_acceptance.py
         python3 scripts/verify_remediation_phase_1_2.py
@@ -220,6 +222,13 @@ tasks.register<Exec>("verifyPhase62OnboardingSeal") {
     group = "verification"
     description = "Checks Phase 62 onboarding and local sample plan wizard behavior."
     commandLine("python3", "scripts/verify_phase_62.py")
+}
+
+
+tasks.register<Exec>("verifyPhase63_64ExamRunbookSprintSeal") {
+    group = "verification"
+    description = "Checks Phase 63 exam runbook and Phase 64 preview-first study sprint behavior."
+    commandLine("python3", "scripts/verify_phase_63_64.py")
 }
 
 
@@ -440,6 +449,7 @@ tasks.register("checkAll") {
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",
         "verifyPhase62OnboardingSeal",
+        "verifyPhase63_64ExamRunbookSprintSeal",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",

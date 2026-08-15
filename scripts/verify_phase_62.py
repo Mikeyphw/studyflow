@@ -222,8 +222,15 @@ for token in (
 
 require("navigation = \"2.9.8\"" in versions, "Navigation version must remain 2.9.8")
 require("2026.06.00" in versions, "Compose BOM must remain unchanged")
-require("StudyExamRunbook" not in "\n".join(str(path) for path in ROOT.rglob("*")),
-        "Wrong Phase 62/63 runbook direction leaked into Phase 62 overlay")
+for onboarding_path in (
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyOnboardingSamplePlanWizard.kt",
+    "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/OnboardingSamplePlanWizardScreen.kt",
+    "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt",
+):
+    require(
+        "StudyExamRunbook" not in text(onboarding_path),
+        f"Future runbook behavior must not leak into Phase 62 onboarding: {onboarding_path}",
+    )
 
 for source_path in (
     "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyOnboardingSamplePlanWizard.kt",

@@ -510,4 +510,62 @@
     <string name="remediation_slow_checklist">Use a slow-check checklist</string>
     <string name="remediation_verify_source">Verify the source</string>
     <string name="remediation_review_explanation">Review the explanation</string>
+
+    <!-- Phase 63-64: exam runbook and preview-first study sprint -->
+    <string name="exam_runbook_title">Exam runbook</string>
+    <string name="exam_runbook_message">A local, read-only path from current evidence to exam day.</string>
+    <string name="exam_runbook_not_applicable">Add an exam date to build a runbook</string>
+    <string name="exam_runbook_no_date_message">The runbook stays off until this plan has a confirmed exam date.</string>
+    <string name="set_exam_date">Set exam date</string>
+    <plurals name="exam_runbook_days">
+        <item quantity="one">1 day to the exam</item>
+        <item quantity="other">%d days to the exam</item>
+    </plurals>
+    <string name="exam_runbook_now">Now</string>
+    <string name="exam_runbook_this_week">This week</string>
+    <string name="exam_runbook_exam_eve">Exam eve</string>
+    <string name="exam_runbook_recover_reviews">Recover overdue reviews</string>
+    <string name="exam_runbook_recover_reviews_message">Clear retention debt before adding more new work.</string>
+    <plurals name="exam_runbook_overdue_reviews">
+        <item quantity="one">1 overdue review needs recovery.</item>
+        <item quantity="other">%d overdue reviews need recovery.</item>
+    </plurals>
+    <string name="exam_runbook_weak_area">Target a weak area</string>
+    <string name="exam_runbook_weak_area_message">Use focused questions and review on the weakest current evidence.</string>
+    <string name="exam_runbook_practice">Repair applied recall</string>
+    <string name="exam_runbook_practice_message">Use concept repair followed by questions while accuracy is weak.</string>
+    <string name="exam_runbook_mock">Rehearse under exam conditions</string>
+    <string name="exam_runbook_mock_message">Complete a timed mock while there is still time to act on the result.</string>
+    <string name="exam_runbook_schedule">Protect the schedule</string>
+    <string name="exam_runbook_schedule_message">Resolve missed work or schedule drift before adding load.</string>
+    <string name="exam_runbook_final_review">Final review pass</string>
+    <string name="exam_runbook_final_review_message">Keep the last window focused on recall, evidence, and calm execution.</string>
+    <string name="exam_runbook_momentum">Maintain momentum</string>
+    <string name="exam_runbook_momentum_message">No urgent recovery signal is present; keep the current evidence-backed mix.</string>
+    <string name="open_practice">Open practice</string>
+    <string name="open_content">Open content</string>
+    <string name="retry">Retry</string>
+    <string name="study_sprint_title">7-day study sprint</string>
+    <plurals name="study_sprint_summary">
+        <item quantity="one">1 existing block in the next 7 days · %2$d min. Preview first; nothing changes until Apply.</item>
+        <item quantity="other">%1$d existing blocks in the next 7 days · %2$d min. Preview first; nothing changes until Apply.</item>
+    </plurals>
+    <string name="study_sprint_applying">Applying sprint…</string>
+    <string name="apply_study_sprint">Apply sprint safely</string>
+    <string name="study_sprint_apply_result">Study sprint</string>
+    <string name="study_sprint_apply_failed">The schedule changed or the sprint could not be applied. Refreshing the latest preview before retry.</string>
+    <plurals name="study_sprint_apply_success">
+        <item quantity="one">Applied 1 version-checked schedule change.</item>
+        <item quantity="other">Applied %d version-checked schedule changes.</item>
+    </plurals>
+    <string name="study_sprint_review_focus">Review-recovery sprint</string>
+    <string name="study_sprint_schedule_focus">Schedule-recovery sprint</string>
+    <string name="study_sprint_practice_focus">Accuracy-repair sprint</string>
+    <string name="study_sprint_weakness_focus">Weakness-focused sprint</string>
+    <string name="study_sprint_balanced_focus">Current 7-day mix is already safe</string>
+    <string name="study_sprint_change_reviews">Bias an existing block toward review recovery.</string>
+    <string name="study_sprint_change_overload">Shorten an existing block without moving or replacing history.</string>
+    <string name="study_sprint_change_practice">Rebalance an existing block between concept repair and questions.</string>
+    <string name="study_sprint_change_schedule">Recover an existing scheduled block without creating a parallel plan.</string>
+    <string name="study_sprint_change_steady">Preview only; the existing block does not need a safe mutation.</string>
 </resources>

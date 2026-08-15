@@ -20,8 +20,8 @@ workspace.
 
 `verifyPhase62OnboardingSeal` runs `scripts/verify_phase_62.py`. The validator checks the pure domain
 contract, route and UI integration, app-level user-initiated creation path, English/pt-BR resource
-parity, concrete workload/schedule-block preview rendering, unchanged Navigation 2.9.8, unchanged Compose BOM, and that the abandoned runbook/sprint
-Phase 62/63 direction did not leak into this overlay.
+parity, concrete workload/schedule-block preview rendering, unchanged Navigation 2.9.8, unchanged Compose BOM, and that the deferred runbook/sprint
+direction did not leak into Phase 62 onboarding.
 
 
 ## r3 compile hotfix

@@ -430,6 +430,11 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 onSystem = { navController.navigate(SystemHubRoute(plan.id.value)) },
                 onOpenProgressCenter = { navController.navigate(ProgressCenterRoute(plan.id.value)) },
                 onOpenAnalytics = { navController.navigate(AnalyticsDetailRoute(plan.id.value)) },
+                onOpenPlanOverview = {
+                    navController.navigate(
+                        PlanWorkspaceRoute(plan.id.value, PlanWorkspaceTab.OVERVIEW),
+                    )
+                },
                 onOpenPlan = {
                     navController.navigate(
                         PlanWorkspaceRoute(plan.id.value, PlanWorkspaceTab.SCHEDULE),
@@ -438,6 +443,11 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 onOpenContent = {
                     navController.navigate(
                         PlanWorkspaceRoute(plan.id.value, PlanWorkspaceTab.CONTENT),
+                    )
+                },
+                onOpenPractice = {
+                    navController.navigate(
+                        PracticeWorkspaceRoute(plan.id.value, PracticeWorkspaceTab.QUESTIONS),
                     )
                 },
                 onOpenReviews = {
