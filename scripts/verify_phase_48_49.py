@@ -110,7 +110,7 @@ for token in (
     "readinessSignalMessage(signal.kind)",
     "rescheduleChangeReason(change.type)",
     "rescheduleSummary(",
-    "types = preview.changes.map { it.type }",
+    "types = reschedulePreview.changes.map { it.type }",
     "reschedule_apply_success",
 ):
     require(token in progress, f"Progress workspace missing localized Phase 48/49 rendering: {token}")

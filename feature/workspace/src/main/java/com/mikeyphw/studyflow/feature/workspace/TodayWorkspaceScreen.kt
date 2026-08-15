@@ -359,7 +359,7 @@ fun TodayWorkspaceScreen(
                 item(key = "coach", contentType = "coach") {
                     val coachMessage = when {
                         dueReviewCount > 0 -> stringResource(R.string.today_coach_backlog)
-                        (readyAnalytics.scheduleAdherencePercent ?: 100) < 60 -> {
+                        readyAnalytics.scheduleAdherencePercent < 60 -> {
                             stringResource(R.string.today_coach_schedule)
                         }
                         else -> stringResource(R.string.today_coach_stable)

@@ -589,7 +589,9 @@ internal class RoomStudyPlanPortabilityRepository(
         staged: StagedAnnexRestore,
     ) {
         staged.entries.forEach { entry ->
-            val directory = entry.destinationFile.parentFile
+            val directory = requireNotNull(entry.destinationFile.parentFile) {
+                "Restored annex destination must have a parent directory."
+            }
             require(directory.mkdirs() || directory.isDirectory) { "Could not create restored annex directory." }
             require(!entry.destinationFile.exists()) { "Restored annex destination already exists." }
             check(entry.temporaryFile.renameTo(entry

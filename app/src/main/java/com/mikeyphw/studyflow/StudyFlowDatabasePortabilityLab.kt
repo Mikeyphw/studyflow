@@ -241,9 +241,10 @@ private suspend fun runProductionPortabilityDrills(
                     password = password,
                 )
             }
-            importedPlanId = StudyPlanId(imported.studyPlanId)
+            val restoredPlanId = StudyPlanId(imported.studyPlanId)
+            importedPlanId = restoredPlanId
             realRestoreVerified = imported.importedRows > 0 &&
-                container.manageStudyPlan.observePlan(importedPlanId!!).first() != null
+                container.manageStudyPlan.observePlan(restoredPlanId).first() != null
         } finally {
             importedPlanId?.let { disposableId ->
                 container.manageStudyPlan.deletePermanently(disposableId)

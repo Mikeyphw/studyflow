@@ -10,6 +10,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudyType
+import java.util.Calendar
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -77,7 +78,10 @@ class StudyReminderPlannerPhase29HotfixTest {
 
     @Test
     fun quietHoursStillSuppressLatePlannedActivityDelivery() {
-        val now = 1_000_000L
+        val now = Calendar.getInstance().apply {
+            set(2026, Calendar.JANUARY, 15, 10, 5, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
         val plan = plan()
         val reminderPlan = StudyReminderPlanner.buildPlan(
             input(

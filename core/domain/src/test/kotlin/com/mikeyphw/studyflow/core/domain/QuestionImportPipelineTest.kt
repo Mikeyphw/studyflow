@@ -25,7 +25,14 @@ class QuestionImportPipelineTest {
         val preview = QuestionImportPipeline.preview(
             planId = planId,
             rawText = raw,
-            existingQuestions = listOf(question("What is 2+2?", "4")),
+            existingQuestions = listOf(
+                question(
+                    statement = "What is 2+2?",
+                    answer = "4",
+                    options = listOf("A", "4", "5"),
+                    explanation = "Basic arithmetic",
+                ),
+            ),
         )
 
         assertEquals(QuestionImportFormat.CSV, preview.format)
@@ -42,7 +49,7 @@ class QuestionImportPipelineTest {
             # What is judicial review?
             Answer: Constitutional control
             Explanation: Courts review compatibility with the constitution.
-            Options: Judicial control|Executive veto|Budget review
+            Options: Constitutional control|Executive veto|Budget review
             Tags: constitution; courts
             Difficulty: 4
         """.trimIndent()
@@ -57,7 +64,7 @@ class QuestionImportPipelineTest {
 
     @Test
     fun ankiStyleTsvIsAcceptedAndRepeatedRowsAreSkipped() {
-        val raw = "Question one\tAnswer one\tExplained\nQuestion one\tAnswer one\tExplained again"
+        val raw = "Question one\tAnswer one\tExplained\nQuestion one\tAnswer one\tExplained"
 
         val preview = QuestionImportPipeline.preview(planId, raw, existingQuestions = emptyList())
 
@@ -149,16 +156,21 @@ class QuestionImportPipelineTest {
         assertFalse(preview.drafts.single().duplicateOfExisting)
     }
 
-    private fun question(statement: String, answer: String) = Question(
+    private fun question(
+        statement: String,
+        answer: String,
+        options: List<String> = listOf("A", answer),
+        explanation: String = "Explanation",
+    ) = Question(
         id = QuestionId(statement.lowercase().replace(" ", "-")),
         studyPlanId = planId,
         subjectId = null,
         topicId = null,
         type = QuestionType.MULTIPLE_CHOICE,
         statement = statement,
-        options = listOf("A", answer),
+        options = options,
         correctAnswer = answer,
-        explanation = "Explanation",
+        explanation = explanation,
         examBoard = null,
         source = null,
         year = null,

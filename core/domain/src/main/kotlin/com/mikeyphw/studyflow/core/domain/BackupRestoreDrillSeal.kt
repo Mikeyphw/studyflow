@@ -282,7 +282,7 @@ object BackupRestoreDrillSeal {
     ): StudyPlanPackageArchive {
         val privatePlanId = "private-0123456789abcdefabcd"
         val privateAnnexId = StudyPlanPrivacyPolicy.pseudonymizeIdentifier(privatePlanId, rawAnnexId)
-        val entryName = "annex-payloads/$privateAnnexId/private-annex.pdf"
+        val entryName = "annex-payloads/$privateAnnexId/payload.bin"
         val manifest = StudyPlanPackageManifest(
             applicationVersion = StudyPlanPrivacyPolicy.PrivateApplicationVersion,
             exportedAtEpochMillis = 0L,
@@ -296,7 +296,7 @@ object BackupRestoreDrillSeal {
                 PortableAnnexPayload(
                     annexId = privateAnnexId,
                     entryName = entryName,
-                    fileName = "private-annex.pdf",
+                    fileName = "private-annex.bin",
                     mimeType = "application/pdf",
                     byteSize = annexBytes.size.toLong(),
                     checksumSha256 = sha256(annexBytes),
@@ -333,7 +333,7 @@ object BackupRestoreDrillSeal {
                     rows = listOf(
                         row(
                             "id" to text(privateAnnexId),
-                            "displayName" to text("private-annex.pdf"),
+                            "displayName" to text("private-annex.bin"),
                             "mimeType" to text("application/pdf"),
                         ),
                     ),

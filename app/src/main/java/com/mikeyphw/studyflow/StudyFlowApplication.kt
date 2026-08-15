@@ -32,6 +32,7 @@ import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
@@ -220,6 +221,7 @@ private class DefaultAppContainer(
         retryInitialization()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun startWidgetInvalidationObserver() {
         if (widgetInvalidationJob?.isActive == true) return
         widgetInvalidationJob = applicationScope.launch {

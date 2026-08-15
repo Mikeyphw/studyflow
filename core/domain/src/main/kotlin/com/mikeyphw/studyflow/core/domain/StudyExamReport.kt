@@ -109,8 +109,11 @@ object StudyExamReportBuilder {
 
     fun build(input: StudyExamReportInput): StudyExamReportSnapshot {
         require(input.requiredInputsReady) { "Exam report export requires every authoritative input to be Ready." }
-        require(input.analytics != null && input.readiness != null) {
-            "Exam report export requires analytics and readiness inputs."
+        val analytics = requireNotNull(input.analytics) {
+            "Exam report export requires analytics input."
+        }
+        val readiness = requireNotNull(input.readiness) {
+            "Exam report export requires readiness input."
         }
         val completedTests = input.tests.filter { test -> test.submittedAtEpochMillis != null }
         val testQuestionTotal = completedTests.sumOf(StudyTest::questionCount)
@@ -121,22 +124,20 @@ object StudyExamReportBuilder {
         return StudyExamReportSnapshot(
             studyPlanName = input.plan.name,
             generatedAtEpochMillis = input.generatedAtEpochMillis,
-            readinessScorePercent = input.readiness?.scorePercent,
-            readinessBand = input.readiness?.band,
-            readinessSignals = input.readiness?.signals.orEmpty().map { signal ->
+            readinessScorePercent = readiness.scorePercent,
+            readinessBand = readiness.band,
+            readinessSignals = readiness.signals.map { signal ->
                 StudyExamReportSignal(signal.kind, signal.scorePercent)
             },
             weeklyCoachItems = input.weeklyReview.items,
-            studiedMinutesLastSevenDays = input.analytics?.studiedMinutesLastSevenDays ?: 0,
+            studiedMinutesLastSevenDays = analytics.studiedMinutesLastSevenDays,
             evidenceCount = input.totalEvidenceCount,
-            weakAreas = input.analytics?.weakAreas.orEmpty(),
+            weakAreas = analytics.weakAreas,
             missedActivityCount = input.schedule.plannedActivities.count { activity ->
                 activity.status == PlannedActivityStatus.MISSED
             },
-            dueReviewCount = input.analytics?.dueReviewCount ?: input.reviewItems.count { review ->
-                ReviewDuePolicy.isDue(review, input.generatedAtEpochMillis)
-            },
-            overdueReviewCount = input.analytics?.overdueReviewCount ?: 0,
+            dueReviewCount = analytics.dueReviewCount,
+            overdueReviewCount = analytics.overdueReviewCount,
             practiceTestCount = input.tests.size,
             completedPracticeTestCount = completedTests.size,
             practiceTestAccuracyPercent = if (testQuestionTotal == 0) {

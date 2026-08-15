@@ -1,3 +1,14 @@
 {
-  "failed": []
+  "failed": [
+    "com.mikeyphw.studyflow.core.domain.BackupRestoreDrillSealTest.annex privacy drill is not applicable when package declares no annex payloads",
+    "com.mikeyphw.studyflow.core.domain.BackupRestoreDrillSealTest.dryRunDrillBlocksWhenDryRunWritesRows",
+    "com.mikeyphw.studyflow.core.domain.BackupRestoreDrillSealTest.drill cancellation is never converted into blocked evidence",
+    "com.mikeyphw.studyflow.core.domain.BackupRestoreDrillSealTest.packageDrillPassesEveryRequiredScenarioUsingRealDryRunCallback",
+    "com.mikeyphw.studyflow.core.domain.BackupRestoreDrillSealTest.drillResultsStayNonDestructive",
+    "com.mikeyphw.studyflow.core.domain.QuestionImportPipelineTest.markdownImportBuildsValidatedDrafts",
+    "com.mikeyphw.studyflow.core.domain.QuestionImportPipelineTest.csvImportDetectsHeaderRowsAndExistingDuplicates",
+    "com.mikeyphw.studyflow.core.domain.QuestionImportPipelineTest.ankiStyleTsvIsAcceptedAndRepeatedRowsAreSkipped",
+    "com.mikeyphw.studyflow.core.domain.RecoverableOperationTest.initializationError",
+    "com.mikeyphw.studyflow.core.domain.StudyReminderPlannerPhase29HotfixTest.quietHoursStillSuppressLatePlannedActivityDelivery"
+  ]
 }

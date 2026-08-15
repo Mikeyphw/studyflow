@@ -243,8 +243,8 @@ for token in (
     "StudyEvidenceTimelineInput(",
     "tests = tests",
     "mockExams = mockExams",
-    "goals = progress?.let { snapshot -> snapshot.activeGoals + snapshot.completedGoals }.orEmpty()",
-    "notes = progress?.notes.orEmpty()",
+    "goals = progress.activeGoals + progress.completedGoals",
+    "notes = progress.notes",
 ):
     require(token in progress_screen, f"evidence timeline coverage missing: {token}")
 for token in (

@@ -213,7 +213,7 @@ fun ProgressWorkspaceScreen(
     val tests = testsState.readyValue()
     val mockExams = mockExamsState.readyValue()
     val planSettings = planSettingsState.readyValue()
-    val targetNote = progress?.notes?.firstOrNull { note -> note.id.value == targetId }
+    val targetNote = progress.notes.firstOrNull { note -> note.id.value == targetId }
     val coroutineScope = rememberCoroutineScope()
     var appliedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
     var skippedRescheduleChanges by rememberSaveable(plan.id.value) { mutableStateOf<Int?>(null) }
@@ -321,8 +321,8 @@ fun ProgressWorkspaceScreen(
                 questions = questions,
                 tests = tests,
                 mockExams = mockExams,
-                goals = progress?.let { snapshot -> snapshot.activeGoals + snapshot.completedGoals }.orEmpty(),
-                notes = progress?.notes.orEmpty(),
+                goals = progress.activeGoals + progress.completedGoals,
+                notes = progress.notes,
                 nowEpochMillis = nowEpochMillis,
             ),
         )
@@ -352,33 +352,26 @@ fun ProgressWorkspaceScreen(
         progress,
         nowEpochMillis,
     ) {
-        val currentSyllabus = syllabus
-        val currentLibrary = library
-        if (currentSyllabus == null || currentLibrary == null) {
-            null
-        } else {
-            StudyContentCleanupEngine.inspect(
-                StudyContentCleanupInput(
-                    plan = plan,
-                    syllabus = currentSyllabus,
-                    questions = questions,
-                    materials = currentLibrary.materials,
-                    videos = currentLibrary.videos,
-                    annexes = currentLibrary.annexes,
-                    reviewItems = reviewItems,
-                    flashcards = flashcards,
-                    errorEntries = errorEntries,
-                    plannedActivities = schedule.plannedActivities,
-                    studySessions = sessions,
-                    notes = progress?.notes.orEmpty(),
-                    nowEpochMillis = nowEpochMillis,
-                ),
-            )
-        }
+        StudyContentCleanupEngine.inspect(
+            StudyContentCleanupInput(
+                plan = plan,
+                syllabus = syllabus,
+                questions = questions,
+                materials = library.materials,
+                videos = library.videos,
+                annexes = library.annexes,
+                reviewItems = reviewItems,
+                flashcards = flashcards,
+                errorEntries = errorEntries,
+                plannedActivities = schedule.plannedActivities,
+                studySessions = sessions,
+                notes = progress.notes,
+                nowEpochMillis = nowEpochMillis,
+            ),
+        )
     }
-    val examReportSnapshot = if (cleanupReport != null && analytics != null && readiness != null) {
-        StudyExamReportBuilder.build(
-            StudyExamReportInput(
+    val examReportSnapshot = StudyExamReportBuilder.build(
+        StudyExamReportInput(
                 plan = plan,
                 analytics = analytics,
                 readiness = readiness,
@@ -394,24 +387,18 @@ fun ProgressWorkspaceScreen(
                 reschedulePreview = reschedulePreview,
                 cleanupReport = cleanupReport,
                 generatedAtEpochMillis = nowEpochMillis,
-            ),
-        )
-    } else {
-        null
-    }
-    val reportDocument = examReportSnapshot?.let { snapshot -> localizedExamReportDocument(snapshot) }
+        ),
+    )
+    val reportDocument = localizedExamReportDocument(examReportSnapshot)
     val reportChooserTitle = stringResource(R.string.exam_report_share_chooser)
     val launchReportExport: (StudyExamReportFormat) -> Unit = { format ->
-        val currentDocument = reportDocument
-        if (currentDocument != null) {
-            coroutineScope.launch {
-                try {
-                    reportExportResult = onExportExamReport(currentDocument, format, reportChooserTitle)
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: RuntimeException) {
-                    reportExportResult = false
-                }
+        coroutineScope.launch {
+            try {
+                reportExportResult = onExportExamReport(reportDocument, format, reportChooserTitle)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: RuntimeException) {
+                reportExportResult = false
             }
         }
     }
@@ -479,15 +466,16 @@ fun ProgressWorkspaceScreen(
                 item(key = "readiness-card", contentType = "readiness") {
                     val currentReadiness = readiness
                     StudyFlowPrimaryActionCard(
-                        title = currentReadiness?.let { score ->
-                            stringResource(R.string.percent_value, score.scorePercent)
-                        } ?: stringResource(R.string.not_enough_data),
-                        message = currentReadiness?.let { score ->
-                            stringResource(readinessBandMessage(score.band))
-                        } ?: stringResource(R.string.readiness_waiting_message),
-                        supportingLabel = currentReadiness?.band?.let { band ->
-                            stringResource(readinessBandLabel(band))
-                        } ?: stringResource(R.string.readiness_score),
+                        title = stringResource(
+                            R.string.percent_value,
+                            currentReadiness.scorePercent,
+                        ),
+                        message = stringResource(
+                            readinessBandMessage(currentReadiness.band),
+                        ),
+                        supportingLabel = stringResource(
+                            readinessBandLabel(currentReadiness.band),
+                        ),
                         actionLabel = stringResource(R.string.open_analytics),
                         onAction = onOpenAnalytics,
                         secondaryLabel = stringResource(R.string.preview_reschedule),
@@ -499,19 +487,21 @@ fun ProgressWorkspaceScreen(
                         first = { childModifier ->
                             StudyFlowMetricPulse(
                                 label = stringResource(R.string.readiness_coverage),
-                                value = readiness?.let { score ->
-                                    stringResource(R.string.percent_value, score.coveragePercent)
-                                } ?: stringResource(R.string.not_enough_data),
+                                value = stringResource(
+                                    R.string.percent_value,
+                                    readiness.coveragePercent,
+                                ),
                                 modifier = childModifier,
                             )
                         },
                         second = { childModifier ->
                             StudyFlowMetricPulse(
                                 label = stringResource(R.string.readiness_time_feasibility),
-                                value = readiness?.let { score ->
-                                    stringResource(R.string.percent_value, score.timeFeasibilityPercent)
-                                } ?: stringResource(R.string.not_enough_data),
-                                supportingText = readiness?.daysUntilExam?.let { days ->
+                                value = stringResource(
+                                    R.string.percent_value,
+                                    readiness.timeFeasibilityPercent,
+                                ),
+                                supportingText = readiness.daysUntilExam?.let { days ->
                                     pluralStringResource(R.plurals.days_value, days, days)
                                 },
                                 modifier = childModifier,
@@ -520,7 +510,7 @@ fun ProgressWorkspaceScreen(
                     )
                 }
                 items(
-                    items = readiness?.signals.orEmpty(),
+                    items = readiness.signals,
                     key = { signal -> "readiness:${signal.kind}" },
                     contentType = { "readiness-signal" },
                 ) { signal ->
@@ -706,13 +696,11 @@ fun ProgressWorkspaceScreen(
                 item(key = "content-health-card", contentType = "coach") {
                     val currentCleanup = cleanupReport
                     StudyFlowCoachCard(
-                        title = currentCleanup?.let { report ->
-                            stringResource(R.string.percent_value, report.healthScorePercent)
-                        } ?: stringResource(R.string.not_enough_data),
-                        message = when {
-                            currentCleanup == null -> stringResource(R.string.content_health_waiting)
-                            currentCleanup.issueCount == 0 -> stringResource(R.string.content_health_clean_message)
-                            else -> pluralStringResource(
+                        title = stringResource(R.string.percent_value, currentCleanup.healthScorePercent),
+                        message = if (currentCleanup.issueCount == 0) {
+                            stringResource(R.string.content_health_clean_message)
+                        } else {
+                            pluralStringResource(
                                 R.plurals.content_health_summary,
                                 currentCleanup.issueCount,
                                 currentCleanup.issueCount,
@@ -741,7 +729,6 @@ fun ProgressWorkspaceScreen(
                         first = { childModifier ->
                             androidx.compose.material3.Button(
                                 onClick = { launchReportExport(StudyExamReportFormat.HTML) },
-                                enabled = reportDocument != null,
                                 modifier = childModifier,
                             ) {
                                 Text(stringResource(R.string.export_report_html))
@@ -750,7 +737,6 @@ fun ProgressWorkspaceScreen(
                         second = { childModifier ->
                             androidx.compose.material3.OutlinedButton(
                                 onClick = { launchReportExport(StudyExamReportFormat.PDF) },
-                                enabled = reportDocument != null,
                                 modifier = childModifier,
                             ) {
                                 Text(stringResource(R.string.export_report_pdf))
@@ -779,14 +765,12 @@ fun ProgressWorkspaceScreen(
                 item(key = "adaptive-summary", contentType = "coach") {
                     StudyFlowCoachCard(
                         title = stringResource(R.string.reschedule_preview),
-                        message = reschedulePreview?.let { preview ->
-                            stringResource(
-                                rescheduleSummary(
-                                    types = preview.changes.map { it.type },
-                                    readinessScorePercent = preview.readinessScorePercent,
-                                ),
-                            )
-                        } ?: stringResource(R.string.readiness_waiting_message),
+                        message = stringResource(
+                            rescheduleSummary(
+                                types = reschedulePreview.changes.map { it.type },
+                                readinessScorePercent = reschedulePreview.readinessScorePercent,
+                            ),
+                        ),
                         actionLabel = stringResource(R.string.apply_safe_reschedule),
                         onAction = {
                             coroutineScope.launch {
@@ -829,7 +813,7 @@ fun ProgressWorkspaceScreen(
                     }
                 }
                 items(
-                    items = reschedulePreview?.changes.orEmpty(),
+                    items = reschedulePreview.changes,
                     key = { change -> "reschedule:${change.id}" },
                     contentType = { "reschedule-change" },
                 ) { change ->
@@ -886,19 +870,18 @@ fun ProgressWorkspaceScreen(
                         first = { childModifier ->
                             StudyFlowMetricPulse(
                                 label = stringResource(R.string.plan_schedule),
-                                value = analytics?.let { snapshot ->
-                                    stringResource(R.string.percent_value, snapshot.scheduleAdherencePercent)
-                                } ?: stringResource(R.string.not_enough_data),
+                                value = stringResource(
+                                    R.string.percent_value,
+                                    analytics.scheduleAdherencePercent,
+                                ),
                                 modifier = childModifier,
                             )
                         },
                         second = { childModifier ->
-                            val goalPercent = progress?.goalProgressPercent ?: analytics?.goalCompletionPercent
+                            val goalPercent = progress.goalProgressPercent
                             StudyFlowMetricPulse(
                                 label = stringResource(R.string.goal),
-                                value = goalPercent?.let { value ->
-                                    stringResource(R.string.percent_value, value)
-                                } ?: stringResource(R.string.not_enough_data),
+                                value = stringResource(R.string.percent_value, goalPercent),
                                 modifier = childModifier,
                             )
                         },
@@ -919,7 +902,7 @@ fun ProgressWorkspaceScreen(
                 }
 
                 studyFlowSectionHeader(key = "weak", title = { stringResource(R.string.weak_areas) })
-                if (analytics?.weakAreas.isNullOrEmpty()) {
+                if (analytics.weakAreas.isEmpty()) {
                     item(key = "weak-empty", contentType = "empty") {
                         StudyFlowEmptyState(
                             title = stringResource(R.string.weak_areas),
@@ -930,7 +913,7 @@ fun ProgressWorkspaceScreen(
                     }
                 } else {
                     items(
-                        items = analytics?.weakAreas.orEmpty(),
+                        items = analytics.weakAreas,
                         key = { area -> area.label },
                         contentType = { "weak-area" },
                     ) { area ->
@@ -951,12 +934,13 @@ fun ProgressWorkspaceScreen(
                             StudyFlowMetricPulse(
                                 label = pluralStringResource(
                                     R.plurals.active_goals_value,
-                                    progress?.activeGoals?.size ?: 0,
-                                    progress?.activeGoals?.size ?: 0,
+                                    progress.activeGoals.size,
+                                    progress.activeGoals.size,
                                 ),
-                                value = progress?.goalProgressPercent?.let { value ->
-                                    stringResource(R.string.percent_value, value)
-                                } ?: stringResource(R.string.not_enough_data),
+                                value = stringResource(
+                                    R.string.percent_value,
+                                    progress.goalProgressPercent,
+                                ),
                                 modifier = childModifier,
                             )
                         },
@@ -964,10 +948,10 @@ fun ProgressWorkspaceScreen(
                             StudyFlowMetricPulse(
                                 label = pluralStringResource(
                                     R.plurals.notes_value,
-                                    progress?.notes?.size ?: 0,
-                                    progress?.notes?.size ?: 0,
+                                    progress.notes.size,
+                                    progress.notes.size,
                                 ),
-                                value = (progress?.pinnedNotes?.size ?: 0).toString(),
+                                value = (progress.pinnedNotes.size).toString(),
                                 supportingText = stringResource(R.string.open_progress_center),
                                 modifier = childModifier,
                             )
@@ -976,7 +960,7 @@ fun ProgressWorkspaceScreen(
                 }
                 item(key = "adaptation", contentType = "coach") {
                     val message = when {
-                        (analytics?.overdueReviewCount ?: 0) > 0 -> {
+                        analytics.overdueReviewCount > 0 -> {
                             stringResource(R.string.adaptation_backlog)
                         }
                         periodAccuracy != null && periodAccuracy < 60 -> {
@@ -993,9 +977,9 @@ fun ProgressWorkspaceScreen(
                 }
                 items(
                     items = adaptationRows(
-                        overdueReviews = analytics?.overdueReviewCount ?: 0,
+                        overdueReviews = analytics.overdueReviewCount,
                         periodAccuracy = periodAccuracy,
-                        weakAreas = analytics?.weakAreas.orEmpty().map { it.label },
+                        weakAreas = analytics.weakAreas.map { it.label },
                     ),
                     key = { row -> "adapt:${row.titleRes}" },
                     contentType = { "adaptation-step" },

@@ -1,6 +1,6 @@
 package com.mikeyphw.studyflow.core.domain
 
-import java.util.concurrent.CancellationException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -18,13 +18,17 @@ class RecoverableOperationTest {
     }
 
     @Test(expected = CancellationException::class)
-    fun cancellationPropagates() = runBlocking {
-        runRecoverableOperation<Unit> { throw CancellationException("cancel") }
+    fun cancellationPropagates() {
+        runBlocking {
+            runRecoverableOperation<Unit> { throw CancellationException("cancel") }
+        }
     }
 
     @Test(expected = AssertionError::class)
-    fun fatalErrorsPropagate() = runBlocking {
-        runRecoverableOperation<Unit> { throw AssertionError("fatal") }
+    fun fatalErrorsPropagate() {
+        runBlocking {
+            runRecoverableOperation<Unit> { throw AssertionError("fatal") }
+        }
     }
 
     @Test

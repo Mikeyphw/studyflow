@@ -7,6 +7,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageCodec
 import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarnings
 import com.mikeyphw.studyflow.core.portability.StudyPlanRestoreDryRun
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

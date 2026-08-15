@@ -387,7 +387,7 @@ fun PlanPortabilityScreen(
                         ) { Text(stringResource(R.string.choose_studyplan_file)) }
                         if (selectedImportUri != null) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(onClick = { inspect(selectedImportUri!!) }, enabled = !busy) {
+                                OutlinedButton(onClick = { inspect(selectedImportUri) }, enabled = !busy) {
                                     Text(stringResource(R.string.inspect_integrity))
                                 }
                                 OutlinedButton(onClick = ::previewImport, enabled = !busy) {

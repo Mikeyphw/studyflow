@@ -56,7 +56,8 @@ object StudyExamRunbookPlanner {
         require(analytics.studyPlanId == plan.id) { "Runbook analytics belong to another Study Plan." }
         require(readiness.studyPlanId == plan.id) { "Runbook readiness belongs to another Study Plan." }
         require(schedule.studyPlanId == plan.id) { "Runbook schedule belongs to another Study Plan." }
-        require(schedule.strategy == null || schedule.strategy.studyPlanId == plan.id) {
+        val scheduleStrategy = schedule.strategy
+        require(scheduleStrategy == null || scheduleStrategy.studyPlanId == plan.id) {
             "Runbook strategy evidence belongs to another Study Plan."
         }
         require(schedule.scheduleRules.all { rule -> rule.studyPlanId == plan.id }) {

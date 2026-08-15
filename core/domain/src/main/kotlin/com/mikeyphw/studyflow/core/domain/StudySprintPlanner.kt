@@ -43,7 +43,8 @@ object StudySprintPlanner {
         require(analytics.studyPlanId == plan.id) { "Sprint analytics belong to another Study Plan." }
         require(readiness.studyPlanId == plan.id) { "Sprint readiness belongs to another Study Plan." }
         require(schedule.studyPlanId == plan.id) { "Sprint schedule belongs to another Study Plan." }
-        require(schedule.strategy == null || schedule.strategy.studyPlanId == plan.id) {
+        val scheduleStrategy = schedule.strategy
+        require(scheduleStrategy == null || scheduleStrategy.studyPlanId == plan.id) {
             "Sprint strategy evidence belongs to another Study Plan."
         }
         require(schedule.scheduleRules.all { rule -> rule.studyPlanId == plan.id }) {
@@ -97,7 +98,8 @@ object StudySprintPlanner {
         require(schedule.studyPlanId == preview.studyPlanId) {
             "Study sprint current schedule belongs to another Study Plan."
         }
-        require(schedule.strategy == null || schedule.strategy.studyPlanId == preview.studyPlanId) {
+        val currentStrategy = schedule.strategy
+        require(currentStrategy == null || currentStrategy.studyPlanId == preview.studyPlanId) {
             "Study sprint current strategy belongs to another Study Plan."
         }
         require(schedule.scheduleRules.all { rule -> rule.studyPlanId == preview.studyPlanId }) {

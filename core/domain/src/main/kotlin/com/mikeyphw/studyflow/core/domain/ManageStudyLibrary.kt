@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.Annex
+import com.mikeyphw.studyflow.core.model.AnnexId
 import com.mikeyphw.studyflow.core.model.StudyMaterial
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.StudyMaterialType

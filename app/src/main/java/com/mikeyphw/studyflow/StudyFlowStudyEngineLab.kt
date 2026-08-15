@@ -153,8 +153,9 @@ private suspend fun inspectStudyEngine(
         generatedActivities.all { activity ->
             activity.studyPlanId == planId &&
                 activity.plannedDurationMinutes > 0 &&
-                activity.scheduledStartEpochMillis != null &&
-                activity.scheduledStartEpochMillis >= nowEpochMillis
+                activity.scheduledStartEpochMillis?.let { scheduledStart ->
+                    scheduledStart >= nowEpochMillis
+                } == true
         }
     val schedulePersistenceValid = schedule.plannedActivities.map { it.id }.distinct().size == schedule
         .plannedActivities.size &&
@@ -174,7 +175,7 @@ private suspend fun inspectStudyEngine(
         mock.studyPlanId == planId &&
             mock.answeredCount in 0..mock.questionCount &&
             mock.correctCount in 0..mock.answeredCount &&
-            (mock.scorePercent == null || mock.scorePercent in 0.0..100.0) &&
+            (mock.scorePercent?.let { score -> score in 0.0..100.0 } != false) &&
             (mock.submittedAtEpochMillis == null || mock.scorePercent != null)
     }
     val recommendationsValid = recommendations.map { it.id }.distinct().size == recommendations.size &&

@@ -21,6 +21,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -42,19 +43,23 @@ internal class RoomStudyAnalyticsRepository(
     private val structureDao = database.studyStructureDao()
     private val sharedSnapshots = ConcurrentHashMap<String, Flow<StudyAnalyticsSnapshot>>()
 
-    override fun observeSnapshot(planId: StudyPlanId): Flow<StudyAnalyticsSnapshot> = sharedSnapshots.computeIfAbsent(
-        planId.value,
-    ) {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeSnapshot(planId: StudyPlanId): Flow<StudyAnalyticsSnapshot> {
+        sharedSnapshots[planId.value]?.let { existing -> return existing }
+
         val graphRevision = metadataDao.observeValue(StudyFlowIntegrity.GraphRevisionMetadataKey)
             .map { value -> value?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L }
             .distinctUntilChanged()
-        combine(graphRevision, tickingClockFlow(clock)) { _, now -> now }
+
+        val shared = combine(graphRevision, tickingClockFlow(clock)) { _, now -> now }
             .mapLatest { now -> buildSnapshot(planId, loadInputs(planId, now), now) }
             .shareIn(
                 scope = sharingScope,
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = SharedFlowStopTimeoutMillis),
                 replay = 1,
             )
+
+        return sharedSnapshots.putIfAbsent(planId.value, shared) ?: shared
     }
 
     private suspend fun loadInputs(planId: StudyPlanId, now: Long): AnalyticsInputs {

@@ -342,7 +342,7 @@ class StudyContentCleanupEngineTest {
     private fun material(
         id: String,
         archived: Boolean,
-        tags: List<String>,
+        tags: List<String> = emptyList(),
         updatedAt: Long,
     ) = StudyMaterial(
         id = StudyMaterialId(id),

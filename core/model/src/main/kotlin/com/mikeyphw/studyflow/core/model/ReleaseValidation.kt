@@ -52,9 +52,9 @@ data class ReleaseValidationSeal(
     val signerCertificateSha256: List<String> = emptyList(),
 ) {
     private val artifactBound: Boolean = !validationSession.isNullOrBlank() &&
-        artifactSha256.isSha256() &&
+        isSha256(artifactSha256) &&
         signerCertificateSha256.isNotEmpty() &&
-        signerCertificateSha256.all(String::isSha256)
+        signerCertificateSha256.all { value -> isSha256(value) }
 
     val releaseReady: Boolean = provenance == ReleaseValidationProvenance.AUTHORITATIVE_VERDICT &&
         artifactBound &&
@@ -68,5 +68,5 @@ data class ReleaseValidationSeal(
     val failureCount: Int = gates.count { gate -> gate.status == ReleaseValidationGateStatus.FAIL }
     val passedCount: Int = gates.count { gate -> gate.status == ReleaseValidationGateStatus.PASS }
 
-    private fun String?.isSha256(): Boolean = this?.matches(Regex("[0-9a-fA-F]{64}")) == true
+    private fun isSha256(value: String?): Boolean = value?.matches(Regex("[0-9a-fA-F]{64}")) == true
 }

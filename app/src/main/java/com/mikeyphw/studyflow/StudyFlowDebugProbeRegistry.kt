@@ -300,7 +300,6 @@ private class AndroidStudyFlowDebugProbeOperations(
         val abnormalReasons = crashOrAnrReasons + setOf(
             ApplicationExitInfo.REASON_INITIALIZATION_FAILURE,
             ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
-            ApplicationExitInfo.REASON_MEMORY_LIMITER,
             ApplicationExitInfo.REASON_SIGNALED,
             ApplicationExitInfo.REASON_UNKNOWN,
         )
