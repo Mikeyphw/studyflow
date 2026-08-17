@@ -195,14 +195,24 @@ build_cache = true
 structured_events = true
 
 [targets.studyflow_desktop.tasks]
-build = ["verifyStudyFlowDesktopFoundation"]
+build = [
+    "verifyStudyFlowDesktopFoundation",
+    "verifyStudyFlowDesktopShellContracts",
+    ":desktopApp:compileKotlin",
+]
 test = [
     "verifyStudyFlowDesktopFoundation",
+    "verifyStudyFlowDesktopShellContracts",
     ":core:model:test",
     ":core:domain:test",
     ":core:portability:test",
+    ":desktopApp:test",
 ]
-lint = ["verifyFormatting", "verifyStudyFlowDesktopFoundation"]
+lint = [
+    "verifyFormatting",
+    "verifyStudyFlowDesktopFoundation",
+    "verifyStudyFlowDesktopShellContracts",
+]
 clean = ["clean"]
 
 [targets.studyflow_desktop.validation]
@@ -218,12 +228,30 @@ memory_guard_mb = 0
 
 [targets.studyflow_desktop.validation.phases]
 preflight = ["help"]
-compile = ["verifyStudyFlowDesktopFoundation"]
+compile = [
+    "verifyStudyFlowDesktopFoundation",
+    "verifyStudyFlowDesktopShellContracts",
+    ":core:model:compileKotlin",
+    ":core:portability:compileKotlin",
+    ":core:domain:compileKotlin",
+    ":desktopApp:compileKotlin",
+    ":desktopApp:compileTestKotlin",
+]
 unit-test = [
     "verifyStudyFlowDesktopFoundation",
+    "verifyStudyFlowDesktopShellContracts",
     ":core:model:test",
     ":core:domain:test",
     ":core:portability:test",
+    ":desktopApp:test",
 ]
-package = ["verifyStudyFlowDesktopFoundation"]
-lint = ["verifyFormatting", "verifyStudyFlowDesktopFoundation"]
+package = [
+    "verifyStudyFlowDesktopFoundation",
+    "verifyStudyFlowDesktopShellContracts",
+    ":desktopApp:compileKotlin",
+]
+lint = [
+    "verifyFormatting",
+    "verifyStudyFlowDesktopFoundation",
+    "verifyStudyFlowDesktopShellContracts",
+]

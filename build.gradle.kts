@@ -455,6 +455,13 @@ tasks.register<Exec>("verifyStudyFlowDesktopFoundation") {
     commandLine("python3", "scripts/verify_studyflow_desktop_foundation.py")
 }
 
+
+tasks.register<Exec>("verifyStudyFlowDesktopShellContracts") {
+    group = "verification"
+    description = "Checks the Compose Desktop shell and shared-module boundary contracts."
+    commandLine("python3", "scripts/verify_studyflow_desktop_shell_contracts.py")
+}
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
