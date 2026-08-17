@@ -2,6 +2,7 @@
 agp = "9.3.0"
 kotlin = "2.4.10"
 composeBom = "2026.06.00"
+composeMultiplatform = "1.9.3"
 activity = "1.13.0"
 appcompat = "1.7.1"
 coreKtx = "1.17.0"
@@ -47,3 +48,8 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

@@ -2,6 +2,7 @@ val qualitySourceRoots = listOf(
     "app",
     "core",
     "feature",
+    "desktopApp",
     "build-logic",
 )
 
@@ -446,6 +447,12 @@ tasks.register<Exec>("verifyFinalReleaseVerdict") {
     group = "verification"
     description = "Fails closed until automated and manual final Release evidence all PASS."
     commandLine("python3", "scripts/verify_final_release_verdict.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowDesktopFoundation") {
+    group = "verification"
+    description = "Checks StudyFlow desktop foundation wiring before the desktop app shell exists."
+    commandLine("python3", "scripts/verify_studyflow_desktop_foundation.py")
 }
 
 tasks.register("checkAll") {

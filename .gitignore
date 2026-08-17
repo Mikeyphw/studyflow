@@ -32,3 +32,14 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Desktop packaging artifacts
+*.deb
+*.rpm
+*.msi
+*.exe
+*.dmg
+*.pkg
+*.app/
+desktopApp/dist/
+desktopApp/out/

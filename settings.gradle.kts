@@ -44,4 +44,5 @@ include(
     ":feature:settings",
     ":feature:subjects",
     ":feature:workspace",
+    ":desktopApp",
 )
