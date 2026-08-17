@@ -35,3 +35,19 @@ reserve desktop-safe seams for future filesystem, file-dialog, tray, and
 notification adapters.
 
 The bootstrap also supports empty repositories so first-run desktop storage can show empty dashboard/library states instead of crashing.
+
+
+## DOV06/DOV07 desktop workflow expansion
+
+DOV06 adds the first desktop planner and practice workflows. The desktop app now
+wires JVM in-memory implementations for schedule, session, and practice
+repositories and renders planned activities, recent sessions, practice deck
+summary, attempts, and the current question card.
+
+DOV07 adds analytics, global search, recommendations, and settings screens. These
+use `core:domain` calculators/search contracts and `core:model` preferences, but
+stay desktop-local until persistent filesystem settings and backup/restore are
+introduced.
+
+Still forbidden: Android `:feature:*`, `:core:data`, `:core:database`,
+`:core:designsystem`, and `:core:navigation` dependencies.

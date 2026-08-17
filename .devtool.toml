@@ -199,12 +199,14 @@ build = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopWorkflows",
     ":desktopApp:compileKotlin",
 ]
 test = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopWorkflows",
     ":core:model:test",
     ":core:domain:test",
     ":core:portability:test",
@@ -215,6 +217,7 @@ lint = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopWorkflows",
 ]
 clean = ["clean"]
 
@@ -235,6 +238,7 @@ compile = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopWorkflows",
     ":core:model:compileKotlin",
     ":core:portability:compileKotlin",
     ":core:domain:compileKotlin",
@@ -245,6 +249,7 @@ unit-test = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopWorkflows",
     ":core:model:test",
     ":core:domain:test",
     ":core:portability:test",
@@ -254,6 +259,7 @@ package = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopWorkflows",
     ":desktopApp:compileKotlin",
 ]
 lint = [
@@ -261,4 +267,5 @@ lint = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopWorkflows",
 ]

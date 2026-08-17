@@ -2,31 +2,52 @@ package com.mikeyphw.studyflow.desktop
 
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessAuditor
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessInput
+import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
+import com.mikeyphw.studyflow.core.domain.ManageStudyDiscovery
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyPlan
+import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
+import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
+import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.PracticeAnalytics
 import com.mikeyphw.studyflow.core.domain.StudyLibrarySnapshot
 import com.mikeyphw.studyflow.core.model.AppLanguage
+import com.mikeyphw.studyflow.core.model.AppPreferences
+import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.ThemeMode
+import kotlinx.coroutines.runBlocking
 
 class DesktopStudyFlowServices(
     val planRepository: InMemoryStudyPlanRepository,
     val libraryRepository: InMemoryStudyLibraryRepository,
+    val scheduleRepository: InMemoryStudyScheduleRepository,
+    val sessionRepository: InMemoryStudySessionRepository,
+    val practiceRepository: InMemoryStudyPracticeRepository,
+    val analyticsRepository: InMemoryStudyAnalyticsRepository,
+    val discoveryRepository: DesktopStudyDiscoveryRepository,
+    val preferencesStore: DesktopPreferencesStore,
     val platformPorts: DesktopPlatformPorts,
 ) {
     val manageStudyPlan: ManageStudyPlan = ManageStudyPlan(planRepository)
     val manageStudyLibrary: ManageStudyLibrary = ManageStudyLibrary(libraryRepository)
+    val manageStudySchedule: ManageStudySchedule = ManageStudySchedule(scheduleRepository)
+    val manageStudySession: ManageStudySession = ManageStudySession(sessionRepository, planRepository)
+    val manageStudyPractice: ManageStudyPractice = ManageStudyPractice(practiceRepository, planRepository)
+    val manageStudyAnalytics: ManageStudyAnalytics = ManageStudyAnalytics(analyticsRepository)
+    val manageStudyDiscovery: ManageStudyDiscovery = ManageStudyDiscovery(discoveryRepository)
     val defaultPlanId: StudyPlanId? = planRepository.currentPlans().firstOrNull()?.id
 
     fun createDashboardState(): DesktopDashboardState {
         val activePlan = currentDefaultPlan()
         val librarySnapshot = activePlan?.id?.let(libraryRepository::currentSnapshot) ?: emptyLibrarySnapshot()
+        val preferences = preferencesStore.current()
         val readiness = AppShellReadinessAuditor.evaluate(
             AppShellReadinessInput(
-                language = AppLanguage.SYSTEM_DEFAULT,
-                themeMode = ThemeMode.SYSTEM_DEFAULT,
-                dynamicColorEnabled = false,
+                language = preferences.language,
+                themeMode = preferences.themeMode,
+                dynamicColorEnabled = preferences.dynamicColorEnabled,
                 hasDefaultPlan = activePlan != null,
             ),
         )
@@ -44,7 +65,15 @@ class DesktopStudyFlowServices(
             materialCount = librarySnapshot.activeMaterials.size,
             favoriteCount = librarySnapshot.favoriteMaterials.size,
             videoCount = librarySnapshot.videos.size,
-            domainManagers = listOf("ManageStudyPlan", "ManageStudyLibrary"),
+            domainManagers = listOf(
+                "ManageStudyPlan",
+                "ManageStudyLibrary",
+                "ManageStudySchedule",
+                "ManageStudySession",
+                "ManageStudyPractice",
+                "ManageStudyAnalytics",
+                "ManageStudyDiscovery",
+            ),
             boundaryModules = StudyFlowDesktopBoundary.allowedSharedModules,
         )
     }
@@ -67,6 +96,112 @@ class DesktopStudyFlowServices(
         )
     }
 
+    fun createPlannerState(): DesktopPlannerScreenState {
+        val activePlan = currentDefaultPlan()
+        val planId = activePlan?.id
+        val activities = planId?.let(scheduleRepository::currentActivities).orEmpty()
+        val sessions = planId?.let(sessionRepository::currentSessions).orEmpty()
+        val activeSession = sessions.firstOrNull { session ->
+            session.status.name == "RUNNING" || session.status.name == "PAUSED"
+        }
+        return DesktopPlannerScreenState(
+            status = if (activePlan == null || activities.isEmpty() && sessions.isEmpty()) {
+                DesktopScreenStatus.EMPTY
+            } else {
+                DesktopScreenStatus.CONTENT
+            },
+            planName = activePlan?.name ?: "No active Study Plan",
+            plannedActivities = activities.map(DesktopPlannedActivityRow::fromActivity),
+            activeSession = activeSession?.let(DesktopSessionRow::fromSession),
+            recentSessions = sessions.map(DesktopSessionRow::fromSession),
+            nextActivityTitle = activities.firstOrNull { activity ->
+                activity.status in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED)
+            }?.title ?: "No next activity",
+            completedCount = activities.count { activity -> activity.status == PlannedActivityStatus.COMPLETED },
+            missedCount = activities.count { activity -> activity.status == PlannedActivityStatus.MISSED },
+            totalPlannedMinutes = activities.sumOf { activity -> activity.plannedDurationMinutes },
+        )
+    }
+
+    fun createPracticeState(): DesktopPracticeScreenState {
+        val activePlan = currentDefaultPlan()
+        val planId = activePlan?.id
+        val questions = planId?.let(practiceRepository::currentQuestions).orEmpty()
+        val tests = planId?.let(practiceRepository::currentTests).orEmpty()
+        val mockExams = planId?.let(practiceRepository::currentMockExams).orEmpty()
+        val summary = PracticeAnalytics.summarize(questions, tests, mockExams)
+        val deck = buildDesktopPracticeDeck(questions)
+        return DesktopPracticeScreenState(
+            status = if (activePlan == null || questions.isEmpty()) {
+                DesktopScreenStatus.EMPTY
+            } else {
+                DesktopScreenStatus.CONTENT
+            },
+            summary = DesktopPracticeSummary.fromSummary(summary),
+            deck = deck.map(DesktopQuestionRow::fromQuestion),
+            tests = tests.map(DesktopPracticeAttemptRow::fromTest),
+            currentQuestion = deck.firstOrNull()?.let(DesktopQuestionRow::fromQuestion),
+        )
+    }
+
+    fun createAnalyticsState(): DesktopAnalyticsScreenState {
+        val activePlan = currentDefaultPlan()
+        val snapshot = activePlan?.id?.let(analyticsRepository::currentSnapshot)
+        return snapshot?.let(DesktopAnalyticsScreenState::fromSnapshot) ?: DesktopAnalyticsScreenState(
+            status = DesktopScreenStatus.EMPTY,
+            studiedHoursSevenDays = 0.0,
+            completedSessions = 0,
+            scheduleAdherencePercent = 0,
+            questionAccuracyPercent = 0,
+            answeredQuestions = 0,
+            libraryProgressPercent = 0,
+            consistencyScorePercent = 0,
+            dueReviewCount = 0,
+            overdueReviewCount = 0,
+            weakAreas = emptyList(),
+            insights = emptyList(),
+        )
+    }
+
+    fun createSearchState(query: String): DesktopSearchScreenState {
+        val activePlan = currentDefaultPlan()
+        val trimmed = query.trim()
+        val results = if (trimmed.length >= 2) {
+            runBlocking { manageStudyDiscovery.search(trimmed).map(DesktopSearchResultRow::fromResult) }
+        } else {
+            emptyList()
+        }
+        if (results.isNotEmpty()) preferencesStore.recordSearch(trimmed)
+        val recommendations = activePlan?.id?.let { planId ->
+            runBlocking {
+                manageStudyDiscovery.recommendations(planId).map(DesktopRecommendationRow::fromRecommendation)
+            }
+        }.orEmpty()
+        return DesktopSearchScreenState(
+            status = if (activePlan == null) DesktopScreenStatus.EMPTY else DesktopScreenStatus.CONTENT,
+            query = query,
+            results = results,
+            recommendations = recommendations,
+            recentSearches = preferencesStore.current().recentSearches,
+        )
+    }
+
+    fun createSettingsState(): DesktopSettingsScreenState {
+        val activePlan = currentDefaultPlan()
+        return DesktopSettingsScreenState.fromPreferences(
+            preferences = preferencesStore.current(),
+            defaultPlanLabel = activePlan?.name ?: "No active Study Plan",
+        )
+    }
+
+    fun setTheme(themeMode: ThemeMode) {
+        preferencesStore.setTheme(themeMode)
+    }
+
+    fun setLanguage(language: AppLanguage) {
+        preferencesStore.setLanguage(language)
+    }
+
     private fun currentDefaultPlan(): StudyPlan? {
         val plans = planRepository.currentPlans()
         return defaultPlanId?.let { planId -> plans.firstOrNull { plan -> plan.id == planId } }
@@ -84,12 +219,47 @@ fun createDesktopStudyFlowServices(
     platformPorts: DesktopPlatformPorts = NoOpDesktopPlatformPorts,
 ): DesktopStudyFlowServices {
     val sample = DesktopStudyFlowSampleData.create()
+    val planRepository = InMemoryStudyPlanRepository(sample.plans)
+    val libraryRepository = InMemoryStudyLibraryRepository(
+        materials = sample.materials,
+        videos = sample.videos,
+        annexes = sample.annexes,
+    )
+    val scheduleRepository = InMemoryStudyScheduleRepository(
+        strategies = sample.strategies,
+        scheduleRules = sample.scheduleRules,
+        plannedActivities = sample.plannedActivities,
+    )
+    val sessionRepository = InMemoryStudySessionRepository(sample.sessions)
+    val practiceRepository = InMemoryStudyPracticeRepository(
+        questions = sample.questions,
+        tests = sample.tests,
+        mockExams = sample.mockExams,
+    )
+    val analyticsRepository = InMemoryStudyAnalyticsRepository(
+        plans = planRepository,
+        library = libraryRepository,
+        schedule = scheduleRepository,
+        sessions = sessionRepository,
+        practice = practiceRepository,
+    )
+    val discoveryRepository = DesktopStudyDiscoveryRepository(
+        plans = planRepository,
+        library = libraryRepository,
+        schedule = scheduleRepository,
+        practice = practiceRepository,
+        analytics = analyticsRepository,
+    )
     return DesktopStudyFlowServices(
-        planRepository = InMemoryStudyPlanRepository(sample.plans),
-        libraryRepository = InMemoryStudyLibraryRepository(
-            materials = sample.materials,
-            videos = sample.videos,
-            annexes = sample.annexes,
+        planRepository = planRepository,
+        libraryRepository = libraryRepository,
+        scheduleRepository = scheduleRepository,
+        sessionRepository = sessionRepository,
+        practiceRepository = practiceRepository,
+        analyticsRepository = analyticsRepository,
+        discoveryRepository = discoveryRepository,
+        preferencesStore = DesktopPreferencesStore(
+            AppPreferences(dynamicColorEnabled = false, defaultStudyPlanId = sample.plans.firstOrNull()?.id),
         ),
         platformPorts = platformPorts,
     )

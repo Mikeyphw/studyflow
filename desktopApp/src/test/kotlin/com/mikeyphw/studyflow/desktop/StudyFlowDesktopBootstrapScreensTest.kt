@@ -41,15 +41,36 @@ class StudyFlowDesktopBootstrapScreensTest {
         appState.selectRoute(DesktopRoute.LIBRARY)
         assertEquals(DesktopRoute.LIBRARY, appState.selectedRoute)
     }
+
     @Test
     fun emptyRepositoriesRenderEmptyStatesInsteadOfCrashing() {
+        val planRepository = InMemoryStudyPlanRepository(emptyList())
+        val libraryRepository = InMemoryStudyLibraryRepository(emptyList(), emptyList(), emptyList())
+        val scheduleRepository = InMemoryStudyScheduleRepository(emptyList(), emptyList(), emptyList())
+        val sessionRepository = InMemoryStudySessionRepository(emptyList())
+        val practiceRepository = InMemoryStudyPracticeRepository(emptyList(), emptyList(), emptyList())
+        val analyticsRepository = InMemoryStudyAnalyticsRepository(
+            plans = planRepository,
+            library = libraryRepository,
+            schedule = scheduleRepository,
+            sessions = sessionRepository,
+            practice = practiceRepository,
+        )
         val services = DesktopStudyFlowServices(
-            planRepository = InMemoryStudyPlanRepository(emptyList()),
-            libraryRepository = InMemoryStudyLibraryRepository(
-                materials = emptyList(),
-                videos = emptyList(),
-                annexes = emptyList(),
+            planRepository = planRepository,
+            libraryRepository = libraryRepository,
+            scheduleRepository = scheduleRepository,
+            sessionRepository = sessionRepository,
+            practiceRepository = practiceRepository,
+            analyticsRepository = analyticsRepository,
+            discoveryRepository = DesktopStudyDiscoveryRepository(
+                plans = planRepository,
+                library = libraryRepository,
+                schedule = scheduleRepository,
+                practice = practiceRepository,
+                analytics = analyticsRepository,
             ),
+            preferencesStore = DesktopPreferencesStore(),
             platformPorts = NoOpDesktopPlatformPorts,
         )
         val appState = DesktopAppState(
