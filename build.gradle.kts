@@ -462,6 +462,13 @@ tasks.register<Exec>("verifyStudyFlowDesktopShellContracts") {
     commandLine("python3", "scripts/verify_studyflow_desktop_shell_contracts.py")
 }
 
+
+tasks.register<Exec>("verifyStudyFlowDesktopBootstrapScreens") {
+    group = "verification"
+    description = "Checks desktop bootstrap, domain wiring, dashboard, and library screens."
+    commandLine("python3", "scripts/verify_studyflow_desktop_bootstrap_screens.py")
+}
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."

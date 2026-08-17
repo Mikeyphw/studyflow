@@ -198,11 +198,13 @@ structured_events = true
 build = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
+    "verifyStudyFlowDesktopBootstrapScreens",
     ":desktopApp:compileKotlin",
 ]
 test = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
+    "verifyStudyFlowDesktopBootstrapScreens",
     ":core:model:test",
     ":core:domain:test",
     ":core:portability:test",
@@ -212,6 +214,7 @@ lint = [
     "verifyFormatting",
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
+    "verifyStudyFlowDesktopBootstrapScreens",
 ]
 clean = ["clean"]
 
@@ -231,6 +234,7 @@ preflight = ["help"]
 compile = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
+    "verifyStudyFlowDesktopBootstrapScreens",
     ":core:model:compileKotlin",
     ":core:portability:compileKotlin",
     ":core:domain:compileKotlin",
@@ -240,6 +244,7 @@ compile = [
 unit-test = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
+    "verifyStudyFlowDesktopBootstrapScreens",
     ":core:model:test",
     ":core:domain:test",
     ":core:portability:test",
@@ -248,10 +253,12 @@ unit-test = [
 package = [
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
+    "verifyStudyFlowDesktopBootstrapScreens",
     ":desktopApp:compileKotlin",
 ]
 lint = [
     "verifyFormatting",
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopShellContracts",
+    "verifyStudyFlowDesktopBootstrapScreens",
 ]
