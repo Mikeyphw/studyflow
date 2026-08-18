@@ -1,0 +1,229 @@
+[project]
+kind = "android"
+
+default_target = "studyflow_desktop"
+[execution]
+environment = "auto"
+chroot_name = "androidos"
+
+[targets.studyflow_android]
+type = "android"
+root = "."
+execution_environment = "auto"
+chroot_name = "androidos"
+
+[targets.studyflow_android.android]
+variant = "debug"
+aapt2_provider = "auto"
+prefer_native_termux = true
+
+[targets.studyflow_android.gradle]
+max_workers = 1
+parallel = false
+no_daemon = true
+build_cache = true
+structured_events = true
+
+[targets.studyflow_android.tasks]
+build = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
+test = [
+    "verifyRepositoryContracts",
+    "verifyPhase63_64ExamRunbookSprintSeal",
+    "verifyPostPhase64FinalValidationRefresh",
+    "verifyFormatting",
+    "verifyFinalSourceAcceptance",
+    "verifyRemediationOv13",
+    ":core:diagnostics:test",
+    ":core:model:test",
+    ":core:domain:test",
+    ":core:portability:test",
+    ":core:data:testDebugUnitTest",
+    ":core:database:testDebugUnitTest",
+    ":core:navigation:test",
+    ":core:testing:test",
+    ":app:testDebugUnitTest",
+    ":feature:analytics:testDebugUnitTest",
+    ":feature:dashboard:testDebugUnitTest",
+    ":feature:library:testDebugUnitTest",
+    ":feature:plans:testDebugUnitTest",
+    ":feature:practice:testDebugUnitTest",
+    ":feature:privacy:testDebugUnitTest",
+    ":feature:reminders:testDebugUnitTest",
+    ":feature:progress:testDebugUnitTest",
+    ":feature:reviews:testDebugUnitTest",
+    ":feature:schedule:testDebugUnitTest",
+    ":feature:search:testDebugUnitTest",
+    ":feature:sessions:testDebugUnitTest",
+    ":feature:settings:testDebugUnitTest",
+    ":feature:subjects:testDebugUnitTest",
+    ":feature:workspace:testDebugUnitTest",
+]
+lint = [
+    ":core:data:lintDebug",
+    ":core:database:lintDebug",
+    ":core:i18n:lintDebug",
+    ":feature:plans:lintDebug",
+    ":feature:privacy:lintDebug",
+    ":feature:reminders:lintDebug",
+    ":feature:search:lintDebug",
+    ":feature:settings:lintDebug",
+    ":feature:workspace:lintDebug",
+    ":app:lintDebug",
+    ":app:lintRelease",
+]
+clean = ["clean"]
+
+[targets.studyflow_android.artifacts]
+required = true
+external_verification = "auto"
+
+[targets.studyflow_android.validation]
+android_safe = true
+max_workers = 1
+cpu_limit = 2
+parallel = false
+split_gradle = true
+no_daemon = true
+low_priority = true
+gradle_heap_mb = 512
+memory_guard_mb = 0
+gradle_packaging_heap_mb = 1536
+affected_module_lint = true
+
+[targets.studyflow_android.validation.phase_profiles.resources]
+gradle_heap_mb = 768
+
+[targets.studyflow_android.validation.phase_profiles.package]
+gradle_heap_mb = 1536
+
+[targets.studyflow_android.validation.phase_profiles.lint]
+gradle_heap_mb = 1024
+
+[targets.studyflow_android.validation.phases]
+preflight = ["help"]
+compile = [
+    ":core:diagnostics:compileKotlin",
+    ":core:model:compileKotlin",
+    ":core:portability:compileKotlin",
+    ":core:domain:compileKotlin",
+    ":core:i18n:compileDebugKotlin",
+    ":core:database:compileDebugKotlin",
+    ":core:data:compileDebugKotlin",
+    ":feature:plans:compileDebugKotlin",
+    ":feature:privacy:compileDebugKotlin",
+    ":feature:reminders:compileDebugKotlin",
+    ":feature:search:compileDebugKotlin",
+    ":feature:settings:compileDebugKotlin",
+    ":feature:workspace:compileDebugKotlin",
+    ":app:compileDebugKotlin",
+    ":app:compileReleaseKotlin",
+    ":core:diagnostics:compileTestKotlin",
+    ":core:model:compileTestKotlin",
+    ":core:portability:compileTestKotlin",
+    ":core:domain:compileTestKotlin",
+    ":core:database:compileDebugUnitTestKotlin",
+    ":core:data:compileDebugUnitTestKotlin",
+    ":feature:plans:compileDebugUnitTestKotlin",
+    ":feature:privacy:compileDebugUnitTestKotlin",
+    ":feature:reminders:compileDebugUnitTestKotlin",
+    ":feature:search:compileDebugUnitTestKotlin",
+    ":feature:workspace:compileDebugUnitTestKotlin",
+    ":core:database:compileDebugAndroidTestKotlin",
+    ":feature:workspace:compileDebugAndroidTestKotlin",
+    ":app:compileDebugUnitTestKotlin",
+    ":app:compileReleaseAndroidTestKotlin",
+]
+resources = [":app:processDebugResources"]
+unit-test = [
+    "verifyRepositoryContracts",
+    "verifyPhase63_64ExamRunbookSprintSeal",
+    "verifyPostPhase64FinalValidationRefresh",
+    "verifyFormatting",
+    "verifyFinalSourceAcceptance",
+    "verifyRemediationOv13",
+    ":core:diagnostics:test",
+    ":core:model:test",
+    ":core:domain:test",
+    ":core:portability:test",
+    ":core:data:testDebugUnitTest",
+    ":core:database:testDebugUnitTest",
+    ":core:navigation:test",
+    ":core:testing:test",
+    ":app:testDebugUnitTest",
+    ":feature:analytics:testDebugUnitTest",
+    ":feature:dashboard:testDebugUnitTest",
+    ":feature:library:testDebugUnitTest",
+    ":feature:plans:testDebugUnitTest",
+    ":feature:practice:testDebugUnitTest",
+    ":feature:privacy:testDebugUnitTest",
+    ":feature:reminders:testDebugUnitTest",
+    ":feature:progress:testDebugUnitTest",
+    ":feature:reviews:testDebugUnitTest",
+    ":feature:schedule:testDebugUnitTest",
+    ":feature:search:testDebugUnitTest",
+    ":feature:sessions:testDebugUnitTest",
+    ":feature:settings:testDebugUnitTest",
+    ":feature:subjects:testDebugUnitTest",
+    ":feature:workspace:testDebugUnitTest",
+]
+package = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
+lint = [
+    ":core:data:lintDebug",
+    ":core:database:lintDebug",
+    ":core:i18n:lintDebug",
+    ":feature:plans:lintDebug",
+    ":feature:privacy:lintDebug",
+    ":feature:reminders:lintDebug",
+    ":feature:search:lintDebug",
+    ":feature:settings:lintDebug",
+    ":feature:workspace:lintDebug",
+    ":app:lintDebug",
+    ":app:lintRelease",
+]
+
+[targets.studyflow_desktop]
+type = "gradle"
+root = "."
+execution_environment = "auto"
+chroot_name = "androidos"
+
+[targets.studyflow_desktop.gradle]
+max_workers = 1
+parallel = false
+no_daemon = true
+build_cache = true
+structured_events = true
+
+[targets.studyflow_desktop.tasks]
+build = ["verifyStudyFlowDesktopFoundation"]
+test = [
+    "verifyStudyFlowDesktopFoundation",
+    ":core:model:test",
+    ":core:domain:test",
+    ":core:portability:test",
+]
+lint = ["verifyFormatting", "verifyStudyFlowDesktopFoundation"]
+clean = ["clean"]
+
+[targets.studyflow_desktop.validation]
+android_safe = false
+max_workers = 1
+cpu_limit = 2
+parallel = false
+split_gradle = true
+no_daemon = true
+low_priority = true
+gradle_heap_mb = 1024
+memory_guard_mb = 0
+
+[targets.studyflow_desktop.validation.phases]
+preflight = ["help"]
+compile = ["verifyStudyFlowDesktopFoundation"]
+unit-test = [
+    "verifyStudyFlowDesktopFoundation",
+    ":core:model:test",
+    ":core:domain:test",
+    ":core:portability:test",
+]
+package = ["verifyStudyFlowDesktopFoundation"]
+lint = ["verifyFormatting", "verifyStudyFlowDesktopFoundation"]
