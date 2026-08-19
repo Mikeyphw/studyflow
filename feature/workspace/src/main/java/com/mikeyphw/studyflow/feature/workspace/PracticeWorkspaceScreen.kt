@@ -83,7 +83,6 @@ import kotlinx.coroutines.launch
 fun PracticeWorkspaceScreen(
     plan: StudyPlan,
     selectedTab: PracticeWorkspaceTab,
-    targetId: String? = null,
     practiceManager: ManageStudyPractice,
     reviewManager: ManageStudyReview,
     contentManager: ManageStudyContent,
@@ -95,6 +94,7 @@ fun PracticeWorkspaceScreen(
     onOpenReviewCenter: () -> Unit,
     onOpenQuestionBank: () -> Unit,
     modifier: Modifier = Modifier,
+    targetId: String? = null,
 ) {
     var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
     val reviewFlow = remember(plan.id, loadAttempt) {
@@ -122,7 +122,7 @@ fun PracticeWorkspaceScreen(
     val mocksState by mocksFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     if (
-        !WorkspaceLoadGate(
+        !workspaceLoadGate(
             states = listOf(queueState, notebookState, questionsState, testsState, mocksState, syllabusState),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,
@@ -778,9 +778,21 @@ private fun QuestionImportDialog(
                     Text(
                         text = stringResource(
                             R.string.question_import_preview,
-                            value.acceptedCount,
-                            value.duplicateCount,
-                            value.rejectedCount,
+                            pluralStringResource(
+                                R.plurals.question_import_ready,
+                                value.acceptedCount,
+                                value.acceptedCount,
+                            ),
+                            pluralStringResource(
+                                R.plurals.question_import_duplicates,
+                                value.duplicateCount,
+                                value.duplicateCount,
+                            ),
+                            pluralStringResource(
+                                R.plurals.question_import_rejected,
+                                value.rejectedCount,
+                                value.rejectedCount,
+                            ),
                         ),
                         color = if (value.hasErrors) MaterialTheme.colorScheme.error else MaterialTheme
                             .colorScheme.primary,

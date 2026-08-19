@@ -7,7 +7,7 @@ import org.junit.Test
 
 class ManifestSecuritySourceContractTest {
     private fun repoFile(path: String): File {
-        var current = File(System.getProperty("user.dir"))
+        var current = File(requireNotNull(System.getProperty("user.dir")))
         repeat(8) {
             val candidate = File(current, path)
             if (candidate.isFile) return candidate

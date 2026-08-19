@@ -46,7 +46,6 @@
         <item quantity="one">%1$d question</item>
         <item quantity="other">%1$d questions</item>
     </plurals>
-    <string name="complete">Complete</string>
     <string name="completed">Completed</string>
     <string name="missed">Missed</string>
     <string name="planned">Planned</string>
@@ -272,7 +271,6 @@
     <string name="review_generic">Review · %1$s</string>
 
     <string name="readiness_score">Exam readiness</string>
-    <string name="readiness_waiting_message">StudyFlow is calculating your readiness from the current plan.</string>
     <string name="readiness_coverage">Coverage</string>
     <string name="readiness_time_feasibility">Time feasibility</string>
     <string name="readiness_on_track">On track</string>
@@ -500,7 +498,19 @@
     <string name="exam_report_metric_provenance_section">Metric provenance</string>
     <string name="notes">Notes</string>
     <string name="question_import_issue_row">Row %1$d: %2$s</string>
-    <string name="question_import_preview">Preview: %1$d ready, %2$d duplicates, %3$d rejected</string>
+    <plurals name="question_import_ready">
+        <item quantity="one">%1$d ready</item>
+        <item quantity="other">%1$d ready</item>
+    </plurals>
+    <plurals name="question_import_duplicates">
+        <item quantity="one">%1$d duplicate</item>
+        <item quantity="other">%1$d duplicates</item>
+    </plurals>
+    <plurals name="question_import_rejected">
+        <item quantity="one">%1$d rejected</item>
+        <item quantity="other">%1$d rejected</item>
+    </plurals>
+    <string name="question_import_preview">Preview: %1$s · %2$s · %3$s</string>
     <string name="review_chosen_answer">Chosen: %1$s</string>
     <string name="review_correct_answer">Correct: %1$s</string>
     <string name="remediation_review_theory">Review theory</string>

@@ -14,7 +14,7 @@
 
 ## Target-host acceptance
 
-- Gradle/AGP compile and lint must pass on the configured JDK 17 target host.
+- Gradle/AGP compile and lint must pass on the configured JDK 21 target host.
 - Unit tests for readiness and reschedule planner must pass.
 - Manual verification should cover overdue reviews, missed blocks, low accuracy, locked activities,
   and a stable plan with no proposed mutations.

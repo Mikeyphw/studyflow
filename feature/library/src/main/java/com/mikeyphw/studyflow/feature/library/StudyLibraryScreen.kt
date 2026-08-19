@@ -39,6 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -75,6 +76,7 @@ fun StudyLibraryScreen(
         initialValue = StudyLibrarySnapshot(materials = emptyList(), videos = emptyList(), annexes = emptyList()),
     )
     val context = LocalContext.current
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     var filter by rememberSaveable { mutableStateOf(LibraryFilter.MATERIALS) }
     var materialTitle by rememberSaveable { mutableStateOf("") }
@@ -277,7 +279,7 @@ fun StudyLibraryScreen(
                         resourceViewer = resourceViewer,
                         plan = plan,
                         onLaunchResult = { result ->
-                            message = context.getString(result.messageRes())
+                            message = resources.getString(result.messageRes())
                         },
                     )
                     LibraryFilter.VIDEOS -> VideoList(
@@ -286,7 +288,7 @@ fun StudyLibraryScreen(
                         resourceViewer = resourceViewer,
                         plan = plan,
                         onLaunchResult = { result ->
-                            message = context.getString(result.messageRes())
+                            message = resources.getString(result.messageRes())
                         },
                     )
                     LibraryFilter.ANNEXES -> AnnexList(
@@ -296,7 +298,7 @@ fun StudyLibraryScreen(
                         plan = plan,
                         onDeleted = { message = annexDeletedMessage },
                         onLaunchResult = { result ->
-                            message = context.getString(result.messageRes())
+                            message = resources.getString(result.messageRes())
                         },
                     )
                 }
@@ -327,6 +329,7 @@ private fun MaterialList(
     onLaunchResult: (StudyResourceLaunchResult) -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     if (materials.isEmpty()) {
         Text(stringResource(R.string.no_materials), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -381,6 +384,7 @@ private fun VideoList(
     onLaunchResult: (StudyResourceLaunchResult) -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     if (videos.isEmpty()) {
         Text(stringResource(R.string.no_videos), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -430,6 +434,7 @@ private fun AnnexList(
     onLaunchResult: (StudyResourceLaunchResult) -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     if (annexes.isEmpty()) {
         Text(stringResource(R.string.no_annexes), color = MaterialTheme.colorScheme.onSurfaceVariant)

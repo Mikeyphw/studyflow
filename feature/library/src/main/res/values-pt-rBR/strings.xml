@@ -45,7 +45,6 @@
     <string name="open_video">Abrir vídeo</string>
     <string name="open_annex">Abrir anexo</string>
     <string name="resource_opened">Recurso aberto.</string>
-    <string name="resource_open_failed">Nenhum app compatível conseguiu abrir este recurso.</string>
     <string name="confirm_delete_title">Excluir item?</string>
     <string name="confirm_delete_message">Esta ação não pode ser desfeita.</string>
     <string name="confirm_delete">Excluir</string>

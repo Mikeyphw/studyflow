@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow
 
 import android.content.Context
+import androidx.core.content.edit
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeId
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeMessage
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeResult
@@ -31,7 +32,7 @@ internal class RuntimeSelfCheckHistoryStore(context: Context) {
         val encoded = history.runs
             .take(MaxRuns)
             .joinToString("\n") { run -> encodeRun(run.sanitized()) }
-        preferences.edit().putString(KeyRuns, encoded).apply()
+        preferences.edit { putString(KeyRuns, encoded) }
     }
 
     private fun encodeRun(run: RuntimeSelfCheckRun): String {

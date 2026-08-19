@@ -25,7 +25,6 @@
     <string name="candidate_planned_activity">Atividade planejada</string>
     <string name="candidate_missed_activity">Recuperação de atividade perdida</string>
     <string name="candidate_daily_summary">Resumo diário</string>
-    <string name="suppressed_by_quiet_hours">Silenciado pelo horário silencioso</string>
     <string name="widget_preview_title">Prévia do widget de hoje</string>
     <string name="widget_plan_name">Plano: %1$s</string>
     <string name="widget_due_reviews">Revisões pendentes: %1$d</string>
@@ -41,14 +40,11 @@
     <string name="reminder_reliability_blocked">Bloqueado</string>
     <string name="reminder_fallback_none">Os lembretes estão prontos; o widget continua como atalho manual.</string>
     <string name="reminder_fallback_widget_manual">Use o widget de Hoje ou verificações manuais até liberar as notificações.</string>
-    <string name="reminder_fallback_inexact">O horário exato pode usar a janela segura de entrega aproximada.</string>
     <string name="reminder_fallback_quiet_hours">O horário silencioso adiará alertas imediatos até o descanso terminar.</string>
     <string name="reminder_fallback_backlog">Recupere revisões pendentes ou blocos perdidos antes de aumentar os alertas.</string>
     <string name="reminder_next_candidate_epoch">Próxima candidata: %1$d</string>
     <string name="reminder_issue_permission">Permissão de notificações</string>
     <string name="reminder_issue_permission_message">O Android bloqueará lembretes até que a permissão seja concedida.</string>
-    <string name="reminder_issue_exact_alarm">Acesso a alarme exato</string>
-    <string name="reminder_issue_exact_alarm_message">Blocos cronometrados podem usar uma janela de entrega maior neste aparelho.</string>
     <string name="reminder_issue_battery">Otimização de bateria</string>
     <string name="reminder_issue_battery_message">Limites de bateria podem atrasar a reconciliação dos lembretes.</string>
     <string name="reminder_issue_quiet_hours">Horário silencioso</string>

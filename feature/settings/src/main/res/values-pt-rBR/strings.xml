@@ -75,6 +75,7 @@
     <plurals name="debug_timeline_summary">
         <item quantity="one">%1$d evento · %2$d linhas inválidas</item>
         <item quantity="other">%1$d eventos · %2$d linhas inválidas</item>
+        <item quantity="many">%1$d eventos · %2$d linhas inválidas</item>
     </plurals>
     <string name="debug_filter_all">Todos</string>
     <string name="debug_timeline_empty_title">Nenhum evento gravado</string>
@@ -188,7 +189,6 @@
     <string name="debug_probe_message_no_widget">Nenhuma instância do widget Hoje está instalada.</string>
     <string name="debug_probe_message_process_unavailable">O histórico de processos exige Android 11 ou mais recente.</string>
     <string name="debug_probe_message_no_process_history">O Android não retornou encerramentos recentes do StudyFlow.</string>
-    <string name="debug_probe_message_backup_disabled">O backup do Android está desativado para este app.</string>
     <string name="debug_probe_message_file_provider">A configuração do FileProvider de suporte está ausente ou insegura.</string>
     <string name="debug_probe_message_backup_dry_run">O backup não passou nas verificações de integridade ou zero escrita.</string>
     <string name="debug_probe_message_timed_out">A sonda excedeu seu tempo limitado de execução.</string>
@@ -224,12 +224,9 @@
     <string name="debug_reminder_lab_candidates_title">Candidatos a lembrete</string>
     <string name="debug_reminder_lab_no_candidates">Nenhum candidato a lembrete está disponível agora.</string>
     <string name="debug_reminder_lab_scheduled">Horário planejado: %1$s</string>
-    <string name="debug_reminder_lab_effective_trigger">Primeiro disparo efetivo: %1$s</string>
     <string name="debug_reminder_lab_window">Janela de entrega do alarme: %1$d min</string>
     <string name="debug_reminder_lab_late_grace">Tolerância de atualização para atraso: %1$d min</string>
-    <string name="debug_reminder_lab_suppressed">Suprimido pelo horário silencioso</string>
     <string name="debug_reminder_lab_pending_identity">Token de identidade de entrega existe no momento (não prova um alarme instalado)</string>
-    <string name="debug_reminder_lab_request_code">Código de requisição: %1$d</string>
     <string name="debug_lab_boolean_fact">%1$s: %2$s</string>
     <string name="debug_reminder_lab_plan_unavailable">O plano selecionado não está disponível.</string>
     <string name="debug_reminder_lab_plan_not_active">O plano selecionado não está ativo.</string>
@@ -275,8 +272,6 @@
     <string name="debug_portability_lab_zero_write">O teste usa dryRunImport e deve relatar zero escritas no banco. Ele nunca chama importPlan.</string>
     <string name="debug_portability_lab_failed">O teste de portabilidade falhou sem modificar o banco.</string>
     <string name="debug_portability_action_completed">Testes de portabilidade concluídos.</string>
-    <string name="debug_portability_drill_passed">Aprovado</string>
-    <string name="debug_portability_drill_blocked">Bloqueado ou reprovado</string>
     <string name="debug_portability_drill_destructive">Destrutivo</string>
     <string name="debug_portability_drill_annex">Anexo com metadados privados</string>
     <string name="debug_lab_page_study_engine">Motor de estudos</string>
@@ -334,21 +329,26 @@
     <string name="sync_conflict_manual_review">Revisar conflitos manualmente</string>
     <string name="sync_conflict_local_only">Manter apenas neste dispositivo</string>
 
-    <string name="sync_queue_title">Fila de backup local</string>
-    <string name="sync_queue_waiting_for_inspection">Inspecione as mudanças locais para montar a fila.</string>
-    <string name="sync_queue_summary">Prontas: %1$d · Bloqueadas: %2$d · Aguardando: %3$d</string>
     <string name="sync_queue_prepare_checkpoint">Preparar checkpoint</string>
-    <string name="sync_queue_export_backup">Exportar backup local</string>
-    <string name="sync_queue_verify_freshness">Verificar backup recente</string>
     <string name="sync_queue_review_policy">Revisar política de conflito</string>
     <string name="sync_queue_wait_for_data">Aguardar dados locais</string>
     <string name="sync_queue_unblock_checkpoint">Desbloquear checkpoint</string>
-    <string name="sync_queue_prepare_checkpoint_message">Atualize o checkpoint local para %1$d mudança(s) rastreada(s).</string>
-    <string name="sync_queue_export_backup_message">Enfileire um backup local para %1$d mudança(s) rastreada(s).</string>
-    <string name="sync_queue_verify_freshness_message">Confirme se o último backup ainda cobre %1$d mudança(s).</string>
-    <string name="sync_queue_review_policy_message">Revise conflitos manuais para %1$d mudança(s) rastreada(s).</string>
+    <plurals name="sync_queue_prepare_checkpoint_message">
+        <item quantity="one">Atualize o checkpoint local para %1$d mudança rastreada.</item>
+        <item quantity="other">Atualize o checkpoint local para %1$d mudanças rastreadas.</item>
+        <item quantity="many">Atualize o checkpoint local para %1$d mudanças rastreadas.</item>
+    </plurals>
+    <plurals name="sync_queue_review_policy_message">
+        <item quantity="one">Revise conflitos manuais para %1$d mudança rastreada.</item>
+        <item quantity="other">Revise conflitos manuais para %1$d mudanças rastreadas.</item>
+        <item quantity="many">Revise conflitos manuais para %1$d mudanças rastreadas.</item>
+    </plurals>
     <string name="sync_queue_wait_for_data_message">Crie dados de estudo antes de enfileirar backups.</string>
-    <string name="sync_queue_unblock_checkpoint_message">Corrija o checkpoint antes de proteger %1$d mudança(s).</string>
+    <plurals name="sync_queue_unblock_checkpoint_message">
+        <item quantity="one">Corrija o checkpoint antes de proteger %1$d mudança.</item>
+        <item quantity="other">Corrija o checkpoint antes de proteger %1$d mudanças.</item>
+        <item quantity="many">Corrija o checkpoint antes de proteger %1$d mudanças.</item>
+    </plurals>
     <string name="sync_queue_status_ready">Pronta</string>
     <string name="sync_queue_status_waiting">Aguardando</string>
     <string name="sync_queue_status_blocked">Bloqueada</string>

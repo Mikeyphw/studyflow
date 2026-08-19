@@ -99,8 +99,18 @@
     <string name="onboarding_local_only_note">Somente local. Nenhuma conta em nuvem, sincronização de rede ou importação automática é usada.</string>
     <string name="onboarding_topic_bullet">• %1$s</string>
     <string name="onboarding_workload_title">Prévia da carga</string>
-    <string name="onboarding_workload_subjects_topics">%1$d matérias · %2$d tópicos</string>
-    <string name="onboarding_workload_minutes_week">%1$d min agendados/semana · sessão preferida de %2$d min</string>
+    <plurals name="onboarding_workload_subjects">
+        <item quantity="one">%1$d matéria</item>
+        <item quantity="other">%1$d matérias</item>
+        <item quantity="many">%1$d matérias</item>
+    </plurals>
+    <plurals name="onboarding_workload_topics">
+        <item quantity="one">%1$d tópico</item>
+        <item quantity="other">%1$d tópicos</item>
+        <item quantity="many">%1$d tópicos</item>
+    </plurals>
+    <string name="onboarding_workload_subjects_topics">%1$s · %2$s</string>
+    <string name="onboarding_workload_minutes_week">Agendado/semana: %1$s min · sessão preferida: %2$s min</string>
     <string name="onboarding_schedule_title">Blocos semanais que serão criados:</string>
     <string name="onboarding_schedule_block">%1$s · %2$s · %3$d min · %4$s</string>
     <string name="onboarding_schedule_flexible">Revisão flexível</string>

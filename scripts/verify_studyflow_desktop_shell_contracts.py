@@ -95,8 +95,12 @@ def main() -> int:
         )
         require("compose.desktop" in desktop_build, "desktopApp must configure compose.desktop")
         require(
-            'mainClass.set("com.mikeyphw.studyflow.desktop.MainKt")' in desktop_build,
-            "desktopApp must expose the JVM application main class",
+            'mainClass = "com.mikeyphw.studyflow.desktop.MainKt"' in desktop_build,
+            "desktopApp must expose the Compose Desktop application main class",
+        )
+        require(
+            "\n    application\n" not in desktop_build and "\napplication {" not in desktop_build,
+            "desktopApp must not apply/configure Gradle's application plugin alongside Compose Desktop",
         )
         require("compose.desktop.currentOs" in desktop_build, "desktopApp must depend on Compose Desktop")
 

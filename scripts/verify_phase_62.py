@@ -221,7 +221,7 @@ for token in (
     require(token in build, f"Gradle verification wiring missing: {token}")
 
 require("navigation = \"2.9.8\"" in versions, "Navigation version must remain 2.9.8")
-require("2026.06.00" in versions, "Compose BOM must remain unchanged")
+require("2026.06.01" in versions, "Compose BOM must remain unchanged")
 for onboarding_path in (
     "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyOnboardingSamplePlanWizard.kt",
     "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/OnboardingSamplePlanWizardScreen.kt",

@@ -78,12 +78,12 @@ database = text("core/database/src/main/java/com/mikeyphw/studyflow/core/databas
 
 # Stack invariants: this seal is an acceptance gate, not a migration gate.
 for token in (
-    'agp = "9.3.0"',
+    'agp = "9.3.1"',
     'kotlin = "2.4.10"',
-    'composeBom = "2026.06.00"',
+    'composeBom = "2026.06.01"',
     'navigation = "2.9.8"',
     'room = "2.8.0"',
-    'ksp = "2.3.10"',
+    'ksp = "2.3.11"',
 ):
     require(token in versions, f"stack version changed or missing: {token}")
 require("androidx-navigation-compose" in versions, "Navigation Compose dependency alias is missing")

@@ -261,10 +261,10 @@ for source_path in (
         require(line == line.rstrip(), f"{source_path}:{line_number} has trailing whitespace")
         require(len(line) <= 120, f"{source_path}:{line_number} exceeds 120 characters")
 
-require('agp = "9.3.0"' in versions, "AGP version changed unexpectedly")
+require('agp = "9.3.1"' in versions, "AGP version changed unexpectedly")
 require('kotlin = "2.4.10"' in versions, "Kotlin version changed unexpectedly")
 require('navigation = "2.9.8"' in versions, "Navigation must remain on 2.9.8")
-require('ksp = "2.3.10"' in versions, "KSP version changed unexpectedly")
+require('ksp = "2.3.11"' in versions, "KSP version changed unexpectedly")
 require("python3 scripts/verify_phase_60_61.py" in build, "Phase 60/61 verifier is not wired")
 require("verifyPhase60_61ContentReportSeal" in build, "Phase 60/61 Gradle verification task is missing")
 require('"verifyPhase60_61ContentReportSeal"' in build, "checkAll must depend on the Phase 60/61 gate")

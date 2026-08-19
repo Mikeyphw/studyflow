@@ -39,8 +39,8 @@ if '":core:database"' not in settings:
 versions = tomllib.loads((ROOT / "gradle/libs.versions.toml").read_text(encoding="utf-8"))
 if versions.get("versions", {}).get("room") != "2.8.0":
     failures.append("Room must be pinned to 2.8.0 for the Phase 2 baseline")
-if versions.get("versions", {}).get("ksp") != "2.3.10":
-    failures.append("KSP must be pinned to 2.3.10 for the Phase 2 baseline")
+if versions.get("versions", {}).get("ksp") != "2.3.11":
+    failures.append("KSP must be pinned to 2.3.11 for the Phase 2 baseline")
 
 gradle_properties = (ROOT / "gradle.properties").read_text(encoding="utf-8")
 if "android.builtInKotlin=false" in gradle_properties:
@@ -54,7 +54,7 @@ build_logic = (ROOT / "build-logic/convention/build.gradle.kts").read_text(encod
 for dependency in (
     'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10',
     'org.jetbrains.kotlin:kotlin-serialization:2.4.10',
-    'com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.10',
+    'com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.11',
 ):
     if dependency not in build_logic:
         failures.append(f"build logic is missing plugin-classloader dependency: {dependency}")

@@ -12,6 +12,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.SystemClock
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -285,13 +286,25 @@ private class AndroidStudyFlowDebugProbeOperations(
     }
 
     private suspend fun processExitHealth(id: DebugProbeId): DebugProbeResult = runInterruptible {
-        val supported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-        val reports = if (supported) {
-            appContext.getSystemService(ActivityManager::class.java)
-                .getHistoricalProcessExitReasons(appContext.packageName, 0, 8)
+        val snapshot = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            processExitSnapshotApi30()
         } else {
-            emptyList()
+            ProcessExitHealthSnapshot(
+                apiSupported = false,
+                recentExitCount = 0,
+                crashOrAnrCount = 0,
+                abnormalExitCount = 0,
+                lowMemoryCount = 0,
+                apiLevel = Build.VERSION.SDK_INT,
+            )
         }
+        DebugProbePlatformPolicy.processExit(id = id, snapshot = snapshot)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun processExitSnapshotApi30(): ProcessExitHealthSnapshot {
+        val reports = appContext.getSystemService(ActivityManager::class.java)
+            .getHistoricalProcessExitReasons(appContext.packageName, 0, 8)
         val crashOrAnrReasons = setOf(
             ApplicationExitInfo.REASON_CRASH,
             ApplicationExitInfo.REASON_CRASH_NATIVE,
@@ -303,16 +316,13 @@ private class AndroidStudyFlowDebugProbeOperations(
             ApplicationExitInfo.REASON_SIGNALED,
             ApplicationExitInfo.REASON_UNKNOWN,
         )
-        DebugProbePlatformPolicy.processExit(
-            id = id,
-            snapshot = ProcessExitHealthSnapshot(
-                apiSupported = supported,
-                recentExitCount = reports.size,
-                crashOrAnrCount = reports.count { it.reason in crashOrAnrReasons },
-                abnormalExitCount = reports.count { it.reason in abnormalReasons },
-                lowMemoryCount = reports.count { it.reason == ApplicationExitInfo.REASON_LOW_MEMORY },
-                apiLevel = Build.VERSION.SDK_INT,
-            ),
+        return ProcessExitHealthSnapshot(
+            apiSupported = true,
+            recentExitCount = reports.size,
+            crashOrAnrCount = reports.count { it.reason in crashOrAnrReasons },
+            abnormalExitCount = reports.count { it.reason in abnormalReasons },
+            lowMemoryCount = reports.count { it.reason == ApplicationExitInfo.REASON_LOW_MEMORY },
+            apiLevel = Build.VERSION.SDK_INT,
         )
     }
 

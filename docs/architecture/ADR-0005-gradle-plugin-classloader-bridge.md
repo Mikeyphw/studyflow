@@ -29,7 +29,7 @@ one of those compatibility switches creates an invalid hybrid configuration.
 
 ## Consequences
 
-AGP remains the single owner of Kotlin compilation for Android modules. KSP 2.3.10 can integrate
+AGP remains the single owner of Kotlin compilation for Android modules. KSP 2.3.11 can integrate
 with AGP 9 built-in Kotlin, while all additional compiler plugins retain one explicit classloader
 owner. Android module build files remain small and the project avoids the temporary legacy-DSL
 compatibility path that AGP 10 will remove.

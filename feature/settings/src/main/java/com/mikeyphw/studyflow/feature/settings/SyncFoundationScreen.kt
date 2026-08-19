@@ -28,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
@@ -245,7 +246,7 @@ private fun CloudlessBackupQueueRow(item: CloudlessBackupQueueItem) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = stringResource(item.action.titleRes()), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    text = stringResource(item.action.messageRes(), item.pendingChangeCount),
+                    text = item.action.message(item.pendingChangeCount),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -281,12 +282,25 @@ private fun CloudlessBackupQueueAction.titleRes(): Int = when (this) {
     CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT -> R.string.sync_queue_unblock_checkpoint
 }
 
-private fun CloudlessBackupQueueAction.messageRes(): Int = when (this) {
-    CloudlessBackupQueueAction.PREPARE_CHECKPOINT -> R.string.sync_queue_prepare_checkpoint_message
-    CloudlessBackupQueueAction.CHECKPOINT_CURRENT -> R.string.sync_checkpoint_current_message
-    CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY -> R.string.sync_queue_review_policy_message
-    CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA -> R.string.sync_queue_wait_for_data_message
-    CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT -> R.string.sync_queue_unblock_checkpoint_message
+@Composable
+private fun CloudlessBackupQueueAction.message(pendingChangeCount: Int): String = when (this) {
+    CloudlessBackupQueueAction.PREPARE_CHECKPOINT -> pluralStringResource(
+        R.plurals.sync_queue_prepare_checkpoint_message,
+        pendingChangeCount,
+        pendingChangeCount,
+    )
+    CloudlessBackupQueueAction.CHECKPOINT_CURRENT -> stringResource(R.string.sync_checkpoint_current_message)
+    CloudlessBackupQueueAction.REVIEW_LOCAL_CONFLICT_POLICY -> pluralStringResource(
+        R.plurals.sync_queue_review_policy_message,
+        pendingChangeCount,
+        pendingChangeCount,
+    )
+    CloudlessBackupQueueAction.WAIT_FOR_LOCAL_DATA -> stringResource(R.string.sync_queue_wait_for_data_message)
+    CloudlessBackupQueueAction.UNBLOCK_CHECKPOINT -> pluralStringResource(
+        R.plurals.sync_queue_unblock_checkpoint_message,
+        pendingChangeCount,
+        pendingChangeCount,
+    )
 }
 
 private fun CloudlessBackupQueueStatus.labelRes(): Int = when (this) {

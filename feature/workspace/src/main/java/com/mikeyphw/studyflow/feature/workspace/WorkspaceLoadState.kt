@@ -8,7 +8,7 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowLoadingPane
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 
 @Composable
-internal fun WorkspaceLoadGate(
+internal fun workspaceLoadGate(
     states: List<StudyFlowLoadState<*>>,
     onRetry: () -> Unit,
     modifier: Modifier,

@@ -12,6 +12,111 @@ fun File.isQualitySource(): Boolean =
     extension in setOf("kt", "kts", "xml") &&
         toPath().none { pathSegment -> pathSegment.toString() in excludedDirectoryNames }
 
+tasks.register("verifyStableToolchainBaseline") {
+    group = "verification"
+    description = "Checks the shared stable Gradle, Android, Kotlin, JVM, SDK, and dependency baseline."
+
+    doLast {
+        val failures = mutableListOf<String>()
+        val versionsText = file("gradle/libs.versions.toml").readText()
+        val buildLogicText = file("build-logic/convention/build.gradle.kts").readText()
+        val androidConventionText =
+            file("build-logic/convention/src/main/kotlin/AndroidConvention.kt").readText()
+        val kotlinConventionText =
+            file("build-logic/convention/src/main/kotlin/KotlinLibraryConventionPlugin.kt").readText()
+        val desktopBuildText = file("desktopApp/build.gradle.kts").readText()
+        val wrapperText = file("gradle/wrapper/gradle-wrapper.properties").readText()
+
+        val requiredCatalogVersions = mapOf(
+            "agp" to "9.3.1",
+            "kotlin" to "2.4.10",
+            "composeBom" to "2026.06.01",
+            "ksp" to "2.3.11",
+        )
+        requiredCatalogVersions.forEach { (name, version) ->
+            if ("$name = \"$version\"" !in versionsText) {
+                failures += "gradle/libs.versions.toml: $name must be $version"
+            }
+        }
+
+        val requiredBuildLogicTokens = listOf(
+            "JavaLanguageVersion.of(21)",
+            "com.android.tools.build:gradle:9.3.1",
+            "org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10",
+            "com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.11",
+        )
+        requiredBuildLogicTokens.forEach { token ->
+            if (token !in buildLogicText) {
+                failures += "build-logic/convention/build.gradle.kts: missing $token"
+            }
+        }
+
+        val requiredAndroidTokenCounts = mapOf(
+            "compileSdk = 36" to 2,
+            "targetSdk = 36" to 1,
+            "buildToolsVersion = \"36.0.0\"" to 2,
+            "sourceCompatibility = JavaVersion.VERSION_21" to 2,
+            "targetCompatibility = JavaVersion.VERSION_21" to 2,
+        )
+        requiredAndroidTokenCounts.forEach { (token, minimumCount) ->
+            val count = Regex(Regex.escape(token)).findAll(androidConventionText).count()
+            if (count < minimumCount) {
+                failures += "AndroidConvention.kt: expected at least $minimumCount occurrences of $token"
+            }
+        }
+
+        if ("jvmToolchain(21)" !in kotlinConventionText) {
+            failures += "Kotlin library convention must use JVM toolchain 21"
+        }
+        if ("jvmToolchain(21)" !in desktopBuildText) {
+            failures += "desktopApp must use JVM toolchain 21"
+        }
+        if ("gradle-9.7.0-bin.zip" !in wrapperText) {
+            failures += "Gradle wrapper must pin Gradle 9.7.0"
+        }
+        val expectedWrapperChecksum =
+            "distributionSha256Sum=84fbba45c7f4c64abc77460e1c00f541e9f960e3c7ed2538f1ede19eacd873ae"
+        if (expectedWrapperChecksum !in wrapperText) {
+            failures += "Gradle 9.7.0 wrapper checksum is missing or unexpected"
+        }
+        if ("VERSION_17" in androidConventionText || "jvmToolchain(17)" in kotlinConventionText) {
+            failures += "Java 17 remnants are forbidden in the standardized JVM lane"
+        }
+        if ("jvmToolchain(17)" in desktopBuildText || "JavaLanguageVersion.of(17)" in buildLogicText) {
+            failures += "Java 17 remnants are forbidden in desktop/build-logic toolchains"
+        }
+
+        val prereleasePattern =
+            Regex(
+                "(?i)(?:^|[-.+_])" +
+                    "(alpha|beta|rc|preview|canary|eap|snapshot|nightly|milestone|dev|m\\d+)" +
+                    "(?:[-.+_]?\\d*)",
+            )
+        var inVersions = false
+        versionsText.lineSequence().forEach { line ->
+            val trimmed = line.trim()
+            when {
+                trimmed == "[versions]" -> inVersions = true
+                inVersions && trimmed.startsWith("[") -> inVersions = false
+                inVersions -> {
+                    val match = Regex("^([A-Za-z0-9_.-]+)\\s*=\\s*\"([^\"]+)\"$").matchEntire(trimmed)
+                    if (match != null) {
+                        val name = match.groupValues[1]
+                        val version = match.groupValues[2]
+                        if (prereleasePattern.containsMatchIn(version)) {
+                            failures += "gradle/libs.versions.toml: prerelease $name=$version is forbidden"
+                        }
+                    }
+                }
+            }
+        }
+
+        if (failures.isNotEmpty()) {
+            throw GradleException(failures.joinToString(prefix = "Stable toolchain violations:\n", separator = "\n"))
+        }
+    }
+}
+
 tasks.register("verifyFormatting") {
     group = "verification"
     description =
@@ -50,6 +155,7 @@ tasks.register("verifyFormatting") {
 
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
+    dependsOn("verifyStableToolchainBaseline")
     description =
         "Runs historical contracts through Phase 37, post-V2 features through Phase 64, " +
             "and Debug Workbench D1 through D8."

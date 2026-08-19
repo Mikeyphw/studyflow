@@ -95,7 +95,6 @@ import kotlinx.coroutines.launch
 fun ProgressWorkspaceScreen(
     plan: StudyPlan,
     selectedPeriod: ProgressWorkspacePeriod,
-    targetId: String? = null,
     analyticsManager: ManageStudyAnalytics,
     planManager: ManageStudyPlan,
     progressManager: ManageStudyProgress,
@@ -119,6 +118,7 @@ fun ProgressWorkspaceScreen(
     onOpenReviews: () -> Unit,
     onExportExamReport: suspend (StudyExamReportDocument, StudyExamReportFormat, String) -> Boolean,
     modifier: Modifier = Modifier,
+    targetId: String? = null,
 ) {
     var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
     val analyticsFlow = remember(plan.id, loadAttempt) {
@@ -180,7 +180,7 @@ fun ProgressWorkspaceScreen(
     var sprintApplyFailed by rememberSaveable(plan.id.value) { mutableStateOf(false) }
     var sprintApplyInFlight by remember(plan.id.value) { mutableStateOf(false) }
     if (
-        !WorkspaceLoadGate(
+        !workspaceLoadGate(
             states = listOf(
                 analyticsState,
                 progressState,

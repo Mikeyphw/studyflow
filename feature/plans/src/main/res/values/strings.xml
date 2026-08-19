@@ -97,8 +97,16 @@
     <string name="onboarding_local_only_note">Local only. No cloud account, network sync or automatic import is used.</string>
     <string name="onboarding_topic_bullet">• %1$s</string>
     <string name="onboarding_workload_title">Workload preview</string>
-    <string name="onboarding_workload_subjects_topics">%1$d subjects · %2$d topics</string>
-    <string name="onboarding_workload_minutes_week">%1$d scheduled min/week · %2$d min preferred session</string>
+    <plurals name="onboarding_workload_subjects">
+        <item quantity="one">%1$d subject</item>
+        <item quantity="other">%1$d subjects</item>
+    </plurals>
+    <plurals name="onboarding_workload_topics">
+        <item quantity="one">%1$d topic</item>
+        <item quantity="other">%1$d topics</item>
+    </plurals>
+    <string name="onboarding_workload_subjects_topics">%1$s · %2$s</string>
+    <string name="onboarding_workload_minutes_week">Scheduled/week: %1$s min · preferred session: %2$s min</string>
     <string name="onboarding_schedule_title">Weekly blocks to be created:</string>
     <string name="onboarding_schedule_block">%1$s · %2$s · %3$d min · %4$s</string>
     <string name="onboarding_schedule_flexible">Flexible review</string>

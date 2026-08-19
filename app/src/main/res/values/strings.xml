@@ -21,8 +21,6 @@
     <string name="widget_next_activity_empty">No upcoming block</string>
     <string name="debug_bundle_chooser_title">Share StudyFlow diagnostics</string>
     <string name="debug_clipboard_label">StudyFlow diagnostics</string>
-    <string name="debug_diagnostic_notification_title">StudyFlow diagnostic notification</string>
-    <string name="debug_diagnostic_notification_body">Notification delivery is available. No study content is included.</string>
     <string name="reminder_notification_due_reviews_title">Due reviews</string>
     <plurals name="reminder_notification_due_reviews_body">
         <item quantity="one">%1$d review item is due now.</item>

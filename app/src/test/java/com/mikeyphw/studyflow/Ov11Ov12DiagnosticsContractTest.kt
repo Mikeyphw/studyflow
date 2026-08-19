@@ -7,7 +7,7 @@ import org.junit.Test
 
 class Ov11Ov12DiagnosticsContractTest {
     private fun repoFile(path: String): String {
-        var current = File(System.getProperty("user.dir"))
+        var current = File(requireNotNull(System.getProperty("user.dir")))
         repeat(8) {
             val candidate = File(current, path)
             if (candidate.isFile) return candidate.readText()
@@ -26,7 +26,7 @@ class Ov11Ov12DiagnosticsContractTest {
         assertTrue("collectAsStateWithLifecycle" in app)
         assertTrue("viewModelScope" in viewModel)
         assertTrue("probeMutex" in viewModel)
-        assertTrue("suiteRunning" in viewModel)
+        assertTrue("safeSuiteRunning" in viewModel)
         assertFalse(Regex("rememberSaveable[\\s\\S]{0,160}(suite|probe|lab).*Running", RegexOption
             .IGNORE_CASE).containsMatchIn(app))
         assertTrue("Status snapshot" in strings)

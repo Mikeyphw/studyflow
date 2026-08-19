@@ -40,28 +40,27 @@ args = [
 build = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
 test = [
     "verifyRepositoryContracts",
+    "verifyRemediationOv13",
     "verifyPhase63_64ExamRunbookSprintSeal",
     "verifyPostPhase64FinalValidationRefresh",
     "verifyFormatting",
     "verifyFinalSourceAcceptance",
-    "verifyRemediationOv13",
-    ":core:diagnostics:test",
-    ":core:model:test",
-    ":core:domain:test",
-    ":core:portability:test",
     ":core:data:testDebugUnitTest",
     ":core:database:testDebugUnitTest",
+    ":core:diagnostics:test",
+    ":core:domain:test",
+    ":core:model:test",
     ":core:navigation:test",
+    ":core:portability:test",
     ":core:testing:test",
-    ":app:testDebugUnitTest",
     ":feature:analytics:testDebugUnitTest",
     ":feature:dashboard:testDebugUnitTest",
     ":feature:library:testDebugUnitTest",
     ":feature:plans:testDebugUnitTest",
     ":feature:practice:testDebugUnitTest",
     ":feature:privacy:testDebugUnitTest",
-    ":feature:reminders:testDebugUnitTest",
     ":feature:progress:testDebugUnitTest",
+    ":feature:reminders:testDebugUnitTest",
     ":feature:reviews:testDebugUnitTest",
     ":feature:schedule:testDebugUnitTest",
     ":feature:search:testDebugUnitTest",
@@ -69,6 +68,7 @@ test = [
     ":feature:settings:testDebugUnitTest",
     ":feature:subjects:testDebugUnitTest",
     ":feature:workspace:testDebugUnitTest",
+    ":app:testDebugUnitTest",
 ]
 lint = [
     ":core:data:lintDebug",
@@ -99,10 +99,10 @@ no_daemon = false
 stop_daemon_after_phase = false
 low_priority = false
 gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
+gradle_metaspace_mb = 768
 gradle_packaging_heap_mb = 1280
-gradle_packaging_metaspace_mb = 640
-gradle_lint_metaspace_mb = 640
+gradle_packaging_metaspace_mb = 768
+gradle_lint_metaspace_mb = 768
 memory_guard_mb = 512
 affected_module_lint = true
 
@@ -110,7 +110,7 @@ affected_module_lint = true
 max_workers = 2
 cpu_limit = 2
 gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
+gradle_metaspace_mb = 768
 memory_guard_mb = 512
 no_daemon = false
 low_priority = false
@@ -119,7 +119,7 @@ low_priority = false
 max_workers = 2
 cpu_limit = 2
 gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
+gradle_metaspace_mb = 768
 memory_guard_mb = 640
 no_daemon = false
 low_priority = false
@@ -128,79 +128,79 @@ low_priority = false
 max_workers = 1
 cpu_limit = 2
 gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
+gradle_metaspace_mb = 768
 memory_guard_mb = 640
 no_daemon = false
 low_priority = false
 
 [targets.studyflow_android.validation.phases]
 preflight = [
-  "verifyRepositoryContracts",
-  "verifyPhase63_64ExamRunbookSprintSeal",
-  "verifyPostPhase64FinalValidationRefresh",
-  "verifyFinalSourceAcceptance",
-  "verifyRemediationOv13",
+    "verifyRepositoryContracts",
+    "verifyRemediationOv13",
+    "verifyPhase63_64ExamRunbookSprintSeal",
+    "verifyPostPhase64FinalValidationRefresh",
+    "verifyFinalSourceAcceptance",
 ]
 compile = [
-  ":core:diagnostics:compileKotlin",
-  ":core:model:compileKotlin",
-  ":core:portability:compileKotlin",
-  ":core:domain:compileKotlin",
-  ":core:i18n:compileDebugKotlin",
-  ":core:database:compileDebugKotlin",
-  ":core:data:compileDebugKotlin",
-  ":feature:plans:compileDebugKotlin",
-  ":feature:privacy:compileDebugKotlin",
-  ":feature:reminders:compileDebugKotlin",
-  ":feature:search:compileDebugKotlin",
-  ":feature:settings:compileDebugKotlin",
-  ":feature:workspace:compileDebugKotlin",
-  ":app:compileDebugKotlin",
-  ":app:compileReleaseKotlin",
-  ":core:diagnostics:compileTestKotlin",
-  ":core:model:compileTestKotlin",
-  ":core:portability:compileTestKotlin",
-  ":core:domain:compileTestKotlin",
-  ":core:database:compileDebugUnitTestKotlin",
-  ":core:data:compileDebugUnitTestKotlin",
-  ":feature:plans:compileDebugUnitTestKotlin",
-  ":feature:privacy:compileDebugUnitTestKotlin",
-  ":feature:reminders:compileDebugUnitTestKotlin",
-  ":feature:search:compileDebugUnitTestKotlin",
-  ":feature:workspace:compileDebugUnitTestKotlin",
-  ":core:database:compileDebugAndroidTestKotlin",
-  ":feature:workspace:compileDebugAndroidTestKotlin",
-  ":app:compileDebugUnitTestKotlin",
-  ":app:compileReleaseAndroidTestKotlin",
+    ":core:data:compileDebugKotlin",
+    ":core:database:compileDebugKotlin",
+    ":core:diagnostics:compileKotlin",
+    ":core:domain:compileKotlin",
+    ":core:i18n:compileDebugKotlin",
+    ":core:model:compileKotlin",
+    ":core:portability:compileKotlin",
+    ":feature:plans:compileDebugKotlin",
+    ":feature:privacy:compileDebugKotlin",
+    ":feature:reminders:compileDebugKotlin",
+    ":feature:search:compileDebugKotlin",
+    ":feature:settings:compileDebugKotlin",
+    ":feature:workspace:compileDebugKotlin",
+    ":app:compileDebugKotlin",
+    ":app:compileReleaseKotlin",
+    ":core:data:compileDebugUnitTestKotlin",
+    ":core:database:compileDebugUnitTestKotlin",
+    ":core:diagnostics:compileTestKotlin",
+    ":core:domain:compileTestKotlin",
+    ":core:model:compileTestKotlin",
+    ":core:portability:compileTestKotlin",
+    ":feature:plans:compileDebugUnitTestKotlin",
+    ":feature:privacy:compileDebugUnitTestKotlin",
+    ":feature:reminders:compileDebugUnitTestKotlin",
+    ":feature:search:compileDebugUnitTestKotlin",
+    ":feature:workspace:compileDebugUnitTestKotlin",
+    ":app:compileDebugUnitTestKotlin",
+    ":core:database:compileDebugAndroidTestKotlin",
+    ":feature:workspace:compileDebugAndroidTestKotlin",
+    ":app:compileReleaseAndroidTestKotlin",
 ]
 resources = [
   ":app:processDebugResources",
 ]
 unit-test = [
-  ":core:diagnostics:test",
-  ":core:model:test",
-  ":core:domain:test",
-  ":core:portability:test",
-  ":core:data:testDebugUnitTest",
-  ":core:database:testDebugUnitTest",
-  ":core:navigation:test",
-  ":core:testing:test",
-  ":app:testDebugUnitTest",
-  ":feature:analytics:testDebugUnitTest",
-  ":feature:dashboard:testDebugUnitTest",
-  ":feature:library:testDebugUnitTest",
-  ":feature:plans:testDebugUnitTest",
-  ":feature:practice:testDebugUnitTest",
-  ":feature:privacy:testDebugUnitTest",
-  ":feature:reminders:testDebugUnitTest",
-  ":feature:progress:testDebugUnitTest",
-  ":feature:reviews:testDebugUnitTest",
-  ":feature:schedule:testDebugUnitTest",
-  ":feature:search:testDebugUnitTest",
-  ":feature:sessions:testDebugUnitTest",
-  ":feature:settings:testDebugUnitTest",
-  ":feature:subjects:testDebugUnitTest",
-  ":feature:workspace:testDebugUnitTest",
+    ":core:data:testDebugUnitTest",
+    ":core:database:testDebugUnitTest",
+    ":core:diagnostics:test",
+    ":core:domain:test",
+    ":core:model:test",
+    ":core:navigation:test",
+    ":core:portability:test",
+    ":core:testing:test",
+    ":feature:analytics:testDebugUnitTest",
+    ":feature:dashboard:testDebugUnitTest",
+    ":feature:library:testDebugUnitTest",
+    ":feature:plans:testDebugUnitTest",
+    ":feature:practice:testDebugUnitTest",
+    ":feature:privacy:testDebugUnitTest",
+    ":feature:progress:testDebugUnitTest",
+    ":feature:reminders:testDebugUnitTest",
+    ":feature:reviews:testDebugUnitTest",
+    ":feature:schedule:testDebugUnitTest",
+    ":feature:search:testDebugUnitTest",
+    ":feature:sessions:testDebugUnitTest",
+    ":feature:settings:testDebugUnitTest",
+    ":feature:subjects:testDebugUnitTest",
+    ":feature:workspace:testDebugUnitTest",
+    ":app:testDebugUnitTest",
 ]
 package = [
   ":app:assembleDebug",
@@ -249,26 +249,26 @@ args = [
 [targets.studyflow_desktop.tasks]
 build = [
     "verifyStudyFlowDesktopFoundation",
-    "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopWorkflows",
     ":desktopApp:compileKotlin",
 ]
 test = [
     "verifyStudyFlowDesktopFoundation",
-    "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopWorkflows",
-    ":core:model:test",
     ":core:domain:test",
+    ":core:model:test",
     ":core:portability:test",
     ":desktopApp:test",
 ]
 lint = [
     "verifyFormatting",
     "verifyStudyFlowDesktopFoundation",
-    "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopWorkflows",
 ]
 clean = ["clean"]
@@ -288,23 +288,23 @@ memory_guard_mb = 512
 
 [targets.studyflow_desktop.validation.phases]
 preflight = [
-  "verifyStudyFlowDesktopFoundation",
-  "verifyStudyFlowDesktopShellContracts",
-  "verifyStudyFlowDesktopBootstrapScreens",
-  "verifyStudyFlowDesktopWorkflows",
+    "verifyStudyFlowDesktopFoundation",
+    "verifyStudyFlowDesktopBootstrapScreens",
+    "verifyStudyFlowDesktopShellContracts",
+    "verifyStudyFlowDesktopWorkflows",
 ]
 compile = [
-  ":core:model:compileKotlin",
-  ":core:portability:compileKotlin",
-  ":core:domain:compileKotlin",
-  ":desktopApp:compileKotlin",
-  ":desktopApp:compileTestKotlin",
+    ":core:domain:compileKotlin",
+    ":core:model:compileKotlin",
+    ":core:portability:compileKotlin",
+    ":desktopApp:compileKotlin",
+    ":desktopApp:compileTestKotlin",
 ]
 unit-test = [
-  ":core:model:test",
-  ":core:domain:test",
-  ":core:portability:test",
-  ":desktopApp:test",
+    ":core:domain:test",
+    ":core:model:test",
+    ":core:portability:test",
+    ":desktopApp:test",
 ]
 package = [
   ":desktopApp:compileKotlin",
@@ -317,7 +317,7 @@ lint = [
 max_workers = 1
 cpu_limit = 1
 gradle_heap_mb = 768
-gradle_metaspace_mb = 640
+gradle_metaspace_mb = 768
 memory_guard_mb = 384
 no_daemon = false
 low_priority = false
@@ -327,7 +327,7 @@ low_priority = false
 max_workers = 2
 cpu_limit = 2
 gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
+gradle_metaspace_mb = 768
 memory_guard_mb = 512
 no_daemon = false
 low_priority = false
@@ -337,7 +337,7 @@ low_priority = false
 max_workers = 2
 cpu_limit = 2
 gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
+gradle_metaspace_mb = 768
 memory_guard_mb = 512
 no_daemon = false
 low_priority = false
@@ -347,7 +347,7 @@ low_priority = false
 max_workers = 1
 cpu_limit = 2
 gradle_heap_mb = 1024
-gradle_metaspace_mb = 640
+gradle_metaspace_mb = 768
 memory_guard_mb = 512
 no_daemon = false
 low_priority = false

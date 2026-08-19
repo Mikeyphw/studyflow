@@ -8,7 +8,7 @@ import org.junit.Test
 
 class Ov11PerformanceSourceContractTest {
     private fun repoFile(path: String): String {
-        var current = File(System.getProperty("user.dir"))
+        var current = File(requireNotNull(System.getProperty("user.dir")))
         repeat(8) {
             val candidate = File(current, path)
             if (candidate.isFile) return candidate.readText()
@@ -21,7 +21,7 @@ class Ov11PerformanceSourceContractTest {
     fun `application composition owns the only production room graph`() {
         val dataLayer = repoFile("core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt")
         val application = repoFile("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt")
-        val receiver = repoFile("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderReceiver.kt")
+        val receiver = repoFile("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderReceivers.kt")
         val widget = repoFile("app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowTodayWidgetProvider.kt")
 
         assertEquals(1, Regex("StudyFlowDatabase\\.create\\(").findAll(dataLayer).count())
@@ -71,7 +71,8 @@ class Ov11PerformanceSourceContractTest {
             "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanPortabilityRepository.kt")
 
         assertTrue("shareIn(" in analytics)
-        assertTrue("StudyAnalyticsDao" in analytics)
+        assertTrue("database.studyAnalyticsDao()" in analytics)
+        assertTrue("analyticsDao.snapshot(" in analytics)
         assertTrue("SELECT" in analyticsDao)
         assertTrue("readArchiveStreaming" in codec)
         assertTrue("stagingDirectory" in codec)

@@ -6,13 +6,24 @@ import org.junit.Test
 
 class Ov13ReleaseRegressionContractTest {
     private fun repoFile(path: String): String {
-        var current = File(System.getProperty("user.dir"))
+        var current = File(requireNotNull(System.getProperty("user.dir")))
         repeat(8) {
             val candidate = File(current, path)
             if (candidate.isFile) return candidate.readText()
             current = current.parentFile ?: return@repeat
         }
         error("Unable to locate $path")
+    }
+
+    private fun repoRootFile(path: String): String {
+        var current = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+        repeat(8) {
+            val settings = File(current, "settings.gradle.kts")
+            val candidate = File(current, path)
+            if (settings.isFile && candidate.isFile) return candidate.readText()
+            current = current.parentFile ?: return@repeat
+        }
+        error("Unable to locate repository-root $path")
     }
 
     @Test
@@ -36,7 +47,7 @@ class Ov13ReleaseRegressionContractTest {
     }
     @Test
     fun `final overlay requires signed automated Android validation rather than host only`() {
-        val rootBuild = repoFile("build.gradle.kts")
+        val rootBuild = repoRootFile("build.gradle.kts")
         val validator = repoFile("scripts/validate_repo.sh")
 
         assertTrue("verifyFinalReleaseAutomatedGate" in rootBuild)

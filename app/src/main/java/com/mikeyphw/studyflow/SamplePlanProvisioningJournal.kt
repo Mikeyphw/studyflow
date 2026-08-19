@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow
 
 import android.content.Context
+import androidx.core.content.edit
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 
@@ -31,10 +32,10 @@ internal class SharedPreferencesSamplePlanProvisioningJournal(context: Context) 
     }
 
     override fun begin(template: OnboardingSamplePlanTemplate, proposedPlanId: StudyPlanId) {
-        preferences.edit()
-            .putString(TemplateKey, template.name)
-            .putString(PlanIdKey, proposedPlanId.value)
-            .commit()
+        preferences.edit(commit = true) {
+            putString(TemplateKey, template.name)
+            putString(PlanIdKey, proposedPlanId.value)
+        }
     }
 
     override fun updateCommittedPlan(template: OnboardingSamplePlanTemplate, planId: StudyPlanId) {
@@ -49,7 +50,10 @@ internal class SharedPreferencesSamplePlanProvisioningJournal(context: Context) 
     }
 
     override fun clearPending() {
-        preferences.edit().remove(TemplateKey).remove(PlanIdKey).commit()
+        preferences.edit(commit = true) {
+            remove(TemplateKey)
+            remove(PlanIdKey)
+        }
     }
 
     private companion object {

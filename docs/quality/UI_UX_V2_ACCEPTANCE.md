@@ -21,7 +21,7 @@
 
 The following remain evidence-based target checks and must not be inferred from source validation:
 
-- clean compile and resource processing under AGP 9.3.0, Gradle 9.5.0, JDK 17, and SDK 37;
+- clean compile and resource processing under AGP 9.3.1, Gradle 9.7.0, JDK 21, and SDK 36;
 - unit, instrumentation, and Room migration tests;
 - Android lint and APK assembly;
 - compact portrait, landscape, foldable, and larger-width navigation behavior;

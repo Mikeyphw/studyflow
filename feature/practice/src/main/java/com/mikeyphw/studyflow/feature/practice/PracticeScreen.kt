@@ -38,6 +38,7 @@ import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -383,7 +384,7 @@ private fun PracticeRunnerCard(
     onFinish: () -> Unit,
     onClose: () -> Unit,
 ) {
-    var nowEpochMillis by remember(state.attemptId) { mutableStateOf(System.currentTimeMillis()) }
+    var nowEpochMillis by remember(state.attemptId) { mutableLongStateOf(System.currentTimeMillis()) }
     val deadline = state.deadlineEpochMillis
     LaunchedEffect(state.attemptId, deadline, state.submitted) {
         if (!state.submitted && deadline != null) {

@@ -118,20 +118,20 @@ require(
 )
 
 expected_versions = {
-    "agp": "9.3.0",
+    "agp": "9.3.1",
     "kotlin": "2.4.10",
-    "composeBom": "2026.06.00",
+    "composeBom": "2026.06.01",
     "navigation": "2.9.8",
     "room": "2.8.0",
-    "ksp": "2.3.10",
+    "ksp": "2.3.11",
 }
 for version_name, expected in expected_versions.items():
     require(
         f'{version_name} = "{expected}"' in versions,
         f"toolchain drifted: {version_name} must remain {expected}",
     )
-require("compileSdk = 37" in android_convention, "compileSdk must remain 37")
-require("targetSdk = 37" in android_convention, "targetSdk must remain 37")
+require("compileSdk = 36" in android_convention, "compileSdk must remain 36")
+require("targetSdk = 36" in android_convention, "targetSdk must remain 36")
 require("minSdk = 23" in android_convention, "minSdk must remain 23")
 require("navigation3" not in versions.lower(), "Navigation 3 must not be introduced during UI/UX V2")
 require(

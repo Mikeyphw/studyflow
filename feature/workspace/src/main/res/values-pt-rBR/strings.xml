@@ -37,16 +37,18 @@
     <plurals name="days_value">
         <item quantity="one">%1$d dia</item>
         <item quantity="other">%1$d dias</item>
+        <item quantity="many">%1$d dias</item>
     </plurals>
     <plurals name="reviews_value">
         <item quantity="one">%1$d revisão</item>
         <item quantity="other">%1$d revisões</item>
+        <item quantity="many">%1$d revisões</item>
     </plurals>
     <plurals name="questions_value">
         <item quantity="one">%1$d questão</item>
         <item quantity="other">%1$d questões</item>
+        <item quantity="many">%1$d questões</item>
     </plurals>
-    <string name="complete">Concluir</string>
     <string name="completed">Concluído</string>
     <string name="missed">Perdido</string>
     <string name="planned">Planejado</string>
@@ -79,22 +81,27 @@
     <plurals name="subjects_count">
         <item quantity="one">%1$d matéria</item>
         <item quantity="other">%1$d matérias</item>
+        <item quantity="many">%1$d matérias</item>
     </plurals>
     <plurals name="topics_count">
         <item quantity="one">%1$d tópico</item>
         <item quantity="other">%1$d tópicos</item>
+        <item quantity="many">%1$d tópicos</item>
     </plurals>
     <plurals name="materials_count">
         <item quantity="one">%1$d material</item>
         <item quantity="other">%1$d materiais</item>
+        <item quantity="many">%1$d materiais</item>
     </plurals>
     <plurals name="videos_count">
         <item quantity="one">%1$d vídeo</item>
         <item quantity="other">%1$d vídeos</item>
+        <item quantity="many">%1$d vídeos</item>
     </plurals>
     <plurals name="annexes_count">
         <item quantity="one">%1$d anexo</item>
         <item quantity="other">%1$d anexos</item>
+        <item quantity="many">%1$d anexos</item>
     </plurals>
     <string name="practice_reviews">Revisões</string>
     <string name="practice_questions">Questões</string>
@@ -102,6 +109,7 @@
     <plurals name="practice_due_message">
         <item quantity="one">%1$d item está pronto para revisão espaçada.</item>
         <item quantity="other">%1$d itens estão prontos para revisão espaçada.</item>
+        <item quantity="many">%1$d itens estão prontos para revisão espaçada.</item>
     </plurals>
     <string name="practice_empty_reviews">Nenhuma revisão pendente. As próximas continuam agendadas automaticamente.</string>
     <string name="practice_empty_questions">Ainda não há questões. Adicione questões ou importe um conjunto.</string>
@@ -112,14 +120,17 @@
     <plurals name="tests_count">
         <item quantity="one">%1$d teste</item>
         <item quantity="other">%1$d testes</item>
+        <item quantity="many">%1$d testes</item>
     </plurals>
     <plurals name="mocks_count">
         <item quantity="one">%1$d simulado</item>
         <item quantity="other">%1$d simulados</item>
+        <item quantity="many">%1$d simulados</item>
     </plurals>
     <plurals name="recurrences_value">
         <item quantity="one">Repetido %1$d vez</item>
         <item quantity="other">Repetido %1$d vezes</item>
+        <item quantity="many">Repetido %1$d vezes</item>
     </plurals>
     <string name="progress_7_days">7 dias</string>
     <string name="progress_30_days">30 dias</string>
@@ -127,10 +138,12 @@
     <plurals name="sessions_value">
         <item quantity="one">%1$d sessão</item>
         <item quantity="other">%1$d sessões</item>
+        <item quantity="many">%1$d sessões</item>
     </plurals>
     <plurals name="answered_value">
         <item quantity="one">%1$d respondida</item>
         <item quantity="other">%1$d respondidas</item>
+        <item quantity="many">%1$d respondidas</item>
     </plurals>
     <string name="weak_areas">Pontos fracos</string>
     <string name="no_weak_areas">Nenhum ponto fraco está sinalizado no momento.</string>
@@ -138,10 +151,12 @@
     <plurals name="active_goals_value">
         <item quantity="one">%1$d meta ativa</item>
         <item quantity="other">%1$d metas ativas</item>
+        <item quantity="many">%1$d metas ativas</item>
     </plurals>
     <plurals name="notes_value">
         <item quantity="one">%1$d anotação</item>
         <item quantity="other">%1$d anotações</item>
+        <item quantity="many">%1$d anotações</item>
     </plurals>
     <string name="open_progress_center">Abrir metas e anotações</string>
     <string name="open_analytics">Abrir análises detalhadas</string>
@@ -197,6 +212,7 @@
     <plurals name="flashcards_value">
         <item quantity="one">%1$d flashcard</item>
         <item quantity="other">%1$d flashcards</item>
+        <item quantity="many">%1$d flashcards</item>
     </plurals>
     <string name="material_type">Material</string>
     <string name="video_type">Vídeo</string>
@@ -231,15 +247,18 @@
     <plurals name="view_all_topics">
         <item quantity="one">Ver %1$d tópico</item>
         <item quantity="other">Ver todos os %1$d tópicos</item>
+        <item quantity="many">Ver todos os %1$d tópicos</item>
     </plurals>
     <string name="review_due_now">Vencidas agora</string>
     <plurals name="open_remaining_reviews">
         <item quantity="one">Abrir mais %1$d revisão</item>
         <item quantity="other">Abrir mais %1$d revisões</item>
+        <item quantity="many">Abrir mais %1$d revisões</item>
     </plurals>
     <plurals name="review_method_and_interval">
         <item quantity="one">%1$s · intervalo de %2$d dia</item>
         <item quantity="other">%1$s · intervalo de %2$d dias</item>
+        <item quantity="many">%1$s · intervalo de %2$d dias</item>
     </plurals>
     <string name="review_again">De novo</string>
     <string name="review_hard">Difícil</string>
@@ -250,6 +269,7 @@
     <plurals name="test_progress">
         <item quantity="one">%1$d/%2$d respondida</item>
         <item quantity="other">%1$d/%2$d respondidas</item>
+        <item quantity="many">%1$d/%2$d respondidas</item>
     </plurals>
     <string name="period_trend">Tendência do período</string>
     <string name="period_trend_detail">Antes %1$d min · recente %2$d min</string>
@@ -272,7 +292,6 @@
     <string name="review_generic">Revisão · %1$s</string>
 
     <string name="readiness_score">Prontidão para a prova</string>
-    <string name="readiness_waiting_message">O StudyFlow está calculando a prontidão pelo plano atual.</string>
     <string name="readiness_coverage">Cobertura</string>
     <string name="readiness_time_feasibility">Viabilidade do tempo</string>
     <string name="readiness_on_track">No caminho</string>
@@ -323,6 +342,7 @@
     <plurals name="reschedule_apply_success">
         <item quantity="one">Aplicou %1$d ajuste seguro; pulou %2$d itens só de prévia.</item>
         <item quantity="other">Aplicou %1$d ajustes seguros; pulou %2$d itens só de prévia.</item>
+        <item quantity="many">Aplicou %1$d ajustes seguros; pulou %2$d itens só de prévia.</item>
     </plurals>
     <string name="reschedule_apply_failed">Não foi possível aplicar os ajustes seguros. Abra o plano para ajustar manualmente.</string>
 
@@ -330,6 +350,7 @@
     <plurals name="weakness_drill_message">
         <item quantity="one">%1$d questão direcionada por %2$d sinais fracos.</item>
         <item quantity="other">%1$d questões direcionadas por %2$d sinais fracos.</item>
+        <item quantity="many">%1$d questões direcionadas por %2$d sinais fracos.</item>
     </plurals>
     <string name="weakness_drill_unavailable">Adicione erros ou revisões de questões vencidas antes de criar o treino.</string>
     <string name="weakness_drill_created">Treino de fraquezas criado.</string>
@@ -346,6 +367,7 @@
     <plurals name="mock_exam_studio_message">
         <item quantity="one">%1$d questão elegível · cronômetro de %2$d min</item>
         <item quantity="other">%1$d questões elegíveis · cronômetro de %2$d min</item>
+        <item quantity="many">%1$d questões elegíveis · cronômetro de %2$d min</item>
     </plurals>
     <string name="mock_exam_studio_help">Ajuste quantidade, tempo e nota mínima antes de criar o simulado.</string>
     <string name="mock_exam_question_count">Quantidade de questões</string>
@@ -356,6 +378,7 @@
     <plurals name="mock_exam_studio_sections">
         <item quantity="one">%1$d seção · %2$d questões selecionadas</item>
         <item quantity="other">%1$d seções · %2$d questões selecionadas</item>
+        <item quantity="many">%1$d seções · %2$d questões selecionadas</item>
     </plurals>
     <string name="mock_exam_warning_no_questions">Adicione questões antes de criar um simulado.</string>
     <string name="mock_exam_warning_skipped">Algumas questões inelegíveis foram ignoradas.</string>
@@ -373,11 +396,13 @@
     <plurals name="evidence_minutes_and_count">
         <item quantity="one">%1$s - %2$d min - %3$d item</item>
         <item quantity="other">%1$s - %2$d min - %3$d itens</item>
+        <item quantity="many">%1$s - %2$d min - %3$d itens</item>
     </plurals>
     <string name="evidence_minutes">%1$s - %2$d min</string>
     <plurals name="evidence_count">
         <item quantity="one">%1$s - %2$d item</item>
         <item quantity="other">%1$s - %2$d itens</item>
+        <item quantity="many">%1$s - %2$d itens</item>
     </plurals>
     <string name="evidence_session_completed">Sessão concluída</string>
     <string name="evidence_session_cancelled">Sessão cancelada</string>
@@ -396,12 +421,14 @@
     <plurals name="items_count">
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d itens</item>
+        <item quantity="many">%1$d itens</item>
     </plurals>
     <string name="weekly_coach_review">Revisão semanal do coach</string>
     <string name="weekly_coach_title">Revisão do coach para %1$s</string>
     <plurals name="weekly_coach_summary">
         <item quantity="one">%1$d evidência · %2$d minutos estudados nesta semana.</item>
         <item quantity="other">%1$d evidências · %2$d minutos estudados nesta semana.</item>
+        <item quantity="many">%1$d evidências · %2$d minutos estudados nesta semana.</item>
     </plurals>
     <string name="weekly_coach_readiness_stable">Prontidão estável</string>
     <string name="weekly_coach_readiness_risk">Prontidão pede ação</string>
@@ -429,6 +456,7 @@
     <plurals name="content_health_summary">
         <item quantity="one">%1$d problema de limpeza encontrado · %2$d exige ação.</item>
         <item quantity="other">%1$d problemas de limpeza encontrados · %2$d exigem ação.</item>
+        <item quantity="many">%1$d problemas de limpeza encontrados · %2$d exigem ação.</item>
     </plurals>
     <string name="review_cleanup">Revisar limpeza</string>
     <string name="preview_cleanup_action">Prévia</string>
@@ -500,7 +528,22 @@
     <string name="exam_report_metric_provenance_section">Proveniência das métricas</string>
     <string name="notes">Notas</string>
     <string name="question_import_issue_row">Linha %1$d: %2$s</string>
-    <string name="question_import_preview">Prévia: %1$d prontas, %2$d duplicadas, %3$d rejeitadas</string>
+    <plurals name="question_import_ready">
+        <item quantity="one">%1$d pronta</item>
+        <item quantity="other">%1$d prontas</item>
+        <item quantity="many">%1$d prontas</item>
+    </plurals>
+    <plurals name="question_import_duplicates">
+        <item quantity="one">%1$d duplicada</item>
+        <item quantity="other">%1$d duplicadas</item>
+        <item quantity="many">%1$d duplicadas</item>
+    </plurals>
+    <plurals name="question_import_rejected">
+        <item quantity="one">%1$d rejeitada</item>
+        <item quantity="other">%1$d rejeitadas</item>
+        <item quantity="many">%1$d rejeitadas</item>
+    </plurals>
+    <string name="question_import_preview">Prévia: %1$s · %2$s · %3$s</string>
     <string name="review_chosen_answer">Resposta escolhida: %1$s</string>
     <string name="review_correct_answer">Resposta correta: %1$s</string>
     <string name="remediation_review_theory">Revisar a teoria</string>
@@ -518,8 +561,9 @@
     <string name="exam_runbook_no_date_message">O roteiro fica desativado até o plano ter uma data de prova confirmada.</string>
     <string name="set_exam_date">Definir data da prova</string>
     <plurals name="exam_runbook_days">
-        <item quantity="one">1 dia para a prova</item>
+        <item quantity="one">%1$d dia para a prova</item>
         <item quantity="other">%d dias para a prova</item>
+        <item quantity="many">%d dias para a prova</item>
     </plurals>
     <string name="exam_runbook_now">Agora</string>
     <string name="exam_runbook_this_week">Esta semana</string>
@@ -527,8 +571,9 @@
     <string name="exam_runbook_recover_reviews">Recuperar revisões atrasadas</string>
     <string name="exam_runbook_recover_reviews_message">Elimine a dívida de retenção antes de adicionar conteúdo novo.</string>
     <plurals name="exam_runbook_overdue_reviews">
-        <item quantity="one">1 revisão atrasada precisa ser recuperada.</item>
+        <item quantity="one">%1$d revisão atrasada precisa ser recuperada.</item>
         <item quantity="other">%d revisões atrasadas precisam ser recuperadas.</item>
+        <item quantity="many">%d revisões atrasadas precisam ser recuperadas.</item>
     </plurals>
     <string name="exam_runbook_weak_area">Atacar uma área fraca</string>
     <string name="exam_runbook_weak_area_message">Use questões focadas e revisão nas evidências atualmente mais fracas.</string>
@@ -549,14 +594,16 @@
     <plurals name="study_sprint_summary">
         <item quantity="one">1 bloco existente nos próximos 7 dias · %2$d min. Prévia primeiro; nada muda até Aplicar.</item>
         <item quantity="other">%1$d blocos existentes nos próximos 7 dias · %2$d min. Prévia primeiro; nada muda até Aplicar.</item>
+        <item quantity="many">%1$d blocos existentes nos próximos 7 dias · %2$d min. Prévia primeiro; nada muda até Aplicar.</item>
     </plurals>
     <string name="study_sprint_applying">Aplicando sprint…</string>
     <string name="apply_study_sprint">Aplicar sprint com segurança</string>
     <string name="study_sprint_apply_result">Sprint de estudos</string>
     <string name="study_sprint_apply_failed">O cronograma mudou ou o sprint não pôde ser aplicado. Atualizando a prévia mais recente antes de tentar novamente.</string>
     <plurals name="study_sprint_apply_success">
-        <item quantity="one">Aplicada 1 alteração de cronograma com versão verificada.</item>
+        <item quantity="one">Aplicada %1$d alteração de cronograma com versão verificada.</item>
         <item quantity="other">Aplicadas %d alterações de cronograma com versão verificada.</item>
+        <item quantity="many">Aplicadas %d alterações de cronograma com versão verificada.</item>
     </plurals>
     <string name="study_sprint_review_focus">Sprint de recuperação de revisões</string>
     <string name="study_sprint_schedule_focus">Sprint de recuperação do cronograma</string>

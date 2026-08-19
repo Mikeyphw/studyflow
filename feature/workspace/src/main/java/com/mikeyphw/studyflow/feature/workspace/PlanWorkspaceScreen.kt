@@ -74,7 +74,6 @@ import com.mikeyphw.studyflow.core.navigation.PlanWorkspaceTab
 fun PlanWorkspaceScreen(
     plan: StudyPlan,
     selectedTab: PlanWorkspaceTab,
-    targetId: String? = null,
     scheduleManager: ManageStudySchedule,
     contentManager: ManageStudyContent,
     libraryManager: ManageStudyLibrary,
@@ -95,6 +94,7 @@ fun PlanWorkspaceScreen(
     onManageContent: () -> Unit,
     onManageLibrary: () -> Unit,
     modifier: Modifier = Modifier,
+    targetId: String? = null,
 ) {
     var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
     val scheduleFlow = remember(plan.id, loadAttempt) {
@@ -134,7 +134,7 @@ fun PlanWorkspaceScreen(
     val progressState by progressFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     if (
-        !WorkspaceLoadGate(
+        !workspaceLoadGate(
             states = listOf(
                 scheduleState,
                 syllabusState,

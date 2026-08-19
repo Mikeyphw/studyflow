@@ -21,8 +21,6 @@
     <string name="widget_next_activity_empty">Nenhum bloco próximo</string>
     <string name="debug_bundle_chooser_title">Compartilhar diagnósticos do StudyFlow</string>
     <string name="debug_clipboard_label">Diagnósticos do StudyFlow</string>
-    <string name="debug_diagnostic_notification_title">Notificação de diagnóstico do StudyFlow</string>
-    <string name="debug_diagnostic_notification_body">A entrega de notificações está disponível. Nenhum conteúdo de estudo foi incluído.</string>
     <string name="reminder_notification_due_reviews_title">Revisões pendentes</string>
     <plurals name="reminder_notification_due_reviews_body">
         <item quantity="one">%1$d item de revisão está pendente agora.</item>

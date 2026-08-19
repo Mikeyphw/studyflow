@@ -43,7 +43,6 @@
     <string name="open_video">Open video</string>
     <string name="open_annex">Open annex</string>
     <string name="resource_opened">Resource opened.</string>
-    <string name="resource_open_failed">No compatible app could open this resource.</string>
     <string name="confirm_delete_title">Delete item?</string>
     <string name="confirm_delete_message">This action cannot be undone.</string>
     <string name="confirm_delete">Delete</string>

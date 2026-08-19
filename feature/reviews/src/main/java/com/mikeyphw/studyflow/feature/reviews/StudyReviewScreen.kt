@@ -98,9 +98,11 @@ fun StudyReviewScreen(
         ),
     )
     val questions by practice.observeQuestions(plan.id).collectAsStateWithLifecycle(initialValue = emptyList())
-    val syllabus by content.observeSyllabus(plan.id)
-        .map<StudySyllabus, StudySyllabus?> { current -> current }
-        .collectAsStateWithLifecycle(initialValue = null)
+    val syllabusFlow = remember(content, plan.id) {
+        content.observeSyllabus(plan.id)
+            .map<StudySyllabus, StudySyllabus?> { current -> current }
+    }
+    val syllabus by syllabusFlow.collectAsStateWithLifecycle(initialValue = null)
     val coroutineScope = rememberCoroutineScope()
     var filter by rememberSaveable { mutableStateOf(ReviewFilter.DUE) }
     var front by rememberSaveable { mutableStateOf("") }

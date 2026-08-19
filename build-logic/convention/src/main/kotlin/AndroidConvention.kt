@@ -3,18 +3,19 @@ import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 
 internal fun ApplicationExtension.configureStudyFlowApplication() {
-    compileSdk = 37
+    compileSdk = 36
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         minSdk = 23
-        targetSdk = 37
+        targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     testOptions {
@@ -36,7 +37,8 @@ internal fun ApplicationExtension.configureStudyFlowApplication() {
 }
 
 internal fun LibraryExtension.configureStudyFlowLibrary() {
-    compileSdk = 37
+    compileSdk = 36
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         minSdk = 23
@@ -46,8 +48,8 @@ internal fun LibraryExtension.configureStudyFlowLibrary() {
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     testOptions {

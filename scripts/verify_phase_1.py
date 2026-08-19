@@ -134,8 +134,8 @@ if devtool_path.is_file():
 wrapper_path = ROOT / "gradle/wrapper/gradle-wrapper.properties"
 if wrapper_path.is_file():
     wrapper = wrapper_path.read_text(encoding="utf-8")
-    if "gradle-9.5.0-bin.zip" not in wrapper:
-        failures.append("Gradle wrapper must pin Gradle 9.5.0")
+    if "gradle-9.7.0-bin.zip" not in wrapper:
+        failures.append("Gradle wrapper must pin Gradle 9.7.0")
     if "distributionSha256Sum=" not in wrapper:
         failures.append("Gradle wrapper must pin the distribution checksum")
 

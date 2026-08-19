@@ -49,9 +49,9 @@ import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
 fun OnboardingSamplePlanWizardScreen(
     onBack: () -> Unit,
     onCreateSample: (OnboardingSamplePlanTemplate) -> Unit,
+    modifier: Modifier = Modifier,
     creating: Boolean = false,
     creationFailed: Boolean = false,
-    modifier: Modifier = Modifier,
 ) {
     val choices = StudyOnboardingSamplePlanWizard.choices()
     var selectedTemplateName by rememberSaveable {
@@ -280,16 +280,24 @@ private fun OnboardingWorkloadPreview(choice: OnboardingSamplePlanBlueprint) {
         Text(
             text = stringResource(
                 R.string.onboarding_workload_subjects_topics,
-                choice.subjectCount,
-                choice.topicCount,
+                pluralStringResource(
+                    R.plurals.onboarding_workload_subjects,
+                    choice.subjectCount,
+                    choice.subjectCount,
+                ),
+                pluralStringResource(
+                    R.plurals.onboarding_workload_topics,
+                    choice.topicCount,
+                    choice.topicCount,
+                ),
             ),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = stringResource(
                 R.string.onboarding_workload_minutes_week,
-                choice.weeklyScheduleMinutes,
-                choice.preferredSessionMinutes,
+                choice.weeklyScheduleMinutes.toString(),
+                choice.preferredSessionMinutes.toString(),
             ),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -111,7 +111,7 @@ fun TodayWorkspaceScreen(
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val operationFailed = stringResource(R.string.operation_failed)
     if (
-        !WorkspaceLoadGate(
+        !workspaceLoadGate(
             states = listOf(scheduleState, sessionsState, reviewState, analyticsState),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,

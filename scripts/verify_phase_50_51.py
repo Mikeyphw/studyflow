@@ -151,12 +151,12 @@ for required_task in (
 require("python3 scripts/verify_phase_50_51.py" in build, "Phase 50/51 verifier is not wired")
 
 expected_versions = {
-    "agp": "9.3.0",
+    "agp": "9.3.1",
     "kotlin": "2.4.10",
-    "composeBom": "2026.06.00",
+    "composeBom": "2026.06.01",
     "navigation": "2.9.8",
     "room": "2.8.0",
-    "ksp": "2.3.10",
+    "ksp": "2.3.11",
 }
 for name, expected in expected_versions.items():
     require(f'{name} = "{expected}"' in versions, f"toolchain drifted: {name} must remain {expected}")

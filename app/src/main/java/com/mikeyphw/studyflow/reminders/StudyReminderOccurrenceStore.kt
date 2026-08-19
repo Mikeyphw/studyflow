@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.reminders
 
 import android.content.Context
+import androidx.core.content.edit
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationCandidate
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
@@ -30,7 +31,7 @@ class StudyReminderOccurrenceStore(context: Context) {
     @Synchronized
     fun replaceScheduled(planId: StudyPlanId, candidates: Collection<ReminderNotificationCandidate>) {
         val encoded = candidates.mapTo(linkedSetOf(), ::encodeScheduled)
-        preferences.edit().putStringSet(scheduledKey(planId), encoded).commit()
+        preferences.edit(commit = true) { putStringSet(scheduledKey(planId), encoded) }
     }
 
 
@@ -39,22 +40,25 @@ class StudyReminderOccurrenceStore(context: Context) {
         val encoded = LinkedHashSet(preferences.getStringSet(scheduledKey(planId), emptySet()).orEmpty())
         encoded.removeAll { value -> decodeScheduled(value)?.occurrenceId == candidate.occurrenceId }
         encoded += encodeScheduled(candidate)
-        preferences.edit().putStringSet(scheduledKey(planId), encoded).commit()
+        preferences.edit(commit = true) { putStringSet(scheduledKey(planId), encoded) }
     }
 
     @Synchronized
     fun removeScheduled(planId: StudyPlanId, occurrenceId: String) {
         val encoded = preferences.getStringSet(scheduledKey(planId), emptySet()).orEmpty()
             .filterTo(linkedSetOf()) { value -> decodeScheduled(value)?.occurrenceId != occurrenceId }
-        val editor = preferences.edit()
-        if (encoded.isEmpty()) editor.remove(scheduledKey(planId)) else editor
-            .putStringSet(scheduledKey(planId), encoded)
-        editor.commit()
+        preferences.edit(commit = true) {
+            if (encoded.isEmpty()) {
+                remove(scheduledKey(planId))
+            } else {
+                putStringSet(scheduledKey(planId), encoded)
+            }
+        }
     }
 
     @Synchronized
     fun clearScheduled(planId: StudyPlanId) {
-        preferences.edit().remove(scheduledKey(planId)).commit()
+        preferences.edit(commit = true) { remove(scheduledKey(planId)) }
     }
 
     @Synchronized
@@ -68,7 +72,7 @@ class StudyReminderOccurrenceStore(context: Context) {
         while (delivered.size > MaxDeliveredOccurrenceIds) {
             delivered.remove(delivered.first())
         }
-        preferences.edit().putStringSet(deliveredKey(planId), delivered).commit()
+        preferences.edit(commit = true) { putStringSet(deliveredKey(planId), delivered) }
     }
 
 
@@ -76,15 +80,18 @@ class StudyReminderOccurrenceStore(context: Context) {
     fun removeDelivered(planId: StudyPlanId, occurrenceId: String) {
         val delivered = LinkedHashSet(preferences.getStringSet(deliveredKey(planId), emptySet()).orEmpty())
         if (!delivered.remove(occurrenceId)) return
-        val editor = preferences.edit()
-        if (delivered.isEmpty()) editor.remove(deliveredKey(planId)) else editor
-            .putStringSet(deliveredKey(planId), delivered)
-        editor.commit()
+        preferences.edit(commit = true) {
+            if (delivered.isEmpty()) {
+                remove(deliveredKey(planId))
+            } else {
+                putStringSet(deliveredKey(planId), delivered)
+            }
+        }
     }
 
     @Synchronized
     fun markProductionPipelineCanary(planId: StudyPlanId, verifiedAtEpochMillis: Long) {
-        preferences.edit().putLong(canaryKey(planId), verifiedAtEpochMillis).commit()
+        preferences.edit(commit = true) { putLong(canaryKey(planId), verifiedAtEpochMillis) }
     }
 
     @Synchronized
@@ -93,11 +100,11 @@ class StudyReminderOccurrenceStore(context: Context) {
 
     @Synchronized
     fun clearPlan(planId: StudyPlanId) {
-        preferences.edit()
-            .remove(scheduledKey(planId))
-            .remove(deliveredKey(planId))
-            .remove(canaryKey(planId))
-            .commit()
+        preferences.edit(commit = true) {
+            remove(scheduledKey(planId))
+            remove(deliveredKey(planId))
+            remove(canaryKey(planId))
+        }
     }
 
     private fun scheduledKey(planId: StudyPlanId): String = "scheduled:${planId.value}"

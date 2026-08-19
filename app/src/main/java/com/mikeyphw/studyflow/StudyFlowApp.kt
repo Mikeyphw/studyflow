@@ -27,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -353,6 +354,7 @@ internal fun StudyFlowNavHost(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val copySuffix = stringResource(R.string.plan_copy_suffix)
     val debugClipboardLabel = stringResource(R.string.debug_clipboard_label)
     val debugBundleChooserTitle = stringResource(R.string.debug_bundle_chooser_title)
@@ -469,7 +471,6 @@ internal fun StudyFlowNavHost(
                     val blueprint = StudyOnboardingSamplePlanWizard.build(
                         OnboardingSamplePlanInput(template = template),
                     )
-                    val resources = context.resources
                     container.samplePlanProvisioner.clearFailure()
                     container.samplePlanProvisioner.startProvisioning(
                         blueprint = blueprint,

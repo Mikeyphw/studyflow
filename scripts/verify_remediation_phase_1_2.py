@@ -41,11 +41,11 @@ except zipfile.BadZipFile:
     fail("Gradle wrapper JAR is not a valid JAR/ZIP")
 wrapper_properties = text("gradle/wrapper/gradle-wrapper.properties")
 require(
-    "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.5.0-bin.zip" in wrapper_properties,
-    "Gradle wrapper does not pin Gradle 9.5.0",
+    "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.7.0-bin.zip" in wrapper_properties,
+    "Gradle wrapper does not pin Gradle 9.7.0",
 )
 require(
-    "distributionSha256Sum=553c78f50dafcd54d65b9a444649057857469edf836431389695608536d6b746"
+    "distributionSha256Sum=84fbba45c7f4c64abc77460e1c00f541e9f960e3c7ed2538f1ede19eacd873ae"
     in wrapper_properties,
     "Gradle wrapper distribution checksum is missing or unexpected",
 )
@@ -263,7 +263,7 @@ for workspace_path in (
 ):
     workspace = text(workspace_path)
     require("asStudyFlowLoadState" in workspace, f"{workspace_path} does not use explicit load-state Flows")
-    require("WorkspaceLoadGate" in workspace, f"{workspace_path} has no loading/failure/retry gate")
+    require("workspaceLoadGate" in workspace, f"{workspace_path} has no loading/failure/retry gate")
     require("initialValue = emptyList()" not in workspace, f"{workspace_path} still uses fake empty loading state")
 
 app_container_start = app.index("interface AppContainer")

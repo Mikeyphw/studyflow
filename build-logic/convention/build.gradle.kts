@@ -6,16 +6,16 @@ group = "com.mikeyphw.studyflow.buildlogic"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
 dependencies {
-    implementation("com.android.tools.build:gradle:9.3.0")
+    implementation("com.android.tools.build:gradle:9.3.1")
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10")
     implementation("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.4.10")
     implementation("org.jetbrains.kotlin:kotlin-serialization:2.4.10")
-    implementation("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.10")
+    implementation("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.11")
 }
 
 gradlePlugin {

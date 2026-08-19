@@ -41,7 +41,6 @@ class StudyFlowReminderNotificationLabTest {
         val lab = lab(
             reconcile = {
                 calls.incrementAndGet()
-                Unit
             },
             defaultPlanId = { null },
         )

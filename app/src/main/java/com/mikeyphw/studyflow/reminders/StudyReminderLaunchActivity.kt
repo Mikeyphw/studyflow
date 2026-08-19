@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.reminders
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -17,6 +18,8 @@ import com.mikeyphw.studyflow.core.model.StudyPlanId
  * to this component, which validates the internal payload and hands it to the process-local store
  * before foregrounding [MainActivity].
  */
+// This is an internal PendingIntent trampoline, not an app launch/splash screen.
+@SuppressLint("CustomSplashScreen")
 class StudyReminderLaunchActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

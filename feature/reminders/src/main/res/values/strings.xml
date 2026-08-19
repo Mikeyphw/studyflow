@@ -24,7 +24,6 @@
     <string name="candidate_planned_activity">Planned activity</string>
     <string name="candidate_missed_activity">Missed activity recovery</string>
     <string name="candidate_daily_summary">Daily summary</string>
-    <string name="suppressed_by_quiet_hours">Suppressed by quiet hours</string>
     <string name="widget_preview_title">Today widget preview</string>
     <string name="widget_plan_name">Plan: %1$s</string>
     <string name="widget_due_reviews">Due reviews: %1$d</string>
@@ -40,14 +39,11 @@
     <string name="reminder_reliability_blocked">Blocked</string>
     <string name="reminder_fallback_none">Reminders are ready; the widget remains a quick manual fallback.</string>
     <string name="reminder_fallback_widget_manual">Use the Today widget or manual checks until notification permission is enabled.</string>
-    <string name="reminder_fallback_inexact">Precise timing may use the safe inexact delivery window.</string>
     <string name="reminder_fallback_quiet_hours">Quiet hours will delay immediate alerts until rest time ends.</string>
     <string name="reminder_fallback_backlog">Recover due reviews or missed blocks before adding more reminder pressure.</string>
     <string name="reminder_next_candidate_epoch">Next candidate: %1$d</string>
     <string name="reminder_issue_permission">Notification permission</string>
     <string name="reminder_issue_permission_message">Android will block reminder notifications until permission is granted.</string>
-    <string name="reminder_issue_exact_alarm">Exact alarm access</string>
-    <string name="reminder_issue_exact_alarm_message">Timed study blocks may use a wider delivery window on this device.</string>
     <string name="reminder_issue_battery">Battery optimization</string>
     <string name="reminder_issue_battery_message">Battery limits may delay background reminder reconciliation.</string>
     <string name="reminder_issue_quiet_hours">Quiet hours</string>

@@ -187,7 +187,6 @@
     <string name="debug_probe_message_no_widget">No Today widget instance is currently installed.</string>
     <string name="debug_probe_message_process_unavailable">Process-exit history requires Android 11 or newer.</string>
     <string name="debug_probe_message_no_process_history">Android returned no recent StudyFlow process exits.</string>
-    <string name="debug_probe_message_backup_disabled">Android OS backup is disabled for this app.</string>
     <string name="debug_probe_message_file_provider">The support FileProvider configuration is unsafe or missing.</string>
     <string name="debug_probe_message_backup_dry_run">The backup did not pass integrity or zero-write checks.</string>
     <string name="debug_probe_message_timed_out">The probe exceeded its bounded execution time.</string>
@@ -223,12 +222,9 @@
     <string name="debug_reminder_lab_candidates_title">Reminder candidates</string>
     <string name="debug_reminder_lab_no_candidates">No reminder candidate is currently available.</string>
     <string name="debug_reminder_lab_scheduled">Planned time: %1$s</string>
-    <string name="debug_reminder_lab_effective_trigger">Effective earliest trigger: %1$s</string>
     <string name="debug_reminder_lab_window">Alarm delivery window: %1$d min</string>
     <string name="debug_reminder_lab_late_grace">Late-delivery freshness grace: %1$d min</string>
-    <string name="debug_reminder_lab_suppressed">Suppressed by quiet hours</string>
     <string name="debug_reminder_lab_pending_identity">Delivery identity token currently exists (not proof of an installed alarm)</string>
-    <string name="debug_reminder_lab_request_code">Request code: %1$d</string>
     <string name="debug_lab_boolean_fact">%1$s: %2$s</string>
     <string name="debug_reminder_lab_plan_unavailable">The selected plan is unavailable.</string>
     <string name="debug_reminder_lab_plan_not_active">The selected plan is not active.</string>
@@ -274,8 +270,6 @@
     <string name="debug_portability_lab_zero_write">The drill uses dryRunImport and must report zero database writes. It never invokes importPlan.</string>
     <string name="debug_portability_lab_failed">The portability drill failed without modifying the database.</string>
     <string name="debug_portability_action_completed">Portability drills completed.</string>
-    <string name="debug_portability_drill_passed">Passed</string>
-    <string name="debug_portability_drill_blocked">Blocked or failed</string>
     <string name="debug_portability_drill_destructive">Destructive</string>
     <string name="debug_portability_drill_annex">Metadata-private annex</string>
     <string name="debug_lab_page_study_engine">Study engine</string>
@@ -333,21 +327,23 @@
     <string name="sync_conflict_manual_review">Review conflicts manually</string>
     <string name="sync_conflict_local_only">Keep this device only</string>
 
-    <string name="sync_queue_title">Local backup queue</string>
-    <string name="sync_queue_waiting_for_inspection">Inspect local changes to build the queue.</string>
-    <string name="sync_queue_summary">Ready: %1$d · Blocked: %2$d · Waiting: %3$d</string>
     <string name="sync_queue_prepare_checkpoint">Prepare checkpoint</string>
-    <string name="sync_queue_export_backup">Export local backup</string>
-    <string name="sync_queue_verify_freshness">Verify backup freshness</string>
     <string name="sync_queue_review_policy">Review conflict policy</string>
     <string name="sync_queue_wait_for_data">Wait for local data</string>
     <string name="sync_queue_unblock_checkpoint">Unblock checkpoint</string>
-    <string name="sync_queue_prepare_checkpoint_message">Refresh the local checkpoint for %1$d tracked change(s).</string>
-    <string name="sync_queue_export_backup_message">Queue a local backup export for %1$d tracked change(s).</string>
-    <string name="sync_queue_verify_freshness_message">Confirm the latest backup still matches %1$d tracked change(s).</string>
-    <string name="sync_queue_review_policy_message">Review manual conflict handling for %1$d tracked change(s).</string>
+    <plurals name="sync_queue_prepare_checkpoint_message">
+        <item quantity="one">Refresh the local checkpoint for %1$d tracked change.</item>
+        <item quantity="other">Refresh the local checkpoint for %1$d tracked changes.</item>
+    </plurals>
+    <plurals name="sync_queue_review_policy_message">
+        <item quantity="one">Review manual conflict handling for %1$d tracked change.</item>
+        <item quantity="other">Review manual conflict handling for %1$d tracked changes.</item>
+    </plurals>
     <string name="sync_queue_wait_for_data_message">Create study data before backup work is useful.</string>
-    <string name="sync_queue_unblock_checkpoint_message">Fix checkpoint settings before %1$d tracked change(s) can be protected.</string>
+    <plurals name="sync_queue_unblock_checkpoint_message">
+        <item quantity="one">Fix checkpoint settings before %1$d tracked change can be protected.</item>
+        <item quantity="other">Fix checkpoint settings before %1$d tracked changes can be protected.</item>
+    </plurals>
     <string name="sync_queue_status_ready">Ready</string>
     <string name="sync_queue_status_waiting">Waiting</string>
     <string name="sync_queue_status_blocked">Blocked</string>
