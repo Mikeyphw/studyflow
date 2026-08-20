@@ -68,7 +68,7 @@ test = [
     ":feature:settings:testDebugUnitTest",
     ":feature:subjects:testDebugUnitTest",
     ":feature:workspace:testDebugUnitTest",
-    ":app:testDebugUnitTest",
+    ":app:testReleaseUnitTest",
 ]
 lint = [
     ":core:data:lintDebug",
@@ -90,7 +90,7 @@ required = true
 external_verification = "auto"
 
 [targets.studyflow_android.validation]
-android_safe = false
+android_safe = true
 max_workers = 2
 cpu_limit = 2
 parallel = true
@@ -168,7 +168,7 @@ compile = [
     ":feature:reminders:compileDebugUnitTestKotlin",
     ":feature:search:compileDebugUnitTestKotlin",
     ":feature:workspace:compileDebugUnitTestKotlin",
-    ":app:compileDebugUnitTestKotlin",
+    ":app:compileReleaseUnitTestKotlin",
     ":core:database:compileDebugAndroidTestKotlin",
     ":feature:workspace:compileDebugAndroidTestKotlin",
     ":app:compileReleaseAndroidTestKotlin",
@@ -200,7 +200,7 @@ unit-test = [
     ":feature:settings:testDebugUnitTest",
     ":feature:subjects:testDebugUnitTest",
     ":feature:workspace:testDebugUnitTest",
-    ":app:testDebugUnitTest",
+    ":app:testReleaseUnitTest",
 ]
 package = [
   ":app:assembleDebug",

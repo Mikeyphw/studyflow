@@ -604,7 +604,7 @@ tasks.register("checkAll") {
         ":core:navigation:test",
         ":core:portability:test",
         ":core:testing:test",
-        ":app:testDebugUnitTest",
+        ":app:testReleaseUnitTest",
         ":feature:dashboard:testDebugUnitTest",
         ":feature:analytics:testDebugUnitTest",
         ":feature:library:testDebugUnitTest",
