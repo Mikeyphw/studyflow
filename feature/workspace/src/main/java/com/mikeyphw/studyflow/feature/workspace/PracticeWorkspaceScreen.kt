@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.feature.workspace
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -18,12 +20,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -44,11 +43,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowFloatingAction
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowPrimaryActionCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowPracticeHero
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowTabStrip
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowWorkspaceTabs
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
@@ -158,16 +158,8 @@ fun PracticeWorkspaceScreen(
         )
     }
 
-    Scaffold(
-        modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbar) },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onQuickAdd) {
-                Icon(Icons.Outlined.Quiz, contentDescription = stringResource(R.string.quick_add))
-            }
-        },
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             WorkspaceHeader(
                 title = stringResource(R.string.practice_title),
                 plan = plan,
@@ -175,7 +167,7 @@ fun PracticeWorkspaceScreen(
                 onSearch = onSearch,
                 onSystem = onSystem,
             )
-            StudyFlowWorkspaceTabs(
+            StudyFlowTabStrip(
                 tabs = PracticeWorkspaceTab.entries,
                 selected = selectedTab,
                 label = { tab ->
@@ -189,127 +181,139 @@ fun PracticeWorkspaceScreen(
                 },
                 onSelected = onTabSelected,
             )
-            when (selectedTab) {
-                PracticeWorkspaceTab.REVIEWS -> ReviewsPane(
-                    due = queue.due,
-                    dueCount = queue.dueCount,
-                    upcomingCount = queue.upcomingCount,
-                    flashcardCount = queue.flashcardCount,
-                    questions = questions,
-                    flashcards = queue.flashcards,
-                    errors = queue.errors,
-                    topics = syllabus.topics,
-                    targetId = targetId,
-                    onGrade = { item, grade ->
-                        scope.launch {
-                            try {
-                                reviewManager.gradeReview(plan.id, item.id, grade)
-                            } catch (cancelled: CancellationException) {
-                                throw cancelled
-                            } catch (_: Exception) {
-                                snackbar.showSnackbar(operationFailed)
-                            }
-                        }
-                    },
-                    onSkip = { item ->
-                        scope.launch {
-                            try {
-                                reviewManager.skipReview(plan.id, item.id)
-                            } catch (cancelled: CancellationException) {
-                                throw cancelled
-                            } catch (_: Exception) {
-                                snackbar.showSnackbar(operationFailed)
-                            }
-                        }
-                    },
-                    onOpenReviewCenter = onOpenReviewCenter,
-                )
-                PracticeWorkspaceTab.QUESTIONS -> QuestionsPane(
-                    questions = questions,
-                    tests = tests,
-                    mocks = mocks,
-                    mockStudio = mockStudio,
-                    targetId = targetId,
-                    onOpenQuestionBank = onOpenQuestionBank,
-                    onPreviewMockExam = { request ->
-                        practiceManager.previewMockExamStudio(questions, request)
-                    },
-                    onPreviewQuestionImport = { rawText ->
-                        practiceManager.previewQuestionImport(
-                            planId = plan.id,
-                            rawText = rawText,
-                            existingQuestions = questions,
-                            ownership = QuestionImportOwnership.from(syllabus),
-                        )
-                    },
-                    onCreateMockExam = { request ->
-                        scope.launch {
-                            try {
-                                practiceManager.createMockExamFromStudio(
-                                    id = MockExamId(UUID.randomUUID().toString()),
-                                    planId = plan.id,
-                                    questions = questions,
-                                    request = request,
-                                )
-                                snackbar.showSnackbar(mockExamCreated)
-                            } catch (cancelled: CancellationException) {
-                                throw cancelled
-                            } catch (_: Exception) {
-                                snackbar.showSnackbar(operationFailed)
-                            }
-                        }
-                    },
-                    onImportQuestions = { rawText ->
-                        scope.launch {
-                            try {
-                                val result = practiceManager.importQuestionsFromText(
-                                    planId = plan.id,
-                                    rawText = rawText,
-                                    existingQuestions = questions,
-                                    ownership = QuestionImportOwnership.from(syllabus),
-                                )
-                                snackbar.showSnackbar(
-                                    if (result.importedCount > 0) questionsImported else noNewQuestions,
-                                )
-                            } catch (cancelled: CancellationException) {
-                                throw cancelled
-                            } catch (_: Exception) {
-                                snackbar.showSnackbar(operationFailed)
-                            }
-                        }
-                    },
-                )
-                PracticeWorkspaceTab.ERRORS -> ErrorsPane(
-                    entries = notebook.entries,
-                    weaknessDrill = weaknessDrill,
-                    targetId = targetId,
-                    onCreateWeaknessDrill = {
-                        scope.launch {
-                            try {
-                                if (!weaknessDrill.executable) {
-                                    snackbar.showSnackbar(weaknessDrillUnavailable)
-                                    return@launch
+            Box(modifier = Modifier.weight(1f)) {
+                when (selectedTab) {
+                    PracticeWorkspaceTab.REVIEWS -> ReviewsPane(
+                        due = queue.due,
+                        dueCount = queue.dueCount,
+                        upcomingCount = queue.upcomingCount,
+                        flashcardCount = queue.flashcardCount,
+                        questions = questions,
+                        flashcards = queue.flashcards,
+                        errors = queue.errors,
+                        topics = syllabus.topics,
+                        targetId = targetId,
+                        onGrade = { item, grade ->
+                            scope.launch {
+                                try {
+                                    reviewManager.gradeReview(plan.id, item.id, grade)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    snackbar.showSnackbar(operationFailed)
                                 }
-                                practiceManager.createWeaknessDrillTest(
-                                    id = StudyTestId(UUID.randomUUID().toString()),
-                                    planId = plan.id,
-                                    title = weaknessDrillTitle,
-                                    questions = questions,
-                                    remediations = notebook.entries,
-                                    dueReviews = queue.due,
-                                )
-                                snackbar.showSnackbar(weaknessDrillCreated)
-                            } catch (cancelled: CancellationException) {
-                                throw cancelled
-                            } catch (_: Exception) {
-                                snackbar.showSnackbar(operationFailed)
                             }
-                        }
-                    },
-                    onOpenReviewCenter = onOpenReviewCenter,
-                )
+                        },
+                        onSkip = { item ->
+                            scope.launch {
+                                try {
+                                    reviewManager.skipReview(plan.id, item.id)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    snackbar.showSnackbar(operationFailed)
+                                }
+                            }
+                        },
+                        onOpenReviewCenter = onOpenReviewCenter,
+                    )
+                    PracticeWorkspaceTab.QUESTIONS -> QuestionsPane(
+                        questions = questions,
+                        tests = tests,
+                        mocks = mocks,
+                        mockStudio = mockStudio,
+                        targetId = targetId,
+                        onOpenQuestionBank = onOpenQuestionBank,
+                        onPreviewMockExam = { request ->
+                            practiceManager.previewMockExamStudio(questions, request)
+                        },
+                        onPreviewQuestionImport = { rawText ->
+                            practiceManager.previewQuestionImport(
+                                planId = plan.id,
+                                rawText = rawText,
+                                existingQuestions = questions,
+                                ownership = QuestionImportOwnership.from(syllabus),
+                            )
+                        },
+                        onCreateMockExam = { request ->
+                            scope.launch {
+                                try {
+                                    practiceManager.createMockExamFromStudio(
+                                        id = MockExamId(UUID.randomUUID().toString()),
+                                        planId = plan.id,
+                                        questions = questions,
+                                        request = request,
+                                    )
+                                    snackbar.showSnackbar(mockExamCreated)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    snackbar.showSnackbar(operationFailed)
+                                }
+                            }
+                        },
+                        onImportQuestions = { rawText ->
+                            scope.launch {
+                                try {
+                                    val result = practiceManager.importQuestionsFromText(
+                                        planId = plan.id,
+                                        rawText = rawText,
+                                        existingQuestions = questions,
+                                        ownership = QuestionImportOwnership.from(syllabus),
+                                    )
+                                    snackbar.showSnackbar(
+                                        if (result.importedCount > 0) questionsImported else noNewQuestions,
+                                    )
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    snackbar.showSnackbar(operationFailed)
+                                }
+                            }
+                        },
+                    )
+                    PracticeWorkspaceTab.ERRORS -> ErrorsPane(
+                        entries = notebook.entries,
+                        weaknessDrill = weaknessDrill,
+                        targetId = targetId,
+                        onCreateWeaknessDrill = {
+                            scope.launch {
+                                try {
+                                    if (!weaknessDrill.executable) {
+                                        snackbar.showSnackbar(weaknessDrillUnavailable)
+                                        return@launch
+                                    }
+                                    practiceManager.createWeaknessDrillTest(
+                                        id = StudyTestId(UUID.randomUUID().toString()),
+                                        planId = plan.id,
+                                        title = weaknessDrillTitle,
+                                        questions = questions,
+                                        remediations = notebook.entries,
+                                        dueReviews = queue.due,
+                                    )
+                                    snackbar.showSnackbar(weaknessDrillCreated)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    snackbar.showSnackbar(operationFailed)
+                                }
+                            }
+                        },
+                        onOpenReviewCenter = onOpenReviewCenter,
+                    )
+                }
             }
         }
+        SnackbarHost(
+            hostState = snackbar,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        StudyFlowFloatingAction(
+            icon = Icons.Outlined.Quiz,
+            contentDescription = stringResource(R.string.quick_add),
+            onClick = onQuickAdd,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
+        )
     }
 }
 
@@ -345,9 +349,9 @@ private fun ReviewsPane(
         }
         item(key = "review-primary", contentType = "primary-action") {
             if (dueCount > 0) {
-                StudyFlowPrimaryActionCard(
-                    supportingLabel = stringResource(R.string.practice_reviews),
-                    title = stringResource(R.string.due_reviews),
+                StudyFlowPracticeHero(
+                    count = dueCount.toString(),
+                    label = stringResource(R.string.practice_reviews),
                     message = pluralStringResource(R.plurals.practice_due_message, dueCount, dueCount),
                     actionLabel = stringResource(R.string.review_now),
                     onAction = onOpenReviewCenter,

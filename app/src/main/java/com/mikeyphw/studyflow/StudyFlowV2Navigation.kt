@@ -1,11 +1,14 @@
 package com.mikeyphw.studyflow
 
+import android.os.SystemClock
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -92,7 +95,10 @@ import com.mikeyphw.studyflow.feature.workspace.SystemHubScreen
 import com.mikeyphw.studyflow.feature.workspace.TodayWorkspaceScreen
 import com.mikeyphw.studyflow.feature.workspace.WorkspaceNoPlanScreen
 import com.mikeyphw.studyflow.feature.workspace.R as WorkspaceR
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun StudyFlowV2Navigation(
@@ -111,6 +117,19 @@ internal fun StudyFlowV2Navigation(
     val workspaceFallbackPlan = resolveWorkspacePlan(plans, preferences, "")
     val currentPlanId = entry.workspacePlanId().ifBlank { workspaceFallbackPlan?.id?.value.orEmpty() }
     val selectedRoot = destination.workspaceRoot()
+    val activeSessions by remember(container.manageStudySession) {
+        container.manageStudySession.observeActiveSessions()
+    }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val activeSession = activeSessions.singleOrNull()
+    var activeSessionTick by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    val shellScope = rememberCoroutineScope()
+
+    LaunchedEffect(activeSession?.id, activeSession?.status) {
+        while (activeSession?.status == StudySessionStatus.RUNNING) {
+            activeSessionTick = SystemClock.elapsedRealtime()
+            delay(1_000)
+        }
+    }
 
     LaunchedEffect(preferences.defaultStudyPlanId, plans) {
         val staleDefaultId = preferences.defaultStudyPlanId
@@ -169,6 +188,41 @@ internal fun StudyFlowV2Navigation(
             ),
             onNavigate = { root ->
                 navController.navigateWorkspaceRoot(root, currentPlanId)
+            },
+            activeSession = activeSession,
+            activeSessionElapsed = activeSession?.let { session ->
+                formatShellDuration(
+                    remember(session, activeSessionTick) { container.manageStudySession.liveActiveSeconds(session) },
+                )
+            }.orEmpty(),
+            activeSessionStatusLabel = activeSession?.let { session ->
+                stringResource(
+                    if (session.status == StudySessionStatus.PAUSED) {
+                        WorkspaceR.string.status_paused
+                    } else {
+                        WorkspaceR.string.active_session
+                    },
+                )
+            }.orEmpty(),
+            pauseLabel = stringResource(WorkspaceR.string.pause),
+            resumeLabel = stringResource(WorkspaceR.string.resume),
+            onOpenActiveSession = { activeSession?.let { navController.navigate(it.focusRoute()) } },
+            onToggleActiveSession = {
+                activeSession?.let { session ->
+                    shellScope.launch {
+                        try {
+                            if (session.status == StudySessionStatus.PAUSED) {
+                                container.manageStudySession.resume(session.studyPlanId, session.id)
+                            } else {
+                                container.manageStudySession.pause(session.studyPlanId, session.id)
+                            }
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            navController.navigate(session.focusRoute())
+                        }
+                    }
+                }
             },
             modifier = modifier.fillMaxSize(),
             content = content,
@@ -796,6 +850,17 @@ internal fun resolveCanonicalDefaultPlan(
 
 internal fun isWorkspaceEligiblePlan(plan: StudyPlan): Boolean =
     plan.status !in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)
+
+private fun formatShellDuration(totalSeconds: Long): String {
+    val hours = totalSeconds / 3_600
+    val minutes = (totalSeconds % 3_600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%02d:%02d".format(minutes, seconds)
+    }
+}
 
 private fun StudySession.focusRoute(): FocusSessionRoute = FocusSessionRoute(
     planId = studyPlanId.value,

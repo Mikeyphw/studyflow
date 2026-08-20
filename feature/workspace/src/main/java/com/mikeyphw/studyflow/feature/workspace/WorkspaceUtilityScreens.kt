@@ -2,12 +2,17 @@ package com.mikeyphw.studyflow.feature.workspace
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.BugReport
@@ -22,6 +27,7 @@ import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,10 +37,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowActionRow
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
@@ -286,60 +294,57 @@ fun QuickAddScreen(
     modifier: Modifier = Modifier,
 ) {
     var showQuickSession by rememberSaveable { mutableStateOf(false) }
-    WorkspaceUtilityScaffold(
-        title = stringResource(R.string.quick_add_title),
-        onBack = onBack,
-        modifier = modifier,
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = padding,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+    Column(
+        modifier = modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            item(key = "quick-subtitle", contentType = "workspace-utility") {
-                Text(stringResource(R.string.quick_add_context, quickAddSourceLabel(sourceRoot)))
-            }
-            item(key = "quick-session", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
-                    title = stringResource(R.string.quick_session),
-                    metadata = stringResource(R.string.start_focus),
-                    icon = Icons.Outlined.PlayCircle,
-                    onClick = { showQuickSession = true },
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
                 )
             }
-            item(key = "study-block", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
-                    title = stringResource(R.string.study_block),
-                    metadata = stringResource(R.string.manage_schedule),
-                    icon = Icons.Outlined.AddTask,
-                    onClick = onStudyBlock,
+            Column(modifier = Modifier.padding(start = 6.dp)) {
+                Text(
+                    text = stringResource(R.string.quick_add_title),
+                    style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
                 )
-            }
-            item(key = "question", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
-                    title = stringResource(R.string.question),
-                    metadata = stringResource(R.string.open_question_bank),
-                    icon = Icons.Outlined.Quiz,
-                    onClick = onQuestion,
-                )
-            }
-            item(key = "goal-note", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
-                    title = stringResource(R.string.goal_or_note),
-                    metadata = stringResource(R.string.open_progress_center),
-                    icon = Icons.AutoMirrored.Outlined.ListAlt,
-                    onClick = onGoalOrNote,
-                )
-            }
-            item(key = "material", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
-                    title = stringResource(R.string.material),
-                    metadata = stringResource(R.string.manage_library),
-                    icon = Icons.Outlined.FolderOpen,
-                    onClick = onMaterial,
+                Text(
+                    text = stringResource(R.string.quick_add_context, quickAddSourceLabel(sourceRoot)),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+        StudyFlowActionRow(
+            icon = Icons.Outlined.PlayCircle,
+            label = stringResource(R.string.quick_session),
+            onClick = { showQuickSession = true },
+        )
+        StudyFlowActionRow(
+            icon = Icons.Outlined.AddTask,
+            label = stringResource(R.string.study_block),
+            onClick = onStudyBlock,
+        )
+        StudyFlowActionRow(
+            icon = Icons.Outlined.Quiz,
+            label = stringResource(R.string.question),
+            onClick = onQuestion,
+        )
+        StudyFlowActionRow(
+            icon = Icons.AutoMirrored.Outlined.ListAlt,
+            label = stringResource(R.string.goal_or_note),
+            onClick = onGoalOrNote,
+        )
+        StudyFlowActionRow(
+            icon = Icons.Outlined.FolderOpen,
+            label = stringResource(R.string.material),
+            onClick = onMaterial,
+        )
     }
     if (showQuickSession) {
         QuickSessionDialog(

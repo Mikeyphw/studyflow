@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,28 +15,22 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.PauseCircle
-import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material.icons.outlined.StopCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,16 +43,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowImmersiveTimer
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowSessionControls
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
@@ -69,7 +61,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FocusSessionScreen(
     plan: StudyPlan,
@@ -120,31 +111,14 @@ fun FocusSessionScreen(
         if (!sessionsLoading && !transitionInFlight) showCancel = true
     }
 
-    Scaffold(
-        modifier = modifier.semantics { paneTitle = focusTitle },
-        snackbarHost = { SnackbarHost(snackbar) },
-        contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = {
-            TopAppBar(
-                title = { Text(focusTitle) },
-                navigationIcon = {
-                    IconButton(
-                        onClick = { if (activeSession == null) onFinished() else showCancel = true },
-                        enabled = !sessionsLoading && !transitionInFlight,
-                    ) {
-                        Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.cancel_session))
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Box(modifier = modifier.fillMaxSize().semantics { paneTitle = focusTitle }) {
         if (sessionsLoading) {
             StudyFlowEmptyState(
                 title = focusTitle,
                 message = stringResource(R.string.session_loading),
                 actionLabel = stringResource(R.string.back),
                 onAction = {},
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
             )
         } else if (activeSession == null) {
             StudyFlowEmptyState(
@@ -154,7 +128,7 @@ fun FocusSessionScreen(
                 ),
                 actionLabel = stringResource(R.string.back),
                 onAction = onFinished,
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
             )
         } else {
             val elapsedSeconds = remember(activeSession, timerTick) {
@@ -186,12 +160,29 @@ fun FocusSessionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
                     .imePadding()
                     .verticalScroll(rememberScrollState())
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(
+                        onClick = { showCancel = true },
+                        enabled = !transitionInFlight,
+                    ) {
+                        Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.cancel_session))
+                    }
+                    Text(
+                        text = focusTitle,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f).padding(start = 4.dp),
+                    )
+                }
                 Text(
                     text = plan.name,
                     style = MaterialTheme.typography.labelLarge,
@@ -201,82 +192,32 @@ fun FocusSessionScreen(
                     text = activeSession.notes.lineSequence().firstOrNull().orEmpty().ifBlank { plan.name },
                     style = MaterialTheme.typography.headlineMedium,
                 )
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics {
-                            liveRegion = LiveRegionMode.Polite
-                            stateDescription = timerDescription
-                        },
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    ),
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 38.dp, horizontal = 20.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = formatDuration(timerSeconds),
-                                style = MaterialTheme.typography.displayMedium,
-                                textAlign = TextAlign.Center,
-                            )
-                            Text(
-                                text = timerDescription,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
-                        }
-                    }
-                }
-                StudyFlowResponsivePair(
-                    first = { childModifier ->
-                        if (activeSession.status == StudySessionStatus.RUNNING) {
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch {
-                                        performFocusMutation(
-                                            onInFlightChange = { transitionInFlight = it },
-                                            operation = { sessionManager.pause(plan.id, activeSession.id) },
-                                            onFailure = { snackbar.showSnackbar(operationFailed) },
-                                        )
+                StudyFlowImmersiveTimer(
+                    timerText = formatDuration(timerSeconds),
+                    stateText = timerDescription,
+                )
+                StudyFlowSessionControls(
+                    paused = activeSession.status == StudySessionStatus.PAUSED,
+                    pauseLabel = stringResource(R.string.pause),
+                    resumeLabel = stringResource(R.string.resume),
+                    finishLabel = stringResource(R.string.finish),
+                    onToggle = {
+                        scope.launch {
+                            performFocusMutation(
+                                onInFlightChange = { transitionInFlight = it },
+                                operation = {
+                                    if (activeSession.status == StudySessionStatus.RUNNING) {
+                                        sessionManager.pause(plan.id, activeSession.id)
+                                    } else {
+                                        sessionManager.resume(plan.id, activeSession.id)
                                     }
                                 },
-                                modifier = childModifier,
-                                enabled = !transitionInFlight,
-                            ) {
-                                Icon(Icons.Outlined.PauseCircle, contentDescription = null)
-                                Text(stringResource(R.string.pause), modifier = Modifier.padding(start = 8.dp))
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch {
-                                        performFocusMutation(
-                                            onInFlightChange = { transitionInFlight = it },
-                                            operation = { sessionManager.resume(plan.id, activeSession.id) },
-                                            onFailure = { snackbar.showSnackbar(operationFailed) },
-                                        )
-                                    }
-                                },
-                                modifier = childModifier,
-                                enabled = !transitionInFlight,
-                            ) {
-                                Icon(Icons.Outlined.PlayCircle, contentDescription = null)
-                                Text(stringResource(R.string.resume), modifier = Modifier.padding(start = 8.dp))
-                            }
+                                onFailure = { snackbar.showSnackbar(operationFailed) },
+                            )
                         }
                     },
-                    second = { childModifier ->
-                        Button(
-                            onClick = { showFinish = true },
-                            enabled = !transitionInFlight,
-                            modifier = childModifier,
-                        ) {
-                            Icon(Icons.Outlined.StopCircle, contentDescription = null)
-                            Text(stringResource(R.string.finish), modifier = Modifier.padding(start = 8.dp))
-                        }
-                    },
+                    onFinish = { showFinish = true },
+                    enabled = !transitionInFlight,
                 )
                 OutlinedTextField(
                     value = draftNotes,
@@ -296,6 +237,10 @@ fun FocusSessionScreen(
                 }
             }
         }
+        SnackbarHost(
+            hostState = snackbar,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 12.dp),
+        )
     }
 
     if (showFinish && activeSession != null) {
