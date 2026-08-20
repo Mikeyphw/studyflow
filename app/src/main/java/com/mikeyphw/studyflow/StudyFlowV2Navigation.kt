@@ -1,14 +1,6 @@
 package com.mikeyphw.studyflow
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Insights
-import androidx.compose.material.icons.outlined.Quiz
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -167,50 +159,18 @@ internal fun StudyFlowV2Navigation(
     if (selectedRoot == null) {
         content()
     } else {
-        NavigationSuiteScaffold(
-            modifier = modifier.fillMaxSize(),
-            navigationSuiteItems = {
-                item(
-                    selected = selectedRoot == StudyFlowWorkspaceRoot.TODAY,
-                    onClick = {
-                        if (selectedRoot != StudyFlowWorkspaceRoot.TODAY) {
-                            navController.navigateWorkspaceRoot(StudyFlowWorkspaceRoot.TODAY, currentPlanId)
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.Home, contentDescription = null) },
-                    label = { Text(stringResource(WorkspaceR.string.today_title)) },
-                )
-                item(
-                    selected = selectedRoot == StudyFlowWorkspaceRoot.PLAN,
-                    onClick = {
-                        if (selectedRoot != StudyFlowWorkspaceRoot.PLAN) {
-                            navController.navigateWorkspaceRoot(StudyFlowWorkspaceRoot.PLAN, currentPlanId)
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null) },
-                    label = { Text(stringResource(WorkspaceR.string.plan_title)) },
-                )
-                item(
-                    selected = selectedRoot == StudyFlowWorkspaceRoot.PRACTICE,
-                    onClick = {
-                        if (selectedRoot != StudyFlowWorkspaceRoot.PRACTICE) {
-                            navController.navigateWorkspaceRoot(StudyFlowWorkspaceRoot.PRACTICE, currentPlanId)
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.Quiz, contentDescription = null) },
-                    label = { Text(stringResource(WorkspaceR.string.practice_title)) },
-                )
-                item(
-                    selected = selectedRoot == StudyFlowWorkspaceRoot.PROGRESS,
-                    onClick = {
-                        if (selectedRoot != StudyFlowWorkspaceRoot.PROGRESS) {
-                            navController.navigateWorkspaceRoot(StudyFlowWorkspaceRoot.PROGRESS, currentPlanId)
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.Insights, contentDescription = null) },
-                    label = { Text(stringResource(WorkspaceR.string.progress_title)) },
-                )
+        StudyFlowShell(
+            selectedRoot = selectedRoot,
+            labels = mapOf(
+                StudyFlowWorkspaceRoot.TODAY to stringResource(WorkspaceR.string.today_title),
+                StudyFlowWorkspaceRoot.PLAN to stringResource(WorkspaceR.string.plan_title),
+                StudyFlowWorkspaceRoot.PRACTICE to stringResource(WorkspaceR.string.practice_title),
+                StudyFlowWorkspaceRoot.PROGRESS to stringResource(WorkspaceR.string.progress_title),
+            ),
+            onNavigate = { root ->
+                navController.navigateWorkspaceRoot(root, currentPlanId)
             },
+            modifier = modifier.fillMaxSize(),
             content = content,
         )
     }
