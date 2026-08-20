@@ -1,6 +1,5 @@
 package com.mikeyphw.studyflow.feature.workspace
 
-import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
 import org.junit.Assert.assertFalse
@@ -17,7 +16,7 @@ class PracticeFocusExperienceContractTest {
         error("Could not locate StudyFlow repository root")
     }
 
-    private fun source(relative: String): String = Files.readString(repoRoot().resolve(relative))
+    private fun source(relative: String): String = repoRoot().resolve(relative).toFile().readText()
 
     @Test
     fun `practice root is shell-native and keeps all three practice routes`() {
@@ -52,7 +51,7 @@ class PracticeFocusExperienceContractTest {
         assertTrue("sessionManager.resume(" in focus)
         assertTrue("sessionManager.complete(" in focus)
         assertTrue("sessionManager.cancel(" in focus)
-        assertTrue("BackHandler(" in focus)
+        assertTrue("PredictiveBackHandler(" in focus)
     }
 
     @Test

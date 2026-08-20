@@ -1,10 +1,19 @@
 package com.mikeyphw.studyflow
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
@@ -13,6 +22,7 @@ import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -20,9 +30,12 @@ import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowActiveSessionBar
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowCompactDock
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowExpandedRail
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowMotionTokens
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowPracticeTokens
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowShellDefaults
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowShellDestination
+import com.mikeyphw.studyflow.core.designsystem.rememberStudyFlowMotionEnabled
+import com.mikeyphw.studyflow.core.designsystem.studyFlowAnimationSpec
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.navigation.StudyFlowWorkspaceRoot
@@ -67,10 +80,31 @@ internal fun StudyFlowShell(
             },
         )
     }
-    val sessionInset = if (activeSession != null) {
-        StudyFlowPracticeTokens.SessionBarMinHeight + 28.dp
+    val motionEnabled = rememberStudyFlowMotionEnabled()
+    val sessionInset by animateDpAsState(
+        targetValue = if (activeSession != null) {
+            StudyFlowPracticeTokens.SessionBarMinHeight + 28.dp
+        } else {
+            0.dp
+        },
+        animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.StandardMillis),
+        label = "studyflow-shell-session-inset",
+    )
+    val sessionEnter = if (motionEnabled) {
+        fadeIn(studyFlowAnimationSpec(true)) + scaleIn(
+            initialScale = 0.96f,
+            animationSpec = studyFlowAnimationSpec(true),
+        )
     } else {
-        0.dp
+        EnterTransition.None
+    }
+    val sessionExit = if (motionEnabled) {
+        fadeOut(studyFlowAnimationSpec(true)) + scaleOut(
+            targetScale = 0.96f,
+            animationSpec = studyFlowAnimationSpec(true),
+        )
+    } else {
+        ExitTransition.None
     }
 
     if (expanded) {
@@ -80,47 +114,101 @@ internal fun StudyFlowShell(
                 Box(modifier = Modifier.fillMaxSize().padding(bottom = sessionInset)) {
                     content()
                 }
-                activeSession?.let { session ->
-                    StudyFlowActiveSessionBar(
-                        title = session.notes.lineSequence().firstOrNull().orEmpty().ifBlank { activeSessionStatusLabel },
-                        elapsed = activeSessionElapsed,
-                        statusLabel = activeSessionStatusLabel,
-                        toggleLabel = if (session.status == StudySessionStatus.PAUSED) resumeLabel else pauseLabel,
-                        paused = session.status == StudySessionStatus.PAUSED,
-                        onOpen = onOpenActiveSession,
-                        onToggle = onToggleActiveSession,
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 20.dp, vertical = 12.dp),
-                    )
-                }
+                StudyFlowExpandedSessionBar(
+                    activeSession = activeSession,
+                    activeSessionElapsed = activeSessionElapsed,
+                    activeSessionStatusLabel = activeSessionStatusLabel,
+                    pauseLabel = pauseLabel,
+                    resumeLabel = resumeLabel,
+                    onOpenActiveSession = onOpenActiveSession,
+                    onToggleActiveSession = onToggleActiveSession,
+                    enter = sessionEnter,
+                    exit = sessionExit,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
         }
     } else {
-        val bottomInset = if (activeSession != null) {
-            StudyFlowPracticeTokens.SessionBarMinHeight + 28.dp
-        } else {
-            StudyFlowShellDefaults.CompactDockHeight + 28.dp
-        }
+        val bottomInset by animateDpAsState(
+            targetValue = if (activeSession != null) {
+                StudyFlowPracticeTokens.SessionBarMinHeight + 28.dp
+            } else {
+                StudyFlowShellDefaults.CompactDockHeight + 28.dp
+            },
+            animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.StandardMillis),
+            label = "studyflow-shell-bottom-inset",
+        )
         Box(modifier = modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize().padding(bottom = bottomInset)) {
                 content()
             }
-            if (activeSession == null) {
-                StudyFlowCompactDock(
-                    destinations = destinations,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                )
-            } else {
-                StudyFlowActiveSessionBar(
-                    title = activeSession.notes.lineSequence().firstOrNull().orEmpty().ifBlank { activeSessionStatusLabel },
-                    elapsed = activeSessionElapsed,
-                    statusLabel = activeSessionStatusLabel,
-                    toggleLabel = if (activeSession.status == StudySessionStatus.PAUSED) resumeLabel else pauseLabel,
-                    paused = activeSession.status == StudySessionStatus.PAUSED,
-                    onOpen = onOpenActiveSession,
-                    onToggle = onToggleActiveSession,
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 12.dp, vertical = 10.dp),
-                )
+            AnimatedContent(
+                targetState = activeSession != null,
+                transitionSpec = { sessionEnter togetherWith sessionExit },
+                modifier = Modifier.align(Alignment.BottomCenter),
+                label = "studyflow-session-dock-morph",
+            ) { sessionVisible ->
+                val session = activeSession
+                if (sessionVisible && session != null) {
+                    StudyFlowActiveSessionBar(
+                        title = session.notes.lineSequence().firstOrNull().orEmpty()
+                            .ifBlank { activeSessionStatusLabel },
+                        elapsed = activeSessionElapsed,
+                        statusLabel = activeSessionStatusLabel,
+                        toggleLabel = if (session.status == StudySessionStatus.PAUSED) {
+                            resumeLabel
+                        } else {
+                            pauseLabel
+                        },
+                        paused = session.status == StudySessionStatus.PAUSED,
+                        onOpen = onOpenActiveSession,
+                        onToggle = onToggleActiveSession,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    )
+                } else {
+                    StudyFlowCompactDock(destinations = destinations)
+                }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun StudyFlowExpandedSessionBar(
+    activeSession: StudySession?,
+    activeSessionElapsed: String,
+    activeSessionStatusLabel: String,
+    pauseLabel: String,
+    resumeLabel: String,
+    onOpenActiveSession: () -> Unit,
+    onToggleActiveSession: () -> Unit,
+    enter: EnterTransition,
+    exit: ExitTransition,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = activeSession != null,
+        enter = enter,
+        exit = exit,
+        modifier = modifier,
+    ) {
+        activeSession?.let { session ->
+            StudyFlowActiveSessionBar(
+                title = session.notes.lineSequence().firstOrNull().orEmpty()
+                    .ifBlank { activeSessionStatusLabel },
+                elapsed = activeSessionElapsed,
+                statusLabel = activeSessionStatusLabel,
+                toggleLabel = if (session.status == StudySessionStatus.PAUSED) {
+                    resumeLabel
+                } else {
+                    pauseLabel
+                },
+                paused = session.status == StudySessionStatus.PAUSED,
+                onOpen = onOpenActiveSession,
+                onToggle = onToggleActiveSession,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            )
         }
     }
 }

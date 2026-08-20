@@ -1,7 +1,7 @@
 package com.mikeyphw.studyflow.feature.workspace
 
 import android.os.SystemClock
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -59,6 +58,7 @@ import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 @Composable
@@ -107,8 +107,14 @@ fun FocusSessionScreen(
         }
     }
 
-    BackHandler(enabled = sessionsLoading || shouldInterceptFocusBack(session?.status)) {
-        if (!sessionsLoading && !transitionInFlight) showCancel = true
+    PredictiveBackHandler(enabled = sessionsLoading || shouldInterceptFocusBack(session?.status)) { progress ->
+        if (sessionsLoading || transitionInFlight) return@PredictiveBackHandler
+        try {
+            progress.collect { }
+            showCancel = true
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        }
     }
 
     Box(modifier = modifier.fillMaxSize().semantics { paneTitle = focusTitle }) {

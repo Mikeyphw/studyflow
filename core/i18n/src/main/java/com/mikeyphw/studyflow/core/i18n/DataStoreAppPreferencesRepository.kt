@@ -45,7 +45,7 @@ class DataStoreAppPreferencesRepository(
                 themeMode = values[ThemeModeKey]
                     ?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } }
                     ?: ThemeMode.SYSTEM_DEFAULT,
-                dynamicColorEnabled = values[DynamicColorKey] ?: true,
+                dynamicColorEnabled = values[DynamicColorKey] ?: false,
                 defaultStudyPlanId = values[DefaultStudyPlanKey]
                     ?.takeIf(String::isNotBlank)
                     ?.let(::StudyPlanId),

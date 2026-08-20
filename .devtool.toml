@@ -40,6 +40,7 @@ args = [
 build = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
 test = [
     "verifyRepositoryContracts",
+    "verifyAndroidFocusShellFinalSeal",
     "verifyRemediationOv13",
     "verifyPhase63_64ExamRunbookSprintSeal",
     "verifyPostPhase64FinalValidationRefresh",
@@ -136,6 +137,7 @@ low_priority = false
 [targets.studyflow_android.validation.phases]
 preflight = [
     "verifyRepositoryContracts",
+    "verifyAndroidFocusShellFinalSeal",
     "verifyRemediationOv13",
     "verifyPhase63_64ExamRunbookSprintSeal",
     "verifyPostPhase64FinalValidationRefresh",

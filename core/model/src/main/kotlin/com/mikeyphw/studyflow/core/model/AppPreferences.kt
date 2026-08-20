@@ -15,7 +15,7 @@ enum class ThemeMode {
 data class AppPreferences(
     val language: AppLanguage = AppLanguage.SYSTEM_DEFAULT,
     val themeMode: ThemeMode = ThemeMode.SYSTEM_DEFAULT,
-    val dynamicColorEnabled: Boolean = true,
+    val dynamicColorEnabled: Boolean = false,
     val defaultStudyPlanId: StudyPlanId? = null,
     val recentSearches: List<String> = emptyList(),
 )

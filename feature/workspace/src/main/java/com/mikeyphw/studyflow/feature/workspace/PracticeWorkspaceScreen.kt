@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -44,11 +43,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowFloatingAction
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetric
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowPracticeHero
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTabStrip
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
@@ -340,7 +339,7 @@ private fun ReviewsPane(
     ) {
         targetedFlashcard?.let { flashcard ->
             item(key = "target-flashcard:${flashcard.id.value}", contentType = "target-flashcard") {
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = flashcard.front,
                     metadata = flashcard.back,
                     icon = Icons.Outlined.Quiz,
@@ -369,14 +368,14 @@ private fun ReviewsPane(
         item(key = "review-metrics", contentType = "metrics") {
             StudyFlowResponsivePair(
                 first = { childModifier ->
-                    StudyFlowMetricPulse(
+                    StudyFlowMetric(
                         label = stringResource(R.string.due_reviews),
                         value = dueCount.toString(),
                         modifier = childModifier,
                     )
                 },
                 second = { childModifier ->
-                    StudyFlowMetricPulse(
+                    StudyFlowMetric(
                         label = stringResource(R.string.planned),
                         value = upcomingCount.toString(),
                         supportingText = pluralStringResource(
@@ -443,7 +442,7 @@ private fun QuestionsPane(
             onAction = onOpenQuestionBank,
         )
         item(key = "question-metrics", contentType = "metrics") {
-            StudyFlowMetricPulse(
+            StudyFlowMetric(
                 label = pluralStringResource(R.plurals.questions_value, questions.size, questions.size),
                 value = pluralStringResource(R.plurals.tests_count, tests.size, tests.size),
                 supportingText = pluralStringResource(R.plurals.mocks_count, mocks.size, mocks.size),
@@ -451,7 +450,7 @@ private fun QuestionsPane(
             )
         }
         item(key = "mock-exam-studio", contentType = "mock-exam-studio") {
-            StudyFlowTimelineRow(
+            StudyFlowTimelineItem(
                 title = stringResource(R.string.mock_exam_studio_title),
                 metadata = pluralStringResource(
                     R.plurals.mock_exam_studio_message,
@@ -466,7 +465,7 @@ private fun QuestionsPane(
             )
         }
         item(key = "question-importer", contentType = "importer") {
-            StudyFlowTimelineRow(
+            StudyFlowTimelineItem(
                 title = stringResource(R.string.question_importer_title),
                 metadata = stringResource(R.string.question_importer_message),
                 icon = Icons.Outlined.Quiz,
@@ -489,7 +488,7 @@ private fun QuestionsPane(
                 key = { question -> question.id.value },
                 contentType = { "question" },
             ) { question ->
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = question.statement,
                     metadata = question.examBoard ?: question.type.name.replace('_', ' ').lowercase(),
                     icon = Icons.Outlined.Quiz,
@@ -505,7 +504,7 @@ private fun QuestionsPane(
                 key = { test -> "test:${test.id.value}" },
                 contentType = { "practice-test" },
             ) { test ->
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = test.title,
                     metadata = pluralStringResource(
                         R.plurals.test_progress,
@@ -526,7 +525,7 @@ private fun QuestionsPane(
                 key = { mock -> "mock:${mock.id.value}" },
                 contentType = { "mock-exam" },
             ) { mock ->
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = mock.title,
                     metadata = pluralStringResource(
                         R.plurals.test_progress,
@@ -960,7 +959,7 @@ private fun ErrorsPane(
             onAction = onOpenReviewCenter,
         )
         item(key = "weakness-drill", contentType = "weakness-drill") {
-            StudyFlowTimelineRow(
+            StudyFlowTimelineItem(
                 title = stringResource(R.string.weakness_drill_title),
                 metadata = weaknessDrillMessage(weaknessDrill),
                 icon = Icons.Outlined.ErrorOutline,
@@ -988,7 +987,7 @@ private fun ErrorsPane(
                 key = { entry -> entry.error.id.value },
                 contentType = { "error-entry" },
             ) { entry ->
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = entry.error.explanation.ifBlank { entry.error.category.name.replace('_', ' ') },
                     metadata = pluralStringResource(
                         R.plurals.recurrences_value,

@@ -22,7 +22,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowWorkspaceTabs
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowTabStrip
 import org.junit.Rule
 import org.junit.Test
 
@@ -69,7 +69,7 @@ class WorkspaceAccessibilityTest {
     fun workspaceTabsExposeSelectedStateSemantics() {
         composeRule.setContent {
             MaterialTheme {
-                StudyFlowWorkspaceTabs(
+                StudyFlowTabStrip(
                     tabs = listOf("Today", "Plan"),
                     selected = "Plan",
                     label = { tab -> tab },

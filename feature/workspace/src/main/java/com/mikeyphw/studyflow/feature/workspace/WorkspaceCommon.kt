@@ -6,15 +6,19 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,9 +84,8 @@ fun WorkspaceNoPlanScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun WorkspaceUtilityScaffold(
+internal fun WorkspaceUtilityPane(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -90,28 +93,36 @@ internal fun WorkspaceUtilityScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val layoutDirection = LocalLayoutDirection.current
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                        )
-                    }
-                },
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(start = 8.dp),
             )
-        },
-    ) { padding ->
+        }
         content(
             PaddingValues(
                 start = contentPadding.calculateStartPadding(layoutDirection),
-                top = padding.calculateTopPadding() + contentPadding.calculateTopPadding(),
+                top = contentPadding.calculateTopPadding(),
                 end = contentPadding.calculateEndPadding(layoutDirection),
-                bottom = padding.calculateBottomPadding() + contentPadding.calculateBottomPadding(),
+                bottom = contentPadding.calculateBottomPadding(),
             ),
         )
     }

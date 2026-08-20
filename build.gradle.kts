@@ -179,6 +179,7 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         python3 scripts/verify_debug_workbench_d7.py
         python3 scripts/verify_debug_workbench_d8.py
         python3 scripts/verify_ui_ux_v2.py
+        python3 scripts/verify_android_focus_shell_r2.py
         python3 scripts/verify_phase_48_49.py
         python3 scripts/verify_phase_50_51.py
         python3 scripts/verify_phase_52_53.py
@@ -281,11 +282,15 @@ enum class $enumName""" !in routes) {
                 failures += "StudyFlowRoutes.kt: $enumName must be annotated with @Keep"
             }
         }
-        if ("import androidx.compose.material3.ScrollableTabRow" in design) {
-            failures += "StudyFlowWorkspaceComponents.kt: deprecated ScrollableTabRow remains"
+        if ("PrimaryScrollableTabRow(" in design || "ScrollableTabRow(" in design) {
+            failures += "StudyFlowWorkspaceComponents.kt: stock Material tab rows must stay retired"
         }
-        if ("PrimaryScrollableTabRow(" !in design) {
-            failures += "StudyFlowWorkspaceComponents.kt: PrimaryScrollableTabRow is missing"
+        val focusPrimitives = file(
+            "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/" +
+                "StudyFlowFocusWorkspacePrimitives.kt",
+        ).readText()
+        if ("fun <T> StudyFlowTabStrip(" !in focusPrimitives || "Role.Tab" !in focusPrimitives) {
+            failures += "StudyFlowFocusWorkspacePrimitives.kt: custom accessible tab strip is missing"
         }
         if ("name=\"in_progress\"" in workspaceStrings) {
             failures += "workspace strings must not override private androidx.compose.ui:in_progress"
@@ -344,6 +349,13 @@ tasks.register<Exec>("verifyPostPhase64FinalValidationRefresh") {
     group = "verification"
     description = "Checks Phase 64 roadmap reconciliation and final signed-journey coverage."
     commandLine("python3", "scripts/verify_post_phase_64_final_validation.py")
+}
+
+
+tasks.register<Exec>("verifyAndroidFocusShellFinalSeal") {
+    group = "verification"
+    description = "Checks the Android UXOV-01 through UXOV-04-R2 Focus Shell source contracts."
+    commandLine("python3", "scripts/verify_android_focus_shell_r2.py")
 }
 
 
@@ -593,6 +605,7 @@ tasks.register("checkAll") {
         "verifyPhase62OnboardingSeal",
         "verifyPhase63_64ExamRunbookSprintSeal",
         "verifyPostPhase64FinalValidationRefresh",
+        "verifyAndroidFocusShellFinalSeal",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",

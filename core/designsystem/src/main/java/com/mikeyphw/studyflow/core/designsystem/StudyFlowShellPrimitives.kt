@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.designsystem
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -135,17 +137,25 @@ private fun StudyFlowShellItem(
     compact: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val motionEnabled = rememberStudyFlowMotionEnabled()
     val background by animateColorAsState(
         targetValue = if (destination.selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
             Color.Transparent
         },
+        animationSpec = studyFlowAnimationSpec(motionEnabled),
         label = "studyflow-shell-item-background",
     )
     val verticalPadding by animateDpAsState(
         targetValue = if (destination.selected) 8.dp else 6.dp,
+        animationSpec = studyFlowAnimationSpec(motionEnabled),
         label = "studyflow-shell-item-padding",
+    )
+    val iconScale by animateFloatAsState(
+        targetValue = if (destination.selected) 1.08f else 1f,
+        animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.FastMillis),
+        label = "studyflow-shell-item-scale",
     )
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -166,6 +176,10 @@ private fun StudyFlowShellItem(
     ) {
         Box(
             modifier = Modifier
+                .graphicsLayer {
+                    scaleX = iconScale
+                    scaleY = iconScale
+                }
                 .clip(RoundedCornerShape(StudyFlowShellDefaults.SelectedIndicatorCornerRadius))
                 .padding(horizontal = if (destination.selected) 10.dp else 6.dp, vertical = 3.dp),
             contentAlignment = Alignment.Center,

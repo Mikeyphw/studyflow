@@ -108,8 +108,8 @@ require(
     "initialValue = emptyList()" not in plan_workspace,
     "Plan workspace still treats unloaded plan data as a real empty state",
 )
-require("StudyFlowLoadingPane" in today_workspace, "Today workspace has no loading state")
-require("StudyFlowLoadingPane" in plan_workspace, "Plan workspace has no loading state")
+require("workspaceLoadGate" in today_workspace, "Today workspace has no loading/failure/retry gate")
+require("workspaceLoadGate" in plan_workspace, "Plan workspace has no loading/failure/retry gate")
 
 # Schema v4 + migration correctness + integrity policy.
 database = text("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt")

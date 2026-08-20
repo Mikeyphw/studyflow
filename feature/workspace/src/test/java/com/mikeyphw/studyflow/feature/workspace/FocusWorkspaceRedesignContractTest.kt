@@ -1,6 +1,5 @@
 package com.mikeyphw.studyflow.feature.workspace
 
-import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
 import org.junit.Assert.assertFalse
@@ -17,7 +16,7 @@ class FocusWorkspaceRedesignContractTest {
         error("Could not locate StudyFlow repository root")
     }
 
-    private fun source(relative: String): String = Files.readString(repoRoot().resolve(relative))
+    private fun source(relative: String): String = repoRoot().resolve(relative).toFile().readText()
 
     @Test
     fun `today is a shell-native workspace without nested Material scaffold or fab`() {
@@ -66,7 +65,8 @@ class FocusWorkspaceRedesignContractTest {
     @Test
     fun `workspace primitives do not reintroduce stock Material tabs or cards`() {
         val primitives = source(
-            "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowFocusWorkspacePrimitives.kt",
+            "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/" +
+                "StudyFlowFocusWorkspacePrimitives.kt",
         )
         assertTrue("fun <T> StudyFlowTabStrip(" in primitives)
         assertTrue("Role.Tab" in primitives)

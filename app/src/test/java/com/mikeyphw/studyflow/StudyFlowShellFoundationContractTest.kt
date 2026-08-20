@@ -1,6 +1,5 @@
 package com.mikeyphw.studyflow
 
-import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
 import org.junit.Assert.assertFalse
@@ -17,7 +16,7 @@ class StudyFlowShellFoundationContractTest {
         error("Could not locate StudyFlow repository root")
     }
 
-    private fun source(relative: String): String = Files.readString(repoRoot().resolve(relative))
+    private fun source(relative: String): String = repoRoot().resolve(relative).toFile().readText()
 
     @Test
     fun `root navigation uses StudyFlow shell instead of Material navigation suite`() {

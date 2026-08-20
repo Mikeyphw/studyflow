@@ -24,6 +24,7 @@ def text(path: str) -> str:
 seal = text("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/PostV2ReleaseSeal.kt")
 seal_test = text("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/PostV2ReleaseSealTest.kt")
 nav = text("app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt")
+shell = text("app/src/main/java/com/mikeyphw/studyflow/StudyFlowShell.kt")
 routes = text("core/navigation/src/main/kotlin/com/mikeyphw/studyflow/core/navigation/StudyFlowRoutes.kt")
 progress = text("feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/ProgressWorkspaceScreen.kt")
 practice = text("feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PracticeWorkspaceScreen.kt")
@@ -61,8 +62,8 @@ for token in (
 ):
     require(token in seal_test, f"Phase 56/57 test missing {token}")
 
+require("NavigationSuiteScaffold" not in nav, "retired NavigationSuiteScaffold returned to V2 navigation")
 for token in (
-    "NavigationSuiteScaffold",
     "clearBackStack<TodayRoute>()",
     "clearBackStack<PlanWorkspaceRoute>()",
     "clearBackStack<PracticeWorkspaceRoute>()",
@@ -74,6 +75,10 @@ for token in (
     "StudyFlowWorkspaceRoot.PROGRESS",
 ):
     require(token in nav, f"V2 navigation contract missing {token}")
+
+
+for token in ("StudyFlowCompactDock(", "StudyFlowExpandedRail(", "StudyFlowActiveSessionBar("):
+    require(token in shell, f"StudyFlow Focus shell contract missing {token}")
 
 for token in (
     "is DashboardRoute -> TodayRoute",

@@ -178,12 +178,20 @@ for legacy_name in (
 ):
     require(f"is {legacy_name} ->" in routes, f"legacy route is not translated: {legacy_name}")
 
-require("NavigationSuiteScaffold" in v2, "adaptive navigation scaffold is missing")
-require(v2.count("navigationSuiteItems") == 1, "navigation suite should have one root item declaration")
+shell_source = text("app/src/main/java/com/mikeyphw/studyflow/StudyFlowShell.kt")
+shell_primitives = text(
+    "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowShellPrimitives.kt"
+)
+require("StudyFlowShell(" in v2, "custom StudyFlow workspace shell is missing")
+require("NavigationSuiteScaffold" not in v2, "retired Material navigation suite returned")
+require("StudyFlowCompactDock(" in shell_source, "compact StudyFlow dock is missing")
+require("StudyFlowExpandedRail(" in shell_source, "expanded StudyFlow rail is missing")
+require("NavigationBar(" not in shell_primitives, "stock Material navigation bar returned")
+require("NavigationRail(" not in shell_primitives, "stock Material navigation rail returned")
 for root in ("TODAY", "PLAN", "PRACTICE", "PROGRESS"):
     require(
-        f"selectedRoot == StudyFlowWorkspaceRoot.{root}" in v2,
-        f"navigation item is missing for {root}",
+        f"StudyFlowWorkspaceRoot.{root}" in shell_source,
+        f"custom shell destination is missing for {root}",
     )
 require("saveState = restoreSavedStack" in v2, "root navigation does not conditionally save state")
 require("restoreState = restoreSavedStack" in v2, "root navigation does not conditionally restore state")
@@ -206,11 +214,10 @@ require(
     "plan switching must navigate the selected workspace without restoring another plan stack",
 )
 require("launchSingleTop = true" in v2, "root navigation does not use launchSingleTop")
-for root in ("TODAY", "PLAN", "PRACTICE", "PROGRESS"):
-    require(
-        f"if (selectedRoot != StudyFlowWorkspaceRoot.{root})" in v2,
-        f"reselecting {root} can reset or duplicate its current workspace coordinate",
-    )
+require(
+    "onClick = { if (root != selectedRoot) onNavigate(root) }" in shell_source,
+    "reselecting the active workspace can reset or duplicate its current coordinate",
+)
 require("currentBackStackEntryAsState" in v2, "root selection is not derived from destination")
 require("rememberSaveable" not in v2, "app shell should not keep duplicate selected-root state")
 require("startDestination = TodayRoute()" in app, "Today is not the application start destination")
@@ -299,8 +306,11 @@ design_source = text(
     "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowWorkspaceComponents.kt",
 )
 require("paneTitle" in common_source, "workspace panes do not expose pane-title semantics")
-require("LiveRegionMode.Polite" in focus_source, "focus timer is not announced as a live region")
-require("stateDescription = timerDescription" in focus_source, "focus timer lacks state description")
+practice_primitives = text(
+    "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowPracticePrimitives.kt"
+)
+require("LiveRegionMode.Polite" in practice_primitives, "focus timer is not announced as a live region")
+require("stateDescription = timerState" in practice_primitives, "focus timer lacks state description")
 require("accessibilityTimerBucket" in focus_source, "focus timer announces every raw second")
 require("performFocusMutation" in focus_source, "focus mutations do not share cancellation-safe handling")
 require(
@@ -314,9 +324,10 @@ require(
 require("shouldInterceptFocusBack" in focus_source, "focus back interception is not state-scoped")
 require("imePadding()" in focus_source, "focus notes do not respect the IME")
 require(
-    "contentWindowInsets = WindowInsets.safeDrawing" in focus_source,
+    "windowInsetsPadding(WindowInsets.safeDrawing)" in focus_source,
     "focus mode does not use explicit safe-drawing insets",
 )
+require("PredictiveBackHandler(" in focus_source, "focus mode does not integrate predictive back")
 require(
     "navigationBarsPadding()" not in focus_source,
     "focus mode double-applies navigation-bar padding on top of Scaffold insets",
@@ -329,19 +340,22 @@ require("focus_overtime" in focus_source, "focus timer lacks overtime elapsed fa
 require("concentrationRating = concentration" in focus_source, "focus completion omits concentration")
 require("difficultyRating = difficulty" in focus_source, "focus completion omits difficulty")
 require("StudyFlowResponsivePair" in design_source, "large-font responsive pair component is missing")
-require("PrimaryScrollableTabRow(" in design_source, "workspace tabs must use the current Material3 API")
+focus_primitives = text(
+    "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowFocusWorkspacePrimitives.kt"
+)
+require("PrimaryScrollableTabRow(" not in design_source, "legacy Material workspace tabs remain")
+require("fun <T> StudyFlowTabStrip(" in focus_primitives, "custom workspace tab strip is missing")
+require("Role.Tab" in focus_primitives, "custom workspace tabs lack tab semantics")
 require("fontScale >= 1.5f" in design_source, "200% font layouts are not forced to stack")
 require("MinimumTouchTarget = 48.dp" in design_source, "48dp interaction token is missing")
-require(
-    "AssistChip(" in design_source and
-    "modifier = Modifier.heightIn(min = StudyFlowWorkspaceTokens.MinimumTouchTarget)" in design_source,
-    "coach-card chips do not expose an explicit 48dp target",
-)
+require("StudyFlowCoachCard(" not in design_source, "retired coach-card primitive remains")
 progress_source = workspace_sources.get("ProgressWorkspaceScreen.kt", "")
-require(
-    "FilterChip(" in progress_source and "modifier = Modifier.heightIn(min = 48.dp)" in progress_source,
-    "progress period chips do not expose an explicit 48dp target",
+progress_primitives = text(
+    "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowProgressPrimitives.kt"
 )
+require("FilterChip(" not in progress_source, "stock Material progress period chips remain")
+require("StudyFlowPeriodStrip(" in progress_source, "custom progress period strip is missing")
+require("heightIn(min = 48.dp)" in progress_primitives, "progress period controls lack 48dp targets")
 require("calculateStartPadding" in common_source, "utility padding is not RTL-aware at the start edge")
 require("calculateEndPadding" in common_source, "utility padding is not RTL-aware at the end edge")
 require("search_plans" in utility_source, "plan picker lacks search")

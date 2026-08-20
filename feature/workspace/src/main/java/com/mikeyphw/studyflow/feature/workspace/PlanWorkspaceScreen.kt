@@ -30,7 +30,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowCoachCard
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowInsightPanel
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowActionRow
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetric
@@ -389,7 +389,7 @@ private fun PlanContentPane(
         }
         item(key = "content-health-summary", contentType = "coach") {
             val currentReport = cleanupReport
-            StudyFlowCoachCard(
+            StudyFlowInsightPanel(
                 title = currentReport?.let { report ->
                     stringResource(R.string.percent_value, report.healthScorePercent)
                 } ?: stringResource(R.string.not_enough_data),

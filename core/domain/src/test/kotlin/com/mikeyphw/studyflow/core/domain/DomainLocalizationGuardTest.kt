@@ -42,6 +42,6 @@ class DomainLocalizationGuardTest {
         }
         val source = candidates.firstOrNull(Files::isRegularFile)
         assertNotNull("Could not locate domain source $fileName", source)
-        return Files.readString(requireNotNull(source))
+        return requireNotNull(source).toFile().readText()
     }
 }

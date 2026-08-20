@@ -2,23 +2,19 @@ package com.mikeyphw.studyflow.feature.workspace
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,12 +29,17 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowPrimaryActionCard
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowCoachCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowActionRow
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowAdaptiveWorkspaceFrame
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowFocusActionSurface
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowInsightPanel
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetric
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowPeriodStrip
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowProgressBand
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionTitle
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageAdaptiveReschedule
@@ -403,8 +404,7 @@ fun ProgressWorkspaceScreen(
         }
     }
 
-    Scaffold(modifier = modifier) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+    Column(modifier = modifier.fillMaxSize()) {
             WorkspaceHeader(
                 title = stringResource(R.string.progress_title),
                 plan = plan,
@@ -412,48 +412,86 @@ fun ProgressWorkspaceScreen(
                 onSearch = onSearch,
                 onSystem = onSystem,
             )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                ProgressWorkspacePeriod.entries.forEach { period ->
-                    FilterChip(
-                        selected = period == selectedPeriod,
-                        modifier = Modifier.heightIn(min = 48.dp),
-                        onClick = { onPeriodSelected(period) },
-                        label = {
-                            Text(
-                                stringResource(
-                                    when (period) {
-                                        ProgressWorkspacePeriod.SEVEN_DAYS -> R.string.progress_7_days
-                                        ProgressWorkspacePeriod.THIRTY_DAYS -> R.string.progress_30_days
-                                        ProgressWorkspacePeriod.NINETY_DAYS -> R.string.progress_90_days
-                                    },
-                                ),
-                            )
-                        },
-                        leadingIcon = if (period == selectedPeriod) {
-                            {
-                                androidx.compose.material3.Icon(
-                                    Icons.AutoMirrored.Outlined.TrendingUp,
-                                    contentDescription = null,
-                                )
-                            }
-                        } else {
-                            null
+            StudyFlowPeriodStrip(
+                periods = ProgressWorkspacePeriod.entries,
+                selectedPeriod = selectedPeriod,
+                label = { period ->
+                    stringResource(
+                        when (period) {
+                            ProgressWorkspacePeriod.SEVEN_DAYS -> R.string.progress_7_days
+                            ProgressWorkspacePeriod.THIRTY_DAYS -> R.string.progress_30_days
+                            ProgressWorkspacePeriod.NINETY_DAYS -> R.string.progress_90_days
                         },
                     )
-                }
-            }
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                },
+                onSelected = onPeriodSelected,
+            )
+            StudyFlowAdaptiveWorkspaceFrame(
+                supportingContent = {
+                    StudyFlowSectionTitle(title = stringResource(R.string.readiness_score))
+                    StudyFlowMetric(
+                        label = stringResource(readinessBandLabel(readiness.band)),
+                        value = stringResource(R.string.percent_value, readiness.scorePercent),
+                        supportingText = stringResource(readinessBandMessage(readiness.band)),
+                    )
+                    StudyFlowProgressBand(
+                        label = stringResource(R.string.readiness_coverage),
+                        valueText = stringResource(R.string.percent_value, readiness.coveragePercent),
+                        progressPercent = readiness.coveragePercent,
+                    )
+                    StudyFlowProgressBand(
+                        label = stringResource(R.string.plan_schedule),
+                        valueText = stringResource(R.string.percent_value, analytics.scheduleAdherencePercent),
+                        progressPercent = analytics.scheduleAdherencePercent,
+                    )
+                    StudyFlowProgressBand(
+                        label = stringResource(R.string.goal),
+                        valueText = stringResource(R.string.percent_value, progress.goalProgressPercent),
+                        progressPercent = progress.goalProgressPercent,
+                    )
+                    StudyFlowMetric(
+                        label = stringResource(R.string.studied_time),
+                        value = stringResource(R.string.minutes_value, (studiedSeconds / 60).toInt()),
+                        supportingText = periodAccuracy?.let { value ->
+                            stringResource(R.string.percent_value, value)
+                        },
+                    )
+                    StudyFlowTimelineItem(
+                        title = stringResource(R.string.period_trend),
+                        metadata = stringResource(
+                            R.string.period_trend_detail,
+                            earlierMinutes.toInt(),
+                            recentMinutes.toInt(),
+                        ),
+                        icon = Icons.AutoMirrored.Outlined.TrendingUp,
+                        status = stringResource(trendLabel),
+                        onClick = onOpenAnalytics,
+                    )
+                    StudyFlowActionRow(
+                        icon = Icons.Outlined.Insights,
+                        label = stringResource(R.string.open_analytics),
+                        onClick = onOpenAnalytics,
+                    )
+                    StudyFlowActionRow(
+                        icon = Icons.Outlined.Flag,
+                        label = stringResource(R.string.open_progress_center),
+                        onClick = onOpenProgressCenter,
+                    )
+                    StudyFlowActionRow(
+                        icon = Icons.Outlined.AutoFixHigh,
+                        label = stringResource(R.string.adjust_plan),
+                        onClick = onOpenPlan,
+                    )
+                },
+            ) { primaryModifier ->
+                LazyColumn(
+                    modifier = primaryModifier,
                 contentPadding = workspaceContentPadding(),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 targetNote?.let { note ->
                     item(key = "search-target:${note.id.value}", contentType = "search-target") {
-                        StudyFlowPrimaryActionCard(
+                        StudyFlowFocusActionSurface(
                             supportingLabel = stringResource(R.string.notes),
                             title = note.title,
                             message = note.content.take(180),
@@ -465,7 +503,7 @@ fun ProgressWorkspaceScreen(
                 studyFlowSectionHeader(key = "readiness", title = { stringResource(R.string.readiness_score) })
                 item(key = "readiness-card", contentType = "readiness") {
                     val currentReadiness = readiness
-                    StudyFlowPrimaryActionCard(
+                    StudyFlowFocusActionSurface(
                         title = stringResource(
                             R.string.percent_value,
                             currentReadiness.scorePercent,
@@ -485,7 +523,7 @@ fun ProgressWorkspaceScreen(
                 item(key = "readiness-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(
                         first = { childModifier ->
-                            StudyFlowMetricPulse(
+                            StudyFlowMetric(
                                 label = stringResource(R.string.readiness_coverage),
                                 value = stringResource(
                                     R.string.percent_value,
@@ -495,7 +533,7 @@ fun ProgressWorkspaceScreen(
                             )
                         },
                         second = { childModifier ->
-                            StudyFlowMetricPulse(
+                            StudyFlowMetric(
                                 label = stringResource(R.string.readiness_time_feasibility),
                                 value = stringResource(
                                     R.string.percent_value,
@@ -514,7 +552,7 @@ fun ProgressWorkspaceScreen(
                     key = { signal -> "readiness:${signal.kind}" },
                     contentType = { "readiness-signal" },
                 ) { signal ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = stringResource(readinessSignalLabel(signal.kind)),
                         metadata = stringResource(readinessSignalMessage(signal.kind)),
                         icon = Icons.Outlined.CheckCircle,
@@ -528,7 +566,7 @@ fun ProgressWorkspaceScreen(
                     title = { stringResource(R.string.exam_runbook_title) },
                 )
                 item(key = "exam-runbook-summary", contentType = "runbook") {
-                    StudyFlowCoachCard(
+                    StudyFlowInsightPanel(
                         title = if (examRunbook.applicable) {
                             examRunbook.daysUntilExam?.let { days ->
                                 pluralStringResource(R.plurals.exam_runbook_days, days, days)
@@ -554,7 +592,7 @@ fun ProgressWorkspaceScreen(
                     key = { item -> "runbook:${item.id}" },
                     contentType = { "runbook-item" },
                 ) { item ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = item.focusLabel ?: stringResource(runbookActionLabel(item.action)),
                         metadata = runbookItemMetadata(item.action, item.count),
                         icon = Icons.Outlined.Flag,
@@ -579,7 +617,7 @@ fun ProgressWorkspaceScreen(
                     title = { stringResource(R.string.study_sprint_title) },
                 )
                 item(key = "study-sprint-summary", contentType = "sprint") {
-                    StudyFlowCoachCard(
+                    StudyFlowInsightPanel(
                         title = stringResource(sprintFocusLabel(sprintPreview.focus)),
                         message = pluralStringResource(
                             R.plurals.study_sprint_summary,
@@ -599,7 +637,7 @@ fun ProgressWorkspaceScreen(
                 }
                 if (appliedSprintChanges != null || sprintApplyFailed) {
                     item(key = "study-sprint-feedback", contentType = "sprint-feedback") {
-                        StudyFlowCoachCard(
+                        StudyFlowInsightPanel(
                             title = stringResource(R.string.study_sprint_apply_result),
                             message = if (sprintApplyFailed) {
                                 stringResource(R.string.study_sprint_apply_failed)
@@ -630,7 +668,7 @@ fun ProgressWorkspaceScreen(
                     key = { change -> "sprint:${change.id}" },
                     contentType = { "sprint-change" },
                 ) { change ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = if (change.plannedActivityId == null) {
                             stringResource(sprintFocusLabel(sprintPreview.focus))
                         } else {
@@ -650,7 +688,7 @@ fun ProgressWorkspaceScreen(
 
                 studyFlowSectionHeader(key = "weekly-coach", title = { stringResource(R.string.weekly_coach_review) })
                 item(key = "weekly-coach-summary", contentType = "coach") {
-                    StudyFlowCoachCard(
+                    StudyFlowInsightPanel(
                         title = stringResource(R.string.weekly_coach_title, weeklyReview.studyPlanName),
                         message = pluralStringResource(
                             R.plurals.weekly_coach_summary,
@@ -667,7 +705,7 @@ fun ProgressWorkspaceScreen(
                     key = { item -> "weekly-coach:${item.kind}" },
                     contentType = { "weekly-coach-item" },
                 ) { item ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = stringResource(item.kind.titleRes()),
                         metadata = stringResource(item.kind.messageRes()),
                         icon = when (item.tone) {
@@ -695,7 +733,7 @@ fun ProgressWorkspaceScreen(
                 )
                 item(key = "content-health-card", contentType = "coach") {
                     val currentCleanup = cleanupReport
-                    StudyFlowCoachCard(
+                    StudyFlowInsightPanel(
                         title = stringResource(R.string.percent_value, currentCleanup.healthScorePercent),
                         message = if (currentCleanup.issueCount == 0) {
                             stringResource(R.string.content_health_clean_message)
@@ -717,7 +755,7 @@ fun ProgressWorkspaceScreen(
                     title = { stringResource(R.string.exam_report_export_title) },
                 )
                 item(key = "exam-report-card", contentType = "report-export") {
-                    StudyFlowCoachCard(
+                    StudyFlowInsightPanel(
                         title = stringResource(R.string.exam_report_title, plan.name),
                         message = stringResource(R.string.exam_report_export_message),
                         actionLabel = stringResource(R.string.open_progress_center),
@@ -725,24 +763,18 @@ fun ProgressWorkspaceScreen(
                     )
                 }
                 item(key = "exam-report-actions", contentType = "actions") {
-                    StudyFlowResponsivePair(
-                        first = { childModifier ->
-                            androidx.compose.material3.Button(
-                                onClick = { launchReportExport(StudyExamReportFormat.HTML) },
-                                modifier = childModifier,
-                            ) {
-                                Text(stringResource(R.string.export_report_html))
-                            }
-                        },
-                        second = { childModifier ->
-                            androidx.compose.material3.OutlinedButton(
-                                onClick = { launchReportExport(StudyExamReportFormat.PDF) },
-                                modifier = childModifier,
-                            ) {
-                                Text(stringResource(R.string.export_report_pdf))
-                            }
-                        },
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        StudyFlowActionRow(
+                            icon = Icons.Outlined.Description,
+                            label = stringResource(R.string.export_report_html),
+                            onClick = { launchReportExport(StudyExamReportFormat.HTML) },
+                        )
+                        StudyFlowActionRow(
+                            icon = Icons.Outlined.PictureAsPdf,
+                            label = stringResource(R.string.export_report_pdf),
+                            onClick = { launchReportExport(StudyExamReportFormat.PDF) },
+                        )
+                    }
                 }
                 reportExportResult?.let { exported ->
                     item(key = "exam-report-result", contentType = "report-result") {
@@ -763,7 +795,7 @@ fun ProgressWorkspaceScreen(
                     title = { stringResource(R.string.adaptive_reschedule) },
                 )
                 item(key = "adaptive-summary", contentType = "coach") {
-                    StudyFlowCoachCard(
+                    StudyFlowInsightPanel(
                         title = stringResource(R.string.reschedule_preview),
                         message = stringResource(
                             rescheduleSummary(
@@ -795,7 +827,7 @@ fun ProgressWorkspaceScreen(
                 }
                 if (appliedRescheduleChanges != null || rescheduleApplyFailed) {
                     item(key = "adaptive-apply-feedback", contentType = "coach") {
-                        StudyFlowCoachCard(
+                        StudyFlowInsightPanel(
                             title = stringResource(R.string.reschedule_apply_result),
                             message = if (rescheduleApplyFailed) {
                                 stringResource(R.string.reschedule_apply_failed)
@@ -817,7 +849,7 @@ fun ProgressWorkspaceScreen(
                     key = { change -> "reschedule:${change.id}" },
                     contentType = { "reschedule-change" },
                 ) { change ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = if (change.plannedActivityId == null) {
                             stringResource(rescheduleChangeLabel(change.type))
                         } else {
@@ -838,7 +870,7 @@ fun ProgressWorkspaceScreen(
                 item(key = "period-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(
                         first = { childModifier ->
-                            StudyFlowMetricPulse(
+                            StudyFlowMetric(
                                 label = stringResource(R.string.studied_time),
                                 value = stringResource(R.string.minutes_value, (studiedSeconds / 60).toInt()),
                                 supportingText = pluralStringResource(
@@ -850,7 +882,7 @@ fun ProgressWorkspaceScreen(
                             )
                         },
                         second = { childModifier ->
-                            StudyFlowMetricPulse(
+                            StudyFlowMetric(
                                 label = stringResource(R.string.accuracy),
                                 value = periodAccuracy?.let { value ->
                                     stringResource(R.string.percent_value, value)
@@ -868,7 +900,7 @@ fun ProgressWorkspaceScreen(
                 item(key = "quality-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(
                         first = { childModifier ->
-                            StudyFlowMetricPulse(
+                            StudyFlowMetric(
                                 label = stringResource(R.string.plan_schedule),
                                 value = stringResource(
                                     R.string.percent_value,
@@ -879,7 +911,7 @@ fun ProgressWorkspaceScreen(
                         },
                         second = { childModifier ->
                             val goalPercent = progress.goalProgressPercent
-                            StudyFlowMetricPulse(
+                            StudyFlowMetric(
                                 label = stringResource(R.string.goal),
                                 value = stringResource(R.string.percent_value, goalPercent),
                                 modifier = childModifier,
@@ -888,7 +920,7 @@ fun ProgressWorkspaceScreen(
                     )
                 }
                 item(key = "period-trend", contentType = "trend") {
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = stringResource(R.string.period_trend),
                         metadata = stringResource(
                             R.string.period_trend_detail,
@@ -917,7 +949,7 @@ fun ProgressWorkspaceScreen(
                         key = { area -> area.label },
                         contentType = { "weak-area" },
                     ) { area ->
-                        StudyFlowTimelineRow(
+                        StudyFlowTimelineItem(
                             title = area.label,
                             metadata = stringResource(R.string.percent_value, area.masteryPercent),
                             icon = Icons.Outlined.Insights,
@@ -931,7 +963,7 @@ fun ProgressWorkspaceScreen(
                 item(key = "goal-note-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(
                         first = { childModifier ->
-                            StudyFlowMetricPulse(
+                            StudyFlowMetric(
                                 label = pluralStringResource(
                                     R.plurals.active_goals_value,
                                     progress.activeGoals.size,
@@ -945,7 +977,7 @@ fun ProgressWorkspaceScreen(
                             )
                         },
                         second = { childModifier ->
-                            StudyFlowMetricPulse(
+                            StudyFlowMetric(
                                 label = pluralStringResource(
                                     R.plurals.notes_value,
                                     progress.notes.size,
@@ -968,7 +1000,7 @@ fun ProgressWorkspaceScreen(
                         }
                         else -> stringResource(R.string.adaptation_steady)
                     }
-                    StudyFlowCoachCard(
+                    StudyFlowInsightPanel(
                         title = stringResource(R.string.adaptation_preview),
                         message = message,
                         actionLabel = stringResource(R.string.adjust_plan),
@@ -984,7 +1016,7 @@ fun ProgressWorkspaceScreen(
                     key = { row -> "adapt:${row.titleRes}" },
                     contentType = { "adaptation-step" },
                 ) { row ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = stringResource(row.titleRes),
                         metadata = stringResource(row.messageRes),
                         icon = Icons.Outlined.AutoFixHigh,
@@ -1013,7 +1045,7 @@ fun ProgressWorkspaceScreen(
                         key = { event -> "evidence:${event.id}" },
                         contentType = { "evidence-event" },
                     ) { event ->
-                        StudyFlowTimelineRow(
+                        StudyFlowTimelineItem(
                             title = stringResource(event.kind.titleRes()),
                             metadata = eventMetadata(event),
                             icon = event.kind.icon(),
@@ -1024,25 +1056,18 @@ fun ProgressWorkspaceScreen(
                 }
 
                 item(key = "progress-actions", contentType = "actions") {
-                    StudyFlowResponsivePair(
-                        first = { childModifier ->
-                            androidx.compose.material3.Button(
-                                onClick = onOpenProgressCenter,
-                                modifier = childModifier,
-                            ) {
-                                androidx.compose.material3.Icon(Icons.Outlined.Flag, contentDescription = null)
-                                Text(stringResource(R.string.open_progress_center))
-                            }
-                        },
-                        second = { childModifier ->
-                            androidx.compose.material3.OutlinedButton(
-                                onClick = onOpenAnalytics,
-                                modifier = childModifier,
-                            ) {
-                                Text(stringResource(R.string.open_analytics))
-                            }
-                        },
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        StudyFlowActionRow(
+                            icon = Icons.Outlined.Flag,
+                            label = stringResource(R.string.open_progress_center),
+                            onClick = onOpenProgressCenter,
+                        )
+                        StudyFlowActionRow(
+                            icon = Icons.Outlined.Insights,
+                            label = stringResource(R.string.open_analytics),
+                            onClick = onOpenAnalytics,
+                        )
+                    }
                 }
             }
         }

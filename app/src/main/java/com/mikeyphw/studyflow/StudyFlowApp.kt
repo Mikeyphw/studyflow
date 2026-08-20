@@ -5,6 +5,10 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -38,6 +42,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowErrorPane
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowLoadingPane
+import com.mikeyphw.studyflow.core.designsystem.rememberStudyFlowMotionEnabled
+import com.mikeyphw.studyflow.core.designsystem.studyFlowAnimationSpec
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTheme
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeId
 import com.mikeyphw.studyflow.core.diagnostics.DebugProbeReport
@@ -237,7 +243,7 @@ fun StudyFlowApp(
     if (initializationState is AppInitializationState.Initializing) {
         StudyFlowTheme(
             themeMode = ThemeMode.SYSTEM_DEFAULT,
-            dynamicColorEnabled = true,
+            dynamicColorEnabled = false,
         ) {
             StudyFlowLoadingPane(modifier = modifier)
         }
@@ -246,7 +252,7 @@ fun StudyFlowApp(
     if (initializationState is AppInitializationState.Failed) {
         StudyFlowTheme(
             themeMode = ThemeMode.SYSTEM_DEFAULT,
-            dynamicColorEnabled = true,
+            dynamicColorEnabled = false,
         ) {
             StudyFlowErrorPane(
                 message = stringResource(R.string.app_initialization_failed),
@@ -280,7 +286,7 @@ fun StudyFlowApp(
     if (rootStates.any { state -> state is StudyFlowLoadState.Failed }) {
         StudyFlowTheme(
             themeMode = ThemeMode.SYSTEM_DEFAULT,
-            dynamicColorEnabled = true,
+            dynamicColorEnabled = false,
         ) {
             StudyFlowErrorPane(
                 message = stringResource(R.string.app_initialization_failed),
@@ -293,7 +299,7 @@ fun StudyFlowApp(
     if (rootStates.any { state -> state !is StudyFlowLoadState.Ready<*> }) {
         StudyFlowTheme(
             themeMode = ThemeMode.SYSTEM_DEFAULT,
-            dynamicColorEnabled = true,
+            dynamicColorEnabled = false,
         ) {
             StudyFlowLoadingPane(modifier = modifier)
         }
@@ -358,11 +364,36 @@ internal fun StudyFlowNavHost(
     val copySuffix = stringResource(R.string.plan_copy_suffix)
     val debugClipboardLabel = stringResource(R.string.debug_clipboard_label)
     val debugBundleChooserTitle = stringResource(R.string.debug_bundle_chooser_title)
+    val motionEnabled = rememberStudyFlowMotionEnabled()
 
     NavHost(
         navController = navController,
         startDestination = TodayRoute(),
         modifier = modifier.fillMaxSize(),
+        enterTransition = {
+            slideInHorizontally(
+                animationSpec = studyFlowAnimationSpec(motionEnabled),
+                initialOffsetX = { width -> width / 20 },
+            ) + fadeIn(animationSpec = studyFlowAnimationSpec(motionEnabled))
+        },
+        exitTransition = {
+            slideOutHorizontally(
+                animationSpec = studyFlowAnimationSpec(motionEnabled),
+                targetOffsetX = { width -> -width / 30 },
+            ) + fadeOut(animationSpec = studyFlowAnimationSpec(motionEnabled))
+        },
+        popEnterTransition = {
+            slideInHorizontally(
+                animationSpec = studyFlowAnimationSpec(motionEnabled),
+                initialOffsetX = { width -> -width / 20 },
+            ) + fadeIn(animationSpec = studyFlowAnimationSpec(motionEnabled))
+        },
+        popExitTransition = {
+            slideOutHorizontally(
+                animationSpec = studyFlowAnimationSpec(motionEnabled),
+                targetOffsetX = { width -> width / 30 },
+            ) + fadeOut(animationSpec = studyFlowAnimationSpec(motionEnabled))
+        },
     ) {
         studyFlowV2Destinations(
             navController = navController,

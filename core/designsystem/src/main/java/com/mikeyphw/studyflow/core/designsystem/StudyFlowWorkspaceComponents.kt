@@ -1,7 +1,10 @@
 package com.mikeyphw.studyflow.core.designsystem
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,26 +30,18 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.stateDescription
@@ -54,6 +49,7 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
@@ -124,109 +120,73 @@ fun StudyFlowWorkspaceHeader(
                 Icon(Icons.Outlined.MoreVert, contentDescription = systemContentDescription)
             }
         }
-        Surface(
+        val motionEnabled = rememberStudyFlowMotionEnabled()
+        val planInteraction = remember { MutableInteractionSource() }
+        val planPressed by planInteraction.collectIsPressedAsState()
+        val planScale by animateFloatAsState(
+            targetValue = if (planPressed) 0.985f else 1f,
+            animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.FastMillis),
+            label = "studyflow-plan-switcher-scale",
+        )
+        val arrowRotation by animateFloatAsState(
+            targetValue = if (planPressed) 180f else 0f,
+            animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.FastMillis),
+            label = "studyflow-plan-switcher-arrow",
+        )
+        val planVerticalPadding by animateDpAsState(
+            targetValue = if (planPressed) 12.dp else 10.dp,
+            animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.FastMillis),
+            label = "studyflow-plan-switcher-expansion",
+        )
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = StudyFlowWorkspaceTokens.MinimumTouchTarget)
-                .clickable(onClick = onPlanClick)
-                .semantics { traversalIndex = 3f },
-            shape = RoundedCornerShape(StudyFlowWorkspaceTokens.CompactCardRadius),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                .graphicsLayer {
+                    scaleX = planScale
+                    scaleY = planScale
+                }
+                .clip(RoundedCornerShape(StudyFlowWorkspaceTokens.CompactCardRadius))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.72f))
+                .clickable(interactionSource = planInteraction, indication = null, onClick = onPlanClick)
+                .semantics { traversalIndex = 3f }
+                .padding(horizontal = 14.dp, vertical = planVerticalPadding),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Bolt,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = planName.orEmpty(),
-                        style = MaterialTheme.typography.titleSmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = planSupportingText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
+                Icon(
+                    imageVector = Icons.Outlined.Bolt,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(18.dp),
+                )
             }
-        }
-    }
-}
-
-@Composable
-fun StudyFlowPrimaryActionCard(
-    title: String,
-    message: String,
-    actionLabel: String,
-    onAction: () -> Unit,
-    modifier: Modifier = Modifier,
-    supportingLabel: String? = null,
-    secondaryLabel: String? = null,
-    onSecondaryAction: (() -> Unit)? = null,
-) {
-    ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(StudyFlowWorkspaceTokens.CardRadius),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            supportingLabel?.let {
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = planName.orEmpty(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = planSupportingText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            Icon(
+                Icons.Outlined.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.graphicsLayer { rotationZ = arrowRotation },
             )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            if (secondaryLabel != null && onSecondaryAction != null) {
-                StudyFlowResponsivePair(
-                    first = { childModifier ->
-                        Button(onClick = onAction, modifier = childModifier) {
-                            Text(actionLabel)
-                        }
-                    },
-                    second = { childModifier ->
-                        OutlinedButton(onClick = onSecondaryAction, modifier = childModifier) {
-                            Text(secondaryLabel)
-                        }
-                    },
-                )
-            } else {
-                Button(onClick = onAction, modifier = Modifier.fillMaxWidth()) {
-                    Text(actionLabel)
-                }
-            }
         }
     }
 }
@@ -260,168 +220,41 @@ fun StudyFlowResponsivePair(
 }
 
 @Composable
-fun StudyFlowMetricPulse(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    supportingText: String? = null,
-    progress: Float? = null,
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(StudyFlowWorkspaceTokens.CompactCardRadius),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(text = value, style = MaterialTheme.typography.headlineSmall)
-            progress?.let {
-                LinearProgressIndicator(
-                    progress = { it.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            supportingText?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun StudyFlowTimelineRow(
-    title: String,
-    metadata: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    status: String? = null,
-    actionLabel: String? = null,
-    onAction: (() -> Unit)? = null,
-    onClick: (() -> Unit)? = null,
-) {
-    val rowModifier = if (onClick == null) modifier else modifier.clickable(onClick = onClick)
-    Row(
-        modifier = rowModifier
-            .fillMaxWidth()
-            .heightIn(min = StudyFlowWorkspaceTokens.MinimumTouchTarget)
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Surface(
-            modifier = Modifier.size(42.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(21.dp))
-            }
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = metadata,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            status?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-        if (actionLabel != null && onAction != null) {
-            FilledTonalButton(onClick = onAction) {
-                Text(actionLabel)
-            }
-        }
-    }
-}
-
-@Composable
-fun StudyFlowCoachCard(
-    title: String,
-    message: String,
-    modifier: Modifier = Modifier,
-    actionLabel: String? = null,
-    onAction: (() -> Unit)? = null,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(StudyFlowWorkspaceTokens.CardRadius),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-            if (actionLabel != null && onAction != null) {
-                AssistChip(
-                    onClick = onAction,
-                    label = { Text(actionLabel) },
-                    modifier = Modifier.heightIn(min = StudyFlowWorkspaceTokens.MinimumTouchTarget),
-                )
-            }
-        }
-    }
-}
-
-
-@Composable
 fun StudyFlowInlineError(
     message: String,
     actionLabel: String,
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(StudyFlowWorkspaceTokens.CompactCardRadius),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-        ),
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(StudyFlowWorkspaceTokens.CompactCardRadius))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.ErrorOutline,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onErrorContainer,
-            )
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.weight(1f),
-            )
-            OutlinedButton(onClick = onAction) {
-                Text(actionLabel)
-            }
-        }
+        Icon(
+            imageVector = Icons.Outlined.ErrorOutline,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+        )
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = actionLabel,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier
+                .heightIn(min = StudyFlowWorkspaceTokens.MinimumTouchTarget)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onAction)
+                .padding(horizontal = 12.dp, vertical = 14.dp),
+        )
     }
 }
 
@@ -437,14 +270,12 @@ fun StudyFlowSubjectAccordion(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(StudyFlowWorkspaceTokens.CompactCardRadius),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(StudyFlowWorkspaceTokens.CompactCardRadius))
+            .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -489,37 +320,6 @@ fun StudyFlowSubjectAccordion(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun <T> StudyFlowWorkspaceTabs(
-    tabs: List<T>,
-    selected: T,
-    label: @Composable (T) -> String,
-    onSelected: (T) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    PrimaryScrollableTabRow(
-        selectedTabIndex = tabs.indexOf(selected).coerceAtLeast(0),
-        modifier = modifier.fillMaxWidth(),
-        edgePadding = 0.dp,
-    ) {
-        tabs.forEach { tab ->
-            Tab(
-                selected = selected == tab,
-                onClick = { onSelected(tab) },
-                modifier = Modifier.heightIn(min = StudyFlowWorkspaceTokens.MinimumTouchTarget),
-                text = {
-                    Text(
-                        text = label(tab),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-            )
-        }
-    }
 }
 
 fun LazyListScope.studyFlowSectionHeader(
@@ -558,10 +358,17 @@ fun LazyListScope.studyFlowSectionHeader(
                     .semantics { heading() },
             )
             if (actionLabel != null && onAction != null) {
-                OutlinedButton(onClick = onAction) {
+                Row(
+                    modifier = Modifier
+                        .heightIn(min = StudyFlowWorkspaceTokens.MinimumTouchTarget)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onAction)
+                        .padding(horizontal = 10.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Icon(Icons.Outlined.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(actionLabel())
+                    Text(actionLabel(), style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

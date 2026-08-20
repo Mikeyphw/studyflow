@@ -1,6 +1,11 @@
 package com.mikeyphw.studyflow.feature.workspace
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,6 +16,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AddTask
@@ -28,9 +34,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,13 +46,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowActionRow
+import com.mikeyphw.studyflow.core.designsystem.rememberStudyFlowMotionEnabled
+import com.mikeyphw.studyflow.core.designsystem.studyFlowAnimationSpec
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
@@ -85,7 +96,7 @@ fun PlanPickerScreen(
             onPlanSelected(plan)
         }
     }
-    WorkspaceUtilityScaffold(
+    WorkspaceUtilityPane(
         title = stringResource(R.string.plan_picker_title),
         onBack = onBack,
         modifier = modifier,
@@ -119,7 +130,7 @@ fun PlanPickerScreen(
                 }
             } else {
                 items(active, key = { plan -> plan.id.value }, contentType = { "plan-choice" }) { plan ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = plan.name,
                         metadata = stringResource(R.string.percent_value, plan.progressPercent),
                         icon = Icons.AutoMirrored.Outlined.ListAlt,
@@ -136,7 +147,7 @@ fun PlanPickerScreen(
             if (other.isNotEmpty()) {
                 studyFlowSectionHeader(key = "other", title = { stringResource(R.string.other_plans) })
                 items(other, key = { plan -> "other:${plan.id.value}" }, contentType = { "plan-choice" }) { plan ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = plan.name,
                         metadata = stringResource(
                             when (plan.status) {
@@ -158,7 +169,7 @@ fun PlanPickerScreen(
                     key = { plan -> "archived:${plan.id.value}" },
                     contentType = { "archived-plan" },
                 ) { plan ->
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = plan.name,
                         metadata = stringResource(R.string.status_archived),
                         icon = Icons.AutoMirrored.Outlined.ListAlt,
@@ -203,7 +214,7 @@ fun SystemHubScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    WorkspaceUtilityScaffold(
+    WorkspaceUtilityPane(
         title = stringResource(R.string.system_hub_title),
         onBack = onBack,
         modifier = modifier,
@@ -217,7 +228,7 @@ fun SystemHubScreen(
                 Text(stringResource(R.string.system_hub_subtitle))
             }
             item(key = "plans", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = stringResource(R.string.all_plans),
                     metadata = stringResource(R.string.plan_picker_subtitle),
                     icon = Icons.AutoMirrored.Outlined.ListAlt,
@@ -225,7 +236,7 @@ fun SystemHubScreen(
                 )
             }
             item(key = "settings", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = stringResource(R.string.settings),
                     metadata = stringResource(R.string.system_hub_subtitle),
                     icon = Icons.Outlined.Settings,
@@ -234,7 +245,7 @@ fun SystemHubScreen(
             }
             if (hasPlan) {
                 item(key = "reminders", contentType = "workspace-utility") {
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = stringResource(R.string.reminders),
                         metadata = stringResource(R.string.plan_title),
                         icon = Icons.Outlined.Notifications,
@@ -242,7 +253,7 @@ fun SystemHubScreen(
                     )
                 }
                 item(key = "backup", contentType = "workspace-utility") {
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = stringResource(R.string.backup_restore),
                         metadata = stringResource(R.string.plan_title),
                         icon = Icons.Outlined.Backup,
@@ -251,7 +262,7 @@ fun SystemHubScreen(
                 }
             }
             item(key = "sync", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = stringResource(R.string.sync),
                     metadata = stringResource(R.string.system_hub_subtitle),
                     icon = Icons.Outlined.Sync,
@@ -259,7 +270,7 @@ fun SystemHubScreen(
                 )
             }
             item(key = "privacy", contentType = "workspace-utility") {
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = stringResource(R.string.privacy),
                     metadata = stringResource(R.string.system_hub_subtitle),
                     icon = Icons.Outlined.Lock,
@@ -268,7 +279,7 @@ fun SystemHubScreen(
             }
             if (diagnosticsAvailable) {
                 item(key = "debug", contentType = "workspace-utility") {
-                    StudyFlowTimelineRow(
+                    StudyFlowTimelineItem(
                         title = stringResource(R.string.debug_workbench),
                         metadata = stringResource(R.string.system_hub_subtitle),
                         icon = Icons.Outlined.BugReport,
@@ -294,58 +305,87 @@ fun QuickAddScreen(
     modifier: Modifier = Modifier,
 ) {
     var showQuickSession by rememberSaveable { mutableStateOf(false) }
-    Column(
-        modifier = modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+    var panelVisible by remember { mutableStateOf(false) }
+    val motionEnabled = rememberStudyFlowMotionEnabled()
+
+    LaunchedEffect(Unit) { panelVisible = true }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+        AnimatedVisibility(
+            visible = panelVisible,
+            enter = slideInVertically(
+                animationSpec = studyFlowAnimationSpec(motionEnabled),
+                initialOffsetY = { height -> height / 3 },
+            ) + fadeIn(animationSpec = studyFlowAnimationSpec(motionEnabled)),
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                        )
+                    }
+                    Column(modifier = Modifier.padding(start = 6.dp)) {
+                        Text(
+                            text = stringResource(R.string.quick_add_title),
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.quick_add_context,
+                                quickAddSourceLabel(sourceRoot),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                StudyFlowActionRow(
+                    icon = Icons.Outlined.PlayCircle,
+                    label = stringResource(R.string.quick_session),
+                    onClick = { showQuickSession = true },
                 )
-            }
-            Column(modifier = Modifier.padding(start = 6.dp)) {
-                Text(
-                    text = stringResource(R.string.quick_add_title),
-                    style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
+                StudyFlowActionRow(
+                    icon = Icons.Outlined.AddTask,
+                    label = stringResource(R.string.study_block),
+                    onClick = onStudyBlock,
                 )
-                Text(
-                    text = stringResource(R.string.quick_add_context, quickAddSourceLabel(sourceRoot)),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                StudyFlowActionRow(
+                    icon = Icons.Outlined.Quiz,
+                    label = stringResource(R.string.question),
+                    onClick = onQuestion,
+                )
+                StudyFlowActionRow(
+                    icon = Icons.AutoMirrored.Outlined.ListAlt,
+                    label = stringResource(R.string.goal_or_note),
+                    onClick = onGoalOrNote,
+                )
+                StudyFlowActionRow(
+                    icon = Icons.Outlined.FolderOpen,
+                    label = stringResource(R.string.material),
+                    onClick = onMaterial,
                 )
             }
         }
-        StudyFlowActionRow(
-            icon = Icons.Outlined.PlayCircle,
-            label = stringResource(R.string.quick_session),
-            onClick = { showQuickSession = true },
-        )
-        StudyFlowActionRow(
-            icon = Icons.Outlined.AddTask,
-            label = stringResource(R.string.study_block),
-            onClick = onStudyBlock,
-        )
-        StudyFlowActionRow(
-            icon = Icons.Outlined.Quiz,
-            label = stringResource(R.string.question),
-            onClick = onQuestion,
-        )
-        StudyFlowActionRow(
-            icon = Icons.AutoMirrored.Outlined.ListAlt,
-            label = stringResource(R.string.goal_or_note),
-            onClick = onGoalOrNote,
-        )
-        StudyFlowActionRow(
-            icon = Icons.Outlined.FolderOpen,
-            label = stringResource(R.string.material),
-            onClick = onMaterial,
-        )
     }
+
     if (showQuickSession) {
         QuickSessionDialog(
             plan = plan,

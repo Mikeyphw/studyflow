@@ -96,7 +96,10 @@ for enum_name in (
 ):
     require(f"@Keep\n@Serializable\nenum class {enum_name}" in routes, f"{enum_name} lacks @Keep")
 
-require("PrimaryScrollableTabRow(" in design, "workspace tabs must use PrimaryScrollableTabRow")
+focus_primitives = text("core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowFocusWorkspacePrimitives.kt")
+require("PrimaryScrollableTabRow(" not in design, "legacy Material workspace tab row remains")
+require("fun <T> StudyFlowTabStrip(" in focus_primitives, "custom StudyFlow tab strip is missing")
+require("Role.Tab" in focus_primitives, "custom StudyFlow tab semantics are missing")
 require("import androidx.compose.material3.ScrollableTabRow" not in design, "deprecated ScrollableTabRow import remains")
 require("mutableLongStateOf(System.currentTimeMillis())" in today, "Today current time must use mutableLongStateOf")
 require("Build.VERSION.SDK_INT < 23" not in reminders, "reminders still contain obsolete minSdk < 23 branch")
