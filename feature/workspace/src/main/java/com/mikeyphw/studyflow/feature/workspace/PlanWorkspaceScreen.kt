@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -17,12 +16,7 @@ import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,13 +32,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowCoachCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowLoadingPane
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowActionRow
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetric
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricStrip
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowPlanSummary
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionTitle
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowTabStrip
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSubjectAccordion
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowWorkspaceTabs
-import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
@@ -190,60 +185,58 @@ fun PlanWorkspaceScreen(
         )
     }
 
-    Scaffold(modifier = modifier) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            WorkspaceHeader(
-                title = stringResource(R.string.plan_title),
+    Column(modifier = modifier.fillMaxSize()) {
+        WorkspaceHeader(
+            title = stringResource(R.string.plan_title),
+            plan = plan,
+            onSwitchPlan = onSwitchPlan,
+            onSearch = onSearch,
+            onSystem = onSystem,
+        )
+        StudyFlowTabStrip(
+            tabs = PlanWorkspaceTab.entries,
+            selected = selectedTab,
+            label = { tab ->
+                stringResource(
+                    when (tab) {
+                        PlanWorkspaceTab.OVERVIEW -> R.string.plan_overview
+                        PlanWorkspaceTab.SCHEDULE -> R.string.plan_schedule
+                        PlanWorkspaceTab.CONTENT -> R.string.plan_content
+                        PlanWorkspaceTab.LIBRARY -> R.string.plan_library
+                    },
+                )
+            },
+            onSelected = onTabSelected,
+        )
+        when (selectedTab) {
+            PlanWorkspaceTab.OVERVIEW -> PlanOverviewPane(
                 plan = plan,
-                onSwitchPlan = onSwitchPlan,
-                onSearch = onSearch,
-                onSystem = onSystem,
+                scheduleCount = readySchedule.plannedActivities.size,
+                subjectCount = readySyllabus.subjects.size,
+                materialCount = readyLibrary.activeMaterials.size,
+                onEditPlan = onEditPlan,
+                onPlanSettings = onPlanSettings,
+                onSessions = onSessions,
+                onReminders = onReminders,
+                onPortability = onPortability,
             )
-            StudyFlowWorkspaceTabs(
-                tabs = PlanWorkspaceTab.entries,
-                selected = selectedTab,
-                label = { tab ->
-                    stringResource(
-                        when (tab) {
-                            PlanWorkspaceTab.OVERVIEW -> R.string.plan_overview
-                            PlanWorkspaceTab.SCHEDULE -> R.string.plan_schedule
-                            PlanWorkspaceTab.CONTENT -> R.string.plan_content
-                            PlanWorkspaceTab.LIBRARY -> R.string.plan_library
-                        },
-                    )
-                },
-                onSelected = onTabSelected,
+            PlanWorkspaceTab.SCHEDULE -> PlanSchedulePane(
+                schedule = readySchedule,
+                onManage = onManageSchedule,
             )
-            when (selectedTab) {
-                PlanWorkspaceTab.OVERVIEW -> PlanOverviewPane(
-                    plan = plan,
-                    scheduleCount = readySchedule.plannedActivities.size,
-                    subjectCount = readySyllabus.subjects.size,
-                    materialCount = readyLibrary.activeMaterials.size,
-                    onEditPlan = onEditPlan,
-                    onPlanSettings = onPlanSettings,
-                    onSessions = onSessions,
-                    onReminders = onReminders,
-                    onPortability = onPortability,
-                )
-                PlanWorkspaceTab.SCHEDULE -> PlanSchedulePane(
-                    schedule = readySchedule,
-                    onManage = onManageSchedule,
-                )
-                PlanWorkspaceTab.CONTENT -> PlanContentPane(
-                    syllabus = readySyllabus,
-                    cleanupReport = cleanupReport,
-                    targetId = targetId,
-                    onManage = onManageContent,
-                )
-                PlanWorkspaceTab.LIBRARY -> PlanLibraryPane(
-                    materials = readyLibrary.materials.filterNot { it.archived }.map { it.id.value to it.title },
-                    videos = readyLibrary.videos.map { it.id.value to it.title },
-                    targetId = targetId,
-                    annexCount = readyLibrary.annexes.size,
-                    onManage = onManageLibrary,
-                )
-            }
+            PlanWorkspaceTab.CONTENT -> PlanContentPane(
+                syllabus = readySyllabus,
+                cleanupReport = cleanupReport,
+                targetId = targetId,
+                onManage = onManageContent,
+            )
+            PlanWorkspaceTab.LIBRARY -> PlanLibraryPane(
+                materials = readyLibrary.materials.filterNot { it.archived }.map { it.id.value to it.title },
+                videos = readyLibrary.videos.map { it.id.value to it.title },
+                targetId = targetId,
+                annexCount = readyLibrary.annexes.size,
+                onManage = onManageLibrary,
+            )
         }
     }
 }
@@ -263,72 +256,54 @@ private fun PlanOverviewPane(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = workspaceContentPadding(),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        studyFlowSectionHeader(key = "progress", title = { stringResource(R.string.plan_progress) })
+        item(key = "section:progress", contentType = "section") {
+            StudyFlowSectionTitle(title = stringResource(R.string.plan_progress))
+        }
         item(key = "plan-metrics", contentType = "metrics") {
-            StudyFlowResponsivePair(
-                first = { childModifier ->
-                    StudyFlowMetricPulse(
-                        label = stringResource(R.string.plan_progress),
-                        value = stringResource(R.string.percent_value, plan.progressPercent),
-                        progress = plan.progressPercent / 100f,
-                        modifier = childModifier,
-                    )
-                },
-                second = { childModifier ->
-                    StudyFlowMetricPulse(
-                        label = stringResource(R.string.weekly_goal),
-                        value = stringResource(R.string.hours_value, plan.weeklyGoalHours),
-                        supportingText = stringResource(R.string.minutes_value, plan.studiedMinutesThisWeek),
-                        modifier = childModifier,
-                    )
-                },
+            StudyFlowMetricStrip(
+                firstLabel = stringResource(R.string.plan_progress),
+                firstValue = stringResource(R.string.percent_value, plan.progressPercent),
+                secondLabel = stringResource(R.string.weekly_goal),
+                secondValue = stringResource(R.string.hours_value, plan.weeklyGoalHours),
+                secondSupportingText = stringResource(R.string.minutes_value, plan.studiedMinutesThisWeek),
             )
         }
-        item(key = "plan-structure", contentType = "summary-card") {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(plan.description.ifBlank { plan.name }, style = MaterialTheme.typography.bodyLarge)
-                    val examDate = plan.examDateIso ?: stringResource(R.string.not_set)
-                    Text(
-                        text = stringResource(R.string.exam_date) + ": " + examDate,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(pluralStringResource(R.plurals.subjects_count, subjectCount, subjectCount))
-                    Text("$scheduleCount · ${stringResource(R.string.plan_schedule)}")
-                    Text(pluralStringResource(R.plurals.materials_count, materialCount, materialCount))
-                }
-            }
+        item(key = "section:structure", contentType = "section") {
+            StudyFlowSectionTitle(title = stringResource(R.string.plan_overview))
         }
-        studyFlowSectionHeader(key = "actions", title = { stringResource(R.string.plan_actions) })
-        item(key = "actions-card", contentType = "actions") {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                PlanActionButton(Icons.Outlined.Edit, stringResource(R.string.edit_plan), onEditPlan)
-                PlanActionButton(Icons.Outlined.Settings, stringResource(R.string.plan_settings), onPlanSettings)
-                PlanActionButton(Icons.Outlined.PlayCircle, stringResource(R.string.study_sessions), onSessions)
-                PlanActionButton(Icons.Outlined.Notifications, stringResource(R.string.reminders), onReminders)
-                PlanActionButton(Icons.Outlined.Backup, stringResource(R.string.backup_restore), onPortability)
-            }
+        item(key = "plan-structure", contentType = "summary") {
+            StudyFlowPlanSummary(
+                description = plan.description.ifBlank { plan.name },
+                examLabel = stringResource(R.string.exam_date),
+                examDate = plan.examDateIso ?: stringResource(R.string.not_set),
+                subjectsLabel = stringResource(R.string.plan_content),
+                subjectCount = pluralStringResource(R.plurals.subjects_count, subjectCount, subjectCount),
+                scheduleLabel = stringResource(R.string.plan_schedule),
+                scheduleCount = scheduleCount.toString(),
+                libraryLabel = stringResource(R.string.plan_library),
+                materialCount = pluralStringResource(R.plurals.materials_count, materialCount, materialCount),
+            )
         }
-    }
-}
-
-@Composable
-private fun PlanActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
-) {
-    Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Icon(icon, contentDescription = null)
-        Text(label, modifier = Modifier.padding(start = 8.dp))
+        item(key = "section:actions", contentType = "section") {
+            StudyFlowSectionTitle(title = stringResource(R.string.plan_actions))
+        }
+        item(key = "action-edit", contentType = "action-row") {
+            StudyFlowActionRow(Icons.Outlined.Edit, stringResource(R.string.edit_plan), onEditPlan)
+        }
+        item(key = "action-settings", contentType = "action-row") {
+            StudyFlowActionRow(Icons.Outlined.Settings, stringResource(R.string.plan_settings), onPlanSettings)
+        }
+        item(key = "action-sessions", contentType = "action-row") {
+            StudyFlowActionRow(Icons.Outlined.PlayCircle, stringResource(R.string.study_sessions), onSessions)
+        }
+        item(key = "action-reminders", contentType = "action-row") {
+            StudyFlowActionRow(Icons.Outlined.Notifications, stringResource(R.string.reminders), onReminders)
+        }
+        item(key = "action-portability", contentType = "action-row") {
+            StudyFlowActionRow(Icons.Outlined.Backup, stringResource(R.string.backup_restore), onPortability)
+        }
     }
 }
 
@@ -343,12 +318,13 @@ private fun PlanSchedulePane(
         contentPadding = workspaceContentPadding(),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        studyFlowSectionHeader(
-            key = "schedule",
-            title = { stringResource(R.string.plan_schedule) },
-            actionLabel = { stringResource(R.string.manage_schedule) },
-            onAction = onManage,
-        )
+        item(key = "section:schedule", contentType = "section") {
+            StudyFlowSectionTitle(
+                title = stringResource(R.string.plan_schedule),
+                actionLabel = stringResource(R.string.manage_schedule),
+                onAction = onManage,
+            )
+        }
         if (activities.isEmpty()) {
             item(key = "schedule-empty", contentType = "empty") {
                 StudyFlowEmptyState(
@@ -364,7 +340,7 @@ private fun PlanSchedulePane(
                 key = { activity -> activity.id.value },
                 contentType = { "plan-activity" },
             ) { activity ->
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = activity.title,
                     metadata = stringResource(R.string.minutes_value, activity.plannedDurationMinutes),
                     icon = Icons.Outlined.Event,
@@ -408,10 +384,9 @@ private fun PlanContentPane(
         contentPadding = workspaceContentPadding(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        studyFlowSectionHeader(
-            key = "content-health",
-            title = { stringResource(R.string.content_health_title) },
-        )
+        item(key = "section:content-health", contentType = "section") {
+            StudyFlowSectionTitle(title = stringResource(R.string.content_health_title))
+        }
         item(key = "content-health-summary", contentType = "coach") {
             val currentReport = cleanupReport
             StudyFlowCoachCard(
@@ -443,7 +418,7 @@ private fun PlanContentPane(
             key = { issue -> "cleanup:${issue.kind}" },
             contentType = { "cleanup-issue" },
         ) { issue ->
-            StudyFlowTimelineRow(
+            StudyFlowTimelineItem(
                 title = stringResource(issue.kind.titleRes()),
                 metadata = stringResource(issue.kind.messageRes()),
                 icon = Icons.Outlined.AutoFixHigh,
@@ -453,14 +428,15 @@ private fun PlanContentPane(
             )
         }
 
-        studyFlowSectionHeader(
-            key = "content",
-            title = { stringResource(R.string.plan_content) },
-            actionLabel = { stringResource(R.string.manage_content) },
-            onAction = onManage,
-        )
+        item(key = "section:content", contentType = "section") {
+            StudyFlowSectionTitle(
+                title = stringResource(R.string.plan_content),
+                actionLabel = stringResource(R.string.manage_content),
+                onAction = onManage,
+            )
+        }
         item(key = "content-counts", contentType = "metrics") {
-            StudyFlowMetricPulse(
+            StudyFlowMetric(
                 label = stringResource(R.string.plan_content),
                 value = pluralStringResource(R.plurals.subjects_count, subjects.size, subjects.size),
                 supportingText = pluralStringResource(R.plurals.topics_count, topics.size, topics.size),
@@ -506,7 +482,7 @@ private fun PlanContentPane(
                         )
                     } else {
                         subjectTopics.take(6).forEach { topic ->
-                            StudyFlowTimelineRow(
+                            StudyFlowTimelineItem(
                                 title = topic.name,
                                 metadata = stringResource(R.string.topic_mastery, topic.masteryPercent),
                                 icon = Icons.Outlined.AutoStories,
@@ -515,15 +491,15 @@ private fun PlanContentPane(
                             )
                         }
                         if (subjectTopics.size > 6) {
-                            Button(onClick = onManage, modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    pluralStringResource(
-                                        R.plurals.view_all_topics,
-                                        subjectTopics.size,
-                                        subjectTopics.size,
-                                    ),
-                                )
-                            }
+                            StudyFlowActionRow(
+                                icon = Icons.Outlined.AutoStories,
+                                label = pluralStringResource(
+                                    R.plurals.view_all_topics,
+                                    subjectTopics.size,
+                                    subjectTopics.size,
+                                ),
+                                onClick = onManage,
+                            )
                         }
                     }
                 }
@@ -548,17 +524,19 @@ private fun PlanLibraryPane(
         contentPadding = workspaceContentPadding(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        studyFlowSectionHeader(
-            key = "library",
-            title = { stringResource(R.string.plan_library) },
-            actionLabel = { stringResource(R.string.manage_library) },
-            onAction = onManage,
-        )
+        item(key = "section:library", contentType = "section") {
+            StudyFlowSectionTitle(
+                title = stringResource(R.string.plan_library),
+                actionLabel = stringResource(R.string.manage_library),
+                onAction = onManage,
+            )
+        }
         item(key = "library-counts", contentType = "metrics") {
-            StudyFlowMetricPulse(
-                label = pluralStringResource(R.plurals.materials_count, materials.size, materials.size),
-                value = pluralStringResource(R.plurals.videos_count, videos.size, videos.size),
-                supportingText = pluralStringResource(R.plurals.annexes_count, annexCount, annexCount),
+            StudyFlowMetric(
+                label = stringResource(R.string.plan_library),
+                value = pluralStringResource(R.plurals.materials_count, materials.size, materials.size),
+                supportingText = pluralStringResource(R.plurals.videos_count, videos.size, videos.size) +
+                    " · " + pluralStringResource(R.plurals.annexes_count, annexCount, annexCount),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -573,7 +551,7 @@ private fun PlanLibraryPane(
             }
         } else {
             items(rows, key = { row -> row.first }, contentType = { "library-row" }) { row ->
-                StudyFlowTimelineRow(
+                StudyFlowTimelineItem(
                     title = row.third,
                     metadata = stringResource(row.second),
                     icon = Icons.Outlined.FolderOpen,

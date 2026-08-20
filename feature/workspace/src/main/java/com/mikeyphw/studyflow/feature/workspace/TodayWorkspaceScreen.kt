@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.feature.workspace
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,11 +13,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -29,19 +26,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowCoachCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricPulse
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowLoadingPane
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowPrimaryActionCard
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineRow
-import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowFloatingAction
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowFocusActionSurface
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricStrip
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionTitle
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.ManageStudyDiscovery
@@ -55,7 +51,6 @@ import com.mikeyphw.studyflow.core.domain.StudySessionTimer
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
-import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
@@ -68,7 +63,6 @@ import java.util.concurrent.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayWorkspaceScreen(
     plan: StudyPlan,
@@ -183,16 +177,8 @@ fun TodayWorkspaceScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbar) },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onQuickAdd) {
-                Icon(Icons.Outlined.PlayCircle, contentDescription = stringResource(R.string.quick_add))
-            }
-        },
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             WorkspaceHeader(
                 title = stringResource(R.string.today_title),
                 eyebrow = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(currentTime)),
@@ -204,18 +190,18 @@ fun TodayWorkspaceScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = workspaceContentPadding(),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                item(key = "primary", contentType = "primary-action") {
+                item(key = "primary", contentType = "focus-action") {
                     when {
-                        activeSession != null -> StudyFlowPrimaryActionCard(
+                        activeSession != null -> StudyFlowFocusActionSurface(
                             supportingLabel = stringResource(R.string.active_session),
                             title = activeSession.notes.ifBlank { stringResource(R.string.continue_studying) },
                             message = sessionMessage(activeSession),
                             actionLabel = stringResource(R.string.resume_session),
                             onAction = { onOpenFocus(activeSession) },
                         )
-                        dueReviewCount > 0 -> StudyFlowPrimaryActionCard(
+                        dueReviewCount > 0 -> StudyFlowFocusActionSurface(
                             supportingLabel = stringResource(R.string.recommended_next),
                             title = stringResource(R.string.due_reviews),
                             message = pluralStringResource(
@@ -228,7 +214,7 @@ fun TodayWorkspaceScreen(
                             secondaryLabel = recommendation?.let { stringResource(R.string.open) },
                             onSecondaryAction = recommendation?.let { { onOpenRecommendation(it) } },
                         )
-                        nextActivity != null -> StudyFlowPrimaryActionCard(
+                        nextActivity != null -> StudyFlowFocusActionSurface(
                             supportingLabel = stringResource(R.string.planned_next),
                             title = nextActivity.title,
                             message = activityMetadata(nextActivity),
@@ -237,7 +223,7 @@ fun TodayWorkspaceScreen(
                             secondaryLabel = stringResource(R.string.adjust_plan),
                             onSecondaryAction = onOpenSchedule,
                         )
-                        recommendation != null -> StudyFlowPrimaryActionCard(
+                        recommendation != null -> StudyFlowFocusActionSurface(
                             supportingLabel = stringResource(R.string.recommended_next),
                             title = recommendation.targetLabel.ifBlank {
                                 stringResource(R.string.continue_studying)
@@ -246,7 +232,7 @@ fun TodayWorkspaceScreen(
                             actionLabel = stringResource(R.string.open),
                             onAction = { onOpenRecommendation(recommendation) },
                         )
-                        else -> StudyFlowPrimaryActionCard(
+                        else -> StudyFlowFocusActionSurface(
                             supportingLabel = stringResource(R.string.recommended_next),
                             title = stringResource(R.string.free_study),
                             message = stringResource(R.string.free_study_message),
@@ -258,12 +244,13 @@ fun TodayWorkspaceScreen(
                     }
                 }
 
-                studyFlowSectionHeader(
-                    key = "today-path",
-                    title = { stringResource(R.string.today_timeline) },
-                    actionLabel = { stringResource(R.string.adjust_plan) },
-                    onAction = onOpenSchedule,
-                )
+                item(key = "section:today-path", contentType = "section") {
+                    StudyFlowSectionTitle(
+                        title = stringResource(R.string.today_timeline),
+                        actionLabel = stringResource(R.string.adjust_plan),
+                        onAction = onOpenSchedule,
+                    )
+                }
                 if (todayActivities.isEmpty() && dueReviewCount == 0) {
                     item(key = "empty-timeline", contentType = "empty") {
                         StudyFlowEmptyState(
@@ -279,7 +266,7 @@ fun TodayWorkspaceScreen(
                         key = { activity -> "activity:${activity.id.value}" },
                         contentType = { "today-activity" },
                     ) { activity ->
-                        StudyFlowTimelineRow(
+                        StudyFlowTimelineItem(
                             title = activity.title,
                             metadata = activityMetadata(activity),
                             icon = if (activity.status == PlannedActivityStatus.COMPLETED) {
@@ -310,7 +297,7 @@ fun TodayWorkspaceScreen(
                     }
                     if (dueReviewCount > 0) {
                         item(key = "review-batch", contentType = "today-review-batch") {
-                            StudyFlowTimelineRow(
+                            StudyFlowTimelineItem(
                                 title = stringResource(R.string.due_reviews),
                                 metadata = pluralStringResource(
                                     R.plurals.reviews_value,
@@ -325,38 +312,37 @@ fun TodayWorkspaceScreen(
                     }
                 }
 
-                studyFlowSectionHeader(
-                    key = "weekly-pace",
-                    title = { stringResource(R.string.weekly_pace) },
-                )
+                item(key = "section:weekly-pace", contentType = "section") {
+                    StudyFlowSectionTitle(title = stringResource(R.string.weekly_pace))
+                }
                 item(key = "weekly-metrics", contentType = "metrics") {
-                    StudyFlowResponsivePair(
-                        first = { childModifier ->
-                            StudyFlowMetricPulse(
-                                label = stringResource(R.string.studied_time),
-                                value = stringResource(R.string.minutes_value, weeklyStudiedMinutes),
-                                progress = weeklyProgress,
-                                modifier = childModifier,
-                            )
-                        },
-                        second = { childModifier ->
-                            StudyFlowMetricPulse(
-                                label = stringResource(R.string.accuracy),
-                                value = stringResource(
-                                    R.string.percent_value,
-                                    readyAnalytics.questionAccuracyPercent,
-                                ),
-                                supportingText = pluralStringResource(
-                                    R.plurals.questions_value,
-                                    readyAnalytics.answeredQuestions,
-                                    readyAnalytics.answeredQuestions,
-                                ),
-                                modifier = childModifier,
-                            )
-                        },
+                    StudyFlowMetricStrip(
+                        firstLabel = stringResource(R.string.studied_time),
+                        firstValue = stringResource(R.string.minutes_value, weeklyStudiedMinutes),
+                        firstSupportingText = stringResource(
+                            R.string.percent_value,
+                            (weeklyProgress * 100f).toInt().coerceIn(0, 999),
+                        ),
+                        secondLabel = stringResource(R.string.accuracy),
+                        secondValue = stringResource(
+                            R.string.percent_value,
+                            readyAnalytics.questionAccuracyPercent,
+                        ),
+                        secondSupportingText = pluralStringResource(
+                            R.plurals.questions_value,
+                            readyAnalytics.answeredQuestions,
+                            readyAnalytics.answeredQuestions,
+                        ),
                     )
                 }
-                item(key = "coach", contentType = "coach") {
+                item(key = "section:coach", contentType = "section") {
+                    StudyFlowSectionTitle(
+                        title = stringResource(R.string.today_coach_title),
+                        actionLabel = stringResource(R.string.adjust_plan),
+                        onAction = onOpenSchedule,
+                    )
+                }
+                item(key = "coach", contentType = "coach-row") {
                     val coachMessage = when {
                         dueReviewCount > 0 -> stringResource(R.string.today_coach_backlog)
                         readyAnalytics.scheduleAdherencePercent < 60 -> {
@@ -364,20 +350,31 @@ fun TodayWorkspaceScreen(
                         }
                         else -> stringResource(R.string.today_coach_stable)
                     }
-                    StudyFlowCoachCard(
-                        title = stringResource(R.string.today_coach_title),
-                        message = if (recommendationUnavailable) {
+                    Text(
+                        text = if (recommendationUnavailable) {
                             "$coachMessage ${stringResource(R.string.operation_failed)}"
                         } else {
                             coachMessage
                         },
-                        actionLabel = stringResource(R.string.adjust_plan),
-                        onAction = onOpenSchedule,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                     )
                 }
             }
         }
+        StudyFlowFloatingAction(
+            icon = Icons.Outlined.PlayCircle,
+            contentDescription = stringResource(R.string.quick_add),
+            onClick = onQuickAdd,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
+        )
+        SnackbarHost(
+            hostState = snackbar,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 20.dp, vertical = 84.dp),
+        )
     }
+
 }
 
 private fun localWeekStart(nowEpochMillis: Long): Long {
