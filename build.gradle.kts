@@ -417,6 +417,13 @@ tasks.register<Exec>("verifyImportTemplates") {
     commandLine("python3", "scripts/verify_import_templates.py")
 }
 
+
+tasks.register<Exec>("verifyModeAwareAnalytics") {
+    group = "verification"
+    description = "Checks CMOV-10 mode-aware analytics profiles, labels and UI routing."
+    commandLine("python3", "scripts/verify_mode_aware_analytics.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."

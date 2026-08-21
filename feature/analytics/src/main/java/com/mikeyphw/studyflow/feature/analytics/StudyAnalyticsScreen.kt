@@ -101,7 +101,7 @@ fun StudyAnalyticsScreen(
                 }
             }
             StudyFlowSectionCard(title = stringResource(R.string.analytics_title)) {
-                snapshot.metricRows().forEach { row ->
+                snapshot.metricRows(plan.contentMode).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StudyFlowStatusPill(text = stringResource(row.titleRes))
                         Text(text = row.value, style = MaterialTheme.typography.titleMedium)
@@ -129,7 +129,7 @@ fun StudyAnalyticsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            StudyFlowSectionCard(title = stringResource(R.string.weak_areas)) {
+            StudyFlowSectionCard(title = stringResource(plan.contentMode.weakAreasTitleRes())) {
                 if (snapshot.weakAreas.isEmpty()) {
                     Text(stringResource(R.string.no_weak_areas), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
