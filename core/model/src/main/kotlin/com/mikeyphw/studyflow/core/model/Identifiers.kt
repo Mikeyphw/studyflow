@@ -201,3 +201,10 @@ value class VocabularyCardId(val value: String) {
         require(value.isNotBlank()) { "VocabularyCardId cannot be blank." }
     }
 }
+
+@JvmInline
+value class LanguageReviewAttemptId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "LanguageReviewAttemptId cannot be blank." }
+    }
+}

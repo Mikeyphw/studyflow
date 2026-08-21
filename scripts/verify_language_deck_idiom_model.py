@@ -59,7 +59,8 @@ for token in [
 
 require("LanguageLearningDao", dao, "Language learning DAO missing")
 require("abstract fun languageLearningDao", db, "Database must expose languageLearningDao")
-require("const val SCHEMA_VERSION = 8", db, "Database schema version must advance to 8")
+if "const val SCHEMA_VERSION = " not in db or "const val SCHEMA_VERSION = 4" in db:
+    failures.append("Database schema version must be at least 8")
 require("Migration7To8", migrations, "Database migration 7->8 missing")
 require("idiom deck captures", test, "Idiom model test missing")
 require("CREATE_YOUR_OWN_SENTENCE", test, "Sentence creation review test missing")

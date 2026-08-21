@@ -25,6 +25,7 @@ import com.mikeyphw.studyflow.core.database.entity.ProgrammingCourseProfileEntit
 import com.mikeyphw.studyflow.core.database.entity.TermuxRuntimePreferenceEntity
 import com.mikeyphw.studyflow.core.database.entity.LanguageDeckProfileEntity
 import com.mikeyphw.studyflow.core.database.entity.LanguageExpressionEntity
+import com.mikeyphw.studyflow.core.database.entity.LanguageReviewAttemptEntity
 import com.mikeyphw.studyflow.core.database.entity.IdiomCardEntity
 import com.mikeyphw.studyflow.core.database.entity.VocabularyCardEntity
 import com.mikeyphw.studyflow.core.database.entity.TermuxCommandRequestEntity
@@ -87,6 +88,7 @@ import com.mikeyphw.studyflow.core.database.entity.VideoResourceEntity
         LanguageExpressionEntity::class,
         IdiomCardEntity::class,
         VocabularyCardEntity::class,
+        LanguageReviewAttemptEntity::class,
         DatabaseMetadataEntity::class,
     ],
     version = StudyFlowDatabase.SCHEMA_VERSION,
@@ -120,7 +122,7 @@ abstract class StudyFlowDatabase : RoomDatabase() {
     abstract fun languageLearningDao(): LanguageLearningDao
 
     companion object {
-        const val SCHEMA_VERSION = 8
+        const val SCHEMA_VERSION = 9
         const val DATABASE_NAME = "studyflow.db"
 
         fun create(context: Context): StudyFlowDatabase =

@@ -111,3 +111,42 @@ data class VocabularyCardEntity(
     val reviewDirectionsJson: String,
     val difficulty: Int,
 )
+
+
+@Entity(
+    tableName = "language_review_attempts",
+    foreignKeys = [
+        ForeignKey(
+            entity = StudyPlanEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["studyPlanId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = LanguageExpressionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["expressionId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = IdiomCardEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["idiomCardId"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
+    indices = [Index("studyPlanId"), Index("expressionId"), Index("idiomCardId"), Index("outcome")],
+)
+data class LanguageReviewAttemptEntity(
+    @PrimaryKey val id: String,
+    val studyPlanId: String,
+    val expressionId: String,
+    val idiomCardId: String?,
+    val direction: String,
+    val promptText: String,
+    val answerText: String,
+    val outcome: String,
+    val scorePercent: Int,
+    val reviewItemId: String?,
+    val createdAtEpochMillis: Long,
+)

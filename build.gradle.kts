@@ -405,6 +405,12 @@ tasks.register<Exec>("verifyLanguageDeckIdiomModel") {
     commandLine("python3", "scripts/verify_language_deck_idiom_model.py")
 }
 
+tasks.register<Exec>("verifyLanguageReviewModes") {
+    group = "verification"
+    description = "Checks CMOV-08 language review prompts, evaluation and spaced-review bridge contracts."
+    commandLine("python3", "scripts/verify_language_review_modes.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."

@@ -361,6 +361,50 @@ object StudyFlowMigrations {
     }
 
 
+    val Migration8To9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS language_review_attempts (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyPlanId TEXT NOT NULL,
+                    expressionId TEXT NOT NULL,
+                    idiomCardId TEXT,
+                    direction TEXT NOT NULL,
+                    promptText TEXT NOT NULL,
+                    answerText TEXT NOT NULL,
+                    outcome TEXT NOT NULL,
+                    scorePercent INTEGER NOT NULL,
+                    reviewItemId TEXT,
+                    createdAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE,
+                    FOREIGN KEY(expressionId) REFERENCES language_expressions(id) ON DELETE CASCADE,
+                    FOREIGN KEY(idiomCardId) REFERENCES idiom_cards(id) ON DELETE SET NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_language_review_attempts_studyPlanId " +
+                    "ON language_review_attempts(studyPlanId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_language_review_attempts_expressionId " +
+                    "ON language_review_attempts(expressionId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_language_review_attempts_idiomCardId " +
+                    "ON language_review_attempts(idiomCardId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_language_review_attempts_outcome " +
+                    "ON language_review_attempts(outcome)",
+            )
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.install(db)
+        }
+    }
+
+
     val All = arrayOf(
         Migration1To2,
         Migration2To3,
@@ -369,6 +413,7 @@ object StudyFlowMigrations {
         Migration5To6,
         Migration6To7,
         Migration7To8,
+        Migration8To9,
     )
 }
 
