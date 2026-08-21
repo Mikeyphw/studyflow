@@ -30,7 +30,11 @@ class SupportBundlePrivacyScannerTest {
     @Test
     fun canonicalSanitizedTimelinePassesOutboundGate() {
         val event = DiagnosticEvent(
-            area = DiagnosticArea.SEARCH,
+            sessionId = "privacy-scan-test",
+            sequence = 1L,
+            timestampEpochMillis = 1_000L,
+            area = DiagnosticArea.SEARCH_RECOMMENDATIONS,
+            severity = DiagnosticSeverity.INFO,
             action = "query",
             outcome = DiagnosticOutcome.SUCCEEDED,
             safeDetails = mapOf("query" to "private study words"),

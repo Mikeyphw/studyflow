@@ -28,7 +28,8 @@ def main() -> None:
         "fun StudyFlowCodeBlock(",
         "object StudyFlowSyntaxHighlighter",
         "data class StudyFlowSyntaxTheme",
-        "LocalClipboardManager",
+        "LocalClipboard",
+        "setClipEntry",
         "SelectionContainer",
         "horizontalScroll",
         "lineNumberColumn",
@@ -58,7 +59,8 @@ def main() -> None:
         "core/designsystem/src/test/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowCodeBlockContractTest.kt",
         "code block exposes syntax highlighting and programming-language support",
         "StudyFlowSyntaxHighlighter",
-        "LocalClipboardManager",
+        "LocalClipboard",
+        "setClipEntry",
     )
     require_contains(
         "build.gradle.kts",

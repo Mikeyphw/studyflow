@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.core.designsystem
 
+import android.content.ClipData
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.SelectionContainer
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -24,10 +25,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -37,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikeyphw.studyflow.core.model.ProgrammingLanguage
+import kotlinx.coroutines.launch
 
 @Immutable
 data class StudyFlowSyntaxTheme(
@@ -69,7 +73,8 @@ fun StudyFlowCodeBlock(
     showLineNumbers: Boolean = true,
     copyEnabled: Boolean = true,
 ) {
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val coroutineScope = rememberCoroutineScope()
     val syntaxTheme = studyFlowSyntaxTheme()
     val highlighted = remember(code, language, syntaxTheme) {
         StudyFlowSyntaxHighlighter.highlight(
@@ -109,7 +114,15 @@ fun StudyFlowCodeBlock(
                     )
                 }
                 if (copyEnabled) {
-                    IconButton(onClick = { clipboard.setText(AnnotatedString(code)) }) {
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                clipboard.setClipEntry(
+                                    ClipEntry(ClipData.newPlainText("code", code)),
+                                )
+                            }
+                        },
+                    ) {
                         Icon(
                             imageVector = Icons.Outlined.ContentCopy,
                             contentDescription = "Copy code",

@@ -230,7 +230,7 @@ class RollingJsonlDiagnosticRecorderTest {
                 rootDirectory = root,
                 policy = DiagnosticSessionPolicy.debug("retained-one"),
             ).use { recorder ->
-                recorder.record(DiagnosticArea.SEARCH, "retained-marker", DiagnosticOutcome.SUCCEEDED)
+                recorder.record(DiagnosticArea.SEARCH_RECOMMENDATIONS, "retained-marker", DiagnosticOutcome.SUCCEEDED)
                 assertTrue(recorder.flush())
             }
             val bundle = File(root, "support.zip")
@@ -238,7 +238,7 @@ class RollingJsonlDiagnosticRecorderTest {
                 rootDirectory = root,
                 policy = DiagnosticSessionPolicy.debug("retained-two"),
             ).use { recorder ->
-                recorder.record(DiagnosticArea.SEARCH, "current-marker", DiagnosticOutcome.SUCCEEDED)
+                recorder.record(DiagnosticArea.SEARCH_RECOMMENDATIONS, "current-marker", DiagnosticOutcome.SUCCEEDED)
                 recorder.exportSupportBundle(bundle)
             }
 

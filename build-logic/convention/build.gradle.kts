@@ -14,6 +14,7 @@ dependencies {
     implementation("com.android.tools.build:gradle:9.3.1")
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10")
     implementation("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.4.10")
+    implementation("org.jetbrains.compose:compose-gradle-plugin:1.9.3")
     implementation("org.jetbrains.kotlin:kotlin-serialization:2.4.10")
     implementation("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.11")
 }
@@ -35,6 +36,10 @@ gradlePlugin {
         register("androidLibraryRoom") {
             id = "studyflow.android.library.room"
             implementationClass = "AndroidLibraryRoomConventionPlugin"
+        }
+        register("desktopApplication") {
+            id = "studyflow.desktop.application"
+            implementationClass = "DesktopApplicationConventionPlugin"
         }
         register("kotlinLibrary") {
             id = "studyflow.kotlin.library"

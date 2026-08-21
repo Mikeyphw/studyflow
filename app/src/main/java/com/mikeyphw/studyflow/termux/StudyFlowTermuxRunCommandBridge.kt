@@ -55,7 +55,7 @@ object StudyFlowTermuxRunCommandBridge {
             setClassName(TERMUX_PACKAGE, RUN_COMMAND_SERVICE)
             putExtra(EXTRA_COMMAND_PATH, termuxExecutablePath(invocation.executable))
             putExtra(EXTRA_ARGUMENTS, invocation.arguments.toTypedArray())
-            putExtra(EXTRA_WORKDIR, request.workspace.toTermuxHomeWorkdir(template.workingDirectory))
+            putExtra(EXTRA_WORKDIR, request.toTermuxHomeWorkdir(template.workingDirectory))
             putExtra(EXTRA_BACKGROUND, background)
             putExtra(EXTRA_SESSION_ACTION, "0")
             putExtra(EXTRA_COMMAND_LABEL, template.label)

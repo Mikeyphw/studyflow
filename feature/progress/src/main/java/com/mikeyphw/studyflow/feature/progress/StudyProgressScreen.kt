@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -93,14 +93,14 @@ fun StudyProgressScreen(
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
-        Column(
+        androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(horizontal = 20.dp),
         ) {
             StudyProgressHeader(plan = plan, onBack = onBack)
-            Column(
+            androidx.compose.foundation.layout.Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
@@ -234,7 +234,7 @@ private fun StudyProgressHeader(plan: StudyPlan, onBack: () -> Unit) {
                 contentDescription = stringResource(R.string.go_back),
             )
         }
-        Column(modifier = Modifier.weight(1f)) {
+        androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.progress_title),
                 style = MaterialTheme.typography.headlineSmall,
@@ -251,8 +251,8 @@ private fun StudyProgressHeader(plan: StudyPlan, onBack: () -> Unit) {
 }
 
 @Composable
-private fun StudyFlowInputPanel(content: @Composable Column.() -> Unit) {
-    Column(
+private fun StudyFlowInputPanel(content: @Composable ColumnScope.() -> Unit) {
+    androidx.compose.foundation.layout.Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
@@ -297,7 +297,7 @@ private fun GoalList(goals: List<StudyGoal>, progress: ManageStudyProgress, plan
     if (goals.isEmpty()) {
         StudyFlowEmptyLine(text = stringResource(R.string.no_goals))
     } else {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             goals.forEach { goal ->
                 val row = goal.asRowState()
                 StudyFlowRecordPanel {
@@ -331,7 +331,7 @@ private fun NoteList(notes: List<StudyNote>, progress: ManageStudyProgress, plan
     if (notes.isEmpty()) {
         StudyFlowEmptyLine(text = stringResource(R.string.no_notes))
     } else {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             notes.forEach { note ->
                 StudyFlowRecordPanel {
                     StudyFlowTimelineItem(
@@ -353,8 +353,8 @@ private fun NoteList(notes: List<StudyNote>, progress: ManageStudyProgress, plan
 }
 
 @Composable
-private fun StudyFlowRecordPanel(content: @Composable Column.() -> Unit) {
-    Column(
+private fun StudyFlowRecordPanel(content: @Composable ColumnScope.() -> Unit) {
+    androidx.compose.foundation.layout.Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))

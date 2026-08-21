@@ -49,8 +49,7 @@ fun Intent.toStudyFlowTermuxCommandResult(completedAtEpochMillis: Long): TermuxC
     val stderr = listOfNotNull(
         bundle.getString(StudyFlowTermuxResultReceiver.EXTRA_STDERR),
         bundle.getString(StudyFlowTermuxResultReceiver.EXTRA_ERRMSG)?.takeIf { it.isNotBlank() },
-    ).joinToString(separator = "
-")
+    ).joinToString(separator = "\n")
     return TermuxCommandResult(
         requestId = requestId,
         state = if (err == -1 && exitCode == 0) TermuxExecutionState.SUCCEEDED else TermuxExecutionState.FAILED,

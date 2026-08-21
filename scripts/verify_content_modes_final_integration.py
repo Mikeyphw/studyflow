@@ -59,7 +59,7 @@ require("Import heading title is blank" in imports, "Markdown preview must repor
 for marker in ["StudyContentMode.PROGRAMMING_COURSE", "StudyContentMode.LANGUAGE_DECK", "WEAK_CONCEPTS", "MISTAKE_PATTERNS"]:
     require(marker in analytics, f"Missing mode-aware analytics marker: {marker}")
 
-for marker in ["StudyFlowCodeBlock", "LocalClipboardManager", "SelectionContainer", "showLineNumbers"]:
+for marker in ["StudyFlowCodeBlock", "LocalClipboard", "setClipEntry", "SelectionContainer", "showLineNumbers"]:
     require(marker in code_block, f"Missing syntax code block marker: {marker}")
 
 print("CONTENT_MODES_FINAL_INTEGRATION_SEAL_R3_OK")
