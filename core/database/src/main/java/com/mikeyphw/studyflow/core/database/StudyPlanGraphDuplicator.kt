@@ -195,6 +195,40 @@ class StudyPlanGraphDuplicator(
                 "preferredSessionMinutes", "quietHoursStartMinute", "quietHoursEndMinute", "configurationJson",
                 remap = emptySet(),
             ),
+            table(
+                "programming_course_profiles",
+                "id", "studyPlanId", "primaryLanguage", "level", "repositoryUri", "workspaceRelativePath",
+                "buildSystem", "packageManager", "tagsJson", "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id"),
+            ),
+            table(
+                "code_snippets",
+                "id", "studyPlanId", "subjectId", "topicId", "title", "language", "code", "description",
+                "sourceUri", "tagsJson", "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id", "subjectId", "topicId"),
+            ),
+            table(
+                "coding_exercises",
+                "id", "studyPlanId", "subjectId", "topicId", "snippetId", "type", "title", "prompt",
+                "starterCode", "expectedOutput", "hintsJson", "solutionNotes", "language", "difficulty",
+                "status", "runCommandTemplate", "testCommandTemplate", "filesJson", "tagsJson",
+                "lastResultJson", "retryAtEpochMillis", "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id", "subjectId", "topicId", "snippetId"),
+            ),
+            table(
+                "mini_projects",
+                "id", "studyPlanId", "subjectId", "topicId", "title", "description", "status", "language",
+                "repositoryUri", "workspaceRelativePath", "checkpointsJson", "deliverablesJson",
+                "runCommandTemplate", "testCommandTemplate", "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id", "subjectId", "topicId"),
+            ),
+            table(
+                "termux_runtime_preferences",
+                "studyPlanId", "enabled", "workspaceRoot", "preferredLanguage", "defaultRunCommand",
+                "defaultTestCommand", "allowedCommandTemplatesJson", "captureStdout", "captureStderr",
+                "updatedAtEpochMillis",
+                remap = emptySet(),
+            ),
         )
 
         /**

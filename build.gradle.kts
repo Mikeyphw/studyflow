@@ -365,6 +365,14 @@ tasks.register<Exec>("verifyContentModeFoundation") {
 }
 
 
+
+
+tasks.register<Exec>("verifyProgrammingCourseModel") {
+    group = "verification"
+    description = "Checks programming-course data model, persistence, and Termux preference contracts."
+    commandLine("python3", "scripts/verify_programming_course_model.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."
@@ -613,6 +621,7 @@ tasks.register("checkAll") {
         "verifyPostPhase64FinalValidationRefresh",
         "verifyAndroidFocusShellFinalSeal",
         "verifyContentModeFoundation",
+        "verifyProgrammingCourseModel",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",

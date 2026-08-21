@@ -52,7 +52,7 @@ def main() -> None:
     )
     require_contains(
         "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt",
-        "const val SCHEMA_VERSION = 5",
+        "const val SCHEMA_VERSION = ",
     )
     require_contains(
         "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt",

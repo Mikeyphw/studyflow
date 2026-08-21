@@ -23,7 +23,7 @@ val StudyContentMode.capabilities: StudyContentModeCapabilities
         StudyContentMode.PROGRAMMING_COURSE -> StudyContentModeCapabilities(
             supportsCodeBlocks = true,
             supportsTermuxRuntime = false,
-            supportsCodingExercises = false,
+            supportsCodingExercises = true,
         )
         StudyContentMode.EXAM_PLAN,
         StudyContentMode.LANGUAGE_DECK,

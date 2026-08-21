@@ -146,3 +146,31 @@ value class PlanSnapshotId(val value: String) {
         require(value.isNotBlank()) { "PlanSnapshotId cannot be blank." }
     }
 }
+
+@JvmInline
+value class ProgrammingCourseProfileId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "ProgrammingCourseProfileId cannot be blank." }
+    }
+}
+
+@JvmInline
+value class CodeSnippetId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "CodeSnippetId cannot be blank." }
+    }
+}
+
+@JvmInline
+value class CodingExerciseId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "CodingExerciseId cannot be blank." }
+    }
+}
+
+@JvmInline
+value class MiniProjectId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "MiniProjectId cannot be blank." }
+    }
+}

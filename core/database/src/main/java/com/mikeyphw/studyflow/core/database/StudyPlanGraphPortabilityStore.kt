@@ -362,6 +362,22 @@ class StudyPlanGraphPortabilityStore(
             requireReference("study_notes", row, "materialId", "study_materials")
             requireTopicSubjectConsistency("study_notes", row)
         }
+        rows("code_snippets").forEach { row ->
+            requireReference("code_snippets", row, "subjectId", "subjects")
+            requireReference("code_snippets", row, "topicId", "topics")
+            requireTopicSubjectConsistency("code_snippets", row)
+        }
+        rows("coding_exercises").forEach { row ->
+            requireReference("coding_exercises", row, "subjectId", "subjects")
+            requireReference("coding_exercises", row, "topicId", "topics")
+            requireReference("coding_exercises", row, "snippetId", "code_snippets")
+            requireTopicSubjectConsistency("coding_exercises", row)
+        }
+        rows("mini_projects").forEach { row ->
+            requireReference("mini_projects", row, "subjectId", "subjects")
+            requireReference("mini_projects", row, "topicId", "topics")
+            requireTopicSubjectConsistency("mini_projects", row)
+        }
 
         val questionIds = idsByTable["questions"].orEmpty()
         listOf("study_tests", "mock_exams").forEach { tableName ->
@@ -620,10 +636,12 @@ class StudyPlanGraphPortabilityStore(
         )
         val StructureTables = setOf(
             "study_targets", "exam_stages", "subjects", "topics", "study_strategies",
-            "schedule_rules", "study_plan_settings",
+            "schedule_rules", "study_plan_settings", "programming_course_profiles",
+            "termux_runtime_preferences",
         )
         val PrivateStrippedTables = StructureTables + setOf(
             "study_materials", "video_resources", "annexes", "planned_activities", "study_goals",
+            "code_snippets", "coding_exercises", "mini_projects",
         )
         val FullTables = StudyPlanGraphDuplicator.PortabilityTableSpecs.mapTo(linkedSetOf()) { it.tableName }
         val PracticeConfigurationTables = setOf("study_tests", "mock_exams")
@@ -632,6 +650,8 @@ class StudyPlanGraphPortabilityStore(
             "exam_stages",
             "study_strategies",
             "study_plan_settings",
+            "programming_course_profiles",
+            "termux_runtime_preferences",
         )
     }
 }
