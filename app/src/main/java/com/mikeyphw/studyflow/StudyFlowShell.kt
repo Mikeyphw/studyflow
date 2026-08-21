@@ -12,6 +12,9 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -21,6 +24,7 @@ import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -107,66 +111,73 @@ internal fun StudyFlowShell(
         ExitTransition.None
     }
 
-    if (expanded) {
-        Row(modifier = modifier.fillMaxSize()) {
-            StudyFlowExpandedRail(destinations = destinations)
-            Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-                Box(modifier = Modifier.fillMaxSize().padding(bottom = sessionInset)) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+    ) {
+        val shellSafeArea = Modifier.windowInsetsPadding(WindowInsets.statusBars)
+        if (expanded) {
+            Row(modifier = shellSafeArea.fillMaxSize()) {
+                StudyFlowExpandedRail(destinations = destinations)
+                Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(bottom = sessionInset)) {
+                        content()
+                    }
+                    StudyFlowExpandedSessionBar(
+                        activeSession = activeSession,
+                        activeSessionElapsed = activeSessionElapsed,
+                        activeSessionStatusLabel = activeSessionStatusLabel,
+                        pauseLabel = pauseLabel,
+                        resumeLabel = resumeLabel,
+                        onOpenActiveSession = onOpenActiveSession,
+                        onToggleActiveSession = onToggleActiveSession,
+                        enter = sessionEnter,
+                        exit = sessionExit,
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
+            }
+        } else {
+            val bottomInset by animateDpAsState(
+                targetValue = if (activeSession != null) {
+                    StudyFlowPracticeTokens.SessionBarMinHeight + 20.dp
+                } else {
+                    StudyFlowShellDefaults.CompactDockHeight + 20.dp
+                },
+                animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.StandardMillis),
+                label = "studyflow-shell-bottom-inset",
+            )
+            Box(modifier = shellSafeArea.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize().padding(bottom = bottomInset)) {
                     content()
                 }
-                StudyFlowExpandedSessionBar(
-                    activeSession = activeSession,
-                    activeSessionElapsed = activeSessionElapsed,
-                    activeSessionStatusLabel = activeSessionStatusLabel,
-                    pauseLabel = pauseLabel,
-                    resumeLabel = resumeLabel,
-                    onOpenActiveSession = onOpenActiveSession,
-                    onToggleActiveSession = onToggleActiveSession,
-                    enter = sessionEnter,
-                    exit = sessionExit,
+                AnimatedContent(
+                    targetState = activeSession != null,
+                    transitionSpec = { sessionEnter togetherWith sessionExit },
                     modifier = Modifier.align(Alignment.BottomCenter),
-                )
-            }
-        }
-    } else {
-        val bottomInset by animateDpAsState(
-            targetValue = if (activeSession != null) {
-                StudyFlowPracticeTokens.SessionBarMinHeight + 28.dp
-            } else {
-                StudyFlowShellDefaults.CompactDockHeight + 28.dp
-            },
-            animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.StandardMillis),
-            label = "studyflow-shell-bottom-inset",
-        )
-        Box(modifier = modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize().padding(bottom = bottomInset)) {
-                content()
-            }
-            AnimatedContent(
-                targetState = activeSession != null,
-                transitionSpec = { sessionEnter togetherWith sessionExit },
-                modifier = Modifier.align(Alignment.BottomCenter),
-                label = "studyflow-session-dock-morph",
-            ) { sessionVisible ->
-                val session = activeSession
-                if (sessionVisible && session != null) {
-                    StudyFlowActiveSessionBar(
-                        title = session.notes.lineSequence().firstOrNull().orEmpty()
-                            .ifBlank { activeSessionStatusLabel },
-                        elapsed = activeSessionElapsed,
-                        statusLabel = activeSessionStatusLabel,
-                        toggleLabel = if (session.status == StudySessionStatus.PAUSED) {
-                            resumeLabel
-                        } else {
-                            pauseLabel
-                        },
-                        paused = session.status == StudySessionStatus.PAUSED,
-                        onOpen = onOpenActiveSession,
-                        onToggle = onToggleActiveSession,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    )
-                } else {
-                    StudyFlowCompactDock(destinations = destinations)
+                    label = "studyflow-session-dock-morph",
+                ) { sessionVisible ->
+                    val session = activeSession
+                    if (sessionVisible && session != null) {
+                        StudyFlowActiveSessionBar(
+                            title = session.notes.lineSequence().firstOrNull().orEmpty()
+                                .ifBlank { activeSessionStatusLabel },
+                            elapsed = activeSessionElapsed,
+                            statusLabel = activeSessionStatusLabel,
+                            toggleLabel = if (session.status == StudySessionStatus.PAUSED) {
+                                resumeLabel
+                            } else {
+                                pauseLabel
+                            },
+                            paused = session.status == StudySessionStatus.PAUSED,
+                            onOpen = onOpenActiveSession,
+                            onToggle = onToggleActiveSession,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        )
+                    } else {
+                        StudyFlowCompactDock(destinations = destinations)
+                    }
                 }
             }
         }

@@ -354,7 +354,7 @@ tasks.register<Exec>("verifyPostPhase64FinalValidationRefresh") {
 
 tasks.register<Exec>("verifyAndroidFocusShellFinalSeal") {
     group = "verification"
-    description = "Checks the Android UXOV-01 through UXOV-04-R2 Focus Shell source contracts."
+    description = "Checks the Android UXOV-01 through UXOV-05-R2 Focus Shell and polish source contracts."
     commandLine("python3", "scripts/verify_android_focus_shell_r2.py")
 }
 

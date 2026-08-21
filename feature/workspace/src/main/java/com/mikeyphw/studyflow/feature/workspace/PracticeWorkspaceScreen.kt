@@ -42,7 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowFloatingAction
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowActionOrb
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetric
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowPracticeHero
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowResponsivePair
@@ -180,6 +180,11 @@ fun PracticeWorkspaceScreen(
                 },
                 onSelected = onTabSelected,
             )
+            StudyFlowPracticeSnapshotHeader(
+                dueCount = queue.dueCount,
+                plannedCount = queue.upcomingCount,
+                questionCount = questions.size,
+            )
             Box(modifier = Modifier.weight(1f)) {
                 when (selectedTab) {
                     PracticeWorkspaceTab.REVIEWS -> ReviewsPane(
@@ -307,11 +312,37 @@ fun PracticeWorkspaceScreen(
             hostState = snackbar,
             modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        StudyFlowFloatingAction(
+        StudyFlowActionOrb(
             icon = Icons.Outlined.Quiz,
+            label = stringResource(R.string.practice_title),
             contentDescription = stringResource(R.string.quick_add),
             onClick = onQuickAdd,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        )
+    }
+}
+
+@Composable
+private fun StudyFlowPracticeSnapshotHeader(
+    dueCount: Int,
+    plannedCount: Int,
+    questionCount: Int,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.practice_queue_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Text(
+            text = stringResource(R.string.practice_queue_status, dueCount, plannedCount, questionCount),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

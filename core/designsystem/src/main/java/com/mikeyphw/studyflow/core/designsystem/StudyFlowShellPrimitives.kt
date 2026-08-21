@@ -48,7 +48,7 @@ data class StudyFlowShellDestination(
 )
 
 object StudyFlowShellDefaults {
-    val CompactDockHeight: Dp = 72.dp
+    val CompactDockHeight: Dp = 64.dp
     val CompactDockOuterPadding: Dp = 12.dp
     val ExpandedRailWidth: Dp = 80.dp
     val ItemCornerRadius: Dp = 14.dp
@@ -63,7 +63,7 @@ fun StudyFlowCompactDock(
     Surface(
         modifier = modifier
             .navigationBarsPadding()
-            .padding(horizontal = StudyFlowShellDefaults.CompactDockOuterPadding, vertical = 8.dp),
+            .padding(horizontal = StudyFlowShellDefaults.CompactDockOuterPadding, vertical = 6.dp),
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 4.dp,
@@ -73,7 +73,7 @@ fun StudyFlowCompactDock(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(StudyFlowShellDefaults.CompactDockHeight)
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -148,7 +148,7 @@ private fun StudyFlowShellItem(
         label = "studyflow-shell-item-background",
     )
     val verticalPadding by animateDpAsState(
-        targetValue = if (destination.selected) 8.dp else 6.dp,
+        targetValue = if (destination.selected) 6.dp else 4.dp,
         animationSpec = studyFlowAnimationSpec(motionEnabled),
         label = "studyflow-shell-item-padding",
     )
@@ -186,7 +186,7 @@ private fun StudyFlowShellItem(
         ) {
             destination.icon()
         }
-        Spacer(modifier = Modifier.height(if (compact) 3.dp else 4.dp))
+        Spacer(modifier = Modifier.height(if (compact) 2.dp else 4.dp))
         Text(
             text = destination.label,
             style = MaterialTheme.typography.labelSmall,

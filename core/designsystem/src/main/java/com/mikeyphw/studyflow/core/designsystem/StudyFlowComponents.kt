@@ -131,6 +131,7 @@ private fun MessagePane(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(8.dp))

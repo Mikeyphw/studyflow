@@ -615,4 +615,6 @@
     <string name="study_sprint_change_practice">Reequilibre um bloco existente entre reparo de conceito e questões.</string>
     <string name="study_sprint_change_schedule">Recupere um bloco agendado existente sem criar um plano paralelo.</string>
     <string name="study_sprint_change_steady">Somente prévia; o bloco existente não precisa de alteração segura.</string>
+    <string name="practice_queue_title">Fila pronta</string>
+    <string name="practice_queue_status">%1$d vencidas • %2$d planejadas • %3$d questões</string>
 </resources>

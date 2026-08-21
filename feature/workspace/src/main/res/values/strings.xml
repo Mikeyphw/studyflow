@@ -102,6 +102,8 @@
         <item quantity="one">%1$d item is ready for spaced review.</item>
         <item quantity="other">%1$d items are ready for spaced review.</item>
     </plurals>
+    <string name="practice_queue_title">Ready queue</string>
+    <string name="practice_queue_status">%1$d due • %2$d planned • %3$d questions</string>
     <string name="practice_empty_reviews">No reviews are due. Future reviews stay queued automatically.</string>
     <string name="practice_empty_questions">No questions yet. Add questions or import a deck.</string>
     <string name="practice_empty_errors">The wrong-answer notebook is clear.</string>

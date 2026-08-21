@@ -33,7 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
-import com.mikeyphw.studyflow.core.designsystem.StudyFlowFloatingAction
+import com.mikeyphw.studyflow.core.designsystem.StudyFlowActionOrb
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowFocusActionSurface
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricStrip
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionTitle
@@ -363,11 +363,12 @@ fun TodayWorkspaceScreen(
                 }
             }
         }
-        StudyFlowFloatingAction(
+        StudyFlowActionOrb(
             icon = Icons.Outlined.PlayCircle,
+            label = stringResource(R.string.start_focus),
             contentDescription = stringResource(R.string.quick_add),
             onClick = onQuickAdd,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         )
         SnackbarHost(
             hostState = snackbar,

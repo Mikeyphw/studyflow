@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed source contract for the StudyFlow Android Focus Shell UXOV-01..04-R2 series."""
+"""Fail-closed source contract for the StudyFlow Android Focus Shell UXOV-01..05 series."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +58,9 @@ restoration_test = read(
 )
 theme = read(
     "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowTheme.kt"
+)
+standalone_progress = read(
+    "feature/progress/src/main/java/com/mikeyphw/studyflow/feature/progress/StudyProgressScreen.kt"
 )
 
 # UXOV-01: custom root shell and canonical workspace contract.
@@ -133,6 +136,56 @@ require("studyflow-plan-switcher-expansion" in workspace_components, "plan-switc
 require("dynamicColorEnabled: Boolean = false" in preferences, "dynamic color is still default-on")
 require("?: false" in preferences_repo, "stored-preference fallback still defaults dynamic color on")
 require("dynamicColorEnabled && Build.VERSION.SDK_INT" in theme, "dynamic color is no longer optional")
+for token in (
+    "onBackground = Color(0xFFE7EAF3)",
+    "onSurface = Color(0xFFE7EAF3)",
+    "onSurfaceVariant = Color(0xFFC5CAD7)",
+):
+    require(token in theme, f"dark theme contrast token missing: {token}")
+
+# UXOV-05: screenshot polish — edge-to-edge content stays below the status bar,
+# dock density is phone-friendly, and floating actions use the StudyFlow action orb.
+require("WindowInsets.statusBars" in shell, "shell does not consume the status-bar inset")
+require("windowInsetsPadding(WindowInsets.statusBars)" in shell, "shell is missing status-bar padding")
+require("Surface(" in shell and "contentColor = MaterialTheme.colorScheme.onBackground" in shell,
+        "shell root does not provide a dark-mode content color")
+require("val CompactDockHeight: Dp = 64.dp" in shell_primitives, "compact dock must be reduced to 64dp")
+focus_primitives = read(
+    "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowFocusWorkspacePrimitives.kt"
+)
+require("fun StudyFlowActionOrb(" in focus_primitives, "StudyFlow action orb is missing")
+require("secondaryContainer" in focus_primitives and "onSecondaryContainer" in focus_primitives,
+        "StudyFlow action orb must use semantic contrast colors")
+require("StudyFlowActionOrb(" in read(
+    "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt"
+), "Today still does not use the StudyFlow action orb")
+practice = read("feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PracticeWorkspaceScreen.kt")
+require("StudyFlowActionOrb(" in practice, "Practice still does not use the StudyFlow action orb")
+require("StudyFlowPracticeSnapshotHeader(" in practice, "Practice identity snapshot is missing")
+
+require("DarkShellPolishContractTest" in read(
+    "feature/workspace/src/test/java/com/mikeyphw/studyflow/feature/workspace/DarkShellPolishContractTest.kt"
+), "dark shell polish contract test is missing")
+require("StudyProgressShellPolishContractTest" in read(
+    "feature/progress/src/test/java/com/mikeyphw/studyflow/feature/progress/StudyProgressShellPolishContractTest.kt"
+), "Goals and notes shell polish contract test is missing")
+
+# UXOV-05-R2: the separate Goals and notes route from the screenshots also
+# uses the shell polish language instead of the older Material card scaffold.
+absent(
+    standalone_progress,
+    ("Scaffold(", "TopAppBar(", "FilterChip(", "StudyFlowSectionCard("),
+    "StudyProgressScreen",
+)
+for token in (
+    "WindowInsets.safeDrawing",
+    "contentColor = MaterialTheme.colorScheme.onBackground",
+    "StudyFlowMetricStrip(",
+    "StudyFlowTabStrip(",
+    "StudyFlowTimelineItem(",
+    "StudyFlowActionOrb(",
+):
+    require(token in standalone_progress, f"Goals and notes polish missing {token}")
 
 # State restoration and accessibility coverage remain present after the redesign.
 require("StateRestorationTester" in restoration_test, "workspace state-restoration instrumentation is missing")
@@ -154,7 +207,7 @@ for relative in (
     absent(test_source, ("Files.readString",), relative)
     require("readText()" in test_source, f"{relative} does not use the compatible File.readText reader")
 
-print("ANDROID_FOCUS_SHELL_R2_VALIDATION_OK")
+print("ANDROID_FOCUS_SHELL_UXOV05_VALIDATION_OK")
 print(
     "custom shell, branded default, motion/reduced-motion, predictive back, "
     "adaptive Progress, and restoration contracts verified"

@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.dp
 
 object StudyFlowWorkspaceTokens {
     val ScreenPadding = 20.dp
-    val SectionSpacing = 18.dp
+    val SectionSpacing = 14.dp
     val CardRadius = 24.dp
     val CompactCardRadius = 18.dp
     val MinimumTouchTarget = 48.dp
@@ -79,7 +79,7 @@ fun StudyFlowWorkspaceHeader(
         modifier = modifier
             .fillMaxWidth()
             .semantics { isTraversalGroup = true }
-            .padding(horizontal = StudyFlowWorkspaceTokens.ScreenPadding, vertical = 14.dp),
+            .padding(horizontal = StudyFlowWorkspaceTokens.ScreenPadding, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
@@ -382,7 +382,7 @@ fun StudyFlowInlineDivider(modifier: Modifier = Modifier) {
 
 fun workspaceContentPadding(bottom: androidx.compose.ui.unit.Dp = 96.dp): PaddingValues = PaddingValues(
     start = StudyFlowWorkspaceTokens.ScreenPadding,
-    top = 8.dp,
+    top = 4.dp,
     end = StudyFlowWorkspaceTokens.ScreenPadding,
     bottom = bottom,
 )

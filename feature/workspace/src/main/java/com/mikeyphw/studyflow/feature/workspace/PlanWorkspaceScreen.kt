@@ -255,8 +255,8 @@ private fun PlanOverviewPane(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = workspaceContentPadding(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = workspaceContentPadding(bottom = 84.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         item(key = "section:progress", contentType = "section") {
             StudyFlowSectionTitle(title = stringResource(R.string.plan_progress))
