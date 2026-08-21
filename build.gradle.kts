@@ -411,6 +411,12 @@ tasks.register<Exec>("verifyLanguageReviewModes") {
     commandLine("python3", "scripts/verify_language_review_modes.py")
 }
 
+tasks.register<Exec>("verifyImportTemplates") {
+    group = "verification"
+    description = "Checks CMOV-09 programming-course and language idiom import template contracts."
+    commandLine("python3", "scripts/verify_import_templates.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."

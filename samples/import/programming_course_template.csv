@@ -1,0 +1,3 @@
+type,module,topic,title,prompt,starter_code,expected_output,hint,solution,difficulty,tags,language,run_command,test_command
+exercise,Kotlin basics,Null safety,Safe length,"Write a function that returns a nullable string length.","fun safeLength(value: String?): Int = TODO()",3,"Use ?. and ?: operators.","fun safeLength(value: String?): Int = value?.length ?: 0",2,"kotlin|null-safety",kotlin,kotlinc Main.kt,kotlin MainKt
+project,CLI practice,Arguments,Todo CLI,"Build a tiny todo command parser.",,,"Start with add/list commands.",,3,"project|cli",kotlin,./gradlew run,./gradlew test
