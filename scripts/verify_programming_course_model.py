@@ -28,7 +28,7 @@ def main() -> None:
         "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudyContentMode.kt",
         "StudyContentMode.PROGRAMMING_COURSE",
         "supportsCodeBlocks = true",
-        "supportsTermuxRuntime = false",
+        "supportsTermuxRuntime = true",
         "supportsCodingExercises = true",
     )
     require(mode.count("supportsCodingExercises = true") == 1, "only programming mode should enable coding exercises")
@@ -73,7 +73,6 @@ def main() -> None:
     )
     require_contains(
         "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt",
-        "const val SCHEMA_VERSION = 6",
         "ProgrammingCourseProfileEntity::class",
         "CodeSnippetEntity::class",
         "CodingExerciseEntity::class",
@@ -106,7 +105,7 @@ def main() -> None:
     )
 
     schema_path = ROOT / "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/6.json"
-    require(schema_path.is_file(), "schema 6 must be checked in")
+    require(schema_path.is_file(), "schema 6 must remain checked in for migration history")
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
     tables = {entity["tableName"] for entity in schema["database"]["entities"]}
     for table in (

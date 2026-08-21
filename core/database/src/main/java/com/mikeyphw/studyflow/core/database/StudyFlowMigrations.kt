@@ -189,6 +189,79 @@ object StudyFlowMigrations {
     }
 
 
-    val All = arrayOf(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6)
+    val Migration6To7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS termux_command_requests (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyPlanId TEXT NOT NULL,
+                    exerciseId TEXT,
+                    workspaceRoot TEXT NOT NULL,
+                    courseSlug TEXT NOT NULL,
+                    workspaceRelativePath TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    commandTemplateId TEXT,
+                    commandTemplateLabel TEXT,
+                    commandTemplateLanguage TEXT,
+                    commandLine TEXT,
+                    workingDirectory TEXT,
+                    state TEXT NOT NULL,
+                    createdAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE,
+                    FOREIGN KEY(exerciseId) REFERENCES coding_exercises(id) ON DELETE SET NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_termux_command_requests_studyPlanId " +
+                    "ON termux_command_requests(studyPlanId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_termux_command_requests_exerciseId " +
+                    "ON termux_command_requests(exerciseId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_termux_command_requests_state " +
+                    "ON termux_command_requests(state)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS termux_command_results (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    requestId TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    exitCode INTEGER,
+                    stdoutText TEXT NOT NULL,
+                    stderrText TEXT NOT NULL,
+                    resultJson TEXT,
+                    durationMillis INTEGER,
+                    completedAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(requestId) REFERENCES termux_command_requests(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_termux_command_results_requestId " +
+                    "ON termux_command_results(requestId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_termux_command_results_state " +
+                    "ON termux_command_results(state)",
+            )
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.install(db)
+        }
+    }
+
+
+    val All = arrayOf(
+        Migration1To2,
+        Migration2To3,
+        Migration3To4,
+        Migration4To5,
+        Migration5To6,
+        Migration6To7,
+    )
 }
 

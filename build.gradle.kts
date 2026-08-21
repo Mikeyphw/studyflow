@@ -393,6 +393,12 @@ tasks.register<Exec>("verifyProgrammingCourseUi") {
     commandLine("python3", "scripts/verify_programming_course_ui.py")
 }
 
+tasks.register<Exec>("verifyCodingExerciseTermuxExecution") {
+    group = "verification"
+    description = "Checks CMOV-06 coding-exercise Termux execution planning and result contracts."
+    commandLine("python3", "scripts/verify_coding_exercise_termux_execution.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."

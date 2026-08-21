@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowCodeBlock
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowFocusActionSurface
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricStrip
@@ -57,6 +58,15 @@ internal fun ProgrammingCourseWorkspacePanel(
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
+        )
+        StudyFlowFocusActionSurface(
+            supportingLabel = stringResource(R.string.programming_termux_execution_title),
+            title = stringResource(R.string.programming_termux_execution_title),
+            message = stringResource(R.string.programming_termux_execution_message),
+            actionLabel = stringResource(R.string.open_programming_practice),
+            onAction = onOpenPractice,
+            secondaryLabel = stringResource(R.string.programming_termux_result_summary),
+            onSecondaryAction = onOpenPlan,
         )
     }
 }

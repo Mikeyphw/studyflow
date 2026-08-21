@@ -8,6 +8,8 @@ import com.mikeyphw.studyflow.core.database.entity.CodingExerciseEntity
 import com.mikeyphw.studyflow.core.database.entity.MiniProjectEntity
 import com.mikeyphw.studyflow.core.database.entity.ProgrammingCourseProfileEntity
 import com.mikeyphw.studyflow.core.database.entity.TermuxRuntimePreferenceEntity
+import com.mikeyphw.studyflow.core.database.entity.TermuxCommandRequestEntity
+import com.mikeyphw.studyflow.core.database.entity.TermuxCommandResultEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -47,6 +49,25 @@ interface ProgrammingCourseDao {
 
     @Query("SELECT * FROM termux_runtime_preferences WHERE studyPlanId = :planId LIMIT 1")
     suspend fun findTermuxRuntimePreference(planId: String): TermuxRuntimePreferenceEntity?
+
+
+    @Upsert
+    suspend fun upsertTermuxCommandRequest(request: TermuxCommandRequestEntity)
+
+    @Upsert
+    suspend fun upsertTermuxCommandResult(result: TermuxCommandResultEntity)
+
+    @Query("SELECT * FROM termux_command_requests WHERE studyPlanId = :planId ORDER BY createdAtEpochMillis DESC")
+    fun observeTermuxCommandRequests(planId: String): Flow<List<TermuxCommandRequestEntity>>
+
+    @Query("SELECT * FROM termux_command_requests WHERE exerciseId = :exerciseId ORDER BY createdAtEpochMillis DESC")
+    fun observeTermuxCommandRequestsForExercise(exerciseId: String): Flow<List<TermuxCommandRequestEntity>>
+
+    @Query("SELECT * FROM termux_command_results WHERE requestId = :requestId LIMIT 1")
+    fun observeTermuxCommandResult(requestId: String): Flow<TermuxCommandResultEntity?>
+
+    @Query("SELECT * FROM termux_command_results WHERE requestId = :requestId LIMIT 1")
+    suspend fun findTermuxCommandResult(requestId: String): TermuxCommandResultEntity?
 
     @Query("DELETE FROM code_snippets WHERE studyPlanId = :planId AND id = :snippetId")
     suspend fun deleteCodeSnippet(planId: String, snippetId: String): Int

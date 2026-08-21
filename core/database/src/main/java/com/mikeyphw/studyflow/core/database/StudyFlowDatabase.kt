@@ -22,6 +22,8 @@ import com.mikeyphw.studyflow.core.database.entity.CodingExerciseEntity
 import com.mikeyphw.studyflow.core.database.entity.MiniProjectEntity
 import com.mikeyphw.studyflow.core.database.entity.ProgrammingCourseProfileEntity
 import com.mikeyphw.studyflow.core.database.entity.TermuxRuntimePreferenceEntity
+import com.mikeyphw.studyflow.core.database.entity.TermuxCommandRequestEntity
+import com.mikeyphw.studyflow.core.database.entity.TermuxCommandResultEntity
 import com.mikeyphw.studyflow.core.database.entity.DatabaseMetadataEntity
 import com.mikeyphw.studyflow.core.database.entity.ErrorEntryEntity
 import com.mikeyphw.studyflow.core.database.entity.ExamStageEntity
@@ -74,6 +76,8 @@ import com.mikeyphw.studyflow.core.database.entity.VideoResourceEntity
         CodingExerciseEntity::class,
         MiniProjectEntity::class,
         TermuxRuntimePreferenceEntity::class,
+        TermuxCommandRequestEntity::class,
+        TermuxCommandResultEntity::class,
         DatabaseMetadataEntity::class,
     ],
     version = StudyFlowDatabase.SCHEMA_VERSION,
@@ -105,7 +109,7 @@ abstract class StudyFlowDatabase : RoomDatabase() {
     abstract fun programmingCourseDao(): ProgrammingCourseDao
 
     companion object {
-        const val SCHEMA_VERSION = 6
+        const val SCHEMA_VERSION = 7
         const val DATABASE_NAME = "studyflow.db"
 
         fun create(context: Context): StudyFlowDatabase =

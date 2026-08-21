@@ -192,3 +192,62 @@ data class TermuxRuntimePreferenceEntity(
     val captureStderr: Boolean,
     val updatedAtEpochMillis: Long,
 )
+
+@Entity(
+    tableName = "termux_command_requests",
+    foreignKeys = [
+        ForeignKey(
+            entity = StudyPlanEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["studyPlanId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = CodingExerciseEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["exerciseId"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
+    indices = [Index("studyPlanId"), Index("exerciseId"), Index("state")],
+)
+data class TermuxCommandRequestEntity(
+    @PrimaryKey val id: String,
+    val studyPlanId: String,
+    val exerciseId: String?,
+    val workspaceRoot: String,
+    val courseSlug: String,
+    val workspaceRelativePath: String,
+    val action: String,
+    val commandTemplateId: String?,
+    val commandTemplateLabel: String?,
+    val commandTemplateLanguage: String?,
+    val commandLine: String?,
+    val workingDirectory: String?,
+    val state: String,
+    val createdAtEpochMillis: Long,
+)
+
+@Entity(
+    tableName = "termux_command_results",
+    foreignKeys = [
+        ForeignKey(
+            entity = TermuxCommandRequestEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["requestId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("requestId", unique = true), Index("state")],
+)
+data class TermuxCommandResultEntity(
+    @PrimaryKey val id: String,
+    val requestId: String,
+    val state: String,
+    val exitCode: Int?,
+    val stdoutText: String,
+    val stderrText: String,
+    val resultJson: String?,
+    val durationMillis: Long?,
+    val completedAtEpochMillis: Long,
+)
