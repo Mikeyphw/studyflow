@@ -256,4 +256,12 @@
     <string name="confirm_delete">Delete</string>
     <string name="onboarding_create_failed">Could not create the sample Study Plan. Try again.</string>
     <string name="export_password_reenter_after_recreation">Re-enter the export password and retry. The password is intentionally not retained after recreation.</string>
+    <string name="content_mode">What are you studying?</string>
+    <string name="content_mode_support_message">StudyFlow keeps the same planner but adapts labels and future tools to this mode.</string>
+    <string name="content_mode_exam_plan">Exam plan</string>
+    <string name="content_mode_programming_course">Programming course</string>
+    <string name="content_mode_language_deck">Language deck</string>
+    <string name="content_mode_reading_study">Reading study</string>
+    <string name="content_mode_general_skill">General skill</string>
+    <string name="content_mode_programming_status">Programming mode is available now. Code blocks, Termux runtime and coding exercises arrive in later overlays.</string>
 </resources>

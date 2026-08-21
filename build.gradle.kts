@@ -358,6 +358,12 @@ tasks.register<Exec>("verifyAndroidFocusShellFinalSeal") {
     commandLine("python3", "scripts/verify_android_focus_shell_r2.py")
 }
 
+tasks.register<Exec>("verifyContentModeFoundation") {
+    group = "verification"
+    description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."
+    commandLine("python3", "scripts/verify_content_mode_foundation.py")
+}
+
 
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
@@ -606,6 +612,7 @@ tasks.register("checkAll") {
         "verifyPhase63_64ExamRunbookSprintSeal",
         "verifyPostPhase64FinalValidationRefresh",
         "verifyAndroidFocusShellFinalSeal",
+        "verifyContentModeFoundation",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",

@@ -266,4 +266,12 @@
     <string name="confirm_delete">Excluir</string>
     <string name="onboarding_create_failed">Não foi possível criar o plano de estudo de exemplo. Tente novamente.</string>
     <string name="export_password_reenter_after_recreation">Digite novamente a senha de exportação e tente de novo. A senha não é mantida após a recriação por segurança.</string>
+    <string name="content_mode">O que você está estudando?</string>
+    <string name="content_mode_support_message">O StudyFlow mantém o mesmo planejador, mas adapta rótulos e ferramentas futuras para este modo.</string>
+    <string name="content_mode_exam_plan">Plano de prova</string>
+    <string name="content_mode_programming_course">Curso de programação</string>
+    <string name="content_mode_language_deck">Baralho de idioma</string>
+    <string name="content_mode_reading_study">Estudo de leitura</string>
+    <string name="content_mode_general_skill">Habilidade geral</string>
+    <string name="content_mode_programming_status">O modo programação já está disponível. Blocos de código, Termux e exercícios chegam em overlays futuros.</string>
 </resources>

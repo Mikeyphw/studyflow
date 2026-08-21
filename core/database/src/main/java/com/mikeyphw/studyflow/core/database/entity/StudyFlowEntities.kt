@@ -22,6 +22,7 @@ data class StudyPlanEntity(
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
     val trashedAtEpochMillis: Long?,
+    val contentMode: String = "EXAM_PLAN",
 )
 
 @Entity(

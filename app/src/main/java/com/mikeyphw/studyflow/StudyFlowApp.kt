@@ -950,6 +950,7 @@ private fun PlanEditorForm.toNewStudyPlan(): StudyPlan = StudyPlan(
     description = description,
     type = studyType,
     status = StudyPlanStatus.ACTIVE,
+    contentMode = contentMode,
     examDateIso = examDateIso.ifBlank { null },
     weeklyGoalHours = weeklyGoalHours,
     progressPercent = 0,
@@ -962,6 +963,7 @@ private fun StudyPlan.withEditorForm(form: PlanEditorForm): StudyPlan = copy(
     name = form.name,
     description = form.description,
     type = form.studyType,
+    contentMode = form.contentMode,
     examDateIso = form.examDateIso.ifBlank { null },
     weeklyGoalHours = form.weeklyGoalHours,
 )

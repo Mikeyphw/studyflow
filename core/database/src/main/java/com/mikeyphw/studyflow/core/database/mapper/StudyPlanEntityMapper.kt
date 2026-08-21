@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudyType
+import com.mikeyphw.studyflow.core.model.contentModeOrDefault
 
 fun StudyPlanEntity.asExternalModel(): StudyPlan = decodeModel("StudyPlanEntity") {
     StudyPlan(
@@ -22,6 +23,7 @@ fun StudyPlanEntity.asExternalModel(): StudyPlan = decodeModel("StudyPlanEntity"
         createdAtEpochMillis = createdAtEpochMillis,
         updatedAtEpochMillis = updatedAtEpochMillis,
         trashedAtEpochMillis = trashedAtEpochMillis,
+        contentMode = contentModeOrDefault(contentMode),
     )
 }
 
@@ -43,5 +45,6 @@ fun StudyPlan.asEntity(nowEpochMillis: Long): StudyPlanEntity {
         createdAtEpochMillis = normalizedCreatedAt,
         updatedAtEpochMillis = normalizedUpdatedAt,
         trashedAtEpochMillis = trashedAtEpochMillis,
+        contentMode = contentMode.name,
     )
 }

@@ -41,5 +41,16 @@ object StudyFlowMigrations {
         }
     }
 
-    val All = arrayOf(Migration1To2, Migration2To3, Migration3To4)
+    val Migration4To5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE study_plans ADD COLUMN contentMode TEXT NOT NULL DEFAULT 'EXAM_PLAN'",
+            )
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.install(db)
+        }
+    }
+
+    val All = arrayOf(Migration1To2, Migration2To3, Migration3To4, Migration4To5)
 }
+

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
+import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
@@ -219,6 +220,7 @@ private fun StudyPlanCard(
                             text = stringResource(statusLabel(plan.status)),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        StudyFlowStatusPill(text = stringResource(contentModeCardLabel(plan.contentMode)))
                         if (isDefault) {
                             StudyFlowStatusPill(
                                 text = stringResource(R.string.default_plan),
@@ -427,6 +429,15 @@ private fun actionLabel(action: StudyPlanAction): Int = when (action) {
     StudyPlanAction.MOVE_TO_TRASH -> R.string.move_to_trash
     StudyPlanAction.DELETE_PERMANENTLY -> R.string.delete_permanently
     StudyPlanAction.PORTABILITY -> R.string.portability_title
+}
+
+@StringRes
+internal fun contentModeCardLabel(mode: StudyContentMode): Int = when (mode) {
+    StudyContentMode.EXAM_PLAN -> R.string.content_mode_exam_plan
+    StudyContentMode.PROGRAMMING_COURSE -> R.string.content_mode_programming_course
+    StudyContentMode.LANGUAGE_DECK -> R.string.content_mode_language_deck
+    StudyContentMode.READING_STUDY -> R.string.content_mode_reading_study
+    StudyContentMode.GENERAL_SKILL -> R.string.content_mode_general_skill
 }
 
 @StringRes

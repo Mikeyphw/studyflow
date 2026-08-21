@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.feature.plans
 
+import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
@@ -17,6 +18,7 @@ class CreatePlanFormTest {
             name = "TRT 2027",
             description = "Preparation",
             studyType = StudyType.PUBLIC_EXAMINATION,
+            contentMode = StudyContentMode.PROGRAMMING_COURSE,
             examDateIso = "2027-10-06",
             weeklyGoalHours = 20,
             preferredSessionMinutes = 45,
@@ -26,6 +28,7 @@ class CreatePlanFormTest {
         )
 
         assertEquals(StudyType.PUBLIC_EXAMINATION, form.studyType)
+        assertEquals(StudyContentMode.PROGRAMMING_COURSE, form.contentMode)
     }
 
     @Test

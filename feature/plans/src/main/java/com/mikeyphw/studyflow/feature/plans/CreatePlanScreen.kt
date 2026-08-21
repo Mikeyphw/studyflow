@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudyType
@@ -55,6 +56,7 @@ data class PlanEditorForm(
     val name: String,
     val description: String,
     val studyType: StudyType,
+    val contentMode: StudyContentMode,
     val examDateIso: String,
     val weeklyGoalHours: Int,
     val preferredSessionMinutes: Int,
@@ -91,6 +93,9 @@ fun PlanEditorScreen(
     var studyTypeName by rememberSaveable(initialPlan?.id?.value) {
         mutableStateOf((initialPlan?.type ?: StudyType.PUBLIC_EXAMINATION).name)
     }
+    var contentModeName by rememberSaveable(initialPlan?.id?.value) {
+        mutableStateOf((initialPlan?.contentMode ?: StudyContentMode.EXAM_PLAN).name)
+    }
     var adaptivePlanning by rememberSaveable(initialPlan?.id?.value) {
         mutableStateOf(initialSettings?.adaptivePlanningEnabled ?: true)
     }
@@ -102,6 +107,10 @@ fun PlanEditorScreen(
     }
 
     val selectedStudyType = enumValueOrDefault<StudyType>(studyTypeName, StudyType.UNIVERSITY)
+    val selectedContentMode = enumValueOrDefault<StudyContentMode>(
+        contentModeName,
+        StudyContentMode.EXAM_PLAN,
+    )
     val weeklyGoalValue = weeklyGoal.toIntOrNull()
     val preferredSessionValue = preferredSession.toIntOrNull()
     val dateValid = isValidIsoDateOrBlank(examDate)
@@ -162,6 +171,8 @@ fun PlanEditorScreen(
                     onDescriptionChanged = { description = it },
                     selectedStudyType = selectedStudyType,
                     onStudyTypeChanged = { studyTypeName = it.name },
+                    selectedContentMode = selectedContentMode,
+                    onContentModeChanged = { contentModeName = it.name },
                 )
                 1 -> TargetStep(
                     examDate = examDate,
@@ -213,6 +224,7 @@ fun PlanEditorScreen(
                                     name = name.trim(),
                                     description = description.trim(),
                                     studyType = selectedStudyType,
+                                    contentMode = selectedContentMode,
                                     examDateIso = examDate.trim(),
                                     weeklyGoalHours = requireNotNull(weeklyGoalValue),
                                     preferredSessionMinutes = requireNotNull(preferredSessionValue),
@@ -245,6 +257,8 @@ private fun ObjectiveStep(
     onDescriptionChanged: (String) -> Unit,
     selectedStudyType: StudyType,
     onStudyTypeChanged: (StudyType) -> Unit,
+    selectedContentMode: StudyContentMode,
+    onContentModeChanged: (StudyContentMode) -> Unit,
 ) {
     Text(text = stringResource(R.string.wizard_objective_title), style = MaterialTheme.typography.headlineSmall)
     Text(
@@ -265,6 +279,27 @@ private fun ObjectiveStep(
         label = { Text(text = stringResource(R.string.plan_description)) },
         minLines = 3,
     )
+    Text(text = stringResource(R.string.content_mode), style = MaterialTheme.typography.titleMedium)
+    Text(
+        text = stringResource(R.string.content_mode_support_message),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        StudyContentMode.entries.forEach { mode ->
+            FilterChip(
+                selected = selectedContentMode == mode,
+                onClick = { onContentModeChanged(mode) },
+                label = { Text(text = stringResource(contentModeLabel(mode))) },
+            )
+        }
+    }
+    if (selectedContentMode == StudyContentMode.PROGRAMMING_COURSE) {
+        Text(
+            text = stringResource(R.string.content_mode_programming_status),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
     Text(text = stringResource(R.string.study_type), style = MaterialTheme.typography.titleMedium)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         StudyType.entries.forEach { studyType ->
@@ -393,6 +428,15 @@ internal fun isValidIsoDateOrBlank(value: String): Boolean {
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply { isLenient = false }
     val position = ParsePosition(0)
     return formatter.parse(value, position) != null && position.index == value.length
+}
+
+@StringRes
+internal fun contentModeLabel(mode: StudyContentMode): Int = when (mode) {
+    StudyContentMode.EXAM_PLAN -> R.string.content_mode_exam_plan
+    StudyContentMode.PROGRAMMING_COURSE -> R.string.content_mode_programming_course
+    StudyContentMode.LANGUAGE_DECK -> R.string.content_mode_language_deck
+    StudyContentMode.READING_STUDY -> R.string.content_mode_reading_study
+    StudyContentMode.GENERAL_SKILL -> R.string.content_mode_general_skill
 }
 
 @StringRes

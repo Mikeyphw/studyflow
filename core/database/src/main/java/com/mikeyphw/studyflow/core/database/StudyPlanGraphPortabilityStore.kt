@@ -397,6 +397,7 @@ class StudyPlanGraphPortabilityStore(
         val legacyExpected = when (spec.tableName) {
             "subjects", "topics" -> expected - "examStageId"
             "study_sessions" -> expected - "targetDurationMinutes"
+            "study_plans" -> expected - "contentMode"
             else -> emptySet()
         }
         require(actual == expected || actual == legacyExpected) {
@@ -531,6 +532,9 @@ class StudyPlanGraphPortabilityStore(
             if (spec.tableName == "study_sessions" && "targetDurationMinutes" !in this) {
                 put("targetDurationMinutes", PortableValue(PortableValueType.NULL))
             }
+            if (spec.tableName == "study_plans" && "contentMode" !in this) {
+                put("contentMode", text("EXAM_PLAN"))
+            }
         }
         require(normalizedValues.keys == allowed) {
             "Columns for ${spec.tableName} do not match the supported schema."
@@ -607,9 +611,10 @@ class StudyPlanGraphPortabilityStore(
         val RootSpec = StudyPlanGraphDuplicator.TableSpec(
             tableName = "study_plans",
             columns = listOf(
-                "id", "name", "description", "type", "status", "examDateIso", "weeklyGoalHours",
-                "progressPercent", "studiedMinutesThisWeek", "questionsAnswered", "averageAccuracyPercent",
-                "createdAtEpochMillis", "updatedAtEpochMillis", "trashedAtEpochMillis",
+                "id", "name", "description", "type", "contentMode", "status", "examDateIso",
+                "weeklyGoalHours", "progressPercent", "studiedMinutesThisWeek", "questionsAnswered",
+                "averageAccuracyPercent", "createdAtEpochMillis", "updatedAtEpochMillis",
+                "trashedAtEpochMillis",
             ),
             remappedIdentifierColumns = setOf("id"),
         )

@@ -32,6 +32,7 @@ data class StudyPlan(
     val createdAtEpochMillis: Long = 0L,
     val updatedAtEpochMillis: Long = createdAtEpochMillis,
     val trashedAtEpochMillis: Long? = null,
+    val contentMode: StudyContentMode = StudyContentMode.EXAM_PLAN,
 ) {
     init {
         require(name.isNotBlank()) { "Study Plan name cannot be blank." }
