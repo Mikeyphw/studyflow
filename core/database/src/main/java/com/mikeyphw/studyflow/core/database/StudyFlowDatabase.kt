@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import com.mikeyphw.studyflow.core.database.dao.DatabaseMetadataDao
 import com.mikeyphw.studyflow.core.database.dao.PlanOwnershipDao
 import com.mikeyphw.studyflow.core.database.dao.ProgrammingCourseDao
+import com.mikeyphw.studyflow.core.database.dao.LanguageLearningDao
 import com.mikeyphw.studyflow.core.database.dao.StudyDiscoveryDao
 import com.mikeyphw.studyflow.core.database.dao.StudyAnalyticsDao
 import com.mikeyphw.studyflow.core.database.dao.StudyLibraryDao
@@ -22,6 +23,10 @@ import com.mikeyphw.studyflow.core.database.entity.CodingExerciseEntity
 import com.mikeyphw.studyflow.core.database.entity.MiniProjectEntity
 import com.mikeyphw.studyflow.core.database.entity.ProgrammingCourseProfileEntity
 import com.mikeyphw.studyflow.core.database.entity.TermuxRuntimePreferenceEntity
+import com.mikeyphw.studyflow.core.database.entity.LanguageDeckProfileEntity
+import com.mikeyphw.studyflow.core.database.entity.LanguageExpressionEntity
+import com.mikeyphw.studyflow.core.database.entity.IdiomCardEntity
+import com.mikeyphw.studyflow.core.database.entity.VocabularyCardEntity
 import com.mikeyphw.studyflow.core.database.entity.TermuxCommandRequestEntity
 import com.mikeyphw.studyflow.core.database.entity.TermuxCommandResultEntity
 import com.mikeyphw.studyflow.core.database.entity.DatabaseMetadataEntity
@@ -78,6 +83,10 @@ import com.mikeyphw.studyflow.core.database.entity.VideoResourceEntity
         TermuxRuntimePreferenceEntity::class,
         TermuxCommandRequestEntity::class,
         TermuxCommandResultEntity::class,
+        LanguageDeckProfileEntity::class,
+        LanguageExpressionEntity::class,
+        IdiomCardEntity::class,
+        VocabularyCardEntity::class,
         DatabaseMetadataEntity::class,
     ],
     version = StudyFlowDatabase.SCHEMA_VERSION,
@@ -108,8 +117,10 @@ abstract class StudyFlowDatabase : RoomDatabase() {
 
     abstract fun programmingCourseDao(): ProgrammingCourseDao
 
+    abstract fun languageLearningDao(): LanguageLearningDao
+
     companion object {
-        const val SCHEMA_VERSION = 7
+        const val SCHEMA_VERSION = 8
         const val DATABASE_NAME = "studyflow.db"
 
         fun create(context: Context): StudyFlowDatabase =

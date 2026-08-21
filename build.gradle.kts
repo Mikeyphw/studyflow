@@ -399,6 +399,12 @@ tasks.register<Exec>("verifyCodingExerciseTermuxExecution") {
     commandLine("python3", "scripts/verify_coding_exercise_termux_execution.py")
 }
 
+tasks.register<Exec>("verifyLanguageDeckIdiomModel") {
+    group = "verification"
+    description = "Checks CMOV-07 language deck, expression, idiom and vocabulary model contracts."
+    commandLine("python3", "scripts/verify_language_deck_idiom_model.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."

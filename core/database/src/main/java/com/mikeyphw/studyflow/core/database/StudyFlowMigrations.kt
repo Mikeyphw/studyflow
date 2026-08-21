@@ -255,6 +255,112 @@ object StudyFlowMigrations {
     }
 
 
+    val Migration7To8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS language_deck_profiles (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyPlanId TEXT NOT NULL,
+                    targetLanguage TEXT NOT NULL,
+                    nativeLanguage TEXT,
+                    regionFocus TEXT,
+                    defaultRegister TEXT NOT NULL,
+                    reviewDirectionsJson TEXT NOT NULL,
+                    tagsJson TEXT NOT NULL,
+                    createdAtEpochMillis INTEGER NOT NULL,
+                    updatedAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_language_deck_profiles_studyPlanId " +
+                    "ON language_deck_profiles(studyPlanId)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS language_expressions (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyPlanId TEXT NOT NULL,
+                    deckId TEXT NOT NULL,
+                    expression TEXT NOT NULL,
+                    meaning TEXT NOT NULL,
+                    literalTranslation TEXT,
+                    translationEquivalent TEXT,
+                    type TEXT NOT NULL,
+                    register TEXT NOT NULL,
+                    region TEXT,
+                    pronunciationNote TEXT,
+                    commonMistake TEXT,
+                    examplesJson TEXT NOT NULL,
+                    tagsJson TEXT NOT NULL,
+                    createdAtEpochMillis INTEGER NOT NULL,
+                    updatedAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE,
+                    FOREIGN KEY(deckId) REFERENCES language_deck_profiles(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_language_expressions_studyPlanId " +
+                    "ON language_expressions(studyPlanId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_language_expressions_deckId " +
+                    "ON language_expressions(deckId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_language_expressions_type " +
+                    "ON language_expressions(type)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_language_expressions_register " +
+                    "ON language_expressions(register)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS idiom_cards (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    expressionId TEXT NOT NULL,
+                    naturalExample TEXT NOT NULL,
+                    userSentence TEXT,
+                    clozePrompt TEXT,
+                    acceptedAnswersJson TEXT NOT NULL,
+                    reviewDirectionsJson TEXT NOT NULL,
+                    difficulty INTEGER NOT NULL,
+                    FOREIGN KEY(expressionId) REFERENCES language_expressions(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_idiom_cards_expressionId " +
+                    "ON idiom_cards(expressionId)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS vocabulary_cards (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    expressionId TEXT NOT NULL,
+                    partOfSpeech TEXT,
+                    synonymsJson TEXT NOT NULL,
+                    antonymsJson TEXT NOT NULL,
+                    reviewDirectionsJson TEXT NOT NULL,
+                    difficulty INTEGER NOT NULL,
+                    FOREIGN KEY(expressionId) REFERENCES language_expressions(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_vocabulary_cards_expressionId " +
+                    "ON vocabulary_cards(expressionId)",
+            )
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.install(db)
+        }
+    }
+
+
     val All = arrayOf(
         Migration1To2,
         Migration2To3,
@@ -262,6 +368,7 @@ object StudyFlowMigrations {
         Migration4To5,
         Migration5To6,
         Migration6To7,
+        Migration7To8,
     )
 }
 

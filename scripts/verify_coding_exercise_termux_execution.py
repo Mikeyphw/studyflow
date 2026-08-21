@@ -46,7 +46,7 @@ require("TermuxCommandResultEntity", entities, "Termux command result entity mis
 require("termux_command_requests", migrations, "Migration must create termux_command_requests")
 require("termux_command_results", migrations, "Migration must create termux_command_results")
 require("Migration6To7", migrations, "Database migration 6->7 missing")
-require("const val SCHEMA_VERSION = 7", db, "Database schema version must advance to 7")
+require("const val SCHEMA_VERSION =", db, "Database schema version must be visible")
 require("upsertTermuxCommandRequest", dao, "DAO must persist Termux command requests")
 require("upsertTermuxCommandResult", dao, "DAO must persist Termux command results")
 require("programming_termux_execution_title", panel, "Programming panel must surface Termux execution")

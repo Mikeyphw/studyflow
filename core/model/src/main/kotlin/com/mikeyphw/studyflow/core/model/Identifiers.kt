@@ -174,3 +174,30 @@ value class MiniProjectId(val value: String) {
         require(value.isNotBlank()) { "MiniProjectId cannot be blank." }
     }
 }
+@JvmInline
+value class LanguageDeckId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "LanguageDeckId cannot be blank." }
+    }
+}
+
+@JvmInline
+value class LanguageExpressionId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "LanguageExpressionId cannot be blank." }
+    }
+}
+
+@JvmInline
+value class IdiomCardId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "IdiomCardId cannot be blank." }
+    }
+}
+
+@JvmInline
+value class VocabularyCardId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "VocabularyCardId cannot be blank." }
+    }
+}
