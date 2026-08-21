@@ -170,10 +170,43 @@ fun termuxResultFileName(requestId: String): String {
 
 fun isAllowedTermuxCommandTemplate(template: String?): Boolean {
     val command = template?.trim().orEmpty()
-    if (command.isEmpty()) return true
+    if (command.isEmpty()) return false
     if (!isSafeTermuxCommandTemplate(command)) return false
-    val executable = command.split(Regex("\\s+"), limit = 2).firstOrNull().orEmpty()
+    val executable = splitTermuxCommandTemplate(command).executable
     return executable in AllowedTermuxExecutables
+}
+
+data class TermuxCommandInvocation(
+    val executable: String,
+    val arguments: List<String>,
+) {
+    init {
+        require(executable.isNotBlank()) { "Termux executable cannot be blank." }
+        require(executable in AllowedTermuxExecutables) { "Termux executable is not allowed." }
+        require(arguments.none { it.isBlank() }) { "Termux arguments cannot be blank." }
+    }
+}
+
+fun splitTermuxCommandTemplate(commandLine: String): TermuxCommandInvocation {
+    val command = commandLine.trim()
+    require(command.isNotBlank()) { "Termux command template cannot be blank." }
+    require(isSafeTermuxCommandTemplate(command)) { "Termux command template is not safe." }
+    val parts = command.split(Regex("\\s+")).filter { it.isNotBlank() }
+    return TermuxCommandInvocation(
+        executable = parts.first(),
+        arguments = parts.drop(1),
+    )
+}
+
+fun termuxExecutablePath(executable: String): String {
+    require(executable in AllowedTermuxExecutables) { "Termux executable is not allowed." }
+    return when {
+        executable.startsWith("/") -> executable
+        executable.startsWith("./") -> executable
+        executable.startsWith("~/") -> executable
+        executable.startsWith("$" + "PREFIX/") -> executable
+        else -> "$" + "PREFIX/bin/$executable"
+    }
 }
 
 fun defaultTermuxTemplates(language: ProgrammingLanguage): List<TermuxCommandTemplate> = when (language) {

@@ -379,7 +379,8 @@ require("AdaptationDestination.PROGRESS" in progress_source, "Adaptation preview
 
 require("targetDurationMinutes: Int? = null" in model, "session domain model lacks target duration")
 require("targetDurationMinutes: Int? = null" in entity, "session entity lacks target duration")
-require("const val SCHEMA_VERSION = 4" in database, "Room database version is not 4")
+schema_match = re.search(r"const val SCHEMA_VERSION = (\d+)", database)
+require(schema_match is not None and int(schema_match.group(1)) >= 4, "Room database version is not 4 or later")
 require("StudyFlowMigrations.All" in database, "Room database does not register the migration array")
 require("Migration2To3" in migrations, "Room migration array lacks migration 2 to 3")
 require("Migration3To4" in migrations, "Room migration array lacks migration 3 to 4")

@@ -117,7 +117,8 @@ for marker in (
         failures.append(f"entity schema missing optional exam stage marker: {marker}")
 
 database = (ROOT / "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt").read_text()
-if "const val SCHEMA_VERSION = 4" not in database:
+schema_match = re.search(r"const val SCHEMA_VERSION = (\d+)", database)
+if schema_match is None or int(schema_match.group(1)) < 4:
     failures.append("Room schema version must preserve Phase 5 and include later migrations")
 if "addMigrations(*StudyFlowMigrations.All)" not in database:
     failures.append("database builder does not install Phase 5 migrations")

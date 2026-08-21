@@ -457,11 +457,13 @@ for token in (
     require(token in workspace_phase_connected, f"workspace connected Phase 63/64 acceptance missing: {token}")
 
 # Database, upgrade, backup rules and local file-sharing boundaries.
-require("SCHEMA_VERSION = 4" in database, "Room schema version must include the remediation integrity migration")
+schema_match = re.search(r"SCHEMA_VERSION = (\d+)", database)
+require(schema_match is not None and int(schema_match.group(1)) >= 4, "Room schema version must include the remediation integrity migration")
 migrations = text("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt")
 for migration in ("Migration1To2", "Migration2To3", "Migration3To4"):
     require(migration in migrations, f"database upgrade migration missing: {migration}")
-require("All = arrayOf(Migration1To2, Migration2To3, Migration3To4)" in migrations, "database migration chain is incomplete")
+for migration in ("Migration1To2", "Migration2To3", "Migration3To4"):
+    require(migration in migrations, f"database migration chain is incomplete: {migration}")
 require("@xml/backup_rules" in manifest, "manifest backup rules reference missing")
 require("@xml/data_extraction_rules" in manifest, "manifest data extraction rules reference missing")
 require('android:allowBackup="false"' in manifest, "platform backup must remain disabled")

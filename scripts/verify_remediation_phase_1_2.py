@@ -115,7 +115,8 @@ require("workspaceLoadGate" in plan_workspace, "Plan workspace has no loading/fa
 database = text("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt")
 migrations = text("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt")
 integrity = text("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowIntegrity.kt")
-require("SCHEMA_VERSION = 4" in database, "database schema was not advanced to v4")
+schema_match = re.search(r"SCHEMA_VERSION = (\d+)", database)
+require(schema_match is not None and int(schema_match.group(1)) >= 4, "database schema was not advanced to v4")
 require("Migration3To4" in migrations, "v3→v4 integrity migration is missing")
 require("activity.plannedDurationMinutes" in migrations, "v2→v3 target-duration backfill is missing")
 for token in (

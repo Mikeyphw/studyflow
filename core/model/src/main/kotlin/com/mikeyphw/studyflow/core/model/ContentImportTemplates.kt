@@ -182,32 +182,49 @@ private fun previewMarkdown(
     kind: StudyFlowImportRowKind,
     headingPrefix: String,
 ): StudyFlowImportPreview {
-    val headings = markdown.lineSequence()
-        .map { it.trim() }
-        .filter { it.startsWith(headingPrefix) }
-        .mapIndexed { index, line ->
-            StudyFlowImportPreviewRow(
-                rowNumber = index + 1,
+    val lines = markdown.lineSequence().map { it.trim() }.toList()
+    val rows = mutableListOf<StudyFlowImportPreviewRow>()
+    val issues = mutableListOf<StudyFlowImportIssue>()
+    var index = 0
+    while (index < lines.size) {
+        val heading = lines[index]
+        if (!heading.startsWith(headingPrefix)) {
+            index++
+            continue
+        }
+        val rowNumber = rows.size + 1
+        val title = heading.removePrefix(headingPrefix).trim()
+        val block = mutableListOf<String>()
+        index++
+        while (index < lines.size && !lines[index].startsWith(headingPrefix)) {
+            if (lines[index].isNotBlank()) block += lines[index]
+            index++
+        }
+        if (title.isBlank()) {
+            issues += StudyFlowImportIssue(rowNumber, headingPrefix, "Import heading title is blank.")
+        } else {
+            val summary = block.firstOrNull { it.startsWith("Meaning:") || it.startsWith("Prompt:") }
+                ?.substringAfter(':')
+                ?.trim()
+                .orEmpty()
+            val tags = block.firstOrNull { it.startsWith("Tags:") }
+                ?.substringAfter(':')
+                ?.let(::splitImportTags)
+                .orEmpty()
+            rows += StudyFlowImportPreviewRow(
+                rowNumber = rowNumber,
                 kind = kind,
-                title = line.removePrefix(headingPrefix).trim(),
-                summary = markdown.lineSequence().firstOrNull { it.startsWith("Meaning:") || it.startsWith("Prompt:") }
-                    ?.substringAfter(':')
-                    ?.trim()
-                    .orEmpty(),
-                tags = markdown.lineSequence().firstOrNull { it.startsWith("Tags:") }
-                    ?.substringAfter(':')
-                    ?.let(::splitImportTags)
-                    .orEmpty(),
-                raw = mapOf("heading" to line),
+                title = title,
+                summary = summary,
+                tags = tags,
+                raw = mapOf("heading" to heading) + block.associateBy { it.substringBefore(':', it) },
             )
         }
-        .toList()
-    val issues = if (headings.isEmpty()) {
-        listOf(StudyFlowImportIssue(null, headingPrefix, "No import headings found."))
-    } else {
-        emptyList()
     }
-    return StudyFlowImportPreview(template.type, headings, issues)
+    if (rows.isEmpty() && issues.isEmpty()) {
+        issues += StudyFlowImportIssue(null, headingPrefix, "No import headings found.")
+    }
+    return StudyFlowImportPreview(template.type, rows, issues)
 }
 
 private fun missingColumns(
@@ -224,9 +241,14 @@ private fun parseCsvLine(line: String): List<String> {
     val values = mutableListOf<String>()
     val current = StringBuilder()
     var quoted = false
-    line.forEachIndexed { index, char ->
+    var index = 0
+    while (index < line.length) {
+        val char = line[index]
         when {
-            char == '"' && quoted && line.getOrNull(index + 1) == '"' -> current.append('"')
+            char == '"' && quoted && line.getOrNull(index + 1) == '"' -> {
+                current.append('"')
+                index++
+            }
             char == '"' -> quoted = !quoted
             char == ',' && !quoted -> {
                 values += current.toString()
@@ -234,6 +256,7 @@ private fun parseCsvLine(line: String): List<String> {
             }
             else -> current.append(char)
         }
+        index++
     }
     values += current.toString()
     return values

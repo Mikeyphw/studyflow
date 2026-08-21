@@ -424,6 +424,13 @@ tasks.register<Exec>("verifyModeAwareAnalytics") {
     commandLine("python3", "scripts/verify_mode_aware_analytics.py")
 }
 
+
+tasks.register<Exec>("verifyContentModesFinalIntegrationSeal") {
+    group = "verification"
+    description = "Checks the audited CMOV-01..CMOV-10 integration seal, including Android Termux bridge readiness."
+    commandLine("python3", "scripts/verify_content_modes_final_integration.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."
@@ -674,6 +681,7 @@ tasks.register("checkAll") {
         "verifyContentModeFoundation",
         "verifyProgrammingCourseModel",
         "verifyCodeBlocksSyntax",
+        "verifyContentModesFinalIntegrationSeal",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",

@@ -56,7 +56,9 @@ fun CodingExercise.toTermuxExecutionPlan(
     }
     require(createdAtEpochMillis >= 0) { "Created timestamp cannot be negative." }
 
-    val command = commandTemplateFor(runMode)
+    val command = requireNotNull(safeCommandTemplateFor(runMode)) {
+        "No safe Termux command is available for ${language.displayName}."
+    }
     val template = TermuxCommandTemplate(
         id = "${requestIdPrefix}-${runMode.name.lowercase()}",
         label = if (runMode == TermuxExerciseRunMode.TEST) "Run exercise tests" else "Run exercise",
@@ -137,9 +139,15 @@ fun CodingExercise.exerciseFileBundle(): List<CodingExerciseFile> {
     return listOfNotNull(starter, expected, notes)
 }
 
-fun CodingExercise.commandTemplateFor(runMode: TermuxExerciseRunMode): String = when (runMode) {
-    TermuxExerciseRunMode.TEST -> testCommandTemplate ?: runCommandTemplate ?: defaultRunCommandFor(language)
-    TermuxExerciseRunMode.RUN -> runCommandTemplate ?: testCommandTemplate ?: defaultRunCommandFor(language)
+fun CodingExercise.commandTemplateFor(runMode: TermuxExerciseRunMode): String =
+    safeCommandTemplateFor(runMode).orEmpty()
+
+fun CodingExercise.safeCommandTemplateFor(runMode: TermuxExerciseRunMode): String? {
+    val command = when (runMode) {
+        TermuxExerciseRunMode.TEST -> testCommandTemplate ?: runCommandTemplate ?: defaultRunCommandFor(language)
+        TermuxExerciseRunMode.RUN -> runCommandTemplate ?: testCommandTemplate ?: defaultRunCommandFor(language)
+    }.trim()
+    return command.takeIf(::isAllowedTermuxCommandTemplate)
 }
 
 fun CodingExercise.applyTermuxResult(result: TermuxCommandResult, updatedAtEpochMillis: Long): CodingExercise {
@@ -165,7 +173,7 @@ fun CodingExercise.applyTermuxResult(result: TermuxCommandResult, updatedAtEpoch
 fun CodingExercise.toTermuxSummary(result: TermuxCommandResult? = null): CodingExerciseTermuxSummary {
     val lastExitCode = result?.exitCode
     val ready = status != CodingExerciseStatus.COMPLETED &&
-        commandTemplateFor(TermuxExerciseRunMode.TEST).isNotBlank()
+        safeCommandTemplateFor(TermuxExerciseRunMode.TEST) != null
     val label = when (status) {
         CodingExerciseStatus.NOT_STARTED -> "Start in Termux"
         CodingExerciseStatus.IN_PROGRESS -> "Run in Termux"
@@ -194,13 +202,19 @@ private fun defaultRunCommandFor(language: ProgrammingLanguage): String = when (
     ProgrammingLanguage.PYTHON -> "python main.py"
     ProgrammingLanguage.JAVASCRIPT -> "node index.js"
     ProgrammingLanguage.TYPESCRIPT -> "npx ts-node index.ts"
-    ProgrammingLanguage.SHELL -> "sh main.sh"
-    ProgrammingLanguage.SQL -> "sqlite3 < query.sql"
     ProgrammingLanguage.C -> "clang main.c"
     ProgrammingLanguage.CPP -> "clang main.cpp"
     ProgrammingLanguage.GO -> "go test"
     ProgrammingLanguage.RUST -> "cargo test"
-    else -> "python main.py"
+    ProgrammingLanguage.SHELL,
+    ProgrammingLanguage.SQL,
+    ProgrammingLanguage.HTML,
+    ProgrammingLanguage.CSS,
+    ProgrammingLanguage.JSON,
+    ProgrammingLanguage.YAML,
+    ProgrammingLanguage.MARKDOWN,
+    ProgrammingLanguage.OTHER,
+    -> ""
 }
 
 private fun TermuxCommandResult.toExerciseResultJson(): String = buildString {
