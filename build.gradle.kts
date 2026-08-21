@@ -373,6 +373,14 @@ tasks.register<Exec>("verifyProgrammingCourseModel") {
     commandLine("python3", "scripts/verify_programming_course_model.py")
 }
 
+
+
+tasks.register<Exec>("verifyCodeBlocksSyntax") {
+    group = "verification"
+    description = "Checks CMOV-03 reusable code block and syntax-highlighting contracts."
+    commandLine("python3", "scripts/verify_code_blocks_syntax.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."
@@ -622,6 +630,7 @@ tasks.register("checkAll") {
         "verifyAndroidFocusShellFinalSeal",
         "verifyContentModeFoundation",
         "verifyProgrammingCourseModel",
+        "verifyCodeBlocksSyntax",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",
