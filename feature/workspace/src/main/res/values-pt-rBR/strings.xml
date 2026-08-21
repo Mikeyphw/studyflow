@@ -617,4 +617,18 @@
     <string name="study_sprint_change_steady">Somente prévia; o bloco existente não precisa de alteração segura.</string>
     <string name="practice_queue_title">Fila pronta</string>
     <string name="practice_queue_status">%1$d vencidas • %2$d planejadas • %3$d questões</string>
+    <string name="programming_mode_label">Modo programação</string>
+    <string name="programming_workspace_title">Construa, pratique, rode e revise</string>
+    <string name="programming_workspace_message">Use módulos, exercícios, projetos, notas de código e passos prontos para Termux.</string>
+    <string name="open_programming_practice">Abrir prática</string>
+    <string name="open_programming_plan">Abrir módulos</string>
+    <string name="programming_modules">Módulos</string>
+    <string name="programming_lessons">Aulas</string>
+    <string name="programming_exercises">Exercícios</string>
+    <string name="programming_projects_count">%1$d projetos</string>
+    <string name="programming_code_preview_title">Ciclo de estudo de programação</string>
+    <string name="programming_termux_ready">A base do runtime Termux está pronta. A execução chega no próximo overlay.</string>
+    <string name="programming_termux_waiting">O runtime Termux ainda não está habilitado para este plano.</string>
+    <string name="programming_target_date">Data-alvo</string>
+    <string name="programming_resources">Recursos</string>
 </resources>

@@ -580,4 +580,18 @@
     <string name="study_sprint_change_practice">Rebalance an existing block between concept repair and questions.</string>
     <string name="study_sprint_change_schedule">Recover an existing scheduled block without creating a parallel plan.</string>
     <string name="study_sprint_change_steady">Preview only; the existing block does not need a safe mutation.</string>
+    <string name="programming_mode_label">Programming mode</string>
+    <string name="programming_workspace_title">Build, practice, run, review</string>
+    <string name="programming_workspace_message">Use modules, exercises, projects, code notes and Termux-ready steps.</string>
+    <string name="open_programming_practice">Open practice</string>
+    <string name="open_programming_plan">Open modules</string>
+    <string name="programming_modules">Modules</string>
+    <string name="programming_lessons">Lessons</string>
+    <string name="programming_exercises">Exercises</string>
+    <string name="programming_projects_count">%1$d projects</string>
+    <string name="programming_code_preview_title">Programming study loop</string>
+    <string name="programming_termux_ready">Termux runtime foundation is ready. Execution arrives in the next runtime overlay.</string>
+    <string name="programming_termux_waiting">Termux runtime is not enabled for this plan yet.</string>
+    <string name="programming_target_date">Target date</string>
+    <string name="programming_resources">Resources</string>
 </resources>

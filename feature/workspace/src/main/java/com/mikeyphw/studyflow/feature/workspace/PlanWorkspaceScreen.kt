@@ -59,6 +59,7 @@ import com.mikeyphw.studyflow.core.model.Flashcard
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySyllabus
@@ -276,13 +277,13 @@ private fun PlanOverviewPane(
         item(key = "plan-structure", contentType = "summary") {
             StudyFlowPlanSummary(
                 description = plan.description.ifBlank { plan.name },
-                examLabel = stringResource(R.string.exam_date),
+                examLabel = stringResource(planPrimaryDateLabel(plan)),
                 examDate = plan.examDateIso ?: stringResource(R.string.not_set),
-                subjectsLabel = stringResource(R.string.plan_content),
+                subjectsLabel = stringResource(planContentLabel(plan)),
                 subjectCount = pluralStringResource(R.plurals.subjects_count, subjectCount, subjectCount),
                 scheduleLabel = stringResource(R.string.plan_schedule),
                 scheduleCount = scheduleCount.toString(),
-                libraryLabel = stringResource(R.string.plan_library),
+                libraryLabel = stringResource(planLibraryLabel(plan)),
                 materialCount = pluralStringResource(R.plurals.materials_count, materialCount, materialCount),
             )
         }
@@ -586,4 +587,19 @@ private fun StudyContentCleanupSeverity.labelRes(): Int = when (this) {
     StudyContentCleanupSeverity.INFO -> R.string.cleanup_severity_info
     StudyContentCleanupSeverity.REVIEW -> R.string.cleanup_severity_review
     StudyContentCleanupSeverity.ACTION -> R.string.cleanup_severity_action
+}
+
+private fun planPrimaryDateLabel(plan: StudyPlan): Int = when (plan.contentMode) {
+    StudyContentMode.PROGRAMMING_COURSE -> R.string.programming_target_date
+    else -> R.string.exam_date
+}
+
+private fun planContentLabel(plan: StudyPlan): Int = when (plan.contentMode) {
+    StudyContentMode.PROGRAMMING_COURSE -> R.string.programming_modules
+    else -> R.string.plan_content
+}
+
+private fun planLibraryLabel(plan: StudyPlan): Int = when (plan.contentMode) {
+    StudyContentMode.PROGRAMMING_COURSE -> R.string.programming_resources
+    else -> R.string.plan_library
 }

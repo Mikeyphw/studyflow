@@ -50,6 +50,9 @@ import com.mikeyphw.studyflow.core.domain.StudyRecommendationPresentation
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.ProgrammingCourseDashboardSummary
+import com.mikeyphw.studyflow.core.model.StudyContentMode
+import com.mikeyphw.studyflow.core.model.capabilities
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
@@ -240,6 +243,24 @@ fun TodayWorkspaceScreen(
                             onAction = onQuickAdd,
                             secondaryLabel = stringResource(R.string.adjust_plan),
                             onSecondaryAction = onOpenSchedule,
+                        )
+                    }
+                }
+
+                if (plan.contentMode == StudyContentMode.PROGRAMMING_COURSE) {
+                    item(key = "programming-course-panel", contentType = "programming-course-panel") {
+                        ProgrammingCourseWorkspacePanel(
+                            summary = ProgrammingCourseDashboardSummary(
+                                moduleCount = readySchedule.plannedActivities.size,
+                                exerciseCount = readyAnalytics.answeredQuestions,
+                                projectCount = readySchedule.plannedActivities.count { activity ->
+                                    activity.title.contains("project", ignoreCase = true)
+                                },
+                                weakConceptCount = readyAnalytics.weakAreas.size,
+                                termuxRuntimeReady = plan.contentMode.capabilities.supportsTermuxRuntime,
+                            ),
+                            onOpenPractice = onOpenReviews,
+                            onOpenPlan = onOpenSchedule,
                         )
                     }
                 }
