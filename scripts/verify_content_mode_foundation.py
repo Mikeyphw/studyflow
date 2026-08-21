@@ -32,8 +32,8 @@ def main() -> None:
         "READING_STUDY",
         "GENERAL_SKILL",
         "supportsCodeBlocks = true",
-        "supportsTermuxRuntime = false",
-        "supportsCodingExercises = false",
+        "supportsTermuxRuntime",
+        "supportsCodingExercises",
     )
     require("contentModeOrDefault" in mode, "unknown content modes must have an exam-plan fallback")
 

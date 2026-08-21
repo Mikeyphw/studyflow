@@ -381,6 +381,12 @@ tasks.register<Exec>("verifyCodeBlocksSyntax") {
     commandLine("python3", "scripts/verify_code_blocks_syntax.py")
 }
 
+tasks.register<Exec>("verifyTermuxRuntimeFoundation") {
+    group = "verification"
+    description = "Checks CMOV-04 safe Termux runtime request/result and command-template contracts."
+    commandLine("python3", "scripts/verify_termux_runtime_foundation.py")
+}
+
 tasks.register<Exec>("verifyFinalSourceAcceptance") {
     group = "verification"
     description = "Checks source/static final acceptance only; it does not claim release artifact or device acceptance."

@@ -1,7 +1,6 @@
 package com.mikeyphw.studyflow.core.model
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -26,12 +25,12 @@ class StudyContentModeTest {
     }
 
     @Test
-    fun `programming mode exposes future capability flags without enabling runtime yet`() {
+    fun `programming mode exposes runtime foundation capability without enabling execution yet`() {
         val capabilities = StudyContentMode.PROGRAMMING_COURSE.capabilities
 
         assertTrue(capabilities.supportsCodeBlocks)
-        assertFalse(capabilities.supportsTermuxRuntime)
-        assertFalse(capabilities.supportsCodingExercises)
+        assertTrue(capabilities.supportsTermuxRuntime)
+        assertTrue(capabilities.supportsCodingExercises)
     }
 
     @Test

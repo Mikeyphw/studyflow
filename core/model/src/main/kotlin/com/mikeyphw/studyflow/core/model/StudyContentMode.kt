@@ -22,7 +22,7 @@ val StudyContentMode.capabilities: StudyContentModeCapabilities
     get() = when (this) {
         StudyContentMode.PROGRAMMING_COURSE -> StudyContentModeCapabilities(
             supportsCodeBlocks = true,
-            supportsTermuxRuntime = false,
+            supportsTermuxRuntime = true,
             supportsCodingExercises = true,
         )
         StudyContentMode.EXAM_PLAN,
