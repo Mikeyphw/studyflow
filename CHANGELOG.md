@@ -65,6 +65,13 @@
 # Changelog
 
 
+
+## CSOV03
+
+- Added the optional sync provider abstraction with provider id, display name, account requirement, configuration state, checkpoint listing, upload, download, and delete operations.
+- Added encrypted `.sfbackup` upload/download DTOs so providers transfer encrypted bytes plus manifest metadata instead of raw database handles.
+- Added a disabled default provider, provider registry, domain tests, and CSOV03 source-contract verification.
+
 ## CSOV02
 
 - Added the portable StudyFlow sync checkpoint bundle format (`.sfbackup`) with manifest, checkpoint, database snapshot, attachments, and SHA-256 integrity entries.

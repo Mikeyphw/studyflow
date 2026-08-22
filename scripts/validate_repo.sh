@@ -47,6 +47,7 @@ python3 scripts/verify_phase_36.py
 python3 scripts/verify_phase_37.py
 python3 scripts/verify_cloud_optional_sync_settings.py
 python3 scripts/verify_csov02_sync_bundle.py
+python3 scripts/verify_csov03_provider_abstraction.py
 
 python3 scripts/verify_debug_workbench_d1_r2.py
 python3 scripts/verify_debug_workbench_d2.py

@@ -364,6 +364,12 @@ tasks.register<Exec>("verifyCsov02SyncBundle") {
     commandLine("python3", "scripts/verify_csov02_sync_bundle.py")
 }
 
+tasks.register<Exec>("verifyCsov03ProviderAbstraction") {
+    group = "verification"
+    description = "Checks CSOV03 optional sync provider abstraction source contracts."
+    commandLine("python3", "scripts/verify_csov03_provider_abstraction.py")
+}
+
 tasks.register<Exec>("verifyContentModeFoundation") {
     group = "verification"
     description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."

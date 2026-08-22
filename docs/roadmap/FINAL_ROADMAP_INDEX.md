@@ -52,4 +52,6 @@ Cloud sync overlay roadmap:
 - CSOV03: provider abstraction.
 - CSOV04-CSOV11: optional onboarding, manual provider transfer, merge/conflict review, background sync, and final seal.
 
+CSOV02-CSOV03 are implemented as source foundations; provider-backed I/O remains intentionally off until CSOV04/CSOV05.
+
 The final target-machine validation and evidence pass remains required before product sealing.

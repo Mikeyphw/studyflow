@@ -257,3 +257,10 @@ stays under `build/reports/studyflow/` and is not pre-marked by source validatio
 - Unit coverage: `:core:portability:test`
 - Compile gate: `:core:portability:compileKotlin`
 - Purpose: validates the `.sfbackup` archive entries, manifest/checkpoint integrity, and encrypted remote bundle policy.
+
+## CSOV03 Validation
+
+- Static source contract: `python3 scripts/verify_csov03_provider_abstraction.py`
+- Unit coverage: `:core:domain:test`
+- Compile gate: `:core:domain:compileKotlin`
+- Purpose: validates provider abstraction, disabled default provider, registry behavior, and encrypted `.sfbackup` transfer DTOs.
