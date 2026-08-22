@@ -83,6 +83,27 @@ class SettingsContractTest {
         assertFalse(strings.contains("Cloud required"))
     }
 
+    @Test
+    fun `manual folder sync exposes explicit manual actions`() {
+        val source = readSource(
+            modulePath = "src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+            rootPath = "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+        )
+        val strings = readSource(
+            modulePath = "src/main/res/values/strings.xml",
+            rootPath = "feature/settings/src/main/res/values/strings.xml",
+        )
+
+        assertTrue(source.contains("ManualFolderSyncCard"))
+        assertTrue(source.contains("StudySyncManualActionPlanner.actions"))
+        assertTrue(source.contains("onUploadEncryptedCheckpoint"))
+        assertTrue(source.contains("onCheckRemoteCheckpoints"))
+        assertTrue(strings.contains("Manual folder sync"))
+        assertTrue(strings.contains("Prepare encrypted upload checkpoint"))
+        assertTrue(strings.contains("Check for remote checkpoint"))
+        assertTrue(strings.contains("Automatic sync remains off"))
+    }
+
     private fun readSource(modulePath: String, rootPath: String): String {
         val candidates: List<Path> = listOf(Paths.get(modulePath), Paths.get(rootPath))
         return candidates.first { path -> path.toFile().isFile }.toFile().readText()

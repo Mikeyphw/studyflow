@@ -102,6 +102,62 @@ internal class LocalStudyCloudSyncRepository(
         return syncState.first()
     }
 
+    override suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState {
+        val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+        dataStore.edit { preferences ->
+            preferences[EnabledKey] = true
+            preferences[ProviderIdKey] = StudyFlowSyncProviderIds.LOCAL_FOLDER
+            preferences[ProviderLocationKey] = folderUri
+            preferences[AutomaticSyncEnabledKey] = false
+            preferences[EncryptRemoteBackupsKey] = true
+            preferences[StatusKey] = if (preferences[ChangeTokenKey].revisionFromToken() == revision) {
+                StudySyncConnectionStatus.LOCAL_READY.name
+            } else {
+                StudySyncConnectionStatus.CHECKPOINT_NEEDED.name
+            }
+            preferences.remove(BlockedReasonKey)
+        }
+        return syncState.first()
+    }
+
+    override suspend fun recordManualUploadCheckpoint(): StudySyncState {
+        val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+        dataStore.edit { preferences ->
+            if (preferences[ProviderIdKey] != StudyFlowSyncProviderIds.LOCAL_FOLDER ||
+                preferences[ProviderLocationKey].isNullOrBlank()
+            ) {
+                preferences[StatusKey] = StudySyncConnectionStatus.CHECKPOINT_BLOCKED.name
+                preferences[BlockedReasonKey] = "Choose a sync folder before manual upload."
+                return@edit
+            }
+            preferences[EnabledKey] = true
+            preferences[StatusKey] = StudySyncConnectionStatus.LOCAL_READY.name
+            preferences[PreparedAtKey] = clock()
+            preferences[ChangeTokenKey] = revisionToken(revision)
+            preferences[PendingLocalChangeKey] = 0L
+            preferences[LastManualUploadAtKey] = clock()
+            preferences[RemoteCheckpointCountKey] = maxOf(preferences[RemoteCheckpointCountKey] ?: 0L, 1L)
+            preferences.remove(BlockedReasonKey)
+        }
+        return syncState.first()
+    }
+
+    override suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState {
+        dataStore.edit { preferences ->
+            if (preferences[ProviderIdKey] != StudyFlowSyncProviderIds.LOCAL_FOLDER ||
+                preferences[ProviderLocationKey].isNullOrBlank()
+            ) {
+                preferences[StatusKey] = StudySyncConnectionStatus.CHECKPOINT_BLOCKED.name
+                preferences[BlockedReasonKey] = "Choose a sync folder before checking remote checkpoints."
+                return@edit
+            }
+            preferences[LastRemoteCheckAtKey] = clock()
+            preferences[RemoteCheckpointCountKey] = remoteCheckpointCount.toLong()
+            preferences.remove(BlockedReasonKey)
+        }
+        return syncState.first()
+    }
+
     override suspend fun clearLocalFoundation(): StudySyncState {
         dataStore.edit { preferences -> preferences.clear() }
         return StudySyncState.disabled()
@@ -145,6 +201,13 @@ internal class LocalStudyCloudSyncRepository(
         wifiOnly = preferences[WifiOnlyKey] ?: true,
         chargingOnly = preferences[ChargingOnlyKey] ?: false,
         encryptRemoteBackups = preferences[EncryptRemoteBackupsKey] ?: true,
+        providerLocation = preferences[ProviderLocationKey],
+        lastManualUploadAtEpochMillis = preferences[LastManualUploadAtKey],
+        lastRemoteCheckAtEpochMillis = preferences[LastRemoteCheckAtKey],
+        remoteCheckpointCount = preferences[RemoteCheckpointCountKey]
+            ?.coerceAtMost(Int.MAX_VALUE.toLong())
+            ?.toInt()
+            ?: 0,
     )
 
     private fun providerDescriptor(
@@ -199,10 +262,14 @@ internal class LocalStudyCloudSyncRepository(
         val ChangeTokenKey = stringPreferencesKey("change_token")
         val PendingLocalChangeKey = longPreferencesKey("pending_local_change_count")
         val ProviderIdKey = stringPreferencesKey("provider_id")
+        val ProviderLocationKey = stringPreferencesKey("provider_location")
         val AutomaticSyncEnabledKey = booleanPreferencesKey("automatic_sync_enabled")
         val WifiOnlyKey = booleanPreferencesKey("wifi_only")
         val ChargingOnlyKey = booleanPreferencesKey("charging_only")
         val EncryptRemoteBackupsKey = booleanPreferencesKey("encrypt_remote_backups")
+        val LastManualUploadAtKey = longPreferencesKey("last_manual_upload_at")
+        val LastRemoteCheckAtKey = longPreferencesKey("last_remote_check_at")
+        val RemoteCheckpointCountKey = longPreferencesKey("remote_checkpoint_count")
         val BlockedReasonKey = stringPreferencesKey("blocked_reason")
     }
 }

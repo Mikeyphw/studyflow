@@ -414,4 +414,16 @@
     <string name="sync_keep_offline">Manter offline</string>
     <string name="sync_choose_folder">Escolher pasta de sincronização</string>
     <string name="sync_learn_more">Saiba mais</string>
+    <string name="sync_manual_folder_title">Sincronização manual por pasta</string>
+    <string name="sync_manual_folder_message">Escolha uma pasta, depois prepare checkpoints criptografados manualmente e verifique arquivos remotos. A sincronização automática continua desligada.</string>
+    <string name="sync_folder_selected">Pasta de sincronização selecionada</string>
+    <string name="sync_folder_missing">Nenhuma pasta de sincronização selecionada</string>
+    <string name="sync_last_upload_value">Último upload preparado: %1$s</string>
+    <string name="sync_last_remote_check_value">Última verificação remota: %1$s</string>
+    <string name="sync_remote_checkpoint_count">Checkpoints remotos encontrados: %1$d</string>
+    <string name="sync_never">Nunca</string>
+    <string name="sync_prepare_upload_checkpoint">Preparar checkpoint criptografado para upload</string>
+    <string name="sync_check_remote_checkpoint">Verificar checkpoint remoto</string>
+    <string name="sync_preview_restore">Pré-visualizar restauração</string>
+    <string name="sync_view_history">Ver histórico de sincronização</string>
 </resources>

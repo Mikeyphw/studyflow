@@ -5,6 +5,9 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -704,6 +707,24 @@ internal fun StudyFlowNavHost(
             }
             var summaryFailed by remember { mutableStateOf(false) }
             var summaryRetryNonce by remember { mutableLongStateOf(0L) }
+            val syncFolderLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.OpenDocumentTree(),
+            ) { uri: Uri? ->
+                if (uri == null) return@rememberLauncherForActivityResult
+                coroutineScope.launch {
+                    val permissionFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    runRecoverableOperation {
+                        context.contentResolver.takePersistableUriPermission(uri, permissionFlags)
+                        container.manageStudyCloudSync.configureLocalFolderProvider(uri.toString())
+                    }.onSuccess {
+                        summary = container.manageStudyCloudSync.inspectLocalChanges()
+                        summaryFailed = false
+                    }.onFailure {
+                        summaryFailed = true
+                    }
+                }
+            }
             LaunchedEffect(syncState.lastLocalChangeToken, summaryRetryNonce) {
                 runRecoverableOperation { container.manageStudyCloudSync.inspectLocalChanges() }
                     .onSuccess { value ->
@@ -724,6 +745,18 @@ internal fun StudyFlowNavHost(
                 },
                 onDisable = {
                     container.manageStudyCloudSync.clearLocalFoundation()
+                    summary = container.manageStudyCloudSync.inspectLocalChanges()
+                    summaryFailed = false
+                },
+                onChooseSyncFolder = { syncFolderLauncher.launch(null) },
+                onUploadEncryptedCheckpoint = {
+                    container.manageStudyCloudSync.recordManualUploadCheckpoint()
+                    summary = container.manageStudyCloudSync.inspectLocalChanges()
+                    summaryFailed = false
+                },
+                onCheckRemoteCheckpoints = {
+                    val count = if (syncState.settings.lastManualUploadAtEpochMillis == null) 0 else 1
+                    container.manageStudyCloudSync.recordManualRemoteCheck(count)
                     summary = container.manageStudyCloudSync.inspectLocalChanges()
                     summaryFailed = false
                 },

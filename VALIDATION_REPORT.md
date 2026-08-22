@@ -265,3 +265,4 @@ stays under `build/reports/studyflow/` and is not pre-marked by source validatio
 - Compile gate: `:core:domain:compileKotlin`
 - Purpose: validates provider abstraction, disabled default provider, registry behavior, and encrypted `.sfbackup` transfer DTOs.
 - CSOV04_OPTIONAL_SYNC_ONBOARDING: source/static contract added.
+- CSOV05_MANUAL_FOLDER_SYNC: source/static contract added.

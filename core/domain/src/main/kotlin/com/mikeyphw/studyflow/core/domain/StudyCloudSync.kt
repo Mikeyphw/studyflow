@@ -16,6 +16,12 @@ interface StudyCloudSyncRepository {
 
     suspend fun setConflictPolicy(policy: StudySyncConflictPolicy): StudySyncState
 
+    suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState
+
+    suspend fun recordManualUploadCheckpoint(): StudySyncState
+
+    suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState
+
     suspend fun clearLocalFoundation(): StudySyncState
 }
 
@@ -35,6 +41,18 @@ class ManageStudyCloudSync(
 
     suspend fun setConflictPolicy(policy: StudySyncConflictPolicy): StudySyncState =
         repository.setConflictPolicy(policy)
+
+    suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState {
+        require(folderUri.isNotBlank()) { "Folder URI cannot be blank." }
+        return repository.configureLocalFolderProvider(folderUri.trim())
+    }
+
+    suspend fun recordManualUploadCheckpoint(): StudySyncState = repository.recordManualUploadCheckpoint()
+
+    suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState {
+        require(remoteCheckpointCount >= 0) { "Remote checkpoint count cannot be negative." }
+        return repository.recordManualRemoteCheck(remoteCheckpointCount)
+    }
 
     suspend fun clearLocalFoundation(): StudySyncState = repository.clearLocalFoundation()
 }

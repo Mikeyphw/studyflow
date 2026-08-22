@@ -41,10 +41,12 @@ import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
+import com.mikeyphw.studyflow.core.model.StudySyncManualAction
+import com.mikeyphw.studyflow.core.model.StudySyncManualActionPlanner
 import com.mikeyphw.studyflow.core.model.StudySyncState
 import kotlinx.coroutines.launch
 
-private enum class SyncMutation { PREPARE, DISABLE, KEEP_OFFLINE }
+private enum class SyncMutation { PREPARE, DISABLE, KEEP_OFFLINE, UPLOAD_CHECKPOINT, CHECK_REMOTE }
 
 private sealed interface SyncOperationState {
     data object Idle : SyncOperationState
@@ -67,6 +69,10 @@ fun SyncFoundationScreen(
     onKeepOffline: suspend () -> Unit = onDisable,
     onChooseSyncFolder: () -> Unit = {},
     onLearnMore: () -> Unit = {},
+    onUploadEncryptedCheckpoint: suspend () -> Unit = onPrepare,
+    onCheckRemoteCheckpoints: suspend () -> Unit = {},
+    onPreviewRemoteRestore: () -> Unit = {},
+    onViewSyncHistory: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var operationState by remember { mutableStateOf<SyncOperationState>(SyncOperationState.Idle) }
@@ -80,6 +86,8 @@ fun SyncFoundationScreen(
                     SyncMutation.PREPARE -> onPrepare()
                     SyncMutation.DISABLE -> onDisable()
                     SyncMutation.KEEP_OFFLINE -> onKeepOffline()
+                    SyncMutation.UPLOAD_CHECKPOINT -> onUploadEncryptedCheckpoint()
+                    SyncMutation.CHECK_REMOTE -> onCheckRemoteCheckpoints()
                 }
             }.onSuccess {
                 operationState = SyncOperationState.Succeeded(mutation)
@@ -190,6 +198,15 @@ fun SyncFoundationScreen(
                 }
             }
             LocalCheckpointReadinessCard(state = state, summary = summary)
+            ManualFolderSyncCard(
+                state = state,
+                operationRunning = operationRunning,
+                onChooseSyncFolder = onChooseSyncFolder,
+                onUploadEncryptedCheckpoint = { execute(SyncMutation.UPLOAD_CHECKPOINT) },
+                onCheckRemoteCheckpoints = { execute(SyncMutation.CHECK_REMOTE) },
+                onPreviewRemoteRestore = onPreviewRemoteRestore,
+                onViewSyncHistory = onViewSyncHistory,
+            )
             when (val operation = operationState) {
                 SyncOperationState.Idle -> Unit
                 is SyncOperationState.Running -> StudyFlowSectionCard(
@@ -238,6 +255,91 @@ fun SyncFoundationScreen(
     }
 }
 
+
+
+@Composable
+private fun ManualFolderSyncCard(
+    state: StudySyncState,
+    operationRunning: Boolean,
+    onChooseSyncFolder: () -> Unit,
+    onUploadEncryptedCheckpoint: () -> Unit,
+    onCheckRemoteCheckpoints: () -> Unit,
+    onPreviewRemoteRestore: () -> Unit,
+    onViewSyncHistory: () -> Unit,
+) {
+    val actions = StudySyncManualActionPlanner.actions(state)
+    fun enabled(action: StudySyncManualAction): Boolean =
+        actions.first { item -> item.action == action }.enabled && !operationRunning
+
+    StudyFlowSectionCard(title = stringResource(R.string.sync_manual_folder_title)) {
+        Text(
+            text = stringResource(R.string.sync_manual_folder_message),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = if (state.localFolderSyncConfigured) {
+                stringResource(R.string.sync_folder_selected)
+            } else {
+                stringResource(R.string.sync_folder_missing)
+            },
+        )
+        Text(
+            text = stringResource(
+                R.string.sync_last_upload_value,
+                state.settings.lastManualUploadAtEpochMillis?.toString()
+                    ?: stringResource(R.string.sync_never),
+            ),
+        )
+        Text(
+            text = stringResource(
+                R.string.sync_last_remote_check_value,
+                state.settings.lastRemoteCheckAtEpochMillis?.toString()
+                    ?: stringResource(R.string.sync_never),
+            ),
+        )
+        Text(
+            text = stringResource(
+                R.string.sync_remote_checkpoint_count,
+                state.settings.remoteCheckpointCount,
+            ),
+        )
+        Button(
+            onClick = onChooseSyncFolder,
+            enabled = enabled(StudySyncManualAction.CHOOSE_SYNC_FOLDER),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.sync_choose_folder))
+        }
+        Button(
+            onClick = onUploadEncryptedCheckpoint,
+            enabled = enabled(StudySyncManualAction.PREPARE_UPLOAD_CHECKPOINT),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.sync_prepare_upload_checkpoint))
+        }
+        OutlinedButton(
+            onClick = onCheckRemoteCheckpoints,
+            enabled = enabled(StudySyncManualAction.CHECK_REMOTE_CHECKPOINTS),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.sync_check_remote_checkpoint))
+        }
+        OutlinedButton(
+            onClick = onPreviewRemoteRestore,
+            enabled = enabled(StudySyncManualAction.PREVIEW_RESTORE),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.sync_preview_restore))
+        }
+        OutlinedButton(
+            onClick = onViewSyncHistory,
+            enabled = enabled(StudySyncManualAction.VIEW_SYNC_HISTORY),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.sync_view_history))
+        }
+    }
+}
 
 @Composable
 private fun OptionalSyncOnboardingCard(

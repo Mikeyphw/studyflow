@@ -230,3 +230,4 @@ copy.
 - Fixed onboarding schedule preview Kotlin helper reuse so `:feature:plans:compileDebugKotlin` does not hit overload ambiguity with the existing plan settings time formatter.
 - Strengthened the Phase 62 validator to reject future duplicate `formatMinuteOfDay` helper declarations in the onboarding screen.
 - CSOV04: Added optional sync onboarding with explicit Keep offline and Choose sync folder paths.
+- CSOV05: Added manual folder sync controls, SAF folder selection, and local manual sync state.

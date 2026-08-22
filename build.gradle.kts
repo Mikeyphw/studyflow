@@ -377,6 +377,13 @@ tasks.register<Exec>("verifyCsov04OptionalSyncOnboarding") {
     commandLine("python3", "scripts/verify_csov04_optional_sync_onboarding.py")
 }
 
+
+tasks.register<Exec>("verifyCsov05ManualFolderSync") {
+    group = "verification"
+    description = "Checks CSOV05 manual folder sync source contracts."
+    commandLine("python3", "scripts/verify_csov05_manual_folder_sync.py")
+}
+
 tasks.register<Exec>("verifyContentModeFoundation") {
     group = "verification"
     description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."

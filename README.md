@@ -261,3 +261,4 @@ survive a forced process restart. `verifyFinalReleaseVerdict` remains fail-close
 observations also carry explicit evidence. Source/static validators never imply artifact or device acceptance.
 Signing credentials and generated acceptance evidence remain outside source control.
 - CSOV04 adds optional sync onboarding while preserving Keep offline as a first-class path.
+- CSOV05 adds manual folder sync setup and manual checkpoint actions without enabling automatic sync.
