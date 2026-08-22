@@ -55,3 +55,10 @@ Conflict review is explicit and user-driven; automatic sync application remains 
 ### CSOV09 acceptance note
 
 Background sync remains optional; automatic work is blocked unless sync is enabled, encrypted, and provider-backed.
+
+
+### CSOV10 provider lane acceptance
+
+- WebDAV / Nextcloud provider lane exists and accepts only encrypted sync checkpoint uploads.
+- Google Drive remains optional and unconfigured by default.
+- Cloud sync is not required for fresh install or offline use.

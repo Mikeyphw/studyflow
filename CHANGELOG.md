@@ -255,3 +255,9 @@ copy.
 - Added background sync mode and constraint models.
 - Added a planner that keeps fresh installs off and makes manual-only the configured default.
 - Added sync UI summary copy and `verifyCsov09BackgroundSyncModes`.
+
+## CSOV10 — Real provider lane
+
+- Added optional WebDAV / Nextcloud provider lane for encrypted `.sfbackup` upload, list, download, and delete through a user-supplied HTTPS endpoint.
+- Added Google Drive as an optional provider shell without default configuration or StudyFlow account requirement.
+- Added source verifier `verifyCsov10RealProviders`.

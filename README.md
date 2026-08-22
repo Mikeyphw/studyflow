@@ -278,3 +278,7 @@ Optional cloud sync now includes a conservative conflict review path. When the s
 ### CSOV09 background sync modes
 
 Optional sync now has explicit background modes: off, manual only, upload after changes, check daily, and full automatic. Fresh installs remain effectively off; configured sync stays manual-only by default.
+
+### Optional cloud sync provider lane
+
+StudyFlow remains local-first. CSOV10 adds WebDAV / Nextcloud as the first optional account-capable provider lane. Remote uploads still use encrypted `.sfbackup` checkpoints, and cloud setup is never required for offline study.

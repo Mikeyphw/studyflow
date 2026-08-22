@@ -412,6 +412,12 @@ tasks.register<Exec>("verifyCsov09BackgroundSyncModes") {
     commandLine("python3", "scripts/verify_csov09_background_sync_modes.py")
 }
 
+tasks.register<Exec>("verifyCsov10RealProviders") {
+    group = "verification"
+    description = "Checks CSOV10 WebDAV / Nextcloud real provider lane source contracts."
+    commandLine("python3", "scripts/verify_csov10_real_providers.py")
+}
+
 tasks.register<Exec>("verifyContentModeFoundation") {
     group = "verification"
     description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."

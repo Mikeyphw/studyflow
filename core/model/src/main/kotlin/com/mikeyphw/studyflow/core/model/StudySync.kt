@@ -149,6 +149,97 @@ val LocalFolderSyncProvider = StudySyncProviderDescriptor(
     id = StudyFlowSyncProviderIds.LOCAL_FOLDER,
 )
 
+
+enum class StudySyncProviderCapability {
+    LOCAL_EXPORT,
+    REMOTE_UPLOAD,
+    REMOTE_DOWNLOAD,
+    BACKGROUND_SYNC,
+    USER_SUPPLIED_ENDPOINT,
+    THIRD_PARTY_ACCOUNT,
+}
+
+data class StudySyncProviderCatalogEntry(
+    val id: String,
+    val displayName: String,
+    val description: String,
+    val requiresAccount: Boolean,
+    val defaultEnabled: Boolean = false,
+    val capabilities: Set<StudySyncProviderCapability> = emptySet(),
+) {
+    init {
+        require(id.isNotBlank()) { "Sync provider catalog id cannot be blank." }
+        require(displayName.isNotBlank()) { "Sync provider catalog name cannot be blank." }
+        require(description.isNotBlank()) { "Sync provider catalog description cannot be blank." }
+    }
+
+    val optional: Boolean = !defaultEnabled
+    val remote: Boolean = StudySyncProviderCapability.REMOTE_UPLOAD in capabilities ||
+        StudySyncProviderCapability.REMOTE_DOWNLOAD in capabilities
+}
+
+object StudySyncProviderCatalog {
+    val None: StudySyncProviderCatalogEntry = StudySyncProviderCatalogEntry(
+        id = StudyFlowSyncProviderIds.NONE,
+        displayName = "No sync",
+        description = "Keep StudyFlow fully offline on this device.",
+        requiresAccount = false,
+    )
+
+    val LocalFolder: StudySyncProviderCatalogEntry = StudySyncProviderCatalogEntry(
+        id = StudyFlowSyncProviderIds.LOCAL_FOLDER,
+        displayName = "Local folder",
+        description = "Write encrypted checkpoints to a folder chosen by the user.",
+        requiresAccount = false,
+        capabilities = setOf(
+            StudySyncProviderCapability.LOCAL_EXPORT,
+            StudySyncProviderCapability.REMOTE_UPLOAD,
+            StudySyncProviderCapability.REMOTE_DOWNLOAD,
+        ),
+    )
+
+    val WebDavNextcloud: StudySyncProviderCatalogEntry = StudySyncProviderCatalogEntry(
+        id = StudyFlowSyncProviderIds.WEBDAV,
+        displayName = "WebDAV / Nextcloud",
+        description = "Sync encrypted checkpoints with a user-supplied WebDAV or Nextcloud folder.",
+        requiresAccount = true,
+        capabilities = setOf(
+            StudySyncProviderCapability.REMOTE_UPLOAD,
+            StudySyncProviderCapability.REMOTE_DOWNLOAD,
+            StudySyncProviderCapability.BACKGROUND_SYNC,
+            StudySyncProviderCapability.USER_SUPPLIED_ENDPOINT,
+            StudySyncProviderCapability.THIRD_PARTY_ACCOUNT,
+        ),
+    )
+
+    val GoogleDrive: StudySyncProviderCatalogEntry = StudySyncProviderCatalogEntry(
+        id = StudyFlowSyncProviderIds.GOOGLE_DRIVE,
+        displayName = "Google Drive",
+        description = "Optional account provider planned behind the same encrypted checkpoint contract.",
+        requiresAccount = true,
+        capabilities = setOf(
+            StudySyncProviderCapability.REMOTE_UPLOAD,
+            StudySyncProviderCapability.REMOTE_DOWNLOAD,
+            StudySyncProviderCapability.BACKGROUND_SYNC,
+            StudySyncProviderCapability.THIRD_PARTY_ACCOUNT,
+        ),
+    )
+
+    val Entries: List<StudySyncProviderCatalogEntry> = listOf(
+        None,
+        LocalFolder,
+        WebDavNextcloud,
+        GoogleDrive,
+    )
+
+    fun entry(id: String?): StudySyncProviderCatalogEntry =
+        Entries.firstOrNull { entry -> entry.id == (id ?: StudyFlowSyncProviderIds.NONE) }
+            ?: error("Unknown sync provider catalog id: $id")
+
+    fun optionalRemoteProviders(): List<StudySyncProviderCatalogEntry> =
+        Entries.filter { entry -> entry.optional && entry.remote }
+}
+
 data class StudySyncChangeSummary(
     val planCount: Int,
     val activePlanCount: Int,

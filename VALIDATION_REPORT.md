@@ -284,3 +284,7 @@ Static contract: `verifyCsov08ConflictReview`. Recommended runtime checks: `:cor
 ## CSOV09 validation
 
 Static contract: `verifyCsov09BackgroundSyncModes`. Recommended runtime checks: `:core:domain:test`, `:core:data:compileDebugKotlin`, `:feature:settings:compileDebugKotlin`, and `:app:compileDebugKotlin`.
+
+## CSOV10 — Real provider lane
+
+Static contract: `verifyCsov10RealProviders`. Recommended runtime checks: `:core:domain:test`, `:core:data:compileDebugKotlin`, and `:app:compileDebugKotlin`.

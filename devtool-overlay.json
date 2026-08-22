@@ -3,48 +3,48 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov09_background_sync_modes_v1",
-    "title": "CSOV09 background sync modes",
+    "name": "studyflow_csov10_webdav_nextcloud_provider_v1",
+    "title": "CSOV10 WebDAV / Nextcloud provider lane",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 2,
+    "index": 1,
     "count": 2,
-    "summary": "Adds optional background sync modes, scheduling constraints, persistence keys, and UI summary while keeping manual-only as the configured default."
+    "summary": "Adds the first account-capable optional provider lane using encrypted WebDAV / Nextcloud .sfbackup upload, index, download, and delete contracts."
   },
   "artifact": {
-    "name": "studyflow_csov09_background_sync_modes_v1",
+    "name": "studyflow_csov10_webdav_nextcloud_provider_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds optional background sync modes, scheduling constraints, persistence keys, and UI summary while keeping manual-only as the configured default."
+    "summary": "Adds the first account-capable optional provider lane using encrypted WebDAV / Nextcloud .sfbackup upload, index, download, and delete contracts."
   },
   "git": {
     "commit": true,
-    "message": "CSOV09 add optional background sync modes",
-    "commit_message": "CSOV09 add optional background sync modes"
+    "message": "CSOV10 add WebDAV Nextcloud sync provider lane",
+    "commit_message": "CSOV10 add WebDAV Nextcloud sync provider lane"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV09 add optional background sync modes"
+    "message": "CSOV10 add WebDAV Nextcloud sync provider lane"
   },
-  "commit_message": "CSOV09 add optional background sync modes",
+  "commit_message": "CSOV10 add WebDAV Nextcloud sync provider lane",
   "validation": {
     "recommended": [
-      "verifyCsov09BackgroundSyncModes",
+      "verifyCsov10RealProviders",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "tasks": [
-      "verifyCsov09BackgroundSyncModes",
+      "verifyCsov10RealProviders",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyCsov09BackgroundSyncModes",
+      "verifyCsov10RealProviders",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
@@ -59,33 +59,10 @@
     "README.md",
     "VALIDATION_REPORT.md",
     "build.gradle.kts",
-    "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
-    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
-    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncBackgroundSyncPlannerTest.kt",
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyFlowSyncProvider.kt",
+    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/WebDavStudyFlowSyncProviderTest.kt",
     "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-    "docs/quality/CSOV09_BACKGROUND_SYNC_MODES.md",
-    "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-    "feature/settings/src/main/res/values/strings.xml",
-    "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-    "scripts/verify_csov09_background_sync_modes.py"
-  ],
-  "copy": {
-    "mode": "overlay",
-    "paths": [
-      "CHANGELOG.md",
-      "FINAL_FULL_APP_ACCEPTANCE_SEAL.md",
-      "README.md",
-      "VALIDATION_REPORT.md",
-      "build.gradle.kts",
-      "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
-      "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
-      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncBackgroundSyncPlannerTest.kt",
-      "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-      "docs/quality/CSOV09_BACKGROUND_SYNC_MODES.md",
-      "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-      "feature/settings/src/main/res/values/strings.xml",
-      "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-      "scripts/verify_csov09_background_sync_modes.py"
-    ]
-  }
+    "docs/quality/CSOV10_REAL_PROVIDERS.md",
+    "scripts/verify_csov10_real_providers.py"
+  ]
 }
