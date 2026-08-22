@@ -231,3 +231,9 @@ copy.
 - Strengthened the Phase 62 validator to reject future duplicate `formatMinuteOfDay` helper declarations in the onboarding screen.
 - CSOV04: Added optional sync onboarding with explicit Keep offline and Choose sync folder paths.
 - CSOV05: Added manual folder sync controls, SAF folder selection, and local manual sync state.
+
+## CSOV06 - Sync device identity and ledger
+
+- Added durable optional-sync device identity models.
+- Added checkpoint ledger records for creator device, revision, upload state, restore-preview state, and conflict count.
+- Added repository ledger inspection and restore-preview recording hooks.

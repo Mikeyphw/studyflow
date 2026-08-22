@@ -16,6 +16,12 @@ import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
 import com.mikeyphw.studyflow.core.model.StudyFlowSyncSettings
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
+import com.mikeyphw.studyflow.core.model.StudySyncLedgerSnapshot
+import com.mikeyphw.studyflow.core.model.StudySyncLedgerFactory
+import com.mikeyphw.studyflow.core.model.StudySyncLedgerEventType
+import com.mikeyphw.studyflow.core.model.StudySyncLedgerEvent
+import com.mikeyphw.studyflow.core.model.StudySyncDeviceIdentity
+import com.mikeyphw.studyflow.core.model.StudySyncCheckpointRecord
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
@@ -63,17 +69,35 @@ internal class LocalStudyCloudSyncRepository(
         )
     }
 
+    override suspend fun inspectSyncLedger(): StudySyncLedgerSnapshot = decodeLedger(dataStore.data.first())
+
     override suspend fun prepareLocalFoundation(deviceName: String): StudySyncState {
         val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+        val now = clock()
         dataStore.edit { preferences ->
+            val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
+            val token = revisionToken(revision)
+            val checkpointId = StudySyncLedgerFactory.checkpointId(deviceId, revision, now)
             preferences[EnabledKey] = true
             preferences[StatusKey] = StudySyncConnectionStatus.LOCAL_READY.name
             preferences[ConflictPolicyKey] = preferences[ConflictPolicyKey]
                 ?: StudySyncConflictPolicy.MANUAL_REVIEW.name
+            preferences[DeviceIdKey] = deviceId
             preferences[DeviceNameKey] = deviceName
-            preferences[PreparedAtKey] = clock()
-            preferences[ChangeTokenKey] = revisionToken(revision)
+            preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
+            preferences[DeviceLastSeenAtKey] = now
+            preferences[PreparedAtKey] = now
+            preferences[ChangeTokenKey] = token
             preferences[PendingLocalChangeKey] = 0L
+            recordCheckpointLedger(preferences, checkpointId, deviceId, deviceName, now, revision, token)
+            appendLedgerEvent(
+                preferences = preferences,
+                type = StudySyncLedgerEventType.LOCAL_CHECKPOINT_PREPARED,
+                deviceId = deviceId,
+                checkpointId = checkpointId,
+                now = now,
+                message = "Prepared local checkpoint foundation.",
+            )
             preferences.remove(BlockedReasonKey)
         }
         return syncState.first()
@@ -104,7 +128,13 @@ internal class LocalStudyCloudSyncRepository(
 
     override suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState {
         val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+        val now = clock()
         dataStore.edit { preferences ->
+            val deviceName = preferences[DeviceNameKey] ?: "This device"
+            val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
+            preferences[DeviceIdKey] = deviceId
+            preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
+            preferences[DeviceLastSeenAtKey] = now
             preferences[EnabledKey] = true
             preferences[ProviderIdKey] = StudyFlowSyncProviderIds.LOCAL_FOLDER
             preferences[ProviderLocationKey] = folderUri
@@ -115,6 +145,14 @@ internal class LocalStudyCloudSyncRepository(
             } else {
                 StudySyncConnectionStatus.CHECKPOINT_NEEDED.name
             }
+            appendLedgerEvent(
+                preferences = preferences,
+                type = StudySyncLedgerEventType.DEVICE_REGISTERED,
+                deviceId = deviceId,
+                checkpointId = null,
+                now = now,
+                message = "Configured optional folder sync provider.",
+            )
             preferences.remove(BlockedReasonKey)
         }
         return syncState.first()
@@ -122,27 +160,49 @@ internal class LocalStudyCloudSyncRepository(
 
     override suspend fun recordManualUploadCheckpoint(): StudySyncState {
         val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+        val now = clock()
         dataStore.edit { preferences ->
+            val remoteLocation = preferences[ProviderLocationKey]
             if (preferences[ProviderIdKey] != StudyFlowSyncProviderIds.LOCAL_FOLDER ||
-                preferences[ProviderLocationKey].isNullOrBlank()
+                remoteLocation.isNullOrBlank()
             ) {
                 preferences[StatusKey] = StudySyncConnectionStatus.CHECKPOINT_BLOCKED.name
                 preferences[BlockedReasonKey] = "Choose a sync folder before manual upload."
                 return@edit
             }
+            val deviceName = preferences[DeviceNameKey] ?: "This device"
+            val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
+            val token = revisionToken(revision)
+            val checkpointId = StudySyncLedgerFactory.checkpointId(deviceId, revision, now)
             preferences[EnabledKey] = true
             preferences[StatusKey] = StudySyncConnectionStatus.LOCAL_READY.name
-            preferences[PreparedAtKey] = clock()
-            preferences[ChangeTokenKey] = revisionToken(revision)
+            preferences[DeviceIdKey] = deviceId
+            preferences[DeviceNameKey] = deviceName
+            preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
+            preferences[DeviceLastSeenAtKey] = now
+            preferences[PreparedAtKey] = now
+            preferences[ChangeTokenKey] = token
             preferences[PendingLocalChangeKey] = 0L
-            preferences[LastManualUploadAtKey] = clock()
+            preferences[LastManualUploadAtKey] = now
             preferences[RemoteCheckpointCountKey] = maxOf(preferences[RemoteCheckpointCountKey] ?: 0L, 1L)
+            recordCheckpointLedger(preferences, checkpointId, deviceId, deviceName, now, revision, token)
+            preferences[LastCheckpointUploadedAtKey] = now
+            preferences[LastCheckpointRemoteLocationKey] = remoteLocation
+            appendLedgerEvent(
+                preferences = preferences,
+                type = StudySyncLedgerEventType.MANUAL_UPLOAD_RECORDED,
+                deviceId = deviceId,
+                checkpointId = checkpointId,
+                now = now,
+                message = "Recorded manual encrypted checkpoint upload.",
+            )
             preferences.remove(BlockedReasonKey)
         }
         return syncState.first()
     }
 
     override suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState {
+        val now = clock()
         dataStore.edit { preferences ->
             if (preferences[ProviderIdKey] != StudyFlowSyncProviderIds.LOCAL_FOLDER ||
                 preferences[ProviderLocationKey].isNullOrBlank()
@@ -151,8 +211,45 @@ internal class LocalStudyCloudSyncRepository(
                 preferences[BlockedReasonKey] = "Choose a sync folder before checking remote checkpoints."
                 return@edit
             }
-            preferences[LastRemoteCheckAtKey] = clock()
+            val deviceName = preferences[DeviceNameKey] ?: "This device"
+            val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
+            preferences[DeviceIdKey] = deviceId
+            preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
+            preferences[DeviceLastSeenAtKey] = now
+            preferences[LastRemoteCheckAtKey] = now
             preferences[RemoteCheckpointCountKey] = remoteCheckpointCount.toLong()
+            appendLedgerEvent(
+                preferences = preferences,
+                type = StudySyncLedgerEventType.REMOTE_CHECK_COMPLETED,
+                deviceId = deviceId,
+                checkpointId = preferences[LastCheckpointIdKey],
+                now = now,
+                message = "Checked for remote encrypted checkpoints.",
+            )
+            preferences.remove(BlockedReasonKey)
+        }
+        return syncState.first()
+    }
+
+    override suspend fun recordRestorePreview(checkpointId: String): StudySyncState {
+        val now = clock()
+        dataStore.edit { preferences ->
+            val deviceName = preferences[DeviceNameKey] ?: "This device"
+            val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
+            preferences[DeviceIdKey] = deviceId
+            preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
+            preferences[DeviceLastSeenAtKey] = now
+            if (preferences[LastCheckpointIdKey] == checkpointId) {
+                preferences[LastRestorePreviewedAtKey] = now
+            }
+            appendLedgerEvent(
+                preferences = preferences,
+                type = StudySyncLedgerEventType.RESTORE_PREVIEWED,
+                deviceId = deviceId,
+                checkpointId = checkpointId,
+                now = now,
+                message = "Previewed checkpoint restore before applying data.",
+            )
             preferences.remove(BlockedReasonKey)
         }
         return syncState.first()
@@ -182,6 +279,7 @@ internal class LocalStudyCloudSyncRepository(
             provider = providerDescriptor(settings, enabled),
             connectionStatus = status,
             conflictPolicy = decodeConflictPolicy(preferences[ConflictPolicyKey]),
+            deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.DefaultDeviceId,
             deviceName = preferences[DeviceNameKey] ?: "This device",
             lastPreparedAtEpochMillis = preferences[PreparedAtKey],
             lastLocalChangeToken = preferences[ChangeTokenKey],
@@ -252,6 +350,95 @@ internal class LocalStudyCloudSyncRepository(
         return (this - previous).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 
+
+    private fun decodeLedger(
+        preferences: androidx.datastore.preferences.core.Preferences,
+    ): StudySyncLedgerSnapshot {
+        val now = clock()
+        val deviceName = preferences[DeviceNameKey] ?: "This device"
+        val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.DefaultDeviceId
+        val firstSeen = preferences[DeviceFirstSeenAtKey] ?: preferences[PreparedAtKey] ?: now
+        val lastSeen = preferences[DeviceLastSeenAtKey] ?: preferences[LastManualUploadAtKey] ?: firstSeen
+        val device = StudySyncLedgerFactory.localDevice(deviceId, deviceName, firstSeen, lastSeen)
+        val checkpoint = preferences[LastCheckpointIdKey]?.let { checkpointId ->
+            StudySyncCheckpointRecord(
+                id = checkpointId,
+                deviceId = preferences[LastCheckpointDeviceIdKey] ?: deviceId,
+                deviceName = preferences[LastCheckpointDeviceNameKey] ?: deviceName,
+                createdAtEpochMillis = preferences[LastCheckpointCreatedAtKey] ?: 0L,
+                databaseRevision = preferences[LastCheckpointRevisionKey] ?: 0L,
+                localChangeToken = preferences[LastCheckpointChangeTokenKey] ?: revisionToken(0L),
+                changeCount = preferences[LastCheckpointChangeCountKey]
+                    ?.coerceAtMost(Int.MAX_VALUE.toLong())
+                    ?.toInt()
+                    ?: 0,
+                uploadedAtEpochMillis = preferences[LastCheckpointUploadedAtKey],
+                remoteLocation = preferences[LastCheckpointRemoteLocationKey],
+                restorePreviewedAtEpochMillis = preferences[LastRestorePreviewedAtKey],
+                conflictCount = preferences[LastCheckpointConflictCountKey]
+                    ?.coerceAtMost(Int.MAX_VALUE.toLong())
+                    ?.toInt()
+                    ?: 0,
+            )
+        }
+        val eventCount = preferences[SyncLedgerEventCountKey] ?: 0L
+        val event = if (eventCount > 0L) {
+            StudySyncLedgerEvent(
+                sequence = eventCount,
+                type = decodeLedgerEventType(preferences[LastLedgerEventTypeKey]),
+                deviceId = deviceId,
+                checkpointId = preferences[LastLedgerEventCheckpointIdKey]?.takeIf { it.isNotBlank() },
+                createdAtEpochMillis = preferences[LastLedgerEventAtKey] ?: lastSeen,
+                message = preferences[LastLedgerEventMessageKey] ?: "Sync ledger updated.",
+            )
+        } else {
+            null
+        }
+        return StudySyncLedgerSnapshot(
+            devices = listOf(device),
+            checkpoints = listOfNotNull(checkpoint),
+            events = listOfNotNull(event),
+        )
+    }
+
+    private fun recordCheckpointLedger(
+        preferences: androidx.datastore.preferences.core.MutablePreferences,
+        checkpointId: String,
+        deviceId: String,
+        deviceName: String,
+        now: Long,
+        revision: Long,
+        changeToken: String,
+    ) {
+        preferences[LastCheckpointIdKey] = checkpointId
+        preferences[LastCheckpointDeviceIdKey] = deviceId
+        preferences[LastCheckpointDeviceNameKey] = deviceName
+        preferences[LastCheckpointCreatedAtKey] = now
+        preferences[LastCheckpointRevisionKey] = revision
+        preferences[LastCheckpointChangeTokenKey] = changeToken
+        preferences[LastCheckpointChangeCountKey] = preferences[PendingLocalChangeKey] ?: 0L
+    }
+
+    private fun appendLedgerEvent(
+        preferences: androidx.datastore.preferences.core.MutablePreferences,
+        type: StudySyncLedgerEventType,
+        deviceId: String,
+        checkpointId: String?,
+        now: Long,
+        message: String,
+    ) {
+        preferences[SyncLedgerEventCountKey] = (preferences[SyncLedgerEventCountKey] ?: 0L) + 1L
+        preferences[LastLedgerEventTypeKey] = type.name
+        preferences[LastLedgerEventDeviceIdKey] = deviceId
+        preferences[LastLedgerEventCheckpointIdKey] = checkpointId ?: ""
+        preferences[LastLedgerEventAtKey] = now
+        preferences[LastLedgerEventMessageKey] = message
+    }
+
+    private fun decodeLedgerEventType(value: String?): StudySyncLedgerEventType = runCatching {
+        value?.let { enumValueOf<StudySyncLedgerEventType>(it) }
+    }.getOrNull() ?: StudySyncLedgerEventType.DEVICE_REGISTERED
+
     private companion object {
         const val RevisionTokenPrefix = "revision="
         val EnabledKey = booleanPreferencesKey("enabled")
@@ -270,6 +457,26 @@ internal class LocalStudyCloudSyncRepository(
         val LastManualUploadAtKey = longPreferencesKey("last_manual_upload_at")
         val LastRemoteCheckAtKey = longPreferencesKey("last_remote_check_at")
         val RemoteCheckpointCountKey = longPreferencesKey("remote_checkpoint_count")
+        val DeviceIdKey = stringPreferencesKey("device_id")
+        val DeviceFirstSeenAtKey = longPreferencesKey("device_first_seen_at")
+        val DeviceLastSeenAtKey = longPreferencesKey("device_last_seen_at")
+        val LastCheckpointIdKey = stringPreferencesKey("last_checkpoint_id")
+        val LastCheckpointDeviceIdKey = stringPreferencesKey("last_checkpoint_device_id")
+        val LastCheckpointDeviceNameKey = stringPreferencesKey("last_checkpoint_device_name")
+        val LastCheckpointCreatedAtKey = longPreferencesKey("last_checkpoint_created_at")
+        val LastCheckpointRevisionKey = longPreferencesKey("last_checkpoint_revision")
+        val LastCheckpointChangeTokenKey = stringPreferencesKey("last_checkpoint_change_token")
+        val LastCheckpointChangeCountKey = longPreferencesKey("last_checkpoint_change_count")
+        val LastCheckpointUploadedAtKey = longPreferencesKey("last_checkpoint_uploaded_at")
+        val LastCheckpointRemoteLocationKey = stringPreferencesKey("last_checkpoint_remote_location")
+        val LastRestorePreviewedAtKey = longPreferencesKey("last_restore_previewed_at")
+        val LastCheckpointConflictCountKey = longPreferencesKey("last_checkpoint_conflict_count")
+        val SyncLedgerEventCountKey = longPreferencesKey("sync_ledger_event_count")
+        val LastLedgerEventTypeKey = stringPreferencesKey("last_ledger_event_type")
+        val LastLedgerEventDeviceIdKey = stringPreferencesKey("last_ledger_event_device_id")
+        val LastLedgerEventCheckpointIdKey = stringPreferencesKey("last_ledger_event_checkpoint_id")
+        val LastLedgerEventAtKey = longPreferencesKey("last_ledger_event_at")
+        val LastLedgerEventMessageKey = stringPreferencesKey("last_ledger_event_message")
         val BlockedReasonKey = stringPreferencesKey("blocked_reason")
     }
 }

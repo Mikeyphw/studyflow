@@ -384,6 +384,13 @@ tasks.register<Exec>("verifyCsov05ManualFolderSync") {
     commandLine("python3", "scripts/verify_csov05_manual_folder_sync.py")
 }
 
+
+tasks.register<Exec>("verifyCsov06SyncLedger") {
+    group = "verification"
+    description = "Checks CSOV06 sync device identity and ledger source contracts."
+    commandLine("python3", "scripts/verify_csov06_sync_ledger.py")
+}
+
 tasks.register<Exec>("verifyContentModeFoundation") {
     group = "verification"
     description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."

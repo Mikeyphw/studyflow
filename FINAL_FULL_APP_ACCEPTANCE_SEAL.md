@@ -43,3 +43,5 @@ R2 strengthens the source verifier after an audit found two weakly implied check
 ## Result
 
 The app is ready for one final Devtool acceptance run on the landed Phase 64 repository. The signed Release journey now exercises the Phase 63 runbook and applies a Phase 64 sprint before export/restore, then verifies the sprint result after a forced process restart. No Phase 65 feature is defined by the current roadmap.
+
+- CSOV06 records sync device identity and checkpoint ledger metadata without requiring cloud sign-in.

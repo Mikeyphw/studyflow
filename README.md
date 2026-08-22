@@ -262,3 +262,7 @@ observations also carry explicit evidence. Source/static validators never imply 
 Signing credentials and generated acceptance evidence remain outside source control.
 - CSOV04 adds optional sync onboarding while preserving Keep offline as a first-class path.
 - CSOV05 adds manual folder sync setup and manual checkpoint actions without enabling automatic sync.
+
+### CSOV06 sync ledger
+
+Optional cloud sync now records local device identity and checkpoint ledger facts while preserving local-first/offline operation.

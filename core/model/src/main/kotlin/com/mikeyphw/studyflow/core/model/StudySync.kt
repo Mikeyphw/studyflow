@@ -78,6 +78,7 @@ data class StudySyncState(
     val provider: StudySyncProviderDescriptor,
     val connectionStatus: StudySyncConnectionStatus,
     val conflictPolicy: StudySyncConflictPolicy,
+    val deviceId: String = StudySyncDeviceIdentity.DefaultDeviceId,
     val deviceName: String,
     val lastPreparedAtEpochMillis: Long?,
     val lastLocalChangeToken: String?,
@@ -98,6 +99,7 @@ data class StudySyncState(
             provider = NoSyncProvider,
             connectionStatus = StudySyncConnectionStatus.DISABLED,
             conflictPolicy = StudySyncConflictPolicy.MANUAL_REVIEW,
+            deviceId = StudySyncDeviceIdentity.DefaultDeviceId,
             deviceName = deviceName,
             lastPreparedAtEpochMillis = null,
             lastLocalChangeToken = null,
@@ -139,6 +141,143 @@ data class StudySyncChangeSummary(
 ) {
     val changeCount: Int = changesSinceCheckpoint
     val hasLocalData: Boolean = planCount > 0
+}
+
+data class StudySyncDevice(
+    val id: String,
+    val name: String,
+    val createdAtEpochMillis: Long,
+    val lastSeenAtEpochMillis: Long,
+) {
+    init {
+        require(id.isNotBlank()) { "Device id cannot be blank." }
+        require(name.isNotBlank()) { "Device name cannot be blank." }
+        require(createdAtEpochMillis >= 0L) { "Device creation time cannot be negative." }
+        require(lastSeenAtEpochMillis >= createdAtEpochMillis) {
+            "Device last-seen time cannot be before creation."
+        }
+    }
+}
+
+enum class StudySyncLedgerEventType {
+    DEVICE_REGISTERED,
+    LOCAL_CHECKPOINT_PREPARED,
+    MANUAL_UPLOAD_RECORDED,
+    REMOTE_CHECK_COMPLETED,
+    RESTORE_PREVIEWED,
+    CONFLICT_DETECTED,
+    CONFLICT_RESOLVED,
+}
+
+data class StudySyncCheckpointRecord(
+    val id: String,
+    val deviceId: String = StudySyncDeviceIdentity.DefaultDeviceId,
+    val deviceName: String,
+    val createdAtEpochMillis: Long,
+    val databaseRevision: Long,
+    val localChangeToken: String,
+    val changeCount: Int,
+    val uploadedAtEpochMillis: Long? = null,
+    val remoteLocation: String? = null,
+    val restorePreviewedAtEpochMillis: Long? = null,
+    val conflictCount: Int = 0,
+) {
+    init {
+        require(id.isNotBlank()) { "Checkpoint id cannot be blank." }
+        require(deviceId.isNotBlank()) { "Checkpoint device id cannot be blank." }
+        require(deviceName.isNotBlank()) { "Checkpoint device name cannot be blank." }
+        require(createdAtEpochMillis >= 0L) { "Checkpoint creation time cannot be negative." }
+        require(databaseRevision >= 0L) { "Checkpoint database revision cannot be negative." }
+        require(localChangeToken.isNotBlank()) { "Checkpoint change token cannot be blank." }
+        require(changeCount >= 0) { "Checkpoint change count cannot be negative." }
+        require(uploadedAtEpochMillis == null || uploadedAtEpochMillis >= createdAtEpochMillis) {
+            "Upload time cannot be before checkpoint creation."
+        }
+        require(remoteLocation?.isNotBlank() ?: true) { "Remote location cannot be blank." }
+        require(
+            restorePreviewedAtEpochMillis == null ||
+                restorePreviewedAtEpochMillis >= createdAtEpochMillis,
+        ) {
+            "Restore preview time cannot be before checkpoint creation."
+        }
+        require(conflictCount >= 0) { "Conflict count cannot be negative." }
+    }
+
+    val uploaded: Boolean = uploadedAtEpochMillis != null
+    val restorePreviewed: Boolean = restorePreviewedAtEpochMillis != null
+    val hasConflicts: Boolean = conflictCount > 0
+}
+
+data class StudySyncLedgerEvent(
+    val sequence: Long,
+    val type: StudySyncLedgerEventType,
+    val deviceId: String,
+    val checkpointId: String? = null,
+    val createdAtEpochMillis: Long,
+    val message: String,
+) {
+    init {
+        require(sequence >= 0L) { "Ledger event sequence cannot be negative." }
+        require(deviceId.isNotBlank()) { "Ledger event device id cannot be blank." }
+        require(checkpointId?.isNotBlank() ?: true) { "Ledger event checkpoint id cannot be blank." }
+        require(createdAtEpochMillis >= 0L) { "Ledger event time cannot be negative." }
+        require(message.isNotBlank()) { "Ledger event message cannot be blank." }
+    }
+}
+
+data class StudySyncLedgerSnapshot(
+    val devices: List<StudySyncDevice> = emptyList(),
+    val checkpoints: List<StudySyncCheckpointRecord> = emptyList(),
+    val events: List<StudySyncLedgerEvent> = emptyList(),
+) {
+    val currentDevice: StudySyncDevice? = devices.maxByOrNull { device -> device.lastSeenAtEpochMillis }
+    val latestCheckpoint: StudySyncCheckpointRecord? = checkpoints.maxByOrNull { checkpoint ->
+        checkpoint.createdAtEpochMillis
+    }
+    val uploadedCheckpointCount: Int = checkpoints.count { checkpoint -> checkpoint.uploaded }
+    val restorePreviewedCheckpointCount: Int = checkpoints.count { checkpoint -> checkpoint.restorePreviewed }
+    val conflictCount: Int = checkpoints.sumOf { checkpoint -> checkpoint.conflictCount }
+    val hasConflicts: Boolean = conflictCount > 0
+}
+
+object StudySyncDeviceIdentity {
+    const val DefaultDeviceId: String = "device-local-default"
+
+    fun stableDeviceId(seed: String): String {
+        val normalized = seed.trim().lowercase()
+        require(normalized.isNotBlank()) { "Device identity seed cannot be blank." }
+        val hash = normalized.fold(0x811C9DC5.toInt()) { acc, char ->
+            (acc xor char.code) * 0x01000193
+        }.toLong() and 0xffffffffL
+        return "device-${hash.toString(16).padStart(8, '0')}"
+    }
+
+    fun normalizeDeviceName(name: String): String = name.trim().ifBlank { "This device" }
+}
+
+object StudySyncLedgerFactory {
+    fun checkpointId(
+        deviceId: String,
+        databaseRevision: Long,
+        createdAtEpochMillis: Long,
+    ): String {
+        require(deviceId.isNotBlank()) { "Checkpoint device id cannot be blank." }
+        require(databaseRevision >= 0L) { "Checkpoint database revision cannot be negative." }
+        require(createdAtEpochMillis >= 0L) { "Checkpoint creation time cannot be negative." }
+        return "checkpoint-$deviceId-r$databaseRevision-t$createdAtEpochMillis"
+    }
+
+    fun localDevice(
+        id: String,
+        name: String,
+        firstSeenAtEpochMillis: Long,
+        lastSeenAtEpochMillis: Long = firstSeenAtEpochMillis,
+    ): StudySyncDevice = StudySyncDevice(
+        id = id,
+        name = StudySyncDeviceIdentity.normalizeDeviceName(name),
+        createdAtEpochMillis = firstSeenAtEpochMillis,
+        lastSeenAtEpochMillis = lastSeenAtEpochMillis,
+    )
 }
 
 

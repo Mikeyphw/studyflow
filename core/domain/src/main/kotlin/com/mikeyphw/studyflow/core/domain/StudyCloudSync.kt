@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
+import com.mikeyphw.studyflow.core.model.StudySyncLedgerSnapshot
 import com.mikeyphw.studyflow.core.model.StudySyncState
 import kotlinx.coroutines.flow.Flow
 
@@ -9,6 +10,8 @@ interface StudyCloudSyncRepository {
     val syncState: Flow<StudySyncState>
 
     suspend fun inspectLocalChanges(): StudySyncChangeSummary
+
+    suspend fun inspectSyncLedger(): StudySyncLedgerSnapshot
 
     suspend fun prepareLocalFoundation(deviceName: String): StudySyncState
 
@@ -22,6 +25,8 @@ interface StudyCloudSyncRepository {
 
     suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState
 
+    suspend fun recordRestorePreview(checkpointId: String): StudySyncState
+
     suspend fun clearLocalFoundation(): StudySyncState
 }
 
@@ -31,6 +36,8 @@ class ManageStudyCloudSync(
     val syncState: Flow<StudySyncState> = repository.syncState
 
     suspend fun inspectLocalChanges(): StudySyncChangeSummary = repository.inspectLocalChanges()
+
+    suspend fun inspectSyncLedger(): StudySyncLedgerSnapshot = repository.inspectSyncLedger()
 
     suspend fun prepareLocalFoundation(deviceName: String): StudySyncState {
         require(deviceName.isNotBlank()) { "Device name cannot be blank." }
@@ -52,6 +59,11 @@ class ManageStudyCloudSync(
     suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState {
         require(remoteCheckpointCount >= 0) { "Remote checkpoint count cannot be negative." }
         return repository.recordManualRemoteCheck(remoteCheckpointCount)
+    }
+
+    suspend fun recordRestorePreview(checkpointId: String): StudySyncState {
+        require(checkpointId.isNotBlank()) { "Checkpoint id cannot be blank." }
+        return repository.recordRestorePreview(checkpointId.trim())
     }
 
     suspend fun clearLocalFoundation(): StudySyncState = repository.clearLocalFoundation()

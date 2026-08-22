@@ -3,34 +3,34 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov05_manual_folder_sync_v1",
-    "title": "CSOV05 manual folder sync",
+    "name": "studyflow_csov06_device_sync_ledger_v1",
+    "title": "CSOV06 device sync ledger",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 2,
+    "index": 1,
     "count": 2,
-    "summary": "Adds SAF folder selection, manual encrypted checkpoint action state, remote check state, and manual sync UI controls."
+    "summary": "Adds durable optional-sync device identity, checkpoint ledger records, ledger inspection, and restore-preview bookkeeping."
   },
   "artifact": {
-    "name": "studyflow_csov05_manual_folder_sync_v1",
+    "name": "studyflow_csov06_device_sync_ledger_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds SAF folder selection, manual encrypted checkpoint action state, remote check state, and manual sync UI controls."
+    "summary": "Adds durable optional-sync device identity, checkpoint ledger records, ledger inspection, and restore-preview bookkeeping."
   },
   "git": {
     "commit": true,
-    "message": "CSOV05 add manual folder sync lane",
-    "commit_message": "CSOV05 add manual folder sync lane"
+    "message": "CSOV06 add sync device ledger",
+    "commit_message": "CSOV06 add sync device ledger"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV05 add manual folder sync lane"
+    "message": "CSOV06 add sync device ledger"
   },
-  "commit_message": "CSOV05 add manual folder sync lane",
+  "commit_message": "CSOV06 add sync device ledger",
   "validation": {
     "recommended": [
-      "verifyCsov05ManualFolderSync",
+      "verifyCsov06SyncLedger",
       ":core:model:test",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
@@ -38,7 +38,7 @@
       ":app:compileDebugKotlin"
     ],
     "tasks": [
-      "verifyCsov05ManualFolderSync",
+      "verifyCsov06SyncLedger",
       ":core:model:test",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
@@ -46,7 +46,7 @@
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyCsov05ManualFolderSync",
+      "verifyCsov06SyncLedger",
       ":core:model:test",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
@@ -58,39 +58,33 @@
   },
   "files": [
     "CHANGELOG.md",
+    "FINAL_FULL_APP_ACCEPTANCE_SEAL.md",
     "README.md",
     "VALIDATION_REPORT.md",
-    "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
     "build.gradle.kts",
     "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
     "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
+    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncLedgerTest.kt",
     "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
     "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudyFlowSyncSettingsTest.kt",
-    "docs/quality/CSOV05_MANUAL_FOLDER_SYNC.md",
-    "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-    "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-    "feature/settings/src/main/res/values/strings.xml",
-    "feature/settings/src/test/java/com/mikeyphw/studyflow/feature/settings/SettingsContractTest.kt",
-    "scripts/verify_csov05_manual_folder_sync.py"
+    "docs/quality/CSOV06_SYNC_LEDGER.md",
+    "scripts/verify_csov06_sync_ledger.py"
   ],
   "copy": {
     "mode": "overlay",
     "paths": [
       "CHANGELOG.md",
+      "FINAL_FULL_APP_ACCEPTANCE_SEAL.md",
       "README.md",
       "VALIDATION_REPORT.md",
-      "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
       "build.gradle.kts",
       "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
       "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
+      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncLedgerTest.kt",
       "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
       "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudyFlowSyncSettingsTest.kt",
-      "docs/quality/CSOV05_MANUAL_FOLDER_SYNC.md",
-      "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-      "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-      "feature/settings/src/main/res/values/strings.xml",
-      "feature/settings/src/test/java/com/mikeyphw/studyflow/feature/settings/SettingsContractTest.kt",
-      "scripts/verify_csov05_manual_folder_sync.py"
+      "docs/quality/CSOV06_SYNC_LEDGER.md",
+      "scripts/verify_csov06_sync_ledger.py"
     ]
   }
 }

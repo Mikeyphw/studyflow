@@ -91,4 +91,46 @@ class StudyFlowSyncSettingsTest {
             it.action == StudySyncManualAction.CHECK_REMOTE_CHECKPOINTS
         }.enabled)
     }
+    @Test
+    fun `sync ledger records device checkpoint upload and restore preview facts`() {
+        val device = StudySyncLedgerFactory.localDevice(
+            id = StudySyncDeviceIdentity.stableDeviceId("Tablet"),
+            name = "Tablet",
+            firstSeenAtEpochMillis = 100L,
+            lastSeenAtEpochMillis = 200L,
+        )
+        val checkpoint = StudySyncCheckpointRecord(
+            id = StudySyncLedgerFactory.checkpointId(device.id, databaseRevision = 7L, createdAtEpochMillis = 250L),
+            deviceId = device.id,
+            deviceName = device.name,
+            createdAtEpochMillis = 250L,
+            databaseRevision = 7L,
+            localChangeToken = "revision=7",
+            changeCount = 3,
+            uploadedAtEpochMillis = 300L,
+            remoteLocation = "content://sync-folder",
+            restorePreviewedAtEpochMillis = 400L,
+        )
+        val snapshot = StudySyncLedgerSnapshot(
+            devices = listOf(device),
+            checkpoints = listOf(checkpoint),
+            events = listOf(
+                StudySyncLedgerEvent(
+                    sequence = 1L,
+                    type = StudySyncLedgerEventType.MANUAL_UPLOAD_RECORDED,
+                    deviceId = device.id,
+                    checkpointId = checkpoint.id,
+                    createdAtEpochMillis = 300L,
+                    message = "Recorded manual encrypted checkpoint upload.",
+                ),
+            ),
+        )
+
+        assertEquals(device, snapshot.currentDevice)
+        assertEquals(checkpoint, snapshot.latestCheckpoint)
+        assertTrue(snapshot.latestCheckpoint!!.uploaded)
+        assertTrue(snapshot.latestCheckpoint!!.restorePreviewed)
+        assertEquals(1, snapshot.uploadedCheckpointCount)
+        assertFalse(snapshot.hasConflicts)
+    }
 }
