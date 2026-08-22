@@ -3,104 +3,72 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov14_optional_sync_delivery_audit_hotfix_v1",
-    "title": "CSOV14 optional sync delivery audit hotfix",
+    "name": "studyflow_csov15_optional_instrumentation_validation_v1",
+    "title": "CSOV15 optional instrumentation validation",
     "project": "studyflow",
     "target": "studyflow_android",
     "index": 1,
     "count": 1,
-    "summary": "Registers the missing CSOV00/CSOV01 Gradle verifier and wires the full CSOV00-CSOV14 optional sync audit lane into checkAll."
+    "summary": "Adds optional adb/localhost/root-aware connected instrumentation validation and on-device sync UI tests."
   },
   "artifact": {
-    "name": "studyflow_csov14_optional_sync_delivery_audit_hotfix_v1",
+    "name": "studyflow_csov15_optional_instrumentation_validation_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Closes the optional sync delivery-audit gap by exposing every CSOV verifier through Gradle and checkAll."
+    "summary": "Adds optional instrumentation validation with adb localhost:5555 detection, root probing when available, and skip/pass/fail evidence."
   },
   "git": {
     "commit": true,
-    "message": "CSOV14 hotfix optional sync delivery audit",
-    "commit_message": "CSOV14 hotfix optional sync delivery audit"
+    "message": "CSOV15 add optional instrumentation validation",
+    "commit_message": "CSOV15 add optional instrumentation validation"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV14 hotfix optional sync delivery audit"
+    "message": "CSOV15 add optional instrumentation validation"
   },
-  "commit_message": "CSOV14 hotfix optional sync delivery audit",
+  "commit_message": "CSOV15 add optional instrumentation validation",
   "validation": {
     "recommended": [
-      "verifyCsov14OptionalSyncDeliveryAudit",
-      "verifyCloudOptionalSyncSettings",
-      "verifyCsov02SyncBundle",
-      "verifyCsov03ProviderAbstraction",
-      "verifyCsov04OptionalSyncOnboarding",
-      "verifyCsov05ManualFolderSync",
-      "verifyCsov06SyncLedger",
-      "verifyCsov07MergeEngine",
-      "verifyCsov08ConflictReview",
-      "verifyCsov09BackgroundSyncModes",
-      "verifyCsov10RealProviders",
-      "verifyCsov11FinalSyncSeal",
-      "verifyCsov12ProviderSetupSecurity",
-      "verifyCsov13SyncRunbook"
+      "verifyCsov15OptionalInstrumentationValidation",
+      "recordOptionalInstrumentationValidation",
+      ":app:connectedDebugAndroidTest"
     ],
     "tasks": [
-      "verifyCsov14OptionalSyncDeliveryAudit",
-      "verifyCloudOptionalSyncSettings",
-      "verifyCsov02SyncBundle",
-      "verifyCsov03ProviderAbstraction",
-      "verifyCsov04OptionalSyncOnboarding",
-      "verifyCsov05ManualFolderSync",
-      "verifyCsov06SyncLedger",
-      "verifyCsov07MergeEngine",
-      "verifyCsov08ConflictReview",
-      "verifyCsov09BackgroundSyncModes",
-      "verifyCsov10RealProviders",
-      "verifyCsov11FinalSyncSeal",
-      "verifyCsov12ProviderSetupSecurity",
-      "verifyCsov13SyncRunbook",
-      ":core:model:test",
-      ":core:domain:test",
-      ":core:portability:test",
-      ":feature:settings:compileDebugKotlin",
+      "verifyCsov15OptionalInstrumentationValidation",
+      "recordOptionalInstrumentationValidation",
+      ":app:connectedDebugAndroidTest",
+      ":app:compileDebugAndroidTestKotlin",
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyCsov14OptionalSyncDeliveryAudit",
-      "verifyCloudOptionalSyncSettings",
-      "verifyCsov02SyncBundle",
-      "verifyCsov03ProviderAbstraction",
-      "verifyCsov04OptionalSyncOnboarding",
-      "verifyCsov05ManualFolderSync",
-      "verifyCsov06SyncLedger",
-      "verifyCsov07MergeEngine",
-      "verifyCsov08ConflictReview",
-      "verifyCsov09BackgroundSyncModes",
-      "verifyCsov10RealProviders",
-      "verifyCsov11FinalSyncSeal",
-      "verifyCsov12ProviderSetupSecurity",
-      "verifyCsov13SyncRunbook"
+      "verifyCsov15OptionalInstrumentationValidation",
+      "recordOptionalInstrumentationValidation",
+      ":app:connectedDebugAndroidTest"
     ],
     "defer_for_intermediate": false,
     "default_apply_flag": "--no-validate"
   },
   "files": [
     "build.gradle.kts",
-    "scripts/verify_csov14_optional_sync_delivery_audit.py",
-    "docs/quality/CSOV14_OPTIONAL_SYNC_DELIVERY_AUDIT.md",
+    "scripts/run_optional_instrumentation_validation.py",
+    "scripts/verify_csov15_optional_instrumentation_validation.py",
+    "app/src/androidTest/java/com/mikeyphw/studyflow/OptionalSyncInstrumentationValidationTest.kt",
+    "docs/quality/CSOV15_OPTIONAL_INSTRUMENTATION_VALIDATION.md",
     "CHANGELOG.md",
     "FINAL_FULL_APP_ACCEPTANCE_SEAL.md",
     "VALIDATION_REPORT.md"
   ],
   "integrity": {
     "sha256": {
-      "build.gradle.kts": "c30e90c17c8c6914d41c69baed1b19348fec407dfd07bcf8cd7e35d29b4a8561",
-      "scripts/verify_csov14_optional_sync_delivery_audit.py": "37cc4f87e9771a1a8b205518ac8b1c126beff9551a58236fcbfc4120ab7d171c",
-      "docs/quality/CSOV14_OPTIONAL_SYNC_DELIVERY_AUDIT.md": "9d0573140de7662f50073f934f26c58a912010aa70a93f5c1a1b495892f31f3e",
-      "CHANGELOG.md": "8a1af01d36739f3b8a8c29cde18efcfd90ff6f8c9170e9a5b3f6bad1756390de",
-      "FINAL_FULL_APP_ACCEPTANCE_SEAL.md": "e546c010a6cc1f9f5cf95d9c26185a7407b3ad616ad1e13ac797d95d1fd0a618",
-      "VALIDATION_REPORT.md": "0464fdde1d3ecfe81e0a8021f964ce95188d3b36a5b58f75ba94a6d7c250b1d7"
+      "build.gradle.kts": "d97692dee96450877da88816c58a9db453c7c54db031959f897f7901afc2a160",
+      "scripts/run_optional_instrumentation_validation.py": "139a3e69a108bbc073a7d71281732ead6be2e979e073e4f47e70d6b964750961",
+      "scripts/verify_csov15_optional_instrumentation_validation.py": "c68ab0905719ca30d5e650527b430f7abbdf376ce92b9ea427c6cd64fee9d00b",
+      "app/src/androidTest/java/com/mikeyphw/studyflow/OptionalSyncInstrumentationValidationTest.kt": "de8d9432797d41250f1c5b957a3ea099b1686a59b83a88af3eefd5e093f749c4",
+      "docs/quality/CSOV15_OPTIONAL_INSTRUMENTATION_VALIDATION.md": "1d06e0907d12222a490639b711f686a9fb65914937c1c51244edf38b63781d8f",
+      "CHANGELOG.md": "a233fc68ee1e7deaa6fb24c319fe45b6a7b40bb053e6f25ab82e238725ea2c99",
+      "FINAL_FULL_APP_ACCEPTANCE_SEAL.md": "ae9a4793a43693a1131a0a8f9e13114f6f046104a535b3b3640e466a1829f23e",
+      "VALIDATION_REPORT.md": "2102266b2dd0a11d1dfaf8c889b4932087573f9367515ce146f6dbc11225215a"
     }
   }
 }

@@ -765,6 +765,7 @@ tasks.register("checkAll") {
         "verifyCsov12ProviderSetupSecurity",
         "verifyCsov13SyncRunbook",
         "verifyCsov14OptionalSyncDeliveryAudit",
+        "verifyCsov15OptionalInstrumentationValidation",
         "verifyContentModeFoundation",
         "verifyProgrammingCourseModel",
         "verifyCodeBlocksSyntax",
@@ -824,4 +825,18 @@ tasks.register<Exec>("verifyCsov14OptionalSyncDeliveryAudit") {
     group = "verification"
     description = "Runs the cumulative CSOV00-CSOV13 optional sync delivery audit."
     commandLine("python3", "scripts/verify_csov14_optional_sync_delivery_audit.py")
+}
+
+
+tasks.register<Exec>("verifyCsov15OptionalInstrumentationValidation") {
+    group = "verification"
+    description = "Checks CSOV15 optional adb/root instrumentation validation source contracts."
+    commandLine("python3", "scripts/verify_csov15_optional_instrumentation_validation.py")
+}
+
+
+tasks.register<Exec>("recordOptionalInstrumentationValidation") {
+    group = "verification"
+    description = "Optionally runs connected Android instrumentation through adb and records skip/pass/fail evidence."
+    commandLine("python3", "scripts/run_optional_instrumentation_validation.py")
 }

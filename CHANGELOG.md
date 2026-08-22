@@ -1,3 +1,10 @@
+# CSOV15 optional instrumentation validation
+
+- Added an optional connected-device validation lane for CSOV sync work.
+- `recordOptionalInstrumentationValidation` uses adb, prefers `ANDROID_SERIAL`, tries `localhost:5555`, and records SKIPPED when no device is connected unless explicitly required.
+- Root is probed when available with `su -c id`; optional `adb root` probing is behind `STUDYFLOW_ADB_TRY_ROOT=true`.
+- Added on-device Compose instrumentation coverage for optional sync/offline/manual-folder actions.
+
 # Phase 63-64 Exam Runbook and Study Sprint
 
 - Added a local, read-only exam runbook derived from readiness, review backlog, weak areas, schedule and mock evidence.

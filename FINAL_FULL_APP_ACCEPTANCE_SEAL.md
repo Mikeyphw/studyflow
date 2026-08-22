@@ -1,3 +1,10 @@
+# CSOV15 optional instrumentation validation
+
+- Added an optional connected-device validation lane for CSOV sync work.
+- `recordOptionalInstrumentationValidation` uses adb, prefers `ANDROID_SERIAL`, tries `localhost:5555`, and records SKIPPED when no device is connected unless explicitly required.
+- Root is probed when available with `su -c id`; optional `adb root` probing is behind `STUDYFLOW_ADB_TRY_ROOT=true`.
+- Added on-device Compose instrumentation coverage for optional sync/offline/manual-folder actions.
+
 # Final Full-App Acceptance Seal
 
 StudyFlow is source-sealed through the completed V2 and post-V2 roadmap through Phase 64. This seal is not a new feature phase; it is a repository acceptance gate that proves the landed pieces still point at each other instead of becoming polished islands.
