@@ -51,3 +51,7 @@ The app is ready for one final Devtool acceptance run on the landed Phase 64 rep
 ### CSOV08 acceptance note
 
 Conflict review is explicit and user-driven; automatic sync application remains blocked while conflicts are unresolved.
+
+### CSOV09 acceptance note
+
+Background sync remains optional; automatic work is blocked unless sync is enabled, encrypted, and provider-backed.

@@ -26,6 +26,15 @@ enum class StudySyncConflictPolicy {
     MANUAL_REVIEW,
 }
 
+
+enum class StudySyncBackgroundMode {
+    OFF,
+    MANUAL_ONLY,
+    UPLOAD_AFTER_CHANGES,
+    CHECK_DAILY,
+    FULL_AUTOMATIC,
+}
+
 enum class StudySyncManualAction {
     CHOOSE_SYNC_FOLDER,
     PREPARE_UPLOAD_CHECKPOINT,
@@ -38,7 +47,9 @@ data class StudyFlowSyncSettings(
     val syncEnabled: Boolean = false,
     val providerId: String? = null,
     val automaticSyncEnabled: Boolean = false,
+    val backgroundSyncMode: StudySyncBackgroundMode = StudySyncBackgroundMode.MANUAL_ONLY,
     val wifiOnly: Boolean = true,
+    val batteryNotLow: Boolean = true,
     val chargingOnly: Boolean = false,
     val encryptRemoteBackups: Boolean = true,
     val providerLocation: String? = null,
@@ -50,6 +61,7 @@ data class StudyFlowSyncSettings(
         require(providerId?.isNotBlank() ?: true) { "Sync provider id cannot be blank." }
         require(providerLocation?.isNotBlank() ?: true) { "Sync provider location cannot be blank." }
         require(!automaticSyncEnabled || syncEnabled) { "Automatic sync cannot run while sync is off." }
+        require(!backgroundSyncMode.automatic || syncEnabled) { "Background sync cannot run while sync is off." }
         require(remoteCheckpointCount >= 0) { "Remote checkpoint count cannot be negative." }
     }
 
@@ -59,6 +71,12 @@ data class StudyFlowSyncSettings(
     val localFolderConfigured: Boolean =
         providerId == StudyFlowSyncProviderIds.LOCAL_FOLDER && providerLocation != null
     val manualOnly: Boolean = syncEnabled && !automaticSyncEnabled
+    val effectiveBackgroundMode: StudySyncBackgroundMode = if (syncEnabled) {
+        backgroundSyncMode
+    } else {
+        StudySyncBackgroundMode.OFF
+    }
+    val backgroundSyncEnabled: Boolean = effectiveBackgroundMode.automatic
 
     companion object {
         val LocalFirstDefault: StudyFlowSyncSettings = StudyFlowSyncSettings()
@@ -418,6 +436,55 @@ object StudySyncConflictReviewPresenter {
             remoteSummary = conflict.remoteUpdatedAtEpochMillis?.let { timestamp ->
                 "Remote version updated at $timestamp"
             } ?: "No remote version",
+        )
+    }
+}
+
+
+val StudySyncBackgroundMode.automatic: Boolean
+    get() = this in setOf(
+        StudySyncBackgroundMode.UPLOAD_AFTER_CHANGES,
+        StudySyncBackgroundMode.CHECK_DAILY,
+        StudySyncBackgroundMode.FULL_AUTOMATIC,
+    )
+
+data class StudySyncBackgroundConstraints(
+    val requiresNetwork: Boolean = true,
+    val wifiOnly: Boolean = true,
+    val batteryNotLow: Boolean = true,
+    val chargingOnly: Boolean = false,
+)
+
+data class StudySyncBackgroundPlan(
+    val mode: StudySyncBackgroundMode,
+    val enabled: Boolean,
+    val constraints: StudySyncBackgroundConstraints,
+    val blockedReason: String? = null,
+) {
+    val canSchedule: Boolean = enabled && blockedReason == null
+}
+
+object StudySyncBackgroundSyncPlanner {
+    fun plan(settings: StudyFlowSyncSettings): StudySyncBackgroundPlan {
+        val effectiveMode = settings.effectiveBackgroundMode
+        val constraints = StudySyncBackgroundConstraints(
+            requiresNetwork = effectiveMode.automatic,
+            wifiOnly = settings.wifiOnly,
+            batteryNotLow = settings.batteryNotLow,
+            chargingOnly = settings.chargingOnly,
+        )
+        val blockedReason = when {
+            effectiveMode == StudySyncBackgroundMode.OFF -> "Sync is off."
+            effectiveMode == StudySyncBackgroundMode.MANUAL_ONLY -> null
+            !settings.providerConfigured -> "Choose a sync provider before enabling background sync."
+            !settings.encryptRemoteBackups -> "Remote backup encryption must stay enabled."
+            else -> null
+        }
+        return StudySyncBackgroundPlan(
+            mode = effectiveMode,
+            enabled = effectiveMode.automatic,
+            constraints = constraints,
+            blockedReason = blockedReason,
         )
     }
 }

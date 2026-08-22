@@ -274,3 +274,7 @@ Optional cloud sync now has a stable-id merge planner that imports remote-only r
 ### CSOV08 conflict review
 
 Optional cloud sync now includes a conservative conflict review path. When the same stable-id entity changes on two devices, StudyFlow presents keep-local, use-remote, and keep-both choices instead of silently overwriting data.
+
+### CSOV09 background sync modes
+
+Optional sync now has explicit background modes: off, manual only, upload after changes, check daily, and full automatic. Fresh installs remain effectively off; configured sync stays manual-only by default.

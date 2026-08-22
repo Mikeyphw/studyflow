@@ -3,47 +3,50 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov08_conflict_review_ui_v1",
-    "title": "CSOV08 conflict review UI",
+    "name": "studyflow_csov09_background_sync_modes_v1",
+    "title": "CSOV09 background sync modes",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 1,
+    "index": 2,
     "count": 2,
-    "summary": "Adds explicit manual conflict review items and UI actions for keep-local, use-remote, and keep-both sync decisions."
+    "summary": "Adds optional background sync modes, scheduling constraints, persistence keys, and UI summary while keeping manual-only as the configured default."
   },
   "artifact": {
-    "name": "studyflow_csov08_conflict_review_ui_v1",
+    "name": "studyflow_csov09_background_sync_modes_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds explicit manual conflict review items and UI actions for keep-local, use-remote, and keep-both sync decisions."
+    "summary": "Adds optional background sync modes, scheduling constraints, persistence keys, and UI summary while keeping manual-only as the configured default."
   },
   "git": {
     "commit": true,
-    "message": "CSOV08 add sync conflict review UI",
-    "commit_message": "CSOV08 add sync conflict review UI"
+    "message": "CSOV09 add optional background sync modes",
+    "commit_message": "CSOV09 add optional background sync modes"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV08 add sync conflict review UI"
+    "message": "CSOV09 add optional background sync modes"
   },
-  "commit_message": "CSOV08 add sync conflict review UI",
+  "commit_message": "CSOV09 add optional background sync modes",
   "validation": {
     "recommended": [
-      "verifyCsov08ConflictReview",
+      "verifyCsov09BackgroundSyncModes",
       ":core:domain:test",
+      ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "tasks": [
-      "verifyCsov08ConflictReview",
+      "verifyCsov09BackgroundSyncModes",
       ":core:domain:test",
+      ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyCsov08ConflictReview",
+      "verifyCsov09BackgroundSyncModes",
       ":core:domain:test",
+      ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
@@ -56,13 +59,15 @@
     "README.md",
     "VALIDATION_REPORT.md",
     "build.gradle.kts",
-    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncConflictReviewPresenterTest.kt",
+    "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
+    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncBackgroundSyncPlannerTest.kt",
     "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-    "docs/quality/CSOV08_CONFLICT_REVIEW.md",
+    "docs/quality/CSOV09_BACKGROUND_SYNC_MODES.md",
     "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
     "feature/settings/src/main/res/values/strings.xml",
     "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-    "scripts/verify_csov08_conflict_review.py"
+    "scripts/verify_csov09_background_sync_modes.py"
   ],
   "copy": {
     "mode": "overlay",
@@ -72,13 +77,15 @@
       "README.md",
       "VALIDATION_REPORT.md",
       "build.gradle.kts",
-      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncConflictReviewPresenterTest.kt",
+      "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
+      "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
+      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncBackgroundSyncPlannerTest.kt",
       "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-      "docs/quality/CSOV08_CONFLICT_REVIEW.md",
+      "docs/quality/CSOV09_BACKGROUND_SYNC_MODES.md",
       "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
       "feature/settings/src/main/res/values/strings.xml",
       "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-      "scripts/verify_csov08_conflict_review.py"
+      "scripts/verify_csov09_background_sync_modes.py"
     ]
   }
 }

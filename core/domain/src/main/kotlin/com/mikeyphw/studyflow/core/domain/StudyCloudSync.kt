@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.core.domain
 
+import com.mikeyphw.studyflow.core.model.StudySyncBackgroundMode
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncLedgerSnapshot
@@ -18,6 +19,8 @@ interface StudyCloudSyncRepository {
     suspend fun setSyncEnabled(enabled: Boolean): StudySyncState
 
     suspend fun setConflictPolicy(policy: StudySyncConflictPolicy): StudySyncState
+
+    suspend fun setBackgroundSyncMode(mode: StudySyncBackgroundMode): StudySyncState
 
     suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState
 
@@ -48,6 +51,9 @@ class ManageStudyCloudSync(
 
     suspend fun setConflictPolicy(policy: StudySyncConflictPolicy): StudySyncState =
         repository.setConflictPolicy(policy)
+
+    suspend fun setBackgroundSyncMode(mode: StudySyncBackgroundMode): StudySyncState =
+        repository.setBackgroundSyncMode(mode)
 
     suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState {
         require(folderUri.isNotBlank()) { "Folder URI cannot be blank." }

@@ -14,6 +14,7 @@ import com.mikeyphw.studyflow.core.model.LocalOnlyProvider
 import com.mikeyphw.studyflow.core.model.NoSyncProvider
 import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
 import com.mikeyphw.studyflow.core.model.StudyFlowSyncSettings
+import com.mikeyphw.studyflow.core.model.StudySyncBackgroundMode
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncLedgerSnapshot
@@ -109,6 +110,7 @@ internal class LocalStudyCloudSyncRepository(
             preferences[EnabledKey] = enabled
             if (!enabled) {
                 preferences[AutomaticSyncEnabledKey] = false
+                preferences[BackgroundSyncModeKey] = StudySyncBackgroundMode.OFF.name
             }
             preferences[StatusKey] = if (!enabled) {
                 StudySyncConnectionStatus.DISABLED.name
@@ -126,6 +128,21 @@ internal class LocalStudyCloudSyncRepository(
         return syncState.first()
     }
 
+    override suspend fun setBackgroundSyncMode(mode: StudySyncBackgroundMode): StudySyncState {
+        dataStore.edit { preferences ->
+            preferences[BackgroundSyncModeKey] = mode.name
+            preferences[AutomaticSyncEnabledKey] = mode in setOf(
+                StudySyncBackgroundMode.UPLOAD_AFTER_CHANGES,
+                StudySyncBackgroundMode.CHECK_DAILY,
+                StudySyncBackgroundMode.FULL_AUTOMATIC,
+            )
+            if (mode != StudySyncBackgroundMode.OFF) {
+                preferences[EnabledKey] = true
+            }
+        }
+        return syncState.first()
+    }
+
     override suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState {
         val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
         val now = clock()
@@ -139,6 +156,8 @@ internal class LocalStudyCloudSyncRepository(
             preferences[ProviderIdKey] = StudyFlowSyncProviderIds.LOCAL_FOLDER
             preferences[ProviderLocationKey] = folderUri
             preferences[AutomaticSyncEnabledKey] = false
+            preferences[BackgroundSyncModeKey] = StudySyncBackgroundMode.MANUAL_ONLY.name
+            preferences[BatteryNotLowKey] = true
             preferences[EncryptRemoteBackupsKey] = true
             preferences[StatusKey] = if (preferences[ChangeTokenKey].revisionFromToken() == revision) {
                 StudySyncConnectionStatus.LOCAL_READY.name
@@ -296,7 +315,9 @@ internal class LocalStudyCloudSyncRepository(
         syncEnabled = enabled,
         providerId = preferences[ProviderIdKey]?.takeUnless { it == StudyFlowSyncProviderIds.NONE },
         automaticSyncEnabled = enabled && (preferences[AutomaticSyncEnabledKey] ?: false),
+        backgroundSyncMode = decodeBackgroundSyncMode(preferences[BackgroundSyncModeKey]),
         wifiOnly = preferences[WifiOnlyKey] ?: true,
+        batteryNotLow = preferences[BatteryNotLowKey] ?: true,
         chargingOnly = preferences[ChargingOnlyKey] ?: false,
         encryptRemoteBackups = preferences[EncryptRemoteBackupsKey] ?: true,
         providerLocation = preferences[ProviderLocationKey],
@@ -335,6 +356,10 @@ internal class LocalStudyCloudSyncRepository(
     private fun decodeConflictPolicy(value: String?): StudySyncConflictPolicy = runCatching {
         value?.let { enumValueOf<StudySyncConflictPolicy>(it) }
     }.getOrNull() ?: StudySyncConflictPolicy.MANUAL_REVIEW
+
+    private fun decodeBackgroundSyncMode(value: String?): StudySyncBackgroundMode = runCatching {
+        value?.let { enumValueOf<StudySyncBackgroundMode>(it) }
+    }.getOrNull() ?: StudySyncBackgroundMode.MANUAL_ONLY
 
     private fun String?.toRevision(): Long = this?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
 
@@ -451,7 +476,9 @@ internal class LocalStudyCloudSyncRepository(
         val ProviderIdKey = stringPreferencesKey("provider_id")
         val ProviderLocationKey = stringPreferencesKey("provider_location")
         val AutomaticSyncEnabledKey = booleanPreferencesKey("automatic_sync_enabled")
+        val BackgroundSyncModeKey = stringPreferencesKey("background_sync_mode")
         val WifiOnlyKey = booleanPreferencesKey("wifi_only")
+        val BatteryNotLowKey = booleanPreferencesKey("battery_not_low")
         val ChargingOnlyKey = booleanPreferencesKey("charging_only")
         val EncryptRemoteBackupsKey = booleanPreferencesKey("encrypt_remote_backups")
         val LastManualUploadAtKey = longPreferencesKey("last_manual_upload_at")

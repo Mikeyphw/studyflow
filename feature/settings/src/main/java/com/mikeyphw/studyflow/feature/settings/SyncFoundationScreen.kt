@@ -38,6 +38,8 @@ import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueuePlanner
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueStatus
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
+import com.mikeyphw.studyflow.core.model.StudySyncBackgroundMode
+import com.mikeyphw.studyflow.core.model.StudySyncBackgroundSyncPlanner
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictReviewItem
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
@@ -174,6 +176,12 @@ fun SyncFoundationScreen(
                         stringResource(remoteEncryptionLabel),
                     ),
                 )
+                Text(
+                    text = stringResource(
+                        R.string.sync_background_mode_value,
+                        stringResource(syncBackgroundModeLabel(state.settings.effectiveBackgroundMode)),
+                    ),
+                )
             }
             OptionalSyncOnboardingCard(
                 operationRunning = operationRunning,
@@ -218,6 +226,7 @@ fun SyncFoundationScreen(
                 onUseRemoteConflict = onUseRemoteConflict,
                 onKeepBothConflict = onKeepBothConflict,
             )
+            BackgroundSyncModeCard(state = state)
             when (val operation = operationState) {
                 SyncOperationState.Idle -> Unit
                 is SyncOperationState.Running -> StudyFlowSectionCard(
@@ -348,6 +357,63 @@ private fun ManualFolderSyncCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.sync_view_history))
+        }
+    }
+}
+
+@Composable
+private fun BackgroundSyncModeCard(state: StudySyncState) {
+    val plan = StudySyncBackgroundSyncPlanner.plan(state.settings)
+    StudyFlowSectionCard(title = stringResource(R.string.sync_background_title)) {
+        Text(
+            text = stringResource(R.string.sync_background_message),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(
+                R.string.sync_background_mode_value,
+                stringResource(syncBackgroundModeLabel(plan.mode)),
+            ),
+        )
+        val wifiLabel = if (plan.constraints.wifiOnly) {
+            R.string.sync_flag_enabled
+        } else {
+            R.string.sync_flag_disabled
+        }
+        Text(
+            text = stringResource(
+                R.string.sync_background_wifi_value,
+                stringResource(wifiLabel),
+            ),
+        )
+        Text(
+            text = stringResource(
+                R.string.sync_background_battery_value,
+                stringResource(
+                    if (plan.constraints.batteryNotLow) {
+                        R.string.sync_flag_enabled
+                    } else {
+                        R.string.sync_flag_disabled
+                    },
+                ),
+            ),
+        )
+        val chargingLabel = if (plan.constraints.chargingOnly) {
+            R.string.sync_flag_enabled
+        } else {
+            R.string.sync_flag_disabled
+        }
+        Text(
+            text = stringResource(
+                R.string.sync_background_charging_value,
+                stringResource(chargingLabel),
+            ),
+        )
+        plan.blockedReason?.let { reason ->
+            Text(
+                text = stringResource(R.string.sync_background_blocked_value, reason),
+                color = MaterialTheme.colorScheme.error,
+            )
         }
     }
 }
@@ -538,6 +604,14 @@ private fun syncProviderLabel(providerId: String?): Int = when (providerId) {
     StudyFlowSyncProviderIds.WEBDAV -> R.string.sync_provider_webdav
     StudyFlowSyncProviderIds.GOOGLE_DRIVE -> R.string.sync_provider_google_drive
     else -> R.string.sync_provider_custom
+}
+
+private fun syncBackgroundModeLabel(mode: StudySyncBackgroundMode): Int = when (mode) {
+    StudySyncBackgroundMode.OFF -> R.string.sync_background_mode_off
+    StudySyncBackgroundMode.MANUAL_ONLY -> R.string.sync_background_mode_manual_only
+    StudySyncBackgroundMode.UPLOAD_AFTER_CHANGES -> R.string.sync_background_mode_upload_after_changes
+    StudySyncBackgroundMode.CHECK_DAILY -> R.string.sync_background_mode_check_daily
+    StudySyncBackgroundMode.FULL_AUTOMATIC -> R.string.sync_background_mode_full_automatic
 }
 
 

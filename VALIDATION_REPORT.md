@@ -280,3 +280,7 @@ Recommended validation: `:core:model:test`, `:core:domain:test`, `:app:compileDe
 ## CSOV08 validation
 
 Static contract: `verifyCsov08ConflictReview`. Recommended runtime checks: `:core:domain:test`, `:feature:settings:compileDebugKotlin`, and `:app:compileDebugKotlin`.
+
+## CSOV09 validation
+
+Static contract: `verifyCsov09BackgroundSyncModes`. Recommended runtime checks: `:core:domain:test`, `:core:data:compileDebugKotlin`, `:feature:settings:compileDebugKotlin`, and `:app:compileDebugKotlin`.

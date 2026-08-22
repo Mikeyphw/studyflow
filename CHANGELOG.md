@@ -249,3 +249,9 @@ copy.
 - Added sync conflict review item models and presenter.
 - Added a sync UI card for keep-local, use-remote, and keep-both decisions.
 - Added source verifier `verifyCsov08ConflictReview`.
+
+## CSOV09 - Background sync modes
+
+- Added background sync mode and constraint models.
+- Added a planner that keeps fresh installs off and makes manual-only the configured default.
+- Added sync UI summary copy and `verifyCsov09BackgroundSyncModes`.
