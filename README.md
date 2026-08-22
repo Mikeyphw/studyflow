@@ -38,6 +38,7 @@ The preceding release-identity and acceptance framework remains active:
 - Phase 31 wired the dashboard primary action to the Study Sessions flow.
 - Phase 32 moved diagnostics behind a developer-only debug gate.
 - Phase 33 completed the former sync surface as an offline-first local checkpoint.
+- CSOV00-CSOV01 migrate the product language to local-first optional cloud sync and add an off-by-default sync settings model.
 - Phase 34 replaces passive-but-clickable chips with non-clickable status pills.
 - Phase 35 refreshes README, changelog, validation notes, and artifact hygiene contracts.
 - Phase 36 sets the release-candidate identity, packaging policy, and signing boundary.
@@ -49,9 +50,7 @@ build host must still produce build, install, upgrade, and device-smoke evidence
 
 ## Product boundary
 
-StudyFlow is currently an **offline-first** app. It does not require an account and does not present
-a cloud provider flow. Local checkpoint status means the app can summarize whether local backup and
-restore decisions are ready for the selected Study Plan; it is not an online synchronization service.
+StudyFlow is now **local-first with optional cloud sync**. A fresh install works fully offline, requires no StudyFlow account, and leaves cloud sync off until the user explicitly chooses a provider. Local checkpoint status still summarizes whether backup and restore decisions are ready for the selected Study Plan; provider-backed upload, download, and merge flows are staged after the settings foundation.
 
 A `StudyPlan` is the complete and independent workspace for one study objective. Subjects, nested
 topics, schedules, sessions, questions, mock exams, reviews, notes, videos, annexes, analytics, and
@@ -104,7 +103,7 @@ feature:analytics/      Local insights from sessions, schedule, practice, review
 feature:search/         Global search and local recommendations
 feature:reminders/      Reminder scheduling, notification permission UI, and widget evidence
 feature:privacy/        Retention, local export security, and restore dry-run explanation
-feature:settings/       Language, appearance, local checkpoint, backup, privacy, diagnostics entry
+feature:settings/       Language, appearance, optional sync, backup, privacy, diagnostics entry
 docs/                   Architecture, product, quality, roadmap, and release notes
 scripts/                Source-contract validation entry points
 ```
@@ -232,9 +231,9 @@ The post-V2 seal now includes `verifyPhase56_57ReleaseReadiness` and Devtool
 claim that signed release packaging or real-device acceptance has run.
 
 
-### Phase 58-59: cloudless queue and weekly coach
+### Phase 58-59: local checkpoint queue and weekly coach
 
-Phase 58 adds a local-only backup queue to Sync Foundation. Phase 59 adds the weekly coach review to
+Phase 58 adds a local-first backup readiness queue to Sync Foundation. Phase 59 adds the weekly coach review to
 Progress. See [Phase 58-59](PHASE_58_59_SYNC_QUEUE_WEEKLY_COACH.md) and
 [Phase 58-59 acceptance](docs/quality/PHASE_58_59_ACCEPTANCE.md).
 

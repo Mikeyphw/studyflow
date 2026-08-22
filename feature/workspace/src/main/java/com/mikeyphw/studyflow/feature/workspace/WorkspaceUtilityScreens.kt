@@ -230,7 +230,7 @@ fun SystemHubScreen(
             item(key = "plans", contentType = "workspace-utility") {
                 StudyFlowTimelineItem(
                     title = stringResource(R.string.all_plans),
-                    metadata = stringResource(R.string.plan_picker_subtitle),
+                    metadata = stringResource(R.string.system_hub_all_plans_meta),
                     icon = Icons.AutoMirrored.Outlined.ListAlt,
                     onClick = onAllPlans,
                 )
@@ -238,7 +238,7 @@ fun SystemHubScreen(
             item(key = "settings", contentType = "workspace-utility") {
                 StudyFlowTimelineItem(
                     title = stringResource(R.string.settings),
-                    metadata = stringResource(R.string.system_hub_subtitle),
+                    metadata = stringResource(R.string.system_hub_settings_meta),
                     icon = Icons.Outlined.Settings,
                     onClick = onSettings,
                 )
@@ -247,7 +247,7 @@ fun SystemHubScreen(
                 item(key = "reminders", contentType = "workspace-utility") {
                     StudyFlowTimelineItem(
                         title = stringResource(R.string.reminders),
-                        metadata = stringResource(R.string.plan_title),
+                        metadata = stringResource(R.string.system_hub_reminders_meta),
                         icon = Icons.Outlined.Notifications,
                         onClick = onReminders,
                     )
@@ -255,7 +255,7 @@ fun SystemHubScreen(
                 item(key = "backup", contentType = "workspace-utility") {
                     StudyFlowTimelineItem(
                         title = stringResource(R.string.backup_restore),
-                        metadata = stringResource(R.string.plan_title),
+                        metadata = stringResource(R.string.system_hub_backup_meta),
                         icon = Icons.Outlined.Backup,
                         onClick = onPortability,
                     )
@@ -264,7 +264,7 @@ fun SystemHubScreen(
             item(key = "sync", contentType = "workspace-utility") {
                 StudyFlowTimelineItem(
                     title = stringResource(R.string.sync),
-                    metadata = stringResource(R.string.system_hub_subtitle),
+                    metadata = stringResource(R.string.system_hub_sync_meta),
                     icon = Icons.Outlined.Sync,
                     onClick = onSync,
                 )
@@ -272,7 +272,7 @@ fun SystemHubScreen(
             item(key = "privacy", contentType = "workspace-utility") {
                 StudyFlowTimelineItem(
                     title = stringResource(R.string.privacy),
-                    metadata = stringResource(R.string.system_hub_subtitle),
+                    metadata = stringResource(R.string.system_hub_privacy_meta),
                     icon = Icons.Outlined.Lock,
                     onClick = onPrivacy,
                 )
@@ -281,7 +281,7 @@ fun SystemHubScreen(
                 item(key = "debug", contentType = "workspace-utility") {
                     StudyFlowTimelineItem(
                         title = stringResource(R.string.debug_workbench),
-                        metadata = stringResource(R.string.system_hub_subtitle),
+                        metadata = stringResource(R.string.system_hub_debug_meta),
                         icon = Icons.Outlined.BugReport,
                         onClick = onDebug,
                     )

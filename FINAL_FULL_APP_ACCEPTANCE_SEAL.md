@@ -10,7 +10,7 @@ StudyFlow is source-sealed through the completed V2 and post-V2 roadmap through 
 - Phase 52-53 Mock Exam Studio and Today widget actions.
 - Phase 54-55 reminder reliability and Evidence Timeline.
 - Phase 56-57 post-V2 integration and real-device readiness polish.
-- Phase 58-59 cloudless local sync/checkpoint queue and weekly coach review.
+- Phase 58-59 local-first sync/checkpoint queue and weekly coach review.
 - Phase 60-61 smart content cleanup and local exam report HTML/PDF export.
 - Phase 62 onboarding and sample plan wizard.
 - Phase 63 exam runbook.
@@ -28,7 +28,7 @@ StudyFlow is source-sealed through the completed V2 and post-V2 roadmap through 
 - drills, imports, mocks, widget taps, reminders, timeline, weekly coach, cleanup, report export, backup, onboarding, runbook, and sprint remain wired;
 - reminder reliability keeps explicit blocked, degraded, action-needed, ready, exact-alarm, battery, and permission states;
 - backup/export/import covers the post-V2 data surface and keeps restore dry-run semantics visible;
-- local-only boundaries remain intact for cloudless checkpointing, cleanup preview, report export, and onboarding;
+- local-first boundaries remain intact for checkpointing, cleanup preview, report export, and onboarding;
 - English and pt-BR resource names/types remain paired for the principal user surfaces;
 - warning sentries remain in place for duplicate resources, file-scope suppressions, `android:tint`, resource XML parsing, and stack drift.
 

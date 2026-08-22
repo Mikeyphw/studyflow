@@ -192,7 +192,7 @@ fun TodayWorkspaceScreen(
             )
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = workspaceContentPadding(),
+                contentPadding = workspaceContentPadding(bottom = 180.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "primary", contentType = "focus-action") {

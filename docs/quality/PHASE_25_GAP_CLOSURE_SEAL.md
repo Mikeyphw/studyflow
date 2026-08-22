@@ -15,7 +15,7 @@ gap by adding app-local scheduling and notification posting:
 
 ## Phase 24 provider gate
 
-The sync foundation remains local-only. Phase 25 does not add a provider, account identity, network endpoint,
+The historical sync foundation remains local checkpoint based. Phase 25 does not add a provider, account identity, network endpoint,
 OAuth surface, remote merge loop, or token persistence. The Phase 24 provider gate remains in force.
 
 ## Release posture

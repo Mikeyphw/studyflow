@@ -9,7 +9,11 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
 import com.mikeyphw.studyflow.core.domain.StudyCloudSyncRepository
+import com.mikeyphw.studyflow.core.model.LocalFolderSyncProvider
 import com.mikeyphw.studyflow.core.model.LocalOnlyProvider
+import com.mikeyphw.studyflow.core.model.NoSyncProvider
+import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
+import com.mikeyphw.studyflow.core.model.StudyFlowSyncSettings
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
@@ -22,7 +26,7 @@ import kotlinx.coroutines.flow.first
 private val Context.studySyncDataStore by preferencesDataStore(name = "study_sync_foundation")
 
 /**
- * Local-only checkpoint state. The durable source of freshness is the Room graph revision, not a
+ * Local-first optional sync state. The durable source of freshness is the Room graph revision, not a
  * synthetic plan count. Every user-data mutation advances that revision through database triggers.
  */
 internal class LocalStudyCloudSyncRepository(
@@ -79,6 +83,9 @@ internal class LocalStudyCloudSyncRepository(
         val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
         dataStore.edit { preferences ->
             preferences[EnabledKey] = enabled
+            if (!enabled) {
+                preferences[AutomaticSyncEnabledKey] = false
+            }
             preferences[StatusKey] = if (!enabled) {
                 StudySyncConnectionStatus.DISABLED.name
             } else if (preferences[ChangeTokenKey].revisionFromToken() == revision) {
@@ -105,6 +112,7 @@ internal class LocalStudyCloudSyncRepository(
         currentRevision: Long,
     ): StudySyncState {
         val enabled = preferences[EnabledKey] ?: false
+        val settings = decodeSettings(preferences, enabled)
         val preparedRevision = preferences[ChangeTokenKey].revisionFromToken()
         val persistedStatus = decodeStatus(preferences[StatusKey])
         val status = when {
@@ -115,7 +123,7 @@ internal class LocalStudyCloudSyncRepository(
         }
         return StudySyncState(
             enabled = enabled,
-            provider = LocalOnlyProvider,
+            provider = providerDescriptor(settings, enabled),
             connectionStatus = status,
             conflictPolicy = decodeConflictPolicy(preferences[ConflictPolicyKey]),
             deviceName = preferences[DeviceNameKey] ?: "This device",
@@ -123,6 +131,34 @@ internal class LocalStudyCloudSyncRepository(
             lastLocalChangeToken = preferences[ChangeTokenKey],
             pendingLocalChangeCount = currentRevision.deltaSince(preparedRevision),
             blockedReason = preferences[BlockedReasonKey],
+            settings = settings,
+        )
+    }
+
+    private fun decodeSettings(
+        preferences: androidx.datastore.preferences.core.Preferences,
+        enabled: Boolean,
+    ): StudyFlowSyncSettings = StudyFlowSyncSettings(
+        syncEnabled = enabled,
+        providerId = preferences[ProviderIdKey]?.takeUnless { it == StudyFlowSyncProviderIds.NONE },
+        automaticSyncEnabled = enabled && (preferences[AutomaticSyncEnabledKey] ?: false),
+        wifiOnly = preferences[WifiOnlyKey] ?: true,
+        chargingOnly = preferences[ChargingOnlyKey] ?: false,
+        encryptRemoteBackups = preferences[EncryptRemoteBackupsKey] ?: true,
+    )
+
+    private fun providerDescriptor(
+        settings: StudyFlowSyncSettings,
+        enabled: Boolean,
+    ) = when (settings.providerId) {
+        null -> if (enabled) LocalOnlyProvider else NoSyncProvider
+        StudyFlowSyncProviderIds.LOCAL_FOLDER -> LocalFolderSyncProvider
+        else -> com.mikeyphw.studyflow.core.model.StudySyncProviderDescriptor(
+            kind = com.mikeyphw.studyflow.core.model.StudySyncProviderKind.REMOTE_PROVIDER,
+            displayName = settings.providerId,
+            configured = true,
+            id = settings.providerId,
+            requiresAccount = true,
         )
     }
 
@@ -162,6 +198,11 @@ internal class LocalStudyCloudSyncRepository(
         val PreparedAtKey = longPreferencesKey("prepared_at")
         val ChangeTokenKey = stringPreferencesKey("change_token")
         val PendingLocalChangeKey = longPreferencesKey("pending_local_change_count")
+        val ProviderIdKey = stringPreferencesKey("provider_id")
+        val AutomaticSyncEnabledKey = booleanPreferencesKey("automatic_sync_enabled")
+        val WifiOnlyKey = booleanPreferencesKey("wifi_only")
+        val ChargingOnlyKey = booleanPreferencesKey("charging_only")
+        val EncryptRemoteBackupsKey = booleanPreferencesKey("encrypt_remote_backups")
         val BlockedReasonKey = stringPreferencesKey("blocked_reason")
     }
 }

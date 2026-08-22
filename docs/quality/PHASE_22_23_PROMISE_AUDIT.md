@@ -47,7 +47,7 @@ landed Phase 20 source baseline. The overlay is complete against Phase 20 and do
 | Wrong password fails safely | **Delivered.** GCM authentication failure prevents package parsing/import; temporary plaintext is discarded. |
 | Unencrypted export still works | **Delivered.** Prefix detection preserves the existing ZIP package path. |
 | Privacy export excludes selected sections | **Delivered.** Export transformation plus package-level privacy validation tests. |
-| No cloud-sync claim | **Delivered.** UI and documentation state the actual local boundary. |
+| Historical local sync boundary | **Superseded.** Current product language is local-first optional cloud sync with sync off by default. |
 | Android backup hardening | **Delivered.** Android 11 `fullBackupContent` and Android 12+ `dataExtractionRules` remain wired with valid domains; passwords and archive keys are not persisted. |
 
 ## Cryptographic boundary review

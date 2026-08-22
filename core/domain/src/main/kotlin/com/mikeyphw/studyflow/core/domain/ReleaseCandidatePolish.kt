@@ -87,7 +87,7 @@ object ReleaseCandidatePolishAuditor {
             ),
             finding(
                 ReleaseCandidatePolishArea.FIRST_RUN_UPGRADE_NOTES,
-                "First-run and upgrade notes explain local-only defaults and safe backup drills.",
+                "First-run and upgrade notes explain local-first optional sync defaults and safe backup drills.",
                 evidence.firstRunUpgradeNotesPublished,
                 "First-run and upgrade notes are present and reviewed.",
             ),

@@ -50,6 +50,4 @@ language.
 
 ## Current product boundaries
 
-StudyFlow does not present an account or online-provider setup. Local checkpoint status summarizes
-on-device backup/readiness conditions. Release packaging and signed artifact policy are separate
-release-phase work.
+StudyFlow is local-first and cloud-optional. A fresh install requires no StudyFlow account, provider, or network connection. Optional sync starts off, records provider/settings intent separately from local checkpoints, and must not block creating, studying, reviewing, exporting, importing, inspecting, or dry-running local content. Release packaging and signed artifact policy are separate release-phase work.

@@ -31,9 +31,9 @@ Included:
 - current README, changelog, and validation report;
 - release-candidate identity, package policy, signing boundary, and real-device acceptance template.
 
-## Explicit post-1.0 scope
+## Explicit staged scope
 
-- online-provider synchronization;
+- optional provider upload/download, remote checkpoint discovery, merge, and conflict review are staged after the off-by-default sync settings foundation;
 - public template marketplace;
 - automatic syllabus extraction;
 - desktop or web companion.

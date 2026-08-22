@@ -39,7 +39,7 @@
 - Added four structured sample templates: public exam, university semester, certification bootcamp, and free-study habit.
 - Wired the Plan list to “Start with sample” and added a bilingual preview screen for subjects, topics and weekly blocks.
 - Seeded localized sample subjects, topics, plan settings and recurring schedule rules only after the user taps Create sample.
-- Added the Phase 62 source verifier and Gradle gate while preserving the cloudless/offline boundary.
+- Added the Phase 62 source verifier and Gradle gate while preserving the local-first boundary.
 
 # Phase 60-61 Smart Content Cleanup and Exam Report Export
 
@@ -63,6 +63,12 @@
 - Added repository verification for the known post-V2 traps: route loops, missing workspace wiring, android:tint, bad resource escapes, deprecated TrendingUp icon usage, duplicate strings, and forbidden Kotlin extension references.
 
 # Changelog
+
+## CSOV00-CSOV01
+
+- Migrated user-facing product copy from local-checkpoint-only sync language to local-first optional cloud sync.
+- Added `StudyFlowSyncSettings` with sync disabled, provider none, automatic sync disabled, Wi-Fi-only enabled, charging-only disabled, and remote-backup encryption enabled by default.
+- Updated Settings and Sync Foundation to expose provider-none and automatic-sync-off state without making cloud obligatory.
 
 ## Phase 58-59 r2 audit closure
 
@@ -164,7 +170,7 @@
 
 - Removed normal-user Settings cards that exposed app-shell readiness, UX polish, release-candidate
   polish, and stale release seals.
-- Renamed local-only sync surfaces to local backup checkpoints and removed user-facing online-sync
+- Renamed local-only sync surfaces to local backup checkpoints and removed premature online-sync
   promises.
 - Advanced the release-readiness scope through Phase 31 plus Debug Workbench D1-D8 while keeping
   target-machine release gates evidence-based.
@@ -199,7 +205,7 @@ copy.
 
 ## Phase 58-59 - Cloudless queue, weekly coach, warning hygiene
 
-- Added a cloudless backup queue planner and Sync Foundation surface for local checkpoint/export work.
+- Added a local-first backup queue planner and Sync Foundation surface for local checkpoint/export work.
 - Added a Study Coach weekly review generated from readiness, reschedule preview, analytics, and evidence.
 - Cleaned the Phase 57 warning backlog: typed-route `@Keep`, current Material3 tabs, private-resource rename,
   primitive time state, obsolete SDK branch removal, and explicit resource-lint suppression boundaries.

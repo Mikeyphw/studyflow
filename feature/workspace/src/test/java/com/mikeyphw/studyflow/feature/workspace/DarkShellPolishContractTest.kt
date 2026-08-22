@@ -66,4 +66,31 @@ class DarkShellPolishContractTest {
         assertFalse("FloatingActionButton(" in today)
         assertFalse("FloatingActionButton(" in practice)
     }
+
+    @Test
+    fun `snapshot UI regressions stay fixed`() {
+        val common = source(
+            "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceCommon.kt",
+        )
+        val today = source(
+            "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt",
+        )
+        val utility = source(
+            "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceUtilityScreens.kt",
+        )
+        val plans = source(
+            "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt",
+        )
+        val sync = source(
+            "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+        )
+
+        assertTrue("contentColor = MaterialTheme.colorScheme.onBackground" in common)
+        assertTrue("workspaceContentPadding(bottom = 180.dp)" in today)
+        assertTrue("bottom = 132.dp" in plans)
+        assertTrue("system_hub_all_plans_meta" in utility)
+        assertTrue("system_hub_backup_meta" in utility)
+        assertTrue("disabledContentColor" in sync)
+    }
+
 }

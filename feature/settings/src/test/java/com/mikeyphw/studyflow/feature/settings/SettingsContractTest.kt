@@ -43,6 +43,25 @@ class SettingsContractTest {
         assertFalse(source.contains("ux_polish_title"))
     }
 
+    @Test
+    fun `settings copy exposes optional cloud sync as off by default`() {
+        val source = readSource(
+            modulePath = "src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
+            rootPath = "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
+        )
+        val strings = readSource(
+            modulePath = "src/main/res/values/strings.xml",
+            rootPath = "feature/settings/src/main/res/values/strings.xml",
+        )
+
+        assertTrue(source.contains("syncState.settings.providerId"))
+        assertTrue(strings.contains("Optional cloud sync"))
+        assertTrue(strings.contains("Cloud sync is optional, off by default"))
+        assertTrue(strings.contains("provider: %2$s"))
+        assertFalse(strings.contains("No cloud"))
+        assertFalse(strings.contains("network sync"))
+    }
+
     private fun readSource(modulePath: String, rootPath: String): String {
         val candidates: List<Path> = listOf(Paths.get(modulePath), Paths.get(rootPath))
         return candidates.first { path -> path.toFile().isFile }.toFile().readText()

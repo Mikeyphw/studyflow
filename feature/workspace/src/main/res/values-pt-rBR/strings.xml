@@ -193,6 +193,13 @@
     <string name="sync">Base de sincronização</string>
     <string name="privacy">Central de privacidade</string>
     <string name="debug_workbench">Bancada de depuração</string>
+    <string name="system_hub_all_plans_meta">Veja, importe, arquive ou restaure planos de estudo.</string>
+    <string name="system_hub_settings_meta">Tema, movimento, idioma e comportamento do app.</string>
+    <string name="system_hub_reminders_meta">Lembretes, widgets e verificações de notificação.</string>
+    <string name="system_hub_backup_meta">Exporte, importe e use snapshots locais de recuperação.</string>
+    <string name="system_hub_sync_meta">Ferramentas de checkpoint e sincronização local-first.</string>
+    <string name="system_hub_privacy_meta">Retenção, redação de exportações e garantias locais.</string>
+    <string name="system_hub_debug_meta">Diagnósticos, smoke checks e evidências de validação.</string>
     <string name="quick_add_title">O que você quer adicionar?</string>
     <string name="quick_session">Sessão rápida de foco</string>
     <string name="quick_session_title">Título da sessão</string>

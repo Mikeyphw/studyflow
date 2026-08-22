@@ -105,7 +105,12 @@ fun PlanListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
+            contentPadding = PaddingValues(
+                start = 20.dp,
+                top = 24.dp,
+                end = 20.dp,
+                bottom = 132.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item {

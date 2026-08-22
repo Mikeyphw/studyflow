@@ -96,7 +96,7 @@
     <string name="onboarding_select">Selecionar</string>
     <string name="onboarding_preview_title">Prévia antes de criar</string>
     <string name="onboarding_preview_message">Nada é salvo até você tocar em Criar exemplo.</string>
-    <string name="onboarding_local_only_note">Somente local. Nenhuma conta em nuvem, sincronização de rede ou importação automática é usada.</string>
+    <string name="onboarding_local_only_note">Local-first. Sincronização em nuvem é opcional e nunca exigida para configurar um plano de exemplo.</string>
     <string name="onboarding_topic_bullet">• %1$s</string>
     <string name="onboarding_workload_title">Prévia da carga</string>
     <plurals name="onboarding_workload_subjects">

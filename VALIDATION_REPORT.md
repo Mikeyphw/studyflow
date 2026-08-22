@@ -215,7 +215,7 @@ packaging and device-only checks remain outside this source artifact.
 
 ## Phase 58-59 validation update
 
-Phase 58 adds a local-only backup queue in Sync Foundation. Phase 59 adds a localized weekly coach review
+Phase 58 adds a local-first backup readiness queue in Sync Foundation. Phase 59 adds a localized weekly coach review
 in Progress. The overlay adds `scripts/verify_phase_58_59.py` and `verifyPhase58_59WarningHygiene` so
 source hygiene is checked before Android lint.
 

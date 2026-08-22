@@ -495,7 +495,7 @@
     <string name="exam_report_action_review_cleanup">Review the content cleanup preview.</string>
     <string name="exam_report_action_apply_reschedule">Review and apply safe reschedule changes.</string>
     <string name="exam_report_action_keep_plan">Keep executing the current plan.</string>
-    <string name="exam_report_privacy_notice">Generated from local StudyFlow data. Export is user initiated, uses no cloud account, and omits freeform notes by default.</string>
+    <string name="exam_report_privacy_notice">Generated from local StudyFlow data. Export is user initiated, can be saved or shared only when you choose, and omits freeform notes by default.</string>
     <string name="session_loading">Study Session is still loading. Focus controls will unlock when the session state is ready.</string>
     <string name="exam_report_metric_provenance_section">Metric provenance</string>
     <string name="notes">Notes</string>

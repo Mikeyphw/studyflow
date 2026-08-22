@@ -39,7 +39,7 @@ StudyFlow product roadmap through Phase 64.
 - Phase 52-53: Mock Exam Studio and widget actions.
 - Phase 54-55: reminder reliability and evidence timeline.
 - Phase 56-57: post-V2 integration and device-readiness polish.
-- Phase 58-59: cloudless local checkpoint queue and weekly coach.
+- Phase 58-59: local-first checkpoint queue and weekly coach.
 - Phase 60-61: smart content cleanup and local exam report export.
 - Phase 62: onboarding and sample plan wizard.
 - Phase 63: exam runbook.

@@ -32,6 +32,7 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
+import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
 import com.mikeyphw.studyflow.core.model.ThemeMode
@@ -188,6 +189,7 @@ fun SettingsScreen(
                 text = stringResource(
                     R.string.sync_settings_message,
                     stringResource(syncConnectionStatusLabel(syncState.connectionStatus)),
+                    stringResource(syncProviderLabel(syncState.settings.providerId)),
                     syncState.pendingLocalChangeCount,
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -280,4 +282,13 @@ private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = 
     StudySyncConnectionStatus.LOCAL_READY -> R.string.sync_connection_local_ready
     StudySyncConnectionStatus.CHECKPOINT_NEEDED -> R.string.sync_connection_checkpoint_needed
     StudySyncConnectionStatus.CHECKPOINT_BLOCKED -> R.string.sync_connection_checkpoint_error
+}
+
+@StringRes
+private fun syncProviderLabel(providerId: String?): Int = when (providerId) {
+    null, StudyFlowSyncProviderIds.NONE -> R.string.sync_provider_none
+    StudyFlowSyncProviderIds.LOCAL_FOLDER -> R.string.sync_provider_local_folder
+    StudyFlowSyncProviderIds.WEBDAV -> R.string.sync_provider_webdav
+    StudyFlowSyncProviderIds.GOOGLE_DRIVE -> R.string.sync_provider_google_drive
+    else -> R.string.sync_provider_custom
 }

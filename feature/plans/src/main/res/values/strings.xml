@@ -94,7 +94,7 @@
     <string name="onboarding_select">Select</string>
     <string name="onboarding_preview_title">Preview before creating</string>
     <string name="onboarding_preview_message">Nothing is saved until you press Create sample.</string>
-    <string name="onboarding_local_only_note">Local only. No cloud account, network sync or automatic import is used.</string>
+    <string name="onboarding_local_only_note">Local-first. Cloud sync is optional and never required for sample plan setup.</string>
     <string name="onboarding_topic_bullet">• %1$s</string>
     <string name="onboarding_workload_title">Workload preview</string>
     <plurals name="onboarding_workload_subjects">

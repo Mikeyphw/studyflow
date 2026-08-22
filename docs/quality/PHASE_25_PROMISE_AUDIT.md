@@ -23,7 +23,7 @@ PROMISE_AUDIT_STATUS: PASSED
 | Android 12 widget background contract present | Passed |
 | Phase 22 search/recommendations preserved | Passed |
 | Phase 23 privacy/encryption preserved | Passed |
-| Phase 24 local-only sync provider gate preserved | Passed |
+| Phase 24 local checkpoint gate preserved; later CSOV sync settings are optional | Passed |
 | Release readiness seal covers 25 phases | Passed |
 | New verifier enforces the source-level contract | Passed |
 

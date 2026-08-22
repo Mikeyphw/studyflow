@@ -46,7 +46,7 @@ for forbidden in [
     "StudySyncConnectionStatus.BLOCKED",
 ]:
     require(forbidden not in model + domain + data + settings + sync_screen,
-            f"offline checkpoint model still has provider/upload/cloud contract: {forbidden}")
+            f"sync checkpoint/settings model still has obsolete contract: {forbidden}")
 for required in [
     "pendingLocalChangeCount",
     "checkpointReady",
@@ -56,41 +56,34 @@ for required in [
     "StudyLocalCheckpointReadinessAuditor",
     "localCheckpointReady",
     "PendingLocalChangeKey",
+    "StudyFlowSyncSettings",
+    "syncEnabled: Boolean = false",
+    "providerId: String? = null",
+    "automaticSyncEnabled: Boolean = false",
+    "wifiOnly: Boolean = true",
+    "chargingOnly: Boolean = false",
+    "encryptRemoteBackups: Boolean = true",
+    "StudyFlowSyncProviderIds.NONE",
+    "NoSyncProvider",
 ]:
     require(required in model + domain + data + settings + sync_screen,
-            f"offline checkpoint contract missing: {required}")
+            f"local-first optional sync contract missing: {required}")
 
 for rel in [
     "feature/settings/src/main/res/values/strings.xml",
     "feature/settings/src/main/res/values-pt-rBR/strings.xml",
 ]:
     text = read(rel)
-    forbidden_literals = [
-        "cloud-sync",
-        "Cloud",
-        "provider_required",
-        "provider_connected",
-        "provider_error",
-        "sync_provider_gate",
-        "sync_provider_value",
-        "sync_prepare_foundation",
-        "sync_disable_foundation",
-        "server",
-        "servidor",
-        "network sync",
-        "sincronização pela rede",
-        "network service",
-        "serviço de rede",
-        "remote changes",
-        "alterações remotas",
-        "sign in",
-        "entrar em conta",
-        "nenhuma conta",
-        "upload",
-        "envio",
-    ]
-    for forbidden in forbidden_literals:
-        require(forbidden not in text, f"{rel} still has online-sync copy: {forbidden}")
+    lower = text.lower()
+    for forbidden in [
+        "cloud required",
+        "cloud is required",
+        "must sign in",
+        "required provider",
+        "obligatory cloud",
+        "automatic upload is enabled",
+    ]:
+        require(forbidden not in lower, f"{rel} makes cloud look obligatory: {forbidden}")
     for required in [
         "sync_device_value",
         "sync_checkpoint_controls_message",
@@ -98,15 +91,21 @@ for rel in [
         "sync_disable_checkpoint",
         "sync_connection_checkpoint_needed",
         "sync_connection_checkpoint_error",
+        "sync_provider_value",
+        "sync_automatic_value",
+        "sync_encryption_value",
+        "sync_provider_none",
     ]:
-        require(f'name="{required}"' in text, f"{rel} missing offline checkpoint label: {required}")
+        require(f'name="{required}"' in text, f"{rel} missing local-first optional sync label: {required}")
+    require("optional" in lower or "opcional" in lower,
+            f"{rel} must describe sync as optional")
     try:
         ET.fromstring(text)
     except ET.ParseError as exc:
         errors.append(f"invalid XML in {rel}: {exc}")
 
 require("Local checkpoint" in runtime and "Sync foundation" not in runtime,
-        "runtime smoke workbench must use local checkpoint language")
+        "runtime smoke workbench must keep local checkpoint language")
 release = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSeal.kt")
 require("ReleaseReadinessPhase(33" in release and "Offline-first checkpoint completion" in release,
         "Release readiness seal must include Phase 33")
@@ -127,4 +126,4 @@ if errors:
     for error in errors:
         print(f"- {error}")
     sys.exit(1)
-print("PHASE_33_CONTRACT: PASSED (offline-first local checkpoint completion, no online-sync UI copy)")
+print("PHASE_33_CONTRACT: PASSED (local-first optional cloud sync settings, no obligatory cloud)")

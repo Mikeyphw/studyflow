@@ -37,6 +37,7 @@ import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueItem
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueuePlanner
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueStatus
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
+import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
@@ -126,6 +127,24 @@ fun SyncFoundationScreen(
                     text = stringResource(
                         R.string.sync_conflict_value,
                         stringResource(syncConflictPolicyLabel(state.conflictPolicy)),
+                    ),
+                )
+                Text(
+                    text = stringResource(
+                        R.string.sync_provider_value,
+                        stringResource(syncProviderLabel(state.settings.providerId)),
+                    ),
+                )
+                Text(
+                    text = stringResource(
+                        R.string.sync_automatic_value,
+                        stringResource(if (state.settings.automaticSyncEnabled) R.string.sync_flag_enabled else R.string.sync_flag_disabled),
+                    ),
+                )
+                Text(
+                    text = stringResource(
+                        R.string.sync_encryption_value,
+                        stringResource(if (state.settings.encryptRemoteBackups) R.string.sync_flag_enabled else R.string.sync_flag_disabled),
                     ),
                 )
             }
@@ -271,6 +290,14 @@ private fun syncConnectionStatusLabel(status: StudySyncConnectionStatus): Int = 
 private fun syncConflictPolicyLabel(policy: StudySyncConflictPolicy): Int = when (policy) {
     StudySyncConflictPolicy.KEEP_LOCAL -> R.string.sync_conflict_local_only
     StudySyncConflictPolicy.MANUAL_REVIEW -> R.string.sync_conflict_manual_review
+}
+
+private fun syncProviderLabel(providerId: String?): Int = when (providerId) {
+    null, StudyFlowSyncProviderIds.NONE -> R.string.sync_provider_none
+    StudyFlowSyncProviderIds.LOCAL_FOLDER -> R.string.sync_provider_local_folder
+    StudyFlowSyncProviderIds.WEBDAV -> R.string.sync_provider_webdav
+    StudyFlowSyncProviderIds.GOOGLE_DRIVE -> R.string.sync_provider_google_drive
+    else -> R.string.sync_provider_custom
 }
 
 
