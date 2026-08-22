@@ -280,6 +280,94 @@ object StudySyncLedgerFactory {
     )
 }
 
+enum class StudySyncEntityState {
+    PRESENT,
+    DELETED,
+}
+
+enum class StudySyncMergeAction {
+    KEEP_LOCAL,
+    IMPORT_REMOTE,
+    USE_REMOTE,
+    NO_CHANGE,
+    MANUAL_CONFLICT,
+}
+
+enum class StudySyncMergeConflictReason {
+    BOTH_CHANGED,
+    DELETED_LOCALLY_CHANGED_REMOTELY,
+    DELETED_REMOTELY_CHANGED_LOCALLY,
+}
+
+data class StudySyncEntityVersion(
+    val entityType: String,
+    val entityId: String,
+    val updatedAtEpochMillis: Long,
+    val contentHash: String,
+    val state: StudySyncEntityState = StudySyncEntityState.PRESENT,
+) {
+    init {
+        require(entityType.isNotBlank()) { "Entity type cannot be blank." }
+        require(entityId.isNotBlank()) { "Entity id cannot be blank." }
+        require(updatedAtEpochMillis >= 0L) { "Entity update time cannot be negative." }
+        require(contentHash.isNotBlank()) { "Entity content hash cannot be blank." }
+    }
+
+    val stableKey: String = "$entityType:$entityId"
+    val deleted: Boolean = state == StudySyncEntityState.DELETED
+
+    fun sameContentAs(other: StudySyncEntityVersion): Boolean =
+        stableKey == other.stableKey &&
+            contentHash == other.contentHash &&
+            state == other.state
+}
+
+data class StudySyncMergeConflict(
+    val entityType: String,
+    val entityId: String,
+    val reason: StudySyncMergeConflictReason,
+    val localUpdatedAtEpochMillis: Long?,
+    val remoteUpdatedAtEpochMillis: Long?,
+) {
+    init {
+        require(entityType.isNotBlank()) { "Conflict entity type cannot be blank." }
+        require(entityId.isNotBlank()) { "Conflict entity id cannot be blank." }
+    }
+}
+
+data class StudySyncMergeDecision(
+    val entityType: String,
+    val entityId: String,
+    val action: StudySyncMergeAction,
+    val local: StudySyncEntityVersion? = null,
+    val remote: StudySyncEntityVersion? = null,
+    val base: StudySyncEntityVersion? = null,
+    val conflict: StudySyncMergeConflict? = null,
+) {
+    init {
+        require(entityType.isNotBlank()) { "Merge entity type cannot be blank." }
+        require(entityId.isNotBlank()) { "Merge entity id cannot be blank." }
+        require((local ?: remote ?: base) != null) { "Merge decision needs at least one version." }
+        require((action == StudySyncMergeAction.MANUAL_CONFLICT) == (conflict != null)) {
+            "Manual conflict decisions must carry conflict details."
+        }
+    }
+
+    val stableKey: String = "$entityType:$entityId"
+    val blocksAutomaticApply: Boolean = action == StudySyncMergeAction.MANUAL_CONFLICT
+}
+
+data class StudySyncMergePlan(
+    val decisions: List<StudySyncMergeDecision>,
+) {
+    val conflictCount: Int = decisions.count { decision -> decision.blocksAutomaticApply }
+    val importCount: Int = decisions.count { decision -> decision.action == StudySyncMergeAction.IMPORT_REMOTE }
+    val useRemoteCount: Int = decisions.count { decision -> decision.action == StudySyncMergeAction.USE_REMOTE }
+    val keepLocalCount: Int = decisions.count { decision -> decision.action == StudySyncMergeAction.KEEP_LOCAL }
+    val noChangeCount: Int = decisions.count { decision -> decision.action == StudySyncMergeAction.NO_CHANGE }
+    val canApplyAutomatically: Boolean = conflictCount == 0
+}
+
 
 data class StudySyncManualActionAvailability(
     val action: StudySyncManualAction,

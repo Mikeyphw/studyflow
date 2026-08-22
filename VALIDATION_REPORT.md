@@ -271,3 +271,8 @@ stays under `build/reports/studyflow/` and is not pre-marked by source validatio
 
 Static contract: `verifyCsov06SyncLedger`
 Recommended validation: `:core:model:test`, `:core:domain:test`, `:core:data:compileDebugKotlin`.
+
+## CSOV07 conservative merge engine
+
+Static contract: `verifyCsov07MergeEngine`
+Recommended validation: `:core:model:test`, `:core:domain:test`, `:app:compileDebugKotlin`.

@@ -266,3 +266,7 @@ Signing credentials and generated acceptance evidence remain outside source cont
 ### CSOV06 sync ledger
 
 Optional cloud sync now records local device identity and checkpoint ledger facts while preserving local-first/offline operation.
+
+### CSOV07 conservative merge engine
+
+Optional cloud sync now has a stable-id merge planner that imports remote-only records, keeps local-only records, applies one-sided updates, and blocks both-sided/delete-vs-change cases for manual review.

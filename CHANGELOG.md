@@ -237,3 +237,9 @@ copy.
 - Added durable optional-sync device identity models.
 - Added checkpoint ledger records for creator device, revision, upload state, restore-preview state, and conflict count.
 - Added repository ledger inspection and restore-preview recording hooks.
+
+## CSOV07 - Conservative merge engine
+
+- Added stable-id sync entity versions and merge decisions.
+- Added conservative merge engine with local-only, remote-only, one-sided change, both-changed, and delete-vs-change decisions.
+- Added tests and source contract for conflict-first sync behavior.

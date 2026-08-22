@@ -3,54 +3,48 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov06_device_sync_ledger_v1",
-    "title": "CSOV06 device sync ledger",
+    "name": "studyflow_csov07_conservative_merge_engine_v1",
+    "title": "CSOV07 conservative merge engine",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 1,
+    "index": 2,
     "count": 2,
-    "summary": "Adds durable optional-sync device identity, checkpoint ledger records, ledger inspection, and restore-preview bookkeeping."
+    "summary": "Adds stable-id sync entity versions and a conservative merge planner that blocks both-sided and delete-vs-change conflicts for manual review."
   },
   "artifact": {
-    "name": "studyflow_csov06_device_sync_ledger_v1",
+    "name": "studyflow_csov07_conservative_merge_engine_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds durable optional-sync device identity, checkpoint ledger records, ledger inspection, and restore-preview bookkeeping."
+    "summary": "Adds stable-id sync entity versions and a conservative merge planner that blocks both-sided and delete-vs-change conflicts for manual review."
   },
   "git": {
     "commit": true,
-    "message": "CSOV06 add sync device ledger",
-    "commit_message": "CSOV06 add sync device ledger"
+    "message": "CSOV07 add conservative sync merge engine",
+    "commit_message": "CSOV07 add conservative sync merge engine"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV06 add sync device ledger"
+    "message": "CSOV07 add conservative sync merge engine"
   },
-  "commit_message": "CSOV06 add sync device ledger",
+  "commit_message": "CSOV07 add conservative sync merge engine",
   "validation": {
     "recommended": [
-      "verifyCsov06SyncLedger",
+      "verifyCsov07MergeEngine",
       ":core:model:test",
       ":core:domain:test",
-      ":core:data:compileDebugKotlin",
-      ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "tasks": [
-      "verifyCsov06SyncLedger",
+      "verifyCsov07MergeEngine",
       ":core:model:test",
       ":core:domain:test",
-      ":core:data:compileDebugKotlin",
-      ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyCsov06SyncLedger",
+      "verifyCsov07MergeEngine",
       ":core:model:test",
       ":core:domain:test",
-      ":core:data:compileDebugKotlin",
-      ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "defer_for_intermediate": true,
@@ -62,13 +56,11 @@
     "README.md",
     "VALIDATION_REPORT.md",
     "build.gradle.kts",
-    "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
-    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
-    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncLedgerTest.kt",
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncMerge.kt",
+    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncMergeEngineTest.kt",
     "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-    "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudyFlowSyncSettingsTest.kt",
-    "docs/quality/CSOV06_SYNC_LEDGER.md",
-    "scripts/verify_csov06_sync_ledger.py"
+    "docs/quality/CSOV07_CONSERVATIVE_MERGE_ENGINE.md",
+    "scripts/verify_csov07_merge_engine.py"
   ],
   "copy": {
     "mode": "overlay",
@@ -78,13 +70,11 @@
       "README.md",
       "VALIDATION_REPORT.md",
       "build.gradle.kts",
-      "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
-      "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
-      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncLedgerTest.kt",
+      "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncMerge.kt",
+      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncMergeEngineTest.kt",
       "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-      "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudyFlowSyncSettingsTest.kt",
-      "docs/quality/CSOV06_SYNC_LEDGER.md",
-      "scripts/verify_csov06_sync_ledger.py"
+      "docs/quality/CSOV07_CONSERVATIVE_MERGE_ENGINE.md",
+      "scripts/verify_csov07_merge_engine.py"
     ]
   }
 }

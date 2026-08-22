@@ -391,6 +391,13 @@ tasks.register<Exec>("verifyCsov06SyncLedger") {
     commandLine("python3", "scripts/verify_csov06_sync_ledger.py")
 }
 
+
+tasks.register<Exec>("verifyCsov07MergeEngine") {
+    group = "verification"
+    description = "Checks CSOV07 conservative sync merge engine source contracts."
+    commandLine("python3", "scripts/verify_csov07_merge_engine.py")
+}
+
 tasks.register<Exec>("verifyContentModeFoundation") {
     group = "verification"
     description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."
