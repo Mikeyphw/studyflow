@@ -370,6 +370,13 @@ tasks.register<Exec>("verifyCsov03ProviderAbstraction") {
     commandLine("python3", "scripts/verify_csov03_provider_abstraction.py")
 }
 
+
+tasks.register<Exec>("verifyCsov04OptionalSyncOnboarding") {
+    group = "verification"
+    description = "Checks CSOV04 optional sync onboarding source contracts."
+    commandLine("python3", "scripts/verify_csov04_optional_sync_onboarding.py")
+}
+
 tasks.register<Exec>("verifyContentModeFoundation") {
     group = "verification"
     description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."

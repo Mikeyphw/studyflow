@@ -3,52 +3,46 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov03_sync_provider_abstraction_v1",
-    "title": "CSOV03 sync provider abstraction",
+    "name": "studyflow_csov04_optional_sync_onboarding_v1",
+    "title": "CSOV04 optional sync onboarding",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 2,
+    "index": 1,
     "count": 2,
-    "summary": "Adds the optional cloud sync provider API, disabled default provider, registry, encrypted .sfbackup transfer DTOs, and provider contract tests."
+    "summary": "Adds optional sync onboarding with first-class Keep offline, Choose sync folder, and Learn more paths."
   },
   "artifact": {
-    "name": "studyflow_csov03_sync_provider_abstraction_v1",
+    "name": "studyflow_csov04_optional_sync_onboarding_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds the optional cloud sync provider API, disabled default provider, registry, encrypted .sfbackup transfer DTOs, and provider contract tests."
+    "summary": "Adds optional sync onboarding with first-class Keep offline, Choose sync folder, and Learn more paths."
   },
   "git": {
     "commit": true,
-    "message": "CSOV03 add sync provider abstraction",
-    "commit_message": "CSOV03 add sync provider abstraction"
+    "message": "CSOV04 add optional sync onboarding",
+    "commit_message": "CSOV04 add optional sync onboarding"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV03 add sync provider abstraction"
+    "message": "CSOV04 add optional sync onboarding"
   },
-  "commit_message": "CSOV03 add sync provider abstraction",
+  "commit_message": "CSOV04 add optional sync onboarding",
   "validation": {
     "recommended": [
-      "verifyCsov02SyncBundle",
-      "verifyCsov03ProviderAbstraction",
-      ":core:portability:test",
-      ":core:domain:test",
-      ":core:domain:compileKotlin"
+      "verifyCsov04OptionalSyncOnboarding",
+      ":feature:settings:testDebugUnitTest",
+      ":feature:settings:compileDebugKotlin"
     ],
     "tasks": [
-      "verifyCsov02SyncBundle",
-      "verifyCsov03ProviderAbstraction",
-      ":core:portability:test",
-      ":core:domain:test",
-      ":core:domain:compileKotlin"
+      "verifyCsov04OptionalSyncOnboarding",
+      ":feature:settings:testDebugUnitTest",
+      ":feature:settings:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyCsov02SyncBundle",
-      "verifyCsov03ProviderAbstraction",
-      ":core:portability:test",
-      ":core:domain:test",
-      ":core:domain:compileKotlin"
+      "verifyCsov04OptionalSyncOnboarding",
+      ":feature:settings:testDebugUnitTest",
+      ":feature:settings:compileDebugKotlin"
     ],
     "defer_for_intermediate": true,
     "default_apply_flag": "--no-validate"
@@ -58,13 +52,12 @@
     "README.md",
     "VALIDATION_REPORT.md",
     "build.gradle.kts",
-    "core/domain/build.gradle.kts",
-    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyFlowSyncProvider.kt",
-    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyFlowSyncProviderTest.kt",
-    "docs/quality/CSOV03_PROVIDER_ABSTRACTION_ACCEPTANCE.md",
-    "docs/roadmap/FINAL_ROADMAP_INDEX.md",
-    "scripts/validate_repo.sh",
-    "scripts/verify_csov03_provider_abstraction.py"
+    "docs/quality/CSOV04_OPTIONAL_SYNC_ONBOARDING.md",
+    "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+    "feature/settings/src/main/res/values-pt-rBR/strings.xml",
+    "feature/settings/src/main/res/values/strings.xml",
+    "feature/settings/src/test/java/com/mikeyphw/studyflow/feature/settings/SettingsContractTest.kt",
+    "scripts/verify_csov04_optional_sync_onboarding.py"
   ],
   "copy": {
     "mode": "overlay",
@@ -73,13 +66,12 @@
       "README.md",
       "VALIDATION_REPORT.md",
       "build.gradle.kts",
-      "core/domain/build.gradle.kts",
-      "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyFlowSyncProvider.kt",
-      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyFlowSyncProviderTest.kt",
-      "docs/quality/CSOV03_PROVIDER_ABSTRACTION_ACCEPTANCE.md",
-      "docs/roadmap/FINAL_ROADMAP_INDEX.md",
-      "scripts/validate_repo.sh",
-      "scripts/verify_csov03_provider_abstraction.py"
+      "docs/quality/CSOV04_OPTIONAL_SYNC_ONBOARDING.md",
+      "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+      "feature/settings/src/main/res/values-pt-rBR/strings.xml",
+      "feature/settings/src/main/res/values/strings.xml",
+      "feature/settings/src/test/java/com/mikeyphw/studyflow/feature/settings/SettingsContractTest.kt",
+      "scripts/verify_csov04_optional_sync_onboarding.py"
     ]
   }
 }

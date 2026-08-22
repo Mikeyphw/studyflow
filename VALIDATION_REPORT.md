@@ -264,3 +264,4 @@ stays under `build/reports/studyflow/` and is not pre-marked by source validatio
 - Unit coverage: `:core:domain:test`
 - Compile gate: `:core:domain:compileKotlin`
 - Purpose: validates provider abstraction, disabled default provider, registry behavior, and encrypted `.sfbackup` transfer DTOs.
+- CSOV04_OPTIONAL_SYNC_ONBOARDING: source/static contract added.

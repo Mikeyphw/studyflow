@@ -62,6 +62,27 @@ class SettingsContractTest {
         assertFalse(strings.contains("network sync"))
     }
 
+    @Test
+    fun `optional sync onboarding keeps offline as first class path`() {
+        val source = readSource(
+            modulePath = "src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+            rootPath = "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+        )
+        val strings = readSource(
+            modulePath = "src/main/res/values/strings.xml",
+            rootPath = "feature/settings/src/main/res/values/strings.xml",
+        )
+
+        assertTrue(source.contains("OptionalSyncOnboardingCard"))
+        assertTrue(source.contains("onKeepOffline"))
+        assertTrue(source.contains("onChooseSyncFolder"))
+        assertTrue(source.contains("onLearnMore"))
+        assertTrue(strings.contains("Keep offline"))
+        assertTrue(strings.contains("Choose sync folder"))
+        assertTrue(strings.contains("StudyFlow works fully offline"))
+        assertFalse(strings.contains("Cloud required"))
+    }
+
     private fun readSource(modulePath: String, rootPath: String): String {
         val candidates: List<Path> = listOf(Paths.get(modulePath), Paths.get(rootPath))
         return candidates.first { path -> path.toFile().isFile }.toFile().readText()

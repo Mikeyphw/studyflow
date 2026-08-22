@@ -44,7 +44,7 @@ import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
 import kotlinx.coroutines.launch
 
-private enum class SyncMutation { PREPARE, DISABLE }
+private enum class SyncMutation { PREPARE, DISABLE, KEEP_OFFLINE }
 
 private sealed interface SyncOperationState {
     data object Idle : SyncOperationState
@@ -64,6 +64,9 @@ fun SyncFoundationScreen(
     onDisable: suspend () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onKeepOffline: suspend () -> Unit = onDisable,
+    onChooseSyncFolder: () -> Unit = {},
+    onLearnMore: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var operationState by remember { mutableStateOf<SyncOperationState>(SyncOperationState.Idle) }
@@ -76,6 +79,7 @@ fun SyncFoundationScreen(
                 when (mutation) {
                     SyncMutation.PREPARE -> onPrepare()
                     SyncMutation.DISABLE -> onDisable()
+                    SyncMutation.KEEP_OFFLINE -> onKeepOffline()
                 }
             }.onSuccess {
                 operationState = SyncOperationState.Succeeded(mutation)
@@ -158,6 +162,12 @@ fun SyncFoundationScreen(
                     ),
                 )
             }
+            OptionalSyncOnboardingCard(
+                operationRunning = operationRunning,
+                onKeepOffline = { execute(SyncMutation.KEEP_OFFLINE) },
+                onChooseSyncFolder = onChooseSyncFolder,
+                onLearnMore = onLearnMore,
+            )
             StudyFlowSectionCard(title = stringResource(R.string.sync_local_changes_title)) {
                 val currentSummary = summary
                 if (summaryFailed) {
@@ -209,8 +219,11 @@ fun SyncFoundationScreen(
                     text = stringResource(R.string.sync_checkpoint_controls_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = { execute(SyncMutation.PREPARE) }, enabled = !operationRunning,
-                    modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = { execute(SyncMutation.PREPARE) },
+                    enabled = !operationRunning,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Text(stringResource(R.string.sync_prepare_checkpoint))
                 }
                 OutlinedButton(
@@ -225,6 +238,42 @@ fun SyncFoundationScreen(
     }
 }
 
+
+@Composable
+private fun OptionalSyncOnboardingCard(
+    operationRunning: Boolean,
+    onKeepOffline: () -> Unit,
+    onChooseSyncFolder: () -> Unit,
+    onLearnMore: () -> Unit,
+) {
+    StudyFlowSectionCard(title = stringResource(R.string.sync_onboarding_title)) {
+        Text(
+            text = stringResource(R.string.sync_onboarding_message),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Button(
+            onClick = onKeepOffline,
+            enabled = !operationRunning,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.sync_keep_offline))
+        }
+        OutlinedButton(
+            onClick = onChooseSyncFolder,
+            enabled = !operationRunning,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.sync_choose_folder))
+        }
+        OutlinedButton(
+            onClick = onLearnMore,
+            enabled = !operationRunning,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.sync_learn_more))
+        }
+    }
+}
 
 @Composable
 private fun LocalCheckpointReadinessCard(

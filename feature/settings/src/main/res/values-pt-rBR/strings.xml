@@ -409,4 +409,9 @@
     <string name="debug_portability_drill_failure_isolation">Isolamento de falha de restauração</string>
     <string name="debug_portability_drill_logical_integrity">Integridade lógica</string>
     <string name="debug_study_engine_kind_schedule_persistence">Semântica do cronograma persistido</string>
+    <string name="sync_onboarding_title">Introdução à sincronização opcional</string>
+    <string name="sync_onboarding_message">O StudyFlow funciona totalmente offline. Escolha manter offline para continuar só local, ou escolha uma pasta quando quiser sincronizar checkpoints criptografados.</string>
+    <string name="sync_keep_offline">Manter offline</string>
+    <string name="sync_choose_folder">Escolher pasta de sincronização</string>
+    <string name="sync_learn_more">Saiba mais</string>
 </resources>

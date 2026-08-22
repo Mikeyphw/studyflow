@@ -40,6 +40,11 @@
     <string name="sync_provider_webdav">WebDAV / Nextcloud</string>
     <string name="sync_provider_google_drive">Google Drive</string>
     <string name="sync_provider_custom">Custom provider</string>
+    <string name="sync_onboarding_title">Optional sync onboarding</string>
+    <string name="sync_onboarding_message">StudyFlow works fully offline. Choose Keep offline to stay local-only, or choose a folder when you want encrypted checkpoint sync.</string>
+    <string name="sync_keep_offline">Keep offline</string>
+    <string name="sync_choose_folder">Choose sync folder</string>
+    <string name="sync_learn_more">Learn more</string>
     <string name="sync_local_changes_title">Local changes</string>
     <string name="sync_local_changes_unknown">Inspect local changes to prepare a restore-safe checkpoint.</string>
     <string name="sync_plan_count">Study Plans: %1$d</string>

@@ -260,3 +260,4 @@ session-bound connected data/database/feature/Release-app suites, and an exact-A
 survive a forced process restart. `verifyFinalReleaseVerdict` remains fail-closed until the separate manual device
 observations also carry explicit evidence. Source/static validators never imply artifact or device acceptance.
 Signing credentials and generated acceptance evidence remain outside source control.
+- CSOV04 adds optional sync onboarding while preserving Keep offline as a first-class path.
