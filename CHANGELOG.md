@@ -272,3 +272,9 @@ copy.
 
 - Added optional provider setup validation for SAF and WebDAV.
 - Added secret-handle based diagnostics that avoid raw cloud credentials.
+
+
+## CSOV13 sync runbook
+
+- Added sync execution planner for manual upload, remote check, restore preview, and background modes.
+- Restore preview stays dry-run-only and conflict-gated.

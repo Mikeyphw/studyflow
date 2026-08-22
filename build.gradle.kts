@@ -790,3 +790,10 @@ tasks.register<Exec>("verifyCsov12ProviderSetupSecurity") {
     description = "Checks CSOV12 provider setup and credential-redaction source contracts."
     commandLine("python3", "scripts/verify_csov12_provider_setup_security.py")
 }
+
+
+tasks.register<Exec>("verifyCsov13SyncRunbook") {
+    group = "verification"
+    description = "Checks CSOV13 manual and background sync runbook source contracts."
+    commandLine("python3", "scripts/verify_csov13_sync_runbook.py")
+}

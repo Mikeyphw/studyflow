@@ -3,47 +3,56 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov12_provider_setup_security_v1",
-    "title": "CSOV12 provider setup security",
+    "name": "studyflow_csov13_sync_runbook_v1",
+    "title": "CSOV13 sync runbook planner",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 1,
+    "index": 2,
     "count": 2,
-    "summary": "Adds optional sync provider setup validation, HTTPS/WebDAV safety, and secret-redacted diagnostics."
+    "summary": "Adds manual/background sync execution runbook planning with encrypted upload, dry-run restore, and conflict gates."
   },
   "artifact": {
-    "name": "studyflow_csov12_provider_setup_security_v1",
+    "name": "studyflow_csov13_sync_runbook_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds optional sync provider setup validation, HTTPS/WebDAV safety, and secret-redacted diagnostics."
+    "summary": "Adds manual/background sync execution runbook planning with encrypted upload, dry-run restore, and conflict gates."
   },
   "git": {
     "commit": true,
-    "message": "CSOV12 add provider setup security",
-    "commit_message": "CSOV12 add provider setup security"
+    "message": "CSOV13 add sync runbook planner",
+    "commit_message": "CSOV13 add sync runbook planner"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV12 add provider setup security"
+    "message": "CSOV13 add sync runbook planner"
   },
-  "commit_message": "CSOV12 add provider setup security",
+  "commit_message": "CSOV13 add sync runbook planner",
   "validation": {
     "recommended": [
       "verifyCsov12ProviderSetupSecurity",
+      "verifyCsov13SyncRunbook",
       ":core:model:test",
+      ":core:domain:test",
+      ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "tasks": [
       "verifyCsov12ProviderSetupSecurity",
+      "verifyCsov13SyncRunbook",
       ":core:model:test",
+      ":core:domain:test",
+      ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
       "verifyCsov12ProviderSetupSecurity",
+      "verifyCsov13SyncRunbook",
       ":core:model:test",
+      ":core:domain:test",
+      ":core:data:compileDebugKotlin",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
@@ -56,9 +65,9 @@
     "README.md",
     "VALIDATION_REPORT.md",
     "build.gradle.kts",
-    "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySyncProviderSetup.kt",
-    "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudySyncProviderSetupTest.kt",
-    "docs/quality/CSOV12_PROVIDER_SETUP_SECURITY.md",
-    "scripts/verify_csov12_provider_setup_security.py"
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncRunbook.kt",
+    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncRunbookTest.kt",
+    "docs/quality/CSOV13_SYNC_RUNBOOK.md",
+    "scripts/verify_csov13_sync_runbook.py"
   ]
 }
