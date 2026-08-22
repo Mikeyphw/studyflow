@@ -64,6 +64,13 @@
 
 # Changelog
 
+
+## CSOV02
+
+- Added the portable StudyFlow sync checkpoint bundle format (`.sfbackup`) with manifest, checkpoint, database snapshot, attachments, and SHA-256 integrity entries.
+- Reused the existing authenticated AES-GCM encrypted package envelope for remote-ready sync bundles so raw database bytes are not the provider-transfer default.
+- Added codec unit coverage plus a CSOV02 source-contract verifier and Gradle verification task.
+
 ## CSOV00-CSOV01
 
 - Migrated user-facing product copy from local-checkpoint-only sync language to local-first optional cloud sync.

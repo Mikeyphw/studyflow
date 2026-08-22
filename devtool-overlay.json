@@ -3,67 +3,49 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov01_sync_settings_foundation_v1",
-    "title": "CSOV01 sync settings foundation",
+    "name": "studyflow_csov02_encrypted_sync_checkpoint_format_v1",
+    "title": "CSOV02 encrypted sync checkpoint format",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 2,
+    "index": 1,
     "count": 2,
-    "summary": "Adds the off-by-default optional sync settings model, provider-none state, settings UI status, DataStore defaults, and verification contract."
+    "summary": "Adds the encrypted .sfbackup sync checkpoint bundle format with manifest, checkpoint, database snapshot, attachment, and integrity contracts."
   },
   "artifact": {
-    "name": "studyflow_csov01_sync_settings_foundation_v1",
+    "name": "studyflow_csov02_encrypted_sync_checkpoint_format_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds the off-by-default optional sync settings model, provider-none state, settings UI status, DataStore defaults, and verification contract."
+    "summary": "Adds the encrypted .sfbackup sync checkpoint bundle format with manifest, checkpoint, database snapshot, attachment, and integrity contracts."
   },
   "git": {
     "commit": true,
-    "message": "CSOV01 add optional sync settings foundation",
-    "commit_message": "CSOV01 add optional sync settings foundation"
+    "message": "CSOV02 add encrypted sync checkpoint format",
+    "commit_message": "CSOV02 add encrypted sync checkpoint format"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV01 add optional sync settings foundation"
+    "message": "CSOV02 add encrypted sync checkpoint format"
   },
-  "commit_message": "CSOV01 add optional sync settings foundation",
+  "commit_message": "CSOV02 add encrypted sync checkpoint format",
   "validation": {
     "recommended": [
-      "verifyRepositoryContracts",
-      "verifyPhase33OfflineCheckpointCompletion",
-      "verifyCloudOptionalSyncSettings",
-      ":core:model:test",
-      ":feature:settings:testDebugUnitTest",
-      ":feature:settings:compileDebugKotlin",
-      ":app:compileDebugKotlin",
-      ":app:lintDebug",
-      ":app:lintRelease",
-      ":app:assembleDebug"
+      "verifyCsov02SyncBundle",
+      ":core:portability:test",
+      ":core:portability:compileKotlin",
+      ":feature:settings:compileDebugKotlin"
     ],
     "tasks": [
-      "verifyRepositoryContracts",
-      "verifyPhase33OfflineCheckpointCompletion",
-      "verifyCloudOptionalSyncSettings",
-      ":core:model:test",
-      ":feature:settings:testDebugUnitTest",
-      ":feature:settings:compileDebugKotlin",
-      ":app:compileDebugKotlin",
-      ":app:lintDebug",
-      ":app:lintRelease",
-      ":app:assembleDebug"
+      "verifyCsov02SyncBundle",
+      ":core:portability:test",
+      ":core:portability:compileKotlin",
+      ":feature:settings:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyRepositoryContracts",
-      "verifyPhase33OfflineCheckpointCompletion",
-      "verifyCloudOptionalSyncSettings",
-      ":core:model:test",
-      ":feature:settings:testDebugUnitTest",
-      ":feature:settings:compileDebugKotlin",
-      ":app:compileDebugKotlin",
-      ":app:lintDebug",
-      ":app:lintRelease",
-      ":app:assembleDebug"
+      "verifyCsov02SyncBundle",
+      ":core:portability:test",
+      ":core:portability:compileKotlin",
+      ":feature:settings:compileDebugKotlin"
     ],
     "defer_for_intermediate": true,
     "default_apply_flag": "--no-validate"
@@ -72,32 +54,14 @@
     "CHANGELOG.md",
     "README.md",
     "VALIDATION_REPORT.md",
-    "FINAL_FULL_APP_ACCEPTANCE_SEAL.md",
-    "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
-    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseCandidatePolish.kt",
-    "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-    "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudyFlowSyncSettingsTest.kt",
-    "docs/architecture/ADR-0028-optional-cloud-sync-foundation.md",
-    "docs/architecture/ADR-0034-local-first-optional-cloud-sync.md",
-    "docs/product/FIRST_RUN_AND_UPGRADE_NOTES.md",
-    "docs/product/PRODUCT_CONTRACT.md",
-    "docs/product/SCOPE_BOUNDARIES.md",
-    "docs/quality/CSOV00_CSOV01_ACCEPTANCE.md",
-    "docs/quality/PHASE_22_23_PROMISE_AUDIT.md",
-    "docs/quality/PHASE_25_GAP_CLOSURE_SEAL.md",
-    "docs/quality/PHASE_25_PROMISE_AUDIT.md",
+    "build.gradle.kts",
+    "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyFlowSyncBundle.kt",
+    "core/portability/src/test/kotlin/com/mikeyphw/studyflow/core/portability/StudyFlowSyncBundleCodecTest.kt",
+    "docs/quality/CSOV02_SYNC_BUNDLE_ACCEPTANCE.md",
     "docs/roadmap/FINAL_ROADMAP_INDEX.md",
-    "feature/plans/src/main/res/values/strings.xml",
-    "feature/plans/src/main/res/values-pt-rBR/strings.xml",
-    "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
     "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-    "feature/settings/src/main/res/values/strings.xml",
-    "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-    "feature/settings/src/test/java/com/mikeyphw/studyflow/feature/settings/SettingsContractTest.kt",
-    "feature/workspace/src/main/res/values/strings.xml",
     "scripts/validate_repo.sh",
-    "scripts/verify_cloud_optional_sync_settings.py",
-    "scripts/verify_phase_33.py"
+    "scripts/verify_csov02_sync_bundle.py"
   ],
   "copy": {
     "mode": "overlay",
@@ -105,32 +69,14 @@
       "CHANGELOG.md",
       "README.md",
       "VALIDATION_REPORT.md",
-      "FINAL_FULL_APP_ACCEPTANCE_SEAL.md",
-      "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
-      "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseCandidatePolish.kt",
-      "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-      "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudyFlowSyncSettingsTest.kt",
-      "docs/architecture/ADR-0028-optional-cloud-sync-foundation.md",
-      "docs/architecture/ADR-0034-local-first-optional-cloud-sync.md",
-      "docs/product/FIRST_RUN_AND_UPGRADE_NOTES.md",
-      "docs/product/PRODUCT_CONTRACT.md",
-      "docs/product/SCOPE_BOUNDARIES.md",
-      "docs/quality/CSOV00_CSOV01_ACCEPTANCE.md",
-      "docs/quality/PHASE_22_23_PROMISE_AUDIT.md",
-      "docs/quality/PHASE_25_GAP_CLOSURE_SEAL.md",
-      "docs/quality/PHASE_25_PROMISE_AUDIT.md",
+      "build.gradle.kts",
+      "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyFlowSyncBundle.kt",
+      "core/portability/src/test/kotlin/com/mikeyphw/studyflow/core/portability/StudyFlowSyncBundleCodecTest.kt",
+      "docs/quality/CSOV02_SYNC_BUNDLE_ACCEPTANCE.md",
       "docs/roadmap/FINAL_ROADMAP_INDEX.md",
-      "feature/plans/src/main/res/values/strings.xml",
-      "feature/plans/src/main/res/values-pt-rBR/strings.xml",
-      "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
       "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-      "feature/settings/src/main/res/values/strings.xml",
-      "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-      "feature/settings/src/test/java/com/mikeyphw/studyflow/feature/settings/SettingsContractTest.kt",
-      "feature/workspace/src/main/res/values/strings.xml",
       "scripts/validate_repo.sh",
-      "scripts/verify_cloud_optional_sync_settings.py",
-      "scripts/verify_phase_33.py"
+      "scripts/verify_csov02_sync_bundle.py"
     ]
   }
 }

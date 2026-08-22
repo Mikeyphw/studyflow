@@ -250,3 +250,10 @@ connected Room/data/feature/app suites, and an exact-APK production-container jo
 and CREATE_AS_NEW restores followed by a forced process restart and durable re-read. Manual real-device acceptance
 remains a separate evidence class and each PASS requires a non-empty observation. Generated evidence
 stays under `build/reports/studyflow/` and is not pre-marked by source validation.
+
+## CSOV02 Validation
+
+- Static source contract: `python3 scripts/verify_csov02_sync_bundle.py`
+- Unit coverage: `:core:portability:test`
+- Compile gate: `:core:portability:compileKotlin`
+- Purpose: validates the `.sfbackup` archive entries, manifest/checkpoint integrity, and encrypted remote bundle policy.

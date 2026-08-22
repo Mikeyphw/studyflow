@@ -135,16 +135,26 @@ fun SyncFoundationScreen(
                         stringResource(syncProviderLabel(state.settings.providerId)),
                     ),
                 )
+                val automaticSyncLabel = if (state.settings.automaticSyncEnabled) {
+                    R.string.sync_flag_enabled
+                } else {
+                    R.string.sync_flag_disabled
+                }
+                val remoteEncryptionLabel = if (state.settings.encryptRemoteBackups) {
+                    R.string.sync_flag_enabled
+                } else {
+                    R.string.sync_flag_disabled
+                }
                 Text(
                     text = stringResource(
                         R.string.sync_automatic_value,
-                        stringResource(if (state.settings.automaticSyncEnabled) R.string.sync_flag_enabled else R.string.sync_flag_disabled),
+                        stringResource(automaticSyncLabel),
                     ),
                 )
                 Text(
                     text = stringResource(
                         R.string.sync_encryption_value,
-                        stringResource(if (state.settings.encryptRemoteBackups) R.string.sync_flag_enabled else R.string.sync_flag_disabled),
+                        stringResource(remoteEncryptionLabel),
                     ),
                 )
             }

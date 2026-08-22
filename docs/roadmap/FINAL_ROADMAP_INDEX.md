@@ -45,5 +45,11 @@ StudyFlow product roadmap through Phase 64.
 - Phase 63: exam runbook.
 - Phase 64: preview-first seven-day study sprint.
 
-The next work is the final target-machine validation and evidence pass. No Phase 65 feature is
-currently defined by the roadmap.
+Cloud sync overlay roadmap:
+
+- CSOV00-CSOV01: local-first optional-cloud language and settings foundation.
+- CSOV02: encrypted sync checkpoint bundle format.
+- CSOV03: provider abstraction.
+- CSOV04-CSOV11: optional onboarding, manual provider transfer, merge/conflict review, background sync, and final seal.
+
+The final target-machine validation and evidence pass remains required before product sealing.

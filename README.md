@@ -39,6 +39,7 @@ The preceding release-identity and acceptance framework remains active:
 - Phase 32 moved diagnostics behind a developer-only debug gate.
 - Phase 33 completed the former sync surface as an offline-first local checkpoint.
 - CSOV00-CSOV01 migrate the product language to local-first optional cloud sync and add an off-by-default sync settings model.
+- CSOV02 adds the encrypted `.sfbackup` sync bundle format with manifest, checkpoint, database snapshot, attachments, and integrity entries.
 - Phase 34 replaces passive-but-clickable chips with non-clickable status pills.
 - Phase 35 refreshes README, changelog, validation notes, and artifact hygiene contracts.
 - Phase 36 sets the release-candidate identity, packaging policy, and signing boundary.
@@ -50,7 +51,7 @@ build host must still produce build, install, upgrade, and device-smoke evidence
 
 ## Product boundary
 
-StudyFlow is now **local-first with optional cloud sync**. A fresh install works fully offline, requires no StudyFlow account, and leaves cloud sync off until the user explicitly chooses a provider. Local checkpoint status still summarizes whether backup and restore decisions are ready for the selected Study Plan; provider-backed upload, download, and merge flows are staged after the settings foundation.
+StudyFlow is now **local-first with optional cloud sync**. A fresh install works fully offline, requires no StudyFlow account, and leaves cloud sync off until the user explicitly chooses a provider. Local checkpoint status still summarizes whether backup and restore decisions are ready for the selected Study Plan; provider-backed upload, download, and merge flows are staged after the settings foundation. CSOV02 defines the portable encrypted `.sfbackup` checkpoint bundle future providers will transfer.
 
 A `StudyPlan` is the complete and independent workspace for one study objective. Subjects, nested
 topics, schedules, sessions, questions, mock exams, reviews, notes, videos, annexes, analytics, and
