@@ -398,6 +398,13 @@ tasks.register<Exec>("verifyCsov07MergeEngine") {
     commandLine("python3", "scripts/verify_csov07_merge_engine.py")
 }
 
+
+tasks.register<Exec>("verifyCsov08ConflictReview") {
+    group = "verification"
+    description = "Checks CSOV08 conflict review UI and presenter source contracts."
+    commandLine("python3", "scripts/verify_csov08_conflict_review.py")
+}
+
 tasks.register<Exec>("verifyContentModeFoundation") {
     group = "verification"
     description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."

@@ -368,6 +368,60 @@ data class StudySyncMergePlan(
     val canApplyAutomatically: Boolean = conflictCount == 0
 }
 
+enum class StudySyncConflictResolutionChoice {
+    KEEP_LOCAL,
+    USE_REMOTE,
+    KEEP_BOTH,
+}
+
+data class StudySyncConflictReviewItem(
+    val stableKey: String,
+    val entityType: String,
+    val entityId: String,
+    val reason: StudySyncMergeConflictReason,
+    val localUpdatedAtEpochMillis: Long?,
+    val remoteUpdatedAtEpochMillis: Long?,
+    val localSummary: String,
+    val remoteSummary: String,
+    val allowedChoices: List<StudySyncConflictResolutionChoice> = listOf(
+        StudySyncConflictResolutionChoice.KEEP_LOCAL,
+        StudySyncConflictResolutionChoice.USE_REMOTE,
+        StudySyncConflictResolutionChoice.KEEP_BOTH,
+    ),
+) {
+    init {
+        require(stableKey.isNotBlank()) { "Conflict review stable key cannot be blank." }
+        require(entityType.isNotBlank()) { "Conflict review entity type cannot be blank." }
+        require(entityId.isNotBlank()) { "Conflict review entity id cannot be blank." }
+        require(localSummary.isNotBlank()) { "Local conflict summary cannot be blank." }
+        require(remoteSummary.isNotBlank()) { "Remote conflict summary cannot be blank." }
+        require(allowedChoices.isNotEmpty()) { "Conflict review choices cannot be empty." }
+    }
+}
+
+object StudySyncConflictReviewPresenter {
+    fun fromPlan(plan: StudySyncMergePlan): List<StudySyncConflictReviewItem> =
+        plan.decisions.mapNotNull { decision -> fromDecision(decision) }
+
+    fun fromDecision(decision: StudySyncMergeDecision): StudySyncConflictReviewItem? {
+        val conflict = decision.conflict ?: return null
+        return StudySyncConflictReviewItem(
+            stableKey = decision.stableKey,
+            entityType = conflict.entityType,
+            entityId = conflict.entityId,
+            reason = conflict.reason,
+            localUpdatedAtEpochMillis = conflict.localUpdatedAtEpochMillis,
+            remoteUpdatedAtEpochMillis = conflict.remoteUpdatedAtEpochMillis,
+            localSummary = conflict.localUpdatedAtEpochMillis?.let { timestamp ->
+                "Local version updated at $timestamp"
+            } ?: "No local version",
+            remoteSummary = conflict.remoteUpdatedAtEpochMillis?.let { timestamp ->
+                "Remote version updated at $timestamp"
+            } ?: "No remote version",
+        )
+    }
+}
+
 
 data class StudySyncManualActionAvailability(
     val action: StudySyncManualAction,

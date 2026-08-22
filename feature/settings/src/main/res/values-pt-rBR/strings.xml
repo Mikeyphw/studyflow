@@ -45,6 +45,15 @@
     <string name="sync_plan_count">Planos de estudo: %1$d</string>
     <string name="sync_active_plan_count">Planos ativos ou pausados: %1$d</string>
     <string name="sync_change_count">Alterações locais: %1$d</string>
+    <string name="sync_conflict_review_title">Revisão de conflitos</string>
+    <string name="sync_conflict_review_message">Se o mesmo item mudar em dois dispositivos, o StudyFlow não faz nada até você escolher como resolver.</string>
+    <string name="sync_conflict_review_empty">Nenhum conflito de sincronização precisa de revisão.</string>
+    <string name="sync_conflict_review_item_title">Conflito: %1$s %2$s</string>
+    <string name="sync_conflict_review_local">Local: %1$s</string>
+    <string name="sync_conflict_review_remote">Remoto: %1$s</string>
+    <string name="sync_conflict_keep_local">Manter local</string>
+    <string name="sync_conflict_use_remote">Usar remoto</string>
+    <string name="sync_conflict_keep_both">Manter ambos</string>
     <string name="sync_checkpoint_controls_title">Controles do checkpoint</string>
     <string name="sync_checkpoint_controls_message">Checkpoints manuais continuam disponíveis sem provedor de nuvem. Configuração de provedor e sincronização automática permanecem desativadas até ativação explícita posterior.</string>
     <string name="sync_prepare_checkpoint">Preparar checkpoint manual</string>

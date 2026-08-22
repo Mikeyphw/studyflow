@@ -47,3 +47,7 @@ The app is ready for one final Devtool acceptance run on the landed Phase 64 rep
 - CSOV06 records sync device identity and checkpoint ledger metadata without requiring cloud sign-in.
 
 - CSOV07 adds a conservative stable-id sync merge engine so optional cloud sync cannot silently overwrite both-sided edits.
+
+### CSOV08 acceptance note
+
+Conflict review is explicit and user-driven; automatic sync application remains blocked while conflicts are unresolved.

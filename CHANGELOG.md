@@ -243,3 +243,9 @@ copy.
 - Added stable-id sync entity versions and merge decisions.
 - Added conservative merge engine with local-only, remote-only, one-sided change, both-changed, and delete-vs-change decisions.
 - Added tests and source contract for conflict-first sync behavior.
+
+## CSOV08 - Conflict review UI
+
+- Added sync conflict review item models and presenter.
+- Added a sync UI card for keep-local, use-remote, and keep-both decisions.
+- Added source verifier `verifyCsov08ConflictReview`.

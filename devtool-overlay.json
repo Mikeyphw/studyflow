@@ -3,48 +3,48 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov07_conservative_merge_engine_v1",
-    "title": "CSOV07 conservative merge engine",
+    "name": "studyflow_csov08_conflict_review_ui_v1",
+    "title": "CSOV08 conflict review UI",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 2,
+    "index": 1,
     "count": 2,
-    "summary": "Adds stable-id sync entity versions and a conservative merge planner that blocks both-sided and delete-vs-change conflicts for manual review."
+    "summary": "Adds explicit manual conflict review items and UI actions for keep-local, use-remote, and keep-both sync decisions."
   },
   "artifact": {
-    "name": "studyflow_csov07_conservative_merge_engine_v1",
+    "name": "studyflow_csov08_conflict_review_ui_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds stable-id sync entity versions and a conservative merge planner that blocks both-sided and delete-vs-change conflicts for manual review."
+    "summary": "Adds explicit manual conflict review items and UI actions for keep-local, use-remote, and keep-both sync decisions."
   },
   "git": {
     "commit": true,
-    "message": "CSOV07 add conservative sync merge engine",
-    "commit_message": "CSOV07 add conservative sync merge engine"
+    "message": "CSOV08 add sync conflict review UI",
+    "commit_message": "CSOV08 add sync conflict review UI"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV07 add conservative sync merge engine"
+    "message": "CSOV08 add sync conflict review UI"
   },
-  "commit_message": "CSOV07 add conservative sync merge engine",
+  "commit_message": "CSOV08 add sync conflict review UI",
   "validation": {
     "recommended": [
-      "verifyCsov07MergeEngine",
-      ":core:model:test",
+      "verifyCsov08ConflictReview",
       ":core:domain:test",
+      ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "tasks": [
-      "verifyCsov07MergeEngine",
-      ":core:model:test",
+      "verifyCsov08ConflictReview",
       ":core:domain:test",
+      ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyCsov07MergeEngine",
-      ":core:model:test",
+      "verifyCsov08ConflictReview",
       ":core:domain:test",
+      ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "defer_for_intermediate": true,
@@ -56,11 +56,13 @@
     "README.md",
     "VALIDATION_REPORT.md",
     "build.gradle.kts",
-    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncMerge.kt",
-    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncMergeEngineTest.kt",
+    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncConflictReviewPresenterTest.kt",
     "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-    "docs/quality/CSOV07_CONSERVATIVE_MERGE_ENGINE.md",
-    "scripts/verify_csov07_merge_engine.py"
+    "docs/quality/CSOV08_CONFLICT_REVIEW.md",
+    "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+    "feature/settings/src/main/res/values/strings.xml",
+    "feature/settings/src/main/res/values-pt-rBR/strings.xml",
+    "scripts/verify_csov08_conflict_review.py"
   ],
   "copy": {
     "mode": "overlay",
@@ -70,11 +72,13 @@
       "README.md",
       "VALIDATION_REPORT.md",
       "build.gradle.kts",
-      "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncMerge.kt",
-      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncMergeEngineTest.kt",
+      "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncConflictReviewPresenterTest.kt",
       "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-      "docs/quality/CSOV07_CONSERVATIVE_MERGE_ENGINE.md",
-      "scripts/verify_csov07_merge_engine.py"
+      "docs/quality/CSOV08_CONFLICT_REVIEW.md",
+      "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
+      "feature/settings/src/main/res/values/strings.xml",
+      "feature/settings/src/main/res/values-pt-rBR/strings.xml",
+      "scripts/verify_csov08_conflict_review.py"
     ]
   }
 }

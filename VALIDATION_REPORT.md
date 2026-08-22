@@ -276,3 +276,7 @@ Recommended validation: `:core:model:test`, `:core:domain:test`, `:core:data:com
 
 Static contract: `verifyCsov07MergeEngine`
 Recommended validation: `:core:model:test`, `:core:domain:test`, `:app:compileDebugKotlin`.
+
+## CSOV08 validation
+
+Static contract: `verifyCsov08ConflictReview`. Recommended runtime checks: `:core:domain:test`, `:feature:settings:compileDebugKotlin`, and `:app:compileDebugKotlin`.

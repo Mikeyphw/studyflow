@@ -39,6 +39,7 @@ import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueStatus
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
+import com.mikeyphw.studyflow.core.model.StudySyncConflictReviewItem
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncManualAction
@@ -73,6 +74,10 @@ fun SyncFoundationScreen(
     onCheckRemoteCheckpoints: suspend () -> Unit = {},
     onPreviewRemoteRestore: () -> Unit = {},
     onViewSyncHistory: () -> Unit = {},
+    conflictReviewItems: List<StudySyncConflictReviewItem> = emptyList(),
+    onKeepLocalConflict: (StudySyncConflictReviewItem) -> Unit = {},
+    onUseRemoteConflict: (StudySyncConflictReviewItem) -> Unit = {},
+    onKeepBothConflict: (StudySyncConflictReviewItem) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var operationState by remember { mutableStateOf<SyncOperationState>(SyncOperationState.Idle) }
@@ -207,6 +212,12 @@ fun SyncFoundationScreen(
                 onPreviewRemoteRestore = onPreviewRemoteRestore,
                 onViewSyncHistory = onViewSyncHistory,
             )
+            ConflictReviewCard(
+                conflictReviewItems = conflictReviewItems,
+                onKeepLocalConflict = onKeepLocalConflict,
+                onUseRemoteConflict = onUseRemoteConflict,
+                onKeepBothConflict = onKeepBothConflict,
+            )
             when (val operation = operationState) {
                 SyncOperationState.Idle -> Unit
                 is SyncOperationState.Running -> StudyFlowSectionCard(
@@ -337,6 +348,74 @@ private fun ManualFolderSyncCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.sync_view_history))
+        }
+    }
+}
+
+@Composable
+private fun ConflictReviewCard(
+    conflictReviewItems: List<StudySyncConflictReviewItem>,
+    onKeepLocalConflict: (StudySyncConflictReviewItem) -> Unit,
+    onUseRemoteConflict: (StudySyncConflictReviewItem) -> Unit,
+    onKeepBothConflict: (StudySyncConflictReviewItem) -> Unit,
+) {
+    StudyFlowSectionCard(title = stringResource(R.string.sync_conflict_review_title)) {
+        Text(
+            text = stringResource(R.string.sync_conflict_review_message),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (conflictReviewItems.isEmpty()) {
+            Text(text = stringResource(R.string.sync_conflict_review_empty))
+        } else {
+            conflictReviewItems.forEach { item ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    tonalElevation = 1.dp,
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(
+                                R.string.sync_conflict_review_item_title,
+                                item.entityType,
+                                item.entityId,
+                            ),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = stringResource(R.string.sync_conflict_review_local, item.localSummary),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
+                            text = stringResource(R.string.sync_conflict_review_remote, item.remoteSummary),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Button(
+                            onClick = { onKeepLocalConflict(item) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.sync_conflict_keep_local))
+                        }
+                        OutlinedButton(
+                            onClick = { onUseRemoteConflict(item) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.sync_conflict_use_remote))
+                        }
+                        OutlinedButton(
+                            onClick = { onKeepBothConflict(item) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.sync_conflict_keep_both))
+                        }
+                    }
+                }
+            }
         }
     }
 }

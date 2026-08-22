@@ -270,3 +270,7 @@ Optional cloud sync now records local device identity and checkpoint ledger fact
 ### CSOV07 conservative merge engine
 
 Optional cloud sync now has a stable-id merge planner that imports remote-only records, keeps local-only records, applies one-sided updates, and blocks both-sided/delete-vs-change cases for manual review.
+
+### CSOV08 conflict review
+
+Optional cloud sync now includes a conservative conflict review path. When the same stable-id entity changes on two devices, StudyFlow presents keep-local, use-remote, and keep-both choices instead of silently overwriting data.

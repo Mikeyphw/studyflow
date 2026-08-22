@@ -62,6 +62,15 @@
     <string name="sync_check_remote_checkpoint">Check for remote checkpoint</string>
     <string name="sync_preview_restore">Preview restore</string>
     <string name="sync_view_history">View sync history</string>
+    <string name="sync_conflict_review_title">Conflict review</string>
+    <string name="sync_conflict_review_message">If the same item changed on two devices, StudyFlow does nothing until you choose how to resolve it.</string>
+    <string name="sync_conflict_review_empty">No sync conflicts need review.</string>
+    <string name="sync_conflict_review_item_title">Conflict: %1$s %2$s</string>
+    <string name="sync_conflict_review_local">Local: %1$s</string>
+    <string name="sync_conflict_review_remote">Remote: %1$s</string>
+    <string name="sync_conflict_keep_local">Keep local</string>
+    <string name="sync_conflict_use_remote">Use remote</string>
+    <string name="sync_conflict_keep_both">Keep both</string>
     <string name="sync_checkpoint_controls_title">Checkpoint controls</string>
     <string name="sync_checkpoint_controls_message">Manual checkpoints remain available without a cloud provider. Provider setup and automatic sync stay off until explicitly enabled later.</string>
     <string name="sync_prepare_checkpoint">Prepare manual checkpoint</string>
