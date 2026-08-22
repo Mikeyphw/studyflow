@@ -286,3 +286,9 @@ StudyFlow remains local-first. CSOV10 adds WebDAV / Nextcloud as the first optio
 ### Sync acceptance seal
 
 The optional cloud sync roadmap is sealed with local-first defaults, encrypted remote checkpoints, conservative merge behavior, manual conflict review, and background sync gates. StudyFlow does not require cloud setup to study offline.
+
+
+## CSOV12 provider setup security
+
+- Added optional provider setup validation for SAF and WebDAV.
+- Added secret-handle based diagnostics that avoid raw cloud credentials.

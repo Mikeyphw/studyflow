@@ -70,3 +70,9 @@ Background sync remains optional; automatic work is blocked unless sync is enabl
 - Cloud providers are optional and encrypted.
 - Background sync is gated by user configuration and provider readiness.
 - Conflicts require explicit review before data is overwritten.
+
+
+## CSOV12 provider setup security
+
+- Added optional provider setup validation for SAF and WebDAV.
+- Added secret-handle based diagnostics that avoid raw cloud credentials.

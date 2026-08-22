@@ -292,3 +292,9 @@ Static contract: `verifyCsov10RealProviders`. Recommended runtime checks: `:core
 ## CSOV11 — Final optional cloud sync acceptance seal
 
 Static contract: `verifyCsov11FinalSyncSeal`. Recommended runtime checks: all CSOV verifiers plus `:core:domain:test`, `:core:data:compileDebugKotlin`, `:feature:settings:compileDebugKotlin`, and `:app:compileDebugKotlin`.
+
+
+## CSOV12 provider setup security
+
+- Added optional provider setup validation for SAF and WebDAV.
+- Added secret-handle based diagnostics that avoid raw cloud credentials.

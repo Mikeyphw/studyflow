@@ -266,3 +266,9 @@ copy.
 
 - Added final sync acceptance seal covering local-first defaults, optional provider catalog, encrypted remote uploads, conflict review, and background sync gating.
 - Added source verifier `verifyCsov11FinalSyncSeal`.
+
+
+## CSOV12 provider setup security
+
+- Added optional provider setup validation for SAF and WebDAV.
+- Added secret-handle based diagnostics that avoid raw cloud credentials.

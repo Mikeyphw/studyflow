@@ -3,53 +3,47 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov11_final_optional_sync_seal_v1",
-    "title": "CSOV11 final optional sync seal",
+    "name": "studyflow_csov12_provider_setup_security_v1",
+    "title": "CSOV12 provider setup security",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 2,
+    "index": 1,
     "count": 2,
-    "summary": "Adds the final local-first optional cloud sync acceptance seal covering defaults, encrypted uploads, provider catalog, background sync gates, and conflict review."
+    "summary": "Adds optional sync provider setup validation, HTTPS/WebDAV safety, and secret-redacted diagnostics."
   },
   "artifact": {
-    "name": "studyflow_csov11_final_optional_sync_seal_v1",
+    "name": "studyflow_csov12_provider_setup_security_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds the final local-first optional cloud sync acceptance seal covering defaults, encrypted uploads, provider catalog, background sync gates, and conflict review."
+    "summary": "Adds optional sync provider setup validation, HTTPS/WebDAV safety, and secret-redacted diagnostics."
   },
   "git": {
     "commit": true,
-    "message": "CSOV11 seal optional cloud sync acceptance",
-    "commit_message": "CSOV11 seal optional cloud sync acceptance"
+    "message": "CSOV12 add provider setup security",
+    "commit_message": "CSOV12 add provider setup security"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV11 seal optional cloud sync acceptance"
+    "message": "CSOV12 add provider setup security"
   },
-  "commit_message": "CSOV11 seal optional cloud sync acceptance",
+  "commit_message": "CSOV12 add provider setup security",
   "validation": {
     "recommended": [
-      "verifyCsov11FinalSyncSeal",
-      "verifyCsov10RealProviders",
-      ":core:domain:test",
-      ":core:data:compileDebugKotlin",
+      "verifyCsov12ProviderSetupSecurity",
+      ":core:model:test",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "tasks": [
-      "verifyCsov11FinalSyncSeal",
-      "verifyCsov10RealProviders",
-      ":core:domain:test",
-      ":core:data:compileDebugKotlin",
+      "verifyCsov12ProviderSetupSecurity",
+      ":core:model:test",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
-      "verifyCsov11FinalSyncSeal",
-      "verifyCsov10RealProviders",
-      ":core:domain:test",
-      ":core:data:compileDebugKotlin",
+      "verifyCsov12ProviderSetupSecurity",
+      ":core:model:test",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
@@ -62,8 +56,9 @@
     "README.md",
     "VALIDATION_REPORT.md",
     "build.gradle.kts",
-    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyFlowOptionalCloudSyncFinalSealTest.kt",
-    "docs/quality/CSOV11_FINAL_SYNC_ACCEPTANCE_SEAL.md",
-    "scripts/verify_csov11_final_sync_seal.py"
+    "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySyncProviderSetup.kt",
+    "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudySyncProviderSetupTest.kt",
+    "docs/quality/CSOV12_PROVIDER_SETUP_SECURITY.md",
+    "scripts/verify_csov12_provider_setup_security.py"
   ]
 }

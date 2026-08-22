@@ -783,3 +783,10 @@ tasks.register("checkAll") {
         ":app:bundleRelease",
     )
 }
+
+
+tasks.register<Exec>("verifyCsov12ProviderSetupSecurity") {
+    group = "verification"
+    description = "Checks CSOV12 provider setup and credential-redaction source contracts."
+    commandLine("python3", "scripts/verify_csov12_provider_setup_security.py")
+}
