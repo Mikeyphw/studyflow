@@ -3,33 +3,34 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov10_webdav_nextcloud_provider_v1",
-    "title": "CSOV10 WebDAV / Nextcloud provider lane",
+    "name": "studyflow_csov11_final_optional_sync_seal_v1",
+    "title": "CSOV11 final optional sync seal",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 1,
+    "index": 2,
     "count": 2,
-    "summary": "Adds the first account-capable optional provider lane using encrypted WebDAV / Nextcloud .sfbackup upload, index, download, and delete contracts."
+    "summary": "Adds the final local-first optional cloud sync acceptance seal covering defaults, encrypted uploads, provider catalog, background sync gates, and conflict review."
   },
   "artifact": {
-    "name": "studyflow_csov10_webdav_nextcloud_provider_v1",
+    "name": "studyflow_csov11_final_optional_sync_seal_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds the first account-capable optional provider lane using encrypted WebDAV / Nextcloud .sfbackup upload, index, download, and delete contracts."
+    "summary": "Adds the final local-first optional cloud sync acceptance seal covering defaults, encrypted uploads, provider catalog, background sync gates, and conflict review."
   },
   "git": {
     "commit": true,
-    "message": "CSOV10 add WebDAV Nextcloud sync provider lane",
-    "commit_message": "CSOV10 add WebDAV Nextcloud sync provider lane"
+    "message": "CSOV11 seal optional cloud sync acceptance",
+    "commit_message": "CSOV11 seal optional cloud sync acceptance"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV10 add WebDAV Nextcloud sync provider lane"
+    "message": "CSOV11 seal optional cloud sync acceptance"
   },
-  "commit_message": "CSOV10 add WebDAV Nextcloud sync provider lane",
+  "commit_message": "CSOV11 seal optional cloud sync acceptance",
   "validation": {
     "recommended": [
+      "verifyCsov11FinalSyncSeal",
       "verifyCsov10RealProviders",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
@@ -37,6 +38,7 @@
       ":app:compileDebugKotlin"
     ],
     "tasks": [
+      "verifyCsov11FinalSyncSeal",
       "verifyCsov10RealProviders",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
@@ -44,6 +46,7 @@
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
+      "verifyCsov11FinalSyncSeal",
       "verifyCsov10RealProviders",
       ":core:domain:test",
       ":core:data:compileDebugKotlin",
@@ -59,10 +62,8 @@
     "README.md",
     "VALIDATION_REPORT.md",
     "build.gradle.kts",
-    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyFlowSyncProvider.kt",
-    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/WebDavStudyFlowSyncProviderTest.kt",
-    "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-    "docs/quality/CSOV10_REAL_PROVIDERS.md",
-    "scripts/verify_csov10_real_providers.py"
+    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyFlowOptionalCloudSyncFinalSealTest.kt",
+    "docs/quality/CSOV11_FINAL_SYNC_ACCEPTANCE_SEAL.md",
+    "scripts/verify_csov11_final_sync_seal.py"
   ]
 }

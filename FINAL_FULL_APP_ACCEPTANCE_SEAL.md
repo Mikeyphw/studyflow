@@ -62,3 +62,11 @@ Background sync remains optional; automatic work is blocked unless sync is enabl
 - WebDAV / Nextcloud provider lane exists and accepts only encrypted sync checkpoint uploads.
 - Google Drive remains optional and unconfigured by default.
 - Cloud sync is not required for fresh install or offline use.
+
+
+### CSOV11 final optional cloud sync seal
+
+- Fresh install remains local-first and sync-off.
+- Cloud providers are optional and encrypted.
+- Background sync is gated by user configuration and provider readiness.
+- Conflicts require explicit review before data is overwritten.

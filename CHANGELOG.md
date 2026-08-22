@@ -261,3 +261,8 @@ copy.
 - Added optional WebDAV / Nextcloud provider lane for encrypted `.sfbackup` upload, list, download, and delete through a user-supplied HTTPS endpoint.
 - Added Google Drive as an optional provider shell without default configuration or StudyFlow account requirement.
 - Added source verifier `verifyCsov10RealProviders`.
+
+## CSOV11 — Final optional cloud sync acceptance seal
+
+- Added final sync acceptance seal covering local-first defaults, optional provider catalog, encrypted remote uploads, conflict review, and background sync gating.
+- Added source verifier `verifyCsov11FinalSyncSeal`.

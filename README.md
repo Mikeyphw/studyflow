@@ -282,3 +282,7 @@ Optional sync now has explicit background modes: off, manual only, upload after 
 ### Optional cloud sync provider lane
 
 StudyFlow remains local-first. CSOV10 adds WebDAV / Nextcloud as the first optional account-capable provider lane. Remote uploads still use encrypted `.sfbackup` checkpoints, and cloud setup is never required for offline study.
+
+### Sync acceptance seal
+
+The optional cloud sync roadmap is sealed with local-first defaults, encrypted remote checkpoints, conservative merge behavior, manual conflict review, and background sync gates. StudyFlow does not require cloud setup to study offline.

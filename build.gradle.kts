@@ -418,6 +418,12 @@ tasks.register<Exec>("verifyCsov10RealProviders") {
     commandLine("python3", "scripts/verify_csov10_real_providers.py")
 }
 
+tasks.register<Exec>("verifyCsov11FinalSyncSeal") {
+    group = "verification"
+    description = "Checks CSOV11 local-first optional cloud final acceptance source contracts."
+    commandLine("python3", "scripts/verify_csov11_final_sync_seal.py")
+}
+
 tasks.register<Exec>("verifyContentModeFoundation") {
     group = "verification"
     description = "Checks CMOV-01 content mode persistence, UI, backup and capability contracts."
