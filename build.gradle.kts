@@ -358,6 +358,13 @@ tasks.register<Exec>("verifyAndroidFocusShellFinalSeal") {
     commandLine("python3", "scripts/verify_android_focus_shell_r2.py")
 }
 
+tasks.register<Exec>("verifyCloudOptionalSyncSettings") {
+    group = "verification"
+    description = "Checks CSOV00/CSOV01 local-first optional cloud sync source contracts."
+    commandLine("python3", "scripts/verify_cloud_optional_sync_settings.py")
+}
+
+
 tasks.register<Exec>("verifyCsov02SyncBundle") {
     group = "verification"
     description = "Checks CSOV02 encrypted sync checkpoint bundle source contracts."
@@ -744,6 +751,20 @@ tasks.register("checkAll") {
         "verifyPhase63_64ExamRunbookSprintSeal",
         "verifyPostPhase64FinalValidationRefresh",
         "verifyAndroidFocusShellFinalSeal",
+        "verifyCloudOptionalSyncSettings",
+        "verifyCsov02SyncBundle",
+        "verifyCsov03ProviderAbstraction",
+        "verifyCsov04OptionalSyncOnboarding",
+        "verifyCsov05ManualFolderSync",
+        "verifyCsov06SyncLedger",
+        "verifyCsov07MergeEngine",
+        "verifyCsov08ConflictReview",
+        "verifyCsov09BackgroundSyncModes",
+        "verifyCsov10RealProviders",
+        "verifyCsov11FinalSyncSeal",
+        "verifyCsov12ProviderSetupSecurity",
+        "verifyCsov13SyncRunbook",
+        "verifyCsov14OptionalSyncDeliveryAudit",
         "verifyContentModeFoundation",
         "verifyProgrammingCourseModel",
         "verifyCodeBlocksSyntax",
@@ -796,4 +817,11 @@ tasks.register<Exec>("verifyCsov13SyncRunbook") {
     group = "verification"
     description = "Checks CSOV13 manual and background sync runbook source contracts."
     commandLine("python3", "scripts/verify_csov13_sync_runbook.py")
+}
+
+
+tasks.register<Exec>("verifyCsov14OptionalSyncDeliveryAudit") {
+    group = "verification"
+    description = "Runs the cumulative CSOV00-CSOV13 optional sync delivery audit."
+    commandLine("python3", "scripts/verify_csov14_optional_sync_delivery_audit.py")
 }

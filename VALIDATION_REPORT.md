@@ -304,3 +304,19 @@ Static contract: `verifyCsov11FinalSyncSeal`. Recommended runtime checks: all CS
 
 - Added sync execution planner for manual upload, remote check, restore preview, and background modes.
 - Restore preview stays dry-run-only and conflict-gated.
+
+## CSOV14 optional sync delivery audit hotfix
+
+Sandbox replay:
+- Applied CSOV00 through CSOV13 overlay contents in order to a fresh StudyFlow snapshot.
+- Ran all CSOV static verifiers through `scripts/verify_csov14_optional_sync_delivery_audit.py`.
+- Result: PASS.
+
+Gap fixed:
+- `verify_cloud_optional_sync_settings.py` existed but did not have the promised Gradle task name `verifyCloudOptionalSyncSettings`.
+- The all-up `checkAll` lane did not depend on the CSOV verifier sequence.
+
+Hotfix:
+- Registered `verifyCloudOptionalSyncSettings`.
+- Added `verifyCsov14OptionalSyncDeliveryAudit`.
+- Wired `checkAll` to CSOV00/CSOV01 through CSOV14 verification tasks.

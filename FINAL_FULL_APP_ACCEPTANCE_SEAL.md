@@ -82,3 +82,9 @@ Background sync remains optional; automatic work is blocked unless sync is enabl
 
 - Added sync execution planner for manual upload, remote check, restore preview, and background modes.
 - Restore preview stays dry-run-only and conflict-gated.
+
+## CSOV14 optional sync delivery audit hotfix
+
+- `verifyCloudOptionalSyncSettings` is now registered as a Gradle task.
+- `verifyCsov14OptionalSyncDeliveryAudit` runs the cumulative CSOV00-CSOV13 source audit.
+- `checkAll` now includes the optional sync verifier lane so future full validation cannot skip it.

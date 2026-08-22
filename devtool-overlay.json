@@ -3,71 +3,104 @@
   "schema_version": 2,
   "kind": "devtool-overlay",
   "overlay": {
-    "name": "studyflow_csov13_sync_runbook_v1",
-    "title": "CSOV13 sync runbook planner",
+    "name": "studyflow_csov14_optional_sync_delivery_audit_hotfix_v1",
+    "title": "CSOV14 optional sync delivery audit hotfix",
     "project": "studyflow",
     "target": "studyflow_android",
-    "index": 2,
-    "count": 2,
-    "summary": "Adds manual/background sync execution runbook planning with encrypted upload, dry-run restore, and conflict gates."
+    "index": 1,
+    "count": 1,
+    "summary": "Registers the missing CSOV00/CSOV01 Gradle verifier and wires the full CSOV00-CSOV14 optional sync audit lane into checkAll."
   },
   "artifact": {
-    "name": "studyflow_csov13_sync_runbook_v1",
+    "name": "studyflow_csov14_optional_sync_delivery_audit_hotfix_v1",
     "type": "overlay",
     "target": "studyflow_android",
     "project": "StudyFlow",
-    "summary": "Adds manual/background sync execution runbook planning with encrypted upload, dry-run restore, and conflict gates."
+    "summary": "Closes the optional sync delivery-audit gap by exposing every CSOV verifier through Gradle and checkAll."
   },
   "git": {
     "commit": true,
-    "message": "CSOV13 add sync runbook planner",
-    "commit_message": "CSOV13 add sync runbook planner"
+    "message": "CSOV14 hotfix optional sync delivery audit",
+    "commit_message": "CSOV14 hotfix optional sync delivery audit"
   },
   "commit": {
     "enabled": true,
-    "message": "CSOV13 add sync runbook planner"
+    "message": "CSOV14 hotfix optional sync delivery audit"
   },
-  "commit_message": "CSOV13 add sync runbook planner",
+  "commit_message": "CSOV14 hotfix optional sync delivery audit",
   "validation": {
     "recommended": [
+      "verifyCsov14OptionalSyncDeliveryAudit",
+      "verifyCloudOptionalSyncSettings",
+      "verifyCsov02SyncBundle",
+      "verifyCsov03ProviderAbstraction",
+      "verifyCsov04OptionalSyncOnboarding",
+      "verifyCsov05ManualFolderSync",
+      "verifyCsov06SyncLedger",
+      "verifyCsov07MergeEngine",
+      "verifyCsov08ConflictReview",
+      "verifyCsov09BackgroundSyncModes",
+      "verifyCsov10RealProviders",
+      "verifyCsov11FinalSyncSeal",
       "verifyCsov12ProviderSetupSecurity",
-      "verifyCsov13SyncRunbook",
-      ":core:model:test",
-      ":core:domain:test",
-      ":core:data:compileDebugKotlin",
-      ":feature:settings:compileDebugKotlin",
-      ":app:compileDebugKotlin"
+      "verifyCsov13SyncRunbook"
     ],
     "tasks": [
+      "verifyCsov14OptionalSyncDeliveryAudit",
+      "verifyCloudOptionalSyncSettings",
+      "verifyCsov02SyncBundle",
+      "verifyCsov03ProviderAbstraction",
+      "verifyCsov04OptionalSyncOnboarding",
+      "verifyCsov05ManualFolderSync",
+      "verifyCsov06SyncLedger",
+      "verifyCsov07MergeEngine",
+      "verifyCsov08ConflictReview",
+      "verifyCsov09BackgroundSyncModes",
+      "verifyCsov10RealProviders",
+      "verifyCsov11FinalSyncSeal",
       "verifyCsov12ProviderSetupSecurity",
       "verifyCsov13SyncRunbook",
       ":core:model:test",
       ":core:domain:test",
-      ":core:data:compileDebugKotlin",
+      ":core:portability:test",
       ":feature:settings:compileDebugKotlin",
       ":app:compileDebugKotlin"
     ],
     "gradle_tasks": [
+      "verifyCsov14OptionalSyncDeliveryAudit",
+      "verifyCloudOptionalSyncSettings",
+      "verifyCsov02SyncBundle",
+      "verifyCsov03ProviderAbstraction",
+      "verifyCsov04OptionalSyncOnboarding",
+      "verifyCsov05ManualFolderSync",
+      "verifyCsov06SyncLedger",
+      "verifyCsov07MergeEngine",
+      "verifyCsov08ConflictReview",
+      "verifyCsov09BackgroundSyncModes",
+      "verifyCsov10RealProviders",
+      "verifyCsov11FinalSyncSeal",
       "verifyCsov12ProviderSetupSecurity",
-      "verifyCsov13SyncRunbook",
-      ":core:model:test",
-      ":core:domain:test",
-      ":core:data:compileDebugKotlin",
-      ":feature:settings:compileDebugKotlin",
-      ":app:compileDebugKotlin"
+      "verifyCsov13SyncRunbook"
     ],
-    "defer_for_intermediate": true,
+    "defer_for_intermediate": false,
     "default_apply_flag": "--no-validate"
   },
   "files": [
+    "build.gradle.kts",
+    "scripts/verify_csov14_optional_sync_delivery_audit.py",
+    "docs/quality/CSOV14_OPTIONAL_SYNC_DELIVERY_AUDIT.md",
     "CHANGELOG.md",
     "FINAL_FULL_APP_ACCEPTANCE_SEAL.md",
-    "README.md",
-    "VALIDATION_REPORT.md",
-    "build.gradle.kts",
-    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncRunbook.kt",
-    "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySyncRunbookTest.kt",
-    "docs/quality/CSOV13_SYNC_RUNBOOK.md",
-    "scripts/verify_csov13_sync_runbook.py"
-  ]
+    "VALIDATION_REPORT.md"
+  ],
+  "integrity": {
+    "sha256": {
+      "build.gradle.kts": "c30e90c17c8c6914d41c69baed1b19348fec407dfd07bcf8cd7e35d29b4a8561",
+      "scripts/verify_csov14_optional_sync_delivery_audit.py": "37cc4f87e9771a1a8b205518ac8b1c126beff9551a58236fcbfc4120ab7d171c",
+      "docs/quality/CSOV14_OPTIONAL_SYNC_DELIVERY_AUDIT.md": "9d0573140de7662f50073f934f26c58a912010aa70a93f5c1a1b495892f31f3e",
+      "CHANGELOG.md": "8a1af01d36739f3b8a8c29cde18efcfd90ff6f8c9170e9a5b3f6bad1756390de",
+      "FINAL_FULL_APP_ACCEPTANCE_SEAL.md": "e546c010a6cc1f9f5cf95d9c26185a7407b3ad616ad1e13ac797d95d1fd0a618",
+      "VALIDATION_REPORT.md": "0464fdde1d3ecfe81e0a8021f964ce95188d3b36a5b58f75ba94a6d7c250b1d7"
+    }
+  }
 }

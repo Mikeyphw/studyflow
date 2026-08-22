@@ -278,3 +278,9 @@ copy.
 
 - Added sync execution planner for manual upload, remote check, restore preview, and background modes.
 - Restore preview stays dry-run-only and conflict-gated.
+
+## CSOV14 - Optional sync delivery audit hotfix
+
+- Added a cumulative CSOV00-CSOV13 optional sync delivery verifier.
+- Registered the missing CSOV00/CSOV01 Gradle verifier task.
+- Wired the optional sync verifier lane into `checkAll`.
