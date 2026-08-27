@@ -1,5 +1,7 @@
 package com.mikeyphw.studyflow.feature.subjects
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,13 +23,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.domain.ExamNoticeImportIssue
+import com.mikeyphw.studyflow.core.domain.ExamNoticeImportIssueKind
+import com.mikeyphw.studyflow.core.domain.ExamNoticeImportParser
+import com.mikeyphw.studyflow.core.domain.ExamNoticeImportPreview
+import com.mikeyphw.studyflow.core.domain.ExamNoticeImportSource
 import com.mikeyphw.studyflow.core.domain.SyllabusImportDraft
 import com.mikeyphw.studyflow.core.domain.SyllabusImportFormat
 import com.mikeyphw.studyflow.core.domain.SyllabusImportParser
@@ -35,9 +45,11 @@ import com.mikeyphw.studyflow.core.domain.TopicBulkUpdate
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.ExamStageId
+import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.Topic
 import com.mikeyphw.studyflow.core.model.TopicId
+import kotlinx.coroutines.launch
 
 internal data class SubjectEditorValue(
     val name: String,
@@ -325,24 +337,89 @@ internal fun BulkEditDialog(
 
 @Composable
 internal fun ImportSyllabusDialog(
+    existingSyllabus: StudySyllabus,
+    isPublicExam: Boolean,
     onDismiss: () -> Unit,
     onImport: (SyllabusImportDraft) -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var formatName by rememberSaveable { mutableStateOf(SyllabusImportFormat.STRUCTURED_TEXT.name) }
-    var input by rememberSaveable { mutableStateOf("") }
-    var preview by remember { mutableStateOf<Result<SyllabusImportDraft>?>(null) }
+    var input by remember { mutableStateOf("") }
+    var sourceName by remember { mutableStateOf<String?>(null) }
+    var preview by remember { mutableStateOf<Result<ExamNoticeImportPreview>?>(null) }
+    var documentFailure by remember { mutableStateOf<ExamNoticeDocumentFailure?>(null) }
+    var loadingDocument by remember { mutableStateOf(false) }
     val format = enumValueOrDefault<SyllabusImportFormat>(formatName, SyllabusImportFormat.STRUCTURED_TEXT)
+
+    val documentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            loadingDocument = true
+            documentFailure = null
+            when (val result = ExamNoticeDocumentLoader.load(context, uri)) {
+                is ExamNoticeDocumentLoadResult.Success -> {
+                    sourceName = result.document.displayName
+                    input = result.document.text
+                    formatName = result.document.format.name
+                    preview = null
+                }
+                is ExamNoticeDocumentLoadResult.Failure -> {
+                    documentFailure = result.reason
+                }
+            }
+            loadingDocument = false
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.import_syllabus)) },
+        title = {
+            Text(
+                stringResource(
+                    if (isPublicExam) R.string.import_exam_notice else R.string.import_syllabus,
+                ),
+            )
+        },
         text = {
             Column(
                 modifier = Modifier
-                    .heightIn(max = 560.dp)
+                    .heightIn(max = 620.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(stringResource(R.string.import_syllabus_description))
+                Text(
+                    stringResource(
+                        if (isPublicExam) {
+                            R.string.import_exam_notice_description
+                        } else {
+                            R.string.import_syllabus_description
+                        },
+                    ),
+                )
+                OutlinedButton(
+                    onClick = {
+                        documentPicker.launch(
+                            arrayOf(
+                                "text/plain",
+                                "text/csv",
+                                "text/tab-separated-values",
+                                "application/pdf",
+                            ),
+                        )
+                    },
+                ) {
+                    Text(stringResource(R.string.choose_exam_notice_file))
+                }
+                sourceName?.let { fileName ->
+                    Text(stringResource(R.string.exam_notice_loaded_file, fileName))
+                }
+                if (loadingDocument) {
+                    Text(stringResource(R.string.exam_notice_loading_file))
+                }
+                documentFailure?.let { failure ->
+                    Text(stringResource(failure.messageResource()))
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SyllabusImportFormat.entries.forEach { candidate ->
                         FilterChip(
@@ -350,6 +427,7 @@ internal fun ImportSyllabusDialog(
                             onClick = {
                                 formatName = candidate.name
                                 preview = null
+                                documentFailure = null
                             },
                             label = { Text(stringResource(candidate.importFormatLabel())) },
                         )
@@ -359,7 +437,9 @@ internal fun ImportSyllabusDialog(
                     value = input,
                     onValueChange = {
                         input = it
+                        sourceName = null
                         preview = null
+                        documentFailure = null
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(format.importFormatLabel())) },
@@ -367,30 +447,35 @@ internal fun ImportSyllabusDialog(
                     minLines = 8,
                 )
                 OutlinedButton(
-                    onClick = { preview = runCatching { SyllabusImportParser.parse(input, format) } },
-                    enabled = input.isNotBlank(),
+                    onClick = {
+                        preview = runCatching {
+                            ExamNoticeImportParser.preview(
+                                planId = existingSyllabus.studyPlanId,
+                                source = ExamNoticeImportSource(
+                                    displayName = sourceName ?: "pasted-input",
+                                    format = format,
+                                    text = input,
+                                ),
+                                existing = existingSyllabus,
+                            )
+                        }
+                    },
+                    enabled = input.isNotBlank() && !loadingDocument,
                 ) {
                     Text(stringResource(R.string.preview))
                 }
                 preview?.fold(
-                    onSuccess = { draft ->
-                        val topics = draft.subjects.sumOf { it.topics.size }
-                        Text(
-                            pluralStringResource(
-                                R.plurals.import_subject_count,
-                                draft.subjects.size,
-                                draft.subjects.size,
-                            ),
-                        )
-                        Text(pluralStringResource(R.plurals.import_topic_count, topics, topics))
-                    },
+                    onSuccess = { result -> ExamNoticePreview(result) },
                     onFailure = { Text(stringResource(R.string.import_failed)) },
                 )
             }
         },
         confirmButton = {
-            val draft = preview?.getOrNull()
-            Button(onClick = { if (draft != null) onImport(draft) }, enabled = draft != null) {
+            val result = preview?.getOrNull()
+            Button(
+                onClick = { result?.takeIf(ExamNoticeImportPreview::canApply)?.let { onImport(it.draft) } },
+                enabled = result?.canApply == true,
+            ) {
                 Text(stringResource(R.string.import_action))
             }
         },
@@ -398,6 +483,88 @@ internal fun ImportSyllabusDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
+}
+
+@Composable
+private fun ExamNoticePreview(preview: ExamNoticeImportPreview) {
+    val topics = preview.draft.subjects.sumOf { it.topics.size }
+    Text(
+        pluralStringResource(
+            R.plurals.import_subject_count,
+            preview.draft.subjects.size,
+            preview.draft.subjects.size,
+        ),
+    )
+    Text(pluralStringResource(R.plurals.import_topic_count, topics, topics))
+    Text(
+        stringResource(
+            R.string.exam_notice_duplicate_summary,
+            preview.duplicateSubjects,
+            preview.duplicateTopics,
+        ),
+    )
+    Text(stringResource(R.string.exam_notice_destructive_summary, preview.destructiveChanges))
+    if (preview.destructiveChanges == 0) {
+        Text(stringResource(R.string.exam_notice_additive_only))
+    }
+
+    preview.draft.subjects.forEach { subject ->
+        Text(subject.name, fontWeight = FontWeight.SemiBold)
+        subject.topics.forEach { topic ->
+            val depth = examNoticeTopicDepth(topic.key, topic.parentKey, subject.topics)
+            Text("${"  ".repeat(depth)}• ${topic.name}")
+        }
+    }
+
+    if (preview.issues.isNotEmpty()) {
+        Text(stringResource(R.string.exam_notice_review_issues), fontWeight = FontWeight.SemiBold)
+        preview.issues.take(10).forEach { issue ->
+            Text("• ${issue.localizedDescription()}")
+        }
+        if (preview.issues.size > 10) {
+            Text(stringResource(R.string.exam_notice_more_issues, preview.issues.size - 10))
+        }
+    }
+    Text(stringResource(R.string.exam_notice_correction_hint))
+}
+
+@Composable
+private fun ExamNoticeImportIssue.localizedDescription(): String {
+    val detail = when (kind) {
+        ExamNoticeImportIssueKind.DUPLICATE_SUBJECT ->
+            stringResource(R.string.exam_notice_issue_duplicate_subject, value)
+        ExamNoticeImportIssueKind.DUPLICATE_TOPIC ->
+            stringResource(R.string.exam_notice_issue_duplicate_topic, value, context.orEmpty())
+        ExamNoticeImportIssueKind.UNRECOGNIZED_HEADING ->
+            stringResource(R.string.exam_notice_issue_unrecognized_heading, value)
+        ExamNoticeImportIssueKind.ORPHAN_TOPIC ->
+            stringResource(R.string.exam_notice_issue_orphan_topic, value)
+    }
+    val line = lineNumber ?: return detail
+    return stringResource(R.string.exam_notice_issue_with_line, line, detail)
+}
+
+private fun ExamNoticeDocumentFailure.messageResource(): Int = when (this) {
+    ExamNoticeDocumentFailure.UNSUPPORTED_FORMAT -> R.string.exam_notice_file_unsupported
+    ExamNoticeDocumentFailure.PDF_TEXT_REQUIRES_ANDROID_15 -> R.string.exam_notice_pdf_requires_android_15
+    ExamNoticeDocumentFailure.PDF_HAS_NO_TEXT_LAYER -> R.string.exam_notice_pdf_no_text_layer
+    ExamNoticeDocumentFailure.DOCUMENT_TOO_LARGE -> R.string.exam_notice_file_too_large
+    ExamNoticeDocumentFailure.READ_FAILED -> R.string.exam_notice_file_read_failed
+}
+
+private fun examNoticeTopicDepth(
+    key: String,
+    parentKey: String?,
+    topics: List<com.mikeyphw.studyflow.core.domain.SyllabusTopicDraft>,
+): Int {
+    var depth = 0
+    var current = parentKey
+    val visited = mutableSetOf(key)
+    while (current != null && visited.add(current)) {
+        depth++
+        current = topics.firstOrNull { it.key == current }?.parentKey
+    }
+    return depth
 }
 
 @Composable
@@ -582,11 +749,13 @@ private fun ParentChooser(parents: List<Topic>, selected: TopicId?, onSelected: 
 private fun SyllabusImportFormat.importFormatLabel(): Int = when (this) {
     SyllabusImportFormat.STRUCTURED_TEXT -> R.string.structured_text
     SyllabusImportFormat.CSV -> R.string.csv
+    SyllabusImportFormat.TSV -> R.string.tsv
 }
 
 private fun SyllabusImportFormat.importHint(): Int = when (this) {
     SyllabusImportFormat.STRUCTURED_TEXT -> R.string.import_input_hint
     SyllabusImportFormat.CSV -> R.string.csv_input_hint
+    SyllabusImportFormat.TSV -> R.string.tsv_input_hint
 }
 
 internal fun ContentProgressStatus.label(): Int = when (this) {

@@ -139,6 +139,7 @@ low_priority = false
 preflight = [
     "verifyCpov00Toolchain",
     "verifyCpov01PublicExamProfile",
+    "verifyCpov02EditalImport",
     "verifyRepositoryContracts",
     "verifyAndroidFocusShellFinalSeal",
     "verifyRemediationOv13",
@@ -295,6 +296,7 @@ memory_guard_mb = 256
 preflight = [
     "verifyCpov00Toolchain",
     "verifyCpov01PublicExamProfile",
+    "verifyCpov02EditalImport",
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",

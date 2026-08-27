@@ -214,6 +214,12 @@ tasks.register<Exec>("verifyCpov01PublicExamProfile") {
     commandLine("python3", "scripts/verify_cpov01_public_exam_profile.py")
 }
 
+tasks.register<Exec>("verifyCpov02EditalImport") {
+    group = "verification"
+    description = "Checks CPOV02 edital parsing, preview-first apply, local document lanes and locale contracts."
+    commandLine("python3", "scripts/verify_cpov02_edital_import.py")
+}
+
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
     dependsOn("verifyStableToolchainBaseline", "verifyCpov00Toolchain")
@@ -807,6 +813,7 @@ tasks.register("checkAll") {
         "verifyRepositoryContracts",
         "verifyCpov00Toolchain",
         "verifyCpov01PublicExamProfile",
+        "verifyCpov02EditalImport",
         "verifyPhase56_57ReleaseReadiness",
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",

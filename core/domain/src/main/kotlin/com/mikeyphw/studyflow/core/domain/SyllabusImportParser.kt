@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 enum class SyllabusImportFormat {
     STRUCTURED_TEXT,
     CSV,
+    TSV,
 }
 
 data class SyllabusImportDraft(
@@ -43,6 +44,7 @@ object SyllabusImportParser {
     fun parse(input: String, format: SyllabusImportFormat): SyllabusImportDraft = when (format) {
         SyllabusImportFormat.STRUCTURED_TEXT -> parseStructuredText(input)
         SyllabusImportFormat.CSV -> parseCsv(input)
+        SyllabusImportFormat.TSV -> parseTsv(input)
     }
 
     fun parseStructuredText(input: String): SyllabusImportDraft {
@@ -88,15 +90,22 @@ object SyllabusImportParser {
         return SyllabusImportDraft(subjects.map(MutableSubject::freeze))
     }
 
-    fun parseCsv(input: String): SyllabusImportDraft {
-        val rows = input.lineSequence().filter { it.isNotBlank() }.map(::parseCsvLine).toList()
-        require(rows.isNotEmpty()) { "The CSV syllabus is empty." }
+    fun parseCsv(input: String): SyllabusImportDraft = parseDelimited(input, ',', "CSV")
+
+    fun parseTsv(input: String): SyllabusImportDraft = parseDelimited(input, '\t', "TSV")
+
+    private fun parseDelimited(input: String, delimiter: Char, label: String): SyllabusImportDraft {
+        val rows = input.lineSequence()
+            .filter { it.isNotBlank() }
+            .map { line -> parseDelimitedLine(line, delimiter) }
+            .toList()
+        require(rows.isNotEmpty()) { "The $label syllabus is empty." }
         val header = rows.first().mapIndexed { column, value ->
             value.trim().let { normalized -> if (column == 0) normalized
                 .removePrefix("\uFEFF") else normalized }.lowercase()
         }
         val index = header.withIndex().associate { it.value to it.index }
-        require("subject" in index && "topic" in index) { "CSV must include subject and topic columns." }
+        require("subject" in index && "topic" in index) { "$label must include subject and topic columns." }
 
         data class RawTopic(
             val rowNumber: Int,
@@ -119,7 +128,7 @@ object SyllabusImportParser {
             val rowNumber = rowIndex + 2
             fun value(name: String): String = index[name]?.let { row.getOrNull(it) }.orEmpty().trim()
             val subjectName = value("subject")
-            require(subjectName.isNotBlank()) { "CSV row $rowNumber has no subject." }
+            require(subjectName.isNotBlank()) { "$label row $rowNumber has no subject." }
             val subjectKey = subjectName.lowercase()
             val rawSubject = subjects.getOrPut(subjectKey) {
                 RawSubject(
@@ -155,13 +164,13 @@ object SyllabusImportParser {
                 val parentKey = rawTopic.parentName?.let { parentName ->
                     val matches = byName[parentName.trim().lowercase()].orEmpty()
                     require(matches.isNotEmpty()) {
-                        "CSV row ${rawTopic.rowNumber} references unknown parent topic '$parentName'."
+                        "$label row ${rawTopic.rowNumber} references unknown parent topic '$parentName'."
                     }
                     require(matches.size == 1) {
-                        "CSV row ${rawTopic.rowNumber} references ambiguous parent topic '$parentName'."
+                        "$label row ${rawTopic.rowNumber} references ambiguous parent topic '$parentName'."
                     }
                     require(matches.single().key != rawTopic.key) {
-                        "CSV row ${rawTopic.rowNumber} cannot make a topic its own parent."
+                        "$label row ${rawTopic.rowNumber} cannot make a topic its own parent."
                     }
                     matches.single().key
                 }
@@ -177,14 +186,14 @@ object SyllabusImportParser {
                 )
             }
         }
-        require(subjects.isNotEmpty()) { "The CSV syllabus does not contain any subjects." }
+        require(subjects.isNotEmpty()) { "The $label syllabus does not contain any subjects." }
         return SyllabusImportDraft(subjects.values.map { it.mutable.freeze() })
     }
 
     private fun strictInt(value: String, field: String, row: Int, range: IntRange, default: Int): Int {
         if (value.isBlank()) return default
-        val parsed = value.toIntOrNull() ?: error("CSV row $row has invalid integer '$value' for $field.")
-        require(parsed in range) { "CSV row $row has out-of-range value '$value' for $field." }
+        val parsed = value.toIntOrNull() ?: error("Delimited row $row has invalid integer '$value' for $field.")
+        require(parsed in range) { "Delimited row $row has out-of-range value '$value' for $field." }
         return parsed
     }
 
@@ -195,18 +204,20 @@ object SyllabusImportParser {
 
     private fun strictDouble(value: String, field: String, row: Int, minimum: Double, default: Double): Double {
         if (value.isBlank()) return default
-        val parsed = value.toDoubleOrNull() ?: error("CSV row $row has invalid number '$value' for $field.")
-        require(parsed.isFinite() && parsed >= minimum) { "CSV row $row has out-of-range value '$value' for $field." }
+        val parsed = value.toDoubleOrNull() ?: error("Delimited row $row has invalid number '$value' for $field.")
+        require(parsed.isFinite() && parsed >= minimum) {
+            "Delimited row $row has out-of-range value '$value' for $field."
+        }
         return parsed
     }
 
     private fun strictStatus(value: String, row: Int): ContentProgressStatus {
         if (value.isBlank()) return ContentProgressStatus.NOT_STARTED
         return runCatching { ContentProgressStatus.valueOf(value.uppercase()) }
-            .getOrElse { error("CSV row $row has invalid status '$value'.") }
+            .getOrElse { error("Delimited row $row has invalid status '$value'.") }
     }
 
-    private fun parseCsvLine(line: String): List<String> {
+    private fun parseDelimitedLine(line: String, delimiter: Char): List<String> {
         val values = mutableListOf<String>()
         val current = StringBuilder()
         var quoted = false
@@ -219,7 +230,7 @@ object SyllabusImportParser {
                     index++
                 }
                 character == '"' -> quoted = !quoted
-                character == ',' && !quoted -> {
+                character == delimiter && !quoted -> {
                     values += current.toString()
                     current.clear()
                 }
@@ -227,7 +238,7 @@ object SyllabusImportParser {
             }
             index++
         }
-        require(!quoted) { "CSV contains an unclosed quoted value." }
+        require(!quoted) { "Delimited input contains an unclosed quoted value." }
         values += current.toString()
         return values
     }

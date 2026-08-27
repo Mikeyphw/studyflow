@@ -72,6 +72,7 @@ import com.mikeyphw.studyflow.core.domain.TopicBulkUpdate
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySyllabus
+import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.SyllabusFilter
@@ -471,6 +472,8 @@ fun StudyContentScreen(
 
     if (showImportDialog) {
         ImportSyllabusDialog(
+            existingSyllabus = syllabus,
+            isPublicExam = plan.type == StudyType.PUBLIC_EXAMINATION,
             onDismiss = { showImportDialog = false },
             onImport = { draft: SyllabusImportDraft ->
                 showImportDialog = false
