@@ -40,15 +40,19 @@ try:
 except zipfile.BadZipFile:
     fail("Gradle wrapper JAR is not a valid JAR/ZIP")
 wrapper_properties = text("gradle/wrapper/gradle-wrapper.properties")
-require(
-    "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.7.0-bin.zip" in wrapper_properties,
-    "Gradle wrapper does not pin Gradle 9.7.0",
-)
-require(
-    "distributionSha256Sum=84fbba45c7f4c64abc77460e1c00f541e9f960e3c7ed2538f1ede19eacd873ae"
-    in wrapper_properties,
-    "Gradle wrapper distribution checksum is missing or unexpected",
-)
+version_match = re.search(r"gradle-(\d+\.\d+(?:\.\d+)?)-bin\.zip", wrapper_properties)
+require(version_match is not None, "Gradle wrapper URL has no stable version")
+version = tuple(int(part) for part in version_match.group(1).split(".")) if version_match else (0,)
+version = version + (0,) * (3 - len(version))
+require(version >= (9, 7, 0), "Gradle wrapper must use stable Gradle >= 9.7.0")
+checksum_match = re.search(r"(?m)^distributionSha256Sum=([0-9a-f]{64})$", wrapper_properties)
+require(checksum_match is not None, "Gradle wrapper distribution checksum is missing or malformed")
+if version_match and version_match.group(1) == "9.7.1":
+    require(
+        checksum_match is not None and checksum_match.group(1) == "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
+        "Gradle 9.7.1 wrapper checksum is unexpected",
+    )
+
 
 # Release validation cannot remain debug-only or silently skip Android.
 build = text("build.gradle.kts")

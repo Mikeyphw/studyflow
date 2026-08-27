@@ -2,9 +2,12 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 
+internal const val STUDYFLOW_NDK_VERSION = "29.0.14206865"
+
 internal fun ApplicationExtension.configureStudyFlowApplication() {
     compileSdk = 36
     buildToolsVersion = "36.0.0"
+    ndkVersion = STUDYFLOW_NDK_VERSION
 
     defaultConfig {
         minSdk = 23
@@ -39,6 +42,7 @@ internal fun ApplicationExtension.configureStudyFlowApplication() {
 internal fun LibraryExtension.configureStudyFlowLibrary() {
     compileSdk = 36
     buildToolsVersion = "36.0.0"
+    ndkVersion = STUDYFLOW_NDK_VERSION
 
     defaultConfig {
         minSdk = 23

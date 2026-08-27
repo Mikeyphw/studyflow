@@ -71,13 +71,62 @@ tasks.register("verifyStableToolchainBaseline") {
         if ("jvmToolchain(21)" !in desktopBuildText) {
             failures += "desktopApp must use JVM toolchain 21"
         }
-        if ("gradle-9.7.0-bin.zip" !in wrapperText) {
-            failures += "Gradle wrapper must pin Gradle 9.7.0"
+        val gradleVersionMatch =
+            Regex("gradle-([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)-bin\\.zip").find(wrapperText)
+        val wrapperGradleVersion = gradleVersionMatch?.groupValues?.get(1)
+        fun stableGradleTuple(version: String): Triple<Int, Int, Int>? {
+            val match = Regex("^([0-9]+)\\.([0-9]+)(?:\\.([0-9]+))?$").matchEntire(version)
+                ?: return null
+            return Triple(
+                match.groupValues[1].toInt(),
+                match.groupValues[2].toInt(),
+                match.groupValues[3].ifEmpty { "0" }.toInt(),
+            )
         }
-        val expectedWrapperChecksum =
-            "distributionSha256Sum=84fbba45c7f4c64abc77460e1c00f541e9f960e3c7ed2538f1ede19eacd873ae"
-        if (expectedWrapperChecksum !in wrapperText) {
-            failures += "Gradle 9.7.0 wrapper checksum is missing or unexpected"
+        fun isAtLeastGradle970(version: String): Boolean {
+            val parsed = stableGradleTuple(version) ?: return false
+            return parsed.first > 9 ||
+                (parsed.first == 9 && parsed.second > 7) ||
+                (parsed.first == 9 && parsed.second == 7 && parsed.third >= 0)
+        }
+        if (wrapperGradleVersion == null || !isAtLeastGradle970(wrapperGradleVersion)) {
+            failures += "Gradle wrapper must use a stable Gradle version >= 9.7.0"
+        }
+        val wrapperChecksum =
+            Regex("(?m)^distributionSha256Sum=([0-9a-f]{64})$")
+                .find(wrapperText)
+                ?.groupValues
+                ?.get(1)
+        if (wrapperChecksum == null) {
+            failures += "Gradle wrapper must pin a lowercase 64-character SHA-256 checksum"
+        }
+        if (
+            wrapperGradleVersion == "9.7.1" &&
+            wrapperChecksum != "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a"
+        ) {
+            failures += "Gradle 9.7.1 wrapper checksum is missing or unexpected"
+        }
+
+        val devtoolText = file(".devtool.toml").readText()
+        val devtoolGradleVersions =
+            Regex("(?m)^version = \"([^\"]+)\"$")
+                .findAll(devtoolText)
+                .map { it.groupValues[1] }
+                .toList()
+        if (devtoolGradleVersions.size < 2 || devtoolGradleVersions.any { !isAtLeastGradle970(it) }) {
+            failures += "Devtool Gradle targets must use stable Gradle >= 9.7.0"
+        }
+        if (wrapperGradleVersion != null && devtoolGradleVersions.any { it != wrapperGradleVersion }) {
+            failures += "Devtool Gradle targets must match the wrapper Gradle version"
+        }
+        if ("ndk_version = \"29.0.14206865\"" !in devtoolText) {
+            failures += "Devtool Android target must pin NDK 29.0.14206865"
+        }
+        if ("internal const val STUDYFLOW_NDK_VERSION = \"29.0.14206865\"" !in androidConventionText) {
+            failures += "AndroidConvention.kt must define the canonical NDK 29.0.14206865 version"
+        }
+        if (Regex("ndkVersion = STUDYFLOW_NDK_VERSION").findAll(androidConventionText).count() != 2) {
+            failures += "Application and library Android conventions must both use the canonical NDK version"
         }
         if ("VERSION_17" in androidConventionText || "jvmToolchain(17)" in kotlinConventionText) {
             failures += "Java 17 remnants are forbidden in the standardized JVM lane"
@@ -153,9 +202,15 @@ tasks.register("verifyFormatting") {
     }
 }
 
+tasks.register<Exec>("verifyCpov00Toolchain") {
+    group = "verification"
+    description = "Checks CPOV00 Gradle >= 9.7 and canonical NDK r29 toolchain contracts."
+    commandLine("python3", "scripts/verify_cpov00_toolchain.py")
+}
+
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
-    dependsOn("verifyStableToolchainBaseline")
+    dependsOn("verifyStableToolchainBaseline", "verifyCpov00Toolchain")
     description =
         "Runs historical contracts through Phase 37, post-V2 features through Phase 64, " +
             "and Debug Workbench D1 through D8."
@@ -744,6 +799,7 @@ tasks.register("checkAll") {
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
     dependsOn(
         "verifyRepositoryContracts",
+        "verifyCpov00Toolchain",
         "verifyPhase56_57ReleaseReadiness",
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",

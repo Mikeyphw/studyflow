@@ -17,9 +17,10 @@ variant = "debug"
 aapt2_provider = "termux"
 instrumentation = "when-device-present"
 prefer_native_termux = true
+ndk_version = "29.0.14206865"
 
 [targets.studyflow_android.gradle]
-version = "9.7.0"
+version = "9.7.1"
 provider = "auto"
 max_workers = 1
 parallel = false
@@ -136,6 +137,7 @@ low_priority = false
 
 [targets.studyflow_android.validation.phases]
 preflight = [
+    "verifyCpov00Toolchain",
     "verifyRepositoryContracts",
     "verifyAndroidFocusShellFinalSeal",
     "verifyRemediationOv13",
@@ -231,7 +233,7 @@ execution_environment = "auto"
 chroot_name = "androidos"
 
 [targets.studyflow_desktop.gradle]
-version = "9.7.0"
+version = "9.7.1"
 provider = "auto"
 max_workers = 1
 parallel = false
@@ -290,6 +292,7 @@ memory_guard_mb = 256
 
 [targets.studyflow_desktop.validation.phases]
 preflight = [
+    "verifyCpov00Toolchain",
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",

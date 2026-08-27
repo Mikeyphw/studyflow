@@ -134,10 +134,16 @@ if devtool_path.is_file():
 wrapper_path = ROOT / "gradle/wrapper/gradle-wrapper.properties"
 if wrapper_path.is_file():
     wrapper = wrapper_path.read_text(encoding="utf-8")
-    if "gradle-9.7.0-bin.zip" not in wrapper:
-        failures.append("Gradle wrapper must pin Gradle 9.7.0")
-    if "distributionSha256Sum=" not in wrapper:
-        failures.append("Gradle wrapper must pin the distribution checksum")
+    version_match = re.search(r"gradle-(\d+\.\d+(?:\.\d+)?)-bin\.zip", wrapper)
+    if version_match is None:
+        failures.append("Gradle wrapper URL does not contain a stable Gradle version")
+    else:
+        version = tuple(int(part) for part in version_match.group(1).split("."))
+        version = version + (0,) * (3 - len(version))
+        if version < (9, 7, 0):
+            failures.append("Gradle wrapper must use stable Gradle >= 9.7.0")
+    if re.search(r"(?m)^distributionSha256Sum=[0-9a-f]{64}$", wrapper) is None:
+        failures.append("Gradle wrapper must pin a lowercase SHA-256 distribution checksum")
 
 if failures:
     print("PHASE_1_CONTRACT: FAILED")

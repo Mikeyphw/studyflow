@@ -61,12 +61,13 @@ local checkpoint evidence are scoped through `studyPlanId`.
 ## Toolchain
 
 - Android Gradle Plugin 9.3.1
-- Gradle 9.7.0
+- Gradle 9.7.1 (project policy: stable >= 9.7.0)
 - Kotlin 2.4.10
 - KSP 2.3.11
 - JDK / JVM target 21
 - Android SDK 36
 - Android SDK Build Tools 36.0.0
+- Android NDK 29.0.14206865 (r29)
 - Compose BOM 2026.06.01
 
 AGP 9 built-in Kotlin and the new Android DSL are used for Android modules. Do not apply
