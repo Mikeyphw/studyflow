@@ -172,7 +172,12 @@ fun isAllowedTermuxCommandTemplate(template: String?): Boolean {
     val command = template?.trim().orEmpty()
     if (command.isEmpty()) return false
     if (!isSafeTermuxCommandTemplate(command)) return false
-    val executable = splitTermuxCommandTemplate(command).executable
+
+    val executable = command
+        .split(Regex("\\s+"), limit = 2)
+        .firstOrNull()
+        .orEmpty()
+
     return executable in AllowedTermuxExecutables
 }
 

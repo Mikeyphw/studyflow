@@ -332,16 +332,19 @@ internal class LocalStudyCloudSyncRepository(
     private fun providerDescriptor(
         settings: StudyFlowSyncSettings,
         enabled: Boolean,
-    ) = when (settings.providerId) {
-        null -> if (enabled) LocalOnlyProvider else NoSyncProvider
-        StudyFlowSyncProviderIds.LOCAL_FOLDER -> LocalFolderSyncProvider
-        else -> com.mikeyphw.studyflow.core.model.StudySyncProviderDescriptor(
-            kind = com.mikeyphw.studyflow.core.model.StudySyncProviderKind.REMOTE_PROVIDER,
-            displayName = settings.providerId,
-            configured = true,
-            id = settings.providerId,
-            requiresAccount = true,
-        )
+    ): com.mikeyphw.studyflow.core.model.StudySyncProviderDescriptor {
+        val providerId = settings.providerId
+        return when (providerId) {
+            null -> if (enabled) LocalOnlyProvider else NoSyncProvider
+            StudyFlowSyncProviderIds.LOCAL_FOLDER -> LocalFolderSyncProvider
+            else -> com.mikeyphw.studyflow.core.model.StudySyncProviderDescriptor(
+                kind = com.mikeyphw.studyflow.core.model.StudySyncProviderKind.REMOTE_PROVIDER,
+                displayName = providerId,
+                configured = true,
+                id = providerId,
+                requiresAccount = true,
+            )
+        }
     }
 
     private fun decodeStatus(value: String?): StudySyncConnectionStatus = when (value) {

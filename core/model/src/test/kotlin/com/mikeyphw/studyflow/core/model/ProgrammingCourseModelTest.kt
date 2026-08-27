@@ -7,12 +7,12 @@ import org.junit.Test
 
 class ProgrammingCourseModelTest {
     @Test
-    fun `programming course mode enables code and exercise modeling but not runtime execution`() {
+    fun `programming course mode enables code exercise and termux runtime capabilities`() {
         val capabilities = StudyContentMode.PROGRAMMING_COURSE.capabilities
 
         assertTrue(capabilities.supportsCodeBlocks)
         assertTrue(capabilities.supportsCodingExercises)
-        assertFalse(capabilities.supportsTermuxRuntime)
+        assertTrue(capabilities.supportsTermuxRuntime)
     }
 
     @Test

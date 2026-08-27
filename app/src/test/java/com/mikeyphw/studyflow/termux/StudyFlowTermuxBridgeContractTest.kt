@@ -48,7 +48,7 @@ class StudyFlowTermuxBridgeContractTest {
         )
         assertTrue("safeCommandTemplateFor" in execution)
         assertTrue("No safe Termux command is available" in execution)
-        assertFalse("ProgrammingLanguage.SHELL -> "sh main.sh"" in execution)
-        assertFalse("ProgrammingLanguage.SQL -> "sqlite3 < query.sql"" in execution)
+        assertFalse("ProgrammingLanguage.SHELL -> \"sh main.sh\"" in execution)
+        assertFalse("ProgrammingLanguage.SQL -> \"sqlite3 < query.sql\"" in execution)
     }
 }

@@ -128,8 +128,10 @@ class StudyFlowSyncSettingsTest {
 
         assertEquals(device, snapshot.currentDevice)
         assertEquals(checkpoint, snapshot.latestCheckpoint)
-        assertTrue(snapshot.latestCheckpoint!!.uploaded)
-        assertTrue(snapshot.latestCheckpoint!!.restorePreviewed)
+        val latestCheckpoint = snapshot.latestCheckpoint
+            ?: throw AssertionError("Expected latest sync checkpoint")
+        assertTrue(latestCheckpoint.uploaded)
+        assertTrue(latestCheckpoint.restorePreviewed)
         assertEquals(1, snapshot.uploadedCheckpointCount)
         assertFalse(snapshot.hasConflicts)
     }

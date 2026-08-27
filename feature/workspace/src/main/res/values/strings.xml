@@ -179,6 +179,13 @@
     <string name="sync">Sync foundation</string>
     <string name="privacy">Privacy center</string>
     <string name="debug_workbench">Debug workbench</string>
+    <string name="system_hub_all_plans_meta">View, import, archive, or restore study plans.</string>
+    <string name="system_hub_settings_meta">Theme, motion, language, and app behavior.</string>
+    <string name="system_hub_reminders_meta">Reminders, widgets, and notification checks.</string>
+    <string name="system_hub_backup_meta">Export, import, and use local recovery snapshots.</string>
+    <string name="system_hub_sync_meta">Local-first checkpoint and sync tools.</string>
+    <string name="system_hub_privacy_meta">Retention, export redaction, and local guarantees.</string>
+    <string name="system_hub_debug_meta">Diagnostics, smoke checks, and validation evidence.</string>
     <string name="quick_add_title">What are you adding?</string>
     <string name="quick_session">Quick focus session</string>
     <string name="quick_session_title">Session title</string>
