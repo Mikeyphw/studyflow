@@ -208,6 +208,12 @@ tasks.register<Exec>("verifyCpov00Toolchain") {
     commandLine("python3", "scripts/verify_cpov00_toolchain.py")
 }
 
+tasks.register<Exec>("verifyCpov01PublicExamProfile") {
+    group = "verification"
+    description = "Checks CPOV01 public-exam profile shell, ownership, onboarding and locale contracts."
+    commandLine("python3", "scripts/verify_cpov01_public_exam_profile.py")
+}
+
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
     dependsOn("verifyStableToolchainBaseline", "verifyCpov00Toolchain")
@@ -800,6 +806,7 @@ tasks.register("checkAll") {
     dependsOn(
         "verifyRepositoryContracts",
         "verifyCpov00Toolchain",
+        "verifyCpov01PublicExamProfile",
         "verifyPhase56_57ReleaseReadiness",
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",

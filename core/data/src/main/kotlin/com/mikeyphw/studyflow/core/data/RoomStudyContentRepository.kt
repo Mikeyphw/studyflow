@@ -21,6 +21,7 @@ import com.mikeyphw.studyflow.core.model.TopicId
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 internal class RoomStudyContentRepository(
     private val database: StudyFlowDatabase,
@@ -28,6 +29,9 @@ internal class RoomStudyContentRepository(
 ) : StudyContentRepository {
     private val structureDao = database.studyStructureDao()
     private val planDao = database.studyPlanDao()
+
+    override fun observeStudyTarget(planId: StudyPlanId): Flow<StudyTarget?> =
+        structureDao.observeTarget(planId.value).map { target -> target?.asExternalModel() }
 
     override fun observeSyllabus(planId: StudyPlanId): Flow<StudySyllabus> = combine(
         structureDao.observeSubjects(planId.value),
@@ -44,6 +48,11 @@ internal class RoomStudyContentRepository(
 
     override suspend fun upsertStudyTarget(target: StudyTarget): StudyTarget = database.withTransaction {
         requirePlan(target.studyPlanId)
+        structureDao.findTargetById(target.id.value)?.let { existing ->
+            require(existing.studyPlanId == target.studyPlanId.value) {
+                "Study target id already belongs to another Study Plan."
+            }
+        }
         structureDao.upsertTarget(target.asEntity())
         requireNotNull(structureDao.findTarget(target.studyPlanId.value, target.id.value)).asExternalModel()
     }
@@ -52,6 +61,14 @@ internal class RoomStudyContentRepository(
         requirePlan(stage.studyPlanId)
         requireNotNull(structureDao.findTarget(stage.studyPlanId.value, stage.studyTargetId.value)) {
             "Study target does not belong to this Study Plan."
+        }
+        structureDao.findExamStageById(stage.id.value)?.let { existing ->
+            require(
+                existing.studyPlanId == stage.studyPlanId.value &&
+                    existing.studyTargetId == stage.studyTargetId.value,
+            ) {
+                "Exam stage id already belongs to another Study Plan target."
+            }
         }
         structureDao.upsertExamStage(stage.asEntity())
         requireNotNull(structureDao.findExamStage(stage.studyPlanId.value, stage.id.value)).asExternalModel()

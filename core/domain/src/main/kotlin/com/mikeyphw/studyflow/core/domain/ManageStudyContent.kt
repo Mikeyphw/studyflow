@@ -1,6 +1,8 @@
 package com.mikeyphw.studyflow.core.domain
 
+import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.Topic
@@ -9,7 +11,24 @@ import com.mikeyphw.studyflow.core.model.TopicId
 class ManageStudyContent(
     private val repository: StudyContentRepository,
 ) {
+    fun observeStudyTarget(planId: StudyPlanId) = repository.observeStudyTarget(planId)
+
     fun observeSyllabus(planId: StudyPlanId) = repository.observeSyllabus(planId)
+
+    suspend fun saveStudyTarget(target: StudyTarget): StudyTarget {
+        require(target.organization.isNotBlank()) { "Study target organization cannot be blank." }
+        require(target.role.isNotBlank()) { "Study target role cannot be blank." }
+        require(target.examBoard.isNotBlank()) { "Exam board cannot be blank." }
+        return repository.upsertStudyTarget(target)
+    }
+
+    suspend fun saveExamStage(stage: ExamStage): ExamStage {
+        require(stage.name.isNotBlank()) { "Exam stage name cannot be blank." }
+        require(stage.weight.isFinite() && stage.weight >= 0.0) {
+            "Exam stage weight must be finite and non-negative."
+        }
+        return repository.upsertExamStage(stage)
+    }
 
     suspend fun saveSubject(subject: Subject): Subject {
         require(subject.name.isNotBlank()) { "Subject name cannot be blank." }

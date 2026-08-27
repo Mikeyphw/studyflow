@@ -138,6 +138,7 @@ low_priority = false
 [targets.studyflow_android.validation.phases]
 preflight = [
     "verifyCpov00Toolchain",
+    "verifyCpov01PublicExamProfile",
     "verifyRepositoryContracts",
     "verifyAndroidFocusShellFinalSeal",
     "verifyRemediationOv13",
@@ -293,6 +294,7 @@ memory_guard_mb = 256
 [targets.studyflow_desktop.validation.phases]
 preflight = [
     "verifyCpov00Toolchain",
+    "verifyCpov01PublicExamProfile",
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",

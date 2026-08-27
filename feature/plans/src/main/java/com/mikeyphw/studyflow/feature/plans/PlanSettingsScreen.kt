@@ -34,8 +34,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
+import com.mikeyphw.studyflow.core.model.StudyTarget
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +47,9 @@ fun PlanSettingsScreen(
     settings: StudyPlanSettings,
     onBack: () -> Unit,
     onSave: (StudyPlanSettings) -> Unit,
+    studyTarget: StudyTarget? = null,
+    examStages: List<ExamStage> = emptyList(),
+    onSavePublicExamProfile: (PublicExamProfileForm) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var preferredSession by rememberSaveable(plan.id.value) {
@@ -103,6 +108,14 @@ fun PlanSettingsScreen(
                 text = stringResource(R.string.plan_settings_intro, plan.name),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (shouldShowPublicExamProfile(plan.type)) {
+                PublicExamProfileSection(
+                    plan = plan,
+                    target = studyTarget,
+                    examStages = examStages,
+                    onSave = onSavePublicExamProfile,
+                )
+            }
             OutlinedTextField(
                 value = preferredSession,
                 onValueChange = { preferredSession = it.filter(Char::isDigit).take(3) },

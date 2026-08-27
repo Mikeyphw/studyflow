@@ -83,6 +83,7 @@ import com.mikeyphw.studyflow.core.domain.asStudyFlowOptionalLoadState
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
+import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.Subject
@@ -92,6 +93,9 @@ import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
+import com.mikeyphw.studyflow.core.model.StudyTarget
+import com.mikeyphw.studyflow.core.model.StudyTargetId
+import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.ThemeMode
 import com.mikeyphw.studyflow.core.navigation.AnalyticsRoute
 import com.mikeyphw.studyflow.core.navigation.CreatePlanRoute
@@ -129,6 +133,7 @@ import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
 import com.mikeyphw.studyflow.feature.library.StudyLibraryScreen
 import com.mikeyphw.studyflow.feature.plans.PlanEditorForm
 import com.mikeyphw.studyflow.feature.plans.PlanEditorScreen
+import com.mikeyphw.studyflow.feature.plans.PublicExamProfileForm
 import com.mikeyphw.studyflow.feature.plans.OnboardingSamplePlanWizardScreen
 import com.mikeyphw.studyflow.feature.plans.PlanListScreen
 import com.mikeyphw.studyflow.feature.plans.PlanPortabilityScreen
@@ -232,6 +237,49 @@ private fun LoadedPlanSettingsDestination(
             modifier = modifier,
         )
         is StudyFlowLoadState.Ready -> content(current.value)
+    }
+}
+
+private suspend fun persistPublicExamProfile(
+    container: AppContainer,
+    plan: StudyPlan,
+    existingTarget: StudyTarget?,
+    form: PublicExamProfileForm,
+) {
+    require(plan.type == StudyType.PUBLIC_EXAMINATION) {
+        "Public examination profile can only be saved for a public examination Study Plan."
+    }
+    val now = System.currentTimeMillis()
+    val targetId = existingTarget?.id ?: StudyTargetId(UUID.randomUUID().toString())
+    val target = StudyTarget(
+        id = targetId,
+        studyPlanId = plan.id,
+        organization = form.organization.trim(),
+        role = form.role.trim(),
+        examBoard = form.examBoard.trim(),
+        noticeUrl = form.noticeUrl.trim().ifBlank { null },
+        confirmedExamDateIso = form.confirmedExamDateIso.trim().ifBlank { null },
+        expectedExamDateIso = form.expectedExamDateIso.trim().ifBlank { null },
+        openings = form.openings.toIntOrNull(),
+        estimatedCutoffPercent = form.estimatedCutoffPercent.toIntOrNull(),
+        createdAtEpochMillis = existingTarget?.createdAtEpochMillis ?: now,
+        updatedAtEpochMillis = now,
+    )
+    container.manageStudyContent.saveStudyTarget(target)
+    form.stages.forEachIndexed { index, stage ->
+        container.manageStudyContent.saveExamStage(
+            ExamStage(
+                id = stage.id ?: com.mikeyphw.studyflow.core.model.ExamStageId(UUID.randomUUID().toString()),
+                studyPlanId = plan.id,
+                studyTargetId = targetId,
+                name = stage.name.trim(),
+                type = stage.type,
+                scheduledDateIso = stage.scheduledDateIso.trim().ifBlank { null },
+                weight = stage.weight.toDouble(),
+                minimumScorePercent = stage.minimumScorePercent.toIntOrNull(),
+                position = index,
+            ),
+        )
     }
 }
 
@@ -493,8 +541,14 @@ internal fun StudyFlowNavHost(
                     ?: return@LaunchedEffect
                 container.reminderDeliveryCoordinator.reconcilePlan(completed.planId)
                 container.samplePlanProvisioner.consumeCompletion(completed.planId)
-                navController.navigate(DashboardRoute(completed.planId.value)) {
-                    popUpTo<PlanListRoute>()
+                if (completed.template == OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK) {
+                    navController.navigate(PlanSettingsRoute(completed.planId.value)) {
+                        popUpTo<PlanListRoute>()
+                    }
+                } else {
+                    navController.navigate(DashboardRoute(completed.planId.value)) {
+                        popUpTo<PlanListRoute>()
+                    }
                 }
             }
             OnboardingSamplePlanWizardScreen(
@@ -542,15 +596,37 @@ internal fun StudyFlowNavHost(
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
             LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
                 LoadedPlanSettingsDestination(container = container, planId = planId) { settings ->
+                    val targetFlow = remember(planId) { container.manageStudyContent.observeStudyTarget(planId) }
+                    val target by targetFlow.collectAsStateWithLifecycle(initialValue = null)
+                    val syllabusFlow = remember(planId) { container.manageStudyContent.observeSyllabus(planId) }
+                    val syllabus by syllabusFlow.collectAsStateWithLifecycle(
+                        initialValue = com.mikeyphw.studyflow.core.model.StudySyllabus(
+                            studyPlanId = planId,
+                            subjects = emptyList(),
+                            topics = emptyList(),
+                        ),
+                    )
                     PlanSettingsScreen(
                         plan = currentPlan,
                         settings = settings,
+                        studyTarget = target,
+                        examStages = syllabus.examStages,
                         onBack = navController::popBackStack,
                         onSave = { updatedSettings ->
                             coroutineScope.launch {
                                 container.manageStudyPlan.updateSettings(updatedSettings)
                                 container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
                                 navController.popBackStack()
+                            }
+                        },
+                        onSavePublicExamProfile = { form ->
+                            coroutineScope.launch {
+                                persistPublicExamProfile(
+                                    container = container,
+                                    plan = currentPlan,
+                                    existingTarget = target,
+                                    form = form,
+                                )
                             }
                         },
                     )

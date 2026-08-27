@@ -22,6 +22,7 @@ data class TopicBulkUpdate(
 )
 
 interface StudyContentRepository {
+    fun observeStudyTarget(planId: StudyPlanId): Flow<StudyTarget?>
     fun observeSyllabus(planId: StudyPlanId): Flow<StudySyllabus>
 
     suspend fun upsertStudyTarget(target: StudyTarget): StudyTarget

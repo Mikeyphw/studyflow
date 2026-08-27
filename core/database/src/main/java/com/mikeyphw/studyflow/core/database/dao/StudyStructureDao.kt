@@ -32,6 +32,9 @@ interface StudyStructureDao {
     @Upsert
     suspend fun upsertTopics(topics: List<TopicEntity>)
 
+    @Query("SELECT * FROM study_targets WHERE studyPlanId = :planId LIMIT 1")
+    fun observeTarget(planId: String): Flow<StudyTargetEntity?>
+
     @Query("SELECT * FROM exam_stages WHERE studyPlanId = :planId ORDER BY position, name COLLATE NOCASE")
     fun observeExamStages(planId: String): Flow<List<ExamStageEntity>>
 
@@ -56,8 +59,14 @@ interface StudyStructureDao {
     @Query("SELECT * FROM topics WHERE id = :topicId AND studyPlanId = :planId LIMIT 1")
     suspend fun findTopic(planId: String, topicId: String): TopicEntity?
 
+    @Query("SELECT * FROM study_targets WHERE id = :targetId LIMIT 1")
+    suspend fun findTargetById(targetId: String): StudyTargetEntity?
+
     @Query("SELECT * FROM study_targets WHERE id = :targetId AND studyPlanId = :planId LIMIT 1")
     suspend fun findTarget(planId: String, targetId: String): StudyTargetEntity?
+
+    @Query("SELECT * FROM exam_stages WHERE id = :stageId LIMIT 1")
+    suspend fun findExamStageById(stageId: String): ExamStageEntity?
 
     @Query("SELECT * FROM exam_stages WHERE id = :stageId AND studyPlanId = :planId LIMIT 1")
     suspend fun findExamStage(planId: String, stageId: String): ExamStageEntity?

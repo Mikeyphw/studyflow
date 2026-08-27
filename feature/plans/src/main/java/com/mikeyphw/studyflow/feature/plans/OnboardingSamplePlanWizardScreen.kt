@@ -240,6 +240,12 @@ private fun OnboardingPreview(choice: OnboardingSamplePlanBlueprint) {
                 text = stringResource(R.string.onboarding_preview_message),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (choice.template == OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK) {
+                Text(
+                    text = stringResource(R.string.onboarding_public_exam_profile_entry),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             OnboardingWorkloadPreview(choice = choice)
             choice.subjects.forEach { subject ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
