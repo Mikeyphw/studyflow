@@ -542,6 +542,109 @@ object StudyFlowMigrations {
     }
 
 
+    val Migration12To13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS legislation_documents (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyPlanId TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    sourceReference TEXT,
+                    createdAtEpochMillis INTEGER NOT NULL,
+                    updatedAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_documents_studyPlanId " +
+                    "ON legislation_documents(studyPlanId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_documents_studyPlanId_title " +
+                    "ON legislation_documents(studyPlanId, title)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS legislation_provisions (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    legislationDocumentId TEXT NOT NULL,
+                    studyPlanId TEXT NOT NULL,
+                    reference TEXT NOT NULL,
+                    parentReference TEXT,
+                    kind TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    position INTEGER NOT NULL,
+                    read INTEGER NOT NULL,
+                    important INTEGER NOT NULL,
+                    createdAtEpochMillis INTEGER NOT NULL,
+                    updatedAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(legislationDocumentId) REFERENCES legislation_documents(id) ON DELETE CASCADE,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_provisions_legislationDocumentId " +
+                    "ON legislation_provisions(legislationDocumentId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_provisions_studyPlanId " +
+                    "ON legislation_provisions(studyPlanId)",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                    "index_legislation_provisions_legislationDocumentId_position " +
+                    "ON legislation_provisions(legislationDocumentId, position)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_provisions_studyPlanId_reference " +
+                    "ON legislation_provisions(studyPlanId, reference)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS legislation_evidence_links (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyPlanId TEXT NOT NULL,
+                    provisionId TEXT NOT NULL,
+                    questionId TEXT,
+                    errorEntryId TEXT,
+                    reviewItemId TEXT,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE,
+                    FOREIGN KEY(provisionId) REFERENCES legislation_provisions(id) ON DELETE CASCADE,
+                    FOREIGN KEY(questionId) REFERENCES questions(id) ON DELETE CASCADE,
+                    FOREIGN KEY(errorEntryId) REFERENCES error_entries(id) ON DELETE CASCADE,
+                    FOREIGN KEY(reviewItemId) REFERENCES review_items(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_evidence_links_studyPlanId " +
+                    "ON legislation_evidence_links(studyPlanId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_evidence_links_provisionId " +
+                    "ON legislation_evidence_links(provisionId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_evidence_links_questionId " +
+                    "ON legislation_evidence_links(questionId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_evidence_links_errorEntryId " +
+                    "ON legislation_evidence_links(errorEntryId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_legislation_evidence_links_reviewItemId " +
+                    "ON legislation_evidence_links(reviewItemId)",
+            )
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.install(db)
+        }
+    }
+
+
     val All = arrayOf(
         Migration1To2,
         Migration2To3,
@@ -554,6 +657,7 @@ object StudyFlowMigrations {
         Migration9To10,
         Migration10To11,
         Migration11To12,
+        Migration12To13,
     )
 }
 

@@ -27,6 +27,9 @@ import com.mikeyphw.studyflow.core.database.entity.TermuxRuntimePreferenceEntity
 import com.mikeyphw.studyflow.core.database.entity.LanguageDeckProfileEntity
 import com.mikeyphw.studyflow.core.database.entity.LanguageExpressionEntity
 import com.mikeyphw.studyflow.core.database.entity.LanguageReviewAttemptEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationProvisionEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationEvidenceLinkEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationDocumentEntity
 import com.mikeyphw.studyflow.core.database.entity.IdiomCardEntity
 import com.mikeyphw.studyflow.core.database.entity.VocabularyCardEntity
 import com.mikeyphw.studyflow.core.database.entity.TermuxCommandRequestEntity
@@ -63,6 +66,9 @@ import com.mikeyphw.studyflow.core.database.entity.VideoResourceEntity
         StudyTargetEntity::class,
         ExamStageEntity::class,
         ExamNoticeRevisionEntity::class,
+        LegislationDocumentEntity::class,
+        LegislationProvisionEntity::class,
+        LegislationEvidenceLinkEntity::class,
         SubjectEntity::class,
         TopicEntity::class,
         StudyStrategyEntity::class,
@@ -131,7 +137,7 @@ abstract class StudyFlowDatabase : RoomDatabase() {
     abstract fun publicExamDao(): PublicExamDao
 
     companion object {
-        const val SCHEMA_VERSION = 12
+        const val SCHEMA_VERSION = 13
         const val DATABASE_NAME = "studyflow.db"
 
         fun create(context: Context): StudyFlowDatabase =

@@ -24,6 +24,9 @@ object StudyFlowIntegrity {
     private val planOwnedTables = listOf(
         "study_targets",
         "exam_stages",
+        "legislation_documents",
+        "legislation_provisions",
+        "legislation_evidence_links",
         "subjects",
         "topics",
         "study_strategies",
@@ -46,6 +49,11 @@ object StudyFlowIntegrity {
 
     private val scopedReferences = listOf(
         ScopedReference("exam_stages", "studyTargetId", "study_targets"),
+        ScopedReference("legislation_provisions", "legislationDocumentId", "legislation_documents"),
+        ScopedReference("legislation_evidence_links", "provisionId", "legislation_provisions"),
+        ScopedReference("legislation_evidence_links", "questionId", "questions"),
+        ScopedReference("legislation_evidence_links", "errorEntryId", "error_entries"),
+        ScopedReference("legislation_evidence_links", "reviewItemId", "review_items"),
         ScopedReference("subjects", "examStageId", "exam_stages"),
         ScopedReference("topics", "subjectId", "subjects"),
         ScopedReference(
@@ -92,13 +100,18 @@ object StudyFlowIntegrity {
     )
 
     fun install(db: SupportSQLiteDatabase) {
-        planOwnedTables.forEach { table -> installStablePlanOwnerTrigger(db, table) }
+        planOwnedTables.filter { tableExists(db, it) }.forEach { table ->
+            installStablePlanOwnerTrigger(db, table)
+        }
         installPlanSettingsIdentityTriggers(db)
-        scopedReferences.forEach { reference -> installScopedReferenceTriggers(db, reference) }
+        scopedReferences
+            .filter { reference -> tableExists(db, reference.table) && tableExists(db, reference.targetTable) }
+            .forEach { reference -> installScopedReferenceTriggers(db, reference) }
         installTopicHierarchyUpdateGuard(db)
         installExamStageDeleteCleanup(db)
         installSingleActiveSessionTriggers(db)
         installValueGuards(db)
+        installLegislationEvidenceTargetTriggers(db)
         installGraphRevisionTriggers(db)
         StudyFlowSearchIndex.install(db)
     }
@@ -107,7 +120,9 @@ object StudyFlowIntegrity {
         db.execSQL(
             "INSERT OR IGNORE INTO database_metadata (`key`, value) VALUES ('$GraphRevisionMetadataKey', '0')",
         )
-        val revisionTables = (listOf("study_plans") + planOwnedTables + "study_plan_settings").distinct()
+        val revisionTables = (listOf("study_plans") + planOwnedTables + "study_plan_settings")
+            .distinct()
+            .filter { tableExists(db, it) }
         revisionTables.forEach { table ->
             listOf("INSERT", "UPDATE", "DELETE").forEach { event ->
                 val suffix = event.lowercase()
@@ -133,7 +148,7 @@ object StudyFlowIntegrity {
                 "StudyFlow database corruption: foreign-key violations must be repaired before schema v4."
             }
         }
-        planOwnedTables.forEach { table ->
+        planOwnedTables.filter { tableExists(db, it) }.forEach { table ->
             requireNoRows(
                 db = db,
                 sql = "SELECT 1 FROM $table WHERE trim(id) = '' OR trim(studyPlanId) = '' LIMIT 1",
@@ -145,8 +160,11 @@ object StudyFlowIntegrity {
             sql = "SELECT 1 FROM study_plan_settings WHERE trim(studyPlanId) = '' LIMIT 1",
             message = "StudyFlow database corruption: Study Plan settings contain a blank identity.",
         )
-        scopedReferences.forEach { reference -> verifyScopedReference(db, reference) }
+        scopedReferences
+            .filter { reference -> tableExists(db, reference.table) && tableExists(db, reference.targetTable) }
+            .forEach { reference -> verifyScopedReference(db, reference) }
         verifyValueGuards(db)
+        verifyLegislationEvidenceTargets(db)
         requireNoRows(
             db = db,
             sql =
@@ -173,6 +191,42 @@ object StudyFlowIntegrity {
                 "StudyFlow database corruption: invalid ${reference.table}.${reference.column} ownership.",
         )
     }
+
+    private fun installLegislationEvidenceTargetTriggers(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "legislation_evidence_links")) return
+        listOf("INSERT", "UPDATE").forEach { event ->
+            db.execSQL(
+                """
+                CREATE TRIGGER IF NOT EXISTS guard_legislation_evidence_exactly_one_${event.lowercase()}
+                BEFORE $event ON legislation_evidence_links
+                WHEN ((NEW.questionId IS NOT NULL) + (NEW.errorEntryId IS NOT NULL) +
+                    (NEW.reviewItemId IS NOT NULL)) <> 1
+                BEGIN
+                    SELECT RAISE(ABORT, 'StudyFlow integrity: legislation evidence requires exactly one target');
+                END
+                """.trimIndent(),
+            )
+        }
+    }
+
+    private fun verifyLegislationEvidenceTargets(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "legislation_evidence_links")) return
+        requireNoRows(
+            db = db,
+            sql =
+                "SELECT 1 FROM legislation_evidence_links WHERE " +
+                    "((questionId IS NOT NULL) + (errorEntryId IS NOT NULL) + " +
+                    "(reviewItemId IS NOT NULL)) <> 1 LIMIT 1",
+            message =
+                "StudyFlow database corruption: legislation evidence must reference exactly one target.",
+        )
+    }
+
+    private fun tableExists(db: SupportSQLiteDatabase, table: String): Boolean =
+        db.query(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+            arrayOf(table),
+        ).use { cursor -> cursor.moveToFirst() }
 
     private fun requireNoRows(
         db: SupportSQLiteDatabase,

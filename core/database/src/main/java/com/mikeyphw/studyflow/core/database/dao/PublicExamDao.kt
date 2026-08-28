@@ -6,6 +6,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.mikeyphw.studyflow.core.database.entity.ExamNoticeRevisionEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationProvisionEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationEvidenceLinkEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationDocumentEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyCycleEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyCycleItemEntity
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +39,82 @@ interface PublicExamDao {
 
     @Query("SELECT * FROM exam_notice_revisions WHERE studyPlanId = :planId AND id = :revisionId LIMIT 1")
     suspend fun findExamNoticeRevision(planId: String, revisionId: String): ExamNoticeRevisionEntity?
+
+
+    @Query("SELECT * FROM legislation_documents WHERE studyPlanId = :planId ORDER BY title, id")
+    fun observeLegislationDocuments(planId: String): Flow<List<LegislationDocumentEntity>>
+
+    @Query(
+        "SELECT * FROM legislation_provisions WHERE studyPlanId = :planId " +
+            "ORDER BY legislationDocumentId, position, id",
+    )
+    fun observeLegislationProvisions(planId: String): Flow<List<LegislationProvisionEntity>>
+
+    @Query("SELECT * FROM legislation_evidence_links WHERE studyPlanId = :planId ORDER BY provisionId, id")
+    fun observeLegislationEvidenceLinks(planId: String): Flow<List<LegislationEvidenceLinkEntity>>
+
+
+    @Query("SELECT * FROM legislation_documents WHERE studyPlanId = :planId ORDER BY title, id")
+    suspend fun findLegislationDocuments(planId: String): List<LegislationDocumentEntity>
+
+    @Query(
+        "SELECT * FROM legislation_provisions WHERE studyPlanId = :planId " +
+            "ORDER BY legislationDocumentId, position, id",
+    )
+    suspend fun findLegislationProvisionsForPlan(planId: String): List<LegislationProvisionEntity>
+
+    @Query("SELECT * FROM legislation_evidence_links WHERE studyPlanId = :planId ORDER BY provisionId, id")
+    suspend fun findLegislationEvidenceLinks(planId: String): List<LegislationEvidenceLinkEntity>
+
+    @Query("SELECT * FROM legislation_documents WHERE studyPlanId = :planId AND id = :documentId LIMIT 1")
+    suspend fun findLegislationDocument(planId: String, documentId: String): LegislationDocumentEntity?
+
+    @Query("SELECT * FROM legislation_provisions WHERE studyPlanId = :planId AND id = :provisionId LIMIT 1")
+    suspend fun findLegislationProvision(planId: String, provisionId: String): LegislationProvisionEntity?
+
+    @Query(
+        "SELECT * FROM legislation_provisions WHERE studyPlanId = :planId " +
+            "AND legislationDocumentId = :documentId ORDER BY position, id",
+    )
+    suspend fun findLegislationProvisions(planId: String, documentId: String): List<LegislationProvisionEntity>
+
+    @Upsert
+    suspend fun upsertLegislationDocument(document: LegislationDocumentEntity)
+
+    @Upsert
+    suspend fun upsertLegislationProvisions(provisions: List<LegislationProvisionEntity>)
+
+    @Upsert
+    suspend fun upsertLegislationEvidenceLink(link: LegislationEvidenceLinkEntity)
+
+    @Query(
+        "UPDATE legislation_provisions SET position = position + :offset " +
+            "WHERE studyPlanId = :planId AND legislationDocumentId = :documentId",
+    )
+    suspend fun shiftLegislationProvisionPositions(planId: String, documentId: String, offset: Int): Int
+
+    @Query(
+        "DELETE FROM legislation_provisions " +
+            "WHERE studyPlanId = :planId AND legislationDocumentId = :documentId AND id = :provisionId",
+    )
+    suspend fun deleteLegislationProvision(planId: String, documentId: String, provisionId: String): Int
+
+    @Query(
+        "UPDATE legislation_provisions SET read = :read, updatedAtEpochMillis = :updatedAt " +
+            "WHERE studyPlanId = :planId AND id = :provisionId",
+    )
+    suspend fun setLegislationProvisionRead(planId: String, provisionId: String, read: Boolean, updatedAt: Long): Int
+
+    @Query(
+        "UPDATE legislation_provisions SET important = :important, updatedAtEpochMillis = :updatedAt " +
+            "WHERE studyPlanId = :planId AND id = :provisionId",
+    )
+    suspend fun setLegislationProvisionImportant(
+        planId: String,
+        provisionId: String,
+        important: Boolean,
+        updatedAt: Long,
+    ): Int
 
     @Upsert
     suspend fun upsertStudyCycle(cycle: StudyCycleEntity)

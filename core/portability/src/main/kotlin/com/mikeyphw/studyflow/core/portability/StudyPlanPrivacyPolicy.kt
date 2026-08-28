@@ -18,6 +18,7 @@ object StudyPlanPrivacyPolicy {
         "review_items",
         "error_entries",
         "exam_notice_revisions",
+        "legislation_evidence_links",
     )
 
     private val AllowedSections = setOf(MetadataSection, NotesSection, HistorySection)

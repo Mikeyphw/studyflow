@@ -106,6 +106,17 @@ class StudyPlanGraphDuplicator(
                 remap = setOf("id", "subjectId", "parentTopicId", "examStageId"),
             ),
             table(
+                "legislation_documents",
+                "id", "studyPlanId", "title", "sourceReference", "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id"),
+            ),
+            table(
+                "legislation_provisions",
+                "id", "legislationDocumentId", "studyPlanId", "reference", "parentReference", "kind", "text",
+                "position", "read", "important", "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id", "legislationDocumentId"),
+            ),
+            table(
                 "study_cycles",
                 "id", "studyPlanId", "name", "enabled", "currentItemId",
                 "createdAtEpochMillis", "updatedAtEpochMillis",
@@ -202,6 +213,11 @@ class StudyPlanGraphDuplicator(
                 "id", "studyPlanId", "subjectId", "topicId", "questionId", "flashcardId", "errorEntryId", "method",
                 "status", "dueAtEpochMillis", "intervalDays", "repetitionCount", "easeFactor", "completedAtEpochMillis",
                 remap = setOf("id", "subjectId", "topicId", "questionId", "flashcardId", "errorEntryId"),
+            ),
+            table(
+                "legislation_evidence_links",
+                "id", "studyPlanId", "provisionId", "questionId", "errorEntryId", "reviewItemId",
+                remap = setOf("id", "provisionId", "questionId", "errorEntryId", "reviewItemId"),
             ),
             table(
                 "study_notes",

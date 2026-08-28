@@ -289,6 +289,31 @@ class StudyPlanGraphPortabilityStore(
                 "$tableName subject/topic ownership is inconsistent."
             }
         }
+        rows("legislation_provisions").forEach { row ->
+            requireReference(
+                "legislation_provisions",
+                row,
+                "legislationDocumentId",
+                "legislation_documents",
+                required = true,
+            )
+        }
+        rows("legislation_evidence_links").forEach { row ->
+            requireReference(
+                "legislation_evidence_links",
+                row,
+                "provisionId",
+                "legislation_provisions",
+                required = true,
+            )
+            requireReference("legislation_evidence_links", row, "questionId", "questions")
+            requireReference("legislation_evidence_links", row, "errorEntryId", "error_entries")
+            requireReference("legislation_evidence_links", row, "reviewItemId", "review_items")
+            val targetCount = listOf("questionId", "errorEntryId", "reviewItemId").count { column ->
+                row.values[column]?.let { it.type != PortableValueType.NULL && !it.value.isNullOrBlank() } == true
+            }
+            require(targetCount == 1) { "Legislation evidence link must reference exactly one evidence target." }
+        }
         rows("study_cycle_items").forEach { row ->
             requireReference("study_cycle_items", row, "studyCycleId", "study_cycles", required = true)
             requireReference("study_cycle_items", row, "subjectId", "subjects")
@@ -672,7 +697,8 @@ class StudyPlanGraphPortabilityStore(
             remappedIdentifierColumns = setOf("id"),
         )
         val StructureTables = setOf(
-            "study_targets", "exam_stages", "subjects", "topics", "study_cycles",
+            "study_targets", "exam_stages", "subjects", "topics", "legislation_documents",
+            "legislation_provisions", "study_cycles",
             "study_cycle_items", "study_strategies",
             "schedule_rules", "study_plan_settings", "programming_course_profiles",
             "termux_runtime_preferences",
@@ -687,6 +713,9 @@ class StudyPlanGraphPortabilityStore(
             "study_targets",
             "exam_stages",
             "exam_notice_revisions",
+            "legislation_documents",
+            "legislation_provisions",
+            "legislation_evidence_links",
             "study_cycles",
             "study_cycle_items",
             "study_strategies",

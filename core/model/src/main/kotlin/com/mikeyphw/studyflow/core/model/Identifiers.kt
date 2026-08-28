@@ -229,3 +229,18 @@ value class StudyCycleItemId(val value: String) {
         require(value.isNotBlank()) { "StudyCycleItemId cannot be blank." }
     }
 }
+
+@JvmInline
+value class LegislationDocumentId(val value: String) {
+    init { require(value.isNotBlank()) { "Legislation document id cannot be blank." } }
+}
+
+@JvmInline
+value class LegislationProvisionId(val value: String) {
+    init { require(value.isNotBlank()) { "Legislation provision id cannot be blank." } }
+}
+
+@JvmInline
+value class LegislationEvidenceLinkId(val value: String) {
+    init { require(value.isNotBlank()) { "Legislation evidence link id cannot be blank." } }
+}

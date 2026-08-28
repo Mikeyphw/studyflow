@@ -41,6 +41,7 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowTabStrip
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSubjectAccordion
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
+import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
@@ -48,6 +49,8 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.PublicExamDashboardBuilder
+import com.mikeyphw.studyflow.core.domain.PublicExamDashboardSnapshot
 import com.mikeyphw.studyflow.core.domain.PublicExamPriorityEvidence
 import com.mikeyphw.studyflow.core.domain.PublicExamPriorityPlanner
 import com.mikeyphw.studyflow.core.domain.PublicExamPriorityReasonCode
@@ -82,6 +85,7 @@ fun PlanWorkspaceScreen(
     reviewManager: ManageStudyReview,
     progressManager: ManageStudyProgress,
     sessionManager: ManageStudySession,
+    publicExamManager: ManagePublicExam,
     onTabSelected: (PlanWorkspaceTab) -> Unit,
     onSwitchPlan: () -> Unit,
     onSearch: () -> Unit,
@@ -125,6 +129,15 @@ fun PlanWorkspaceScreen(
     val sessionsFlow = remember(plan.id, loadAttempt) {
         sessionManager.observeSessions(plan.id).asStudyFlowLoadState()
     }
+    val targetFlow = remember(plan.id, loadAttempt) {
+        contentManager.observeStudyTarget(plan.id).asStudyFlowLoadState()
+    }
+    val mockExamsFlow = remember(plan.id, loadAttempt) {
+        practiceManager.observeMockExams(plan.id).asStudyFlowLoadState()
+    }
+    val legislationFlow = remember(plan.id, loadAttempt) {
+        publicExamManager.observeLegislation(plan.id).asStudyFlowLoadState()
+    }
     val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val libraryState by libraryFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
@@ -134,6 +147,9 @@ fun PlanWorkspaceScreen(
     val errorEntriesState by errorEntriesFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val progressState by progressFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val targetState by targetFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val mockExamsState by mockExamsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val legislationState by legislationFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     if (
         !workspaceLoadGate(
             states = listOf(
@@ -146,6 +162,9 @@ fun PlanWorkspaceScreen(
                 errorEntriesState,
                 progressState,
                 sessionsState,
+                targetState,
+                mockExamsState,
+                legislationState,
             ),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,
@@ -160,6 +179,9 @@ fun PlanWorkspaceScreen(
     val readyErrorEntries = errorEntriesState.readyValue()
     val readyProgress = progressState.readyValue()
     val readySessions = sessionsState.readyValue()
+    val readyTarget = targetState.readyValue()
+    val readyMockExams = mockExamsState.readyValue()
+    val readyLegislation = legislationState.readyValue()
     val cleanupReport = remember(
         plan,
         readySyllabus,
@@ -213,6 +235,33 @@ fun PlanWorkspaceScreen(
         }
     }
 
+    val publicExamDashboard = remember(
+        plan,
+        readyTarget,
+        readySyllabus,
+        readyQuestions,
+        readyReviewItems,
+        readyErrorEntries,
+        readySessions,
+        readyMockExams,
+    ) {
+        if (plan.type == StudyType.PUBLIC_EXAMINATION) {
+            PublicExamDashboardBuilder.build(
+                plan = plan,
+                target = readyTarget,
+                syllabus = readySyllabus,
+                questions = readyQuestions,
+                reviews = readyReviewItems,
+                errors = readyErrorEntries,
+                sessions = readySessions,
+                mockExams = readyMockExams,
+                nowEpochMillis = System.currentTimeMillis(),
+            )
+        } else {
+            null
+        }
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
         WorkspaceHeader(
             title = stringResource(R.string.plan_title),
@@ -243,6 +292,7 @@ fun PlanWorkspaceScreen(
                 subjectCount = readySyllabus.subjects.size,
                 materialCount = readyLibrary.activeMaterials.size,
                 priorityRecommendations = priorityRecommendations,
+                publicExamDashboard = publicExamDashboard,
                 onPrioritySelected = onManageContent,
                 onEditPlan = onEditPlan,
                 onPlanSettings = onPlanSettings,
@@ -266,6 +316,10 @@ fun PlanWorkspaceScreen(
                 targetId = targetId,
                 annexCount = readyLibrary.annexes.size,
                 onManage = onManageLibrary,
+                planId = plan.id,
+                legislation = readyLegislation,
+                publicExamManager = publicExamManager,
+                showLegislation = plan.type == StudyType.PUBLIC_EXAMINATION,
             )
         }
     }
@@ -278,6 +332,7 @@ private fun PlanOverviewPane(
     subjectCount: Int,
     materialCount: Int,
     priorityRecommendations: List<PublicExamPriorityRecommendation>,
+    publicExamDashboard: PublicExamDashboardSnapshot?,
     onPrioritySelected: () -> Unit,
     onEditPlan: () -> Unit,
     onPlanSettings: () -> Unit,
@@ -317,6 +372,14 @@ private fun PlanOverviewPane(
                 libraryLabel = stringResource(planLibraryLabel(plan)),
                 materialCount = pluralStringResource(R.plurals.materials_count, materialCount, materialCount),
             )
+        }
+        publicExamDashboard?.let { dashboard ->
+            item(key = "section:public-exam-dashboard", contentType = "section") {
+                StudyFlowSectionTitle(title = stringResource(R.string.public_exam_dashboard_title))
+            }
+            item(key = "public-exam-dashboard-metrics", contentType = "dashboard") {
+                PublicExamDashboardSummary(dashboard)
+            }
         }
         if (priorityRecommendations.isNotEmpty()) {
             item(key = "section:public-exam-priority", contentType = "section") {
@@ -583,6 +646,10 @@ private fun PlanLibraryPane(
     targetId: String?,
     annexCount: Int,
     onManage: () -> Unit,
+    planId: com.mikeyphw.studyflow.core.model.StudyPlanId,
+    legislation: com.mikeyphw.studyflow.core.model.LegislationStudySnapshot,
+    publicExamManager: ManagePublicExam,
+    showLegislation: Boolean,
 ) {
     val rows = (materials.map { (id, title) -> Triple(id, R.string.material_type, title) } +
         videos.map { (id, title) -> Triple(id, R.string.video_type, title) })
@@ -592,6 +659,11 @@ private fun PlanLibraryPane(
         contentPadding = workspaceContentPadding(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (showLegislation) {
+            item(key = "public-exam-legislation", contentType = "legislation") {
+                PublicExamLegislationPanel(planId, legislation, publicExamManager)
+            }
+        }
         item(key = "section:library", contentType = "section") {
             StudyFlowSectionTitle(
                 title = stringResource(R.string.plan_library),
@@ -754,3 +826,65 @@ private fun priorityReasonLabel(reason: PublicExamPriorityReasonCode): Int = whe
     PublicExamPriorityReasonCode.COOLDOWN -> R.string.priority_reason_cooldown
     PublicExamPriorityReasonCode.STARVATION_RELIEF -> R.string.priority_reason_starvation
 }
+
+
+@Composable
+private fun PublicExamDashboardSummary(snapshot: PublicExamDashboardSnapshot) {
+    val metrics = snapshot.metrics
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        StudyFlowMetricStrip(
+            firstLabel = stringResource(R.string.edital_coverage),
+            firstValue = metrics.editalCoveragePercent.percentOrUnknown(),
+            secondLabel = stringResource(R.string.weighted_mastery),
+            secondValue = metrics.weightedMasteryPercent.percentOrUnknown(),
+        )
+        Text(stringResource(R.string.dashboard_questions_total, metrics.totalQuestions))
+        Text(stringResource(R.string.dashboard_accuracy_windows,
+            metrics.accuracy7d.percentOrUnknown(), metrics.accuracy30d.percentOrUnknown(),
+            metrics.accuracy90d.percentOrUnknown()))
+        Text(stringResource(R.string.dashboard_speed,
+            metrics.questionsPerHour30d.numberOrUnknown(), metrics.averageSecondsPerQuestion30d.numberOrUnknown()))
+        Text(stringResource(R.string.dashboard_backlog, metrics.overdueReviews, metrics.recurringErrors))
+        Text(stringResource(R.string.dashboard_mock_cutoff,
+            metrics.latestMockScorePercent.percentOrUnknown(),
+            metrics.estimatedCutoffGapPercent.signedPercentOrUnknown(),
+        ))
+        Text(
+            stringResource(
+                R.string.dashboard_days_to_exam,
+                metrics.daysUntilExam?.toString() ?: stringResource(R.string.unknown),
+            ),
+        )
+        StudyFlowSectionTitle(title = stringResource(R.string.edital_matrix_title))
+        snapshot.matrix.take(12).forEach { row ->
+            Text(
+                stringResource(
+                    R.string.edital_matrix_row,
+                    row.label,
+                    row.examWeight?.let { "%.2f".format(it) } ?: stringResource(R.string.unknown),
+                    row.incidencePercent?.let { "$it%" } ?: stringResource(R.string.unknown),
+                    row.questionsAnswered,
+                    row.accuracyPercent.percentOrUnknown(),
+                    row.masteryPercent,
+                    row.overdueReviewCount,
+                    row.recurringErrorCount,
+                    (row.priorityScore * 100).toInt(),
+                ),
+            )
+        }
+        Text(
+            stringResource(R.string.importance_mastery_matrix_hint),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun Double?.percentOrUnknown(): String = this?.let { "%.1f%%".format(it) } ?: stringResource(R.string.unknown)
+
+@Composable
+private fun Double?.signedPercentOrUnknown(): String =
+    this?.let { "%+.1f%%".format(it) } ?: stringResource(R.string.unknown)
+
+@Composable
+private fun Double?.numberOrUnknown(): String = this?.let { "%.1f".format(it) } ?: stringResource(R.string.unknown)

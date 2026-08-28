@@ -932,3 +932,9 @@ tasks.register<Exec>("recordOptionalInstrumentationValidation") {
     description = "Optionally runs connected Android instrumentation through adb and records skip/pass/fail evidence."
     commandLine("python3", "scripts/run_optional_instrumentation_validation.py")
 }
+
+tasks.register<Exec>("verifyCpov09Cpov10LegislationDashboard") {
+    group = "verification"
+    description = "Verifies CPOV09 structured legislation and CPOV10 derived concurso dashboard contracts."
+    commandLine("python3", "scripts/verify_cpov09_10_legislation_dashboard.py")
+}

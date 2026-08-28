@@ -114,3 +114,114 @@ data class StudyCycleItemEntity(
     val activityType: String,
     val completionRule: String?,
 )
+
+
+@Entity(
+    tableName = "legislation_documents",
+    foreignKeys = [
+        ForeignKey(
+            entity = StudyPlanEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["studyPlanId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("studyPlanId"), Index(value = ["studyPlanId", "title"])],
+)
+data class LegislationDocumentEntity(
+    @PrimaryKey val id: String,
+    val studyPlanId: String,
+    val title: String,
+    val sourceReference: String?,
+    val createdAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long,
+)
+
+@Entity(
+    tableName = "legislation_provisions",
+    foreignKeys = [
+        ForeignKey(
+            entity = LegislationDocumentEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["legislationDocumentId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = StudyPlanEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["studyPlanId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [
+        Index("legislationDocumentId"),
+        Index("studyPlanId"),
+        Index(value = ["legislationDocumentId", "position"], unique = true),
+        Index(value = ["studyPlanId", "reference"]),
+    ],
+)
+data class LegislationProvisionEntity(
+    @PrimaryKey val id: String,
+    val legislationDocumentId: String,
+    val studyPlanId: String,
+    val reference: String,
+    val parentReference: String?,
+    val kind: String,
+    val text: String,
+    val position: Int,
+    val read: Boolean,
+    val important: Boolean,
+    val createdAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long,
+)
+
+@Entity(
+    tableName = "legislation_evidence_links",
+    foreignKeys = [
+        ForeignKey(
+            entity = StudyPlanEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["studyPlanId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = LegislationProvisionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["provisionId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = QuestionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["questionId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = ErrorEntryEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["errorEntryId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = ReviewItemEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["reviewItemId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [
+        Index("studyPlanId"),
+        Index("provisionId"),
+        Index("questionId"),
+        Index("errorEntryId"),
+        Index("reviewItemId"),
+    ],
+)
+data class LegislationEvidenceLinkEntity(
+    @PrimaryKey val id: String,
+    val studyPlanId: String,
+    val provisionId: String,
+    val questionId: String?,
+    val errorEntryId: String?,
+    val reviewItemId: String?,
+)

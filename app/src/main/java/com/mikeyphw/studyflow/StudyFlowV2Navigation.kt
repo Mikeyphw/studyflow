@@ -315,6 +315,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 reviewManager = container.manageStudyReview,
                 progressManager = container.manageStudyProgress,
                 sessionManager = container.manageStudySession,
+                publicExamManager = container.managePublicExam,
                 onTabSelected = { tab ->
                     navController.navigateWorkspaceTab(PlanWorkspaceRoute(plan.id.value, tab))
                 },

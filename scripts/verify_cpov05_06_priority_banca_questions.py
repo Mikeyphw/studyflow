@@ -80,7 +80,11 @@ require(
     and "ALTER TABLE questions ADD COLUMN authorship" in migrations,
     "Room 11->12 migration missing",
 )
-require("SCHEMA_VERSION = 12" in database, "Room schema version is not 12")
+schema_match = __import__("re").search(r"SCHEMA_VERSION\s*=\s*(\d+)", database)
+require(
+    schema_match is not None and int(schema_match.group(1)) >= 12,
+    "Room schema version must remain at least 12",
+)
 require(
     '"questions" -> expected - setOf(' in portability
     and 'put("authorship", text("UNKNOWN"))' in portability,

@@ -3,6 +3,9 @@ package com.mikeyphw.studyflow.core.data
 import androidx.room.withTransaction
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.entity.ExamNoticeRevisionEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationProvisionEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationEvidenceLinkEntity
+import com.mikeyphw.studyflow.core.database.entity.LegislationDocumentEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyCycleEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyCycleItemEntity
 import com.mikeyphw.studyflow.core.database.entity.SubjectEntity
@@ -18,6 +21,17 @@ import com.mikeyphw.studyflow.core.domain.StudyCyclePlanner
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.ExamNoticeRevision
 import com.mikeyphw.studyflow.core.model.ExamNoticeRevisionId
+import com.mikeyphw.studyflow.core.model.LegislationDocument
+import com.mikeyphw.studyflow.core.model.LegislationDocumentId
+import com.mikeyphw.studyflow.core.model.LegislationEvidenceLink
+import com.mikeyphw.studyflow.core.model.LegislationEvidenceLinkId
+import com.mikeyphw.studyflow.core.model.LegislationProvision
+import com.mikeyphw.studyflow.core.model.LegislationProvisionId
+import com.mikeyphw.studyflow.core.model.LegislationProvisionKind
+import com.mikeyphw.studyflow.core.model.LegislationStudySnapshot
+import com.mikeyphw.studyflow.core.model.QuestionId
+import com.mikeyphw.studyflow.core.model.ErrorEntryId
+import com.mikeyphw.studyflow.core.model.ReviewItemId
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyCycle
 import com.mikeyphw.studyflow.core.model.StudyCycleId
@@ -32,6 +46,7 @@ import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -42,9 +57,14 @@ class RoomPublicExamRepository(
 ) : PublicExamRepository {
     private val publicExamDao = database.publicExamDao()
     private val structureDao = database.studyStructureDao()
+    private val planDao = database.studyPlanDao()
+    private val practiceDao = database.studyPracticeDao()
+    private val retentionDao = database.studyRetentionDao()
 
     override fun observeExamNoticeRevisions(planId: StudyPlanId): Flow<List<ExamNoticeRevision>> =
-        publicExamDao.observeExamNoticeRevisions(planId.value).map { rows -> rows.map(ExamNoticeRevisionEntity::toModel) }
+        publicExamDao.observeExamNoticeRevisions(planId.value).map { rows ->
+            rows.map(ExamNoticeRevisionEntity::toModel)
+        }
 
     override suspend fun prepareExamNoticeRevision(
         planId: StudyPlanId,
@@ -69,7 +89,9 @@ class RoomPublicExamRepository(
 
     override suspend fun applyExamNoticeRevision(preview: ExamNoticeRevisionPreview): ExamNoticeRevision =
         database.withTransaction {
-            val target = requireNotNull(structureDao.findTarget(preview.studyPlanId.value, preview.studyTargetId.value)) {
+            val target = requireNotNull(
+                structureDao.findTarget(preview.studyPlanId.value, preview.studyTargetId.value),
+            ) {
                 "Exam notice revision target does not belong to this Study Plan."
             }
             require(target.id == preview.studyTargetId.value) { "Exam notice revision target changed." }
@@ -133,7 +155,8 @@ class RoomPublicExamRepository(
             val topicIdsByIncomingKey = linkedMapOf<String, String>()
             preview.changes.filter { change -> change.incomingTopicKey != null && change.existingTopicId != null }
                 .forEach { change ->
-                    topicIdsByIncomingKey[requireNotNull(change.incomingTopicKey)] = requireNotNull(change.existingTopicId).value
+                    topicIdsByIncomingKey[requireNotNull(change.incomingTopicKey)] =
+                        requireNotNull(change.existingTopicId).value
                     if (change.kind == ExamNoticeDiffKind.CHANGED) {
                         require(
                             publicExamDao.renameTopic(
@@ -144,9 +167,16 @@ class RoomPublicExamRepository(
                         ) { "Changed edital topic no longer belongs to this Study Plan." }
                     }
                 }
-            preview.changes.filter { change -> change.kind == ExamNoticeDiffKind.REMOVED && change.existingTopicId != null }
+            preview.changes.filter { change ->
+                change.kind == ExamNoticeDiffKind.REMOVED && change.existingTopicId != null
+            }
                 .forEach { change ->
-                    require(publicExamDao.archiveTopic(preview.studyPlanId.value, requireNotNull(change.existingTopicId).value) == 1) {
+                    require(
+                        publicExamDao.archiveTopic(
+                            preview.studyPlanId.value,
+                            requireNotNull(change.existingTopicId).value,
+                        ) == 1,
+                    ) {
                         "Removed edital topic no longer belongs to this Study Plan."
                     }
                 }
@@ -207,6 +237,142 @@ class RoomPublicExamRepository(
         }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
+    override fun observeLegislation(planId: StudyPlanId): Flow<LegislationStudySnapshot> = combine(
+        publicExamDao.observeLegislationDocuments(planId.value),
+        publicExamDao.observeLegislationProvisions(planId.value),
+        publicExamDao.observeLegislationEvidenceLinks(planId.value),
+    ) { documents, provisions, links ->
+        LegislationStudySnapshot(
+            studyPlanId = planId,
+            documents = documents.map(LegislationDocumentEntity::toModel),
+            provisions = provisions.map(LegislationProvisionEntity::toModel),
+            evidenceLinks = links.map(LegislationEvidenceLinkEntity::toModel),
+        )
+    }
+
+    override suspend fun applyLegislationImport(
+        planId: StudyPlanId,
+        preview: com.mikeyphw.studyflow.core.domain.LegislationImportPreview,
+        existingDocumentId: LegislationDocumentId?,
+    ): LegislationStudySnapshot = database.withTransaction {
+        require(planDao.findById(planId.value) != null) { "Study Plan does not exist." }
+        val now = clock()
+        val existing = existingDocumentId?.let { documentId ->
+            requireNotNull(publicExamDao.findLegislationDocument(planId.value, documentId.value)) {
+                "Legislation document does not belong to this Study Plan."
+            }
+        }
+        val documentId = existing?.id ?: UUID.randomUUID().toString()
+        publicExamDao.upsertLegislationDocument(
+            LegislationDocumentEntity(
+                id = documentId,
+                studyPlanId = planId.value,
+                title = preview.title,
+                sourceReference = preview.sourceReference,
+                createdAtEpochMillis = existing?.createdAtEpochMillis ?: now,
+                updatedAtEpochMillis = now,
+            ),
+        )
+        val old = publicExamDao.findLegislationProvisions(planId.value, documentId)
+        val oldById = old.associateBy { it.id }
+        val rows = preview.provisions.mapIndexed { position, draft ->
+            val stableId = UUID.nameUUIDFromBytes("$documentId:${draft.key}".toByteArray()).toString()
+            val previous = oldById[stableId]
+            LegislationProvisionEntity(
+                id = stableId,
+                legislationDocumentId = documentId,
+                studyPlanId = planId.value,
+                reference = draft.reference,
+                parentReference = draft.parentReference,
+                kind = draft.kind.name,
+                text = draft.text,
+                position = position,
+                read = previous?.read ?: false,
+                important = previous?.important ?: false,
+                createdAtEpochMillis = previous?.createdAtEpochMillis ?: now,
+                updatedAtEpochMillis = now,
+            )
+        }
+        // Move existing positions out of the unique-index range before upserting reordered rows.
+        publicExamDao.shiftLegislationProvisionPositions(planId.value, documentId, 1_000_000)
+        publicExamDao.upsertLegislationProvisions(rows)
+        val retainedIds = rows.mapTo(hashSetOf()) { it.id }
+        old.filterNot { it.id in retainedIds }.forEach { removed ->
+            publicExamDao.deleteLegislationProvision(planId.value, documentId, removed.id)
+        }
+        loadLegislationSnapshot(planId)
+    }
+
+    override suspend fun setLegislationProvisionRead(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        read: Boolean,
+    ): LegislationStudySnapshot = database.withTransaction {
+        require(publicExamDao.setLegislationProvisionRead(planId.value, provisionId.value, read, clock()) == 1) {
+            "Legislation provision does not belong to this Study Plan."
+        }
+        loadLegislationSnapshot(planId)
+    }
+
+    override suspend fun setLegislationProvisionImportant(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        important: Boolean,
+    ): LegislationStudySnapshot = database.withTransaction {
+        require(
+            publicExamDao.setLegislationProvisionImportant(
+                planId.value,
+                provisionId.value,
+                important,
+                clock(),
+            ) == 1,
+        ) {
+            "Legislation provision does not belong to this Study Plan."
+        }
+        loadLegislationSnapshot(planId)
+    }
+
+    override suspend fun linkLegislationEvidence(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        questionId: QuestionId?,
+        errorEntryId: ErrorEntryId?,
+        reviewItemId: ReviewItemId?,
+    ): LegislationEvidenceLink = database.withTransaction {
+        require(listOf(questionId, errorEntryId, reviewItemId).count { it != null } == 1) {
+            "Legislation evidence link requires exactly one target."
+        }
+        requireNotNull(publicExamDao.findLegislationProvision(planId.value, provisionId.value)) {
+            "Legislation provision does not belong to this Study Plan."
+        }
+        questionId?.let { id ->
+            requireNotNull(practiceDao.findQuestion(planId.value, id.value)) {
+                "Question evidence does not belong to this Study Plan."
+            }
+        }
+        errorEntryId?.let { id ->
+            requireNotNull(retentionDao.findErrorEntry(planId.value, id.value)) {
+                "Error evidence does not belong to this Study Plan."
+            }
+        }
+        reviewItemId?.let { id ->
+            requireNotNull(retentionDao.findReviewItem(planId.value, id.value)) {
+                "Review evidence does not belong to this Study Plan."
+            }
+        }
+        val row = LegislationEvidenceLinkEntity(
+            id = UUID.randomUUID().toString(),
+            studyPlanId = planId.value,
+            provisionId = provisionId.value,
+            questionId = questionId?.value,
+            errorEntryId = errorEntryId?.value,
+            reviewItemId = reviewItemId?.value,
+        )
+        publicExamDao.upsertLegislationEvidenceLink(row)
+        row.toModel()
+    }
+
     override fun observeStudyCycle(planId: StudyPlanId): Flow<StudyCycleSnapshot?> =
         publicExamDao.observeStudyCycle(planId.value).flatMapLatest { cycle ->
             if (cycle == null) {
@@ -225,7 +391,9 @@ class RoomPublicExamRepository(
         targetDurationMinutes: Int,
     ): StudyCycleSnapshot = database.withTransaction {
         require(syllabus.studyPlanId == planId) { "Study cycle syllabus belongs to another Study Plan." }
-        val activeSubjects = syllabus.subjects.filterNot { subject -> subject.archived }.sortedBy { subject -> subject.position }
+        val activeSubjects = syllabus.subjects
+            .filterNot { subject -> subject.archived }
+            .sortedBy { subject -> subject.position }
         require(activeSubjects.isNotEmpty()) { "At least one active subject is required to build a study cycle." }
         val existing = publicExamDao.findStudyCycle(planId.value)
         val now = clock()
@@ -260,7 +428,9 @@ class RoomPublicExamRepository(
         requireNotNull(loadCycleSnapshot(planId))
     }
 
-    override suspend fun prepareNextStudyCycleAction(planId: StudyPlanId): StudyCycleAction? = database.withTransaction {
+    override suspend fun prepareNextStudyCycleAction(
+        planId: StudyPlanId,
+    ): StudyCycleAction? = database.withTransaction {
         val cycle = publicExamDao.findStudyCycle(planId.value) ?: return@withTransaction null
         if (!cycle.enabled) return@withTransaction null
         val eligible = publicExamDao.findEligibleStudyCycleItems(planId.value, cycle.id)
@@ -284,7 +454,9 @@ class RoomPublicExamRepository(
                 "Study cycle changed while resolving its current item."
             }
         }
-        val subject = requireNotNull(current.subjectId?.let { subjectId -> structureDao.findSubject(planId.value, subjectId) }) {
+        val subject = requireNotNull(
+            current.subjectId?.let { subjectId -> structureDao.findSubject(planId.value, subjectId) },
+        ) {
             "Study cycle subject is no longer eligible."
         }
         val topic = current.topicId?.let { topicId ->
@@ -300,7 +472,9 @@ class RoomPublicExamRepository(
         )
     }
 
-    override suspend fun skipCurrentStudyCycleItem(planId: StudyPlanId): StudyCycleSnapshot? = database.withTransaction {
+    override suspend fun skipCurrentStudyCycleItem(
+        planId: StudyPlanId,
+    ): StudyCycleSnapshot? = database.withTransaction {
         val cycle = publicExamDao.findStudyCycle(planId.value) ?: return@withTransaction null
         val eligible = publicExamDao.findEligibleStudyCycleItems(planId.value, cycle.id)
         if (eligible.isEmpty()) {
@@ -358,7 +532,8 @@ class RoomPublicExamRepository(
             "Study cycle item does not belong to this Study Plan."
         }
         val eligible = publicExamDao.findEligibleStudyCycleItems(planId.value, cycle.id)
-        val normalizedCurrent = eligible.firstOrNull { item -> item.id == cycle.currentItemId } ?: eligible.firstOrNull()
+        val normalizedCurrent =
+            eligible.firstOrNull { item -> item.id == cycle.currentItemId } ?: eligible.firstOrNull()
         publicExamDao.setCurrentStudyCycleItem(planId.value, cycle.id, normalizedCurrent?.id, clock())
         loadCycleSnapshot(planId) ?: error("Study cycle disappeared after item update.")
     }
@@ -414,4 +589,38 @@ private fun StudyCycleItemEntity.toModel(): StudyCycleItem = StudyCycleItem(
     enabled = enabled,
     activityType = StudyActivityType.valueOf(activityType),
     completionRule = completionRule,
+)
+
+
+private fun LegislationDocumentEntity.toModel(): LegislationDocument = LegislationDocument(
+    id = LegislationDocumentId(id),
+    studyPlanId = StudyPlanId(studyPlanId),
+    title = title,
+    sourceReference = sourceReference,
+    createdAtEpochMillis = createdAtEpochMillis,
+    updatedAtEpochMillis = updatedAtEpochMillis,
+)
+
+private fun LegislationProvisionEntity.toModel(): LegislationProvision = LegislationProvision(
+    id = LegislationProvisionId(id),
+    legislationDocumentId = LegislationDocumentId(legislationDocumentId),
+    studyPlanId = StudyPlanId(studyPlanId),
+    reference = reference,
+    parentReference = parentReference,
+    kind = LegislationProvisionKind.valueOf(kind),
+    text = text,
+    position = position,
+    read = read,
+    important = important,
+    createdAtEpochMillis = createdAtEpochMillis,
+    updatedAtEpochMillis = updatedAtEpochMillis,
+)
+
+private fun LegislationEvidenceLinkEntity.toModel(): LegislationEvidenceLink = LegislationEvidenceLink(
+    id = LegislationEvidenceLinkId(id),
+    studyPlanId = StudyPlanId(studyPlanId),
+    provisionId = LegislationProvisionId(provisionId),
+    questionId = questionId?.let(::QuestionId),
+    errorEntryId = errorEntryId?.let(::ErrorEntryId),
+    reviewItemId = reviewItemId?.let(::ReviewItemId),
 )

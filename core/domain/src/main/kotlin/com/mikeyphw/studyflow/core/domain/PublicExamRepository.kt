@@ -1,6 +1,13 @@
 package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.ExamNoticeRevision
+import com.mikeyphw.studyflow.core.model.LegislationDocumentId
+import com.mikeyphw.studyflow.core.model.LegislationEvidenceLink
+import com.mikeyphw.studyflow.core.model.LegislationProvisionId
+import com.mikeyphw.studyflow.core.model.LegislationStudySnapshot
+import com.mikeyphw.studyflow.core.model.QuestionId
+import com.mikeyphw.studyflow.core.model.ErrorEntryId
+import com.mikeyphw.studyflow.core.model.ReviewItemId
 import com.mikeyphw.studyflow.core.model.StudyCycleItemId
 import com.mikeyphw.studyflow.core.model.StudyCycleSnapshot
 import com.mikeyphw.studyflow.core.model.StudyCycleSessionBinding
@@ -33,6 +40,73 @@ interface PublicExamRepository {
     ): ExamNoticeRevisionPreview
 
     suspend fun applyExamNoticeRevision(preview: ExamNoticeRevisionPreview): ExamNoticeRevision
+
+
+    fun observeLegislation(planId: StudyPlanId): Flow<LegislationStudySnapshot>
+
+    suspend fun applyLegislationImport(
+        planId: StudyPlanId,
+        preview: LegislationImportPreview,
+        existingDocumentId: LegislationDocumentId? = null,
+    ): LegislationStudySnapshot
+
+    suspend fun setLegislationProvisionRead(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        read: Boolean,
+    ): LegislationStudySnapshot
+
+    suspend fun setLegislationProvisionImportant(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        important: Boolean,
+    ): LegislationStudySnapshot
+
+    suspend fun linkLegislationEvidence(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        questionId: QuestionId? = null,
+        errorEntryId: ErrorEntryId? = null,
+        reviewItemId: ReviewItemId? = null,
+    ): LegislationEvidenceLink
+
+
+    fun observeLegislation(planId: StudyPlanId): Flow<LegislationStudySnapshot> = repository.observeLegislation(planId)
+
+    fun previewLegislationImport(
+        title: String,
+        sourceReference: String?,
+        rawText: String,
+        format: LegislationImportFormat,
+    ): LegislationImportPreview = LegislationImportParser.preview(title, sourceReference, rawText, format)
+
+    suspend fun applyLegislationImport(
+        planId: StudyPlanId,
+        preview: LegislationImportPreview,
+        existingDocumentId: LegislationDocumentId? = null,
+    ): LegislationStudySnapshot = repository.applyLegislationImport(planId, preview, existingDocumentId)
+
+    suspend fun setLegislationProvisionRead(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        read: Boolean,
+    ): LegislationStudySnapshot = repository.setLegislationProvisionRead(planId, provisionId, read)
+
+    suspend fun setLegislationProvisionImportant(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        important: Boolean,
+    ): LegislationStudySnapshot = repository.setLegislationProvisionImportant(planId, provisionId, important)
+
+    suspend fun linkLegislationEvidence(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        questionId: QuestionId? = null,
+        errorEntryId: ErrorEntryId? = null,
+        reviewItemId: ReviewItemId? = null,
+    ): LegislationEvidenceLink = repository.linkLegislationEvidence(
+        planId, provisionId, questionId, errorEntryId, reviewItemId,
+    )
 
     fun observeStudyCycle(planId: StudyPlanId): Flow<StudyCycleSnapshot?>
 
