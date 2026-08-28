@@ -369,12 +369,15 @@ class ManagePracticeExecution(
         val questions = questionsForAttempt(planId, mock.configurationJson)
         val state = engine.stateForMockExam(mock, questions)
         val summary = engine.finish(state)
+        val blueprintScore = ExamBlueprintCodec.decode(mock.configurationJson)?.let { frozen ->
+            ExamBlueprintScorer.score(state, frozen)
+        }
         return repository.submitMockExamIfOpen(
             expectedConfiguration = mock.configurationJson,
             next = mock.copy(
                 answeredCount = summary.answeredCount,
                 correctCount = summary.correctCount,
-                scorePercent = summary.scorePercent.toDouble(),
+                scorePercent = (blueprintScore?.scorePercent ?: summary.scorePercent).toDouble(),
                 submittedAtEpochMillis = summary.finishedAtEpochMillis,
                 configurationJson = PracticeAttemptCodec.encode(state),
             ),

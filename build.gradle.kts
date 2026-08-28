@@ -819,6 +819,12 @@ tasks.register<Exec>("verifyCpov05Cpov06PriorityBancaQuestions") {
     commandLine("python3", "scripts/verify_cpov05_06_priority_banca_questions.py")
 }
 
+tasks.register<Exec>("verifyCpov07Cpov08BancaErrorNotebook") {
+    group = "verification"
+    description = "Checks CPOV07 banca blueprint scoring and CPOV08 error-notebook review-policy contracts."
+    commandLine("python3", "scripts/verify_cpov07_08_banca_error_notebook.py")
+}
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."
@@ -827,6 +833,9 @@ tasks.register("checkAll") {
         "verifyCpov00Toolchain",
         "verifyCpov01PublicExamProfile",
         "verifyCpov02EditalImport",
+        "verifyCpov03Cpov04PublicExamProgress",
+        "verifyCpov05Cpov06PriorityBancaQuestions",
+        "verifyCpov07Cpov08BancaErrorNotebook",
         "verifyPhase56_57ReleaseReadiness",
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",

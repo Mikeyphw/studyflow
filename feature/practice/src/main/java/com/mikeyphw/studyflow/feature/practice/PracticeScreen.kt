@@ -55,6 +55,8 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
+import com.mikeyphw.studyflow.core.domain.ExamBlueprintPlanner
+import com.mikeyphw.studyflow.core.domain.ExamBlueprintPreview
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.PublicExamQuestionFilter
@@ -114,6 +116,7 @@ fun PracticeScreen(
     var difficultyFilter by rememberSaveable { mutableStateOf<Int?>(null) }
     var activeTestId by rememberSaveable { mutableStateOf<String?>(null) }
     var activeMockId by rememberSaveable { mutableStateOf<String?>(null) }
+    var bancaBlueprintPreview by remember { mutableStateOf<ExamBlueprintPreview?>(null) }
 
     val questionFilter = PublicExamQuestionFilter(
         examBoard = examBoardFilter.trim().ifBlank { null },
@@ -146,6 +149,7 @@ fun PracticeScreen(
     val needQuestions = stringResource(R.string.need_questions)
     val answerSaved = stringResource(R.string.answer_saved)
     val attemptFinished = stringResource(R.string.attempt_finished)
+    val bancaMockCreated = stringResource(R.string.banca_mock_created)
 
     fun launchAction(success: String, action: suspend () -> Unit) {
         scope.launch {
@@ -439,6 +443,81 @@ fun PracticeScreen(
                                         }
                                     },
                                 ) { Text(text = stringResource(R.string.create_mock_exam)) }
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    if (screenState.filteredQuestions.isEmpty()) {
+                                        scope.launch { snackbar.showSnackbar(needQuestions) }
+                                    } else {
+                                        val exactYear = yearFromFilter.toIntOrNull()
+                                            ?.takeIf { it == yearToFilter.toIntOrNull() }
+                                        val blueprint = ExamBlueprintPlanner.balancedFromSelection(
+                                            title = "${plan.name} banca mock",
+                                            questions = screenState.filteredQuestions,
+                                            examBoard = examBoardFilter.trim().ifBlank { null },
+                                            year = exactYear,
+                                        )
+                                        bancaBlueprintPreview = practice.previewExamBlueprint(
+                                            screenState.filteredQuestions,
+                                            blueprint,
+                                        )
+                                    }
+                                },
+                            ) {
+                                Text(stringResource(R.string.preview_banca_blueprint))
+                            }
+                            bancaBlueprintPreview?.let { preview ->
+                                StudyFlowSectionCard(
+                                    title = stringResource(R.string.banca_blueprint_preview_title),
+                                ) {
+                                    Text(
+                                        stringResource(
+                                            R.string.banca_blueprint_distribution,
+                                            preview.selectedQuestions.size,
+                                            preview.blueprint.requestedQuestionCount,
+                                            preview.missingQuestionCount,
+                                        ),
+                                    )
+                                    preview.sections.forEach { section ->
+                                        Text(
+                                            stringResource(
+                                                R.string.banca_blueprint_section,
+                                                section.section.key,
+                                                section.selectedQuestions.size,
+                                                section.section.questionCount,
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    if (!preview.executable) {
+                                        Text(
+                                            stringResource(R.string.banca_blueprint_insufficient_bank),
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
+                                    Button(
+                                        enabled = preview.executable,
+                                        onClick = {
+                                            scope.launch {
+                                                runRecoverableOperation {
+                                                    practice.createMockExamFromBlueprint(
+                                                        id = MockExamId(UUID.randomUUID().toString()),
+                                                        planId = plan.id,
+                                                        questions = screenState.filteredQuestions,
+                                                        blueprint = preview.blueprint,
+                                                    )
+                                                }.onSuccess {
+                                                    bancaBlueprintPreview = null
+                                                    snackbar.showSnackbar(bancaMockCreated)
+                                                }.onFailure {
+                                                    snackbar.showSnackbar(operationFailed)
+                                                }
+                                            }
+                                        },
+                                    ) {
+                                        Text(stringResource(R.string.create_banca_mock))
+                                    }
+                                }
                             }
                             screenState.filteredQuestions.forEach { question ->
                                 QuestionCard(

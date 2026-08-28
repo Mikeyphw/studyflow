@@ -195,7 +195,11 @@ private class DefaultAppContainer(
     )
     override val manageStudyPractice = ManageStudyPractice(studyPracticeRepository, studyPlanRepository)
     override val manageStudyLibrary = ManageStudyLibrary(studyLibraryRepository)
-    override val manageStudyReview = ManageStudyReview(studyReviewRepository, studyPracticeRepository)
+    override val manageStudyReview = ManageStudyReview(
+        studyReviewRepository,
+        studyPracticeRepository,
+        studyPlanRepository = studyPlanRepository,
+    )
     override val manageStudyResourceViewer = ManageStudyResourceViewer(studyLibraryRepository)
     override val manageStudyProgress = ManageStudyProgress(studyProgressRepository)
     override val manageStudyAnalytics = ManageStudyAnalytics(studyAnalyticsRepository)

@@ -228,6 +228,45 @@ class ManageStudyPractice(
         )
     }
 
+    fun previewExamBlueprint(
+        questions: List<Question>,
+        blueprint: ExamBlueprint,
+    ): ExamBlueprintPreview = ExamBlueprintPlanner.preview(questions, blueprint)
+
+    suspend fun createMockExamFromBlueprint(
+        id: MockExamId,
+        planId: StudyPlanId,
+        questions: List<Question>,
+        blueprint: ExamBlueprint,
+    ): MockExam {
+        require(questions.all { it.studyPlanId == planId }) {
+            "Blueprint question bank must belong to this Study Plan."
+        }
+        val preview = previewExamBlueprint(questions, blueprint)
+        require(preview.executable) {
+            "Exam blueprint is incomplete; preview the missing question supply before creating the mock."
+        }
+        val frozenConfiguration = ExamBlueprintCodec.encodeConfiguration(preview)
+        return repository.upsertMockExam(
+            MockExam(
+                id = id,
+                studyPlanId = planId,
+                title = blueprint.title.trim(),
+                mode = TestMode.EXAM,
+                timeLimitSeconds = blueprint.timeLimitMinutes * 60L,
+                questionCount = preview.selectedQuestions.size,
+                answeredCount = 0,
+                correctCount = 0,
+                scorePercent = null,
+                negativeMarking = blueprint.scoringPolicy.legacyNegativeMarking,
+                minimumScorePercent = blueprint.minimumOverallScorePercent,
+                startedAtEpochMillis = null,
+                submittedAtEpochMillis = null,
+                configurationJson = frozenConfiguration,
+            ),
+        )
+    }
+
     suspend fun submitMockExam(
         planId: StudyPlanId,
         mockExamId: MockExamId,

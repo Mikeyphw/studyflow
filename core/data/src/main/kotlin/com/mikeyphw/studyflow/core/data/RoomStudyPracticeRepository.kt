@@ -6,6 +6,7 @@ import com.mikeyphw.studyflow.core.database.mapper.asEntity
 import com.mikeyphw.studyflow.core.database.mapper.asExternalModel
 import com.mikeyphw.studyflow.core.domain.PracticeAttemptCodec
 import com.mikeyphw.studyflow.core.domain.PracticeWrongAnswerCapture
+import com.mikeyphw.studyflow.core.domain.PublicExamReviewPolicyCodec
 import com.mikeyphw.studyflow.core.domain.StudyPracticeRepository
 import com.mikeyphw.studyflow.core.model.ErrorEntry
 import com.mikeyphw.studyflow.core.model.ErrorEntryId
@@ -32,6 +33,7 @@ internal class RoomStudyPracticeRepository(
     private val practiceDao = database.studyPracticeDao()
     private val retentionDao = database.studyRetentionDao()
     private val planDao = database.studyPlanDao()
+    private val supportDao = database.studySupportDao()
 
     override fun observeQuestions(planId: StudyPlanId): Flow<List<Question>> =
         practiceDao.observeQuestions(planId.value).map { rows -> rows.map { it.asExternalModel() } }
@@ -259,6 +261,9 @@ internal class RoomStudyPracticeRepository(
         )
         retentionDao.upsertErrorEntry(entry.asEntity())
         if (retentionDao.findPendingReviewForError(entry.studyPlanId.value, entry.id.value) == null) {
+            val settings = supportDao.findPlanSettings(entry.studyPlanId.value)
+            val policy = PublicExamReviewPolicyCodec.decode(settings?.configurationJson.orEmpty())
+            val dueAtEpochMillis = policy.initialDueAt(now, entry.recurrenceCount)
             retentionDao.upsertReviewItem(
                 ReviewItem(
                     id = ReviewItemId(UUID.randomUUID().toString()),
@@ -270,8 +275,8 @@ internal class RoomStudyPracticeRepository(
                     errorEntryId = entry.id,
                     method = ReviewMethod.ERROR_BASED,
                     status = ReviewStatus.SCHEDULED,
-                    dueAtEpochMillis = now,
-                    intervalDays = 0,
+                    dueAtEpochMillis = dueAtEpochMillis,
+                    intervalDays = policy.intervalsDays.first(),
                     repetitionCount = 0,
                     easeFactor = 2.5,
                     completedAtEpochMillis = null,

@@ -297,4 +297,9 @@
     <string name="public_exam_stage_type_titles">Titles / credentials</string>
     <string name="public_exam_stage_type_other">Other</string>
     <string name="onboarding_public_exam_profile_entry">After creating this sample, StudyFlow opens Plan Settings so you can add the real organization, role, exam board and dates. The sample never fabricates them.</string>
+    <string name="public_exam_review_policy_title">Public-exam review policy</string>
+    <string name="public_exam_review_policy_description">Error-based reviews default to 1, 7 and 30 days. Repeated mistakes can make the next review more urgent.</string>
+    <string name="public_exam_review_24h">1st days</string>
+    <string name="public_exam_review_7d">2nd days</string>
+    <string name="public_exam_review_30d">3rd days</string>
 </resources>

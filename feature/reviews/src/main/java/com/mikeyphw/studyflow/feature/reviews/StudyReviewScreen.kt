@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -40,8 +42,11 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
+import com.mikeyphw.studyflow.core.domain.PublicExamErrorRemediation
+import com.mikeyphw.studyflow.core.domain.PublicExamRemediationAction
 import com.mikeyphw.studyflow.core.domain.ReviewQueue
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
+import com.mikeyphw.studyflow.core.model.ErrorCategory
 import com.mikeyphw.studyflow.core.model.ErrorEntry
 import com.mikeyphw.studyflow.core.model.ErrorEntryId
 import com.mikeyphw.studyflow.core.model.Flashcard
@@ -62,6 +67,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 internal sealed interface ReviewMutation {
     data class ScheduleError(val errorId: ErrorEntryId) : ReviewMutation
     data class ResolveError(val errorId: ErrorEntryId) : ReviewMutation
+    data class ReclassifyError(val errorId: ErrorEntryId, val category: ErrorCategory) : ReviewMutation
     data class Grade(val reviewId: ReviewItemId, val grade: Int) : ReviewMutation
     data class Skip(val reviewId: ReviewItemId) : ReviewMutation
     data class CreateFlashcard(
@@ -122,6 +128,11 @@ fun StudyReviewScreen(
                 when (mutation) {
                     is ReviewMutation.ScheduleError -> review.scheduleErrorReview(plan.id, mutation.errorId)
                     is ReviewMutation.ResolveError -> review.resolveErrorEntry(plan.id, mutation.errorId)
+                    is ReviewMutation.ReclassifyError -> review.reclassifyErrorEntry(
+                        plan.id,
+                        mutation.errorId,
+                        mutation.category,
+                    )
                     is ReviewMutation.Grade -> review.gradeReview(plan.id, mutation.reviewId, mutation.grade)
                     is ReviewMutation.Skip -> review.skipReview(plan.id, mutation.reviewId)
                     is ReviewMutation.CreateFlashcard -> review.createFlashcard(
@@ -228,6 +239,27 @@ fun StudyReviewScreen(
                         },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (sortedErrors.isNotEmpty()) {
+                        val categoryCounts = sortedErrors.groupingBy(ErrorEntry::category).eachCount()
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            ErrorCategory.entries.forEach { category ->
+                                categoryCounts[category]?.let { count ->
+                                    StudyFlowStatusPill(
+                                        text = stringResource(
+                                            R.string.error_category_count,
+                                            stringResource(category.labelRes()),
+                                            count,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
             items(
@@ -242,8 +274,9 @@ fun StudyReviewScreen(
                 WrongAnswerRow(
                     error = error,
                     priority = priority,
-                    suggestion = com.mikeyphw.studyflow.core.domain.WrongAnswerRemediator.suggestionFor(error),
+                    action = PublicExamErrorRemediation.actionFor(error.category),
                     enabled = !operationRunning,
+                    onClassify = { category -> execute(ReviewMutation.ReclassifyError(error.id, category)) },
                     onScheduleReview = { execute(ReviewMutation.ScheduleError(error.id)) },
                     onResolve = { execute(ReviewMutation.ResolveError(error.id)) },
                 )
@@ -446,8 +479,9 @@ private class ReviewItemContentIndex(
 private fun WrongAnswerRow(
     error: ErrorEntry,
     priority: RemediationPriority,
-    suggestion: com.mikeyphw.studyflow.core.domain.RemediationSuggestion,
+    action: PublicExamRemediationAction,
     enabled: Boolean,
+    onClassify: (ErrorCategory) -> Unit,
     onScheduleReview: () -> Unit,
     onResolve: () -> Unit,
 ) {
@@ -459,11 +493,33 @@ private fun WrongAnswerRow(
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
     ) {
-        StudyFlowStatusPill(text = priority.label())
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StudyFlowStatusPill(text = priority.label())
+            StudyFlowStatusPill(text = stringResource(error.category.labelRes()))
+        }
         Text(
-            suggestion.name.replace('_', ' ').lowercase().replaceFirstChar { char -> char.titlecase() },
+            text = stringResource(action.labelRes()),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            text = stringResource(R.string.classify_error_prompt),
+            style = MaterialTheme.typography.labelLarge,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ErrorCategory.entries.forEach { category ->
+                FilterChip(
+                    selected = error.category == category,
+                    onClick = { onClassify(category) },
+                    enabled = enabled,
+                    label = { Text(stringResource(category.labelRes())) },
+                )
+            }
+        }
         error.chosenAnswer?.let { chosen ->
             Text(stringResource(R.string.chosen_answer_value, chosen))
         }
@@ -482,6 +538,30 @@ private fun WrongAnswerRow(
             }
         }
     }
+}
+
+private fun ErrorCategory.labelRes(): Int = when (this) {
+    ErrorCategory.CONTENT_GAP -> R.string.error_category_content_gap
+    ErrorCategory.FORGOTTEN_CONTENT -> R.string.error_category_forgotten
+    ErrorCategory.CONCEPT_CONFUSION -> R.string.error_category_confusion
+    ErrorCategory.INTERPRETATION -> R.string.error_category_interpretation
+    ErrorCategory.DISTRACTION -> R.string.error_category_distraction
+    ErrorCategory.CALCULATION -> R.string.error_category_calculation
+    ErrorCategory.TIME_PRESSURE -> R.string.error_category_time_pressure
+    ErrorCategory.DISPUTED_QUESTION -> R.string.error_category_disputed
+    ErrorCategory.OTHER -> R.string.error_category_other
+}
+
+private fun PublicExamRemediationAction.labelRes(): Int = when (this) {
+    PublicExamRemediationAction.STUDY_TOPIC -> R.string.remediation_study_topic
+    PublicExamRemediationAction.REVIEW -> R.string.remediation_review
+    PublicExamRemediationAction.COMPARE_CONCEPTS -> R.string.remediation_compare_concepts
+    PublicExamRemediationAction.TARGETED_QUESTION_DRILL -> R.string.remediation_targeted_questions
+    PublicExamRemediationAction.TIMED_SHORT_SET -> R.string.remediation_timed_short_set
+    PublicExamRemediationAction.CALCULATION_DRILL -> R.string.remediation_calculation_drill
+    PublicExamRemediationAction.TIMED_SIMULATION -> R.string.remediation_timed_simulation
+    PublicExamRemediationAction.VERIFY_SOURCE -> R.string.remediation_verify_source
+    PublicExamRemediationAction.REVIEW_EXPLANATION -> R.string.remediation_review_explanation
 }
 
 @Composable

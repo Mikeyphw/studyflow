@@ -18,12 +18,14 @@ import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 
 class ManageStudyReview(
     private val repository: StudyReviewRepository,
     private val practiceRepository: StudyPracticeRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
     private val zoneId: ZoneId = ZoneId.systemDefault(),
+    private val studyPlanRepository: StudyPlanRepository? = null,
 ) {
     fun observeReviewItems(planId: StudyPlanId): Flow<List<ReviewItem>> = repository.observeReviewItems(planId)
 
@@ -199,9 +201,12 @@ class ManageStudyReview(
         newId: ErrorEntryId = ErrorEntryId(UUID.randomUUID().toString()),
     ): ErrorEntry {
         val now = clock()
+        val existing = repository.findErrorEntryForQuestion(question.studyPlanId, question.id)
+        val recurrenceCount = (existing?.recurrenceCount ?: 0) + 1
+        val policy = reviewPolicyFor(question.studyPlanId)
         return repository.recordWrongAnswerAndEnsureReview(
             entry = ErrorEntry(
-                id = newId,
+                id = existing?.id ?: newId,
                 studyPlanId = question.studyPlanId,
                 questionId = question.id,
                 subjectId = question.subjectId,
@@ -210,12 +215,23 @@ class ManageStudyReview(
                 chosenAnswer = chosenAnswer?.trim()?.ifBlank { null },
                 correctAnswer = question.correctAnswer,
                 explanation = question.explanation,
-                recurrenceCount = 1,
-                createdAtEpochMillis = now,
+                recurrenceCount = recurrenceCount,
+                createdAtEpochMillis = existing?.createdAtEpochMillis ?: now,
                 updatedAtEpochMillis = now,
             ),
-            dueAtEpochMillis = now,
+            dueAtEpochMillis = policy.initialDueAt(now, recurrenceCount),
         )
+    }
+
+    suspend fun reclassifyErrorEntry(
+        planId: StudyPlanId,
+        errorEntryId: ErrorEntryId,
+        category: ErrorCategory,
+    ): ErrorEntry {
+        val current = requireNotNull(repository.findErrorEntry(planId, errorEntryId)) {
+            "Error entry does not exist."
+        }
+        return repository.upsertErrorEntry(current.copy(category = category, updatedAtEpochMillis = clock()))
     }
 
     suspend fun scheduleErrorReview(
@@ -246,7 +262,11 @@ class ManageStudyReview(
         }
         require(ReviewDuePolicy.isActive(item)) { "Terminal reviews cannot be graded or reopened." }
         val reviewedAt = clock()
-        val scheduled = SpacedRepetitionScheduler.schedule(item, grade, reviewedAt)
+        val scheduled = if (item.method == ReviewMethod.ERROR_BASED && item.errorEntryId != null) {
+            reviewPolicyFor(planId).successor(item, grade, reviewedAt)
+        } else {
+            SpacedRepetitionScheduler.schedule(item, grade, reviewedAt)
+        }
         val completed = item.copy(
             status = ReviewStatus.COMPLETED,
             completedAtEpochMillis = reviewedAt,
@@ -272,6 +292,11 @@ class ManageStudyReview(
 
     suspend fun deleteReview(planId: StudyPlanId, reviewItemId: ReviewItemId) {
         repository.deleteReviewItem(planId, reviewItemId)
+    }
+
+    private suspend fun reviewPolicyFor(planId: StudyPlanId): PublicExamReviewPolicy {
+        val settings = studyPlanRepository?.observePlanSettings(planId)?.first()
+        return PublicExamReviewPolicyCodec.decode(settings?.configurationJson.orEmpty())
     }
 
     private fun observeFreshErrorEntries(planId: StudyPlanId): Flow<List<ErrorEntry>> {

@@ -307,4 +307,9 @@
     <string name="public_exam_stage_type_titles">Títulos</string>
     <string name="public_exam_stage_type_other">Outra</string>
     <string name="onboarding_public_exam_profile_entry">Após criar esta amostra, o StudyFlow abre as Configurações do Plano para você informar órgão, cargo, banca e datas reais. A amostra nunca inventa esses dados.</string>
+    <string name="public_exam_review_policy_title">Política de revisão para concurso</string>
+    <string name="public_exam_review_policy_description">As revisões por erro usam 1, 7 e 30 dias por padrão. Erros recorrentes podem antecipar a próxima revisão.</string>
+    <string name="public_exam_review_24h">1ª: dias</string>
+    <string name="public_exam_review_7d">2ª: dias</string>
+    <string name="public_exam_review_30d">3ª: dias</string>
 </resources>

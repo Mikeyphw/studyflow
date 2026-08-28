@@ -34,6 +34,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.domain.PublicExamReviewPolicy
+import com.mikeyphw.studyflow.core.domain.PublicExamReviewPolicyCodec
 import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
@@ -74,11 +76,26 @@ fun PlanSettingsScreen(
         mutableStateOf(formatMinuteOfDay(settings.quietHoursEndMinute ?: 7 * 60))
     }
 
+    val initialReviewPolicy = PublicExamReviewPolicyCodec.decode(settings.configurationJson)
+    var reviewDay1 by rememberSaveable(plan.id.value) {
+        mutableStateOf(initialReviewPolicy.intervalsDays.getOrElse(0) { 1 }.toString())
+    }
+    var reviewDay2 by rememberSaveable(plan.id.value) {
+        mutableStateOf(initialReviewPolicy.intervalsDays.getOrElse(1) { 7 }.toString())
+    }
+    var reviewDay3 by rememberSaveable(plan.id.value) {
+        mutableStateOf(initialReviewPolicy.intervalsDays.getOrElse(2) { 30 }.toString())
+    }
+
     val preferredSessionValue = preferredSession.toIntOrNull()
     val quietStartValue = parseMinuteOfDay(quietHoursStart)
     val quietEndValue = parseMinuteOfDay(quietHoursEnd)
     val quietHoursValid = !quietHoursEnabled || (quietStartValue != null && quietEndValue != null)
-    val formValid = preferredSessionValue in 5..240 && quietHoursValid
+    val reviewDays = listOf(reviewDay1, reviewDay2, reviewDay3).map { it.toIntOrNull() }
+    val reviewPolicyValid = reviewDays.all { it != null && it in 1..365 } &&
+        reviewDays.filterNotNull().zipWithNext().all { (left, right) -> right >= left }
+    val formValid = preferredSessionValue in 5..240 && quietHoursValid &&
+        (!shouldShowPublicExamProfile(plan.type) || reviewPolicyValid)
 
     Scaffold(
         modifier = modifier,
@@ -115,6 +132,36 @@ fun PlanSettingsScreen(
                     examStages = examStages,
                     onSave = onSavePublicExamProfile,
                 )
+            }
+            if (shouldShowPublicExamProfile(plan.type)) {
+                Text(
+                    text = stringResource(R.string.public_exam_review_policy_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = stringResource(R.string.public_exam_review_policy_description),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    listOf(
+                        Triple(reviewDay1, R.string.public_exam_review_24h, { value: String -> reviewDay1 = value }),
+                        Triple(reviewDay2, R.string.public_exam_review_7d, { value: String -> reviewDay2 = value }),
+                        Triple(reviewDay3, R.string.public_exam_review_30d, { value: String -> reviewDay3 = value }),
+                    ).forEach { (value, label, update) ->
+                        OutlinedTextField(
+                            value = value,
+                            onValueChange = { update(it.filter(Char::isDigit).take(3)) },
+                            modifier = Modifier.weight(1f),
+                            label = { Text(stringResource(label)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = !reviewPolicyValid,
+                            singleLine = true,
+                        )
+                    }
+                }
             }
             OutlinedTextField(
                 value = preferredSession,
@@ -215,6 +262,14 @@ fun PlanSettingsScreen(
                             preferredSessionMinutes = requireNotNull(preferredSessionValue),
                             quietHoursStartMinute = if (quietHoursEnabled) quietStartValue else null,
                             quietHoursEndMinute = if (quietHoursEnabled) quietEndValue else null,
+                            configurationJson = if (shouldShowPublicExamProfile(plan.type)) {
+                                PublicExamReviewPolicyCodec.encode(
+                                    settings.configurationJson,
+                                    PublicExamReviewPolicy(reviewDays.filterNotNull()),
+                                )
+                            } else {
+                                settings.configurationJson
+                            },
                         ),
                     )
                 },
