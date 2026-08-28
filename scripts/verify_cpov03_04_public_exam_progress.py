@@ -50,9 +50,13 @@ for token in (
 
 for token in ('tableName = "exam_notice_revisions"', 'tableName = "study_cycles"', 'tableName = "study_cycle_items"'):
     require(token in entities, f"Room entity missing: {token}")
-require("SCHEMA_VERSION = 11" in database, "Room schema must advance to version 11")
+schema_match = __import__("re").search(r"SCHEMA_VERSION\s*=\s*(\d+)", database)
+require(schema_match is not None and int(schema_match.group(1)) >= 11, "Room schema must remain at version 11 or newer")
 require("Migration(9, 10)" in migrations and "Migration(10, 11)" in migrations, "Room 9->10->11 chain missing")
-require("Migration9To10" in migrations and "Migration10To11" in migrations, "Public-exam migrations missing from source")
+require(
+    "Migration9To10" in migrations and "Migration10To11" in migrations,
+    "Public-exam migrations missing from source",
+)
 
 for token in (
     "baseSyllabusSha256",
@@ -62,7 +66,10 @@ for token in (
     "archiveTopic",
 ):
     require(token in revision + room_public, f"Revision preview/apply contract missing: {token}")
-require("deleteSubject" not in room_public and "deleteTopic" not in room_public, "Removed edital content must archive, not delete")
+require(
+    "deleteSubject" not in room_public and "deleteTopic" not in room_public,
+    "Removed edital content must archive, not delete",
+)
 require("coverage(" in revision and "canonicalSyllabusSha256" in revision, "Canonical coverage/version binding missing")
 
 for token in (
@@ -83,7 +90,10 @@ require(
     and "StudySessionStatus.CANCELLED" in session_room,
     "Completion/cancellation paths must remain explicit",
 )
-require("metadataDao.delete(cycleSessionBindingKey(session.id))" in session_room, "Terminal sessions must clear cycle binding")
+require(
+    "metadataDao.delete(cycleSessionBindingKey(session.id))" in session_room,
+    "Terminal sessions must clear cycle binding",
+)
 
 for table in ("exam_notice_revisions", "study_cycles", "study_cycle_items"):
     require(f'"{table}"' in duplicator, f"Plan graph duplication missing {table}")
@@ -94,7 +104,12 @@ for token in ("ManagePublicExam", "RoomPublicExamRepository", "publicExamReposit
     require(token in app + data_layer, f"Application composition missing: {token}")
 for token in ("exam_notice_revision_preview_title", "exam_notice_history_title", "ExamNoticeRevisionPlanner.coverage"):
     require(token in content_ui, f"CPOV03 content UX missing: {token}")
-for token in ("study_cycle_title", "replaceStudyCycleFromSyllabus", "skipCurrentStudyCycleItem", "moveStudyCycleItemToEnd"):
+for token in (
+    "study_cycle_title",
+    "replaceStudyCycleFromSyllabus",
+    "skipCurrentStudyCycleItem",
+    "moveStudyCycleItemToEnd",
+):
     require(token in schedule_ui, f"CPOV04 schedule UX missing: {token}")
 for token in ("study_cycle_next", "startCurrentStudyCycleItem", "nextStudyCycleAction"):
     require(token in today_ui, f"CPOV04 Today UX missing: {token}")
@@ -116,7 +131,10 @@ migration_test = text(
     "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyFlowMigration9To11PublicExamTest.kt"
 )
 require("runMigrationsAndValidate" in migration_test, "9->11 migration fixture missing validation")
-require("Migration9To10" in migration_test and "Migration10To11" in migration_test, "Migration fixture must exercise both hops")
+require(
+    "Migration9To10" in migration_test and "Migration10To11" in migration_test,
+    "Migration fixture must exercise both hops",
+)
 
 for test_rel, tokens in {
     "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyCyclePlannerTest.kt": (

@@ -2,7 +2,10 @@ package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
+import com.mikeyphw.studyflow.core.model.ExamNoticeRevisionId
+import com.mikeyphw.studyflow.core.model.ExamStageId
 import com.mikeyphw.studyflow.core.model.Question
+import com.mikeyphw.studyflow.core.model.QuestionAuthorship
 import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
@@ -57,6 +60,13 @@ class ManageStudyPractice(
         year: Int?,
         difficulty: Int,
         tags: List<String>,
+        organization: String? = null,
+        role: String? = null,
+        examStageId: ExamStageId? = null,
+        authorship: QuestionAuthorship = QuestionAuthorship.UNKNOWN,
+        examNoticeRevisionId: ExamNoticeRevisionId? = null,
+        externalReference: String? = null,
+        points: Double? = null,
     ): Question = saveQuestion(
         Question(
             id = id,
@@ -77,6 +87,13 @@ class ManageStudyPractice(
             tags = tags.map(String::trim).filter(String::isNotBlank).distinct(),
             createdAtEpochMillis = clock(),
             updatedAtEpochMillis = clock(),
+            organization = organization,
+            role = role,
+            examStageId = examStageId,
+            authorship = authorship,
+            examNoticeRevisionId = examNoticeRevisionId,
+            externalReference = externalReference,
+            points = points,
         ),
     )
 
@@ -335,6 +352,13 @@ class ManageStudyPractice(
                 tags = draft.tags,
                 createdAtEpochMillis = now,
                 updatedAtEpochMillis = now,
+                organization = draft.organization,
+                role = draft.role,
+                examStageId = draft.examStageId,
+                authorship = draft.authorship,
+                examNoticeRevisionId = draft.examNoticeRevisionId,
+                externalReference = draft.externalReference,
+                points = draft.points,
             )
         }
         val imported = if (candidates.isEmpty()) emptyList() else repository.importQuestionsAtomically(candidates)

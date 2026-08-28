@@ -34,6 +34,9 @@ interface PublicExamDao {
     )
     suspend fun findExamNoticeRevisionBySha256(planId: String, sha256: String): ExamNoticeRevisionEntity?
 
+    @Query("SELECT * FROM exam_notice_revisions WHERE studyPlanId = :planId AND id = :revisionId LIMIT 1")
+    suspend fun findExamNoticeRevision(planId: String, revisionId: String): ExamNoticeRevisionEntity?
+
     @Upsert
     suspend fun upsertStudyCycle(cycle: StudyCycleEntity)
 

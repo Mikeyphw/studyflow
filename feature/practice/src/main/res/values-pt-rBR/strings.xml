@@ -96,4 +96,16 @@
     <string name="score_outcome_value">Pontuação %1$d%%: %2$s</string>
     <string name="exam_pass">Aprovado</string>
     <string name="exam_below_threshold">Abaixo da nota mínima</string>
+    <string name="public_exam_filters">Filtros de concurso público</string>
+    <string name="filter_exam_board">Banca</string>
+    <string name="filter_organization">Órgão / instituição</string>
+    <string name="filter_role">Cargo</string>
+    <string name="filter_year_from">Ano inicial</string>
+    <string name="filter_year_to">Ano final</string>
+    <string name="filter_any_origin">Qualquer origem</string>
+    <string name="filter_official">Oficial</string>
+    <string name="filter_authored">Autoral</string>
+    <string name="filter_any_difficulty">Qualquer dificuldade</string>
+    <string name="filter_subject">Disciplina</string>
+    <string name="filter_topic">Tópico / subtópico</string>
 </resources>

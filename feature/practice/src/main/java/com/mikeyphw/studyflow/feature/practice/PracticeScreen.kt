@@ -55,13 +55,18 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
+import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
+import com.mikeyphw.studyflow.core.domain.PublicExamQuestionFilter
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionState
 import com.mikeyphw.studyflow.core.domain.PracticeSummary
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
+import com.mikeyphw.studyflow.core.model.QuestionAuthorship
+import com.mikeyphw.studyflow.core.model.SubjectId
+import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -77,6 +82,7 @@ fun PracticeScreen(
     plan: StudyPlan,
     practice: ManageStudyPractice,
     review: ManageStudyReview,
+    content: ManageStudyContent,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -86,25 +92,49 @@ fun PracticeScreen(
     val testsFlow = remember(plan.id) { practice.observeTests(plan.id) }
     val mocksFlow = remember(plan.id) { practice.observeMockExams(plan.id) }
     val summaryFlow = remember(plan.id) { practice.observeSummary(plan.id) }
+    val syllabusFlow = remember(plan.id) { content.observeSyllabus(plan.id) }
     val questions by questionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val tests by testsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val mocks by mocksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val summary by summaryFlow.collectAsStateWithLifecycle(
         initialValue = PracticeSummary(0, 0, 0, 0, 0, 0, 0, 0),
     )
+    val syllabus by syllabusFlow.collectAsStateWithLifecycle(initialValue = null)
     var showEditor by rememberSaveable { mutableStateOf(false) }
     var favoriteOnly by rememberSaveable { mutableStateOf(false) }
     var disputedOnly by rememberSaveable { mutableStateOf(false) }
+    var examBoardFilter by rememberSaveable { mutableStateOf("") }
+    var organizationFilter by rememberSaveable { mutableStateOf("") }
+    var roleFilter by rememberSaveable { mutableStateOf("") }
+    var yearFromFilter by rememberSaveable { mutableStateOf("") }
+    var yearToFilter by rememberSaveable { mutableStateOf("") }
+    var selectedSubjectId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedTopicId by rememberSaveable { mutableStateOf<String?>(null) }
+    var authorshipFilter by rememberSaveable { mutableStateOf<QuestionAuthorship?>(null) }
+    var difficultyFilter by rememberSaveable { mutableStateOf<Int?>(null) }
     var activeTestId by rememberSaveable { mutableStateOf<String?>(null) }
     var activeMockId by rememberSaveable { mutableStateOf<String?>(null) }
 
+    val questionFilter = PublicExamQuestionFilter(
+        examBoard = examBoardFilter.trim().ifBlank { null },
+        organization = organizationFilter.trim().ifBlank { null },
+        role = roleFilter.trim().ifBlank { null },
+        subjectId = selectedSubjectId?.let(::SubjectId),
+        topicId = selectedTopicId?.let(::TopicId),
+        yearFrom = yearFromFilter.toIntOrNull(),
+        yearTo = yearToFilter.toIntOrNull(),
+        authorship = authorshipFilter,
+        difficulty = difficultyFilter,
+        favorite = true.takeIf { favoriteOnly },
+        disputed = true.takeIf { disputedOnly },
+    )
     val screenState = PracticeScreenState(
         questions = questions,
         tests = tests,
         mocks = mocks,
         summary = summary,
-        favoriteOnly = favoriteOnly,
-        disputedOnly = disputedOnly,
+        planId = plan.id,
+        filter = questionFilter,
     )
     val operationFailed = stringResource(R.string.operation_failed)
     val questionSaved = stringResource(R.string.question_saved)
@@ -211,6 +241,15 @@ fun PracticeScreen(
                         onClick = {
                             favoriteOnly = false
                             disputedOnly = false
+                            examBoardFilter = ""
+                            organizationFilter = ""
+                            roleFilter = ""
+                            yearFromFilter = ""
+                            yearToFilter = ""
+                            selectedSubjectId = null
+                            selectedTopicId = null
+                            authorshipFilter = null
+                            difficultyFilter = null
                         },
                         label = { Text(stringResource(R.string.all_questions)) },
                     )
@@ -224,6 +263,125 @@ fun PracticeScreen(
                         onClick = { disputedOnly = !disputedOnly },
                         label = { Text(stringResource(R.string.disputed)) },
                     )
+                }
+            }
+            item {
+                StudyFlowSectionCard(title = stringResource(R.string.public_exam_filters)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = examBoardFilter,
+                            onValueChange = { examBoardFilter = it },
+                            label = { Text(stringResource(R.string.filter_exam_board)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = organizationFilter,
+                            onValueChange = { organizationFilter = it },
+                            label = { Text(stringResource(R.string.filter_organization)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = roleFilter,
+                            onValueChange = { roleFilter = it },
+                            label = { Text(stringResource(R.string.filter_role)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = yearFromFilter,
+                                onValueChange = { yearFromFilter = it.filter(Char::isDigit).take(4) },
+                                label = { Text(stringResource(R.string.filter_year_from)) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            OutlinedTextField(
+                                value = yearToFilter,
+                                onValueChange = { yearToFilter = it.filter(Char::isDigit).take(4) },
+                                label = { Text(stringResource(R.string.filter_year_to)) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = authorshipFilter == null,
+                                onClick = { authorshipFilter = null },
+                                label = { Text(stringResource(R.string.filter_any_origin)) },
+                            )
+                            FilterChip(
+                                selected = authorshipFilter == QuestionAuthorship.OFFICIAL,
+                                onClick = { authorshipFilter = QuestionAuthorship.OFFICIAL },
+                                label = { Text(stringResource(R.string.filter_official)) },
+                            )
+                            FilterChip(
+                                selected = authorshipFilter == QuestionAuthorship.AUTHORED,
+                                onClick = { authorshipFilter = QuestionAuthorship.AUTHORED },
+                                label = { Text(stringResource(R.string.filter_authored)) },
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = difficultyFilter == null,
+                                onClick = { difficultyFilter = null },
+                                label = { Text(stringResource(R.string.filter_any_difficulty)) },
+                            )
+                            (1..5).forEach { level ->
+                                FilterChip(
+                                    selected = difficultyFilter == level,
+                                    onClick = { difficultyFilter = level },
+                                    label = { Text(level.toString()) },
+                                )
+                            }
+                        }
+                        val activeSubjects = syllabus?.subjects.orEmpty().filterNot { it.archived }
+                        if (activeSubjects.isNotEmpty()) {
+                            Text(stringResource(R.string.filter_subject))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                FilterChip(
+                                    selected = selectedSubjectId == null,
+                                    onClick = { selectedSubjectId = null; selectedTopicId = null },
+                                    label = { Text(stringResource(R.string.all_questions)) },
+                                )
+                                activeSubjects.forEach { subject ->
+                                    FilterChip(
+                                        selected = selectedSubjectId == subject.id.value,
+                                        onClick = { selectedSubjectId = subject.id.value; selectedTopicId = null },
+                                        label = { Text(subject.name) },
+                                    )
+                                }
+                            }
+                        }
+                        val activeTopics = syllabus?.topics.orEmpty().filter { topic ->
+                            !topic.archived && (selectedSubjectId == null || topic.subjectId.value == selectedSubjectId)
+                        }
+                        if (activeTopics.isNotEmpty()) {
+                            Text(stringResource(R.string.filter_topic))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                FilterChip(
+                                    selected = selectedTopicId == null,
+                                    onClick = { selectedTopicId = null },
+                                    label = { Text(stringResource(R.string.all_questions)) },
+                                )
+                                activeTopics.forEach { topic ->
+                                    FilterChip(
+                                        selected = selectedTopicId == topic.id.value,
+                                        onClick = { selectedTopicId = topic.id.value },
+                                        label = { Text(topic.name) },
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
             item {

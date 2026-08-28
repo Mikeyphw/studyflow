@@ -1,5 +1,11 @@
 package com.mikeyphw.studyflow.core.model
 
+enum class QuestionAuthorship {
+    UNKNOWN,
+    OFFICIAL,
+    AUTHORED,
+}
+
 enum class QuestionType {
     MULTIPLE_CHOICE,
     TRUE_FALSE,
@@ -32,12 +38,22 @@ data class Question(
     val tags: List<String>,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
+    val organization: String? = null,
+    val role: String? = null,
+    val examStageId: ExamStageId? = null,
+    val authorship: QuestionAuthorship = QuestionAuthorship.UNKNOWN,
+    val examNoticeRevisionId: ExamNoticeRevisionId? = null,
+    val externalReference: String? = null,
+    val points: Double? = null,
 ) {
     init {
         require(statement.isNotBlank()) { "Question statement cannot be blank." }
         require(correctAnswer.isNotBlank()) { "Correct answer cannot be blank." }
         require(difficulty in 1..5) { "Question difficulty must be between 1 and 5." }
         require(year == null || year in 1900..2200) { "Question year is outside the supported range." }
+        require(points == null || points.isFinite() && points >= 0.0) {
+            "Question points must be finite and non-negative."
+        }
         if (type == QuestionType.MULTIPLE_CHOICE) {
             require(options.size >= 2) { "Multiple-choice questions need at least two options." }
             require(options.any { option -> option.trim().equals(correctAnswer.trim(), ignoreCase = true) }) {

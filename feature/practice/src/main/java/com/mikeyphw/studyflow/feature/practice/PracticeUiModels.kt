@@ -1,6 +1,8 @@
 package com.mikeyphw.studyflow.feature.practice
 
 import com.mikeyphw.studyflow.core.domain.PracticeSummary
+import com.mikeyphw.studyflow.core.domain.PublicExamQuestionFilter
+import com.mikeyphw.studyflow.core.domain.PublicExamQuestionFilters
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionType
@@ -34,10 +36,8 @@ internal data class PracticeScreenState(
     val tests: List<StudyTest>,
     val mocks: List<MockExam>,
     val summary: PracticeSummary,
-    val favoriteOnly: Boolean,
-    val disputedOnly: Boolean,
+    val planId: com.mikeyphw.studyflow.core.model.StudyPlanId,
+    val filter: PublicExamQuestionFilter,
 ) {
-    val filteredQuestions: List<Question> = questions
-        .filter { question -> !favoriteOnly || question.favorite }
-        .filter { question -> !disputedOnly || question.disputed }
+    val filteredQuestions: List<Question> = PublicExamQuestionFilters.apply(planId, questions, filter)
 }

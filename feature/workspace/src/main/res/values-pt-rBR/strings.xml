@@ -643,4 +643,19 @@
     <string name="programming_termux_result_summary">O resultado alimenta decisões de tentar de novo, revisar e concluir.</string>
     <string name="study_cycle_next">Ciclo de estudos · próximo</string>
     <string name="study_cycle_duration">Ciclo persistente · meta de %1$d min</string>
+    <string name="public_exam_priority_title">O que devo estudar agora?</string>
+    <string name="public_exam_priority_preview_notice">Prévia explicável. Revise as evidências antes de escolher o que estudar.</string>
+    <string name="public_exam_priority_score">Prioridade %1$d/100</string>
+    <string name="public_exam_priority_review">Revisar</string>
+    <string name="priority_reason_weight">alto peso no edital</string>
+    <string name="priority_reason_incidence">alta incidência</string>
+    <string name="priority_reason_mastery">baixo domínio</string>
+    <string name="priority_reason_accuracy">baixa precisão</string>
+    <string name="priority_reason_errors">erros recorrentes</string>
+    <string name="priority_reason_review">revisão atrasada</string>
+    <string name="priority_reason_missed">planejamento perdido</string>
+    <string name="priority_reason_exam_near">prova próxima</string>
+    <string name="priority_reason_cycle">posição no ciclo</string>
+    <string name="priority_reason_cooldown">saturação recente</string>
+    <string name="priority_reason_starvation">muito tempo sem estudar</string>
 </resources>

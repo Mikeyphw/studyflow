@@ -168,8 +168,9 @@ class StudyPlanGraphDuplicator(
                 "questions",
                 "id", "studyPlanId", "subjectId", "topicId", "type", "statement", "optionsJson", "correctAnswer",
                 "explanation", "examBoard", "source", "year", "difficulty", "favorite", "disputed", "tagsJson",
-                "createdAtEpochMillis", "updatedAtEpochMillis",
-                remap = setOf("id", "subjectId", "topicId"),
+                "createdAtEpochMillis", "updatedAtEpochMillis", "organization", "role", "examStageId", "authorship",
+                "examNoticeRevisionId", "externalReference", "points",
+                remap = setOf("id", "subjectId", "topicId", "examStageId", "examNoticeRevisionId"),
             ),
             table(
                 "study_tests",

@@ -5,7 +5,10 @@ import com.mikeyphw.studyflow.core.database.entity.QuestionEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyTestEntity
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
+import com.mikeyphw.studyflow.core.model.ExamNoticeRevisionId
+import com.mikeyphw.studyflow.core.model.ExamStageId
 import com.mikeyphw.studyflow.core.model.Question
+import com.mikeyphw.studyflow.core.model.QuestionAuthorship
 import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
@@ -35,6 +38,13 @@ fun QuestionEntity.asExternalModel(): Question = decodeModel("QuestionEntity") {
         tags = tagsJson.decodeStringListStable("StudyPracticeEntityMapper.tagsJson"),
         createdAtEpochMillis = createdAtEpochMillis,
         updatedAtEpochMillis = updatedAtEpochMillis,
+        organization = organization,
+        role = role,
+        examStageId = examStageId?.let(::ExamStageId),
+        authorship = authorship.decodeEnum<QuestionAuthorship>("StudyPracticeEntityMapper.authorship"),
+        examNoticeRevisionId = examNoticeRevisionId?.let(::ExamNoticeRevisionId),
+        externalReference = externalReference,
+        points = points,
     )
 }
 
@@ -57,6 +67,13 @@ fun Question.asEntity(): QuestionEntity = QuestionEntity(
     tagsJson = tags.encodeStringListStable(),
     createdAtEpochMillis = createdAtEpochMillis,
     updatedAtEpochMillis = updatedAtEpochMillis,
+    organization = organization,
+    role = role,
+    examStageId = examStageId?.value,
+    authorship = authorship.name,
+    examNoticeRevisionId = examNoticeRevisionId?.value,
+    externalReference = externalReference,
+    points = points,
 )
 
 fun StudyTestEntity.asExternalModel(): StudyTest = decodeModel("StudyTestEntity") {

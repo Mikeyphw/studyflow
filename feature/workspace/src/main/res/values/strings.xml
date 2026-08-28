@@ -606,4 +606,19 @@
     <string name="programming_termux_result_summary">Result feeds retry, review and completion decisions.</string>
     <string name="study_cycle_next">Study cycle · next</string>
     <string name="study_cycle_duration">Persistent cycle · %1$d min target</string>
+    <string name="public_exam_priority_title">What should I study now?</string>
+    <string name="public_exam_priority_preview_notice">Explainable preview only. Review the evidence before choosing what to study.</string>
+    <string name="public_exam_priority_score">Priority %1$d/100</string>
+    <string name="public_exam_priority_review">Review</string>
+    <string name="priority_reason_weight">high edital weight</string>
+    <string name="priority_reason_incidence">high incidence</string>
+    <string name="priority_reason_mastery">low mastery</string>
+    <string name="priority_reason_accuracy">low accuracy</string>
+    <string name="priority_reason_errors">recurring errors</string>
+    <string name="priority_reason_review">overdue review</string>
+    <string name="priority_reason_missed">missed schedule</string>
+    <string name="priority_reason_exam_near">exam is near</string>
+    <string name="priority_reason_cycle">cycle position</string>
+    <string name="priority_reason_cooldown">recent saturation</string>
+    <string name="priority_reason_starvation">long time without study</string>
 </resources>

@@ -48,6 +48,10 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.PublicExamPriorityEvidence
+import com.mikeyphw.studyflow.core.domain.PublicExamPriorityPlanner
+import com.mikeyphw.studyflow.core.domain.PublicExamPriorityReasonCode
+import com.mikeyphw.studyflow.core.domain.PublicExamPriorityRecommendation
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupEngine
 import com.mikeyphw.studyflow.core.domain.StudyContentCleanupInput
@@ -61,6 +65,7 @@ import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
@@ -185,6 +190,28 @@ fun PlanWorkspaceScreen(
             ),
         )
     }
+    val priorityRecommendations = remember(
+        plan,
+        readySyllabus,
+        readyReviewItems,
+        readyErrorEntries,
+        readySchedule,
+        readySessions,
+    ) {
+        if (plan.type != StudyType.PUBLIC_EXAMINATION) {
+            emptyList()
+        } else {
+            buildPublicExamPriorityRecommendations(
+                plan = plan,
+                syllabus = readySyllabus,
+                reviewItems = readyReviewItems,
+                errorEntries = readyErrorEntries,
+                schedule = readySchedule,
+                sessions = readySessions,
+                nowEpochMillis = System.currentTimeMillis(),
+            )
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         WorkspaceHeader(
@@ -215,6 +242,8 @@ fun PlanWorkspaceScreen(
                 scheduleCount = readySchedule.plannedActivities.size,
                 subjectCount = readySyllabus.subjects.size,
                 materialCount = readyLibrary.activeMaterials.size,
+                priorityRecommendations = priorityRecommendations,
+                onPrioritySelected = onManageContent,
                 onEditPlan = onEditPlan,
                 onPlanSettings = onPlanSettings,
                 onSessions = onSessions,
@@ -248,6 +277,8 @@ private fun PlanOverviewPane(
     scheduleCount: Int,
     subjectCount: Int,
     materialCount: Int,
+    priorityRecommendations: List<PublicExamPriorityRecommendation>,
+    onPrioritySelected: () -> Unit,
     onEditPlan: () -> Unit,
     onPlanSettings: () -> Unit,
     onSessions: () -> Unit,
@@ -286,6 +317,42 @@ private fun PlanOverviewPane(
                 libraryLabel = stringResource(planLibraryLabel(plan)),
                 materialCount = pluralStringResource(R.plurals.materials_count, materialCount, materialCount),
             )
+        }
+        if (priorityRecommendations.isNotEmpty()) {
+            item(key = "section:public-exam-priority", contentType = "section") {
+                StudyFlowSectionTitle(title = stringResource(R.string.public_exam_priority_title))
+            }
+            item(key = "public-exam-priority-notice", contentType = "notice") {
+                Text(
+                    text = stringResource(R.string.public_exam_priority_preview_notice),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            items(
+                items = priorityRecommendations,
+                key = { recommendation ->
+                    recommendation.evidence.topicId?.value ?: recommendation.evidence.subjectId.value
+                },
+                contentType = { "public-exam-priority" },
+            ) { recommendation ->
+                val evidence = recommendation.evidence
+                val title = evidence.topicName?.let { topic -> "${evidence.subjectName} — $topic" }
+                    ?: evidence.subjectName
+                val reasons = recommendation.reasonCodes.take(3).joinToString(" · ") { reason ->
+                    stringResource(priorityReasonLabel(reason))
+                }
+                StudyFlowTimelineItem(
+                    title = title,
+                    metadata = reasons,
+                    icon = Icons.Outlined.AutoFixHigh,
+                    status = stringResource(
+                        R.string.public_exam_priority_score,
+                        (recommendation.score * 100.0).toInt(),
+                    ),
+                    actionLabel = stringResource(R.string.public_exam_priority_review),
+                    onClick = onPrioritySelected,
+                )
+            }
         }
         item(key = "section:actions", contentType = "section") {
             StudyFlowSectionTitle(title = stringResource(R.string.plan_actions))
@@ -602,4 +669,88 @@ private fun planContentLabel(plan: StudyPlan): Int = when (plan.contentMode) {
 private fun planLibraryLabel(plan: StudyPlan): Int = when (plan.contentMode) {
     StudyContentMode.PROGRAMMING_COURSE -> R.string.programming_resources
     else -> R.string.plan_library
+}
+
+
+private fun buildPublicExamPriorityRecommendations(
+    plan: StudyPlan,
+    syllabus: StudySyllabus?,
+    reviewItems: List<ReviewItem>,
+    errorEntries: List<ErrorEntry>,
+    schedule: StudySchedule,
+    sessions: List<com.mikeyphw.studyflow.core.model.StudySession>,
+    nowEpochMillis: Long,
+): List<PublicExamPriorityRecommendation> {
+    val source = syllabus ?: return emptyList()
+    val activeSession = sessions.firstOrNull { session ->
+        session.status == com.mikeyphw.studyflow.core.model.StudySessionStatus.RUNNING ||
+            session.status == com.mikeyphw.studyflow.core.model.StudySessionStatus.PAUSED
+    }
+    val weekAgo = nowEpochMillis - 7L * 24L * 60L * 60L * 1_000L
+    val daysUntilExam = plan.examDateIso?.let { iso ->
+        runCatching {
+            java.time.temporal.ChronoUnit.DAYS.between(
+                java.time.LocalDate.now(),
+                java.time.LocalDate.parse(iso),
+            ).toInt().coerceAtLeast(0)
+        }.getOrNull()
+    }
+    val subjectById = source.subjects.associateBy { it.id }
+    val evidence = source.topics.filterNot { it.archived }.mapNotNull { topic ->
+        val subject = subjectById[topic.subjectId]?.takeUnless { it.archived } ?: return@mapNotNull null
+        val topicSessions = sessions.filter { session ->
+            session.status == com.mikeyphw.studyflow.core.model.StudySessionStatus.COMPLETED &&
+                (session.topicId == topic.id || session.subjectId == subject.id)
+        }
+        val minutesLast7Days = topicSessions.filter { it.startedAtEpochMillis >= weekAgo }.sumOf { session ->
+            ((session.grossDurationSeconds - session.pauseDurationSeconds).coerceAtLeast(0L) / 60L).toInt()
+        }
+        val lastStudy = topicSessions.maxOfOrNull { it.endedAtEpochMillis ?: it.startedAtEpochMillis }
+        PublicExamPriorityEvidence(
+            studyPlanId = plan.id,
+            subjectId = subject.id,
+            topicId = topic.id,
+            subjectName = subject.name,
+            topicName = topic.name,
+            examWeight = subject.examWeight,
+            examIncidencePercent = topic.examIncidencePercent,
+            masteryPercent = topic.masteryPercent,
+            recentAccuracyPercent = subject.accuracyPercent,
+            recurringErrorCount = errorEntries.filter { it.studyPlanId == plan.id && it.topicId == topic.id }
+                .sumOf { it.recurrenceCount },
+            overdueReviewCount = reviewItems.count { review ->
+                review.studyPlanId == plan.id && review.topicId == topic.id &&
+                    review.status != com.mikeyphw.studyflow.core.model.ReviewStatus.COMPLETED &&
+                    review.status != com.mikeyphw.studyflow.core.model.ReviewStatus.CANCELLED &&
+                    review.dueAtEpochMillis <= nowEpochMillis
+            },
+            missedScheduleCount = schedule.plannedActivities.count { activity ->
+                activity.studyPlanId == plan.id &&
+                    (activity.topicId == topic.id || (activity.topicId == null && activity.subjectId == subject.id)) &&
+                    activity.status == PlannedActivityStatus.MISSED
+            },
+            daysUntilExam = daysUntilExam,
+            cycleDistance = null,
+            minutesStudiedLast7Days = minutesLast7Days,
+            hoursSinceLastStudy = lastStudy?.let { ((nowEpochMillis - it).coerceAtLeast(0L) / 3_600_000L).toInt() },
+            lockedByActiveSession = activeSession?.let { session ->
+                session.topicId == topic.id || (session.topicId == null && session.subjectId == subject.id)
+            } == true,
+        )
+    }
+    return PublicExamPriorityPlanner.rank(plan.id, evidence, limit = 5)
+}
+
+private fun priorityReasonLabel(reason: PublicExamPriorityReasonCode): Int = when (reason) {
+    PublicExamPriorityReasonCode.HIGH_EXAM_WEIGHT -> R.string.priority_reason_weight
+    PublicExamPriorityReasonCode.HIGH_INCIDENCE -> R.string.priority_reason_incidence
+    PublicExamPriorityReasonCode.LOW_MASTERY -> R.string.priority_reason_mastery
+    PublicExamPriorityReasonCode.LOW_ACCURACY -> R.string.priority_reason_accuracy
+    PublicExamPriorityReasonCode.RECURRING_ERRORS -> R.string.priority_reason_errors
+    PublicExamPriorityReasonCode.OVERDUE_REVIEW -> R.string.priority_reason_review
+    PublicExamPriorityReasonCode.MISSED_SCHEDULE -> R.string.priority_reason_missed
+    PublicExamPriorityReasonCode.EXAM_NEAR -> R.string.priority_reason_exam_near
+    PublicExamPriorityReasonCode.CYCLE_POSITION -> R.string.priority_reason_cycle
+    PublicExamPriorityReasonCode.COOLDOWN -> R.string.priority_reason_cooldown
+    PublicExamPriorityReasonCode.STARVATION_RELIEF -> R.string.priority_reason_starvation
 }

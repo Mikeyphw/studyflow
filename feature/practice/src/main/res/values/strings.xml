@@ -88,4 +88,16 @@
     <string name="score_outcome_value">Score %1$d%%: %2$s</string>
     <string name="exam_pass">Pass</string>
     <string name="exam_below_threshold">Below threshold</string>
+    <string name="public_exam_filters">Public exam filters</string>
+    <string name="filter_exam_board">Exam board</string>
+    <string name="filter_organization">Organization / agency</string>
+    <string name="filter_role">Role / cargo</string>
+    <string name="filter_year_from">Year from</string>
+    <string name="filter_year_to">Year to</string>
+    <string name="filter_any_origin">Any origin</string>
+    <string name="filter_official">Official</string>
+    <string name="filter_authored">Authored</string>
+    <string name="filter_any_difficulty">Any difficulty</string>
+    <string name="filter_subject">Subject</string>
+    <string name="filter_topic">Topic / subtopic</string>
 </resources>

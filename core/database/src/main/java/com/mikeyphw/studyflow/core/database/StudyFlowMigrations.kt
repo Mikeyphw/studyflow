@@ -515,6 +515,33 @@ object StudyFlowMigrations {
     }
 
 
+    val Migration11To12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE questions ADD COLUMN organization TEXT")
+            db.execSQL("ALTER TABLE questions ADD COLUMN role TEXT")
+            db.execSQL("ALTER TABLE questions ADD COLUMN examStageId TEXT")
+            db.execSQL("ALTER TABLE questions ADD COLUMN authorship TEXT NOT NULL DEFAULT 'UNKNOWN'")
+            db.execSQL("ALTER TABLE questions ADD COLUMN examNoticeRevisionId TEXT")
+            db.execSQL("ALTER TABLE questions ADD COLUMN externalReference TEXT")
+            db.execSQL("ALTER TABLE questions ADD COLUMN points REAL")
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_questions_studyPlanId_examBoard_year " +
+                    "ON questions(studyPlanId, examBoard, year)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_questions_studyPlanId_subjectId_topicId " +
+                    "ON questions(studyPlanId, subjectId, topicId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_questions_studyPlanId_organization_role " +
+                    "ON questions(studyPlanId, organization, role)",
+            )
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.install(db)
+        }
+    }
+
+
     val All = arrayOf(
         Migration1To2,
         Migration2To3,
@@ -526,6 +553,7 @@ object StudyFlowMigrations {
         Migration8To9,
         Migration9To10,
         Migration10To11,
+        Migration11To12,
     )
 }
 

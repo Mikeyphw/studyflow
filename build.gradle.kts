@@ -812,6 +812,13 @@ tasks.register<Exec>("verifyStudyFlowDesktopWorkflows") {
     commandLine("python3", "scripts/verify_studyflow_desktop_workflows.py")
 }
 
+
+tasks.register<Exec>("verifyCpov05Cpov06PriorityBancaQuestions") {
+    group = "verification"
+    description = "Checks CPOV05 explainable priority and CPOV06 banca question contracts."
+    commandLine("python3", "scripts/verify_cpov05_06_priority_banca_questions.py")
+}
+
 tasks.register("checkAll") {
     group = "verification"
     description = "Runs repository contracts, formatting, unit tests, and Android lint."

@@ -1,6 +1,9 @@
 package com.mikeyphw.studyflow.core.domain
 
+import com.mikeyphw.studyflow.core.model.ExamNoticeRevisionId
+import com.mikeyphw.studyflow.core.model.ExamStageId
 import com.mikeyphw.studyflow.core.model.Question
+import com.mikeyphw.studyflow.core.model.QuestionAuthorship
 import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySyllabus
@@ -44,6 +47,13 @@ data class QuestionImportDraft(
     val duplicateOfExisting: Boolean,
     val duplicateWithinImport: Boolean,
     val valid: Boolean,
+    val organization: String? = null,
+    val role: String? = null,
+    val examStageId: ExamStageId? = null,
+    val authorship: QuestionAuthorship = QuestionAuthorship.UNKNOWN,
+    val examNoticeRevisionId: ExamNoticeRevisionId? = null,
+    val externalReference: String? = null,
+    val points: Double? = null,
 ) {
     val importable: Boolean = valid && !duplicateOfExisting && !duplicateWithinImport
 }
@@ -70,11 +80,14 @@ data class QuestionImportResult(
 data class QuestionImportOwnership(
     val subjectIds: Set<SubjectId>,
     val topicSubjects: Map<TopicId, SubjectId>,
+    val examStageIds: Set<ExamStageId> = emptySet(),
+    val examNoticeRevisionIds: Set<ExamNoticeRevisionId>? = null,
 ) {
     companion object {
         fun from(syllabus: StudySyllabus): QuestionImportOwnership = QuestionImportOwnership(
             subjectIds = syllabus.subjects.mapTo(linkedSetOf()) { it.id },
             topicSubjects = syllabus.topics.associate { it.id to it.subjectId },
+            examStageIds = syllabus.examStages.mapTo(linkedSetOf()) { it.id },
         )
     }
 }
@@ -172,6 +185,15 @@ object QuestionImportPipeline {
             } else if (subjectId != null && topicSubject != null && topicSubject != subjectId) {
                 add(error(draft.rowNumber, "Topic does not belong to the selected subject."))
             }
+            if (draft.examStageId != null && draft.examStageId !in ownership.examStageIds) {
+                add(error(draft.rowNumber, "Question exam stage does not belong to this Study Plan."))
+            }
+            val allowedRevisionIds = ownership.examNoticeRevisionIds
+            if (draft.examNoticeRevisionId != null && allowedRevisionIds != null &&
+                draft.examNoticeRevisionId !in allowedRevisionIds
+            ) {
+                add(error(draft.rowNumber, "Question edital revision does not belong to this Study Plan."))
+            }
         }
     }
 
@@ -267,6 +289,13 @@ object QuestionImportPipeline {
                 year = map.firstValue("year"),
                 subjectId = map.firstValue("subjectid", "subject"),
                 topicId = map.firstValue("topicid", "topic"),
+                organization = map.firstValue("organization", "agency", "orgao"),
+                role = map.firstValue("role", "cargo"),
+                examStageId = map.firstValue("examstageid", "stageid"),
+                authorship = map.firstValue("authorship", "origin", "official"),
+                examNoticeRevisionId = map.firstValue("examnoticerevisionid", "revisionid"),
+                externalReference = map.firstValue("externalreference", "questionnumber", "reference"),
+                points = map.firstValue("points", "value"),
             )
         }
     }
@@ -307,6 +336,13 @@ object QuestionImportPipeline {
                 year = values["year"],
                 subjectId = values["subjectid"] ?: values["subject"],
                 topicId = values["topicid"] ?: values["topic"],
+                organization = values["organization"] ?: values["agency"] ?: values["orgao"],
+                role = values["role"] ?: values["cargo"],
+                examStageId = values["examstageid"] ?: values["stageid"],
+                authorship = values["authorship"] ?: values["origin"] ?: values["official"],
+                examNoticeRevisionId = values["examnoticerevisionid"] ?: values["revisionid"],
+                externalReference = values["externalreference"] ?: values["questionnumber"] ?: values["reference"],
+                points = values["points"] ?: values["value"],
             )
         }
 
@@ -327,6 +363,13 @@ object QuestionImportPipeline {
         year: String?,
         subjectId: String?,
         topicId: String?,
+        organization: String?,
+        role: String?,
+        examStageId: String?,
+        authorship: String?,
+        examNoticeRevisionId: String?,
+        externalReference: String?,
+        points: String?,
     ): ParsedDraft {
         val issues = mutableListOf<QuestionImportIssue>()
         if (statement.isBlank()) {
@@ -366,6 +409,21 @@ object QuestionImportPipeline {
         if (normalizedYear != null && parsedYear == null) {
             issues += error(rowNumber, "Year must be an integer between 1900 and 2200.")
         }
+        val normalizedAuthorship = authorship?.trim()?.takeIf(String::isNotBlank)
+        val parsedAuthorship = when (normalizedAuthorship?.lowercase()) {
+            null, "unknown", "" -> QuestionAuthorship.UNKNOWN
+            "official", "true", "yes", "sim", "oficial" -> QuestionAuthorship.OFFICIAL
+            "authored", "false", "no", "nao", "não", "author" -> QuestionAuthorship.AUTHORED
+            else -> {
+                issues += error(rowNumber, "Authorship must be official, authored, or unknown.")
+                QuestionAuthorship.UNKNOWN
+            }
+        }
+        val normalizedPoints = points?.trim()?.takeIf(String::isNotBlank)
+        val parsedPoints = normalizedPoints?.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0.0 }
+        if (normalizedPoints != null && parsedPoints == null) {
+            issues += error(rowNumber, "Points must be a non-negative number.")
+        }
         val accepted = issues.none { it.severity == QuestionImportIssueSeverity.ERROR }
         val draft = QuestionImportDraft(
             rowNumber = rowNumber,
@@ -385,6 +443,13 @@ object QuestionImportPipeline {
             duplicateOfExisting = false,
             duplicateWithinImport = false,
             valid = accepted,
+            organization = organization?.trim()?.ifBlank { null },
+            role = role?.trim()?.ifBlank { null },
+            examStageId = examStageId?.trim()?.ifBlank { null }?.let(::ExamStageId),
+            authorship = parsedAuthorship,
+            examNoticeRevisionId = examNoticeRevisionId?.trim()?.ifBlank { null }?.let(::ExamNoticeRevisionId),
+            externalReference = externalReference?.trim()?.ifBlank { null },
+            points = parsedPoints,
         )
         return ParsedDraft(draft = draft, issues = issues)
     }

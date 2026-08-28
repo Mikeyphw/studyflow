@@ -567,6 +567,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 plan = plan,
                 practice = container.manageStudyPractice,
                 review = container.manageStudyReview,
+                content = container.manageStudyContent,
                 onBack = navController::popBackStack,
             )
         }

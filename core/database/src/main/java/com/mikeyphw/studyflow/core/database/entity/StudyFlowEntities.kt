@@ -545,7 +545,14 @@ data class AnnexEntity(
             onDelete = ForeignKey.SET_NULL,
         ),
     ],
-    indices = [Index("studyPlanId"), Index("subjectId"), Index("topicId")],
+    indices = [
+        Index("studyPlanId"),
+        Index("subjectId"),
+        Index("topicId"),
+        Index(value = ["studyPlanId", "examBoard", "year"]),
+        Index(value = ["studyPlanId", "subjectId", "topicId"]),
+        Index(value = ["studyPlanId", "organization", "role"]),
+    ],
 )
 data class QuestionEntity(
     @PrimaryKey val id: String,
@@ -566,6 +573,13 @@ data class QuestionEntity(
     val tagsJson: String,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
+    val organization: String? = null,
+    val role: String? = null,
+    val examStageId: String? = null,
+    val authorship: String = "UNKNOWN",
+    val examNoticeRevisionId: String? = null,
+    val externalReference: String? = null,
+    val points: Double? = null,
 )
 
 @Entity(

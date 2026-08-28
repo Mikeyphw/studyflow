@@ -353,6 +353,8 @@ class StudyPlanGraphPortabilityStore(
         rows("questions").forEach { row ->
             requireReference("questions", row, "subjectId", "subjects")
             requireReference("questions", row, "topicId", "topics")
+            requireReference("questions", row, "examStageId", "exam_stages")
+            requireReference("questions", row, "examNoticeRevisionId", "exam_notice_revisions")
             requireTopicSubjectConsistency("questions", row)
         }
         rows("flashcards").forEach { row ->
@@ -436,6 +438,10 @@ class StudyPlanGraphPortabilityStore(
             "subjects", "topics" -> expected - "examStageId"
             "study_sessions" -> expected - "targetDurationMinutes"
             "study_plans" -> expected - "contentMode"
+            "questions" -> expected - setOf(
+                "organization", "role", "examStageId", "authorship",
+                "examNoticeRevisionId", "externalReference", "points",
+            )
             else -> emptySet()
         }
         require(actual == expected || actual == legacyExpected) {
@@ -572,6 +578,15 @@ class StudyPlanGraphPortabilityStore(
             }
             if (spec.tableName == "study_plans" && "contentMode" !in this) {
                 put("contentMode", text("EXAM_PLAN"))
+            }
+            if (spec.tableName == "questions" && "authorship" !in this) {
+                put("organization", PortableValue(PortableValueType.NULL))
+                put("role", PortableValue(PortableValueType.NULL))
+                put("examStageId", PortableValue(PortableValueType.NULL))
+                put("authorship", text("UNKNOWN"))
+                put("examNoticeRevisionId", PortableValue(PortableValueType.NULL))
+                put("externalReference", PortableValue(PortableValueType.NULL))
+                put("points", PortableValue(PortableValueType.NULL))
             }
         }
         require(normalizedValues.keys == allowed) {

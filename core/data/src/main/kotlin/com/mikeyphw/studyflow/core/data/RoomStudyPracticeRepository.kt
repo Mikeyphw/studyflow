@@ -295,6 +295,18 @@ internal class RoomStudyPracticeRepository(
         if (subject != null && topic != null) {
             require(topic.subjectId == subject.id) { "Question topic does not belong to the selected subject." }
         }
+        question.examStageId?.let { stageId ->
+            requireNotNull(database.studyStructureDao().findExamStage(question.studyPlanId.value, stageId.value)) {
+                "Question exam stage does not belong to this Study Plan."
+            }
+        }
+        question.examNoticeRevisionId?.let { revisionId ->
+            requireNotNull(
+                database.publicExamDao().findExamNoticeRevision(question.studyPlanId.value, revisionId.value),
+            ) {
+                "Question edital revision does not belong to this Study Plan."
+            }
+        }
     }
 
     private suspend fun requirePlan(planId: StudyPlanId) {
