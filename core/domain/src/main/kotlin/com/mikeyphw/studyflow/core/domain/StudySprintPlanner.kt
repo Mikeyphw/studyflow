@@ -8,6 +8,7 @@ import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.StudySchedule
 
 enum class StudySprintFocus {
@@ -27,6 +28,7 @@ data class StudySprintPreview(
     val totalMinutes: Int,
     val scheduleVersionToken: String,
     val schedulePreview: AdaptiveReschedulePreview,
+    val finalStretchStrategy: PublicExamFinalStretchStrategy? = null,
 ) {
     val executableChangeCount: Int = schedulePreview.executableChangeCount
     val executable: Boolean = executableChangeCount > 0
@@ -61,7 +63,12 @@ object StudySprintPlanner {
             .take(MaxCandidates)
             .toList()
         val focus = chooseFocus(analytics)
-        val changes = buildChanges(candidates, focus, analytics)
+        val finalStretch = if (plan.type == StudyType.PUBLIC_EXAMINATION) {
+            PublicExamFinalStretchPlanner.plan(readiness.daysUntilExam)
+        } else {
+            null
+        }
+        val changes = buildChanges(candidates, focus, analytics, finalStretch)
         val versionToken = AdaptiveReschedulePlanner.scheduleVersionToken(schedule)
         val adaptivePreview = AdaptiveReschedulePreview(
             studyPlanId = plan.id,
@@ -85,6 +92,7 @@ object StudySprintPlanner {
             totalMinutes = candidates.sumOf(PlannedActivity::plannedDurationMinutes),
             scheduleVersionToken = versionToken,
             schedulePreview = adaptivePreview,
+            finalStretchStrategy = finalStretch,
         )
     }
 
@@ -188,8 +196,9 @@ object StudySprintPlanner {
         candidates: List<PlannedActivity>,
         focus: StudySprintFocus,
         analytics: StudyAnalyticsSnapshot,
+        finalStretch: PublicExamFinalStretchStrategy?,
     ): List<AdaptiveRescheduleChange> = candidates.mapIndexedNotNull { index, activity ->
-        val targetType = targetType(focus, index, activity.type)
+        val targetType = targetType(focus, index, activity.type, finalStretch)
         val targetDuration = targetDuration(focus, activity.plannedDurationMinutes)
         if (targetType == activity.type && targetDuration == activity.plannedDurationMinutes) {
             return@mapIndexedNotNull null
@@ -228,8 +237,27 @@ object StudySprintPlanner {
         else -> StudySprintFocus.BALANCED
     }
 
-    private fun targetType(focus: StudySprintFocus, index: Int, current: StudyActivityType): StudyActivityType =
-        when (focus) {
+    private fun targetType(
+        focus: StudySprintFocus,
+        index: Int,
+        current: StudyActivityType,
+        finalStretch: PublicExamFinalStretchStrategy?,
+    ): StudyActivityType {
+        if (current == StudyActivityType.THEORY && finalStretch != null) {
+            return when (finalStretch.band) {
+                PublicExamFinalStretchBand.EXAM_EVE -> StudyActivityType.REVIEW
+                PublicExamFinalStretchBand.DAYS_2 -> StudyActivityType.QUESTIONS
+                PublicExamFinalStretchBand.DAYS_7 -> if (index % 2 == 0) {
+                    StudyActivityType.REVIEW
+                } else {
+                    StudyActivityType.QUESTIONS
+                }
+                PublicExamFinalStretchBand.DAYS_15 -> if (index % 3 == 0) StudyActivityType.REVIEW else current
+                PublicExamFinalStretchBand.DAYS_30,
+                PublicExamFinalStretchBand.BEYOND_30_DAYS -> current
+            }
+        }
+        return when (focus) {
             StudySprintFocus.REVIEW_RECOVERY -> if (index % 2 == 0) StudyActivityType.REVIEW else current
             StudySprintFocus.PRACTICE_ACCURACY -> if (index % 2 == 0) StudyActivityType.THEORY else {
                 StudyActivityType.QUESTIONS
@@ -238,6 +266,7 @@ object StudySprintPlanner {
             StudySprintFocus.SCHEDULE_RECOVERY,
             StudySprintFocus.BALANCED -> current
         }
+    }
 
     private fun targetDuration(focus: StudySprintFocus, currentMinutes: Int): Int = when (focus) {
         StudySprintFocus.SCHEDULE_RECOVERY -> currentMinutes.coerceAtMost(RecoveryBlockMinutes)

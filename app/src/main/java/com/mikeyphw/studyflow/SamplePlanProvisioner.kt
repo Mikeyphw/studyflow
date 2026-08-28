@@ -4,6 +4,8 @@ import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
+import com.mikeyphw.studyflow.core.domain.PublicExamGoalPreset
+import com.mikeyphw.studyflow.core.domain.PublicExamOnboardingBuilder
 import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRepository
 import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRequest
 import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
@@ -16,6 +18,7 @@ import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.Topic
 import com.mikeyphw.studyflow.core.model.TopicId
+import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +30,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+
+private fun defaultGoalNames(): Map<PublicExamGoalPreset, String> =
+    PublicExamGoalPreset.entries.associateWith { preset -> preset.name }
 
 sealed interface SamplePlanProvisioningState {
     data object Idle : SamplePlanProvisioningState
@@ -65,6 +71,7 @@ class SamplePlanProvisioner internal constructor(
         planDescription: String,
         subjectNames: Map<OnboardingSampleSubjectKind, String>,
         topicNames: Map<OnboardingSampleTopicKind, String>,
+        goalNames: Map<PublicExamGoalPreset, String> = defaultGoalNames(),
     ) {
         applicationScope.launch {
             try {
@@ -74,6 +81,7 @@ class SamplePlanProvisioner internal constructor(
                     planDescription = planDescription,
                     subjectNames = subjectNames,
                     topicNames = topicNames,
+                    goalNames = goalNames,
                 )
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -103,6 +111,7 @@ class SamplePlanProvisioner internal constructor(
         planDescription: String,
         subjectNames: Map<OnboardingSampleSubjectKind, String>,
         topicNames: Map<OnboardingSampleTopicKind, String>,
+        goalNames: Map<PublicExamGoalPreset, String> = defaultGoalNames(),
     ): StudyPlanId {
         val job = mutex.withLock {
             inFlight?.let { active ->
@@ -121,6 +130,7 @@ class SamplePlanProvisioner internal constructor(
                         planDescription = planDescription,
                         subjectNames = subjectNames,
                         topicNames = topicNames,
+                        goalNames = goalNames,
                     ).also { planId ->
                         _state.value = SamplePlanProvisioningState.Completed(blueprint.template, planId)
                     }
@@ -177,6 +187,7 @@ class SamplePlanProvisioner internal constructor(
         planDescription: String,
         subjectNames: Map<OnboardingSampleSubjectKind, String>,
         topicNames: Map<OnboardingSampleTopicKind, String>,
+        goalNames: Map<PublicExamGoalPreset, String>,
     ): StudyPlanId {
         val planId = StudyPlanId(UUID.randomUUID().toString())
         journal.begin(blueprint.template, planId)
@@ -186,7 +197,7 @@ class SamplePlanProvisioner internal constructor(
             description = planDescription,
             type = blueprint.studyType,
             status = StudyPlanStatus.ACTIVE,
-            examDateIso = null,
+            examDateIso = blueprint.publicExam?.examDateIso,
             weeklyGoalHours = blueprint.weeklyGoalHours,
             progressPercent = 0,
             studiedMinutesThisWeek = 0,
@@ -246,6 +257,30 @@ class SamplePlanProvisioner internal constructor(
                 subjectIdsByKind = subjectIds,
                 idFactory = { UUID.randomUUID().toString() },
             ),
+            strategy = blueprint.publicExam?.let { profile ->
+                PublicExamOnboardingBuilder.buildStrategy(
+                    planId = planId,
+                    blueprint = profile,
+                    idFactory = { UUID.randomUUID().toString() },
+                )
+            },
+            target = blueprint.publicExam?.let { profile ->
+                PublicExamOnboardingBuilder.buildTarget(
+                    planId = planId,
+                    blueprint = profile,
+                    idFactory = { UUID.randomUUID().toString() },
+                    nowEpochMillis = System.currentTimeMillis(),
+                )
+            },
+            goals = blueprint.publicExam?.let { profile ->
+                PublicExamOnboardingBuilder.buildGoals(
+                    planId = planId,
+                    blueprint = profile,
+                    goalTitles = goalNames,
+                    startsOnIso = LocalDate.now().toString(),
+                    idFactory = { UUID.randomUUID().toString() },
+                )
+            }.orEmpty(),
         )
         val provisionedPlanId = repository.provision(request)
         journal.updateCommittedPlan(blueprint.template, provisionedPlanId)

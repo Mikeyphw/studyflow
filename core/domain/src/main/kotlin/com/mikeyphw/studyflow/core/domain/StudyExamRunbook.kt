@@ -41,6 +41,7 @@ data class StudyExamRunbook(
     val daysUntilExam: Int?,
     val readinessBand: ExamReadinessBand,
     val items: List<StudyExamRunbookItem>,
+    val finalStretchStrategy: PublicExamFinalStretchStrategy? = null,
 ) {
     val applicable: Boolean = state == StudyExamRunbookState.READY
 }
@@ -76,6 +77,7 @@ object StudyExamRunbookPlanner {
                 daysUntilExam = null,
                 readinessBand = readiness.band,
                 items = emptyList(),
+                finalStretchStrategy = null,
             )
         }
 
@@ -156,6 +158,7 @@ object StudyExamRunbookPlanner {
             daysUntilExam = daysUntilExam,
             readinessBand = readiness.band,
             items = items.sortedBy { item -> actionPriority(item.action) }.take(MaxItems),
+            finalStretchStrategy = PublicExamFinalStretchPlanner.plan(daysUntilExam),
         )
     }
 

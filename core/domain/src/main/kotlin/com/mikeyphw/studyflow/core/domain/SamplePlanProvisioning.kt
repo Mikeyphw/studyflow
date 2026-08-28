@@ -3,7 +3,10 @@ package com.mikeyphw.studyflow.core.domain
 import com.mikeyphw.studyflow.core.model.ScheduleRule
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.StudyGoal
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
+import com.mikeyphw.studyflow.core.model.StudyStrategy
+import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.Topic
 
@@ -20,6 +23,9 @@ data class SamplePlanProvisioningRequest(
     val subjects: List<Subject>,
     val topics: List<Topic>,
     val scheduleRules: List<ScheduleRule>,
+    val strategy: StudyStrategy? = null,
+    val target: StudyTarget? = null,
+    val goals: List<StudyGoal> = emptyList(),
 ) {
     init {
         require(provisioningKey.isNotBlank()) { "Sample provisioning key cannot be blank." }
@@ -29,6 +35,15 @@ data class SamplePlanProvisioningRequest(
         require(topics.all { it.studyPlanId == planId }) { "Sample topics must belong to the sample Study Plan." }
         require(scheduleRules.all { it.studyPlanId == planId }) {
             "Sample schedule rules must belong to the sample Study Plan."
+        }
+        require(strategy == null || strategy.studyPlanId == planId) {
+            "Sample strategy must belong to the sample Study Plan."
+        }
+        require(target == null || target.studyPlanId == planId) {
+            "Sample target must belong to the sample Study Plan."
+        }
+        require(goals.all { goal -> goal.studyPlanId == planId }) {
+            "Sample goals must belong to the sample Study Plan."
         }
         val subjectIds = subjects.map { it.id }.toSet()
         require(topics.all { it.subjectId in subjectIds }) { "Every sample topic must reference a sample subject." }

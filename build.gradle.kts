@@ -836,6 +836,8 @@ tasks.register("checkAll") {
         "verifyCpov03Cpov04PublicExamProgress",
         "verifyCpov05Cpov06PriorityBancaQuestions",
         "verifyCpov07Cpov08BancaErrorNotebook",
+        "verifyCpov09Cpov10LegislationDashboard",
+        "verifyCpov11Cpov12FinalStretchOnboarding",
         "verifyPhase56_57ReleaseReadiness",
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",
@@ -937,4 +939,11 @@ tasks.register<Exec>("verifyCpov09Cpov10LegislationDashboard") {
     group = "verification"
     description = "Verifies CPOV09 structured legislation and CPOV10 derived concurso dashboard contracts."
     commandLine("python3", "scripts/verify_cpov09_10_legislation_dashboard.py")
+}
+
+
+tasks.register<Exec>("verifyCpov11Cpov12FinalStretchOnboarding") {
+    group = "verification"
+    description = "Verifies CPOV11 final-stretch strategy and CPOV12 public-exam onboarding contracts."
+    commandLine("python3", "scripts/verify_cpov11_12_final_stretch_onboarding.py")
 }

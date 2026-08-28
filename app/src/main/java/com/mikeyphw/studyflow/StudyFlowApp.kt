@@ -74,6 +74,7 @@ import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanInput
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
+import com.mikeyphw.studyflow.core.domain.PublicExamGoalPreset
 import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
 import com.mikeyphw.studyflow.core.domain.StudyRecommendationDestination
@@ -555,10 +556,9 @@ internal fun StudyFlowNavHost(
                 onBack = navController::popBackStack,
                 creating = provisioningState is SamplePlanProvisioningState.InFlight,
                 creationFailed = provisioningState is SamplePlanProvisioningState.Failed,
-                onCreateSample = { template ->
-                    val blueprint = StudyOnboardingSamplePlanWizard.build(
-                        OnboardingSamplePlanInput(template = template),
-                    )
+                onCreateSample = { input ->
+                    val blueprint = StudyOnboardingSamplePlanWizard.build(input)
+                    val template = input.template
                     container.samplePlanProvisioner.clearFailure()
                     container.samplePlanProvisioner.startProvisioning(
                         blueprint = blueprint,
@@ -566,6 +566,7 @@ internal fun StudyFlowNavHost(
                         planDescription = resources.getString(template.planDescriptionRes()),
                         subjectNames = localizedSubjectNames(resources),
                         topicNames = localizedTopicNames(resources),
+                        goalNames = localizedPublicExamGoalNames(resources),
                     )
                 },
             )
@@ -1052,6 +1053,9 @@ private fun localizedTopicNames(resources: Resources): Map<OnboardingSampleTopic
     OnboardingSampleTopicKind.entries.associateWith { topic ->
         resources.getString(topic.titleRes())
     }
+
+private fun localizedPublicExamGoalNames(resources: Resources): Map<PublicExamGoalPreset, String> =
+    PublicExamGoalPreset.entries.associateWith { preset -> resources.getString(preset.titleRes()) }
 
 private fun PlanEditorForm.toNewStudyPlan(): StudyPlan = StudyPlan(
     id = StudyPlanId(UUID.randomUUID().toString()),

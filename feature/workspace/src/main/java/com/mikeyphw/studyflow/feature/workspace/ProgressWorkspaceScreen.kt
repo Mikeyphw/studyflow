@@ -73,6 +73,7 @@ import com.mikeyphw.studyflow.core.domain.StudyEvidenceEventKind
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineBuilder
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineInput
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
+import com.mikeyphw.studyflow.core.domain.PublicExamFinalStretchBand
 import com.mikeyphw.studyflow.core.domain.StudySprintFocus
 import com.mikeyphw.studyflow.core.domain.StudySprintPlanner
 import com.mikeyphw.studyflow.core.domain.tickingClockFlow
@@ -635,6 +636,24 @@ fun ProgressWorkspaceScreen(
                         },
                     )
                 }
+                sprintPreview.finalStretchStrategy?.let { strategy ->
+                    item(key = "final-stretch-allocation", contentType = "final-stretch") {
+                        val allocation = strategy.allocation
+                        StudyFlowInsightPanel(
+                            title = stringResource(finalStretchBandLabel(strategy.band)),
+                            message = stringResource(
+                                R.string.final_stretch_allocation,
+                                allocation.newContentPercent,
+                                allocation.reviewPercent,
+                                allocation.errorNotebookPercent,
+                                allocation.questionsPercent,
+                                allocation.mockExamPercent,
+                                allocation.legislationPercent,
+                            ),
+                        )
+                    }
+                }
+
                 if (appliedSprintChanges != null || sprintApplyFailed) {
                     item(key = "study-sprint-feedback", contentType = "sprint-feedback") {
                         StudyFlowInsightPanel(
@@ -1160,6 +1179,15 @@ private fun runbookWindowLabel(window: StudyExamRunbookWindow): Int = when (wind
     StudyExamRunbookWindow.NOW -> R.string.exam_runbook_now
     StudyExamRunbookWindow.THIS_WEEK -> R.string.exam_runbook_this_week
     StudyExamRunbookWindow.EXAM_EVE -> R.string.exam_runbook_exam_eve
+}
+
+private fun finalStretchBandLabel(band: PublicExamFinalStretchBand): Int = when (band) {
+    PublicExamFinalStretchBand.BEYOND_30_DAYS -> R.string.final_stretch_beyond_30
+    PublicExamFinalStretchBand.DAYS_30 -> R.string.final_stretch_30
+    PublicExamFinalStretchBand.DAYS_15 -> R.string.final_stretch_15
+    PublicExamFinalStretchBand.DAYS_7 -> R.string.final_stretch_7
+    PublicExamFinalStretchBand.DAYS_2 -> R.string.final_stretch_2
+    PublicExamFinalStretchBand.EXAM_EVE -> R.string.final_stretch_eve
 }
 
 private fun sprintFocusLabel(focus: StudySprintFocus): Int = when (focus) {

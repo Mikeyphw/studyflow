@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -39,16 +40,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
+import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanInput
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
+import com.mikeyphw.studyflow.core.domain.PublicExamCyclePreference
+import com.mikeyphw.studyflow.core.domain.PublicExamGoalPreset
+import com.mikeyphw.studyflow.core.domain.PublicExamOnboardingInput
 import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingSamplePlanWizardScreen(
     onBack: () -> Unit,
-    onCreateSample: (OnboardingSamplePlanTemplate) -> Unit,
+    onCreateSample: (OnboardingSamplePlanInput) -> Unit,
     modifier: Modifier = Modifier,
     creating: Boolean = false,
     creationFailed: Boolean = false,
@@ -61,7 +66,47 @@ fun OnboardingSamplePlanWizardScreen(
         selectedTemplateName,
         OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK,
     )
-    val selectedChoice = choices.first { choice -> choice.template == selectedTemplate }
+    val selectedBaseChoice = choices.first { choice -> choice.template == selectedTemplate }
+    var organization by rememberSaveable { mutableStateOf("") }
+    var role by rememberSaveable { mutableStateOf("") }
+    var examBoard by rememberSaveable { mutableStateOf("") }
+    var noticeUrl by rememberSaveable { mutableStateOf("") }
+    var examDate by rememberSaveable { mutableStateOf("") }
+    var availabilityHours by rememberSaveable { mutableStateOf("18") }
+    var cyclePreferenceName by rememberSaveable { mutableStateOf(PublicExamCyclePreference.STUDY_CYCLE.name) }
+    var reviewDay1 by rememberSaveable { mutableStateOf("1") }
+    var reviewDay2 by rememberSaveable { mutableStateOf("7") }
+    var reviewDay3 by rememberSaveable { mutableStateOf("30") }
+    var weeklyQuestions by rememberSaveable { mutableStateOf("200") }
+    var accuracyGoal by rememberSaveable { mutableStateOf("80") }
+    var monthlyMocks by rememberSaveable { mutableStateOf("2") }
+    val publicExamInput = runCatching {
+        PublicExamOnboardingInput(
+            organization = organization,
+            role = role,
+            examBoard = examBoard,
+            noticeUrl = noticeUrl,
+            examDateIso = examDate,
+            weeklyAvailabilityHours = availabilityHours.toInt(),
+            cyclePreference = enumValueOrDefault(
+                cyclePreferenceName,
+                PublicExamCyclePreference.STUDY_CYCLE,
+            ),
+            reviewDays = listOf(reviewDay1.toInt(), reviewDay2.toInt(), reviewDay3.toInt()),
+            weeklyQuestionGoal = weeklyQuestions.toInt(),
+            accuracyGoalPercent = accuracyGoal.toInt(),
+            monthlyMockGoal = monthlyMocks.toInt(),
+        )
+    }.getOrNull()
+    val selectedChoice = if (selectedTemplate == OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK) {
+        publicExamInput?.let { input ->
+            StudyOnboardingSamplePlanWizard.build(
+                OnboardingSamplePlanInput(template = selectedTemplate, publicExam = input),
+            )
+        } ?: selectedBaseChoice
+    } else {
+        selectedBaseChoice
+    }
 
     Scaffold(
         modifier = modifier,
@@ -99,6 +144,39 @@ fun OnboardingSamplePlanWizardScreen(
             item {
                 OnboardingPreview(choice = selectedChoice)
             }
+            if (selectedTemplate == OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK) {
+                item {
+                    PublicExamOnboardingFields(
+                        organization = organization,
+                        onOrganizationChange = { organization = it },
+                        role = role,
+                        onRoleChange = { role = it },
+                        examBoard = examBoard,
+                        onExamBoardChange = { examBoard = it },
+                        noticeUrl = noticeUrl,
+                        onNoticeUrlChange = { noticeUrl = it },
+                        examDate = examDate,
+                        onExamDateChange = { examDate = it },
+                        availabilityHours = availabilityHours,
+                        onAvailabilityHoursChange = { availabilityHours = it },
+                        cyclePreferenceName = cyclePreferenceName,
+                        onCyclePreferenceChange = { cyclePreferenceName = it.name },
+                        reviewDay1 = reviewDay1,
+                        onReviewDay1Change = { reviewDay1 = it },
+                        reviewDay2 = reviewDay2,
+                        onReviewDay2Change = { reviewDay2 = it },
+                        reviewDay3 = reviewDay3,
+                        onReviewDay3Change = { reviewDay3 = it },
+                        weeklyQuestions = weeklyQuestions,
+                        onWeeklyQuestionsChange = { weeklyQuestions = it },
+                        accuracyGoal = accuracyGoal,
+                        onAccuracyGoalChange = { accuracyGoal = it },
+                        monthlyMocks = monthlyMocks,
+                        onMonthlyMocksChange = { monthlyMocks = it },
+                        valid = publicExamInput != null,
+                    )
+                }
+            }
             if (creationFailed) {
                 item {
                     Text(
@@ -120,8 +198,18 @@ fun OnboardingSamplePlanWizardScreen(
                         Text(stringResource(R.string.cancel))
                     }
                     Button(
-                        onClick = { onCreateSample(selectedChoice.template) },
-                        enabled = !creating,
+                        onClick = {
+                            onCreateSample(
+                                OnboardingSamplePlanInput(
+                                    template = selectedChoice.template,
+                                    publicExam = publicExamInput ?: PublicExamOnboardingInput(),
+                                ),
+                            )
+                        },
+                        enabled = !creating && (
+                            selectedChoice.template != OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK ||
+                                publicExamInput != null
+                            ),
                         modifier = Modifier.weight(1f),
                     ) {
                         Text(stringResource(R.string.onboarding_create_sample))
@@ -130,6 +218,160 @@ fun OnboardingSamplePlanWizardScreen(
             }
         }
     }
+}
+
+@Composable
+private fun PublicExamOnboardingFields(
+    organization: String,
+    onOrganizationChange: (String) -> Unit,
+    role: String,
+    onRoleChange: (String) -> Unit,
+    examBoard: String,
+    onExamBoardChange: (String) -> Unit,
+    noticeUrl: String,
+    onNoticeUrlChange: (String) -> Unit,
+    examDate: String,
+    onExamDateChange: (String) -> Unit,
+    availabilityHours: String,
+    onAvailabilityHoursChange: (String) -> Unit,
+    cyclePreferenceName: String,
+    onCyclePreferenceChange: (PublicExamCyclePreference) -> Unit,
+    reviewDay1: String,
+    onReviewDay1Change: (String) -> Unit,
+    reviewDay2: String,
+    onReviewDay2Change: (String) -> Unit,
+    reviewDay3: String,
+    onReviewDay3Change: (String) -> Unit,
+    weeklyQuestions: String,
+    onWeeklyQuestionsChange: (String) -> Unit,
+    accuracyGoal: String,
+    onAccuracyGoalChange: (String) -> Unit,
+    monthlyMocks: String,
+    onMonthlyMocksChange: (String) -> Unit,
+    valid: Boolean,
+) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(stringResource(R.string.onboarding_exam_setup_title), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.onboarding_exam_setup_message),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = organization,
+                onValueChange = onOrganizationChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.onboarding_exam_organization)) },
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = role,
+                onValueChange = onRoleChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.onboarding_exam_role)) },
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = examBoard,
+                onValueChange = onExamBoardChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.onboarding_exam_board)) },
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = noticeUrl,
+                onValueChange = onNoticeUrlChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.onboarding_exam_notice_url)) },
+                singleLine = true,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = examDate,
+                    onValueChange = onExamDateChange,
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.onboarding_exam_date)) },
+                    supportingText = { Text("YYYY-MM-DD") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = availabilityHours,
+                    onValueChange = onAvailabilityHoursChange,
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.onboarding_exam_availability)) },
+                    singleLine = true,
+                )
+            }
+            Text(stringResource(R.string.onboarding_cycle_preference), fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PublicExamCyclePreference.entries.forEach { preference ->
+                    FilterChip(
+                        selected = preference.name == cyclePreferenceName,
+                        onClick = { onCyclePreferenceChange(preference) },
+                        label = { Text(stringResource(preference.labelRes())) },
+                    )
+                }
+            }
+            Text(stringResource(R.string.onboarding_review_policy), fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    reviewDay1 to onReviewDay1Change,
+                    reviewDay2 to onReviewDay2Change,
+                    reviewDay3 to onReviewDay3Change,
+                ).forEachIndexed { index, (value, onChange) ->
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = onChange,
+                        modifier = Modifier.weight(1f),
+                        label = { Text(stringResource(R.string.onboarding_review_day, index + 1)) },
+                        singleLine = true,
+                    )
+                }
+            }
+            Text(stringResource(R.string.onboarding_goal_presets), fontWeight = FontWeight.SemiBold)
+            OutlinedTextField(
+                value = weeklyQuestions,
+                onValueChange = onWeeklyQuestionsChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.onboarding_goal_questions)) },
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = accuracyGoal,
+                onValueChange = onAccuracyGoalChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.onboarding_goal_accuracy)) },
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = monthlyMocks,
+                onValueChange = onMonthlyMocksChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.onboarding_goal_mocks)) },
+                singleLine = true,
+            )
+            Text(
+                text = stringResource(
+                    if (valid) R.string.onboarding_exam_setup_valid else R.string.onboarding_exam_setup_invalid,
+                ),
+                color = if (valid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+            )
+            Text(
+                stringResource(R.string.onboarding_import_templates_local),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@androidx.annotation.StringRes
+private fun PublicExamCyclePreference.labelRes(): Int = when (this) {
+    PublicExamCyclePreference.STUDY_CYCLE -> R.string.onboarding_cycle_study_cycle
+    PublicExamCyclePreference.FIXED_WEEKLY -> R.string.onboarding_cycle_fixed_weekly
+    PublicExamCyclePreference.ADAPTIVE -> R.string.onboarding_cycle_adaptive
 }
 
 @Composable
@@ -361,6 +603,14 @@ private fun dayOfWeekRes(dayOfWeek: Int): Int = when (dayOfWeek) {
     else -> R.string.onboarding_day_sunday
 }
 
+
+@StringRes
+fun PublicExamGoalPreset.titleRes(): Int = when (this) {
+    PublicExamGoalPreset.WEEKLY_STUDY_TIME -> R.string.onboarding_goal_title_study_time
+    PublicExamGoalPreset.WEEKLY_QUESTIONS -> R.string.onboarding_goal_title_questions
+    PublicExamGoalPreset.ACCURACY -> R.string.onboarding_goal_title_accuracy
+    PublicExamGoalPreset.MONTHLY_MOCKS -> R.string.onboarding_goal_title_mocks
+}
 
 @StringRes
 fun OnboardingSamplePlanTemplate.titleRes(): Int = when (this) {

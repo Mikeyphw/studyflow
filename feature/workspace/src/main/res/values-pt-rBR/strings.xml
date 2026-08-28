@@ -692,4 +692,11 @@
     <string name="preview">Prévia</string>
     <string name="apply_changes">Aplicar alterações</string>
     <string name="cancel">Cancelar</string>
+    <string name="final_stretch_beyond_30">Reta final · mais de 30 dias</string>
+    <string name="final_stretch_30">Reta final · faixa de 30 dias</string>
+    <string name="final_stretch_15">Reta final · faixa de 15 dias</string>
+    <string name="final_stretch_7">Reta final · faixa de 7 dias</string>
+    <string name="final_stretch_2">Reta final · faixa de 2 dias</string>
+    <string name="final_stretch_eve">Reta final · véspera da prova</string>
+    <string name="final_stretch_allocation">Mix sugerido — conteúdo novo %1$d%% · revisões %2$d%% · erros %3$d%% · questões %4$d%% · simulados %5$d%% · legislação %6$d%%. O sprint continua alterando apenas atividades existentes e desbloqueadas.</string>
 </resources>

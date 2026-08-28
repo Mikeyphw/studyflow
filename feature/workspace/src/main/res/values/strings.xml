@@ -655,4 +655,11 @@
     <string name="preview">Preview</string>
     <string name="apply_changes">Apply changes</string>
     <string name="cancel">Cancel</string>
+    <string name="final_stretch_beyond_30">Final stretch · more than 30 days</string>
+    <string name="final_stretch_30">Final stretch · 30-day band</string>
+    <string name="final_stretch_15">Final stretch · 15-day band</string>
+    <string name="final_stretch_7">Final stretch · 7-day band</string>
+    <string name="final_stretch_2">Final stretch · 2-day band</string>
+    <string name="final_stretch_eve">Final stretch · exam eve</string>
+    <string name="final_stretch_allocation">Suggested mix — new content %1$d%% · reviews %2$d%% · errors %3$d%% · questions %4$d%% · mocks %5$d%% · legislation %6$d%%. The sprint still changes only existing unlocked activities.</string>
 </resources>

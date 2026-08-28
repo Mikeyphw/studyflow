@@ -86,6 +86,7 @@ data class OnboardingSamplePlanBlueprint(
     val userInitiatedOnly: Boolean,
     val subjects: List<OnboardingSampleSubjectBlueprint>,
     val scheduleRules: List<OnboardingScheduleRuleBlueprint>,
+    val publicExam: PublicExamOnboardingBlueprint? = null,
 ) {
     val subjectCount: Int = subjects.size
     val topicCount: Int = subjects.sumOf { subject -> subject.topics.size }
@@ -94,6 +95,7 @@ data class OnboardingSamplePlanBlueprint(
 
 data class OnboardingSamplePlanInput(
     val template: OnboardingSamplePlanTemplate,
+    val publicExam: PublicExamOnboardingInput = PublicExamOnboardingInput(),
     val localOnly: Boolean = true,
     val previewFirst: Boolean = true,
     val userInitiatedOnly: Boolean = true,
@@ -109,20 +111,26 @@ object StudyOnboardingSamplePlanWizard {
         require(input.previewFirst) { "Onboarding samples must be previewed before creation." }
         require(input.userInitiatedOnly) { "Onboarding samples must be user initiated." }
         return when (input.template) {
-            OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK -> publicExamPlan()
+            OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK -> publicExamPlan(input.publicExam)
             OnboardingSamplePlanTemplate.UNIVERSITY_SEMESTER -> universityPlan()
             OnboardingSamplePlanTemplate.CERTIFICATION_BOOTCAMP -> certificationPlan()
             OnboardingSamplePlanTemplate.FREE_STUDY_HABIT -> freeStudyPlan()
         }
     }
 
-    fun buildSettings(planId: StudyPlanId, blueprint: OnboardingSamplePlanBlueprint): StudyPlanSettings =
-        StudyPlanSettings.defaults(planId).copy(
+    fun buildSettings(planId: StudyPlanId, blueprint: OnboardingSamplePlanBlueprint): StudyPlanSettings {
+        val defaults = StudyPlanSettings.defaults(planId)
+        val configurationJson = blueprint.publicExam?.let { profile ->
+            PublicExamReviewPolicyCodec.encode(defaults.configurationJson, profile.reviewPolicy)
+        } ?: defaults.configurationJson
+        return defaults.copy(
             adaptivePlanningEnabled = blueprint.adaptivePlanningEnabled,
             reviewNotificationsEnabled = blueprint.reviewNotificationsEnabled,
             strictExamModeEnabled = blueprint.strictExamModeEnabled,
             preferredSessionMinutes = blueprint.preferredSessionMinutes,
+            configurationJson = configurationJson,
         )
+    }
 
     fun buildScheduleRules(
         planId: StudyPlanId,
@@ -145,10 +153,12 @@ object StudyOnboardingSamplePlanWizard {
         )
     }
 
-    private fun publicExamPlan() = OnboardingSamplePlanBlueprint(
+    private fun publicExamPlan(input: PublicExamOnboardingInput): OnboardingSamplePlanBlueprint {
+        val profile = PublicExamOnboardingBuilder.build(input)
+        return OnboardingSamplePlanBlueprint(
         template = OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK,
         studyType = StudyType.PUBLIC_EXAMINATION,
-        weeklyGoalHours = 18,
+        weeklyGoalHours = profile.weeklyAvailabilityHours,
         preferredSessionMinutes = 50,
         adaptivePlanningEnabled = true,
         reviewNotificationsEnabled = true,
@@ -177,7 +187,9 @@ object StudyOnboardingSamplePlanWizard {
             rule(5, 19 * 60, 75, OnboardingSampleSubjectKind.REVIEW_AND_FLASHCARDS),
             rule(6, 9 * 60, 120, OnboardingSampleSubjectKind.QUESTIONS_AND_CASES),
         ),
+        publicExam = profile,
     )
+    }
 
     private fun universityPlan() = OnboardingSamplePlanBlueprint(
         template = OnboardingSamplePlanTemplate.UNIVERSITY_SEMESTER,
