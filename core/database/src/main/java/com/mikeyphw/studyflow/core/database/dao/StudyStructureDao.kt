@@ -59,6 +59,9 @@ interface StudyStructureDao {
     @Query("SELECT * FROM topics WHERE id = :topicId AND studyPlanId = :planId LIMIT 1")
     suspend fun findTopic(planId: String, topicId: String): TopicEntity?
 
+    @Query("SELECT * FROM study_targets WHERE studyPlanId = :planId LIMIT 1")
+    suspend fun findTargetForPlan(planId: String): StudyTargetEntity?
+
     @Query("SELECT * FROM study_targets WHERE id = :targetId LIMIT 1")
     suspend fun findTargetById(targetId: String): StudyTargetEntity?
 

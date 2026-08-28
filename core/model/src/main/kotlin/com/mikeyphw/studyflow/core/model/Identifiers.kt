@@ -208,3 +208,24 @@ value class LanguageReviewAttemptId(val value: String) {
         require(value.isNotBlank()) { "LanguageReviewAttemptId cannot be blank." }
     }
 }
+
+@JvmInline
+value class ExamNoticeRevisionId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "ExamNoticeRevisionId cannot be blank." }
+    }
+}
+
+@JvmInline
+value class StudyCycleId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "StudyCycleId cannot be blank." }
+    }
+}
+
+@JvmInline
+value class StudyCycleItemId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "StudyCycleItemId cannot be blank." }
+    }
+}

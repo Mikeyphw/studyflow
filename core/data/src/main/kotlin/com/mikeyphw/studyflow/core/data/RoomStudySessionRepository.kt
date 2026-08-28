@@ -5,8 +5,13 @@ import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.entity.DatabaseMetadataEntity
 import com.mikeyphw.studyflow.core.database.mapper.asEntity
 import com.mikeyphw.studyflow.core.database.mapper.asExternalModel
+import com.mikeyphw.studyflow.core.domain.StudyCyclePlanner
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.StudyCycleId
+import com.mikeyphw.studyflow.core.model.StudyCycleItemId
+import com.mikeyphw.studyflow.core.model.StudyCycleSessionBinding
+import com.mikeyphw.studyflow.core.model.StudyCycleSnapshot
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
@@ -73,6 +78,7 @@ internal class RoomStudySessionRepository(
     override suspend fun createSession(
         session: StudySession,
         linkedActivityExpectedStatus: PlannedActivityStatus?,
+        cycleBinding: StudyCycleSessionBinding?,
     ): StudySession = diagnosticRecorder.recordRepositoryMutation(
         area = com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea.STUDY_SESSIONS,
         action = "session-create",
@@ -112,6 +118,33 @@ internal class RoomStudySessionRepository(
                 DatabaseMetadataEntity(
                     key = sourceActivityStatusKey(session.id),
                     value = expected.name,
+                ),
+            )
+        }
+
+        cycleBinding?.let { binding ->
+            val publicExamDao = database.publicExamDao()
+            val cycle = requireNotNull(publicExamDao.findStudyCycle(session.studyPlanId.value)) {
+                "Study cycle does not belong to this Study Plan."
+            }
+            require(cycle.id == binding.cycleId.value && cycle.currentItemId == binding.itemId.value) {
+                "Study cycle changed before the Study Session could start."
+            }
+            val eligibleIds = publicExamDao.findEligibleStudyCycleItems(
+                session.studyPlanId.value,
+                cycle.id,
+            ).map { it.id }.toSet()
+            require(binding.itemId.value in eligibleIds) {
+                "Study cycle item is no longer eligible."
+            }
+            metadataDao.upsert(
+                DatabaseMetadataEntity(
+                    key = cycleSessionBindingKey(session.id),
+                    value = listOf(
+                        session.studyPlanId.value,
+                        binding.cycleId.value,
+                        binding.itemId.value,
+                    ).joinToString("|"),
                 ),
             )
         }
@@ -199,6 +232,11 @@ internal class RoomStudySessionRepository(
             "Study Session changed before the requested transition could be applied."
         }
         if (session.status in setOf(StudySessionStatus.COMPLETED, StudySessionStatus.CANCELLED)) {
+            val bindingValue = metadataDao.findValue(cycleSessionBindingKey(session.id))
+            if (session.status == StudySessionStatus.COMPLETED && bindingValue != null) {
+                advanceBoundStudyCycle(session, bindingValue)
+            }
+            metadataDao.delete(cycleSessionBindingKey(session.id))
             metadataDao.delete(sourceActivityStatusKey(session.id))
         }
         requireNotNull(planningDao.findStudySession(session.studyPlanId.value, session.id.value))
@@ -311,6 +349,67 @@ internal class RoomStudySessionRepository(
             require(current == proposed) { "A terminal Study Session is immutable." }
         }
     }
+
+    private suspend fun advanceBoundStudyCycle(session: StudySession, encoded: String) {
+        val parts = encoded.split('|')
+        require(parts.size == 3 && parts[0] == session.studyPlanId.value) {
+            "Study cycle session binding is invalid."
+        }
+        val cycleId = StudyCycleId(parts[1])
+        val itemId = StudyCycleItemId(parts[2])
+        val publicExamDao = database.publicExamDao()
+        val cycleEntity = requireNotNull(publicExamDao.findStudyCycle(session.studyPlanId.value)) {
+            "Bound Study cycle no longer exists."
+        }
+        require(cycleEntity.id == cycleId.value) { "Bound Study cycle changed." }
+        val allItems = publicExamDao.findStudyCycleItems(session.studyPlanId.value, cycleId.value)
+        val eligible = publicExamDao.findEligibleStudyCycleItems(session.studyPlanId.value, cycleId.value)
+        val snapshot = StudyCycleSnapshot(
+            cycle = cycleEntity.toCycleModel(),
+            items = allItems.map { it.toCycleItemModel() },
+        )
+        val next = StudyCyclePlanner.nextAfterCompletion(
+            snapshot = snapshot,
+            completedItemId = itemId,
+            eligibleItemIds = eligible.map { StudyCycleItemId(it.id) }.toSet(),
+        )
+        require(
+            publicExamDao.setCurrentStudyCycleItem(
+                planId = session.studyPlanId.value,
+                cycleId = cycleId.value,
+                itemId = next?.id?.value,
+                updatedAt = session.endedAtEpochMillis ?: System.currentTimeMillis(),
+            ) == 1,
+        ) { "Study cycle changed before completion could advance it." }
+    }
+
+    private fun com.mikeyphw.studyflow.core.database.entity.StudyCycleEntity.toCycleModel() =
+        com.mikeyphw.studyflow.core.model.StudyCycle(
+            id = StudyCycleId(id),
+            studyPlanId = StudyPlanId(studyPlanId),
+            name = name,
+            enabled = enabled,
+            currentItemId = currentItemId?.let(::StudyCycleItemId),
+            createdAtEpochMillis = createdAtEpochMillis,
+            updatedAtEpochMillis = updatedAtEpochMillis,
+        )
+
+    private fun com.mikeyphw.studyflow.core.database.entity.StudyCycleItemEntity.toCycleItemModel() =
+        com.mikeyphw.studyflow.core.model.StudyCycleItem(
+            id = StudyCycleItemId(id),
+            studyCycleId = StudyCycleId(studyCycleId),
+            studyPlanId = StudyPlanId(studyPlanId),
+            subjectId = subjectId?.let { com.mikeyphw.studyflow.core.model.SubjectId(it) },
+            topicId = topicId?.let { com.mikeyphw.studyflow.core.model.TopicId(it) },
+            position = position,
+            targetDurationMinutes = targetDurationMinutes,
+            enabled = enabled,
+            activityType = com.mikeyphw.studyflow.core.model.StudyActivityType.valueOf(activityType),
+            completionRule = completionRule,
+        )
+
+    private fun cycleSessionBindingKey(sessionId: StudySessionId): String =
+        "cycle_session_binding:${sessionId.value}"
 
     private fun sourceActivityStatusKey(sessionId: StudySessionId): String =
         "session_source_activity_status:${sessionId.value}"

@@ -85,6 +85,13 @@ class StudyPlanGraphDuplicator(
                 remap = setOf("id", "studyTargetId"),
             ),
             table(
+                "exam_notice_revisions",
+                "id", "studyPlanId", "studyTargetId", "label", "sourceReference",
+                "importedAtEpochMillis", "normalizedContentSha256", "parserVersion",
+                "publicationDateIso", "addedCount", "removedCount", "changedCount", "unchangedCount",
+                remap = setOf("id", "studyTargetId"),
+            ),
+            table(
                 "subjects",
                 "id", "studyPlanId", "name", "description", "colorArgb", "priority", "examWeight",
                 "estimatedMinutes", "progressPercent", "accuracyPercent", "status", "position", "archived",
@@ -97,6 +104,18 @@ class StudyPlanGraphDuplicator(
                 "difficulty", "examIncidencePercent", "estimatedMinutes", "progressPercent", "masteryPercent",
                 "status", "position", "archived", "examStageId",
                 remap = setOf("id", "subjectId", "parentTopicId", "examStageId"),
+            ),
+            table(
+                "study_cycles",
+                "id", "studyPlanId", "name", "enabled", "currentItemId",
+                "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id", "currentItemId"),
+            ),
+            table(
+                "study_cycle_items",
+                "id", "studyCycleId", "studyPlanId", "subjectId", "topicId", "position",
+                "targetDurationMinutes", "enabled", "activityType", "completionRule",
+                remap = setOf("id", "studyCycleId", "subjectId", "topicId"),
             ),
             table(
                 "study_strategies",

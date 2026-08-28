@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.StudyCycleSessionBinding
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
@@ -27,6 +28,7 @@ interface StudySessionRepository {
     suspend fun createSession(
         session: StudySession,
         linkedActivityExpectedStatus: PlannedActivityStatus? = null,
+        cycleBinding: StudyCycleSessionBinding? = null,
     ): StudySession
 
     suspend fun transitionSession(

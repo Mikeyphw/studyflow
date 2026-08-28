@@ -4,6 +4,7 @@ import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
+import com.mikeyphw.studyflow.core.model.StudyCycleSessionBinding
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
@@ -43,6 +44,7 @@ class ManageStudySession(
         materialId: StudyMaterialId? = null,
         videoResourceId: VideoResourceId? = null,
         targetDurationMinutes: Int? = null,
+        cycleBinding: StudyCycleSessionBinding? = null,
     ): StudySession {
         require(title.isNotBlank()) { "Quick Study Session title cannot be blank." }
         require(targetDurationMinutes == null || targetDurationMinutes in 5..240) {
@@ -79,6 +81,7 @@ class ManageStudySession(
                 notes = title.trim(),
                 targetDurationMinutes = resolvedTargetDurationMinutes,
             ),
+            cycleBinding = cycleBinding,
         )
         runtimeClock.register(created)
         return created

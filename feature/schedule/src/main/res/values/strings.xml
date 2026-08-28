@@ -79,4 +79,13 @@
     <string name="confirm_delete">Delete</string>
     <string name="invalid_time">Enter a valid time such as 08:30.</string>
     <string name="invalid_duration">Duration must be between 5 and 720 minutes.</string>
+    <string name="study_cycle_title">Study cycle</string>
+    <string name="study_cycle_not_configured">No persistent study cycle is configured yet.</string>
+    <string name="study_cycle_status">%1$d items · current position %2$d</string>
+    <string name="build_cycle">Build cycle</string>
+    <string name="rebuild_cycle">Rebuild cycle</string>
+    <string name="skip_once">Skip once</string>
+    <string name="disable_cycle">Disable cycle</string>
+    <string name="enable_cycle">Enable cycle</string>
+    <string name="move_current_to_end">Move current to end</string>
 </resources>

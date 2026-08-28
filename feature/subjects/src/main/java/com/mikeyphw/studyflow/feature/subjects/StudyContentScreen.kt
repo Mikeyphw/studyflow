@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.SelectAll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
@@ -65,6 +66,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
+import com.mikeyphw.studyflow.core.domain.ExamNoticeDiffKind
+import com.mikeyphw.studyflow.core.domain.ExamNoticeImportPreview
+import com.mikeyphw.studyflow.core.domain.ExamNoticeRevisionPlanner
+import com.mikeyphw.studyflow.core.domain.ExamNoticeRevisionPreview
+import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.SyllabusImportDraft
@@ -99,6 +105,7 @@ private sealed interface DeleteRequest {
 fun StudyContentScreen(
     plan: StudyPlan,
     content: ManageStudyContent,
+    publicExamManager: ManagePublicExam? = null,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -108,6 +115,11 @@ fun StudyContentScreen(
     val syllabus by syllabusFlow.collectAsStateWithLifecycle(
         initialValue = StudySyllabus(plan.id, emptyList(), emptyList()),
     )
+    val revisionFlow = remember(plan.id, publicExamManager) {
+        publicExamManager?.observeExamNoticeRevisions(plan.id) ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    }
+    val revisions by revisionFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val coverage = remember(syllabus) { ExamNoticeRevisionPlanner.coverage(syllabus) }
     var query by rememberSaveable { mutableStateOf("") }
     var filterName by rememberSaveable { mutableStateOf(SyllabusFilter.ACTIVE.name) }
     var sortName by rememberSaveable { mutableStateOf(SyllabusSort.POSITION.name) }
@@ -122,6 +134,7 @@ fun StudyContentScreen(
     var deleteRequest by remember { mutableStateOf<DeleteRequest?>(null) }
     var showBulkDialog by rememberSaveable { mutableStateOf(false) }
     var showImportDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingRevisionPreview by remember { mutableStateOf<ExamNoticeRevisionPreview?>(null) }
 
     val editingSubject = editingSubjectId?.let { id -> syllabus.subjects.firstOrNull { it.id.value == id } }
     val topicEditorRequest = topicEditorSubjectId?.let { subjectId ->
@@ -210,6 +223,40 @@ fun StudyContentScreen(
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            if (plan.type == StudyType.PUBLIC_EXAMINATION && publicExamManager != null) {
+                item {
+                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.exam_notice_history_title),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(
+                                    R.string.exam_notice_coverage,
+                                    coverage.studiedCanonicalItems,
+                                    coverage.totalCanonicalItems,
+                                    coverage.coveragePercent,
+                                ),
+                            )
+                            revisions.firstOrNull()?.let { revision ->
+                                Text(
+                                    stringResource(
+                                        R.string.exam_notice_latest_revision,
+                                        revision.label,
+                                        revision.addedCount,
+                                        revision.removedCount,
+                                        revision.changedCount,
+                                    ),
+                                )
+                            } ?: Text(stringResource(R.string.exam_notice_no_revisions))
+                        }
+                    }
+                }
+            }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
@@ -475,9 +522,57 @@ fun StudyContentScreen(
             existingSyllabus = syllabus,
             isPublicExam = plan.type == StudyType.PUBLIC_EXAMINATION,
             onDismiss = { showImportDialog = false },
-            onImport = { draft: SyllabusImportDraft ->
+            onImport = { importPreview: ExamNoticeImportPreview ->
                 showImportDialog = false
-                launchAction(importCompleted) { content.importSyllabus(plan.id, draft) }
+                if (plan.type == StudyType.PUBLIC_EXAMINATION && publicExamManager != null) {
+                    scope.launch {
+                        runRecoverableOperation {
+                            publicExamManager.prepareExamNoticeRevision(
+                                planId = plan.id,
+                                importPreview = importPreview,
+                                existing = syllabus,
+                            )
+                        }.onSuccess { pendingRevisionPreview = it }
+                            .onFailure { snackbar.showSnackbar(operationFailed) }
+                    }
+                } else {
+                    launchAction(importCompleted) { content.importSyllabus(plan.id, importPreview.draft) }
+                }
+            },
+        )
+    }
+
+    pendingRevisionPreview?.let { preview ->
+        AlertDialog(
+            onDismissRequest = { pendingRevisionPreview = null },
+            title = { Text(stringResource(R.string.exam_notice_revision_preview_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(
+                            R.string.exam_notice_revision_summary,
+                            preview.addedCount,
+                            preview.removedCount,
+                            preview.changedCount,
+                            preview.unchangedCount,
+                        ),
+                    )
+                    Text(stringResource(R.string.exam_notice_revision_archive_notice))
+                    preview.changes.filter { it.kind != ExamNoticeDiffKind.UNCHANGED }.take(12).forEach { change ->
+                        Text("• ${change.kind.name.lowercase()}: ${change.afterName ?: change.beforeName.orEmpty()}")
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        pendingRevisionPreview = null
+                        launchAction(importCompleted) { publicExamManager?.applyExamNoticeRevision(preview) }
+                    },
+                ) { Text(stringResource(R.string.apply_revision)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRevisionPreview = null }) { Text(stringResource(R.string.cancel)) }
             },
         )
     }

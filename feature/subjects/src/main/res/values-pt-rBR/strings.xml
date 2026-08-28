@@ -125,4 +125,12 @@
         <item quantity="many">%d assuntos detectados</item>
         <item quantity="other">%d assuntos detectados</item>
     </plurals>
+    <string name="exam_notice_revision_preview_title">Impacto da revisão do edital</string>
+    <string name="exam_notice_revision_summary">Adicionados %1$d · Removidos %2$d · Alterados %3$d · Inalterados %4$d</string>
+    <string name="exam_notice_revision_archive_notice">Itens removidos do conteúdo serão arquivados, não excluídos permanentemente.</string>
+    <string name="apply_revision">Aplicar revisão</string>
+    <string name="exam_notice_history_title">Histórico do edital e cobertura</string>
+    <string name="exam_notice_coverage">Cobertura: %1$d de %2$d itens canônicos (%3$d%%)</string>
+    <string name="exam_notice_latest_revision">Última: %1$s · +%2$d / −%3$d / ~%4$d</string>
+    <string name="exam_notice_no_revisions">Nenhuma revisão de edital aceita ainda.</string>
 </resources>

@@ -340,7 +340,7 @@ internal fun ImportSyllabusDialog(
     existingSyllabus: StudySyllabus,
     isPublicExam: Boolean,
     onDismiss: () -> Unit,
-    onImport: (SyllabusImportDraft) -> Unit,
+    onImport: (ExamNoticeImportPreview) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -473,7 +473,7 @@ internal fun ImportSyllabusDialog(
         confirmButton = {
             val result = preview?.getOrNull()
             Button(
-                onClick = { result?.takeIf(ExamNoticeImportPreview::canApply)?.let { onImport(it.draft) } },
+                onClick = { result?.takeIf(ExamNoticeImportPreview::canApply)?.let { onImport(it) } },
                 enabled = result?.canApply == true,
             ) {
                 Text(stringResource(R.string.import_action))

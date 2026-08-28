@@ -63,7 +63,10 @@ for token in (
     require(token in dialogs + screen, f"Android edital import UX contract missing: {token}")
 
 require("result?.takeIf(ExamNoticeImportPreview::canApply)" in dialogs, "Apply must require a successful preview")
-require("onImport(it.draft)" in dialogs, "Preview draft must be the only explicit apply payload")
+require(
+    "onImport(it)" in dialogs and "content.importSyllabus(plan.id, importPreview.draft)" in screen,
+    "Successful preview must remain the only explicit apply payload",
+)
 require("onValueChange" in dialogs and "preview = null" in dialogs, "Editing source must invalidate the preview")
 require("destructiveChanges" in dialogs, "Preview must surface destructive-change count")
 require("duplicateSubjects" in dialogs and "duplicateTopics" in dialogs, "Preview must surface duplicates")

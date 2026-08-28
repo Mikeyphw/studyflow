@@ -6,6 +6,7 @@ import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder
 import com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
+import com.mikeyphw.studyflow.core.domain.PublicExamRepository
 import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
 import com.mikeyphw.studyflow.core.domain.StudyContentRepository
@@ -43,6 +44,7 @@ class StudyFlowDataLayer internal constructor(
     val studyReviewRepository: StudyReviewRepository,
     val studyProgressRepository: StudyProgressRepository,
     val studyAnalyticsRepository: StudyAnalyticsRepository,
+    val publicExamRepository: PublicExamRepository,
     val annexFileStorageRepository: AnnexFileStorageRepository,
     private val initializeData: suspend () -> Unit,
     private val inspectDatabase: suspend () -> DatabaseHealthLabReport,
@@ -81,6 +83,7 @@ fun createStudyFlowDataLayer(
     val studyReviewRepository = RoomStudyReviewRepository(database, diagnosticRecorder)
     val studyProgressRepository = RoomStudyProgressRepository(database)
     val studyAnalyticsRepository = RoomStudyAnalyticsRepository(database, dataSharingScope, clock)
+    val publicExamRepository = RoomPublicExamRepository(database, clock)
     val annexFileStorageRepository = RoomAnnexFileStorageRepository(
         context = context.applicationContext,
         database = database,
@@ -107,6 +110,7 @@ fun createStudyFlowDataLayer(
         studyReviewRepository = studyReviewRepository,
         studyProgressRepository = studyProgressRepository,
         studyAnalyticsRepository = studyAnalyticsRepository,
+        publicExamRepository = publicExamRepository,
         annexFileStorageRepository = annexFileStorageRepository,
         initializeData = {
             studyPlanRepository.seedFoundationSamplesOnce()

@@ -12,6 +12,7 @@ import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
 import com.mikeyphw.studyflow.core.domain.CreateStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageAdaptiveReschedule
 import com.mikeyphw.studyflow.core.domain.ManageExamReadiness
+import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.ManageStudyCloudSync
@@ -102,6 +103,7 @@ interface AppContainer : DiagnosticRecorderProvider {
     val manageStudyCloudSync: ManageStudyCloudSync
     val manageStudySchedule: ManageStudySchedule
     val manageStudySession: ManageStudySession
+    val managePublicExam: ManagePublicExam
     val manageStudyPractice: ManageStudyPractice
     val manageStudyLibrary: ManageStudyLibrary
     val manageStudyReview: ManageStudyReview
@@ -186,6 +188,10 @@ private class DefaultAppContainer(
         repository = studySessionRepository,
         studyPlanRepository = studyPlanRepository,
         monotonicClockMillis = SystemClock::elapsedRealtime,
+    )
+    override val managePublicExam = ManagePublicExam(
+        repository = dataLayer.publicExamRepository,
+        sessionManager = manageStudySession,
     )
     override val manageStudyPractice = ManageStudyPractice(studyPracticeRepository, studyPlanRepository)
     override val manageStudyLibrary = ManageStudyLibrary(studyLibraryRepository)

@@ -254,6 +254,15 @@ class StudyPlanGraphPortabilityStore(
         rows("exam_stages").forEach { row ->
             requireReference("exam_stages", row, "studyTargetId", "study_targets", required = true)
         }
+        rows("exam_notice_revisions").forEach { row ->
+            requireReference(
+                "exam_notice_revisions",
+                row,
+                "studyTargetId",
+                "study_targets",
+                required = true,
+            )
+        }
         rows("subjects").forEach { row ->
             requireReference("subjects", row, "examStageId", "exam_stages")
         }
@@ -278,6 +287,19 @@ class StudyPlanGraphPortabilityStore(
             val subjectId = row.values["subjectId"]?.value?.takeIf(String::isNotBlank)
             require(subjectId == topic.values["subjectId"]?.value) {
                 "$tableName subject/topic ownership is inconsistent."
+            }
+        }
+        rows("study_cycle_items").forEach { row ->
+            requireReference("study_cycle_items", row, "studyCycleId", "study_cycles", required = true)
+            requireReference("study_cycle_items", row, "subjectId", "subjects")
+            requireReference("study_cycle_items", row, "topicId", "topics")
+            requireTopicSubjectConsistency("study_cycle_items", row)
+        }
+        rows("study_cycles").forEach { row ->
+            val currentItemId = row.values["currentItemId"]?.value?.takeIf(String::isNotBlank) ?: return@forEach
+            val item = rows("study_cycle_items").firstOrNull { it.values["id"]?.value == currentItemId }
+            require(item != null && item.values["studyCycleId"]?.value == row.values["id"]?.value) {
+                "Study cycle current item must belong to the same cycle."
             }
         }
         rows("schedule_rules").forEach { row ->
@@ -635,7 +657,8 @@ class StudyPlanGraphPortabilityStore(
             remappedIdentifierColumns = setOf("id"),
         )
         val StructureTables = setOf(
-            "study_targets", "exam_stages", "subjects", "topics", "study_strategies",
+            "study_targets", "exam_stages", "subjects", "topics", "study_cycles",
+            "study_cycle_items", "study_strategies",
             "schedule_rules", "study_plan_settings", "programming_course_profiles",
             "termux_runtime_preferences",
         )
@@ -648,6 +671,9 @@ class StudyPlanGraphPortabilityStore(
         val MergeSkippedTables = setOf(
             "study_targets",
             "exam_stages",
+            "exam_notice_revisions",
+            "study_cycles",
+            "study_cycle_items",
             "study_strategies",
             "study_plan_settings",
             "programming_course_profiles",

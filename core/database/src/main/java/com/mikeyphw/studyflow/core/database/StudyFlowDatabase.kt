@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import com.mikeyphw.studyflow.core.database.dao.DatabaseMetadataDao
 import com.mikeyphw.studyflow.core.database.dao.PlanOwnershipDao
 import com.mikeyphw.studyflow.core.database.dao.ProgrammingCourseDao
+import com.mikeyphw.studyflow.core.database.dao.PublicExamDao
 import com.mikeyphw.studyflow.core.database.dao.LanguageLearningDao
 import com.mikeyphw.studyflow.core.database.dao.StudyDiscoveryDao
 import com.mikeyphw.studyflow.core.database.dao.StudyAnalyticsDao
@@ -32,6 +33,7 @@ import com.mikeyphw.studyflow.core.database.entity.TermuxCommandRequestEntity
 import com.mikeyphw.studyflow.core.database.entity.TermuxCommandResultEntity
 import com.mikeyphw.studyflow.core.database.entity.DatabaseMetadataEntity
 import com.mikeyphw.studyflow.core.database.entity.ErrorEntryEntity
+import com.mikeyphw.studyflow.core.database.entity.ExamNoticeRevisionEntity
 import com.mikeyphw.studyflow.core.database.entity.ExamStageEntity
 import com.mikeyphw.studyflow.core.database.entity.FlashcardEntity
 import com.mikeyphw.studyflow.core.database.entity.MockExamEntity
@@ -41,6 +43,8 @@ import com.mikeyphw.studyflow.core.database.entity.QuestionEntity
 import com.mikeyphw.studyflow.core.database.entity.ReviewItemEntity
 import com.mikeyphw.studyflow.core.database.entity.ScheduleRuleEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyGoalEntity
+import com.mikeyphw.studyflow.core.database.entity.StudyCycleEntity
+import com.mikeyphw.studyflow.core.database.entity.StudyCycleItemEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyMaterialEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyNoteEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyPlanEntity
@@ -58,9 +62,12 @@ import com.mikeyphw.studyflow.core.database.entity.VideoResourceEntity
         StudyPlanEntity::class,
         StudyTargetEntity::class,
         ExamStageEntity::class,
+        ExamNoticeRevisionEntity::class,
         SubjectEntity::class,
         TopicEntity::class,
         StudyStrategyEntity::class,
+        StudyCycleEntity::class,
+        StudyCycleItemEntity::class,
         ScheduleRuleEntity::class,
         PlannedActivityEntity::class,
         StudySessionEntity::class,
@@ -121,8 +128,10 @@ abstract class StudyFlowDatabase : RoomDatabase() {
 
     abstract fun languageLearningDao(): LanguageLearningDao
 
+    abstract fun publicExamDao(): PublicExamDao
+
     companion object {
-        const val SCHEMA_VERSION = 9
+        const val SCHEMA_VERSION = 11
         const val DATABASE_NAME = "studyflow.db"
 
         fun create(context: Context): StudyFlowDatabase =

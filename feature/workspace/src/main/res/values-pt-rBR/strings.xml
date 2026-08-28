@@ -641,4 +641,6 @@
     <string name="programming_termux_execution_title">Execução segura no Termux</string>
     <string name="programming_termux_execution_message">Exercícios agora preparam arquivos, rodam modelos permitidos e capturam stdout, stderr e código de saída.</string>
     <string name="programming_termux_result_summary">O resultado alimenta decisões de tentar de novo, revisar e concluir.</string>
+    <string name="study_cycle_next">Ciclo de estudos · próximo</string>
+    <string name="study_cycle_duration">Ciclo persistente · meta de %1$d min</string>
 </resources>

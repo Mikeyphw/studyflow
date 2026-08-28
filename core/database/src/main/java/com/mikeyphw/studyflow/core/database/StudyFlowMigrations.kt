@@ -405,6 +405,116 @@ object StudyFlowMigrations {
     }
 
 
+    val Migration9To10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS exam_notice_revisions (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyPlanId TEXT NOT NULL,
+                    studyTargetId TEXT NOT NULL,
+                    label TEXT NOT NULL,
+                    sourceReference TEXT,
+                    importedAtEpochMillis INTEGER NOT NULL,
+                    normalizedContentSha256 TEXT NOT NULL,
+                    parserVersion TEXT NOT NULL,
+                    publicationDateIso TEXT,
+                    addedCount INTEGER NOT NULL,
+                    removedCount INTEGER NOT NULL,
+                    changedCount INTEGER NOT NULL,
+                    unchangedCount INTEGER NOT NULL,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE,
+                    FOREIGN KEY(studyTargetId) REFERENCES study_targets(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_exam_notice_revisions_studyPlanId " +
+                    "ON exam_notice_revisions(studyPlanId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_exam_notice_revisions_studyTargetId " +
+                    "ON exam_notice_revisions(studyTargetId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_exam_notice_revisions_studyPlanId_importedAtEpochMillis " +
+                    "ON exam_notice_revisions(studyPlanId, importedAtEpochMillis)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_exam_notice_revisions_studyPlanId_normalizedContentSha256 " +
+                    "ON exam_notice_revisions(studyPlanId, normalizedContentSha256)",
+            )
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.install(db)
+        }
+    }
+
+    val Migration10To11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS study_cycles (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyPlanId TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    enabled INTEGER NOT NULL,
+                    currentItemId TEXT,
+                    createdAtEpochMillis INTEGER NOT NULL,
+                    updatedAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_study_cycles_studyPlanId " +
+                    "ON study_cycles(studyPlanId)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS study_cycle_items (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    studyCycleId TEXT NOT NULL,
+                    studyPlanId TEXT NOT NULL,
+                    subjectId TEXT,
+                    topicId TEXT,
+                    position INTEGER NOT NULL,
+                    targetDurationMinutes INTEGER NOT NULL,
+                    enabled INTEGER NOT NULL,
+                    activityType TEXT NOT NULL,
+                    completionRule TEXT,
+                    FOREIGN KEY(studyCycleId) REFERENCES study_cycles(id) ON DELETE CASCADE,
+                    FOREIGN KEY(studyPlanId) REFERENCES study_plans(id) ON DELETE CASCADE,
+                    FOREIGN KEY(subjectId) REFERENCES subjects(id) ON DELETE SET NULL,
+                    FOREIGN KEY(topicId) REFERENCES topics(id) ON DELETE SET NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_study_cycle_items_studyCycleId " +
+                    "ON study_cycle_items(studyCycleId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_study_cycle_items_studyPlanId " +
+                    "ON study_cycle_items(studyPlanId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_study_cycle_items_subjectId " +
+                    "ON study_cycle_items(subjectId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_study_cycle_items_topicId " +
+                    "ON study_cycle_items(topicId)",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_study_cycle_items_studyCycleId_position " +
+                    "ON study_cycle_items(studyCycleId, position)",
+            )
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.install(db)
+        }
+    }
+
+
     val All = arrayOf(
         Migration1To2,
         Migration2To3,
@@ -414,6 +524,8 @@ object StudyFlowMigrations {
         Migration6To7,
         Migration7To8,
         Migration8To9,
+        Migration9To10,
+        Migration10To11,
     )
 }
 

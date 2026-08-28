@@ -604,4 +604,6 @@
     <string name="programming_termux_execution_title">Safe Termux execution</string>
     <string name="programming_termux_execution_message">Exercises now prepare workspace files, run whitelisted templates and capture stdout, stderr and exit code.</string>
     <string name="programming_termux_result_summary">Result feeds retry, review and completion decisions.</string>
+    <string name="study_cycle_next">Study cycle · next</string>
+    <string name="study_cycle_duration">Persistent cycle · %1$d min target</string>
 </resources>

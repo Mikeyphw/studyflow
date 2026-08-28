@@ -50,6 +50,8 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
+import com.mikeyphw.studyflow.core.domain.ManagePublicExam
+import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.model.MissedActivityHandling
 import com.mikeyphw.studyflow.core.model.PlannedActivity
@@ -61,6 +63,8 @@ import com.mikeyphw.studyflow.core.model.ScheduleRuleId
 import com.mikeyphw.studyflow.core.model.ScheduleRuleType
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudySyllabus
+import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudyStrategy
 import com.mikeyphw.studyflow.core.model.StudyStrategyId
@@ -74,6 +78,8 @@ import kotlinx.coroutines.launch
 fun StudyScheduleScreen(
     plan: StudyPlan,
     scheduleManager: ManageStudySchedule,
+    contentManager: ManageStudyContent? = null,
+    publicExamManager: ManagePublicExam? = null,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -83,6 +89,18 @@ fun StudyScheduleScreen(
     val schedule by scheduleFlow.collectAsStateWithLifecycle(
         initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
     )
+    val syllabusFlow = remember(plan.id, contentManager) {
+        contentManager?.observeSyllabus(plan.id) ?: kotlinx.coroutines.flow.flowOf(
+            StudySyllabus(plan.id, emptyList(), emptyList()),
+        )
+    }
+    val syllabus by syllabusFlow.collectAsStateWithLifecycle(
+        initialValue = StudySyllabus(plan.id, emptyList(), emptyList()),
+    )
+    val cycleFlow = remember(plan.id, publicExamManager) {
+        publicExamManager?.observeStudyCycle(plan.id) ?: kotlinx.coroutines.flow.flowOf(null)
+    }
+    val cycle by cycleFlow.collectAsStateWithLifecycle(initialValue = null)
     var showRuleDialog by remember { mutableStateOf(false) }
     var showActivityDialog by remember { mutableStateOf(false) }
     var strategyName by rememberSaveable(schedule.strategy?.id?.value) {
@@ -149,6 +167,69 @@ fun StudyScheduleScreen(
                     text = stringResource(R.string.schedule_subtitle, plan.name),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            if (plan.type == StudyType.PUBLIC_EXAMINATION && publicExamManager != null) {
+                item {
+                    StudyFlowSectionCard(title = stringResource(R.string.study_cycle_title)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val current = cycle?.orderedItems?.firstOrNull { it.id == cycle?.cycle?.currentItemId }
+                            Text(
+                                if (cycle == null) {
+                                    stringResource(R.string.study_cycle_not_configured)
+                                } else {
+                                    stringResource(
+                                        R.string.study_cycle_status,
+                                        cycle?.orderedItems?.size ?: 0,
+                                        (current?.position ?: 0) + 1,
+                                    )
+                                },
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        launchAction(blockSaved) {
+                                            publicExamManager.replaceStudyCycleFromSyllabus(plan.id, syllabus)
+                                        }
+                                    },
+                                    enabled = syllabus.subjects.any { !it.archived },
+                                ) { Text(stringResource(if (cycle == null) R.string.build_cycle else R.string.rebuild_cycle)) }
+                                if (cycle != null) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            launchAction(blockSaved) { publicExamManager.skipCurrentStudyCycleItem(plan.id) }
+                                        },
+                                    ) { Text(stringResource(R.string.skip_once)) }
+                                }
+                            }
+                            if (cycle != null) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            launchAction(blockSaved) {
+                                                publicExamManager.setStudyCycleEnabled(plan.id, !(cycle?.cycle?.enabled ?: true))
+                                            }
+                                        },
+                                    ) {
+                                        Text(
+                                            stringResource(
+                                                if (cycle?.cycle?.enabled == true) R.string.disable_cycle else R.string.enable_cycle,
+                                            ),
+                                        )
+                                    }
+                                    current?.let { item ->
+                                        OutlinedButton(
+                                            onClick = {
+                                                launchAction(blockSaved) {
+                                                    publicExamManager.moveStudyCycleItemToEnd(plan.id, item.id)
+                                                }
+                                            },
+                                        ) { Text(stringResource(R.string.move_current_to_end)) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.study_strategy)) {

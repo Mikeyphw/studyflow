@@ -220,6 +220,12 @@ tasks.register<Exec>("verifyCpov02EditalImport") {
     commandLine("python3", "scripts/verify_cpov02_edital_import.py")
 }
 
+tasks.register<Exec>("verifyCpov03Cpov04PublicExamProgress") {
+    group = "verification"
+    description = "Checks CPOV03 edital revisions and CPOV04 persistent study-cycle contracts."
+    commandLine("python3", "scripts/verify_cpov03_04_public_exam_progress.py")
+}
+
 tasks.register<Exec>("verifyRepositoryContracts") {
     group = "verification"
     dependsOn("verifyStableToolchainBaseline", "verifyCpov00Toolchain")

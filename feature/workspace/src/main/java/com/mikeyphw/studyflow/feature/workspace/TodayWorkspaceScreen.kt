@@ -39,7 +39,9 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowMetricStrip
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionTitle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
+import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
+import com.mikeyphw.studyflow.core.domain.StudyCycleAction
 import com.mikeyphw.studyflow.core.domain.ManageStudyDiscovery
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
@@ -57,6 +59,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
+import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import java.text.DateFormat
 import java.util.Calendar
@@ -74,6 +77,7 @@ fun TodayWorkspaceScreen(
     reviewManager: ManageStudyReview,
     analyticsManager: ManageStudyAnalytics,
     discoveryManager: ManageStudyDiscovery,
+    publicExamManager: ManagePublicExam,
     onSwitchPlan: () -> Unit,
     onSearch: () -> Unit,
     onSystem: () -> Unit,
@@ -105,6 +109,9 @@ fun TodayWorkspaceScreen(
     val analyticsState by analyticsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     var recommendations by remember(plan.id) { mutableStateOf<List<StudyRecommendation>>(emptyList()) }
     var recommendationUnavailable by remember(plan.id) { mutableStateOf(false) }
+    val cycleFlow = remember(plan.id) { publicExamManager.observeStudyCycle(plan.id) }
+    val cycleSnapshot by cycleFlow.collectAsStateWithLifecycle(initialValue = null)
+    var cycleAction by remember(plan.id) { mutableStateOf<StudyCycleAction?>(null) }
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val operationFailed = stringResource(R.string.operation_failed)
     if (
@@ -123,6 +130,20 @@ fun TodayWorkspaceScreen(
         while (true) {
             currentTime = System.currentTimeMillis()
             delay(60_000L)
+        }
+    }
+
+    LaunchedEffect(plan.id, cycleSnapshot?.cycle?.currentItemId, cycleSnapshot?.cycle?.enabled) {
+        cycleAction = if (plan.type == StudyType.PUBLIC_EXAMINATION) {
+            try {
+                publicExamManager.nextStudyCycleAction(plan.id)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
+            }
+        } else {
+            null
         }
     }
 
@@ -216,6 +237,26 @@ fun TodayWorkspaceScreen(
                             onAction = onOpenReviews,
                             secondaryLabel = recommendation?.let { stringResource(R.string.open) },
                             onSecondaryAction = recommendation?.let { { onOpenRecommendation(it) } },
+                        )
+                        cycleAction != null -> StudyFlowFocusActionSurface(
+                            supportingLabel = stringResource(R.string.study_cycle_next),
+                            title = cycleAction?.title.orEmpty(),
+                            message = stringResource(
+                                R.string.study_cycle_duration,
+                                cycleAction?.targetDurationMinutes ?: 0,
+                            ),
+                            actionLabel = stringResource(R.string.start_focus),
+                            onAction = {
+                                scope.launch {
+                                    try {
+                                        publicExamManager.startCurrentStudyCycleItem(plan.id)?.let(onOpenFocus)
+                                    } catch (_: Exception) {
+                                        snackbar.showSnackbar(operationFailed)
+                                    }
+                                }
+                            },
+                            secondaryLabel = stringResource(R.string.adjust_plan),
+                            onSecondaryAction = onOpenSchedule,
                         )
                         nextActivity != null -> StudyFlowFocusActionSurface(
                             supportingLabel = stringResource(R.string.planned_next),
