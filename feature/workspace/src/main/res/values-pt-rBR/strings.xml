@@ -686,7 +686,7 @@
     <string name="dashboard_mock_cutoff">Último simulado %1$s · diferença para corte estimado %2$s</string>
     <string name="dashboard_days_to_exam">Dias até a prova: %1$s</string>
     <string name="edital_matrix_title">Matriz do edital</string>
-    <string name="edital_matrix_row">%1$s · P %2$s · Inc %3$s · Q %4$d · Ac %5$s · D %6$d%% · Rev %7$d · Err %8$d · Pr %9$d</string>
+    <string name="edital_matrix_row">%1$s · P %2$s · Inc %3$s · Q %4$d · Ac %5$s · D %6$d%% · Status %7$s · Rev %8$d · Err %9$d · Pr %10$d</string>
     <string name="importance_mastery_matrix_hint">Importância × domínio: prioridade maior combina evidência mais importante com menor domínio/mais pendências. Incidência desconhecida permanece desconhecida.</string>
     <string name="unknown">Desconhecido</string>
     <string name="preview">Prévia</string>
@@ -699,4 +699,18 @@
     <string name="final_stretch_2">Reta final · faixa de 2 dias</string>
     <string name="final_stretch_eve">Reta final · véspera da prova</string>
     <string name="final_stretch_allocation">Mix sugerido — conteúdo novo %1$d%% · revisões %2$d%% · erros %3$d%% · questões %4$d%% · simulados %5$d%% · legislação %6$d%%. O sprint continua alterando apenas atividades existentes e desbloqueadas.</string>
+    <string name="legislation_filter_weak">Fracos</string>
+    <string name="importance_mastery_matrix_title">Importância × domínio</string>
+    <string name="matrix_high_importance_low_mastery">Alta importância · fraco</string>
+    <string name="matrix_high_importance_high_mastery">Alta importância · dominado</string>
+    <string name="matrix_low_importance_low_mastery">Menor importância · fraco</string>
+    <string name="matrix_low_importance_high_mastery">Menor importância · dominado</string>
+    <string name="status_not_started">Não iniciado</string>
+    <string name="status_in_progress">Em andamento</string>
+    <string name="status_skipped">Ignorado</string>
+    <string name="legislation_link_evidence">Vincular evidência</string>
+    <string name="legislation_link_questions">Questões</string>
+    <string name="legislation_link_errors">Erros</string>
+    <string name="legislation_link_reviews">Revisões</string>
+    <string name="legislation_no_evidence_available">Ainda não há evidências de questões, erros ou revisões disponíveis.</string>
 </resources>

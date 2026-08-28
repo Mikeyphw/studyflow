@@ -649,7 +649,7 @@
     <string name="dashboard_mock_cutoff">Latest mock %1$s · estimated cutoff gap %2$s</string>
     <string name="dashboard_days_to_exam">Days until exam: %1$s</string>
     <string name="edital_matrix_title">Edital matrix</string>
-    <string name="edital_matrix_row">%1$s · W %2$s · Inc %3$s · Q %4$d · Acc %5$s · M %6$d%% · Rev %7$d · Err %8$d · P %9$d</string>
+    <string name="edital_matrix_row">%1$s · W %2$s · Inc %3$s · Q %4$d · Acc %5$s · M %6$d%% · Status %7$s · Rev %8$d · Err %9$d · P %10$d</string>
     <string name="importance_mastery_matrix_hint">Importance × mastery: higher priority means more important evidence with weaker mastery/backlog. Unknown incidence remains unknown.</string>
     <string name="unknown">Unknown</string>
     <string name="preview">Preview</string>
@@ -662,4 +662,18 @@
     <string name="final_stretch_2">Final stretch · 2-day band</string>
     <string name="final_stretch_eve">Final stretch · exam eve</string>
     <string name="final_stretch_allocation">Suggested mix — new content %1$d%% · reviews %2$d%% · errors %3$d%% · questions %4$d%% · mocks %5$d%% · legislation %6$d%%. The sprint still changes only existing unlocked activities.</string>
+    <string name="legislation_filter_weak">Weak</string>
+    <string name="importance_mastery_matrix_title">Importance × mastery</string>
+    <string name="matrix_high_importance_low_mastery">High importance · weak</string>
+    <string name="matrix_high_importance_high_mastery">High importance · mastered</string>
+    <string name="matrix_low_importance_low_mastery">Lower importance · weak</string>
+    <string name="matrix_low_importance_high_mastery">Lower importance · mastered</string>
+    <string name="status_not_started">Not started</string>
+    <string name="status_in_progress">In progress</string>
+    <string name="status_skipped">Skipped</string>
+    <string name="legislation_link_evidence">Link evidence</string>
+    <string name="legislation_link_questions">Questions</string>
+    <string name="legislation_link_errors">Errors</string>
+    <string name="legislation_link_reviews">Reviews</string>
+    <string name="legislation_no_evidence_available">No question, error, or review evidence is available yet.</string>
 </resources>

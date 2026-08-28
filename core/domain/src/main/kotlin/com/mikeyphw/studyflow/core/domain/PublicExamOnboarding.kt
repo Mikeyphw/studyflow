@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.model.GoalType
 import com.mikeyphw.studyflow.core.model.StudyGoal
 import com.mikeyphw.studyflow.core.model.StudyGoalId
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.StudyStrategy
 import com.mikeyphw.studyflow.core.model.StudyStrategyId
 import com.mikeyphw.studyflow.core.model.StudyStrategyType
@@ -22,8 +23,14 @@ enum class PublicExamGoalPreset {
     WEEKLY_STUDY_TIME,
     WEEKLY_QUESTIONS,
     ACCURACY,
+    ELIMINATE_OVERDUE_REVIEWS,
+    EDITAL_COVERAGE_BY_DATE,
     MONTHLY_MOCKS,
 }
+
+enum class PublicExamExamDateKind { CONFIRMED, EXPECTED }
+
+enum class PublicExamEditalImportChoice { NOW, LATER }
 
 enum class PublicExamImportTemplateKind {
     EDITAL,
@@ -34,14 +41,52 @@ enum class PublicExamImportTemplateKind {
 data class PublicExamImportTemplate(
     val kind: PublicExamImportTemplateKind,
     val repositoryPath: String,
+    val format: String,
     val localOnly: Boolean = true,
 )
 
 object PublicExamOnboardingTemplates {
     val importTemplates: List<PublicExamImportTemplate> = listOf(
-        PublicExamImportTemplate(PublicExamImportTemplateKind.EDITAL, "samples/import/public_exam_edital.txt"),
-        PublicExamImportTemplate(PublicExamImportTemplateKind.QUESTIONS, "samples/import/public_exam_questions.csv"),
-        PublicExamImportTemplate(PublicExamImportTemplateKind.LEGISLATION, "samples/import/public_exam_legislation.md"),
+        PublicExamImportTemplate(
+            PublicExamImportTemplateKind.EDITAL,
+            "samples/import/public_exam_edital.txt",
+            "structured-text",
+        ),
+        PublicExamImportTemplate(
+            PublicExamImportTemplateKind.EDITAL,
+            "samples/import/public_exam_edital.csv",
+            "csv",
+        ),
+        PublicExamImportTemplate(
+            PublicExamImportTemplateKind.EDITAL,
+            "samples/import/public_exam_edital.tsv",
+            "tsv",
+        ),
+        PublicExamImportTemplate(
+            PublicExamImportTemplateKind.QUESTIONS,
+            "samples/import/public_exam_questions.csv",
+            "csv",
+        ),
+        PublicExamImportTemplate(
+            PublicExamImportTemplateKind.QUESTIONS,
+            "samples/import/public_exam_questions.tsv",
+            "tsv",
+        ),
+        PublicExamImportTemplate(
+            PublicExamImportTemplateKind.LEGISLATION,
+            "samples/import/public_exam_legislation.txt",
+            "text",
+        ),
+        PublicExamImportTemplate(
+            PublicExamImportTemplateKind.LEGISLATION,
+            "samples/import/public_exam_legislation.md",
+            "markdown",
+        ),
+        PublicExamImportTemplate(
+            PublicExamImportTemplateKind.LEGISLATION,
+            "samples/import/public_exam_legislation.csv",
+            "csv",
+        ),
     )
 }
 
@@ -51,12 +96,16 @@ data class PublicExamOnboardingInput(
     val examBoard: String = "",
     val noticeUrl: String = "",
     val examDateIso: String = "",
+    val examDateKind: PublicExamExamDateKind = PublicExamExamDateKind.CONFIRMED,
+    val editalImportChoice: PublicExamEditalImportChoice = PublicExamEditalImportChoice.LATER,
     val weeklyAvailabilityHours: Int = 18,
     val cyclePreference: PublicExamCyclePreference = PublicExamCyclePreference.STUDY_CYCLE,
     val reviewDays: List<Int> = listOf(1, 7, 30),
     val weeklyQuestionGoal: Int = 200,
     val accuracyGoalPercent: Int = 80,
     val monthlyMockGoal: Int = 2,
+    val coverageGoalDateIso: String = "",
+    val includeOverdueReviewGoal: Boolean = true,
 ) {
     init {
         require(weeklyAvailabilityHours in 1..100) { "Weekly availability must be between 1 and 100 hours." }
@@ -71,6 +120,9 @@ data class PublicExamOnboardingInput(
         examDateIso.trim().takeIf(String::isNotEmpty)?.let { date ->
             require(runCatching { LocalDate.parse(date) }.isSuccess) { "Exam date must use YYYY-MM-DD." }
         }
+        coverageGoalDateIso.trim().takeIf(String::isNotEmpty)?.let { date ->
+            require(runCatching { LocalDate.parse(date) }.isSuccess) { "Coverage goal date must use YYYY-MM-DD." }
+        }
     }
 }
 
@@ -80,12 +132,16 @@ data class PublicExamOnboardingBlueprint(
     val examBoard: String,
     val noticeUrl: String?,
     val examDateIso: String?,
+    val examDateKind: PublicExamExamDateKind,
+    val editalImportChoice: PublicExamEditalImportChoice,
     val weeklyAvailabilityHours: Int,
     val cyclePreference: PublicExamCyclePreference,
     val reviewPolicy: PublicExamReviewPolicy,
     val weeklyQuestionGoal: Int,
     val accuracyGoalPercent: Int,
     val monthlyMockGoal: Int,
+    val coverageGoalDateIso: String?,
+    val includeOverdueReviewGoal: Boolean,
     val importTemplates: List<PublicExamImportTemplate> = PublicExamOnboardingTemplates.importTemplates,
 ) {
     val hasTargetProfile: Boolean = organization.isNotBlank() && role.isNotBlank() && examBoard.isNotBlank()
@@ -98,12 +154,16 @@ object PublicExamOnboardingBuilder {
         examBoard = input.examBoard.trim(),
         noticeUrl = input.noticeUrl.trim().ifBlank { null },
         examDateIso = input.examDateIso.trim().ifBlank { null },
+        examDateKind = input.examDateKind,
+        editalImportChoice = input.editalImportChoice,
         weeklyAvailabilityHours = input.weeklyAvailabilityHours,
         cyclePreference = input.cyclePreference,
         reviewPolicy = PublicExamReviewPolicy(input.reviewDays),
         weeklyQuestionGoal = input.weeklyQuestionGoal,
         accuracyGoalPercent = input.accuracyGoalPercent,
         monthlyMockGoal = input.monthlyMockGoal,
+        coverageGoalDateIso = input.coverageGoalDateIso.trim().ifBlank { null },
+        includeOverdueReviewGoal = input.includeOverdueReviewGoal,
     )
 
     fun buildTarget(
@@ -119,8 +179,12 @@ object PublicExamOnboardingBuilder {
             role = profile.role,
             examBoard = profile.examBoard,
             noticeUrl = profile.noticeUrl,
-            confirmedExamDateIso = profile.examDateIso,
-            expectedExamDateIso = null,
+            confirmedExamDateIso = profile.examDateIso.takeIf {
+                profile.examDateKind == PublicExamExamDateKind.CONFIRMED
+            },
+            expectedExamDateIso = profile.examDateIso.takeIf {
+                profile.examDateKind == PublicExamExamDateKind.EXPECTED
+            },
             openings = null,
             estimatedCutoffPercent = null,
             createdAtEpochMillis = nowEpochMillis,
@@ -155,6 +219,7 @@ object PublicExamOnboardingBuilder {
         goalTitles: Map<PublicExamGoalPreset, String>,
         startsOnIso: String,
         idFactory: () -> String,
+        accuracySubjectId: SubjectId? = null,
     ): List<StudyGoal> = buildList {
         addGoal(
             planId,
@@ -185,6 +250,21 @@ object PublicExamOnboardingBuilder {
                 blueprint.accuracyGoalPercent.toDouble(),
                 startsOnIso,
                 idFactory,
+                subjectId = accuracySubjectId,
+            )
+        }
+        if (blueprint.includeOverdueReviewGoal) {
+            addGoal(
+                planId, GoalType.CUSTOM, GoalPeriod.WEEKLY,
+                goalTitles.getValue(PublicExamGoalPreset.ELIMINATE_OVERDUE_REVIEWS),
+                1.0, startsOnIso, idFactory,
+            )
+        }
+        blueprint.coverageGoalDateIso?.let { targetDate ->
+            addGoal(
+                planId, GoalType.TOPIC_COMPLETION, GoalPeriod.CUSTOM,
+                goalTitles.getValue(PublicExamGoalPreset.EDITAL_COVERAGE_BY_DATE),
+                100.0, startsOnIso, idFactory, endsOnIso = targetDate,
             )
         }
         if (blueprint.monthlyMockGoal > 0) {
@@ -208,12 +288,14 @@ object PublicExamOnboardingBuilder {
         target: Double,
         startsOnIso: String,
         idFactory: () -> String,
+        subjectId: SubjectId? = null,
+        endsOnIso: String? = null,
     ) {
         add(
             StudyGoal(
                 id = StudyGoalId(idFactory()),
                 studyPlanId = planId,
-                subjectId = null,
+                subjectId = subjectId,
                 topicId = null,
                 type = type,
                 period = period,
@@ -221,7 +303,7 @@ object PublicExamOnboardingBuilder {
                 targetValue = target,
                 currentValue = 0.0,
                 startsOnIso = startsOnIso,
-                endsOnIso = null,
+                endsOnIso = endsOnIso,
                 completedAtEpochMillis = null,
                 archived = false,
             ),

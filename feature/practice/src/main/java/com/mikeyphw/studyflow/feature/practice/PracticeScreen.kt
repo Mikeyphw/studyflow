@@ -57,12 +57,17 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ExamBlueprintPlanner
 import com.mikeyphw.studyflow.core.domain.ExamBlueprintPreview
+import com.mikeyphw.studyflow.core.domain.ExamScoringMode
+import com.mikeyphw.studyflow.core.domain.ExamScoringPolicy
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.PublicExamQuestionFilter
+import com.mikeyphw.studyflow.core.domain.PublicExamQuestionOutcomeEvidence
+import com.mikeyphw.studyflow.core.domain.QuestionAttemptOutcome
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionState
 import com.mikeyphw.studyflow.core.domain.PracticeSummary
+import com.mikeyphw.studyflow.core.model.ErrorCategory
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
@@ -74,6 +79,7 @@ import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
+import com.mikeyphw.studyflow.core.model.TestMode
 import java.util.UUID
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -114,9 +120,27 @@ fun PracticeScreen(
     var selectedTopicId by rememberSaveable { mutableStateOf<String?>(null) }
     var authorshipFilter by rememberSaveable { mutableStateOf<QuestionAuthorship?>(null) }
     var difficultyFilter by rememberSaveable { mutableStateOf<Int?>(null) }
+    var outcomeFilter by rememberSaveable { mutableStateOf<QuestionAttemptOutcome?>(null) }
     var activeTestId by rememberSaveable { mutableStateOf<String?>(null) }
     var activeMockId by rememberSaveable { mutableStateOf<String?>(null) }
     var bancaBlueprintPreview by remember { mutableStateOf<ExamBlueprintPreview?>(null) }
+    var blueprintScoringMode by rememberSaveable { mutableStateOf(ExamScoringMode.NO_PENALTY) }
+    var blueprintWrongPenalty by rememberSaveable { mutableStateOf("1.0") }
+    var blueprintBlankPenalty by rememberSaveable { mutableStateOf("0.0") }
+    var blueprintTimeMinutes by rememberSaveable { mutableStateOf("120") }
+    var blueprintOverallMinimum by rememberSaveable { mutableStateOf("60") }
+    var blueprintSectionMinimum by rememberSaveable { mutableStateOf("") }
+    var blueprintSectionCounts by rememberSaveable { mutableStateOf("") }
+    var blueprintSectionWeights by rememberSaveable { mutableStateOf("") }
+    var blueprintStrictMode by rememberSaveable { mutableStateOf(true) }
+    var blueprintAllowMultipleChoice by rememberSaveable { mutableStateOf(true) }
+    var blueprintAllowTrueFalse by rememberSaveable { mutableStateOf(true) }
+    var blueprintAllowShortAnswer by rememberSaveable { mutableStateOf(true) }
+    val blueprintAllowedTypes = buildSet {
+        if (blueprintAllowMultipleChoice) add(QuestionType.MULTIPLE_CHOICE)
+        if (blueprintAllowTrueFalse) add(QuestionType.TRUE_FALSE)
+        if (blueprintAllowShortAnswer) add(QuestionType.SHORT_ANSWER)
+    }.ifEmpty { setOf(QuestionType.MULTIPLE_CHOICE) }
 
     val questionFilter = PublicExamQuestionFilter(
         examBoard = examBoardFilter.trim().ifBlank { null },
@@ -130,7 +154,11 @@ fun PracticeScreen(
         difficulty = difficultyFilter,
         favorite = true.takeIf { favoriteOnly },
         disputed = true.takeIf { disputedOnly },
+        outcome = outcomeFilter,
     )
+    val questionOutcomes = remember(questions, tests, mocks) {
+        PublicExamQuestionOutcomeEvidence.latest(questions, tests, mocks)
+    }
     val screenState = PracticeScreenState(
         questions = questions,
         tests = tests,
@@ -138,6 +166,7 @@ fun PracticeScreen(
         summary = summary,
         planId = plan.id,
         filter = questionFilter,
+        outcomes = questionOutcomes,
     )
     val operationFailed = stringResource(R.string.operation_failed)
     val questionSaved = stringResource(R.string.question_saved)
@@ -201,9 +230,11 @@ fun PracticeScreen(
                     PracticeRunnerCard(
                         title = stringResource(R.string.active_practice_attempt),
                         state = state,
-                        onAnswer = { question, answer, elapsedSeconds ->
+                        onAnswer = { question, answer, elapsedSeconds, category ->
                             launchAction(answerSaved) {
-                                practice.answerPracticeQuestion(plan.id, test.id, question.id, answer, elapsedSeconds)
+                                practice.answerPracticeQuestion(
+                                    plan.id, test.id, question.id, answer, elapsedSeconds, category,
+                                )
                             }
                         },
                         onFinish = {
@@ -222,9 +253,11 @@ fun PracticeScreen(
                     PracticeRunnerCard(
                         title = stringResource(R.string.active_mock_attempt),
                         state = state,
-                        onAnswer = { question, answer, elapsedSeconds ->
+                        onAnswer = { question, answer, elapsedSeconds, category ->
                             launchAction(answerSaved) {
-                                practice.answerMockQuestion(plan.id, mock.id, question.id, answer, elapsedSeconds)
+                                practice.answerMockQuestion(
+                                    plan.id, mock.id, question.id, answer, elapsedSeconds, category,
+                                )
                             }
                         },
                         onFinish = {
@@ -254,6 +287,7 @@ fun PracticeScreen(
                             selectedTopicId = null
                             authorshipFilter = null
                             difficultyFilter = null
+                            outcomeFilter = null
                         },
                         label = { Text(stringResource(R.string.all_questions)) },
                     )
@@ -340,6 +374,32 @@ fun PracticeScreen(
                                     label = { Text(level.toString()) },
                                 )
                             }
+                        }
+                        Text(stringResource(R.string.filter_attempt_outcome))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = outcomeFilter == null,
+                                onClick = { outcomeFilter = null },
+                                label = { Text(stringResource(R.string.filter_outcome_any)) },
+                            )
+                            FilterChip(
+                                selected = outcomeFilter == QuestionAttemptOutcome.CORRECT,
+                                onClick = { outcomeFilter = QuestionAttemptOutcome.CORRECT },
+                                label = { Text(stringResource(R.string.filter_outcome_correct)) },
+                            )
+                            FilterChip(
+                                selected = outcomeFilter == QuestionAttemptOutcome.WRONG,
+                                onClick = { outcomeFilter = QuestionAttemptOutcome.WRONG },
+                                label = { Text(stringResource(R.string.filter_outcome_wrong)) },
+                            )
+                            FilterChip(
+                                selected = outcomeFilter == QuestionAttemptOutcome.UNSEEN,
+                                onClick = { outcomeFilter = QuestionAttemptOutcome.UNSEEN },
+                                label = { Text(stringResource(R.string.filter_outcome_unseen)) },
+                            )
                         }
                         val activeSubjects = syllabus?.subjects.orEmpty().filterNot { it.archived }
                         if (activeSubjects.isNotEmpty()) {
@@ -444,6 +504,150 @@ fun PracticeScreen(
                                     },
                                 ) { Text(text = stringResource(R.string.create_mock_exam)) }
                             }
+                            Text(stringResource(R.string.banca_blueprint_settings), fontWeight = FontWeight.SemiBold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                ExamScoringMode.entries.forEach { mode ->
+                                    FilterChip(
+                                        selected = blueprintScoringMode == mode,
+                                        onClick = { blueprintScoringMode = mode; bancaBlueprintPreview = null },
+                                        label = { Text(stringResource(mode.practiceLabelRes())) },
+                                    )
+                                }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = blueprintTimeMinutes,
+                                    onValueChange = { blueprintTimeMinutes = it; bancaBlueprintPreview = null },
+                                    modifier = Modifier.weight(1f),
+                                    label = { Text(stringResource(R.string.banca_blueprint_time_minutes)) },
+                                    singleLine = true,
+                                )
+                                OutlinedTextField(
+                                    value = blueprintOverallMinimum,
+                                    onValueChange = { blueprintOverallMinimum = it; bancaBlueprintPreview = null },
+                                    modifier = Modifier.weight(1f),
+                                    label = { Text(stringResource(R.string.banca_blueprint_overall_minimum)) },
+                                    singleLine = true,
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = blueprintWrongPenalty,
+                                    onValueChange = { blueprintWrongPenalty = it; bancaBlueprintPreview = null },
+                                    modifier = Modifier.weight(1f),
+                                    label = { Text(stringResource(R.string.banca_blueprint_wrong_penalty)) },
+                                    singleLine = true,
+                                )
+                                OutlinedTextField(
+                                    value = blueprintBlankPenalty,
+                                    onValueChange = { blueprintBlankPenalty = it; bancaBlueprintPreview = null },
+                                    modifier = Modifier.weight(1f),
+                                    label = { Text(stringResource(R.string.banca_blueprint_blank_penalty)) },
+                                    singleLine = true,
+                                )
+                                OutlinedTextField(
+                                    value = blueprintSectionMinimum,
+                                    onValueChange = { blueprintSectionMinimum = it; bancaBlueprintPreview = null },
+                                    modifier = Modifier.weight(1f),
+                                    label = { Text(stringResource(R.string.banca_blueprint_section_minimum)) },
+                                    singleLine = true,
+                                )
+                            }
+                            val blueprintSubjectOrder = screenState.filteredQuestions
+                                .map { it.subjectId?.value ?: "general" }
+                                .distinct()
+                                .sorted()
+                                .map { key ->
+                                    if (key == "general") {
+                                        stringResource(R.string.banca_blueprint_general_section)
+                                    } else {
+                                        syllabus?.subjects?.firstOrNull { it.id.value == key }?.name ?: key
+                                    }
+                                }
+                            if (blueprintSubjectOrder.isNotEmpty()) {
+                                Text(
+                                    stringResource(
+                                        R.string.banca_blueprint_section_order,
+                                        blueprintSubjectOrder.joinToString(" · "),
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            OutlinedTextField(
+                                value = blueprintSectionCounts,
+                                onValueChange = { blueprintSectionCounts = it; bancaBlueprintPreview = null },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text(stringResource(R.string.banca_blueprint_section_counts)) },
+                                supportingText = {
+                                    Text(stringResource(R.string.banca_blueprint_comma_separated_hint))
+                                },
+                                singleLine = true,
+                            )
+                            OutlinedTextField(
+                                value = blueprintSectionWeights,
+                                onValueChange = { blueprintSectionWeights = it; bancaBlueprintPreview = null },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text(stringResource(R.string.banca_blueprint_section_weights)) },
+                                supportingText = {
+                                    Text(stringResource(R.string.banca_blueprint_comma_separated_hint))
+                                },
+                                singleLine = true,
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                FilterChip(
+                                    selected = blueprintStrictMode,
+                                    onClick = {
+                                        blueprintStrictMode = !blueprintStrictMode
+                                        bancaBlueprintPreview = null
+                                    },
+                                    label = { Text(stringResource(R.string.banca_blueprint_strict_mode)) },
+                                )
+                                FilterChip(
+                                    selected = blueprintAllowMultipleChoice,
+                                    onClick = {
+                                        if (!blueprintAllowMultipleChoice ||
+                                            blueprintAllowTrueFalse ||
+                                            blueprintAllowShortAnswer
+                                        ) {
+                                            blueprintAllowMultipleChoice = !blueprintAllowMultipleChoice
+                                            bancaBlueprintPreview = null
+                                        }
+                                    },
+                                    label = { Text(QuestionType.MULTIPLE_CHOICE.name.replace('_', ' ')) },
+                                )
+                                FilterChip(
+                                    selected = blueprintAllowTrueFalse,
+                                    onClick = {
+                                        if (!blueprintAllowTrueFalse ||
+                                            blueprintAllowMultipleChoice ||
+                                            blueprintAllowShortAnswer
+                                        ) {
+                                            blueprintAllowTrueFalse = !blueprintAllowTrueFalse
+                                            bancaBlueprintPreview = null
+                                        }
+                                    },
+                                    label = { Text(QuestionType.TRUE_FALSE.name.replace('_', ' ')) },
+                                )
+                                FilterChip(
+                                    selected = blueprintAllowShortAnswer,
+                                    onClick = {
+                                        if (!blueprintAllowShortAnswer ||
+                                            blueprintAllowMultipleChoice ||
+                                            blueprintAllowTrueFalse
+                                        ) {
+                                            blueprintAllowShortAnswer = !blueprintAllowShortAnswer
+                                            bancaBlueprintPreview = null
+                                        }
+                                    },
+                                    label = { Text(QuestionType.SHORT_ANSWER.name.replace('_', ' ')) },
+                                )
+                            }
                             OutlinedButton(
                                 onClick = {
                                     if (screenState.filteredQuestions.isEmpty()) {
@@ -451,11 +655,46 @@ fun PracticeScreen(
                                     } else {
                                         val exactYear = yearFromFilter.toIntOrNull()
                                             ?.takeIf { it == yearToFilter.toIntOrNull() }
-                                        val blueprint = ExamBlueprintPlanner.balancedFromSelection(
+                                        val scoring = ExamScoringPolicy(
+                                            mode = blueprintScoringMode,
+                                            wrongAnswerPenalty = blueprintWrongPenalty
+                                                .toDoubleOrNull()
+                                                ?.coerceAtLeast(0.0) ?: 0.0,
+                                            unansweredPenalty = blueprintBlankPenalty
+                                                .toDoubleOrNull()
+                                                ?.coerceAtLeast(0.0) ?: 0.0,
+                                        )
+                                        val sectionMinimum = blueprintSectionMinimum.toIntOrNull()?.coerceIn(0, 100)
+                                        val baseBlueprint = ExamBlueprintPlanner.balancedFromSelection(
                                             title = "${plan.name} banca mock",
                                             questions = screenState.filteredQuestions,
+                                            timeLimitMinutes = blueprintTimeMinutes
+                                                .toIntOrNull()
+                                                ?.coerceIn(1, 1_440) ?: 120,
+                                            scoringPolicy = scoring,
+                                            minimumOverallScorePercent = blueprintOverallMinimum
+                                                .toIntOrNull()
+                                                ?.coerceIn(0, 100),
                                             examBoard = examBoardFilter.trim().ifBlank { null },
                                             year = exactYear,
+                                        )
+                                        val customCounts = blueprintSectionCounts.split(',')
+                                            .mapNotNull { it.trim().toIntOrNull()?.takeIf { count -> count > 0 } }
+                                        val customWeights = blueprintSectionWeights.split(',')
+                                            .mapNotNull { raw ->
+                                                raw.trim().toDoubleOrNull()?.takeIf { it > 0.0 }
+                                            }
+                                        val blueprint = baseBlueprint.copy(
+                                            strictExamMode = blueprintStrictMode,
+                                            sections = baseBlueprint.sections.mapIndexed { index, section ->
+                                                section.copy(
+                                                    questionCount = customCounts.getOrNull(index)
+                                                        ?: section.questionCount,
+                                                    weight = customWeights.getOrNull(index) ?: section.weight,
+                                                    minimumScorePercent = sectionMinimum,
+                                                    allowedQuestionTypes = blueprintAllowedTypes,
+                                                )
+                                            },
                                         )
                                         bancaBlueprintPreview = practice.previewExamBlueprint(
                                             screenState.filteredQuestions,
@@ -617,11 +856,12 @@ private fun PracticeSummaryCard(summary: PracticeSummary) {
 private fun PracticeRunnerCard(
     title: String,
     state: PracticeExecutionState,
-    onAnswer: (Question, String, Long) -> Unit,
+    onAnswer: (Question, String, Long, ErrorCategory?) -> Unit,
     onFinish: () -> Unit,
     onClose: () -> Unit,
 ) {
     var nowEpochMillis by remember(state.attemptId) { mutableLongStateOf(System.currentTimeMillis()) }
+    var pendingWrongAnswer by remember(state.attemptId) { mutableStateOf<PendingWrongAnswer?>(null) }
     val deadline = state.deadlineEpochMillis
     LaunchedEffect(state.attemptId, deadline, state.submitted) {
         if (!state.submitted && deadline != null) {
@@ -665,7 +905,12 @@ private fun PracticeRunnerCard(
                         onClick = {
                             val elapsedSeconds = ((SystemClock
                                 .elapsedRealtime() - questionStartedAt) / 1_000L).coerceAtLeast(0L)
-                            onAnswer(question, option, elapsedSeconds)
+                            val wrong = !option.trim().equals(question.correctAnswer.trim(), ignoreCase = true)
+                            if (wrong && state.mode == TestMode.IMMEDIATE_FEEDBACK) {
+                                pendingWrongAnswer = PendingWrongAnswer(question, option, elapsedSeconds)
+                            } else {
+                                onAnswer(question, option, elapsedSeconds, null)
+                            }
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(option) }
@@ -685,6 +930,74 @@ private fun PracticeRunnerCard(
             }
         }
     }
+    pendingWrongAnswer?.let { pending ->
+        WrongAnswerClassificationDialog(
+            onDismiss = {
+                onAnswer(pending.question, pending.answer, pending.elapsedSeconds, ErrorCategory.OTHER)
+                pendingWrongAnswer = null
+            },
+            onClassify = { category ->
+                onAnswer(pending.question, pending.answer, pending.elapsedSeconds, category)
+                pendingWrongAnswer = null
+            },
+        )
+    }
+}
+
+private data class PendingWrongAnswer(
+    val question: Question,
+    val answer: String,
+    val elapsedSeconds: Long,
+)
+
+@Composable
+private fun WrongAnswerClassificationDialog(
+    onDismiss: () -> Unit,
+    onClassify: (ErrorCategory) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.quick_error_classification_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(stringResource(R.string.quick_error_classification_message))
+                ErrorCategory.entries.forEach { category ->
+                    OutlinedButton(
+                        onClick = { onClassify(category) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(category.practiceLabelRes()))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.classify_later)) }
+        },
+    )
+}
+
+private fun ExamScoringMode.practiceLabelRes(): Int = when (this) {
+    ExamScoringMode.NO_PENALTY -> R.string.scoring_no_penalty
+    ExamScoringMode.FIXED_NEGATIVE -> R.string.scoring_fixed_negative
+    ExamScoringMode.RIGHT_MINUS_WRONG -> R.string.scoring_right_minus_wrong
+    ExamScoringMode.WEIGHTED_CUSTOM -> R.string.scoring_weighted
+}
+
+private fun ErrorCategory.practiceLabelRes(): Int = when (this) {
+    ErrorCategory.CONTENT_GAP -> R.string.error_category_content_gap
+    ErrorCategory.FORGOTTEN_CONTENT -> R.string.error_category_forgotten
+    ErrorCategory.CONCEPT_CONFUSION -> R.string.error_category_confusion
+    ErrorCategory.INTERPRETATION -> R.string.error_category_interpretation
+    ErrorCategory.DISTRACTION -> R.string.error_category_distraction
+    ErrorCategory.CALCULATION -> R.string.error_category_calculation
+    ErrorCategory.TIME_PRESSURE -> R.string.error_category_time_pressure
+    ErrorCategory.DISPUTED_QUESTION -> R.string.error_category_disputed
+    ErrorCategory.OTHER -> R.string.error_category_other
 }
 
 @Composable

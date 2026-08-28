@@ -4,6 +4,7 @@ import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.ExamNoticeRevisionId
 import com.mikeyphw.studyflow.core.model.ExamStageId
+import com.mikeyphw.studyflow.core.model.ErrorCategory
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionAuthorship
 import com.mikeyphw.studyflow.core.model.QuestionId
@@ -252,7 +253,7 @@ class ManageStudyPractice(
                 id = id,
                 studyPlanId = planId,
                 title = blueprint.title.trim(),
-                mode = TestMode.EXAM,
+                mode = if (blueprint.strictExamMode) TestMode.EXAM else TestMode.IMMEDIATE_FEEDBACK,
                 timeLimitSeconds = blueprint.timeLimitMinutes * 60L,
                 questionCount = preview.selectedQuestions.size,
                 answeredCount = 0,
@@ -313,7 +314,10 @@ class ManageStudyPractice(
         questionId: QuestionId,
         chosenAnswer: String,
         elapsedSeconds: Long,
-    ): StudyTest = execution.answerTestQuestion(planId, testId, questionId, chosenAnswer, elapsedSeconds)
+        errorCategory: ErrorCategory? = null,
+    ): StudyTest = execution.answerTestQuestion(
+        planId, testId, questionId, chosenAnswer, elapsedSeconds, errorCategory,
+    )
 
     suspend fun finishPracticeAttempt(planId: StudyPlanId, testId: StudyTestId): StudyTest =
         execution.finishTest(planId, testId)
@@ -327,7 +331,10 @@ class ManageStudyPractice(
         questionId: QuestionId,
         chosenAnswer: String,
         elapsedSeconds: Long,
-    ): MockExam = execution.answerMockQuestion(planId, mockExamId, questionId, chosenAnswer, elapsedSeconds)
+        errorCategory: ErrorCategory? = null,
+    ): MockExam = execution.answerMockQuestion(
+        planId, mockExamId, questionId, chosenAnswer, elapsedSeconds, errorCategory,
+    )
 
     suspend fun finishMockExamAttempt(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
         execution.finishMockExam(planId, mockExamId)

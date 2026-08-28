@@ -72,6 +72,7 @@ import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanInput
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
+import com.mikeyphw.studyflow.core.domain.PublicExamEditalImportChoice
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
 import com.mikeyphw.studyflow.core.domain.PublicExamGoalPreset
@@ -108,6 +109,7 @@ import com.mikeyphw.studyflow.core.navigation.OnboardingRoute
 import com.mikeyphw.studyflow.core.navigation.PlanListRoute
 import com.mikeyphw.studyflow.core.navigation.PlanPortabilityRoute
 import com.mikeyphw.studyflow.core.navigation.PlanSettingsRoute
+import com.mikeyphw.studyflow.core.navigation.ContentManagerRoute
 import com.mikeyphw.studyflow.core.navigation.ProgressWorkspaceRoute
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceTab
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceRoute
@@ -542,7 +544,14 @@ internal fun StudyFlowNavHost(
                     ?: return@LaunchedEffect
                 container.reminderDeliveryCoordinator.reconcilePlan(completed.planId)
                 container.samplePlanProvisioner.consumeCompletion(completed.planId)
-                if (completed.template == OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK) {
+                if (
+                    completed.template == OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK &&
+                    completed.editalImportChoice == PublicExamEditalImportChoice.NOW
+                ) {
+                    navController.navigate(ContentManagerRoute(completed.planId.value)) {
+                        popUpTo<PlanListRoute>()
+                    }
+                } else if (completed.template == OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK) {
                     navController.navigate(PlanSettingsRoute(completed.planId.value)) {
                         popUpTo<PlanListRoute>()
                     }

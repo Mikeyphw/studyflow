@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanInput
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
+import com.mikeyphw.studyflow.core.domain.PublicExamEditalImportChoice
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
 import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRepository
@@ -117,7 +118,7 @@ class SamplePlanProvisionerTest {
         val repository = RecoveringProvisioningRepository(template, committedPlanId)
         val preferences = FakeAppPreferencesRepository()
         val journal = InMemorySamplePlanProvisioningJournal().apply {
-            begin(template, StudyPlanId("proposed-before-process-death"))
+            begin(template, StudyPlanId("proposed-before-process-death"), PublicExamEditalImportChoice.NOW)
         }
         val provisioner = SamplePlanProvisioner(this, repository, preferences, journal)
 

@@ -45,6 +45,8 @@ import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
 import com.mikeyphw.studyflow.core.domain.PublicExamCyclePreference
+import com.mikeyphw.studyflow.core.domain.PublicExamEditalImportChoice
+import com.mikeyphw.studyflow.core.domain.PublicExamExamDateKind
 import com.mikeyphw.studyflow.core.domain.PublicExamGoalPreset
 import com.mikeyphw.studyflow.core.domain.PublicExamOnboardingInput
 import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
@@ -72,6 +74,9 @@ fun OnboardingSamplePlanWizardScreen(
     var examBoard by rememberSaveable { mutableStateOf("") }
     var noticeUrl by rememberSaveable { mutableStateOf("") }
     var examDate by rememberSaveable { mutableStateOf("") }
+    var examDateKindName by rememberSaveable { mutableStateOf(PublicExamExamDateKind.CONFIRMED.name) }
+    var editalImportChoiceName by rememberSaveable { mutableStateOf(PublicExamEditalImportChoice.LATER.name) }
+    var coverageGoalDate by rememberSaveable { mutableStateOf("") }
     var availabilityHours by rememberSaveable { mutableStateOf("18") }
     var cyclePreferenceName by rememberSaveable { mutableStateOf(PublicExamCyclePreference.STUDY_CYCLE.name) }
     var reviewDay1 by rememberSaveable { mutableStateOf("1") }
@@ -87,6 +92,12 @@ fun OnboardingSamplePlanWizardScreen(
             examBoard = examBoard,
             noticeUrl = noticeUrl,
             examDateIso = examDate,
+            examDateKind = enumValueOrDefault(examDateKindName, PublicExamExamDateKind.CONFIRMED),
+            editalImportChoice = enumValueOrDefault(
+                editalImportChoiceName,
+                PublicExamEditalImportChoice.LATER,
+            ),
+            coverageGoalDateIso = coverageGoalDate,
             weeklyAvailabilityHours = availabilityHours.toInt(),
             cyclePreference = enumValueOrDefault(
                 cyclePreferenceName,
@@ -157,6 +168,12 @@ fun OnboardingSamplePlanWizardScreen(
                         onNoticeUrlChange = { noticeUrl = it },
                         examDate = examDate,
                         onExamDateChange = { examDate = it },
+                        examDateKindName = examDateKindName,
+                        onExamDateKindChange = { examDateKindName = it.name },
+                        editalImportChoiceName = editalImportChoiceName,
+                        onEditalImportChoiceChange = { editalImportChoiceName = it.name },
+                        coverageGoalDate = coverageGoalDate,
+                        onCoverageGoalDateChange = { coverageGoalDate = it },
                         availabilityHours = availabilityHours,
                         onAvailabilityHoursChange = { availabilityHours = it },
                         cyclePreferenceName = cyclePreferenceName,
@@ -232,6 +249,12 @@ private fun PublicExamOnboardingFields(
     onNoticeUrlChange: (String) -> Unit,
     examDate: String,
     onExamDateChange: (String) -> Unit,
+    examDateKindName: String,
+    onExamDateKindChange: (PublicExamExamDateKind) -> Unit,
+    editalImportChoiceName: String,
+    onEditalImportChoiceChange: (PublicExamEditalImportChoice) -> Unit,
+    coverageGoalDate: String,
+    onCoverageGoalDateChange: (String) -> Unit,
     availabilityHours: String,
     onAvailabilityHoursChange: (String) -> Unit,
     cyclePreferenceName: String,
@@ -305,6 +328,26 @@ private fun PublicExamOnboardingFields(
                     singleLine = true,
                 )
             }
+            Text(stringResource(R.string.onboarding_exam_date_kind), fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PublicExamExamDateKind.entries.forEach { kind ->
+                    FilterChip(
+                        selected = kind.name == examDateKindName,
+                        onClick = { onExamDateKindChange(kind) },
+                        label = { Text(stringResource(kind.labelRes())) },
+                    )
+                }
+            }
+            Text(stringResource(R.string.onboarding_edital_import_choice), fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PublicExamEditalImportChoice.entries.forEach { choice ->
+                    FilterChip(
+                        selected = choice.name == editalImportChoiceName,
+                        onClick = { onEditalImportChoiceChange(choice) },
+                        label = { Text(stringResource(choice.labelRes())) },
+                    )
+                }
+            }
             Text(stringResource(R.string.onboarding_cycle_preference), fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PublicExamCyclePreference.entries.forEach { preference ->
@@ -353,6 +396,18 @@ private fun PublicExamOnboardingFields(
                 label = { Text(stringResource(R.string.onboarding_goal_mocks)) },
                 singleLine = true,
             )
+            OutlinedTextField(
+                value = coverageGoalDate,
+                onValueChange = onCoverageGoalDateChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.onboarding_goal_coverage_date)) },
+                supportingText = { Text("YYYY-MM-DD") },
+                singleLine = true,
+            )
+            Text(
+                stringResource(R.string.onboarding_goal_overdue_reviews),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(
                 text = stringResource(
                     if (valid) R.string.onboarding_exam_setup_valid else R.string.onboarding_exam_setup_invalid,
@@ -365,6 +420,18 @@ private fun PublicExamOnboardingFields(
             )
         }
     }
+}
+
+@androidx.annotation.StringRes
+private fun PublicExamExamDateKind.labelRes(): Int = when (this) {
+    PublicExamExamDateKind.CONFIRMED -> R.string.onboarding_exam_date_confirmed
+    PublicExamExamDateKind.EXPECTED -> R.string.onboarding_exam_date_expected
+}
+
+@androidx.annotation.StringRes
+private fun PublicExamEditalImportChoice.labelRes(): Int = when (this) {
+    PublicExamEditalImportChoice.NOW -> R.string.onboarding_edital_import_now
+    PublicExamEditalImportChoice.LATER -> R.string.onboarding_edital_import_later
 }
 
 @androidx.annotation.StringRes
@@ -609,6 +676,8 @@ fun PublicExamGoalPreset.titleRes(): Int = when (this) {
     PublicExamGoalPreset.WEEKLY_STUDY_TIME -> R.string.onboarding_goal_title_study_time
     PublicExamGoalPreset.WEEKLY_QUESTIONS -> R.string.onboarding_goal_title_questions
     PublicExamGoalPreset.ACCURACY -> R.string.onboarding_goal_title_accuracy
+    PublicExamGoalPreset.ELIMINATE_OVERDUE_REVIEWS -> R.string.onboarding_goal_title_overdue_reviews
+    PublicExamGoalPreset.EDITAL_COVERAGE_BY_DATE -> R.string.onboarding_goal_title_edital_coverage
     PublicExamGoalPreset.MONTHLY_MOCKS -> R.string.onboarding_goal_title_mocks
 }
 

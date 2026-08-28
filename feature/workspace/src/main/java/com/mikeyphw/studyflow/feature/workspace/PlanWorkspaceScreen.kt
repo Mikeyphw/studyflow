@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.feature.workspace
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -138,6 +139,9 @@ fun PlanWorkspaceScreen(
     val legislationFlow = remember(plan.id, loadAttempt) {
         publicExamManager.observeLegislation(plan.id).asStudyFlowLoadState()
     }
+    val studyCycleFlow = remember(plan.id, loadAttempt) {
+        publicExamManager.observeStudyCycle(plan.id).asStudyFlowLoadState()
+    }
     val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val libraryState by libraryFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
@@ -150,6 +154,7 @@ fun PlanWorkspaceScreen(
     val targetState by targetFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val mockExamsState by mockExamsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val legislationState by legislationFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val studyCycleState by studyCycleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     if (
         !workspaceLoadGate(
             states = listOf(
@@ -165,6 +170,7 @@ fun PlanWorkspaceScreen(
                 targetState,
                 mockExamsState,
                 legislationState,
+                studyCycleState,
             ),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,
@@ -182,6 +188,7 @@ fun PlanWorkspaceScreen(
     val readyTarget = targetState.readyValue()
     val readyMockExams = mockExamsState.readyValue()
     val readyLegislation = legislationState.readyValue()
+    val readyStudyCycle = studyCycleState.readyValue()
     val cleanupReport = remember(
         plan,
         readySyllabus,
@@ -219,6 +226,7 @@ fun PlanWorkspaceScreen(
         readyErrorEntries,
         readySchedule,
         readySessions,
+        readyStudyCycle,
     ) {
         if (plan.type != StudyType.PUBLIC_EXAMINATION) {
             emptyList()
@@ -230,6 +238,7 @@ fun PlanWorkspaceScreen(
                 errorEntries = readyErrorEntries,
                 schedule = readySchedule,
                 sessions = readySessions,
+                studyCycle = readyStudyCycle,
                 nowEpochMillis = System.currentTimeMillis(),
             )
         }
@@ -318,6 +327,9 @@ fun PlanWorkspaceScreen(
                 onManage = onManageLibrary,
                 planId = plan.id,
                 legislation = readyLegislation,
+                questions = readyQuestions,
+                errorEntries = readyErrorEntries,
+                reviewItems = readyReviewItems,
                 publicExamManager = publicExamManager,
                 showLegislation = plan.type == StudyType.PUBLIC_EXAMINATION,
             )
@@ -648,6 +660,9 @@ private fun PlanLibraryPane(
     onManage: () -> Unit,
     planId: com.mikeyphw.studyflow.core.model.StudyPlanId,
     legislation: com.mikeyphw.studyflow.core.model.LegislationStudySnapshot,
+    questions: List<com.mikeyphw.studyflow.core.model.Question>,
+    errorEntries: List<com.mikeyphw.studyflow.core.model.ErrorEntry>,
+    reviewItems: List<com.mikeyphw.studyflow.core.model.ReviewItem>,
     publicExamManager: ManagePublicExam,
     showLegislation: Boolean,
 ) {
@@ -661,7 +676,14 @@ private fun PlanLibraryPane(
     ) {
         if (showLegislation) {
             item(key = "public-exam-legislation", contentType = "legislation") {
-                PublicExamLegislationPanel(planId, legislation, publicExamManager)
+                PublicExamLegislationPanel(
+                    planId = planId,
+                    snapshot = legislation,
+                    manager = publicExamManager,
+                    questions = questions,
+                    errorEntries = errorEntries,
+                    reviewItems = reviewItems,
+                )
             }
         }
         item(key = "section:library", contentType = "section") {
@@ -751,6 +773,7 @@ private fun buildPublicExamPriorityRecommendations(
     errorEntries: List<ErrorEntry>,
     schedule: StudySchedule,
     sessions: List<com.mikeyphw.studyflow.core.model.StudySession>,
+    studyCycle: com.mikeyphw.studyflow.core.model.StudyCycleSnapshot?,
     nowEpochMillis: Long,
 ): List<PublicExamPriorityRecommendation> {
     val source = syllabus ?: return emptyList()
@@ -759,6 +782,11 @@ private fun buildPublicExamPriorityRecommendations(
             session.status == com.mikeyphw.studyflow.core.model.StudySessionStatus.PAUSED
     }
     val weekAgo = nowEpochMillis - 7L * 24L * 60L * 60L * 1_000L
+    val accuracyWindowStart = nowEpochMillis - 30L * 24L * 60L * 60L * 1_000L
+    val cycleItems = studyCycle?.orderedItems.orEmpty().filter { it.enabled }
+    val cyclePointerIndex = studyCycle?.cycle?.currentItemId?.let { pointer ->
+        cycleItems.indexOfFirst { it.id == pointer }.takeIf { it >= 0 }
+    } ?: 0
     val daysUntilExam = plan.examDateIso?.let { iso ->
         runCatching {
             java.time.temporal.ChronoUnit.DAYS.between(
@@ -778,6 +806,15 @@ private fun buildPublicExamPriorityRecommendations(
             ((session.grossDurationSeconds - session.pauseDurationSeconds).coerceAtLeast(0L) / 60L).toInt()
         }
         val lastStudy = topicSessions.maxOfOrNull { it.endedAtEpochMillis ?: it.startedAtEpochMillis }
+        val recentPractice = topicSessions.filter { it.startedAtEpochMillis >= accuracyWindowStart }
+        val recentAnswered = recentPractice.sumOf { it.questionsAnswered }
+        val recentCorrect = recentPractice.sumOf { it.correctAnswers }
+        val cycleIndex = cycleItems.indexOfFirst { item ->
+            item.topicId == topic.id || (item.topicId == null && item.subjectId == subject.id)
+        }
+        val cycleDistance = cycleIndex.takeIf { it >= 0 }?.let { index ->
+            if (cycleItems.isEmpty()) null else (index - cyclePointerIndex + cycleItems.size) % cycleItems.size
+        }
         PublicExamPriorityEvidence(
             studyPlanId = plan.id,
             subjectId = subject.id,
@@ -787,7 +824,7 @@ private fun buildPublicExamPriorityRecommendations(
             examWeight = subject.examWeight,
             examIncidencePercent = topic.examIncidencePercent,
             masteryPercent = topic.masteryPercent,
-            recentAccuracyPercent = subject.accuracyPercent,
+            recentAccuracyPercent = if (recentAnswered > 0) recentCorrect * 100 / recentAnswered else null,
             recurringErrorCount = errorEntries.filter { it.studyPlanId == plan.id && it.topicId == topic.id }
                 .sumOf { it.recurrenceCount },
             overdueReviewCount = reviewItems.count { review ->
@@ -802,7 +839,7 @@ private fun buildPublicExamPriorityRecommendations(
                     activity.status == PlannedActivityStatus.MISSED
             },
             daysUntilExam = daysUntilExam,
-            cycleDistance = null,
+            cycleDistance = cycleDistance,
             minutesStudiedLast7Days = minutesLast7Days,
             hoursSinceLastStudy = lastStudy?.let { ((nowEpochMillis - it).coerceAtLeast(0L) / 3_600_000L).toInt() },
             lockedByActiveSession = activeSession?.let { session ->
@@ -866,17 +903,111 @@ private fun PublicExamDashboardSummary(snapshot: PublicExamDashboardSnapshot) {
                     row.questionsAnswered,
                     row.accuracyPercent.percentOrUnknown(),
                     row.masteryPercent,
+                    stringResource(row.status.workspaceLabelRes()),
                     row.overdueReviewCount,
                     row.recurringErrorCount,
                     (row.priorityScore * 100).toInt(),
                 ),
             )
         }
+        ImportanceMasteryMatrix(snapshot.matrix)
         Text(
             stringResource(R.string.importance_mastery_matrix_hint),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+private fun ImportanceMasteryMatrix(rows: List<com.mikeyphw.studyflow.core.domain.PublicExamEditalMatrixRow>) {
+    val knownWeights = rows.mapNotNull { it.examWeight }
+    val midpoint = knownWeights.maxOrNull()?.div(2.0) ?: Double.POSITIVE_INFINITY
+    val buckets = rows.groupBy { row ->
+        val important = (row.examWeight ?: 0.0) >= midpoint || (row.incidencePercent ?: 0) >= 60
+        val mastered = row.masteryPercent >= 70
+        important to mastered
+    }
+    StudyFlowSectionTitle(title = stringResource(R.string.importance_mastery_matrix_title))
+    BoxWithConstraints {
+        val narrow = maxWidth < 480.dp
+        if (narrow) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ImportanceMasteryCell(
+                    stringResource(R.string.matrix_high_importance_low_mastery),
+                    buckets[true to false].orEmpty(),
+                    Modifier.fillMaxWidth(),
+                )
+                ImportanceMasteryCell(
+                    stringResource(R.string.matrix_high_importance_high_mastery),
+                    buckets[true to true].orEmpty(),
+                    Modifier.fillMaxWidth(),
+                )
+                ImportanceMasteryCell(
+                    stringResource(R.string.matrix_low_importance_low_mastery),
+                    buckets[false to false].orEmpty(),
+                    Modifier.fillMaxWidth(),
+                )
+                ImportanceMasteryCell(
+                    stringResource(R.string.matrix_low_importance_high_mastery),
+                    buckets[false to true].orEmpty(),
+                    Modifier.fillMaxWidth(),
+                )
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ImportanceMasteryCell(
+                        stringResource(R.string.matrix_high_importance_low_mastery),
+                        buckets[true to false].orEmpty(),
+                        Modifier.weight(1f),
+                    )
+                    ImportanceMasteryCell(
+                        stringResource(R.string.matrix_high_importance_high_mastery),
+                        buckets[true to true].orEmpty(),
+                        Modifier.weight(1f),
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ImportanceMasteryCell(
+                        stringResource(R.string.matrix_low_importance_low_mastery),
+                        buckets[false to false].orEmpty(),
+                        Modifier.weight(1f),
+                    )
+                    ImportanceMasteryCell(
+                        stringResource(R.string.matrix_low_importance_high_mastery),
+                        buckets[false to true].orEmpty(),
+                        Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImportanceMasteryCell(
+    title: String,
+    rows: List<com.mikeyphw.studyflow.core.domain.PublicExamEditalMatrixRow>,
+    modifier: Modifier = Modifier,
+) {
+    androidx.compose.material3.ElevatedCard(modifier = modifier) {
+        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(title, style = MaterialTheme.typography.labelMedium)
+            if (rows.isEmpty()) {
+                Text(stringResource(R.string.none), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                rows.take(3).forEach { Text(it.label, style = MaterialTheme.typography.bodySmall) }
+                if (rows.size > 3) Text("+${rows.size - 3}", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+private fun com.mikeyphw.studyflow.core.model.ContentProgressStatus.workspaceLabelRes(): Int = when (this) {
+    com.mikeyphw.studyflow.core.model.ContentProgressStatus.NOT_STARTED -> R.string.status_not_started
+    com.mikeyphw.studyflow.core.model.ContentProgressStatus.IN_PROGRESS -> R.string.status_in_progress
+    com.mikeyphw.studyflow.core.model.ContentProgressStatus.COMPLETED -> R.string.status_completed
+    com.mikeyphw.studyflow.core.model.ContentProgressStatus.SKIPPED -> R.string.status_skipped
 }
 
 @Composable

@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.core.domain
 
+import com.mikeyphw.studyflow.core.model.ErrorCategory
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.QuestionType
@@ -36,6 +37,23 @@ class PracticeExecutionEngineTest {
         assertEquals(1, decoded.answeredCount)
         assertEquals(1, decoded.correctCount)
         assertEquals("b", decoded.answers.single().chosenAnswer)
+    }
+
+    @Test
+    fun wrongAnswerClassificationRoundTripsAndDefaultsTruthfully() {
+        val engine = PracticeExecutionEngine(clock = { 43L })
+        val base = engine.stateForTest(test("questionIds=q1"), listOf(question))
+        val classified = engine.answer(
+            base, question, "A", elapsedSeconds = 9, errorCategory = ErrorCategory.INTERPRETATION,
+        )
+        val decoded = PracticeAttemptCodec.decode(
+            attemptId = "test", title = "Attempt", questionCount = 1,
+            configuration = PracticeAttemptCodec.encode(classified), questions = listOf(question),
+            startedAtEpochMillis = 1, submittedAtEpochMillis = null, timeLimitSeconds = null,
+        )
+        assertEquals(ErrorCategory.INTERPRETATION, decoded.answers.single().errorCategory)
+        val unclassified = engine.answer(base, question, "A", elapsedSeconds = 10)
+        assertEquals(ErrorCategory.OTHER, unclassified.answers.single().errorCategory)
     }
 
     @Test

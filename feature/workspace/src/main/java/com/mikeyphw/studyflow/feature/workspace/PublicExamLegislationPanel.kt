@@ -33,27 +33,36 @@ import com.mikeyphw.studyflow.core.domain.LegislationImportPreview
 import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.model.LegislationProvision
 import com.mikeyphw.studyflow.core.model.LegislationStudySnapshot
+import com.mikeyphw.studyflow.core.model.ErrorEntry
+import com.mikeyphw.studyflow.core.model.Question
+import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class LegislationUiFilter { ALL, UNREAD, IMPORTANT, ERROR_LINKED }
+enum class LegislationUiFilter { ALL, WEAK, UNREAD, IMPORTANT, ERROR_LINKED }
 
 @Composable
 internal fun PublicExamLegislationPanel(
     planId: StudyPlanId,
     snapshot: LegislationStudySnapshot,
     manager: ManagePublicExam,
+    questions: List<Question>,
+    errorEntries: List<ErrorEntry>,
+    reviewItems: List<ReviewItem>,
 ) {
     val scope = rememberCoroutineScope()
     var filter by remember { mutableStateOf(LegislationUiFilter.ALL) }
     var importing by remember { mutableStateOf(false) }
+    var linkingProvision by remember { mutableStateOf<LegislationProvision?>(null) }
     val errorLinked = snapshot.evidenceLinks.filter { it.errorEntryId != null }.map { it.provisionId }.toSet()
+    val reviewLinked = snapshot.evidenceLinks.filter { it.reviewItemId != null }.map { it.provisionId }.toSet()
     val visible = snapshot.provisions.filter { provision ->
         when (filter) {
             LegislationUiFilter.ALL -> true
+            LegislationUiFilter.WEAK -> provision.id in errorLinked || provision.id in reviewLinked
             LegislationUiFilter.UNREAD -> !provision.read
             LegislationUiFilter.IMPORTANT -> provision.important
             LegislationUiFilter.ERROR_LINKED -> provision.id in errorLinked
@@ -91,9 +100,38 @@ internal fun PublicExamLegislationPanel(
                     onImportant = { important ->
                         scope.launch { manager.setLegislationProvisionImportant(planId, provision.id, important) }
                     },
+                    onLinkEvidence = { linkingProvision = provision },
                 )
             }
         }
+    }
+    linkingProvision?.let { provision ->
+        LegislationEvidenceLinkDialog(
+            provision = provision,
+            snapshot = snapshot,
+            questions = questions,
+            errorEntries = errorEntries,
+            reviewItems = reviewItems,
+            onDismiss = { linkingProvision = null },
+            onLinkQuestion = { question ->
+                scope.launch {
+                    manager.linkLegislationEvidence(planId, provision.id, questionId = question.id)
+                    linkingProvision = null
+                }
+            },
+            onLinkError = { error ->
+                scope.launch {
+                    manager.linkLegislationEvidence(planId, provision.id, errorEntryId = error.id)
+                    linkingProvision = null
+                }
+            },
+            onLinkReview = { review ->
+                scope.launch {
+                    manager.linkLegislationEvidence(planId, provision.id, reviewItemId = review.id)
+                    linkingProvision = null
+                }
+            },
+        )
     }
     if (importing) {
         LegislationImportDialog(
@@ -117,6 +155,7 @@ private fun LegislationProvisionRow(
     reviewLinks: Int,
     onRead: (Boolean) -> Unit,
     onImportant: (Boolean) -> Unit,
+    onLinkEvidence: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("${provision.reference} — ${provision.text}")
@@ -132,8 +171,70 @@ private fun LegislationProvisionRow(
             TextButton(onClick = { onImportant(!provision.important) }) {
                 Text(stringResource(if (provision.important) R.string.remove_important else R.string.mark_important))
             }
+            TextButton(onClick = onLinkEvidence) { Text(stringResource(R.string.legislation_link_evidence)) }
         }
     }
+}
+
+@Composable
+private fun LegislationEvidenceLinkDialog(
+    provision: LegislationProvision,
+    snapshot: LegislationStudySnapshot,
+    questions: List<Question>,
+    errorEntries: List<ErrorEntry>,
+    reviewItems: List<ReviewItem>,
+    onDismiss: () -> Unit,
+    onLinkQuestion: (Question) -> Unit,
+    onLinkError: (ErrorEntry) -> Unit,
+    onLinkReview: (ReviewItem) -> Unit,
+) {
+    val links = snapshot.linksFor(provision.id)
+    val linkedQuestions = links.mapNotNull { it.questionId }.toSet()
+    val linkedErrors = links.mapNotNull { it.errorEntryId }.toSet()
+    val linkedReviews = links.mapNotNull { it.reviewItemId }.toSet()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.legislation_link_evidence)) },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(provision.reference, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.legislation_link_questions),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                )
+                questions.filterNot { it.id in linkedQuestions }.take(8).forEach { question ->
+                    OutlinedButton(onClick = { onLinkQuestion(question) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(question.statement, maxLines = 2)
+                    }
+                }
+                Text(
+                    stringResource(R.string.legislation_link_errors),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                )
+                errorEntries.filterNot { it.id in linkedErrors }.take(8).forEach { error ->
+                    OutlinedButton(onClick = { onLinkError(error) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(error.category.name.replace('_', ' '))
+                    }
+                }
+                Text(
+                    stringResource(R.string.legislation_link_reviews),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                )
+                reviewItems.filterNot { it.id in linkedReviews }.take(8).forEach { review ->
+                    OutlinedButton(onClick = { onLinkReview(review) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("${review.method.name.replace('_', ' ')} · ${review.intervalDays}d")
+                    }
+                }
+                if (questions.isEmpty() && errorEntries.isEmpty() && reviewItems.isEmpty()) {
+                    Text(stringResource(R.string.legislation_no_evidence_available))
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
+    )
 }
 
 @Composable
@@ -224,6 +325,7 @@ private fun LegislationImportDialog(
 
 private fun LegislationUiFilter.labelResource(): Int = when (this) {
     LegislationUiFilter.ALL -> R.string.legislation_filter_all
+    LegislationUiFilter.WEAK -> R.string.legislation_filter_weak
     LegislationUiFilter.UNREAD -> R.string.legislation_filter_unread
     LegislationUiFilter.IMPORTANT -> R.string.legislation_filter_important
     LegislationUiFilter.ERROR_LINKED -> R.string.legislation_filter_error_linked

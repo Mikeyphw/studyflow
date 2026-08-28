@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 data class PracticeWrongAnswerCapture(
     val question: Question,
     val chosenAnswer: String?,
-    val category: ErrorCategory = ErrorCategory.CONCEPT_CONFUSION,
+    val category: ErrorCategory = ErrorCategory.OTHER,
 )
 
 interface StudyPracticeRepository {

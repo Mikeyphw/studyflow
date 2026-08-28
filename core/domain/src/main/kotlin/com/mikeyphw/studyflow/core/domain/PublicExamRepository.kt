@@ -71,43 +71,6 @@ interface PublicExamRepository {
     ): LegislationEvidenceLink
 
 
-    fun observeLegislation(planId: StudyPlanId): Flow<LegislationStudySnapshot> = repository.observeLegislation(planId)
-
-    fun previewLegislationImport(
-        title: String,
-        sourceReference: String?,
-        rawText: String,
-        format: LegislationImportFormat,
-    ): LegislationImportPreview = LegislationImportParser.preview(title, sourceReference, rawText, format)
-
-    suspend fun applyLegislationImport(
-        planId: StudyPlanId,
-        preview: LegislationImportPreview,
-        existingDocumentId: LegislationDocumentId? = null,
-    ): LegislationStudySnapshot = repository.applyLegislationImport(planId, preview, existingDocumentId)
-
-    suspend fun setLegislationProvisionRead(
-        planId: StudyPlanId,
-        provisionId: LegislationProvisionId,
-        read: Boolean,
-    ): LegislationStudySnapshot = repository.setLegislationProvisionRead(planId, provisionId, read)
-
-    suspend fun setLegislationProvisionImportant(
-        planId: StudyPlanId,
-        provisionId: LegislationProvisionId,
-        important: Boolean,
-    ): LegislationStudySnapshot = repository.setLegislationProvisionImportant(planId, provisionId, important)
-
-    suspend fun linkLegislationEvidence(
-        planId: StudyPlanId,
-        provisionId: LegislationProvisionId,
-        questionId: QuestionId? = null,
-        errorEntryId: ErrorEntryId? = null,
-        reviewItemId: ReviewItemId? = null,
-    ): LegislationEvidenceLink = repository.linkLegislationEvidence(
-        planId, provisionId, questionId, errorEntryId, reviewItemId,
-    )
-
     fun observeStudyCycle(planId: StudyPlanId): Flow<StudyCycleSnapshot?>
 
     suspend fun replaceStudyCycleFromSyllabus(
@@ -153,6 +116,43 @@ class ManagePublicExam(
 
     suspend fun applyExamNoticeRevision(preview: ExamNoticeRevisionPreview): ExamNoticeRevision =
         repository.applyExamNoticeRevision(preview)
+
+    fun observeLegislation(planId: StudyPlanId): Flow<LegislationStudySnapshot> = repository.observeLegislation(planId)
+
+    fun previewLegislationImport(
+        title: String,
+        sourceReference: String?,
+        rawText: String,
+        format: LegislationImportFormat,
+    ): LegislationImportPreview = LegislationImportParser.preview(title, sourceReference, rawText, format)
+
+    suspend fun applyLegislationImport(
+        planId: StudyPlanId,
+        preview: LegislationImportPreview,
+        existingDocumentId: LegislationDocumentId? = null,
+    ): LegislationStudySnapshot = repository.applyLegislationImport(planId, preview, existingDocumentId)
+
+    suspend fun setLegislationProvisionRead(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        read: Boolean,
+    ): LegislationStudySnapshot = repository.setLegislationProvisionRead(planId, provisionId, read)
+
+    suspend fun setLegislationProvisionImportant(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        important: Boolean,
+    ): LegislationStudySnapshot = repository.setLegislationProvisionImportant(planId, provisionId, important)
+
+    suspend fun linkLegislationEvidence(
+        planId: StudyPlanId,
+        provisionId: LegislationProvisionId,
+        questionId: QuestionId? = null,
+        errorEntryId: ErrorEntryId? = null,
+        reviewItemId: ReviewItemId? = null,
+    ): LegislationEvidenceLink = repository.linkLegislationEvidence(
+        planId, provisionId, questionId, errorEntryId, reviewItemId,
+    )
 
     fun observeStudyCycle(planId: StudyPlanId): Flow<StudyCycleSnapshot?> = repository.observeStudyCycle(planId)
 

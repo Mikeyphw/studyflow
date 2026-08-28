@@ -115,4 +115,39 @@
     <string name="banca_blueprint_insufficient_bank">O banco filtrado não atende a este blueprint. Ajuste os filtros ou adicione questões antes de iniciar.</string>
     <string name="create_banca_mock">Criar simulado congelado da banca</string>
     <string name="banca_mock_created">Simulado da banca criado a partir da prévia congelada.</string>
+
+    <string name="filter_attempt_outcome">Resultado da tentativa</string>
+    <string name="filter_outcome_any">Qualquer resultado</string>
+    <string name="filter_outcome_correct">Correta</string>
+    <string name="filter_outcome_wrong">Errada</string>
+    <string name="filter_outcome_unseen">Não respondida</string>
+
+    <string name="quick_error_classification_title">Por que esta resposta ficou errada?</string>
+    <string name="quick_error_classification_message">Classifique o erro agora para que revisões e remediação usem a evidência correta.</string>
+    <string name="classify_later">Classificar depois</string>
+    <string name="error_category_content_gap">Lacuna de conteúdo / não sabia</string>
+    <string name="error_category_forgotten">Conteúdo esquecido</string>
+    <string name="error_category_confusion">Confusão de conceitos</string>
+    <string name="error_category_interpretation">Interpretação</string>
+    <string name="error_category_distraction">Distração / atenção</string>
+    <string name="error_category_calculation">Cálculo</string>
+    <string name="error_category_time_pressure">Pressão de tempo</string>
+    <string name="error_category_disputed">Questão contestada</string>
+    <string name="error_category_other">Outro</string>
+    <string name="banca_blueprint_settings">Configuração do simulado da banca</string>
+    <string name="banca_blueprint_time_minutes">Tempo (min)</string>
+    <string name="banca_blueprint_overall_minimum">Mínimo geral %</string>
+    <string name="banca_blueprint_wrong_penalty">Penalidade por erro</string>
+    <string name="banca_blueprint_blank_penalty">Penalidade em branco</string>
+    <string name="banca_blueprint_section_minimum">Mínimo por seção %</string>
+    <string name="banca_blueprint_strict_mode">Modo de prova estrito</string>
+    <string name="scoring_no_penalty">Sem penalidade</string>
+    <string name="scoring_fixed_negative">Negativa fixa</string>
+    <string name="scoring_right_minus_wrong">Certo − errado</string>
+    <string name="scoring_weighted">Ponderado/personalizado</string>
+    <string name="banca_blueprint_section_order">Ordem das seções: %1$s</string>
+    <string name="banca_blueprint_section_counts">Quantidade de questões por seção</string>
+    <string name="banca_blueprint_section_weights">Peso por seção</string>
+    <string name="banca_blueprint_comma_separated_hint">Valores separados por vírgula na ordem acima; em branco mantém o padrão equilibrado.</string>
+    <string name="banca_blueprint_general_section">Geral / sem disciplina</string>
 </resources>

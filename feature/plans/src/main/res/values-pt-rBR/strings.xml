@@ -336,5 +336,15 @@
     <string name="onboarding_goal_title_study_time">Tempo de estudo semanal</string>
     <string name="onboarding_goal_title_questions">Questões semanais</string>
     <string name="onboarding_goal_title_accuracy">Acerto semanal</string>
+    <string name="onboarding_goal_title_overdue_reviews">Eliminar revisões atrasadas</string>
+    <string name="onboarding_goal_title_edital_coverage">Concluir cobertura do edital até a data</string>
     <string name="onboarding_goal_title_mocks">Simulados mensais</string>
+    <string name="onboarding_exam_date_kind">Situação da data da prova</string>
+    <string name="onboarding_exam_date_confirmed">Confirmada</string>
+    <string name="onboarding_exam_date_expected">Prevista</string>
+    <string name="onboarding_edital_import_choice">Importação do edital</string>
+    <string name="onboarding_edital_import_now">Importar agora</string>
+    <string name="onboarding_edital_import_later">Importar depois</string>
+    <string name="onboarding_goal_coverage_date">Concluir cobertura do edital até a data</string>
+    <string name="onboarding_goal_overdue_reviews">Uma meta de “zerar revisões atrasadas” está incluída neste preset.</string>
 </resources>

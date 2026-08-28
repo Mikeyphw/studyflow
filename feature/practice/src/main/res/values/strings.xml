@@ -107,4 +107,39 @@
     <string name="banca_blueprint_insufficient_bank">The filtered question bank cannot satisfy this blueprint. Adjust filters or add questions before starting.</string>
     <string name="create_banca_mock">Create frozen banca mock</string>
     <string name="banca_mock_created">Banca mock exam created from the frozen preview.</string>
+
+    <string name="filter_attempt_outcome">Attempt result</string>
+    <string name="filter_outcome_any">Any result</string>
+    <string name="filter_outcome_correct">Correct</string>
+    <string name="filter_outcome_wrong">Wrong</string>
+    <string name="filter_outcome_unseen">Unseen</string>
+
+    <string name="quick_error_classification_title">Why was this answer wrong?</string>
+    <string name="quick_error_classification_message">Classify the mistake now so reviews and remediation can use the right evidence.</string>
+    <string name="classify_later">Classify later</string>
+    <string name="error_category_content_gap">Content gap / did not know</string>
+    <string name="error_category_forgotten">Forgotten content</string>
+    <string name="error_category_confusion">Concept confusion</string>
+    <string name="error_category_interpretation">Interpretation</string>
+    <string name="error_category_distraction">Distraction / attention</string>
+    <string name="error_category_calculation">Calculation</string>
+    <string name="error_category_time_pressure">Time pressure</string>
+    <string name="error_category_disputed">Disputed question</string>
+    <string name="error_category_other">Other</string>
+    <string name="banca_blueprint_settings">Banca blueprint settings</string>
+    <string name="banca_blueprint_time_minutes">Time (min)</string>
+    <string name="banca_blueprint_overall_minimum">Overall minimum %</string>
+    <string name="banca_blueprint_wrong_penalty">Wrong penalty</string>
+    <string name="banca_blueprint_blank_penalty">Blank penalty</string>
+    <string name="banca_blueprint_section_minimum">Section minimum %</string>
+    <string name="banca_blueprint_strict_mode">Strict exam mode</string>
+    <string name="scoring_no_penalty">No penalty</string>
+    <string name="scoring_fixed_negative">Fixed negative</string>
+    <string name="scoring_right_minus_wrong">Right − wrong</string>
+    <string name="scoring_weighted">Weighted/custom</string>
+    <string name="banca_blueprint_section_order">Section order: %1$s</string>
+    <string name="banca_blueprint_section_counts">Question count per section</string>
+    <string name="banca_blueprint_section_weights">Weight per section</string>
+    <string name="banca_blueprint_comma_separated_hint">Comma-separated values in the section order above; blank keeps the balanced default.</string>
+    <string name="banca_blueprint_general_section">General / unassigned</string>
 </resources>

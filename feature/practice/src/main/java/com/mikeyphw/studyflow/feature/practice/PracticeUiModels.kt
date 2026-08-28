@@ -3,6 +3,8 @@ package com.mikeyphw.studyflow.feature.practice
 import com.mikeyphw.studyflow.core.domain.PracticeSummary
 import com.mikeyphw.studyflow.core.domain.PublicExamQuestionFilter
 import com.mikeyphw.studyflow.core.domain.PublicExamQuestionFilters
+import com.mikeyphw.studyflow.core.domain.QuestionAttemptOutcome
+import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionType
@@ -38,6 +40,7 @@ internal data class PracticeScreenState(
     val summary: PracticeSummary,
     val planId: com.mikeyphw.studyflow.core.model.StudyPlanId,
     val filter: PublicExamQuestionFilter,
+    val outcomes: Map<QuestionId, QuestionAttemptOutcome> = emptyMap(),
 ) {
-    val filteredQuestions: List<Question> = PublicExamQuestionFilters.apply(planId, questions, filter)
+    val filteredQuestions: List<Question> = PublicExamQuestionFilters.apply(planId, questions, filter, outcomes)
 }

@@ -838,6 +838,8 @@ tasks.register("checkAll") {
         "verifyCpov07Cpov08BancaErrorNotebook",
         "verifyCpov09Cpov10LegislationDashboard",
         "verifyCpov11Cpov12FinalStretchOnboarding",
+        "verifyCpov13PublicExamReleaseSeal",
+        "verifyCpovRoadmapReconciliation",
         "verifyPhase56_57ReleaseReadiness",
         "verifyPhase58_59WarningHygiene",
         "verifyPhase60_61ContentReportSeal",
@@ -947,3 +949,16 @@ tasks.register<Exec>("verifyCpov11Cpov12FinalStretchOnboarding") {
     description = "Verifies CPOV11 final-stretch strategy and CPOV12 public-exam onboarding contracts."
     commandLine("python3", "scripts/verify_cpov11_12_final_stretch_onboarding.py")
 }
+
+tasks.register<Exec>("verifyCpov13PublicExamReleaseSeal") {
+    group = "verification"
+    description = "Verifies the complete CPOV migration, portability, connected-journey and release-seal contracts."
+    commandLine("python3", "scripts/verify_cpov13_public_exam_release_seal.py")
+}
+
+tasks.register<Exec>("verifyCpovRoadmapReconciliation") {
+    group = "verification"
+    description = "Verifies reconciled CPOV00-CPOV13 roadmap promises missed by the original source seals."
+    commandLine("python3", "scripts/verify_cpov_roadmap_reconciliation.py")
+}
+

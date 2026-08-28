@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
 import com.mikeyphw.studyflow.core.domain.PublicExamGoalPreset
+import com.mikeyphw.studyflow.core.domain.PublicExamEditalImportChoice
 import com.mikeyphw.studyflow.core.domain.PublicExamOnboardingBuilder
 import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRepository
 import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRequest
@@ -40,6 +41,7 @@ sealed interface SamplePlanProvisioningState {
     data class Completed(
         val template: OnboardingSamplePlanTemplate,
         val planId: StudyPlanId,
+        val editalImportChoice: PublicExamEditalImportChoice = PublicExamEditalImportChoice.LATER,
     ) : SamplePlanProvisioningState
     data class Failed(
         val template: OnboardingSamplePlanTemplate,
@@ -132,7 +134,11 @@ class SamplePlanProvisioner internal constructor(
                         topicNames = topicNames,
                         goalNames = goalNames,
                     ).also { planId ->
-                        _state.value = SamplePlanProvisioningState.Completed(blueprint.template, planId)
+                        _state.value = SamplePlanProvisioningState.Completed(
+                            blueprint.template,
+                            planId,
+                            blueprint.publicExam?.editalImportChoice ?: PublicExamEditalImportChoice.LATER,
+                        )
                     }
                 } catch (cancelled: CancellationException) {
                     _state.value = SamplePlanProvisioningState.Idle
@@ -173,7 +179,9 @@ class SamplePlanProvisioner internal constructor(
         }
         journal.updateCommittedPlan(pending.template, committedPlanId)
         preferencesRepository.setDefaultStudyPlanIfAbsent(committedPlanId)
-        _state.value = SamplePlanProvisioningState.Completed(pending.template, committedPlanId)
+        _state.value = SamplePlanProvisioningState.Completed(
+            pending.template, committedPlanId, pending.editalImportChoice,
+        )
     }
 
     private data class InFlightProvisioning(
@@ -190,7 +198,8 @@ class SamplePlanProvisioner internal constructor(
         goalNames: Map<PublicExamGoalPreset, String>,
     ): StudyPlanId {
         val planId = StudyPlanId(UUID.randomUUID().toString())
-        journal.begin(blueprint.template, planId)
+        val editalImportChoice = blueprint.publicExam?.editalImportChoice ?: PublicExamEditalImportChoice.LATER
+        journal.begin(blueprint.template, planId, editalImportChoice)
         val plan = StudyPlan(
             id = planId,
             name = planName,
@@ -279,11 +288,12 @@ class SamplePlanProvisioner internal constructor(
                     goalTitles = goalNames,
                     startsOnIso = LocalDate.now().toString(),
                     idFactory = { UUID.randomUUID().toString() },
+                    accuracySubjectId = subjects.firstOrNull()?.id,
                 )
             }.orEmpty(),
         )
         val provisionedPlanId = repository.provision(request)
-        journal.updateCommittedPlan(blueprint.template, provisionedPlanId)
+        journal.updateCommittedPlan(blueprint.template, provisionedPlanId, editalImportChoice)
         preferencesRepository.setDefaultStudyPlanIfAbsent(provisionedPlanId)
         return provisionedPlanId
     }

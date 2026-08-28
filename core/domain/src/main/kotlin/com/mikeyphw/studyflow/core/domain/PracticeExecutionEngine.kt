@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
+import com.mikeyphw.studyflow.core.model.ErrorCategory
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.StudyPlanId
@@ -55,6 +56,7 @@ class PracticeExecutionEngine(
         question: Question,
         chosenAnswer: String,
         elapsedSeconds: Long,
+        errorCategory: ErrorCategory? = null,
     ): PracticeExecutionState {
         require(!state.submitted) { "Submitted attempts cannot be changed." }
         require(state.startedAtEpochMillis != null) { "Attempt must be explicitly started before answering." }
@@ -70,6 +72,11 @@ class PracticeExecutionEngine(
             correct = normalizedAnswer.equals(question.correctAnswer.trim(), ignoreCase = true),
             elapsedSeconds = elapsedSeconds,
             answeredAtEpochMillis = clock(),
+            errorCategory = if (normalizedAnswer.equals(question.correctAnswer.trim(), ignoreCase = true)) {
+                null
+            } else {
+                errorCategory ?: ErrorCategory.OTHER
+            },
         )
         val answers = state.answers.filterNot { it.questionId == question.id } + record
         return state.copy(answers = answers.sortedBy { state.questionIds.indexOf(it.questionId) })
@@ -139,6 +146,7 @@ data class PracticeAnswerRecord(
     val correct: Boolean,
     val elapsedSeconds: Long,
     val answeredAtEpochMillis: Long,
+    val errorCategory: ErrorCategory? = null,
 )
 
 data class PracticeExecutionSummary(
@@ -213,7 +221,9 @@ object PracticeAttemptCodec {
             append(FieldSeparator)
             append(answer.elapsedSeconds)
             append(FieldSeparator)
-            appendLine(answer.answeredAtEpochMillis)
+            append(answer.answeredAtEpochMillis)
+            append(FieldSeparator)
+            appendLine(answer.errorCategory?.name.orEmpty())
         }
     }.trimEnd()
 
@@ -230,7 +240,7 @@ object PracticeAttemptCodec {
 
     private fun decodeAnswerLine(value: String): PracticeAnswerRecord? {
         val parts = value.split(FieldSeparator)
-        if (parts.size != 6) return null
+        if (parts.size !in 6..7) return null
         return runCatching {
             PracticeAnswerRecord(
                 questionId = QuestionId(parts[0].fromB64()),
@@ -239,6 +249,7 @@ object PracticeAttemptCodec {
                 correct = parts[3].toBooleanStrict(),
                 elapsedSeconds = parts[4].toLong().coerceAtLeast(0L),
                 answeredAtEpochMillis = parts[5].toLong(),
+                errorCategory = parts.getOrNull(6)?.takeIf(String::isNotBlank)?.let(ErrorCategory::valueOf),
             )
         }.getOrNull()
     }
@@ -306,12 +317,13 @@ class ManagePracticeExecution(
         questionId: QuestionId,
         chosenAnswer: String,
         elapsedSeconds: Long,
+        errorCategory: ErrorCategory? = null,
     ): StudyTest {
         val test = requireNotNull(repository.findTest(planId, testId)) { "Practice Test does not exist." }
         val question = requireNotNull(repository.findQuestion(planId, questionId)) { "Question does not exist." }
         val questions = questionsForAttempt(planId, test.configurationJson)
         val current = engine.stateForTest(test, questions)
-        val next = engine.answer(current, question, chosenAnswer, elapsedSeconds)
+        val next = engine.answer(current, question, chosenAnswer, elapsedSeconds, errorCategory)
         return repository.updateTestAttemptIfOpen(
             expectedConfiguration = test.configurationJson,
             next = test.copy(
@@ -348,12 +360,13 @@ class ManagePracticeExecution(
         questionId: QuestionId,
         chosenAnswer: String,
         elapsedSeconds: Long,
+        errorCategory: ErrorCategory? = null,
     ): MockExam {
         val mock = requireNotNull(repository.findMockExam(planId, mockExamId)) { "Mock Exam does not exist." }
         val question = requireNotNull(repository.findQuestion(planId, questionId)) { "Question does not exist." }
         val questions = questionsForAttempt(planId, mock.configurationJson)
         val current = engine.stateForMockExam(mock, questions)
-        val next = engine.answer(current, question, chosenAnswer, elapsedSeconds)
+        val next = engine.answer(current, question, chosenAnswer, elapsedSeconds, errorCategory)
         return repository.updateMockExamAttemptIfOpen(
             expectedConfiguration = mock.configurationJson,
             next = mock.copy(
@@ -394,7 +407,11 @@ class ManagePracticeExecution(
         .filterNot(PracticeAnswerRecord::correct)
         .mapNotNull { answer ->
             state.questions.firstOrNull { it.id == answer.questionId }?.let { question ->
-                PracticeWrongAnswerCapture(question = question, chosenAnswer = answer.chosenAnswer)
+                PracticeWrongAnswerCapture(
+                    question = question,
+                    chosenAnswer = answer.chosenAnswer,
+                    category = answer.errorCategory ?: ErrorCategory.OTHER,
+                )
             }
         }
 

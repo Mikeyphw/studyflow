@@ -326,5 +326,15 @@
     <string name="onboarding_goal_title_study_time">Weekly study time</string>
     <string name="onboarding_goal_title_questions">Weekly questions</string>
     <string name="onboarding_goal_title_accuracy">Weekly accuracy</string>
+    <string name="onboarding_goal_title_overdue_reviews">Eliminate overdue reviews</string>
+    <string name="onboarding_goal_title_edital_coverage">Complete edital coverage by date</string>
     <string name="onboarding_goal_title_mocks">Monthly mock exams</string>
+    <string name="onboarding_exam_date_kind">Exam date confidence</string>
+    <string name="onboarding_exam_date_confirmed">Confirmed</string>
+    <string name="onboarding_exam_date_expected">Expected</string>
+    <string name="onboarding_edital_import_choice">Edital import</string>
+    <string name="onboarding_edital_import_now">Import now</string>
+    <string name="onboarding_edital_import_later">Import later</string>
+    <string name="onboarding_goal_coverage_date">Complete edital coverage by date</string>
+    <string name="onboarding_goal_overdue_reviews">An “eliminate overdue reviews” goal is included in this preset.</string>
 </resources>
