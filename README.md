@@ -1,10 +1,16 @@
 # StudyFlow Android
 
-## Current status: Phase 64 implemented; final validation refresh ready
+## Current status: CPOV13 public-exam integration seal implemented
 
-StudyFlow includes the completed remediation roadmap through OV-13. Source/static contracts do not
-claim release readiness: the automated signed-artifact/connected-device gate and explicit manual
-device observations must still produce one fail-closed final verdict.
+StudyFlow includes the completed remediation roadmap through OV-13 and the Concurso Público
+specialization through CPOV13. Source/static contracts do not claim product sealing: target-machine
+Debug/Release validation, signed-artifact evidence, and the existing explicit manual device
+observations remain separate fail-closed release evidence.
+
+The CPOV sequence adds edital revisions, persistent study cycles, explainable priority, banca-aware
+questions and mocks, Error Notebook 2.0, structured legislation, a derived concurso dashboard,
+final-stretch strategy, and public-exam onboarding while preserving one Study Plan graph. See
+`docs/roadmap/CPOV_PUBLIC_EXAM_COMPLETION_MATRIX.md`.
 
 
 StudyFlow is an offline-first Android study workspace for public examinations, certifications,

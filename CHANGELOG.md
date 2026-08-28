@@ -1,3 +1,14 @@
+# CPOV13 public-exam full integration and release seal
+
+- Closed the CPOV00-CPOV13 concurso-publico roadmap at Room schema 13.
+- Added fresh-schema and representative Phase-64 9->10->11->12->13 migration acceptance.
+- Added full-package portability coverage for edital revisions, cycles, question provenance and legislation.
+- Added a connected public-exam CPOV journey and kept process-restart proof in the authoritative full journey.
+- Expanded Devtool final validation to Release resources, Debug/Release lint and conditional connected suites.
+- Added the CPOV completion matrix and architecture decision for the reused Study Plan graph.
+- Removed temporary CPOV patch backups and compatibility artifacts from the repository.
+- Preserved the fail-closed boundary: source/build validation does not fabricate signed/manual device evidence.
+
 # CSOV15 optional instrumentation validation
 
 - Added an optional connected-device validation lane for CSOV sync work.

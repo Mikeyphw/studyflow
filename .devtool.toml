@@ -145,6 +145,7 @@ preflight = [
     "verifyCpov07Cpov08BancaErrorNotebook",
     "verifyCpov09Cpov10LegislationDashboard",
     "verifyCpov11Cpov12FinalStretchOnboarding",
+    "verifyCpov13PublicExamReleaseSeal",
     "verifyRepositoryContracts",
     "verifyAndroidFocusShellFinalSeal",
     "verifyRemediationOv13",
@@ -186,6 +187,7 @@ compile = [
 ]
 resources = [
   ":app:processDebugResources",
+  ":app:processReleaseResources",
 ]
 unit-test = [
     ":core:data:testDebugUnitTest",
@@ -218,21 +220,55 @@ package = [
   ":app:assembleRelease",
   ":app:bundleRelease",
 ]
+
+instrumentation = [
+  ":core:database:connectedDebugAndroidTest",
+  ":feature:workspace:connectedDebugAndroidTest",
+  ":app:connectedReleaseAndroidTest",
+]
 lint = [
   "verifyFormatting",
   ":core:data:lintDebug",
+  ":core:data:lintRelease",
   ":core:database:lintDebug",
+  ":core:database:lintRelease",
+  ":core:designsystem:lintDebug",
+  ":core:designsystem:lintRelease",
   ":core:i18n:lintDebug",
+  ":core:i18n:lintRelease",
+  ":feature:analytics:lintDebug",
+  ":feature:analytics:lintRelease",
+  ":feature:dashboard:lintDebug",
+  ":feature:dashboard:lintRelease",
+  ":feature:library:lintDebug",
+  ":feature:library:lintRelease",
   ":feature:plans:lintDebug",
+  ":feature:plans:lintRelease",
+  ":feature:practice:lintDebug",
+  ":feature:practice:lintRelease",
   ":feature:privacy:lintDebug",
+  ":feature:privacy:lintRelease",
+  ":feature:progress:lintDebug",
+  ":feature:progress:lintRelease",
   ":feature:reminders:lintDebug",
+  ":feature:reminders:lintRelease",
+  ":feature:reviews:lintDebug",
+  ":feature:reviews:lintRelease",
+  ":feature:schedule:lintDebug",
+  ":feature:schedule:lintRelease",
   ":feature:search:lintDebug",
+  ":feature:search:lintRelease",
+  ":feature:sessions:lintDebug",
+  ":feature:sessions:lintRelease",
   ":feature:settings:lintDebug",
+  ":feature:settings:lintRelease",
+  ":feature:subjects:lintDebug",
+  ":feature:subjects:lintRelease",
   ":feature:workspace:lintDebug",
+  ":feature:workspace:lintRelease",
   ":app:lintDebug",
   ":app:lintRelease",
 ]
-
 [targets.studyflow_desktop]
 type = "gradle"
 root = "."
@@ -307,6 +343,7 @@ preflight = [
     "verifyCpov07Cpov08BancaErrorNotebook",
     "verifyCpov09Cpov10LegislationDashboard",
     "verifyCpov11Cpov12FinalStretchOnboarding",
+    "verifyCpov13PublicExamReleaseSeal",
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",

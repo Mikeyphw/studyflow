@@ -92,4 +92,4 @@ data class StudyCycleSnapshot(
 data class StudyCycleSessionBinding(
     val cycleId: StudyCycleId,
     val itemId: StudyCycleItemId,
-) 
+)

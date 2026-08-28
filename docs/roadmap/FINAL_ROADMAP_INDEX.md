@@ -44,6 +44,7 @@ StudyFlow product roadmap through Phase 64.
 - Phase 62: onboarding and sample plan wizard.
 - Phase 63: exam runbook.
 - Phase 64: preview-first seven-day study sprint.
+- No Phase 65 feature is defined; CPOV00-CPOV13 are public-exam specialization overlays over the Phase 64 product baseline.
 
 Cloud sync overlay roadmap:
 
