@@ -23,11 +23,7 @@ class ExamNoticeRevisionPlannerTest {
             source = ExamNoticeImportSource("edital.txt", SyllabusImportFormat.STRUCTURED_TEXT, "source"),
             draft = SyllabusImportDraft(
                 listOf(
-                    SyllabusSubjectDraft(
-                        "s1",
-                        "Portuguese",
-                        topics = listOf(SyllabusTopicDraft("t1", null, "Grammar")),
-                    ),
+                    SyllabusSubjectDraft("s1", "Portuguese", topics = listOf(SyllabusTopicDraft("t1", null, "Grammar"))),
                     SyllabusSubjectDraft("s2", "Constitutional Law"),
                 ),
             ),

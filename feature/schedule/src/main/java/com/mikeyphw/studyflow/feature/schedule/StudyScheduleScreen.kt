@@ -192,19 +192,11 @@ fun StudyScheduleScreen(
                                         }
                                     },
                                     enabled = syllabus.subjects.any { !it.archived },
-                                ) {
-                                    Text(
-                                        stringResource(
-                                            if (cycle == null) R.string.build_cycle else R.string.rebuild_cycle,
-                                        ),
-                                    )
-                                }
+                                ) { Text(stringResource(if (cycle == null) R.string.build_cycle else R.string.rebuild_cycle)) }
                                 if (cycle != null) {
                                     OutlinedButton(
                                         onClick = {
-                                            launchAction(blockSaved) {
-                                                publicExamManager.skipCurrentStudyCycleItem(plan.id)
-                                            }
+                                            launchAction(blockSaved) { publicExamManager.skipCurrentStudyCycleItem(plan.id) }
                                         },
                                     ) { Text(stringResource(R.string.skip_once)) }
                                 }
@@ -214,20 +206,13 @@ fun StudyScheduleScreen(
                                     OutlinedButton(
                                         onClick = {
                                             launchAction(blockSaved) {
-                                                publicExamManager.setStudyCycleEnabled(
-                                                    plan.id,
-                                                    !(cycle?.cycle?.enabled ?: true),
-                                                )
+                                                publicExamManager.setStudyCycleEnabled(plan.id, !(cycle?.cycle?.enabled ?: true))
                                             }
                                         },
                                     ) {
                                         Text(
                                             stringResource(
-                                                if (cycle?.cycle?.enabled == true) {
-                                                    R.string.disable_cycle
-                                                } else {
-                                                    R.string.enable_cycle
-                                                },
+                                                if (cycle?.cycle?.enabled == true) R.string.disable_cycle else R.string.enable_cycle,
                                             ),
                                         )
                                     }
