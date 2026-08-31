@@ -49,10 +49,10 @@ fun PlanSettingsScreen(
     settings: StudyPlanSettings,
     onBack: () -> Unit,
     onSave: (StudyPlanSettings) -> Unit,
+    modifier: Modifier = Modifier,
     studyTarget: StudyTarget? = null,
     examStages: List<ExamStage> = emptyList(),
     onSavePublicExamProfile: (PublicExamProfileForm) -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     var preferredSession by rememberSaveable(plan.id.value) {
         mutableStateOf(settings.preferredSessionMinutes.toString())

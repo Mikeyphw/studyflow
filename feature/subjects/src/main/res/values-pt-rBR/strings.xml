@@ -45,11 +45,11 @@
     <string name="exam_notice_loading_file">Lendo o documento local…</string>
     <string name="tsv">TSV</string>
     <string name="tsv_input_hint">subject\ttopic\tparent\tpriority\tdifficulty\tincidence\tminutes</string>
-    <string name="exam_notice_duplicate_summary">Duplicidades: %1$d disciplinas, %2$d assuntos</string>
+    <string name="exam_notice_duplicate_summary">Disciplinas duplicadas: %1$d · assuntos: %2$d</string>
     <string name="exam_notice_destructive_summary">Alterações destrutivas: %1$d</string>
     <string name="exam_notice_additive_only">Esta importação é aditiva. O conteúdo existente não é apagado nem sobrescrito.</string>
     <string name="exam_notice_review_issues">Revise os problemas detectados</string>
-    <string name="exam_notice_more_issues">Há mais %1$d problemas nesta pré-visualização.</string>
+    <string name="exam_notice_more_issues">Problemas adicionais: %1$d</string>
     <string name="exam_notice_correction_hint">Edite a fonte acima e visualize novamente para corrigir o rascunho. Importar só é habilitado após uma pré-visualização válida.</string>
     <string name="exam_notice_issue_duplicate_subject">Disciplina duplicada: %1$s</string>
     <string name="exam_notice_issue_duplicate_topic">Assunto duplicado: %1$s em %2$s</string>
@@ -130,7 +130,7 @@
     <string name="exam_notice_revision_archive_notice">Itens removidos do conteúdo serão arquivados, não excluídos permanentemente.</string>
     <string name="apply_revision">Aplicar revisão</string>
     <string name="exam_notice_history_title">Histórico do edital e cobertura</string>
-    <string name="exam_notice_coverage">Cobertura: %1$d de %2$d itens canônicos (%3$d%%)</string>
+    <string name="exam_notice_coverage">Cobertura: canônicos %1$d/%2$d (%3$d%%)</string>
     <string name="exam_notice_latest_revision">Última: %1$s · +%2$d / −%3$d / ~%4$d</string>
     <string name="exam_notice_no_revisions">Nenhuma revisão de edital aceita ainda.</string>
 </resources>

@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -113,7 +114,12 @@ fun StudyProgressScreen(
                     firstSupportingText = stringResource(R.string.goal_progress, snapshot.goalProgressPercent),
                     secondLabel = stringResource(R.string.notes),
                     secondValue = snapshot.pinnedNotes.size.toString(),
-                    secondSupportingText = stringResource(R.string.progress_title),
+                    secondSupportingText = pluralStringResource(
+                        R.plurals.progress_summary,
+                        snapshot.activeGoals.size,
+                        snapshot.activeGoals.size,
+                        snapshot.pinnedNotes.size,
+                    ),
                 )
                 StudyFlowStatusPill(text = stringResource(R.string.goal_progress, snapshot.goalProgressPercent))
 

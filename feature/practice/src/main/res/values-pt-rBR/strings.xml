@@ -110,8 +110,8 @@
     <string name="filter_topic">Tópico / subtópico</string>
     <string name="preview_banca_blueprint">Pré-visualizar blueprint da banca</string>
     <string name="banca_blueprint_preview_title">Prévia do blueprint da banca</string>
-    <string name="banca_blueprint_distribution">Selecionadas %1$d de %2$d questões · faltam %3$d</string>
-    <string name="banca_blueprint_section">%1$s · %2$d/%3$d questões</string>
+    <string name="banca_blueprint_distribution">Selecionadas: %1$d/%2$d · faltam: %3$d</string>
+    <string name="banca_blueprint_section">%1$s · questões: %2$d/%3$d</string>
     <string name="banca_blueprint_insufficient_bank">O banco filtrado não atende a este blueprint. Ajuste os filtros ou adicione questões antes de iniciar.</string>
     <string name="create_banca_mock">Criar simulado congelado da banca</string>
     <string name="banca_mock_created">Simulado da banca criado a partir da prévia congelada.</string>

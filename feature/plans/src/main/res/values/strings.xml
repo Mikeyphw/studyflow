@@ -318,7 +318,7 @@
     <string name="onboarding_review_day">Review %1$d</string>
     <string name="onboarding_goal_presets">Goal presets</string>
     <string name="onboarding_goal_questions">Questions / week (0 disables)</string>
-    <string name="onboarding_goal_accuracy">Accuracy target % (0 disables)</string>
+    <string name="onboarding_goal_accuracy">Accuracy target in percent (0 = disabled)</string>
     <string name="onboarding_goal_mocks">Mocks / month (0 disables)</string>
     <string name="onboarding_exam_setup_valid">Configuration is valid and will be previewed before the atomic local creation.</string>
     <string name="onboarding_exam_setup_invalid">Check numeric fields, YYYY-MM-DD, and fill organization + role + exam board together.</string>

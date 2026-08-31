@@ -29,7 +29,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowActiveSessionBar
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowCompactDock
@@ -59,7 +60,8 @@ internal fun StudyFlowShell(
     onToggleActiveSession: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
-    val expanded = LocalConfiguration.current.screenWidthDp >= 600
+    val containerWidthPx = LocalWindowInfo.current.containerSize.width
+    val expanded = with(LocalDensity.current) { containerWidthPx >= 600.dp.roundToPx() }
     val destinations = StudyFlowWorkspaceRoot.entries.map { root ->
         StudyFlowShellDestination(
             key = root.name,

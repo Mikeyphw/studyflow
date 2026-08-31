@@ -78,10 +78,10 @@ import kotlinx.coroutines.launch
 fun StudyScheduleScreen(
     plan: StudyPlan,
     scheduleManager: ManageStudySchedule,
-    contentManager: ManageStudyContent? = null,
-    publicExamManager: ManagePublicExam? = null,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    contentManager: ManageStudyContent? = null,
+    publicExamManager: ManagePublicExam? = null,
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }

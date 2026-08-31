@@ -623,7 +623,7 @@
     <string name="study_sprint_change_schedule">Recupere um bloco agendado existente sem criar um plano paralelo.</string>
     <string name="study_sprint_change_steady">Somente prévia; o bloco existente não precisa de alteração segura.</string>
     <string name="practice_queue_title">Fila pronta</string>
-    <string name="practice_queue_status">%1$d vencidas • %2$d planejadas • %3$d questões</string>
+    <string name="practice_queue_status">Vencidas: %1$d • planejadas: %2$d • questões: %3$d</string>
     <string name="programming_mode_label">Modo programação</string>
     <string name="programming_workspace_title">Construa, pratique, rode e revise</string>
     <string name="programming_workspace_message">Use módulos, exercícios, projetos, notas de código e passos prontos para Termux.</string>
@@ -632,7 +632,7 @@
     <string name="programming_modules">Módulos</string>
     <string name="programming_lessons">Aulas</string>
     <string name="programming_exercises">Exercícios</string>
-    <string name="programming_projects_count">%1$d projetos</string>
+    <string name="programming_projects_count">Projetos: %1$d</string>
     <string name="programming_code_preview_title">Ciclo de estudo de programação</string>
     <string name="programming_termux_ready">A execução no Termux está pronta para exercícios de programação permitidos.</string>
     <string name="programming_termux_waiting">O runtime Termux ainda não está habilitado para este plano.</string>
@@ -666,7 +666,7 @@
     <string name="legislation_source_reference">Referência da fonte (opcional)</string>
     <string name="legislation_choose_file">Escolher TXT, Markdown ou CSV</string>
     <string name="legislation_paste_text">Cole o texto da legislação</string>
-    <string name="legislation_preview_count">Prévia: %1$d dispositivos</string>
+    <string name="legislation_preview_count">Dispositivos na prévia: %1$d</string>
     <string name="legislation_filter_all">Todos</string>
     <string name="legislation_filter_unread">Não lidos</string>
     <string name="legislation_filter_important">Importantes</string>

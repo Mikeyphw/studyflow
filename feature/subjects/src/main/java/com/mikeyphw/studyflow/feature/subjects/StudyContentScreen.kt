@@ -105,9 +105,9 @@ private sealed interface DeleteRequest {
 fun StudyContentScreen(
     plan: StudyPlan,
     content: ManageStudyContent,
-    publicExamManager: ManagePublicExam? = null,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    publicExamManager: ManagePublicExam? = null,
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }

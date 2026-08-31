@@ -45,6 +45,7 @@ import com.mikeyphw.studyflow.core.model.StudyTargetId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
 import java.util.UUID
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -376,6 +377,7 @@ class RoomPublicExamRepository(
         row.toModel()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeStudyCycle(planId: StudyPlanId): Flow<StudyCycleSnapshot?> =
         publicExamDao.observeStudyCycle(planId.value).flatMapLatest { cycle ->
             if (cycle == null) {

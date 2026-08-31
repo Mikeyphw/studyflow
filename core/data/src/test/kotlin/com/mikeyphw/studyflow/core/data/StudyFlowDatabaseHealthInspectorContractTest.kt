@@ -43,6 +43,5 @@ class StudyFlowDatabaseHealthInspectorContractTest {
         databaseHealthReportOrUnavailable(expectedSchemaVersion = 7) {
             throw CancellationException("cancelled")
         }
-        Unit
     }
 }

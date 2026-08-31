@@ -81,7 +81,7 @@
     <string name="invalid_duration">Duration must be between 5 and 720 minutes.</string>
     <string name="study_cycle_title">Study cycle</string>
     <string name="study_cycle_not_configured">No persistent study cycle is configured yet.</string>
-    <string name="study_cycle_status">%1$d items · current position %2$d</string>
+    <string name="study_cycle_status">Items: %1$d · current position: %2$d</string>
     <string name="build_cycle">Build cycle</string>
     <string name="rebuild_cycle">Rebuild cycle</string>
     <string name="skip_once">Skip once</string>

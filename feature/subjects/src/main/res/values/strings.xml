@@ -45,11 +45,11 @@
     <string name="exam_notice_loading_file">Reading the local document…</string>
     <string name="tsv">TSV</string>
     <string name="tsv_input_hint">subject\ttopic\tparent\tpriority\tdifficulty\tincidence\tminutes</string>
-    <string name="exam_notice_duplicate_summary">Duplicates: %1$d disciplines, %2$d topics</string>
+    <string name="exam_notice_duplicate_summary">Duplicate disciplines: %1$d · topics: %2$d</string>
     <string name="exam_notice_destructive_summary">Destructive changes: %1$d</string>
     <string name="exam_notice_additive_only">This import is additive. Existing syllabus rows are not deleted or overwritten.</string>
     <string name="exam_notice_review_issues">Review detected issues</string>
-    <string name="exam_notice_more_issues">%1$d more issues are present in this preview.</string>
+    <string name="exam_notice_more_issues">Additional issues: %1$d</string>
     <string name="exam_notice_correction_hint">Edit the source above and Preview again to correct the draft. Import stays disabled until a successful preview exists.</string>
     <string name="exam_notice_issue_duplicate_subject">Duplicate discipline: %1$s</string>
     <string name="exam_notice_issue_duplicate_topic">Duplicate topic: %1$s in %2$s</string>
@@ -125,7 +125,7 @@
     <string name="exam_notice_revision_archive_notice">Removed syllabus items will be archived, not permanently deleted.</string>
     <string name="apply_revision">Apply revision</string>
     <string name="exam_notice_history_title">Exam notice history &amp; coverage</string>
-    <string name="exam_notice_coverage">Coverage: %1$d of %2$d canonical items (%3$d%%)</string>
+    <string name="exam_notice_coverage">Coverage: canonical %1$d/%2$d (%3$d%%)</string>
     <string name="exam_notice_latest_revision">Latest: %1$s · +%2$d / −%3$d / ~%4$d</string>
     <string name="exam_notice_no_revisions">No accepted exam notice revision yet.</string>
 </resources>

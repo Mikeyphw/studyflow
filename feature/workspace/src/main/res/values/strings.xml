@@ -103,7 +103,7 @@
         <item quantity="other">%1$d items are ready for spaced review.</item>
     </plurals>
     <string name="practice_queue_title">Ready queue</string>
-    <string name="practice_queue_status">%1$d due • %2$d planned • %3$d questions</string>
+    <string name="practice_queue_status">Due: %1$d • planned: %2$d • questions: %3$d</string>
     <string name="practice_empty_reviews">No reviews are due. Future reviews stay queued automatically.</string>
     <string name="practice_empty_questions">No questions yet. Add questions or import a deck.</string>
     <string name="practice_empty_errors">The wrong-answer notebook is clear.</string>
@@ -595,7 +595,7 @@
     <string name="programming_modules">Modules</string>
     <string name="programming_lessons">Lessons</string>
     <string name="programming_exercises">Exercises</string>
-    <string name="programming_projects_count">%1$d projects</string>
+    <string name="programming_projects_count">Projects: %1$d</string>
     <string name="programming_code_preview_title">Programming study loop</string>
     <string name="programming_termux_ready">Termux execution is ready for whitelisted coding exercises.</string>
     <string name="programming_termux_waiting">Termux runtime is not enabled for this plan yet.</string>
@@ -629,7 +629,7 @@
     <string name="legislation_source_reference">Source reference (optional)</string>
     <string name="legislation_choose_file">Choose TXT, Markdown, or CSV</string>
     <string name="legislation_paste_text">Paste legislation text</string>
-    <string name="legislation_preview_count">Preview: %1$d provisions</string>
+    <string name="legislation_preview_count">Preview provisions: %1$d</string>
     <string name="legislation_filter_all">All</string>
     <string name="legislation_filter_unread">Unread</string>
     <string name="legislation_filter_important">Important</string>

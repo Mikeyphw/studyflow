@@ -328,7 +328,7 @@
     <string name="onboarding_review_day">Revisão %1$d</string>
     <string name="onboarding_goal_presets">Metas predefinidas</string>
     <string name="onboarding_goal_questions">Questões / semana (0 desativa)</string>
-    <string name="onboarding_goal_accuracy">Meta de acerto % (0 desativa)</string>
+    <string name="onboarding_goal_accuracy">Meta de acerto em percentual (0 = desativado)</string>
     <string name="onboarding_goal_mocks">Simulados / mês (0 desativa)</string>
     <string name="onboarding_exam_setup_valid">Configuração válida; ela será pré-visualizada antes da criação local atômica.</string>
     <string name="onboarding_exam_setup_invalid">Revise os números, YYYY-MM-DD e preencha órgão + cargo + banca em conjunto.</string>
