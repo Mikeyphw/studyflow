@@ -692,6 +692,7 @@
     <string name="preview">Prévia</string>
     <string name="apply_changes">Aplicar alterações</string>
     <string name="cancel">Cancelar</string>
+    <string name="close">Fechar</string>
     <string name="final_stretch_beyond_30">Reta final · mais de 30 dias</string>
     <string name="final_stretch_30">Reta final · faixa de 30 dias</string>
     <string name="final_stretch_15">Reta final · faixa de 15 dias</string>
@@ -706,6 +707,9 @@
     <string name="matrix_low_importance_low_mastery">Menor importância · fraco</string>
     <string name="matrix_low_importance_high_mastery">Menor importância · dominado</string>
     <string name="status_not_started">Não iniciado</string>
+    <string name="status_studying">Estudando</string>
+    <string name="status_reviewing">Revisando</string>
+    <string name="status_mastered">Dominado</string>
     <string name="status_in_progress">Em andamento</string>
     <string name="status_skipped">Ignorado</string>
     <string name="legislation_link_evidence">Vincular evidência</string>

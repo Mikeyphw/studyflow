@@ -655,6 +655,7 @@
     <string name="preview">Preview</string>
     <string name="apply_changes">Apply changes</string>
     <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
     <string name="final_stretch_beyond_30">Final stretch · more than 30 days</string>
     <string name="final_stretch_30">Final stretch · 30-day band</string>
     <string name="final_stretch_15">Final stretch · 15-day band</string>
@@ -669,6 +670,9 @@
     <string name="matrix_low_importance_low_mastery">Lower importance · weak</string>
     <string name="matrix_low_importance_high_mastery">Lower importance · mastered</string>
     <string name="status_not_started">Not started</string>
+    <string name="status_studying">Studying</string>
+    <string name="status_reviewing">Reviewing</string>
+    <string name="status_mastered">Mastered</string>
     <string name="status_in_progress">In progress</string>
     <string name="status_skipped">Skipped</string>
     <string name="legislation_link_evidence">Link evidence</string>

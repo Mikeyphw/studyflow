@@ -3,8 +3,10 @@ package com.mikeyphw.studyflow.feature.workspace
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -413,9 +415,7 @@ private fun PlanOverviewPane(
                 val evidence = recommendation.evidence
                 val title = evidence.topicName?.let { topic -> "${evidence.subjectName} — $topic" }
                     ?: evidence.subjectName
-                val reasons = recommendation.reasonCodes.take(3).joinToString(" · ") { reason ->
-                    stringResource(priorityReasonLabel(reason))
-                }
+                val reasons = priorityReasonSummary(recommendation.reasonCodes)
                 StudyFlowTimelineItem(
                     title = title,
                     metadata = reasons,
@@ -850,6 +850,15 @@ private fun buildPublicExamPriorityRecommendations(
     return PublicExamPriorityPlanner.rank(plan.id, evidence, limit = 5)
 }
 
+@Composable
+private fun priorityReasonSummary(reasons: List<PublicExamPriorityReasonCode>): String {
+    val labels = mutableListOf<String>()
+    for (reason in reasons.take(3)) {
+        labels += stringResource(priorityReasonLabel(reason))
+    }
+    return labels.joinToString(" · ")
+}
+
 private fun priorityReasonLabel(reason: PublicExamPriorityReasonCode): Int = when (reason) {
     PublicExamPriorityReasonCode.HIGH_EXAM_WEIGHT -> R.string.priority_reason_weight
     PublicExamPriorityReasonCode.HIGH_INCIDENCE -> R.string.priority_reason_incidence
@@ -1005,9 +1014,10 @@ private fun ImportanceMasteryCell(
 
 private fun com.mikeyphw.studyflow.core.model.ContentProgressStatus.workspaceLabelRes(): Int = when (this) {
     com.mikeyphw.studyflow.core.model.ContentProgressStatus.NOT_STARTED -> R.string.status_not_started
-    com.mikeyphw.studyflow.core.model.ContentProgressStatus.IN_PROGRESS -> R.string.status_in_progress
-    com.mikeyphw.studyflow.core.model.ContentProgressStatus.COMPLETED -> R.string.status_completed
-    com.mikeyphw.studyflow.core.model.ContentProgressStatus.SKIPPED -> R.string.status_skipped
+    com.mikeyphw.studyflow.core.model.ContentProgressStatus.STUDYING -> R.string.status_studying
+    com.mikeyphw.studyflow.core.model.ContentProgressStatus.REVIEWING -> R.string.status_reviewing
+    com.mikeyphw.studyflow.core.model.ContentProgressStatus.MASTERED -> R.string.status_mastered
+    com.mikeyphw.studyflow.core.model.ContentProgressStatus.ARCHIVED -> R.string.status_archived
 }
 
 @Composable
