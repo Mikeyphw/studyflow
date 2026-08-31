@@ -432,6 +432,9 @@ private fun ReviewItemRow(
 internal fun ReviewQueue.alreadyReflects(mutation: ReviewMutation): Boolean = when (mutation) {
     is ReviewMutation.ScheduleError -> (due + upcoming + completedToday).any { it.errorEntryId == mutation.errorId }
     is ReviewMutation.ResolveError -> errors.none { it.id == mutation.errorId }
+    is ReviewMutation.ReclassifyError -> errors.any {
+        it.id == mutation.errorId && it.category == mutation.category
+    }
     is ReviewMutation.Grade -> completedToday.any { it.id == mutation.reviewId }
     is ReviewMutation.Skip -> (due + upcoming).none { it.id == mutation.reviewId }
     is ReviewMutation.CreateFlashcard -> flashcards.any { it.id == mutation.id }
