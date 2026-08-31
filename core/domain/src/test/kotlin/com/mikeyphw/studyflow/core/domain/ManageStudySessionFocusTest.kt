@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyActivityType
+import com.mikeyphw.studyflow.core.model.StudyCycleSessionBinding
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
@@ -234,6 +235,7 @@ private class FakeStudySessionRepository : StudySessionRepository {
     override suspend fun createSession(
         session: StudySession,
         linkedActivityExpectedStatus: PlannedActivityStatus?,
+        cycleBinding: StudyCycleSessionBinding?,
     ): StudySession {
         require(findSession(session.studyPlanId, session.id) == null)
         require(findAnyActiveSession() == null)

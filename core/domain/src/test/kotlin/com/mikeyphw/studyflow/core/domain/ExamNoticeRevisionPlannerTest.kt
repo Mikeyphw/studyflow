@@ -63,7 +63,7 @@ class ExamNoticeRevisionPlannerTest {
     private fun syllabus(): StudySyllabus {
         val subject = Subject(
             SubjectId("subject"), planId, "Portuguese", "", null, 3, 1.0, 60, 50, 70,
-            ContentProgressStatus.IN_PROGRESS, 0, false, null,
+            ContentProgressStatus.STUDYING, 0, false, null,
         )
         val removedSubject = Subject(
             SubjectId("removed-subject"), planId, "Mathematics", "", null, 3, 1.0, 60, 0, 0,
@@ -71,7 +71,7 @@ class ExamNoticeRevisionPlannerTest {
         )
         val topic = Topic(
             TopicId("topic"), planId, subject.id, null, "Grammar", "", 3, 3, 30, 30, 50, 40,
-            ContentProgressStatus.IN_PROGRESS, 0, false, null,
+            ContentProgressStatus.STUDYING, 0, false, null,
         )
         return StudySyllabus(planId, listOf(subject, removedSubject), listOf(topic))
     }
