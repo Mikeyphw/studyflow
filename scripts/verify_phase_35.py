@@ -30,13 +30,18 @@ if not phase_version_at_least(ROOT, 35):
 
 readme = read("README.md")
 require(readme.count("# StudyFlow Android") == 1, "README must have one StudyFlow heading")
-for required in [
+optional_cloud_sync = (ROOT / "docs/architecture/ADR-0034-local-first-optional-cloud-sync.md").is_file()
+required_readme_markers = [
     "implemented through **Phase 37**",
     "offline-first",
-    "not an online synchronization service",
     "target-machine gates",
     "Developer diagnostics",
-]:
+]
+if optional_cloud_sync:
+    required_readme_markers.append("optional cloud sync")
+else:
+    required_readme_markers.append("not an online synchronization service")
+for required in required_readme_markers:
     require(required in readme, f"README missing current product marker: {required}")
 for stale in [
     "Roadmap Phases 0 through 29",
@@ -90,8 +95,31 @@ for rel in [
 ]:
     text = read(rel)
     values = " ".join(node.text or "" for node in ET.fromstring(text) if "name" in node.attrib)
-    for stale in ["cloud sync", "sincronização em nuvem", "Legacy rules", "Regras legadas"]:
+    stale_values = ["Legacy rules", "Regras legadas"]
+    if not optional_cloud_sync:
+        stale_values.extend(["cloud sync", "sincronização em nuvem"])
+    for stale in stale_values:
         require(stale not in values, f"{rel} still has stale user-facing value: {stale}")
+
+if optional_cloud_sync:
+    settings_en = read("feature/settings/src/main/res/values/strings.xml").lower()
+    settings_pt = read("feature/settings/src/main/res/values-pt-rBR/strings.xml").lower()
+    require(
+        "optional cloud sync" in settings_en,
+        "current sync settings must identify cloud sync as optional",
+    )
+    require(
+        "off by default" in settings_en,
+        "current sync settings must preserve the off-by-default boundary",
+    )
+    require(
+        "sincronização em nuvem opcional" in settings_pt,
+        "pt-BR sync settings must identify cloud sync as optional",
+    )
+    require(
+        "desativada" in settings_pt,
+        "pt-BR sync settings must preserve the off-by-default boundary",
+    )
 
 release = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseReadinessSeal.kt")
 require("ReleaseReadinessPhase(35" in release and "Documentation and artifact cleanup" in release,

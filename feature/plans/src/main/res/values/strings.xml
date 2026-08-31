@@ -337,4 +337,5 @@
     <string name="onboarding_edital_import_later">Import later</string>
     <string name="onboarding_goal_coverage_date">Complete edital coverage by date</string>
     <string name="onboarding_goal_overdue_reviews">An “eliminate overdue reviews” goal is included in this preset.</string>
+    <string name="onboarding_date_format_hint">YYYY-MM-DD</string>
 </resources>

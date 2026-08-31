@@ -317,7 +317,7 @@ private fun PublicExamOnboardingFields(
                     onValueChange = onExamDateChange,
                     modifier = Modifier.weight(1f),
                     label = { Text(stringResource(R.string.onboarding_exam_date)) },
-                    supportingText = { Text("YYYY-MM-DD") },
+                    supportingText = { Text(stringResource(R.string.onboarding_date_format_hint)) },
                     singleLine = true,
                 )
                 OutlinedTextField(
@@ -401,7 +401,7 @@ private fun PublicExamOnboardingFields(
                 onValueChange = onCoverageGoalDateChange,
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.onboarding_goal_coverage_date)) },
-                supportingText = { Text("YYYY-MM-DD") },
+                supportingText = { Text(stringResource(R.string.onboarding_date_format_hint)) },
                 singleLine = true,
             )
             Text(

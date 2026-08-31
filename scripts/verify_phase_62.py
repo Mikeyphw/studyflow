@@ -92,9 +92,22 @@ for token in (
     "dayOfWeekRes",
     "formatMinuteOfDay",
     "choice.scheduleRules.forEach",
-    "onCreateSample(selectedChoice.template)",
 ):
     require(token in screen, f"Onboarding screen integration missing: {token}")
+
+legacy_sample_creation = "onCreateSample(selectedChoice.template)" in screen
+structured_sample_creation = all(
+    token in screen
+    for token in (
+        "onCreateSample(",
+        "OnboardingSamplePlanInput(",
+        "template = selectedChoice.template",
+    )
+)
+require(
+    legacy_sample_creation or structured_sample_creation,
+    "Onboarding screen must preserve explicit sample creation using the selected template",
+)
 
 for token in (
     "onStartSamplePlan",

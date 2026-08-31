@@ -676,4 +676,5 @@
     <string name="legislation_link_errors">Errors</string>
     <string name="legislation_link_reviews">Reviews</string>
     <string name="legislation_no_evidence_available">No question, error, or review evidence is available yet.</string>
+    <string name="none">None</string>
 </resources>

@@ -33,6 +33,8 @@ Included:
 
 ## Explicit staged scope
 
+The following capabilities remain **post-1.0** unless a later roadmap explicitly promotes them into the active product scope:
+
 - optional provider upload/download, remote checkpoint discovery, merge, and conflict review are staged after the off-by-default sync settings foundation;
 - public template marketplace;
 - automatic syllabus extraction;

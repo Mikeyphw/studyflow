@@ -258,8 +258,12 @@ for token in ("Loading", "Ready", "Missing", "Failed"):
 require("CancellationException" in load_flow, "load-state Flow adapter does not preserve coroutine cancellation")
 require("asStudyFlowOptionalLoadState" in root_app, "plan destinations do not distinguish missing from loading/failure")
 require("LoadedPlanDestination" in root_app, "legacy plan destinations still lack the explicit plan load gate")
-require("collectAsStateWithLifecycle(initialValue = null)" not in root_app,
-        "StudyFlowApp still conflates an unloaded plan Flow with a missing plan")
+plan_load_block = root_app[root_app.index("private fun LoadedPlanDestination"):root_app.index("private fun LoadedPlanSettingsDestination")]
+require(
+    "initialValue = StudyFlowLoadState.Loading" in plan_load_block
+    and "asStudyFlowOptionalLoadState" in plan_load_block,
+    "StudyFlowApp still conflates an unloaded plan Flow with a missing plan",
+)
 for workspace_path in (
     "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt",
     "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PlanWorkspaceScreen.kt",

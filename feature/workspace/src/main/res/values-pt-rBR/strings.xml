@@ -713,4 +713,5 @@
     <string name="legislation_link_errors">Erros</string>
     <string name="legislation_link_reviews">Revisões</string>
     <string name="legislation_no_evidence_available">Ainda não há evidências de questões, erros ou revisões disponíveis.</string>
+    <string name="none">Nenhum</string>
 </resources>

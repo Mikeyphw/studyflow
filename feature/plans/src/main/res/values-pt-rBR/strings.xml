@@ -347,4 +347,5 @@
     <string name="onboarding_edital_import_later">Importar depois</string>
     <string name="onboarding_goal_coverage_date">Concluir cobertura do edital até a data</string>
     <string name="onboarding_goal_overdue_reviews">Uma meta de “zerar revisões atrasadas” está incluída neste preset.</string>
+    <string name="onboarding_date_format_hint">YYYY-MM-DD</string>
 </resources>
