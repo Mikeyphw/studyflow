@@ -108,8 +108,11 @@ class RoomPublicExamRepository(
             preview.changes.filter { change -> change.existingTopicId == null }.forEach { change ->
                 val incomingKey = change.incomingSubjectKey
                 when (change.kind) {
-                    ExamNoticeDiffKind.UNCHANGED -> if (incomingKey != null && change.existingSubjectId != null) {
-                        subjectIdsByIncomingKey[incomingKey] = change.existingSubjectId.value
+                    ExamNoticeDiffKind.UNCHANGED -> {
+                        val existingSubjectId = change.existingSubjectId
+                        if (incomingKey != null && existingSubjectId != null) {
+                            subjectIdsByIncomingKey[incomingKey] = existingSubjectId.value
+                        }
                     }
                     ExamNoticeDiffKind.CHANGED -> {
                         val subjectId = requireNotNull(change.existingSubjectId)
@@ -537,6 +540,17 @@ class RoomPublicExamRepository(
         publicExamDao.setCurrentStudyCycleItem(planId.value, cycle.id, normalizedCurrent?.id, clock())
         loadCycleSnapshot(planId) ?: error("Study cycle disappeared after item update.")
     }
+
+    private suspend fun loadLegislationSnapshot(planId: StudyPlanId): LegislationStudySnapshot =
+        LegislationStudySnapshot(
+            studyPlanId = planId,
+            documents = publicExamDao.findLegislationDocuments(planId.value)
+                .map(LegislationDocumentEntity::toModel),
+            provisions = publicExamDao.findLegislationProvisionsForPlan(planId.value)
+                .map(LegislationProvisionEntity::toModel),
+            evidenceLinks = publicExamDao.findLegislationEvidenceLinks(planId.value)
+                .map(LegislationEvidenceLinkEntity::toModel),
+        )
 
     private suspend fun loadCycleSnapshot(planId: StudyPlanId): StudyCycleSnapshot? {
         val cycle = publicExamDao.findStudyCycle(planId.value) ?: return null
