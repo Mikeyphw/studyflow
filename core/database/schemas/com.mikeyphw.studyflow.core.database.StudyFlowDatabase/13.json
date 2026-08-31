@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 13,
-    "identityHash": "cpov09_schema13_legislation_v1",
+    "identityHash": "70b166af49717d97d9c471c4e83d0a47",
     "entities": [
       {
         "tableName": "study_plans",
@@ -308,6 +308,535 @@
             "onUpdate": "NO ACTION",
             "columns": [
               "studyTargetId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "exam_notice_revisions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `studyTargetId` TEXT NOT NULL, `label` TEXT NOT NULL, `sourceReference` TEXT, `importedAtEpochMillis` INTEGER NOT NULL, `normalizedContentSha256` TEXT NOT NULL, `parserVersion` TEXT NOT NULL, `publicationDateIso` TEXT, `addedCount` INTEGER NOT NULL, `removedCount` INTEGER NOT NULL, `changedCount` INTEGER NOT NULL, `unchangedCount` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`studyTargetId`) REFERENCES `study_targets`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyPlanId",
+            "columnName": "studyPlanId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyTargetId",
+            "columnName": "studyTargetId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceReference",
+            "columnName": "sourceReference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "importedAtEpochMillis",
+            "columnName": "importedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedContentSha256",
+            "columnName": "normalizedContentSha256",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parserVersion",
+            "columnName": "parserVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicationDateIso",
+            "columnName": "publicationDateIso",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "addedCount",
+            "columnName": "addedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "removedCount",
+            "columnName": "removedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "changedCount",
+            "columnName": "changedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unchangedCount",
+            "columnName": "unchangedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_exam_notice_revisions_studyPlanId",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_exam_notice_revisions_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
+          },
+          {
+            "name": "index_exam_notice_revisions_studyTargetId",
+            "unique": false,
+            "columnNames": [
+              "studyTargetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_exam_notice_revisions_studyTargetId` ON `${TABLE_NAME}` (`studyTargetId`)"
+          },
+          {
+            "name": "index_exam_notice_revisions_studyPlanId_importedAtEpochMillis",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId",
+              "importedAtEpochMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_exam_notice_revisions_studyPlanId_importedAtEpochMillis` ON `${TABLE_NAME}` (`studyPlanId`, `importedAtEpochMillis`)"
+          },
+          {
+            "name": "index_exam_notice_revisions_studyPlanId_normalizedContentSha256",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId",
+              "normalizedContentSha256"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_exam_notice_revisions_studyPlanId_normalizedContentSha256` ON `${TABLE_NAME}` (`studyPlanId`, `normalizedContentSha256`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "study_plans",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "studyPlanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "study_targets",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "studyTargetId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "legislation_documents",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `title` TEXT NOT NULL, `sourceReference` TEXT, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyPlanId",
+            "columnName": "studyPlanId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceReference",
+            "columnName": "sourceReference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_legislation_documents_studyPlanId",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_documents_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
+          },
+          {
+            "name": "index_legislation_documents_studyPlanId_title",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId",
+              "title"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_documents_studyPlanId_title` ON `${TABLE_NAME}` (`studyPlanId`, `title`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "study_plans",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "studyPlanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "legislation_provisions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `legislationDocumentId` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `reference` TEXT NOT NULL, `parentReference` TEXT, `kind` TEXT NOT NULL, `text` TEXT NOT NULL, `position` INTEGER NOT NULL, `read` INTEGER NOT NULL, `important` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`legislationDocumentId`) REFERENCES `legislation_documents`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legislationDocumentId",
+            "columnName": "legislationDocumentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyPlanId",
+            "columnName": "studyPlanId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reference",
+            "columnName": "reference",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentReference",
+            "columnName": "parentReference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "read",
+            "columnName": "read",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "important",
+            "columnName": "important",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_legislation_provisions_legislationDocumentId",
+            "unique": false,
+            "columnNames": [
+              "legislationDocumentId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_provisions_legislationDocumentId` ON `${TABLE_NAME}` (`legislationDocumentId`)"
+          },
+          {
+            "name": "index_legislation_provisions_studyPlanId",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_provisions_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
+          },
+          {
+            "name": "index_legislation_provisions_legislationDocumentId_position",
+            "unique": true,
+            "columnNames": [
+              "legislationDocumentId",
+              "position"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_legislation_provisions_legislationDocumentId_position` ON `${TABLE_NAME}` (`legislationDocumentId`, `position`)"
+          },
+          {
+            "name": "index_legislation_provisions_studyPlanId_reference",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId",
+              "reference"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_provisions_studyPlanId_reference` ON `${TABLE_NAME}` (`studyPlanId`, `reference`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "legislation_documents",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "legislationDocumentId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "study_plans",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "studyPlanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "legislation_evidence_links",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `provisionId` TEXT NOT NULL, `questionId` TEXT, `errorEntryId` TEXT, `reviewItemId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`provisionId`) REFERENCES `legislation_provisions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`questionId`) REFERENCES `questions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`errorEntryId`) REFERENCES `error_entries`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`reviewItemId`) REFERENCES `review_items`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyPlanId",
+            "columnName": "studyPlanId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "provisionId",
+            "columnName": "provisionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "questionId",
+            "columnName": "questionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "errorEntryId",
+            "columnName": "errorEntryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reviewItemId",
+            "columnName": "reviewItemId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_legislation_evidence_links_studyPlanId",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
+          },
+          {
+            "name": "index_legislation_evidence_links_provisionId",
+            "unique": false,
+            "columnNames": [
+              "provisionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_provisionId` ON `${TABLE_NAME}` (`provisionId`)"
+          },
+          {
+            "name": "index_legislation_evidence_links_questionId",
+            "unique": false,
+            "columnNames": [
+              "questionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_questionId` ON `${TABLE_NAME}` (`questionId`)"
+          },
+          {
+            "name": "index_legislation_evidence_links_errorEntryId",
+            "unique": false,
+            "columnNames": [
+              "errorEntryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_errorEntryId` ON `${TABLE_NAME}` (`errorEntryId`)"
+          },
+          {
+            "name": "index_legislation_evidence_links_reviewItemId",
+            "unique": false,
+            "columnNames": [
+              "reviewItemId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_reviewItemId` ON `${TABLE_NAME}` (`reviewItemId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "study_plans",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "studyPlanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "legislation_provisions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "provisionId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "questions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "questionId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "error_entries",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "errorEntryId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "review_items",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "reviewItemId"
             ],
             "referencedColumns": [
               "id"
@@ -719,6 +1248,246 @@
             "onUpdate": "NO ACTION",
             "columns": [
               "studyPlanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "study_cycles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `name` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `currentItemId` TEXT, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyPlanId",
+            "columnName": "studyPlanId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentItemId",
+            "columnName": "currentItemId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_study_cycles_studyPlanId",
+            "unique": true,
+            "columnNames": [
+              "studyPlanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_study_cycles_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "study_plans",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "studyPlanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "study_cycle_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyCycleId` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `subjectId` TEXT, `topicId` TEXT, `position` INTEGER NOT NULL, `targetDurationMinutes` INTEGER NOT NULL, `enabled` INTEGER NOT NULL, `activityType` TEXT NOT NULL, `completionRule` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`studyCycleId`) REFERENCES `study_cycles`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`subjectId`) REFERENCES `subjects`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`topicId`) REFERENCES `topics`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyCycleId",
+            "columnName": "studyCycleId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyPlanId",
+            "columnName": "studyPlanId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjectId",
+            "columnName": "subjectId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "topicId",
+            "columnName": "topicId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetDurationMinutes",
+            "columnName": "targetDurationMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activityType",
+            "columnName": "activityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completionRule",
+            "columnName": "completionRule",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_study_cycle_items_studyCycleId",
+            "unique": false,
+            "columnNames": [
+              "studyCycleId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_study_cycle_items_studyCycleId` ON `${TABLE_NAME}` (`studyCycleId`)"
+          },
+          {
+            "name": "index_study_cycle_items_studyPlanId",
+            "unique": false,
+            "columnNames": [
+              "studyPlanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_study_cycle_items_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
+          },
+          {
+            "name": "index_study_cycle_items_subjectId",
+            "unique": false,
+            "columnNames": [
+              "subjectId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_study_cycle_items_subjectId` ON `${TABLE_NAME}` (`subjectId`)"
+          },
+          {
+            "name": "index_study_cycle_items_topicId",
+            "unique": false,
+            "columnNames": [
+              "topicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_study_cycle_items_topicId` ON `${TABLE_NAME}` (`topicId`)"
+          },
+          {
+            "name": "index_study_cycle_items_studyCycleId_position",
+            "unique": true,
+            "columnNames": [
+              "studyCycleId",
+              "position"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_study_cycle_items_studyCycleId_position` ON `${TABLE_NAME}` (`studyCycleId`, `position`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "study_cycles",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "studyCycleId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "study_plans",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "studyPlanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "subjects",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "subjectId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "topics",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "topicId"
             ],
             "referencedColumns": [
               "id"
@@ -1936,7 +2705,7 @@
       },
       {
         "tableName": "questions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `subjectId` TEXT, `topicId` TEXT, `type` TEXT NOT NULL, `statement` TEXT NOT NULL, `optionsJson` TEXT NOT NULL, `correctAnswer` TEXT NOT NULL, `explanation` TEXT NOT NULL, `examBoard` TEXT, `source` TEXT, `year` INTEGER, `difficulty` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, `disputed` INTEGER NOT NULL, `tagsJson` TEXT NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, `organization` TEXT, `role` TEXT, `examStageId` TEXT, `authorship` TEXT NOT NULL DEFAULT 'UNKNOWN', `examNoticeRevisionId` TEXT, `externalReference` TEXT, `points` REAL, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`subjectId`) REFERENCES `subjects`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`topicId`) REFERENCES `topics`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `subjectId` TEXT, `topicId` TEXT, `type` TEXT NOT NULL, `statement` TEXT NOT NULL, `optionsJson` TEXT NOT NULL, `correctAnswer` TEXT NOT NULL, `explanation` TEXT NOT NULL, `examBoard` TEXT, `source` TEXT, `year` INTEGER, `difficulty` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, `disputed` INTEGER NOT NULL, `tagsJson` TEXT NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, `organization` TEXT, `role` TEXT, `examStageId` TEXT, `authorship` TEXT NOT NULL, `examNoticeRevisionId` TEXT, `externalReference` TEXT, `points` REAL, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`subjectId`) REFERENCES `subjects`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`topicId`) REFERENCES `topics`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -2044,45 +2813,38 @@
           {
             "fieldPath": "organization",
             "columnName": "organization",
-            "affinity": "TEXT",
-            "notNull": false
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "role",
             "columnName": "role",
-            "affinity": "TEXT",
-            "notNull": false
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "examStageId",
             "columnName": "examStageId",
-            "affinity": "TEXT",
-            "notNull": false
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "authorship",
             "columnName": "authorship",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "'UNKNOWN'"
+            "notNull": true
           },
           {
             "fieldPath": "examNoticeRevisionId",
             "columnName": "examNoticeRevisionId",
-            "affinity": "TEXT",
-            "notNull": false
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "externalReference",
             "columnName": "externalReference",
-            "affinity": "TEXT",
-            "notNull": false
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "points",
             "columnName": "points",
-            "affinity": "REAL",
-            "notNull": false
+            "affinity": "REAL"
           }
         ],
         "primaryKey": {
@@ -2128,7 +2890,7 @@
               "year"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `${INDEX_NAME}` ON `${TABLE_NAME}` (`studyPlanId`, `examBoard`, `year`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_questions_studyPlanId_examBoard_year` ON `${TABLE_NAME}` (`studyPlanId`, `examBoard`, `year`)"
           },
           {
             "name": "index_questions_studyPlanId_subjectId_topicId",
@@ -2139,7 +2901,7 @@
               "topicId"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `${INDEX_NAME}` ON `${TABLE_NAME}` (`studyPlanId`, `subjectId`, `topicId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_questions_studyPlanId_subjectId_topicId` ON `${TABLE_NAME}` (`studyPlanId`, `subjectId`, `topicId`)"
           },
           {
             "name": "index_questions_studyPlanId_organization_role",
@@ -2150,7 +2912,7 @@
               "role"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `${INDEX_NAME}` ON `${TABLE_NAME}` (`studyPlanId`, `organization`, `role`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_questions_studyPlanId_organization_role` ON `${TABLE_NAME}` (`studyPlanId`, `organization`, `role`)"
           }
         ],
         "foreignKeys": [
@@ -4794,785 +5556,11 @@
             "key"
           ]
         }
-      },
-      {
-        "tableName": "exam_notice_revisions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `studyTargetId` TEXT NOT NULL, `label` TEXT NOT NULL, `sourceReference` TEXT, `importedAtEpochMillis` INTEGER NOT NULL, `normalizedContentSha256` TEXT NOT NULL, `parserVersion` TEXT NOT NULL, `publicationDateIso` TEXT, `addedCount` INTEGER NOT NULL, `removedCount` INTEGER NOT NULL, `changedCount` INTEGER NOT NULL, `unchangedCount` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`studyTargetId`) REFERENCES `study_targets`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "studyPlanId",
-            "columnName": "studyPlanId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "studyTargetId",
-            "columnName": "studyTargetId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "label",
-            "columnName": "label",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "sourceReference",
-            "columnName": "sourceReference",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "importedAtEpochMillis",
-            "columnName": "importedAtEpochMillis",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "normalizedContentSha256",
-            "columnName": "normalizedContentSha256",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "parserVersion",
-            "columnName": "parserVersion",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "publicationDateIso",
-            "columnName": "publicationDateIso",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "addedCount",
-            "columnName": "addedCount",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "removedCount",
-            "columnName": "removedCount",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "changedCount",
-            "columnName": "changedCount",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "unchangedCount",
-            "columnName": "unchangedCount",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_exam_notice_revisions_studyPlanId",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_exam_notice_revisions_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
-          },
-          {
-            "name": "index_exam_notice_revisions_studyTargetId",
-            "unique": false,
-            "columnNames": [
-              "studyTargetId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_exam_notice_revisions_studyTargetId` ON `${TABLE_NAME}` (`studyTargetId`)"
-          },
-          {
-            "name": "index_exam_notice_revisions_studyPlanId_importedAtEpochMillis",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId",
-              "importedAtEpochMillis"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_exam_notice_revisions_studyPlanId_importedAtEpochMillis` ON `${TABLE_NAME}` (`studyPlanId`, `importedAtEpochMillis`)"
-          },
-          {
-            "name": "index_exam_notice_revisions_studyPlanId_normalizedContentSha256",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId",
-              "normalizedContentSha256"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_exam_notice_revisions_studyPlanId_normalizedContentSha256` ON `${TABLE_NAME}` (`studyPlanId`, `normalizedContentSha256`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "study_plans",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "studyPlanId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "study_targets",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "studyTargetId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          }
-        ]
-      },
-      {
-        "tableName": "study_cycles",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `name` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `currentItemId` TEXT, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "studyPlanId",
-            "columnName": "studyPlanId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "name",
-            "columnName": "name",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "enabled",
-            "columnName": "enabled",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "currentItemId",
-            "columnName": "currentItemId",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "createdAtEpochMillis",
-            "columnName": "createdAtEpochMillis",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "updatedAtEpochMillis",
-            "columnName": "updatedAtEpochMillis",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_study_cycles_studyPlanId",
-            "unique": true,
-            "columnNames": [
-              "studyPlanId"
-            ],
-            "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_study_cycles_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "study_plans",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "studyPlanId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          }
-        ]
-      },
-      {
-        "tableName": "study_cycle_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyCycleId` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `subjectId` TEXT, `topicId` TEXT, `position` INTEGER NOT NULL, `targetDurationMinutes` INTEGER NOT NULL, `enabled` INTEGER NOT NULL, `activityType` TEXT NOT NULL, `completionRule` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`studyCycleId`) REFERENCES `study_cycles`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`subjectId`) REFERENCES `subjects`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`topicId`) REFERENCES `topics`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "studyCycleId",
-            "columnName": "studyCycleId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "studyPlanId",
-            "columnName": "studyPlanId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "subjectId",
-            "columnName": "subjectId",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "topicId",
-            "columnName": "topicId",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "position",
-            "columnName": "position",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "targetDurationMinutes",
-            "columnName": "targetDurationMinutes",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "enabled",
-            "columnName": "enabled",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "activityType",
-            "columnName": "activityType",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "completionRule",
-            "columnName": "completionRule",
-            "affinity": "TEXT"
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_study_cycle_items_studyCycleId",
-            "unique": false,
-            "columnNames": [
-              "studyCycleId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_study_cycle_items_studyCycleId` ON `${TABLE_NAME}` (`studyCycleId`)"
-          },
-          {
-            "name": "index_study_cycle_items_studyPlanId",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_study_cycle_items_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
-          },
-          {
-            "name": "index_study_cycle_items_subjectId",
-            "unique": false,
-            "columnNames": [
-              "subjectId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_study_cycle_items_subjectId` ON `${TABLE_NAME}` (`subjectId`)"
-          },
-          {
-            "name": "index_study_cycle_items_topicId",
-            "unique": false,
-            "columnNames": [
-              "topicId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_study_cycle_items_topicId` ON `${TABLE_NAME}` (`topicId`)"
-          },
-          {
-            "name": "index_study_cycle_items_studyCycleId_position",
-            "unique": true,
-            "columnNames": [
-              "studyCycleId",
-              "position"
-            ],
-            "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_study_cycle_items_studyCycleId_position` ON `${TABLE_NAME}` (`studyCycleId`, `position`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "study_cycles",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "studyCycleId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "study_plans",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "studyPlanId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "subjects",
-            "onDelete": "SET NULL",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "subjectId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "topics",
-            "onDelete": "SET NULL",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "topicId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          }
-        ]
-      },
-      {
-        "tableName": "legislation_documents",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `title` TEXT NOT NULL, `sourceReference` TEXT, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "studyPlanId",
-            "columnName": "studyPlanId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "title",
-            "columnName": "title",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "sourceReference",
-            "columnName": "sourceReference",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "createdAtEpochMillis",
-            "columnName": "createdAtEpochMillis",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "updatedAtEpochMillis",
-            "columnName": "updatedAtEpochMillis",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_legislation_documents_studyPlanId",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_documents_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
-          },
-          {
-            "name": "index_legislation_documents_studyPlanId_title",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId",
-              "title"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_documents_studyPlanId_title` ON `${TABLE_NAME}` (`studyPlanId`, `title`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "study_plans",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "studyPlanId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          }
-        ]
-      },
-      {
-        "tableName": "legislation_provisions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `legislationDocumentId` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `reference` TEXT NOT NULL, `parentReference` TEXT, `kind` TEXT NOT NULL, `text` TEXT NOT NULL, `position` INTEGER NOT NULL, `read` INTEGER NOT NULL, `important` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`legislationDocumentId`) REFERENCES `legislation_documents`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "legislationDocumentId",
-            "columnName": "legislationDocumentId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "studyPlanId",
-            "columnName": "studyPlanId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "reference",
-            "columnName": "reference",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "parentReference",
-            "columnName": "parentReference",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "kind",
-            "columnName": "kind",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "text",
-            "columnName": "text",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "position",
-            "columnName": "position",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "read",
-            "columnName": "read",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "important",
-            "columnName": "important",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "createdAtEpochMillis",
-            "columnName": "createdAtEpochMillis",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "updatedAtEpochMillis",
-            "columnName": "updatedAtEpochMillis",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_legislation_provisions_legislationDocumentId",
-            "unique": false,
-            "columnNames": [
-              "legislationDocumentId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_provisions_legislationDocumentId` ON `${TABLE_NAME}` (`legislationDocumentId`)"
-          },
-          {
-            "name": "index_legislation_provisions_studyPlanId",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_provisions_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
-          },
-          {
-            "name": "index_legislation_provisions_legislationDocumentId_position",
-            "unique": true,
-            "columnNames": [
-              "legislationDocumentId",
-              "position"
-            ],
-            "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_legislation_provisions_legislationDocumentId_position` ON `${TABLE_NAME}` (`legislationDocumentId`, `position`)"
-          },
-          {
-            "name": "index_legislation_provisions_studyPlanId_reference",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId",
-              "reference"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_provisions_studyPlanId_reference` ON `${TABLE_NAME}` (`studyPlanId`, `reference`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "legislation_documents",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "legislationDocumentId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "study_plans",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "studyPlanId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          }
-        ]
-      },
-      {
-        "tableName": "legislation_evidence_links",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `studyPlanId` TEXT NOT NULL, `provisionId` TEXT NOT NULL, `questionId` TEXT, `errorEntryId` TEXT, `reviewItemId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`studyPlanId`) REFERENCES `study_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`provisionId`) REFERENCES `legislation_provisions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`questionId`) REFERENCES `questions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`errorEntryId`) REFERENCES `error_entries`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`reviewItemId`) REFERENCES `review_items`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "studyPlanId",
-            "columnName": "studyPlanId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "provisionId",
-            "columnName": "provisionId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "questionId",
-            "columnName": "questionId",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "errorEntryId",
-            "columnName": "errorEntryId",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "reviewItemId",
-            "columnName": "reviewItemId",
-            "affinity": "TEXT",
-            "notNull": false
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_legislation_evidence_links_studyPlanId",
-            "unique": false,
-            "columnNames": [
-              "studyPlanId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_studyPlanId` ON `${TABLE_NAME}` (`studyPlanId`)"
-          },
-          {
-            "name": "index_legislation_evidence_links_provisionId",
-            "unique": false,
-            "columnNames": [
-              "provisionId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_provisionId` ON `${TABLE_NAME}` (`provisionId`)"
-          },
-          {
-            "name": "index_legislation_evidence_links_questionId",
-            "unique": false,
-            "columnNames": [
-              "questionId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_questionId` ON `${TABLE_NAME}` (`questionId`)"
-          },
-          {
-            "name": "index_legislation_evidence_links_errorEntryId",
-            "unique": false,
-            "columnNames": [
-              "errorEntryId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_errorEntryId` ON `${TABLE_NAME}` (`errorEntryId`)"
-          },
-          {
-            "name": "index_legislation_evidence_links_reviewItemId",
-            "unique": false,
-            "columnNames": [
-              "reviewItemId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_legislation_evidence_links_reviewItemId` ON `${TABLE_NAME}` (`reviewItemId`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "study_plans",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "studyPlanId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "legislation_provisions",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "provisionId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "questions",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "questionId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "error_entries",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "errorEntryId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
-          {
-            "table": "review_items",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "reviewItemId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          }
-        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cpov09_schema13_legislation_v1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '70b166af49717d97d9c471c4e83d0a47')"
     ]
   }
 }
