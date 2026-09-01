@@ -180,6 +180,7 @@ object DiagnosticRedactor {
     private val uuidPattern = Regex(
         pattern = "(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\b",
     )
+    private val redactedUriMarkerPattern = Regex("^<redacted-[a-z0-9]{1,16}-uri>$")
 
     fun redactDetails(details: Map<String, String>): Map<String, String> = details
         .entries
@@ -235,6 +236,7 @@ object DiagnosticRedactor {
 
     fun redactUri(value: String?): String {
         val raw = value?.trim()?.takeIf(String::isNotBlank) ?: return ""
+        if (redactedUriMarkerPattern.matches(raw)) return raw
         val scheme = raw.substringBefore("://", missingDelimiterValue = "uri")
             .lowercase(Locale.US)
             .filter(Char::isLetterOrDigit)

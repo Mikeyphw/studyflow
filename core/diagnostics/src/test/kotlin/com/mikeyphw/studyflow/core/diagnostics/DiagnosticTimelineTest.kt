@@ -62,7 +62,7 @@ class DiagnosticTimelineTest {
     @Test
     fun `reader re-sanitizes untrusted timeline fields and rejects pathological nesting`() {
         val malicious = """
-            {"sequence":9,"timestampEpochMillis":10,"area":"VALIDATION","severity":"INFO",
+            {"schemaVersion":1,"sequence":9,"timestampEpochMillis":10,"area":"VALIDATION","severity":"INFO",
             "action":"safe-action","outcome":"SUCCEEDED","correlationId":"private-plan-id",
             "safeDetails":{"reason":"Private calculus note","plan_id":"plan-secret"}}
         """.trimIndent().replace("\n", "")

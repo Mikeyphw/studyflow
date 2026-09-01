@@ -42,6 +42,16 @@ class DiagnosticRedactorTest {
         assertEquals("<redacted-content>", redacted.getValue("plan_name"))
         assertEquals("<redacted-content>", redacted.getValue("question_text"))
         assertEquals("<redacted-content-uri>", redacted.getValue("source_uri"))
+        assertEquals(
+            redacted.getValue("source_uri"),
+            DiagnosticRedactor.redactUri(redacted.getValue("source_uri")),
+        )
+        assertEquals(
+            redacted.getValue("source_uri"),
+            DiagnosticRedactor.redactDetails(
+                mapOf("sourceUri" to redacted.getValue("source_uri")),
+            ).getValue("source_uri"),
+        )
         assertEquals("<redacted-path>", redacted.getValue("absolute_path"))
         assertNotEquals(planId, redacted.getValue("plan_id"))
         assertFalse(rendered.contains("student@example.com"))
