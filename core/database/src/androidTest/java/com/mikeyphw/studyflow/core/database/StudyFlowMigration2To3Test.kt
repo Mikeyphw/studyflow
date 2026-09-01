@@ -118,37 +118,43 @@ class StudyFlowMigration2To3Test {
     @Test
     fun freshVersionFourDatabaseContainsNullableTargetDuration() {
         val databaseName = trackedDatabase("studyflow-fresh-4.db")
-        Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
+        val roomDatabase = Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
             .addMigrations(*StudyFlowMigrations.All)
             .allowMainThreadQueries()
             .build()
-            .use { roomDatabase ->
-                val database = roomDatabase.openHelper.writableDatabase
-                assertTrue("targetDurationMinutes" in database.tableColumns("study_sessions"))
-            }
+        try {
+            val database = roomDatabase.openHelper.writableDatabase
+            assertTrue("targetDurationMinutes" in database.tableColumns("study_sessions"))
+        } finally {
+            roomDatabase.close()
+        }
     }
 
     @Test
     fun activeFocusSessionRestoresAfterDatabaseReopen() = runBlocking {
         val databaseName = trackedDatabase("studyflow-focus-restore.db")
-        Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
+        val database = Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
             .addMigrations(*StudyFlowMigrations.All)
             .allowMainThreadQueries()
             .build()
-            .use { database ->
-                insertPlanAndFocusSession(database.openHelper.writableDatabase)
-            }
+        try {
+            insertPlanAndFocusSession(database.openHelper.writableDatabase)
+        } finally {
+            database.close()
+        }
 
-        Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
+        val reopened = Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
             .addMigrations(*StudyFlowMigrations.All)
             .allowMainThreadQueries()
             .build()
-            .use { reopened ->
-                val restored = reopened.studyPlanningDao().findActiveStudySessions("plan").single()
-                assertEquals("RUNNING", restored.status)
-                assertEquals(45, restored.targetDurationMinutes)
-                assertEquals(1_000L, restored.startedAtEpochMillis)
-            }
+        try {
+            val restored = reopened.studyPlanningDao().findActiveStudySessions("plan").single()
+            assertEquals("RUNNING", restored.status)
+            assertEquals(45, restored.targetDurationMinutes)
+            assertEquals(1_000L, restored.startedAtEpochMillis)
+        } finally {
+            reopened.close()
+        }
     }
 
     private fun trackedDatabase(name: String): String = name.also(databaseNames::add)
@@ -215,3 +221,18 @@ class StudyFlowMigration2To3Test {
         )
     }
 }
+
+private fun SupportSQLiteDatabase.tableColumns(tableName: String): Set<String> =
+    query("PRAGMA table_info($tableName)").use { cursor ->
+        buildSet {
+            while (cursor.moveToNext()) {
+                add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            }
+        }
+    }
+
+private fun SupportSQLiteDatabase.countRows(tableName: String): Int =
+    query("SELECT COUNT(*) FROM $tableName").use { cursor ->
+        cursor.moveToFirst()
+        cursor.getInt(0)
+    }

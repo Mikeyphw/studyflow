@@ -184,7 +184,7 @@ class HttpUrlConnectionWebDavSyncTransport(
 ) : WebDavSyncTransport {
     override suspend fun execute(request: WebDavSyncRequest): WebDavSyncResponse =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val connection = java.net.URL(request.url).openConnection() as java.net.HttpURLConnection
+            val connection = java.net.URI.create(request.url).toURL().openConnection() as java.net.HttpURLConnection
             connection.requestMethod = request.method
             connection.connectTimeout = connectTimeoutMillis
             connection.readTimeout = readTimeoutMillis
