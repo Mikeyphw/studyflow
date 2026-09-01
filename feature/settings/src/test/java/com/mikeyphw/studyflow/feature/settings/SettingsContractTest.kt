@@ -57,7 +57,7 @@ class SettingsContractTest {
         assertTrue(source.contains("syncState.settings.providerId"))
         assertTrue(strings.contains("Optional cloud sync"))
         assertTrue(strings.contains("Cloud sync is optional, off by default"))
-        assertTrue(strings.contains("provider: %2$s"))
+        assertTrue(strings.contains("provider: %2\$s"))
         assertFalse(strings.contains("No cloud"))
         assertFalse(strings.contains("network sync"))
     }
