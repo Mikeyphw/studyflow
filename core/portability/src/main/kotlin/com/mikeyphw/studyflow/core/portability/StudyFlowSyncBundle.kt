@@ -131,7 +131,9 @@ class StudyFlowSyncBundleCodec(
     }
 
     fun writeEncryptedArchive(archive: StudyFlowSyncBundleArchive, output: OutputStream, password: CharArray) {
-        require(archive.manifest.encryptedForRemote) { "Remote sync bundles must declare encryptedForRemote=true." }
+        if (!archive.manifest.encryptedForRemote) {
+            throw StudyPlanPackageException("Remote sync bundles must declare encryptedForRemote=true.")
+        }
         encryptedCodec.encrypt(output, password) { encryptedOutput ->
             writeArchive(archive, encryptedOutput)
         }
