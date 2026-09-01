@@ -47,57 +47,59 @@ class StudyPlanPortabilityMigrationCompatibilityTest {
             *StudyFlowMigrations.All,
         ).close()
 
-        Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
+        val database = Room.databaseBuilder(context, StudyFlowDatabase::class.java, databaseName)
             .addMigrations(*StudyFlowMigrations.All)
             .allowMainThreadQueries()
             .build()
-            .use { database ->
-                val store = StudyPlanGraphPortabilityStore(database)
-                val exported = store.exportPayload(
-                    planId = "plan",
-                    options = StudyPlanExportOptions(),
-                    applicationVersion = "test",
-                    exportedAtEpochMillis = 10_000L,
-                )
-                val exportedSession = exported.tables
-                    .single { table -> table.name == "study_sessions" }
-                    .rows
-                    .single()
-                assertTrue("targetDurationMinutes" in exportedSession.values)
-                assertNull(exportedSession.values.getValue("targetDurationMinutes").value)
+        try {
+            val store = StudyPlanGraphPortabilityStore(database)
+            val exported = store.exportPayload(
+                planId = "plan",
+                options = StudyPlanExportOptions(),
+                applicationVersion = "test",
+                exportedAtEpochMillis = 10_000L,
+            )
+            val exportedSession = exported.tables
+                .single { table -> table.name == "study_sessions" }
+                .rows
+                .single()
+            assertTrue("targetDurationMinutes" in exportedSession.values)
+            assertNull(exportedSession.values.getValue("targetDurationMinutes").value)
 
-                val legacyTables = exported.tables.map { table ->
-                    if (table.name != "study_sessions") {
-                        table
-                    } else {
-                        table.copy(
-                            rows = table.rows.map { row ->
-                                row.copy(values = row.values - "targetDurationMinutes")
-                            },
-                        )
-                    }
-                }
-                val legacyPayload = exported.copy(tables = legacyTables)
-                store.validatePayload(legacyPayload)
-                store.importPayload(
-                    payload = legacyPayload,
-                    strategy = StudyPlanImportStrategy.CREATE_AS_NEW,
-                    targetPlanId = "restored",
-                    importedAtEpochMillis = 20_000L,
-                )
-
-                database.openHelper.writableDatabase.query(
-                    """
-                    SELECT notes, targetDurationMinutes
-                    FROM study_sessions
-                    WHERE studyPlanId = 'restored'
-                    """.trimIndent(),
-                ).use { cursor ->
-                    assertTrue(cursor.moveToFirst())
-                    assertEquals("legacy", cursor.getString(0))
-                    assertNull(if (cursor.isNull(1)) null else cursor.getInt(1))
+            val legacyTables = exported.tables.map { table ->
+                if (table.name != "study_sessions") {
+                    table
+                } else {
+                    table.copy(
+                        rows = table.rows.map { row ->
+                            row.copy(values = row.values - "targetDurationMinutes")
+                        },
+                    )
                 }
             }
+            val legacyPayload = exported.copy(tables = legacyTables)
+            store.validatePayload(legacyPayload)
+            store.importPayload(
+                payload = legacyPayload,
+                strategy = StudyPlanImportStrategy.CREATE_AS_NEW,
+                targetPlanId = "restored",
+                importedAtEpochMillis = 20_000L,
+            )
+
+            database.openHelper.writableDatabase.query(
+                """
+                SELECT notes, targetDurationMinutes
+                FROM study_sessions
+                WHERE studyPlanId = 'restored'
+                """.trimIndent(),
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("legacy", cursor.getString(0))
+                assertNull(if (cursor.isNull(1)) null else cursor.getInt(1))
+            }
+        } finally {
+            database.close()
+        }
     }
 
     private fun insertLegacyGraph(database: SupportSQLiteDatabase) {

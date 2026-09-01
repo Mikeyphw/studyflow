@@ -144,20 +144,22 @@ class StudyFlowMigration9To13CpovSealTest {
 
     @Test
     fun freshSchemaCreatesTheSameCpovEndpoint() {
-        Room.inMemoryDatabaseBuilder(context, StudyFlowDatabase::class.java)
+        val database = Room.inMemoryDatabaseBuilder(context, StudyFlowDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-            .use { database ->
-                val db = database.openHelper.writableDatabase
-                assertEquals(13, db.version)
-                db.query(
-                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' " +
-                        "AND name IN ('exam_notice_revisions','study_cycles','study_cycle_items'," +
-                        "'legislation_documents','legislation_provisions','legislation_evidence_links')",
-                ).use { cursor ->
-                    assertTrue(cursor.moveToFirst())
-                    assertEquals(6, cursor.getInt(0))
-                }
+        try {
+            val db = database.openHelper.writableDatabase
+            assertEquals(13, db.version)
+            db.query(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' " +
+                    "AND name IN ('exam_notice_revisions','study_cycles','study_cycle_items'," +
+                    "'legislation_documents','legislation_provisions','legislation_evidence_links')",
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(6, cursor.getInt(0))
             }
+        } finally {
+            database.close()
+        }
     }
 }
