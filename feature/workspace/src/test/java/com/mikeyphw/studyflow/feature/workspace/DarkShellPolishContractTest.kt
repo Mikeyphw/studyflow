@@ -90,7 +90,8 @@ class DarkShellPolishContractTest {
         assertTrue("bottom = 132.dp" in plans)
         assertTrue("system_hub_all_plans_meta" in utility)
         assertTrue("system_hub_backup_meta" in utility)
-        assertTrue("disabledContentColor" in sync)
+        assertTrue("color = MaterialTheme.colorScheme.onSurfaceVariant" in sync)
+        assertFalse("Color.Black" in sync)
     }
 
 }

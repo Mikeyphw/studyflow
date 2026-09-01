@@ -29,7 +29,7 @@ class FocusWorkspaceRedesignContractTest {
         assertTrue("StudyFlowFocusActionSurface(" in today)
         assertTrue("StudyFlowTimelineItem(" in today)
         assertTrue("StudyFlowMetricStrip(" in today)
-        assertTrue("StudyFlowFloatingAction(" in today)
+        assertTrue("StudyFlowActionOrb(" in today)
         assertTrue("onOpenFocus" in today)
         assertTrue("onOpenReviews" in today)
         assertTrue("onOpenSchedule" in today)

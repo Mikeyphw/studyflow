@@ -28,7 +28,7 @@ class PracticeFocusExperienceContractTest {
         assertFalse("StudyFlowWorkspaceTabs(" in practice)
         assertTrue("StudyFlowTabStrip(" in practice)
         assertTrue("StudyFlowPracticeHero(" in practice)
-        assertTrue("StudyFlowFloatingAction(" in practice)
+        assertTrue("StudyFlowActionOrb(" in practice)
         assertTrue("PracticeWorkspaceTab.REVIEWS" in practice)
         assertTrue("PracticeWorkspaceTab.QUESTIONS" in practice)
         assertTrue("PracticeWorkspaceTab.ERRORS" in practice)
