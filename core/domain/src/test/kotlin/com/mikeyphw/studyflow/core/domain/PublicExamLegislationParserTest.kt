@@ -30,7 +30,7 @@ class PublicExamLegislationParserTest {
         val preview = LegislationImportParser.preview(
             title = "Lei",
             sourceReference = "local",
-            rawText = "reference,text,kind\\nArt. 1º,Administração pública,ARTICLE",
+            rawText = "reference,text,kind\nArt. 1º,Administração pública,ARTICLE",
             format = LegislationImportFormat.CSV,
         )
         assertEquals("Administração pública", preview.provisions.single().text)
