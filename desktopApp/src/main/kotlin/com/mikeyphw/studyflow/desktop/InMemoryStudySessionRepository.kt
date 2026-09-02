@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.desktop
 
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.StudyCycleSessionBinding
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
@@ -44,6 +45,7 @@ class InMemoryStudySessionRepository(
     override suspend fun createSession(
         session: StudySession,
         linkedActivityExpectedStatus: PlannedActivityStatus?,
+        cycleBinding: StudyCycleSessionBinding?,
     ): StudySession {
         require(sessionState.value.none { existing -> existing.id == session.id }) { "Study Session already exists." }
         sessionState.value = sessionState.value + session
