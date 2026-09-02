@@ -258,6 +258,9 @@ fun isSafeTermuxCommandTemplate(template: String?): Boolean {
     return DangerousShellFragments.none { fragment -> fragment in command }
 }
 
+// This predicate rejects shared-storage paths; it does not access them.
+// Android lint otherwise mistakes the literal safety boundary for filesystem usage.
+@Suppress("SdCardPath")
 fun isSafeTermuxPath(path: String): Boolean {
     val normalized = path.trim()
     if (normalized.isEmpty()) return false
