@@ -74,6 +74,7 @@ fun createStudyFlowDataLayer(
     val studyCloudSyncRepository = LocalStudyCloudSyncRepository(
         context = context,
         database = database,
+        applicationVersion = applicationVersion,
         clock = clock,
     )
     val studyScheduleRepository = RoomStudyScheduleRepository(database, diagnosticRecorder)

@@ -98,9 +98,13 @@ class SettingsContractTest {
         assertTrue(source.contains("StudySyncManualActionPlanner.actions"))
         assertTrue(source.contains("onUploadEncryptedCheckpoint"))
         assertTrue(source.contains("onCheckRemoteCheckpoints"))
+        assertTrue(source.contains("PasswordVisualTransformation"))
+        assertTrue(source.contains("StudyPlanEncryptedPackageCodec.MinimumPasswordLength"))
+        assertTrue(source.contains("onPreviewRemoteRestore"))
+        assertTrue(source.contains("onViewSyncHistory"))
         assertTrue(strings.contains("Manual folder sync"))
-        assertTrue(strings.contains("Prepare encrypted upload checkpoint"))
-        assertTrue(strings.contains("Check for remote checkpoint"))
+        assertTrue(strings.contains("Write encrypted checkpoint"))
+        assertTrue(strings.contains("Refresh folder checkpoints"))
         assertTrue(strings.contains("Automatic sync remains off"))
     }
 

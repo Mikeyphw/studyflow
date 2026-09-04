@@ -51,15 +51,15 @@
     <string name="sync_active_plan_count">Active or paused plans: %1$d</string>
     <string name="sync_change_count">Local changes: %1$d</string>
     <string name="sync_manual_folder_title">Manual folder sync</string>
-    <string name="sync_manual_folder_message">Choose a folder, then manually prepare encrypted checkpoints and check for remote checkpoint files. Automatic sync remains off.</string>
+    <string name="sync_manual_folder_message">Choose a folder and enter a passphrase. StudyFlow writes encrypted checkpoint files only when you tap the manual action; automatic sync remains off.</string>
     <string name="sync_folder_selected">Sync folder selected</string>
     <string name="sync_folder_missing">No sync folder selected</string>
-    <string name="sync_last_upload_value">Last prepared upload: %1$s</string>
+    <string name="sync_last_upload_value">Last successful upload: %1$s</string>
     <string name="sync_last_remote_check_value">Last remote check: %1$s</string>
     <string name="sync_remote_checkpoint_count">Remote checkpoints found: %1$d</string>
     <string name="sync_never">Never</string>
-    <string name="sync_prepare_upload_checkpoint">Prepare encrypted upload checkpoint</string>
-    <string name="sync_check_remote_checkpoint">Check for remote checkpoint</string>
+    <string name="sync_prepare_upload_checkpoint">Write encrypted checkpoint</string>
+    <string name="sync_check_remote_checkpoint">Refresh folder checkpoints</string>
     <string name="sync_preview_restore">Preview restore</string>
     <string name="sync_view_history">View sync history</string>
     <string name="sync_background_title">Background sync modes</string>
@@ -442,4 +442,26 @@
     <string name="debug_portability_drill_failure_isolation">Failed-restore isolation</string>
     <string name="debug_portability_drill_logical_integrity">Logical integrity</string>
     <string name="debug_study_engine_kind_schedule_persistence">Persisted schedule semantics</string>
+
+    <string name="sync_passphrase_label">Checkpoint passphrase</string>
+    <string name="sync_passphrase_help">At least 8 characters. StudyFlow does not save this passphrase.</string>
+    <string name="sync_scan_result_title">Folder scan result</string>
+    <string name="sync_latest_remote_file">Latest file: %1$s</string>
+    <string name="sync_latest_remote_modified">Last modified: %1$s</string>
+    <string name="sync_none_found">None</string>
+    <string name="sync_restore_preview_title">Authenticated restore preview</string>
+    <string name="sync_restore_preview_file">File: %1$s</string>
+    <string name="sync_restore_preview_device">Source device: %1$s</string>
+    <string name="sync_restore_preview_revision">Database revision: %1$d</string>
+    <string name="sync_restore_preview_changes">Checkpoint changes: %1$d</string>
+    <string name="sync_restore_preview_database_bytes">Database snapshot bytes: %1$d</string>
+    <string name="sync_restore_preview_attachments">Attachments included: %1$d</string>
+    <string name="sync_restore_preview_app_version">App version: %1$s</string>
+    <string name="sync_restore_preview_read_only">This operation only decrypts, authenticates, and inspects the checkpoint. No local data is changed.</string>
+    <string name="sync_history_title">Available sync history</string>
+    <string name="sync_history_devices">Registered devices: %1$d</string>
+    <string name="sync_history_checkpoints">Recorded checkpoints: %1$d</string>
+    <string name="sync_history_events">Available events: %1$d</string>
+    <string name="sync_history_latest_checkpoint">Latest checkpoint: %1$s</string>
+    <string name="sync_history_latest_event">Latest event: %1$s</string>
 </resources>

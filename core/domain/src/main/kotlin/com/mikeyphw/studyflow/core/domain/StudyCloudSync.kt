@@ -4,6 +4,7 @@ import com.mikeyphw.studyflow.core.model.StudySyncBackgroundMode
 import com.mikeyphw.studyflow.core.model.StudySyncChangeSummary
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncLedgerSnapshot
+import com.mikeyphw.studyflow.core.portability.StudyPlanEncryptedPackageCodec
 import com.mikeyphw.studyflow.core.model.StudySyncState
 import kotlinx.coroutines.flow.Flow
 
@@ -24,11 +25,12 @@ interface StudyCloudSyncRepository {
 
     suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState
 
-    suspend fun recordManualUploadCheckpoint(): StudySyncState
+    suspend fun uploadManualFolderCheckpoint(password: CharArray): StudyManualFolderCheckpointDetails
 
-    suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState
+    suspend fun scanManualFolderCheckpoints(): StudyManualFolderScan
 
-    suspend fun recordRestorePreview(checkpointId: String): StudySyncState
+    suspend fun previewLatestManualFolderRestore(password: CharArray): StudyManualFolderCheckpointDetails
+
 
     suspend fun clearLocalFoundation(): StudySyncState
 }
@@ -60,19 +62,73 @@ class ManageStudyCloudSync(
         return repository.configureLocalFolderProvider(folderUri.trim())
     }
 
-    suspend fun recordManualUploadCheckpoint(): StudySyncState = repository.recordManualUploadCheckpoint()
-
-    suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState {
-        require(remoteCheckpointCount >= 0) { "Remote checkpoint count cannot be negative." }
-        return repository.recordManualRemoteCheck(remoteCheckpointCount)
+    suspend fun uploadManualFolderCheckpoint(password: CharArray): StudyManualFolderCheckpointDetails {
+        require(password.size >= StudyPlanEncryptedPackageCodec.MinimumPasswordLength) {
+            "Encrypted sync checkpoints require at least " +
+                "${StudyPlanEncryptedPackageCodec.MinimumPasswordLength} characters."
+        }
+        return repository.uploadManualFolderCheckpoint(password)
     }
 
-    suspend fun recordRestorePreview(checkpointId: String): StudySyncState {
-        require(checkpointId.isNotBlank()) { "Checkpoint id cannot be blank." }
-        return repository.recordRestorePreview(checkpointId.trim())
+    suspend fun scanManualFolderCheckpoints(): StudyManualFolderScan =
+        repository.scanManualFolderCheckpoints()
+
+    suspend fun previewLatestManualFolderRestore(password: CharArray): StudyManualFolderCheckpointDetails {
+        require(password.size >= StudyPlanEncryptedPackageCodec.MinimumPasswordLength) {
+            "Encrypted sync checkpoints require at least " +
+                "${StudyPlanEncryptedPackageCodec.MinimumPasswordLength} characters."
+        }
+        return repository.previewLatestManualFolderRestore(password)
     }
+
 
     suspend fun clearLocalFoundation(): StudySyncState = repository.clearLocalFoundation()
+}
+
+
+data class StudyManualFolderScan(
+    val checkpointCount: Int,
+    val latestFileName: String?,
+    val latestModifiedAtEpochMillis: Long?,
+) {
+    init {
+        require(checkpointCount >= 0) { "Manual folder checkpoint count cannot be negative." }
+        require((checkpointCount == 0) == (latestFileName == null)) {
+            "Manual folder scan latest file must match checkpoint availability."
+        }
+        require(latestFileName?.isNotBlank() ?: true) { "Manual folder checkpoint file name cannot be blank." }
+        require(latestModifiedAtEpochMillis == null || latestModifiedAtEpochMillis >= 0L) {
+            "Manual folder checkpoint modification time cannot be negative."
+        }
+    }
+}
+
+data class StudyManualFolderCheckpointDetails(
+    val fileName: String,
+    val checkpointId: String,
+    val deviceId: String,
+    val deviceName: String,
+    val createdAtEpochMillis: Long,
+    val graphRevision: Long,
+    val changeCount: Int,
+    val databaseByteSize: Long,
+    val attachmentCount: Int,
+    val applicationVersion: String,
+) {
+    init {
+        require(fileName.endsWith(".sfbackup", ignoreCase = true)) {
+            "Manual folder checkpoints must use the .sfbackup extension."
+        }
+        require(checkpointId.isNotBlank()) { "Manual folder checkpoint id cannot be blank." }
+        require(deviceId.isNotBlank()) { "Manual folder checkpoint device id cannot be blank." }
+        require(deviceName.isNotBlank()) { "Manual folder checkpoint device name cannot be blank." }
+        require(createdAtEpochMillis >= 0L) { "Manual folder checkpoint creation time cannot be negative." }
+        require(graphRevision >= 0L) { "Manual folder checkpoint graph revision cannot be negative." }
+        require(changeCount >= 0) { "Manual folder checkpoint change count cannot be negative." }
+        require(databaseByteSize >= 0L) { "Manual folder database size cannot be negative." }
+        require(attachmentCount >= 0) { "Manual folder attachment count cannot be negative." }
+        require(applicationVersion.isNotBlank()) { "Manual folder application version cannot be blank." }
+    }
 }
 
 object StudyLocalCheckpointReadinessAuditor {

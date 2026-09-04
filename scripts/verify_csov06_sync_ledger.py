@@ -33,7 +33,7 @@ for marker in [
 
 for marker in [
     "inspectSyncLedger()",
-    "recordRestorePreview(checkpointId: String)",
+    "previewLatestManualFolderRestore(password: CharArray)",
     "StudySyncLedgerSnapshot",
 ]:
     if marker not in domain:

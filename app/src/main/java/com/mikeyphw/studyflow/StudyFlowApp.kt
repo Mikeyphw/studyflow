@@ -67,6 +67,8 @@ import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabActionResult
 import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabMessage
 import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabReport
 import com.mikeyphw.studyflow.core.domain.GlobalSearchContentType
+import com.mikeyphw.studyflow.core.domain.StudyManualFolderCheckpointDetails
+import com.mikeyphw.studyflow.core.domain.StudyManualFolderScan
 import com.mikeyphw.studyflow.core.domain.GlobalSearchDestination
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
@@ -87,6 +89,7 @@ import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudySyncLedgerSnapshot
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.SubjectId
@@ -793,6 +796,9 @@ internal fun StudyFlowNavHost(
             }
             var summaryFailed by remember { mutableStateOf(false) }
             var summaryRetryNonce by remember { mutableLongStateOf(0L) }
+            var remoteScan by remember { mutableStateOf<StudyManualFolderScan?>(null) }
+            var restorePreview by remember { mutableStateOf<StudyManualFolderCheckpointDetails?>(null) }
+            var syncHistory by remember { mutableStateOf<StudySyncLedgerSnapshot?>(null) }
             val syncFolderLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.OpenDocumentTree(),
             ) { uri: Uri? ->
@@ -804,6 +810,9 @@ internal fun StudyFlowNavHost(
                         context.contentResolver.takePersistableUriPermission(uri, permissionFlags)
                         container.manageStudyCloudSync.configureLocalFolderProvider(uri.toString())
                     }.onSuccess {
+                        remoteScan = null
+                        restorePreview = null
+                        syncHistory = null
                         summary = container.manageStudyCloudSync.inspectLocalChanges()
                         summaryFailed = false
                     }.onFailure {
@@ -831,21 +840,38 @@ internal fun StudyFlowNavHost(
                 },
                 onDisable = {
                     container.manageStudyCloudSync.clearLocalFoundation()
+                    remoteScan = null
+                    restorePreview = null
+                    syncHistory = null
                     summary = container.manageStudyCloudSync.inspectLocalChanges()
                     summaryFailed = false
                 },
                 onChooseSyncFolder = { syncFolderLauncher.launch(null) },
-                onUploadEncryptedCheckpoint = {
-                    container.manageStudyCloudSync.recordManualUploadCheckpoint()
+                onUploadEncryptedCheckpoint = { password ->
+                    container.manageStudyCloudSync.uploadManualFolderCheckpoint(password)
+                    remoteScan = container.manageStudyCloudSync.scanManualFolderCheckpoints()
+                    restorePreview = null
+                    syncHistory = container.manageStudyCloudSync.inspectSyncLedger()
                     summary = container.manageStudyCloudSync.inspectLocalChanges()
                     summaryFailed = false
                 },
                 onCheckRemoteCheckpoints = {
-                    val count = if (syncState.settings.lastManualUploadAtEpochMillis == null) 0 else 1
-                    container.manageStudyCloudSync.recordManualRemoteCheck(count)
+                    remoteScan = container.manageStudyCloudSync.scanManualFolderCheckpoints()
+                    restorePreview = null
                     summary = container.manageStudyCloudSync.inspectLocalChanges()
                     summaryFailed = false
                 },
+                onPreviewRemoteRestore = { password ->
+                    restorePreview = container.manageStudyCloudSync.previewLatestManualFolderRestore(password)
+                    remoteScan = container.manageStudyCloudSync.scanManualFolderCheckpoints()
+                    syncHistory = container.manageStudyCloudSync.inspectSyncLedger()
+                },
+                onViewSyncHistory = {
+                    syncHistory = container.manageStudyCloudSync.inspectSyncLedger()
+                },
+                remoteScan = remoteScan,
+                restorePreview = restorePreview,
+                syncHistory = syncHistory,
                 onBack = navController::popBackStack,
             )
         }

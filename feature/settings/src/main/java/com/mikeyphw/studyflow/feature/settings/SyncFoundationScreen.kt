@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
@@ -36,6 +38,8 @@ import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueAction
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueItem
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueuePlanner
 import com.mikeyphw.studyflow.core.domain.CloudlessBackupQueueStatus
+import com.mikeyphw.studyflow.core.domain.StudyManualFolderCheckpointDetails
+import com.mikeyphw.studyflow.core.domain.StudyManualFolderScan
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
 import com.mikeyphw.studyflow.core.model.StudySyncBackgroundMode
@@ -47,9 +51,19 @@ import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncManualAction
 import com.mikeyphw.studyflow.core.model.StudySyncManualActionPlanner
 import com.mikeyphw.studyflow.core.model.StudySyncState
+import com.mikeyphw.studyflow.core.model.StudySyncLedgerSnapshot
+import com.mikeyphw.studyflow.core.portability.StudyPlanEncryptedPackageCodec
 import kotlinx.coroutines.launch
 
-private enum class SyncMutation { PREPARE, DISABLE, KEEP_OFFLINE, UPLOAD_CHECKPOINT, CHECK_REMOTE }
+private enum class SyncMutation {
+    PREPARE,
+    DISABLE,
+    KEEP_OFFLINE,
+    UPLOAD_CHECKPOINT,
+    CHECK_REMOTE,
+    PREVIEW_RESTORE,
+    VIEW_HISTORY,
+}
 
 private sealed interface SyncOperationState {
     data object Idle : SyncOperationState
@@ -68,14 +82,17 @@ fun SyncFoundationScreen(
     onPrepare: suspend () -> Unit,
     onDisable: suspend () -> Unit,
     onBack: () -> Unit,
+    onChooseSyncFolder: () -> Unit,
+    onUploadEncryptedCheckpoint: suspend (CharArray) -> Unit,
+    onCheckRemoteCheckpoints: suspend () -> Unit,
+    onPreviewRemoteRestore: suspend (CharArray) -> Unit,
+    onViewSyncHistory: suspend () -> Unit,
     modifier: Modifier = Modifier,
     onKeepOffline: suspend () -> Unit = onDisable,
-    onChooseSyncFolder: () -> Unit = {},
     onLearnMore: () -> Unit = {},
-    onUploadEncryptedCheckpoint: suspend () -> Unit = onPrepare,
-    onCheckRemoteCheckpoints: suspend () -> Unit = {},
-    onPreviewRemoteRestore: () -> Unit = {},
-    onViewSyncHistory: () -> Unit = {},
+    remoteScan: StudyManualFolderScan? = null,
+    restorePreview: StudyManualFolderCheckpointDetails? = null,
+    syncHistory: StudySyncLedgerSnapshot? = null,
     conflictReviewItems: List<StudySyncConflictReviewItem> = emptyList(),
     onKeepLocalConflict: (StudySyncConflictReviewItem) -> Unit = {},
     onUseRemoteConflict: (StudySyncConflictReviewItem) -> Unit = {},
@@ -83,6 +100,7 @@ fun SyncFoundationScreen(
 ) {
     val scope = rememberCoroutineScope()
     var operationState by remember { mutableStateOf<SyncOperationState>(SyncOperationState.Idle) }
+    var syncPassphrase by remember { mutableStateOf("") }
 
     fun execute(mutation: SyncMutation) {
         if (operationState is SyncOperationState.Running) return
@@ -93,10 +111,28 @@ fun SyncFoundationScreen(
                     SyncMutation.PREPARE -> onPrepare()
                     SyncMutation.DISABLE -> onDisable()
                     SyncMutation.KEEP_OFFLINE -> onKeepOffline()
-                    SyncMutation.UPLOAD_CHECKPOINT -> onUploadEncryptedCheckpoint()
                     SyncMutation.CHECK_REMOTE -> onCheckRemoteCheckpoints()
+                    SyncMutation.VIEW_HISTORY -> onViewSyncHistory()
+                    SyncMutation.UPLOAD_CHECKPOINT, SyncMutation.PREVIEW_RESTORE -> {
+                        require(syncPassphrase.length >= StudyPlanEncryptedPackageCodec.MinimumPasswordLength) {
+                            "Sync passphrase is too short."
+                        }
+                        val password = syncPassphrase.toCharArray()
+                        try {
+                            if (mutation == SyncMutation.UPLOAD_CHECKPOINT) {
+                                onUploadEncryptedCheckpoint(password)
+                            } else {
+                                onPreviewRemoteRestore(password)
+                            }
+                        } finally {
+                            password.fill('\u0000')
+                        }
+                    }
                 }
             }.onSuccess {
+                if (mutation == SyncMutation.UPLOAD_CHECKPOINT || mutation == SyncMutation.PREVIEW_RESTORE) {
+                    syncPassphrase = ""
+                }
                 operationState = SyncOperationState.Succeeded(mutation)
             }.onFailure {
                 operationState = SyncOperationState.Failed(mutation)
@@ -214,12 +250,17 @@ fun SyncFoundationScreen(
             ManualFolderSyncCard(
                 state = state,
                 operationRunning = operationRunning,
+                passphrase = syncPassphrase,
+                onPassphraseChange = { syncPassphrase = it },
                 onChooseSyncFolder = onChooseSyncFolder,
                 onUploadEncryptedCheckpoint = { execute(SyncMutation.UPLOAD_CHECKPOINT) },
                 onCheckRemoteCheckpoints = { execute(SyncMutation.CHECK_REMOTE) },
-                onPreviewRemoteRestore = onPreviewRemoteRestore,
-                onViewSyncHistory = onViewSyncHistory,
+                onPreviewRemoteRestore = { execute(SyncMutation.PREVIEW_RESTORE) },
+                onViewSyncHistory = { execute(SyncMutation.VIEW_HISTORY) },
             )
+            remoteScan?.let { ManualFolderScanResultCard(it) }
+            restorePreview?.let { ManualFolderRestorePreviewCard(it) }
+            syncHistory?.let { SyncHistoryResultCard(it) }
             ConflictReviewCard(
                 conflictReviewItems = conflictReviewItems,
                 onKeepLocalConflict = onKeepLocalConflict,
@@ -281,6 +322,8 @@ fun SyncFoundationScreen(
 private fun ManualFolderSyncCard(
     state: StudySyncState,
     operationRunning: Boolean,
+    passphrase: String,
+    onPassphraseChange: (String) -> Unit,
     onChooseSyncFolder: () -> Unit,
     onUploadEncryptedCheckpoint: () -> Unit,
     onCheckRemoteCheckpoints: () -> Unit,
@@ -323,6 +366,16 @@ private fun ManualFolderSyncCard(
                 state.settings.remoteCheckpointCount,
             ),
         )
+        OutlinedTextField(
+            value = passphrase,
+            onValueChange = onPassphraseChange,
+            enabled = state.localFolderSyncConfigured && !operationRunning,
+            label = { Text(stringResource(R.string.sync_passphrase_label)) },
+            supportingText = { Text(stringResource(R.string.sync_passphrase_help)) },
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Button(
             onClick = onChooseSyncFolder,
             enabled = enabled(StudySyncManualAction.CHOOSE_SYNC_FOLDER),
@@ -332,7 +385,8 @@ private fun ManualFolderSyncCard(
         }
         Button(
             onClick = onUploadEncryptedCheckpoint,
-            enabled = enabled(StudySyncManualAction.PREPARE_UPLOAD_CHECKPOINT),
+            enabled = enabled(StudySyncManualAction.PREPARE_UPLOAD_CHECKPOINT) &&
+                passphrase.length >= StudyPlanEncryptedPackageCodec.MinimumPasswordLength,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.sync_prepare_upload_checkpoint))
@@ -346,7 +400,8 @@ private fun ManualFolderSyncCard(
         }
         OutlinedButton(
             onClick = onPreviewRemoteRestore,
-            enabled = enabled(StudySyncManualAction.PREVIEW_RESTORE),
+            enabled = enabled(StudySyncManualAction.PREVIEW_RESTORE) &&
+                passphrase.length >= StudyPlanEncryptedPackageCodec.MinimumPasswordLength,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.sync_preview_restore))
@@ -414,6 +469,54 @@ private fun BackgroundSyncModeCard(state: StudySyncState) {
                 text = stringResource(R.string.sync_background_blocked_value, reason),
                 color = MaterialTheme.colorScheme.error,
             )
+        }
+    }
+}
+
+@Composable
+private fun ManualFolderScanResultCard(scan: StudyManualFolderScan) {
+    StudyFlowSectionCard(title = stringResource(R.string.sync_scan_result_title)) {
+        Text(stringResource(R.string.sync_remote_checkpoint_count, scan.checkpointCount))
+        Text(
+            stringResource(
+                R.string.sync_latest_remote_file,
+                scan.latestFileName ?: stringResource(R.string.sync_none_found),
+            ),
+        )
+        scan.latestModifiedAtEpochMillis?.let { modified ->
+            Text(stringResource(R.string.sync_latest_remote_modified, modified.toString()))
+        }
+    }
+}
+
+@Composable
+private fun ManualFolderRestorePreviewCard(preview: StudyManualFolderCheckpointDetails) {
+    StudyFlowSectionCard(title = stringResource(R.string.sync_restore_preview_title)) {
+        Text(stringResource(R.string.sync_restore_preview_file, preview.fileName))
+        Text(stringResource(R.string.sync_restore_preview_device, preview.deviceName))
+        Text(stringResource(R.string.sync_restore_preview_revision, preview.graphRevision))
+        Text(stringResource(R.string.sync_restore_preview_changes, preview.changeCount))
+        Text(stringResource(R.string.sync_restore_preview_database_bytes, preview.databaseByteSize))
+        Text(stringResource(R.string.sync_restore_preview_attachments, preview.attachmentCount))
+        Text(stringResource(R.string.sync_restore_preview_app_version, preview.applicationVersion))
+        Text(
+            text = stringResource(R.string.sync_restore_preview_read_only),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SyncHistoryResultCard(history: StudySyncLedgerSnapshot) {
+    StudyFlowSectionCard(title = stringResource(R.string.sync_history_title)) {
+        Text(stringResource(R.string.sync_history_devices, history.devices.size))
+        Text(stringResource(R.string.sync_history_checkpoints, history.checkpoints.size))
+        Text(stringResource(R.string.sync_history_events, history.events.size))
+        history.latestCheckpoint?.let { checkpoint ->
+            Text(stringResource(R.string.sync_history_latest_checkpoint, checkpoint.id))
+        }
+        history.events.maxByOrNull { event -> event.sequence }?.let { event ->
+            Text(stringResource(R.string.sync_history_latest_event, event.message))
         }
     }
 }

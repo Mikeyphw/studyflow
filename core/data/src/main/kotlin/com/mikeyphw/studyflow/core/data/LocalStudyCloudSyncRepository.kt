@@ -6,9 +6,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.room.withTransaction
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
 import com.mikeyphw.studyflow.core.domain.StudyCloudSyncRepository
+import com.mikeyphw.studyflow.core.domain.StudyManualFolderCheckpointDetails
+import com.mikeyphw.studyflow.core.domain.StudyManualFolderScan
 import com.mikeyphw.studyflow.core.model.LocalFolderSyncProvider
 import com.mikeyphw.studyflow.core.model.LocalOnlyProvider
 import com.mikeyphw.studyflow.core.model.NoSyncProvider
@@ -26,9 +29,16 @@ import com.mikeyphw.studyflow.core.model.StudySyncCheckpointRecord
 import com.mikeyphw.studyflow.core.model.StudySyncConflictPolicy
 import com.mikeyphw.studyflow.core.model.StudySyncConnectionStatus
 import com.mikeyphw.studyflow.core.model.StudySyncState
+import com.mikeyphw.studyflow.core.portability.StudyFlowSyncBundleArchive
+import com.mikeyphw.studyflow.core.portability.StudyFlowSyncBundleCodec
+import com.mikeyphw.studyflow.core.portability.StudyFlowSyncBundleManifest
+import com.mikeyphw.studyflow.core.portability.StudyFlowSyncCheckpoint
+import java.security.MessageDigest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 private val Context.studySyncDataStore by preferencesDataStore(name = "study_sync_foundation")
 
@@ -39,10 +49,15 @@ private val Context.studySyncDataStore by preferencesDataStore(name = "study_syn
 internal class LocalStudyCloudSyncRepository(
     context: Context,
     private val database: StudyFlowDatabase,
+    private val applicationVersion: String,
     private val clock: () -> Long,
 ) : StudyCloudSyncRepository {
-    private val dataStore = context.applicationContext.studySyncDataStore
+    private val appContext = context.applicationContext
+    private val dataStore = appContext.studySyncDataStore
     private val metadataDao = database.databaseMetadataDao()
+    private val syncBundleCodec = StudyFlowSyncBundleCodec()
+    private val manualFolderStorage = SafManualFolderSyncStorage(appContext)
+    private val attachmentCollector = ManualSyncAttachmentCollector(appContext, database)
 
     override val syncState: Flow<StudySyncState> = combine(
         dataStore.data,
@@ -74,6 +89,8 @@ internal class LocalStudyCloudSyncRepository(
 
     override suspend fun prepareLocalFoundation(deviceName: String): StudySyncState {
         val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+        val previousRevision = dataStore.data.first()[ChangeTokenKey].revisionFromToken()
+        val changeCount = revision.deltaSince(previousRevision)
         val now = clock()
         dataStore.edit { preferences ->
             val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
@@ -90,7 +107,16 @@ internal class LocalStudyCloudSyncRepository(
             preferences[PreparedAtKey] = now
             preferences[ChangeTokenKey] = token
             preferences[PendingLocalChangeKey] = 0L
-            recordCheckpointLedger(preferences, checkpointId, deviceId, deviceName, now, revision, token)
+            recordCheckpointLedger(
+                preferences = preferences,
+                checkpointId = checkpointId,
+                deviceId = deviceId,
+                deviceName = deviceName,
+                now = now,
+                revision = revision,
+                changeToken = token,
+                changeCount = changeCount,
+            )
             appendLedgerEvent(
                 preferences = preferences,
                 type = StudySyncLedgerEventType.LOCAL_CHECKPOINT_PREPARED,
@@ -143,12 +169,18 @@ internal class LocalStudyCloudSyncRepository(
         return syncState.first()
     }
 
-    override suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState {
+    override suspend fun configureLocalFolderProvider(folderUri: String): StudySyncState = withContext(Dispatchers.IO) {
+        val documents = manualFolderStorage.listCheckpointDocuments(folderUri)
         val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
         val now = clock()
+        val previousLocation = dataStore.data.first()[ProviderLocationKey]
         dataStore.edit { preferences ->
             val deviceName = preferences[DeviceNameKey] ?: "This device"
             val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
+            if (previousLocation != null && previousLocation != folderUri) {
+                preferences.remove(LastManualUploadAtKey)
+                preferences.remove(LastCheckpointRemoteLocationKey)
+            }
             preferences[DeviceIdKey] = deviceId
             preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
             preferences[DeviceLastSeenAtKey] = now
@@ -159,6 +191,8 @@ internal class LocalStudyCloudSyncRepository(
             preferences[BackgroundSyncModeKey] = StudySyncBackgroundMode.MANUAL_ONLY.name
             preferences[BatteryNotLowKey] = true
             preferences[EncryptRemoteBackupsKey] = true
+            preferences[LastRemoteCheckAtKey] = now
+            preferences[RemoteCheckpointCountKey] = documents.size.toLong()
             preferences[StatusKey] = if (preferences[ChangeTokenKey].revisionFromToken() == revision) {
                 StudySyncConnectionStatus.LOCAL_READY.name
             } else {
@@ -170,31 +204,75 @@ internal class LocalStudyCloudSyncRepository(
                 deviceId = deviceId,
                 checkpointId = null,
                 now = now,
-                message = "Configured optional folder sync provider.",
+                message = "Configured optional folder sync provider and verified SAF access.",
             )
             preferences.remove(BlockedReasonKey)
         }
-        return syncState.first()
+        if (previousLocation != null && previousLocation != folderUri) {
+            manualFolderStorage.releasePersistedPermission(previousLocation)
+        }
+        syncState.first()
     }
 
-    override suspend fun recordManualUploadCheckpoint(): StudySyncState {
-        val revision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+    override suspend fun uploadManualFolderCheckpoint(
+        password: CharArray,
+    ): StudyManualFolderCheckpointDetails = withContext(Dispatchers.IO) {
+        val before = dataStore.data.first()
+        val folderUri = requireConfiguredManualFolder(before, "uploading a checkpoint")
+        val previousRevision = before[ChangeTokenKey].revisionFromToken()
+        val (revision, databaseSnapshot, attachments) = database.withTransaction {
+            Triple(
+                metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision(),
+                StudyFlowDatabaseSnapshotWriter.capture(database),
+                attachmentCollector.collect(),
+            )
+        }
         val now = clock()
+        val deviceName = before[DeviceNameKey] ?: "This device"
+        val deviceId = before[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
+        val changeCount = revision.deltaSince(previousRevision)
+        val checkpointId = StudySyncLedgerFactory.checkpointId(deviceId, revision, now)
+        val databaseHash = sha256(databaseSnapshot)
+        val checkpoint = StudyFlowSyncCheckpoint(
+            id = checkpointId,
+            deviceId = deviceId,
+            deviceName = deviceName,
+            createdAtEpochMillis = now,
+            databaseHashSha256 = databaseHash,
+            changeCount = changeCount,
+            graphRevision = revision,
+        )
+        val manifest = StudyFlowSyncBundleManifest(
+            applicationVersion = applicationVersion,
+            checkpoint = checkpoint,
+            encryptedForRemote = true,
+            databaseByteSize = databaseSnapshot.size.toLong(),
+            databaseChecksumSha256 = databaseHash,
+            attachments = attachments.map { source -> source.manifest },
+        )
+        val archive = StudyFlowSyncBundleArchive(
+            manifest = manifest,
+            databaseSnapshot = databaseSnapshot,
+            attachmentStreams = attachments.associate { source ->
+                source.manifest.entryName to source.openStream
+            },
+        )
+        val requestedFileName = syncBundleCodec.defaultFileName(now)
+        val committed = manualFolderStorage.writeCheckpoint(folderUri, requestedFileName) { output ->
+            syncBundleCodec.writeEncryptedArchive(archive, output, password)
+        }
+        val remoteDocuments = runCatching {
+            manualFolderStorage.listCheckpointDocuments(folderUri)
+        }.getOrNull()
+        val currentRevision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+        val token = revisionToken(revision)
         dataStore.edit { preferences ->
-            val remoteLocation = preferences[ProviderLocationKey]
-            if (preferences[ProviderIdKey] != StudyFlowSyncProviderIds.LOCAL_FOLDER ||
-                remoteLocation.isNullOrBlank()
-            ) {
-                preferences[StatusKey] = StudySyncConnectionStatus.CHECKPOINT_BLOCKED.name
-                preferences[BlockedReasonKey] = "Choose a sync folder before manual upload."
-                return@edit
-            }
-            val deviceName = preferences[DeviceNameKey] ?: "This device"
-            val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
-            val token = revisionToken(revision)
-            val checkpointId = StudySyncLedgerFactory.checkpointId(deviceId, revision, now)
             preferences[EnabledKey] = true
-            preferences[StatusKey] = StudySyncConnectionStatus.LOCAL_READY.name
+            preferences[StatusKey] = if (currentRevision == revision) {
+                StudySyncConnectionStatus.LOCAL_READY.name
+            } else {
+                StudySyncConnectionStatus.CHECKPOINT_NEEDED.name
+            }
             preferences[DeviceIdKey] = deviceId
             preferences[DeviceNameKey] = deviceName
             preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
@@ -203,81 +281,152 @@ internal class LocalStudyCloudSyncRepository(
             preferences[ChangeTokenKey] = token
             preferences[PendingLocalChangeKey] = 0L
             preferences[LastManualUploadAtKey] = now
-            preferences[RemoteCheckpointCountKey] = maxOf(preferences[RemoteCheckpointCountKey] ?: 0L, 1L)
-            recordCheckpointLedger(preferences, checkpointId, deviceId, deviceName, now, revision, token)
+            remoteDocuments?.let { documents ->
+                preferences[RemoteCheckpointCountKey] = documents.size.toLong()
+            }
+            recordCheckpointLedger(
+                preferences = preferences,
+                checkpointId = checkpointId,
+                deviceId = deviceId,
+                deviceName = deviceName,
+                now = now,
+                revision = revision,
+                changeToken = token,
+                changeCount = changeCount,
+            )
             preferences[LastCheckpointUploadedAtKey] = now
-            preferences[LastCheckpointRemoteLocationKey] = remoteLocation
+            preferences[LastCheckpointRemoteLocationKey] = committed.uri
             appendLedgerEvent(
                 preferences = preferences,
                 type = StudySyncLedgerEventType.MANUAL_UPLOAD_RECORDED,
                 deviceId = deviceId,
                 checkpointId = checkpointId,
                 now = now,
-                message = "Recorded manual encrypted checkpoint upload.",
+                message = "Uploaded encrypted checkpoint to the selected SAF folder.",
             )
             preferences.remove(BlockedReasonKey)
         }
-        return syncState.first()
+        manifest.toManualFolderDetails(committed.fileName)
     }
 
-    override suspend fun recordManualRemoteCheck(remoteCheckpointCount: Int): StudySyncState {
+    override suspend fun scanManualFolderCheckpoints(): StudyManualFolderScan = withContext(Dispatchers.IO) {
+        val before = dataStore.data.first()
+        val folderUri = requireConfiguredManualFolder(before, "checking remote checkpoints")
+        val documents = manualFolderStorage.listCheckpointDocuments(folderUri)
         val now = clock()
+        val deviceName = before[DeviceNameKey] ?: "This device"
+        val deviceId = before[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
         dataStore.edit { preferences ->
-            if (preferences[ProviderIdKey] != StudyFlowSyncProviderIds.LOCAL_FOLDER ||
-                preferences[ProviderLocationKey].isNullOrBlank()
-            ) {
-                preferences[StatusKey] = StudySyncConnectionStatus.CHECKPOINT_BLOCKED.name
-                preferences[BlockedReasonKey] = "Choose a sync folder before checking remote checkpoints."
-                return@edit
-            }
-            val deviceName = preferences[DeviceNameKey] ?: "This device"
-            val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
             preferences[DeviceIdKey] = deviceId
             preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
             preferences[DeviceLastSeenAtKey] = now
             preferences[LastRemoteCheckAtKey] = now
-            preferences[RemoteCheckpointCountKey] = remoteCheckpointCount.toLong()
+            preferences[RemoteCheckpointCountKey] = documents.size.toLong()
             appendLedgerEvent(
                 preferences = preferences,
                 type = StudySyncLedgerEventType.REMOTE_CHECK_COMPLETED,
                 deviceId = deviceId,
                 checkpointId = preferences[LastCheckpointIdKey],
                 now = now,
-                message = "Checked for remote encrypted checkpoints.",
+                message = "Enumerated encrypted checkpoint files in the selected SAF folder.",
             )
             preferences.remove(BlockedReasonKey)
         }
-        return syncState.first()
+        documents.toManualFolderScan()
     }
 
-    override suspend fun recordRestorePreview(checkpointId: String): StudySyncState {
+    override suspend fun previewLatestManualFolderRestore(
+        password: CharArray,
+    ): StudyManualFolderCheckpointDetails = withContext(Dispatchers.IO) {
+        val before = dataStore.data.first()
+        val folderUri = requireConfiguredManualFolder(before, "previewing a restore")
+        val documents = manualFolderStorage.listCheckpointDocuments(folderUri)
+        val latest = documents.firstOrNull()
+            ?: throw IllegalStateException("No encrypted checkpoint exists in the selected sync folder.")
+        require(latest.byteSize == 0L || latest.byteSize <= MaximumManualEncryptedBundleBytes) {
+            "The selected encrypted sync checkpoint exceeds the supported size limit."
+        }
+        val archive = manualFolderStorage.openCheckpoint(latest.uri).use { input ->
+            syncBundleCodec.readEncryptedArchive(
+                input = input,
+                password = password,
+                maximumEncryptedBytes = MaximumManualEncryptedBundleBytes,
+            )
+        }
+        require(archive.manifest.encryptedForRemote) {
+            "Manual folder restore preview only accepts encrypted remote-ready checkpoints."
+        }
         val now = clock()
+        val deviceName = before[DeviceNameKey] ?: "This device"
+        val deviceId = before[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
         dataStore.edit { preferences ->
-            val deviceName = preferences[DeviceNameKey] ?: "This device"
-            val deviceId = preferences[DeviceIdKey] ?: StudySyncDeviceIdentity.stableDeviceId(deviceName)
             preferences[DeviceIdKey] = deviceId
             preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
             preferences[DeviceLastSeenAtKey] = now
-            if (preferences[LastCheckpointIdKey] == checkpointId) {
+            preferences[LastRemoteCheckAtKey] = now
+            preferences[RemoteCheckpointCountKey] = documents.size.toLong()
+            if (preferences[LastCheckpointIdKey] == archive.manifest.checkpointId) {
                 preferences[LastRestorePreviewedAtKey] = now
             }
             appendLedgerEvent(
                 preferences = preferences,
                 type = StudySyncLedgerEventType.RESTORE_PREVIEWED,
                 deviceId = deviceId,
-                checkpointId = checkpointId,
+                checkpointId = archive.manifest.checkpointId,
                 now = now,
-                message = "Previewed checkpoint restore before applying data.",
+                message = "Decrypted, authenticated, and inspected the latest SAF checkpoint for restore preview.",
             )
             preferences.remove(BlockedReasonKey)
         }
-        return syncState.first()
+        archive.manifest.toManualFolderDetails(latest.fileName)
     }
 
+
     override suspend fun clearLocalFoundation(): StudySyncState {
+        val previousLocation = dataStore.data.first()[ProviderLocationKey]
         dataStore.edit { preferences -> preferences.clear() }
+        previousLocation?.let(manualFolderStorage::releasePersistedPermission)
         return StudySyncState.disabled()
     }
+
+
+    private fun requireConfiguredManualFolder(
+        preferences: androidx.datastore.preferences.core.Preferences,
+        operation: String,
+    ): String {
+        val location = preferences[ProviderLocationKey]
+        check(preferences[ProviderIdKey] == StudyFlowSyncProviderIds.LOCAL_FOLDER && !location.isNullOrBlank()) {
+            "Choose a sync folder before $operation."
+        }
+        return location
+    }
+
+    private fun List<ManualFolderSyncDocument>.toManualFolderScan(): StudyManualFolderScan {
+        val latest = firstOrNull()
+        return StudyManualFolderScan(
+            checkpointCount = size,
+            latestFileName = latest?.fileName,
+            latestModifiedAtEpochMillis = latest?.lastModifiedAtEpochMillis,
+        )
+    }
+
+    private fun StudyFlowSyncBundleManifest.toManualFolderDetails(
+        fileName: String,
+    ): StudyManualFolderCheckpointDetails = StudyManualFolderCheckpointDetails(
+        fileName = fileName,
+        checkpointId = checkpoint.id,
+        deviceId = checkpoint.deviceId,
+        deviceName = checkpoint.deviceName,
+        createdAtEpochMillis = checkpoint.createdAtEpochMillis,
+        graphRevision = checkpoint.graphRevision,
+        changeCount = checkpoint.changeCount,
+        databaseByteSize = databaseByteSize,
+        attachmentCount = attachments.size,
+        applicationVersion = applicationVersion,
+    )
+
+    private fun sha256(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { byte -> "%02x".format(byte) }
 
     private fun decodeState(
         preferences: androidx.datastore.preferences.core.Preferences,
@@ -437,6 +586,7 @@ internal class LocalStudyCloudSyncRepository(
         now: Long,
         revision: Long,
         changeToken: String,
+        changeCount: Int,
     ) {
         preferences[LastCheckpointIdKey] = checkpointId
         preferences[LastCheckpointDeviceIdKey] = deviceId
@@ -444,7 +594,7 @@ internal class LocalStudyCloudSyncRepository(
         preferences[LastCheckpointCreatedAtKey] = now
         preferences[LastCheckpointRevisionKey] = revision
         preferences[LastCheckpointChangeTokenKey] = changeToken
-        preferences[LastCheckpointChangeCountKey] = preferences[PendingLocalChangeKey] ?: 0L
+        preferences[LastCheckpointChangeCountKey] = changeCount.toLong()
     }
 
     private fun appendLedgerEvent(
@@ -469,6 +619,7 @@ internal class LocalStudyCloudSyncRepository(
 
     private companion object {
         const val RevisionTokenPrefix = "revision="
+        const val MaximumManualEncryptedBundleBytes = 576L * 1024L * 1024L
         val EnabledKey = booleanPreferencesKey("enabled")
         val StatusKey = stringPreferencesKey("status")
         val ConflictPolicyKey = stringPreferencesKey("conflict_policy")

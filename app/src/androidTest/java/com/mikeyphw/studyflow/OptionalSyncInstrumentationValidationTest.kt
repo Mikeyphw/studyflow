@@ -34,6 +34,11 @@ class OptionalSyncInstrumentationValidationTest {
                     onPrepare = {},
                     onDisable = {},
                     onBack = {},
+                    onChooseSyncFolder = {},
+                    onUploadEncryptedCheckpoint = {},
+                    onCheckRemoteCheckpoints = {},
+                    onPreviewRemoteRestore = {},
+                    onViewSyncHistory = {},
                 )
             }
         }
@@ -62,6 +67,11 @@ class OptionalSyncInstrumentationValidationTest {
                     onPrepare = {},
                     onDisable = {},
                     onBack = {},
+                    onChooseSyncFolder = {},
+                    onUploadEncryptedCheckpoint = {},
+                    onCheckRemoteCheckpoints = {},
+                    onPreviewRemoteRestore = {},
+                    onViewSyncHistory = {},
                 )
             }
         }

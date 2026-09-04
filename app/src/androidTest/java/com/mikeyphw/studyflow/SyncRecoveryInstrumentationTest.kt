@@ -37,6 +37,11 @@ class SyncRecoveryInstrumentationTest {
                     },
                     onDisable = {},
                     onBack = {},
+                    onChooseSyncFolder = {},
+                    onUploadEncryptedCheckpoint = {},
+                    onCheckRemoteCheckpoints = {},
+                    onPreviewRemoteRestore = {},
+                    onViewSyncHistory = {},
                 )
             }
         }
