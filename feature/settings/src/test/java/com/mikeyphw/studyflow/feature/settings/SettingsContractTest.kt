@@ -105,7 +105,7 @@ class SettingsContractTest {
         assertTrue(strings.contains("Manual folder sync"))
         assertTrue(strings.contains("Write encrypted checkpoint"))
         assertTrue(strings.contains("Refresh folder checkpoints"))
-        assertTrue(strings.contains("Automatic sync remains off"))
+        assertTrue(strings.contains("automatic sync remains off"))
     }
 
     private fun readSource(modulePath: String, rootPath: String): String {
