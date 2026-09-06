@@ -4,9 +4,9 @@
   "private": true,
   "description": "Mobile-first, self-contained StudyFlow Local web application.",
   "scripts": {
-    "build": "python3 scripts/validate_web.py --contract",
+    "build": "python3 scripts/validate_web.py --all",
     "test": "python3 -m unittest discover -s tests -p 'test_*.py'",
-    "lint": "python3 scripts/validate_web.py --contract",
+    "lint": "python3 scripts/validate_web.py --all",
     "dev": "python3 -m http.server 8000 --bind 127.0.0.1"
   }
 }
