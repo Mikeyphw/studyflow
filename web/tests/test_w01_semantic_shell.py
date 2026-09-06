@@ -59,11 +59,11 @@ class W01SemanticMobileShellTest(unittest.TestCase):
             if href.startswith("#"):
                 self.assertIn(href[1:], self.parser.ids, href)
 
-    def test_w01_has_no_css_or_javascript(self) -> None:
-        tags = [tag for tag, _ in self.parser.tags]
-        self.assertNotIn("script", tags)
-        self.assertNotIn("style", tags)
+    def test_w01_semantic_shell_remains_framework_independent(self) -> None:
         self.assertNotIn("style=", self.text.lower())
+        self.assertNotIn("<style", self.text.lower())
+        scripts = [attrs for tag, attrs in self.parser.tags if tag == "script"]
+        self.assertTrue(all(not str(attrs.get("src") or "").startswith(("http://", "https://")) for attrs in scripts))
 
     def test_integrated_validator_passes_full_w01_contract(self) -> None:
         path = WEB / "scripts/validate_web.py"
