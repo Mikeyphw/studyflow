@@ -7,13 +7,14 @@
     <meta name="description" content="StudyFlow Local — a mobile-first, self-contained study system.">
     <title>StudyFlow Local</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="app.js" defer></script>
+    <script type="module" src="app.js" defer></script>
 </head>
 <body>
     <header class="app-header">
         <div>
             <p class="eyebrow">StudyFlow Local</p>
             <p class="app-subtitle">Private, local-first study workspace</p>
+            <p id="persistence-status" class="storage-status" aria-live="polite">Initializing local state…</p>
         </div>
         <button class="icon-button" type="button" data-open-dialog="quick-add-dialog" aria-label="Quick add activity">+</button>
     </header>
@@ -89,9 +90,9 @@
 
             <section id="plan-overview" class="tab-panel" data-tab-panel="plan" aria-labelledby="plan-overview-heading">
                 <div class="metric-grid">
-                    <article class="metric-card"><span>Study phase</span><strong>Foundation</strong><small>Local sample state</small></article>
-                    <article class="metric-card"><span>Readiness</span><strong>No data</strong><small>Evidence is not invented</small></article>
-                    <article class="metric-card"><span>Exam date</span><strong>Unknown</strong><small>No date supplied</small></article>
+                    <article class="metric-card"><span>Active plan</span><strong id="active-plan-name">General Study Plan</strong><small>Stored locally</small></article>
+                    <article class="metric-card"><span>Subjects</span><strong id="plan-subject-count">3</strong><small>Domain records</small></article>
+                    <article class="metric-card"><span>Topics</span><strong id="plan-topic-count">5</strong><small>Domain records</small></article>
                 </div>
                 <article class="card">
                     <h2 id="plan-overview-heading">Overview</h2>
@@ -134,6 +135,7 @@
             <section id="plan-content" class="tab-panel" data-tab-panel="plan" aria-labelledby="plan-content-heading">
                 <article class="card">
                     <h2 id="plan-content-heading">Content</h2>
+                    <div id="plan-subject-list">
                     <details open>
                         <summary><span>Constitutional Law</span><span class="muted">3 topics</span></summary>
                         <ul class="topic-list">
@@ -149,6 +151,7 @@
                             <li><span>Syntax</span><span class="pill">Medium</span></li>
                         </ul>
                     </details>
+                    </div>
                 </article>
             </section>
 
@@ -219,7 +222,19 @@
             </section>
             <section id="progress-performance" class="tab-panel" data-tab-panel="progress"><article class="card"><h2>Performance</h2><p>Time, accuracy, coverage and review health; unavailable evidence is shown as no data, never invented zero.</p></article></section>
             <section id="progress-goals" class="tab-panel" data-tab-panel="progress"><article class="card"><h2>Goals</h2><p>Study time, questions, coverage and mode-aware objectives.</p></article></section>
-            <section id="progress-tools" class="tab-panel" data-tab-panel="progress"><article class="card"><h2>Tools</h2><p>Evidence Timeline, Content Integrity, adaptive reschedule, sprint and backup health.</p></article></section>
+            <section id="progress-tools" class="tab-panel" data-tab-panel="progress">
+                <article class="card">
+                    <h2>Tools</h2>
+                    <p>Evidence Timeline, Content Integrity, adaptive reschedule, sprint and backup health.</p>
+                    <div class="tool-row">
+                        <div>
+                            <strong>Local state</strong>
+                            <span class="muted">W04 uses versioned browser storage until IndexedDB arrives in W12.</span>
+                        </div>
+                        <button id="reset-local-state" type="button" class="button button-quiet">Reset sample data</button>
+                    </div>
+                </article>
+            </section>
         </section>
     </main>
 
@@ -255,7 +270,7 @@
                 <span>Duration</span>
                 <input name="duration" type="number" min="5" max="240" step="5" value="25" inputmode="numeric">
             </label>
-            <p class="muted">This W03 activity exists only until the page reloads. W04 will add durable state.</p>
+            <p class="muted">Activities are saved locally in this browser. W12 will move structured records to IndexedDB without changing the domain contract.</p>
             <div class="button-row dialog-actions">
                 <button type="button" class="button button-quiet" data-close-dialog>Cancel</button>
                 <button type="submit" class="button button-primary">Add activity</button>

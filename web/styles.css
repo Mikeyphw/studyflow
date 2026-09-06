@@ -624,3 +624,33 @@ legend {
         transition-duration: 0.01ms !important;
     }
 }
+
+.storage-status {
+    margin: 0.2rem 0 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+.storage-status[data-persistence="memory"] {
+    color: var(--warning);
+}
+
+.tool-row {
+    display: grid;
+    gap: var(--space-3);
+    align-items: center;
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+}
+
+.tool-row > div {
+    display: grid;
+    gap: var(--space-1);
+}
+
+@media (min-width: 700px) {
+    .tool-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+}

@@ -66,8 +66,8 @@ def validate_contract() -> list[str]:
         scripts = package.get("scripts", {})
         for script in ("build", "test", "lint", "dev"):
             fail(errors, not str(scripts.get(script, "")).strip(), f"missing npm script: {script}")
-        fail(errors, bool(package.get("dependencies")), "W00-W03 must not add runtime dependencies")
-        fail(errors, bool(package.get("devDependencies")), "W00-W03 must not add dev dependencies")
+        fail(errors, bool(package.get("dependencies")), "W00-W05 must not add runtime dependencies")
+        fail(errors, bool(package.get("devDependencies")), "W00-W05 must not add dev dependencies")
 
     lock_text = read_text(WEB / "package-lock.json", errors)
     if lock_text:
@@ -252,6 +252,85 @@ def validate_interactions() -> list[str]:
     return errors
 
 
+
+def _node_check(errors: list[str], path: Path) -> None:
+    try:
+        result = subprocess.run(
+            ["node", "--check", str(path)],
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=30,
+            cwd=WEB,
+        )
+    except Exception as exc:
+        errors.append(f"node --check {path.relative_to(WEB)} failed to run: {exc}")
+        return
+    if result.returncode != 0:
+        errors.append(f"{path.relative_to(WEB)} syntax invalid: {result.stderr.strip() or result.stdout.strip()}")
+
+
+def validate_state() -> list[str]:
+    errors = validate_interactions()
+    package_text = read_text(WEB / "package.json", errors)
+    if package_text:
+        try:
+            package = json.loads(package_text)
+        except Exception:
+            package = {}
+        fail(errors, package.get("type") != "module", "W04 requires package type=module for native ES modules")
+
+    html, parser = parse_shell(errors)
+    if parser is not None:
+        for element_id in ("persistence-status", "plan-subject-list", "reset-local-state"):
+            fail(errors, element_id not in parser.ids, f"W04 state UI hook missing: {element_id}")
+        if parser.scripts:
+            fail(errors, parser.scripts[0].get("type") != "module", "W04 app.js must load as an ES module")
+
+    modules = {
+        "storage": read_text(WEB / "src/storage.js", errors),
+        "state": read_text(WEB / "src/state.js", errors),
+        "render": read_text(WEB / "src/render.js", errors),
+        "events": read_text(WEB / "src/events.js", errors),
+    }
+    storage = modules["storage"]
+    state = modules["state"]
+    app = read_text(WEB / "app.js", errors)
+    for token in ("studyflow.local.state.v", "JSON.parse", "JSON.stringify", "validateStudyState", "getItem", "setItem", "removeItem"):
+        fail(errors, token not in storage, f"W04 storage contract missing token: {token}")
+    for token in ("createStudyStore", "subscribe", "addActivity", "resetLocalState", "repository.save"):
+        fail(errors, token not in state, f"W04 state contract missing token: {token}")
+    for token in ("createBrowserRepository", "createStudyStore", "renderStudyState", "bindPersistentStudyEvents"):
+        fail(errors, token not in app, f"W04 application wiring missing token: {token}")
+    lowered = "\n".join(modules.values()).lower()
+    fail(errors, "indexeddb" in lowered, "W04 must not steal W12 IndexedDB scope")
+    fail(errors, "fetch(" in lowered, "W04 local state must not introduce network access")
+    for relative in ("app.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js"):
+        _node_check(errors, WEB / relative)
+
+    doc = read_text(ROOT / "docs/web/W04_W05_STATE_DOMAIN_FOUNDATION.md", errors)
+    for token in ("localStorage", "schemaVersion", "Quick Add", "in memory only", "IndexedDB", "W05"):
+        fail(errors, token.lower() not in doc.lower(), f"W04/W05 delivery doc missing: {token}")
+    return errors
+
+
+def validate_domain() -> list[str]:
+    errors = validate_state()
+    domain = read_text(WEB / "src/domain.js", errors)
+    for token in (
+        "createPlan", "createSubject", "createTopic", "createActivity", "createStudySession",
+        "createGoal", "createMaterial", "createReview", "createQuestion", "createEvidence",
+        "createEntityId", "validateStudyState", "selectActivePlan", "selectSubjectsForPlan",
+        "selectTopicsForSubject", "selectActivitiesForQueue", "derivePlanInventory",
+        "EXAM_PLAN", "PROGRAMMING_COURSE", "LANGUAGE_DECK", "READING_STUDY", "GENERAL_SKILL",
+    ):
+        fail(errors, token not in domain, f"W05 domain contract missing token: {token}")
+    lowered = domain.lower()
+    for forbidden in ("document.", "window.", "localstorage", "indexeddb", "htmlelement", "fetch("):
+        fail(errors, forbidden in lowered, f"W05 domain must remain UI/storage/network independent: {forbidden}")
+    _node_check(errors, WEB / "src/domain.js")
+    return errors
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -259,6 +338,8 @@ def main() -> int:
     mode.add_argument("--shell", action="store_true")
     mode.add_argument("--visual", action="store_true")
     mode.add_argument("--interactions", action="store_true")
+    mode.add_argument("--state", action="store_true")
+    mode.add_argument("--domain", action="store_true")
     mode.add_argument("--all", action="store_true")
     args = parser.parse_args()
 
@@ -271,9 +352,15 @@ def main() -> int:
     elif args.visual:
         errors = validate_visual()
         label = "W02 visual system"
-    else:
+    elif args.interactions:
         errors = validate_interactions()
         label = "W02/W03 visual + interaction foundation"
+    elif args.state:
+        errors = validate_state()
+        label = "W04 application state + temporary persistence"
+    else:
+        errors = validate_domain()
+        label = "W04/W05 state + core domain foundation"
 
     if errors:
         print("StudyFlow web validation FAILED:", file=sys.stderr)

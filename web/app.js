@@ -1,3 +1,8 @@
+import { bindPersistentStudyEvents } from "./src/events.js";
+import { renderStudyState } from "./src/render.js";
+import { createStudyStore } from "./src/state.js";
+import { createBrowserRepository } from "./src/storage.js";
+
 (() => {
     "use strict";
 
@@ -106,32 +111,6 @@
         toast.textContent = message;
         region.append(toast);
         toastTimeout = window.setTimeout(() => region.replaceChildren(), 2600);
-    }
-
-    function handleQuickAdd(event) {
-        event.preventDefault();
-        const form = event.currentTarget;
-        const data = new FormData(form);
-        const title = String(data.get("title") || "").trim();
-        const type = String(data.get("type") || "study");
-        const duration = Math.max(5, Math.min(240, Number(data.get("duration")) || 25));
-        if (!title) return;
-
-        const list = byId("today-activity-list");
-        const item = document.createElement("li");
-        item.dataset.kind = type;
-        const strong = document.createElement("strong");
-        strong.textContent = title;
-        const meta = document.createElement("span");
-        meta.textContent = `${type[0].toUpperCase()}${type.slice(1)} · ${duration} min`;
-        item.append(strong, meta);
-        list?.append(item);
-
-        form.reset();
-        const durationInput = form.elements.namedItem("duration");
-        if (durationInput instanceof HTMLInputElement) durationInput.value = "25";
-        form.closest("dialog")?.close();
-        showToast("Activity added for this session only.");
     }
 
     function applyScheduleFilter(filter) {
@@ -270,7 +249,6 @@
         document.querySelectorAll("[data-close-dialog]").forEach((button) => {
             button.addEventListener("click", () => closeDialog(button));
         });
-        byId("quick-add-form")?.addEventListener("submit", handleQuickAdd);
     }
 
     function bindSchedule() {
@@ -286,15 +264,21 @@
     }
 
     function init() {
+        const store = createStudyStore({ repository: createBrowserRepository() });
+        const render = () => renderStudyState(store.getState(), store.getPersistenceStatus());
+
         bindNavigation();
         bindDialogs();
         bindSchedule();
         bindFocus();
+        bindPersistentStudyEvents({ store, showToast });
+        store.subscribe(render);
         byId("practice-question-form")?.addEventListener("submit", checkPracticeAnswer);
         routeFromHash({ replace: true });
         Object.entries(DEFAULT_TABS).forEach(([group, target]) => activateTab(group, uiState.tabs[group] || target));
         applyScheduleFilter("all");
         renderFocus();
+        render();
     }
 
     document.addEventListener("DOMContentLoaded", init);

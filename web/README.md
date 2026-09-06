@@ -29,3 +29,7 @@ For local browsing after W01 exists:
 cd web
 npm run dev
 ```
+
+## W04/W05 foundation
+
+W04 introduces the versioned temporary browser-state repository and makes Quick Add durable across reloads. W05 adds the framework-independent Plan/Subject/Topic/Activity/StudySession/Goal/Material/Review/Question/Evidence model plus reference validation and pure selectors. Focus/session evidence remains deferred to W06, and IndexedDB remains deferred to W12.
