@@ -1,6 +1,6 @@
 <resources>
     <string name="go_back">Voltar</string>
-    <string name="progress_title">Metas e notas</string>
+    <string name="progress_title">Progresso</string>
     <plurals name="progress_summary">
         <item quantity="one">%1$d meta ativa • %2$d notas fixadas</item>
         <item quantity="many">%1$d metas ativas • %2$d notas fixadas</item>

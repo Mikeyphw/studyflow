@@ -35,13 +35,13 @@
     <string name="portability_title">Import, export and snapshots</string>
     <string name="schedule">Schedule</string>
     <string name="syllabus">Syllabus</string>
-    <string name="practice">Questions and mocks</string>
+    <string name="practice">Practice</string>
     <string name="reviews">Reviews and flashcards</string>
     <string name="sessions">Study sessions</string>
     <string name="library">Library</string>
     <string name="library_scope_title">Resources ready</string>
     <string name="library_scope_message">Organize books, PDFs, video links, courses, and annex metadata before a study session.</string>
-    <string name="progress_center">Goals and notes</string>
+    <string name="progress_center">Progress</string>
     <string name="progress_scope_title">Goals and notes ready</string>
     <string name="progress_scope_message">Track measurable goals and pin notes that keep study decisions close to the plan.</string>
 <string name="analytics">Analytics</string>

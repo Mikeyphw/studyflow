@@ -18,8 +18,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -27,7 +27,6 @@ import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.HorizontalDivider
@@ -140,7 +139,7 @@ fun StudyFlowWorkspaceHeader(
         )
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                .widthIn(max = 360.dp)
                 .heightIn(min = StudyFlowWorkspaceTokens.MinimumTouchTarget)
                 .graphicsLayer {
                     scaleX = planScale
@@ -149,38 +148,22 @@ fun StudyFlowWorkspaceHeader(
                 .clip(RoundedCornerShape(StudyFlowWorkspaceTokens.CompactCardRadius))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.72f))
                 .clickable(interactionSource = planInteraction, indication = null, onClick = onPlanClick)
-                .semantics { traversalIndex = 3f }
+                .semantics {
+                    traversalIndex = 3f
+                    stateDescription = planSupportingText
+                }
                 .padding(horizontal = 14.dp, vertical = planVerticalPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(30.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Bolt,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = planName.orEmpty(),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = planSupportingText,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = planName.orEmpty(),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(modifier = Modifier.width(6.dp))
             Icon(
                 Icons.Outlined.ArrowDropDown,
                 contentDescription = null,

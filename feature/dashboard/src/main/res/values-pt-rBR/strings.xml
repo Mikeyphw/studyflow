@@ -37,13 +37,13 @@
     <string name="portability_title">Importação, exportação e snapshots</string>
     <string name="schedule">Cronograma</string>
     <string name="syllabus">Conteúdo programático</string>
-    <string name="practice">Questões e simulados</string>
+    <string name="practice">Prática</string>
     <string name="reviews">Revisões e flashcards</string>
     <string name="sessions">Sessões de estudo</string>
     <string name="library">Biblioteca</string>
     <string name="library_scope_title">Recursos prontos</string>
     <string name="library_scope_message">Organize livros, PDFs, links de vídeo, cursos e metadados de anexos antes de uma sessão de estudo.</string>
-    <string name="progress_center">Metas e notas</string>
+    <string name="progress_center">Progresso</string>
     <string name="progress_scope_title">Metas e notas prontas</string>
     <string name="progress_scope_message">Acompanhe metas mensuráveis e fixe notas que mantêm as decisões de estudo perto do plano.</string>
 <string name="analytics">Análises</string>

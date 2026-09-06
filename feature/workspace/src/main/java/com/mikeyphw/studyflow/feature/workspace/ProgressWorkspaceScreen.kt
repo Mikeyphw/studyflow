@@ -125,6 +125,10 @@ fun ProgressWorkspaceScreen(
     targetId: String? = null,
 ) {
     var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
+    var selectedSegmentName by rememberSaveable(plan.id.value) {
+        mutableStateOf(ProgressHubSegment.SUMMARY.name)
+    }
+    val selectedSegment = ProgressHubSegment.valueOf(selectedSegmentName)
     val analyticsFlow = remember(plan.id, loadAttempt) {
         analyticsManager.observeSnapshot(plan.id).asStudyFlowLoadState()
     }
@@ -423,97 +427,136 @@ fun ProgressWorkspaceScreen(
                 onSystem = onSystem,
             )
             StudyFlowPeriodStrip(
-                periods = ProgressWorkspacePeriod.entries,
-                selectedPeriod = selectedPeriod,
-                label = { period ->
-                    stringResource(
-                        when (period) {
-                            ProgressWorkspacePeriod.SEVEN_DAYS -> R.string.progress_7_days
-                            ProgressWorkspacePeriod.THIRTY_DAYS -> R.string.progress_30_days
-                            ProgressWorkspacePeriod.NINETY_DAYS -> R.string.progress_90_days
-                        },
-                    )
-                },
-                onSelected = onPeriodSelected,
+                periods = ProgressHubSegment.entries,
+                selectedPeriod = selectedSegment,
+                label = { segment -> stringResource(segment.labelRes()) },
+                onSelected = { selectedSegmentName = it.name },
             )
+            if (selectedSegment.usesPeriod) {
+                StudyFlowPeriodStrip(
+                    periods = ProgressWorkspacePeriod.entries,
+                    selectedPeriod = selectedPeriod,
+                    label = { period ->
+                        stringResource(
+                            when (period) {
+                                ProgressWorkspacePeriod.SEVEN_DAYS -> R.string.progress_7_days
+                                ProgressWorkspacePeriod.THIRTY_DAYS -> R.string.progress_30_days
+                                ProgressWorkspacePeriod.NINETY_DAYS -> R.string.progress_90_days
+                            },
+                        )
+                    },
+                    onSelected = onPeriodSelected,
+                )
+            }
             StudyFlowAdaptiveWorkspaceFrame(
                 supportingContent = {
-                    StudyFlowSectionTitle(title = stringResource(R.string.readiness_score))
-                    StudyFlowMetric(
-                        label = readiness.band?.let { band ->
-                            stringResource(readinessBandLabel(band))
-                        } ?: stringResource(R.string.not_enough_data),
-                        value = readiness.scorePercent?.let { score ->
-                            stringResource(R.string.percent_value, score)
-                        } ?: stringResource(R.string.no_data),
-                        supportingText = readiness.band?.let { band ->
-                            readiness.confidence?.let { confidence ->
-                                stringResource(
-                                    R.string.readiness_message_with_confidence,
-                                    stringResource(readinessBandMessage(band)),
-                                    stringResource(readinessConfidenceLabel(confidence)),
-                                )
-                            } ?: stringResource(readinessBandMessage(band))
-                        } ?: stringResource(R.string.readiness_insufficient_evidence_message),
-                    )
-                    StudyFlowProgressBand(
-                        label = stringResource(R.string.readiness_coverage),
-                        valueText = readiness.coveragePercent?.let { coverage ->
-                            stringResource(R.string.percent_value, coverage)
-                        } ?: stringResource(R.string.no_data),
-                        progressPercent = readiness.coveragePercent ?: 0,
-                    )
-                    StudyFlowProgressBand(
-                        label = stringResource(R.string.plan_schedule),
-                        valueText = if (hasScheduleEvidence) {
-                            stringResource(R.string.percent_value, analytics.scheduleAdherencePercent)
-                        } else {
-                            stringResource(R.string.no_data)
-                        },
-                        progressPercent = analytics.scheduleAdherencePercent,
-                    )
-                    StudyFlowProgressBand(
-                        label = stringResource(R.string.goal),
-                        valueText = if (hasGoalEvidence) {
-                            stringResource(R.string.percent_value, progress.goalProgressPercent)
-                        } else {
-                            stringResource(R.string.no_data)
-                        },
-                        progressPercent = progress.goalProgressPercent,
-                    )
-                    StudyFlowMetric(
-                        label = stringResource(R.string.studied_time),
-                        value = stringResource(R.string.minutes_value, (studiedSeconds / 60).toInt()),
-                        supportingText = periodAccuracy?.let { value ->
-                            stringResource(R.string.percent_value, value)
-                        },
-                    )
-                    StudyFlowTimelineItem(
-                        title = stringResource(R.string.period_trend),
-                        metadata = stringResource(
-                            R.string.period_trend_detail,
-                            earlierMinutes.toInt(),
-                            recentMinutes.toInt(),
-                        ),
-                        icon = Icons.AutoMirrored.Outlined.TrendingUp,
-                        status = stringResource(trendLabel),
-                        onClick = onOpenAnalytics,
-                    )
-                    StudyFlowActionRow(
-                        icon = Icons.Outlined.Insights,
-                        label = stringResource(R.string.open_analytics),
-                        onClick = onOpenAnalytics,
-                    )
-                    StudyFlowActionRow(
-                        icon = Icons.Outlined.Flag,
-                        label = stringResource(R.string.open_progress_center),
-                        onClick = onOpenProgressCenter,
-                    )
-                    StudyFlowActionRow(
-                        icon = Icons.Outlined.AutoFixHigh,
-                        label = stringResource(R.string.adjust_plan),
-                        onClick = onOpenPlan,
-                    )
+                    when (selectedSegment) {
+                        ProgressHubSegment.SUMMARY -> {
+                            StudyFlowSectionTitle(title = stringResource(R.string.readiness_score))
+                            StudyFlowMetric(
+                                label = readiness.band?.let { band ->
+                                    stringResource(readinessBandLabel(band))
+                                } ?: stringResource(R.string.not_enough_data),
+                                value = readiness.scorePercent?.let { score ->
+                                    stringResource(R.string.percent_value, score)
+                                } ?: stringResource(R.string.no_data),
+                                supportingText = readiness.confidence?.let { confidence ->
+                                    stringResource(readinessConfidenceLabel(confidence))
+                                },
+                            )
+                            StudyFlowProgressBand(
+                                label = stringResource(R.string.readiness_coverage),
+                                valueText = readiness.coveragePercent?.let { coverage ->
+                                    stringResource(R.string.percent_value, coverage)
+                                } ?: stringResource(R.string.no_data),
+                                progressPercent = readiness.coveragePercent ?: 0,
+                            )
+                            StudyFlowActionRow(
+                                icon = Icons.Outlined.AutoFixHigh,
+                                label = stringResource(R.string.adjust_plan),
+                                onClick = onOpenPlan,
+                            )
+                        }
+                        ProgressHubSegment.PERFORMANCE -> {
+                            StudyFlowSectionTitle(title = stringResource(R.string.progress_segment_performance))
+                            StudyFlowMetric(
+                                label = stringResource(R.string.studied_time),
+                                value = stringResource(R.string.minutes_value, (studiedSeconds / 60).toInt()),
+                                supportingText = periodAccuracy?.let { value ->
+                                    stringResource(R.string.percent_value, value)
+                                },
+                            )
+                            StudyFlowProgressBand(
+                                label = stringResource(R.string.plan_schedule),
+                                valueText = if (hasScheduleEvidence) {
+                                    stringResource(R.string.percent_value, analytics.scheduleAdherencePercent)
+                                } else {
+                                    stringResource(R.string.no_data)
+                                },
+                                progressPercent = analytics.scheduleAdherencePercent,
+                            )
+                            StudyFlowTimelineItem(
+                                title = stringResource(R.string.period_trend),
+                                metadata = stringResource(
+                                    R.string.period_trend_detail,
+                                    earlierMinutes.toInt(),
+                                    recentMinutes.toInt(),
+                                ),
+                                icon = Icons.AutoMirrored.Outlined.TrendingUp,
+                                status = stringResource(trendLabel),
+                                onClick = onOpenAnalytics,
+                            )
+                            StudyFlowActionRow(
+                                icon = Icons.Outlined.Insights,
+                                label = stringResource(R.string.open_analytics),
+                                onClick = onOpenAnalytics,
+                            )
+                        }
+                        ProgressHubSegment.GOALS -> {
+                            StudyFlowSectionTitle(title = stringResource(R.string.progress_segment_goals))
+                            StudyFlowProgressBand(
+                                label = stringResource(R.string.goal),
+                                valueText = if (hasGoalEvidence) {
+                                    stringResource(R.string.percent_value, progress.goalProgressPercent)
+                                } else {
+                                    stringResource(R.string.no_data)
+                                },
+                                progressPercent = progress.goalProgressPercent,
+                            )
+                            StudyFlowMetric(
+                                label = pluralStringResource(
+                                    R.plurals.active_goals_value,
+                                    progress.activeGoals.size,
+                                    progress.activeGoals.size,
+                                ),
+                                value = progress.pinnedNotes.size.toString(),
+                                supportingText = stringResource(R.string.open_progress_center),
+                            )
+                            StudyFlowActionRow(
+                                icon = Icons.Outlined.Flag,
+                                label = stringResource(R.string.open_progress_center),
+                                onClick = onOpenProgressCenter,
+                            )
+                        }
+                        ProgressHubSegment.TOOLS -> {
+                            StudyFlowSectionTitle(title = stringResource(R.string.progress_segment_tools))
+                            StudyFlowActionRow(
+                                icon = Icons.Outlined.AutoFixHigh,
+                                label = stringResource(R.string.adjust_plan),
+                                onClick = onOpenPlan,
+                            )
+                            StudyFlowActionRow(
+                                icon = Icons.Outlined.Description,
+                                label = stringResource(R.string.export_report_html),
+                                onClick = { launchReportExport(StudyExamReportFormat.HTML) },
+                            )
+                            StudyFlowActionRow(
+                                icon = Icons.Outlined.Insights,
+                                label = stringResource(R.string.open_progress_center),
+                                onClick = onOpenProgressCenter,
+                            )
+                        }
+                    }
                 },
             ) { primaryModifier ->
                 LazyColumn(
@@ -532,6 +575,7 @@ fun ProgressWorkspaceScreen(
                         )
                     }
                 }
+                if (selectedSegment == ProgressHubSegment.SUMMARY) {
                 studyFlowSectionHeader(key = "readiness", title = { stringResource(R.string.readiness_score) })
                 item(key = "readiness-card", contentType = "readiness") {
                     val currentReadiness = readiness
@@ -598,6 +642,8 @@ fun ProgressWorkspaceScreen(
                     )
                 }
 
+                }
+                if (selectedSegment == ProgressHubSegment.TOOLS) {
                 studyFlowSectionHeader(
                     key = "exam-runbook",
                     title = { stringResource(R.string.exam_runbook_title) },
@@ -921,6 +967,8 @@ fun ProgressWorkspaceScreen(
                         onAction = onOpenPlan,
                     )
                 }
+                }
+                if (selectedSegment == ProgressHubSegment.PERFORMANCE) {
                 studyFlowSectionHeader(key = "period", title = { stringResource(R.string.progress_title) })
                 item(key = "period-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(
@@ -1014,6 +1062,8 @@ fun ProgressWorkspaceScreen(
                     }
                 }
 
+                }
+                if (selectedSegment == ProgressHubSegment.GOALS) {
                 studyFlowSectionHeader(key = "goals", title = { stringResource(R.string.goals_and_notes) })
                 item(key = "goal-note-metrics", contentType = "metrics") {
                     StudyFlowResponsivePair(
@@ -1045,6 +1095,8 @@ fun ProgressWorkspaceScreen(
                         },
                     )
                 }
+                }
+                if (selectedSegment == ProgressHubSegment.TOOLS) {
                 item(key = "adaptation", contentType = "coach") {
                     val message = when {
                         analytics.overdueReviewCount > 0 -> {
@@ -1084,6 +1136,8 @@ fun ProgressWorkspaceScreen(
                         },
                     )
                 }
+                }
+                if (selectedSegment == ProgressHubSegment.PERFORMANCE) {
                 studyFlowSectionHeader(key = "evidence", title = { stringResource(R.string.evidence_timeline) })
                 if (evidenceTimeline.isEmpty()) {
                     item(key = "evidence-empty", contentType = "empty") {
@@ -1110,6 +1164,8 @@ fun ProgressWorkspaceScreen(
                     }
                 }
 
+                }
+                if (selectedSegment == ProgressHubSegment.TOOLS) {
                 item(key = "progress-actions", contentType = "actions") {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         StudyFlowActionRow(
@@ -1124,9 +1180,28 @@ fun ProgressWorkspaceScreen(
                         )
                     }
                 }
+                }
             }
         }
     }
+}
+
+
+private enum class ProgressHubSegment {
+    SUMMARY,
+    PERFORMANCE,
+    GOALS,
+    TOOLS,
+}
+
+private val ProgressHubSegment.usesPeriod: Boolean
+    get() = this == ProgressHubSegment.SUMMARY || this == ProgressHubSegment.PERFORMANCE
+
+private fun ProgressHubSegment.labelRes(): Int = when (this) {
+    ProgressHubSegment.SUMMARY -> R.string.progress_segment_summary
+    ProgressHubSegment.PERFORMANCE -> R.string.progress_segment_performance
+    ProgressHubSegment.GOALS -> R.string.progress_segment_goals
+    ProgressHubSegment.TOOLS -> R.string.progress_segment_tools
 }
 
 

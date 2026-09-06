@@ -90,4 +90,5 @@
     <string name="disable_cycle">Desativar ciclo</string>
     <string name="enable_cycle">Ativar ciclo</string>
     <string name="move_current_to_end">Mover atual para o fim</string>
+    <string name="more_actions">Mais ações</string>
 </resources>

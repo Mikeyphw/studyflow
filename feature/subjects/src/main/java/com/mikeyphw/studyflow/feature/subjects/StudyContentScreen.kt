@@ -1,7 +1,9 @@
 package com.mikeyphw.studyflow.feature.subjects
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -27,11 +28,14 @@ import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -100,7 +104,7 @@ private sealed interface DeleteRequest {
     data class TopicRequest(val topic: Topic) : DeleteRequest
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun StudyContentScreen(
     plan: StudyPlan,
@@ -270,9 +274,10 @@ fun StudyContentScreen(
                         label = { Text(stringResource(R.string.search_content)) },
                         singleLine = true,
                     )
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         SyllabusFilter.entries.forEach { candidate ->
                             FilterChip(
@@ -282,9 +287,10 @@ fun StudyContentScreen(
                             )
                         }
                     }
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         SyllabusSort.entries.forEach { candidate ->
                             FilterChip(
@@ -294,9 +300,10 @@ fun StudyContentScreen(
                             )
                         }
                     }
-                    Row(
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         StudyFlowStatusPill(
                             text = pluralStringResource(
@@ -346,7 +353,9 @@ fun StudyContentScreen(
             } else {
                 items(visibleSubjects, key = { it.subject.id.value }) { visible ->
                     SubjectCard(
-                        visible = visible,
+                        subject = visible.subject,
+                        visibleTopicCount = visible.visibleTopicCount,
+                        topicTree = visible.topicTree,
                         syllabus = syllabus,
                         expanded = visible.subject.id.value in expandedSubjectIds || query.isNotBlank(),
                         bulkMode = bulkMode,
@@ -594,9 +603,12 @@ fun StudyContentScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SubjectCard(
-    visible: VisibleSubject,
+    subject: Subject,
+    visibleTopicCount: Int,
+    topicTree: List<TopicNode>,
     syllabus: StudySyllabus,
     expanded: Boolean,
     bulkMode: Boolean,
@@ -613,59 +625,87 @@ private fun SubjectCard(
     onMoveSubject: (Int) -> Unit,
     onMoveTopic: (Topic, Int) -> Unit,
 ) {
+    var menuExpanded by rememberSaveable(subject.id.value) { mutableStateOf(false) }
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text(
-                        text = visible.subject.name,
+                        text = subject.name,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         Text(
-                            text = stringResource(R.string.priority_value, visible.subject.priority),
+                            text = stringResource(R.string.priority_value, subject.priority),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = stringResource(R.string.weight_value, visible.subject.examWeight),
+                            text = stringResource(R.string.weight_value, subject.examWeight),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     LinearProgressIndicator(
-                        progress = { visible.subject.progressPercent / 100f },
+                        progress = { subject.progressPercent / 100f },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Text(stringResource(R.string.progress_value, visible.subject.progressPercent))
+                    Text(stringResource(R.string.progress_value, subject.progressPercent))
                 }
-                IconButton(onClick = { onMoveSubject(-1) }) {
-                    Icon(Icons.Outlined.KeyboardArrowUp, stringResource(R.string.move_up))
-                }
-                IconButton(onClick = { onMoveSubject(1) }) {
-                    Icon(Icons.Outlined.KeyboardArrowDown, stringResource(R.string.move_down))
-                }
-                IconButton(onClick = onToggleSubjectArchived) {
-                    Icon(
-                        if (visible.subject.archived) Icons.Outlined.Restore else Icons.Outlined.Archive,
-                        stringResource(if (visible.subject.archived) R.string.restore else R.string.archive),
-                    )
-                }
-                IconButton(onClick = onEditSubject, enabled = !visible.subject.archived) {
-                    Icon(Icons.Outlined.Edit, stringResource(R.string.edit_subject))
-                }
-                IconButton(onClick = onDeleteSubject) {
-                    Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.delete_subject))
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Outlined.MoreVert, stringResource(R.string.more_actions))
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.move_up)) },
+                            onClick = { menuExpanded = false; onMoveSubject(-1) },
+                            leadingIcon = { Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.move_down)) },
+                            onClick = { menuExpanded = false; onMoveSubject(1) },
+                            leadingIcon = { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(if (subject.archived) R.string.restore else R.string.archive)) },
+                            onClick = { menuExpanded = false; onToggleSubjectArchived() },
+                            leadingIcon = {
+                                Icon(
+                                    if (subject.archived) Icons.Outlined.Restore else Icons.Outlined.Archive,
+                                    contentDescription = null,
+                                )
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.edit_subject)) },
+                            onClick = { menuExpanded = false; onEditSubject() },
+                            enabled = !subject.archived,
+                            leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete_subject)) },
+                            onClick = { menuExpanded = false; onDeleteSubject() },
+                            leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                        )
+                    }
                 }
             }
-            Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 StudyFlowStatusPill(
                     text = pluralStringResource(
                         R.plurals.topic_count,
-                        visible.visibleTopicCount,
-                        visible.visibleTopicCount,
+                        visibleTopicCount,
+                        visibleTopicCount,
                     ),
                 )
                 TextButton(onClick = { onAddTopic(null) }) {
@@ -678,7 +718,7 @@ private fun SubjectCard(
                 }
             }
             if (expanded) {
-                visible.topicTree.forEach { node ->
+                topicTree.forEach { node ->
                     TopicNodeRow(
                         node = node,
                         syllabus = syllabus,
@@ -697,6 +737,7 @@ private fun SubjectCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TopicNodeRow(
     node: TopicNode,
@@ -712,6 +753,7 @@ private fun TopicNodeRow(
 ) {
     val topic = node.topic
     val selected = topic.id.value in selectedTopicIds
+    var menuExpanded by rememberSaveable(topic.id.value) { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -736,7 +778,10 @@ private fun TopicNodeRow(
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(topic.name, fontWeight = FontWeight.SemiBold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
                 Text(stringResource(topic.status.label()), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     text = stringResource(R.string.progress_value, topic.progressPercent),
@@ -751,26 +796,51 @@ private fun TopicNodeRow(
             if (stage != null) Text(stage.name, color = MaterialTheme.colorScheme.primary)
         }
         if (!bulkMode) {
-            IconButton(onClick = { onMove(topic, -1) }) {
-                Icon(Icons.Outlined.KeyboardArrowUp, stringResource(R.string.move_up))
-            }
-            IconButton(onClick = { onMove(topic, 1) }) {
-                Icon(Icons.Outlined.KeyboardArrowDown, stringResource(R.string.move_down))
-            }
-            IconButton(onClick = { onAddChild(topic) }) {
-                Icon(Icons.Outlined.Add, stringResource(R.string.add_child_topic))
-            }
-            IconButton(onClick = { onToggleArchived(topic) }) {
-                Icon(
-                    if (topic.archived) Icons.Outlined.Restore else Icons.Outlined.Archive,
-                    stringResource(if (topic.archived) R.string.restore else R.string.archive),
-                )
-            }
-            IconButton(onClick = { onEdit(topic) }, enabled = !topic.archived) {
-                Icon(Icons.Outlined.Edit, stringResource(R.string.edit_topic))
-            }
-            IconButton(onClick = { onDelete(topic) }) {
-                Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.delete_topic))
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Outlined.MoreVert, stringResource(R.string.more_actions))
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.move_up)) },
+                        onClick = { menuExpanded = false; onMove(topic, -1) },
+                        leadingIcon = { Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = null) },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.move_down)) },
+                        onClick = { menuExpanded = false; onMove(topic, 1) },
+                        leadingIcon = { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null) },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.add_child_topic)) },
+                        onClick = { menuExpanded = false; onAddChild(topic) },
+                        leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(if (topic.archived) R.string.restore else R.string.archive)) },
+                        onClick = { menuExpanded = false; onToggleArchived(topic) },
+                        leadingIcon = {
+                            Icon(
+                                if (topic.archived) Icons.Outlined.Restore else Icons.Outlined.Archive,
+                                contentDescription = null,
+                            )
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.edit_topic)) },
+                        onClick = { menuExpanded = false; onEdit(topic) },
+                        enabled = !topic.archived,
+                        leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.delete_topic)) },
+                        onClick = { menuExpanded = false; onDelete(topic) },
+                        leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+                    )
+                }
             }
         } else {
             Icon(

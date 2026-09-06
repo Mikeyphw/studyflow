@@ -1,9 +1,11 @@
 package com.mikeyphw.studyflow.feature.schedule
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,10 +17,13 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.automirrored.outlined.EventNote
 import androidx.compose.material.icons.outlined.PendingActions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -73,7 +78,7 @@ import java.util.Calendar
 import java.util.UUID
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun StudyScheduleScreen(
     plan: StudyPlan,
@@ -184,7 +189,10 @@ fun StudyScheduleScreen(
                                     )
                                 },
                             )
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
                                 Button(
                                     onClick = {
                                         launchAction(blockSaved) {
@@ -210,7 +218,10 @@ fun StudyScheduleScreen(
                                 }
                             }
                             if (cycle != null) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
                                     OutlinedButton(
                                         onClick = {
                                             launchAction(blockSaved) {
@@ -248,7 +259,11 @@ fun StudyScheduleScreen(
             }
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.study_strategy)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         StudyStrategyType.entries.take(4).forEach { candidate ->
                             FilterChip(
                                 selected = strategyName == candidate.name,
@@ -276,7 +291,11 @@ fun StudyScheduleScreen(
             }
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.weekly_blocks)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Button(onClick = { showRuleDialog = true }) {
                             Icon(Icons.AutoMirrored.Outlined.EventNote, contentDescription = null)
                             Text(stringResource(R.string.add_block))
@@ -325,7 +344,11 @@ fun StudyScheduleScreen(
             }
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.planned_activities)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         StudyFlowStatusPill(
                             text = pluralStringResource(
                                 R.plurals.activity_count,
@@ -427,6 +450,7 @@ fun StudyScheduleScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ScheduleRuleCard(
     rule: ScheduleRule,
@@ -445,17 +469,22 @@ private fun ScheduleRuleCard(
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 StudyFlowStatusPill(
                     text = if (rule.enabled) stringResource(R.string.enabled) else stringResource(R.string.disabled),
                 )
                 if (rule.locked) StudyFlowStatusPill(text = stringResource(R.string.locked))
-                ConfirmingDeleteButton(onConfirmed = onDelete)
+                DeleteOverflowMenu(onConfirmed = onDelete)
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PlannedActivityCard(
     activity: PlannedActivity,
@@ -476,7 +505,11 @@ private fun PlannedActivityCard(
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 if (activity.status in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED)) {
                     Button(onClick = onComplete) {
                         Icon(Icons.Outlined.CheckCircle, contentDescription = null)
@@ -487,31 +520,31 @@ private fun PlannedActivityCard(
                     }
                 }
                 if (activity.status != PlannedActivityStatus.IN_PROGRESS) {
-                    ConfirmingDeleteButton(onConfirmed = onDelete)
+                    DeleteOverflowMenu(onConfirmed = onDelete)
                 }
             }
         }
     }
 }
 
-private fun startOfTodayEpochMillis(): Long = Calendar.getInstance().apply {
-    set(Calendar.HOUR_OF_DAY, 0)
-    set(Calendar.MINUTE, 0)
-    set(Calendar.SECOND, 0)
-    set(Calendar.MILLISECOND, 0)
-}.timeInMillis
-
-
-private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
-    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue
-
-
 @Composable
-private fun ConfirmingDeleteButton(onConfirmed: () -> Unit) {
+private fun DeleteOverflowMenu(onConfirmed: () -> Unit) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
     var confirming by rememberSaveable { mutableStateOf(false) }
-    OutlinedButton(onClick = { confirming = true }) {
-        Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
-        Text(stringResource(R.string.delete))
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.more_actions))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete)) },
+                onClick = {
+                    expanded = false
+                    confirming = true
+                },
+                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, contentDescription = null) },
+            )
+        }
     }
     if (confirming) {
         AlertDialog(
@@ -529,3 +562,14 @@ private fun ConfirmingDeleteButton(onConfirmed: () -> Unit) {
         )
     }
 }
+
+private fun startOfTodayEpochMillis(): Long = Calendar.getInstance().apply {
+    set(Calendar.HOUR_OF_DAY, 0)
+    set(Calendar.MINUTE, 0)
+    set(Calendar.SECOND, 0)
+    set(Calendar.MILLISECOND, 0)
+}.timeInMillis
+
+
+private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
+    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue

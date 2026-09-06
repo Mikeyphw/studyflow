@@ -692,4 +692,8 @@
     <string name="legislation_link_reviews">Reviews</string>
     <string name="legislation_no_evidence_available">No question, error, or review evidence is available yet.</string>
     <string name="none">None</string>
+    <string name="progress_segment_summary">Summary</string>
+    <string name="progress_segment_performance">Performance</string>
+    <string name="progress_segment_goals">Goals</string>
+    <string name="progress_segment_tools">Tools</string>
 </resources>

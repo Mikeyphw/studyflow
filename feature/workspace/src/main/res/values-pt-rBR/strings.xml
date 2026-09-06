@@ -729,4 +729,8 @@
     <string name="legislation_link_reviews">Revisões</string>
     <string name="legislation_no_evidence_available">Ainda não há evidências de questões, erros ou revisões disponíveis.</string>
     <string name="none">Nenhum</string>
+    <string name="progress_segment_summary">Resumo</string>
+    <string name="progress_segment_performance">Desempenho</string>
+    <string name="progress_segment_goals">Metas</string>
+    <string name="progress_segment_tools">Ferramentas</string>
 </resources>

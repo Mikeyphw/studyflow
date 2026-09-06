@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="go_back">Voltar</string>
-    <string name="practice_title">Questões e simulados</string>
+    <string name="practice_title">Prática</string>
     <string name="practice_subtitle">Monte um banco de questões para %1$s e inicie treinos a partir dele.</string>
     <string name="add_question">Adicionar questão</string>
     <string name="question_bank">Banco de questões</string>

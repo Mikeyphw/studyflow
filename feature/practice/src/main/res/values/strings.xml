@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="go_back">Go back</string>
-    <string name="practice_title">Questions and mocks</string>
+    <string name="practice_title">Practice</string>
     <string name="practice_subtitle">Build a question bank for %1$s and launch practice from it.</string>
     <string name="add_question">Add question</string>
     <string name="question_bank">Question bank</string>
