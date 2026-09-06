@@ -19,7 +19,7 @@ A planned reminder can still be valid near the end of the two-hour late-delivery
 
 ```sh
 python3 scripts/verify_bh08_late_reminder_reconciliation.py
-./gradlew :core:domain:test :app:testDebugUnitTest --no-daemon
+./gradlew :core:domain:test :app:testReleaseUnitTest --no-daemon
 ```
 
 The focused domain regressions cover bounded survival, completed/delivered suppression, and exact occurrence identity after rescheduling. App unit tests compile the coordinator and retain the existing OV09 bookkeeping-order contract.

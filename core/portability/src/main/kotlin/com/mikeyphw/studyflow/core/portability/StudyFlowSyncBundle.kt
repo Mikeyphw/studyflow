@@ -98,7 +98,7 @@ class StudyFlowSyncBundleCodec(
     fun isEncrypted(bytes: ByteArray): Boolean = encryptedCodec.isEncrypted(bytes)
 
     fun writeArchive(archive: StudyFlowSyncBundleArchive, output: OutputStream) {
-        validateManifest(archive.manifest, archive.databaseSnapshot.size.toLong())
+        validateManifest(archive.manifest, archive.databaseSnapshot)
         val manifestBytes = json.encodeToString(archive.manifest).encodeToByteArray()
         val checkpointBytes = json.encodeToString(archive.manifest.checkpoint).encodeToByteArray()
         val checksumEntries = linkedMapOf(
@@ -110,6 +110,13 @@ class StudyFlowSyncBundleCodec(
             checksumEntries[attachment.entryName] = attachment.checksumSha256.lowercase()
         }
         val integrityBytes = json.encodeToString(StudyFlowSyncIntegrity(entries = checksumEntries)).encodeToByteArray()
+        validateWriteBudget(
+            manifest = archive.manifest,
+            manifestBytes = manifestBytes,
+            checkpointBytes = checkpointBytes,
+            databaseBytes = archive.databaseSnapshot.size.toLong(),
+            integrityBytes = integrityBytes,
+        )
         ZipOutputStream(output.buffered()).use { zip ->
             writeEntry(zip, ManifestEntry, manifestBytes)
             writeEntry(zip, CheckpointEntry, checkpointBytes)
@@ -168,7 +175,8 @@ class StudyFlowSyncBundleCodec(
         if (manifest.checkpoint != checkpoint) {
             throw StudyPlanPackageException("Sync manifest and checkpoint metadata do not match.")
         }
-        validateManifest(manifest, entries.getValue(manifest.databaseEntryName).size.toLong())
+        val databaseSnapshot = entries.getValue(DatabaseSnapshotEntry)
+        validateManifest(manifest, databaseSnapshot)
         val allowed = required + manifest.attachments.map { it.entryName }.toSet()
         val extras = entries.keys - allowed
         if (extras.isNotEmpty()) {
@@ -187,7 +195,7 @@ class StudyFlowSyncBundleCodec(
         }
         return StudyFlowSyncBundleArchive(
             manifest = manifest,
-            databaseSnapshot = entries.getValue(manifest.databaseEntryName),
+            databaseSnapshot = databaseSnapshot,
             attachmentBytes = attachments,
         )
     }
@@ -224,7 +232,7 @@ class StudyFlowSyncBundleCodec(
         },
     )
 
-    private fun validateManifest(manifest: StudyFlowSyncBundleManifest, actualDatabaseBytes: Long) {
+    private fun validateManifest(manifest: StudyFlowSyncBundleManifest, databaseSnapshot: ByteArray) {
         require(manifest.format == StudyFlowSyncBundleFormat) { "Unsupported sync bundle format: ${manifest.format}" }
         require(manifest.schemaVersion == StudyFlowSyncBundleSchemaVersion) {
             "Unsupported sync bundle schema version: ${manifest.schemaVersion}"
@@ -234,11 +242,18 @@ class StudyFlowSyncBundleCodec(
         require(manifest.checkpoint.databaseHashSha256 == manifest.databaseChecksumSha256) {
             "Sync checkpoint database hash must match the manifest."
         }
-        require(manifest.databaseByteSize == actualDatabaseBytes) {
+        require(manifest.databaseByteSize == databaseSnapshot.size.toLong()) {
             "Sync database snapshot size does not match manifest."
         }
         require(manifest.databaseEntryName == DatabaseSnapshotEntry) { "Sync database entry path is fixed." }
         require(manifest.databaseChecksumSha256.matches(Sha256Regex)) { "Sync database checksum must be SHA-256 hex." }
+        require(sha256(databaseSnapshot) == manifest.databaseChecksumSha256) {
+            "Sync database checksum does not match database.snapshot."
+        }
+        val attachmentEntryNames = manifest.attachments.map { it.entryName }
+        require(attachmentEntryNames.size == attachmentEntryNames.toSet().size) {
+            "Sync attachment declarations must use unique entry names."
+        }
         manifest.attachments.forEach { attachment ->
             require(attachment.entryName.startsWith(AttachmentsPrefix)) {
                 "Sync attachments must live under attachments/."
@@ -251,23 +266,64 @@ class StudyFlowSyncBundleCodec(
 
     private fun readEntries(input: InputStream): Map<String, ByteArray> {
         val entries = linkedMapOf<String, ByteArray>()
-        var totalBytes = 0L
+        val budget = ArchiveBudget()
         ZipInputStream(input.buffered()).use { zip ->
             while (true) {
                 val entry = zip.nextEntry ?: break
                 if (!entry.isDirectory) {
                     requireSafeEntryName(entry.name)
                     require(!entries.containsKey(entry.name)) { "Duplicate sync bundle entry: ${entry.name}" }
-                    require(entries.size < MaxEntryCount) { "Sync bundle contains too many entries." }
+                    budget.reserveEntry()
                     val bytes = readBounded(zip, MaxEntryBytes)
-                    totalBytes += bytes.size
-                    require(totalBytes <= MaxTotalBytes) { "Sync bundle is larger than the supported limit." }
+                    budget.recordBytes(bytes.size.toLong())
                     entries[entry.name] = bytes
                 }
                 zip.closeEntry()
             }
         }
         return entries
+    }
+
+    private fun validateWriteBudget(
+        manifest: StudyFlowSyncBundleManifest,
+        manifestBytes: ByteArray,
+        checkpointBytes: ByteArray,
+        databaseBytes: Long,
+        integrityBytes: ByteArray,
+    ) {
+        val budget = ArchiveBudget()
+        budget.recordEntry(manifestBytes.size.toLong())
+        budget.recordEntry(checkpointBytes.size.toLong())
+        budget.recordEntry(databaseBytes)
+        manifest.attachments.forEach { attachment ->
+            budget.recordEntry(attachment.byteSize)
+        }
+        budget.recordEntry(integrityBytes.size.toLong())
+    }
+
+    private class ArchiveBudget {
+        private var entryCount = 0
+        private var totalBytes = 0L
+
+        fun reserveEntry() {
+            require(entryCount < MaxEntryCount) { "Sync bundle contains too many entries." }
+            entryCount += 1
+        }
+
+        fun recordBytes(bytes: Long) {
+            require(bytes in 0L..MaxEntryBytes.toLong()) {
+                "Sync bundle entry is larger than the supported limit."
+            }
+            require(totalBytes <= MaxTotalBytes - bytes) {
+                "Sync bundle is larger than the supported limit."
+            }
+            totalBytes += bytes
+        }
+
+        fun recordEntry(bytes: Long) {
+            reserveEntry()
+            recordBytes(bytes)
+        }
     }
 
     private inline fun <reified T> decode(bytes: ByteArray): T =
