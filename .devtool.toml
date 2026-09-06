@@ -371,6 +371,18 @@ lint = [
   "verifyFormatting",
 ]
 
+
+[targets.studyflow_web]
+type = "node"
+root = "web"
+execution_environment = "native-termux"
+
+[targets.studyflow_web.validation]
+max_workers = 1
+cpu_limit = 1
+parallel = false
+low_priority = false
+
 [targets.studyflow_android.validation.phase_profiles.preflight]
 max_workers = 1
 cpu_limit = 1
