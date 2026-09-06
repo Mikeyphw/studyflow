@@ -39,6 +39,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.domain.OnboardingSampleExamStageKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanInput
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
@@ -684,6 +685,7 @@ fun PublicExamGoalPreset.titleRes(): Int = when (this) {
 @StringRes
 fun OnboardingSamplePlanTemplate.titleRes(): Int = when (this) {
     OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK -> R.string.onboarding_template_public_exam_title
+    OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL -> R.string.onboarding_template_bb_title
     OnboardingSamplePlanTemplate.UNIVERSITY_SEMESTER -> R.string.onboarding_template_university_title
     OnboardingSamplePlanTemplate.CERTIFICATION_BOOTCAMP -> R.string.onboarding_template_certification_title
     OnboardingSamplePlanTemplate.FREE_STUDY_HABIT -> R.string.onboarding_template_free_study_title
@@ -692,6 +694,7 @@ fun OnboardingSamplePlanTemplate.titleRes(): Int = when (this) {
 @StringRes
 fun OnboardingSamplePlanTemplate.descriptionRes(): Int = when (this) {
     OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK -> R.string.onboarding_template_public_exam_description
+    OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL -> R.string.onboarding_template_bb_description
     OnboardingSamplePlanTemplate.UNIVERSITY_SEMESTER -> R.string.onboarding_template_university_description
     OnboardingSamplePlanTemplate.CERTIFICATION_BOOTCAMP -> R.string.onboarding_template_certification_description
     OnboardingSamplePlanTemplate.FREE_STUDY_HABIT -> R.string.onboarding_template_free_study_description
@@ -700,6 +703,7 @@ fun OnboardingSamplePlanTemplate.descriptionRes(): Int = when (this) {
 @StringRes
 fun OnboardingSamplePlanTemplate.planNameRes(): Int = when (this) {
     OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK -> R.string.onboarding_template_public_exam_plan_name
+    OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL -> R.string.onboarding_template_bb_plan_name
     OnboardingSamplePlanTemplate.UNIVERSITY_SEMESTER -> R.string.onboarding_template_university_plan_name
     OnboardingSamplePlanTemplate.CERTIFICATION_BOOTCAMP -> R.string.onboarding_template_certification_plan_name
     OnboardingSamplePlanTemplate.FREE_STUDY_HABIT -> R.string.onboarding_template_free_study_plan_name
@@ -708,14 +712,29 @@ fun OnboardingSamplePlanTemplate.planNameRes(): Int = when (this) {
 @StringRes
 fun OnboardingSamplePlanTemplate.planDescriptionRes(): Int = when (this) {
     OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK -> R.string.onboarding_template_public_exam_plan_description
+    OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL -> R.string.onboarding_template_bb_plan_description
     OnboardingSamplePlanTemplate.UNIVERSITY_SEMESTER -> R.string.onboarding_template_university_plan_description
     OnboardingSamplePlanTemplate.CERTIFICATION_BOOTCAMP -> R.string.onboarding_template_certification_plan_description
     OnboardingSamplePlanTemplate.FREE_STUDY_HABIT -> R.string.onboarding_template_free_study_plan_description
 }
 
 @StringRes
+fun OnboardingSampleExamStageKind.titleRes(): Int = when (this) {
+    OnboardingSampleExamStageKind.OBJECTIVE -> R.string.onboarding_stage_objective
+    OnboardingSampleExamStageKind.ESSAY -> R.string.onboarding_stage_essay
+}
+
+@StringRes
 fun OnboardingSampleSubjectKind.titleRes(): Int = when (this) {
     OnboardingSampleSubjectKind.CORE_THEORY -> R.string.onboarding_subject_core_theory
+    OnboardingSampleSubjectKind.BB_PORTUGUESE -> R.string.onboarding_subject_bb_portuguese
+    OnboardingSampleSubjectKind.BB_ENGLISH -> R.string.onboarding_subject_bb_english
+    OnboardingSampleSubjectKind.BB_MATHEMATICS -> R.string.onboarding_subject_bb_mathematics
+    OnboardingSampleSubjectKind.BB_FINANCIAL_MARKET_CURRENT_AFFAIRS -> R.string.onboarding_subject_bb_financial_market_current_affairs
+    OnboardingSampleSubjectKind.BB_FINANCIAL_MATHEMATICS -> R.string.onboarding_subject_bb_financial_mathematics
+    OnboardingSampleSubjectKind.BB_BANKING_KNOWLEDGE -> R.string.onboarding_subject_bb_banking_knowledge
+    OnboardingSampleSubjectKind.BB_INFORMATION_TECHNOLOGY -> R.string.onboarding_subject_bb_information_technology
+    OnboardingSampleSubjectKind.BB_SALES_NEGOTIATION -> R.string.onboarding_subject_bb_sales_negotiation
     OnboardingSampleSubjectKind.QUESTIONS_AND_CASES -> R.string.onboarding_subject_questions_cases
     OnboardingSampleSubjectKind.REVIEW_AND_FLASHCARDS -> R.string.onboarding_subject_review_flashcards
     OnboardingSampleSubjectKind.COURSE_FOUNDATIONS -> R.string.onboarding_subject_course_foundations

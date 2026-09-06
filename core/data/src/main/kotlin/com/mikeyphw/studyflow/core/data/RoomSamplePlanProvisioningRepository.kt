@@ -29,6 +29,9 @@ internal class RoomSamplePlanProvisioningRepository(
         database.studyPlanDao().insert(request.plan.asEntity(nowEpochMillis = now))
         database.studySupportDao().upsertPlanSettings(request.settings.asEntity())
         request.target?.let { target -> database.studyStructureDao().upsertTarget(target.asEntity()) }
+        if (request.examStages.isNotEmpty()) {
+            database.studyStructureDao().upsertExamStages(request.examStages.map { stage -> stage.asEntity() })
+        }
         request.strategy?.let { strategy -> database.studyPlanningDao().upsertStrategy(strategy.asEntity()) }
         if (request.goals.isNotEmpty()) {
             database.studyPlanningDao().upsertStudyGoals(request.goals.map { goal -> goal.asEntity() })

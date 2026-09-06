@@ -1,15 +1,20 @@
 package com.mikeyphw.studyflow.core.domain
 
+import com.mikeyphw.studyflow.core.model.ExamStage
+import com.mikeyphw.studyflow.core.model.ExamStageId
+import com.mikeyphw.studyflow.core.model.ExamStageType
 import com.mikeyphw.studyflow.core.model.ScheduleRule
 import com.mikeyphw.studyflow.core.model.ScheduleRuleId
 import com.mikeyphw.studyflow.core.model.ScheduleRuleType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudyType
+import com.mikeyphw.studyflow.core.model.StudyTargetId
 import com.mikeyphw.studyflow.core.model.SubjectId
 
 enum class OnboardingSamplePlanTemplate {
     PUBLIC_EXAM_12_WEEK,
+    BB_AGENTE_COMERCIAL_PRE_EDITAL,
     UNIVERSITY_SEMESTER,
     CERTIFICATION_BOOTCAMP,
     FREE_STUDY_HABIT,
@@ -17,6 +22,14 @@ enum class OnboardingSamplePlanTemplate {
 
 enum class OnboardingSampleSubjectKind {
     CORE_THEORY,
+    BB_PORTUGUESE,
+    BB_ENGLISH,
+    BB_MATHEMATICS,
+    BB_FINANCIAL_MARKET_CURRENT_AFFAIRS,
+    BB_FINANCIAL_MATHEMATICS,
+    BB_BANKING_KNOWLEDGE,
+    BB_INFORMATION_TECHNOLOGY,
+    BB_SALES_NEGOTIATION,
     QUESTIONS_AND_CASES,
     REVIEW_AND_FLASHCARDS,
     COURSE_FOUNDATIONS,
@@ -51,6 +64,18 @@ enum class OnboardingSampleTopicKind {
     REFLECTION_LOG,
 }
 
+enum class OnboardingSampleExamStageKind {
+    OBJECTIVE,
+    ESSAY,
+}
+
+data class OnboardingSampleExamStageBlueprint(
+    val kind: OnboardingSampleExamStageKind,
+    val type: ExamStageType,
+    val weight: Double,
+    val minimumScorePercent: Int?,
+)
+
 data class OnboardingSampleTopicBlueprint(
     val kind: OnboardingSampleTopicKind,
     val priority: Int,
@@ -64,6 +89,7 @@ data class OnboardingSampleSubjectBlueprint(
     val examWeight: Double,
     val estimatedMinutes: Int,
     val topics: List<OnboardingSampleTopicBlueprint>,
+    val examStageKind: OnboardingSampleExamStageKind? = null,
 )
 
 data class OnboardingScheduleRuleBlueprint(
@@ -86,6 +112,7 @@ data class OnboardingSamplePlanBlueprint(
     val userInitiatedOnly: Boolean,
     val subjects: List<OnboardingSampleSubjectBlueprint>,
     val scheduleRules: List<OnboardingScheduleRuleBlueprint>,
+    val examStages: List<OnboardingSampleExamStageBlueprint> = emptyList(),
     val publicExam: PublicExamOnboardingBlueprint? = null,
 ) {
     val subjectCount: Int = subjects.size
@@ -112,6 +139,7 @@ object StudyOnboardingSamplePlanWizard {
         require(input.userInitiatedOnly) { "Onboarding samples must be user initiated." }
         return when (input.template) {
             OnboardingSamplePlanTemplate.PUBLIC_EXAM_12_WEEK -> publicExamPlan(input.publicExam)
+            OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL -> bbAgenteComercialPlan()
             OnboardingSamplePlanTemplate.UNIVERSITY_SEMESTER -> universityPlan()
             OnboardingSamplePlanTemplate.CERTIFICATION_BOOTCAMP -> certificationPlan()
             OnboardingSamplePlanTemplate.FREE_STUDY_HABIT -> freeStudyPlan()
@@ -153,6 +181,30 @@ object StudyOnboardingSamplePlanWizard {
         )
     }
 
+    fun buildExamStages(
+        planId: StudyPlanId,
+        targetId: StudyTargetId,
+        blueprint: OnboardingSamplePlanBlueprint,
+        stageNames: Map<OnboardingSampleExamStageKind, String>,
+        idFactory: () -> String,
+    ): Pair<List<ExamStage>, Map<OnboardingSampleExamStageKind, ExamStageId>> {
+        val ids = blueprint.examStages.associate { stage -> stage.kind to ExamStageId(idFactory()) }
+        val stages = blueprint.examStages.mapIndexed { index, stage ->
+            ExamStage(
+                id = ids.getValue(stage.kind),
+                studyPlanId = planId,
+                studyTargetId = targetId,
+                name = stageNames.getValue(stage.kind),
+                type = stage.type,
+                scheduledDateIso = null,
+                weight = stage.weight,
+                minimumScorePercent = stage.minimumScorePercent,
+                position = index,
+            )
+        }
+        return stages to ids
+    }
+
     private fun publicExamPlan(input: PublicExamOnboardingInput): OnboardingSamplePlanBlueprint {
         val profile = PublicExamOnboardingBuilder.build(input)
         return OnboardingSamplePlanBlueprint(
@@ -189,6 +241,81 @@ object StudyOnboardingSamplePlanWizard {
         ),
         publicExam = profile,
     )
+    }
+
+    private fun bbAgenteComercialPlan(): OnboardingSamplePlanBlueprint {
+        val profile = PublicExamOnboardingBuilder.build(
+            PublicExamOnboardingInput(
+                organization = "Banco do Brasil",
+                role = "Escriturário — Agente Comercial",
+                examBoard = "Fundação Cesgranrio",
+                noticeUrl = BancoDoBrasilAgenteComercialPreset.ReferenceNoticeUrl,
+                examDateIso = "",
+                editalImportChoice = PublicExamEditalImportChoice.LATER,
+                weeklyAvailabilityHours = 19,
+                cyclePreference = PublicExamCyclePreference.FIXED_WEEKLY,
+                reviewDays = listOf(1, 7, 30),
+                weeklyQuestionGoal = 0,
+                accuracyGoalPercent = 80,
+                monthlyMockGoal = 0,
+                coverageGoalDateIso = "",
+            ),
+        )
+        val objective = OnboardingSampleExamStageKind.OBJECTIVE
+        return OnboardingSamplePlanBlueprint(
+            template = OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL,
+            studyType = StudyType.PUBLIC_EXAMINATION,
+            weeklyGoalHours = 19,
+            preferredSessionMinutes = 60,
+            adaptivePlanningEnabled = false,
+            reviewNotificationsEnabled = true,
+            strictExamModeEnabled = true,
+            localOnly = true,
+            previewFirst = true,
+            userInitiatedOnly = true,
+            subjects = listOf(
+                bbSubject(OnboardingSampleSubjectKind.BB_PORTUGUESE, 15.0, objective),
+                bbSubject(OnboardingSampleSubjectKind.BB_ENGLISH, 5.0, objective),
+                bbSubject(OnboardingSampleSubjectKind.BB_MATHEMATICS, 7.5, objective),
+                bbSubject(OnboardingSampleSubjectKind.BB_FINANCIAL_MARKET_CURRENT_AFFAIRS, 5.0, objective),
+                bbSubject(OnboardingSampleSubjectKind.BB_FINANCIAL_MATHEMATICS, 7.5, objective),
+                bbSubject(OnboardingSampleSubjectKind.BB_BANKING_KNOWLEDGE, 15.0, objective),
+                bbSubject(OnboardingSampleSubjectKind.BB_INFORMATION_TECHNOLOGY, 22.5, objective),
+                bbSubject(OnboardingSampleSubjectKind.BB_SALES_NEGOTIATION, 22.5, objective),
+            ),
+            scheduleRules = listOf(
+                rule(1, 9 * 60, 90, OnboardingSampleSubjectKind.BB_PORTUGUESE),
+                rule(1, 10 * 60 + 40, 90, OnboardingSampleSubjectKind.BB_INFORMATION_TECHNOLOGY),
+                rule(2, 9 * 60, 90, OnboardingSampleSubjectKind.BB_SALES_NEGOTIATION),
+                rule(2, 10 * 60 + 40, 90, OnboardingSampleSubjectKind.BB_BANKING_KNOWLEDGE),
+                rule(3, 9 * 60, 90, OnboardingSampleSubjectKind.BB_MATHEMATICS),
+                rule(3, 10 * 60 + 40, 90, OnboardingSampleSubjectKind.BB_INFORMATION_TECHNOLOGY),
+                rule(4, 9 * 60, 90, OnboardingSampleSubjectKind.BB_SALES_NEGOTIATION),
+                rule(4, 10 * 60 + 40, 90, OnboardingSampleSubjectKind.BB_BANKING_KNOWLEDGE),
+                rule(5, 9 * 60, 60, OnboardingSampleSubjectKind.BB_FINANCIAL_MATHEMATICS),
+                rule(5, 10 * 60 + 10, 60, OnboardingSampleSubjectKind.BB_FINANCIAL_MARKET_CURRENT_AFFAIRS),
+                rule(5, 11 * 60 + 20, 60, OnboardingSampleSubjectKind.BB_ENGLISH),
+                rule(6, 9 * 60, 120, null),
+                rule(6, 11 * 60 + 10, 60, null),
+                rule(6, 12 * 60 + 20, 40, null),
+                rule(6, 13 * 60 + 10, 20, null),
+            ),
+            examStages = listOf(
+                OnboardingSampleExamStageBlueprint(
+                    kind = objective,
+                    type = ExamStageType.OBJECTIVE,
+                    weight = 100.0,
+                    minimumScorePercent = null,
+                ),
+                OnboardingSampleExamStageBlueprint(
+                    kind = OnboardingSampleExamStageKind.ESSAY,
+                    type = ExamStageType.ESSAY,
+                    weight = 0.0,
+                    minimumScorePercent = 70,
+                ),
+            ),
+            publicExam = profile,
+        )
     }
 
     private fun universityPlan() = OnboardingSamplePlanBlueprint(
@@ -277,6 +404,19 @@ object StudyOnboardingSamplePlanWizard {
             rule(5, 20 * 60, 45, OnboardingSampleSubjectKind.CREATIVE_PRACTICE),
             rule(7, 10 * 60, 60, null),
         ),
+    )
+
+    private fun bbSubject(
+        kind: OnboardingSampleSubjectKind,
+        examWeight: Double,
+        examStageKind: OnboardingSampleExamStageKind,
+    ) = OnboardingSampleSubjectBlueprint(
+        kind = kind,
+        priority = 3,
+        examWeight = examWeight,
+        estimatedMinutes = 0,
+        topics = emptyList(),
+        examStageKind = examStageKind,
     )
 
     private fun subject(

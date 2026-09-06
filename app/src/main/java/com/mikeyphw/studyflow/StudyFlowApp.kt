@@ -71,6 +71,7 @@ import com.mikeyphw.studyflow.core.domain.StudyManualFolderCheckpointDetails
 import com.mikeyphw.studyflow.core.domain.StudyManualFolderScan
 import com.mikeyphw.studyflow.core.domain.GlobalSearchDestination
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
+import com.mikeyphw.studyflow.core.domain.OnboardingSampleExamStageKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanInput
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
@@ -579,6 +580,7 @@ internal fun StudyFlowNavHost(
                         subjectNames = localizedSubjectNames(resources),
                         topicNames = localizedTopicNames(resources),
                         goalNames = localizedPublicExamGoalNames(resources),
+                        examStageNames = localizedExamStageNames(resources),
                     )
                 },
             )
@@ -1091,6 +1093,10 @@ private fun localizedTopicNames(resources: Resources): Map<OnboardingSampleTopic
 
 private fun localizedPublicExamGoalNames(resources: Resources): Map<PublicExamGoalPreset, String> =
     PublicExamGoalPreset.entries.associateWith { preset -> resources.getString(preset.titleRes()) }
+
+private fun localizedExamStageNames(resources: Resources): Map<OnboardingSampleExamStageKind, String> =
+    OnboardingSampleExamStageKind.entries.associateWith { stage -> resources.getString(stage.titleRes()) }
+
 
 private fun PlanEditorForm.toNewStudyPlan(): StudyPlan = StudyPlan(
     id = StudyPlanId(UUID.randomUUID().toString()),

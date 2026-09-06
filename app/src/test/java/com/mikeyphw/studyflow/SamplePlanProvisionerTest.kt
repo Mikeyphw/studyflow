@@ -112,6 +112,25 @@ class SamplePlanProvisionerTest {
 
 
     @Test
+    fun bbPresetProvisioningCarriesTargetStagesAndObjectiveStageLinksAtomically() = runBlocking {
+        val repository = RecordingProvisioningRepository()
+        val provisioner = SamplePlanProvisioner(this, repository, FakeAppPreferencesRepository())
+        val blueprint = blueprint(OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL)
+        val names = names(blueprint)
+
+        provisioner.provision(blueprint, "BB", "pre-edital", names.subjects, names.topics)
+
+        val request = requireNotNull(repository.request)
+        assertEquals(8, request.subjects.size)
+        assertEquals(2, request.examStages.size)
+        assertTrue(request.target != null)
+        val objective = request.examStages.first { it.type.name == "OBJECTIVE" }
+        assertTrue(request.subjects.all { it.examStageId == objective.id })
+        assertEquals(100.0, request.subjects.sumOf { it.examWeight }, 0.0001)
+        assertTrue(request.plan.examDateIso == null)
+    }
+
+    @Test
     fun pendingProvisioningRecoversCommittedPlanAfterProcessDeath() = runBlocking {
         val committedPlanId = StudyPlanId("committed-sample")
         val template = OnboardingSamplePlanTemplate.FREE_STUDY_HABIT
@@ -144,6 +163,18 @@ class SamplePlanProvisionerTest {
         val subjects: Map<OnboardingSampleSubjectKind, String>,
         val topics: Map<OnboardingSampleTopicKind, String>,
     )
+}
+
+private class RecordingProvisioningRepository : SamplePlanProvisioningRepository {
+    var request: SamplePlanProvisioningRequest? = null
+        private set
+
+    override suspend fun provision(request: SamplePlanProvisioningRequest): StudyPlanId {
+        this.request = request
+        return request.plan.id
+    }
+
+    override suspend fun findProvisionedPlan(provisioningKey: String): StudyPlanId? = null
 }
 
 private class BlockingProvisioningRepository : SamplePlanProvisioningRepository {

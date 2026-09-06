@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.core.domain
 
+import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.ScheduleRule
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
@@ -20,6 +21,7 @@ data class SamplePlanProvisioningRequest(
     val provisioningKey: String,
     val plan: StudyPlan,
     val settings: StudyPlanSettings,
+    val examStages: List<ExamStage> = emptyList(),
     val subjects: List<Subject>,
     val topics: List<Topic>,
     val scheduleRules: List<ScheduleRule>,
@@ -31,6 +33,9 @@ data class SamplePlanProvisioningRequest(
         require(provisioningKey.isNotBlank()) { "Sample provisioning key cannot be blank." }
         val planId = plan.id
         require(settings.studyPlanId == planId) { "Sample settings must belong to the sample Study Plan." }
+        require(examStages.all { it.studyPlanId == planId }) {
+            "Sample exam stages must belong to the sample Study Plan."
+        }
         require(subjects.all { it.studyPlanId == planId }) { "Sample subjects must belong to the sample Study Plan." }
         require(topics.all { it.studyPlanId == planId }) { "Sample topics must belong to the sample Study Plan." }
         require(scheduleRules.all { it.studyPlanId == planId }) {
@@ -42,11 +47,24 @@ data class SamplePlanProvisioningRequest(
         require(target == null || target.studyPlanId == planId) {
             "Sample target must belong to the sample Study Plan."
         }
+        require(examStages.isEmpty() || target != null) {
+            "Sample exam stages require a Study Target."
+        }
+        require(examStages.all { stage -> stage.studyTargetId == target?.id }) {
+            "Sample exam stages must belong to the sample Study Target."
+        }
         require(goals.all { goal -> goal.studyPlanId == planId }) {
             "Sample goals must belong to the sample Study Plan."
         }
+        val stageIds = examStages.map { it.id }.toSet()
         val subjectIds = subjects.map { it.id }.toSet()
+        require(subjects.all { subject -> subject.examStageId == null || subject.examStageId in stageIds }) {
+            "Every stage-scoped sample subject must reference a sample exam stage."
+        }
         require(topics.all { it.subjectId in subjectIds }) { "Every sample topic must reference a sample subject." }
+        require(topics.all { topic -> topic.examStageId == null || topic.examStageId in stageIds }) {
+            "Every stage-scoped sample topic must reference a sample exam stage."
+        }
         require(scheduleRules.all { it.subjectId == null || it.subjectId in subjectIds }) {
             "Every subject-scoped sample rule must reference a sample subject."
         }

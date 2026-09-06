@@ -1,6 +1,8 @@
 package com.mikeyphw.studyflow.core.domain
 
+import com.mikeyphw.studyflow.core.model.ExamStageType
 import com.mikeyphw.studyflow.core.model.ScheduleRuleId
+import com.mikeyphw.studyflow.core.model.StudyTargetId
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.SubjectId
@@ -21,7 +23,11 @@ class StudyOnboardingSamplePlanWizardTest {
             assertTrue(choice.previewFirst)
             assertTrue(choice.userInitiatedOnly)
             assertTrue(choice.subjectCount >= 2)
-            assertTrue(choice.topicCount >= choice.subjectCount)
+            if (choice.template == OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL) {
+                assertEquals(0, choice.topicCount)
+            } else {
+                assertTrue(choice.topicCount >= choice.subjectCount)
+            }
             assertTrue(choice.weeklyGoalHours in 1..100)
             assertTrue(choice.preferredSessionMinutes in 5..240)
             assertFalse(choice.scheduleRules.isEmpty())
@@ -42,6 +48,54 @@ class StudyOnboardingSamplePlanWizardTest {
         assertTrue(
             OnboardingSampleSubjectKind.QUESTIONS_AND_CASES in blueprint.subjects.map { it.kind },
         )
+    }
+
+    @Test
+    fun `BB Agente Comercial preset preserves official reference weights without invented edital details`() {
+        val blueprint = StudyOnboardingSamplePlanWizard.build(
+            OnboardingSamplePlanInput(OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL),
+        )
+
+        assertEquals(StudyType.PUBLIC_EXAMINATION, blueprint.studyType)
+        assertEquals(19, blueprint.weeklyGoalHours)
+        assertEquals(8, blueprint.subjectCount)
+        assertEquals(0, blueprint.topicCount)
+        assertEquals(1_140, blueprint.weeklyScheduleMinutes)
+        assertEquals(100.0, blueprint.subjects.sumOf { it.examWeight }, 0.0001)
+        assertTrue(blueprint.subjects.all { it.examStageKind == OnboardingSampleExamStageKind.OBJECTIVE })
+        assertTrue(blueprint.subjects.all { it.estimatedMinutes == 0 })
+        assertEquals(BancoDoBrasilAgenteComercialPreset.ObjectiveQuestionCount, 70)
+        assertEquals(BancoDoBrasilAgenteComercialPreset.ObjectiveMaximumPoints, 100.0, 0.0001)
+        val profile = requireNotNull(blueprint.publicExam)
+        assertEquals("Banco do Brasil", profile.organization)
+        assertEquals("Escriturário — Agente Comercial", profile.role)
+        assertEquals("Fundação Cesgranrio", profile.examBoard)
+        assertEquals(null, profile.examDateIso)
+        assertEquals(PublicExamCyclePreference.FIXED_WEEKLY, profile.cyclePreference)
+        assertEquals(listOf(1, 7, 30), profile.reviewPolicy.intervalsDays)
+        assertEquals(0, profile.weeklyQuestionGoal)
+        assertEquals(80, profile.accuracyGoalPercent)
+        assertEquals(2, blueprint.examStages.size)
+        assertEquals(ExamStageType.OBJECTIVE, blueprint.examStages[0].type)
+        assertEquals(100.0, blueprint.examStages[0].weight, 0.0001)
+        assertEquals(ExamStageType.ESSAY, blueprint.examStages[1].type)
+        assertEquals(70, blueprint.examStages[1].minimumScorePercent)
+
+        var next = 0
+        val (stages, ids) = StudyOnboardingSamplePlanWizard.buildExamStages(
+            planId = StudyPlanId("bb"),
+            targetId = StudyTargetId("bb-target"),
+            blueprint = blueprint,
+            stageNames = mapOf(
+                OnboardingSampleExamStageKind.OBJECTIVE to "Prova objetiva",
+                OnboardingSampleExamStageKind.ESSAY to "Redação",
+            ),
+            idFactory = { "stage-${++next}" },
+        )
+        assertEquals(2, stages.size)
+        assertEquals("Prova objetiva", stages[0].name)
+        assertEquals("Redação", stages[1].name)
+        assertEquals(stages[0].id, ids.getValue(OnboardingSampleExamStageKind.OBJECTIVE))
     }
 
     @Test

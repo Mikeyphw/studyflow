@@ -353,4 +353,19 @@
     <string name="import_diff_summary">Would add %1$d, remove %2$d, change %3$d and keep %4$d rows; %5$d incoming rows are intentionally ignored by this strategy.</string>
     <string name="import_diff_table">%1$s · +%2$d −%3$d ~%4$d · ignored %5$d</string>
     <string name="import_transactional_rollback">Dry-run writes 0 rows. Real import remains transaction-protected; replace/merge also creates a durable safety snapshot before commit.</string>
+    <string name="onboarding_template_bb_title">BB Agente Comercial — pre-edital</string>
+    <string name="onboarding_template_bb_description">Banco do Brasil reference preset based on Seleção Externa 2022/001: 8 objective subjects, 70 questions / 100 points, separate eliminatory essay, no invented 2026 exam date or topic incidence.</string>
+    <string name="onboarding_template_bb_plan_name">BB Agente Comercial — pre-edital</string>
+    <string name="onboarding_template_bb_plan_description">Pre-edital Banco do Brasil plan using Seleção Externa 2022/001 as a reference. Confirm the next edital before treating assumptions as current.</string>
+    <string name="onboarding_subject_bb_portuguese">Portuguese</string>
+    <string name="onboarding_subject_bb_english">English</string>
+    <string name="onboarding_subject_bb_mathematics">Mathematics</string>
+    <string name="onboarding_subject_bb_financial_market_current_affairs">Financial Market Current Affairs</string>
+    <string name="onboarding_subject_bb_financial_mathematics">Financial Mathematics</string>
+    <string name="onboarding_subject_bb_banking_knowledge">Banking Knowledge</string>
+    <string name="onboarding_subject_bb_information_technology">Information Technology</string>
+    <string name="onboarding_subject_bb_sales_negotiation">Sales and Negotiation</string>
+    <string name="onboarding_stage_objective">Objective test</string>
+    <string name="onboarding_stage_essay">Essay</string>
+
 </resources>

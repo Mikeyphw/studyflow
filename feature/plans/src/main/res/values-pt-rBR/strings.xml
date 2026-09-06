@@ -364,4 +364,19 @@
     <string name="import_diff_summary">A importação adicionaria %1$d, removeria %2$d, alteraria %3$d e manteria %4$d linhas; %5$d linhas recebidas são ignoradas de propósito por esta estratégia.</string>
     <string name="import_diff_table">%1$s · +%2$d −%3$d ~%4$d · ignoradas %5$d</string>
     <string name="import_transactional_rollback">A simulação grava 0 linhas. A importação real continua protegida por transação; substituir/mesclar também cria um snapshot de segurança durável antes do commit.</string>
+    <string name="onboarding_template_bb_title">BB Agente Comercial — pré-edital</string>
+    <string name="onboarding_template_bb_description">Preset de referência do Banco do Brasil baseado na Seleção Externa 2022/001: 8 disciplinas objetivas, 70 questões / 100 pontos, Redação eliminatória separada, sem inventar data de prova de 2026 nem incidência por tópico.</string>
+    <string name="onboarding_template_bb_plan_name">BB Agente Comercial — pré-edital</string>
+    <string name="onboarding_template_bb_plan_description">Plano pré-edital do Banco do Brasil usando a Seleção Externa 2022/001 como referência. Confirme o próximo edital antes de tratar as premissas como atuais.</string>
+    <string name="onboarding_subject_bb_portuguese">Língua Portuguesa</string>
+    <string name="onboarding_subject_bb_english">Língua Inglesa</string>
+    <string name="onboarding_subject_bb_mathematics">Matemática</string>
+    <string name="onboarding_subject_bb_financial_market_current_affairs">Atualidades do Mercado Financeiro</string>
+    <string name="onboarding_subject_bb_financial_mathematics">Matemática Financeira</string>
+    <string name="onboarding_subject_bb_banking_knowledge">Conhecimentos Bancários</string>
+    <string name="onboarding_subject_bb_information_technology">Conhecimentos de Informática</string>
+    <string name="onboarding_subject_bb_sales_negotiation">Vendas e Negociação</string>
+    <string name="onboarding_stage_objective">Prova objetiva</string>
+    <string name="onboarding_stage_essay">Redação</string>
+
 </resources>

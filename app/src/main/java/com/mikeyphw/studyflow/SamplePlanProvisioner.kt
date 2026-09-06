@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow
 
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanBlueprint
+import com.mikeyphw.studyflow.core.domain.OnboardingSampleExamStageKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSamplePlanTemplate
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleSubjectKind
 import com.mikeyphw.studyflow.core.domain.OnboardingSampleTopicKind
@@ -12,6 +13,7 @@ import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRequest
 import com.mikeyphw.studyflow.core.domain.StudyOnboardingSamplePlanWizard
 import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
+import com.mikeyphw.studyflow.core.model.ExamStageId
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
@@ -34,6 +36,9 @@ import kotlinx.coroutines.sync.withLock
 
 private fun defaultGoalNames(): Map<PublicExamGoalPreset, String> =
     PublicExamGoalPreset.entries.associateWith { preset -> preset.name }
+
+private fun defaultExamStageNames(): Map<OnboardingSampleExamStageKind, String> =
+    OnboardingSampleExamStageKind.entries.associateWith { stage -> stage.name }
 
 sealed interface SamplePlanProvisioningState {
     data object Idle : SamplePlanProvisioningState
@@ -74,6 +79,7 @@ class SamplePlanProvisioner internal constructor(
         subjectNames: Map<OnboardingSampleSubjectKind, String>,
         topicNames: Map<OnboardingSampleTopicKind, String>,
         goalNames: Map<PublicExamGoalPreset, String> = defaultGoalNames(),
+        examStageNames: Map<OnboardingSampleExamStageKind, String> = defaultExamStageNames(),
     ) {
         applicationScope.launch {
             try {
@@ -84,6 +90,7 @@ class SamplePlanProvisioner internal constructor(
                     subjectNames = subjectNames,
                     topicNames = topicNames,
                     goalNames = goalNames,
+                    examStageNames = examStageNames,
                 )
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -114,6 +121,7 @@ class SamplePlanProvisioner internal constructor(
         subjectNames: Map<OnboardingSampleSubjectKind, String>,
         topicNames: Map<OnboardingSampleTopicKind, String>,
         goalNames: Map<PublicExamGoalPreset, String> = defaultGoalNames(),
+        examStageNames: Map<OnboardingSampleExamStageKind, String> = defaultExamStageNames(),
     ): StudyPlanId {
         val job = mutex.withLock {
             inFlight?.let { active ->
@@ -133,6 +141,7 @@ class SamplePlanProvisioner internal constructor(
                         subjectNames = subjectNames,
                         topicNames = topicNames,
                         goalNames = goalNames,
+                        examStageNames = examStageNames,
                     ).also { planId ->
                         _state.value = SamplePlanProvisioningState.Completed(
                             blueprint.template,
@@ -196,6 +205,7 @@ class SamplePlanProvisioner internal constructor(
         subjectNames: Map<OnboardingSampleSubjectKind, String>,
         topicNames: Map<OnboardingSampleTopicKind, String>,
         goalNames: Map<PublicExamGoalPreset, String>,
+        examStageNames: Map<OnboardingSampleExamStageKind, String>,
     ): StudyPlanId {
         val planId = StudyPlanId(UUID.randomUUID().toString())
         val editalImportChoice = blueprint.publicExam?.editalImportChoice ?: PublicExamEditalImportChoice.LATER
@@ -213,6 +223,26 @@ class SamplePlanProvisioner internal constructor(
             questionsAnswered = 0,
             averageAccuracyPercent = 0,
         )
+        val target = blueprint.publicExam?.let { profile ->
+            PublicExamOnboardingBuilder.buildTarget(
+                planId = planId,
+                blueprint = profile,
+                idFactory = { UUID.randomUUID().toString() },
+                nowEpochMillis = System.currentTimeMillis(),
+            )
+        }
+        val (examStages, stageIds) = if (target != null && blueprint.examStages.isNotEmpty()) {
+            StudyOnboardingSamplePlanWizard.buildExamStages(
+                planId = planId,
+                targetId = target.id,
+                blueprint = blueprint,
+                stageNames = examStageNames,
+                idFactory = { UUID.randomUUID().toString() },
+            )
+        } else {
+            emptyList<com.mikeyphw.studyflow.core.model.ExamStage>() to
+                emptyMap<OnboardingSampleExamStageKind, ExamStageId>()
+        }
         val subjectIds = blueprint.subjects.associate { subject ->
             subject.kind to SubjectId(UUID.randomUUID().toString())
         }
@@ -231,6 +261,7 @@ class SamplePlanProvisioner internal constructor(
                 status = ContentProgressStatus.NOT_STARTED,
                 position = index,
                 archived = false,
+                examStageId = subject.examStageKind?.let(stageIds::get),
             )
         }
         val topics = blueprint.subjects.flatMap { subject ->
@@ -258,6 +289,7 @@ class SamplePlanProvisioner internal constructor(
             provisioningKey = "onboarding-sample:${blueprint.template.name}",
             plan = plan,
             settings = StudyOnboardingSamplePlanWizard.buildSettings(planId, blueprint),
+            examStages = examStages,
             subjects = subjects,
             topics = topics,
             scheduleRules = StudyOnboardingSamplePlanWizard.buildScheduleRules(
@@ -273,14 +305,7 @@ class SamplePlanProvisioner internal constructor(
                     idFactory = { UUID.randomUUID().toString() },
                 )
             },
-            target = blueprint.publicExam?.let { profile ->
-                PublicExamOnboardingBuilder.buildTarget(
-                    planId = planId,
-                    blueprint = profile,
-                    idFactory = { UUID.randomUUID().toString() },
-                    nowEpochMillis = System.currentTimeMillis(),
-                )
-            },
+            target = target,
             goals = blueprint.publicExam?.let { profile ->
                 PublicExamOnboardingBuilder.buildGoals(
                     planId = planId,
