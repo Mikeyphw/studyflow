@@ -743,4 +743,13 @@
     <string name="metric_schedule_no_evidence">Execute ou deixe vencer blocos do cronograma para criar evidência.</string>
     <string name="metric_goal_evidence">Baseado em %1$d metas registradas · %2$s</string>
     <string name="metric_goal_no_evidence">Crie uma meta para medir progresso.</string>
+    <string name="pre_edital_cockpit_title">Painel pré-edital</string>
+    <string name="pre_edital_cockpit_status">Pré-edital — modo de referência</string>
+    <string name="pre_edital_reference_not_set">Nenhuma referência de edital salva</string>
+    <string name="pre_edital_cockpit_message">Referência: %1$s. Restam %2$d itens para verificar. Nenhuma contagem regressiva oficial é exibida até existir uma data confirmada.</string>
+    <string name="pre_edital_cockpit_stale_message">Referência: %1$s (%2$d dias). Restam %3$d itens para verificar. Revise a referência antes de tratá-la como atual; nenhuma contagem regressiva oficial é exibida.</string>
+    <string name="pre_edital_cockpit_unknown_date_message">Referência: %1$s. A data de publicação é desconhecida e restam %2$d itens para verificar. Nenhuma contagem regressiva oficial é exibida.</string>
+    <string name="pre_edital_cockpit_missing_reference_message">Ainda não há uma referência de edital salva. Restam %1$d itens para verificar, e o StudyFlow não inventa uma contagem regressiva.</string>
+    <string name="pre_edital_review_assumptions">Revisar premissas</string>
+
 </resources>

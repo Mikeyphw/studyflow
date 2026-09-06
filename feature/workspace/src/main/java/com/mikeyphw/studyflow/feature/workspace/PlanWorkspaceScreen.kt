@@ -54,6 +54,9 @@ import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardBuilder
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardSnapshot
+import com.mikeyphw.studyflow.core.domain.PublicExamPreEditalBuilder
+import com.mikeyphw.studyflow.core.domain.PublicExamPreEditalIssue
+import com.mikeyphw.studyflow.core.domain.PublicExamPreEditalSnapshot
 import com.mikeyphw.studyflow.core.domain.PublicExamPriorityEvidence
 import com.mikeyphw.studyflow.core.domain.PublicExamPriorityPlanner
 import com.mikeyphw.studyflow.core.domain.PublicExamPriorityReasonCode
@@ -144,6 +147,9 @@ fun PlanWorkspaceScreen(
     val studyCycleFlow = remember(plan.id, loadAttempt) {
         publicExamManager.observeStudyCycle(plan.id).asStudyFlowLoadState()
     }
+    val examNoticeRevisionsFlow = remember(plan.id, loadAttempt) {
+        publicExamManager.observeExamNoticeRevisions(plan.id).asStudyFlowLoadState()
+    }
     val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val libraryState by libraryFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
@@ -157,6 +163,9 @@ fun PlanWorkspaceScreen(
     val mockExamsState by mockExamsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val legislationState by legislationFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val studyCycleState by studyCycleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val examNoticeRevisionsState by examNoticeRevisionsFlow.collectAsStateWithLifecycle(
+        initialValue = StudyFlowLoadState.Loading,
+    )
     if (
         !workspaceLoadGate(
             states = listOf(
@@ -173,6 +182,7 @@ fun PlanWorkspaceScreen(
                 mockExamsState,
                 legislationState,
                 studyCycleState,
+                examNoticeRevisionsState,
             ),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,
@@ -191,6 +201,7 @@ fun PlanWorkspaceScreen(
     val readyMockExams = mockExamsState.readyValue()
     val readyLegislation = legislationState.readyValue()
     val readyStudyCycle = studyCycleState.readyValue()
+    val readyExamNoticeRevisions = examNoticeRevisionsState.readyValue()
     val cleanupReport = remember(
         plan,
         readySyllabus,
@@ -244,6 +255,15 @@ fun PlanWorkspaceScreen(
                 nowEpochMillis = System.currentTimeMillis(),
             )
         }
+    }
+
+    val preEditalCockpit = remember(plan, readyTarget, readyExamNoticeRevisions) {
+        PublicExamPreEditalBuilder.build(
+            plan = plan,
+            target = readyTarget,
+            revisions = readyExamNoticeRevisions,
+            nowEpochMillis = System.currentTimeMillis(),
+        )?.takeIf { snapshot -> snapshot.preEdital }
     }
 
     val publicExamDashboard = remember(
@@ -304,7 +324,9 @@ fun PlanWorkspaceScreen(
                 materialCount = readyLibrary.activeMaterials.size,
                 priorityRecommendations = priorityRecommendations,
                 publicExamDashboard = publicExamDashboard,
+                preEditalCockpit = preEditalCockpit,
                 onPrioritySelected = onManageContent,
+                onReviewPreEditalAssumptions = onManageContent,
                 onEditPlan = onEditPlan,
                 onPlanSettings = onPlanSettings,
                 onSessions = onSessions,
@@ -347,7 +369,9 @@ private fun PlanOverviewPane(
     materialCount: Int,
     priorityRecommendations: List<PublicExamPriorityRecommendation>,
     publicExamDashboard: PublicExamDashboardSnapshot?,
+    preEditalCockpit: PublicExamPreEditalSnapshot?,
     onPrioritySelected: () -> Unit,
+    onReviewPreEditalAssumptions: () -> Unit,
     onEditPlan: () -> Unit,
     onPlanSettings: () -> Unit,
     onSessions: () -> Unit,
@@ -386,6 +410,17 @@ private fun PlanOverviewPane(
                 libraryLabel = stringResource(planLibraryLabel(plan)),
                 materialCount = pluralStringResource(R.plurals.materials_count, materialCount, materialCount),
             )
+        }
+        preEditalCockpit?.let { cockpit ->
+            item(key = "section:pre-edital-cockpit", contentType = "section") {
+                StudyFlowSectionTitle(title = stringResource(R.string.pre_edital_cockpit_title))
+            }
+            item(key = "pre-edital-cockpit", contentType = "notice") {
+                PublicExamPreEditalCockpit(
+                    snapshot = cockpit,
+                    onReviewAssumptions = onReviewPreEditalAssumptions,
+                )
+            }
         }
         publicExamDashboard?.let { dashboard ->
             item(key = "section:public-exam-dashboard", contentType = "section") {
@@ -871,6 +906,42 @@ private fun priorityReasonLabel(reason: PublicExamPriorityReasonCode): Int = whe
     PublicExamPriorityReasonCode.STARVATION_RELIEF -> R.string.priority_reason_starvation
 }
 
+
+@Composable
+private fun PublicExamPreEditalCockpit(
+    snapshot: PublicExamPreEditalSnapshot,
+    onReviewAssumptions: () -> Unit,
+) {
+    val reference = snapshot.referenceLabel ?: stringResource(R.string.pre_edital_reference_not_set)
+    val message = when {
+        PublicExamPreEditalIssue.STALE_REFERENCE_NOTICE in snapshot.issues -> stringResource(
+            R.string.pre_edital_cockpit_stale_message,
+            reference,
+            snapshot.referenceAgeDays ?: 0L,
+            snapshot.verificationCount,
+        )
+        PublicExamPreEditalIssue.REFERENCE_PUBLICATION_DATE_UNKNOWN in snapshot.issues -> stringResource(
+            R.string.pre_edital_cockpit_unknown_date_message,
+            reference,
+            snapshot.verificationCount,
+        )
+        PublicExamPreEditalIssue.NO_REFERENCE_NOTICE in snapshot.issues -> stringResource(
+            R.string.pre_edital_cockpit_missing_reference_message,
+            snapshot.verificationCount,
+        )
+        else -> stringResource(
+            R.string.pre_edital_cockpit_message,
+            reference,
+            snapshot.verificationCount,
+        )
+    }
+    StudyFlowInsightPanel(
+        title = stringResource(R.string.pre_edital_cockpit_status),
+        message = message,
+        actionLabel = stringResource(R.string.pre_edital_review_assumptions),
+        onAction = onReviewAssumptions,
+    )
+}
 
 @Composable
 private fun PublicExamDashboardSummary(snapshot: PublicExamDashboardSnapshot) {

@@ -706,4 +706,13 @@
     <string name="metric_schedule_no_evidence">Execute or let schedule blocks become due to create evidence.</string>
     <string name="metric_goal_evidence">Based on %1$d recorded goals · %2$s</string>
     <string name="metric_goal_no_evidence">Create a goal before measuring goal progress.</string>
+    <string name="pre_edital_cockpit_title">Pre-edital cockpit</string>
+    <string name="pre_edital_cockpit_status">Pre-edital — reference mode</string>
+    <string name="pre_edital_reference_not_set">No notice reference saved</string>
+    <string name="pre_edital_cockpit_message">Reference: %1$s. %2$d verification items remain. No official exam countdown is shown until a confirmed date is saved.</string>
+    <string name="pre_edital_cockpit_stale_message">Reference: %1$s (%2$d days old). %3$d verification items remain. Review the reference before treating it as current; no official exam countdown is shown.</string>
+    <string name="pre_edital_cockpit_unknown_date_message">Reference: %1$s. Its publication date is unknown and %2$d verification items remain. No official exam countdown is shown.</string>
+    <string name="pre_edital_cockpit_missing_reference_message">No edital reference is saved yet. %1$d verification items remain, and StudyFlow will not invent an exam countdown.</string>
+    <string name="pre_edital_review_assumptions">Review assumptions</string>
+
 </resources>
