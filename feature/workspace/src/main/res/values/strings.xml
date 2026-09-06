@@ -441,14 +441,14 @@
     <string name="weekly_coach_reschedule_ready_message">There are previewed safe changes waiting in the plan.</string>
 
     <!-- Phase 60: preview-first local content health -->
-    <string name="content_health_title">Content health</string>
+    <string name="content_health_title">Content integrity</string>
     <string name="content_health_waiting">Checking local study content.</string>
     <string name="content_health_clean_message">No cleanup issues were detected in the current local plan.</string>
     <plurals name="content_health_summary">
         <item quantity="one">%1$d cleanup issue found · %2$d needs action.</item>
         <item quantity="other">%1$d cleanup issues found · %2$d need action.</item>
     </plurals>
-    <string name="review_cleanup">Review cleanup</string>
+    <string name="review_cleanup">Review issues</string>
     <string name="preview_cleanup_action">Preview</string>
     <string name="cleanup_preview_notice">Preview only. StudyFlow does not delete or rewrite content from this card.</string>
     <string name="cleanup_duplicate_questions">Possible duplicate questions</string>
@@ -696,4 +696,14 @@
     <string name="progress_segment_performance">Performance</string>
     <string name="progress_segment_goals">Goals</string>
     <string name="progress_segment_tools">Tools</string>
+    <string name="content_integrity_score">%1$d / 100</string>
+    <string name="metric_confidence_low">low confidence</string>
+    <string name="metric_confidence_medium">medium confidence</string>
+    <string name="metric_confidence_high">high confidence</string>
+    <string name="metric_accuracy_evidence">Based on %1$d recent answers · %2$s</string>
+    <string name="metric_accuracy_no_evidence">Answer questions to create evidence.</string>
+    <string name="metric_schedule_evidence">Based on %1$d observed schedule blocks · %2$s</string>
+    <string name="metric_schedule_no_evidence">Execute or let schedule blocks become due to create evidence.</string>
+    <string name="metric_goal_evidence">Based on %1$d recorded goals · %2$s</string>
+    <string name="metric_goal_no_evidence">Create a goal before measuring goal progress.</string>
 </resources>

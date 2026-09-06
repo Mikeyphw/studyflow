@@ -468,7 +468,7 @@
     <string name="weekly_coach_reschedule_ready_message">Há mudanças seguras pré-visualizadas aguardando no plano.</string>
 
     <!-- Fase 60: saúde de conteúdo local com prévia primeiro -->
-    <string name="content_health_title">Saúde do conteúdo</string>
+    <string name="content_health_title">Integridade do conteúdo</string>
     <string name="content_health_waiting">Verificando o conteúdo local de estudos.</string>
     <string name="content_health_clean_message">Nenhum problema de limpeza foi detectado no plano local atual.</string>
     <plurals name="content_health_summary">
@@ -476,7 +476,7 @@
         <item quantity="other">%1$d problemas de limpeza encontrados · %2$d exigem ação.</item>
         <item quantity="many">%1$d problemas de limpeza encontrados · %2$d exigem ação.</item>
     </plurals>
-    <string name="review_cleanup">Revisar limpeza</string>
+    <string name="review_cleanup">Revisar problemas</string>
     <string name="preview_cleanup_action">Prévia</string>
     <string name="cleanup_preview_notice">Somente prévia. O StudyFlow não apaga nem reescreve conteúdo por este cartão.</string>
     <string name="cleanup_duplicate_questions">Possíveis questões duplicadas</string>
@@ -733,4 +733,14 @@
     <string name="progress_segment_performance">Desempenho</string>
     <string name="progress_segment_goals">Metas</string>
     <string name="progress_segment_tools">Ferramentas</string>
+    <string name="content_integrity_score">%1$d / 100</string>
+    <string name="metric_confidence_low">confiança baixa</string>
+    <string name="metric_confidence_medium">confiança média</string>
+    <string name="metric_confidence_high">confiança alta</string>
+    <string name="metric_accuracy_evidence">Baseado em %1$d respostas recentes · %2$s</string>
+    <string name="metric_accuracy_no_evidence">Responda questões para criar evidência.</string>
+    <string name="metric_schedule_evidence">Baseado em %1$d blocos observados · %2$s</string>
+    <string name="metric_schedule_no_evidence">Execute ou deixe vencer blocos do cronograma para criar evidência.</string>
+    <string name="metric_goal_evidence">Baseado em %1$d metas registradas · %2$s</string>
+    <string name="metric_goal_no_evidence">Crie uma meta para medir progresso.</string>
 </resources>

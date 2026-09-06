@@ -239,13 +239,6 @@ fun ProgressWorkspaceScreen(
             zoneId = ZoneId.systemDefault(),
         )
     }
-    val hasScheduleEvidence = remember(schedule, nowEpochMillis) {
-        schedule.plannedActivities.any { activity ->
-            activity.status != PlannedActivityStatus.PLANNED ||
-                activity.scheduledStartEpochMillis?.let { it <= nowEpochMillis } == true
-        }
-    }
-    val hasGoalEvidence = progress.activeGoals.isNotEmpty() || progress.completedGoals.isNotEmpty()
     val reschedulePreview = remember(plan, analytics, schedule, readiness, planSettings, nowEpochMillis) {
         if (planSettings.adaptivePlanningEnabled) {
             AdaptiveReschedulePlanner.preview(
@@ -315,7 +308,23 @@ fun ProgressWorkspaceScreen(
     }
     val answered = periodSessions.sumOf { it.questionsAnswered }
     val correct = periodSessions.sumOf { it.correctAnswers }
-    val periodAccuracy = if (answered == 0) null else ((correct.toDouble() / answered) * 100).toInt()
+    val periodAccuracyMetric = remember(correct, answered) {
+        ProgressMetricEvidence.accuracy(correctAnswers = correct, answeredQuestions = answered)
+    }
+    val periodAccuracy = periodAccuracyMetric.percent
+    val scheduleEvidenceCount = remember(schedule, nowEpochMillis) {
+        schedule.plannedActivities.count { activity ->
+            activity.status != PlannedActivityStatus.PLANNED ||
+                activity.scheduledStartEpochMillis?.let { it <= nowEpochMillis } == true
+        }
+    }
+    val scheduleMetric = remember(analytics.scheduleAdherencePercent, scheduleEvidenceCount) {
+        ProgressMetricEvidence.schedule(analytics.scheduleAdherencePercent, scheduleEvidenceCount)
+    }
+    val goalEvidenceCount = progress.activeGoals.size + progress.completedGoals.size
+    val goalMetric = remember(progress.goalProgressPercent, goalEvidenceCount) {
+        ProgressMetricEvidence.goals(progress.goalProgressPercent, goalEvidenceCount)
+    }
     val halfway = cutoff + (selectedPeriod.days * 86_400_000L / 2L)
     val earlierSessions = periodSessions.filter { it.startedAtEpochMillis < halfway }
     val recentSessions = periodSessions.filter { it.startedAtEpochMillis >= halfway }
@@ -488,12 +497,10 @@ fun ProgressWorkspaceScreen(
                             )
                             StudyFlowProgressBand(
                                 label = stringResource(R.string.plan_schedule),
-                                valueText = if (hasScheduleEvidence) {
-                                    stringResource(R.string.percent_value, analytics.scheduleAdherencePercent)
-                                } else {
-                                    stringResource(R.string.no_data)
-                                },
-                                progressPercent = analytics.scheduleAdherencePercent,
+                                valueText = scheduleMetric.percent?.let { value ->
+                                    stringResource(R.string.percent_value, value)
+                                } ?: stringResource(R.string.no_data),
+                                progressPercent = scheduleMetric.percent ?: 0,
                             )
                             StudyFlowTimelineItem(
                                 title = stringResource(R.string.period_trend),
@@ -516,12 +523,10 @@ fun ProgressWorkspaceScreen(
                             StudyFlowSectionTitle(title = stringResource(R.string.progress_segment_goals))
                             StudyFlowProgressBand(
                                 label = stringResource(R.string.goal),
-                                valueText = if (hasGoalEvidence) {
-                                    stringResource(R.string.percent_value, progress.goalProgressPercent)
-                                } else {
-                                    stringResource(R.string.no_data)
-                                },
-                                progressPercent = progress.goalProgressPercent,
+                                valueText = goalMetric.percent?.let { value ->
+                                    stringResource(R.string.percent_value, value)
+                                } ?: stringResource(R.string.no_data),
+                                progressPercent = goalMetric.percent ?: 0,
                             )
                             StudyFlowMetric(
                                 label = pluralStringResource(
@@ -835,7 +840,7 @@ fun ProgressWorkspaceScreen(
                 item(key = "content-health-card", contentType = "coach") {
                     val currentCleanup = cleanupReport
                     StudyFlowInsightPanel(
-                        title = stringResource(R.string.percent_value, currentCleanup.healthScorePercent),
+                        title = stringResource(R.string.content_integrity_score, currentCleanup.healthScorePercent),
                         message = if (currentCleanup.issueCount == 0) {
                             stringResource(R.string.content_health_clean_message)
                         } else {
@@ -987,14 +992,16 @@ fun ProgressWorkspaceScreen(
                         second = { childModifier ->
                             StudyFlowMetric(
                                 label = stringResource(R.string.accuracy),
-                                value = periodAccuracy?.let { value ->
+                                value = periodAccuracyMetric.percent?.let { value ->
                                     stringResource(R.string.percent_value, value)
-                                } ?: stringResource(R.string.not_enough_data),
-                                supportingText = if (answered > 0) {
-                                    pluralStringResource(R.plurals.answered_value, answered, answered)
-                                } else {
-                                    null
-                                },
+                                } ?: stringResource(R.string.no_data),
+                                supportingText = periodAccuracyMetric.confidence?.let { confidence ->
+                                    stringResource(
+                                        R.string.metric_accuracy_evidence,
+                                        periodAccuracyMetric.evidenceCount,
+                                        stringResource(metricConfidenceLabel(confidence)),
+                                    )
+                                } ?: stringResource(R.string.metric_accuracy_no_evidence),
                                 modifier = childModifier,
                             )
                         },
@@ -1005,18 +1012,32 @@ fun ProgressWorkspaceScreen(
                         first = { childModifier ->
                             StudyFlowMetric(
                                 label = stringResource(R.string.plan_schedule),
-                                value = stringResource(
-                                    R.string.percent_value,
-                                    analytics.scheduleAdherencePercent,
-                                ),
+                                value = scheduleMetric.percent?.let { value ->
+                                    stringResource(R.string.percent_value, value)
+                                } ?: stringResource(R.string.no_data),
+                                supportingText = scheduleMetric.confidence?.let { confidence ->
+                                    stringResource(
+                                        R.string.metric_schedule_evidence,
+                                        scheduleMetric.evidenceCount,
+                                        stringResource(metricConfidenceLabel(confidence)),
+                                    )
+                                } ?: stringResource(R.string.metric_schedule_no_evidence),
                                 modifier = childModifier,
                             )
                         },
                         second = { childModifier ->
-                            val goalPercent = progress.goalProgressPercent
                             StudyFlowMetric(
                                 label = stringResource(R.string.goal),
-                                value = stringResource(R.string.percent_value, goalPercent),
+                                value = goalMetric.percent?.let { value ->
+                                    stringResource(R.string.percent_value, value)
+                                } ?: stringResource(R.string.no_data),
+                                supportingText = goalMetric.confidence?.let { confidence ->
+                                    stringResource(
+                                        R.string.metric_goal_evidence,
+                                        goalMetric.evidenceCount,
+                                        stringResource(metricConfidenceLabel(confidence)),
+                                    )
+                                } ?: stringResource(R.string.metric_goal_no_evidence),
                                 modifier = childModifier,
                             )
                         },
@@ -1074,10 +1095,16 @@ fun ProgressWorkspaceScreen(
                                     progress.activeGoals.size,
                                     progress.activeGoals.size,
                                 ),
-                                value = stringResource(
-                                    R.string.percent_value,
-                                    progress.goalProgressPercent,
-                                ),
+                                value = goalMetric.percent?.let { value ->
+                                    stringResource(R.string.percent_value, value)
+                                } ?: stringResource(R.string.no_data),
+                                supportingText = goalMetric.confidence?.let { confidence ->
+                                    stringResource(
+                                        R.string.metric_goal_evidence,
+                                        goalMetric.evidenceCount,
+                                        stringResource(metricConfidenceLabel(confidence)),
+                                    )
+                                } ?: stringResource(R.string.metric_goal_no_evidence),
                                 modifier = childModifier,
                             )
                         },
@@ -1354,6 +1381,12 @@ private fun StudyCoachWeeklyReviewItemKind.destination(): WeeklyCoachDestination
     StudyCoachWeeklyReviewItemKind.SCHEDULE_DRIFT -> WeeklyCoachDestination.PLAN
     StudyCoachWeeklyReviewItemKind.EVIDENCE_EMPTY -> WeeklyCoachDestination.PROGRESS
     else -> WeeklyCoachDestination.ANALYTICS
+}
+
+private fun metricConfidenceLabel(confidence: ProgressMetricConfidence): Int = when (confidence) {
+    ProgressMetricConfidence.LOW -> R.string.metric_confidence_low
+    ProgressMetricConfidence.MEDIUM -> R.string.metric_confidence_medium
+    ProgressMetricConfidence.HIGH -> R.string.metric_confidence_high
 }
 
 private fun readinessConfidenceLabel(confidence: ReadinessConfidence): Int = when (confidence) {
