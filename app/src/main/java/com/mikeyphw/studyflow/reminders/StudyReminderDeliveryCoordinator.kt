@@ -33,6 +33,8 @@ import java.util.Calendar
 import kotlinx.coroutines.flow.first
 
 private const val MinimumFutureDelayMillis = 60 * 1000L
+private const val ReconciliationDeliverySlackMillis =
+    MinimumFutureDelayMillis + StudyReminderPlanner.PlannedActivityDeliveryGraceMillis
 const val StudyReminderAction = "com.mikeyphw.studyflow.action.STUDY_REMINDER"
 const val StudyReminderExtraPlanId = "plan_id"
 const val StudyReminderExtraType = "reminder_type"
@@ -84,12 +86,19 @@ class StudyReminderDeliveryCoordinator(
             cancelPlanAlarms(planId, clearBookkeeping = true)
             return
         }
-        cancelPlanAlarms(planId, clearBookkeeping = false)
-        // Persist the desired schedule before installing Android alarms. If the process dies while
-        // alarms are being installed, startup reconciliation can cancel/rebuild every desired identity;
-        // no newly scheduled PendingIntent can exist outside durable bookkeeping.
+        val previouslyScheduled = occurrenceStore.scheduled(planId)
+        cancelPlanAlarms(
+            planId = planId,
+            clearBookkeeping = false,
+            retainCandidates = runtimePlan.notificationCandidates,
+        )
+        // Persist the desired schedule before installing Android alarms. Unchanged durable occurrences
+        // keep their existing AlarmManager window, so repeated reconciliation cannot slide a late
+        // planned reminder past the freshness boundary by cancelling and recreating it.
         occurrenceStore.replaceScheduled(planId, runtimePlan.notificationCandidates)
-        runtimePlan.notificationCandidates.forEach { candidate -> scheduleCandidate(planId, candidate) }
+        runtimePlan.notificationCandidates
+            .filterNot { candidate -> previouslyScheduled.any { occurrence -> occurrence.matches(candidate) } }
+            .forEach { candidate -> scheduleCandidate(planId, candidate) }
     }
 
     suspend fun deliver(
@@ -145,12 +154,18 @@ class StudyReminderDeliveryCoordinator(
         if (plan.status != StudyPlanStatus.ACTIVE) return null
         val settings = studyPlanRepository.observeStoredPlanSettings(planId).first() ?: return null
         val now = clock()
+        val scheduledOccurrences = occurrenceStore.scheduled(planId)
         val delivered = occurrenceStore.deliveredOccurrenceIds(planId).toMutableSet().apply {
             allowOccurrenceId?.let(::remove)
         }
-        val persistedScheduledAt = occurrenceStore.scheduled(planId).associate { occurrence ->
+        val persistedScheduledAt = scheduledOccurrences.associate { occurrence ->
             occurrence.occurrenceId to occurrence.scheduledAtEpochMillis
         }
+        val reconciliationEligiblePlannedOccurrenceIds = scheduledOccurrences
+            .asSequence()
+            .filter { occurrence -> occurrence.type == ReminderNotificationType.PLANNED_ACTIVITY }
+            .filter { occurrence -> occurrence.isWithinReconciliationDeliveryWindow(now) }
+            .mapTo(mutableSetOf(), ScheduledReminderOccurrence::occurrenceId)
         return StudyReminderPlanner.buildPlan(
             StudyReminderInput(
                 plan = plan,
@@ -162,6 +177,7 @@ class StudyReminderDeliveryCoordinator(
                 apiLevel = Build.VERSION.SDK_INT,
                 notificationPermissionGranted = notificationsAllowed(),
                 deliveredOccurrenceIds = delivered,
+                reconciliationEligiblePlannedOccurrenceIds = reconciliationEligiblePlannedOccurrenceIds,
                 persistedScheduledAtByOccurrenceId = persistedScheduledAt,
             ),
         )
@@ -177,12 +193,31 @@ class StudyReminderDeliveryCoordinator(
         )
     }
 
-    private fun cancelPlanAlarms(planId: StudyPlanId, clearBookkeeping: Boolean) {
-        occurrenceStore.scheduled(planId).forEach { occurrence ->
-            alarmManager.cancel(pendingIntent(planId, occurrence.type, occurrence.occurrenceId))
-        }
+    private fun cancelPlanAlarms(
+        planId: StudyPlanId,
+        clearBookkeeping: Boolean,
+        retainCandidates: Collection<ReminderNotificationCandidate> = emptyList(),
+    ) {
+        occurrenceStore.scheduled(planId)
+            .filterNot { occurrence -> retainCandidates.any { candidate -> occurrence.matches(candidate) } }
+            .forEach { occurrence ->
+                alarmManager.cancel(pendingIntent(planId, occurrence.type, occurrence.occurrenceId))
+            }
         if (clearBookkeeping) occurrenceStore.clearScheduled(planId)
     }
+
+    private fun ScheduledReminderOccurrence.matches(candidate: ReminderNotificationCandidate): Boolean =
+        type == candidate.type &&
+            occurrenceId == candidate.occurrenceId &&
+            scheduledAtEpochMillis == candidate.scheduledAtEpochMillis &&
+            fireAtEpochMillis == candidate.fireAtEpochMillis
+
+    private fun ScheduledReminderOccurrence.isWithinReconciliationDeliveryWindow(nowEpochMillis: Long): Boolean =
+        StudyReminderPlanner.plannedActivityWithinReconciliationDeliveryWindow(
+            fireAtEpochMillis = fireAtEpochMillis,
+            nowEpochMillis = nowEpochMillis,
+            reconciliationSlackMillis = ReconciliationDeliverySlackMillis,
+        )
 
     @SuppressLint("MissingPermission")
     private fun postNotification(planId: StudyPlanId, candidate: ReminderNotificationCandidate): Boolean {

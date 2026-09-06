@@ -1,5 +1,7 @@
 package com.mikeyphw.studyflow.core.model
 
+import java.util.UUID
+
 object StudyFlowSyncProviderIds {
     const val NONE: String = "none"
     const val LOCAL_FOLDER: String = "local-folder"
@@ -351,6 +353,19 @@ data class StudySyncLedgerSnapshot(
 
 object StudySyncDeviceIdentity {
     const val DefaultDeviceId: String = "device-local-default"
+
+    /**
+     * Creates an opaque identifier for one StudyFlow installation. Device display names are not
+     * identity material: two fresh installations with the same name must still be distinct.
+     */
+    fun newInstallationDeviceId(): String = "device-install-${UUID.randomUUID()}"
+
+    /**
+     * Existing persisted ids are authoritative, including ids created by older StudyFlow versions.
+     * Only installations without a persisted id receive a new random installation identity.
+     */
+    fun resolveInstallationDeviceId(existingDeviceId: String?): String =
+        existingDeviceId ?: newInstallationDeviceId()
 
     fun stableDeviceId(seed: String): String {
         val normalized = seed.trim().lowercase()

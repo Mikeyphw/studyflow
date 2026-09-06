@@ -63,30 +63,24 @@ class StudyReminderOccurrenceStore(context: Context) {
 
     @Synchronized
     fun deliveredOccurrenceIds(planId: StudyPlanId): Set<String> =
-        preferences.getStringSet(deliveredKey(planId), emptySet()).orEmpty().toSet()
+        LinkedHashSet(loadDeliveredHistory(planId))
 
     @Synchronized
     fun markDelivered(planId: StudyPlanId, occurrenceId: String) {
-        val delivered = LinkedHashSet(preferences.getStringSet(deliveredKey(planId), emptySet()).orEmpty())
-        delivered += occurrenceId
-        while (delivered.size > MaxDeliveredOccurrenceIds) {
-            delivered.remove(delivered.first())
-        }
-        preferences.edit(commit = true) { putStringSet(deliveredKey(planId), delivered) }
+        val delivered = DeliveredReminderHistory.append(
+            orderedOccurrenceIds = loadDeliveredHistory(planId),
+            occurrenceId = occurrenceId,
+            maxSize = MaxDeliveredOccurrenceIds,
+        )
+        persistDeliveredHistory(planId, delivered)
     }
-
 
     @Synchronized
     fun removeDelivered(planId: StudyPlanId, occurrenceId: String) {
-        val delivered = LinkedHashSet(preferences.getStringSet(deliveredKey(planId), emptySet()).orEmpty())
-        if (!delivered.remove(occurrenceId)) return
-        preferences.edit(commit = true) {
-            if (delivered.isEmpty()) {
-                remove(deliveredKey(planId))
-            } else {
-                putStringSet(deliveredKey(planId), delivered)
-            }
-        }
+        val current = loadDeliveredHistory(planId)
+        if (occurrenceId !in current) return
+        val delivered = DeliveredReminderHistory.remove(current, occurrenceId)
+        persistDeliveredHistory(planId, delivered)
     }
 
     @Synchronized
@@ -103,12 +97,46 @@ class StudyReminderOccurrenceStore(context: Context) {
         preferences.edit(commit = true) {
             remove(scheduledKey(planId))
             remove(deliveredKey(planId))
+            remove(deliveredOrderKey(planId))
             remove(canaryKey(planId))
+        }
+    }
+
+    private fun loadDeliveredHistory(planId: StudyPlanId): List<String> {
+        val orderedKey = deliveredOrderKey(planId)
+        if (preferences.contains(orderedKey)) {
+            val encoded = preferences.getString(orderedKey, null)
+            val decoded = encoded?.let(DeliveredReminderHistory::decode)
+            if (decoded != null) return decoded.takeLast(MaxDeliveredOccurrenceIds)
+        }
+
+        val legacy = preferences.getStringSet(deliveredKey(planId), emptySet()).orEmpty().toSet()
+        if (legacy.isEmpty()) return emptyList()
+        val migrated = DeliveredReminderHistory.migrateLegacy(legacy, MaxDeliveredOccurrenceIds)
+        persistDeliveredHistory(planId, migrated)
+        return migrated
+    }
+
+    private fun persistDeliveredHistory(planId: StudyPlanId, delivered: List<String>) {
+        preferences.edit(commit = true) {
+            if (delivered.isEmpty()) {
+                remove(deliveredOrderKey(planId))
+                remove(deliveredKey(planId))
+            } else {
+                putString(
+                    deliveredOrderKey(planId),
+                    DeliveredReminderHistory.encode(delivered),
+                )
+                // Keep the legacy membership set as a recovery/downgrade mirror. It is never used as
+                // an ordering source once the ordered key exists.
+                putStringSet(deliveredKey(planId), LinkedHashSet(delivered))
+            }
         }
     }
 
     private fun scheduledKey(planId: StudyPlanId): String = "scheduled:${planId.value}"
     private fun deliveredKey(planId: StudyPlanId): String = "delivered:${planId.value}"
+    private fun deliveredOrderKey(planId: StudyPlanId): String = "delivered-order:${planId.value}"
     private fun canaryKey(planId: StudyPlanId): String = "pipeline-canary:${planId.value}"
 
     private fun encodeScheduled(candidate: ReminderNotificationCandidate): String = listOf(

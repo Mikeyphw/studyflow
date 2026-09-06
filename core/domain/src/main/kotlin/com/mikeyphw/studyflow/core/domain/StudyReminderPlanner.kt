@@ -41,10 +41,11 @@ object StudyReminderPlanner {
             .map { activity -> plannedActivityCandidate(activity, input.settings) }
             .filter { candidate -> candidate.occurrenceId !in input.deliveredOccurrenceIds }
             .filter { candidate ->
-                plannedActivityWithinDeliveryWindow(
-                    scheduledStartEpochMillis = candidate.fireAtEpochMillis,
-                    nowEpochMillis = input.nowEpochMillis,
-                )
+                candidate.occurrenceId in input.reconciliationEligiblePlannedOccurrenceIds ||
+                    plannedActivityWithinDeliveryWindow(
+                        scheduledStartEpochMillis = candidate.fireAtEpochMillis,
+                        nowEpochMillis = input.nowEpochMillis,
+                    )
             }
             .minByOrNull(ReminderNotificationCandidate::fireAtEpochMillis)
         val missedActivities = activeActivities.filter { it.status == PlannedActivityStatus.MISSED }
@@ -179,6 +180,16 @@ object StudyReminderPlanner {
         nowEpochMillis: Long,
     ): Boolean = scheduledStartEpochMillis >= nowEpochMillis - PlannedActivityLateDeliveryGraceMillis
 
+    fun plannedActivityWithinReconciliationDeliveryWindow(
+        fireAtEpochMillis: Long,
+        nowEpochMillis: Long,
+        reconciliationSlackMillis: Long,
+    ): Boolean {
+        require(reconciliationSlackMillis >= 0L) { "Reminder reconciliation slack cannot be negative." }
+        return fireAtEpochMillis >=
+            nowEpochMillis - PlannedActivityLateDeliveryGraceMillis - reconciliationSlackMillis
+    }
+
     fun startOfNextLocalDay(nowEpochMillis: Long): Long {
         val calendar = Calendar.getInstance().apply {
             timeInMillis = nowEpochMillis
@@ -279,6 +290,12 @@ data class StudyReminderInput(
     val apiLevel: Int,
     val notificationPermissionGranted: Boolean,
     val deliveredOccurrenceIds: Set<String> = emptySet(),
+    /**
+     * Planned occurrences already installed in AlarmManager may remain deliverable for the bounded
+     * reconciliation slack after the normal late window. The Android coordinator only populates
+     * this set from durable scheduled bookkeeping that is still inside that fixed deadline.
+     */
+    val reconciliationEligiblePlannedOccurrenceIds: Set<String> = emptySet(),
     /** Original schedule time keyed by durable occurrence ID, restored from Android bookkeeping. */
     val persistedScheduledAtByOccurrenceId: Map<String, Long> = emptyMap(),
 ) {

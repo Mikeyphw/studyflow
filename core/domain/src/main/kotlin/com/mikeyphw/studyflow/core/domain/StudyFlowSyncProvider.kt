@@ -2,6 +2,8 @@ package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.StudyFlowSyncProviderIds
 import com.mikeyphw.studyflow.core.portability.StudyFlowSyncBundleManifest
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 interface StudyFlowSyncProvider {
     val id: String
@@ -213,20 +215,35 @@ class WebDavStudyFlowSyncProvider(
     override val displayName: String = "WebDAV / Nextcloud"
     override val requiresAccount: Boolean = true
 
+    private val indexMutationMutex = Mutex()
+
     override suspend fun isConfigured(): Boolean = config.configured
 
     override suspend fun listCheckpoints(): List<RemoteSyncCheckpoint> =
-        readIndex().map { indexed -> indexed.checkpoint }
+        readIndexDocument().checkpoints.map { indexed -> indexed.checkpoint }
 
     override suspend fun uploadCheckpoint(bundle: SyncBundleUpload): SyncUploadResult {
         requireConfigured()
-        val upload = execute(
+        val bundleUrl = config.bundleUrl(bundle.fileName)
+        val uploadAttempt = execute(
             method = "PUT",
-            url = config.bundleUrl(bundle.fileName),
+            url = bundleUrl,
             body = bundle.encryptedBytes,
-            extraHeaders = mapOf("Content-Type" to "application/vnd.studyflow.sync+encrypted"),
+            extraHeaders = mapOf(
+                "Content-Type" to "application/vnd.studyflow.sync+encrypted",
+                "If-None-Match" to "*",
+            ),
         )
-        require(upload.successful) { "WebDAV upload failed with HTTP ${upload.code}." }
+        val upload = if (uploadAttempt.code == 412) {
+            val existing = execute("GET", bundleUrl)
+            require(existing.successful && existing.body.contentEquals(bundle.encryptedBytes)) {
+                "WebDAV checkpoint path already exists with different content."
+            }
+            existing
+        } else {
+            require(uploadAttempt.successful) { "WebDAV upload failed with HTTP ${uploadAttempt.code}." }
+            uploadAttempt
+        }
 
         val checkpoint = RemoteSyncCheckpoint(
             id = bundle.manifest.checkpointId,
@@ -241,20 +258,23 @@ class WebDavStudyFlowSyncProvider(
             byteSize = bundle.encryptedBytes.size.toLong(),
             encrypted = true,
         )
-        val merged = (readIndex() + IndexedRemoteSyncCheckpoint(bundle.fileName, checkpoint))
-            .distinctBy { indexed -> indexed.checkpoint.id }
-            .sortedByDescending { indexed -> indexed.checkpoint.createdAtEpochMillis }
-        writeIndex(merged)
+        indexMutationMutex.withLock {
+            mutateIndex { current ->
+                (current.filterNot { indexed -> indexed.checkpoint.id == checkpoint.id } +
+                    IndexedRemoteSyncCheckpoint(bundle.fileName, checkpoint))
+                    .sortedWith(remoteCheckpointOrdering)
+            }
+        }
         return SyncUploadResult(
             checkpoint = checkpoint,
             uploadedAtEpochMillis = clock(),
-            providerRevision = upload.headers["ETag"]?.firstOrNull(),
+            providerRevision = upload.headerValue("ETag"),
         )
     }
 
     override suspend fun downloadCheckpoint(id: String): SyncBundleDownload {
         require(id.isNotBlank()) { "Checkpoint id cannot be blank." }
-        val indexed = readIndex().firstOrNull { item -> item.checkpoint.id == id }
+        val indexed = readIndexDocument().checkpoints.firstOrNull { item -> item.checkpoint.id == id }
             ?: throw IllegalArgumentException("Unknown WebDAV sync checkpoint: $id")
         val response = execute("GET", config.bundleUrl(indexed.fileName))
         require(response.successful) { "WebDAV download failed with HTTP ${response.code}." }
@@ -263,31 +283,80 @@ class WebDavStudyFlowSyncProvider(
 
     override suspend fun deleteCheckpoint(id: String): Boolean {
         require(id.isNotBlank()) { "Checkpoint id cannot be blank." }
-        val index = readIndex()
-        val indexed = index.firstOrNull { item -> item.checkpoint.id == id } ?: return false
-        val response = execute("DELETE", config.bundleUrl(indexed.fileName))
-        if (!response.successful && !response.notFound) return false
-        writeIndex(index.filterNot { item -> item.checkpoint.id == id })
-        return true
+        return indexMutationMutex.withLock {
+            val initial = readIndexDocument()
+            val indexed = initial.checkpoints.firstOrNull { item -> item.checkpoint.id == id }
+                ?: return@withLock false
+            val response = execute("DELETE", config.bundleUrl(indexed.fileName))
+            if (!response.successful && !response.notFound) return@withLock false
+            mutateIndex(initial) { current ->
+                current.filterNot { item -> item.checkpoint.id == id }
+            }
+            true
+        }
     }
 
-    private suspend fun readIndex(): List<IndexedRemoteSyncCheckpoint> {
+    private suspend fun mutateIndex(
+        initial: WebDavIndexDocument? = null,
+        transform: (List<IndexedRemoteSyncCheckpoint>) -> List<IndexedRemoteSyncCheckpoint>,
+    ): List<IndexedRemoteSyncCheckpoint> {
+        var currentDocument = initial
+        repeat(MaximumIndexMutationAttempts) {
+            val current = currentDocument ?: readIndexDocument()
+            currentDocument = null
+            val updated = normalizeIndex(transform(current.checkpoints))
+            if (updated == current.checkpoints) return updated
+            val response = writeIndex(updated, current)
+            if (response.successful) return updated
+            if (response.code !in IndexConflictStatusCodes) {
+                throw IllegalStateException("WebDAV index write failed with HTTP ${response.code}.")
+            }
+        }
+        throw IllegalStateException(
+            "WebDAV sync index changed concurrently too many times; no remote index update was overwritten.",
+        )
+    }
+
+    private suspend fun readIndexDocument(): WebDavIndexDocument {
         requireConfigured()
         val response = execute("GET", config.indexUrl())
-        if (response.notFound) return emptyList()
+        if (response.notFound) {
+            return WebDavIndexDocument(checkpoints = emptyList(), revision = null, exists = false)
+        }
         require(response.successful) { "WebDAV index read failed with HTTP ${response.code}." }
-        return decodeIndex(response.body.decodeToString())
+        require(response.body.size <= MaximumWebDavIndexBytes) {
+            "WebDAV sync index exceeds the supported size limit."
+        }
+        return WebDavIndexDocument(
+            checkpoints = decodeIndex(response.body.decodeToString()),
+            revision = response.headerValue("ETag"),
+            exists = true,
+        )
     }
 
-    private suspend fun writeIndex(checkpoints: List<IndexedRemoteSyncCheckpoint>) {
+    private suspend fun writeIndex(
+        checkpoints: List<IndexedRemoteSyncCheckpoint>,
+        current: WebDavIndexDocument,
+    ): WebDavSyncResponse {
         val bytes = encodeIndex(checkpoints).encodeToByteArray()
-        val response = execute(
+        require(bytes.size <= MaximumWebDavIndexBytes) {
+            "WebDAV sync index exceeds the supported size limit."
+        }
+        val precondition = if (current.exists) {
+            val revision = current.revision
+            require(!revision.isNullOrBlank()) {
+                "WebDAV server must provide an ETag for safe concurrent sync-index updates."
+            }
+            mapOf("If-Match" to revision)
+        } else {
+            mapOf("If-None-Match" to "*")
+        }
+        return execute(
             method = "PUT",
             url = config.indexUrl(),
             body = bytes,
-            extraHeaders = mapOf("Content-Type" to "text/tab-separated-values; charset=utf-8"),
+            extraHeaders = mapOf("Content-Type" to "text/tab-separated-values; charset=utf-8") + precondition,
         )
-        require(response.successful) { "WebDAV index write failed with HTTP ${response.code}." }
     }
 
     private fun requireConfigured() {
@@ -307,6 +376,15 @@ class WebDavStudyFlowSyncProvider(
             body = body,
         ),
     )
+
+    private companion object {
+        const val MaximumIndexMutationAttempts = 4
+        const val MaximumWebDavIndexBytes = 2 * 1024 * 1024
+        val IndexConflictStatusCodes = setOf(409, 412)
+        val remoteCheckpointOrdering = compareByDescending<IndexedRemoteSyncCheckpoint> { indexed ->
+            indexed.checkpoint.createdAtEpochMillis
+        }.thenBy { indexed -> indexed.checkpoint.id }
+    }
 }
 
 object GoogleDriveStudyFlowSyncProvider : StudyFlowSyncProvider {
@@ -340,8 +418,14 @@ private data class IndexedRemoteSyncCheckpoint(
     val checkpoint: RemoteSyncCheckpoint,
 )
 
+private data class WebDavIndexDocument(
+    val checkpoints: List<IndexedRemoteSyncCheckpoint>,
+    val revision: String?,
+    val exists: Boolean,
+)
+
 private fun encodeIndex(checkpoints: List<IndexedRemoteSyncCheckpoint>): String =
-    checkpoints.joinToString(separator = "\n", postfix = "\n") { indexed ->
+    checkpoints.joinToString(separator = "\n", postfix = if (checkpoints.isEmpty()) "" else "\n") { indexed ->
         val checkpoint = indexed.checkpoint
         listOf(
             checkpoint.id,
@@ -357,29 +441,77 @@ private fun encodeIndex(checkpoints: List<IndexedRemoteSyncCheckpoint>): String 
         ).joinToString("\t")
     }
 
-private fun decodeIndex(text: String): List<IndexedRemoteSyncCheckpoint> = text
-    .lineSequence()
-    .map(String::trim)
-    .filter(String::isNotBlank)
-    .map { line ->
+private fun decodeIndex(text: String): List<IndexedRemoteSyncCheckpoint> {
+    val rows = text.lineSequence()
+        .map(String::trim)
+        .filter(String::isNotBlank)
+        .toList()
+    require(rows.size <= 2_048) { "WebDAV sync index contains too many checkpoints." }
+    val checkpoints = rows.map { line ->
         val parts = line.split('\t')
         require(parts.size == 10) { "Invalid WebDAV sync index row." }
+        val fileName = parts[1]
+        require(fileName.endsWith(".sfbackup", ignoreCase = true)) {
+            "WebDAV sync index file names must use the .sfbackup extension."
+        }
+        require('/' !in fileName && '\\' !in fileName && fileName != "." && fileName != "..") {
+            "WebDAV sync index file names must be single path segments."
+        }
         val checkpoint = RemoteSyncCheckpoint(
             id = parts[0],
             providerId = StudyFlowSyncProviderIds.WEBDAV,
-            displayName = parts[1],
+            displayName = fileName,
             createdAtEpochMillis = parts[2].toLong(),
             deviceId = parts[3],
             deviceName = decodeIndexText(parts[4]),
             schemaVersion = parts[5].toInt(),
-            databaseHashSha256 = parts[6],
+            databaseHashSha256 = parts[6].lowercase(),
             changeCount = parts[7].toInt(),
             byteSize = parts[8].toLong(),
             encrypted = parts[9].toBooleanStrict(),
         )
-        IndexedRemoteSyncCheckpoint(fileName = parts[1], checkpoint = checkpoint)
+        require(checkpoint.id.isNotBlank()) { "WebDAV checkpoint id cannot be blank." }
+        require(checkpoint.createdAtEpochMillis >= 0L) { "WebDAV checkpoint time cannot be negative." }
+        require(checkpoint.deviceId.isNotBlank()) { "WebDAV checkpoint device id cannot be blank." }
+        require(checkpoint.deviceName.isNotBlank()) { "WebDAV checkpoint device name cannot be blank." }
+        require(checkpoint.schemaVersion > 0) { "WebDAV checkpoint schema version must be positive." }
+        require(checkpoint.databaseHashSha256.matches(Regex("[0-9a-f]{64}"))) {
+            "WebDAV checkpoint database hash must be SHA-256."
+        }
+        require(checkpoint.changeCount >= 0) { "WebDAV checkpoint change count cannot be negative." }
+        require(checkpoint.byteSize > 0L) { "WebDAV checkpoint byte size must be positive." }
+        require(checkpoint.encrypted) { "WebDAV checkpoint index may only reference encrypted bundles." }
+        IndexedRemoteSyncCheckpoint(fileName = fileName, checkpoint = checkpoint)
     }
-    .toList()
+    require(checkpoints.map { it.checkpoint.id }.toSet().size == checkpoints.size) {
+        "WebDAV sync index contains duplicate checkpoint ids."
+    }
+    require(checkpoints.map { it.fileName }.toSet().size == checkpoints.size) {
+        "WebDAV sync index contains duplicate checkpoint file names."
+    }
+    return checkpoints
+}
+
+private fun normalizeIndex(
+    checkpoints: List<IndexedRemoteSyncCheckpoint>,
+): List<IndexedRemoteSyncCheckpoint> {
+    require(checkpoints.size <= 2_048) { "WebDAV sync index contains too many checkpoints." }
+    require(checkpoints.map { it.checkpoint.id }.toSet().size == checkpoints.size) {
+        "WebDAV sync index contains duplicate checkpoint ids."
+    }
+    require(checkpoints.map { it.fileName }.toSet().size == checkpoints.size) {
+        "WebDAV sync index contains duplicate checkpoint file names."
+    }
+    return checkpoints.sortedWith(
+        compareByDescending<IndexedRemoteSyncCheckpoint> { indexed -> indexed.checkpoint.createdAtEpochMillis }
+            .thenBy { indexed -> indexed.checkpoint.id },
+    )
+}
+
+private fun WebDavSyncResponse.headerValue(name: String): String? = headers.entries
+    .firstOrNull { (headerName, _) -> headerName.equals(name, ignoreCase = true) }
+    ?.value
+    ?.firstOrNull()
 
 private fun authHeaders(config: WebDavSyncProviderConfig): Map<String, String> =
     if (config.username == null || config.password == null) {

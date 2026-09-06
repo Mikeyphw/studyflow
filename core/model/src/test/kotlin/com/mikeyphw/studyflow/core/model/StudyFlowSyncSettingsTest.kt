@@ -92,6 +92,40 @@ class StudyFlowSyncSettingsTest {
         }.enabled)
     }
     @Test
+    fun `fresh installation device ids are opaque and unique even when display names match`() {
+        val ids = List(64) { StudySyncDeviceIdentity.newInstallationDeviceId() }
+
+        assertEquals(ids.size, ids.toSet().size)
+        assertTrue(ids.all { id ->
+            id.matches(Regex("device-install-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"))
+        })
+    }
+
+    @Test
+    fun `existing persisted device ids are preserved exactly`() {
+        val legacyId = StudySyncDeviceIdentity.stableDeviceId("This device")
+        val installationId = StudySyncDeviceIdentity.newInstallationDeviceId()
+
+        assertEquals(legacyId, StudySyncDeviceIdentity.resolveInstallationDeviceId(legacyId))
+        assertEquals(installationId, StudySyncDeviceIdentity.resolveInstallationDeviceId(installationId))
+    }
+
+    @Test
+    fun `legacy deterministic device ids remain backward compatible`() {
+        assertEquals("device-c214f319", StudySyncDeviceIdentity.stableDeviceId("This device"))
+    }
+
+    @Test
+    fun `missing persisted device id receives a new installation identity`() {
+        val first = StudySyncDeviceIdentity.resolveInstallationDeviceId(null)
+        val second = StudySyncDeviceIdentity.resolveInstallationDeviceId(null)
+
+        assertTrue(first.startsWith("device-install-"))
+        assertTrue(second.startsWith("device-install-"))
+        assertFalse(first == second)
+    }
+
+    @Test
     fun `sync ledger records device checkpoint upload and restore preview facts`() {
         val device = StudySyncLedgerFactory.localDevice(
             id = StudySyncDeviceIdentity.stableDeviceId("Tablet"),
