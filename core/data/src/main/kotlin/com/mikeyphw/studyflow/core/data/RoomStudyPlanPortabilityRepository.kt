@@ -22,6 +22,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportPreview
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportResult
+import com.mikeyphw.studyflow.core.portability.StudyPlanImportDiffEngine
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageArchive
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageCodec
@@ -160,6 +161,26 @@ internal class RoomStudyPlanPortabilityRepository(
                     "The target Study Plan does not exist."
                 }
             }
+            val currentPayload = if (strategy == StudyPlanImportStrategy.CREATE_AS_NEW) {
+                null
+            } else {
+                graphStore.exportPayload(
+                    planId = requireNotNull(targetPlanId).value,
+                    options = StudyPlanExportOptions(
+                        mode = StudyPlanExportMode.FULL,
+                        includeAnnexMetadata = true,
+                        includeAnnexPayloads = false,
+                    ),
+                    applicationVersion = applicationVersion,
+                    exportedAtEpochMillis = clock(),
+                )
+            }
+            val tableDiffs = StudyPlanImportDiffEngine.diff(
+                incoming = archive.payload,
+                current = currentPayload,
+                strategy = strategy,
+                targetStudyPlanId = targetPlanId?.value,
+            )
             StudyPlanRestoreDryRun(
                 strategy = strategy,
                 targetStudyPlanId = targetPlanId?.value,
@@ -178,6 +199,8 @@ internal class RoomStudyPlanPortabilityRepository(
                     }
                 },
                 databaseRowsChanged = 0,
+                tableDiffs = tableDiffs,
+                transactionalRollbackProtected = true,
             )
         } finally {
             decoded.cleanup()

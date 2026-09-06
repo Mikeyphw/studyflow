@@ -435,6 +435,42 @@ fun PlanPortabilityScreen(
                                 ),
                                 color = MaterialTheme.colorScheme.primary,
                             )
+                            val addedRows = report.tableDiffs.sumOf { it.addedRows }
+                            val removedRows = report.tableDiffs.sumOf { it.removedRows }
+                            val changedRows = report.tableDiffs.sumOf { it.changedRows }
+                            val unchangedRows = report.tableDiffs.sumOf { it.unchangedRows }
+                            val ignoredRows = report.tableDiffs.sumOf { it.ignoredRows }
+                            Text(
+                                stringResource(
+                                    R.string.import_diff_summary,
+                                    addedRows,
+                                    removedRows,
+                                    changedRows,
+                                    unchangedRows,
+                                    ignoredRows,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            report.tableDiffs.filter { it.hasChanges }.forEach { table ->
+                                Text(
+                                    stringResource(
+                                        R.string.import_diff_table,
+                                        table.tableName,
+                                        table.addedRows,
+                                        table.removedRows,
+                                        table.changedRows,
+                                        table.ignoredRows,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (report.transactionalRollbackProtected) {
+                                Text(
+                                    stringResource(R.string.import_transactional_rollback),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             report.warnings.forEach { warning ->
                                 Text(
                                     portabilityWarning(warning),

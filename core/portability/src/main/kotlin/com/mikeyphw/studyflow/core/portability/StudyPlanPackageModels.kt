@@ -171,6 +171,20 @@ data class StudyPlanBackupIntegrityReport(
     val canRestore: Boolean,
 )
 
+data class StudyPlanImportTableDiff(
+    val tableName: String,
+    val incomingRows: Int,
+    val currentRows: Int,
+    val addedRows: Int,
+    val removedRows: Int,
+    val changedRows: Int,
+    val unchangedRows: Int,
+    val ignoredRows: Int = 0,
+) {
+    val hasChanges: Boolean
+        get() = addedRows > 0 || removedRows > 0 || changedRows > 0 || ignoredRows > 0
+}
+
 data class StudyPlanRestoreDryRun(
     val strategy: StudyPlanImportStrategy,
     val targetStudyPlanId: String?,
@@ -180,6 +194,8 @@ data class StudyPlanRestoreDryRun(
     val wouldCreateSafetySnapshot: Boolean,
     val warnings: List<StudyPlanPortabilityWarning>,
     val databaseRowsChanged: Int = 0,
+    val tableDiffs: List<StudyPlanImportTableDiff> = emptyList(),
+    val transactionalRollbackProtected: Boolean = true,
 )
 
 data class StudyPlanImportResult(

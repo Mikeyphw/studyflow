@@ -13,6 +13,7 @@ import com.mikeyphw.studyflow.core.portability.PracticeConfigurationReferences
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportMode
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
+import com.mikeyphw.studyflow.core.portability.StudyPlanImportCompatibility
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageManifest
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePayload
 import com.mikeyphw.studyflow.core.portability.StudyPlanPrivacyPolicy
@@ -207,7 +208,7 @@ class StudyPlanGraphPortabilityStore(
             StudyPlanGraphDuplicator.PortabilityTableSpecs
                 .forEach { spec ->
                     if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE &&
-                        spec.tableName in MergeSkippedTables
+                        spec.tableName in StudyPlanImportCompatibility.MergeSkippedTables
                     ) return@forEach
                     tableMap[spec.tableName].orEmptyRows().forEach { row ->
                         insertRow(
@@ -709,19 +710,5 @@ class StudyPlanGraphPortabilityStore(
         )
         val FullTables = StudyPlanGraphDuplicator.PortabilityTableSpecs.mapTo(linkedSetOf()) { it.tableName }
         val PracticeConfigurationTables = setOf("study_tests", "mock_exams")
-        val MergeSkippedTables = setOf(
-            "study_targets",
-            "exam_stages",
-            "exam_notice_revisions",
-            "legislation_documents",
-            "legislation_provisions",
-            "legislation_evidence_links",
-            "study_cycles",
-            "study_cycle_items",
-            "study_strategies",
-            "study_plan_settings",
-            "programming_course_profiles",
-            "termux_runtime_preferences",
-        )
     }
 }
