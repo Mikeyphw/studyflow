@@ -800,7 +800,7 @@ private fun buildPublicExamPriorityRecommendations(
         val subject = subjectById[topic.subjectId]?.takeUnless { it.archived } ?: return@mapNotNull null
         val topicSessions = sessions.filter { session ->
             session.status == com.mikeyphw.studyflow.core.model.StudySessionStatus.COMPLETED &&
-                (session.topicId == topic.id || session.subjectId == subject.id)
+                session.contributesToTopicEvidence(topic.id, subject.id)
         }
         val minutesLast7Days = topicSessions.filter { it.startedAtEpochMillis >= weekAgo }.sumOf { session ->
             ((session.grossDurationSeconds - session.pauseDurationSeconds).coerceAtLeast(0L) / 60L).toInt()
@@ -842,9 +842,7 @@ private fun buildPublicExamPriorityRecommendations(
             cycleDistance = cycleDistance,
             minutesStudiedLast7Days = minutesLast7Days,
             hoursSinceLastStudy = lastStudy?.let { ((nowEpochMillis - it).coerceAtLeast(0L) / 3_600_000L).toInt() },
-            lockedByActiveSession = activeSession?.let { session ->
-                session.topicId == topic.id || (session.topicId == null && session.subjectId == subject.id)
-            } == true,
+            lockedByActiveSession = activeSession?.contributesToTopicEvidence(topic.id, subject.id) == true,
         )
     }
     return PublicExamPriorityPlanner.rank(plan.id, evidence, limit = 5)

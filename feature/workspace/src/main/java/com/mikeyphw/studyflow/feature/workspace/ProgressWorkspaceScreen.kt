@@ -79,6 +79,8 @@ import com.mikeyphw.studyflow.core.domain.StudySprintPlanner
 import com.mikeyphw.studyflow.core.domain.tickingClockFlow
 import com.mikeyphw.studyflow.core.model.AdaptiveRescheduleChangeType
 import com.mikeyphw.studyflow.core.model.ExamReadinessBand
+import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.ReadinessConfidence
 import com.mikeyphw.studyflow.core.model.ReadinessSignalKind
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyPlan
@@ -233,6 +235,13 @@ fun ProgressWorkspaceScreen(
             zoneId = ZoneId.systemDefault(),
         )
     }
+    val hasScheduleEvidence = remember(schedule, nowEpochMillis) {
+        schedule.plannedActivities.any { activity ->
+            activity.status != PlannedActivityStatus.PLANNED ||
+                activity.scheduledStartEpochMillis?.let { it <= nowEpochMillis } == true
+        }
+    }
+    val hasGoalEvidence = progress.activeGoals.isNotEmpty() || progress.completedGoals.isNotEmpty()
     val reschedulePreview = remember(plan, analytics, schedule, readiness, planSettings, nowEpochMillis) {
         if (planSettings.adaptivePlanningEnabled) {
             AdaptiveReschedulePlanner.preview(
@@ -431,23 +440,45 @@ fun ProgressWorkspaceScreen(
                 supportingContent = {
                     StudyFlowSectionTitle(title = stringResource(R.string.readiness_score))
                     StudyFlowMetric(
-                        label = stringResource(readinessBandLabel(readiness.band)),
-                        value = stringResource(R.string.percent_value, readiness.scorePercent),
-                        supportingText = stringResource(readinessBandMessage(readiness.band)),
+                        label = readiness.band?.let { band ->
+                            stringResource(readinessBandLabel(band))
+                        } ?: stringResource(R.string.not_enough_data),
+                        value = readiness.scorePercent?.let { score ->
+                            stringResource(R.string.percent_value, score)
+                        } ?: stringResource(R.string.no_data),
+                        supportingText = readiness.band?.let { band ->
+                            readiness.confidence?.let { confidence ->
+                                stringResource(
+                                    R.string.readiness_message_with_confidence,
+                                    stringResource(readinessBandMessage(band)),
+                                    stringResource(readinessConfidenceLabel(confidence)),
+                                )
+                            } ?: stringResource(readinessBandMessage(band))
+                        } ?: stringResource(R.string.readiness_insufficient_evidence_message),
                     )
                     StudyFlowProgressBand(
                         label = stringResource(R.string.readiness_coverage),
-                        valueText = stringResource(R.string.percent_value, readiness.coveragePercent),
-                        progressPercent = readiness.coveragePercent,
+                        valueText = readiness.coveragePercent?.let { coverage ->
+                            stringResource(R.string.percent_value, coverage)
+                        } ?: stringResource(R.string.no_data),
+                        progressPercent = readiness.coveragePercent ?: 0,
                     )
                     StudyFlowProgressBand(
                         label = stringResource(R.string.plan_schedule),
-                        valueText = stringResource(R.string.percent_value, analytics.scheduleAdherencePercent),
+                        valueText = if (hasScheduleEvidence) {
+                            stringResource(R.string.percent_value, analytics.scheduleAdherencePercent)
+                        } else {
+                            stringResource(R.string.no_data)
+                        },
                         progressPercent = analytics.scheduleAdherencePercent,
                     )
                     StudyFlowProgressBand(
                         label = stringResource(R.string.goal),
-                        valueText = stringResource(R.string.percent_value, progress.goalProgressPercent),
+                        valueText = if (hasGoalEvidence) {
+                            stringResource(R.string.percent_value, progress.goalProgressPercent)
+                        } else {
+                            stringResource(R.string.no_data)
+                        },
                         progressPercent = progress.goalProgressPercent,
                     )
                     StudyFlowMetric(
@@ -505,16 +536,21 @@ fun ProgressWorkspaceScreen(
                 item(key = "readiness-card", contentType = "readiness") {
                     val currentReadiness = readiness
                     StudyFlowFocusActionSurface(
-                        title = stringResource(
-                            R.string.percent_value,
-                            currentReadiness.scorePercent,
-                        ),
-                        message = stringResource(
-                            readinessBandMessage(currentReadiness.band),
-                        ),
-                        supportingLabel = stringResource(
-                            readinessBandLabel(currentReadiness.band),
-                        ),
+                        title = currentReadiness.scorePercent?.let { score ->
+                            stringResource(R.string.percent_value, score)
+                        } ?: stringResource(R.string.not_enough_data),
+                        message = currentReadiness.band?.let { band ->
+                            stringResource(readinessBandMessage(band))
+                        } ?: stringResource(R.string.readiness_insufficient_evidence_message),
+                        supportingLabel = currentReadiness.band?.let { band ->
+                            currentReadiness.confidence?.let { confidence ->
+                                stringResource(
+                                    R.string.readiness_band_with_confidence,
+                                    stringResource(readinessBandLabel(band)),
+                                    stringResource(readinessConfidenceLabel(confidence)),
+                                )
+                            } ?: stringResource(readinessBandLabel(band))
+                        } ?: stringResource(R.string.readiness_collecting_evidence),
                         actionLabel = stringResource(R.string.open_analytics),
                         onAction = onOpenAnalytics,
                         secondaryLabel = stringResource(R.string.preview_reschedule),
@@ -526,23 +562,21 @@ fun ProgressWorkspaceScreen(
                         first = { childModifier ->
                             StudyFlowMetric(
                                 label = stringResource(R.string.readiness_coverage),
-                                value = stringResource(
-                                    R.string.percent_value,
-                                    readiness.coveragePercent,
-                                ),
+                                value = readiness.coveragePercent?.let { coverage ->
+                                    stringResource(R.string.percent_value, coverage)
+                                } ?: stringResource(R.string.no_data),
                                 modifier = childModifier,
                             )
                         },
                         second = { childModifier ->
                             StudyFlowMetric(
                                 label = stringResource(R.string.readiness_time_feasibility),
-                                value = stringResource(
-                                    R.string.percent_value,
-                                    readiness.timeFeasibilityPercent,
-                                ),
+                                value = readiness.timeFeasibilityPercent?.let { feasibility ->
+                                    stringResource(R.string.percent_value, feasibility)
+                                } ?: stringResource(R.string.no_data),
                                 supportingText = readiness.daysUntilExam?.let { days ->
                                     pluralStringResource(R.plurals.days_value, days, days)
-                                },
+                                } ?: stringResource(R.string.readiness_no_exam_date),
                                 modifier = childModifier,
                             )
                         },
@@ -557,7 +591,9 @@ fun ProgressWorkspaceScreen(
                         title = stringResource(readinessSignalLabel(signal.kind)),
                         metadata = stringResource(readinessSignalMessage(signal.kind)),
                         icon = Icons.Outlined.CheckCircle,
-                        status = stringResource(R.string.percent_value, signal.scorePercent),
+                        status = signal.scorePercent?.let { score ->
+                            stringResource(R.string.percent_value, score)
+                        } ?: stringResource(R.string.no_data),
                         onClick = onOpenAnalytics,
                     )
                 }
@@ -1245,6 +1281,12 @@ private fun StudyCoachWeeklyReviewItemKind.destination(): WeeklyCoachDestination
     else -> WeeklyCoachDestination.ANALYTICS
 }
 
+private fun readinessConfidenceLabel(confidence: ReadinessConfidence): Int = when (confidence) {
+    ReadinessConfidence.LOW -> R.string.readiness_confidence_low
+    ReadinessConfidence.MEDIUM -> R.string.readiness_confidence_medium
+    ReadinessConfidence.HIGH -> R.string.readiness_confidence_high
+}
+
 private fun readinessBandLabel(band: ExamReadinessBand): Int = when (band) {
     ExamReadinessBand.ON_TRACK -> R.string.readiness_on_track
     ExamReadinessBand.WATCH -> R.string.readiness_watch
@@ -1297,9 +1339,10 @@ private fun rescheduleChangeReason(type: AdaptiveRescheduleChangeType): Int = wh
     AdaptiveRescheduleChangeType.KEEP_STEADY -> R.string.reschedule_reason_keep_steady
 }
 
-private fun rescheduleSummary(types: List<AdaptiveRescheduleChangeType>, readinessScorePercent: Int): Int = when {
+private fun rescheduleSummary(types: List<AdaptiveRescheduleChangeType>, readinessScorePercent: Int?): Int = when {
     types.any { it == AdaptiveRescheduleChangeType.REDISTRIBUTE_MISSED } -> R.string.reschedule_summary_recover_missed
     types.any { it == AdaptiveRescheduleChangeType.PROTECT_REVIEWS } -> R.string.reschedule_summary_protect_reviews
+    readinessScorePercent == null -> R.string.reschedule_summary_not_enough_evidence
     readinessScorePercent < 65 -> R.string.reschedule_summary_risky
     else -> R.string.reschedule_summary_stable
 }
@@ -1376,7 +1419,9 @@ private fun localizedExamReportDocument(snapshot: StudyExamReportSnapshot): Stud
     val readinessRows = snapshot.readinessSignals.map { signal ->
         StudyExamReportRow(
             label = stringResource(readinessSignalLabel(signal.kind)),
-            value = stringResource(R.string.percent_value, signal.scorePercent),
+            value = signal.scorePercent?.let { score ->
+                stringResource(R.string.percent_value, score)
+            } ?: stringResource(R.string.no_data),
         )
     }
     val coachRows = snapshot.weeklyCoachItems.map { item ->

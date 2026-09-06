@@ -62,6 +62,51 @@ class StudyCoachWeeklyReviewTest {
     }
 
     @Test
+    fun unavailableReadinessDoesNotBecomeFalseRisk() {
+        val unknown = ExamReadinessScore(
+            studyPlanId = plan.id,
+            scorePercent = null,
+            band = null,
+            daysUntilExam = null,
+            coveragePercent = 0,
+            reviewHealthPercent = null,
+            practiceHealthPercent = null,
+            mockExamHealthPercent = null,
+            consistencyPercent = null,
+            scheduleHealthPercent = null,
+            timeFeasibilityPercent = null,
+            signals = emptyList(),
+            confidence = null,
+            evidenceDimensionCount = 1,
+            evidenceSampleCount = 0,
+        )
+        val review = StudyCoachWeeklyReviewBuilder.build(
+            StudyCoachWeeklyReviewInput(
+                plan = plan,
+                analytics = analytics(
+                    overdueReviews = 0,
+                    accuracy = 0,
+                    adherence = 0,
+                    consistency = 0,
+                ).copy(
+                    studiedMinutesLastSevenDays = 0,
+                    completedSessionsLastSevenDays = 0,
+                    answeredQuestions = 0,
+                    retentionEaseAverage = 0.0,
+                ),
+                readiness = unknown,
+                reschedulePreview = null,
+                evidence = emptyList(),
+                generatedAtEpochMillis = NOW,
+            ),
+        )
+
+        assertEquals(null, review.readinessBand)
+        assertTrue(review.items.none { it.kind == StudyCoachWeeklyReviewItemKind.READINESS_RISK })
+        assertTrue(review.items.any { it.kind == StudyCoachWeeklyReviewItemKind.EVIDENCE_EMPTY })
+    }
+
+    @Test
     fun weeklyReviewCelebratesStableConsistency() {
         val review = StudyCoachWeeklyReviewBuilder.build(
             StudyCoachWeeklyReviewInput(

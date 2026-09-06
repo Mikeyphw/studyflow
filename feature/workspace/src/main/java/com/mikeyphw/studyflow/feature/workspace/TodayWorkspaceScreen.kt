@@ -62,8 +62,10 @@ import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.delay
@@ -163,15 +165,11 @@ fun TodayWorkspaceScreen(
         session.status == StudySessionStatus.RUNNING || session.status == StudySessionStatus.PAUSED
     }
     val todayActivities = remember(readySchedule.plannedActivities, currentTime) {
-        val (start, end) = localDayBounds(currentTime)
-        readySchedule.plannedActivities.filter { activity ->
-            val startAt = activity.scheduledStartEpochMillis
-            startAt != null && startAt in start until end && activity.status != PlannedActivityStatus.CANCELLED
-        }.sortedBy { it.scheduledStartEpochMillis }
+        activitiesForLocalDay(readySchedule.plannedActivities, currentTime)
     }
-    val nextActivity = todayActivities.firstOrNull { activity ->
-        activity.status == PlannedActivityStatus.PLANNED || activity.status == PlannedActivityStatus.MISSED
-    } ?: readySchedule.pendingActivities.minByOrNull { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
+    val nextActivity = remember(readySchedule.plannedActivities, currentTime) {
+        selectTodayOrNextScheduledActivity(readySchedule.plannedActivities, currentTime)
+    }
     val dueReviewCount = readyReviewSummary.dueCount
     val recommendation = recommendations.firstOrNull()
     val weeklyGoalMinutes = (plan.weeklyGoalHours * 60).coerceAtLeast(1)
@@ -260,10 +258,13 @@ fun TodayWorkspaceScreen(
                         )
                         nextActivity != null -> StudyFlowFocusActionSurface(
                             supportingLabel = stringResource(R.string.planned_next),
-                            title = nextActivity.title,
-                            message = activityMetadata(nextActivity),
+                            title = nextActivity.activity.title,
+                            message = activityMetadata(
+                                activity = nextActivity.activity,
+                                includeDate = nextActivity.isFutureDay,
+                            ),
                             actionLabel = stringResource(R.string.start_focus),
-                            onAction = { startActivity(nextActivity) },
+                            onAction = { startActivity(nextActivity.activity) },
                             secondaryLabel = stringResource(R.string.adjust_plan),
                             onSecondaryAction = onOpenSchedule,
                         )
@@ -453,19 +454,6 @@ private fun localWeekStart(nowEpochMillis: Long): Long {
     return calendar.timeInMillis
 }
 
-private fun localDayBounds(nowEpochMillis: Long): Pair<Long, Long> {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = nowEpochMillis
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
-    val start = calendar.timeInMillis
-    calendar.add(Calendar.DAY_OF_MONTH, 1)
-    return start to calendar.timeInMillis
-}
-
 @Composable
 private fun sessionMessage(session: StudySession): String = when (session.status) {
     StudySessionStatus.PAUSED -> stringResource(
@@ -481,11 +469,26 @@ private fun sessionMessage(session: StudySession): String = when (session.status
 }
 
 @Composable
-private fun activityMetadata(activity: PlannedActivity): String {
-    val time = activity.scheduledStartEpochMillis?.let { epoch ->
-        DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(epoch))
+private fun activityMetadata(
+    activity: PlannedActivity,
+    includeDate: Boolean = false,
+): String {
+    val epoch = activity.scheduledStartEpochMillis
+    val time = epoch?.let {
+        DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(it))
     } ?: stringResource(R.string.flexible)
-    return "$time · ${stringResource(R.string.minutes_value, activity.plannedDurationMinutes)}"
+    val duration = stringResource(R.string.minutes_value, activity.plannedDurationMinutes)
+    if (!includeDate || epoch == null) return "$time · $duration"
+
+    val date = Date(epoch)
+    val weekday = SimpleDateFormat("EEE", Locale.getDefault()).format(date)
+    val shortDate = DateFormat.getDateInstance(DateFormat.SHORT).format(date)
+    return stringResource(
+        R.string.dated_activity_metadata,
+        "$weekday, $shortDate",
+        time,
+        duration,
+    )
 }
 
 @Composable

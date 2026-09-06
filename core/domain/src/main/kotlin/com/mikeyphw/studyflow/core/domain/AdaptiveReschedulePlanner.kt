@@ -107,12 +107,12 @@ object AdaptiveReschedulePlanner {
         plan: StudyPlan,
         analytics: StudyAnalyticsSnapshot,
         schedule: StudySchedule,
-        readinessScorePercent: Int,
+        readinessScorePercent: Int?,
         nowEpochMillis: Long,
     ): AdaptiveReschedulePreview = AdaptiveReschedulePreview(
         studyPlanId = plan.id,
         generatedAtEpochMillis = nowEpochMillis,
-        readinessScorePercent = readinessScorePercent.coerceIn(0, 100),
+        readinessScorePercent = readinessScorePercent?.coerceIn(0, 100),
         missedUnlockedActivities = schedule.plannedActivities.count {
             it.status == PlannedActivityStatus.MISSED && !it.locked
         },
@@ -127,7 +127,7 @@ object AdaptiveReschedulePlanner {
         plan: StudyPlan,
         analytics: StudyAnalyticsSnapshot,
         schedule: StudySchedule,
-        readinessScorePercent: Int,
+        readinessScorePercent: Int?,
         nowEpochMillis: Long,
     ): AdaptiveReschedulePreview {
         val proposed = buildList {
@@ -142,7 +142,7 @@ object AdaptiveReschedulePlanner {
         return AdaptiveReschedulePreview(
             studyPlanId = plan.id,
             generatedAtEpochMillis = nowEpochMillis,
-            readinessScorePercent = readinessScorePercent.coerceIn(0, 100),
+            readinessScorePercent = readinessScorePercent?.coerceIn(0, 100),
             missedUnlockedActivities = schedule.plannedActivities.count {
                 it.status == PlannedActivityStatus.MISSED && !it.locked
             },
@@ -356,10 +356,11 @@ object AdaptiveReschedulePlanner {
         change.currentStatus == change.proposedStatus &&
         (change.currentType == null || change.currentType == change.proposedType)
 
-    private fun summaryFor(score: Int, changes: List<AdaptiveRescheduleChange>): String = when {
+    private fun summaryFor(score: Int?, changes: List<AdaptiveRescheduleChange>): String = when {
         changes.any { it.type == AdaptiveRescheduleChangeType.REDISTRIBUTE_MISSED } ->
             "Recover missed work before adding new load."
         changes.any { it.type == AdaptiveRescheduleChangeType.PROTECT_REVIEWS } -> "Protect review debt first."
+        score == null -> "Readiness needs more evidence; keep changes evidence-driven and reversible."
         score < 65 -> "The plan is risky; accept only safe, reversible changes."
         else -> "The plan is stable; no major reshuffle is needed."
     }

@@ -130,12 +130,12 @@ object StudyCoachWeeklyReviewBuilder {
         if (adherence != null && adherence < 70) {
             add(item(StudyCoachWeeklyReviewItemKind.SCHEDULE_DRIFT, StudyCoachWeeklyReviewTone.WATCH, adherence))
         }
-        if (readiness != null && readiness.mockExamHealthPercent < 60) {
+        readiness?.mockExamHealthPercent?.takeIf { it < 60 }?.let { mockHealth ->
             add(
                 item(
                     StudyCoachWeeklyReviewItemKind.MOCK_EXAM_SIGNAL,
                     StudyCoachWeeklyReviewTone.WATCH,
-                    readiness.mockExamHealthPercent,
+                    mockHealth,
                 ),
             )
         }

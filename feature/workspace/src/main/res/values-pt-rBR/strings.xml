@@ -32,6 +32,7 @@
     <string name="goal">Meta</string>
     <string name="accuracy">Acerto</string>
     <string name="minutes_value">%1$d min</string>
+    <string name="dated_activity_metadata">%1$s · %2$s · %3$s</string>
     <string name="hours_value">%1$d h</string>
     <string name="percent_value">%1$d%%</string>
     <plurals name="days_value">
@@ -298,6 +299,7 @@
     <string name="review_topic">Tópico · %1$s</string>
     <string name="review_generic">Revisão · %1$s</string>
 
+    <string name="no_data">Sem dados</string>
     <string name="readiness_score">Prontidão para a prova</string>
     <string name="readiness_coverage">Cobertura</string>
     <string name="readiness_time_feasibility">Viabilidade do tempo</string>
@@ -309,6 +311,14 @@
     <string name="readiness_watch_message">O plano é viável, mas pelo menos um sinal pede atenção nesta semana.</string>
     <string name="readiness_at_risk_message">A prontidão está caindo. Aceite ajustes seguros antes de adicionar carga nova.</string>
     <string name="readiness_critical_message">O ritmo atual não está seguro para a prova. Priorize recuperação e revisões.</string>
+    <string name="readiness_insufficient_evidence_message">Conclua mais estudo, prática, revisões ou simulados antes de estimar a prontidão.</string>
+    <string name="readiness_collecting_evidence">Coletando evidências</string>
+    <string name="readiness_no_exam_date">Sem data de prova confirmada</string>
+    <string name="readiness_confidence_low">confiança baixa</string>
+    <string name="readiness_confidence_medium">confiança média</string>
+    <string name="readiness_confidence_high">confiança alta</string>
+    <string name="readiness_band_with_confidence">%1$s · %2$s</string>
+    <string name="readiness_message_with_confidence">%1$s Confiança: %2$s.</string>
     <string name="adaptive_reschedule">Replanejamento adaptativo</string>
     <string name="preview_reschedule">Prévia do replanejamento</string>
     <string name="reschedule_preview">Prévia segura do plano</string>
@@ -340,6 +350,7 @@
     <string name="reschedule_summary_protect_reviews">Proteja a dívida de revisão antes de expandir teoria.</string>
     <string name="reschedule_summary_risky">O plano está arriscado; aceite apenas ajustes seguros e reversíveis.</string>
     <string name="reschedule_summary_stable">O plano está estável; não há grande reorganização necessária.</string>
+    <string name="reschedule_summary_not_enough_evidence">Ainda não há evidência suficiente de prontidão; mantenha apenas ajustes sustentados pelos dados disponíveis.</string>
     <string name="reschedule_reason_redistribute_missed">Este bloco perdido e destravado pode voltar com segurança ao plano.</string>
     <string name="reschedule_reason_protect_reviews">Revisões atrasadas devem ser concluídas antes de teoria nova.</string>
     <string name="reschedule_reason_reduce_overload">Este dia está sobrecarregado, então o bloco é encurtado sem ser excluído.</string>

@@ -39,7 +39,7 @@ data class StudyExamRunbookItem(
 data class StudyExamRunbook(
     val state: StudyExamRunbookState,
     val daysUntilExam: Int?,
-    val readinessBand: ExamReadinessBand,
+    val readinessBand: ExamReadinessBand?,
     val items: List<StudyExamRunbookItem>,
     val finalStretchStrategy: PublicExamFinalStretchStrategy? = null,
 ) {

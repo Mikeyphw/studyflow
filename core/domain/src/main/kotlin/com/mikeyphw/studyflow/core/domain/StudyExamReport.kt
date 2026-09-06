@@ -25,7 +25,7 @@ enum class StudyExamReportNextActionKind {
 
 data class StudyExamReportSignal(
     val kind: ReadinessSignalKind,
-    val scorePercent: Int,
+    val scorePercent: Int?,
 )
 
 enum class StudyExamReportMetricSource {
@@ -187,7 +187,7 @@ object StudyExamReportBuilder {
         if (analytics?.weakAreas?.isNotEmpty() == true || (analytics?.questionAccuracyPercent ?: 100) < 60) {
             add(StudyExamReportNextActionKind.PRACTICE_WEAK_AREAS)
         }
-        if (readiness != null && readiness.mockExamHealthPercent < 60) {
+        if (readiness?.mockExamHealthPercent?.let { it < 60 } == true) {
             add(StudyExamReportNextActionKind.RUN_MOCK_EXAM)
         }
         if (input.cleanupReport.issueCount > 0) {

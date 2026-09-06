@@ -32,6 +32,7 @@
     <string name="goal">Goal</string>
     <string name="accuracy">Accuracy</string>
     <string name="minutes_value">%1$d min</string>
+    <string name="dated_activity_metadata">%1$s · %2$s · %3$s</string>
     <string name="hours_value">%1$d h</string>
     <string name="percent_value">%1$d%%</string>
     <plurals name="days_value">
@@ -279,6 +280,7 @@
     <string name="review_topic">Topic · %1$s</string>
     <string name="review_generic">Review · %1$s</string>
 
+    <string name="no_data">No data</string>
     <string name="readiness_score">Exam readiness</string>
     <string name="readiness_coverage">Coverage</string>
     <string name="readiness_time_feasibility">Time feasibility</string>
@@ -290,6 +292,14 @@
     <string name="readiness_watch_message">The plan is viable, but at least one signal needs attention this week.</string>
     <string name="readiness_at_risk_message">Readiness is slipping. Accept safe adjustments before adding new load.</string>
     <string name="readiness_critical_message">The current pace is not exam-safe. Prioritize recovery and review debt.</string>
+    <string name="readiness_insufficient_evidence_message">Complete more study, practice, reviews, or mocks before estimating readiness.</string>
+    <string name="readiness_collecting_evidence">Collecting evidence</string>
+    <string name="readiness_no_exam_date">No confirmed exam date</string>
+    <string name="readiness_confidence_low">low confidence</string>
+    <string name="readiness_confidence_medium">medium confidence</string>
+    <string name="readiness_confidence_high">high confidence</string>
+    <string name="readiness_band_with_confidence">%1$s · %2$s</string>
+    <string name="readiness_message_with_confidence">%1$s Confidence: %2$s.</string>
     <string name="adaptive_reschedule">Adaptive reschedule</string>
     <string name="preview_reschedule">Preview reschedule</string>
     <string name="reschedule_preview">Safe plan preview</string>
@@ -321,6 +331,7 @@
     <string name="reschedule_summary_protect_reviews">Protect review debt before expanding theory.</string>
     <string name="reschedule_summary_risky">The plan is risky; accept only safe, reversible changes.</string>
     <string name="reschedule_summary_stable">The plan is stable; no major reshuffle is needed.</string>
+    <string name="reschedule_summary_not_enough_evidence">Readiness still lacks enough evidence; keep only changes supported by the available data.</string>
     <string name="reschedule_reason_redistribute_missed">This unlocked missed block can be safely returned to the plan.</string>
     <string name="reschedule_reason_protect_reviews">Overdue reviews should be cleared before adding new theory.</string>
     <string name="reschedule_reason_reduce_overload">This day is overloaded, so the block is shortened without deleting it.</string>

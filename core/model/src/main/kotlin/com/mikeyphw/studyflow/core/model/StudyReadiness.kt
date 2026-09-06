@@ -18,39 +18,79 @@ enum class ReadinessSignalKind {
     WEAK_AREAS,
 }
 
+enum class ReadinessConfidence {
+    LOW,
+    MEDIUM,
+    HIGH,
+}
+
 data class ReadinessSignal(
     val kind: ReadinessSignalKind,
     val label: String,
-    val scorePercent: Int,
+    val scorePercent: Int?,
     val message: String,
-    val severity: ExamReadinessBand,
-)
+    val severity: ExamReadinessBand?,
+) {
+    init {
+        require(scorePercent == null || scorePercent in 0..100) {
+            "Readiness signal score must be between 0 and 100."
+        }
+        require((scorePercent == null) == (severity == null)) {
+            "Readiness signal severity must be absent when its score is unavailable."
+        }
+    }
+}
 
 data class ExamReadinessScore(
     val studyPlanId: StudyPlanId,
-    val scorePercent: Int,
-    val band: ExamReadinessBand,
+    val scorePercent: Int?,
+    val band: ExamReadinessBand?,
     val daysUntilExam: Int?,
-    val coveragePercent: Int,
-    val reviewHealthPercent: Int,
-    val practiceHealthPercent: Int,
-    val mockExamHealthPercent: Int,
-    val consistencyPercent: Int,
-    val scheduleHealthPercent: Int,
-    val timeFeasibilityPercent: Int,
+    val coveragePercent: Int?,
+    val reviewHealthPercent: Int?,
+    val practiceHealthPercent: Int?,
+    val mockExamHealthPercent: Int?,
+    val consistencyPercent: Int?,
+    val scheduleHealthPercent: Int?,
+    val timeFeasibilityPercent: Int?,
     val signals: List<ReadinessSignal>,
+    val confidence: ReadinessConfidence? = ReadinessConfidence.HIGH,
+    val evidenceDimensionCount: Int = 7,
+    val evidenceSampleCount: Int = 0,
 ) {
     init {
-        require(scorePercent in 0..100) { "Readiness score must be between 0 and 100." }
-        require(coveragePercent in 0..100) { "Coverage score must be between 0 and 100." }
-        require(reviewHealthPercent in 0..100) { "Review score must be between 0 and 100." }
-        require(practiceHealthPercent in 0..100) { "Practice score must be between 0 and 100." }
-        require(mockExamHealthPercent in 0..100) { "Mock exam score must be between 0 and 100." }
-        require(consistencyPercent in 0..100) { "Consistency score must be between 0 and 100." }
-        require(scheduleHealthPercent in 0..100) { "Schedule score must be between 0 and 100." }
-        require(timeFeasibilityPercent in 0..100) { "Time-feasibility score must be between 0 and 100." }
+        require(scorePercent == null || scorePercent in 0..100) { "Readiness score must be between 0 and 100." }
+        require((scorePercent == null) == (band == null)) {
+            "Readiness band must be absent when the readiness score is unavailable."
+        }
+        require((scorePercent == null) == (confidence == null)) {
+            "Readiness confidence must be absent when the readiness score is unavailable."
+        }
+        require(coveragePercent == null || coveragePercent in 0..100) { "Coverage score must be between 0 and 100." }
+        require(reviewHealthPercent == null || reviewHealthPercent in 0..100) {
+            "Review score must be between 0 and 100."
+        }
+        require(practiceHealthPercent == null || practiceHealthPercent in 0..100) {
+            "Practice score must be between 0 and 100."
+        }
+        require(mockExamHealthPercent == null || mockExamHealthPercent in 0..100) {
+            "Mock exam score must be between 0 and 100."
+        }
+        require(consistencyPercent == null || consistencyPercent in 0..100) {
+            "Consistency score must be between 0 and 100."
+        }
+        require(scheduleHealthPercent == null || scheduleHealthPercent in 0..100) {
+            "Schedule score must be between 0 and 100."
+        }
+        require(timeFeasibilityPercent == null || timeFeasibilityPercent in 0..100) {
+            "Time-feasibility score must be between 0 and 100."
+        }
         require(daysUntilExam == null || daysUntilExam >= 0) { "Days until exam cannot be negative." }
+        require(evidenceDimensionCount >= 0) { "Evidence dimension count cannot be negative." }
+        require(evidenceSampleCount >= 0) { "Evidence sample count cannot be negative." }
     }
+
+    val hasSufficientEvidence: Boolean = scorePercent != null
 }
 
 enum class AdaptiveRescheduleChangeType {
@@ -82,7 +122,7 @@ data class AdaptiveRescheduleChange(
 data class AdaptiveReschedulePreview(
     val studyPlanId: StudyPlanId,
     val generatedAtEpochMillis: Long,
-    val readinessScorePercent: Int,
+    val readinessScorePercent: Int?,
     val missedUnlockedActivities: Int,
     val overdueReviewCount: Int,
     val scheduleAdherencePercent: Int,
