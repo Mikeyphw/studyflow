@@ -67,6 +67,23 @@ data class PortableAnnexPayload(
     val checksumSha256: String,
 )
 
+enum class PortableResourceHandler {
+    DOCUMENT,
+    TEXT,
+    IMAGE,
+    AUDIO,
+    VIDEO,
+    GENERIC,
+}
+
+data class StudyPlanPortableResource(
+    val fileName: String,
+    val mimeType: String,
+    val byteSize: Long,
+    val checksumSha256: String,
+    val handler: PortableResourceHandler,
+)
+
 @Serializable
 data class StudyPlanPackageManifest(
     val format: String = StudyPlanPackageFormat,
@@ -137,6 +154,7 @@ data class StudyPlanImportPreview(
     val totalRows: Int,
     val warnings: List<StudyPlanPortabilityWarning>,
     val encrypted: Boolean = false,
+    val resources: List<StudyPlanPortableResource> = emptyList(),
 )
 
 data class StudyPlanBackupIntegrityReport(

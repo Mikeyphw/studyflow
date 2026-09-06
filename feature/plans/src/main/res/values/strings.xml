@@ -338,4 +338,16 @@
     <string name="onboarding_goal_coverage_date">Complete edital coverage by date</string>
     <string name="onboarding_goal_overdue_reviews">An “eliminate overdue reviews” goal is included in this preset.</string>
     <string name="onboarding_date_format_hint">YYYY-MM-DD</string>
+    <plurals name="portable_resource_count">
+        <item quantity="one">%1$d portable file</item>
+        <item quantity="other">%1$d portable files</item>
+    </plurals>
+    <string name="portable_resource_details">%1$s · %2$s · %3$s</string>
+    <string name="portable_resource_checksum">SHA-256 %1$s…</string>
+    <string name="portable_handler_document">Document</string>
+    <string name="portable_handler_text">Text</string>
+    <string name="portable_handler_image">Image</string>
+    <string name="portable_handler_audio">Audio</string>
+    <string name="portable_handler_video">Video</string>
+    <string name="portable_handler_generic">File</string>
 </resources>

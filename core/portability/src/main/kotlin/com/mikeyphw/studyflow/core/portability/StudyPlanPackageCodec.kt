@@ -324,6 +324,7 @@ class StudyPlanPackageCodec(
             manifest = payload.manifest,
             totalRows = payload.tables.sumOf { it.rows.size },
             warnings = warnings,
+            resources = StudyPlanPortableResources.forManifest(payload.manifest),
         )
     }
 

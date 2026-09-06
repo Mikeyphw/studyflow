@@ -348,4 +348,17 @@
     <string name="onboarding_goal_coverage_date">Concluir cobertura do edital até a data</string>
     <string name="onboarding_goal_overdue_reviews">Uma meta de “zerar revisões atrasadas” está incluída neste preset.</string>
     <string name="onboarding_date_format_hint">YYYY-MM-DD</string>
+    <plurals name="portable_resource_count">
+        <item quantity="one">%1$d arquivo portátil</item>
+        <item quantity="many">%1$d arquivos portáteis</item>
+        <item quantity="other">%1$d arquivos portáteis</item>
+    </plurals>
+    <string name="portable_resource_details">%1$s · %2$s · %3$s</string>
+    <string name="portable_resource_checksum">SHA-256 %1$s…</string>
+    <string name="portable_handler_document">Documento</string>
+    <string name="portable_handler_text">Texto</string>
+    <string name="portable_handler_image">Imagem</string>
+    <string name="portable_handler_audio">Áudio</string>
+    <string name="portable_handler_video">Vídeo</string>
+    <string name="portable_handler_generic">Arquivo</string>
 </resources>

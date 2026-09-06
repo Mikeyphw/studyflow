@@ -475,7 +475,7 @@ class StudyPlanGraphPortabilityStore(
     }
 
     private fun selectedSpecs(options: StudyPlanExportOptions): List<StudyPlanGraphDuplicator.TableSpec> =
-        StudyPlanGraphDuplicator.TableSpecs.filter { it.tableName in selectedTableNames(options) }
+        StudyPlanGraphDuplicator.PortabilityTableSpecs.filter { it.tableName in selectedTableNames(options) }
 
     private fun selectedTableNames(options: StudyPlanExportOptions): Set<String> {
         var selected = baseTableNames(options.mode)

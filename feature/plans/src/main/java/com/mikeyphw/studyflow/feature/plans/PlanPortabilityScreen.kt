@@ -63,6 +63,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageAuthenticationException
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageMimeType
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePasswordRequiredException
+import com.mikeyphw.studyflow.core.portability.PortableResourceHandler
 import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarning
 import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarningType
 import com.mikeyphw.studyflow.core.portability.StudyPlanPrivacyPolicy
@@ -585,6 +586,35 @@ fun PlanPortabilityScreen(
                         ),
                     )
                     if (preview.encrypted) Text(stringResource(R.string.encrypted_package_verified))
+                    if (preview.resources.isNotEmpty()) {
+                        Text(
+                            pluralStringResource(
+                                R.plurals.portable_resource_count,
+                                preview.resources.size,
+                                preview.resources.size,
+                            ),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        preview.resources.forEach { resource ->
+                            Text(
+                                stringResource(
+                                    R.string.portable_resource_details,
+                                    resource.fileName,
+                                    resource.mimeType,
+                                    stringResource(portableResourceHandlerLabel(resource.handler)),
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                stringResource(
+                                    R.string.portable_resource_checksum,
+                                    resource.checksumSha256.take(12),
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                     preview.warnings.forEach { warning ->
                         Text(portabilityWarning(warning))
                     }
@@ -625,6 +655,16 @@ private fun portabilityWarning(warning: StudyPlanPortabilityWarning): String = w
     StudyPlanPortabilityWarningType.REPLACE_CREATES_SAFETY_SNAPSHOT -> stringResource(
         R.string.replace_creates_safety_snapshot,
     )
+}
+
+@androidx.annotation.StringRes
+private fun portableResourceHandlerLabel(handler: PortableResourceHandler): Int = when (handler) {
+    PortableResourceHandler.DOCUMENT -> R.string.portable_handler_document
+    PortableResourceHandler.TEXT -> R.string.portable_handler_text
+    PortableResourceHandler.IMAGE -> R.string.portable_handler_image
+    PortableResourceHandler.AUDIO -> R.string.portable_handler_audio
+    PortableResourceHandler.VIDEO -> R.string.portable_handler_video
+    PortableResourceHandler.GENERIC -> R.string.portable_handler_generic
 }
 
 @Composable
