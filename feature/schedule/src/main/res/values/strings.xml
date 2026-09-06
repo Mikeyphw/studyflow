@@ -89,4 +89,27 @@
     <string name="enable_cycle">Enable cycle</string>
     <string name="move_current_to_end">Move current to end</string>
     <string name="more_actions">More actions</string>
+    <string name="schedule_filters">Schedule filters</string>
+    <string name="filter_subject">Subject</string>
+    <string name="filter_type">Type</string>
+    <string name="filter_status">Status</string>
+    <string name="filter_provenance">Provenance</string>
+    <string name="filter_all">All</string>
+    <string name="provenance_manual">Manual</string>
+    <string name="provenance_generated">Generated</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="unscheduled">Unscheduled</string>
+    <string name="schedule_conflict">Conflict</string>
+    <string name="overloaded_day">Overloaded day</string>
+    <string name="bulk_actions">Bulk actions</string>
+    <string name="select_visible">Select visible</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="select_activity">Select</string>
+    <string name="delete_selected">Delete selected</string>
+    <string name="delete_selected_title">Delete selected activities?</string>
+    <string name="delete_selected_message">%1$d unlocked editable activities will be deleted.</string>
+    <string name="bulk_protection_note">Locked, in-progress, and historical activities are protected from bulk actions.</string>
+    <string name="no_filter_matches_title">No activities match these filters</string>
+    <string name="no_filter_matches_message">Adjust subject, type, status, or provenance to see other activities.</string>
 </resources>

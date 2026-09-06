@@ -91,4 +91,27 @@
     <string name="enable_cycle">Ativar ciclo</string>
     <string name="move_current_to_end">Mover atual para o fim</string>
     <string name="more_actions">Mais ações</string>
+    <string name="schedule_filters">Filtros do cronograma</string>
+    <string name="filter_subject">Matéria</string>
+    <string name="filter_type">Tipo</string>
+    <string name="filter_status">Status</string>
+    <string name="filter_provenance">Origem</string>
+    <string name="filter_all">Todos</string>
+    <string name="provenance_manual">Manual</string>
+    <string name="provenance_generated">Gerada</string>
+    <string name="today">Hoje</string>
+    <string name="tomorrow">Amanhã</string>
+    <string name="unscheduled">Sem data</string>
+    <string name="schedule_conflict">Conflito</string>
+    <string name="overloaded_day">Dia sobrecarregado</string>
+    <string name="bulk_actions">Ações em lote</string>
+    <string name="select_visible">Selecionar visíveis</string>
+    <string name="selected_count">%1$d selecionadas</string>
+    <string name="select_activity">Selecionar</string>
+    <string name="delete_selected">Excluir selecionadas</string>
+    <string name="delete_selected_title">Excluir atividades selecionadas?</string>
+    <string name="delete_selected_message">%1$d atividades desbloqueadas e editáveis serão excluídas.</string>
+    <string name="bulk_protection_note">Atividades travadas, em andamento e históricas não entram nas ações em lote.</string>
+    <string name="no_filter_matches_title">Nenhuma atividade corresponde aos filtros</string>
+    <string name="no_filter_matches_message">Ajuste matéria, tipo, status ou origem para ver outras atividades.</string>
 </resources>

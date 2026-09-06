@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.outlined.EventNote
 import androidx.compose.material.icons.outlined.PendingActions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
@@ -74,7 +75,11 @@ import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudyStrategy
 import com.mikeyphw.studyflow.core.model.StudyStrategyId
 import com.mikeyphw.studyflow.core.model.StudyStrategyType
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.launch
 
@@ -110,6 +115,31 @@ fun StudyScheduleScreen(
     var showActivityDialog by remember { mutableStateOf(false) }
     var strategyName by rememberSaveable(schedule.strategy?.id?.value) {
         mutableStateOf((schedule.strategy?.type ?: StudyStrategyType.FIXED_WEEKLY).name)
+    }
+    var subjectFilterId by rememberSaveable(plan.id.value) { mutableStateOf("") }
+    var typeFilterName by rememberSaveable(plan.id.value) { mutableStateOf("") }
+    var statusFilterName by rememberSaveable(plan.id.value) { mutableStateOf("") }
+    var provenanceFilterName by rememberSaveable(plan.id.value) { mutableStateOf("") }
+    var selectedActivityIds by rememberSaveable(plan.id.value) { mutableStateOf(setOf<String>()) }
+    var confirmingBulkDelete by rememberSaveable(plan.id.value) { mutableStateOf(false) }
+
+    val zoneId = remember { ZoneId.systemDefault() }
+    val subjectById = remember(syllabus) { syllabus.subjects.associateBy { it.id.value } }
+    val activityFilter = ScheduleActivityFilter(
+        subjectId = subjectFilterId.takeIf(String::isNotEmpty)?.let { com.mikeyphw.studyflow.core.model.SubjectId(it) },
+        type = typeFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, StudyActivityType.CUSTOM) },
+        status = statusFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, PlannedActivityStatus.PLANNED) },
+        provenance = provenanceFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, ScheduleActivityProvenance.MANUAL) },
+    )
+    val visibleActivities = remember(schedule.plannedActivities, activityFilter) {
+        ScheduleIntelligence.filter(schedule.plannedActivities, activityFilter)
+    }
+    val dayGroups = remember(visibleActivities, zoneId) { ScheduleIntelligence.groupByDay(visibleActivities, zoneId) }
+    val intelligence = remember(schedule.plannedActivities, zoneId) {
+        ScheduleIntelligence.inspect(schedule.plannedActivities, zoneId)
+    }
+    val selectedMutableActivities = remember(schedule.plannedActivities, selectedActivityIds) {
+        schedule.plannedActivities.filter { it.id.value in selectedActivityIds && ScheduleIntelligence.isBulkMutable(it) }
     }
 
     val operationFailed = stringResource(R.string.operation_failed)
@@ -352,8 +382,8 @@ fun StudyScheduleScreen(
                         StudyFlowStatusPill(
                             text = pluralStringResource(
                                 R.plurals.activity_count,
-                                schedule.plannedActivities.size,
-                                schedule.plannedActivities.size,
+                                visibleActivities.size,
+                                visibleActivities.size,
                             ),
                             leadingIcon = { Icon(Icons.Outlined.PendingActions, contentDescription = null) },
                         )
@@ -373,32 +403,218 @@ fun StudyScheduleScreen(
                     }
                 }
             }
-            if (schedule.plannedActivities.isEmpty()) {
+            item {
+                StudyFlowSectionCard(title = stringResource(R.string.schedule_filters)) {
+                    Text(stringResource(R.string.filter_subject), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = subjectFilterId.isEmpty(),
+                            onClick = { subjectFilterId = ""; selectedActivityIds = emptySet() },
+                            label = { Text(stringResource(R.string.filter_all)) },
+                        )
+                        syllabus.subjects.filter { !it.archived }.forEach { subject ->
+                            FilterChip(
+                                selected = subjectFilterId == subject.id.value,
+                                onClick = { subjectFilterId = subject.id.value; selectedActivityIds = emptySet() },
+                                label = { Text(subject.name) },
+                            )
+                        }
+                    }
+                    Text(stringResource(R.string.filter_type), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = typeFilterName.isEmpty(),
+                            onClick = { typeFilterName = ""; selectedActivityIds = emptySet() },
+                            label = { Text(stringResource(R.string.filter_all)) },
+                        )
+                        StudyActivityType.entries.forEach { type ->
+                            FilterChip(
+                                selected = typeFilterName == type.name,
+                                onClick = { typeFilterName = type.name; selectedActivityIds = emptySet() },
+                                label = { Text(stringResource(type.labelKey())) },
+                            )
+                        }
+                    }
+                    Text(stringResource(R.string.filter_status), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = statusFilterName.isEmpty(),
+                            onClick = { statusFilterName = ""; selectedActivityIds = emptySet() },
+                            label = { Text(stringResource(R.string.filter_all)) },
+                        )
+                        PlannedActivityStatus.entries.forEach { status ->
+                            FilterChip(
+                                selected = statusFilterName == status.name,
+                                onClick = { statusFilterName = status.name; selectedActivityIds = emptySet() },
+                                label = { Text(stringResource(status.labelKey())) },
+                            )
+                        }
+                    }
+                    Text(stringResource(R.string.filter_provenance), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = provenanceFilterName.isEmpty(),
+                            onClick = { provenanceFilterName = ""; selectedActivityIds = emptySet() },
+                            label = { Text(stringResource(R.string.filter_all)) },
+                        )
+                        ScheduleActivityProvenance.entries.forEach { provenance ->
+                            FilterChip(
+                                selected = provenanceFilterName == provenance.name,
+                                onClick = { provenanceFilterName = provenance.name; selectedActivityIds = emptySet() },
+                                label = { Text(stringResource(provenance.labelKey())) },
+                            )
+                        }
+                    }
+                }
+            }
+            if (visibleActivities.any(ScheduleIntelligence::isBulkMutable)) {
+                item {
+                    StudyFlowSectionCard(title = stringResource(R.string.bulk_actions)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    selectedActivityIds = visibleActivities
+                                        .filter(ScheduleIntelligence::isBulkMutable)
+                                        .mapTo(linkedSetOf()) { it.id.value }
+                                },
+                            ) { Text(stringResource(R.string.select_visible)) }
+                            StudyFlowStatusPill(
+                                text = stringResource(R.string.selected_count, selectedMutableActivities.size),
+                            )
+                            Button(
+                                enabled = selectedMutableActivities.isNotEmpty(),
+                                onClick = {
+                                    val selected = selectedMutableActivities
+                                    selectedActivityIds = emptySet()
+                                    launchAction(activityCompleted) {
+                                        selected.forEach { scheduleManager.completeActivity(plan.id, it.id) }
+                                    }
+                                },
+                            ) { Text(stringResource(R.string.mark_complete)) }
+                            OutlinedButton(
+                                enabled = selectedMutableActivities.isNotEmpty(),
+                                onClick = {
+                                    val selected = selectedMutableActivities
+                                    selectedActivityIds = emptySet()
+                                    launchAction(activityMissed) {
+                                        selected.forEach { scheduleManager.markActivityMissed(plan.id, it.id) }
+                                    }
+                                },
+                            ) { Text(stringResource(R.string.mark_missed)) }
+                            OutlinedButton(
+                                enabled = selectedMutableActivities.isNotEmpty(),
+                                onClick = { confirmingBulkDelete = true },
+                            ) { Text(stringResource(R.string.delete_selected)) }
+                        }
+                        Text(
+                            stringResource(R.string.bulk_protection_note),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+            if (visibleActivities.isEmpty()) {
                 item {
                     StudyFlowEmptyState(
-                        title = stringResource(R.string.empty_activities_title),
-                        message = stringResource(R.string.empty_activities_message),
+                        title = if (schedule.plannedActivities.isEmpty()) {
+                            stringResource(R.string.empty_activities_title)
+                        } else {
+                            stringResource(R.string.no_filter_matches_title)
+                        },
+                        message = if (schedule.plannedActivities.isEmpty()) {
+                            stringResource(R.string.empty_activities_message)
+                        } else {
+                            stringResource(R.string.no_filter_matches_message)
+                        },
                         actionLabel = stringResource(R.string.add_activity),
                         onAction = { showActivityDialog = true },
                     )
                 }
             } else {
-                items(schedule.plannedActivities, key = { it.id.value }) { activity ->
-                    PlannedActivityCard(
-                        activity = activity,
-                        onComplete = {
-                            launchAction(activityCompleted) { scheduleManager.completeActivity(plan.id, activity.id) }
-                        },
-                        onMissed = {
-                            launchAction(activityMissed) { scheduleManager.markActivityMissed(plan.id, activity.id) }
-                        },
-                        onDelete = {
-                            launchAction(itemDeleted) { scheduleManager.deleteActivity(plan.id, activity.id) }
-                        },
-                    )
+                dayGroups.forEach { group ->
+                    item(key = "day:${group.date ?: "unscheduled"}") {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = scheduleDayLabel(group.date),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            group.date?.takeIf { it in intelligence.overloadedDates }?.let {
+                                StudyFlowStatusPill(text = stringResource(R.string.overloaded_day))
+                            }
+                        }
+                    }
+                    items(group.activities, key = { "activity:${it.id.value}" }) { activity ->
+                        PlannedActivityCard(
+                            activity = activity,
+                            subjectLabel = activity.subjectId?.value?.let { subjectById[it]?.name },
+                            provenance = ScheduleIntelligence.provenance(activity),
+                            conflict = activity.id in intelligence.conflictActivityIds,
+                            overloaded = group.date?.let { it in intelligence.overloadedDates } == true,
+                            selectable = ScheduleIntelligence.isBulkMutable(activity),
+                            selected = activity.id.value in selectedActivityIds,
+                            onSelectedChange = { selected ->
+                                selectedActivityIds = if (selected) {
+                                    selectedActivityIds + activity.id.value
+                                } else {
+                                    selectedActivityIds - activity.id.value
+                                }
+                            },
+                            onComplete = {
+                                launchAction(activityCompleted) { scheduleManager.completeActivity(plan.id, activity.id) }
+                            },
+                            onMissed = {
+                                launchAction(activityMissed) { scheduleManager.markActivityMissed(plan.id, activity.id) }
+                            },
+                            onDelete = {
+                                launchAction(itemDeleted) { scheduleManager.deleteActivity(plan.id, activity.id) }
+                            },
+                        )
+                    }
                 }
             }
         }
+    }
+
+    if (confirmingBulkDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmingBulkDelete = false },
+            title = { Text(stringResource(R.string.delete_selected_title)) },
+            text = { Text(stringResource(R.string.delete_selected_message, selectedMutableActivities.size)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selected = selectedMutableActivities
+                        confirmingBulkDelete = false
+                        selectedActivityIds = emptySet()
+                        launchAction(itemDeleted) { selected.forEach { scheduleManager.deleteActivity(plan.id, it.id) } }
+                    },
+                ) { Text(stringResource(R.string.confirm_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmingBulkDelete = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
     }
 
     if (showRuleDialog) {
@@ -488,6 +704,13 @@ private fun ScheduleRuleCard(
 @Composable
 private fun PlannedActivityCard(
     activity: PlannedActivity,
+    subjectLabel: String?,
+    provenance: ScheduleActivityProvenance,
+    conflict: Boolean,
+    overloaded: Boolean,
+    selectable: Boolean,
+    selected: Boolean,
+    onSelectedChange: (Boolean) -> Unit,
     onComplete: () -> Unit,
     onMissed: () -> Unit,
     onDelete: () -> Unit,
@@ -505,6 +728,23 @@ private fun PlannedActivityCard(
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            subjectLabel?.let {
+                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            }
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StudyFlowStatusPill(text = stringResource(provenance.labelKey()))
+                if (conflict) StudyFlowStatusPill(text = stringResource(R.string.schedule_conflict))
+                if (overloaded) StudyFlowStatusPill(text = stringResource(R.string.overloaded_day))
+                if (activity.locked) StudyFlowStatusPill(text = stringResource(R.string.locked))
+                if (selectable) {
+                    Checkbox(checked = selected, onCheckedChange = onSelectedChange)
+                    Text(stringResource(R.string.select_activity), style = MaterialTheme.typography.bodySmall)
+                }
+            }
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -561,6 +801,22 @@ private fun DeleteOverflowMenu(onConfirmed: () -> Unit) {
             },
         )
     }
+}
+
+@Composable
+private fun scheduleDayLabel(date: LocalDate?): String {
+    if (date == null) return stringResource(R.string.unscheduled)
+    val today = LocalDate.now()
+    return when (date) {
+        today -> stringResource(R.string.today)
+        today.plusDays(1) -> stringResource(R.string.tomorrow)
+        else -> date.format(DateTimeFormatter.ofPattern("EEE, d MMM", Locale.getDefault()))
+    }
+}
+
+private fun ScheduleActivityProvenance.labelKey(): Int = when (this) {
+    ScheduleActivityProvenance.MANUAL -> R.string.provenance_manual
+    ScheduleActivityProvenance.GENERATED -> R.string.provenance_generated
 }
 
 private fun startOfTodayEpochMillis(): Long = Calendar.getInstance().apply {
