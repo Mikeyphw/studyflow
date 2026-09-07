@@ -14,7 +14,10 @@ function same(a,b) { return JSON.stringify(a) === JSON.stringify(b); }
 export function createPortablePackage(state, { now = () => new Date().toISOString() } = {}) {
     const errors = validateStudyState(state); if (errors.length) throw new TypeError(`Cannot export invalid StudyFlow state: ${errors[0]}`);
     const exportedAt = now();
-    return { format: PORTABLE_FORMAT, formatVersion: PORTABLE_FORMAT_VERSION, exportedAt, stateSchemaVersion: state.schemaVersion, manifest: { activePlanId: state.activePlanId, counts: counts(state) }, payload: clone(state) };
+    const payload = clone(state);
+    const attachmentReferences = payload.materials.filter((material) => material.attachmentId).length;
+    payload.materials = payload.materials.map((material) => ({ ...material, attachmentId: null, locator: String(material.locator ?? "").startsWith("local-blob:") ? null : material.locator }));
+    return { format: PORTABLE_FORMAT, formatVersion: PORTABLE_FORMAT_VERSION, exportedAt, stateSchemaVersion: state.schemaVersion, manifest: { activePlanId: state.activePlanId, counts: counts(payload), attachments: { references: attachmentReferences, bytesIncluded: false } }, payload };
 }
 
 export function serializePortablePackage(packageObject) { return JSON.stringify(packageObject, null, 2) + "\n"; }
@@ -27,6 +30,7 @@ export function parsePortablePackage(text, { now = () => new Date().toISOString(
     if (parsed.formatVersion !== PORTABLE_FORMAT_VERSION) throw new TypeError(`Unsupported portable package version: ${parsed.formatVersion}`);
     if (!parsed.payload || typeof parsed.payload !== "object" || Array.isArray(parsed.payload)) throw new TypeError("Portable package payload is missing");
     const candidate = migrateStudyState(clone(parsed.payload), { now: now() });
+    if (parsed.manifest?.attachments?.bytesIncluded !== true) candidate.materials = candidate.materials.map((material) => ({ ...material, attachmentId: null, locator: String(material.locator ?? "").startsWith("local-blob:") ? null : material.locator }));
     const errors = validateStudyState(candidate); if (errors.length) throw new TypeError(`Portable package state is invalid: ${errors[0]}`);
     const actualCounts = counts(candidate);
     if (parsed.manifest?.counts && !same(parsed.manifest.counts, actualCounts)) throw new TypeError("Portable package manifest counts do not match its payload");

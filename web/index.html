@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f6f7fb">
     <meta name="description" content="StudyFlow Local — a mobile-first, self-contained study system.">
+    <meta name="application-name" content="StudyFlow Local">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>StudyFlow Local</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="stylesheet" href="styles.css">
     <script type="module" src="app.js" defer></script>
 </head>
@@ -143,12 +148,16 @@
 
             <section id="plan-library" class="tab-panel" data-tab-panel="plan" aria-labelledby="plan-library-heading">
                 <article class="card">
-                    <h2 id="plan-library-heading">Library</h2>
-                    <p>Local materials, attachments, links, MIME metadata and future portable-package handlers belong here.</p>
-                    <div class="empty-state">
-                        <strong>No local materials yet</strong>
-                        <span>Plan content is now editable. Local material attachments and structured imports remain later work.</span>
-                    </div>
+                    <div class="card-heading-row"><div><p class="eyebrow">Device-local files</p><h2 id="plan-library-heading">Library</h2></div><span id="material-count" class="pill">0 items</span></div>
+                    <p>Attachment bytes are stored in IndexedDB on this device. Material metadata stays in the StudyFlow domain state.</p>
+                    <form id="material-form" class="material-form">
+                        <label class="field"><span>Title</span><input name="title" maxlength="120" required placeholder="Constitution notes"></label>
+                        <label class="field"><span>Subject</span><select name="subjectId"><option value="">No subject</option></select></label>
+                        <label class="field"><span>Topic</span><select name="topicId"><option value="">No topic</option></select></label>
+                        <label class="field field-wide"><span>Local file</span><input name="file" type="file" required></label>
+                        <div class="button-row field-wide"><button type="submit" class="button">Store attachment</button><span id="material-storage-status" class="muted" aria-live="polite">IndexedDB attachment storage initializes with the app.</span></div>
+                    </form>
+                    <ul id="material-list" class="activity-list"></ul>
                 </article>
             </section>
         </section>
@@ -213,7 +222,8 @@
                 <div class="content-grid two-column">
                     <article class="card"><h2>Content Integrity</h2><strong id="integrity-status">Checking local state…</strong><p id="integrity-detail" class="muted"></p></article>
                     <article class="card"><h2>Portable package</h2><p class="muted">Export all structured local StudyFlow data as JSON. Import never changes local data until you preview and explicitly apply it.</p><div class="tool-actions"><button id="portable-export" type="button" class="button">Export package</button><label class="button button-quiet file-button">Choose import<input id="portable-import-file" type="file" accept=".json,.studyflow.json,application/json"></label></div><p id="portable-status" class="muted">No package selected.</p><div id="portable-preview" class="portable-preview" hidden><strong>Import preview</strong><p id="portable-preview-summary"></p><ul id="portable-preview-list"></ul><button id="portable-import-apply" type="button" class="button" disabled>Apply imported state</button></div></article>
-                    <article class="card"><h2>Local state</h2><p class="muted">Browser storage remains the temporary repository until IndexedDB/attachment storage arrives in W12.</p><button id="reset-local-state" type="button" class="button button-quiet">Reset sample data</button></article>
+                    <article class="card"><h2>Local state</h2><p class="muted">Structured state now prefers IndexedDB and migrates the previous localStorage state after a verified write. localStorage remains a compatibility fallback only.</p><p id="storage-backend-status" class="muted">Initializing durable storage…</p><button id="reset-local-state" type="button" class="button button-quiet">Reset sample data</button></article>
+                    <article class="card"><h2>Install & offline</h2><p class="muted">The app shell is cached locally by a service worker after the first successful load.</p><p id="pwa-status" class="muted" aria-live="polite">Checking PWA support…</p><button id="install-app" type="button" class="button button-quiet" hidden>Install StudyFlow</button></article>
                 </div>
             </section>
         </section>

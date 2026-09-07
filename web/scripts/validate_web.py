@@ -302,11 +302,12 @@ def validate_state() -> list[str]:
         fail(errors, token not in storage, f"W04 storage contract missing token: {token}")
     for token in ("createStudyStore", "subscribe", "addActivity", "resetLocalState", "repository.save"):
         fail(errors, token not in state, f"W04 state contract missing token: {token}")
-    for token in ("createBrowserRepository", "createStudyStore", "renderStudyState", "bindPersistentStudyEvents"):
+    for token in ("createStudyStore", "renderStudyState", "bindPersistentStudyEvents"):
         fail(errors, token not in app, f"W04 application wiring missing token: {token}")
-    lowered = "\n".join(modules.values()).lower()
-    fail(errors, "indexeddb" in lowered, "W04 must not steal W12 IndexedDB scope")
-    fail(errors, "fetch(" in lowered, "W04 local state must not introduce network access")
+    fail(errors, "createBrowserRepository" not in storage, "W04 localStorage compatibility repository must remain available for migration/fallback")
+    lowered_state = (modules["state"] + modules["render"]).lower()
+    fail(errors, "indexeddb" in lowered_state, "State/render layers must not directly depend on IndexedDB")
+    fail(errors, "fetch(" in "\n".join(modules.values()).lower(), "W04 local state must not introduce network access")
     for relative in ("app.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js"):
         _node_check(errors, WEB / relative)
 
@@ -476,6 +477,62 @@ def validate_portable() -> list[str]:
         fail(errors, token.lower() not in doc.lower(), f"W10/W11 delivery doc missing: {token}")
     return errors
 
+
+def validate_indexeddb() -> list[str]:
+    errors = validate_portable()
+    html, parser = parse_shell(errors)
+    storage = read_text(WEB / "src/storage.js", errors)
+    indexed = read_text(WEB / "src/indexeddb.js", errors)
+    domain = read_text(WEB / "src/domain.js", errors)
+    state = read_text(WEB / "src/state.js", errors)
+    events = read_text(WEB / "src/events.js", errors)
+    portable = read_text(WEB / "src/portable.js", errors)
+    app = read_text(WEB / "app.js", errors)
+    if parser is not None:
+        for element_id in ("material-form", "material-list", "material-count", "material-storage-status", "storage-backend-status"):
+            fail(errors, element_id not in parser.ids, f"W12 IndexedDB/material UI hook missing: {element_id}")
+    for token in ("createBrowserPersistence", "createBrowserRepository", "studyflow.local.state.v3"):
+        fail(errors, token not in storage, f"W12 storage migration contract missing token: {token}")
+    for token in ("openStudyFlowDatabase", "createIndexedDbPersistence", "createIndexedDbAttachmentRepository", "attachments", "transaction", "flush"):
+        fail(errors, token.lower() not in indexed.lower(), f"W12 IndexedDB contract missing token: {token}")
+    for token in ("attachmentId", "sizeBytes"):
+        fail(errors, token not in domain, f"W12 Material metadata contract missing token: {token}")
+    for token in ("addMaterial", "deleteMaterial"):
+        fail(errors, token not in state, f"W12 material state contract missing token: {token}")
+    for token in ("material-form", "data-open-material", "data-delete-material", "attachments.put", "attachments.get"):
+        fail(errors, token not in events, f"W12 attachment event wiring missing token: {token}")
+    fail(errors, "bytesIncluded: false" not in portable, "W12 portable package must truthfully declare that attachment bytes are not embedded")
+    fail(errors, "createBrowserPersistence" not in app, "W12 app startup must prefer the IndexedDB persistence bootstrap")
+    for relative in ("src/indexeddb.js", "src/storage.js", "src/domain.js", "src/state.js", "src/events.js", "src/portable.js", "app.js"):
+        _node_check(errors, WEB / relative)
+    doc = read_text(ROOT / "docs/web/W12_W13_INDEXEDDB_PWA.md", errors)
+    for token in ("IndexedDB", "attachment", "localStorage", "50 MiB", "fallback"):
+        fail(errors, token.lower() not in doc.lower(), f"W12/W13 delivery doc missing: {token}")
+    return errors
+
+
+def validate_pwa() -> list[str]:
+    errors = validate_indexeddb()
+    html, parser = parse_shell(errors)
+    manifest = read_text(WEB / "manifest.webmanifest", errors)
+    worker = read_text(WEB / "service-worker.js", errors)
+    pwa = read_text(WEB / "src/pwa.js", errors)
+    if parser is not None:
+        for element_id in ("pwa-status", "install-app"):
+            fail(errors, element_id not in parser.ids, f"W13 PWA UI hook missing: {element_id}")
+    for token in ('"display": "standalone"', '"start_url": "./#today"', '"192x192"', '"512x512"', '"maskable"'):
+        fail(errors, token not in manifest, f"W13 manifest contract missing token: {token}")
+    for token in ("CACHE_VERSION", "APP_SHELL", "install", "activate", "fetch", "index.html"):
+        fail(errors, token not in worker, f"W13 service-worker contract missing token: {token}")
+    for token in ("serviceWorker.register", "beforeinstallprompt", "appinstalled", "offline"):
+        fail(errors, token not in pwa, f"W13 PWA registration contract missing token: {token}")
+    for relative in ("icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"):
+        fail(errors, not (WEB / relative).is_file(), f"W13 required install icon missing: {relative}")
+    fail(errors, 'rel="manifest"' not in html, "W13 index.html must link the web app manifest")
+    _node_check(errors, WEB / "service-worker.js")
+    _node_check(errors, WEB / "src/pwa.js")
+    return errors
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -491,6 +548,8 @@ def main() -> int:
     mode.add_argument("--practice", action="store_true")
     mode.add_argument("--progress", action="store_true")
     mode.add_argument("--portable", action="store_true")
+    mode.add_argument("--storage", action="store_true")
+    mode.add_argument("--pwa", action="store_true")
     mode.add_argument("--all", action="store_true")
     args = parser.parse_args()
 
@@ -527,9 +586,15 @@ def main() -> int:
     elif args.progress:
         errors = validate_progress()
         label = "W10 truthful progress, evidence and goals"
-    else:
+    elif args.portable:
         errors = validate_portable()
         label = "W10/W11 truthful progress + portable packages"
+    elif args.storage:
+        errors = validate_indexeddb()
+        label = "W12 IndexedDB state + attachment storage"
+    else:
+        errors = validate_pwa()
+        label = "W12/W13 IndexedDB storage + installable offline PWA"
 
     if errors:
         print("StudyFlow web validation FAILED:", file=sys.stderr)

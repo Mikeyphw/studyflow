@@ -22,13 +22,14 @@ class W04StatePersistenceTest(unittest.TestCase):
         app = (WEB / "app.js").read_text(encoding="utf-8")
         for path in ("domain.js", "storage.js", "state.js", "render.js", "events.js"):
             self.assertTrue((WEB / "src" / path).is_file(), path)
-        for token in ("createBrowserRepository", "createStudyStore", "renderStudyState", "bindPersistentStudyEvents"):
+        for token in ("createBrowserPersistence", "createStudyStore", "renderStudyState", "bindPersistentStudyEvents"):
             self.assertIn(token, app)
         self.assertNotIn("localStorage", app)
         storage = (WEB / "src/storage.js").read_text(encoding="utf-8")
         self.assertIn("localStorage", storage)
         self.assertIn("studyflow.local.state.v", storage)
-        self.assertNotIn("indexedDB", storage)
+        self.assertIn("createBrowserRepository", storage)
+        self.assertIn("createBrowserPersistence", storage)
         self.assertNotIn("fetch(", storage)
 
     def test_quick_add_domain_activity_persists_across_store_recreation(self) -> None:
@@ -85,15 +86,17 @@ assert.doesNotThrow(() => JSON.parse(values.get(STORAGE_KEY)));
 '''
         )
 
-    def test_w04_persistence_boundary_remains_separate_after_w06_extension(self) -> None:
+    def test_w04_persistence_boundary_remains_separate_after_w12_upgrade(self) -> None:
         app = (WEB / "app.js").read_text(encoding="utf-8").lower()
         storage = (WEB / "src/storage.js").read_text(encoding="utf-8").lower()
         state = (WEB / "src/state.js").read_text(encoding="utf-8").lower()
+        indexed = (WEB / "src/indexeddb.js").read_text(encoding="utf-8").lower()
         self.assertNotIn("localstorage", app)
         self.assertIn("localstorage", storage)
         self.assertIn("startfocus", state)
         self.assertIn("studyflow.local.state.v1", storage)
-        self.assertNotIn("indexeddb", storage)
+        self.assertNotIn("indexeddb", state)
+        self.assertIn("indexeddb", indexed)
 
 
 if __name__ == "__main__":

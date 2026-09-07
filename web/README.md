@@ -32,12 +32,12 @@ npm run dev
 
 ## W04/W05 foundation
 
-W04 introduces the versioned temporary browser-state repository and makes Quick Add durable across reloads. W05 adds the framework-independent Plan/Subject/Topic/Activity/StudySession/Goal/Material/Review/Question/Evidence model plus reference validation and pure selectors. Focus/session evidence remains deferred to W06, and IndexedDB remains deferred to W12.
+W04 introduces the versioned temporary browser-state repository and makes Quick Add durable across reloads. W05 adds the framework-independent Plan/Subject/Topic/Activity/StudySession/Goal/Material/Review/Question/Evidence model plus reference validation and pure selectors. Focus/session evidence arrived in W06. IndexedDB is now the primary browser persistence backend as of W12, while the legacy repository remains only for migration/fallback.
 
 
 ## WEB-W06/W07
 
-The current browser build now has durable focus sessions and editable plan content. Focus uses absolute persisted timestamps, survives reload, records completed/cancelled `StudySession` history, and emits completion `Evidence` without inventing performance data. Plan Content supports subject/topic create, edit, safe delete, archive, reorder, weight, priority, status, notes, search, filters and evidence counts. The W04 v1 localStorage key is migrated into schema v2 instead of discarded.
+The current browser build now has durable focus sessions and editable plan content. Focus uses absolute persisted timestamps, survives reload, records completed/cancelled `StudySession` history, and emits completion `Evidence` without inventing performance data. Plan Content supports subject/topic create, edit, safe delete, archive, reorder, weight, priority, status, notes, search, filters and evidence counts. Legacy localStorage state is migrated forward instead of discarded; W12 now advances the current domain state to schema v4 and moves normal browser persistence into IndexedDB.
 
 ## W08/W09
 
@@ -48,4 +48,11 @@ Schedule changes are now preview-first and revision-guarded. Practice questions,
 
 Progress now derives study time, graded accuracy, topic coverage, review health and readiness only from persisted evidence. Unknown measurements render as `No data`; a measured zero remains `0`. Goals use supported evidence metrics. Tools expose a read-only evidence timeline and content-integrity status.
 
-Portable packages use the local `studyflow-local-package` JSON format. Export is self-contained structured data. Import is limited to 5 MiB, validated, previewed as add/update/remove counts, revision-guarded, and only replaces local structured state after explicit Apply. Attachments/IndexedDB remain W12.
+Portable packages use the local `studyflow-local-package` JSON format. Import is limited to 5 MiB, validated, previewed as add/update/remove counts, revision-guarded, and only replaces local structured state after explicit Apply. Attachment bytes are deliberately not embedded in this JSON format; exports declare that boundary and strip device-local IndexedDB locators.
+
+
+## W12/W13
+
+Structured state now prefers IndexedDB, with verified migration from the old localStorage keys and a compatibility fallback when IndexedDB is unavailable. Local Library files are stored as Blob/File records in a separate IndexedDB attachment store while domain `Material` entities retain only metadata and attachment IDs.
+
+StudyFlow Local is also an installable PWA. The manifest supplies 192/512/maskable icons and standalone launch metadata; the service worker caches the self-contained app shell, supports offline navigation fallback, cleans old cache versions, and exposes install/offline status in Tools. TypeScript and React remain future W14/W15 work.

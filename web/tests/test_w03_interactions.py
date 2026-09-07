@@ -68,11 +68,12 @@ class W03InteractionFoundationTest(unittest.TestCase):
         self.assertIn("setInterval", self.js)
         self.assertIn("clearInterval", self.js)
 
-    def test_w03_does_not_steal_w04_or_w12_persistence_scope(self) -> None:
+    def test_w03_keeps_persistence_behind_dedicated_modules(self) -> None:
         lowered = self.js.lower()
         self.assertNotIn("localstorage", lowered)
-        self.assertNotIn("indexeddb", lowered)
+        self.assertNotIn("globalthis.indexeddb", lowered)
         self.assertNotIn("fetch(", lowered)
+        self.assertIn("createbrowserpersistence", lowered)
 
     def test_javascript_syntax_is_valid(self) -> None:
         result = subprocess.run(

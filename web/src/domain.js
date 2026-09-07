@@ -1,7 +1,7 @@
 "use strict";
 
-export const STATE_SCHEMA_VERSION = 3;
-export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2]);
+export const STATE_SCHEMA_VERSION = 4;
+export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3]);
 
 export const ENTITY_COLLECTIONS = Object.freeze([
     "plans",
@@ -190,6 +190,8 @@ export function createGoal(input = {}) {
 }
 
 export function createMaterial(input = {}) {
+    const sizeBytes = input.sizeBytes == null ? null : Number(input.sizeBytes);
+    if (sizeBytes != null && (!Number.isInteger(sizeBytes) || sizeBytes < 0)) throw new TypeError("material.sizeBytes must be null or a non-negative integer");
     return {
         ...entityBase("material", input),
         planId: requireText(input.planId, "material.planId"),
@@ -199,6 +201,8 @@ export function createMaterial(input = {}) {
         kind: requireOneOf(input.kind ?? "note", ["note", "file", "link", "book", "legislation"], "material.kind"),
         locator: optionalText(input.locator),
         mimeType: optionalText(input.mimeType),
+        attachmentId: optionalId(input.attachmentId),
+        sizeBytes,
     };
 }
 
@@ -389,7 +393,7 @@ export function focusRemainingMs(focus, at = Date.now()) {
 
 export function migrateStudyState(input, { now = isoNow() } = {}) {
     if (!input || typeof input !== "object" || Array.isArray(input)) return input;
-    if (![1, 2, STATE_SCHEMA_VERSION].includes(input.schemaVersion)) return input;
+    if (![1, 2, 3, STATE_SCHEMA_VERSION].includes(input.schemaVersion)) return input;
     const state = JSON.parse(JSON.stringify(input));
     const originalVersion = state.schemaVersion;
     state.schemaVersion = STATE_SCHEMA_VERSION;
@@ -398,6 +402,7 @@ export function migrateStudyState(input, { now = isoNow() } = {}) {
     state.studyCycle = createStudyCycleState(state.studyCycle ?? { subjectIds: state.subjects.filter((subject) => !subject.archived).map((subject) => subject.id), cursor: 0 });
     state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
     state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
+    state.materials = Array.isArray(state.materials) ? state.materials.map((material) => ({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null })) : [];
     if (originalVersion !== STATE_SCHEMA_VERSION) state.migratedAt = now;
     return state;
 }

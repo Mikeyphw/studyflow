@@ -2,7 +2,7 @@
 
 import {
     buildSchedulePreview, createActivity, createErrorEntry, createEvidence, createFocusState, createInitialStudyState, createQuestion, createReview, createStudySession,
-    createStudyCycleState, createSubject, createTopic, createGoal, focusRemainingMs, gradeQuestion, migrateStudyState, selectActivitiesForQueue, validateStudyState,
+    createStudyCycleState, createSubject, createTopic, createGoal, createMaterial, focusRemainingMs, gradeQuestion, migrateStudyState, selectActivitiesForQueue, validateStudyState,
 } from "./domain.js";
 
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
@@ -171,6 +171,15 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
             }
             commit({ ...state, activities }, "schedule-preview-applied");
             return preview;
+        },
+        addMaterial(input) {
+            const at=nowIso(); const material=createMaterial({ ...input, planId:input.planId??activePlanId(), createdAt:input.createdAt??at, updatedAt:input.updatedAt??at });
+            commit({ ...state, materials:[...state.materials,material] }, "material-added"); return material;
+        },
+        deleteMaterial(materialId) {
+            const current=state.materials.find((material)=>material.id===materialId&&material.planId===activePlanId());
+            if(!current) throw new TypeError("Material not found in the active plan");
+            commit({ ...state, materials:state.materials.filter((material)=>material.id!==materialId) }, "material-deleted"); return current;
         },
         addGoal(input) {
             const at=nowIso(); const goal=createGoal({ ...input, planId:input.planId??activePlanId(), createdAt:at, updatedAt:at });

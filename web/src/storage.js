@@ -1,9 +1,10 @@
 "use strict";
 
 import { STATE_SCHEMA_VERSION, migrateStudyState, validateStudyState } from "./domain.js";
+import { createIndexedDbPersistence } from "./indexeddb.js";
 
 export const STORAGE_KEY = `studyflow.local.state.v${STATE_SCHEMA_VERSION}`;
-export const LEGACY_STORAGE_KEYS = Object.freeze(["studyflow.local.state.v2", "studyflow.local.state.v1"]);
+export const LEGACY_STORAGE_KEYS = Object.freeze(["studyflow.local.state.v3", "studyflow.local.state.v2", "studyflow.local.state.v1"]);
 
 function resolveBrowserStorage() {
     try { return globalThis.localStorage ?? null; } catch { return null; }
@@ -20,6 +21,7 @@ function parseState(raw, now) {
 
 export function createBrowserRepository({ storage = resolveBrowserStorage(), key = STORAGE_KEY, legacyKeys = LEGACY_STORAGE_KEYS, now = () => new Date().toISOString() } = {}) {
     return {
+        backend: "localstorage",
         key,
         load() {
             if (!storage) return result("unavailable", { state: null, reason: "Browser local storage is unavailable." });
@@ -56,4 +58,21 @@ export function createBrowserRepository({ storage = resolveBrowserStorage(), key
             return result("cleared", { reason: null });
         },
     };
+}
+
+function unavailableAttachments(reason) {
+    const fail = async () => { throw new TypeError(reason); };
+    return { backend: "unavailable", put: fail, get: fail, list: async () => [], delete: fail, clear: async () => undefined };
+}
+
+export async function createBrowserPersistence({ storage = resolveBrowserStorage(), indexedDBFactory = globalThis.indexedDB, now = () => new Date().toISOString(), dbName } = {}) {
+    const legacyRepository = createBrowserRepository({ storage, now });
+    if (!indexedDBFactory?.open) {
+        return { backend: "localstorage", repository: legacyRepository, attachments: unavailableAttachments("Attachment storage requires IndexedDB."), fallbackReason: "IndexedDB is unavailable; using localStorage compatibility mode." };
+    }
+    try {
+        return await createIndexedDbPersistence({ indexedDBFactory, legacyRepository, now, dbName });
+    } catch (error) {
+        return { backend: "localstorage", repository: legacyRepository, attachments: unavailableAttachments("Attachment storage is unavailable because IndexedDB failed to initialize."), fallbackReason: error instanceof Error ? error.message : String(error) };
+    }
 }
