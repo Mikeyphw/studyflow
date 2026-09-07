@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -74,6 +75,8 @@ import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineBuilder
 import com.mikeyphw.studyflow.core.domain.StudyEvidenceTimelineInput
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
 import com.mikeyphw.studyflow.core.domain.PublicExamFinalStretchBand
+import com.mikeyphw.studyflow.core.domain.PublicExamQuestionQuotaPlanner
+import com.mikeyphw.studyflow.core.domain.StudyPhasePlanCodec
 import com.mikeyphw.studyflow.core.domain.StudySprintFocus
 import com.mikeyphw.studyflow.core.domain.StudySprintPlanner
 import com.mikeyphw.studyflow.core.domain.tickingClockFlow
@@ -89,6 +92,7 @@ import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.navigation.ProgressWorkspacePeriod
 import java.text.DateFormat
+import java.time.Instant
 import java.time.ZoneId
 import java.util.Date
 import kotlinx.coroutines.CancellationException
@@ -229,6 +233,23 @@ fun ProgressWorkspaceScreen(
     var reportExportResult by rememberSaveable(plan.id.value) { mutableStateOf<Boolean?>(null) }
     val wallClockFlow = remember(plan.id) { tickingClockFlow() }
     val nowEpochMillis by wallClockFlow.collectAsStateWithLifecycle(initialValue = System.currentTimeMillis())
+    val questionQuota = remember(schedule.strategy, syllabus.subjects, sessions, reviewItems, errorEntries, tests, mockExams, nowEpochMillis) {
+        val zoneId = ZoneId.systemDefault()
+        val today = Instant.ofEpochMilli(nowEpochMillis).atZone(zoneId).toLocalDate()
+        StudyPhasePlanCodec.decode(schedule.strategy?.configurationJson.orEmpty()).activeOn(today)?.let { phase ->
+            PublicExamQuestionQuotaPlanner.plan(
+                phase = phase,
+                subjects = syllabus.subjects,
+                sessions = sessions,
+                reviews = reviewItems,
+                errors = errorEntries,
+                tests = tests,
+                mockExams = mockExams,
+                nowEpochMillis = nowEpochMillis,
+                zoneId = zoneId,
+            )
+        }
+    }
     val readiness = remember(plan, analytics, schedule, mockExams, nowEpochMillis) {
         ExamReadinessEngine.calculate(
             plan = plan,
@@ -645,6 +666,49 @@ fun ProgressWorkspaceScreen(
                         } ?: stringResource(R.string.no_data),
                         onClick = onOpenAnalytics,
                     )
+                }
+                questionQuota?.let { quota ->
+                    studyFlowSectionHeader(key = "question-quota", title = { stringResource(R.string.question_quota_title) })
+                    item(key = "question-quota-summary", contentType = "question-quota") {
+                        StudyFlowFocusActionSurface(
+                            title = stringResource(R.string.question_quota_next_7_days, quota.nextSevenDaysQuestions),
+                            message = stringResource(
+                                R.string.question_quota_summary,
+                                quota.phaseQuestionsAnswered,
+                                quota.phaseTargetQuestions,
+                                quota.remainingQuestions,
+                                quota.remainingDays,
+                            ),
+                            supportingLabel = stringResource(R.string.question_quota_daily, quota.dailyQuestions),
+                            actionLabel = stringResource(R.string.open_practice),
+                            onAction = onOpenPractice,
+                        )
+                    }
+                    items(
+                        items = quota.subjects.filter { it.weeklyQuestions > 0 },
+                        key = { row -> "question-quota:${row.subjectId.value}" },
+                        contentType = { "question-quota-subject" },
+                    ) { row ->
+                        StudyFlowTimelineItem(
+                            title = row.subjectName,
+                            metadata = stringResource(
+                                R.string.question_quota_subject_evidence,
+                                row.phaseQuestionsAnswered,
+                                row.recentAccuracyPercent?.toString() ?: stringResource(R.string.no_data),
+                                row.recurringErrors,
+                                row.overdueReviews,
+                            ),
+                            icon = Icons.Outlined.CheckCircle,
+                            status = stringResource(R.string.question_quota_subject_target, row.weeklyQuestions),
+                            onClick = onOpenPractice,
+                        )
+                    }
+                    item(key = "question-quota-formula", contentType = "question-quota-formula") {
+                        Text(
+                            stringResource(R.string.question_quota_formula),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
                 }

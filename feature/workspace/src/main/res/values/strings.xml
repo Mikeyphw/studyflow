@@ -731,4 +731,12 @@
     <string name="study_phase_questions_reviews">Questions &amp; reviews</string>
     <string name="study_phase_summary">Theory %1$d%% · Questions %2$d%% · Reviews %3$d%%</string>
     <string name="study_phase_question_goal">%1$d-question phase target</string>
+
+    <string name="question_quota_title">Question quota planner</string>
+    <string name="question_quota_next_7_days">Next 7 days: %1$d questions</string>
+    <string name="question_quota_daily">Daily pace: %1$d questions</string>
+    <string name="question_quota_summary">Phase progress: %1$d / %2$d answered · %3$d remaining across %4$d days.</string>
+    <string name="question_quota_subject_target">%1$d this week</string>
+    <string name="question_quota_subject_evidence">Phase answered %1$d · accuracy %2$s%% · recurring errors %3$d · overdue reviews %4$d</string>
+    <string name="question_quota_formula">Distribution formula: 35% exam weight, 20% under-practice versus weight, 20% recent accuracy deficit, 15% recurring errors, 10% overdue reviews. Missing evidence contributes zero; totals are normalized to the active phase target.</string>
 </resources>

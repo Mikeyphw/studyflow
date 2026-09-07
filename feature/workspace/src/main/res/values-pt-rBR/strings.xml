@@ -768,4 +768,12 @@
     <string name="study_phase_questions_reviews">Questões e revisões</string>
     <string name="study_phase_summary">Teoria %1$d%% · Questões %2$d%% · Revisões %3$d%%</string>
     <string name="study_phase_question_goal">Meta da fase: %1$d questões</string>
+
+    <string name="question_quota_title">Planejador de cota de questões</string>
+    <string name="question_quota_next_7_days">Próximos 7 dias: %1$d questões</string>
+    <string name="question_quota_daily">Ritmo diário: %1$d questões</string>
+    <string name="question_quota_summary">Progresso da fase: %1$d / %2$d respondidas · %3$d restantes em %4$d dias.</string>
+    <string name="question_quota_subject_target">%1$d nesta semana</string>
+    <string name="question_quota_subject_evidence">Respondidas na fase %1$d · acurácia %2$s%% · erros recorrentes %3$d · revisões vencidas %4$d</string>
+    <string name="question_quota_formula">Fórmula de distribuição: 35% peso da prova, 20% subtreino em relação ao peso, 20% déficit de acurácia recente, 15% erros recorrentes e 10% revisões vencidas. Evidência ausente vale zero; os totais são normalizados para a meta da fase ativa.</string>
 </resources>
