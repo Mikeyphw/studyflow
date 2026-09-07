@@ -38,6 +38,7 @@ const React = __importStar(require("react"));
 const domain_1 = require("../domain");
 const modes_1 = require("../modes");
 const portable_1 = require("../portable");
+const content_import_1 = require("../content_import");
 const pwa_1 = require("../pwa");
 const hardening_1 = require("../hardening");
 const release_1 = require("../release");
@@ -177,77 +178,217 @@ function ModeToday({ state }) { const plan = state.plans.find(p => p.id === stat
         React.createElement("span", { className: "muted" }, "Progress is recorded from explicit reading updates.")); return React.createElement("article", { className: "card mode-banner" },
     React.createElement("strong", null, "General skill"),
     React.createElement("span", { className: "muted" }, "Drill outcomes become evidence only when you record them.")); }
-function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run }) { const inv = (0, domain_1.derivePlanInventory)(state); const [subject, setSubject] = React.useState(""); const [topic, setTopic] = React.useState(""); const [subjectId, setSubjectId] = React.useState(state.subjects.find(s => s.planId === state.activePlanId)?.id ?? ""); const subjects = state.subjects.filter(s => s.planId === state.activePlanId).slice().sort((a, b) => a.order - b.order); const materials = state.materials.filter(m => m.planId === state.activePlanId); const plan = state.plans.find(p => p.id === state.activePlanId); return React.createElement("section", { id: "plan", "data-screen": "plan", className: "screen-section" },
-    React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "plan", label: "Plan sections", items: [["overview", "Overview"], ["schedule", "Schedule"], ["content", "Content"], ["library", "Library"]] }),
-    tab === "overview" && React.createElement("section", { id: "plan-overview", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-        React.createElement("div", { className: "metric-grid" },
-            React.createElement(Metric, { label: "Subjects", value: String(inv.subjects), detail: `${inv.topics} active topics` }),
-            React.createElement(Metric, { label: "Planned", value: `${inv.plannedMinutes} min`, detail: `${inv.activities} activities` })),
-        React.createElement("article", { className: "card" },
-            React.createElement("h2", null, "Study mode"),
-            React.createElement("select", { "aria-label": "Study mode", value: plan?.mode ?? "GENERAL_SKILL", onChange: (e) => run(() => store.setPlanMode(e.target.value), "Study mode updated.") }, modes.map(([id, label]) => React.createElement("option", { key: id, value: id }, label)))),
-        React.createElement(ModeWorkspace, { state: state, store: store, run: run }),
-        React.createElement("article", { className: "card" },
-            React.createElement("h2", null, "Study cycle"),
-            React.createElement("ol", null, state.studyCycle.subjectIds.map((id, i) => React.createElement("li", { key: id },
-                state.subjects.find(s => s.id === id)?.name ?? id,
-                i === state.studyCycle.cursor ? " · current" : ""))),
-            React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.advanceStudyCycle(), "Study cycle advanced.") }, "Advance"))),
-    tab === "schedule" && React.createElement("section", { id: "plan-schedule", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-        React.createElement("article", { className: "card" },
-            React.createElement("div", { className: "card-heading-row" },
-                React.createElement("h2", null, "Adaptive schedule"),
-                React.createElement("button", { className: "button", type: "button", onClick: () => setPreview(store.previewSchedule()) }, "Preview")),
-            preview ? React.createElement(React.Fragment, null,
-                React.createElement("p", null,
-                    preview.summary.add,
-                    " add \u00B7 ",
-                    preview.summary.move,
-                    " move"),
-                React.createElement("ul", null, preview.operations.map((op, i) => React.createElement("li", { key: i }, op.action === "move" ? `Move ${op.activityId} → ${op.to}` : `Add ${op.activity?.title ?? "activity"} · ${op.scheduledFor}`))),
-                React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applySchedulePreview(preview), "Schedule preview applied."))
-                        setPreview(null); } }, "Apply preview")) : React.createElement("p", { className: "muted" }, "Preview first; no schedule changes are silent."))),
-    tab === "content" && React.createElement("section", { id: "plan-content", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-        React.createElement("div", { className: "content-grid two-column" },
-            React.createElement("article", { className: "card" },
-                React.createElement("h2", null, "Add subject"),
-                React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (subject.trim()) {
-                        const added = run(() => store.addSubject({ name: subject.trim() }), "Subject added.");
-                        if (added && !subjectId)
-                            setSubjectId(added.id);
-                        setSubject("");
-                    } } },
-                    React.createElement("input", { "aria-label": "Subject name", value: subject, onChange: (e) => setSubject(e.target.value), required: true }),
-                    React.createElement("button", { className: "button", type: "submit" }, "Add"))),
-            React.createElement("article", { className: "card" },
-                React.createElement("h2", null, "Add topic"),
-                React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (topic.trim() && subjectId) {
-                        run(() => store.addTopic({ subjectId, name: topic.trim() }), "Topic added.");
-                        setTopic("");
-                    } } },
-                    React.createElement("select", { "aria-label": "Topic subject", value: subjectId, onChange: (e) => setSubjectId(e.target.value) }, subjects.map(s => React.createElement("option", { key: s.id, value: s.id }, s.name))),
-                    React.createElement("input", { "aria-label": "Topic name", value: topic, onChange: (e) => setTopic(e.target.value), required: true }),
-                    React.createElement("button", { className: "button", type: "submit" }, "Add")))),
-        subjects.map(s => React.createElement("article", { className: "card", key: s.id },
-            React.createElement("div", { className: "card-heading-row" },
-                React.createElement("div", null,
-                    React.createElement("h2", null, s.name),
-                    React.createElement("p", { className: "muted" },
-                        "Weight ",
-                        s.weight ?? "No data",
-                        " \u00B7 ",
-                        s.archived ? "Archived" : "Active")),
-                React.createElement("div", { className: "button-row" },
-                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateSubject(s.id, { archived: !s.archived }), s.archived ? "Subject restored." : "Subject archived.") }, s.archived ? "Restore" : "Archive"),
-                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateSubject(s.id, { notes: s.notes ? null : "Review this subject" }), "Subject notes updated.") }, "Notes"))),
-            React.createElement("ul", { className: "activity-list" }, state.topics.filter(t => t.subjectId === s.id).sort((a, b) => a.order - b.order).map(t => React.createElement("li", { key: t.id },
+function TopicTree({ state, store, subjectId, parentTopicId = null, run }) {
+    const topics = state.topics.filter(t => t.subjectId === subjectId && (t.parentTopicId ?? null) === parentTopicId).slice().sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+    if (!topics.length)
+        return null;
+    return React.createElement("ul", { className: parentTopicId ? "activity-list nested-topic-list" : "activity-list" }, topics.map(t => React.createElement("li", { key: t.id },
+        React.createElement("div", { className: "topic-row" },
+            React.createElement("div", null,
                 React.createElement("strong", null, t.name),
                 React.createElement("span", null,
                     title(t.priority),
                     " \u00B7 ",
-                    title(t.status)),
-                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateTopic(t.id, { status: t.status === "archived" ? "not-started" : "archived" }), t.status === "archived" ? "Topic restored." : "Topic archived.") }, t.status === "archived" ? "Restore" : "Archive"))))))),
-    tab === "library" && React.createElement(Library, { materials: materials, store: store, persistence: persistence, run: run })); }
+                    title(t.status))),
+            React.createElement("div", { className: "button-row" },
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.moveTopic(t.id, "up"), "Topic moved.") }, "\u2191"),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.moveTopic(t.id, "down"), "Topic moved.") }, "\u2193"),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateTopic(t.id, { status: t.status === "archived" ? "not-started" : "archived" }), t.status === "archived" ? "Topic restored." : "Topic archived.") }, t.status === "archived" ? "Restore" : "Archive"))),
+        React.createElement(TopicTree, { state: state, store: store, subjectId: subjectId, parentTopicId: t.id, run: run }))));
+}
+function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run }) {
+    const inv = (0, domain_1.derivePlanInventory)(state);
+    const plan = state.plans.find(p => p.id === state.activePlanId);
+    const activePlans = state.plans.filter(p => p.status !== "archived");
+    const archivedPlans = state.plans.filter(p => p.status === "archived");
+    const [newPlanName, setNewPlanName] = React.useState("");
+    const [newPlanMode, setNewPlanMode] = React.useState("GENERAL_SKILL");
+    const [rename, setRename] = React.useState(plan?.name ?? "");
+    React.useEffect(() => setRename(plan?.name ?? ""), [plan?.id, plan?.name]);
+    const [subject, setSubject] = React.useState("");
+    const [topic, setTopic] = React.useState("");
+    const [subjectId, setSubjectId] = React.useState(state.subjects.find(s => s.planId === state.activePlanId)?.id ?? "");
+    const [parentTopicId, setParentTopicId] = React.useState("");
+    const subjects = state.subjects.filter(s => s.planId === state.activePlanId).slice().sort((a, b) => a.order - b.order);
+    const materials = state.materials.filter(m => m.planId === state.activePlanId);
+    const topicChoices = state.topics.filter(t => t.planId === state.activePlanId && t.subjectId === subjectId && t.status !== "archived").slice().sort((a, b) => a.order - b.order);
+    React.useEffect(() => { if (!subjects.some(s => s.id === subjectId)) {
+        setSubjectId(subjects[0]?.id ?? "");
+        setParentTopicId("");
+    } }, [state.activePlanId, subjects.length]);
+    const [importText, setImportText] = React.useState("");
+    const [importFormat, setImportFormat] = React.useState("txt");
+    const [importMode, setImportMode] = React.useState("merge");
+    const [importTarget, setImportTarget] = React.useState("active");
+    const [importPlanName, setImportPlanName] = React.useState("");
+    const [contentPreview, setContentPreview] = React.useState(null);
+    React.useEffect(() => setContentPreview(null), [state.activePlanId, importText, importFormat, importMode, importTarget, importPlanName]);
+    const previewImport = () => run(() => { const next = store.previewPlanContentImport(importText, { format: importFormat, mode: importMode, target: importTarget, planName: importTarget === "new-plan" ? importPlanName : undefined, planMode: plan?.mode ?? newPlanMode }); setContentPreview(next); return next; }, "Plan Content import preview generated.");
+    const loadImportFile = async (e) => { const file = e.target.files?.[0]; if (!file)
+        return; try {
+        const source = await file.text();
+        setImportText(source);
+        setImportFormat((0, content_import_1.detectPlanContentImportFormat)(file.name || file.type, source));
+    }
+    catch (error) {
+        run(() => { throw error; });
+    }
+    finally {
+        e.target.value = "";
+    } };
+    return React.createElement("section", { id: "plan", "data-screen": "plan", className: "screen-section" },
+        React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "plan", label: "Plan sections", items: [["overview", "Overview"], ["schedule", "Schedule"], ["content", "Content"], ["library", "Library"]] }),
+        tab === "overview" && React.createElement("section", { id: "plan-overview", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+            React.createElement("div", { className: "metric-grid" },
+                React.createElement(Metric, { label: "Subjects", value: String(inv.subjects), detail: `${inv.topics} active topics` }),
+                React.createElement(Metric, { label: "Planned", value: `${inv.plannedMinutes} min`, detail: `${inv.activities} activities` })),
+            React.createElement("div", { className: "content-grid two-column" },
+                React.createElement("article", { className: "card" },
+                    React.createElement("h2", null, "Plan workspace"),
+                    React.createElement("select", { "aria-label": "Active study plan", value: state.activePlanId ?? "", onChange: (e) => run(() => store.switchPlan(e.target.value), "Active plan switched.") }, activePlans.map(item => React.createElement("option", { key: item.id, value: item.id }, item.name))),
+                    React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (plan && rename.trim())
+                            run(() => store.renamePlan(plan.id, rename.trim()), "Plan renamed."); } },
+                        React.createElement("input", { "aria-label": "Rename active plan", value: rename, onChange: (e) => setRename(e.target.value), required: true }),
+                        React.createElement("button", { className: "button", type: "submit" }, "Rename")),
+                    React.createElement("div", { className: "button-row" },
+                        React.createElement("button", { className: "button button-quiet", type: "button", disabled: !plan, onClick: () => plan && run(() => store.duplicatePlan(plan.id, { name: `${plan.name} copy`, activate: true }), "Plan structure duplicated and activated.") }, "Duplicate"),
+                        React.createElement("button", { className: "button button-quiet", type: "button", disabled: !plan || activePlans.length < 2, onClick: () => plan && run(() => store.setPlanArchived(plan.id, true), "Plan archived; history retained.") }, "Archive")),
+                    archivedPlans.length > 0 && React.createElement("div", null,
+                        React.createElement("h3", null, "Archived plans"),
+                        React.createElement("ul", { className: "activity-list" }, archivedPlans.map(item => React.createElement("li", { key: item.id },
+                            React.createElement("strong", null, item.name),
+                            React.createElement("div", { className: "button-row" },
+                                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setPlanArchived(item.id, false), "Plan restored.") }, "Restore"),
+                                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deletePlan(item.id), "Empty archived plan deleted.") }, "Delete if empty"))))))),
+                React.createElement("article", { className: "card" },
+                    React.createElement("h2", null, "Create plan"),
+                    React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (newPlanName.trim()) {
+                            run(() => store.createPlan({ name: newPlanName.trim(), mode: newPlanMode }, { activate: true }), "Plan created and activated.");
+                            setNewPlanName("");
+                        } } },
+                        React.createElement("input", { "aria-label": "New plan name", value: newPlanName, onChange: (e) => setNewPlanName(e.target.value), required: true }),
+                        React.createElement("select", { "aria-label": "New plan study mode", value: newPlanMode, onChange: (e) => setNewPlanMode(e.target.value) }, modes.map(([id, label]) => React.createElement("option", { key: id, value: id }, label))),
+                        React.createElement("button", { className: "button button-primary", type: "submit" }, "Create plan")),
+                    React.createElement("p", { className: "muted" }, "Plans have isolated content, schedules, evidence and study-cycle cursors."))),
+            React.createElement("article", { className: "card" },
+                React.createElement("h2", null, "Study mode"),
+                React.createElement("select", { "aria-label": "Study mode", value: plan?.mode ?? "GENERAL_SKILL", onChange: (e) => run(() => store.setPlanMode(e.target.value), "Study mode updated.") }, modes.map(([id, label]) => React.createElement("option", { key: id, value: id }, label)))),
+            React.createElement(ModeWorkspace, { state: state, store: store, run: run }),
+            React.createElement("article", { className: "card" },
+                React.createElement("h2", null, "Study cycle"),
+                React.createElement("ol", null, state.studyCycle.subjectIds.map((id, i) => React.createElement("li", { key: id },
+                    state.subjects.find(s => s.id === id)?.name ?? id,
+                    i === state.studyCycle.cursor ? " · current" : ""))),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.advanceStudyCycle(), "Study cycle advanced.") }, "Advance"))),
+        tab === "schedule" && React.createElement("section", { id: "plan-schedule", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+            React.createElement("article", { className: "card" },
+                React.createElement("div", { className: "card-heading-row" },
+                    React.createElement("h2", null, "Adaptive schedule"),
+                    React.createElement("button", { className: "button", type: "button", onClick: () => setPreview(store.previewSchedule()) }, "Preview")),
+                preview ? React.createElement(React.Fragment, null,
+                    React.createElement("p", null,
+                        preview.summary.add,
+                        " add \u00B7 ",
+                        preview.summary.move,
+                        " move"),
+                    React.createElement("ul", null, preview.operations.map((op, i) => React.createElement("li", { key: i }, op.action === "move" ? `Move ${op.activityId} → ${op.to}` : `Add ${op.activity?.title ?? "activity"} · ${op.scheduledFor}`))),
+                    React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applySchedulePreview(preview), "Schedule preview applied."))
+                            setPreview(null); } }, "Apply preview")) : React.createElement("p", { className: "muted" }, "Preview first; no schedule changes are silent."))),
+        tab === "content" && React.createElement("section", { id: "plan-content", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+            React.createElement("div", { className: "content-grid two-column" },
+                React.createElement("article", { className: "card" },
+                    React.createElement("h2", null, "Add subject"),
+                    React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (subject.trim()) {
+                            const added = run(() => store.addSubject({ name: subject.trim() }), "Subject added.");
+                            if (added && !subjectId)
+                                setSubjectId(added.id);
+                            setSubject("");
+                        } } },
+                        React.createElement("input", { "aria-label": "Subject name", value: subject, onChange: (e) => setSubject(e.target.value), required: true }),
+                        React.createElement("button", { className: "button", type: "submit" }, "Add"))),
+                React.createElement("article", { className: "card" },
+                    React.createElement("h2", null, "Add nested topic"),
+                    React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (topic.trim() && subjectId) {
+                            run(() => store.addTopic({ subjectId, parentTopicId: parentTopicId || null, name: topic.trim() }), "Topic added.");
+                            setTopic("");
+                        } } },
+                        React.createElement("select", { "aria-label": "Topic subject", value: subjectId, onChange: (e) => { setSubjectId(e.target.value); setParentTopicId(""); } }, subjects.map(s => React.createElement("option", { key: s.id, value: s.id }, s.name))),
+                        React.createElement("select", { "aria-label": "Parent topic", value: parentTopicId, onChange: (e) => setParentTopicId(e.target.value) },
+                            React.createElement("option", { value: "" }, "Root topic"),
+                            topicChoices.map(t => React.createElement("option", { key: t.id, value: t.id }, t.name))),
+                        React.createElement("input", { "aria-label": "Topic name", value: topic, onChange: (e) => setTopic(e.target.value), required: true }),
+                        React.createElement("button", { className: "button", type: "submit" }, "Add")))),
+            React.createElement("article", { className: "card" },
+                React.createElement("div", { className: "card-heading-row" },
+                    React.createElement("div", null,
+                        React.createElement("h2", null, "Import Plan Content"),
+                        React.createElement("p", { className: "muted" }, "TXT, Markdown, CSV, TSV and JSON are parsed locally. Preview/diff is mandatory before mutation.")),
+                    React.createElement("label", { className: "button button-quiet file-button" },
+                        "Choose file",
+                        React.createElement("input", { "aria-label": "Plan Content import file", type: "file", accept: ".txt,.md,.markdown,.csv,.tsv,.json,text/plain,text/markdown,text/csv,application/json", onChange: loadImportFile }))),
+                React.createElement("div", { className: "content-grid two-column" },
+                    React.createElement("div", { className: "stack-form" },
+                        React.createElement("select", { "aria-label": "Plan Content import format", value: importFormat, onChange: (e) => setImportFormat(e.target.value) },
+                            React.createElement("option", { value: "txt" }, "TXT"),
+                            React.createElement("option", { value: "markdown" }, "Markdown"),
+                            React.createElement("option", { value: "csv" }, "CSV"),
+                            React.createElement("option", { value: "tsv" }, "TSV"),
+                            React.createElement("option", { value: "json" }, "JSON")),
+                        React.createElement("select", { "aria-label": "Plan Content import mode", value: importMode, onChange: (e) => setImportMode(e.target.value) },
+                            React.createElement("option", { value: "merge" }, "Merge only"),
+                            React.createElement("option", { value: "reconcile" }, "Reconcile + archive missing")),
+                        React.createElement("select", { "aria-label": "Plan Content import target", value: importTarget, onChange: (e) => setImportTarget(e.target.value) },
+                            React.createElement("option", { value: "active" }, "Current plan"),
+                            React.createElement("option", { value: "new-plan" }, "Import as new plan")),
+                        importTarget === "new-plan" && React.createElement("input", { "aria-label": "Imported new plan name", value: importPlanName, onChange: (e) => setImportPlanName(e.target.value), placeholder: "New plan name", required: true }),
+                        React.createElement("button", { className: "button", type: "button", disabled: !importText.trim(), onClick: previewImport }, "Preview import")),
+                    React.createElement("textarea", { "aria-label": "Plan Content import source", value: importText, onChange: (e) => setImportText(e.target.value), placeholder: 'Subject: Constitutional Law\nTopic: Fundamental rights > Individual rights' })),
+                contentPreview && React.createElement("div", { className: "import-preview" },
+                    React.createElement("h3", null, contentPreview.ready ? "Preview ready" : "Preview blocked"),
+                    React.createElement("p", null,
+                        contentPreview.summary.subjectsAdd,
+                        " subjects \u00B7 ",
+                        contentPreview.summary.topicsAdd,
+                        " topics \u00B7 ",
+                        contentPreview.summary.update,
+                        " updates \u00B7 ",
+                        contentPreview.summary.reactivate,
+                        " reactivations \u00B7 ",
+                        contentPreview.summary.archive,
+                        " archives \u00B7 ",
+                        contentPreview.summary.duplicate,
+                        " duplicates"),
+                    contentPreview.issues.length > 0 && React.createElement("ul", null, contentPreview.issues.map((issue, index) => React.createElement("li", { key: `${issue.code}-${index}` },
+                        React.createElement("strong", null, title(issue.severity)),
+                        " \u00B7 ",
+                        issue.message))),
+                    React.createElement("details", null,
+                        React.createElement("summary", null,
+                            "Diff operations \u00B7 ",
+                            contentPreview.operations.length),
+                        React.createElement("ul", null, contentPreview.operations.map((op, index) => React.createElement("li", { key: index },
+                            title(op.action),
+                            " \u00B7 ",
+                            [op.subjectName, ...(op.topicPath ?? [])].join(" > "))))),
+                    React.createElement("button", { className: "button button-primary", type: "button", disabled: !contentPreview.ready, onClick: () => { if (run(() => store.applyPlanContentImportPreview(contentPreview), contentPreview.target === "new-plan" ? "New plan imported and activated." : "Plan Content import applied.")) {
+                            setContentPreview(null);
+                            setImportText("");
+                        } } }, "Apply import preview"))),
+            subjects.map(s => React.createElement("article", { className: "card", key: s.id },
+                React.createElement("div", { className: "card-heading-row" },
+                    React.createElement("div", null,
+                        React.createElement("h2", null, s.name),
+                        React.createElement("p", { className: "muted" },
+                            "Weight ",
+                            s.weight ?? "No data",
+                            " \u00B7 ",
+                            s.archived ? "Archived" : "Active")),
+                    React.createElement("div", { className: "button-row" },
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateSubject(s.id, { archived: !s.archived }), s.archived ? "Subject restored." : "Subject archived.") }, s.archived ? "Restore" : "Archive"),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateSubject(s.id, { notes: s.notes ? null : "Review this subject" }), "Subject notes updated.") }, "Notes"))),
+                React.createElement(TopicTree, { state: state, store: store, subjectId: s.id, run: run })))),
+        tab === "library" && React.createElement(Library, { materials: materials, store: store, persistence: persistence, run: run }));
+}
 function PublicExamWorkspace({ state, store, run }) {
     const plan = state.plans.find(p => p.id === state.activePlanId);
     const c = plan.configuration.publicExam;

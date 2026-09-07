@@ -4,6 +4,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createStudyStore = createStudyStore;
 const domain_js_1 = require("./domain.js");
+const content_import_js_1 = require("./content_import.js");
 const modes_js_1 = require("./modes.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
 function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms))
@@ -71,6 +72,18 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             throw new TypeError("Review rating must be a grade from 0 to 5");
         return Math.max(0, Math.min(5, Math.round(grade)));
     }
+    function planCycle(planId, sourceState = state) {
+        const allowed = sourceState.subjects.filter((subject) => subject.planId === planId && !subject.archived).map((subject) => subject.id);
+        const raw = sourceState.studyCycles?.[planId] ?? { subjectIds: allowed, cursor: 0 };
+        const cycle = (0, domain_js_1.createStudyCycleState)(raw);
+        const filtered = cycle.subjectIds.filter((subjectId) => allowed.includes(subjectId));
+        return (0, domain_js_1.createStudyCycleState)({ subjectIds: filtered.length ? filtered : allowed, cursor: cycle.cursor });
+    }
+    function withPlanCycle(sourceState, planId, cycle) {
+        const canonical = (0, domain_js_1.createStudyCycleState)(cycle);
+        const studyCycles = { ...(sourceState.studyCycles ?? {}), [planId]: canonical };
+        return { ...sourceState, studyCycles, studyCycle: sourceState.activePlanId === planId ? canonical : sourceState.studyCycle };
+    }
     function focusSnapshot(at = nowIso()) {
         const focus = (0, domain_js_1.createFocusState)(state.focus ?? {});
         return { ...focus, remainingMs: (0, domain_js_1.focusRemainingMs)(focus, at) };
@@ -104,6 +117,117 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         getFocusSnapshot: (at) => focusSnapshot(at),
         subscribe(listener) { if (typeof listener !== "function")
             throw new TypeError("listener must be a function"); listeners.add(listener); return () => listeners.delete(listener); },
+        createPlan(input, { activate = true } = {}) {
+            const at = nowIso();
+            const plan = (0, domain_js_1.createPlan)({ ...input, mode: input.mode ?? "GENERAL_SKILL", status: "active", createdAt: at, updatedAt: at });
+            const cycle = (0, domain_js_1.createStudyCycleState)();
+            const shouldActivate = activate || !state.activePlanId;
+            const next = { ...state, plans: [...state.plans, plan], studyCycles: { ...(state.studyCycles ?? {}), [plan.id]: cycle }, activePlanId: shouldActivate ? plan.id : state.activePlanId, studyCycle: shouldActivate ? cycle : state.studyCycle };
+            commit(next, "plan-created");
+            return plan;
+        },
+        renamePlan(planId, name) {
+            const current = state.plans.find((plan) => plan.id === planId);
+            if (!current)
+                throw new TypeError("Plan not found");
+            const at = nowIso();
+            const updated = (0, domain_js_1.createPlan)({ ...current, name, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map((plan) => plan.id === planId ? updated : plan) }, "plan-renamed");
+            return updated;
+        },
+        switchPlan(planId) {
+            const target = state.plans.find((plan) => plan.id === planId);
+            if (!target)
+                throw new TypeError("Plan not found");
+            if (target.status === "archived")
+                throw new TypeError("Archived plans must be restored before they can be activated");
+            if (state.focus?.status !== "idle")
+                throw new TypeError("Finish or cancel the current focus session before switching plans");
+            const cycle = planCycle(planId);
+            commit({ ...state, activePlanId: planId, studyCycle: cycle, studyCycles: { ...(state.studyCycles ?? {}), [planId]: cycle } }, "plan-switched");
+            return target;
+        },
+        setPlanArchived(planId, archived = true) {
+            const current = state.plans.find((plan) => plan.id === planId);
+            if (!current)
+                throw new TypeError("Plan not found");
+            const at = nowIso();
+            if (Boolean(archived) === (current.status === "archived"))
+                return current;
+            if (archived && planId === state.activePlanId && state.focus?.status !== "idle")
+                throw new TypeError("Finish or cancel the current focus session before archiving the active plan");
+            let activePlanId = state.activePlanId;
+            let studyCycle = state.studyCycle;
+            if (archived && planId === state.activePlanId) {
+                const replacement = state.plans.find((plan) => plan.id !== planId && plan.status !== "archived");
+                if (!replacement)
+                    throw new TypeError("Cannot archive the only active plan");
+                activePlanId = replacement.id;
+                studyCycle = planCycle(replacement.id);
+            }
+            const updated = (0, domain_js_1.createPlan)({ ...current, status: archived ? "archived" : "active", createdAt: current.createdAt, updatedAt: at });
+            const cycles = { ...(state.studyCycles ?? {}) };
+            if (!cycles[planId])
+                cycles[planId] = planCycle(planId);
+            commit({ ...state, plans: state.plans.map((plan) => plan.id === planId ? updated : plan), activePlanId, studyCycle, studyCycles: cycles }, archived ? "plan-archived" : "plan-restored");
+            return updated;
+        },
+        duplicatePlan(planId, { name = null, activate = false } = {}) {
+            const source = state.plans.find((plan) => plan.id === planId);
+            if (!source)
+                throw new TypeError("Plan not found");
+            const at = nowIso();
+            const plan = (0, domain_js_1.createPlan)({ ...source, id: undefined, name: name ?? `${source.name} copy`, status: "active", configuration: cloneState(source.configuration), createdAt: at, updatedAt: at });
+            const subjectMap = new Map();
+            const subjects = [];
+            for (const item of state.subjects.filter((subject) => subject.planId === planId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))) {
+                const copy = (0, domain_js_1.createSubject)({ ...item, id: undefined, planId: plan.id, createdAt: at, updatedAt: at });
+                subjectMap.set(item.id, copy.id);
+                subjects.push(copy);
+            }
+            const topicMap = new Map();
+            const topics = [];
+            let pending = state.topics.filter((topic) => topic.planId === planId).map((topic) => ({ ...topic }));
+            let guard = 0;
+            while (pending.length && guard++ < pending.length + 5) {
+                let progressed = false;
+                for (let index = pending.length - 1; index >= 0; index -= 1) {
+                    const item = pending[index];
+                    if (item.parentTopicId && !topicMap.has(item.parentTopicId))
+                        continue;
+                    const copy = (0, domain_js_1.createTopic)({ ...item, id: undefined, planId: plan.id, subjectId: subjectMap.get(item.subjectId), parentTopicId: item.parentTopicId ? topicMap.get(item.parentTopicId) : null, createdAt: at, updatedAt: at });
+                    topicMap.set(item.id, copy.id);
+                    topics.push(copy);
+                    pending.splice(index, 1);
+                    progressed = true;
+                }
+                if (!progressed)
+                    throw new TypeError("Cannot duplicate plan because its topic hierarchy is invalid");
+            }
+            const questions = state.questions.filter((question) => question.planId === planId).map((item) => (0, domain_js_1.createQuestion)({ ...item, id: undefined, planId: plan.id, subjectId: item.subjectId ? subjectMap.get(item.subjectId) ?? null : null, topicId: item.topicId ? topicMap.get(item.topicId) ?? null : null, createdAt: at, updatedAt: at }));
+            const goals = state.goals.filter((goal) => goal.planId === planId).map((item) => (0, domain_js_1.createGoal)({ ...item, id: undefined, planId: plan.id, createdAt: at, updatedAt: at }));
+            const activities = state.activities.filter((activity) => activity.planId === planId && activity.status === "planned").map((item) => (0, domain_js_1.createActivity)({ ...item, id: undefined, planId: plan.id, subjectId: item.subjectId ? subjectMap.get(item.subjectId) ?? null : null, topicId: item.topicId ? topicMap.get(item.topicId) ?? null : null, createdAt: at, updatedAt: at }));
+            const sourceCycle = planCycle(planId);
+            const cycle = (0, domain_js_1.createStudyCycleState)({ subjectIds: sourceCycle.subjectIds.map((id) => subjectMap.get(id)).filter(Boolean), cursor: sourceCycle.cursor });
+            const cycles = { ...(state.studyCycles ?? {}), [plan.id]: cycle };
+            commit({ ...state, plans: [...state.plans, plan], subjects: [...state.subjects, ...subjects], topics: [...state.topics, ...topics], questions: [...state.questions, ...questions], goals: [...state.goals, ...goals], activities: [...state.activities, ...activities], studyCycles: cycles, activePlanId: activate ? plan.id : state.activePlanId, studyCycle: activate ? cycle : state.studyCycle }, "plan-duplicated");
+            return plan;
+        },
+        deletePlan(planId) {
+            const current = state.plans.find((plan) => plan.id === planId);
+            if (!current)
+                throw new TypeError("Plan not found");
+            if (planId === state.activePlanId)
+                throw new TypeError("Switch to another plan before deleting this plan");
+            if (current.status !== "archived")
+                throw new TypeError("Archive the plan before deleting it");
+            const owned = [state.subjects, state.topics, state.activities, state.sessions, state.goals, state.materials, state.reviews, state.questions, state.evidence, state.errorEntries].some((collection) => collection.some((entity) => entity.planId === planId));
+            if (owned)
+                throw new TypeError("Plan still owns content or history and cannot be deleted; keep it archived instead");
+            const cycles = { ...(state.studyCycles ?? {}) };
+            delete cycles[planId];
+            commit({ ...state, plans: state.plans.filter((plan) => plan.id !== planId), studyCycles: cycles }, "plan-deleted");
+        },
         setPlanMode(mode) {
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current)
@@ -384,20 +508,22 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         resetFocus() { const current = focusSnapshot(); const next = (0, domain_js_1.createFocusState)({ durationMinutes: current.durationMinutes }); commit({ ...state, focus: next }, "focus-reset"); return next; },
         setFocusNote(note) { const next = (0, domain_js_1.createFocusState)({ ...state.focus, note }); commit({ ...state, focus: next }, "focus-note-updated"); return next; },
         setStudyCycle(subjectIds) {
-            const allowed = new Set(state.subjects.filter((subject) => subject.planId === activePlanId() && !subject.archived).map((subject) => subject.id));
+            const planId = activePlanId();
+            const allowed = new Set(state.subjects.filter((subject) => subject.planId === planId && !subject.archived).map((subject) => subject.id));
             const ids = [...new Set(subjectIds)];
             if (ids.some((id) => !allowed.has(id)))
                 throw new TypeError("Study cycle subjects must be active subjects in the current plan");
             const cycle = (0, domain_js_1.createStudyCycleState)({ subjectIds: ids, cursor: 0 });
-            commit({ ...state, studyCycle: cycle }, "study-cycle-updated");
+            commit(withPlanCycle(state, planId, cycle), "study-cycle-updated");
             return cycle;
         },
         advanceStudyCycle() {
+            const planId = activePlanId();
             const cycle = (0, domain_js_1.createStudyCycleState)(state.studyCycle ?? {});
             if (!cycle.subjectIds.length)
                 return cycle;
             const next = (0, domain_js_1.createStudyCycleState)({ ...cycle, cursor: (cycle.cursor + 1) % cycle.subjectIds.length });
-            commit({ ...state, studyCycle: next }, "study-cycle-advanced");
+            commit(withPlanCycle(state, planId, next), "study-cycle-advanced");
             return next;
         },
         addSubject(input) {
@@ -438,12 +564,19 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, subjects: state.subjects.map((subject) => ranks.has(subject.id) ? { ...subject, order: ranks.get(subject.id), updatedAt: at } : subject) }, "subject-reordered");
         },
         addTopic(input) {
-            const subject = state.subjects.find((candidate) => candidate.id === input.subjectId && candidate.planId === activePlanId());
+            const planId = activePlanId();
+            const subject = state.subjects.find((candidate) => candidate.id === input.subjectId && candidate.planId === planId);
             if (!subject)
                 throw new TypeError("Topic requires a subject in the active plan");
+            const parentTopicId = input.parentTopicId ?? null;
+            if (parentTopicId) {
+                const parent = state.topics.find((candidate) => candidate.id === parentTopicId && candidate.planId === planId && candidate.subjectId === subject.id);
+                if (!parent)
+                    throw new TypeError("Parent topic must belong to the same subject and active plan");
+            }
             const at = nowIso();
-            const siblings = state.topics.filter((topic) => topic.subjectId === subject.id);
-            const topic = (0, domain_js_1.createTopic)({ ...input, planId: activePlanId(), order: input.order ?? siblings.length, createdAt: at, updatedAt: at });
+            const siblings = state.topics.filter((topic) => topic.subjectId === subject.id && (topic.parentTopicId ?? null) === parentTopicId);
+            const topic = (0, domain_js_1.createTopic)({ ...input, planId, parentTopicId, order: input.order ?? siblings.length, createdAt: at, updatedAt: at });
             commit({ ...state, topics: [...state.topics, topic] }, "topic-added");
             return topic;
         },
@@ -455,8 +588,24 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const subject = state.subjects.find((candidate) => candidate.id === subjectId && candidate.planId === current.planId);
             if (!subject)
                 throw new TypeError("Topic subject must belong to the same plan");
+            const parentTopicId = changes.parentTopicId === undefined ? (current.parentTopicId ?? null) : (changes.parentTopicId ?? null);
+            if (parentTopicId === id)
+                throw new TypeError("Topic cannot parent itself");
+            if (parentTopicId) {
+                const parent = state.topics.find((candidate) => candidate.id === parentTopicId && candidate.planId === current.planId && candidate.subjectId === subjectId);
+                if (!parent)
+                    throw new TypeError("Parent topic must belong to the same subject and plan");
+                let cursor = parent;
+                const seen = new Set([id]);
+                while (cursor) {
+                    if (seen.has(cursor.id))
+                        throw new TypeError("Topic hierarchy cannot contain a cycle");
+                    seen.add(cursor.id);
+                    cursor = cursor.parentTopicId ? state.topics.find((candidate) => candidate.id === cursor.parentTopicId) : null;
+                }
+            }
             const at = nowIso();
-            const updated = (0, domain_js_1.createTopic)({ ...current, ...changes, id: current.id, planId: current.planId, subjectId, createdAt: current.createdAt, updatedAt: at });
+            const updated = (0, domain_js_1.createTopic)({ ...current, ...changes, id: current.id, planId: current.planId, subjectId, parentTopicId, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, topics: state.topics.map((topic) => topic.id === id ? updated : topic) }, "topic-updated");
             return updated;
         },
@@ -464,6 +613,8 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const current = state.topics.find((topic) => topic.id === id);
             if (!current)
                 throw new TypeError("Topic not found");
+            if (state.topics.some((topic) => topic.parentTopicId === id))
+                throw new TypeError("Topic has child topics; move, archive, or remove them before deleting it");
             if (referenceCollections(state).some((collection) => collection.some((entity) => entity.topicId === id)) || state.reviews.some((review) => review.sourceType === "topic" && review.sourceId === id))
                 throw new TypeError("Topic has study history or linked records and cannot be deleted; archive it instead");
             commit({ ...state, topics: state.topics.filter((topic) => topic.id !== id) }, "topic-deleted");
@@ -472,7 +623,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const current = state.topics.find((topic) => topic.id === id);
             if (!current)
                 return;
-            const ordered = state.topics.filter((topic) => topic.subjectId === current.subjectId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            const ordered = state.topics.filter((topic) => topic.subjectId === current.subjectId && (topic.parentTopicId ?? null) === (current.parentTopicId ?? null)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
             const index = ordered.findIndex((topic) => topic.id === id);
             const target = index + (direction === "up" ? -1 : 1);
             if (index < 0 || target < 0 || target >= ordered.length)
@@ -481,6 +632,86 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const ranks = new Map(ordered.map((topic, i) => [topic.id, i]));
             const at = nowIso();
             commit({ ...state, topics: state.topics.map((topic) => ranks.has(topic.id) ? { ...topic, order: ranks.get(topic.id), updatedAt: at } : topic) }, "topic-reordered");
+        },
+        previewPlanContentImport(source, options) { return (0, content_import_js_1.buildPlanContentImportPreview)(state, source, { ...options, now: nowIso }); },
+        applyPlanContentImportPreview(preview) {
+            if (!preview || typeof preview !== "object" || !Array.isArray(preview.operations))
+                throw new TypeError("Plan Content import preview is required");
+            if (!preview.ready)
+                throw new TypeError("Plan Content import preview contains errors and cannot be applied");
+            if (preview.baseRevision !== state.revision)
+                throw new TypeError("Plan Content import preview is stale; preview again before applying");
+            const at = nowIso();
+            let plans = state.plans.map((item) => ({ ...item }));
+            let subjects = state.subjects.map((item) => ({ ...item }));
+            let topics = state.topics.map((item) => ({ ...item }));
+            let planId = preview.targetPlanId;
+            const subjectRefs = new Map();
+            const topicRefs = new Map();
+            let activePlanId = state.activePlanId;
+            let studyCycle = state.studyCycle;
+            const studyCycles = { ...(state.studyCycles ?? {}) };
+            if (preview.target === "new-plan") {
+                if (state.focus?.status !== "idle")
+                    throw new TypeError("Finish or cancel the current focus session before importing and activating a new plan");
+                const plan = (0, domain_js_1.createPlan)({ name: preview.targetPlanName, mode: preview.targetPlanMode, status: "active", createdAt: at, updatedAt: at });
+                plans.push(plan);
+                planId = plan.id;
+                activePlanId = plan.id;
+                studyCycles[plan.id] = (0, domain_js_1.createStudyCycleState)();
+                studyCycle = studyCycles[plan.id];
+            }
+            if (!planId)
+                throw new TypeError("Plan Content import target is missing");
+            for (const op of preview.operations) {
+                if (op.action === "add-subject") {
+                    const siblings = subjects.filter((item) => item.planId === planId);
+                    const item = (0, domain_js_1.createSubject)({ name: op.subjectName, planId, order: siblings.length, ...op.changes, createdAt: at, updatedAt: at });
+                    subjects.push(item);
+                    subjectRefs.set(op.subjectRef, item.id);
+                    continue;
+                }
+                const subjectId = subjectRefs.get(op.subjectRef) ?? op.subjectRef;
+                const subject = subjects.find((item) => item.id === subjectId && item.planId === planId);
+                if (!subject)
+                    throw new TypeError(`Import operation references missing subject: ${op.subjectName}`);
+                subjectRefs.set(op.subjectRef, subject.id);
+                if (op.action === "update-subject" || op.action === "archive-subject") {
+                    const updated = (0, domain_js_1.createSubject)({ ...subject, ...op.changes, id: subject.id, planId, createdAt: subject.createdAt, updatedAt: at });
+                    subjects = subjects.map((item) => item.id === subject.id ? updated : item);
+                    continue;
+                }
+                const parentTopicId = op.parentRef ? (topicRefs.get(op.parentRef) ?? op.parentRef) : null;
+                if (op.action === "add-topic") {
+                    const siblings = topics.filter((item) => item.subjectId === subject.id && (item.parentTopicId ?? null) === parentTopicId);
+                    const name = op.topicPath?.[op.topicPath.length - 1] ?? "Topic";
+                    const item = (0, domain_js_1.createTopic)({ name, planId, subjectId: subject.id, parentTopicId, order: siblings.length, ...op.changes, createdAt: at, updatedAt: at });
+                    topics.push(item);
+                    if (op.topicRef)
+                        topicRefs.set(op.topicRef, item.id);
+                    continue;
+                }
+                const topicId = op.topicRef ? (topicRefs.get(op.topicRef) ?? op.topicRef) : null;
+                const topic = topicId ? topics.find((item) => item.id === topicId && item.planId === planId) : null;
+                if (!topic)
+                    throw new TypeError(`Import operation references missing topic: ${(op.topicPath ?? []).join(" > ")}`);
+                if (op.topicRef)
+                    topicRefs.set(op.topicRef, topic.id);
+                if (op.action === "update-topic" || op.action === "archive-topic") {
+                    const updated = (0, domain_js_1.createTopic)({ ...topic, ...op.changes, id: topic.id, planId, subjectId: subject.id, parentTopicId: topic.parentTopicId ?? null, createdAt: topic.createdAt, updatedAt: at });
+                    topics = topics.map((item) => item.id === topic.id ? updated : item);
+                }
+            }
+            const activeSubjects = subjects.filter((item) => item.planId === planId && !item.archived).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            const prior = studyCycles[planId] ?? (0, domain_js_1.createStudyCycleState)();
+            const allowed = new Set(activeSubjects.map((item) => item.id));
+            let ids = prior.subjectIds.filter((id) => allowed.has(id));
+            if (!ids.length)
+                ids = activeSubjects.map((item) => item.id);
+            studyCycles[planId] = (0, domain_js_1.createStudyCycleState)({ subjectIds: ids, cursor: prior.cursor });
+            if (activePlanId === planId)
+                studyCycle = studyCycles[planId];
+            return commit({ ...state, plans, subjects, topics, activePlanId, studyCycle, studyCycles }, "plan-content-import-applied");
         },
         previewSchedule(options = {}) { return (0, domain_js_1.buildSchedulePreview)(state, { ...options, at: options.at ?? nowIso() }); },
         applySchedulePreview(preview) {

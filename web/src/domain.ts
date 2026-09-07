@@ -4,8 +4,8 @@
 
 import { normalizePlanConfiguration, normalizeQuestionMetadata, validatePlanConfiguration } from "./modes";
 
-export const STATE_SCHEMA_VERSION = 5;
-export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3, 4]);
+export const STATE_SCHEMA_VERSION = 6;
+export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3, 4, 5]);
 
 export const ENTITY_COLLECTIONS = Object.freeze([
     "plans",
@@ -143,6 +143,7 @@ export function createTopic(input = {}) {
         ...entityBase("topic", input),
         planId: requireText(input.planId, "topic.planId"),
         subjectId: requireText(input.subjectId, "topic.subjectId"),
+        parentTopicId: optionalId(input.parentTopicId),
         name: requireText(input.name, "topic.name"),
         order: Number.isInteger(Number(input.order)) ? Math.max(0, Number(input.order)) : 0,
         priority: requireOneOf(input.priority ?? "normal", ["low", "normal", "high"], "topic.priority"),
@@ -414,19 +415,30 @@ export function focusRemainingMs(focus, at = Date.now()) {
 
 export function migrateStudyState(input, { now = isoNow() } = {}) {
     if (!input || typeof input !== "object" || Array.isArray(input)) return input;
-    if (![1, 2, 3, 4, STATE_SCHEMA_VERSION].includes(input.schemaVersion)) return input;
+    if (![1, 2, 3, 4, 5, STATE_SCHEMA_VERSION].includes(input.schemaVersion)) return input;
     const state = JSON.parse(JSON.stringify(input));
     const originalVersion = state.schemaVersion;
     state.schemaVersion = STATE_SCHEMA_VERSION;
     state.plans = Array.isArray(state.plans) ? state.plans.map((plan) => createPlan(plan)) : [];
     state.focus = createFocusState(state.focus ?? {});
-    state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => ({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : [];
-    state.studyCycle = createStudyCycleState(state.studyCycle ?? { subjectIds: state.subjects.filter((subject) => !subject.archived).map((subject) => subject.id), cursor: 0 });
-    state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
+    state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => createSubject({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : [];
+    state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => createTopic({ ...topic, parentTopicId: topic.parentTopicId ?? null, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
     state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
     state.materials = Array.isArray(state.materials) ? state.materials.map((material) => ({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null })) : [];
     state.reviews = Array.isArray(state.reviews) ? state.reviews.map((review) => createReview(review)) : [];
     state.questions = Array.isArray(state.questions) ? state.questions.map((question) => createQuestion(question)) : [];
+    const cycles = {};
+    const savedCycles = state.studyCycles && typeof state.studyCycles === "object" && !Array.isArray(state.studyCycles) ? state.studyCycles : {};
+    for (const plan of state.plans) {
+        const allowed = state.subjects.filter((subject) => subject.planId === plan.id && !subject.archived).map((subject) => subject.id);
+        const source = savedCycles[plan.id] ?? (plan.id === state.activePlanId ? state.studyCycle : null) ?? { subjectIds: allowed, cursor: 0 };
+        const sourceCycle = createStudyCycleState(source);
+        const filtered = sourceCycle.subjectIds.filter((subjectId) => allowed.includes(subjectId));
+        const subjectIds = filtered.length ? filtered : allowed;
+        cycles[plan.id] = createStudyCycleState({ subjectIds, cursor: sourceCycle.cursor });
+    }
+    state.studyCycles = cycles;
+    state.studyCycle = state.activePlanId && cycles[state.activePlanId] ? createStudyCycleState(cycles[state.activePlanId]) : createStudyCycleState();
     if (originalVersion !== STATE_SCHEMA_VERSION) state.migratedAt = now;
     return state;
 }
@@ -438,6 +450,7 @@ export function createEmptyStudyState() {
         activePlanId: null,
         focus: createFocusState(),
         studyCycle: createStudyCycleState(),
+        studyCycles: {},
         plans: [],
         subjects: [],
         topics: [],
@@ -474,6 +487,7 @@ export function createInitialStudyState({ now = isoNow() } = {}) {
         createSubject({ id: bankingId, planId, name: "Banking Knowledge", weight: null, order: 2, createdAt: now, updatedAt: now }),
     ];
     state.studyCycle = createStudyCycleState({ subjectIds: state.subjects.map((subject) => subject.id), cursor: 0 });
+    state.studyCycles = { [planId]: createStudyCycleState(state.studyCycle) };
     state.topics = [
         createTopic({ id: "topic-fundamental-rights", planId, order: 0, subjectId: constitutionalId, name: "Fundamental rights", priority: "high", createdAt: now, updatedAt: now }),
         createTopic({ id: "topic-public-administration", planId, order: 1, subjectId: constitutionalId, name: "Public administration", priority: "normal", createdAt: now, updatedAt: now }),
@@ -559,6 +573,7 @@ export function validateStudyState(state) {
         errors.push(`focus is invalid: ${error instanceof Error ? error.message : String(error)}`);
     }
     try { createStudyCycleState(state.studyCycle ?? {}); } catch (error) { errors.push(`studyCycle is invalid: ${error instanceof Error ? error.message : String(error)}`); }
+    if (!state.studyCycles || typeof state.studyCycles !== "object" || Array.isArray(state.studyCycles)) errors.push("studyCycles must be an object");
     validateCollectionShape(state, errors);
     if (errors.some((error) => error.endsWith("must be an array"))) return errors;
 
@@ -591,6 +606,27 @@ export function validateStudyState(state) {
     if (state.activePlanId != null && !planIds.has(state.activePlanId)) {
         errors.push(`activePlanId references missing plan: ${state.activePlanId}`);
     }
+    const activePlan = state.activePlanId == null ? null : state.plans.find((plan) => plan.id === state.activePlanId);
+    if (activePlan?.status === "archived") errors.push(`activePlanId references archived plan: ${state.activePlanId}`);
+    if (state.studyCycles && typeof state.studyCycles === "object" && !Array.isArray(state.studyCycles)) {
+        for (const [planId, rawCycle] of Object.entries(state.studyCycles)) {
+            if (!planIds.has(planId)) { errors.push(`studyCycles contains missing plan: ${planId}`); continue; }
+            try {
+                const cycle = createStudyCycleState(rawCycle);
+                for (const subjectId of cycle.subjectIds) {
+                    const subject = state.subjects.find((candidate) => candidate.id === subjectId);
+                    if (!subject) errors.push(`studyCycles ${planId} references missing subjectId: ${subjectId}`);
+                    else if (subject.planId !== planId) errors.push(`studyCycles ${planId} references subject from another plan: ${subjectId}`);
+                }
+            } catch (error) { errors.push(`studyCycles ${planId} is invalid: ${error instanceof Error ? error.message : String(error)}`); }
+        }
+        for (const plan of state.plans) if (!(plan.id in state.studyCycles)) errors.push(`studyCycles is missing plan: ${plan.id}`);
+        if (state.activePlanId && state.studyCycles[state.activePlanId]) {
+            const canonical = createStudyCycleState(state.studyCycles[state.activePlanId]);
+            const activeCycle = createStudyCycleState(state.studyCycle ?? {});
+            if (JSON.stringify(canonical) !== JSON.stringify(activeCycle)) errors.push("studyCycle must match the active plan's studyCycles entry");
+        }
+    }
     if (state.focus?.activityId != null && !activityIds.has(state.focus.activityId)) {
         errors.push(`focus references missing activityId: ${state.focus.activityId}`);
     }
@@ -606,6 +642,20 @@ export function validateStudyState(state) {
         requireReference(errors, topic, "subjectId", subjectIds, "topic");
         const subject = state.subjects.find((candidate) => candidate.id === topic.subjectId);
         if (subject && subject.planId !== topic.planId) errors.push(`topic ${topic.id} planId does not match its subject`);
+        if (topic.parentTopicId != null) {
+            requireReference(errors, topic, "parentTopicId", topicIds, "topic");
+            const parent = state.topics.find((candidate) => candidate.id === topic.parentTopicId);
+            if (parent && parent.planId !== topic.planId) errors.push(`topic ${topic.id} parentTopicId belongs to another plan`);
+            if (parent && parent.subjectId !== topic.subjectId) errors.push(`topic ${topic.id} parentTopicId belongs to another subject`);
+            if (topic.parentTopicId === topic.id) errors.push(`topic ${topic.id} cannot parent itself`);
+        }
+    }
+    for (const topic of state.topics) {
+        const visited = new Set([topic.id]); let parentId = topic.parentTopicId;
+        while (parentId != null) {
+            if (visited.has(parentId)) { errors.push(`topic hierarchy cycle detected at ${topic.id}`); break; }
+            visited.add(parentId); const parent = state.topics.find((candidate) => candidate.id === parentId); if (!parent) break; parentId = parent.parentTopicId;
+        }
     }
 
     for (const [label, collection] of [
@@ -679,6 +729,20 @@ export function selectAllTopicsForSubject(state, subjectId) {
     return state.topics
         .filter((topic) => topic.subjectId === subjectId)
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+}
+
+export function selectTopicChildren(state, parentTopicId = null, subjectId = null) {
+    return state.topics.filter((topic) => (topic.parentTopicId ?? null) === parentTopicId && (subjectId == null || topic.subjectId === subjectId)).sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name));
+}
+
+export function topicDepth(state, topicId) {
+    let depth=0; let current=state.topics.find((topic)=>topic.id===topicId)??null; const visited=new Set();
+    while(current?.parentTopicId){if(visited.has(current.id))return depth;visited.add(current.id);depth+=1;current=state.topics.find((topic)=>topic.id===current.parentTopicId)??null;} return depth;
+}
+
+export function buildTopicPath(state, topicId) {
+    const names=[]; let current=state.topics.find((topic)=>topic.id===topicId)??null; const visited=new Set();
+    while(current){if(visited.has(current.id))break;visited.add(current.id);names.unshift(current.name);current=current.parentTopicId?state.topics.find((topic)=>topic.id===current.parentTopicId)??null:null;} return names;
 }
 
 export function selectTopicsForSubject(state, subjectId) {

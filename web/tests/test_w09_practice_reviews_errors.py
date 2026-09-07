@@ -26,7 +26,7 @@ const values=new Map(); const storage={getItem:k=>values.get(k)??null,setItem:(k
     def test_v2_storage_migrates_to_v3_with_error_notebook_collection(self):
         self.run_node(r'''
 import assert from "node:assert/strict"; import { createInitialStudyState } from "./runtime/domain.js"; import { createBrowserRepository, STORAGE_KEY } from "./runtime/storage.js"; import { createStudyStore } from "./runtime/state.js";
-const legacy=createInitialStudyState({now:"2026-09-07T09:00:00.000Z"}); legacy.schemaVersion=2; delete legacy.errorEntries; const values=new Map([["studyflow.local.state.v2",JSON.stringify(legacy)]]); const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)}; const now=()=>"2026-09-07T09:05:00.000Z"; const store=createStudyStore({repository:createBrowserRepository({storage,now}),now}); assert.equal(store.getState().schemaVersion,5); assert.deepEqual(store.getState().errorEntries,[]); assert.ok(values.has(STORAGE_KEY));
+const legacy=createInitialStudyState({now:"2026-09-07T09:00:00.000Z"}); legacy.schemaVersion=2; delete legacy.errorEntries; const values=new Map([["studyflow.local.state.v2",JSON.stringify(legacy)]]); const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)}; const now=()=>"2026-09-07T09:05:00.000Z"; const store=createStudyStore({repository:createBrowserRepository({storage,now}),now}); assert.equal(store.getState().schemaVersion,6); assert.deepEqual(store.getState().errorEntries,[]); assert.ok(values.has(STORAGE_KEY));
 ''')
     def test_practice_ui_is_domain_backed(self):
         ui=(WEB/"src/react/App.tsx").read_text()

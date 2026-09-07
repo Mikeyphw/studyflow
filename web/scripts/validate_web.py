@@ -64,12 +64,12 @@ def validate_interactions()->list[str]:
 
 def validate_typescript()->list[str]:
     e=[]
-    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/hardening.ts','src/release.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w18_hardening.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
+    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/content_import.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/hardening.ts','src/release.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w18_hardening.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
     ts=_text(WEB/'tsconfig.json',e)
     try:cfg=json.loads(ts); _require(e,cfg.get('compilerOptions',{}).get('strict') is True,'TypeScript strict mode must be enabled'); _require(e,cfg.get('compilerOptions',{}).get('module')=='CommonJS','tracked browser runtime must compile to CommonJS')
     except Exception as exc:e.append(f'tsconfig invalid: {exc}')
     types=_text(WEB/'src/types.ts',e)
-    for token in ('interface StudyState','interface StudyStore','interface StudyRepository','interface AttachmentRepository','interface SchedulePreview','interface PortableImportPreview'):_require(e,token in types,f'typed contract missing {token}')
+    for token in ('interface StudyState','interface StudyStore','interface StudyRepository','interface AttachmentRepository','interface SchedulePreview','interface PortableImportPreview','interface PlanContentImportPreview'):_require(e,token in types,f'typed contract missing {token}')
     for legacy in ('domain.js','indexeddb.js','storage.js','state.js','portable.js','pwa.js','events.js','render.js'):
         text=_text(WEB/'src'/legacy,e)
         _require(e,'migration tombstone' in text and len(text)<500,f'legacy source must be a migration tombstone: {legacy}')
@@ -83,7 +83,7 @@ def validate_domain()->list[str]:
 
 def validate_state()->list[str]:
     e=[]; s=_text(WEB/'src/state.ts',e).lower(); main=_text(WEB/'src/main.tsx',e)
-    for token in ('startfocus','addsubject','addtopic','previewschedule','answerquestion','applyportableimportpreview'):_require(e,token in s,f'store API missing {token}')
+    for token in ('startfocus','addsubject','addtopic','previewschedule','answerquestion','applyportableimportpreview','previewplancontentimport','applyplancontentimportpreview','switchplan','duplicateplan'):_require(e,token in s,f'store API missing {token}')
     _require(e,'indexeddb' not in s,'state module must not own IndexedDB'); _require(e,'createBrowserPersistence' in main and 'createStudyStore' in main,'main must compose persistence + store outside React')
     return e
 
@@ -95,7 +95,7 @@ def validate_indexeddb()->list[str]:
 def validate_pwa()->list[str]:
     e=[]; p=_text(WEB/'src/pwa.ts',e); sw=_text(WEB/'service-worker.js',e); ui=_text(WEB/'src/react/App.tsx',e)
     for token in ('serviceWorker.register','beforeinstallprompt','appinstalled','offline'):_require(e,token in p,f'PWA registration missing {token}')
-    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','caches.match("./index.html")','appShellUrls.has(url.href)','runtime/main.js','runtime/modes.js','runtime/hardening.js','runtime/release.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
+    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','caches.match("./index.html")','appShellUrls.has(url.href)','runtime/main.js','runtime/content_import.js','runtime/modes.js','runtime/hardening.js','runtime/release.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
     _require(e,'id="install-app"' in ui and 'id="pwa-status"' in ui,'React PWA controls missing'); return e
 
 def validate_react()->list[str]:
@@ -109,8 +109,8 @@ def validate_public_exam()->list[str]:
     for token in ('buildExamNoticePreview','deriveFinalStretchGuidance','filterExamQuestions','previewMockExam','scoreMockExam','derivePublicExamDashboard'):_require(e,token in modes,f'W16 public-exam logic missing {token}')
     for token in ('updatePublicExamTarget','applyExamNoticePreview','addExamStage','addLegislation','setMockBlueprint','recordMockExam'):_require(e,token in state,f'W16 store operation missing {token}')
     for token in ('Concurso target','Concurso dashboard','Preview edital','Apply preview','Legislation','Mock Exam Studio','Banca'):_require(e,token in ui,f'W16 React workflow missing {token}')
-    _require(e,'STATE_SCHEMA_VERSION = 5' in domain,'W16/W17 current state schema must be v5')
-    _require(e,'studyflow.local.state.v4' in storage,'v4 localStorage migration key missing')
+    _require(e,'STATE_SCHEMA_VERSION = 6' in domain,'current state schema must be v6 after PC03')
+    _require(e,'studyflow.local.state.v5' in storage and 'studyflow.local.state.v4' in storage,'v5/v4 localStorage migration keys missing')
     _require(e,'child_process' not in modes and 'exec(' not in modes and 'spawn(' not in modes,'mode domain must not expose arbitrary shell execution')
     return e
 
@@ -167,6 +167,20 @@ def validate_parity_correctness()->list[str]:
     for rel in ('tests/test_pc00_mock_scoring.py','tests/test_pc01_review_progression.py'):_require(e,(WEB/rel).is_file(),f'PC00/PC01 regression suite missing {rel}')
     return e
 
+def validate_parity_plan_content()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); domain=_text(WEB/'src/domain.ts',e); importer=_text(WEB/'src/content_import.ts',e); state=_text(WEB/'src/state.ts',e); storage=_text(WEB/'src/storage.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC02_PC03_PLAN_IMPORT_HIERARCHY.md',e)
+    for token in ('PlanContentImportFormat','PlanContentImportMode','PlanContentImportPreview','parentTopicId','studyCycles: Record<string,StudyCycleState>','schemaVersion: 6'):_require(e,token in types,f'PC02/PC03 typed contract missing {token}')
+    for token in ('detectPlanContentImportFormat','parsePlanContentImport','buildPlanContentImportPreview','duplicate-input','reconcile','new-plan'):_require(e,token in importer,f'PC02 import pipeline missing {token}')
+    for token in ('createPlan(input','renamePlan(','switchPlan(','setPlanArchived(','duplicatePlan(','deletePlan(','previewPlanContentImport','applyPlanContentImportPreview','parentTopicId','studyCycles'):_require(e,token in state,f'PC03 store lifecycle/hierarchy missing {token}')
+    for token in ('STATE_SCHEMA_VERSION = 6','LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3, 4, 5])','selectTopicChildren','topicDepth','buildTopicPath','topic hierarchy cycle detected'):_require(e,token in domain,f'PC03 domain/migration missing {token}')
+    _require(e,'studyflow.local.state.v5' in storage,'PC03 localStorage v5 migration key missing')
+    for token in ('Plan workspace','Create plan','Archived plans','Import Plan Content','Preview import','Apply import preview','Import as new plan','Parent topic','TopicTree'):_require(e,token in ui,f'PC02/PC03 React workflow missing {token}')
+    _require(e,'runtime/content_import.js' in sw,'PC02 runtime must be available in the offline app shell')
+    _require(e,'PC02 | Generic Plan Content import — delivered' in roadmap,'PC02 roadmap delivery marker missing'); _require(e,'PC03 | Plan lifecycle + nested topics — delivered' in roadmap,'PC03 roadmap delivery marker missing')
+    for token in ('parse → normalize → validate → preview/diff → explicit apply','State schema **v6**','per-plan map','does not clone sessions, evidence, reviews, errors'):_require(e,token in doc,f'PC02/PC03 documentation missing {token}')
+    for rel in ('tests/test_pc02_plan_content_import.py','tests/test_pc03_plan_lifecycle_hierarchy.py'):_require(e,(WEB/rel).is_file(),f'PC02/PC03 regression suite missing {rel}')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -178,7 +192,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content)
     out=[]
     for fn in groups:
         for item in fn():
@@ -186,8 +200,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

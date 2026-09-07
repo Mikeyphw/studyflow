@@ -764,3 +764,9 @@ legend {
         border: 1px solid CanvasText;
     }
 }
+
+/* PC03 nested Plan Content hierarchy */
+.nested-topic-list { margin-left: 1rem; border-left: 2px solid var(--border); padding-left: .75rem; }
+.topic-row { display: flex; gap: .75rem; align-items: center; justify-content: space-between; width: 100%; }
+.import-preview { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+@media (min-width: 720px) { .nested-topic-list { margin-left: 1.5rem; } }

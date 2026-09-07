@@ -61,7 +61,7 @@ assert.throws(() => store.deleteSubject("subject-portuguese"));
 
     def test_content_ui_has_react_editors_and_archive_actions(self) -> None:
         ui=(WEB/"src/react/App.tsx").read_text(encoding="utf-8")
-        for token in ("Add subject", "Add topic", "store.addSubject", "store.addTopic", "store.updateSubject", "store.updateTopic", "Archive"):
+        for token in ("Add subject", "Add nested topic", "store.addSubject", "store.addTopic", "store.updateSubject", "store.updateTopic", "Archive"):
             self.assertIn(token,ui)
 
     def test_domain_stays_framework_and_storage_independent(self) -> None:

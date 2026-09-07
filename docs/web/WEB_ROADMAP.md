@@ -29,3 +29,6 @@ Each phase must preserve mobile-first behavior, local ownership, truthful eviden
 
 - PC00 | Mock scoring correctness — delivered: weighted scoring now honors question points and section weights, penalty modes are value-aware, unanswered questions remain neutral, and score evidence includes section/question breakdowns.
 - PC01 | Configurable review progression — delivered: review intervals are actionable, persisted review stages advance through the configured policy, failed reviews reset progression, and successor scheduling is duplicate-safe.
+
+- PC02 | Generic Plan Content import — delivered: TXT/Markdown/CSV/TSV/JSON parse/normalize/validate/preview/diff/apply, merge/reconcile modes, and import-as-new-plan.
+- PC03 | Plan lifecycle + nested topics — delivered: create/rename/switch/duplicate/archive/restore/safe-delete, nested topic hierarchy, and per-plan study-cycle persistence.

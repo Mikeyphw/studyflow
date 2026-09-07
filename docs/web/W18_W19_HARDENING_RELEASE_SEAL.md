@@ -31,7 +31,7 @@ Release invariants:
 - no required backend, account, analytics, ads, telemetry or runtime CDN;
 - React/ReactDOM/TypeScript versions remain pinned by the lockfile;
 - TypeScript source and tracked browser runtime remain byte-for-byte reproducible;
-- state schema remains v5, IndexedDB schema v1 and portable package format v1;
+- at the W19 seal, state schema was v5; PC03 later advances current state to v6 while IndexedDB schema remains v1 and portable package format remains v1;
 - unknown evidence remains distinct from measured zero;
 - portable import remains preview-first and revision guarded;
 - attachment bytes remain local and are not falsely claimed by the JSON portable package;

@@ -31,7 +31,7 @@ export interface GeneralSkillConfiguration { drills:GeneralSkillDrill[]; }
 export interface PlanConfiguration { version:1; publicExam?:PublicExamConfiguration; programming?:ProgrammingConfiguration; language?:LanguageConfiguration; reading?:ReadingConfiguration; general?:GeneralSkillConfiguration; }
 export interface Plan extends EntityBase { name: string; mode: StudyMode; status: "active" | "archived"; examDate: string | null; configuration:PlanConfiguration; }
 export interface Subject extends EntityBase { planId: string; name: string; weight: number | null; order: number; notes: string | null; archived: boolean; }
-export interface Topic extends EntityBase { planId: string; subjectId: string; name: string; order: number; priority: TopicPriority; status: TopicStatus; notes: string | null; }
+export interface Topic extends EntityBase { planId: string; subjectId: string; parentTopicId: string | null; name: string; order: number; priority: TopicPriority; status: TopicStatus; notes: string | null; }
 export interface Activity extends EntityBase { planId: string; subjectId: string | null; topicId: string | null; title: string; kind: ActivityKind; durationMinutes: number; status: ActivityStatus; origin: "manual"|"seed"|"cycle"|"review"|"import"|"schedule"; queue: "today"|"future"|"backlog"; scheduledFor: string | null; }
 export interface StudySession extends EntityBase { planId: string; activityId: string | null; subjectId: string | null; topicId: string | null; startedAt: string; endedAt: string | null; durationMinutes: number | null; status: "running"|"paused"|"completed"|"cancelled"; note: string | null; }
 export interface Goal extends EntityBase { planId: string; name: string; metric: string; target: number; period: "daily"|"weekly"|"monthly"|"plan"; active: boolean; }
@@ -43,7 +43,7 @@ export interface ErrorEntry extends EntityBase { planId: string; subjectId: stri
 export interface FocusState { status: FocusStatus; activityId: string | null; durationMinutes: number; remainingMs: number; elapsedMs: number; startedAt: string | null; lastResumedAt: string | null; endsAt: string | null; note: string | null; }
 export interface FocusSnapshot extends FocusState { remainingMs: number; }
 export interface StudyCycleState { subjectIds: string[]; cursor: number; }
-export interface StudyState { schemaVersion: 5; revision: number; activePlanId: string | null; focus: FocusState; studyCycle: StudyCycleState; plans: Plan[]; subjects: Subject[]; topics: Topic[]; activities: Activity[]; sessions: StudySession[]; goals: Goal[]; materials: Material[]; reviews: Review[]; questions: Question[]; evidence: Evidence[]; errorEntries: ErrorEntry[]; }
+export interface StudyState { schemaVersion: 6; revision: number; activePlanId: string | null; focus: FocusState; studyCycle: StudyCycleState; studyCycles: Record<string,StudyCycleState>; plans: Plan[]; subjects: Subject[]; topics: Topic[]; activities: Activity[]; sessions: StudySession[]; goals: Goal[]; materials: Material[]; reviews: Review[]; questions: Question[]; evidence: Evidence[]; errorEntries: ErrorEntry[]; }
 export interface PersistenceStatus { status: string; message: string; durable: boolean; }
 export interface RepositoryResult { status: string; state?: StudyState | null; reason?: string | null; }
 export interface StudyRepository { backend?: string; load(): RepositoryResult; save(state: StudyState): RepositoryResult; clear(): RepositoryResult; flush?(): Promise<void>; close?(): void; }
@@ -54,6 +54,12 @@ export interface BrowserPersistence { backend: string; repository: StudyReposito
 export interface ScheduleOperation { action: "add"|"move"; activityId?: string; from?: string|null; to?: string; scheduledFor?: string; activity?: Partial<Activity>; reason?: string; }
 export interface SchedulePreview { baseRevision: number; generatedAt: string; operations: ScheduleOperation[]; summary: {add:number; move:number}; reasons: string[]; }
 export interface PortableImportPreview { baseRevision: number; generatedAt: string; packageExportedAt: string|null; sourceActivePlanId: string|null; summary: {add:number; update:number; remove:number; unchanged:number}; collections: Record<string,{add:number;update:number;remove:number;unchanged:number}>; nextState: StudyState; }
+
+export type PlanContentImportFormat = "txt"|"markdown"|"csv"|"tsv"|"json";
+export type PlanContentImportMode = "merge"|"reconcile";
+export interface PlanContentImportIssue { severity:"warning"|"error"; code:string; row:number|null; message:string; }
+export interface PlanContentImportOperation { action:"add-subject"|"update-subject"|"archive-subject"|"add-topic"|"update-topic"|"archive-topic"; subjectRef:string; topicRef?:string; subjectName:string; topicPath?:string[]; parentRef?:string|null; changes:Record<string,unknown>; }
+export interface PlanContentImportPreview { baseRevision:number; generatedAt:string; sourceFingerprint:string; format:PlanContentImportFormat; mode:PlanContentImportMode; target:"active"|"new-plan"; targetPlanId:string|null; targetPlanName:string|null; targetPlanMode:StudyMode; ready:boolean; summary:{subjectsAdd:number;topicsAdd:number;update:number;reactivate:number;archive:number;matched:number;duplicate:number;invalid:number;ambiguous:number}; issues:PlanContentImportIssue[]; operations:PlanContentImportOperation[]; }
 
 export interface ExamNoticePreview { baseRevision:number; generatedAt:string; sourceHash:string; subjects:Array<{name:string;topics:string[]}>; duplicates:string[]; unrecognized:string[]; }
 export interface ExamQuestionFilter { board?:string; organization?:string; role?:string; subjectId?:string; topicId?:string; yearFrom?:number; yearTo?:number; disputed?:boolean; }
@@ -68,6 +74,7 @@ export interface ProgressMetrics { weeklyStudyMinutes:number; gradedAttempts:num
 export interface StudyStore {
   getState(): StudyState; getSnapshot(): StudyState; getPersistenceStatus(): PersistenceStatus; getFocusSnapshot(at?: string|number): FocusSnapshot;
   subscribe(listener: (state: StudyState, persistence: PersistenceStatus, reason: string)=>void): ()=>void;
+  createPlan(input:Partial<Plan> & Pick<Plan,"name">,options?:{activate?:boolean}):Plan; renamePlan(planId:string,name:string):Plan; switchPlan(planId:string):Plan; setPlanArchived(planId:string,archived?:boolean):Plan; duplicatePlan(planId:string,options?:{name?:string;activate?:boolean}):Plan; deletePlan(planId:string):void;
   setPlanMode(mode:StudyMode):Plan; updatePublicExamTarget(input:Partial<ExamTargetProfile>):Plan; addExamStage(input:Partial<ExamStage> & Pick<ExamStage,"name">):Plan; previewExamNotice(source:string):ExamNoticePreview; applyExamNoticePreview(preview:ExamNoticePreview):Plan; addLegislation(input:{title:string;reference?:string|null;notes?:string|null;provisions?:Array<{label:string;text:string}>}):Plan; setReviewIntervalsDays(intervals:number[]):Plan; setMockBlueprint(input:Partial<MockExamBlueprint>):Plan; recordMockExam(preview:MockExamPreview,answers:Record<string,string>):Evidence;
   addProgrammingExercise(input:Partial<ProgrammingExercise> & Pick<ProgrammingExercise,"title"|"prompt">):Plan; updateProgrammingExercise(id:string,changes:Partial<ProgrammingExercise>):Plan; recordProgrammingExercise(id:string,input?:{completed?:boolean;note?:string|null}):Evidence;
   addLanguageExpression(input:Partial<LanguageExpression> & Pick<LanguageExpression,"expression"|"meaning">):Plan; recordLanguageReview(expressionId:string,direction:LanguageReviewDirection,rating:number,input?:{answer?:string|null;note?:string|null}):Evidence;
@@ -77,6 +84,7 @@ export interface StudyStore {
   setStudyCycle(subjectIds:string[]):StudyCycleState; advanceStudyCycle():StudyCycleState;
   addSubject(input: Partial<Subject> & Pick<Subject,"name">):Subject; updateSubject(id:string,changes:Partial<Subject>):Subject; deleteSubject(id:string):void; moveSubject(id:string,direction:"up"|"down"):void;
   addTopic(input: Partial<Topic> & Pick<Topic,"subjectId"|"name">):Topic; updateTopic(id:string,changes:Partial<Topic>):Topic; deleteTopic(id:string):void; moveTopic(id:string,direction:"up"|"down"):void;
+  previewPlanContentImport(source:string,options:{format:PlanContentImportFormat;mode?:PlanContentImportMode;target?:"active"|"new-plan";planName?:string;planMode?:StudyMode}):PlanContentImportPreview; applyPlanContentImportPreview(preview:PlanContentImportPreview):StudyState;
   previewSchedule(options?:Record<string,unknown>):SchedulePreview; applySchedulePreview(preview:SchedulePreview): Activity[];
   addMaterial(input: Partial<Material> & Pick<Material,"title">):Material; deleteMaterial(id:string):void;
   addGoal(input: Partial<Goal> & Pick<Goal,"name"|"metric"|"target">):Goal; toggleGoal(id:string):Goal; deleteGoal(id:string):void;
