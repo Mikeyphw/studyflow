@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.DocumentsContract
 import java.io.InputStream
 import java.io.OutputStream
@@ -166,9 +167,16 @@ internal class SafManualFolderSyncStorage(
         require(uri.scheme.equals(ContentResolver.SCHEME_CONTENT, ignoreCase = true)) {
             "Manual sync folder must use a content URI."
         }
-        require(DocumentsContract.isTreeUri(uri)) { "Manual sync folder must be a SAF tree URI." }
+        require(isTreeUriCompat(uri)) { "Manual sync folder must be a SAF tree URI." }
         return uri
     }
+
+    private fun isTreeUriCompat(uri: Uri): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            DocumentsContract.isTreeUri(uri)
+        } else {
+            runCatching { DocumentsContract.getTreeDocumentId(uri) }.isSuccess
+        }
 
     private fun android.database.Cursor.longOrZero(index: Int): Long =
         if (isNull(index)) 0L else getLong(index).coerceAtLeast(0L)
