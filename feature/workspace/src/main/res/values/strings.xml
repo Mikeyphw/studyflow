@@ -715,4 +715,12 @@
     <string name="pre_edital_cockpit_missing_reference_message">No edital reference is saved yet. %1$d verification items remain, and StudyFlow will not invent an exam countdown.</string>
     <string name="pre_edital_review_assumptions">Review assumptions</string>
 
+    <string name="bb_mock_exam_title">BB Agente Comercial · 2022/001 reference mock</string>
+    <string name="bb_mock_exam_reference">Cesgranrio filter · %1$d objective questions · %2$d min reference full mock · 100 reference points</string>
+    <string name="bb_mock_exam_allocation_notice">Question targets are derived proportionally from the supplied reference point weights so they total 70. They are not presented as official per-subject question counts.</string>
+    <string name="bb_mock_exam_section">%1$s · target %2$d questions · %3$.1f points</string>
+    <string name="bb_mock_exam_ready">Local question coverage is complete for this preset.</string>
+    <string name="bb_mock_exam_missing">Question bank is short by %1$d matching Cesgranrio question(s). The preset will not substitute other subjects or boards.</string>
+    <string name="bb_mock_exam_essay_separate">Essay training remains separate from the 70 objective questions. Reference eliminatory minimum: %1$d/100.</string>
+    <string name="bb_mock_exam_create">Create BB reference mock</string>
 </resources>

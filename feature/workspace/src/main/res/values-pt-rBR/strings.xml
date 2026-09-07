@@ -752,4 +752,12 @@
     <string name="pre_edital_cockpit_missing_reference_message">Ainda não há uma referência de edital salva. Restam %1$d itens para verificar, e o StudyFlow não inventa uma contagem regressiva.</string>
     <string name="pre_edital_review_assumptions">Revisar premissas</string>
 
+    <string name="bb_mock_exam_title">BB Agente Comercial · simulado de referência 2022/001</string>
+    <string name="bb_mock_exam_reference">Filtro Cesgranrio · %1$d questões objetivas · simulado completo de referência de %2$d min · 100 pontos de referência</string>
+    <string name="bb_mock_exam_allocation_notice">As metas de questões são derivadas proporcionalmente dos pesos em pontos fornecidos para totalizar 70. Elas não são apresentadas como quantidade oficial de questões por disciplina.</string>
+    <string name="bb_mock_exam_section">%1$s · meta de %2$d questões · %3$.1f pontos</string>
+    <string name="bb_mock_exam_ready">O banco local possui cobertura completa para este preset.</string>
+    <string name="bb_mock_exam_missing">Faltam %1$d questão(ões) Cesgranrio compatível(is) no banco local. O preset não substitui por outra disciplina ou banca.</string>
+    <string name="bb_mock_exam_essay_separate">O treino de Redação permanece separado das 70 questões objetivas. Mínimo eliminatório de referência: %1$d/100.</string>
+    <string name="bb_mock_exam_create">Criar simulado de referência do BB</string>
 </resources>

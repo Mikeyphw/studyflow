@@ -50,6 +50,9 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowTabStrip
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
+import com.mikeyphw.studyflow.core.domain.BancoDoBrasilAgenteComercialPreset
+import com.mikeyphw.studyflow.core.domain.BancoDoBrasilMockExamPreset
+import com.mikeyphw.studyflow.core.domain.BancoDoBrasilMockExamPresetPreview
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
@@ -156,6 +159,21 @@ fun PracticeWorkspaceScreen(
             request = MockExamStudioRequest(title = mockStudioDefaultTitle),
         )
     }
+    val bbMockTitle = stringResource(R.string.bb_mock_exam_title)
+    val isBbReferencePlan = remember(plan.name) {
+        BancoDoBrasilAgenteComercialPreset.matchesReferencePlanName(plan.name)
+    }
+    val bbMockPreset = remember(syllabus, questions, bbMockTitle, isBbReferencePlan) {
+        if (isBbReferencePlan) {
+            BancoDoBrasilMockExamPreset.preview(
+                syllabus = syllabus,
+                questions = questions,
+                title = bbMockTitle,
+            )
+        } else {
+            null
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -226,6 +244,7 @@ fun PracticeWorkspaceScreen(
                         tests = tests,
                         mocks = mocks,
                         mockStudio = mockStudio,
+                        bbMockPreset = bbMockPreset,
                         targetId = targetId,
                         onOpenQuestionBank = onOpenQuestionBank,
                         onPreviewMockExam = { request ->
@@ -247,6 +266,23 @@ fun PracticeWorkspaceScreen(
                                         planId = plan.id,
                                         questions = questions,
                                         request = request,
+                                    )
+                                    snackbar.showSnackbar(mockExamCreated)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    snackbar.showSnackbar(operationFailed)
+                                }
+                            }
+                        },
+                        onCreateBbMockExam = { preset ->
+                            scope.launch {
+                                try {
+                                    practiceManager.createMockExamFromBlueprint(
+                                        id = MockExamId(UUID.randomUUID().toString()),
+                                        planId = plan.id,
+                                        questions = questions,
+                                        blueprint = preset.blueprint,
                                     )
                                     snackbar.showSnackbar(mockExamCreated)
                                 } catch (cancelled: CancellationException) {
@@ -452,11 +488,13 @@ private fun QuestionsPane(
     tests: List<StudyTest>,
     mocks: List<MockExam>,
     mockStudio: MockExamStudioBlueprint,
+    bbMockPreset: BancoDoBrasilMockExamPresetPreview?,
     targetId: String?,
     onOpenQuestionBank: () -> Unit,
     onPreviewMockExam: (MockExamStudioRequest) -> MockExamStudioBlueprint,
     onPreviewQuestionImport: (String) -> QuestionImportPreview,
     onCreateMockExam: (MockExamStudioRequest) -> Unit,
+    onCreateBbMockExam: (BancoDoBrasilMockExamPresetPreview) -> Unit,
     onImportQuestions: (String) -> Unit,
 ) {
     var showImportDialog by rememberSaveable { mutableStateOf(false) }
@@ -479,6 +517,15 @@ private fun QuestionsPane(
                 supportingText = pluralStringResource(R.plurals.mocks_count, mocks.size, mocks.size),
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+        bbMockPreset?.let { preset ->
+            item(key = "bb-mock-exam-preset", contentType = "bb-mock-exam-preset") {
+                BancoDoBrasilMockExamPresetCard(
+                    preset = preset,
+                    onCreate = { onCreateBbMockExam(preset) },
+                    onOpenQuestionBank = onOpenQuestionBank,
+                )
+            }
         }
         item(key = "mock-exam-studio", contentType = "mock-exam-studio") {
             StudyFlowTimelineItem(
@@ -591,6 +638,79 @@ private fun QuestionsPane(
                 onImportQuestions(rawText)
             },
         )
+    }
+}
+
+@Composable
+private fun BancoDoBrasilMockExamPresetCard(
+    preset: BancoDoBrasilMockExamPresetPreview,
+    onCreate: () -> Unit,
+    onOpenQuestionBank: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.bb_mock_exam_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = stringResource(
+                    R.string.bb_mock_exam_reference,
+                    preset.blueprint.requestedQuestionCount,
+                    preset.blueprint.timeLimitMinutes,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(R.string.bb_mock_exam_allocation_notice),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            preset.preview.sections.forEach { sectionPreview ->
+                val section = sectionPreview.section
+                Text(
+                    text = stringResource(
+                        R.string.bb_mock_exam_section,
+                        section.key,
+                        section.questionCount,
+                        section.weight,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Text(
+                text = if (preset.executable) {
+                    stringResource(R.string.bb_mock_exam_ready)
+                } else {
+                    stringResource(R.string.bb_mock_exam_missing, preset.missingQuestionCount)
+                },
+                color = if (preset.executable) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
+            )
+            Text(
+                text = stringResource(R.string.bb_mock_exam_essay_separate, preset.essayMinimumScorePercent),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            if (preset.executable) {
+                Button(onClick = onCreate, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.bb_mock_exam_create))
+                }
+            } else {
+                OutlinedButton(onClick = onOpenQuestionBank, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.open_question_bank))
+                }
+            }
+        }
     }
 }
 

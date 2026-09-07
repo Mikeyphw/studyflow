@@ -187,11 +187,18 @@ object ExamBlueprintPlanner {
         if (type !in section.allowedQuestionTypes) return false
         if (section.subjectId != null && subjectId != section.subjectId) return false
         if (section.topicId != null && topicId != section.topicId) return false
-        if (blueprint.examBoard != null &&
-            examBoard?.equals(blueprint.examBoard, ignoreCase = true) != true
-        ) return false
+        if (blueprint.examBoard != null && !examBoardMatches(blueprint.examBoard, examBoard)) return false
         if (blueprint.year != null && year != blueprint.year) return false
         return true
+    }
+
+    private fun examBoardMatches(expected: String, actual: String?): Boolean {
+        val candidate = actual?.trim()?.takeIf(String::isNotBlank) ?: return false
+        val requested = expected.trim()
+        if (candidate.equals(requested, ignoreCase = true)) return true
+        val shorter = if (candidate.length <= requested.length) candidate else requested
+        val longer = if (candidate.length > requested.length) candidate else requested
+        return shorter.length >= 5 && longer.contains(shorter, ignoreCase = true)
     }
 
     private const val GeneralSectionKey = "general"
