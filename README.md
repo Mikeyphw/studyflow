@@ -161,6 +161,22 @@ install, upgrade, and device-smoke evidence. Ordinary `studyflow_android` valida
 Debug APK only; signed Release APK/AAB generation is intentionally reserved for the credentialed
 final-release gate in `scripts/run_final_release_acceptance.sh`.
 
+
+
+## Android TV roadmap
+
+Android TV starts as a size-constrained separate APK track. `studyflow_tv` is present as a
+source-contract Devtool target, but it does not compile `:app-tv` until TVOV01 creates that module:
+
+```bash
+devtool -r /path/to/studyflow --target studyflow_tv validate
+```
+
+The TV release APK budget is 25 MiB target / 35 MiB hard ceiling. TV is also a paired companion
+surface: the Android mobile app must eventually control every TV destination and cast study sessions,
+questions, reviews, mock exams, progress, and schedule views to the TV app through explicit,
+revocable pairing.
+
 Useful focused checks:
 
 ```bash

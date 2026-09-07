@@ -388,6 +388,88 @@ cpu_limit = 1
 parallel = false
 low_priority = false
 
+
+[targets.studyflow_tv]
+type = "gradle"
+root = "."
+execution_environment = "native-termux"
+chroot_name = "androidos"
+
+[targets.studyflow_tv.gradle]
+version = "9.7.1"
+provider = "auto"
+max_workers = 1
+parallel = false
+no_daemon = false
+daemon_idle_timeout_ms = 900000
+build_cache = true
+structured_events = false
+fail_fast = true
+offline = false
+args = [
+  "-Dorg.gradle.parallel=true",
+  "-Dorg.gradle.vfs.watch=false",
+  "-Pkotlin.incremental=true",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+]
+
+[targets.studyflow_tv.tasks]
+build = [
+  "verifyStudyFlowTvArchitecture",
+  "verifyStudyFlowTvSizeBudget",
+  "verifyStudyFlowTvControlCast",
+]
+test = [
+  "verifyStudyFlowTvArchitecture",
+  "verifyStudyFlowTvSizeBudget",
+  "verifyStudyFlowTvControlCast",
+]
+lint = [
+  "verifyFormatting",
+  "verifyStudyFlowTvArchitecture",
+  "verifyStudyFlowTvSizeBudget",
+  "verifyStudyFlowTvControlCast",
+]
+clean = ["clean"]
+
+[targets.studyflow_tv.validation]
+android_safe = false
+max_workers = 1
+cpu_limit = 1
+parallel = false
+split_gradle = true
+no_daemon = false
+stop_daemon_after_phase = false
+low_priority = false
+gradle_heap_mb = 768
+gradle_metaspace_mb = 512
+memory_guard_mb = 256
+
+[targets.studyflow_tv.validation.phases]
+preflight = [
+  "verifyStudyFlowTvArchitecture",
+  "verifyStudyFlowTvSizeBudget",
+  "verifyStudyFlowTvControlCast",
+]
+compile = [
+  "verifyStudyFlowTvArchitecture",
+  "verifyStudyFlowTvControlCast",
+]
+unit-test = [
+  "verifyStudyFlowTvArchitecture",
+  "verifyStudyFlowTvControlCast",
+]
+package = [
+  "verifyStudyFlowTvSizeBudget",
+  "verifyStudyFlowTvControlCast",
+]
+lint = [
+  "verifyFormatting",
+  "verifyStudyFlowTvArchitecture",
+  "verifyStudyFlowTvSizeBudget",
+  "verifyStudyFlowTvControlCast",
+]
+
 [targets.studyflow_android.validation.phase_profiles.preflight]
 max_workers = 1
 cpu_limit = 1

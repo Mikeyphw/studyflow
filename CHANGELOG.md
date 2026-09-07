@@ -1,3 +1,11 @@
+# TVOV00 Android TV architecture boundary
+
+- Added the Android TV roadmap for a separate, size-constrained TV APK that reuses StudyFlow core logic.
+- Added a placeholder `studyflow_tv` Devtool target with source-contract-only validation until `:app-tv` exists.
+- Added TV size-budget contracts: 25 MiB target and 35 MiB hard ceiling for the eventual release APK.
+- Added the paired phone-to-TV control/cast contract before any TV module implementation starts.
+- Added source verifiers for TV architecture, target wiring, dependency boundaries, control/cast boundaries, and size-budget drift.
+
 # OV20 final integrated public-exam validation seal
 
 ### OV20 v5 navigation contract hotfix

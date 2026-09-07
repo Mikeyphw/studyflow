@@ -613,6 +613,25 @@ tasks.register<Exec>("verifyOv20FinalIntegration") {
     commandLine("python3", "scripts/verify_ov20_final_integration.py")
 }
 
+
+tasks.register<Exec>("verifyStudyFlowTvArchitecture") {
+    group = "verification"
+    description = "Checks TVOV00 shared-core, app-tv boundary, and Devtool TV target contracts."
+    commandLine("python3", "scripts/verify_tvov00_architecture.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvSizeBudget") {
+    group = "verification"
+    description = "Checks TV size-budget, dependency-boundary, and placeholder target contracts."
+    commandLine("python3", "scripts/verify_tv_size_budget.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvControlCast") {
+    group = "verification"
+    description = "Checks phone-to-TV control and cast boundary contracts."
+    commandLine("python3", "scripts/verify_tv_control_cast_contract.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
     description = "Compatibility alias for the final source/static acceptance contract."
