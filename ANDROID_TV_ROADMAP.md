@@ -55,7 +55,7 @@ bloat and phone-only dependency coupling before the module is introduced.
 
 ```text
 TVOV00  Architecture boundary, size budget, Devtool target, and control/cast contract
-TVOV01  Minimal app-tv application module
+TVOV01  Minimal app-tv application module [implemented]
 TVOV02  TV dependency budget and release shrink setup
 TVOV03  Phone-to-TV pairing, protocol, and cast foundation
 TVOV04  D-pad and focus primitives
@@ -84,3 +84,15 @@ it is not allowed to become a separate StudyFlow implementation.
 
 Do not ship TV as a passive viewer. The final TV track must support both D-pad use and complete
 paired-phone control/cast flows.
+
+
+## TVOV01 implementation note
+
+TVOV01 creates the first real `:app-tv` Android application module as a minimal TV receiver shell.
+It intentionally uses the Android framework view toolkit instead of Compose TV, AndroidX TV UI,
+MediaRouter, or Cast SDK dependencies. This keeps the first TV APK measurable and small while the
+roadmap still requires complete paired-phone control and cast support in later overlays.
+
+The `studyflow_tv` Devtool target now validates the real module with `:app-tv:compileDebugKotlin`,
+`:app-tv:testDebugUnitTest`, `:app-tv:assembleDebug`, and `:app-tv:lintDebug` in addition to the TV
+architecture, size-budget, and control/cast source contracts.

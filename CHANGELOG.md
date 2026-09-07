@@ -341,3 +341,14 @@ copy.
 - Added a cumulative CSOV00-CSOV13 optional sync delivery verifier.
 - Registered the missing CSOV00/CSOV01 Gradle verifier task.
 - Wired the optional sync verifier lane into `checkAll`.
+
+
+## TVOV01 - Minimal Android TV application module
+
+- Added the `:app-tv` Compose compiler guard so the native placeholder module does not require Compose Runtime.
+
+- Added `:app-tv` as the first small, separate Android TV application module.
+- Upgraded the `studyflow_tv` Devtool target to compile, unit-test, package, and lint the TV module.
+- Added a Leanback launcher manifest with touchscreen marked optional and a separate TV package id.
+- Kept TVOV01 dependency-light: no phone feature modules, Cast SDK, MediaRouter, AndroidX TV UI, or Compose runtime dependencies are pulled into the TV APK yet.
+- Retained the TV size budget and paired phone-to-TV control/cast contract for later overlays.

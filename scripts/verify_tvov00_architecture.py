@@ -37,12 +37,13 @@ settings = read("settings.gradle.kts")
 roadmap = read("ANDROID_TV_ROADMAP.md")
 baseline = read("TVOV00_ANDROID_TV_ARCHITECTURE_BASELINE.md")
 quality = read("docs/quality/TVOV00_ARCHITECTURE_CONTRACTS.md")
+app_tv_exists = (ROOT / "app-tv").is_dir()
 
 require("[targets.studyflow_tv]" in devtool, "studyflow_tv Devtool target is missing")
 require('type = "gradle"' in find_section(devtool, "targets.studyflow_tv"), "studyflow_tv must be Gradle-backed")
 require('root = "."' in find_section(devtool, "targets.studyflow_tv"), "studyflow_tv must validate from repo root")
 require("[targets.studyflow_tv.gradle]" in devtool, "studyflow_tv Gradle settings are missing")
-require("version = \"9.7.1\"" in find_section(devtool, "targets.studyflow_tv.gradle"), "studyflow_tv must use Gradle 9.7.1")
+require('version = "9.7.1"' in find_section(devtool, "targets.studyflow_tv.gradle"), "studyflow_tv must use Gradle 9.7.1")
 require("[targets.studyflow_tv.tasks]" in devtool, "studyflow_tv task set is missing")
 require("[targets.studyflow_tv.validation.phases]" in devtool, "studyflow_tv validation phases are missing")
 
@@ -59,9 +60,14 @@ studyflow_tv_text = devtool[devtool.find("[targets.studyflow_tv]") :]
 next_android_profile = studyflow_tv_text.find("[targets.studyflow_android.validation.phase_profiles.preflight]")
 if next_android_profile >= 0:
     studyflow_tv_text = studyflow_tv_text[:next_android_profile]
-require(":app-tv" not in studyflow_tv_text, "studyflow_tv must not reference :app-tv before TVOV01 creates it")
-require(":app:" not in studyflow_tv_text, "studyflow_tv source-only target must not run phone app tasks")
-require("include(\n" in settings and '":app-tv"' not in settings, "TVOV00 must not create :app-tv yet")
+require(":app:" not in studyflow_tv_text, "studyflow_tv must not run phone app tasks")
+if app_tv_exists:
+    require('":app-tv"' in settings, "settings must include :app-tv once the TV module exists")
+    for task in (":app-tv:compileDebugKotlin", ":app-tv:testDebugUnitTest", ":app-tv:assembleDebug", ":app-tv:lintDebug"):
+        require(task in studyflow_tv_text, f"studyflow_tv must run real TV module task {task}")
+else:
+    require(":app-tv" not in studyflow_tv_text, "studyflow_tv must not reference :app-tv before TVOV01 creates it")
+    require('":app-tv"' not in settings, "TVOV00 must not create :app-tv yet")
 
 for token in (
     "small TV-only APK",
@@ -81,8 +87,6 @@ for token in (
     "verifyStudyFlowTvSizeBudget",
     "verifyStudyFlowTvControlCast",
     "Phone-to-TV control/cast baseline",
-    "It does not create",
-    "`:app-tv` yet",
 ):
     require(token in baseline, f"TVOV00 baseline missing token: {token}")
 

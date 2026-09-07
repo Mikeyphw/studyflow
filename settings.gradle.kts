@@ -19,6 +19,7 @@ rootProject.name = "StudyFlow"
 
 include(
     ":app",
+    ":app-tv",
     ":core:data",
     ":core:diagnostics",
     ":core:database",

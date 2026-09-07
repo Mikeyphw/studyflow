@@ -418,17 +418,22 @@ build = [
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
+  "verifyStudyFlowTvAppModule",
+  ":app-tv:assembleDebug",
 ]
 test = [
   "verifyStudyFlowTvArchitecture",
-  "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
+  "verifyStudyFlowTvAppModule",
+  ":app-tv:testDebugUnitTest",
 ]
 lint = [
   "verifyFormatting",
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
+  "verifyStudyFlowTvAppModule",
+  ":app-tv:lintDebug",
 ]
 clean = ["clean"]
 
@@ -450,24 +455,33 @@ preflight = [
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
+  "verifyStudyFlowTvAppModule",
 ]
 compile = [
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvControlCast",
+  "verifyStudyFlowTvAppModule",
+  ":app-tv:compileDebugKotlin",
 ]
 unit-test = [
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvControlCast",
+  "verifyStudyFlowTvAppModule",
+  ":app-tv:testDebugUnitTest",
 ]
 package = [
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
+  "verifyStudyFlowTvAppModule",
+  ":app-tv:assembleDebug",
 ]
 lint = [
   "verifyFormatting",
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
+  "verifyStudyFlowTvAppModule",
+  ":app-tv:lintDebug",
 ]
 
 [targets.studyflow_android.validation.phase_profiles.preflight]

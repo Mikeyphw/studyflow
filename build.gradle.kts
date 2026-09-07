@@ -1,5 +1,6 @@
 val qualitySourceRoots = listOf(
     "app",
+    "app-tv",
     "core",
     "feature",
     "desktopApp",
@@ -630,6 +631,13 @@ tasks.register<Exec>("verifyStudyFlowTvControlCast") {
     group = "verification"
     description = "Checks phone-to-TV control and cast boundary contracts."
     commandLine("python3", "scripts/verify_tv_control_cast_contract.py")
+}
+
+
+tasks.register<Exec>("verifyStudyFlowTvAppModule") {
+    group = "verification"
+    description = "Checks TVOV01 minimal app-tv module, leanback manifest, and size-first dependency boundary."
+    commandLine("python3", "scripts/verify_tvov01_app_module.py")
 }
 
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {

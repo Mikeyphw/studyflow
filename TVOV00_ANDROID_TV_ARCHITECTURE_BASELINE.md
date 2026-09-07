@@ -51,3 +51,12 @@ does not exist yet, the target runs only:
 - `verifyFormatting` for lint-style source hygiene
 
 TVOV01 may expand `studyflow_tv` to compile the real `:app-tv` module once that module exists.
+
+
+## TVOV01 follow-up
+
+TVOV01 is the first implementation overlay after this baseline. It creates `:app-tv` as a small,
+separate Android TV application module and upgrades the `studyflow_tv` target from source-contract
+validation to real module compile/test/package/lint validation. The core TVOV00 promises remain
+active: shared business logic is not forked, the size budget remains 25 MiB target / 35 MiB hard
+ceiling, and phone-to-TV control/cast stays mandatory for later overlays.

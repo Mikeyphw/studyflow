@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">StudyFlow TV</string>
+    <string name="tv_app_title">StudyFlow TV</string>
+    <string name="tv_app_status">Minimal TV shell installed</string>
+    <string name="tv_app_next_step">Pairing, focus navigation, and cast control arrive in the next TV overlays.</string>
+</resources>

@@ -333,3 +333,10 @@ The optional cloud sync roadmap is sealed with local-first defaults, encrypted r
 - Restore preview stays dry-run-only and conflict-gated.
 
 > OV20 navigation note: Mock Exam Studio deep-link launch state is encoded with the serializable `PracticeWorkspaceEntry` small enum; workspace routes do not carry Boolean UI state.
+
+
+## Android TV
+
+TVOV01 adds a real `:app-tv` module with Compose compiler disabled for `:app-tv` for a small Android TV APK. It currently boots to a minimal TV
+receiver shell and deliberately avoids feature-module fanout, AndroidX TV UI, MediaRouter, and Cast
+SDK dependencies until later size-budgeted overlays add pairing, focus navigation, and cast control.
