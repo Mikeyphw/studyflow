@@ -462,7 +462,7 @@
     <string name="sync_restore_preview_database_bytes">Bytes do snapshot do banco: %1$d</string>
     <string name="sync_restore_preview_attachments">Anexos incluídos: %1$d</string>
     <string name="sync_restore_preview_app_version">Versão do app: %1$s</string>
-    <string name="sync_restore_preview_read_only">Esta operação somente descriptografa, autentica e inspeciona o checkpoint. Nenhum dado local é alterado.</string>
+    <string name="sync_restore_preview_read_only">Esta operação somente descriptografa, valida a autenticidade e inspeciona o checkpoint. Nenhum dado local é alterado.</string>
     <string name="sync_history_title">Histórico de sincronização disponível</string>
     <string name="sync_history_devices">Dispositivos registrados: %1$d</string>
     <string name="sync_history_checkpoints">Checkpoints registrados: %1$d</string>

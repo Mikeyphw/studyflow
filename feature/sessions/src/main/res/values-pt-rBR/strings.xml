@@ -81,6 +81,10 @@
     <string name="writing_finish">Finalizar redação</string>
     <string name="writing_finished">Sessão de redação finalizada.</string>
     <string name="writing_history_title">Histórico recente de redações</string>
-    <string name="writing_weekly_goal">Meta semanal de redação: %1$d / %2$d concluída(s)</string>
+    <plurals name="writing_weekly_goal">
+        <item quantity="one">Meta semanal de redação: %1$d / %2$d redação concluída</item>
+        <item quantity="many">Meta semanal de redação: %1$d / %2$d redações concluídas</item>
+        <item quantity="other">Meta semanal de redação: %1$d / %2$d redações concluídas</item>
+    </plurals>
     <string name="writing_no_active_session">Inicie uma atividade planejada ou rápida de Redação para abrir o editor. O histórico recente continua disponível abaixo.</string>
 </resources>

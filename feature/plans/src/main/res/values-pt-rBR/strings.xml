@@ -361,7 +361,7 @@
     <string name="portable_handler_audio">Áudio</string>
     <string name="portable_handler_video">Vídeo</string>
     <string name="portable_handler_generic">Arquivo</string>
-    <string name="import_diff_summary">A importação adicionaria %1$d, removeria %2$d, alteraria %3$d e manteria %4$d linhas; %5$d linhas recebidas são ignoradas de propósito por esta estratégia.</string>
+    <string name="import_diff_summary">Diferenças da importação — a adicionar: %1$d; a remover: %2$d; a alterar: %3$d; a manter: %4$d; recebidas ignoradas: %5$d.</string>
     <string name="import_diff_table">%1$s · +%2$d −%3$d ~%4$d · ignoradas %5$d</string>
     <string name="import_transactional_rollback">A simulação grava 0 linhas. A importação real continua protegida por transação; substituir/mesclar também cria um snapshot de segurança durável antes do commit.</string>
     <string name="onboarding_template_bb_title">BB Agente Comercial — pré-edital</string>

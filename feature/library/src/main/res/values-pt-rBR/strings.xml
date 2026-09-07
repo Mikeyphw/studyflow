@@ -65,7 +65,11 @@
     <string name="reference_possibly_stale">Referência possivelmente desatualizada</string>
     <string name="reference_needs_verification">Referência precisa de verificação</string>
     <string name="reference_untracked">Referência sem rastreamento</string>
-    <string name="reference_stale_policy">Alerta de atualização do StudyFlow: a última verificação tem mais de %1$d dias. Esta é uma regra do produto, não do edital.</string>
+    <plurals name="reference_stale_policy">
+        <item quantity="one">Alerta de atualização do StudyFlow: a última verificação tem mais de %1$d dia. Esta é uma regra do produto, não do edital.</item>
+        <item quantity="many">Alerta de atualização do StudyFlow: a última verificação tem mais de %1$d dias. Esta é uma regra do produto, não do edital.</item>
+        <item quantity="other">Alerta de atualização do StudyFlow: a última verificação tem mais de %1$d dias. Esta é uma regra do produto, não do edital.</item>
+    </plurals>
     <string name="reference_verify_today">Verificar hoje</string>
     <string name="reference_replace">Substituir referência</string>
     <string name="reference_replace_history_notice">A referência anterior será arquivada, não apagada, para manter o histórico.</string>

@@ -63,7 +63,10 @@
     <string name="reference_possibly_stale">Possibly outdated reference</string>
     <string name="reference_needs_verification">Reference needs verification</string>
     <string name="reference_untracked">Untracked reference</string>
-    <string name="reference_stale_policy">StudyFlow freshness warning: last verification is more than %1$d days old. This is a product policy, not an edital rule.</string>
+    <plurals name="reference_stale_policy">
+        <item quantity="one">StudyFlow freshness warning: last verification is more than %1$d day old. This is a product policy, not an edital rule.</item>
+        <item quantity="other">StudyFlow freshness warning: last verification is more than %1$d days old. This is a product policy, not an edital rule.</item>
+    </plurals>
     <string name="reference_verify_today">Verify today</string>
     <string name="reference_replace">Replace reference</string>
     <string name="reference_replace_history_notice">The previous reference will be archived, not deleted, so its history remains available.</string>

@@ -429,7 +429,11 @@ private fun MaterialReferenceControls(
     )
     if (freshness.status == StudyReferenceFreshnessStatus.POSSIBLY_STALE) {
         Text(
-            stringResource(R.string.reference_stale_policy, StudyReferenceFreshnessPolicy.PossiblyStaleAfterDays),
+            pluralStringResource(
+                R.plurals.reference_stale_policy,
+                StudyReferenceFreshnessPolicy.PossiblyStaleAfterDays.toPluralQuantity(),
+                StudyReferenceFreshnessPolicy.PossiblyStaleAfterDays,
+            ),
             color = MaterialTheme.colorScheme.error,
         )
     }

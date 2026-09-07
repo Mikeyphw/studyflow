@@ -299,7 +299,6 @@
     <string name="readiness_confidence_medium">medium confidence</string>
     <string name="readiness_confidence_high">high confidence</string>
     <string name="readiness_band_with_confidence">%1$s · %2$s</string>
-    <string name="readiness_message_with_confidence">%1$s Confidence: %2$s.</string>
     <string name="adaptive_reschedule">Adaptive reschedule</string>
     <string name="preview_reschedule">Preview reschedule</string>
     <string name="reschedule_preview">Safe plan preview</string>
@@ -653,14 +652,8 @@
     <string name="public_exam_dashboard_title">Concurso dashboard</string>
     <string name="edital_coverage">Edital coverage</string>
     <string name="weighted_mastery">Weighted mastery</string>
-    <string name="dashboard_questions_total">Question bank: %1$d</string>
-    <string name="dashboard_accuracy_windows">Accuracy 7d %1$s · 30d %2$s · 90d %3$s</string>
-    <string name="dashboard_speed">30d speed: %1$s questions/hour · %2$s sec/question</string>
     <string name="dashboard_backlog">Overdue reviews %1$d · Recurring errors %2$d</string>
-    <string name="dashboard_mock_cutoff">Latest mock %1$s · estimated cutoff gap %2$s</string>
-    <string name="dashboard_days_to_exam">Days until exam: %1$s</string>
     <string name="edital_matrix_title">Edital matrix</string>
-    <string name="edital_matrix_row">%1$s · W %2$s · Inc %3$s · Q %4$d · Acc %5$s · M %6$d%% · Status %7$s · Rev %8$d · Err %9$d · P %10$d</string>
     <string name="importance_mastery_matrix_hint">Importance × mastery: higher priority means more important evidence with weaker mastery/backlog. Unknown incidence remains unknown.</string>
     <string name="unknown">Unknown</string>
     <string name="preview">Preview</string>

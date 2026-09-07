@@ -350,7 +350,7 @@
     <string name="portable_handler_audio">Audio</string>
     <string name="portable_handler_video">Video</string>
     <string name="portable_handler_generic">File</string>
-    <string name="import_diff_summary">Would add %1$d, remove %2$d, change %3$d and keep %4$d rows; %5$d incoming rows are intentionally ignored by this strategy.</string>
+    <string name="import_diff_summary">Import diff — to add: %1$d; to remove: %2$d; to change: %3$d; to keep: %4$d; incoming ignored: %5$d.</string>
     <string name="import_diff_table">%1$s · +%2$d −%3$d ~%4$d · ignored %5$d</string>
     <string name="import_transactional_rollback">Dry-run writes 0 rows. Real import remains transaction-protected; replace/merge also creates a durable safety snapshot before commit.</string>
     <string name="onboarding_template_bb_title">BB Agente Comercial — pre-edital</string>

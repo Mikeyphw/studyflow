@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -94,8 +95,9 @@ internal fun WritingWorkspaceSection(
     StudyFlowSectionCard(title = stringResource(R.string.writing_workspace_title)) {
         weeklyProgress?.let { progress ->
             Text(
-                text = stringResource(
-                    R.string.writing_weekly_goal,
+                text = pluralStringResource(
+                    R.plurals.writing_weekly_goal,
+                    progress.target,
                     progress.completed,
                     progress.target,
                 ),
