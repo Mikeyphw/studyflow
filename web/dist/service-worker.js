@@ -1,0 +1,40 @@
+"use strict";
+
+const CACHE_VERSION = "studyflow-local-1.0.0-parity";
+const APP_SHELL = [
+  "./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
+  "./runtime/main.js", "./runtime/domain.js", "./runtime/content_import.js",
+  "./runtime/question_import.js", "./runtime/mode_import.js", "./runtime/intelligence.js", "./runtime/product.js", "./runtime/indexeddb.js", "./runtime/storage.js",
+  "./runtime/state.js", "./runtime/modes.js", "./runtime/schedule.js", "./runtime/portable.js", "./runtime/pwa.js", "./runtime/hardening.js", "./runtime/release.js", "./runtime/types.js", "./runtime/react/App.js",
+  "./vendor/react.production.js",
+  "./vendor/react-dom.production.js",
+  "./vendor/react-dom-client.production.js",
+  "./vendor/scheduler.production.js",
+  "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png"
+];
+const appShellUrls = new Set(APP_SHELL.map((path) => new URL(path, self.location.href).href));
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith("studyflow-local-") && key !== CACHE_VERSION).map((key) => caches.delete(key)))).then(() => self.clients.claim()));
+});
+self.addEventListener("fetch", (event) => {
+  const request=event.request;
+  if(request.method!=="GET")return;
+  const url=new URL(request.url);
+  if(url.origin!==self.location.origin)return;
+
+  if(request.mode === "navigate") {
+    event.respondWith(caches.match("./index.html").then((cached)=>cached||fetch(request)));
+    return;
+  }
+  if(!appShellUrls.has(url.href))return;
+  event.respondWith(caches.match(request).then((cached)=>cached||fetch(request).then((response)=>{
+    if(!response||!response.ok||response.type==="opaque")return response;
+    const copy=response.clone();
+    void caches.open(CACHE_VERSION).then((cache)=>cache.put(request,copy));
+    return response;
+  })));
+});

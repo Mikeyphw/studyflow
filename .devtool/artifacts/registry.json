@@ -1,6 +1,1252 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "items": [
+    {
+      "id": "18c755a08f90",
+      "name": "navigation.jar",
+      "path": "core/navigation/build/libs/navigation.jar",
+      "canonical_path": "core/navigation/build/libs/navigation.jar",
+      "source_path": "core/navigation/build/libs/navigation.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 190550,
+      "sha256": "d04a39fca6a64d0e4782dc0148e243ca7d10373b07b707faaf702568bb97c9d7",
+      "commit": "50d202f5c097ee6ac7cfdf6a6b651acdd6b4cd27",
+      "run_id": "a6d8d180002142df890f0f3c3ce5524a",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "produced",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T15:23:10.047822Z",
+      "registered_at": "2026-09-07T15:23:10.047822Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "a6d8d180002142df890f0f3c3ce5524a",
+        "path": "core/navigation/build/libs/navigation.jar",
+        "source_path": "core/navigation/build/libs/navigation.jar",
+        "type": "jar",
+        "size": 190550,
+        "sha256": "d04a39fca6a64d0e4782dc0148e243ca7d10373b07b707faaf702568bb97c9d7",
+        "valid": true,
+        "state": "produced",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "core/navigation/build/libs/navigation.jar",
+          "type": "jar",
+          "variant": "navigation",
+          "module": "core:navigation",
+          "size": 190550,
+          "sha256": "d04a39fca6a64d0e4782dc0148e243ca7d10373b07b707faaf702568bb97c9d7",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "core:navigation",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "a6d8d180002142df890f0f3c3ce5524a:d04a39fca6a64d0e4782dc0148e243ca7d10373b07b707faaf702568bb97c9d7:18c755a08f90"
+    },
+    {
+      "id": "995edd93c281",
+      "name": "app-debug.apk",
+      "path": "app/build/outputs/apk/debug/app-debug.apk",
+      "canonical_path": "app/build/outputs/apk/debug/app-debug.apk",
+      "source_path": "app/build/outputs/apk/debug/app-debug.apk",
+      "exported_path": "",
+      "type": "apk",
+      "size": 30092182,
+      "sha256": "c9c1a796cf6f309e638bd48145e3ce205a058e6ea9a5691ac596875a64bc13ae",
+      "commit": "50d202f5c097ee6ac7cfdf6a6b651acdd6b4cd27",
+      "run_id": "a6d8d180002142df890f0f3c3ce5524a",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "produced",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T15:23:10.045797Z",
+      "registered_at": "2026-09-07T15:23:10.045797Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "a6d8d180002142df890f0f3c3ce5524a",
+        "path": "app/build/outputs/apk/debug/app-debug.apk",
+        "source_path": "app/build/outputs/apk/debug/app-debug.apk",
+        "type": "apk",
+        "size": 30092182,
+        "sha256": "c9c1a796cf6f309e638bd48145e3ce205a058e6ea9a5691ac596875a64bc13ae",
+        "valid": true,
+        "state": "produced",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "member:AndroidManifest.xml",
+            "status": "passed",
+            "detail": "present"
+          },
+          {
+            "name": "aapt2_badging",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "signature",
+            "status": "skipped",
+            "detail": "apksigner not found; JAR signature entries present"
+          }
+        ],
+        "metadata": {
+          "path": "app/build/outputs/apk/debug/app-debug.apk",
+          "type": "apk",
+          "variant": "debug",
+          "module": "app",
+          "size": 30092182,
+          "sha256": "c9c1a796cf6f309e638bd48145e3ce205a058e6ea9a5691ac596875a64bc13ae",
+          "valid": true,
+          "package_id": "com.mikeyphw.studyflow",
+          "version_code": "37",
+          "version_name": "1.0.0-rc1",
+          "min_sdk": "",
+          "target_sdk": "36",
+          "launchable_activity": "com.mikeyphw.studyflow.MainActivity",
+          "signed": null,
+          "abis": [
+            "arm64-v8a",
+            "armeabi-v7a",
+            "x86",
+            "x86_64"
+          ],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "member:AndroidManifest.xml",
+              "status": "passed",
+              "detail": "present"
+            },
+            {
+              "name": "aapt2_badging",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "signature",
+              "status": "skipped",
+              "detail": "apksigner not found; JAR signature entries present"
+            }
+          ]
+        },
+        "module": "app",
+        "package_id": "com.mikeyphw.studyflow",
+        "version_code": "37",
+        "version_name": "1.0.0-rc1",
+        "min_sdk": "",
+        "target_sdk": "36",
+        "launchable_activity": "com.mikeyphw.studyflow.MainActivity",
+        "signed": null,
+        "abis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "a6d8d180002142df890f0f3c3ce5524a:c9c1a796cf6f309e638bd48145e3ce205a058e6ea9a5691ac596875a64bc13ae:995edd93c281"
+    },
+    {
+      "id": "d72d1817e1b2",
+      "name": "desktopApp.jar",
+      "path": "desktopApp/build/libs/desktopApp.jar",
+      "canonical_path": "desktopApp/build/libs/desktopApp.jar",
+      "source_path": "desktopApp/build/libs/desktopApp.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 421248,
+      "sha256": "50d4c3d2eea9a8bb7800083a4919f98b2405b3dd9df3e9edb55fbeb126548ec3",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.995795Z",
+      "registered_at": "2026-09-07T14:52:15.995795Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "desktopApp/build/libs/desktopApp.jar",
+        "source_path": "desktopApp/build/libs/desktopApp.jar",
+        "type": "jar",
+        "size": 421248,
+        "sha256": "50d4c3d2eea9a8bb7800083a4919f98b2405b3dd9df3e9edb55fbeb126548ec3",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "desktopApp/build/libs/desktopApp.jar",
+          "type": "jar",
+          "variant": "desktop-app",
+          "module": "desktopApp",
+          "size": 421248,
+          "sha256": "50d4c3d2eea9a8bb7800083a4919f98b2405b3dd9df3e9edb55fbeb126548ec3",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "desktopApp",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:50d4c3d2eea9a8bb7800083a4919f98b2405b3dd9df3e9edb55fbeb126548ec3:d72d1817e1b2"
+    },
+    {
+      "id": "9ed49a85aae1",
+      "name": "testing.jar",
+      "path": "core/testing/build/libs/testing.jar",
+      "canonical_path": "core/testing/build/libs/testing.jar",
+      "source_path": "core/testing/build/libs/testing.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 2361,
+      "sha256": "6f473d58508ba8fe4cdc0bd380481d2d04f6f14a8101c1124ffdc19b241efd76",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.994513Z",
+      "registered_at": "2026-09-07T14:52:15.994513Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "core/testing/build/libs/testing.jar",
+        "source_path": "core/testing/build/libs/testing.jar",
+        "type": "jar",
+        "size": 2361,
+        "sha256": "6f473d58508ba8fe4cdc0bd380481d2d04f6f14a8101c1124ffdc19b241efd76",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "core/testing/build/libs/testing.jar",
+          "type": "jar",
+          "variant": "testing",
+          "module": "core:testing",
+          "size": 2361,
+          "sha256": "6f473d58508ba8fe4cdc0bd380481d2d04f6f14a8101c1124ffdc19b241efd76",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "core:testing",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:6f473d58508ba8fe4cdc0bd380481d2d04f6f14a8101c1124ffdc19b241efd76:9ed49a85aae1"
+    },
+    {
+      "id": "29aac61e6114",
+      "name": "portability.jar",
+      "path": "core/portability/build/libs/portability.jar",
+      "canonical_path": "core/portability/build/libs/portability.jar",
+      "source_path": "core/portability/build/libs/portability.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 211857,
+      "sha256": "aaa7faa845acd2013d14d56657882b189dc5b13fb1362e7aa43530f04ba54555",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.993959Z",
+      "registered_at": "2026-09-07T14:52:15.993959Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "core/portability/build/libs/portability.jar",
+        "source_path": "core/portability/build/libs/portability.jar",
+        "type": "jar",
+        "size": 211857,
+        "sha256": "aaa7faa845acd2013d14d56657882b189dc5b13fb1362e7aa43530f04ba54555",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "core/portability/build/libs/portability.jar",
+          "type": "jar",
+          "variant": "portability",
+          "module": "core:portability",
+          "size": 211857,
+          "sha256": "aaa7faa845acd2013d14d56657882b189dc5b13fb1362e7aa43530f04ba54555",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "core:portability",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:aaa7faa845acd2013d14d56657882b189dc5b13fb1362e7aa43530f04ba54555:29aac61e6114"
+    },
+    {
+      "id": "5d41f44525be",
+      "name": "navigation.jar",
+      "path": "core/navigation/build/libs/navigation.jar",
+      "canonical_path": "core/navigation/build/libs/navigation.jar",
+      "source_path": "core/navigation/build/libs/navigation.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 187653,
+      "sha256": "320e2af7d600f2487750ef9b48acf4684b4c63de73d748844b0f59f890a55b51",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.993016Z",
+      "registered_at": "2026-09-07T14:52:15.993016Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "core/navigation/build/libs/navigation.jar",
+        "source_path": "core/navigation/build/libs/navigation.jar",
+        "type": "jar",
+        "size": 187653,
+        "sha256": "320e2af7d600f2487750ef9b48acf4684b4c63de73d748844b0f59f890a55b51",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "core/navigation/build/libs/navigation.jar",
+          "type": "jar",
+          "variant": "navigation",
+          "module": "core:navigation",
+          "size": 187653,
+          "sha256": "320e2af7d600f2487750ef9b48acf4684b4c63de73d748844b0f59f890a55b51",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "core:navigation",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:320e2af7d600f2487750ef9b48acf4684b4c63de73d748844b0f59f890a55b51:5d41f44525be"
+    },
+    {
+      "id": "2253ac95c77e",
+      "name": "model.jar",
+      "path": "core/model/build/libs/model.jar",
+      "canonical_path": "core/model/build/libs/model.jar",
+      "source_path": "core/model/build/libs/model.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 583298,
+      "sha256": "7fcca52ee666ee9875b3698d0a0d173c2cf6de2adadb51ab95c5ac683a8d0ca1",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.991908Z",
+      "registered_at": "2026-09-07T14:52:15.991908Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "core/model/build/libs/model.jar",
+        "source_path": "core/model/build/libs/model.jar",
+        "type": "jar",
+        "size": 583298,
+        "sha256": "7fcca52ee666ee9875b3698d0a0d173c2cf6de2adadb51ab95c5ac683a8d0ca1",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "core/model/build/libs/model.jar",
+          "type": "jar",
+          "variant": "model",
+          "module": "core:model",
+          "size": 583298,
+          "sha256": "7fcca52ee666ee9875b3698d0a0d173c2cf6de2adadb51ab95c5ac683a8d0ca1",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "core:model",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:7fcca52ee666ee9875b3698d0a0d173c2cf6de2adadb51ab95c5ac683a8d0ca1:2253ac95c77e"
+    },
+    {
+      "id": "d4c177e928c9",
+      "name": "domain.jar",
+      "path": "core/domain/build/libs/domain.jar",
+      "canonical_path": "core/domain/build/libs/domain.jar",
+      "source_path": "core/domain/build/libs/domain.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 1514390,
+      "sha256": "209d900612aae07820b3dd04003d257dcd4d4c5ddff0ec39e36dff8b4404cc0b",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.990211Z",
+      "registered_at": "2026-09-07T14:52:15.990211Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "core/domain/build/libs/domain.jar",
+        "source_path": "core/domain/build/libs/domain.jar",
+        "type": "jar",
+        "size": 1514390,
+        "sha256": "209d900612aae07820b3dd04003d257dcd4d4c5ddff0ec39e36dff8b4404cc0b",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "core/domain/build/libs/domain.jar",
+          "type": "jar",
+          "variant": "domain",
+          "module": "core:domain",
+          "size": 1514390,
+          "sha256": "209d900612aae07820b3dd04003d257dcd4d4c5ddff0ec39e36dff8b4404cc0b",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "core:domain",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:209d900612aae07820b3dd04003d257dcd4d4c5ddff0ec39e36dff8b4404cc0b:d4c177e928c9"
+    },
+    {
+      "id": "a5c529918084",
+      "name": "diagnostics.jar",
+      "path": "core/diagnostics/build/libs/diagnostics.jar",
+      "canonical_path": "core/diagnostics/build/libs/diagnostics.jar",
+      "source_path": "core/diagnostics/build/libs/diagnostics.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 222856,
+      "sha256": "195c1549defae4e952c1b84ce13edb76ef702cb50eb578037df75a99c684dfc6",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.986842Z",
+      "registered_at": "2026-09-07T14:52:15.986842Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "core/diagnostics/build/libs/diagnostics.jar",
+        "source_path": "core/diagnostics/build/libs/diagnostics.jar",
+        "type": "jar",
+        "size": 222856,
+        "sha256": "195c1549defae4e952c1b84ce13edb76ef702cb50eb578037df75a99c684dfc6",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "core/diagnostics/build/libs/diagnostics.jar",
+          "type": "jar",
+          "variant": "diagnostics",
+          "module": "core:diagnostics",
+          "size": 222856,
+          "sha256": "195c1549defae4e952c1b84ce13edb76ef702cb50eb578037df75a99c684dfc6",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "core:diagnostics",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:195c1549defae4e952c1b84ce13edb76ef702cb50eb578037df75a99c684dfc6:a5c529918084"
+    },
+    {
+      "id": "e80015c7cd35",
+      "name": "convention.jar",
+      "path": "build-logic/convention/build/libs/convention.jar",
+      "canonical_path": "build-logic/convention/build/libs/convention.jar",
+      "source_path": "build-logic/convention/build/libs/convention.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 29212,
+      "sha256": "7c8044e6b3ad4fd132bebea1da1c6027dc229861f3a7699ed59cecc4a2df73ff",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.985813Z",
+      "registered_at": "2026-09-07T14:52:15.985813Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "build-logic/convention/build/libs/convention.jar",
+        "source_path": "build-logic/convention/build/libs/convention.jar",
+        "type": "jar",
+        "size": 29212,
+        "sha256": "7c8044e6b3ad4fd132bebea1da1c6027dc229861f3a7699ed59cecc4a2df73ff",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "build-logic/convention/build/libs/convention.jar",
+          "type": "jar",
+          "variant": "convention",
+          "module": "build-logic:convention",
+          "size": 29212,
+          "sha256": "7c8044e6b3ad4fd132bebea1da1c6027dc229861f3a7699ed59cecc4a2df73ff",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "build-logic:convention",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:7c8044e6b3ad4fd132bebea1da1c6027dc229861f3a7699ed59cecc4a2df73ff:e80015c7cd35"
+    },
+    {
+      "id": "10df9588f65b",
+      "name": "app-debug.apk",
+      "path": "app/build/outputs/apk/debug/app-debug.apk",
+      "canonical_path": "app/build/outputs/apk/debug/app-debug.apk",
+      "source_path": "app/build/outputs/apk/debug/app-debug.apk",
+      "exported_path": "",
+      "type": "apk",
+      "size": 30134977,
+      "sha256": "e7b4b09837cb8d477fbc92804483887220fd5c113a88ae7c94331a1af14eeaab",
+      "commit": "18a17a5f746b898061094075e2340fc0e5d52e38",
+      "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "reused",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T14:52:15.984161Z",
+      "registered_at": "2026-09-07T14:52:15.984161Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "09144f07cd1248dc9baf0403257a8e4b",
+        "path": "app/build/outputs/apk/debug/app-debug.apk",
+        "source_path": "app/build/outputs/apk/debug/app-debug.apk",
+        "type": "apk",
+        "size": 30134977,
+        "sha256": "e7b4b09837cb8d477fbc92804483887220fd5c113a88ae7c94331a1af14eeaab",
+        "valid": true,
+        "state": "reused",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "member:AndroidManifest.xml",
+            "status": "passed",
+            "detail": "present"
+          },
+          {
+            "name": "aapt2_badging",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "signature",
+            "status": "skipped",
+            "detail": "apksigner not found; JAR signature entries present"
+          }
+        ],
+        "metadata": {
+          "path": "app/build/outputs/apk/debug/app-debug.apk",
+          "type": "apk",
+          "variant": "debug",
+          "module": "app",
+          "size": 30134977,
+          "sha256": "e7b4b09837cb8d477fbc92804483887220fd5c113a88ae7c94331a1af14eeaab",
+          "valid": true,
+          "package_id": "com.mikeyphw.studyflow",
+          "version_code": "37",
+          "version_name": "1.0.0-rc1",
+          "min_sdk": "",
+          "target_sdk": "36",
+          "launchable_activity": "com.mikeyphw.studyflow.MainActivity",
+          "signed": null,
+          "abis": [
+            "arm64-v8a",
+            "armeabi-v7a",
+            "x86",
+            "x86_64"
+          ],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "member:AndroidManifest.xml",
+              "status": "passed",
+              "detail": "present"
+            },
+            {
+              "name": "aapt2_badging",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "signature",
+              "status": "skipped",
+              "detail": "apksigner not found; JAR signature entries present"
+            }
+          ]
+        },
+        "module": "app",
+        "package_id": "com.mikeyphw.studyflow",
+        "version_code": "37",
+        "version_name": "1.0.0-rc1",
+        "min_sdk": "",
+        "target_sdk": "36",
+        "launchable_activity": "com.mikeyphw.studyflow.MainActivity",
+        "signed": null,
+        "abis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "09144f07cd1248dc9baf0403257a8e4b:e7b4b09837cb8d477fbc92804483887220fd5c113a88ae7c94331a1af14eeaab:10df9588f65b"
+    },
     {
       "id": "1854edb43112",
       "name": "app-debug.apk",
@@ -68,5 +1314,6 @@
       }
     }
   ],
-  "updated_at": "2026-08-27T18:58:04.920041Z"
+  "updated_at": "2026-09-07T15:23:10.048272Z",
+  "verifications": []
 }

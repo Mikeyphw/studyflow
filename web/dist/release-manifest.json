@@ -1,0 +1,168 @@
+{
+  "product": "StudyFlow Local",
+  "version": "1.0.0",
+  "channel": "parity-closure",
+  "runtimeDependency": "self-contained",
+  "files": [
+    {
+      "path": "THIRD_PARTY_NOTICES.txt",
+      "sha256": "2fd323dc31bf5429f929b355ebb1de926024573bd8febe4481cdbffcd666b0b8",
+      "bytes": 3381
+    },
+    {
+      "path": "app.js",
+      "sha256": "514b749c90108e7fb53d345e2be06608477056247db45e6c371decc429d1463c",
+      "bytes": 2502
+    },
+    {
+      "path": "icons/icon-192.png",
+      "sha256": "6b05a2f05397ab40165526c1692145cb285356fa6cfbb17b43f68e7eb44af846",
+      "bytes": 844
+    },
+    {
+      "path": "icons/icon-512.png",
+      "sha256": "184b0be8cccfb0c2622314c57e59c3b2ed1d21b5f67f4431883485116a92bfae",
+      "bytes": 2370
+    },
+    {
+      "path": "icons/maskable-512.png",
+      "sha256": "e070423bad5f540adb5741a1eafa01acedde561a1b14ee178fbd204acac94dab",
+      "bytes": 2189
+    },
+    {
+      "path": "index.html",
+      "sha256": "e0c93690e3cc8701c204816fe7dcbdb5cd14785b6b6004dd6a7ba46f2f861ca2",
+      "bytes": 820
+    },
+    {
+      "path": "manifest.webmanifest",
+      "sha256": "f2ca2e367b90875e741fbc3981fc60706c116dc26612eca7eb966df3ac7d7598",
+      "bytes": 811
+    },
+    {
+      "path": "runtime/content_import.js",
+      "sha256": "49d805cbe867f0a6de8abd04b66cd267342cb8e6c72c31934273b32102442af0",
+      "bytes": 25451
+    },
+    {
+      "path": "runtime/domain.js",
+      "sha256": "fc6010877e23c65a398e147f7bd445d1c5bd718aa80c378e7d5109490d00d68c",
+      "bytes": 53935
+    },
+    {
+      "path": "runtime/hardening.js",
+      "sha256": "ce0adbf147035cd4b5a99d5df47896f72a4fb3f60ab9b3968ad431f6bd045b52",
+      "bytes": 3921
+    },
+    {
+      "path": "runtime/indexeddb.js",
+      "sha256": "a9763e14906fcd3e5f6720e135ef76fae9cdb29ac5f2008e5020321f83140aca",
+      "bytes": 8823
+    },
+    {
+      "path": "runtime/intelligence.js",
+      "sha256": "b92938440061ac61ca9d40aa86300d9523f345abecec000b49036c9c7f02f906",
+      "bytes": 13956
+    },
+    {
+      "path": "runtime/main.js",
+      "sha256": "7f025afecc84e10b63a0b33b6f7db85218101e900eab168c74233f21cc9068b0",
+      "bytes": 2274
+    },
+    {
+      "path": "runtime/mode_import.js",
+      "sha256": "70615ef84756a3eb01796515ab04a08c5e19a86768736517ea433167bdec8cb1",
+      "bytes": 5205
+    },
+    {
+      "path": "runtime/modes.js",
+      "sha256": "f462543d5aeeaa6bbbe8cc758c91d992bfeff3683b3a9679d68b85e8dca204a9",
+      "bytes": 43406
+    },
+    {
+      "path": "runtime/package.json",
+      "sha256": "dbf8353f77358bc12169b7bb7301e1978d5b503e002ee927229a8993672818fc",
+      "bytes": 20
+    },
+    {
+      "path": "runtime/portable.js",
+      "sha256": "60ff656850029877c3f78b678dd6f8d9c67551e977ea6139bad0d652d0db4a9a",
+      "bytes": 19294
+    },
+    {
+      "path": "runtime/product.js",
+      "sha256": "ca03247f0aff087a91856db5501d465a75711e4be8b75382f63d970df1d3c734",
+      "bytes": 10952
+    },
+    {
+      "path": "runtime/pwa.js",
+      "sha256": "ceb9a72e61743a93554bd84a55b10bba45e54e44ee5a963a292a97adc5adc87c",
+      "bytes": 2864
+    },
+    {
+      "path": "runtime/question_import.js",
+      "sha256": "e23c8926cd4ca24289d7c680806c369f316ff812b90ad93ca6005de7c8885da5",
+      "bytes": 7160
+    },
+    {
+      "path": "runtime/react/App.js",
+      "sha256": "ef12e4d17caf3def6295848f809328a0b7a973a02cc56b56f0d260debd2924e6",
+      "bytes": 117334
+    },
+    {
+      "path": "runtime/release.js",
+      "sha256": "a08902693e46b7dad3889e7862302d39e467199eeaaa353c70bb37dec87bc26d",
+      "bytes": 1467
+    },
+    {
+      "path": "runtime/schedule.js",
+      "sha256": "d0b5374d11c29cee8d06c0a6040c6dfb78fd2886373ad1eaafa7ff5a67e44206",
+      "bytes": 15581
+    },
+    {
+      "path": "runtime/state.js",
+      "sha256": "7e446515c8f77b68067170ebabc154f452b8d27c7ddff58120fa250cdfea6da2",
+      "bytes": 88734
+    },
+    {
+      "path": "runtime/storage.js",
+      "sha256": "c370aa9771abc815459a150de8a563b46cb0f2ae8f93d9df92fd655da3ace216",
+      "bytes": 5295
+    },
+    {
+      "path": "runtime/types.js",
+      "sha256": "d43aa81f5bc89faa359e0f97c814ba25155591ff078fbb9bfd40f8c7c9683230",
+      "bytes": 77
+    },
+    {
+      "path": "service-worker.js",
+      "sha256": "41d33e31da76295faf84f6cd052ca3be7376ea6a476deb2b2ae3d56148052b3b",
+      "bytes": 2078
+    },
+    {
+      "path": "styles.css",
+      "sha256": "9b8e28814e6c6337c92938e8ae7ce6b38805b514d8aa2b9d2eeb2a7b5fa987f9",
+      "bytes": 19412
+    },
+    {
+      "path": "vendor/react-dom-client.production.js",
+      "sha256": "6cf4932e0c20a4572ae395035ca2e512a42d7d49c1a659fa73d6197069c28df0",
+      "bytes": 536016
+    },
+    {
+      "path": "vendor/react-dom.production.js",
+      "sha256": "291e0682e8b69643e8e213b6bc13849527fdd97800fef587d5be7b4a8f6a58ca",
+      "bytes": 6655
+    },
+    {
+      "path": "vendor/react.production.js",
+      "sha256": "d348b80a78c8ea0bd02b1990c7b7b514f5c276f9e74fee6e3976297585385961",
+      "bytes": 17217
+    },
+    {
+      "path": "vendor/scheduler.production.js",
+      "sha256": "679adff761d31e9426604f80c0e99be44a3e6f4c6834b0218ecf0312a67c171f",
+      "bytes": 10181
+    }
+  ]
+}
