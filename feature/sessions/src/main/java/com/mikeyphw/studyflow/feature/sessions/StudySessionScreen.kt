@@ -48,12 +48,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
+import com.mikeyphw.studyflow.core.domain.BancoDoBrasilAgenteComercialPreset
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
+import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySession
@@ -109,6 +111,8 @@ fun StudySessionScreen(
     val sessionResumed = stringResource(R.string.session_resumed)
     val sessionFinished = stringResource(R.string.session_finished)
     val sessionCancelled = stringResource(R.string.session_cancelled)
+    val writingDraftSaved = stringResource(R.string.writing_draft_saved)
+    val writingFinished = stringResource(R.string.writing_finished)
 
     LaunchedEffect(activeSession?.id, activeSession?.status) {
         while (activeSession?.status == StudySessionStatus.RUNNING) {
@@ -189,6 +193,51 @@ fun StudySessionScreen(
                         launchAction(sessionCancelled) { sessionManager.cancel(plan.id, session.id) }
                     },
                 )
+            }
+            val hasWritingWorkspace = activeSession?.type == StudyActivityType.WRITING ||
+                sessions.any { it.type == StudyActivityType.WRITING } ||
+                pendingActivities.any { it.type == StudyActivityType.WRITING }
+            if (hasWritingWorkspace) {
+                item(key = "writing-workspace") {
+                    val writingSession = activeSession?.takeIf { it.type == StudyActivityType.WRITING }
+                    WritingWorkspaceSection(
+                        activeSession = writingSession,
+                        allSessions = sessions,
+                        weeklyTarget = BancoDoBrasilAgenteComercialPreset
+                            .takeIf { it.matchesReferencePlanName(plan.name) }
+                            ?.WeeklyWritingSessionGoal,
+                        activeSeconds = remember(writingSession, timerTick) {
+                            writingSession?.let(sessionManager::liveActiveSeconds)
+                        },
+                        controlsEnabled = sessionsReady && !mutationInFlight,
+                        onSaveDraft = { prompt, draft ->
+                            writingSession?.let { session ->
+                                launchAction(writingDraftSaved) {
+                                    sessionManager.saveWritingDraft(
+                                        planId = plan.id,
+                                        sessionId = session.id,
+                                        prompt = prompt,
+                                        draftText = draft,
+                                    )
+                                }
+                            }
+                        },
+                        onFinishWriting = { prompt, draft, rubric, checklist ->
+                            writingSession?.let { session ->
+                                launchAction(writingFinished) {
+                                    sessionManager.completeWriting(
+                                        planId = plan.id,
+                                        sessionId = session.id,
+                                        prompt = prompt,
+                                        draftText = draft,
+                                        rubric = rubric,
+                                        checklist = checklist,
+                                    )
+                                }
+                            }
+                        },
+                    )
+                }
             }
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.planned_start_queue)) {
@@ -340,9 +389,11 @@ private fun ActiveSessionCard(
                         Text(stringResource(R.string.resume_session))
                     }
                 }
-                Button(onClick = { onFinish(session) }, enabled = controlsEnabled) {
-                    Icon(Icons.Outlined.CheckCircle, contentDescription = null)
-                    Text(stringResource(R.string.finish_session))
+                if (session.type != StudyActivityType.WRITING) {
+                    Button(onClick = { onFinish(session) }, enabled = controlsEnabled) {
+                        Icon(Icons.Outlined.CheckCircle, contentDescription = null)
+                        Text(stringResource(R.string.finish_session))
+                    }
                 }
                 OutlinedButton(onClick = { onCancel(session) }, enabled = controlsEnabled) {
                     Icon(Icons.Outlined.Cancel, contentDescription = null)
@@ -389,7 +440,12 @@ private fun StudySessionHistoryCard(session: StudySession) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = session.notes.ifBlank { stringResource(session.type.labelKey()) },
+                        text = if (session.type == StudyActivityType.WRITING) {
+                            com.mikeyphw.studyflow.core.domain.WritingSessionNoteCodec.decode(session.notes)?.prompt
+                                ?: stringResource(session.type.labelKey())
+                        } else {
+                            session.notes.ifBlank { stringResource(session.type.labelKey()) }
+                        },
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(

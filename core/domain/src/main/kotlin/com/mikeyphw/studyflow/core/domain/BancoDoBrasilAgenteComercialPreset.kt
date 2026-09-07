@@ -14,6 +14,7 @@ object BancoDoBrasilAgenteComercialPreset {
     const val ObjectiveMaximumPoints = 100.0
     const val EssayMinimumScorePercent = 70
     const val WeeklyGoalHours = 19
+    const val WeeklyWritingSessionGoal = 1
     const val ReferenceScheduledMinutes = 1_140
 
     val ObjectiveWeights: Map<OnboardingSampleSubjectKind, Double> = linkedMapOf(
@@ -26,6 +27,11 @@ object BancoDoBrasilAgenteComercialPreset {
         OnboardingSampleSubjectKind.BB_INFORMATION_TECHNOLOGY to 22.5,
         OnboardingSampleSubjectKind.BB_SALES_NEGOTIATION to 22.5,
     )
+
+    fun matchesReferencePlanName(name: String): Boolean {
+        val normalized = name.lowercase()
+        return "agente comercial" in normalized && ("bb" in normalized || "banco do brasil" in normalized)
+    }
 
     init {
         require(ObjectiveWeights.size == 8)

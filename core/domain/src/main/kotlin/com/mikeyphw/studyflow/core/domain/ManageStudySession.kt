@@ -194,6 +194,74 @@ class ManageStudySession(
         )
     }
 
+    suspend fun saveWritingDraft(
+        planId: StudyPlanId,
+        sessionId: StudySessionId,
+        prompt: String,
+        draftText: String,
+    ): StudySession {
+        val current = requireSession(planId, sessionId)
+        require(current.type == StudyActivityType.WRITING) { "Writing drafts require a WRITING Study Session." }
+        require(current.status == StudySessionStatus.RUNNING || current.status == StudySessionStatus.PAUSED) {
+            "Only an active Writing Study Session can save a draft."
+        }
+        val existing = WritingSessionNoteCodec.decode(current.notes)
+        val resolvedPrompt = prompt.trim().ifBlank { existing?.prompt ?: current.notes.trim() }
+        require(resolvedPrompt.isNotBlank()) { "Writing prompt cannot be blank." }
+        return repository.updateNotes(
+            planId = planId,
+            sessionId = sessionId,
+            notes = WritingSessionNoteCodec.encode(
+                WritingSessionRecord(
+                    prompt = resolvedPrompt,
+                    draftText = draftText,
+                    rubric = existing?.rubric,
+                    checklist = existing?.checklist ?: WritingCompletionChecklist(
+                        taskReviewed = false,
+                        structureReviewed = false,
+                        cohesionReviewed = false,
+                        languageReviewed = false,
+                    ),
+                ),
+            ),
+        )
+    }
+
+    suspend fun completeWriting(
+        planId: StudyPlanId,
+        sessionId: StudySessionId,
+        prompt: String,
+        draftText: String,
+        rubric: WritingRubric,
+        checklist: WritingCompletionChecklist,
+    ): StudySession {
+        val current = requireSession(planId, sessionId)
+        require(current.type == StudyActivityType.WRITING) { "Writing completion requires a WRITING Study Session." }
+        require(current.status == StudySessionStatus.RUNNING || current.status == StudySessionStatus.PAUSED) {
+            "Only an active Writing Study Session can be completed."
+        }
+        require(prompt.isNotBlank()) { "Writing prompt cannot be blank." }
+        require(draftText.isNotBlank()) { "Writing draft cannot be blank." }
+        require(checklist.complete) { "Complete the Writing checklist before finishing." }
+        return complete(
+            planId = planId,
+            sessionId = sessionId,
+            pagesCompleted = 0,
+            questionsAnswered = 0,
+            correctAnswers = 0,
+            concentrationRating = null,
+            difficultyRating = null,
+            notes = WritingSessionNoteCodec.encode(
+                WritingSessionRecord(
+                    prompt = prompt.trim(),
+                    draftText = draftText,
+                    rubric = rubric,
+                    checklist = checklist,
+                ),
+            ),
+        )
+    }
+
     suspend fun activeSession(planId: StudyPlanId): StudySession? = repository.findActiveSession(planId)
 
     suspend fun activeSession(): StudySession? = repository.findAnyActiveSession()

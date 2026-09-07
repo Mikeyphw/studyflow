@@ -54,4 +54,31 @@
         <item quantity="one">%1$d session</item>
         <item quantity="other">%1$d sessions</item>
     </plurals>
+    <string name="writing_workspace_title">Writing workspace</string>
+    <string name="writing_timer_supporting">The session timer remains the source of truth for writing time.</string>
+    <string name="writing_prompt">Prompt / task</string>
+    <string name="writing_editor">Draft</string>
+    <string name="writing_save_draft">Save draft</string>
+    <string name="writing_draft_saved">Writing draft saved.</string>
+    <string name="writing_rubric_title">Writing rubric</string>
+    <string name="writing_rubric_help">Score each dimension from 0 to 20. The five dimensions total 100 points.</string>
+    <string name="writing_rubric_theme">Theme and task</string>
+    <string name="writing_rubric_text_type">Text type</string>
+    <string name="writing_rubric_cohesion">Cohesion</string>
+    <string name="writing_rubric_argumentation">Argumentation</string>
+    <string name="writing_rubric_language">Standard language</string>
+    <string name="writing_rubric_points">0–20 points</string>
+    <string name="writing_score_value">Score: %1$d/100</string>
+    <string name="writing_score_pending">Score: complete all five rubric fields</string>
+    <string name="writing_score_unavailable">Score unavailable for this legacy writing session</string>
+    <string name="writing_checklist_title">Before finishing</string>
+    <string name="writing_checklist_task">I checked that the draft answers the requested task.</string>
+    <string name="writing_checklist_structure">I reviewed the text structure and paragraph organization.</string>
+    <string name="writing_checklist_cohesion">I reviewed cohesion and transitions.</string>
+    <string name="writing_checklist_language">I reviewed spelling, grammar, and standard language.</string>
+    <string name="writing_finish">Finish writing</string>
+    <string name="writing_finished">Writing session finished.</string>
+    <string name="writing_history_title">Recent writing history</string>
+    <string name="writing_weekly_goal">Weekly writing target: %1$d / %2$d completed</string>
+    <string name="writing_no_active_session">Start a planned or quick Writing activity to open the editor. Recent writing history remains available below.</string>
 </resources>

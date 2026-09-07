@@ -56,4 +56,31 @@
         <item quantity="many">%1$d sessões</item>
         <item quantity="other">%1$d sessões</item>
     </plurals>
+    <string name="writing_workspace_title">Workspace de Redação</string>
+    <string name="writing_timer_supporting">O cronômetro da sessão continua sendo a fonte de verdade para o tempo de redação.</string>
+    <string name="writing_prompt">Tema / proposta</string>
+    <string name="writing_editor">Texto da redação</string>
+    <string name="writing_save_draft">Salvar rascunho</string>
+    <string name="writing_draft_saved">Rascunho da redação salvo.</string>
+    <string name="writing_rubric_title">Rubrica da redação</string>
+    <string name="writing_rubric_help">Avalie cada dimensão de 0 a 20. As cinco dimensões totalizam 100 pontos.</string>
+    <string name="writing_rubric_theme">Tema e atendimento à proposta</string>
+    <string name="writing_rubric_text_type">Tipo textual</string>
+    <string name="writing_rubric_cohesion">Coesão</string>
+    <string name="writing_rubric_argumentation">Argumentação</string>
+    <string name="writing_rubric_language">Norma-padrão</string>
+    <string name="writing_rubric_points">0–20 pontos</string>
+    <string name="writing_score_value">Nota: %1$d/100</string>
+    <string name="writing_score_pending">Nota: preencha os cinco critérios da rubrica</string>
+    <string name="writing_score_unavailable">Nota indisponível para esta sessão antiga de redação</string>
+    <string name="writing_checklist_title">Antes de finalizar</string>
+    <string name="writing_checklist_task">Conferi se o texto atende à proposta solicitada.</string>
+    <string name="writing_checklist_structure">Revisei a estrutura do texto e a organização dos parágrafos.</string>
+    <string name="writing_checklist_cohesion">Revisei a coesão e as transições.</string>
+    <string name="writing_checklist_language">Revisei ortografia, gramática e norma-padrão.</string>
+    <string name="writing_finish">Finalizar redação</string>
+    <string name="writing_finished">Sessão de redação finalizada.</string>
+    <string name="writing_history_title">Histórico recente de redações</string>
+    <string name="writing_weekly_goal">Meta semanal de redação: %1$d / %2$d concluída(s)</string>
+    <string name="writing_no_active_session">Inicie uma atividade planejada ou rápida de Redação para abrir o editor. O histórico recente continua disponível abaixo.</string>
 </resources>
