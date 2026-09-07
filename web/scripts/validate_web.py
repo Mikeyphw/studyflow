@@ -62,7 +62,7 @@ def validate_interactions()->list[str]:
 
 def validate_typescript()->list[str]:
     e=[]
-    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
+    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
     ts=_text(WEB/'tsconfig.json',e)
     try:cfg=json.loads(ts); _require(e,cfg.get('compilerOptions',{}).get('strict') is True,'TypeScript strict mode must be enabled'); _require(e,cfg.get('compilerOptions',{}).get('module')=='CommonJS','tracked browser runtime must compile to CommonJS')
     except Exception as exc:e.append(f'tsconfig invalid: {exc}')
@@ -93,13 +93,34 @@ def validate_indexeddb()->list[str]:
 def validate_pwa()->list[str]:
     e=[]; p=_text(WEB/'src/pwa.ts',e); sw=_text(WEB/'service-worker.js',e); ui=_text(WEB/'src/react/App.tsx',e)
     for token in ('serviceWorker.register','beforeinstallprompt','appinstalled','offline'):_require(e,token in p,f'PWA registration missing {token}')
-    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','runtime/main.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
+    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','runtime/main.js','runtime/modes.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
     _require(e,'id="install-app"' in ui and 'id="pwa-status"' in ui,'React PWA controls missing'); return e
 
 def validate_react()->list[str]:
     e=[]; ui=_text(WEB/'src/react/App.tsx',e); main=_text(WEB/'src/main.tsx',e)
     for token in ('from "react"','useSyncExternalStore','function Today','function Plan','function Practice','function Progress'):_require(e,token in ui,f'React UI missing {token}')
     _require(e,'createRoot' in main,'React createRoot bootstrap missing'); _require(e,'createStudyStore' in main,'store must be constructed outside React component tree'); return e
+
+def validate_public_exam()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); modes=_text(WEB/'src/modes.ts',e); domain=_text(WEB/'src/domain.ts',e); storage=_text(WEB/'src/storage.ts',e); state=_text(WEB/'src/state.ts',e); ui=_text(WEB/'src/react/App.tsx',e)
+    for token in ('ExamTargetProfile','ExamNoticeRevision','MockExamBlueprint','MockExamPreview','FinalStretchGuidance'):_require(e,token in types,f'W16 typed public-exam contract missing {token}')
+    for token in ('buildExamNoticePreview','deriveFinalStretchGuidance','filterExamQuestions','previewMockExam','scoreMockExam','derivePublicExamDashboard'):_require(e,token in modes,f'W16 public-exam logic missing {token}')
+    for token in ('updatePublicExamTarget','applyExamNoticePreview','addExamStage','addLegislation','setMockBlueprint','recordMockExam'):_require(e,token in state,f'W16 store operation missing {token}')
+    for token in ('Concurso target','Concurso dashboard','Preview edital','Apply preview','Legislation','Mock Exam Studio','Banca'):_require(e,token in ui,f'W16 React workflow missing {token}')
+    _require(e,'STATE_SCHEMA_VERSION = 5' in domain,'W16/W17 current state schema must be v5')
+    _require(e,'studyflow.local.state.v4' in storage,'v4 localStorage migration key missing')
+    _require(e,'child_process' not in modes and 'exec(' not in modes and 'spawn(' not in modes,'mode domain must not expose arbitrary shell execution')
+    return e
+
+def validate_content_modes()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); modes=_text(WEB/'src/modes.ts',e); state=_text(WEB/'src/state.ts',e); ui=_text(WEB/'src/react/App.tsx',e)
+    for token in ('PROGRAMMING_COURSE','LANGUAGE_DECK','READING_STUDY','GENERAL_SKILL'):_require(e,token in types and token in ui,f'W17 mode missing {token}')
+    for token in ('createProgrammingExercise','createLanguageExpression','createReadingItem','createGeneralSkillDrill','deriveModeAnalytics'):_require(e,token in modes,f'W17 mode logic missing {token}')
+    for token in ('recordProgrammingExercise','recordLanguageReview','updateReadingProgress','recordGeneralSkillDrill'):_require(e,token in state,f'W17 store operation missing {token}')
+    for token in ('Programming course','Language deck','Reading study','General skill','Mode-aware analytics','sentence creation'):_require(e,token in ui,f'W17 React workflow missing {token}')
+    _require(e,'manualReview' in state,'language sentence-creation manual-review contract missing')
+    _require(e,'browser-only' in modes,'programming runtime boundary must remain browser-only')
+    return e
 
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
@@ -112,7 +133,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes)
     out=[]
     for fn in groups:
         for item in fn():

@@ -65,3 +65,9 @@ The authoritative application source is now TypeScript under `src/`, compiled in
 React owns the presentation layer through `src/react/App.tsx`, but it does not own StudyFlow state or business logic. `src/main.tsx` composes persistence, attachments, the StudyFlow store, and PWA services before mounting React; components subscribe with `useSyncExternalStore` and invoke typed store actions. The former vanilla `src/*.js` implementation files remain only as migration tombstones so this overlay does not depend on unproven file-delete inventory semantics.
 
 The browser bootloader stays local and dependency-pinned. It loads the generated CommonJS runtime plus the exact React/ReactDOM/Scheduler files installed by `npm ci`; the W15 service-worker app shell caches that runtime graph for offline use after installation. There is still no backend, account, telemetry, or remote runtime CDN dependency.
+
+## W16/W17
+
+Concurso Público is now a first-class typed plan workflow: truthful target identity/date status, stages, edital preview/apply with revision provenance and archive-not-delete reconciliation, banca-aware question metadata, legislation, mock-exam blueprints/scoring, evidence-derived dashboard metrics and confirmed-date final-stretch guidance.
+
+The remaining plan modes are also functional: programming exercises/projects use a browser-only execution boundary; language decks support six review directions with manual review for sentence creation; reading progress is explicit; and general-skill drills record named metrics. All mode configuration lives under the canonical plan, migrates through state schema v5, remains IndexedDB/local-first, and is carried by portable packages without adding a second storage system or backend.

@@ -4,6 +4,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createStudyStore = createStudyStore;
 const domain_js_1 = require("./domain.js");
+const modes_js_1 = require("./modes.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
 function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms))
     throw new TypeError(`Invalid timestamp: ${value}`); return ms; }
@@ -85,6 +86,237 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         getFocusSnapshot: (at) => focusSnapshot(at),
         subscribe(listener) { if (typeof listener !== "function")
             throw new TypeError("listener must be a function"); listeners.add(listener); return () => listeners.delete(listener); },
+        setPlanMode(mode) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current)
+                throw new TypeError("Active plan not found");
+            const at = nowIso();
+            const updated = (0, domain_js_1.createPlan)({ ...current, mode, configuration: {}, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map((plan) => plan.id === current.id ? updated : plan) }, "plan-mode-updated");
+            return updated;
+        },
+        updatePublicExamTarget(input) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "EXAM_PLAN")
+                throw new TypeError("Public-exam target requires an EXAM_PLAN");
+            const at = nowIso();
+            const target = { ...current.configuration.publicExam.target, ...input };
+            const updated = (0, domain_js_1.createPlan)({ ...current, examDate: target.examDate ?? current.examDate, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, target } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map((plan) => plan.id === current.id ? updated : plan) }, "public-exam-target-updated");
+            return updated;
+        },
+        addExamStage(input) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "EXAM_PLAN")
+                throw new TypeError("Exam stages require an EXAM_PLAN");
+            const at = nowIso();
+            const stage = { id: input.id ?? `stage-${Date.now().toString(36)}`, name: String(input.name ?? "").trim(), date: input.date ?? null, status: input.status ?? "planned" };
+            if (!stage.name)
+                throw new TypeError("Exam stage name is required");
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, stages: [...current.configuration.publicExam.stages, stage] } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map((plan) => plan.id === current.id ? updated : plan) }, "exam-stage-added");
+            return updated;
+        },
+        previewExamNotice(source) { return (0, modes_js_1.buildExamNoticePreview)(state, source); },
+        applyExamNoticePreview(preview) {
+            if (!preview || preview.baseRevision !== state.revision)
+                throw new TypeError("Edital preview is stale; preview again before applying");
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "EXAM_PLAN")
+                throw new TypeError("Edital import requires an EXAM_PLAN");
+            const at = nowIso();
+            let subjects = state.subjects.map((x) => ({ ...x })), topics = state.topics.map((x) => ({ ...x }));
+            const touchedSubjects = new Set(), touchedTopics = new Set();
+            let added = 0, archived = 0;
+            for (const row of preview.subjects) {
+                let subject = subjects.find((x) => x.planId === current.id && x.name.trim().toLowerCase() === row.name.trim().toLowerCase());
+                if (!subject) {
+                    subject = (0, domain_js_1.createSubject)({ planId: current.id, name: row.name, order: subjects.filter(x => x.planId === current.id).length, createdAt: at, updatedAt: at });
+                    subjects.push(subject);
+                    added++;
+                }
+                else if (subject.archived) {
+                    subject = (0, domain_js_1.createSubject)({ ...subject, archived: false, createdAt: subject.createdAt, updatedAt: at });
+                    subjects = subjects.map(x => x.id === subject.id ? subject : x);
+                }
+                touchedSubjects.add(subject.id);
+                for (const name of row.topics) {
+                    let topic = topics.find(x => x.subjectId === subject.id && x.name.trim().toLowerCase() === name.trim().toLowerCase());
+                    if (!topic) {
+                        topic = (0, domain_js_1.createTopic)({ planId: current.id, subjectId: subject.id, name, order: topics.filter(x => x.subjectId === subject.id).length, createdAt: at, updatedAt: at });
+                        topics.push(topic);
+                        added++;
+                    }
+                    else if (topic.status === "archived") {
+                        topic = (0, domain_js_1.createTopic)({ ...topic, status: "not-started", createdAt: topic.createdAt, updatedAt: at });
+                        topics = topics.map(x => x.id === topic.id ? topic : x);
+                    }
+                    touchedTopics.add(topic.id);
+                }
+            }
+            for (const topic of topics.filter(x => x.planId === current.id && x.status !== "archived")) {
+                if (!touchedTopics.has(topic.id)) {
+                    topics = topics.map(x => x.id === topic.id ? { ...x, status: "archived", updatedAt: at } : x);
+                    archived++;
+                }
+            }
+            for (const subject of subjects.filter(x => x.planId === current.id && !x.archived)) {
+                if (!touchedSubjects.has(subject.id)) {
+                    subjects = subjects.map(x => x.id === subject.id ? { ...x, archived: true, updatedAt: at } : x);
+                    archived++;
+                }
+            }
+            const revision = { id: `notice-${Date.now().toString(36)}`, acceptedAt: at, sourceHash: preview.sourceHash, added, archived };
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, noticeRevisions: [...current.configuration.publicExam.noticeRevisions, revision] } }, createdAt: current.createdAt, updatedAt: at });
+            const cycleIds = subjects.filter(x => x.planId === current.id && !x.archived).sort((a, b) => a.order - b.order).map(x => x.id);
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x), subjects, topics, studyCycle: (0, domain_js_1.createStudyCycleState)({ subjectIds: cycleIds, cursor: Math.min(state.studyCycle.cursor, Math.max(0, cycleIds.length - 1)) }) }, "exam-notice-applied");
+            return updated;
+        },
+        addLegislation(input) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "EXAM_PLAN")
+                throw new TypeError("Legislation requires an EXAM_PLAN");
+            const at = nowIso();
+            const title = String(input.title ?? "").trim();
+            if (!title)
+                throw new TypeError("Legislation title is required");
+            const document = { id: `law-${Date.now().toString(36)}`, title, reference: input.reference ?? null, notes: input.notes ?? null, provisions: (input.provisions ?? []).map((p, i) => ({ id: `provision-${Date.now().toString(36)}-${i}`, label: String(p.label ?? `Provision ${i + 1}`), text: String(p.text ?? ""), status: "unseen" })) };
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, legislation: [...current.configuration.publicExam.legislation, document] } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "legislation-added");
+            return updated;
+        },
+        setMockBlueprint(input) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "EXAM_PLAN")
+                throw new TypeError("Mock blueprint requires an EXAM_PLAN");
+            const at = nowIso();
+            const blueprint = (0, modes_js_1.normalizeMockBlueprint)({ ...current.configuration.publicExam.mockBlueprint, ...input });
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, mockBlueprint: blueprint } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "mock-blueprint-updated");
+            return updated;
+        },
+        recordMockExam(preview, answers) {
+            if (!preview || preview.baseRevision !== state.revision)
+                throw new TypeError("Mock preview is stale; preview again before recording");
+            if (!preview.ready)
+                throw new TypeError("Mock preview cannot be recorded because the question bank is insufficient");
+            const at = nowIso();
+            const score = (0, modes_js_1.scoreMockExam)(preview, answers, state);
+            const evidence = (0, domain_js_1.createEvidence)({ planId: activePlanId(), kind: "mock-exam-result", observedAt: at, provenance: "user", value: { ...score, blueprint: preview.blueprint, questionIds: preview.questionIds }, createdAt: at, updatedAt: at });
+            commit({ ...state, evidence: [...state.evidence, evidence] }, "mock-exam-recorded");
+            return evidence;
+        },
+        addProgrammingExercise(input) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "PROGRAMMING_COURSE")
+                throw new TypeError("Programming exercises require PROGRAMMING_COURSE mode");
+            const at = nowIso();
+            const exercise = (0, modes_js_1.createProgrammingExercise)({ ...input, language: input.language ?? current.configuration.programming.language });
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, programming: { ...current.configuration.programming, exercises: [...current.configuration.programming.exercises, exercise] } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "programming-exercise-added");
+            return updated;
+        },
+        updateProgrammingExercise(id, changes) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "PROGRAMMING_COURSE")
+                throw new TypeError("Programming exercises require PROGRAMMING_COURSE mode");
+            const exists = current.configuration.programming.exercises.find(x => x.id === id);
+            if (!exists)
+                throw new TypeError("Programming exercise not found");
+            const at = nowIso();
+            const exercise = (0, modes_js_1.createProgrammingExercise)({ ...exists, ...changes, id: exists.id });
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, programming: { ...current.configuration.programming, exercises: current.configuration.programming.exercises.map(x => x.id === id ? exercise : x) } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "programming-exercise-updated");
+            return updated;
+        },
+        recordProgrammingExercise(id, { completed = false, note = null } = {}) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "PROGRAMMING_COURSE")
+                throw new TypeError("Programming evidence requires PROGRAMMING_COURSE mode");
+            const exercise = current.configuration.programming.exercises.find(x => x.id === id);
+            if (!exercise)
+                throw new TypeError("Programming exercise not found");
+            const at = nowIso();
+            const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "programming-exercise", observedAt: at, provenance: "user", value: { exerciseId: id, completed: Boolean(completed), note }, createdAt: at, updatedAt: at });
+            const nextExercise = (0, modes_js_1.createProgrammingExercise)({ ...exercise, status: completed ? "completed" : "attempted" });
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, programming: { ...current.configuration.programming, exercises: current.configuration.programming.exercises.map(x => x.id === id ? nextExercise : x) } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x), evidence: [...state.evidence, evidence] }, "programming-exercise-recorded");
+            return evidence;
+        },
+        addLanguageExpression(input) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "LANGUAGE_DECK")
+                throw new TypeError("Language expressions require LANGUAGE_DECK mode");
+            const at = nowIso();
+            const expression = (0, modes_js_1.createLanguageExpression)(input);
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, language: { ...current.configuration.language, expressions: [...current.configuration.language.expressions, expression] } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "language-expression-added");
+            return updated;
+        },
+        recordLanguageReview(expressionId, direction, rating, { answer = null, note = null } = {}) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "LANGUAGE_DECK")
+                throw new TypeError("Language review requires LANGUAGE_DECK mode");
+            const expression = current.configuration.language.expressions.find(x => x.id === expressionId);
+            if (!expression)
+                throw new TypeError("Language expression not found");
+            if (!current.configuration.language.reviewDirections.includes(direction))
+                throw new TypeError("Unsupported language review direction");
+            const at = nowIso();
+            const manual = direction === "sentence-creation";
+            const value = { expressionId, direction, rating: Math.max(0, Math.min(5, Number(rating) || 0)), answer, note, manualReview: manual };
+            const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "language-review", observedAt: at, provenance: "user", value, createdAt: at, updatedAt: at });
+            const interval = value.rating >= 4 ? 7 : value.rating >= 3 ? 3 : 1;
+            const review = (0, domain_js_1.createReview)({ planId: current.id, dueAt: new Date(Date.parse(at) + interval * 86400000).toISOString(), status: "due", sourceType: "language-expression", sourceId: null, createdAt: at, updatedAt: at });
+            commit({ ...state, evidence: [...state.evidence, evidence], reviews: [...state.reviews, review] }, "language-review-recorded");
+            return evidence;
+        },
+        addReadingItem(input) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "READING_STUDY")
+                throw new TypeError("Reading items require READING_STUDY mode");
+            const at = nowIso();
+            const item = (0, modes_js_1.createReadingItem)(input);
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, reading: { items: [...current.configuration.reading.items, item] } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "reading-item-added");
+            return updated;
+        },
+        updateReadingProgress(id, currentUnit) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "READING_STUDY")
+                throw new TypeError("Reading progress requires READING_STUDY mode");
+            const item = current.configuration.reading.items.find(x => x.id === id);
+            if (!item)
+                throw new TypeError("Reading item not found");
+            const at = nowIso();
+            const next = (0, modes_js_1.createReadingItem)({ ...item, currentUnit, status: Number(currentUnit) >= item.totalUnits ? "completed" : "reading" });
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, reading: { items: current.configuration.reading.items.map(x => x.id === id ? next : x) } }, createdAt: current.createdAt, updatedAt: at });
+            const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "reading-progress", observedAt: at, provenance: "user", value: { itemId: id, currentUnit: next.currentUnit, totalUnits: next.totalUnits }, createdAt: at, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x), evidence: [...state.evidence, evidence] }, "reading-progress-recorded");
+            return evidence;
+        },
+        addGeneralSkillDrill(input) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "GENERAL_SKILL")
+                throw new TypeError("Skill drills require GENERAL_SKILL mode");
+            const at = nowIso();
+            const drill = (0, modes_js_1.createGeneralSkillDrill)(input);
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, general: { drills: [...current.configuration.general.drills, drill] } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "skill-drill-added");
+            return updated;
+        },
+        recordGeneralSkillDrill(id, value, { note = null } = {}) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "GENERAL_SKILL")
+                throw new TypeError("Skill evidence requires GENERAL_SKILL mode");
+            const drill = current.configuration.general.drills.find(x => x.id === id);
+            if (!drill)
+                throw new TypeError("Skill drill not found");
+            const at = nowIso();
+            const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "skill-drill", observedAt: at, provenance: "user", value: { drillId: id, value: Number(value), target: drill.target, unit: drill.unit, note }, createdAt: at, updatedAt: at });
+            commit({ ...state, evidence: [...state.evidence, evidence] }, "skill-drill-recorded");
+            return evidence;
+        },
         addActivity(input) {
             const at = nowIso();
             const activity = (0, domain_js_1.createActivity)({ ...input, planId: input.planId ?? activePlanId(), createdAt: input.createdAt ?? at, updatedAt: input.updatedAt ?? at });

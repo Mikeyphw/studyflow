@@ -6,7 +6,7 @@ exports.createBrowserPersistence = createBrowserPersistence;
 const domain_1 = require("./domain");
 const indexeddb_1 = require("./indexeddb");
 exports.STORAGE_KEY = `studyflow.local.state.v${domain_1.STATE_SCHEMA_VERSION}`;
-exports.LEGACY_STORAGE_KEYS = Object.freeze(["studyflow.local.state.v3", "studyflow.local.state.v2", "studyflow.local.state.v1"]);
+exports.LEGACY_STORAGE_KEYS = Object.freeze(["studyflow.local.state.v4", "studyflow.local.state.v3", "studyflow.local.state.v2", "studyflow.local.state.v1"]);
 function resolveBrowserStorage() { try {
     return globalThis.localStorage ?? null;
 }

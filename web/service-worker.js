@@ -1,10 +1,10 @@
 "use strict";
 
-const CACHE_VERSION = "studyflow-local-w15-v1";
+const CACHE_VERSION = "studyflow-local-w17-v1";
 const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
   "./runtime/main.js", "./runtime/domain.js", "./runtime/indexeddb.js", "./runtime/storage.js",
-  "./runtime/state.js", "./runtime/portable.js", "./runtime/pwa.js", "./runtime/types.js", "./runtime/react/App.js",
+  "./runtime/state.js", "./runtime/modes.js", "./runtime/portable.js", "./runtime/pwa.js", "./runtime/types.js", "./runtime/react/App.js",
   "./node_modules/react/cjs/react.production.js",
   "./node_modules/react-dom/cjs/react-dom.production.js",
   "./node_modules/react-dom/cjs/react-dom-client.production.js",

@@ -2,8 +2,10 @@
 // @ts-nocheck -- legacy internals preserved byte-for-byte for W14 behavioral parity; new/changed code is typed.
 "use strict";
 
-export const STATE_SCHEMA_VERSION = 4;
-export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3]);
+import { normalizePlanConfiguration, normalizeQuestionMetadata, validatePlanConfiguration } from "./modes";
+
+export const STATE_SCHEMA_VERSION = 5;
+export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3, 4]);
 
 export const ENTITY_COLLECTIONS = Object.freeze([
     "plans",
@@ -105,12 +107,18 @@ function entityBase(kind, input = {}) {
 }
 
 export function createPlan(input = {}) {
+    const mode = requireOneOf(input.mode ?? "GENERAL_SKILL", STUDY_MODES, "plan.mode");
+    const configuration = normalizePlanConfiguration(input.configuration ?? {}, mode);
+    const configErrors = validatePlanConfiguration(configuration, mode);
+    if (configErrors.length) throw new TypeError(`plan.configuration is invalid: ${configErrors[0]}`);
+    const configuredExamDate = mode === "EXAM_PLAN" ? configuration.publicExam?.target.examDate ?? null : null;
     return {
         ...entityBase("plan", input),
         name: requireText(input.name, "plan.name"),
-        mode: requireOneOf(input.mode ?? "GENERAL_SKILL", STUDY_MODES, "plan.mode"),
+        mode,
         status: requireOneOf(input.status ?? "active", ["active", "archived"], "plan.status"),
-        examDate: optionalText(input.examDate),
+        examDate: optionalText(input.examDate) ?? configuredExamDate,
+        configuration,
     };
 }
 
@@ -234,6 +242,7 @@ export function createQuestion(input = {}) {
         source: optionalText(input.source),
         explanation: optionalText(input.explanation),
         disputed: Boolean(input.disputed),
+        ...normalizeQuestionMetadata(input),
     };
 }
 
@@ -395,16 +404,18 @@ export function focusRemainingMs(focus, at = Date.now()) {
 
 export function migrateStudyState(input, { now = isoNow() } = {}) {
     if (!input || typeof input !== "object" || Array.isArray(input)) return input;
-    if (![1, 2, 3, STATE_SCHEMA_VERSION].includes(input.schemaVersion)) return input;
+    if (![1, 2, 3, 4, STATE_SCHEMA_VERSION].includes(input.schemaVersion)) return input;
     const state = JSON.parse(JSON.stringify(input));
     const originalVersion = state.schemaVersion;
     state.schemaVersion = STATE_SCHEMA_VERSION;
+    state.plans = Array.isArray(state.plans) ? state.plans.map((plan) => createPlan(plan)) : [];
     state.focus = createFocusState(state.focus ?? {});
     state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => ({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : [];
     state.studyCycle = createStudyCycleState(state.studyCycle ?? { subjectIds: state.subjects.filter((subject) => !subject.archived).map((subject) => subject.id), cursor: 0 });
     state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
     state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
     state.materials = Array.isArray(state.materials) ? state.materials.map((material) => ({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null })) : [];
+    state.questions = Array.isArray(state.questions) ? state.questions.map((question) => createQuestion(question)) : [];
     if (originalVersion !== STATE_SCHEMA_VERSION) state.migratedAt = now;
     return state;
 }

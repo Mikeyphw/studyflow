@@ -18,8 +18,8 @@
 | W13 | Installable offline PWA |
 | W14 | TypeScript migration |
 | W15 | React UI migration |
-| W16 | Full Concurso Público workflow + planned improvements |
-| W17 | Programming/language/reading/general modes |
+| W16 | Full Concurso Público workflow + planned improvements — delivered |
+| W17 | Programming/language/reading/general modes — delivered |
 | W18 | Accessibility/testing/offline/storage hardening |
 | W19 | StudyFlow Local 1.0 release seal |
 
