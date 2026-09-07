@@ -4,6 +4,7 @@
 
 import { normalizePlanConfiguration, normalizeQuestionMetadata, validatePlanConfiguration } from "./modes";
 import { normalizeAppPreferences } from "./product";
+import { normalizeStudyActivityType } from "./task_workflows";
 
 export const STATE_SCHEMA_VERSION = 7;
 export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3, 4, 5, 6]);
@@ -166,6 +167,7 @@ export function createActivity(input = {}) {
         topicId: optionalId(input.topicId),
         title: requireText(input.title, "activity.title"),
         kind: requireOneOf(input.kind ?? "study", ACTIVITY_KINDS, "activity.kind"),
+        activityType: normalizeStudyActivityType(input.activityType, input.kind ?? "study"),
         durationMinutes: requirePositiveInteger(input.durationMinutes ?? 25, "activity.durationMinutes", { min: 5, max: 240 }),
         status: requireOneOf(input.status ?? "planned", ACTIVITY_STATUSES, "activity.status"),
         origin: requireOneOf(input.origin ?? "manual", ["manual", "seed", "cycle", "review", "import", "schedule"], "activity.origin"),

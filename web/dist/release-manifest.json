@@ -46,8 +46,8 @@
     },
     {
       "path": "runtime/domain.js",
-      "sha256": "fe0ee2c9cc60b2121cc222936c4015f3e9c8045d6119e928038aa392636dd4c5",
-      "bytes": 54185
+      "sha256": "84fb6eee2bbbee78f332aeaa1e8d463336ada14c374ac31e942a70848830b33a",
+      "bytes": 54354
     },
     {
       "path": "runtime/exam_foundation.js",
@@ -81,8 +81,8 @@
     },
     {
       "path": "runtime/modes.js",
-      "sha256": "e85b54a9fbf2eb9e1ec3198ce3bdd61027ab92d128cc87fb7d3fe7f84f34280b",
-      "bytes": 46589
+      "sha256": "baa586537fde7dc2061b178b7fc372f118f698b2dddcb68979b7f62d7276391c",
+      "bytes": 47183
     },
     {
       "path": "runtime/package.json",
@@ -96,8 +96,8 @@
     },
     {
       "path": "runtime/product.js",
-      "sha256": "ca03247f0aff087a91856db5501d465a75711e4be8b75382f63d970df1d3c734",
-      "bytes": 10952
+      "sha256": "09325270cc2aaa9213a810b5c8abec4aecfd7e31dc4575ad48a2aa46ffa1870b",
+      "bytes": 11879
     },
     {
       "path": "runtime/pwa.js",
@@ -111,8 +111,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "c356da35431d0cc2b427a89cbee7d8d5c85e714243b3a604979cf1a108b623c6",
-      "bytes": 130831
+      "sha256": "41720f1a470d361e18e9c7c7504828170b71c8dcc97ba02854fb29031fa7dc95",
+      "bytes": 143582
     },
     {
       "path": "runtime/release.js",
@@ -126,13 +126,18 @@
     },
     {
       "path": "runtime/state.js",
-      "sha256": "b6f94f1b9d3ab246970c19dce85a2c567189d7453e16ccc2034e6f85c33a681f",
-      "bytes": 94205
+      "sha256": "a8f6dcec7fffd17c0e89ee94f5d0165c09d399e880b929571e70c5e1a116fec8",
+      "bytes": 106208
     },
     {
       "path": "runtime/storage.js",
       "sha256": "c370aa9771abc815459a150de8a563b46cb0f2ae8f93d9df92fd655da3ace216",
       "bytes": 5295
+    },
+    {
+      "path": "runtime/task_workflows.js",
+      "sha256": "f8d2f9610a2eec48e1e8cca6405529a12c37b2f7ef9146f7f984f5c7dc8392fa",
+      "bytes": 12556
     },
     {
       "path": "runtime/types.js",
@@ -141,13 +146,13 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "557c4d13ac5fc17952d5eb2c921ed0f9f3adc050aa3fdcb64ad514fd732dd85f",
-      "bytes": 2110
+      "sha256": "f77a7b56a66a1ecd646cf66266de694353a2c6721f9bf58c029e1138ce2ee244",
+      "bytes": 2141
     },
     {
       "path": "styles.css",
-      "sha256": "9b8e28814e6c6337c92938e8ae7ce6b38805b514d8aa2b9d2eeb2a7b5fa987f9",
-      "bytes": 19412
+      "sha256": "41542bdce4dd85a9169443a589f51c04c6028c6ee6f777a26f7e95d569b797c0",
+      "bytes": 19470
     },
     {
       "path": "vendor/react-dom-client.production.js",

@@ -4,7 +4,7 @@ const CACHE_VERSION = "studyflow-local-1.0.0-parity";
 const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
   "./runtime/main.js", "./runtime/domain.js", "./runtime/content_import.js",
-  "./runtime/question_import.js", "./runtime/mode_import.js", "./runtime/intelligence.js", "./runtime/product.js", "./runtime/exam_foundation.js", "./runtime/indexeddb.js", "./runtime/storage.js",
+  "./runtime/question_import.js", "./runtime/mode_import.js", "./runtime/intelligence.js", "./runtime/product.js", "./runtime/exam_foundation.js", "./runtime/task_workflows.js", "./runtime/indexeddb.js", "./runtime/storage.js",
   "./runtime/state.js", "./runtime/modes.js", "./runtime/schedule.js", "./runtime/portable.js", "./runtime/pwa.js", "./runtime/hardening.js", "./runtime/release.js", "./runtime/types.js", "./runtime/react/App.js",
   "./vendor/react.production.js",
   "./vendor/react-dom.production.js",

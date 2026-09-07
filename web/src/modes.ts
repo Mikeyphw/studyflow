@@ -4,6 +4,7 @@ import { defaultScheduleConfiguration, normalizeScheduleConfiguration, validateS
 import {
   PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS, cloneBbStudyPhaseSuggestions, normalizeStudyPhaseDefinitions, validateStudyPhaseDefinitions,
 } from "./exam_foundation";
+import { createBbAgenteComercialReferencePreset } from "./task_workflows";
 export {
   BB_STUDY_PHASE_SUGGESTIONS, PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS, REFERENCE_POSSIBLY_STALE_AFTER_DAYS,
   cloneBbStudyPhaseSuggestions, decodeReferenceProvenance, deriveActiveStudyPhase, deriveMaterialReferenceFreshness, derivePreEditalCockpit,
@@ -34,7 +35,7 @@ export function defaultPlanConfiguration(mode:StudyMode="GENERAL_SKILL"):PlanCon
   const base:PlanConfiguration={version:1,schedule:defaultScheduleConfiguration(),practice:{savedSets:[],weeklyQuestionQuota:null}};
   if(mode==="EXAM_PLAN")base.publicExam={
     target:{organization:null,role:null,board:null,editalRef:null,dateStatus:"unknown",examDate:null,openings:null,estimatedCutoff:null},
-    stages:[],noticeRevisions:[],reviewIntervalsDays:[1,7,30],legislation:[],studyPhase:"pre-edital",phaseDefinitions:[],cockpitStaleReferenceDays:PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS,mockBlueprint:{scoring:"no-penalty",negativePoints:0,totalQuestions:20,durationMinutes:60,sections:[]}
+    stages:[],noticeRevisions:[],reviewIntervalsDays:[1,7,30],legislation:[],studyPhase:"pre-edital",phaseDefinitions:[],cockpitStaleReferenceDays:PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS,bbReferencePreset:null,mockBlueprint:{scoring:"no-penalty",negativePoints:0,totalQuestions:20,durationMinutes:60,sections:[]}
   };
   if(mode==="PROGRAMMING_COURSE")base.programming={language:"TypeScript",level:"beginner",runtime:"browser-only",exercises:[],projects:[]};
   if(mode==="LANGUAGE_DECK")base.language={language:"English",nativeLanguage:null,expressions:[],reviewDirections:[...LANGUAGE_DIRECTIONS]};
@@ -57,13 +58,14 @@ export function normalizePlanConfiguration(input:unknown,mode:StudyMode):PlanCon
     const d=defaultPlanConfiguration(mode).publicExam!; const p=raw.publicExam??{};
     out.publicExam={
       target:normalizeExamTarget(p.target),
-      stages:arr<any>(p.stages).map((s,i)=>({id:text(s?.id)??`stage-${i+1}`,name:text(s?.name)??`Stage ${i+1}`,date:dateOnly(s?.date),status:["planned","completed","cancelled"].includes(String(s?.status))?s.status:"planned"})),
+      stages:arr<any>(p.stages).map((s,i)=>({id:text(s?.id)??`stage-${i+1}`,name:text(s?.name)??`Stage ${i+1}`,date:dateOnly(s?.date),status:["planned","completed","cancelled"].includes(String(s?.status))?s.status:"planned",type:["objective","essay","other"].includes(String(s?.type))?s.type:"other",weight:n(s?.weight),minimumScorePercent:n(s?.minimumScorePercent)==null?null:Math.max(0,Math.min(100,n(s?.minimumScorePercent)!)),referenceQuestionCount:n(s?.referenceQuestionCount)==null?null:Math.max(0,Math.trunc(n(s?.referenceQuestionCount)!))})),
       noticeRevisions:arr<any>(p.noticeRevisions).map((r,i)=>({id:text(r?.id)??`notice-${i+1}`,acceptedAt:iso(r?.acceptedAt)??new Date(0).toISOString(),sourceHash:text(r?.sourceHash)??`legacy-${i+1}`,added:Math.max(0,Math.trunc(n(r?.added)??0)),archived:Math.max(0,Math.trunc(n(r?.archived)??0)),reactivated:Math.max(0,Math.trunc(n(r?.reactivated)??0)),unchanged:Math.max(0,Math.trunc(n(r?.unchanged)??0)),previousRevisionId:text(r?.previousRevisionId),syllabusFingerprint:text(r?.syllabusFingerprint),reference:text(r?.reference),publishedAt:dateOnly(r?.publishedAt)})),
       reviewIntervalsDays:arr<unknown>(p.reviewIntervalsDays).map(Number).filter(v=>Number.isInteger(v)&&v>0&&v<=365).slice(0,8) as number[],
       legislation:arr<any>(p.legislation).map((d,i)=>({id:text(d?.id)??`law-${i+1}`,title:text(d?.title)??`Legislation ${i+1}`,reference:text(d?.reference),notes:text(d?.notes),sourceUpdatedAt:iso(d?.sourceUpdatedAt),verifiedAt:iso(d?.verifiedAt),provisions:arr<any>(d?.provisions).map((q,j)=>({id:text(q?.id)??`provision-${i+1}-${j+1}`,label:text(q?.label)??`Provision ${j+1}`,text:text(q?.text)??"",status:["unseen","studying","reviewing","known"].includes(String(q?.status))?q.status:"unseen"})),evidenceLinks:arr<any>(d?.evidenceLinks).map((l,j)=>({id:text(l?.id)??`law-link-${i+1}-${j+1}`,provisionId:text(l?.provisionId)??"",questionId:text(l?.questionId),errorId:text(l?.errorId),reviewId:text(l?.reviewId),note:text(l?.note),createdAt:iso(l?.createdAt)??new Date(0).toISOString()}))})),
       studyPhase:["pre-edital","post-edital","final-stretch"].includes(String(p.studyPhase))?p.studyPhase:(arr<any>(p.noticeRevisions).length?"post-edital":"pre-edital"),
       phaseDefinitions:normalizeStudyPhaseDefinitions(p.phaseDefinitions),
       cockpitStaleReferenceDays:Number.isInteger(Number(p.cockpitStaleReferenceDays))&&Number(p.cockpitStaleReferenceDays)>0?Math.trunc(Number(p.cockpitStaleReferenceDays)):PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS,
+      bbReferencePreset:p.bbReferencePreset?.id==="BB_AGENTE_COMERCIAL_PRE_EDITAL"?createBbAgenteComercialReferencePreset():null,
       mockBlueprint:normalizeMockBlueprint(p.mockBlueprint??d.mockBlueprint),
     };
     if(!out.publicExam.reviewIntervalsDays.length)out.publicExam.reviewIntervalsDays=[1,7,30];

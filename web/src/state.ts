@@ -12,8 +12,9 @@ import { buildModeImportPreview } from "./mode_import.js";
 import { buildContentCleanupPreview } from "./intelligence.js";
 import { normalizeAppPreferences, validateStarterWorkspace } from "./product.js";
 import { buildAdaptiveSchedulePreview, normalizeScheduleConfiguration } from "./schedule.js";
-import { assessProgrammingAttempt, buildExamNoticePreview, buildLanguageReviewPrompt, createGeneralSkillDrill, createLanguageExpression, createProgrammingExercise, createReadingItem, normalizeMockBlueprint, previewMockExam, scoreMockExam, PUBLIC_EXAM_STARTER_TEMPLATES } from "./modes.js";
+import { assessProgrammingAttempt, buildExamNoticePreview, buildLanguageReviewPrompt, createGeneralSkillDrill, createLanguageExpression, createProgrammingExercise, createReadingItem, defaultPlanConfiguration, normalizeMockBlueprint, previewMockExam, scoreMockExam, PUBLIC_EXAM_STARTER_TEMPLATES } from "./modes.js";
 import { cloneBbStudyPhaseSuggestions, decodeReferenceProvenance, encodeReferenceProvenance, normalizeStudyPhaseDefinitions, validateStudyPhaseDefinitions } from "./exam_foundation.js";
+import { BB_REFERENCE_RHYTHM, BB_SUBJECT_WEIGHTS, activityKindForType, activeWritingSession, bbReferenceExamStages, bbReferenceGoals, createBbAgenteComercialReferencePreset, createWritingSessionRecord, decodeWritingSessionRecord, encodeWritingSessionRecord, normalizeStudyActivityType, normalizeWritingChecklist, normalizeWritingRubric, writingActivity, writingChecklistComplete, writingRubricTotal } from "./task_workflows.js";
 
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
 function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms)) throw new TypeError(`Invalid timestamp: ${value}`); return ms; }
@@ -85,9 +86,16 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
         const focus = focusSnapshot(at);
         if (focus.status === "idle") return null;
         const activity = focus.activityId ? state.activities.find((candidate) => candidate.id === focus.activityId) : null;
+        if (writingActivity(activity) && status === "completed") throw new TypeError("Writing sessions must finish through the Writing Workspace checklist and rubric");
         const currentRunMs = focus.status === "running" && focus.lastResumedAt ? Math.max(0, isoMs(at) - isoMs(focus.lastResumedAt)) : 0;
         const elapsedMs = focus.elapsedMs + currentRunMs;
         const durationMinutes = elapsedMs > 0 ? Math.max(1, Math.round(elapsedMs / 60_000)) : null;
+        if (writingActivity(activity)) {
+            const existing=activeWritingSession(state); if(!existing)throw new TypeError("Active Writing Study Session not found");
+            const cancelled=createStudySession({...existing,status:"cancelled",endedAt:at,durationMinutes,note:existing.note,createdAt:existing.createdAt,updatedAt:at});
+            commit({...state,sessions:state.sessions.map(session=>session.id===existing.id?cancelled:session),focus:createFocusState({durationMinutes:focus.durationMinutes})},"focus-cancelled");
+            return cancelled;
+        }
         const session = createStudySession({
             planId: activePlanId(), activityId: activity?.id ?? null, subjectId: activity?.subjectId ?? null, topicId: activity?.topicId ?? null,
             startedAt: focus.startedAt ?? at, endedAt: at, durationMinutes, status, note: note ?? focus.note, createdAt: at, updatedAt: at,
@@ -102,6 +110,20 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
         return session;
     }
 
+    function provisionBbPreset({planName="BB Agente Comercial — pré-edital",activate=true,replaceSample=false,preferences=null}={}) {
+        const at=nowIso(); const preset=createBbAgenteComercialReferencePreset(); const configuration=defaultPlanConfiguration("EXAM_PLAN");
+        configuration.schedule={dailyCapacityMinutes:240,availability:BB_REFERENCE_RHYTHM.map((block,index)=>({id:`bb-rhythm-${index+1}`,weekday:block.weekday,startMinute:block.startMinute,endMinute:block.startMinute+block.durationMinutes})),fixedBlocks:[]};
+        configuration.publicExam={...configuration.publicExam,target:{organization:"Banco do Brasil",role:"Escriturário — Agente Comercial",board:"Fundação Cesgranrio",editalRef:preset.referenceNoticeUrl,dateStatus:"unknown",examDate:null,openings:null,estimatedCutoff:null},stages:[],noticeRevisions:[{id:"bb-reference-2022-001",acceptedAt:at,sourceHash:"bb-reference-2022-001",added:0,archived:0,reactivated:0,unchanged:0,previousRevisionId:null,syllabusFingerprint:null,reference:preset.referenceNotice,publishedAt:"2022-12-23"}],reviewIntervalsDays:[1,7,30],studyPhase:"pre-edital",phaseDefinitions:cloneBbStudyPhaseSuggestions(),bbReferencePreset:preset};
+        const plan=makePlan({name:String(planName).trim()||"BB Agente Comercial — pré-edital",mode:"EXAM_PLAN",status:"active",configuration,createdAt:at,updatedAt:at});
+        const stages=bbReferenceExamStages(plan.id); const normalizedPlan=makePlan({...plan,configuration:{...plan.configuration,publicExam:{...plan.configuration.publicExam,stages}},createdAt:plan.createdAt,updatedAt:at});
+        const subjects=BB_SUBJECT_WEIGHTS.map(([name,weight],order)=>createSubject({planId:plan.id,name,weight,examIncidence:null,order,notes:null,archived:false,createdAt:at,updatedAt:at}));
+        const cycle=createStudyCycleState({subjectIds:subjects.map(subject=>subject.id),cursor:0}); const goals=bbReferenceGoals(plan.id,at);
+        const base=replaceSample?{...state,preferences:preferences?normalizeAppPreferences({...state.preferences,...preferences}):state.preferences,activePlanId:null,focus:createFocusState(),studyCycle:createStudyCycleState(),studyCycles:{},plans:[],subjects:[],topics:[],activities:[],sessions:[],goals:[],materials:[],reviews:[],questions:[],evidence:[],errorEntries:[]}:preferences?{...state,preferences:normalizeAppPreferences({...state.preferences,...preferences})}:state;
+        const next={...base,plans:[...base.plans,normalizedPlan],subjects:[...base.subjects,...subjects],goals:[...base.goals,...goals],studyCycles:{...(base.studyCycles??{}),[plan.id]:cycle},activePlanId:activate?plan.id:base.activePlanId,studyCycle:activate?cycle:base.studyCycle};
+        commit(next,"bb-agente-comercial-preset-provisioned"); return normalizedPlan;
+    }
+
+
     return {
         getState: () => state,
         getSnapshot: () => cloneState(state),
@@ -111,11 +133,13 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
         setPreferences(input) { const preferences=normalizeAppPreferences({...(state.preferences??{}),...(input??{})}); commit({...state,preferences},"preferences-updated"); return preferences; },
         completeOnboarding(input) {
             const cfg=validateStarterWorkspace(input);
+            if(cfg.template==="bb-agente-comercial-pre-edital"){provisionBbPreset({planName:cfg.planName,replaceSample:true,activate:true,preferences:{locale:cfg.locale,onboardingCompleted:true}});return state;}
             if(cfg.useSample){ const active=state.plans.find((plan)=>plan.id===state.activePlanId)??state.plans[0]??null; let next={...state,preferences:normalizeAppPreferences({...state.preferences,locale:cfg.locale,onboardingCompleted:true})}; if(active){const at=nowIso();const updated=makePlan({...active,name:cfg.planName,mode:cfg.mode,createdAt:active.createdAt,updatedAt:at});next={...next,plans:next.plans.map((plan)=>plan.id===active.id?updated:plan)};} commit(next,"onboarding-completed"); return state; }
             const at=nowIso(); const plan=makePlan({name:cfg.planName,mode:cfg.mode,status:"active",createdAt:at,updatedAt:at}); const cycle=createStudyCycleState();
             const next={...createInitialStudyState({now:at}),preferences:normalizeAppPreferences({locale:cfg.locale,onboardingCompleted:true}),activePlanId:plan.id,plans:[plan],subjects:[],topics:[],activities:[],sessions:[],goals:[],materials:[],reviews:[],questions:[],evidence:[],errorEntries:[],studyCycle:cycle,studyCycles:{[plan.id]:cycle},revision:state.revision};
             commit(next,"onboarding-completed"); return state;
         },
+        provisionBbAgenteComercialPreset(options={}) { return provisionBbPreset(options); },
         createPlan(input, { activate = true } = {}) {
             const at=nowIso(); const plan=makePlan({ ...input, mode:input.mode??"GENERAL_SKILL", status:"active", createdAt:at, updatedAt:at });
             const cycle=createStudyCycleState(); const shouldActivate=activate||!state.activePlanId;
@@ -256,6 +280,7 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
             if (current.status === "running") return current;
             const activity = activityId ? state.activities.find((candidate) => candidate.id === activityId && candidate.status === "planned") : selectActivitiesForQueue(state, "today")[0] ?? null;
             if (activityId && !activity) throw new TypeError("Focus activity must reference a planned activity");
+            if (writingActivity(activity)) throw new TypeError("Writing activities must open through the Writing Workspace");
             const configuredMinutes = durationMinutes ?? current.durationMinutes ?? activity?.durationMinutes ?? 25;
             const baseRemaining = current.status === "paused" ? current.remainingMs : Number(configuredMinutes) * 60_000;
             const startedAt = current.status === "paused" ? current.startedAt : at;
@@ -263,11 +288,21 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
             const next = createFocusState({ status: "running", activityId: activity?.id ?? current.activityId, durationMinutes: configuredMinutes, remainingMs: baseRemaining, elapsedMs, startedAt, lastResumedAt: at, endsAt: new Date(isoMs(at) + baseRemaining).toISOString(), note: note ?? current.note });
             commit({ ...state, focus: next }, current.status === "paused" ? "focus-resumed" : "focus-started"); return next;
         },
+        startWritingSession({activityId,prompt,durationMinutes=null}) {
+            const at=nowIso();const activity=state.activities.find(candidate=>candidate.id===activityId&&candidate.planId===activePlanId()&&candidate.status==="planned");if(!activity)throw new TypeError("Writing activity must reference a planned activity in the active plan");if(!writingActivity(activity))throw new TypeError("Writing Workspace requires a WRITING activity");const record=createWritingSessionRecord({prompt,draftText:""});const current=focusSnapshot(at);if(current.status!=="idle"&&current.activityId!==activity.id)throw new TypeError("Finish or cancel the current focus session before opening Writing");const configuredMinutes=durationMinutes??current.durationMinutes??activity.durationMinutes??60;const baseRemaining=current.status==="paused"?current.remainingMs:Number(configuredMinutes)*60_000;const startedAt=current.status==="paused"?current.startedAt:at;const elapsedMs=current.status==="paused"?current.elapsedMs:0;const nextFocus=createFocusState({status:"running",activityId:activity.id,durationMinutes:configuredMinutes,remainingMs:baseRemaining,elapsedMs,startedAt,lastResumedAt:at,endsAt:new Date(isoMs(at)+baseRemaining).toISOString(),note:null});const existing=activeWritingSession(state);let session;if(existing){const old=decodeWritingSessionRecord(existing.note);session=createStudySession({...existing,status:"running",endedAt:null,durationMinutes:null,note:encodeWritingSessionRecord(old??record),createdAt:existing.createdAt,updatedAt:at});}else{session=createStudySession({planId:activePlanId(),activityId:activity.id,subjectId:activity.subjectId,topicId:activity.topicId,startedAt:at,endedAt:null,durationMinutes:null,status:"running",note:encodeWritingSessionRecord(record),createdAt:at,updatedAt:at});}commit({...state,sessions:existing?state.sessions.map(item=>item.id===existing.id?session:item):[...state.sessions,session],focus:nextFocus},existing?"writing-session-resumed":"writing-session-started");return session;
+        },
+        saveWritingDraft({prompt,draftText}) {
+            const at=nowIso();const session=activeWritingSession(state);if(!session)throw new TypeError("No active Writing Study Session");const existing=decodeWritingSessionRecord(session.note);const record=createWritingSessionRecord({prompt:String(prompt??"").trim()||existing?.prompt||"",draftText:String(draftText??""),rubric:existing?.rubric??null,checklist:existing?.checklist});const updated=createStudySession({...session,note:encodeWritingSessionRecord(record),createdAt:session.createdAt,updatedAt:at});commit({...state,sessions:state.sessions.map(item=>item.id===session.id?updated:item)},"writing-draft-saved");return updated;
+        },
+        completeWriting({prompt,draftText,rubric,checklist}) {
+            const at=nowIso();const focus=focusSnapshot(at);if(focus.status==="idle")throw new TypeError("No active Writing focus session");const activity=focus.activityId?state.activities.find(candidate=>candidate.id===focus.activityId):null;if(!writingActivity(activity))throw new TypeError("Writing completion requires a WRITING activity");const session=activeWritingSession(state);if(!session)throw new TypeError("Active Writing Study Session not found");const cleanPrompt=String(prompt??"").trim(),cleanDraft=String(draftText??"");if(!cleanPrompt)throw new TypeError("Writing prompt cannot be blank");if(!cleanDraft.trim())throw new TypeError("Writing draft cannot be blank");const cleanRubric=normalizeWritingRubric(rubric),cleanChecklist=normalizeWritingChecklist(checklist);if(!writingChecklistComplete(cleanChecklist))throw new TypeError("Complete the Writing checklist before finishing");const currentRunMs=focus.status==="running"&&focus.lastResumedAt?Math.max(0,isoMs(at)-isoMs(focus.lastResumedAt)):0;const elapsedMs=focus.elapsedMs+currentRunMs;const durationMinutes=elapsedMs>0?Math.max(1,Math.round(elapsedMs/60_000)):null;const record=createWritingSessionRecord({prompt:cleanPrompt,draftText:cleanDraft,rubric:cleanRubric,checklist:cleanChecklist});const completed=createStudySession({...session,status:"completed",endedAt:at,durationMinutes,note:encodeWritingSessionRecord(record),createdAt:session.createdAt,updatedAt:at});const activities=state.activities.map(candidate=>candidate.id===activity.id?{...candidate,status:"completed",updatedAt:at}:candidate);const evidence=createEvidence({planId:activePlanId(),subjectId:activity.subjectId,topicId:activity.topicId,activityId:activity.id,sessionId:completed.id,kind:"writing-session-completed",observedAt:at,value:{durationMinutes:durationMinutes??0,scorePercent:writingRubricTotal(cleanRubric)},provenance:"session",createdAt:at,updatedAt:at});commit({...state,activities,sessions:state.sessions.map(item=>item.id===session.id?completed:item),evidence:[...state.evidence,evidence],focus:createFocusState({durationMinutes:focus.durationMinutes})},"writing-session-completed");return completed;
+        },
         pauseFocus() {
             const at = nowIso(); const current = focusSnapshot(at); if (current.status !== "running") return current;
             const runMs = current.lastResumedAt ? Math.max(0, isoMs(at) - isoMs(current.lastResumedAt)) : 0;
             const next = createFocusState({ ...current, status: "paused", remainingMs: current.remainingMs, elapsedMs: current.elapsedMs + runMs, lastResumedAt: null, endsAt: null });
-            commit({ ...state, focus: next }, "focus-paused"); return next;
+            const writing=activeWritingSession(state);const sessions=writing?state.sessions.map(item=>item.id===writing.id?createStudySession({...writing,status:"paused",createdAt:writing.createdAt,updatedAt:at}):item):state.sessions;
+            commit({ ...state, sessions, focus: next }, "focus-paused"); return next;
         },
         completeFocus({ note = null } = {}) { return finishFocus("completed", note); },
         cancelFocus({ note = null } = {}) { return finishFocus("cancelled", note); },

@@ -12,6 +12,7 @@ const product_js_1 = require("./product.js");
 const schedule_js_1 = require("./schedule.js");
 const modes_js_1 = require("./modes.js");
 const exam_foundation_js_1 = require("./exam_foundation.js");
+const task_workflows_js_1 = require("./task_workflows.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
 function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms))
     throw new TypeError(`Invalid timestamp: ${value}`); return ms; }
@@ -100,9 +101,19 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         if (focus.status === "idle")
             return null;
         const activity = focus.activityId ? state.activities.find((candidate) => candidate.id === focus.activityId) : null;
+        if ((0, task_workflows_js_1.writingActivity)(activity) && status === "completed")
+            throw new TypeError("Writing sessions must finish through the Writing Workspace checklist and rubric");
         const currentRunMs = focus.status === "running" && focus.lastResumedAt ? Math.max(0, isoMs(at) - isoMs(focus.lastResumedAt)) : 0;
         const elapsedMs = focus.elapsedMs + currentRunMs;
         const durationMinutes = elapsedMs > 0 ? Math.max(1, Math.round(elapsedMs / 60000)) : null;
+        if ((0, task_workflows_js_1.writingActivity)(activity)) {
+            const existing = (0, task_workflows_js_1.activeWritingSession)(state);
+            if (!existing)
+                throw new TypeError("Active Writing Study Session not found");
+            const cancelled = (0, domain_js_1.createStudySession)({ ...existing, status: "cancelled", endedAt: at, durationMinutes, note: existing.note, createdAt: existing.createdAt, updatedAt: at });
+            commit({ ...state, sessions: state.sessions.map(session => session.id === existing.id ? cancelled : session), focus: (0, domain_js_1.createFocusState)({ durationMinutes: focus.durationMinutes }) }, "focus-cancelled");
+            return cancelled;
+        }
         const session = (0, domain_js_1.createStudySession)({
             planId: activePlanId(), activityId: activity?.id ?? null, subjectId: activity?.subjectId ?? null, topicId: activity?.topicId ?? null,
             startedAt: focus.startedAt ?? at, endedAt: at, durationMinutes, status, note: note ?? focus.note, createdAt: at, updatedAt: at,
@@ -116,6 +127,23 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         commit({ ...state, activities, sessions: [...state.sessions, session], evidence, focus: (0, domain_js_1.createFocusState)({ durationMinutes: focus.durationMinutes }) }, `focus-${status}`);
         return session;
     }
+    function provisionBbPreset({ planName = "BB Agente Comercial — pré-edital", activate = true, replaceSample = false, preferences = null } = {}) {
+        const at = nowIso();
+        const preset = (0, task_workflows_js_1.createBbAgenteComercialReferencePreset)();
+        const configuration = (0, modes_js_1.defaultPlanConfiguration)("EXAM_PLAN");
+        configuration.schedule = { dailyCapacityMinutes: 240, availability: task_workflows_js_1.BB_REFERENCE_RHYTHM.map((block, index) => ({ id: `bb-rhythm-${index + 1}`, weekday: block.weekday, startMinute: block.startMinute, endMinute: block.startMinute + block.durationMinutes })), fixedBlocks: [] };
+        configuration.publicExam = { ...configuration.publicExam, target: { organization: "Banco do Brasil", role: "Escriturário — Agente Comercial", board: "Fundação Cesgranrio", editalRef: preset.referenceNoticeUrl, dateStatus: "unknown", examDate: null, openings: null, estimatedCutoff: null }, stages: [], noticeRevisions: [{ id: "bb-reference-2022-001", acceptedAt: at, sourceHash: "bb-reference-2022-001", added: 0, archived: 0, reactivated: 0, unchanged: 0, previousRevisionId: null, syllabusFingerprint: null, reference: preset.referenceNotice, publishedAt: "2022-12-23" }], reviewIntervalsDays: [1, 7, 30], studyPhase: "pre-edital", phaseDefinitions: (0, exam_foundation_js_1.cloneBbStudyPhaseSuggestions)(), bbReferencePreset: preset };
+        const plan = (0, domain_js_1.createPlan)({ name: String(planName).trim() || "BB Agente Comercial — pré-edital", mode: "EXAM_PLAN", status: "active", configuration, createdAt: at, updatedAt: at });
+        const stages = (0, task_workflows_js_1.bbReferenceExamStages)(plan.id);
+        const normalizedPlan = (0, domain_js_1.createPlan)({ ...plan, configuration: { ...plan.configuration, publicExam: { ...plan.configuration.publicExam, stages } }, createdAt: plan.createdAt, updatedAt: at });
+        const subjects = task_workflows_js_1.BB_SUBJECT_WEIGHTS.map(([name, weight], order) => (0, domain_js_1.createSubject)({ planId: plan.id, name, weight, examIncidence: null, order, notes: null, archived: false, createdAt: at, updatedAt: at }));
+        const cycle = (0, domain_js_1.createStudyCycleState)({ subjectIds: subjects.map(subject => subject.id), cursor: 0 });
+        const goals = (0, task_workflows_js_1.bbReferenceGoals)(plan.id, at);
+        const base = replaceSample ? { ...state, preferences: preferences ? (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) : state.preferences, activePlanId: null, focus: (0, domain_js_1.createFocusState)(), studyCycle: (0, domain_js_1.createStudyCycleState)(), studyCycles: {}, plans: [], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], reviews: [], questions: [], evidence: [], errorEntries: [] } : preferences ? { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) } : state;
+        const next = { ...base, plans: [...base.plans, normalizedPlan], subjects: [...base.subjects, ...subjects], goals: [...base.goals, ...goals], studyCycles: { ...(base.studyCycles ?? {}), [plan.id]: cycle }, activePlanId: activate ? plan.id : base.activePlanId, studyCycle: activate ? cycle : base.studyCycle };
+        commit(next, "bb-agente-comercial-preset-provisioned");
+        return normalizedPlan;
+    }
     return {
         getState: () => state,
         getSnapshot: () => cloneState(state),
@@ -126,6 +154,10 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         setPreferences(input) { const preferences = (0, product_js_1.normalizeAppPreferences)({ ...(state.preferences ?? {}), ...(input ?? {}) }); commit({ ...state, preferences }, "preferences-updated"); return preferences; },
         completeOnboarding(input) {
             const cfg = (0, product_js_1.validateStarterWorkspace)(input);
+            if (cfg.template === "bb-agente-comercial-pre-edital") {
+                provisionBbPreset({ planName: cfg.planName, replaceSample: true, activate: true, preferences: { locale: cfg.locale, onboardingCompleted: true } });
+                return state;
+            }
             if (cfg.useSample) {
                 const active = state.plans.find((plan) => plan.id === state.activePlanId) ?? state.plans[0] ?? null;
                 let next = { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, locale: cfg.locale, onboardingCompleted: true }) };
@@ -144,6 +176,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit(next, "onboarding-completed");
             return state;
         },
+        provisionBbAgenteComercialPreset(options = {}) { return provisionBbPreset(options); },
         createPlan(input, { activate = true } = {}) {
             const at = nowIso();
             const plan = (0, domain_js_1.createPlan)({ ...input, mode: input.mode ?? "GENERAL_SKILL", status: "active", createdAt: at, updatedAt: at });
@@ -607,6 +640,8 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const activity = activityId ? state.activities.find((candidate) => candidate.id === activityId && candidate.status === "planned") : (0, domain_js_1.selectActivitiesForQueue)(state, "today")[0] ?? null;
             if (activityId && !activity)
                 throw new TypeError("Focus activity must reference a planned activity");
+            if ((0, task_workflows_js_1.writingActivity)(activity))
+                throw new TypeError("Writing activities must open through the Writing Workspace");
             const configuredMinutes = durationMinutes ?? current.durationMinutes ?? activity?.durationMinutes ?? 25;
             const baseRemaining = current.status === "paused" ? current.remainingMs : Number(configuredMinutes) * 60000;
             const startedAt = current.status === "paused" ? current.startedAt : at;
@@ -615,6 +650,74 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, focus: next }, current.status === "paused" ? "focus-resumed" : "focus-started");
             return next;
         },
+        startWritingSession({ activityId, prompt, durationMinutes = null }) {
+            const at = nowIso();
+            const activity = state.activities.find(candidate => candidate.id === activityId && candidate.planId === activePlanId() && candidate.status === "planned");
+            if (!activity)
+                throw new TypeError("Writing activity must reference a planned activity in the active plan");
+            if (!(0, task_workflows_js_1.writingActivity)(activity))
+                throw new TypeError("Writing Workspace requires a WRITING activity");
+            const record = (0, task_workflows_js_1.createWritingSessionRecord)({ prompt, draftText: "" });
+            const current = focusSnapshot(at);
+            if (current.status !== "idle" && current.activityId !== activity.id)
+                throw new TypeError("Finish or cancel the current focus session before opening Writing");
+            const configuredMinutes = durationMinutes ?? current.durationMinutes ?? activity.durationMinutes ?? 60;
+            const baseRemaining = current.status === "paused" ? current.remainingMs : Number(configuredMinutes) * 60000;
+            const startedAt = current.status === "paused" ? current.startedAt : at;
+            const elapsedMs = current.status === "paused" ? current.elapsedMs : 0;
+            const nextFocus = (0, domain_js_1.createFocusState)({ status: "running", activityId: activity.id, durationMinutes: configuredMinutes, remainingMs: baseRemaining, elapsedMs, startedAt, lastResumedAt: at, endsAt: new Date(isoMs(at) + baseRemaining).toISOString(), note: null });
+            const existing = (0, task_workflows_js_1.activeWritingSession)(state);
+            let session;
+            if (existing) {
+                const old = (0, task_workflows_js_1.decodeWritingSessionRecord)(existing.note);
+                session = (0, domain_js_1.createStudySession)({ ...existing, status: "running", endedAt: null, durationMinutes: null, note: (0, task_workflows_js_1.encodeWritingSessionRecord)(old ?? record), createdAt: existing.createdAt, updatedAt: at });
+            }
+            else {
+                session = (0, domain_js_1.createStudySession)({ planId: activePlanId(), activityId: activity.id, subjectId: activity.subjectId, topicId: activity.topicId, startedAt: at, endedAt: null, durationMinutes: null, status: "running", note: (0, task_workflows_js_1.encodeWritingSessionRecord)(record), createdAt: at, updatedAt: at });
+            }
+            commit({ ...state, sessions: existing ? state.sessions.map(item => item.id === existing.id ? session : item) : [...state.sessions, session], focus: nextFocus }, existing ? "writing-session-resumed" : "writing-session-started");
+            return session;
+        },
+        saveWritingDraft({ prompt, draftText }) {
+            const at = nowIso();
+            const session = (0, task_workflows_js_1.activeWritingSession)(state);
+            if (!session)
+                throw new TypeError("No active Writing Study Session");
+            const existing = (0, task_workflows_js_1.decodeWritingSessionRecord)(session.note);
+            const record = (0, task_workflows_js_1.createWritingSessionRecord)({ prompt: String(prompt ?? "").trim() || existing?.prompt || "", draftText: String(draftText ?? ""), rubric: existing?.rubric ?? null, checklist: existing?.checklist });
+            const updated = (0, domain_js_1.createStudySession)({ ...session, note: (0, task_workflows_js_1.encodeWritingSessionRecord)(record), createdAt: session.createdAt, updatedAt: at });
+            commit({ ...state, sessions: state.sessions.map(item => item.id === session.id ? updated : item) }, "writing-draft-saved");
+            return updated;
+        },
+        completeWriting({ prompt, draftText, rubric, checklist }) {
+            const at = nowIso();
+            const focus = focusSnapshot(at);
+            if (focus.status === "idle")
+                throw new TypeError("No active Writing focus session");
+            const activity = focus.activityId ? state.activities.find(candidate => candidate.id === focus.activityId) : null;
+            if (!(0, task_workflows_js_1.writingActivity)(activity))
+                throw new TypeError("Writing completion requires a WRITING activity");
+            const session = (0, task_workflows_js_1.activeWritingSession)(state);
+            if (!session)
+                throw new TypeError("Active Writing Study Session not found");
+            const cleanPrompt = String(prompt ?? "").trim(), cleanDraft = String(draftText ?? "");
+            if (!cleanPrompt)
+                throw new TypeError("Writing prompt cannot be blank");
+            if (!cleanDraft.trim())
+                throw new TypeError("Writing draft cannot be blank");
+            const cleanRubric = (0, task_workflows_js_1.normalizeWritingRubric)(rubric), cleanChecklist = (0, task_workflows_js_1.normalizeWritingChecklist)(checklist);
+            if (!(0, task_workflows_js_1.writingChecklistComplete)(cleanChecklist))
+                throw new TypeError("Complete the Writing checklist before finishing");
+            const currentRunMs = focus.status === "running" && focus.lastResumedAt ? Math.max(0, isoMs(at) - isoMs(focus.lastResumedAt)) : 0;
+            const elapsedMs = focus.elapsedMs + currentRunMs;
+            const durationMinutes = elapsedMs > 0 ? Math.max(1, Math.round(elapsedMs / 60000)) : null;
+            const record = (0, task_workflows_js_1.createWritingSessionRecord)({ prompt: cleanPrompt, draftText: cleanDraft, rubric: cleanRubric, checklist: cleanChecklist });
+            const completed = (0, domain_js_1.createStudySession)({ ...session, status: "completed", endedAt: at, durationMinutes, note: (0, task_workflows_js_1.encodeWritingSessionRecord)(record), createdAt: session.createdAt, updatedAt: at });
+            const activities = state.activities.map(candidate => candidate.id === activity.id ? { ...candidate, status: "completed", updatedAt: at } : candidate);
+            const evidence = (0, domain_js_1.createEvidence)({ planId: activePlanId(), subjectId: activity.subjectId, topicId: activity.topicId, activityId: activity.id, sessionId: completed.id, kind: "writing-session-completed", observedAt: at, value: { durationMinutes: durationMinutes ?? 0, scorePercent: (0, task_workflows_js_1.writingRubricTotal)(cleanRubric) }, provenance: "session", createdAt: at, updatedAt: at });
+            commit({ ...state, activities, sessions: state.sessions.map(item => item.id === session.id ? completed : item), evidence: [...state.evidence, evidence], focus: (0, domain_js_1.createFocusState)({ durationMinutes: focus.durationMinutes }) }, "writing-session-completed");
+            return completed;
+        },
         pauseFocus() {
             const at = nowIso();
             const current = focusSnapshot(at);
@@ -622,7 +725,9 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 return current;
             const runMs = current.lastResumedAt ? Math.max(0, isoMs(at) - isoMs(current.lastResumedAt)) : 0;
             const next = (0, domain_js_1.createFocusState)({ ...current, status: "paused", remainingMs: current.remainingMs, elapsedMs: current.elapsedMs + runMs, lastResumedAt: null, endsAt: null });
-            commit({ ...state, focus: next }, "focus-paused");
+            const writing = (0, task_workflows_js_1.activeWritingSession)(state);
+            const sessions = writing ? state.sessions.map(item => item.id === writing.id ? (0, domain_js_1.createStudySession)({ ...writing, status: "paused", createdAt: writing.createdAt, updatedAt: at }) : item) : state.sessions;
+            commit({ ...state, sessions, focus: next }, "focus-paused");
             return next;
         },
         completeFocus({ note = null } = {}) { return finishFocus("completed", note); },

@@ -259,6 +259,18 @@ def validate_parity_exam_foundation()->list[str]:
     _require(e,(WEB/'tests/test_pc12_exam_foundation.py').is_file(),'PC12 regression suite missing tests/test_pc12_exam_foundation.py')
     return e
 
+def validate_parity_task_workflows()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); workflows=_text(WEB/'src/task_workflows.ts',e); state=_text(WEB/'src/state.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC13_TASK_WORKFLOWS_PARITY.md',e)
+    for token in ('StudyActivityType','BbAgenteComercialReferencePreset','WritingRubric','WritingChecklist','PracticeRouteContext'):_require(e,token in types,f'PC13 typed workflow contract missing {token}')
+    for token in ('BB_AGENTE_COMERCIAL_PRE_EDITAL','BB_REFERENCE_SCHEDULED_MINUTES = 1140','BB_SUBJECT_WEIGHTS','routeActivityDeepLink','WRITING_PREFIX','writingChecklistComplete','deriveWritingWeeklyProgress'):_require(e,token in workflows,f'PC13 workflow logic missing {token}')
+    for token in ('provisionBbAgenteComercialPreset','startWritingSession','saveWritingDraft','completeWriting','Writing sessions must finish through the Writing Workspace'):_require(e,token in state,f'PC13 store integration missing {token}')
+    for token in ('BB Agente Comercial — pre-edital','Writing Workspace','Finish Writing','Create BB Agente Comercial preset plan','Open {title(a.activityType)}'):_require(e,token in ui,f'PC13 React workflow missing {token}')
+    _require(e,'runtime/task_workflows.js' in sw,'PC13 task workflow runtime must be cached by the offline app shell')
+    _require(e,'PC13 | BB Agente Comercial preset + Writing Workspace + activity deep links (OV10 + OV11 + OV13) — delivered' in roadmap,'PC13 roadmap delivery marker missing')
+    for token in ('OV10','OV11','OV13','1,140 scheduled minutes','never by title text','does **not** claim'):_require(e,token in doc,f'PC13 documentation missing {token}')
+    _require(e,(WEB/'tests/test_pc13_task_workflows.py').is_file(),'PC13 regression suite missing tests/test_pc13_task_workflows.py')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -270,7 +282,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach,validate_parity_product_release,validate_parity_exam_foundation)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach,validate_parity_product_release,validate_parity_exam_foundation,validate_parity_task_workflows)
     out=[]
     for fn in groups:
         for item in fn():
@@ -278,8 +290,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--parity-product-release',action='store_true'); parser.add_argument('--parity-exam-foundation',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_parity_product_release() if args.parity_product_release else validate_parity_exam_foundation() if args.parity_exam_foundation else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--parity-product-release',action='store_true'); parser.add_argument('--parity-exam-foundation',action='store_true'); parser.add_argument('--parity-task-workflows',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_parity_product_release() if args.parity_product_release else validate_parity_exam_foundation() if args.parity_exam_foundation else validate_parity_task_workflows() if args.parity_task_workflows else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

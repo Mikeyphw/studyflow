@@ -786,3 +786,5 @@ legend {
 .search-results li button:hover,.search-results li button:focus-visible{border-color:currentColor}
 .search-results span{font-size:.82rem;opacity:.75}
 .check-row{display:flex!important;align-items:center;gap:.55rem}.check-row input{width:auto!important}
+
+.writing-editor { min-height: 18rem; resize: vertical; }

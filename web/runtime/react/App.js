@@ -46,6 +46,7 @@ const pwa_1 = require("../pwa");
 const hardening_1 = require("../hardening");
 const release_1 = require("../release");
 const product_1 = require("../product");
+const task_workflows_1 = require("../task_workflows");
 const title = (v) => v.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
@@ -77,6 +78,7 @@ function App({ store, persistence }) {
     const [portable, setPortable] = React.useState(null);
     const [portableStatus, setPortableStatus] = React.useState("No package selected.");
     const [questionId, setQuestionId] = React.useState(state.questions[0]?.id ?? null);
+    const [practiceContext, setPracticeContext] = React.useState(null);
     const [toast, setToast] = React.useState(null);
     const [searchOpen, setSearchOpen] = React.useState(false);
     const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -111,10 +113,12 @@ function App({ store, persistence }) {
     const openSearchResult = (item) => { if (item.planId !== state.activePlanId && !run(() => store.switchPlan(item.planId), "Plan switched for search result."))
         return; if (item.type === "question") {
         setQuestionId(item.id);
+        setPracticeContext(null);
         setPracticeTab("questions");
         location.hash = "#practice";
     }
     else if (item.type === "error") {
+        setPracticeContext(null);
         setPracticeTab("errors");
         location.hash = "#practice";
     }
@@ -130,6 +134,19 @@ function App({ store, persistence }) {
         setPlanTab("overview");
         location.hash = "#plan";
     } setSearchOpen(false); };
+    const launchActivity = (activityId) => { const route = run(() => (0, task_workflows_1.routeActivityDeepLink)(state, activityId)); if (!route)
+        return; setPracticeContext(route); const activity = state.activities.find(item => item.id === activityId); if (route.screen === "practice") {
+        setPracticeTab(route.practiceTab);
+        location.hash = "#practice";
+        return;
+    } if (route.focusMode === "writing") {
+        if (!run(() => store.startWritingSession({ activityId, prompt: activity.title, durationMinutes: activity.durationMinutes }), "Writing Workspace opened."))
+            return;
+    }
+    else if (route.focusMode === "focus") {
+        if (!run(() => store.startFocus({ activityId, durationMinutes: activity.durationMinutes }), "Focus started."))
+            return;
+    } location.hash = "#today"; };
     return React.createElement(React.Fragment, null,
         React.createElement("a", { className: "skip-link", href: "#main-content" }, "Skip to content"),
         React.createElement("header", { className: "app-header" },
@@ -146,11 +163,11 @@ function App({ store, persistence }) {
                     " \u00B7 ",
                     persistence.backend))),
         React.createElement("main", { id: "main-content", ref: mainRef, tabIndex: -1, "aria-labelledby": "screen-title", className: "app-main" },
-            screen === "today" && React.createElement(Today, { state: state, store: store, focus: focus, run: run }),
+            screen === "today" && React.createElement(Today, { state: state, store: store, focus: focus, run: run, onLaunch: launchActivity }),
             " ",
             screen === "plan" && React.createElement(Plan, { state: state, store: store, tab: planTab, setTab: setPlanTab, preview: preview, setPreview: setPreview, persistence: persistence, run: run }),
             " ",
-            screen === "practice" && React.createElement(Practice, { state: state, store: store, tab: practiceTab, setTab: setPracticeTab, questionId: questionId, setQuestionId: setQuestionId, run: run }),
+            screen === "practice" && React.createElement(Practice, { state: state, store: store, tab: practiceTab, setTab: setPracticeTab, questionId: questionId, setQuestionId: setQuestionId, context: practiceContext, run: run }),
             " ",
             screen === "progress" && React.createElement(Progress, { state: state, store: store, tab: progressTab, setTab: setProgressTab, persistence: persistence, portable: portable, setPortable: setPortable, portableStatus: portableStatus, setPortableStatus: setPortableStatus, run: run })),
         React.createElement("nav", { className: "bottom-nav", "aria-label": "Main navigation" }, ["today", "plan", "practice", "progress"].map(id => React.createElement("a", { key: id, href: `#${id}`, "aria-current": screen === id ? "page" : undefined },
@@ -219,7 +236,10 @@ function SettingsDialog({ state, store, persistence, onClose, run }) { const pla
                     React.createElement("li", null, "Portable backup: v2 includes attachment bytes and SHA-256 integrity")),
                 React.createElement("p", { className: "muted" }, (0, product_1.uiText)(state.preferences.locale, "encryption"))),
             React.createElement(StorageHealthCard, { state: state, persistence: persistence })))); }
-function OnboardingWizard({ state, store, run }) { const [locale, setLocale] = React.useState(state.preferences.locale); const [mode, setMode] = React.useState(state.plans.find(p => p.id === state.activePlanId)?.mode ?? "EXAM_PLAN"); const [name, setName] = React.useState(state.plans.find(p => p.id === state.activePlanId)?.name ?? "My Study Plan"); const [sample, setSample] = React.useState(true); return React.createElement("div", { className: "modal-backdrop onboarding-backdrop", role: "presentation" },
+function OnboardingWizard({ state, store, run }) { const [locale, setLocale] = React.useState(state.preferences.locale); const [mode, setMode] = React.useState(state.plans.find(p => p.id === state.activePlanId)?.mode ?? "EXAM_PLAN"); const [name, setName] = React.useState(state.plans.find(p => p.id === state.activePlanId)?.name ?? "My Study Plan"); const [template, setTemplate] = React.useState("sample"); const bb = template === "bb-agente-comercial-pre-edital"; const choose = (value) => { const next = value; setTemplate(next); if (next === "bb-agente-comercial-pre-edital") {
+    setMode("EXAM_PLAN");
+    setName(locale === "pt-BR" ? "BB Agente Comercial — pré-edital" : "BB Agente Comercial — pre-edital");
+} }; return React.createElement("div", { className: "modal-backdrop onboarding-backdrop", role: "presentation" },
     React.createElement("section", { className: "modal-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "onboarding-title" },
         React.createElement("h2", { id: "onboarding-title" }, (0, product_1.uiText)(locale, "onboarding")),
         React.createElement("p", { className: "muted" }, "Choose a local workspace. Nothing is sent to a server and you can change these settings later."),
@@ -229,18 +249,26 @@ function OnboardingWizard({ state, store, run }) { const [locale, setLocale] = R
                 React.createElement("option", { value: "en" }, "English"),
                 React.createElement("option", { value: "pt-BR" }, "Portugu\u00EAs (Brasil)"))),
         React.createElement("label", null,
+            "Starter template",
+            React.createElement("select", { "aria-label": "Onboarding starter template", value: template, onChange: (e) => choose(e.target.value) },
+                React.createElement("option", { value: "sample" }, "Current local sample"),
+                React.createElement("option", { value: "blank" }, "Blank workspace"),
+                React.createElement("option", { value: "bb-agente-comercial-pre-edital" }, "BB Agente Comercial \u2014 pre-edital"))),
+        bb && React.createElement("article", { className: "mode-banner" },
+            React.createElement("strong", null, task_workflows_1.BB_AGENTE_COMERCIAL_PRE_EDITAL),
+            React.createElement("span", { className: "muted" }, "Banco do Brasil \u00B7 Escritur\u00E1rio \u2014 Agente Comercial \u00B7 Funda\u00E7\u00E3o Cesgranrio \u00B7 Sele\u00E7\u00E3o Externa 2022/001 reference only."),
+            React.createElement("span", { className: "muted" }, "8 objective subjects \u00B7 100 reference points \u00B7 70 objective questions \u00B7 separate essay threshold 70/100 \u00B7 19 h/week \u00B7 1/7/30 reviews \u00B7 80% weekly accuracy \u00B7 1 writing session/week."),
+            React.createElement("span", { className: "muted" }, "No 2026 edital or exam date is fabricated.")),
+        React.createElement("label", null,
             "Study mode",
-            React.createElement("select", { "aria-label": "Onboarding study mode", value: mode, onChange: (e) => setMode(e.target.value) }, modes.map(([id, label]) => React.createElement("option", { key: id, value: id }, label)))),
+            React.createElement("select", { "aria-label": "Onboarding study mode", disabled: bb, value: mode, onChange: (e) => setMode(e.target.value) }, modes.map(([id, label]) => React.createElement("option", { key: id, value: id }, label)))),
         React.createElement("label", null,
             "Plan name",
             React.createElement("input", { "aria-label": "Onboarding plan name", value: name, onChange: (e) => setName(e.target.value), maxLength: 120 })),
-        React.createElement("label", { className: "check-row" },
-            React.createElement("input", { "aria-label": "Keep sample content", type: "checkbox", checked: sample, onChange: (e) => setSample(e.target.checked) }),
-            "Keep the local sample content as a starting point"),
         React.createElement("div", { className: "button-row" },
-            React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.completeOnboarding({ locale, mode, planName: name, useSample: sample }), "Local workspace ready.") }, (0, product_1.uiText)(locale, "start")),
+            React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.completeOnboarding({ locale, mode, planName: name, useSample: template === "sample", template }), bb ? "BB Agente Comercial reference workspace created." : "Local workspace ready.") }, (0, product_1.uiText)(locale, "start")),
             React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setPreferences({ locale, onboardingCompleted: true }), "Sample workspace kept.") }, (0, product_1.uiText)(locale, "skip"))))); }
-function Today({ state, store, focus, run }) { const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState(focus.note ?? ""); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
+function Today({ state, store, focus, run, onLaunch }) { const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState(focus.note ?? ""); const [activityType, setActivityType] = React.useState("THEORY"); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); const activeActivity = focus.activityId ? state.activities.find(a => a.id === focus.activityId) ?? null : null; const writing = (0, task_workflows_1.writingActivity)(activeActivity); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
     React.createElement("article", { className: "hero-card" },
         React.createElement("p", { className: "eyebrow" }, "Next up"),
         React.createElement("h2", null, rec?.activity.title ?? "No queued activity"),
@@ -250,21 +278,25 @@ function Today({ state, store, focus, run }) { const rec = (0, domain_1.recommen
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Focus"),
             React.createElement("div", { className: "focus-clock", "aria-label": `Focus time remaining ${clock(focus.remainingMs)}` }, clock(focus.remainingMs)),
-            React.createElement("textarea", { "aria-label": "Focus session note", value: note, onChange: (e) => setNote(e.target.value), placeholder: "Session note" }),
+            !writing && React.createElement("textarea", { "aria-label": "Focus session note", value: note, onChange: (e) => setNote(e.target.value), placeholder: "Session note" }),
+            writing && React.createElement("p", { className: "muted" }, "This is a WRITING session. Draft, rubric and mandatory completion checklist are owned by the Writing Workspace below; the generic Finish action is intentionally unavailable."),
             React.createElement("div", { className: "button-row" },
-                focus.status !== "running" && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.startFocus({ note }), "Focus started.") }, focus.status === "paused" ? "Resume" : "Start"),
+                focus.status !== "running" && !writing && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.startFocus({ note }), "Focus started.") }, focus.status === "paused" ? "Resume" : "Start"),
+                focus.status !== "running" && writing && activeActivity && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.startWritingSession({ activityId: activeActivity.id, prompt: (0, task_workflows_1.decodeWritingSessionRecord)((0, task_workflows_1.activeWritingSession)(state)?.note)?.prompt ?? activeActivity.title, durationMinutes: activeActivity.durationMinutes }), "Writing resumed.") }, "Resume Writing"),
                 focus.status === "running" && React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.pauseFocus(), "Focus paused.") }, "Pause"),
                 focus.status !== "idle" && React.createElement(React.Fragment, null,
-                    React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.completeFocus({ note }), "Focus completed and evidenced.") }, "Complete"),
+                    !writing && React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.completeFocus({ note }), "Focus completed and evidenced.") }, "Complete"),
                     React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.cancelFocus({ note }), "Focus cancelled.") }, "Cancel")))),
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Quick Add"),
             React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (name.trim()) {
-                    run(() => store.addActivity({ title: name.trim(), kind: "study", durationMinutes: 25 }), "Activity added locally.");
+                    run(() => store.addActivity({ title: name.trim(), kind: (0, task_workflows_1.activityKindForType)(activityType), activityType, durationMinutes: activityType === "WRITING" ? 60 : 25 }), "Activity added locally.");
                     setName("");
                 } } },
                 React.createElement("input", { "aria-label": "Activity title", value: name, onChange: (e) => setName(e.target.value), placeholder: "Activity title", required: true }),
-                React.createElement("button", { className: "button", type: "submit" }, "Add 25 min activity")))),
+                React.createElement("select", { "aria-label": "Study activity type", value: activityType, onChange: (e) => setActivityType(e.target.value) }, ["THEORY", "VIDEO", "READING", "CUSTOM", "QUESTIONS", "FLASHCARDS", "REVIEW", "MOCK_EXAM", "WRITING"].map(type => React.createElement("option", { key: type, value: type }, title(type)))),
+                React.createElement("button", { className: "button", type: "submit" }, "Add activity")))),
+    writing && React.createElement(WritingWorkspace, { state: state, store: store, run: run }),
     React.createElement("article", { className: "card" },
         React.createElement("h2", null, "Today queue"),
         React.createElement("ul", { className: "activity-list" },
@@ -273,9 +305,65 @@ function Today({ state, store, focus, run }) { const rec = (0, domain_1.recommen
                 React.createElement("span", null,
                     a.durationMinutes,
                     " min \u00B7 ",
-                    title(a.kind)),
-                React.createElement("button", { type: "button", className: "button button-quiet", onClick: () => run(() => store.startFocus({ activityId: a.id, durationMinutes: a.durationMinutes }), "Focus started.") }, "Focus"))),
+                    title(a.activityType)),
+                React.createElement("button", { type: "button", className: "button button-quiet", onClick: () => onLaunch(a.id) },
+                    "Open ",
+                    title(a.activityType)))),
             !planned.length && React.createElement("li", null, "No planned activities remain today.")))); }
+function WritingWorkspace({ state, store, run }) { const session = (0, task_workflows_1.activeWritingSession)(state); const record = (0, task_workflows_1.decodeWritingSessionRecord)(session?.note); const progress = (0, task_workflows_1.deriveWritingWeeklyProgress)(state, new Date()); const history = state.sessions.filter(item => item.planId === state.activePlanId && item.status === "completed" && (0, task_workflows_1.decodeWritingSessionRecord)(item.note) != null).sort((a, b) => String(b.endedAt ?? "").localeCompare(String(a.endedAt ?? ""))); const [prompt, setPrompt] = React.useState(record?.prompt ?? ""); const [draft, setDraft] = React.useState(record?.draftText ?? ""); const [rubric, setRubric] = React.useState(record?.rubric ?? { themeAndTask: 0, textType: 0, cohesion: 0, argumentation: 0, standardLanguage: 0 }); const [checklist, setChecklist] = React.useState(record?.checklist ?? { taskReviewed: false, structureReviewed: false, cohesionReviewed: false, languageReviewed: false }); React.useEffect(() => { const next = (0, task_workflows_1.decodeWritingSessionRecord)((0, task_workflows_1.activeWritingSession)(state)?.note); if (next) {
+    setPrompt(next.prompt);
+    setDraft(next.draftText);
+    setRubric(next.rubric ?? { themeAndTask: 0, textType: 0, cohesion: 0, argumentation: 0, standardLanguage: 0 });
+    setChecklist(next.checklist);
+} }, [session?.id, session?.updatedAt]); const score = (0, task_workflows_1.writingRubricTotal)(rubric); const dimension = (key, label) => React.createElement("label", null,
+    label,
+    React.createElement("input", { "aria-label": `Writing rubric ${label}`, type: "number", min: "0", max: "20", value: rubric[key], onChange: (e) => setRubric({ ...rubric, [key]: Math.max(0, Math.min(20, Number(e.target.value) || 0)) }) })); const check = (key, label) => React.createElement("label", { className: "check-row" },
+    React.createElement("input", { "aria-label": `Writing checklist ${label}`, type: "checkbox", checked: checklist[key], onChange: (e) => setChecklist({ ...checklist, [key]: e.target.checked }) }),
+    label); return React.createElement("article", { className: "card wide-card", id: "writing-workspace" },
+    React.createElement("div", { className: "card-heading-row" },
+        React.createElement("div", null,
+            React.createElement("h2", null, "Writing Workspace"),
+            React.createElement("p", { className: "muted" }, "Durable draft lives in the canonical StudySession note payload. Five 0\u201320 dimensions total 0\u2013100; all checklist items are mandatory before Finish.")),
+        React.createElement("strong", null, progress.target == null ? `${progress.completed} completed this week` : `${progress.completed}/${progress.target} weekly writing sessions`)),
+    session && React.createElement(React.Fragment, null,
+        React.createElement("label", null,
+            "Theme / task",
+            React.createElement("textarea", { "aria-label": "Writing prompt", value: prompt, onChange: (e) => setPrompt(e.target.value), placeholder: "Writing theme / task" })),
+        React.createElement("label", null,
+            "Draft",
+            React.createElement("textarea", { className: "writing-editor", "aria-label": "Writing draft", value: draft, onChange: (e) => setDraft(e.target.value), placeholder: "Write the full draft here" })),
+        React.createElement("div", { className: "content-grid two-column" },
+            React.createElement("div", { className: "stack-form" },
+                React.createElement("h3", null,
+                    "Rubric \u00B7 ",
+                    score,
+                    "/100"),
+                dimension("themeAndTask", "Theme and task"),
+                dimension("textType", "Text type"),
+                dimension("cohesion", "Cohesion"),
+                dimension("argumentation", "Argumentation"),
+                dimension("standardLanguage", "Standard language")),
+            React.createElement("div", { className: "stack-form" },
+                React.createElement("h3", null, "Completion checklist"),
+                check("taskReviewed", "Task reviewed"),
+                check("structureReviewed", "Structure reviewed"),
+                check("cohesionReviewed", "Cohesion reviewed"),
+                check("languageReviewed", "Standard language reviewed"))),
+        React.createElement("div", { className: "button-row" },
+            React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.saveWritingDraft({ prompt, draftText: draft }), "Writing draft saved in StudySession.") }, "Save draft"),
+            React.createElement("button", { className: "button button-primary", type: "button", disabled: !prompt.trim() || !draft.trim() || !(0, task_workflows_1.writingChecklistComplete)(checklist), onClick: () => run(() => store.completeWriting({ prompt, draftText: draft, rubric, checklist }), "Writing session completed and evidenced.") }, "Finish Writing"))),
+    React.createElement("details", null,
+        React.createElement("summary", null,
+            "Writing history \u00B7 ",
+            history.length),
+        React.createElement("ul", { className: "activity-list" },
+            history.map(item => { const r = (0, task_workflows_1.decodeWritingSessionRecord)(item.note); return React.createElement("li", { key: item.id },
+                React.createElement("strong", null, r.prompt),
+                React.createElement("span", null,
+                    item.endedAt?.slice(0, 10) ?? "",
+                    " \u00B7 ",
+                    r.rubric ? `${(0, task_workflows_1.writingRubricTotal)(r.rubric)}/100` : "No rubric")); }),
+            !history.length && React.createElement("li", null, "No completed writing sessions yet.")))); }
 function ModeToday({ state }) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan)
     return null; if (plan.mode === "EXAM_PLAN") {
     const g = (0, modes_1.deriveFinalStretchGuidance)(plan);
@@ -729,8 +817,10 @@ function PublicExamWorkspace({ state, store, run }) {
                     React.createElement("option", { value: "final-stretch" }, "Final stretch"))),
             React.createElement("div", null,
                 React.createElement("strong", null, "Local starter templates"),
-                React.createElement("div", { className: "button-row" }, Object.values(modes_1.PUBLIC_EXAM_STARTER_TEMPLATES).map(t => React.createElement("button", { key: t.id, className: "button button-quiet", type: "button", onClick: () => run(() => store.applyPublicExamStarterTemplate(t.id), `${t.label} starter applied.`) }, t.label))),
-                React.createElement("span", { className: "muted" }, "Templates never invent organization, banca, edital or exam date."))),
+                React.createElement("div", { className: "button-row" },
+                    Object.values(modes_1.PUBLIC_EXAM_STARTER_TEMPLATES).map(t => React.createElement("button", { key: t.id, className: "button button-quiet", type: "button", onClick: () => run(() => store.applyPublicExamStarterTemplate(t.id), `${t.label} starter applied.`) }, t.label)),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.provisionBbAgenteComercialPreset({ activate: true }), "New BB Agente Comercial reference plan created and activated.") }, "Create BB Agente Comercial preset plan")),
+                React.createElement("span", { className: "muted" }, "Templates never invent organization, banca, edital or exam date. The BB preset uses Sele\u00E7\u00E3o Externa 2022/001 only as an explicit historical reference."))),
         React.createElement("article", { className: "card", id: "pre-edital-cockpit" },
             React.createElement("h2", null, "Truthful pre-edital cockpit"),
             !cockpit ? React.createElement("p", { className: "muted" }, "Available for Concurso plans.") : !cockpit.preEdital ? React.createElement("p", null,
@@ -811,7 +901,28 @@ function PublicExamWorkspace({ state, store, run }) {
             React.createElement("ul", null, c.stages.map(s => React.createElement("li", { key: s.id },
                 s.name,
                 " \u00B7 ",
-                s.status)))),
+                s.status,
+                s.type !== "other" ? ` · ${title(s.type)}` : "",
+                s.weight != null ? ` · ${s.weight} points` : "",
+                s.minimumScorePercent != null ? ` · minimum ${s.minimumScorePercent}/100` : "",
+                s.referenceQuestionCount != null ? ` · ${s.referenceQuestionCount} reference questions` : ""))),
+            c.bbReferencePreset && React.createElement("details", { open: true },
+                React.createElement("summary", null,
+                    "BB fixed-weekly reference rhythm \u00B7 ",
+                    c.bbReferencePreset.weeklyScheduledMinutes,
+                    " min/week"),
+                React.createElement("p", { className: "muted" }, "The configured availability windows mirror the supplied Monday\u2013Saturday reference rhythm. The 19-hour goal is retained independently; no 2026 exam date is created."),
+                React.createElement("ul", null, c.bbReferencePreset.scheduleRhythm.map((b, i) => React.createElement("li", { key: i },
+                    "Day ",
+                    b.weekday,
+                    " \u00B7 ",
+                    String(Math.floor(b.startMinute / 60)).padStart(2, "0"),
+                    ":",
+                    String(b.startMinute % 60).padStart(2, "0"),
+                    " \u00B7 ",
+                    b.durationMinutes,
+                    " min \u00B7 ",
+                    b.subjectName ?? "general review/mock/writing window"))))),
         React.createElement("article", { className: "card", id: "edital-revision" },
             React.createElement("h2", null, "Edital revision"),
             React.createElement("input", { "aria-label": "Edital revision reference", value: noticeRef, onChange: (e) => setNoticeRef(e.target.value), placeholder: "Reference / label / URL" }),
@@ -1032,9 +1143,12 @@ function Library({ materials, store, persistence, run }) {
                     !m.archived && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deleteMaterial(m.id), "Material removed.") }, "Delete"))),
                 !materials.length && React.createElement("li", null, "No local materials yet."))));
 }
-function Practice({ state, store, tab, setTab, questionId, setQuestionId, run }) {
-    const due = (0, domain_1.selectDueReviews)(state), errors = (0, domain_1.selectOpenErrors)(state), plan = state.plans.find(p => p.id === state.activePlanId);
+function Practice({ state, store, tab, setTab, questionId, setQuestionId, context, run }) {
+    const dueAll = (0, domain_1.selectDueReviews)(state), errors = (0, domain_1.selectOpenErrors)(state), plan = state.plans.find(p => p.id === state.activePlanId);
     const [filter, setFilter] = React.useState({});
+    React.useEffect(() => { if (!context || context.screen !== "practice")
+        return; setFilter(context.topicId ? { topicId: context.topicId } : context.subjectId ? { subjectId: context.subjectId } : {}); }, [context?.activityId]);
+    const due = (context?.screen === "practice" && context.practiceTab === "reviews" ? dueAll.filter(r => context.topicId ? r.topicId === context.topicId : context.subjectId ? r.subjectId === context.subjectId : true) : dueAll).sort((a, b) => context?.reviewId === a.id ? -1 : context?.reviewId === b.id ? 1 : a.dueAt.localeCompare(b.dueAt));
     const filtered = (0, modes_1.filterPracticeQuestions)(state, filter);
     const current = filtered.find(q => q.id === questionId) ?? filtered[0] ?? null;
     const [answer, setAnswer] = React.useState("");
@@ -1047,6 +1161,11 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, run })
     const quota = plan?.configuration.practice.weeklyQuestionQuota ?? null;
     const weekAttempts = state.evidence.filter(e => e.planId === state.activePlanId && e.kind === "question-attempt" && Date.parse(e.observedAt) >= Date.now() - 7 * 86400000).length;
     return React.createElement("section", { id: "practice", "data-screen": "practice", className: "screen-section" },
+        context?.screen === "practice" && React.createElement("article", { className: "mode-banner" },
+            React.createElement("strong", null,
+                title(context.activityType),
+                " activity context"),
+            React.createElement("span", { className: "muted" }, context.topicId ? "Topic filter preserved exactly." : context.subjectId ? "Subject filter preserved." : "Plan-wide context.")),
         React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "practice", label: "Practice sections", items: [["reviews", "Reviews"], ["questions", "Questions"], ["tests", "Tests"], ["errors", "Errors"]] }),
         tab === "reviews" && React.createElement("section", { id: "practice-reviews", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
             React.createElement("article", { className: "card" },
