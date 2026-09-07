@@ -37,3 +37,6 @@ Each phase must preserve mobile-first behavior, local ownership, truthful eviden
 
 | PC06 | Practice parity: question import/filtering/saved sets/weakness drills — delivered |
 | PC07 | Full Concurso Público parity closure — delivered |
+
+| PC08 | Programming + Language content-mode parity closure — delivered |
+| PC09 | Weekly coach/readiness/cleanup/report/runbook/sprint parity — delivered |

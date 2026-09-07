@@ -21,6 +21,9 @@ exports.createLanguageExpression = createLanguageExpression;
 exports.createReadingItem = createReadingItem;
 exports.createGeneralSkillDrill = createGeneralSkillDrill;
 exports.deriveModeAnalytics = deriveModeAnalytics;
+exports.tokenizeCode = tokenizeCode;
+exports.assessProgrammingAttempt = assessProgrammingAttempt;
+exports.buildLanguageReviewPrompt = buildLanguageReviewPrompt;
 const schedule_1 = require("./schedule");
 const STUDY_MODES = ["EXAM_PLAN", "PROGRAMMING_COURSE", "LANGUAGE_DECK", "READING_STUDY", "GENERAL_SKILL"];
 const LANGUAGE_DIRECTIONS = ["recognition", "production", "fill-blank", "natural-usage", "mistake-spotting", "sentence-creation"];
@@ -82,7 +85,7 @@ function normalizePlanConfiguration(input, mode) {
     if (mode === "PROGRAMMING_COURSE") {
         const p = raw.programming ?? {};
         out.programming = { language: text(p.language) ?? "TypeScript", level: ["beginner", "intermediate", "advanced"].includes(String(p.level)) ? p.level : "beginner", runtime: "browser-only",
-            exercises: arr(p.exercises).map((e, i) => normalizeProgrammingExercise(e, i)), projects: arr(p.projects).map((q, i) => ({ id: text(q?.id) ?? `project-${i + 1}`, title: text(q?.title) ?? `Project ${i + 1}`, status: ["planned", "active", "completed"].includes(String(q?.status)) ? q.status : "planned", checkpoints: uniqueStrings(q?.checkpoints), deliverables: uniqueStrings(q?.deliverables) })) };
+            exercises: arr(p.exercises).map((e, i) => normalizeProgrammingExercise(e, i)), projects: arr(p.projects).map((q, i) => ({ id: text(q?.id) ?? `project-${i + 1}`, title: text(q?.title) ?? `Project ${i + 1}`, status: ["planned", "active", "completed"].includes(String(q?.status)) ? q.status : "planned", checkpoints: uniqueStrings(q?.checkpoints), completedCheckpoints: uniqueStrings(q?.completedCheckpoints).filter((x) => uniqueStrings(q?.checkpoints).includes(x)), deliverables: uniqueStrings(q?.deliverables) })) };
     }
     if (mode === "LANGUAGE_DECK") {
         const p = raw.language ?? {};
@@ -144,8 +147,8 @@ function normalizeMockBlueprint(input) {
     const scoring = EXAM_SCORING.includes(x.scoring) ? x.scoring : "no-penalty";
     return { scoring, negativePoints: Math.max(0, n(x.negativePoints) ?? 0), totalQuestions: Math.max(1, Math.min(500, Math.trunc(n(x.totalQuestions) ?? 20))), durationMinutes: Math.max(5, Math.min(1440, Math.trunc(n(x.durationMinutes) ?? 60))), sections: arr(x.sections).map((s, i) => { const weight = n(s?.weight); return { id: text(s?.id) ?? `section-${i + 1}`, subjectId: text(s?.subjectId), count: Math.max(1, Math.trunc(n(s?.count) ?? 1)), weight: weight != null && weight > 0 ? weight : 1 }; }) };
 }
-function normalizeProgrammingExercise(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `exercise-${index + 1}`, title: text(x.title) ?? `Exercise ${index + 1}`, language: text(x.language) ?? "TypeScript", prompt: text(x.prompt) ?? "", starterCode: String(x.starterCode ?? ""), expectedOutput: text(x.expectedOutput), hints: uniqueStrings(x.hints), solutionNotes: text(x.solutionNotes), difficulty: ["easy", "medium", "hard"].includes(String(x.difficulty)) ? x.difficulty : "medium", status: ["todo", "attempted", "completed"].includes(String(x.status)) ? x.status : "todo" }; }
-function normalizeLanguageExpression(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `expression-${index + 1}`, expression: text(x.expression) ?? `Expression ${index + 1}`, meaning: text(x.meaning) ?? "", literalTranslation: text(x.literalTranslation), region: text(x.region), register: text(x.register), pronunciationNote: text(x.pronunciationNote), commonMistakes: uniqueStrings(x.commonMistakes) }; }
+function normalizeProgrammingExercise(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); const language = text(x.language) ?? "TypeScript"; const files = arr(x.files).map((f, j) => ({ path: text(f?.path) ?? `file-${j + 1}`, language: text(f?.language) ?? language, content: String(f?.content ?? "") })); return { id: text(x.id) ?? `exercise-${index + 1}`, title: text(x.title) ?? `Exercise ${index + 1}`, language, prompt: text(x.prompt) ?? "", starterCode: String(x.starterCode ?? ""), expectedOutput: text(x.expectedOutput), hints: uniqueStrings(x.hints), solutionNotes: text(x.solutionNotes), difficulty: ["easy", "medium", "hard"].includes(String(x.difficulty)) ? x.difficulty : "medium", status: ["todo", "attempted", "completed"].includes(String(x.status)) ? x.status : "todo", files }; }
+function normalizeLanguageExpression(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `expression-${index + 1}`, expression: text(x.expression) ?? `Expression ${index + 1}`, meaning: text(x.meaning) ?? "", literalTranslation: text(x.literalTranslation), region: text(x.region), register: text(x.register), pronunciationNote: text(x.pronunciationNote), commonMistakes: uniqueStrings(x.commonMistakes), exampleSentence: text(x.exampleSentence) }; }
 function normalizeReadingItem(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); const total = Math.max(1, Math.trunc(n(x.totalUnits) ?? 1)); return { id: text(x.id) ?? `reading-${index + 1}`, title: text(x.title) ?? `Reading ${index + 1}`, totalUnits: total, currentUnit: Math.max(0, Math.min(total, Math.trunc(n(x.currentUnit) ?? 0))), unit: text(x.unit) ?? "pages", status: ["planned", "reading", "completed"].includes(String(x.status)) ? x.status : "planned", notes: text(x.notes) }; }
 function normalizeGeneralDrill(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `drill-${index + 1}`, title: text(x.title) ?? `Drill ${index + 1}`, metric: text(x.metric) ?? "repetitions", target: Math.max(0, n(x.target) ?? 1), unit: text(x.unit) ?? "count", status: ["active", "paused", "completed"].includes(String(x.status)) ? x.status : "active" }; }
 function normalizeQuestionMetadata(input) { const points = n(input.points); const diff = text(input.difficulty); return { difficulty: ["easy", "medium", "hard"].includes(String(diff)) ? diff : null, favorite: bool(input.favorite), organization: text(input.organization), role: text(input.role), examStage: text(input.examStage), examBoard: text(input.examBoard), year: n(input.year) == null ? null : Math.trunc(n(input.year)), authorship: text(input.authorship), editalRevision: text(input.editalRevision), externalReference: text(input.externalReference), points: points != null && points > 0 ? points : null }; }
@@ -396,3 +399,65 @@ function deriveModeAnalytics(state) { const plan = state.plans.find(p => p.id ==
     const total = items.reduce((s, x) => s + x.totalUnits, 0), done = items.reduce((s, x) => s + x.currentUnit, 0);
     return { mode: plan.mode, metrics: [{ label: "Reading progress", value: total ? done / total : null }, { label: "Reading items", value: items.length }] };
 } const drills = plan.configuration.general?.drills ?? []; return { mode: plan.mode, metrics: [{ label: "Active drills", value: drills.filter(x => x.status === "active").length }, { label: "Drill evidence", value: evidence.filter(e => e.kind === "skill-drill").length }] }; }
+const KEYWORDS = { javascript: new Set(["const", "let", "var", "function", "return", "if", "else", "for", "while", "class", "new", "async", "await", "import", "export", "true", "false", "null", "undefined"]), typescript: new Set(["const", "let", "var", "function", "return", "if", "else", "for", "while", "class", "new", "async", "await", "import", "export", "interface", "type", "extends", "implements", "string", "number", "boolean", "unknown", "never", "true", "false", "null", "undefined"]), python: new Set(["def", "return", "if", "elif", "else", "for", "while", "class", "import", "from", "as", "async", "await", "True", "False", "None", "with", "try", "except"]), java: new Set(["class", "public", "private", "protected", "static", "final", "void", "int", "long", "double", "boolean", "new", "return", "if", "else", "for", "while", "try", "catch"]), kotlin: new Set(["fun", "val", "var", "class", "object", "data", "when", "if", "else", "for", "while", "return", "suspend", "null", "true", "false"]), go: new Set(["package", "import", "func", "var", "const", "type", "struct", "interface", "return", "if", "else", "for", "range", "go", "defer"]), rust: new Set(["fn", "let", "mut", "struct", "enum", "impl", "trait", "pub", "use", "mod", "match", "if", "else", "for", "while", "return", "async", "await"]) };
+function tokenizeCode(source, language) { const words = KEYWORDS[String(language ?? "").toLowerCase()] ?? new Set(); const tokens = []; const re = /(\/\/[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*\b)/g; let last = 0; for (const m of source.matchAll(re)) {
+    const i = m.index ?? 0;
+    if (i > last)
+        tokens.push({ kind: "plain", text: source.slice(last, i) });
+    const v = m[0];
+    let kind = "plain";
+    if (v.startsWith("//") || v.startsWith("#") || v.startsWith("/*"))
+        kind = "comment";
+    else if (/^['"`]/.test(v))
+        kind = "string";
+    else if (/^\d/.test(v))
+        kind = "number";
+    else if (words.has(v))
+        kind = "keyword";
+    tokens.push({ kind, text: v });
+    last = i + v.length;
+} if (last < source.length)
+    tokens.push({ kind: "plain", text: source.slice(last) }); return tokens; }
+function assessProgrammingAttempt(exercise, observedOutput, completed = false) { const observed = text(observedOutput); const expected = text(exercise.expectedOutput); const norm = (v) => v.replace(/\r\n/g, "\n").trim(); return { exerciseId: exercise.id, expectedOutput: expected, observedOutput: observed, matchesExpected: expected == null || observed == null ? null : norm(expected) === norm(observed), executionMode: "manual-output", completed: Boolean(completed) }; }
+function buildLanguageReviewPrompt(expression, direction) { let prompt = "", expected = null, manualReview = false, ready = true, reason = null; switch (direction) {
+    case "recognition":
+        prompt = `What does “${expression.expression}” mean?`;
+        expected = expression.meaning;
+        break;
+    case "production":
+        prompt = `Produce the expression for: ${expression.meaning}`;
+        expected = expression.expression;
+        break;
+    case "fill-blank":
+        if (expression.exampleSentence && expression.exampleSentence.toLowerCase().includes(expression.expression.toLowerCase())) {
+            prompt = expression.exampleSentence.replace(new RegExp(expression.expression.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), "____");
+            expected = expression.expression;
+        }
+        else {
+            ready = false;
+            reason = "Add an example sentence containing the expression before fill-in review.";
+            prompt = "Fill-in review needs an example sentence.";
+        }
+        break;
+    case "natural-usage":
+        prompt = expression.exampleSentence ? `Judge and explain whether this usage is natural: ${expression.exampleSentence}` : `Write a natural context for “${expression.expression}”.`;
+        expected = expression.exampleSentence;
+        manualReview = true;
+        break;
+    case "mistake-spotting":
+        if (expression.commonMistakes.length) {
+            prompt = `Spot and correct the mistake: ${expression.commonMistakes[0]}`;
+            expected = expression.expression;
+        }
+        else {
+            ready = false;
+            reason = "Add at least one common mistake before mistake-spotting review.";
+            prompt = "Mistake spotting needs a stored common mistake.";
+        }
+        break;
+    case "sentence-creation":
+        prompt = `Create your own sentence using “${expression.expression}”.`;
+        expected = null;
+        manualReview = true;
+        break;
+} return { expressionId: expression.id, direction, prompt, expected, manualReview, ready, reason }; }

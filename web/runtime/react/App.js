@@ -40,6 +40,8 @@ const modes_1 = require("../modes");
 const portable_1 = require("../portable");
 const content_import_1 = require("../content_import");
 const question_import_1 = require("../question_import");
+const mode_import_1 = require("../mode_import");
+const intelligence_1 = require("../intelligence");
 const pwa_1 = require("../pwa");
 const hardening_1 = require("../hardening");
 const release_1 = require("../release");
@@ -628,45 +630,99 @@ function PublicExamWorkspace({ state, store, run }) {
                 React.createElement("button", { className: "button button-quiet", type: "submit" }, "Save review policy")),
             React.createElement("p", { className: "muted" }, "Weighted mocks use question points and section weights. Unanswered questions stay neutral. Review progression follows the configured intervals.")));
 }
-function ProgrammingWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.programming; const [name, setName] = React.useState(""); const [prompt, setPrompt] = React.useState(""); return React.createElement("article", { className: "card" },
-    React.createElement("h2", null,
-        "Programming course \u00B7 ",
-        cfg.language),
-    React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (name.trim() && prompt.trim()) {
-            run(() => store.addProgrammingExercise({ title: name.trim(), prompt: prompt.trim(), starterCode: "// Start here" }), "Coding exercise added.");
-            setName("");
-            setPrompt("");
-        } } },
-        React.createElement("input", { "aria-label": "Exercise title", value: name, onChange: (e) => setName(e.target.value), placeholder: "Exercise title" }),
-        React.createElement("textarea", { "aria-label": "Exercise prompt", value: prompt, onChange: (e) => setPrompt(e.target.value), placeholder: "Exercise prompt" }),
-        React.createElement("button", { className: "button", type: "submit" }, "Add exercise")),
-    cfg.exercises.map(x => React.createElement("div", { className: "mode-item", key: x.id },
-        React.createElement("strong", null, x.title),
-        React.createElement("span", null,
+function CodeBlock({ code, language }) { return React.createElement("pre", { className: "code-block", "data-language": language },
+    React.createElement("code", null, (0, modes_1.tokenizeCode)(code, language).map((t, i) => React.createElement("span", { key: i, className: `code-${t.kind}` }, t.text)))); }
+function ModeImportTools({ state, store, run }) { const [source, setSource] = React.useState(""); const [format, setFormat] = React.useState("csv"); const [preview, setPreview] = React.useState(null); const inspect = () => { const f = source.trim() ? format : (0, mode_import_1.detectModeImportFormat)(source); const next = run(() => store.previewModeImport(source, f)); if (next)
+    setPreview(next); }; return React.createElement("article", { className: "card" },
+    React.createElement("h3", null, "Import template"),
+    React.createElement("select", { "aria-label": "Mode import format", value: format, onChange: (e) => setFormat(e.target.value) },
+        React.createElement("option", { value: "csv" }, "CSV"),
+        React.createElement("option", { value: "markdown" }, "Markdown")),
+    React.createElement("textarea", { "aria-label": "Mode import source", value: source, onChange: (e) => setSource(e.target.value), placeholder: "Paste programming-course or language-deck rows" }),
+    React.createElement("div", { className: "button-row" },
+        React.createElement("button", { className: "button button-quiet", type: "button", onClick: inspect }, "Preview import"),
+        preview && preview.summary.add > 0 && React.createElement("button", { className: "button", type: "button", onClick: () => { if (run(() => store.applyModeImportPreview(preview), "Mode import applied.")) {
+                setPreview(null);
+                setSource("");
+            } } },
+            "Apply ",
+            preview.summary.add)),
+    preview && React.createElement("p", { className: "muted" },
+        preview.summary.add,
+        " add \u00B7 ",
+        preview.summary.duplicate,
+        " duplicate \u00B7 ",
+        preview.summary.invalid,
+        " invalid. Preview does not mutate the plan.")); }
+function ProgrammingWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.programming; const [name, setName] = React.useState(""); const [prompt, setPrompt] = React.useState(""); const [output, setOutput] = React.useState({}); return React.createElement("div", { className: "content-grid two-column" },
+    React.createElement("article", { className: "card" },
+        React.createElement("h2", null,
+            "Programming course \u00B7 ",
+            cfg.language),
+        React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (name.trim() && prompt.trim()) {
+                run(() => store.addProgrammingExercise({ title: name.trim(), prompt: prompt.trim(), starterCode: "// Start here", files: [] }), "Coding exercise added.");
+                setName("");
+                setPrompt("");
+            } } },
+            React.createElement("input", { "aria-label": "Exercise title", value: name, onChange: (e) => setName(e.target.value), placeholder: "Exercise title" }),
+            React.createElement("textarea", { "aria-label": "Exercise prompt", value: prompt, onChange: (e) => setPrompt(e.target.value), placeholder: "Exercise prompt" }),
+            React.createElement("button", { className: "button", type: "submit" }, "Add exercise")),
+        React.createElement("p", { className: "muted" }, "Safety boundary: StudyFlow never runs arbitrary shell commands or pasted code. You can edit code locally and record observed output from a trusted runtime.")),
+    React.createElement(ModeImportTools, { state: state, store: store, run: run }),
+    cfg.exercises.map(x => React.createElement("article", { className: "card", key: x.id },
+        React.createElement("h3", null, x.title),
+        React.createElement("p", null, x.prompt),
+        React.createElement("span", { className: "muted" },
             title(x.difficulty),
             " \u00B7 ",
-            title(x.status)),
-        React.createElement("pre", null,
-            React.createElement("code", null, x.starterCode)),
-        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.recordProgrammingExercise(x.id, { completed: true }), "Exercise completion evidenced.") }, "Mark completed"))),
-    React.createElement("p", { className: "muted" }, "Browser mode stores safe exercise metadata only; arbitrary shell execution is not exposed.")); }
-function LanguageWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.language; const [expression, setExpression] = React.useState(""); const [meaning, setMeaning] = React.useState(""); return React.createElement("article", { className: "card" },
-    React.createElement("h2", null,
-        "Language deck \u00B7 ",
-        cfg.language),
-    React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (expression.trim() && meaning.trim()) {
-            run(() => store.addLanguageExpression({ expression: expression.trim(), meaning: meaning.trim() }), "Expression added.");
-            setExpression("");
-            setMeaning("");
-        } } },
-        React.createElement("input", { "aria-label": "Language expression or idiom", value: expression, onChange: (e) => setExpression(e.target.value), placeholder: "Expression / idiom" }),
-        React.createElement("input", { "aria-label": "Expression meaning", value: meaning, onChange: (e) => setMeaning(e.target.value), placeholder: "Meaning" }),
-        React.createElement("button", { className: "button", type: "submit" }, "Add expression")),
-    React.createElement("ul", null, cfg.expressions.map(x => React.createElement("li", { key: x.id },
-        React.createElement("strong", null, x.expression),
-        " \u2014 ",
-        x.meaning))),
-    React.createElement("p", { className: "muted" }, "Review directions: recognition \u00B7 production \u00B7 fill in the blank \u00B7 natural usage \u00B7 mistake spotting \u00B7 sentence creation.")); }
+            title(x.status),
+            " \u00B7 ",
+            x.language),
+        React.createElement(CodeBlock, { code: x.starterCode, language: x.language }),
+        x.files.map(f => React.createElement("details", { key: f.path },
+            React.createElement("summary", null, f.path),
+            React.createElement(CodeBlock, { code: f.content, language: f.language }))),
+        React.createElement("input", { "aria-label": `Observed output for ${x.title}`, value: output[x.id] ?? "", onChange: (e) => setOutput({ ...output, [x.id]: e.target.value }), placeholder: "Observed output from trusted runtime" }),
+        React.createElement("div", { className: "button-row" },
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.recordProgrammingExercise(x.id, { observedOutput: output[x.id] ?? null }), "Attempt recorded without executing code.") }, "Record attempt"),
+            React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.recordProgrammingExercise(x.id, { completed: true, observedOutput: output[x.id] ?? null }), "Exercise completion evidenced.") }, "Mark completed"),
+            x.solutionNotes && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.revealProgrammingSolution(x.id), `Solution reveal recorded: ${x.solutionNotes}`) }, "Reveal solution")),
+        x.expectedOutput && React.createElement("p", { className: "muted" }, "Expected output is stored for explicit comparison after an attempt.")))); }
+function LanguageWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.language; const [expression, setExpression] = React.useState(""); const [meaning, setMeaning] = React.useState(""); const [selected, setSelected] = React.useState(cfg.expressions[0]?.id ?? ""); const [direction, setDirection] = React.useState("recognition"); const [answer, setAnswer] = React.useState(""); const [rating, setRating] = React.useState(3); const card = cfg.expressions.find(x => x.id === selected) ?? cfg.expressions[0] ?? null; const prompt = card ? (0, modes_1.buildLanguageReviewPrompt)(card, direction) : null; return React.createElement("div", { className: "content-grid two-column" },
+    React.createElement("article", { className: "card" },
+        React.createElement("h2", null,
+            "Language deck \u00B7 ",
+            cfg.language),
+        React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (expression.trim() && meaning.trim()) {
+                run(() => store.addLanguageExpression({ expression: expression.trim(), meaning: meaning.trim() }), "Expression added.");
+                setExpression("");
+                setMeaning("");
+            } } },
+            React.createElement("input", { "aria-label": "Language expression or idiom", value: expression, onChange: (e) => setExpression(e.target.value), placeholder: "Expression / idiom" }),
+            React.createElement("input", { "aria-label": "Expression meaning", value: meaning, onChange: (e) => setMeaning(e.target.value), placeholder: "Meaning" }),
+            React.createElement("button", { className: "button", type: "submit" }, "Add expression")),
+        React.createElement("ul", null, cfg.expressions.map(x => React.createElement("li", { key: x.id },
+            React.createElement("strong", null, x.expression),
+            " \u2014 ",
+            x.meaning,
+            x.register ? ` · ${x.register}` : "")))),
+    React.createElement(ModeImportTools, { state: state, store: store, run: run }),
+    React.createElement("article", { className: "card wide-card" },
+        React.createElement("h3", null, "Six-direction review studio"),
+        !card ? React.createElement("p", null, "No expressions yet.") : React.createElement(React.Fragment, null,
+            React.createElement("select", { "aria-label": "Language review expression", value: card.id, onChange: (e) => { setSelected(e.target.value); setAnswer(""); } }, cfg.expressions.map(x => React.createElement("option", { key: x.id, value: x.id }, x.expression))),
+            React.createElement("select", { "aria-label": "Language review direction", value: direction, onChange: (e) => { setDirection(e.target.value); setAnswer(""); } }, cfg.reviewDirections.map(x => React.createElement("option", { key: x, value: x }, title(x)))),
+            React.createElement("p", null,
+                React.createElement("strong", null, prompt?.prompt)),
+            prompt?.reason && React.createElement("p", { className: "muted" }, prompt.reason),
+            React.createElement("textarea", { "aria-label": "Language review answer", disabled: !prompt?.ready, value: answer, onChange: (e) => setAnswer(e.target.value), placeholder: prompt?.manualReview ? "Write your response; grade it manually" : "Your answer" }),
+            React.createElement("label", null,
+                "Rating 0\u20135",
+                React.createElement("input", { "aria-label": "Language review rating", type: "number", min: "0", max: "5", value: rating, onChange: (e) => setRating(Number(e.target.value)) })),
+            React.createElement("button", { className: "button", type: "button", disabled: !prompt?.ready, onClick: () => run(() => store.recordLanguageReview(card.id, direction, rating, { answer }), prompt?.manualReview ? "Manual-review language evidence recorded." : "Language review recorded.") }, "Record review"),
+            prompt?.expected && React.createElement("details", null,
+                React.createElement("summary", null, "Expected answer"),
+                React.createElement("p", null, prompt.expected))))); }
 function ReadingWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.reading; const [name, setName] = React.useState(""); const [units, setUnits] = React.useState(100); return React.createElement("article", { className: "card" },
     React.createElement("h2", null, "Reading study"),
     React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (name.trim()) {
@@ -878,7 +934,7 @@ function PublicExamMock({ state, store, run }) { const [preview, setPreview] = R
                 setPreview(null);
                 setAnswers({});
             } } }, "Submit mock"))); }
-function Progress({ state, store, tab, setTab, persistence, portable, setPortable, portableStatus, setPortableStatus, run }) { const m = (0, domain_1.deriveProgressMetrics)(state), timeline = (0, domain_1.buildEvidenceTimeline)(state, { limit: 30 }), integrity = (0, domain_1.buildContentIntegrityReport)(state), goals = state.goals.filter(g => g.planId === state.activePlanId), modeAnalytics = (0, modes_1.deriveModeAnalytics)(state); const [goal, setGoal] = React.useState(""); return React.createElement("section", { id: "progress", "data-screen": "progress", className: "screen-section" },
+function Progress({ state, store, tab, setTab, persistence, portable, setPortable, portableStatus, setPortableStatus, run }) { const m = (0, domain_1.deriveProgressMetrics)(state), timeline = (0, domain_1.buildEvidenceTimeline)(state, { limit: 30 }), integrity = (0, domain_1.buildContentIntegrityReport)(state), goals = state.goals.filter(g => g.planId === state.activePlanId), modeAnalytics = (0, modes_1.deriveModeAnalytics)(state), readiness = (0, intelligence_1.deriveReadinessExplanation)(state), coach = (0, intelligence_1.deriveWeeklyCoach)(state), quota = (0, intelligence_1.deriveQuestionQuotaPlan)(state); const [goal, setGoal] = React.useState(""); return React.createElement("section", { id: "progress", "data-screen": "progress", className: "screen-section" },
     React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "progress", label: "Progress sections", items: [["summary", "Summary"], ["performance", "Performance"], ["goals", "Goals"], ["tools", "Tools"]] }),
     tab === "summary" && React.createElement("section", { id: "progress-summary", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "metric-grid" },
@@ -888,7 +944,17 @@ function Progress({ state, store, tab, setTab, persistence, portable, setPortabl
             React.createElement(Metric, { label: "Coverage", value: pct(m.topicCoverage), detail: `${m.coveredTopics}/${m.activeTopics} evidenced topics` })),
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Mode-aware analytics"),
-            React.createElement("div", { className: "metric-grid compact-grid" }, modeAnalytics.metrics.map(x => React.createElement(Metric, { key: x.label, label: x.label, value: typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("accuracy") || typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("progress") || typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("coverage") ? pct(x.value) : x.value == null ? "No data" : String(x.value), detail: modeAnalytics.mode ? title(modeAnalytics.mode) : "No plan" }))))),
+            React.createElement("div", { className: "metric-grid compact-grid" }, modeAnalytics.metrics.map(x => React.createElement(Metric, { key: x.label, label: x.label, value: typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("accuracy") || typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("progress") || typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("coverage") ? pct(x.value) : x.value == null ? "No data" : String(x.value), detail: modeAnalytics.mode ? title(modeAnalytics.mode) : "No plan" })))),
+        React.createElement("article", { className: "card" },
+            React.createElement("h2", null, "Weekly coach"),
+            React.createElement("p", { className: "muted" }, readiness.value == null ? "Readiness: No data" : `Readiness: ${Math.round(readiness.value)}% · ${readiness.confidence}`),
+            React.createElement("ul", { className: "activity-list" }, coach.items.map(i => React.createElement("li", { key: i.id },
+                React.createElement("strong", null, i.title),
+                React.createElement("span", null, i.reason),
+                i.action && React.createElement("small", null, i.action)))),
+            React.createElement("p", { className: "muted" },
+                "Question quota: ",
+                quota.configured == null ? "not configured" : `${quota.completed}/${quota.configured} · ${quota.remaining} remaining`))),
     tab === "performance" && React.createElement("section", { id: "progress-performance", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Evidence Timeline"),
@@ -932,8 +998,45 @@ function Progress({ state, store, tab, setTab, persistence, portable, setPortabl
                     persistence.backend),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.resetLocalState(), "Sample data restored.") }, "Reset sample data")),
             React.createElement(StorageHealthCard, { state: state, persistence: persistence }),
+            React.createElement(IntelligenceTools, { state: state, store: store, run: run }),
             React.createElement(ReleaseCard, { state: state, persistence: persistence }),
             React.createElement(PwaTools, null)))); }
+function IntelligenceTools({ state, store, run }) { const [cleanup, setCleanup] = React.useState(null); const [sprint, setSprint] = React.useState(null); const runbook = (0, intelligence_1.buildExamRunbook)(state); const downloadReport = () => { const report = (0, intelligence_1.buildExamReportSnapshot)(state), html = (0, intelligence_1.renderExamReportHtml)(report), url = URL.createObjectURL(new Blob([html], { type: "text/html" })), a = document.createElement("a"); a.href = url; a.download = `studyflow-exam-report-${new Date().toISOString().slice(0, 10)}.html`; a.click(); URL.revokeObjectURL(url); }; return React.createElement("article", { className: "card" },
+    React.createElement("h2", null, "Coach & exam tools"),
+    React.createElement("p", { className: "muted" },
+        "Runbook: ",
+        runbook.status === "ready" ? `${runbook.daysRemaining} days · ${runbook.phase}` : runbook.status === "no-date" ? "No confirmed exam date" : "Available for Concurso plans"),
+    runbook.items.slice(0, 4).map(x => React.createElement("p", { key: x.id },
+        React.createElement("strong", null, x.title),
+        React.createElement("br", null),
+        React.createElement("span", { className: "muted" }, x.reason))),
+    React.createElement("div", { className: "button-row" },
+        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setCleanup((0, intelligence_1.buildContentCleanupPreview)(state)) }, "Preview smart cleanup"),
+        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSprint((0, intelligence_1.buildStudySprintPreview)(state)) }, "Preview 7-day sprint"),
+        React.createElement("button", { className: "button button-quiet", type: "button", onClick: downloadReport }, "Export HTML exam report")),
+    cleanup && React.createElement("div", null,
+        React.createElement("p", null,
+            cleanup.issues.length,
+            " cleanup findings \u00B7 ",
+            cleanup.applicableCount,
+            " safe automatic actions."),
+        React.createElement("ul", null, cleanup.issues.slice(0, 6).map(x => React.createElement("li", { key: x.id },
+            title(x.kind),
+            ": ",
+            x.label,
+            " \u2014 ",
+            x.reason))),
+        cleanup.applicableCount > 0 && React.createElement("button", { className: "button", type: "button", onClick: () => { if (run(() => store.applyContentCleanupPreview(cleanup), "Safe cleanup actions applied."))
+                setCleanup(null); } }, "Apply safe cleanup")),
+    sprint && React.createElement("div", null,
+        React.createElement("p", null,
+            "7-day sprint \u00B7 ",
+            sprint.schedule.operations.length,
+            " proposed changes \u00B7 ",
+            sprint.schedule.summary.unscheduled,
+            " unscheduled."),
+        React.createElement("button", { className: "button", type: "button", onClick: () => { if (run(() => store.applySchedulePreview(sprint.schedule), "Seven-day sprint applied."))
+                setSprint(null); } }, "Apply sprint preview"))); }
 function StorageHealthCard({ state, persistence }) { const [report, setReport] = React.useState(null); const [busy, setBusy] = React.useState(false); const check = async (clean = false) => { setBusy(true); try {
     setReport(clean ? await (0, hardening_1.purgeOrphanAttachments)(state, persistence) : await (0, hardening_1.auditBrowserStorage)(state, persistence));
 }

@@ -98,3 +98,9 @@ Adaptive scheduling now honors plan capacity, optional clock windows, fixed comm
 ## PC06/PC07 practice + Concurso parity
 
 Question import, weakness drills, saved sets, full banca filters, hierarchical edital revisions, explainable priorities, legislation verification links and the Edital Matrix are local and preview/evidence driven.
+
+
+## PC08 / PC09 parity closure
+
+Programming and language plans now include preview-first import templates, full six-direction language review, local syntax tokenization, trusted-output programming attempts, and solution-reveal evidence. Progress tools now include evidence-backed weekly coaching, readiness explanations, question quota planning, smart cleanup preview/apply, local HTML exam reports, a confirmed-date exam runbook, and a preview-first seven-day sprint.
+

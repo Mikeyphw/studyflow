@@ -20,11 +20,12 @@ export interface MockExamSection { id:string; subjectId:string|null; count:numbe
 export interface MockExamBlueprint { scoring:ExamScoringPolicy; negativePoints:number; totalQuestions:number; durationMinutes:number; sections:MockExamSection[]; }
 export type PublicExamStudyPhase="pre-edital"|"post-edital"|"final-stretch";
 export interface PublicExamConfiguration { target:ExamTargetProfile; stages:ExamStage[]; noticeRevisions:ExamNoticeRevision[]; reviewIntervalsDays:number[]; legislation:LegislationDocument[]; mockBlueprint:MockExamBlueprint; studyPhase:PublicExamStudyPhase; }
-export interface ProgrammingExercise { id:string; title:string; language:string; prompt:string; starterCode:string; expectedOutput:string|null; hints:string[]; solutionNotes:string|null; difficulty:"easy"|"medium"|"hard"; status:"todo"|"attempted"|"completed"; }
-export interface MiniProject { id:string; title:string; status:"planned"|"active"|"completed"; checkpoints:string[]; deliverables:string[]; }
+export interface ProgrammingCodeFile { path:string; language:string; content:string; }
+export interface ProgrammingExercise { id:string; title:string; language:string; prompt:string; starterCode:string; expectedOutput:string|null; hints:string[]; solutionNotes:string|null; difficulty:"easy"|"medium"|"hard"; status:"todo"|"attempted"|"completed"; files:ProgrammingCodeFile[]; }
+export interface MiniProject { id:string; title:string; status:"planned"|"active"|"completed"; checkpoints:string[]; completedCheckpoints:string[]; deliverables:string[]; }
 export interface ProgrammingConfiguration { language:string; level:"beginner"|"intermediate"|"advanced"; runtime:"browser-only"; exercises:ProgrammingExercise[]; projects:MiniProject[]; }
 export type LanguageReviewDirection="recognition"|"production"|"fill-blank"|"natural-usage"|"mistake-spotting"|"sentence-creation";
-export interface LanguageExpression { id:string; expression:string; meaning:string; literalTranslation:string|null; region:string|null; register:string|null; pronunciationNote:string|null; commonMistakes:string[]; }
+export interface LanguageExpression { id:string; expression:string; meaning:string; literalTranslation:string|null; region:string|null; register:string|null; pronunciationNote:string|null; commonMistakes:string[]; exampleSentence:string|null; }
 export interface LanguageConfiguration { language:string; nativeLanguage:string|null; expressions:LanguageExpression[]; reviewDirections:LanguageReviewDirection[]; }
 export interface ReadingItem { id:string; title:string; totalUnits:number; currentUnit:number; unit:string; status:"planned"|"reading"|"completed"; notes:string|null; }
 export interface ReadingConfiguration { items:ReadingItem[]; }
@@ -90,13 +91,33 @@ export interface MockExamScoreResult { scoringPolicy:ExamScoringPolicy; correct:
 export interface FinalStretchGuidance { band:"unknown"|"over-30"|"30-day"|"15-day"|"7-day"|"2-day"|"eve"; daysRemaining:number|null; allocation:{newContent:number;reviews:number;errors:number;questions:number;mocks:number;legislation:number}; }
 export interface ModeMetric { label:string; value:number|null; }
 export interface ModeAnalytics { mode:StudyMode|null; metrics:ModeMetric[]; }
+
+export type ModeImportFormat="csv"|"markdown";
+export interface ModeImportIssue { row:number; code:string; message:string; }
+export interface ModeImportPreview { baseRevision:number; generatedAt:string; mode:"PROGRAMMING_COURSE"|"LANGUAGE_DECK"; format:ModeImportFormat; rows:Array<{index:number;status:"add"|"duplicate"|"invalid";label:string;payload:Record<string,unknown>}>; issues:ModeImportIssue[]; summary:{add:number;duplicate:number;invalid:number}; }
+export interface LanguageReviewPrompt { expressionId:string; direction:LanguageReviewDirection; prompt:string; expected:string|null; manualReview:boolean; ready:boolean; reason:string|null; }
+export interface ProgrammingAttemptAssessment { exerciseId:string; expectedOutput:string|null; observedOutput:string|null; matchesExpected:boolean|null; executionMode:"manual-output"; completed:boolean; }
+export interface CodeToken { kind:"plain"|"keyword"|"string"|"number"|"comment"; text:string; }
+export interface ReadinessSignal { id:string; label:string; value:number|null; status:"good"|"risk"|"unknown"; reason:string; }
+export interface ReadinessExplanation { value:number|null; confidence:string; reason:string; signals:ReadinessSignal[]; }
+export interface WeeklyCoachItem { id:string; kind:"win"|"risk"|"action"; title:string; reason:string; action:string|null; evidenceCount:number; }
+export interface WeeklyCoachReview { status:"ready"|"insufficient"; generatedAt:string; items:WeeklyCoachItem[]; }
+export interface QuestionQuotaPlan { configured:number|null; completed:number; remaining:number|null; dailyTarget:number|null; reason:string; }
+export type ContentCleanupIssueKind="duplicate-question"|"orphan-topic"|"detached-review"|"invalid-activity"|"detached-material";
+export interface ContentCleanupIssue { id:string; kind:ContentCleanupIssueKind; entityId:string; label:string; reason:string; applicable:boolean; action:"archive-topic"|"dismiss-review"|"cancel-activity"|null; }
+export interface ContentCleanupPreview { baseRevision:number; generatedAt:string; issues:ContentCleanupIssue[]; summary:Record<ContentCleanupIssueKind,number>; applicableCount:number; }
+export interface ExamReportSnapshot { generatedAt:string; planId:string|null; planName:string|null; readiness:ReadinessExplanation; coach:WeeklyCoachReview; quota:QuestionQuotaPlan; weeklyStudyMinutes:number; sevenDayEvidence:number; weakAreas:string[]; dueReviews:number; overdueReviews:number; mockCount:number; mockAverage:number|null; cleanup:ContentCleanupPreview["summary"]; nextActions:string[]; }
+export interface ExamRunbookItem { id:string; priority:"urgent"|"high"|"normal"; title:string; reason:string; }
+export interface ExamRunbook { status:"ready"|"no-date"|"not-exam-plan"; daysRemaining:number|null; phase:string|null; items:ExamRunbookItem[]; }
+export interface StudySprintPreview { baseRevision:number; generatedAt:string; schedule:SchedulePreview; days:Array<{date:string;plannedMinutes:number;remainingMinutes:number;overloaded:boolean}>; reasons:string[]; }
+
 export interface ProgressMetrics { weeklyStudyMinutes:number; gradedAttempts:number; accuracy:number|null; topicCoverage:number|null; coveredTopics:number; activeTopics:number; reviewCompletionRate:number|null; readiness:number|null; readinessReason:string; confidence:string; }
 export interface StudyStore {
   getState(): StudyState; getSnapshot(): StudyState; getPersistenceStatus(): PersistenceStatus; getFocusSnapshot(at?: string|number): FocusSnapshot;
   subscribe(listener: (state: StudyState, persistence: PersistenceStatus, reason: string)=>void): ()=>void;
   createPlan(input:Partial<Plan> & Pick<Plan,"name">,options?:{activate?:boolean}):Plan; renamePlan(planId:string,name:string):Plan; switchPlan(planId:string):Plan; setPlanArchived(planId:string,archived?:boolean):Plan; duplicatePlan(planId:string,options?:{name?:string;activate?:boolean}):Plan; deletePlan(planId:string):void;
   setPlanMode(mode:StudyMode):Plan; setPracticeConfiguration(input:Partial<PracticeConfiguration>):Plan; savePracticeSet(name:string,filter?:ExamQuestionFilter,questionIds?:string[]):SavedPracticeSet; deletePracticeSet(id:string):Plan; updatePublicExamTarget(input:Partial<ExamTargetProfile>):Plan; setPublicExamStudyPhase(phase:PublicExamStudyPhase):Plan; applyPublicExamStarterTemplate(templateId:"balanced"|"questions"|"revision"):Plan; addExamStage(input:Partial<ExamStage> & Pick<ExamStage,"name">):Plan; previewExamNotice(source:string):ExamNoticePreview; applyExamNoticePreview(preview:ExamNoticePreview):Plan; addLegislation(input:{title:string;reference?:string|null;notes?:string|null;sourceUpdatedAt?:string|null;provisions?:Array<{label:string;text:string}>}):Plan; verifyLegislation(documentId:string,verifiedAt?:string):Plan; linkLegislationEvidence(documentId:string,input:{provisionId:string;questionId?:string|null;errorId?:string|null;reviewId?:string|null;note?:string|null}):Plan; setReviewIntervalsDays(intervals:number[]):Plan; setMockBlueprint(input:Partial<MockExamBlueprint>):Plan; recordMockExam(preview:MockExamPreview,answers:Record<string,string>):Evidence;
-  addProgrammingExercise(input:Partial<ProgrammingExercise> & Pick<ProgrammingExercise,"title"|"prompt">):Plan; updateProgrammingExercise(id:string,changes:Partial<ProgrammingExercise>):Plan; recordProgrammingExercise(id:string,input?:{completed?:boolean;note?:string|null}):Evidence;
+  addProgrammingExercise(input:Partial<ProgrammingExercise> & Pick<ProgrammingExercise,"title"|"prompt">):Plan; updateProgrammingExercise(id:string,changes:Partial<ProgrammingExercise>):Plan; recordProgrammingExercise(id:string,input?:{completed?:boolean;note?:string|null;observedOutput?:string|null}):Evidence; revealProgrammingSolution(id:string):Evidence; setProgrammingProjectCheckpoint(projectId:string,checkpoint:string,completed?:boolean):Plan; previewModeImport(source:string,format?:ModeImportFormat):ModeImportPreview; applyModeImportPreview(preview:ModeImportPreview):Plan;
   addLanguageExpression(input:Partial<LanguageExpression> & Pick<LanguageExpression,"expression"|"meaning">):Plan; recordLanguageReview(expressionId:string,direction:LanguageReviewDirection,rating:number,input?:{answer?:string|null;note?:string|null}):Evidence;
   addReadingItem(input:Partial<ReadingItem> & Pick<ReadingItem,"title">):Plan; updateReadingProgress(id:string,currentUnit:number):Evidence; addGeneralSkillDrill(input:Partial<GeneralSkillDrill> & Pick<GeneralSkillDrill,"title"|"metric"|"target">):Plan; recordGeneralSkillDrill(id:string,value:number,input?:{note?:string|null}):Evidence;
   addActivity(input: Partial<Activity> & Pick<Activity,"title"|"kind"|"durationMinutes">): Activity;
@@ -110,6 +131,6 @@ export interface StudyStore {
   addGoal(input: Partial<Goal> & Pick<Goal,"name"|"metric"|"target">):Goal; toggleGoal(id:string):Goal; deleteGoal(id:string):void;
   applyPortableImportPreview(preview:PortableImportPreview):StudyState;
   previewQuestionImport(source:string,format?:QuestionImportFormat):QuestionImportPreview; applyQuestionImportPreview(preview:QuestionImportPreview):Question[]; addQuestion(input: Partial<Question> & Pick<Question,"prompt">):Question; reclassifyError(errorId:string,category:ErrorCategory):ErrorEntry; answerQuestion(questionId:string,answer:string,input?:{durationSeconds?:number|null;errorCategory?:ErrorCategory;note?:string|null}):unknown;
-  completeReview(reviewId:string,input?:{rating?:number|null}):Review; resolveError(errorId:string,input?:{note?:string|null}):ErrorEntry;
+  completeReview(reviewId:string,input?:{rating?:number|null}):Review; resolveError(errorId:string,input?:{note?:string|null}):ErrorEntry; applyContentCleanupPreview(preview:ContentCleanupPreview):StudyState;
   replaceState(nextState:StudyState,reason?:string):StudyState; resetLocalState():StudyState;
 }

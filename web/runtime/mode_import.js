@@ -1,0 +1,54 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.detectModeImportFormat = detectModeImportFormat;
+exports.buildModeImportPreview = buildModeImportPreview;
+const clean = (v) => String(v ?? "").trim();
+const splitList = (v) => clean(v).split(/[|;]/).map(x => x.trim()).filter(Boolean);
+function parseCsvLine(line) { const out = []; let cur = "", q = false; for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+        if (q && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+        }
+        else
+            q = !q;
+    }
+    else if (c === ',' && !q) {
+        out.push(cur);
+        cur = "";
+    }
+    else
+        cur += c;
+} out.push(cur); return out.map(x => x.trim()); }
+function csvRows(source) { const lines = source.replace(/^\uFEFF/, "").split(/\r?\n/).filter(x => x.trim()); if (!lines.length)
+    return []; const head = parseCsvLine(lines[0]).map(x => x.toLowerCase().replace(/[ -]+/g, "_")); return lines.slice(1).map((line, i) => { const values = parseCsvLine(line), row = {}; head.forEach((h, j) => row[h] = values[j] ?? ""); return { row: i + 2, data: row }; }); }
+function markdownSections(source, kind) { const lines = source.split(/\r?\n/); const out = []; let current = null, start = 1; const head = kind === "exercise" ? /^#{1,4}\s*(?:exercise\s*[:\-]\s*)?(.+)$/i : /^#{1,4}\s*(?:expression|idiom|card)?\s*[:\-]?\s*(.+)$/i; for (let i = 0; i < lines.length; i++) {
+    const line = lines[i], m = line.match(head);
+    if (m) {
+        if (current)
+            out.push({ row: start, data: current });
+        current = { title: m[1].trim() };
+        start = i + 1;
+        continue;
+    }
+    if (!current)
+        continue;
+    const kv = line.match(/^\s*[-*]?\s*([A-Za-z _-]+)\s*:\s*(.*)$/);
+    if (kv)
+        current[kv[1].trim().toLowerCase().replace(/[ -]+/g, "_")] = kv[2].trim();
+    else if (line.trim())
+        current.body = (current.body ? current.body + "\n" : "") + line.trim();
+} if (current)
+    out.push({ row: start, data: current }); return out; }
+function detectModeImportFormat(source) { return /^\s*#{1,4}\s/m.test(source) ? "markdown" : "csv"; }
+function programPayload(data) { return { title: clean(data.title || data.exercise), prompt: clean(data.prompt || data.body), language: clean(data.language) || undefined, starterCode: data.starter_code ?? data.starter ?? "", expectedOutput: clean(data.expected_output) || null, hints: splitList(data.hints), solutionNotes: clean(data.solution_notes || data.solution) || null, difficulty: ["easy", "medium", "hard"].includes(clean(data.difficulty).toLowerCase()) ? clean(data.difficulty).toLowerCase() : "medium", files: [] }; }
+function languagePayload(data) { return { expression: clean(data.expression || data.idiom || data.title), meaning: clean(data.meaning || data.body), literalTranslation: clean(data.literal_translation) || null, region: clean(data.region) || null, register: clean(data.register) || null, pronunciationNote: clean(data.pronunciation_note || data.pronunciation) || null, commonMistakes: splitList(data.common_mistakes || data.mistakes), exampleSentence: clean(data.example_sentence || data.example) || null }; }
+function buildModeImportPreview(state, source, format = detectModeImportFormat(source)) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan || !["PROGRAMMING_COURSE", "LANGUAGE_DECK"].includes(plan.mode))
+    throw new TypeError("Mode import requires a programming or language plan"); const mode = plan.mode; const raw = format === "csv" ? csvRows(source) : markdownSections(source, mode === "PROGRAMMING_COURSE" ? "exercise" : "expression"); const issues = []; const seen = new Set(); const rows = raw.map(({ row, data }, index) => { const payload = mode === "PROGRAMMING_COURSE" ? programPayload(data) : languagePayload(data); const label = clean(mode === "PROGRAMMING_COURSE" ? payload.title : payload.expression); const required = mode === "PROGRAMMING_COURSE" ? [clean(payload.title), clean(payload.prompt)] : [clean(payload.expression), clean(payload.meaning)]; if (required.some(x => !x)) {
+    issues.push({ row, code: "required", message: `Row ${row} is missing required ${mode === "PROGRAMMING_COURSE" ? "title/prompt" : "expression/meaning"}.` });
+    return { index, status: "invalid", label: label || `Row ${row}`, payload };
+} const key = label.toLowerCase(); const existing = mode === "PROGRAMMING_COURSE" ? plan.configuration.programming.exercises.some((x) => x.title.toLowerCase() === key) : plan.configuration.language.expressions.some((x) => x.expression.toLowerCase() === key); if (existing || seen.has(key)) {
+    issues.push({ row, code: "duplicate", message: `${label} already exists or is duplicated in this import.` });
+    return { index, status: "duplicate", label, payload };
+} seen.add(key); return { index, status: "add", label, payload }; }); return { baseRevision: state.revision, generatedAt: new Date().toISOString(), mode, format, rows, issues, summary: { add: rows.filter(x => x.status === "add").length, duplicate: rows.filter(x => x.status === "duplicate").length, invalid: rows.filter(x => x.status === "invalid").length } }; }

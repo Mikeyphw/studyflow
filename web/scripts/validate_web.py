@@ -64,7 +64,7 @@ def validate_interactions()->list[str]:
 
 def validate_typescript()->list[str]:
     e=[]
-    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/content_import.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/hardening.ts','src/release.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w18_hardening.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
+    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/content_import.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/mode_import.ts','src/intelligence.ts','src/hardening.ts','src/release.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w18_hardening.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
     ts=_text(WEB/'tsconfig.json',e)
     try:cfg=json.loads(ts); _require(e,cfg.get('compilerOptions',{}).get('strict') is True,'TypeScript strict mode must be enabled'); _require(e,cfg.get('compilerOptions',{}).get('module')=='CommonJS','tracked browser runtime must compile to CommonJS')
     except Exception as exc:e.append(f'tsconfig invalid: {exc}')
@@ -211,6 +211,20 @@ def validate_parity_practice_concurso()->list[str]:
     for rel in ('tests/test_pc06_practice_parity.py','tests/test_pc07_concurso_parity.py'):_require(e,(WEB/rel).is_file(),f'PC06/PC07 regression suite missing {rel}')
     return e
 
+def validate_parity_modes_coach()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); modes=_text(WEB/'src/modes.ts',e); importer=_text(WEB/'src/mode_import.ts',e); intel=_text(WEB/'src/intelligence.ts',e); state=_text(WEB/'src/state.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC08_PC09_MODES_COACH_PARITY.md',e)
+    for token in ('ProgrammingCodeFile','ModeImportPreview','LanguageReviewPrompt','WeeklyCoachReview','ContentCleanupPreview','ExamReportSnapshot','ExamRunbook','StudySprintPreview'):_require(e,token in types,f'PC08/PC09 typed contract missing {token}')
+    for token in ('tokenizeCode','assessProgrammingAttempt','buildLanguageReviewPrompt'):_require(e,token in modes,f'PC08 mode workflow missing {token}')
+    for token in ('detectModeImportFormat','buildModeImportPreview','PROGRAMMING_COURSE','LANGUAGE_DECK'):_require(e,token in importer,f'PC08 import pipeline missing {token}')
+    for token in ('deriveWeeklyCoach','deriveReadinessExplanation','deriveQuestionQuotaPlan','buildContentCleanupPreview','buildExamReportSnapshot','renderExamReportHtml','buildExamRunbook','buildStudySprintPreview'):_require(e,token in intel,f'PC09 intelligence workflow missing {token}')
+    for token in ('revealProgrammingSolution','previewModeImport','applyModeImportPreview','recordLanguageReview','applyContentCleanupPreview'):_require(e,token in state,f'PC08/PC09 store integration missing {token}')
+    for token in ('Safety boundary','Six-direction review studio','Preview import','Weekly coach','Preview smart cleanup','Export HTML exam report','Preview 7-day sprint'):_require(e,token in ui,f'PC08/PC09 React workflow missing {token}')
+    _require(e,'runtime/mode_import.js' in sw and 'runtime/intelligence.js' in sw,'PC08/PC09 runtimes must be cached by the offline app shell')
+    _require(e,'PC08 | Programming + Language content-mode parity closure — delivered' in roadmap,'PC08 roadmap delivery marker missing'); _require(e,'PC09 | Weekly coach/readiness/cleanup/report/runbook/sprint parity — delivered' in roadmap,'PC09 roadmap delivery marker missing')
+    for token in ('does not execute arbitrary shell commands or pasted code','all six review directions','Smart content cleanup is preview-first','requires a confirmed exam date','seven-day sprint reuses the PC04 adaptive scheduling engine'):_require(e,token in doc,f'PC08/PC09 documentation missing {token}')
+    for rel in ('tests/test_pc08_content_modes_parity.py','tests/test_pc09_coach_cleanup_report_sprint.py'):_require(e,(WEB/rel).is_file(),f'PC08/PC09 regression suite missing {rel}')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -222,7 +236,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach)
     out=[]
     for fn in groups:
         for item in fn():
@@ -230,8 +244,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

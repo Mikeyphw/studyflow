@@ -6,6 +6,8 @@ exports.createStudyStore = createStudyStore;
 const domain_js_1 = require("./domain.js");
 const content_import_js_1 = require("./content_import.js");
 const question_import_js_1 = require("./question_import.js");
+const mode_import_js_1 = require("./mode_import.js");
+const intelligence_js_1 = require("./intelligence.js");
 const schedule_js_1 = require("./schedule.js");
 const modes_js_1 = require("./modes.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
@@ -415,7 +417,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "programming-exercise-updated");
             return updated;
         },
-        recordProgrammingExercise(id, { completed = false, note = null } = {}) {
+        recordProgrammingExercise(id, { completed = false, note = null, observedOutput = null } = {}) {
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "PROGRAMMING_COURSE")
                 throw new TypeError("Programming evidence requires PROGRAMMING_COURSE mode");
@@ -423,11 +425,64 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             if (!exercise)
                 throw new TypeError("Programming exercise not found");
             const at = nowIso();
-            const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "programming-exercise", observedAt: at, provenance: "user", value: { exerciseId: id, completed: Boolean(completed), note }, createdAt: at, updatedAt: at });
+            const assessment = (0, modes_js_1.assessProgrammingAttempt)(exercise, observedOutput, completed);
+            const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "programming-exercise", observedAt: at, provenance: "user", value: { ...assessment, note }, createdAt: at, updatedAt: at });
             const nextExercise = (0, modes_js_1.createProgrammingExercise)({ ...exercise, status: completed ? "completed" : "attempted" });
             const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, programming: { ...current.configuration.programming, exercises: current.configuration.programming.exercises.map(x => x.id === id ? nextExercise : x) } }, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x), evidence: [...state.evidence, evidence] }, "programming-exercise-recorded");
             return evidence;
+        },
+        revealProgrammingSolution(id) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "PROGRAMMING_COURSE")
+                throw new TypeError("Programming solution reveal requires PROGRAMMING_COURSE mode");
+            const exercise = current.configuration.programming.exercises.find(x => x.id === id);
+            if (!exercise)
+                throw new TypeError("Programming exercise not found");
+            const at = nowIso();
+            const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "programming-solution-revealed", observedAt: at, provenance: "user", value: { exerciseId: id, hasSolution: Boolean(exercise.solutionNotes) }, createdAt: at, updatedAt: at });
+            commit({ ...state, evidence: [...state.evidence, evidence] }, "programming-solution-revealed");
+            return evidence;
+        },
+        setProgrammingProjectCheckpoint(projectId, checkpoint, completed = true) {
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== "PROGRAMMING_COURSE")
+                throw new TypeError("Programming project requires PROGRAMMING_COURSE mode");
+            const project = current.configuration.programming.projects.find(x => x.id === projectId);
+            if (!project)
+                throw new TypeError("Programming project not found");
+            if (!project.checkpoints.includes(checkpoint))
+                throw new TypeError("Programming checkpoint not found");
+            const done = new Set(project.completedCheckpoints ?? []);
+            completed ? done.add(checkpoint) : done.delete(checkpoint);
+            const next = { ...project, completedCheckpoints: [...done], status: done.size === project.checkpoints.length && project.checkpoints.length ? "completed" : done.size ? "active" : "planned" };
+            const at = nowIso();
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, programming: { ...current.configuration.programming, projects: current.configuration.programming.projects.map(x => x.id === projectId ? next : x) } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "programming-project-progress");
+            return updated;
+        },
+        previewModeImport(source, format) { return (0, mode_import_js_1.buildModeImportPreview)(state, source, format); },
+        applyModeImportPreview(preview) {
+            if (!preview || preview.baseRevision !== state.revision)
+                throw new TypeError("Mode import preview is stale; preview again before applying");
+            const current = state.plans.find((plan) => plan.id === activePlanId());
+            if (!current || current.mode !== preview.mode)
+                throw new TypeError("Mode import preview no longer matches the active plan");
+            const accepted = preview.rows.filter(x => x.status === "add");
+            const at = nowIso();
+            let updated = current;
+            if (current.mode === "PROGRAMMING_COURSE") {
+                const exercises = accepted.map((x, i) => (0, modes_js_1.createProgrammingExercise)({ ...x.payload, id: undefined, language: x.payload.language ?? current.configuration.programming.language }));
+                updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, programming: { ...current.configuration.programming, exercises: [...current.configuration.programming.exercises, ...exercises] } }, createdAt: current.createdAt, updatedAt: at });
+            }
+            else if (current.mode === "LANGUAGE_DECK") {
+                const expressions = accepted.map(x => (0, modes_js_1.createLanguageExpression)({ ...x.payload, id: undefined }));
+                updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, language: { ...current.configuration.language, expressions: [...current.configuration.language.expressions, ...expressions] } }, createdAt: current.createdAt, updatedAt: at });
+            }
+            else
+                throw new TypeError("Mode import supports programming or language plans only");
+            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "mode-import-applied");
+            return updated;
         },
         addLanguageExpression(input) {
             const current = state.plans.find((plan) => plan.id === activePlanId());
@@ -448,13 +503,16 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError("Language expression not found");
             if (!current.configuration.language.reviewDirections.includes(direction))
                 throw new TypeError("Unsupported language review direction");
+            const prompt = (0, modes_js_1.buildLanguageReviewPrompt)(expression, direction);
+            if (!prompt.ready)
+                throw new TypeError(prompt.reason ?? "Language review direction is not ready");
             const at = nowIso();
-            const manual = direction === "sentence-creation";
-            const value = { expressionId, direction, rating: Math.max(0, Math.min(5, Number(rating) || 0)), answer, note, manualReview: manual };
+            const value = { expressionId, direction, rating: Math.max(0, Math.min(5, Number(rating) || 0)), answer, note, manualReview: prompt.manualReview, expected: prompt.expected };
             const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "language-review", observedAt: at, provenance: "user", value, createdAt: at, updatedAt: at });
             const interval = value.rating >= 4 ? 7 : value.rating >= 3 ? 3 : 1;
-            const review = (0, domain_js_1.createReview)({ planId: current.id, dueAt: new Date(Date.parse(at) + interval * 86400000).toISOString(), status: "due", sourceType: "language-expression", sourceId: null, createdAt: at, updatedAt: at });
-            commit({ ...state, evidence: [...state.evidence, evidence], reviews: [...state.reviews, review] }, "language-review-recorded");
+            const existing = state.reviews.find(r => r.planId === current.id && r.status === "due" && r.sourceType === "language-expression" && r.sourceId === expressionId);
+            const review = existing ? null : (0, domain_js_1.createReview)({ planId: current.id, dueAt: new Date(Date.parse(at) + interval * 86400000).toISOString(), status: "due", sourceType: "language-expression", sourceId: expressionId, createdAt: at, updatedAt: at });
+            commit({ ...state, evidence: [...state.evidence, evidence], reviews: review ? [...state.reviews, review] : state.reviews }, "language-review-recorded");
             return evidence;
         },
         addReadingItem(input) {
@@ -941,6 +999,27 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const resolved = (0, domain_js_1.createErrorEntry)({ ...entry, status: "resolved", resolvedAt: at, note: note ?? entry.note, updatedAt: at });
             commit({ ...state, errorEntries: state.errorEntries.map((candidate) => candidate.id === errorId ? resolved : candidate) }, "error-resolved");
             return resolved;
+        },
+        applyContentCleanupPreview(preview) {
+            if (!preview || preview.baseRevision !== state.revision)
+                throw new TypeError("Cleanup preview is stale; preview again before applying");
+            const canonical = (0, intelligence_js_1.buildContentCleanupPreview)(state);
+            const allowed = new Map(canonical.issues.filter(x => x.applicable).map(x => [x.id, x]));
+            let next = cloneState(state);
+            const at = nowIso();
+            for (const requested of preview.issues.filter(x => x.applicable)) {
+                const issue = allowed.get(requested.id);
+                if (!issue)
+                    continue;
+                if (issue.action === "archive-topic")
+                    next.topics = next.topics.map(t => t.id === issue.entityId ? { ...t, status: "archived", updatedAt: at } : t);
+                else if (issue.action === "dismiss-review")
+                    next.reviews = next.reviews.map(r => r.id === issue.entityId ? { ...r, status: "dismissed", updatedAt: at } : r);
+                else if (issue.action === "cancel-activity")
+                    next.activities = next.activities.map(a => a.id === issue.entityId ? { ...a, status: "cancelled", updatedAt: at } : a);
+            }
+            commit(next, "content-cleanup-applied");
+            return state;
         },
         replaceState(nextState, reason = "state-replaced") { return commit(nextState, reason); },
         resetLocalState() {
