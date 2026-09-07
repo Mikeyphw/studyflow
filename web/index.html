@@ -104,33 +104,12 @@
 
             <section id="plan-schedule" class="tab-panel" data-tab-panel="plan" aria-labelledby="plan-schedule-heading">
                 <article class="card">
-                    <div class="card-heading-row">
-                        <div>
-                            <p class="eyebrow">This week</p>
-                            <h2 id="plan-schedule-heading">Schedule</h2>
-                        </div>
-                        <span class="pill">4 blocks</span>
-                    </div>
-                    <div class="chip-row" aria-label="Schedule filters">
-                        <button class="chip" type="button" data-schedule-filter="all" aria-pressed="true">All</button>
-                        <button class="chip" type="button" data-schedule-filter="study" aria-pressed="false">Study</button>
-                        <button class="chip" type="button" data-schedule-filter="questions" aria-pressed="false">Questions</button>
-                        <button class="chip" type="button" data-schedule-filter="review" aria-pressed="false">Review</button>
-                    </div>
-                    <div class="day-group">
-                        <h3>Today</h3>
-                        <ul class="schedule-list">
-                            <li data-schedule-kind="study"><strong>Constitutional Law</strong><span>Study · generated from cycle</span></li>
-                            <li data-schedule-kind="review"><strong>Administrative Law</strong><span>Review · overdue evidence</span></li>
-                        </ul>
-                    </div>
-                    <div class="day-group">
-                        <h3>Tomorrow</h3>
-                        <ul class="schedule-list">
-                            <li data-schedule-kind="questions"><strong>Portuguese</strong><span>Questions · manual block</span></li>
-                            <li data-schedule-kind="study"><strong>Banking Knowledge</strong><span>Study · generated from cycle</span></li>
-                        </ul>
-                    </div>
+                    <div class="card-heading-row"><div><p class="eyebrow">Preview before mutation</p><h2 id="plan-schedule-heading">Schedule intelligence</h2></div><span id="schedule-preview-summary" class="pill">Not previewed</span></div>
+                    <p>Generate a local proposal from overdue reviews, the study cycle and existing planned blocks. Nothing changes until you apply the preview.</p>
+                    <div class="button-row"><button id="schedule-preview" class="button button-primary" type="button">Preview schedule</button><button id="schedule-apply" class="button" type="button" disabled>Apply preview</button></div>
+                    <p id="schedule-preview-status" class="muted" aria-live="polite">No schedule preview yet.</p>
+                    <ul id="schedule-preview-list" class="schedule-list"></ul>
+                    <details class="details-block"><summary>Current planned activities</summary><ul id="schedule-current-list" class="schedule-list"></ul></details>
                 </article>
             </section>
 
@@ -186,26 +165,25 @@
                 <a href="#practice-errors" data-tab="practice-errors">Errors</a>
             </nav>
             <section id="practice-reviews" class="tab-panel" data-tab-panel="practice">
-                <article class="card"><h2>Reviews</h2><p>Spaced-review queue.</p><div class="empty-state"><strong>2 reviews due</strong><span>Review scheduling becomes domain-backed later.</span></div></article>
+                <article class="card"><div class="card-heading-row"><div><p class="eyebrow">Persisted queue</p><h2>Reviews</h2></div><span id="practice-review-count" class="pill">0 due</span></div><ul id="practice-review-list" class="activity-list"></ul></article>
             </section>
             <section id="practice-questions" class="tab-panel" data-tab-panel="practice">
                 <article class="card">
-                    <p class="eyebrow">Sample question</p>
-                    <h2>Questions</h2>
+                    <div class="card-heading-row"><div><p class="eyebrow">Evidence-backed attempts</p><h2>Questions</h2></div><button class="button button-quiet" type="button" data-open-dialog="question-dialog">Add question</button></div>
+                    <label class="field"><span>Question</span><select id="practice-question-select"></select></label>
                     <form id="practice-question-form">
-                        <fieldset>
-                            <legend>Which HTML element represents the primary content of a page?</legend>
-                            <label class="choice"><input type="radio" name="answer" value="header"> <span>&lt;header&gt;</span></label>
-                            <label class="choice"><input type="radio" name="answer" value="main"> <span>&lt;main&gt;</span></label>
-                            <label class="choice"><input type="radio" name="answer" value="aside"> <span>&lt;aside&gt;</span></label>
-                        </fieldset>
-                        <button type="submit" class="button button-primary">Check answer</button>
+                        <fieldset id="practice-question-fieldset"><legend id="practice-question-prompt">Choose a question</legend><div id="practice-question-choices"></div></fieldset>
+                        <label class="field"><span>If wrong, classify the error</span><select id="practice-error-category"><option value="content-gap">Content gap</option><option value="forgotten">Forgotten</option><option value="concept-confusion">Concept confusion</option><option value="interpretation">Interpretation</option><option value="distraction">Distraction</option><option value="calculation">Calculation</option><option value="time-pressure">Time pressure</option><option value="disputed">Disputed question</option><option value="other">Other</option></select></label>
+                        <button type="submit" class="button button-primary">Submit answer</button>
                     </form>
                     <p id="practice-feedback" class="feedback" aria-live="polite"></p>
+                    <p id="practice-question-stats" class="muted">No attempts yet.</p>
                 </article>
             </section>
-            <section id="practice-tests" class="tab-panel" data-tab-panel="practice"><article class="card"><h2>Tests</h2><p>Mock Exam Studio and saved blueprints arrive later.</p></article></section>
-            <section id="practice-errors" class="tab-panel" data-tab-panel="practice"><article class="card"><h2>Errors</h2><p>Error Notebook remediation workflow arrives with the practice domain.</p></article></section>
+            <section id="practice-tests" class="tab-panel" data-tab-panel="practice"><article class="card"><h2>Tests</h2><p>Mock Exam Studio remains a later phase; W09 establishes the question/review/error primitives it will reuse.</p></article></section>
+            <section id="practice-errors" class="tab-panel" data-tab-panel="practice">
+                <article class="card"><div class="card-heading-row"><div><p class="eyebrow">Remediation</p><h2>Error Notebook</h2></div><span id="practice-error-count" class="pill">0 open</span></div><ul id="practice-error-list" class="activity-list"></ul></article>
+            </section>
         </section>
 
         <section id="progress" class="screen" data-screen="progress" aria-labelledby="progress-heading">
@@ -307,6 +285,20 @@
             <div class="form-grid"><label class="field"><span>Priority</span><select name="priority"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label><label class="field"><span>Status</span><select name="status"><option value="not-started">Not started</option><option value="learning">Learning</option><option value="reviewing">Reviewing</option><option value="mastered">Mastered</option><option value="archived">Archived</option></select></label></div>
             <label class="field"><span>Notes</span><textarea name="notes" rows="3" maxlength="1000"></textarea></label>
             <div class="button-row dialog-actions"><button id="topic-delete" type="button" class="button button-danger">Delete</button><button type="button" class="button button-quiet" data-close-dialog>Cancel</button><button type="submit" class="button button-primary">Save topic</button></div>
+        </form>
+    </dialog>
+
+
+    <dialog id="question-dialog" class="dialog">
+        <form id="question-form" method="dialog">
+            <div class="dialog-header"><div><p class="eyebrow">Practice</p><h2>Add question</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close question editor">×</button></div>
+            <label class="field"><span>Subject</span><select name="subjectId"></select></label>
+            <label class="field"><span>Topic</span><select name="topicId"><option value="">No topic</option></select></label>
+            <label class="field"><span>Prompt</span><textarea name="prompt" rows="3" maxlength="1000" required></textarea></label>
+            <label class="field"><span>Choices (one per line)</span><textarea name="choices" rows="4" placeholder="Option A&#10;Option B"></textarea></label>
+            <label class="field"><span>Correct answer</span><input name="answer" type="text" maxlength="300" placeholder="Leave blank for ungraded"></label>
+            <label class="field"><span>Explanation</span><textarea name="explanation" rows="3" maxlength="1000"></textarea></label>
+            <div class="button-row dialog-actions"><button type="button" class="button button-quiet" data-close-dialog>Cancel</button><button type="submit" class="button button-primary">Save question</button></div>
         </form>
     </dialog>
 

@@ -66,8 +66,8 @@ def validate_contract() -> list[str]:
         scripts = package.get("scripts", {})
         for script in ("build", "test", "lint", "dev"):
             fail(errors, not str(scripts.get(script, "")).strip(), f"missing npm script: {script}")
-        fail(errors, bool(package.get("dependencies")), "W00-W05 must not add runtime dependencies")
-        fail(errors, bool(package.get("devDependencies")), "W00-W05 must not add dev dependencies")
+        fail(errors, bool(package.get("dependencies")), "web target must remain dependency-free")
+        fail(errors, bool(package.get("devDependencies")), "web target must remain dependency-free")
 
     lock_text = read_text(WEB / "package-lock.json", errors)
     if lock_text:
@@ -222,7 +222,7 @@ def validate_interactions() -> list[str]:
         fail(errors, element_id not in parser.ids, f"W03 interactive element missing: {element_id}")
 
     domain_clock = read_text(WEB / "src/domain.js", []) if (WEB / "src/domain.js").is_file() else ""
-    interaction_source = js + "\n" + text + "\n" + domain_clock
+    interaction_source = js + "\n" + text + "\n" + domain_clock + "\n" + (read_text(WEB / "src/events.js", []) if (WEB / "src/events.js").is_file() else "")
     for token in (
         "showScreen", "activateTab", "showModal", "FormData", "addEventListener",
         "aria-current", "aria-pressed", "createElement", "textContent",
@@ -381,6 +381,55 @@ def validate_plan_content() -> list[str]:
         _node_check(errors, WEB / relative)
     return errors
 
+
+def validate_schedule() -> list[str]:
+    errors = validate_plan_content()
+    html, parser = parse_shell(errors)
+    domain = read_text(WEB / "src/domain.js", errors)
+    state = read_text(WEB / "src/state.js", errors)
+    render = read_text(WEB / "src/render.js", errors)
+    events = read_text(WEB / "src/events.js", errors)
+    if parser is not None:
+        for element_id in ("schedule-preview", "schedule-apply", "schedule-preview-list", "schedule-current-list", "schedule-preview-status"):
+            fail(errors, element_id not in parser.ids, f"W08 schedule UI hook missing: {element_id}")
+    for token in ("buildSchedulePreview", "baseRevision", "operations", "Overdue planned activity", "scheduledFor"):
+        fail(errors, token not in domain, f"W08 schedule-domain contract missing token: {token}")
+    for token in ("previewSchedule", "applySchedulePreview", "Schedule preview is stale"):
+        fail(errors, token not in state, f"W08 schedule-store contract missing token: {token}")
+    for token in ("renderScheduleState", "Preview ready"):
+        fail(errors, token not in render, f"W08 schedule rendering missing token: {token}")
+    fail(errors, "schedule-preview" not in events or "schedule-apply" not in events, "W08 schedule event wiring missing")
+    doc = read_text(ROOT / "docs/web/W08_W09_SCHEDULE_PRACTICE.md", errors)
+    for token in ("preview before apply", "stale", "immutable history", "overdue review"):
+        fail(errors, token.lower() not in doc.lower(), f"W08/W09 delivery doc missing: {token}")
+    return errors
+
+
+def validate_practice() -> list[str]:
+    errors = validate_schedule()
+    html, parser = parse_shell(errors)
+    domain = read_text(WEB / "src/domain.js", errors)
+    state = read_text(WEB / "src/state.js", errors)
+    render = read_text(WEB / "src/render.js", errors)
+    events = read_text(WEB / "src/events.js", errors)
+    storage = read_text(WEB / "src/storage.js", errors)
+    if parser is not None:
+        for element_id in ("practice-question-select", "practice-question-form", "practice-review-list", "practice-error-list", "question-dialog", "question-form"):
+            fail(errors, element_id not in parser.ids, f"W09 practice UI hook missing: {element_id}")
+    for token in ("createErrorEntry", "ERROR_CATEGORIES", "gradeQuestion", "deriveQuestionStats", "selectOpenErrors"):
+        fail(errors, token not in domain, f"W09 practice-domain contract missing token: {token}")
+    for token in ("addQuestion", "answerQuestion", "completeReview", "resolveError", "question-attempt"):
+        fail(errors, token not in state, f"W09 practice-store contract missing token: {token}")
+    for token in ("renderPracticeState", "graded accuracy", "recurrence"):
+        fail(errors, token not in render, f"W09 practice rendering missing token: {token}")
+    for token in ("practice-question-form", "data-complete-review", "data-resolve-error"):
+        fail(errors, token not in events, f"W09 event wiring missing token: {token}")
+    for token in ("studyflow.local.state.v2", "studyflow.local.state.v1"):
+        fail(errors, token not in storage, f"W09 state migration missing legacy key: {token}")
+    for relative in ("src/domain.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js", "app.js"):
+        _node_check(errors, WEB / relative)
+    return errors
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -392,6 +441,8 @@ def main() -> int:
     mode.add_argument("--domain", action="store_true")
     mode.add_argument("--focus", action="store_true")
     mode.add_argument("--content", action="store_true")
+    mode.add_argument("--schedule", action="store_true")
+    mode.add_argument("--practice", action="store_true")
     mode.add_argument("--all", action="store_true")
     args = parser.parse_args()
 
@@ -416,9 +467,15 @@ def main() -> int:
     elif args.focus:
         errors = validate_focus()
         label = "W06 Today + durable focus"
-    else:
+    elif args.content:
         errors = validate_plan_content()
         label = "W06/W07 Today, Focus + Plan Content"
+    elif args.schedule:
+        errors = validate_schedule()
+        label = "W08 schedule intelligence + adaptive preview"
+    else:
+        errors = validate_practice()
+        label = "W08/W09 schedule intelligence + practice"
 
     if errors:
         print("StudyFlow web validation FAILED:", file=sys.stderr)

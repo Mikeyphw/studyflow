@@ -1,8 +1,8 @@
 "use strict";
 
 import {
-    createActivity, createEvidence, createFocusState, createInitialStudyState, createStudySession,
-    createStudyCycleState, createSubject, createTopic, focusRemainingMs, migrateStudyState, selectActivitiesForQueue, validateStudyState,
+    buildSchedulePreview, createActivity, createErrorEntry, createEvidence, createFocusState, createInitialStudyState, createQuestion, createReview, createStudySession,
+    createStudyCycleState, createSubject, createTopic, focusRemainingMs, gradeQuestion, migrateStudyState, selectActivitiesForQueue, validateStudyState,
 } from "./domain.js";
 
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
@@ -17,7 +17,7 @@ function persistenceMessage(status, reason = null) {
     if (status === "cleared") return "Local state reset to the StudyFlow sample baseline.";
     return reason ?? "Local state ready.";
 }
-function referenceCollections(state) { return [state.activities, state.sessions, state.materials, state.reviews, state.questions, state.evidence]; }
+function referenceCollections(state) { return [state.activities, state.sessions, state.materials, state.reviews, state.questions, state.evidence, state.errorEntries]; }
 
 export function createStudyStore({ repository, initialStateFactory = createInitialStudyState, now = () => new Date().toISOString() } = {}) {
     if (!repository || typeof repository.load !== "function" || typeof repository.save !== "function") throw new TypeError("createStudyStore requires a repository with load/save methods");
@@ -152,6 +152,72 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
         },
         moveTopic(id, direction) {
             const current=state.topics.find((topic)=>topic.id===id); if(!current) return; const ordered=state.topics.filter((topic)=>topic.subjectId===current.subjectId).sort((a,b)=>(a.order??0)-(b.order??0)); const index=ordered.findIndex((topic)=>topic.id===id); const target=index+(direction==="up"?-1:1); if(index<0||target<0||target>=ordered.length)return; [ordered[index],ordered[target]]=[ordered[target],ordered[index]]; const ranks=new Map(ordered.map((topic,i)=>[topic.id,i])); const at=nowIso(); commit({ ...state,topics:state.topics.map((topic)=>ranks.has(topic.id)?{...topic,order:ranks.get(topic.id),updatedAt:at}:topic) },"topic-reordered");
+        },
+        previewSchedule(options = {}) { return buildSchedulePreview(state, { ...options, at: options.at ?? nowIso() }); },
+        applySchedulePreview(preview) {
+            if (!preview || typeof preview !== "object" || !Array.isArray(preview.operations)) throw new TypeError("Schedule preview is required");
+            if (preview.baseRevision !== state.revision) throw new TypeError("Schedule preview is stale; preview again before applying");
+            const at = nowIso(); let activities = state.activities.map((activity) => ({ ...activity }));
+            for (const operation of preview.operations) {
+                if (operation.action === "move") {
+                    const index = activities.findIndex((activity) => activity.id === operation.activityId && activity.status === "planned");
+                    if (index < 0) throw new TypeError(`Schedule move references missing planned activity: ${operation.activityId}`);
+                    const scheduledFor = operation.to; const today = at.slice(0,10);
+                    activities[index] = { ...activities[index], scheduledFor, queue: scheduledFor === today ? "today" : "future", updatedAt: at };
+                } else if (operation.action === "add") {
+                    const activity = createActivity({ ...operation.activity, planId: activePlanId(), scheduledFor: operation.scheduledFor, origin: operation.activity.origin ?? "schedule", createdAt: at, updatedAt: at });
+                    activities.push(activity);
+                } else throw new TypeError(`Unsupported schedule operation: ${operation.action}`);
+            }
+            commit({ ...state, activities }, "schedule-preview-applied");
+            return preview;
+        },
+        addQuestion(input) {
+            const at = nowIso(); const question = createQuestion({ ...input, planId: input.planId ?? activePlanId(), createdAt: at, updatedAt: at });
+            commit({ ...state, questions: [...state.questions, question] }, "question-added"); return question;
+        },
+        answerQuestion(questionId, answer, { durationSeconds = null, errorCategory = "other", note = null } = {}) {
+            const at = nowIso(); const question = state.questions.find((candidate) => candidate.id === questionId && candidate.planId === activePlanId());
+            if (!question) throw new TypeError("Question not found in the active plan");
+            const result = gradeQuestion(question, answer);
+            const attempt = createEvidence({
+                planId: activePlanId(), subjectId: question.subjectId, topicId: question.topicId, questionId: question.id, kind: "question-attempt", observedAt: at, provenance: "question",
+                value: { gradable: result.gradable, correct: result.correct, submitted: result.submitted, expected: result.expected, durationSeconds: durationSeconds == null ? null : Math.max(0, Number(durationSeconds) || 0) }, createdAt: at, updatedAt: at,
+            });
+            let reviews = state.reviews; let errorEntries = state.errorEntries; let review = null; let errorEntry = null;
+            if (result.gradable && result.correct === false) {
+                review = state.reviews.find((candidate) => candidate.status === "due" && candidate.sourceType === "question" && candidate.sourceId === question.id) ?? null;
+                if (!review) {
+                    review = createReview({ planId: activePlanId(), subjectId: question.subjectId, topicId: question.topicId, dueAt: new Date(Date.parse(at)+86_400_000).toISOString(), status: "due", sourceType: "question", sourceId: question.id, createdAt: at, updatedAt: at });
+                    reviews = [...reviews, review];
+                }
+                const existing = state.errorEntries.find((candidate) => candidate.status === "open" && candidate.questionId === question.id && candidate.category === errorCategory);
+                if (existing) {
+                    errorEntry = createErrorEntry({ ...existing, recurrenceCount: existing.recurrenceCount + 1, reviewId: review.id, note: note ?? existing.note, updatedAt: at });
+                    errorEntries = state.errorEntries.map((candidate) => candidate.id === existing.id ? errorEntry : candidate);
+                } else {
+                    errorEntry = createErrorEntry({ planId: activePlanId(), subjectId: question.subjectId, topicId: question.topicId, questionId: question.id, reviewId: review.id, category: errorCategory, note, observedAt: at, createdAt: at, updatedAt: at });
+                    errorEntries = [...state.errorEntries, errorEntry];
+                }
+            }
+            commit({ ...state, evidence: [...state.evidence, attempt], reviews, errorEntries }, "question-answered");
+            return { result, attempt, review, errorEntry };
+        },
+        completeReview(reviewId, { rating = null } = {}) {
+            const at = nowIso(); const review = state.reviews.find((candidate) => candidate.id === reviewId && candidate.planId === activePlanId());
+            if (!review) throw new TypeError("Review not found in the active plan");
+            if (review.status !== "due") return review;
+            const completed = createReview({ ...review, status: "completed", updatedAt: at });
+            const evidence = createEvidence({ planId: activePlanId(), subjectId: review.subjectId, topicId: review.topicId, kind: "review-completed", observedAt: at, provenance: "user", value: { reviewId: review.id, rating }, createdAt: at, updatedAt: at });
+            commit({ ...state, reviews: state.reviews.map((candidate) => candidate.id === review.id ? completed : candidate), evidence: [...state.evidence, evidence] }, "review-completed");
+            return completed;
+        },
+        resolveError(errorId, { note = null } = {}) {
+            const at = nowIso(); const entry = state.errorEntries.find((candidate) => candidate.id === errorId && candidate.planId === activePlanId());
+            if (!entry) throw new TypeError("Error entry not found in the active plan");
+            const resolved = createErrorEntry({ ...entry, status: "resolved", resolvedAt: at, note: note ?? entry.note, updatedAt: at });
+            commit({ ...state, errorEntries: state.errorEntries.map((candidate) => candidate.id === errorId ? resolved : candidate) }, "error-resolved");
+            return resolved;
         },
         replaceState(nextState, reason="state-replaced") { return commit(nextState,reason); },
         resetLocalState() {

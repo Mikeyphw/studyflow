@@ -3,7 +3,7 @@
 import { STATE_SCHEMA_VERSION, migrateStudyState, validateStudyState } from "./domain.js";
 
 export const STORAGE_KEY = `studyflow.local.state.v${STATE_SCHEMA_VERSION}`;
-export const LEGACY_STORAGE_KEYS = Object.freeze(["studyflow.local.state.v1"]);
+export const LEGACY_STORAGE_KEYS = Object.freeze(["studyflow.local.state.v2", "studyflow.local.state.v1"]);
 
 function resolveBrowserStorage() {
     try { return globalThis.localStorage ?? null; } catch { return null; }

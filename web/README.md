@@ -38,3 +38,7 @@ W04 introduces the versioned temporary browser-state repository and makes Quick 
 ## WEB-W06/W07
 
 The current browser build now has durable focus sessions and editable plan content. Focus uses absolute persisted timestamps, survives reload, records completed/cancelled `StudySession` history, and emits completion `Evidence` without inventing performance data. Plan Content supports subject/topic create, edit, safe delete, archive, reorder, weight, priority, status, notes, search, filters and evidence counts. The W04 v1 localStorage key is migrated into schema v2 instead of discarded.
+
+## W08/W09
+
+Schedule changes are now preview-first and revision-guarded. Practice questions, review completion and the Error Notebook are stored locally and generate evidence only from actual user actions. Ungraded questions remain truthfully ungraded.

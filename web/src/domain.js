@@ -1,7 +1,7 @@
 "use strict";
 
-export const STATE_SCHEMA_VERSION = 2;
-export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1]);
+export const STATE_SCHEMA_VERSION = 3;
+export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2]);
 
 export const ENTITY_COLLECTIONS = Object.freeze([
     "plans",
@@ -14,6 +14,7 @@ export const ENTITY_COLLECTIONS = Object.freeze([
     "reviews",
     "questions",
     "evidence",
+    "errorEntries",
 ]);
 
 export const STUDY_MODES = Object.freeze([
@@ -27,6 +28,10 @@ export const STUDY_MODES = Object.freeze([
 export const ACTIVITY_KINDS = Object.freeze(["study", "questions", "review"]);
 export const ACTIVITY_STATUSES = Object.freeze(["planned", "completed", "cancelled"]);
 export const FOCUS_STATUSES = Object.freeze(["idle", "running", "paused"]);
+export const ERROR_CATEGORIES = Object.freeze([
+    "content-gap", "forgotten", "concept-confusion", "interpretation",
+    "distraction", "calculation", "time-pressure", "disputed", "other",
+]);
 
 const ID_PREFIXES = Object.freeze({
     plan: "plan",
@@ -39,6 +44,7 @@ const ID_PREFIXES = Object.freeze({
     review: "review",
     question: "question",
     evidence: "evidence",
+    errorEntry: "error",
 });
 
 function requireText(value, field) {
@@ -145,8 +151,9 @@ export function createActivity(input = {}) {
         kind: requireOneOf(input.kind ?? "study", ACTIVITY_KINDS, "activity.kind"),
         durationMinutes: requirePositiveInteger(input.durationMinutes ?? 25, "activity.durationMinutes", { min: 5, max: 240 }),
         status: requireOneOf(input.status ?? "planned", ACTIVITY_STATUSES, "activity.status"),
-        origin: requireOneOf(input.origin ?? "manual", ["manual", "seed", "cycle", "review", "import"], "activity.origin"),
+        origin: requireOneOf(input.origin ?? "manual", ["manual", "seed", "cycle", "review", "import", "schedule"], "activity.origin"),
         queue: requireOneOf(input.queue ?? "today", ["today", "future", "backlog"], "activity.queue"),
+        scheduledFor: optionalText(input.scheduledFor),
     };
 }
 
@@ -219,6 +226,7 @@ export function createQuestion(input = {}) {
         choices,
         answer: optionalText(input.answer),
         source: optionalText(input.source),
+        explanation: optionalText(input.explanation),
         disputed: Boolean(input.disputed),
     };
 }
@@ -236,6 +244,104 @@ export function createEvidence(input = {}) {
         observedAt: requireText(input.observedAt, "evidence.observedAt"),
         value: input.value ?? null,
         provenance: requireOneOf(input.provenance ?? "user", ["user", "session", "question", "import", "derived"], "evidence.provenance"),
+    };
+}
+
+export function createErrorEntry(input = {}) {
+    return {
+        ...entityBase("errorEntry", input),
+        planId: requireText(input.planId, "errorEntry.planId"),
+        subjectId: optionalId(input.subjectId),
+        topicId: optionalId(input.topicId),
+        questionId: optionalId(input.questionId),
+        reviewId: optionalId(input.reviewId),
+        category: requireOneOf(input.category ?? "other", ERROR_CATEGORIES, "errorEntry.category"),
+        note: optionalText(input.note),
+        recurrenceCount: requirePositiveInteger(input.recurrenceCount ?? 1, "errorEntry.recurrenceCount", { min: 1, max: 9999 }),
+        status: requireOneOf(input.status ?? "open", ["open", "resolved"], "errorEntry.status"),
+        observedAt: requireText(input.observedAt, "errorEntry.observedAt"),
+        resolvedAt: optionalText(input.resolvedAt),
+    };
+}
+
+function dayKey(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) throw new TypeError(`Invalid date: ${value}`);
+    return date.toISOString().slice(0, 10);
+}
+
+function plusDays(value, days) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) throw new TypeError(`Invalid date: ${value}`);
+    date.setUTCDate(date.getUTCDate() + Number(days));
+    return date.toISOString();
+}
+
+export function gradeQuestion(question, answer) {
+    const submitted = String(answer ?? "").trim();
+    if (!submitted) return { gradable: Boolean(question.answer), correct: null, submitted: null, expected: question.answer ?? null };
+    if (!question.answer) return { gradable: false, correct: null, submitted, expected: null };
+    const expected = String(question.answer).trim();
+    return { gradable: true, correct: submitted === expected, submitted, expected };
+}
+
+export function buildSchedulePreview(state, { at = isoNow(), days = 7, maxBlocks = 7 } = {}) {
+    const generatedAt = new Date(at).toISOString();
+    const activePlan = selectActivePlan(state);
+    if (!activePlan) return { baseRevision: state.revision, generatedAt, operations: [], summary: { add: 0, move: 0 }, reasons: ["No active plan"] };
+    const today = dayKey(generatedAt);
+    const operations = [];
+    const reasons = [];
+    const planned = state.activities.filter((activity) => activity.planId === activePlan.id && activity.status === "planned");
+    const overdueScheduled = planned
+        .filter((activity) => activity.scheduledFor && activity.scheduledFor < today)
+        .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
+    for (let i = 0; i < Math.min(overdueScheduled.length, maxBlocks); i += 1) {
+        const activity = overdueScheduled[i];
+        operations.push({
+            action: "move",
+            activityId: activity.id,
+            from: activity.scheduledFor,
+            to: dayKey(plusDays(generatedAt, i)),
+            reason: "Overdue planned activity; history remains unchanged",
+        });
+    }
+
+    const remainingSlots = Math.max(0, maxBlocks - operations.length);
+    const existingKeys = new Set(planned.map((activity) => `${activity.kind}|${activity.subjectId ?? ""}|${activity.topicId ?? ""}|${activity.scheduledFor ?? ""}`));
+    const dueReviews = selectOverdueReviews(state, generatedAt, activePlan.id);
+    const cycleSubjects = selectSubjectsForPlan(state, activePlan.id);
+    let slot = 0;
+    const candidates = [];
+    for (const review of dueReviews) {
+        candidates.push({
+            title: state.topics.find((topic) => topic.id === review.topicId)?.name ?? "Due review",
+            kind: "review", durationMinutes: 20, subjectId: review.subjectId, topicId: review.topicId, origin: "review",
+            reason: "Overdue review backed by a persisted review record",
+        });
+    }
+    for (const subject of cycleSubjects) {
+        const topic = selectTopicsForSubject(state, subject.id).sort((a,b) => (a.priority === "high" ? -1 : 0) - (b.priority === "high" ? -1 : 0))[0] ?? null;
+        candidates.push({
+            title: topic ? `${subject.name}: ${topic.name}` : subject.name,
+            kind: "study", durationMinutes: 40, subjectId: subject.id, topicId: topic?.id ?? null, origin: "cycle",
+            reason: topic?.priority === "high" ? "Study-cycle subject with a high-priority topic" : "Study-cycle subject",
+        });
+    }
+    for (const candidate of candidates) {
+        if (slot >= remainingSlots) break;
+        const scheduledFor = dayKey(plusDays(generatedAt, Math.min(days - 1, slot)));
+        const key = `${candidate.kind}|${candidate.subjectId ?? ""}|${candidate.topicId ?? ""}|${scheduledFor}`;
+        if (existingKeys.has(key)) continue;
+        operations.push({ action: "add", scheduledFor, activity: { ...candidate, queue: scheduledFor === today ? "today" : "future" } });
+        existingKeys.add(key);
+        slot += 1;
+    }
+    if (!operations.length) reasons.push("No schedule changes are justified by current local plan data.");
+    return {
+        baseRevision: state.revision, generatedAt, operations,
+        summary: { add: operations.filter((item) => item.action === "add").length, move: operations.filter((item) => item.action === "move").length },
+        reasons,
     };
 }
 
@@ -283,22 +389,16 @@ export function focusRemainingMs(focus, at = Date.now()) {
 
 export function migrateStudyState(input, { now = isoNow() } = {}) {
     if (!input || typeof input !== "object" || Array.isArray(input)) return input;
-    if (input.schemaVersion === STATE_SCHEMA_VERSION) {
-        const state = JSON.parse(JSON.stringify(input));
-        state.focus = createFocusState(state.focus ?? {});
-        state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => ({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : state.subjects;
-        state.studyCycle = createStudyCycleState(state.studyCycle ?? { subjectIds: state.subjects.filter((subject) => !subject.archived).map((subject) => subject.id), cursor: 0 });
-        state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : state.topics;
-        return state;
-    }
-    if (input.schemaVersion !== 1) return input;
+    if (![1, 2, STATE_SCHEMA_VERSION].includes(input.schemaVersion)) return input;
     const state = JSON.parse(JSON.stringify(input));
+    const originalVersion = state.schemaVersion;
     state.schemaVersion = STATE_SCHEMA_VERSION;
-    state.focus = createFocusState({ durationMinutes: 25 });
-    state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => ({ ...subject, order: index, notes: subject.notes ?? null })) : [];
-    state.studyCycle = createStudyCycleState({ subjectIds: state.subjects.filter((subject) => !subject.archived).map((subject) => subject.id), cursor: 0 });
-    state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: index, notes: topic.notes ?? null })) : [];
-    state.migratedAt = now;
+    state.focus = createFocusState(state.focus ?? {});
+    state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => ({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : [];
+    state.studyCycle = createStudyCycleState(state.studyCycle ?? { subjectIds: state.subjects.filter((subject) => !subject.archived).map((subject) => subject.id), cursor: 0 });
+    state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
+    state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
+    if (originalVersion !== STATE_SCHEMA_VERSION) state.migratedAt = now;
     return state;
 }
 
@@ -319,6 +419,7 @@ export function createEmptyStudyState() {
         reviews: [],
         questions: [],
         evidence: [],
+        errorEntries: [],
     };
 }
 
@@ -356,6 +457,17 @@ export function createInitialStudyState({ now = isoNow() } = {}) {
         createActivity({ id: "activity-seed-portuguese-questions", planId, subjectId: portugueseId, title: "Portuguese questions", kind: "questions", durationMinutes: 30, origin: "seed", createdAt: now, updatedAt: now }),
         createActivity({ id: "activity-seed-banking-study", planId, subjectId: bankingId, title: "Banking Knowledge study-cycle block", kind: "study", durationMinutes: 40, origin: "seed", createdAt: now, updatedAt: now }),
     ];
+    state.questions = [createQuestion({
+        id: "question-seed-html-main", planId, subjectId: portugueseId, topicId: "topic-text-interpretation",
+        prompt: "Which HTML element represents the primary content of a page?",
+        choices: ["header", "main", "aside"], answer: "main",
+        explanation: "The main element represents the document's primary content.", source: "StudyFlow sample",
+        createdAt: now, updatedAt: now,
+    })];
+    state.reviews = [createReview({
+        id: "review-seed-fundamental-rights", planId, subjectId: constitutionalId, topicId: "topic-fundamental-rights",
+        dueAt: now, status: "due", sourceType: "topic", sourceId: "topic-fundamental-rights", createdAt: now, updatedAt: now,
+    })];
     return state;
 }
 
@@ -388,6 +500,7 @@ function validateEntityContracts(state, errors) {
         reviews: createReview,
         questions: createQuestion,
         evidence: createEvidence,
+        errorEntries: createErrorEntry,
     };
     for (const [collectionName, create] of Object.entries(constructors)) {
         for (const entity of state[collectionName]) {
@@ -444,6 +557,7 @@ export function validateStudyState(state) {
     const activityIds = idsFor(state.activities);
     const sessionIds = idsFor(state.sessions);
     const questionIds = idsFor(state.questions);
+    const reviewIds = idsFor(state.reviews);
 
     if (state.activePlanId != null && !planIds.has(state.activePlanId)) {
         errors.push(`activePlanId references missing plan: ${state.activePlanId}`);
@@ -467,7 +581,7 @@ export function validateStudyState(state) {
 
     for (const [label, collection] of [
         ["activity", state.activities], ["session", state.sessions], ["goal", state.goals],
-        ["material", state.materials], ["review", state.reviews], ["question", state.questions], ["evidence", state.evidence],
+        ["material", state.materials], ["review", state.reviews], ["question", state.questions], ["evidence", state.evidence], ["errorEntry", state.errorEntries],
     ]) {
         for (const entity of collection) {
             requireReference(errors, entity, "planId", planIds, label);
@@ -495,6 +609,13 @@ export function validateStudyState(state) {
             errors.push(`review ${review.id} references missing activity sourceId: ${review.sourceId}`);
         }
     }
+    for (const errorEntry of state.errorEntries) {
+        requireReference(errors, errorEntry, "questionId", questionIds, "errorEntry");
+        requireReference(errors, errorEntry, "reviewId", reviewIds, "errorEntry");
+        const question = errorEntry.questionId == null ? null : state.questions.find((candidate) => candidate.id === errorEntry.questionId);
+        if (question && question.planId !== errorEntry.planId) errors.push(`errorEntry ${errorEntry.id} planId does not match its questionId`);
+    }
+
     for (const evidence of state.evidence) {
         requireReference(errors, evidence, "activityId", activityIds, "evidence");
         requireReference(errors, evidence, "sessionId", sessionIds, "evidence");
@@ -577,4 +698,22 @@ export function derivePlanInventory(state, planId = state.activePlanId) {
         (summary, activity) => ({ ...summary, plannedMinutes: summary.plannedMinutes + activity.durationMinutes }),
         { subjects: subjects.length, topics: topics.length, activities: activities.length, plannedMinutes: 0 },
     );
+}
+
+
+export function selectDueReviews(state, at = Date.now(), planId = state.activePlanId) {
+    return selectOverdueReviews(state, at, planId).sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
+}
+
+export function selectOpenErrors(state, planId = state.activePlanId) {
+    return state.errorEntries
+        .filter((entry) => entry.planId === planId && entry.status === "open")
+        .sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt));
+}
+
+export function deriveQuestionStats(state, planId = state.activePlanId) {
+    const attempts = state.evidence.filter((item) => item.planId === planId && item.kind === "question-attempt");
+    const gradable = attempts.filter((item) => item.value && item.value.gradable === true);
+    const correct = gradable.filter((item) => item.value.correct === true);
+    return { attempts: attempts.length, gradedAttempts: gradable.length, correct: correct.length, accuracy: gradable.length ? correct.length / gradable.length : null };
 }

@@ -27,6 +27,7 @@ class W03InteractionFoundationTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.html = (WEB / "index.html").read_text(encoding="utf-8")
         cls.js = (WEB / "app.js").read_text(encoding="utf-8")
+        cls.events = (WEB / "src/events.js").read_text(encoding="utf-8") if (WEB / "src/events.js").is_file() else ""
         cls.parser = Capture()
         cls.parser.feed(cls.html)
         cls.parser.close()
@@ -58,7 +59,7 @@ class W03InteractionFoundationTest(unittest.TestCase):
             "addEventListener", "aria-current", "aria-pressed",
             "createElement", "textContent",
         ):
-            self.assertIn(token, self.js + self.html)
+            self.assertIn(token, self.js + self.events + self.html)
 
     def test_focus_timer_uses_absolute_time_for_truth(self) -> None:
         domain = (WEB / "src/domain.js").read_text(encoding="utf-8") if (WEB / "src/domain.js").is_file() else ""
