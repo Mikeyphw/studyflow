@@ -717,3 +717,50 @@ legend {
 .mode-item pre { max-width: 100%; overflow-x: auto; margin: 0; padding: .75rem; border-radius: var(--radius-sm); background: var(--surface-muted); }
 .compact-grid { grid-template-columns: 1fr; }
 @media (min-width: 700px) { .compact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* W18 accessibility and release hardening */
+.tab-link {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tap-size);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.tab-link[aria-selected="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+}
+.tab-panel:focus,
+.app-main:focus {
+    outline: none;
+}
+.tab-panel:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+}
+@media (forced-colors: active) {
+    .card,
+    .hero-card,
+    .metric-card,
+    .button,
+    .tab-link,
+    .status-pill {
+        border: 1px solid CanvasText;
+    }
+    .button-primary,
+    .tab-link[aria-selected="true"] {
+        forced-color-adjust: auto;
+    }
+    .toast {
+        border: 1px solid CanvasText;
+    }
+}

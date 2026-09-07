@@ -9,40 +9,55 @@ function registerStudyFlowPwa({ statusElement = null, installButton = null, navi
         if (!navigatorObject)
             return;
         setStatus(navigatorObject.onLine === false
-            ? "Offline. Cached StudyFlow screens remain available."
-            : "Online. Offline app shell is ready after service-worker activation.");
+            ? "Offline. The installed StudyFlow app shell remains available from local cache."
+            : "Online. StudyFlow core data remains local; the service worker keeps the app shell offline-ready.");
     };
+    const noop = () => undefined;
     if (!navigatorObject?.serviceWorker) {
         setStatus("Service workers are unavailable in this browser context.");
-        return { supported: false };
+        return { supported: false, dispose: noop };
     }
     navigatorObject.serviceWorker.register("./service-worker.js", { scope: "./" })
         .then(() => syncNetworkStatus())
         .catch((error) => setStatus(`Offline worker registration failed: ${error instanceof Error ? error.message : String(error)}`));
-    windowObject?.addEventListener("online", syncNetworkStatus);
-    windowObject?.addEventListener("offline", syncNetworkStatus);
-    windowObject?.addEventListener("beforeinstallprompt", ((event) => {
+    const onBeforeInstall = ((event) => {
         event.preventDefault();
         installPrompt = event;
         if (installButton)
             installButton.hidden = false;
         setStatus("Installable on this device.");
-    }));
-    windowObject?.addEventListener("appinstalled", () => {
+    });
+    const onInstalled = () => {
         installPrompt = null;
         if (installButton)
             installButton.hidden = true;
         setStatus("StudyFlow is installed for offline launch.");
-    });
-    installButton?.addEventListener("click", async () => {
+    };
+    const onInstallClick = async () => {
         if (!installPrompt)
             return;
         await installPrompt.prompt();
         await installPrompt.userChoice;
         installPrompt = null;
-        installButton.hidden = true;
+        if (installButton)
+            installButton.hidden = true;
         syncNetworkStatus();
-    });
+    };
+    windowObject?.addEventListener("online", syncNetworkStatus);
+    windowObject?.addEventListener("offline", syncNetworkStatus);
+    windowObject?.addEventListener("beforeinstallprompt", onBeforeInstall);
+    windowObject?.addEventListener("appinstalled", onInstalled);
+    installButton?.addEventListener("click", onInstallClick);
     syncNetworkStatus();
-    return { supported: true };
+    return {
+        supported: true,
+        dispose() {
+            windowObject?.removeEventListener("online", syncNetworkStatus);
+            windowObject?.removeEventListener("offline", syncNetworkStatus);
+            windowObject?.removeEventListener("beforeinstallprompt", onBeforeInstall);
+            windowObject?.removeEventListener("appinstalled", onInstalled);
+            installButton?.removeEventListener("click", onInstallClick);
+            installPrompt = null;
+        },
+    };
 }

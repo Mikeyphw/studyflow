@@ -71,3 +71,10 @@ The browser bootloader stays local and dependency-pinned. It loads the generated
 Concurso Público is now a first-class typed plan workflow: truthful target identity/date status, stages, edital preview/apply with revision provenance and archive-not-delete reconciliation, banca-aware question metadata, legislation, mock-exam blueprints/scoring, evidence-derived dashboard metrics and confirmed-date final-stretch guidance.
 
 The remaining plan modes are also functional: programming exercises/projects use a browser-only execution boundary; language decks support six review directions with manual review for sentence creation; reading progress is explicit; and general-skill drills record named metrics. All mode configuration lives under the canonical plan, migrates through state schema v5, remains IndexedDB/local-first, and is carried by portable packages without adding a second storage system or backend.
+
+
+## W18/W19 — hardening and Local 1.0
+
+W18 completes the release hardening pass: ARIA/keyboard tab semantics, main-landmark focus management, accessible names for every form control, forced-colors support, explicit PWA listener cleanup, an app-shell-only cache policy, IndexedDB last-known-good recovery, and a storage-health audit with explicit orphan cleanup. Missing attachment references are reported but never silently rewritten.
+
+W19 seals the browser edition as **StudyFlow Local 1.0.0**. `npm run release:check` verifies release identity and offline-shell completeness in addition to the cumulative validator, strict TypeScript compile/runtime parity, tests, and lint. The 1.0 contract remains local-first with no required backend/account/telemetry/CDN, state schema v5, IndexedDB schema v1, and portable package format v1.

@@ -39,18 +39,31 @@ const domain_1 = require("../domain");
 const modes_1 = require("../modes");
 const portable_1 = require("../portable");
 const pwa_1 = require("../pwa");
+const hardening_1 = require("../hardening");
+const release_1 = require("../release");
 const title = (v) => v.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
 const modes = [["EXAM_PLAN", "Concurso público"], ["PROGRAMMING_COURSE", "Programming course"], ["LANGUAGE_DECK", "Language deck"], ["READING_STUDY", "Reading study"], ["GENERAL_SKILL", "General skill"]];
 function useStudyState(store) { return React.useSyncExternalStore((notify) => store.subscribe(() => notify()), store.getState, store.getState); }
-function Tabs({ value, setValue, items }) { return React.createElement("nav", { className: "subnav" }, items.map(([id, label]) => React.createElement("button", { key: id, type: "button", className: "tab-link", "aria-current": value === id ? "page" : undefined, onClick: () => setValue(id) }, label))); }
+function Tabs({ value, setValue, items, prefix, label }) { const refs = React.useRef([]); const move = (e, index) => { let next = index; if (e.key === "ArrowRight")
+    next = (index + 1) % items.length;
+else if (e.key === "ArrowLeft")
+    next = (index - 1 + items.length) % items.length;
+else if (e.key === "Home")
+    next = 0;
+else if (e.key === "End")
+    next = items.length - 1;
+else
+    return; e.preventDefault(); const id = items[next][0]; setValue(id); refs.current?.[next]?.focus(); }; return React.createElement("nav", { className: "subnav", "aria-label": label, role: "tablist" }, items.map(([id, text], index) => React.createElement("button", { key: id, ref: (node) => { if (refs.current)
+        refs.current[index] = node; }, id: `tab-${prefix}-${id}`, type: "button", role: "tab", className: "tab-link", "aria-selected": value === id, "aria-controls": `${prefix}-${id}`, tabIndex: value === id ? 0 : -1, onKeyDown: (e) => move(e, index), onClick: () => setValue(id) }, text))); }
 function Metric({ label, value, detail }) { return React.createElement("article", { className: "metric-card" },
     React.createElement("span", null, label),
     React.createElement("strong", null, value),
     React.createElement("small", null, detail)); }
 function App({ store, persistence }) {
     const state = useStudyState(store);
+    const mainRef = React.useRef(null);
     const [screen, setScreen] = React.useState("today");
     const [planTab, setPlanTab] = React.useState("overview");
     const [practiceTab, setPracticeTab] = React.useState("reviews");
@@ -64,6 +77,7 @@ function App({ store, persistence }) {
     React.useEffect(() => { const onHash = () => { const x = location.hash.slice(1); if (["today", "plan", "practice", "progress"].includes(x))
         setScreen(x); }; onHash(); addEventListener("hashchange", onHash); if (!location.hash)
         history.replaceState(null, "", "#today"); return () => removeEventListener("hashchange", onHash); }, []);
+    React.useEffect(() => { mainRef.current?.focus({ preventScroll: true }); }, [screen]);
     React.useEffect(() => { const id = setInterval(() => tick(v => v + 1), 1000); return () => clearInterval(id); }, []);
     React.useEffect(() => { if (!toast)
         return; const id = setTimeout(() => setToast(null), 2500); return () => clearTimeout(id); }, [toast]);
@@ -84,10 +98,14 @@ function App({ store, persistence }) {
         React.createElement("header", { className: "app-header" },
             React.createElement("div", null,
                 React.createElement("p", { className: "eyebrow" }, "StudyFlow Local"),
-                React.createElement("h1", null, title(screen)),
+                React.createElement("h1", { id: "screen-title" }, title(screen)),
                 React.createElement("p", { className: "muted compact-copy" }, activePlan ? modes.find(([id]) => id === activePlan.mode)?.[1] : "No active plan")),
-            React.createElement("span", { className: "status-pill" }, persistence.backend)),
-        React.createElement("main", { id: "main-content", className: "app-main" },
+            React.createElement("span", { className: "status-pill" },
+                "v",
+                release_1.STUDYFLOW_LOCAL_RELEASE.version,
+                " \u00B7 ",
+                persistence.backend)),
+        React.createElement("main", { id: "main-content", ref: mainRef, tabIndex: -1, "aria-labelledby": "screen-title", className: "app-main" },
             screen === "today" && React.createElement(Today, { state: state, store: store, focus: focus, run: run }),
             " ",
             screen === "plan" && React.createElement(Plan, { state: state, store: store, tab: planTab, setTab: setPlanTab, preview: preview, setPreview: setPreview, persistence: persistence, run: run }),
@@ -97,7 +115,7 @@ function App({ store, persistence }) {
             screen === "progress" && React.createElement(Progress, { state: state, store: store, tab: progressTab, setTab: setProgressTab, persistence: persistence, portable: portable, setPortable: setPortable, portableStatus: portableStatus, setPortableStatus: setPortableStatus, run: run })),
         React.createElement("nav", { className: "bottom-nav", "aria-label": "Main navigation" }, ["today", "plan", "practice", "progress"].map(id => React.createElement("a", { key: id, href: `#${id}`, "aria-current": screen === id ? "page" : undefined },
             React.createElement("span", null, title(id))))),
-        React.createElement("div", { id: "toast-region", className: "toast-region", "aria-live": "polite" }, toast && React.createElement("div", { className: "toast" }, toast)));
+        React.createElement("div", { id: "toast-region", className: "toast-region", role: "status", "aria-live": "polite", "aria-atomic": "true" }, toast && React.createElement("div", { className: "toast" }, toast)));
 }
 function Today({ state, store, focus, run }) { const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState(focus.note ?? ""); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
     React.createElement("article", { className: "hero-card" },
@@ -108,8 +126,8 @@ function Today({ state, store, focus, run }) { const rec = (0, domain_1.recommen
     React.createElement("div", { className: "content-grid two-column" },
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Focus"),
-            React.createElement("div", { className: "focus-clock" }, clock(focus.remainingMs)),
-            React.createElement("textarea", { value: note, onChange: (e) => setNote(e.target.value), placeholder: "Session note" }),
+            React.createElement("div", { className: "focus-clock", "aria-label": `Focus time remaining ${clock(focus.remainingMs)}` }, clock(focus.remainingMs)),
+            React.createElement("textarea", { "aria-label": "Focus session note", value: note, onChange: (e) => setNote(e.target.value), placeholder: "Session note" }),
             React.createElement("div", { className: "button-row" },
                 focus.status !== "running" && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.startFocus({ note }), "Focus started.") }, focus.status === "paused" ? "Resume" : "Start"),
                 focus.status === "running" && React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.pauseFocus(), "Focus paused.") }, "Pause"),
@@ -122,7 +140,7 @@ function Today({ state, store, focus, run }) { const rec = (0, domain_1.recommen
                     run(() => store.addActivity({ title: name.trim(), kind: "study", durationMinutes: 25 }), "Activity added locally.");
                     setName("");
                 } } },
-                React.createElement("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Activity title", required: true }),
+                React.createElement("input", { "aria-label": "Activity title", value: name, onChange: (e) => setName(e.target.value), placeholder: "Activity title", required: true }),
                 React.createElement("button", { className: "button", type: "submit" }, "Add 25 min activity")))),
     React.createElement("article", { className: "card" },
         React.createElement("h2", null, "Today queue"),
@@ -160,8 +178,8 @@ function ModeToday({ state }) { const plan = state.plans.find(p => p.id === stat
     React.createElement("strong", null, "General skill"),
     React.createElement("span", { className: "muted" }, "Drill outcomes become evidence only when you record them.")); }
 function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run }) { const inv = (0, domain_1.derivePlanInventory)(state); const [subject, setSubject] = React.useState(""); const [topic, setTopic] = React.useState(""); const [subjectId, setSubjectId] = React.useState(state.subjects.find(s => s.planId === state.activePlanId)?.id ?? ""); const subjects = state.subjects.filter(s => s.planId === state.activePlanId).slice().sort((a, b) => a.order - b.order); const materials = state.materials.filter(m => m.planId === state.activePlanId); const plan = state.plans.find(p => p.id === state.activePlanId); return React.createElement("section", { id: "plan", "data-screen": "plan", className: "screen-section" },
-    React.createElement(Tabs, { value: tab, setValue: setTab, items: [["overview", "Overview"], ["schedule", "Schedule"], ["content", "Content"], ["library", "Library"]] }),
-    tab === "overview" && React.createElement("section", { id: "plan-overview", className: "tab-panel" },
+    React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "plan", label: "Plan sections", items: [["overview", "Overview"], ["schedule", "Schedule"], ["content", "Content"], ["library", "Library"]] }),
+    tab === "overview" && React.createElement("section", { id: "plan-overview", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "metric-grid" },
             React.createElement(Metric, { label: "Subjects", value: String(inv.subjects), detail: `${inv.topics} active topics` }),
             React.createElement(Metric, { label: "Planned", value: `${inv.plannedMinutes} min`, detail: `${inv.activities} activities` })),
@@ -175,7 +193,7 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
                 state.subjects.find(s => s.id === id)?.name ?? id,
                 i === state.studyCycle.cursor ? " · current" : ""))),
             React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.advanceStudyCycle(), "Study cycle advanced.") }, "Advance"))),
-    tab === "schedule" && React.createElement("section", { id: "plan-schedule", className: "tab-panel" },
+    tab === "schedule" && React.createElement("section", { id: "plan-schedule", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("article", { className: "card" },
             React.createElement("div", { className: "card-heading-row" },
                 React.createElement("h2", null, "Adaptive schedule"),
@@ -189,7 +207,7 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
                 React.createElement("ul", null, preview.operations.map((op, i) => React.createElement("li", { key: i }, op.action === "move" ? `Move ${op.activityId} → ${op.to}` : `Add ${op.activity?.title ?? "activity"} · ${op.scheduledFor}`))),
                 React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applySchedulePreview(preview), "Schedule preview applied."))
                         setPreview(null); } }, "Apply preview")) : React.createElement("p", { className: "muted" }, "Preview first; no schedule changes are silent."))),
-    tab === "content" && React.createElement("section", { id: "plan-content", className: "tab-panel" },
+    tab === "content" && React.createElement("section", { id: "plan-content", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "content-grid two-column" },
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Add subject"),
@@ -199,7 +217,7 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
                             setSubjectId(added.id);
                         setSubject("");
                     } } },
-                    React.createElement("input", { value: subject, onChange: (e) => setSubject(e.target.value), required: true }),
+                    React.createElement("input", { "aria-label": "Subject name", value: subject, onChange: (e) => setSubject(e.target.value), required: true }),
                     React.createElement("button", { className: "button", type: "submit" }, "Add"))),
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Add topic"),
@@ -207,8 +225,8 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
                         run(() => store.addTopic({ subjectId, name: topic.trim() }), "Topic added.");
                         setTopic("");
                     } } },
-                    React.createElement("select", { value: subjectId, onChange: (e) => setSubjectId(e.target.value) }, subjects.map(s => React.createElement("option", { key: s.id, value: s.id }, s.name))),
-                    React.createElement("input", { value: topic, onChange: (e) => setTopic(e.target.value), required: true }),
+                    React.createElement("select", { "aria-label": "Topic subject", value: subjectId, onChange: (e) => setSubjectId(e.target.value) }, subjects.map(s => React.createElement("option", { key: s.id, value: s.id }, s.name))),
+                    React.createElement("input", { "aria-label": "Topic name", value: topic, onChange: (e) => setTopic(e.target.value), required: true }),
                     React.createElement("button", { className: "button", type: "submit" }, "Add")))),
         subjects.map(s => React.createElement("article", { className: "card", key: s.id },
             React.createElement("div", { className: "card-heading-row" },
@@ -248,11 +266,11 @@ function PublicExamWorkspace({ state, store, run }) {
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Concurso target"),
             React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); run(() => store.updatePublicExamTarget({ organization: org || null, role: role || null, board: board || null, examDate: examDate || null, dateStatus }), "Concurso target saved."); } },
-                React.createElement("input", { value: org, onChange: (e) => setOrg(e.target.value), placeholder: "Organization" }),
-                React.createElement("input", { value: role, onChange: (e) => setRole(e.target.value), placeholder: "Role / cargo" }),
-                React.createElement("input", { value: board, onChange: (e) => setBoard(e.target.value), placeholder: "Exam board / banca" }),
-                React.createElement("input", { type: "date", value: examDate, onChange: (e) => setExamDate(e.target.value) }),
-                React.createElement("select", { value: dateStatus, onChange: (e) => setDateStatus(e.target.value) },
+                React.createElement("input", { "aria-label": "Organization", value: org, onChange: (e) => setOrg(e.target.value), placeholder: "Organization" }),
+                React.createElement("input", { "aria-label": "Role or cargo", value: role, onChange: (e) => setRole(e.target.value), placeholder: "Role / cargo" }),
+                React.createElement("input", { "aria-label": "Exam board or banca", value: board, onChange: (e) => setBoard(e.target.value), placeholder: "Exam board / banca" }),
+                React.createElement("input", { "aria-label": "Exam date", type: "date", value: examDate, onChange: (e) => setExamDate(e.target.value) }),
+                React.createElement("select", { "aria-label": "Exam date status", value: dateStatus, onChange: (e) => setDateStatus(e.target.value) },
                     React.createElement("option", { value: "unknown" }, "Date unknown"),
                     React.createElement("option", { value: "expected" }, "Expected date"),
                     React.createElement("option", { value: "confirmed" }, "Confirmed date")),
@@ -274,7 +292,7 @@ function PublicExamWorkspace({ state, store, run }) {
                     run(() => store.addExamStage({ name: stage.trim() }), "Exam stage added.");
                     setStage("");
                 } } },
-                React.createElement("input", { value: stage, onChange: (e) => setStage(e.target.value), placeholder: "Stage name" }),
+                React.createElement("input", { "aria-label": "Exam stage name", value: stage, onChange: (e) => setStage(e.target.value), placeholder: "Stage name" }),
                 React.createElement("button", { className: "button", type: "submit" }, "Add stage")),
             React.createElement("ul", null, c.stages.map(s => React.createElement("li", { key: s.id },
                 s.name,
@@ -282,7 +300,7 @@ function PublicExamWorkspace({ state, store, run }) {
                 s.status)))),
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Edital revision"),
-            React.createElement("textarea", { value: notice, onChange: (e) => { setNotice(e.target.value); setNoticePreview(null); }, placeholder: "Disciplina: Direito Constitucional\n- Direitos fundamentais\n- Administração pública" }),
+            React.createElement("textarea", { "aria-label": "Edital revision text", value: notice, onChange: (e) => { setNotice(e.target.value); setNoticePreview(null); }, placeholder: "Disciplina: Direito Constitucional\n- Direitos fundamentais\n- Administração pública" }),
             React.createElement("div", { className: "button-row" },
                 React.createElement("button", { className: "button", type: "button", onClick: () => { const p = run(() => store.previewExamNotice(notice)); if (p)
                         setNoticePreview(p); } }, "Preview edital"),
@@ -301,7 +319,7 @@ function PublicExamWorkspace({ state, store, run }) {
                     run(() => store.addLegislation({ title: law.trim() }), "Legislation added locally.");
                     setLaw("");
                 } } },
-                React.createElement("input", { value: law, onChange: (e) => setLaw(e.target.value), placeholder: "Law / code / regulation" }),
+                React.createElement("input", { "aria-label": "Law, code, or regulation", value: law, onChange: (e) => setLaw(e.target.value), placeholder: "Law / code / regulation" }),
                 React.createElement("button", { className: "button", type: "submit" }, "Add legislation")),
             React.createElement("p", { className: "muted" },
                 c.legislation.length,
@@ -310,10 +328,10 @@ function PublicExamWorkspace({ state, store, run }) {
             React.createElement("h2", null, "Mock blueprint"),
             React.createElement("label", null,
                 "Total questions",
-                React.createElement("input", { type: "number", min: "1", max: "500", value: c.mockBlueprint.totalQuestions, onChange: (e) => run(() => store.setMockBlueprint({ totalQuestions: Number(e.target.value) }), "Mock blueprint updated.") })),
+                React.createElement("input", { "aria-label": "Mock total questions", type: "number", min: "1", max: "500", value: c.mockBlueprint.totalQuestions, onChange: (e) => run(() => store.setMockBlueprint({ totalQuestions: Number(e.target.value) }), "Mock blueprint updated.") })),
             React.createElement("label", null,
                 "Duration (min)",
-                React.createElement("input", { type: "number", min: "5", value: c.mockBlueprint.durationMinutes, onChange: (e) => run(() => store.setMockBlueprint({ durationMinutes: Number(e.target.value) }), "Mock blueprint updated.") })),
+                React.createElement("input", { "aria-label": "Mock duration minutes", type: "number", min: "5", value: c.mockBlueprint.durationMinutes, onChange: (e) => run(() => store.setMockBlueprint({ durationMinutes: Number(e.target.value) }), "Mock blueprint updated.") })),
             React.createElement("p", { className: "muted" }, "Supply is checked before a mock can start; unanswered questions stay neutral.")));
 }
 function ProgrammingWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.programming; const [name, setName] = React.useState(""); const [prompt, setPrompt] = React.useState(""); return React.createElement("article", { className: "card" },
@@ -325,8 +343,8 @@ function ProgrammingWorkspace({ state, store, run }) { const plan = state.plans.
             setName("");
             setPrompt("");
         } } },
-        React.createElement("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Exercise title" }),
-        React.createElement("textarea", { value: prompt, onChange: (e) => setPrompt(e.target.value), placeholder: "Exercise prompt" }),
+        React.createElement("input", { "aria-label": "Exercise title", value: name, onChange: (e) => setName(e.target.value), placeholder: "Exercise title" }),
+        React.createElement("textarea", { "aria-label": "Exercise prompt", value: prompt, onChange: (e) => setPrompt(e.target.value), placeholder: "Exercise prompt" }),
         React.createElement("button", { className: "button", type: "submit" }, "Add exercise")),
     cfg.exercises.map(x => React.createElement("div", { className: "mode-item", key: x.id },
         React.createElement("strong", null, x.title),
@@ -347,8 +365,8 @@ function LanguageWorkspace({ state, store, run }) { const plan = state.plans.fin
             setExpression("");
             setMeaning("");
         } } },
-        React.createElement("input", { value: expression, onChange: (e) => setExpression(e.target.value), placeholder: "Expression / idiom" }),
-        React.createElement("input", { value: meaning, onChange: (e) => setMeaning(e.target.value), placeholder: "Meaning" }),
+        React.createElement("input", { "aria-label": "Language expression or idiom", value: expression, onChange: (e) => setExpression(e.target.value), placeholder: "Expression / idiom" }),
+        React.createElement("input", { "aria-label": "Expression meaning", value: meaning, onChange: (e) => setMeaning(e.target.value), placeholder: "Meaning" }),
         React.createElement("button", { className: "button", type: "submit" }, "Add expression")),
     React.createElement("ul", null, cfg.expressions.map(x => React.createElement("li", { key: x.id },
         React.createElement("strong", null, x.expression),
@@ -361,8 +379,8 @@ function ReadingWorkspace({ state, store, run }) { const plan = state.plans.find
             run(() => store.addReadingItem({ title: name.trim(), totalUnits: units, unit: "pages" }), "Reading item added.");
             setName("");
         } } },
-        React.createElement("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Book / article" }),
-        React.createElement("input", { type: "number", min: "1", value: units, onChange: (e) => setUnits(Number(e.target.value)) }),
+        React.createElement("input", { "aria-label": "Reading item title", value: name, onChange: (e) => setName(e.target.value), placeholder: "Book / article" }),
+        React.createElement("input", { "aria-label": "Total reading units", type: "number", min: "1", value: units, onChange: (e) => setUnits(Number(e.target.value)) }),
         React.createElement("button", { className: "button", type: "submit" }, "Add reading")),
     cfg.items.map(x => React.createElement("div", { className: "mode-item", key: x.id },
         React.createElement("strong", null, x.title),
@@ -379,7 +397,7 @@ function GeneralSkillWorkspace({ state, store, run }) { const plan = state.plans
             run(() => store.addGeneralSkillDrill({ title: name.trim(), metric: "score", target: 10, unit: "points" }), "Skill drill added.");
             setName("");
         } } },
-        React.createElement("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Drill name" }),
+        React.createElement("input", { "aria-label": "Skill drill name", value: name, onChange: (e) => setName(e.target.value), placeholder: "Drill name" }),
         React.createElement("button", { className: "button", type: "submit" }, "Add drill")),
     cfg.drills.map(x => React.createElement("div", { className: "mode-item", key: x.id },
         React.createElement("strong", null, x.title),
@@ -408,13 +426,13 @@ catch (err) {
 }
 finally {
     e.target.value = "";
-} }; return React.createElement("section", { id: "plan-library", className: "tab-panel" },
+} }; return React.createElement("section", { id: "plan-library", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
     React.createElement("article", { className: "card" },
         React.createElement("div", { className: "card-heading-row" },
             React.createElement("h2", null, "Local materials"),
             React.createElement("label", { className: "button button-quiet file-button" },
                 "Add file",
-                React.createElement("input", { type: "file", onChange: (e) => add(e).catch(err => console.error(err)) }))),
+                React.createElement("input", { "aria-label": "Local material file", type: "file", onChange: (e) => add(e).catch(err => console.error(err)) }))),
         React.createElement("ul", { className: "activity-list" },
             materials.map(m => React.createElement("li", { key: m.id },
                 React.createElement("strong", null, m.title),
@@ -422,8 +440,8 @@ finally {
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deleteMaterial(m.id), "Material removed.") }, "Delete"))),
             !materials.length && React.createElement("li", null, "No local materials yet.")))); }
 function Practice({ state, store, tab, setTab, questionId, setQuestionId, run }) { const due = (0, domain_1.selectDueReviews)(state), errors = (0, domain_1.selectOpenErrors)(state), stats = (0, domain_1.deriveQuestionStats)(state), questions = state.questions.filter(q => q.planId === state.activePlanId), q = questions.find(x => x.id === questionId) ?? questions[0] ?? null; const [answer, setAnswer] = React.useState(""); const [prompt, setPrompt] = React.useState(""); const [board, setBoard] = React.useState(""); const [year, setYear] = React.useState(""); const plan = state.plans.find(p => p.id === state.activePlanId); return React.createElement("section", { id: "practice", "data-screen": "practice", className: "screen-section" },
-    React.createElement(Tabs, { value: tab, setValue: setTab, items: [["reviews", "Reviews"], ["questions", "Questions"], ["tests", "Tests"], ["errors", "Errors"]] }),
-    tab === "reviews" && React.createElement("section", { id: "practice-reviews", className: "tab-panel" },
+    React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "practice", label: "Practice sections", items: [["reviews", "Reviews"], ["questions", "Questions"], ["tests", "Tests"], ["errors", "Errors"]] }),
+    tab === "reviews" && React.createElement("section", { id: "practice-reviews", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("article", { className: "card" },
             React.createElement("h2", null,
                 "Due reviews \u00B7 ",
@@ -433,12 +451,12 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, run })
                     React.createElement("strong", null, state.topics.find(t => t.id === r.topicId)?.name ?? title(r.sourceType ?? "Review")),
                     React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.completeReview(r.id), "Review completed and evidenced.") }, "Complete"))),
                 !due.length && React.createElement("li", null, "No reviews due.")))),
-    tab === "questions" && React.createElement("section", { id: "practice-questions", className: "tab-panel" },
+    tab === "questions" && React.createElement("section", { id: "practice-questions", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "content-grid two-column" },
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Question practice"),
                 React.createElement("p", { className: "muted" }, stats.accuracy == null ? "No graded accuracy" : `${Math.round(stats.accuracy * 100)}% graded accuracy`),
-                React.createElement("select", { value: q?.id ?? "", onChange: (e) => { setQuestionId(e.target.value); setAnswer(""); } }, questions.map(x => React.createElement("option", { key: x.id, value: x.id }, x.prompt))),
+                React.createElement("select", { "aria-label": "Practice question", value: q?.id ?? "", onChange: (e) => { setQuestionId(e.target.value); setAnswer(""); } }, questions.map(x => React.createElement("option", { key: x.id, value: x.id }, x.prompt))),
                 q && React.createElement(React.Fragment, null,
                     React.createElement("h3", null, q.prompt),
                     q.examBoard && React.createElement("p", { className: "muted" },
@@ -446,8 +464,8 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, run })
                         q.examBoard,
                         q.year ? ` · ${q.year}` : ""),
                     q.choices.length ? q.choices.map(c => React.createElement("label", { className: "choice", key: c },
-                        React.createElement("input", { type: "radio", name: "answer", value: c, checked: answer === c, onChange: (e) => setAnswer(e.target.value) }),
-                        React.createElement("span", null, c))) : React.createElement("input", { value: answer, onChange: (e) => setAnswer(e.target.value), placeholder: "Type answer" }),
+                        React.createElement("input", { "aria-label": c, type: "radio", name: "answer", value: c, checked: answer === c, onChange: (e) => setAnswer(e.target.value) }),
+                        React.createElement("span", null, c))) : React.createElement("input", { "aria-label": "Question answer", value: answer, onChange: (e) => setAnswer(e.target.value), placeholder: "Type answer" }),
                     React.createElement("button", { className: "button button-primary", type: "button", disabled: !answer.trim(), onClick: () => { if (run(() => store.answerQuestion(q.id, answer), "Attempt recorded."))
                             setAnswer(""); } }, "Submit"))),
             React.createElement("article", { className: "card" },
@@ -456,14 +474,14 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, run })
                         run(() => store.addQuestion({ prompt: prompt.trim(), examBoard: board || null, year: year ? Number(year) : null }), "Ungraded question added.");
                         setPrompt("");
                     } } },
-                    React.createElement("textarea", { value: prompt, onChange: (e) => setPrompt(e.target.value), required: true }),
+                    React.createElement("textarea", { "aria-label": "Question prompt", value: prompt, onChange: (e) => setPrompt(e.target.value), required: true }),
                     plan?.mode === "EXAM_PLAN" && React.createElement(React.Fragment, null,
-                        React.createElement("input", { value: board, onChange: (e) => setBoard(e.target.value), placeholder: "Banca (optional)" }),
-                        React.createElement("input", { type: "number", value: year, onChange: (e) => setYear(e.target.value), placeholder: "Year" })),
+                        React.createElement("input", { "aria-label": "Question exam board", value: board, onChange: (e) => setBoard(e.target.value), placeholder: "Banca (optional)" }),
+                        React.createElement("input", { "aria-label": "Question year", type: "number", value: year, onChange: (e) => setYear(e.target.value), placeholder: "Year" })),
                     React.createElement("button", { className: "button", type: "submit" }, "Save"))))),
-    tab === "tests" && React.createElement("section", { id: "practice-tests", className: "tab-panel" },
+    tab === "tests" && React.createElement("section", { id: "practice-tests", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement(ModePractice, { state: state, store: store, run: run })),
-    tab === "errors" && React.createElement("section", { id: "practice-errors", className: "tab-panel" },
+    tab === "errors" && React.createElement("section", { id: "practice-errors", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("article", { className: "card" },
             React.createElement("h2", null,
                 "Error Notebook \u00B7 ",
@@ -486,7 +504,7 @@ function MockExamStudio({ state, store, run }) { const [preview, setPreview] = R
             return null; return React.createElement("div", { className: "mode-item", key: id },
             React.createElement("strong", null, q.prompt),
             q.choices.map(c => React.createElement("label", { className: "choice", key: c },
-                React.createElement("input", { type: "radio", name: `mock-${id}`, checked: answers[id] === c, onChange: () => setAnswers({ ...answers, [id]: c }) }),
+                React.createElement("input", { "aria-label": c, type: "radio", name: `mock-${id}`, checked: answers[id] === c, onChange: () => setAnswers({ ...answers, [id]: c }) }),
                 c))); }),
         preview.ready && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.recordMockExam(preview, answers), "Mock exam scored and evidenced.")) {
                 setPreview(null);
@@ -528,8 +546,8 @@ catch (err) {
 finally {
     e.target.value = "";
 } }; return React.createElement("section", { id: "progress", "data-screen": "progress", className: "screen-section" },
-    React.createElement(Tabs, { value: tab, setValue: setTab, items: [["summary", "Summary"], ["performance", "Performance"], ["goals", "Goals"], ["tools", "Tools"]] }),
-    tab === "summary" && React.createElement("section", { id: "progress-summary", className: "tab-panel" },
+    React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "progress", label: "Progress sections", items: [["summary", "Summary"], ["performance", "Performance"], ["goals", "Goals"], ["tools", "Tools"]] }),
+    tab === "summary" && React.createElement("section", { id: "progress-summary", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "metric-grid" },
             React.createElement(Metric, { label: "Readiness", value: m.readiness == null ? "No data" : `${m.readiness}%`, detail: m.readinessReason }),
             React.createElement(Metric, { label: "Study this week", value: `${m.weeklyStudyMinutes} min`, detail: "Completed sessions" }),
@@ -538,7 +556,7 @@ finally {
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Mode-aware analytics"),
             React.createElement("div", { className: "metric-grid compact-grid" }, modeAnalytics.metrics.map(x => React.createElement(Metric, { key: x.label, label: x.label, value: typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("accuracy") || typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("progress") || typeof x.value === "number" && x.value >= 0 && x.value <= 1 && x.label.toLowerCase().includes("coverage") ? pct(x.value) : x.value == null ? "No data" : String(x.value), detail: modeAnalytics.mode ? title(modeAnalytics.mode) : "No plan" }))))),
-    tab === "performance" && React.createElement("section", { id: "progress-performance", className: "tab-panel" },
+    tab === "performance" && React.createElement("section", { id: "progress-performance", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Evidence Timeline"),
             React.createElement("ul", { className: "activity-list" },
@@ -549,14 +567,14 @@ finally {
                         " \u00B7 ",
                         title(x.provenance)))),
                 !timeline.length && React.createElement("li", null, "No evidence recorded yet.")))),
-    tab === "goals" && React.createElement("section", { id: "progress-goals", className: "tab-panel" },
+    tab === "goals" && React.createElement("section", { id: "progress-goals", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Goals"),
             React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (goal.trim()) {
                     run(() => store.addGoal({ name: goal.trim(), metric: "study-minutes", target: 120, period: "weekly" }), "Goal added.");
                     setGoal("");
                 } } },
-                React.createElement("input", { value: goal, onChange: (e) => setGoal(e.target.value), placeholder: "Weekly goal", required: true }),
+                React.createElement("input", { "aria-label": "Weekly goal name", value: goal, onChange: (e) => setGoal(e.target.value), placeholder: "Weekly goal", required: true }),
                 React.createElement("button", { className: "button", type: "submit" }, "Add 120 min goal")),
             goals.map(g => { const p = (0, domain_1.deriveGoalProgress)(state, g); return React.createElement("div", { className: "goal-row", key: g.id },
                 React.createElement("div", null,
@@ -566,7 +584,7 @@ finally {
                         " / ",
                         g.target)),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.toggleGoal(g.id)) }, g.active ? "Pause" : "Resume")); }))),
-    tab === "tools" && React.createElement("section", { id: "progress-tools", className: "tab-panel" },
+    tab === "tools" && React.createElement("section", { id: "progress-tools", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "content-grid two-column" },
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Content Integrity"),
@@ -577,7 +595,7 @@ finally {
                 React.createElement("button", { className: "button", type: "button", onClick: exportData }, "Export package"),
                 React.createElement("label", { className: "button button-quiet file-button" },
                     "Choose import",
-                    React.createElement("input", { type: "file", accept: ".json,.studyflow.json,application/json", onChange: importData })),
+                    React.createElement("input", { "aria-label": "Import StudyFlow package", type: "file", accept: ".json,.studyflow.json,application/json", onChange: importData })),
                 React.createElement("p", { className: "muted" }, portableStatus),
                 portable && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applyPortableImportPreview(portable), "Import applied.")) {
                         setPortable(null);
@@ -590,8 +608,42 @@ finally {
                     "Backend: ",
                     persistence.backend),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.resetLocalState(), "Sample data restored.") }, "Reset sample data")),
+            React.createElement(StorageHealthCard, { state: state, persistence: persistence }),
+            React.createElement(ReleaseCard, { state: state, persistence: persistence }),
             React.createElement(PwaTools, null)))); }
-function PwaTools() { const status = React.useRef(null), install = React.useRef(null); React.useEffect(() => { const register = pwa_1.registerStudyFlowPwa; register({ statusElement: status.current, installButton: install.current }); }, []); return React.createElement("article", { className: "card" },
+function StorageHealthCard({ state, persistence }) { const [report, setReport] = React.useState(null); const [busy, setBusy] = React.useState(false); const check = async (clean = false) => { setBusy(true); try {
+    setReport(clean ? await (0, hardening_1.purgeOrphanAttachments)(state, persistence) : await (0, hardening_1.auditBrowserStorage)(state, persistence));
+}
+finally {
+    setBusy(false);
+} }; return React.createElement("article", { className: "card" },
+    React.createElement("h2", null, "Storage health"),
+    React.createElement("p", { className: "muted", role: "status", "aria-live": "polite" }, report ? `${title(report.status)} · ${report.messages.join(" ")}` : "Not checked in this session."),
+    report && React.createElement("p", { className: "muted" },
+        report.referencedAttachments,
+        " referenced \u00B7 ",
+        report.storedAttachments,
+        " stored \u00B7 ",
+        report.missingAttachmentIds.length,
+        " missing \u00B7 ",
+        report.orphanAttachmentIds.length,
+        " orphan"),
+    React.createElement("div", { className: "button-row" },
+        React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(false) }, busy ? "Checking…" : "Check storage"),
+        Boolean(report?.orphanAttachmentIds.length) && React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(true) }, "Clean orphan files"))); }
+function ReleaseCard({ state, persistence }) { const readiness = (0, release_1.evaluateReleaseReadiness)(state, persistence.backend); return React.createElement("article", { className: "card" },
+    React.createElement("h2", null,
+        "StudyFlow Local ",
+        release_1.STUDYFLOW_LOCAL_RELEASE.version),
+    React.createElement("strong", null, readiness.status === "ready" ? "Release checks ready" : readiness.status === "degraded" ? "Release checks ready with browser limitations" : "Release check blocked"),
+    React.createElement("p", { className: "muted" },
+        "State schema v",
+        release_1.STUDYFLOW_LOCAL_RELEASE.stateSchema,
+        " \u00B7 portable format v",
+        release_1.STUDYFLOW_LOCAL_RELEASE.portableFormat,
+        " \u00B7 local-first"),
+    React.createElement("ul", null, readiness.reasons.map((reason) => React.createElement("li", { key: reason }, reason)))); }
+function PwaTools() { const status = React.useRef(null), install = React.useRef(null); React.useEffect(() => { const handle = (0, pwa_1.registerStudyFlowPwa)({ statusElement: status.current, installButton: install.current }); return () => handle.dispose(); }, []); return React.createElement("article", { className: "card" },
     React.createElement("h2", null, "Install & offline"),
-    React.createElement("p", { id: "pwa-status", ref: status, className: "muted", "aria-live": "polite" }, "Checking PWA support\u2026"),
+    React.createElement("p", { id: "pwa-status", ref: status, className: "muted", role: "status", "aria-live": "polite", "aria-atomic": "true" }, "Checking PWA support\u2026"),
     React.createElement("button", { id: "install-app", ref: install, className: "button button-quiet", type: "button", hidden: true }, "Install StudyFlow")); }

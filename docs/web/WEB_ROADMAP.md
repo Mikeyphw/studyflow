@@ -20,7 +20,7 @@
 | W15 | React UI migration |
 | W16 | Full Concurso Público workflow + planned improvements — delivered |
 | W17 | Programming/language/reading/general modes — delivered |
-| W18 | Accessibility/testing/offline/storage hardening |
-| W19 | StudyFlow Local 1.0 release seal |
+| W18 | Accessibility/testing/offline/storage hardening — delivered |
+| W19 | StudyFlow Local 1.0 release seal — delivered |
 
 Each phase must preserve mobile-first behavior, local ownership, truthful evidence semantics and framework-independent domain rules.

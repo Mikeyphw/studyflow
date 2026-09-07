@@ -21,9 +21,11 @@ def validate_contract()->list[str]:
     try:pkg=json.loads((WEB/'package.json').read_text()); lock=json.loads((WEB/'package-lock.json').read_text())
     except Exception as exc:return e+[f'package metadata invalid: {exc}']
     _require(e,pkg.get('private') is True,'web package must remain private')
+    _require(e,pkg.get('version')=='1.0.0','StudyFlow Local release version must be 1.0.0')
+    _require(e,lock.get('version')=='1.0.0' and lock.get('packages',{}).get('',{}).get('version')=='1.0.0','package-lock release identity must be 1.0.0')
     _require(e,pkg.get('dependencies')=={'react':'19.2.8','react-dom':'19.2.8'},'React runtime dependencies must be pinned')
     _require(e,pkg.get('devDependencies')=={'typescript':'5.8.3'},'TypeScript dependency must be pinned')
-    for script in ('build','test','lint','dev'): _require(e,script in pkg.get('scripts',{}),f'missing npm script: {script}')
+    for script in ('build','test','lint','dev','release:check'): _require(e,script in pkg.get('scripts',{}),f'missing npm script: {script}')
     _require(e,lock.get('lockfileVersion')==3,'package-lock must remain v3')
     for key in ('node_modules/react','node_modules/react-dom','node_modules/scheduler','node_modules/typescript'): _require(e,key in lock.get('packages',{}),f'lock missing {key}')
     return e
@@ -62,7 +64,7 @@ def validate_interactions()->list[str]:
 
 def validate_typescript()->list[str]:
     e=[]
-    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
+    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/hardening.ts','src/release.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w18_hardening.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
     ts=_text(WEB/'tsconfig.json',e)
     try:cfg=json.loads(ts); _require(e,cfg.get('compilerOptions',{}).get('strict') is True,'TypeScript strict mode must be enabled'); _require(e,cfg.get('compilerOptions',{}).get('module')=='CommonJS','tracked browser runtime must compile to CommonJS')
     except Exception as exc:e.append(f'tsconfig invalid: {exc}')
@@ -93,7 +95,7 @@ def validate_indexeddb()->list[str]:
 def validate_pwa()->list[str]:
     e=[]; p=_text(WEB/'src/pwa.ts',e); sw=_text(WEB/'service-worker.js',e); ui=_text(WEB/'src/react/App.tsx',e)
     for token in ('serviceWorker.register','beforeinstallprompt','appinstalled','offline'):_require(e,token in p,f'PWA registration missing {token}')
-    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','runtime/main.js','runtime/modes.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
+    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','caches.match("./index.html")','appShellUrls.has(url.href)','runtime/main.js','runtime/modes.js','runtime/hardening.js','runtime/release.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
     _require(e,'id="install-app"' in ui and 'id="pwa-status"' in ui,'React PWA controls missing'); return e
 
 def validate_react()->list[str]:
@@ -122,6 +124,37 @@ def validate_content_modes()->list[str]:
     _require(e,'browser-only' in modes,'programming runtime boundary must remain browser-only')
     return e
 
+def validate_hardening()->list[str]:
+    e=[]; ui=_text(WEB/'src/react/App.tsx',e); css=_text(WEB/'styles.css',e); indexed=_text(WEB/'src/indexeddb.ts',e); hard=_text(WEB/'src/hardening.ts',e); pwa=_text(WEB/'src/pwa.ts',e); sw=_text(WEB/'service-worker.js',e); state=_text(WEB/'src/state.ts',e)
+    for token in ('role="tablist"','role="tab"','aria-selected','aria-controls','ArrowRight','ArrowLeft','Home','End','mainRef.current?.focus','tabIndex={-1}','role="status"','aria-atomic="true"'):_require(e,token in ui,f'W18 accessibility hardening missing {token}')
+    controls=re.findall(r'<(?:input|textarea|select)\b[^>]*>',ui)
+    _require(e,bool(controls),'W18 accessibility control scan found no controls')
+    for control in controls:_require(e,'aria-label=' in control,f'form control missing accessible name: {control[:100]}')
+    for token in ('prefers-reduced-motion','forced-colors: active','focus-visible','--tap-size'):_require(e,token in css,f'W18 visual accessibility missing {token}')
+    for token in ('RECOVERY_STATE_KEY','writeStateWithRecovery','status="recovered"','last verified local checkpoint'):_require(e,token in indexed or token in state,f'W18 IndexedDB recovery missing {token}')
+    for token in ('auditBrowserStorage','purgeOrphanAttachments','missingAttachmentIds','orphanAttachmentIds'):_require(e,token in hard,f'W18 storage audit missing {token}')
+    for token in ('dispose()','removeEventListener','removeEventListener("click"'):_require(e,token in pwa,f'W18 PWA listener cleanup missing {token}')
+    for token in ('appShellUrls.has(url.href)','caches.match("./index.html")'):_require(e,token in sw,f'W18 offline cache hardening missing {token}')
+    _require(e,'cache.put(request,copy)' in sw,'declared shell fetches must remain cacheable')
+    return e
+
+def validate_release()->list[str]:
+    e=validate_hardening(); pkg=_text(WEB/'package.json',e); lock=_text(WEB/'package-lock.json',e); release=_text(WEB/'src/release.ts',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/W18_W19_HARDENING_RELEASE_SEAL.md',e); manifest=_text(WEB/'manifest.webmanifest',e)
+    _require(e,'"version": "1.0.0"' in pkg,'W19 package version must be 1.0.0')
+    _require(e,'"version": "1.0.0"' in lock,'W19 lockfile version must be 1.0.0')
+    for token in ('version:"1.0.0"','STATE_SCHEMA_VERSION','STUDYFLOW_DB_VERSION','PORTABLE_FORMAT_VERSION','evaluateReleaseReadiness'):_require(e,token in release,f'W19 release contract missing {token}')
+    _require(e,'studyflow-local-1.0.0' in sw,'W19 service-worker cache must use 1.0.0 release identity')
+    _require(e,'W18 | Accessibility/testing/offline/storage hardening — delivered' in roadmap,'W18 roadmap delivery marker missing')
+    _require(e,'W19 | StudyFlow Local 1.0 release seal — delivered' in roadmap,'W19 roadmap delivery marker missing')
+    for token in ('StudyFlow Local 1.0.0','no required backend','unknown evidence remains distinct','npm run release:check'):_require(e,token in doc,f'W19 release documentation missing {token}')
+    try:
+        m=json.loads(manifest); _require(e,m.get('display')=='standalone' and m.get('start_url')=='./#today' and m.get('scope')=='./','W19 manifest launch contract changed')
+    except Exception as exc:e.append(f'W19 manifest invalid: {exc}')
+    runtime_sources='\n'.join(_text(path,e) for path in [WEB/'app.js',WEB/'service-worker.js',WEB/'src/main.tsx',WEB/'src/react/App.tsx',WEB/'src/storage.ts',WEB/'src/indexeddb.ts',WEB/'src/pwa.ts'])
+    _require(e,'http://' not in runtime_sources and 'https://' not in runtime_sources,'W19 runtime must not require remote URLs')
+    for forbidden in ('firebase','supabase','google-analytics','segment.io'):_require(e,forbidden not in runtime_sources.lower(),f'W19 runtime must not introduce {forbidden}')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -133,7 +166,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release)
     out=[]
     for fn in groups:
         for item in fn():
@@ -141,8 +174,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

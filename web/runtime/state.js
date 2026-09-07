@@ -13,6 +13,8 @@ function persistenceMessage(status, reason = null) {
         return "Local state loaded from this browser.";
     if (status === "migrated")
         return "Older local state migrated safely to the current schema.";
+    if (status === "recovered")
+        return reason ?? "Recovered the last verified local checkpoint.";
     if (status === "saved")
         return "Saved locally on this device.";
     if (status === "empty")
