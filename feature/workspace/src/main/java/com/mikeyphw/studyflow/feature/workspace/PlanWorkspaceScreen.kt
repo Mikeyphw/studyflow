@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -981,53 +982,106 @@ private fun PublicExamPreEditalCockpit(
 @Composable
 private fun PublicExamDashboardSummary(snapshot: PublicExamDashboardSnapshot) {
     val metrics = snapshot.metrics
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    var showDetails by rememberSaveable { mutableStateOf(false) }
+    var expandedSubjects by remember { mutableStateOf(setOf<String>()) }
+    val subjectRows = remember(snapshot.matrix) { snapshot.matrix.filter { it.topicId == null }.take(12) }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         StudyFlowMetricStrip(
             firstLabel = stringResource(R.string.edital_coverage),
             firstValue = metrics.editalCoveragePercent.percentOrUnknown(),
             secondLabel = stringResource(R.string.weighted_mastery),
             secondValue = metrics.weightedMasteryPercent.percentOrUnknown(),
         )
-        Text(stringResource(R.string.dashboard_questions_total, metrics.totalQuestions))
-        Text(stringResource(R.string.dashboard_accuracy_windows,
-            metrics.accuracy7d.percentOrUnknown(), metrics.accuracy30d.percentOrUnknown(),
-            metrics.accuracy90d.percentOrUnknown()))
-        Text(stringResource(R.string.dashboard_speed,
-            metrics.questionsPerHour30d.numberOrUnknown(), metrics.averageSecondsPerQuestion30d.numberOrUnknown()))
-        Text(stringResource(R.string.dashboard_backlog, metrics.overdueReviews, metrics.recurringErrors))
-        Text(stringResource(R.string.dashboard_mock_cutoff,
-            metrics.latestMockScorePercent.percentOrUnknown(),
-            metrics.estimatedCutoffGapPercent.signedPercentOrUnknown(),
-        ))
-        Text(
-            stringResource(
-                R.string.dashboard_days_to_exam,
-                metrics.daysUntilExam?.toString() ?: stringResource(R.string.unknown),
+        StudyFlowMetricStrip(
+            firstLabel = stringResource(R.string.dashboard_questions_label),
+            firstValue = metrics.totalQuestions.toString(),
+            secondLabel = stringResource(R.string.dashboard_backlog_label),
+            secondValue = (metrics.overdueReviews + metrics.recurringErrors).toString(),
+            secondSupportingText = stringResource(
+                R.string.dashboard_backlog,
+                metrics.overdueReviews,
+                metrics.recurringErrors,
             ),
         )
-        StudyFlowSectionTitle(title = stringResource(R.string.edital_matrix_title))
-        snapshot.matrix.take(12).forEach { row ->
-            Text(
-                stringResource(
-                    R.string.edital_matrix_row,
-                    row.label,
-                    row.examWeight?.let { "%.2f".format(it) } ?: stringResource(R.string.unknown),
-                    row.incidencePercent?.let { "$it%" } ?: stringResource(R.string.unknown),
-                    row.questionsAnswered,
-                    row.accuracyPercent.percentOrUnknown(),
-                    row.masteryPercent,
-                    stringResource(row.status.workspaceLabelRes()),
-                    row.overdueReviewCount,
-                    row.recurringErrorCount,
-                    (row.priorityScore * 100).toInt(),
-                ),
+        metrics.accuracy30d?.let { accuracy ->
+            StudyFlowMetric(
+                label = stringResource(R.string.dashboard_accuracy_30d_label),
+                value = accuracy.percentOrUnknown(),
+                supportingText = listOfNotNull(
+                    metrics.accuracy7d?.let {
+                        stringResource(R.string.dashboard_accuracy_7d_value, it.percentOrUnknown())
+                    },
+                    metrics.accuracy90d?.let {
+                        stringResource(R.string.dashboard_accuracy_90d_value, it.percentOrUnknown())
+                    },
+                ).joinToString(" · ").takeIf(String::isNotEmpty),
             )
         }
-        ImportanceMasteryMatrix(snapshot.matrix)
-        Text(
-            stringResource(R.string.importance_mastery_matrix_hint),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        metrics.latestMockScorePercent?.let { score ->
+            StudyFlowMetric(
+                label = stringResource(R.string.dashboard_latest_mock_label),
+                value = score.percentOrUnknown(),
+                supportingText = metrics.estimatedCutoffGapPercent?.let { gap ->
+                    stringResource(R.string.dashboard_cutoff_gap_value, gap.signedPercentOrUnknown())
+                },
+            )
+        }
+        metrics.daysUntilExam?.let { days ->
+            StudyFlowMetric(
+                label = stringResource(R.string.dashboard_exam_countdown_label),
+                value = days.toString(),
+            )
+        }
+
+        StudyFlowSectionTitle(title = stringResource(R.string.edital_matrix_title))
+        subjectRows.forEach { row ->
+            val key = row.subjectId.value
+            val expanded = key in expandedSubjects
+            val weightText = if (row.examWeight != null) {
+                stringResource(R.string.dashboard_subject_weight, "%.1f".format(row.examWeight))
+            } else {
+                null
+            }
+            val supporting = listOfNotNull(
+                weightText,
+                stringResource(R.string.dashboard_subject_questions, row.questionsAnswered),
+                stringResource(row.status.workspaceLabelRes()),
+            ).joinToString(" · ")
+            val priority = stringResource(R.string.dashboard_subject_priority, (row.priorityScore * 100).toInt())
+            StudyFlowSubjectAccordion(
+                title = row.label,
+                supportingText = supporting,
+                status = priority,
+                expanded = expanded,
+                expandedStateDescription = stringResource(R.string.dashboard_details_expanded),
+                collapsedStateDescription = stringResource(R.string.dashboard_details_collapsed),
+                onExpandedChange = { shouldExpand ->
+                    expandedSubjects = if (shouldExpand) expandedSubjects + key else expandedSubjects - key
+                },
+            ) {
+                row.incidencePercent?.let { Text(stringResource(R.string.dashboard_subject_incidence, it)) }
+                row.accuracyPercent?.let { accuracy ->
+                    Text(stringResource(R.string.dashboard_subject_accuracy, accuracy.percentOrUnknown()))
+                }
+                Text(stringResource(R.string.dashboard_subject_mastery, row.masteryPercent))
+                if (row.overdueReviewCount > 0) {
+                    Text(stringResource(R.string.dashboard_subject_overdue, row.overdueReviewCount))
+                }
+                if (row.recurringErrorCount > 0) {
+                    Text(stringResource(R.string.dashboard_subject_errors, row.recurringErrorCount))
+                }
+            }
+        }
+        TextButton(onClick = { showDetails = !showDetails }) {
+            Text(stringResource(if (showDetails) R.string.hide_dashboard_details else R.string.show_dashboard_details))
+        }
+        if (showDetails) {
+            ImportanceMasteryMatrix(snapshot.matrix)
+            Text(
+                stringResource(R.string.importance_mastery_matrix_hint),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

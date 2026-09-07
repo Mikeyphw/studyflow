@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="schedule_title">Cronograma</string>
     <string name="schedule_subtitle">Planeje blocos semanais, atividades geradas e regras de recuperação para %1$s.</string>
     <string name="go_back">Voltar</string>
@@ -106,11 +106,19 @@
     <string name="overloaded_day">Dia sobrecarregado</string>
     <string name="bulk_actions">Ações em lote</string>
     <string name="select_visible">Selecionar visíveis</string>
-    <string name="selected_count">%1$d selecionadas</string>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d selecionada</item>
+        <item quantity="many">%1$d selecionadas</item>
+        <item quantity="other">%1$d selecionadas</item>
+    </plurals>
     <string name="select_activity">Selecionar</string>
     <string name="delete_selected">Excluir selecionadas</string>
     <string name="delete_selected_title">Excluir atividades selecionadas?</string>
-    <string name="delete_selected_message">%1$d atividades desbloqueadas e editáveis serão excluídas.</string>
+    <plurals name="delete_selected_message">
+        <item quantity="one">%1$d atividade desbloqueada e editável será excluída.</item>
+        <item quantity="many">%1$d atividades desbloqueadas e editáveis serão excluídas.</item>
+        <item quantity="other">%1$d atividades desbloqueadas e editáveis serão excluídas.</item>
+    </plurals>
     <string name="bulk_protection_note">Atividades travadas, em andamento e históricas não entram nas ações em lote.</string>
     <string name="no_filter_matches_title">Nenhuma atividade corresponde aos filtros</string>
     <string name="no_filter_matches_message">Ajuste matéria, tipo, status ou origem para ver outras atividades.</string>
@@ -139,5 +147,18 @@
     <string name="schedule_view_next_week">Próxima semana</string>
     <string name="schedule_view_calendar">Calendário</string>
     <string name="schedule_view_all_dates">Todas as atividades agendadas e sem data</string>
-    <string name="schedule_view_summary">%1$d atividades · %2$d minutos planejados</string>
+    <plurals name="schedule_view_summary">
+        <item quantity="one">%1$d atividade · %2$d minutos planejados</item>
+        <item quantity="many">%1$d atividades · %2$d minutos planejados</item>
+        <item quantity="other">%1$d atividades · %2$d minutos planejados</item>
+    </plurals>
+    <string name="any_subject">Qualquer matéria</string>
+    <string name="filter_topic">Tópico</string>
+    <string name="no_topic">Sem tópico</string>
+    <string name="activity_date">Data (AAAA-MM-DD)</string>
+    <string name="activity_time">Horário de início (HH:mm)</string>
+    <string name="invalid_date" tools:ignore="TypographyDashes">Informe uma data válida, como 2026-09-07.</string>
+    <string name="schedule_search">Buscar no cronograma</string>
+    <string name="schedule_search_hint">Título, matéria ou tópico</string>
+    <string name="show_past_activities">Mostrar atividades passadas</string>
 </resources>

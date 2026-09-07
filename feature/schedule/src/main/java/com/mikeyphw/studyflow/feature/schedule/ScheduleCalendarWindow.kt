@@ -59,6 +59,11 @@ object ScheduleCalendarPlanner {
         }
     }
 
+    fun isPast(activity: PlannedActivity, today: LocalDate, zoneId: ZoneId): Boolean =
+        activity.scheduledStartEpochMillis?.let { epoch ->
+            Instant.ofEpochMilli(epoch).atZone(zoneId).toLocalDate().isBefore(today)
+        } == true
+
     fun plannedMinutes(activities: List<PlannedActivity>): Int =
         activities.sumOf(PlannedActivity::plannedDurationMinutes)
 }

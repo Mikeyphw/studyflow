@@ -30,11 +30,11 @@ object PublicExamDateResolver {
         }
         return when {
             !target?.confirmedExamDateIso.isNullOrBlank() -> PublicExamResolvedDate(
-                target?.confirmedExamDateIso,
+                requireNotNull(target).confirmedExamDateIso,
                 PublicExamDateSource.CONFIRMED_TARGET,
             )
             !target?.expectedExamDateIso.isNullOrBlank() -> PublicExamResolvedDate(
-                target?.expectedExamDateIso,
+                requireNotNull(target).expectedExamDateIso,
                 PublicExamDateSource.EXPECTED_TARGET,
             )
             !plan.examDateIso.isNullOrBlank() -> PublicExamResolvedDate(

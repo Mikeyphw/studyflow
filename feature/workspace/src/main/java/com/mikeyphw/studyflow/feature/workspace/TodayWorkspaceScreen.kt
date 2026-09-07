@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.feature.workspace
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -70,7 +72,6 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
-import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.delay
@@ -500,16 +501,24 @@ private fun activityMetadata(
     activity: PlannedActivity,
     includeDate: Boolean = false,
 ): String {
+    val configuration = LocalConfiguration.current
+    val locale =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            configuration.locales[0]
+        } else {
+            @Suppress("DEPRECATION")
+            configuration.locale
+        }
     val epoch = activity.scheduledStartEpochMillis
     val time = epoch?.let {
-        DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(it))
+        DateFormat.getTimeInstance(DateFormat.SHORT, locale).format(Date(it))
     } ?: stringResource(R.string.flexible)
     val duration = stringResource(R.string.minutes_value, activity.plannedDurationMinutes)
     if (!includeDate || epoch == null) return "$time · $duration"
 
     val date = Date(epoch)
-    val weekday = SimpleDateFormat("EEE", Locale.getDefault()).format(date)
-    val shortDate = DateFormat.getDateInstance(DateFormat.SHORT).format(date)
+    val weekday = SimpleDateFormat("EEE", locale).format(date)
+    val shortDate = DateFormat.getDateInstance(DateFormat.SHORT, locale).format(date)
     return stringResource(
         R.string.dated_activity_metadata,
         "$weekday, $shortDate",

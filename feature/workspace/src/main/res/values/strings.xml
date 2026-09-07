@@ -739,4 +739,24 @@
     <string name="question_quota_subject_target">%1$d this week</string>
     <string name="question_quota_subject_evidence">Phase answered %1$d · accuracy %2$s%% · recurring errors %3$d · overdue reviews %4$d</string>
     <string name="question_quota_formula">Distribution formula: 35% exam weight, 20% under-practice versus weight, 20% recent accuracy deficit, 15% recurring errors, 10% overdue reviews. Missing evidence contributes zero; totals are normalized to the active phase target.</string>
+    <string name="dashboard_questions_label">Question bank</string>
+    <string name="dashboard_backlog_label">Review/error backlog</string>
+    <string name="dashboard_accuracy_30d_label">30-day accuracy</string>
+    <string name="dashboard_accuracy_7d_value">7d %1$s</string>
+    <string name="dashboard_accuracy_90d_value">90d %1$s</string>
+    <string name="dashboard_latest_mock_label">Latest mock</string>
+    <string name="dashboard_cutoff_gap_value">Estimated cutoff gap %1$s</string>
+    <string name="dashboard_exam_countdown_label">Days until confirmed exam</string>
+    <string name="dashboard_subject_weight">Weight %1$s</string>
+    <string name="dashboard_subject_questions">%1$d questions</string>
+    <string name="dashboard_subject_priority">Priority %1$d</string>
+    <string name="dashboard_subject_incidence">Incidence %1$d%%</string>
+    <string name="dashboard_subject_accuracy">Accuracy %1$s</string>
+    <string name="dashboard_subject_mastery">Mastery %1$d%%</string>
+    <string name="dashboard_subject_overdue">Overdue reviews %1$d</string>
+    <string name="dashboard_subject_errors">Recurring errors %1$d</string>
+    <string name="show_dashboard_details">View detailed matrix</string>
+    <string name="hide_dashboard_details">Hide detailed matrix</string>
+    <string name="dashboard_details_expanded">Details expanded</string>
+    <string name="dashboard_details_collapsed">Details collapsed</string>
 </resources>

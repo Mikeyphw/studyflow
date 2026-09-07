@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.feature.schedule
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -48,6 +49,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -86,7 +88,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.launch
 
@@ -128,6 +129,8 @@ fun StudyScheduleScreen(
     var typeFilterName by rememberSaveable(plan.id.value) { mutableStateOf("") }
     var statusFilterName by rememberSaveable(plan.id.value) { mutableStateOf("") }
     var provenanceFilterName by rememberSaveable(plan.id.value) { mutableStateOf("") }
+    var scheduleSearchQuery by rememberSaveable(plan.id.value) { mutableStateOf("") }
+    var showPastCalendarActivities by rememberSaveable(plan.id.value) { mutableStateOf(false) }
     var selectedActivityIds by rememberSaveable(plan.id.value) { mutableStateOf(setOf<String>()) }
     var confirmingBulkDelete by rememberSaveable(plan.id.value) { mutableStateOf(false) }
     var calendarViewName by rememberSaveable(plan.id.value) {
@@ -143,6 +146,7 @@ fun StudyScheduleScreen(
     }
     val activePhase = remember(phasePlan) { phasePlan.activeOn(LocalDate.now()) }
     val subjectById = remember(syllabus) { syllabus.subjects.associateBy { it.id.value } }
+    val topicById = remember(syllabus) { syllabus.topics.associateBy { it.id.value } }
     val activityFilter = ScheduleActivityFilter(
         subjectId = subjectFilterId.takeIf(String::isNotEmpty)?.let { com.mikeyphw.studyflow.core.model.SubjectId(it) },
         type = typeFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, StudyActivityType.CUSTOM) },
@@ -152,8 +156,33 @@ fun StudyScheduleScreen(
     val criteriaActivities = remember(schedule.plannedActivities, activityFilter) {
         ScheduleIntelligence.filter(schedule.plannedActivities, activityFilter)
     }
-    val visibleActivities = remember(criteriaActivities, calendarView, today, zoneId) {
-        ScheduleCalendarPlanner.filter(criteriaActivities, calendarView, today, zoneId)
+    val windowActivities = remember(
+        criteriaActivities,
+        calendarView,
+        today,
+        zoneId,
+        showPastCalendarActivities,
+    ) {
+        val filtered = ScheduleCalendarPlanner.filter(criteriaActivities, calendarView, today, zoneId)
+        if (calendarView == ScheduleCalendarView.CALENDAR && !showPastCalendarActivities) {
+            filtered.filterNot { ScheduleCalendarPlanner.isPast(it, today, zoneId) }
+        } else {
+            filtered
+        }
+    }
+    val visibleActivities = remember(windowActivities, scheduleSearchQuery, subjectById, topicById) {
+        val query = scheduleSearchQuery.trim()
+        if (query.isEmpty()) {
+            windowActivities
+        } else {
+            windowActivities.filter { activity ->
+                val subject = activity.subjectId?.value?.let(subjectById::get)?.name.orEmpty()
+                val topic = activity.topicId?.value?.let(topicById::get)?.name.orEmpty()
+                activity.title.contains(query, ignoreCase = true) ||
+                    subject.contains(query, ignoreCase = true) ||
+                    topic.contains(query, ignoreCase = true)
+            }
+        }
     }
     val dayGroups = remember(visibleActivities, zoneId) { ScheduleIntelligence.groupByDay(visibleActivities, zoneId) }
     val intelligence = remember(schedule.plannedActivities, zoneId) {
@@ -244,9 +273,17 @@ fun StudyScheduleScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (calendarView == ScheduleCalendarView.CALENDAR) {
+                            FilterChip(
+                                selected = showPastCalendarActivities,
+                                onClick = { showPastCalendarActivities = !showPastCalendarActivities },
+                                label = { Text(stringResource(R.string.show_past_activities)) },
+                            )
+                        }
                         Text(
-                            text = stringResource(
-                                R.string.schedule_view_summary,
+                            text = pluralStringResource(
+                                R.plurals.schedule_view_summary,
+                                visibleActivities.size,
                                 visibleActivities.size,
                                 ScheduleCalendarPlanner.plannedMinutes(visibleActivities),
                             ),
@@ -405,7 +442,7 @@ fun StudyScheduleScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        StudyStrategyType.entries.take(4).forEach { candidate ->
+                        StudyStrategyType.entries.forEach { candidate ->
                             FilterChip(
                                 selected = strategyName == candidate.name,
                                 onClick = {
@@ -480,6 +517,7 @@ fun StudyScheduleScreen(
                 items(schedule.scheduleRules, key = { it.id.value }) { rule ->
                     ScheduleRuleCard(
                         rule = rule,
+                        subjectLabel = rule.subjectId?.value?.let { subjectById[it]?.name },
                         onDelete = {
                             launchAction(itemDeleted) { scheduleManager.deleteRule(plan.id, rule.id) }
                         },
@@ -519,6 +557,14 @@ fun StudyScheduleScreen(
             }
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.schedule_filters)) {
+                    OutlinedTextField(
+                        value = scheduleSearchQuery,
+                        onValueChange = { scheduleSearchQuery = it; selectedActivityIds = emptySet() },
+                        label = { Text(stringResource(R.string.schedule_search)) },
+                        placeholder = { Text(stringResource(R.string.schedule_search_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
                     Text(stringResource(R.string.filter_subject), style = MaterialTheme.typography.labelLarge)
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -608,7 +654,11 @@ fun StudyScheduleScreen(
                                 },
                             ) { Text(stringResource(R.string.select_visible)) }
                             StudyFlowStatusPill(
-                                text = stringResource(R.string.selected_count, selectedMutableActivities.size),
+                                text = pluralStringResource(
+                                    R.plurals.selected_count,
+                                    selectedMutableActivities.size,
+                                    selectedMutableActivities.size,
+                                ),
                             )
                             Button(
                                 enabled = selectedMutableActivities.isNotEmpty(),
@@ -682,6 +732,7 @@ fun StudyScheduleScreen(
                         PlannedActivityCard(
                             activity = activity,
                             subjectLabel = activity.subjectId?.value?.let { subjectById[it]?.name },
+                            topicLabel = activity.topicId?.value?.let { topicById[it]?.name },
                             provenance = ScheduleIntelligence.provenance(activity),
                             conflict = activity.id in intelligence.conflictActivityIds,
                             overloaded = group.date?.let { it in intelligence.overloadedDates } == true,
@@ -714,7 +765,15 @@ fun StudyScheduleScreen(
         AlertDialog(
             onDismissRequest = { confirmingBulkDelete = false },
             title = { Text(stringResource(R.string.delete_selected_title)) },
-            text = { Text(stringResource(R.string.delete_selected_message, selectedMutableActivities.size)) },
+            text = {
+                Text(
+                    pluralStringResource(
+                        R.plurals.delete_selected_message,
+                        selectedMutableActivities.size,
+                        selectedMutableActivities.size,
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -752,13 +811,14 @@ fun StudyScheduleScreen(
 
     if (showRuleDialog) {
         ScheduleRuleDialog(
+            subjects = syllabus.subjects,
             onDismiss = { showRuleDialog = false },
             onSave = { draft ->
                 showRuleDialog = false
                 val rule = ScheduleRule(
                     id = ScheduleRuleId(UUID.randomUUID().toString()),
                     studyPlanId = plan.id,
-                    subjectId = null,
+                    subjectId = draft.subjectId,
                     type = ScheduleRuleType.RECURRING_BLOCK,
                     dayOfWeek = draft.dayOfWeek,
                     startMinuteOfDay = draft.startMinuteOfDay,
@@ -775,19 +835,22 @@ fun StudyScheduleScreen(
 
     if (showActivityDialog) {
         PlannedActivityDialog(
+            subjects = syllabus.subjects,
+            topics = syllabus.topics,
+            zoneId = zoneId,
             onDismiss = { showActivityDialog = false },
             onSave = { draft ->
                 showActivityDialog = false
                 val activity = PlannedActivity(
                     id = PlannedActivityId(UUID.randomUUID().toString()),
                     studyPlanId = plan.id,
-                    subjectId = null,
-                    topicId = null,
+                    subjectId = draft.subjectId,
+                    topicId = draft.topicId,
                     materialId = null,
                     videoResourceId = null,
                     type = draft.type,
                     title = draft.title,
-                    scheduledStartEpochMillis = null,
+                    scheduledStartEpochMillis = draft.scheduledStartEpochMillis,
                     plannedDurationMinutes = draft.durationMinutes,
                     status = PlannedActivityStatus.PLANNED,
                     locked = draft.locked,
@@ -803,12 +866,16 @@ fun StudyScheduleScreen(
 @Composable
 private fun ScheduleRuleCard(
     rule: ScheduleRule,
+    subjectLabel: String?,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ElevatedCard(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = stringResource(dayLabelKey(rule.dayOfWeek)), style = MaterialTheme.typography.titleMedium)
+            subjectLabel?.let {
+                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            }
             Text(
                 text = pluralStringResource(
                     R.plurals.duration_label,
@@ -838,6 +905,7 @@ private fun ScheduleRuleCard(
 private fun PlannedActivityCard(
     activity: PlannedActivity,
     subjectLabel: String?,
+    topicLabel: String?,
     provenance: ScheduleActivityProvenance,
     conflict: Boolean,
     overloaded: Boolean,
@@ -861,8 +929,12 @@ private fun PlannedActivityCard(
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            subjectLabel?.let {
-                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            listOfNotNull(subjectLabel, topicLabel).takeIf { it.isNotEmpty() }?.let { labels ->
+                Text(
+                    labels.joinToString(" · "),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -957,7 +1029,17 @@ private fun scheduleDayLabel(date: LocalDate?): String {
     return when (date) {
         today -> stringResource(R.string.today)
         today.plusDays(1) -> stringResource(R.string.tomorrow)
-        else -> date.format(DateTimeFormatter.ofPattern("EEE, d MMM", Locale.getDefault()))
+        else -> {
+            val configuration = LocalConfiguration.current
+            val locale =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    configuration.locales[0]
+                } else {
+                    @Suppress("DEPRECATION")
+                    configuration.locale
+                }
+            date.format(DateTimeFormatter.ofPattern("EEE, d MMM", locale))
+        }
     }
 }
 
@@ -1030,7 +1112,11 @@ private fun StudyPhaseEditorDialog(
                 OutlinedTextField(theory, { theory = it }, label = { Text(stringResource(R.string.study_phase_theory_ratio)) })
                 OutlinedTextField(questions, { questions = it }, label = { Text(stringResource(R.string.study_phase_question_ratio)) })
                 OutlinedTextField(reviews, { reviews = it }, label = { Text(stringResource(R.string.study_phase_review_ratio)) })
-                OutlinedTextField(questionGoal, { questionGoal = it }, label = { Text(stringResource(R.string.study_phase_question_goal_label)) })
+                OutlinedTextField(
+                    questionGoal,
+                    { questionGoal = it },
+                    label = { Text(stringResource(R.string.study_phase_question_goal_label)) },
+                )
                 OutlinedTextField(mockGoal, { mockGoal = it }, label = { Text(stringResource(R.string.study_phase_mock_goal_label)) })
             }
         },

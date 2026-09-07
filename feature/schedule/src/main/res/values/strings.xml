@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="schedule_title">Schedule</string>
     <string name="schedule_subtitle">Plan weekly blocks, generated activities and recovery rules for %1$s.</string>
     <string name="go_back">Go back</string>
@@ -104,11 +104,17 @@
     <string name="overloaded_day">Overloaded day</string>
     <string name="bulk_actions">Bulk actions</string>
     <string name="select_visible">Select visible</string>
-    <string name="selected_count">%1$d selected</string>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
     <string name="select_activity">Select</string>
     <string name="delete_selected">Delete selected</string>
     <string name="delete_selected_title">Delete selected activities?</string>
-    <string name="delete_selected_message">%1$d unlocked editable activities will be deleted.</string>
+    <plurals name="delete_selected_message">
+        <item quantity="one">%1$d unlocked editable activity will be deleted.</item>
+        <item quantity="other">%1$d unlocked editable activities will be deleted.</item>
+    </plurals>
     <string name="bulk_protection_note">Locked, in-progress, and historical activities are protected from bulk actions.</string>
     <string name="no_filter_matches_title">No activities match these filters</string>
     <string name="no_filter_matches_message">Adjust subject, type, status, or provenance to see other activities.</string>
@@ -137,5 +143,17 @@
     <string name="schedule_view_next_week">Next week</string>
     <string name="schedule_view_calendar">Calendar</string>
     <string name="schedule_view_all_dates">All scheduled and unscheduled activities</string>
-    <string name="schedule_view_summary">%1$d activities · %2$d planned minutes</string>
+    <plurals name="schedule_view_summary">
+        <item quantity="one">%1$d activity · %2$d planned minutes</item>
+        <item quantity="other">%1$d activities · %2$d planned minutes</item>
+    </plurals>
+    <string name="any_subject">Any subject</string>
+    <string name="filter_topic">Topic</string>
+    <string name="no_topic">No topic</string>
+    <string name="activity_date">Date (YYYY-MM-DD)</string>
+    <string name="activity_time">Start time (HH:mm)</string>
+    <string name="invalid_date" tools:ignore="TypographyDashes">Enter a valid date such as 2026-09-07.</string>
+    <string name="schedule_search">Search schedule</string>
+    <string name="schedule_search_hint">Title, subject or topic</string>
+    <string name="show_past_activities">Show past activities</string>
 </resources>
