@@ -63,6 +63,7 @@ import com.mikeyphw.studyflow.core.domain.MockExamStudioWarning
 import com.mikeyphw.studyflow.core.domain.QuestionImportOwnership
 import com.mikeyphw.studyflow.core.domain.QuestionImportPreview
 import com.mikeyphw.studyflow.core.domain.RemediationPriority
+import com.mikeyphw.studyflow.core.domain.StudyActivityLaunchPlanner
 import com.mikeyphw.studyflow.core.domain.WeaknessDrillPlan
 import com.mikeyphw.studyflow.core.domain.WrongAnswerRemediation
 import com.mikeyphw.studyflow.core.model.ErrorEntry
@@ -74,6 +75,8 @@ import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
+import com.mikeyphw.studyflow.core.model.SubjectId
+import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.Topic
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceTab
@@ -97,6 +100,9 @@ fun PracticeWorkspaceScreen(
     onOpenQuestionBank: () -> Unit,
     modifier: Modifier = Modifier,
     targetId: String? = null,
+    subjectFilterId: String? = null,
+    topicFilterId: String? = null,
+    openMockStudio: Boolean = false,
 ) {
     var loadAttempt by remember(plan.id) { mutableIntStateOf(0) }
     val reviewFlow = remember(plan.id, loadAttempt) {
@@ -136,6 +142,18 @@ fun PracticeWorkspaceScreen(
     val tests = testsState.readyValue()
     val mocks = mocksState.readyValue()
     val syllabus = syllabusState.readyValue()
+    val deepLinkSubjectId = remember(subjectFilterId) { subjectFilterId?.let(::SubjectId) }
+    val deepLinkTopicId = remember(topicFilterId) { topicFilterId?.let(::TopicId) }
+    val visibleQuestions = remember(questions, deepLinkSubjectId, deepLinkTopicId) {
+        questions.filter { question ->
+            StudyActivityLaunchPlanner.matchesQuestion(question, deepLinkSubjectId, deepLinkTopicId)
+        }
+    }
+    val visibleDueReviews = remember(queue.due, deepLinkSubjectId, deepLinkTopicId) {
+        queue.due.filter { item ->
+            StudyActivityLaunchPlanner.matchesReview(item, deepLinkSubjectId, deepLinkTopicId)
+        }
+    }
     val weaknessDrill = remember(questions, notebook, queue) {
         practiceManager.buildWeaknessDrill(
             questions = questions,
@@ -206,8 +224,8 @@ fun PracticeWorkspaceScreen(
             Box(modifier = Modifier.weight(1f)) {
                 when (selectedTab) {
                     PracticeWorkspaceTab.REVIEWS -> ReviewsPane(
-                        due = queue.due,
-                        dueCount = queue.dueCount,
+                        due = visibleDueReviews,
+                        dueCount = visibleDueReviews.size,
                         upcomingCount = queue.upcomingCount,
                         flashcardCount = queue.flashcardCount,
                         questions = questions,
@@ -240,12 +258,13 @@ fun PracticeWorkspaceScreen(
                         onOpenReviewCenter = onOpenReviewCenter,
                     )
                     PracticeWorkspaceTab.QUESTIONS -> QuestionsPane(
-                        questions = questions,
+                        questions = visibleQuestions,
                         tests = tests,
                         mocks = mocks,
                         mockStudio = mockStudio,
                         bbMockPreset = bbMockPreset,
                         targetId = targetId,
+                        openMockStudio = openMockStudio,
                         onOpenQuestionBank = onOpenQuestionBank,
                         onPreviewMockExam = { request ->
                             practiceManager.previewMockExamStudio(questions, request)
@@ -490,6 +509,7 @@ private fun QuestionsPane(
     mockStudio: MockExamStudioBlueprint,
     bbMockPreset: BancoDoBrasilMockExamPresetPreview?,
     targetId: String?,
+    openMockStudio: Boolean,
     onOpenQuestionBank: () -> Unit,
     onPreviewMockExam: (MockExamStudioRequest) -> MockExamStudioBlueprint,
     onPreviewQuestionImport: (String) -> QuestionImportPreview,
@@ -498,7 +518,7 @@ private fun QuestionsPane(
     onImportQuestions: (String) -> Unit,
 ) {
     var showImportDialog by rememberSaveable { mutableStateOf(false) }
-    var showMockStudioDialog by rememberSaveable { mutableStateOf(false) }
+    var showMockStudioDialog by rememberSaveable(openMockStudio) { mutableStateOf(openMockStudio) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = workspaceContentPadding(),

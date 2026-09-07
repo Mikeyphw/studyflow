@@ -42,6 +42,8 @@ import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.StudyCycleAction
+import com.mikeyphw.studyflow.core.domain.StudyActivityLaunchDestination
+import com.mikeyphw.studyflow.core.domain.StudyActivityLaunchPlanner
 import com.mikeyphw.studyflow.core.domain.ManageStudyDiscovery
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
@@ -60,6 +62,8 @@ import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.model.StudyType
+import com.mikeyphw.studyflow.core.model.SubjectId
+import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -85,7 +89,9 @@ fun TodayWorkspaceScreen(
     onSystem: () -> Unit,
     onQuickAdd: () -> Unit,
     onOpenFocus: (StudySession) -> Unit,
-    onOpenReviews: () -> Unit,
+    onOpenReviews: (SubjectId?, TopicId?) -> Unit,
+    onOpenQuestions: (SubjectId?, TopicId?) -> Unit,
+    onOpenMockExamStudio: () -> Unit,
     onOpenSchedule: () -> Unit,
     onOpenRecommendation: (StudyRecommendation) -> Unit,
     modifier: Modifier = Modifier,
@@ -185,7 +191,7 @@ fun TodayWorkspaceScreen(
         .toInt()
     val weeklyProgress = weeklyStudiedMinutes.toFloat() / weeklyGoalMinutes.toFloat()
 
-    fun startActivity(activity: PlannedActivity) {
+    fun startFocusActivity(activity: PlannedActivity) {
         scope.launch {
             try {
                 val session = sessionManager.startFromActivity(
@@ -196,6 +202,18 @@ fun TodayWorkspaceScreen(
             } catch (_: Exception) {
                 snackbar.showSnackbar(operationFailed)
             }
+        }
+    }
+
+    fun launchActivity(activity: PlannedActivity) {
+        val intent = StudyActivityLaunchPlanner.plan(activity)
+        when (intent.destination) {
+            StudyActivityLaunchDestination.QUESTIONS -> onOpenQuestions(intent.subjectId, intent.topicId)
+            StudyActivityLaunchDestination.REVIEWS -> onOpenReviews(intent.subjectId, intent.topicId)
+            StudyActivityLaunchDestination.MOCK_EXAM_STUDIO -> onOpenMockExamStudio()
+            StudyActivityLaunchDestination.WRITING_WORKSPACE,
+            StudyActivityLaunchDestination.FOCUS_SESSION,
+            -> startFocusActivity(activity)
         }
     }
 
@@ -232,7 +250,7 @@ fun TodayWorkspaceScreen(
                                 dueReviewCount,
                             ),
                             actionLabel = stringResource(R.string.review_now),
-                            onAction = onOpenReviews,
+                            onAction = { onOpenReviews(null, null) },
                             secondaryLabel = recommendation?.let { stringResource(R.string.open) },
                             onSecondaryAction = recommendation?.let { { onOpenRecommendation(it) } },
                         )
@@ -264,7 +282,7 @@ fun TodayWorkspaceScreen(
                                 includeDate = nextActivity.isFutureDay,
                             ),
                             actionLabel = stringResource(R.string.start_focus),
-                            onAction = { startActivity(nextActivity.activity) },
+                            onAction = { launchActivity(nextActivity.activity) },
                             secondaryLabel = stringResource(R.string.adjust_plan),
                             onSecondaryAction = onOpenSchedule,
                         )
@@ -301,7 +319,7 @@ fun TodayWorkspaceScreen(
                                 weakConceptCount = readyAnalytics.weakAreas.size,
                                 termuxRuntimeReady = plan.contentMode.capabilities.supportsTermuxRuntime,
                             ),
-                            onOpenPractice = onOpenReviews,
+                            onOpenPractice = { onOpenReviews(null, null) },
                             onOpenPlan = onOpenSchedule,
                         )
                     }
@@ -352,7 +370,7 @@ fun TodayWorkspaceScreen(
                                     PlannedActivityStatus.MISSED,
                                 )
                             ) {
-                                { startActivity(activity) }
+                                { launchActivity(activity) }
                             } else {
                                 null
                             },
@@ -369,7 +387,7 @@ fun TodayWorkspaceScreen(
                                 ),
                                 icon = Icons.Outlined.Refresh,
                                 actionLabel = stringResource(R.string.review_now),
-                                onAction = onOpenReviews,
+                                onAction = { onOpenReviews(null, null) },
                             )
                         }
                     }

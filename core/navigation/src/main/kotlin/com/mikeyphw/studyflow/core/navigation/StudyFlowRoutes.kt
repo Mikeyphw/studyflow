@@ -118,6 +118,9 @@ data class PracticeWorkspaceRoute(
     val planId: String = "",
     val tab: PracticeWorkspaceTab = PracticeWorkspaceTab.REVIEWS,
     val targetId: String? = null,
+    val subjectId: String? = null,
+    val topicId: String? = null,
+    val openMockStudio: Boolean = false,
 )
 
 @Serializable

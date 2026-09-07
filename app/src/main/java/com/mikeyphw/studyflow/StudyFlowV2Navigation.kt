@@ -267,9 +267,33 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                     navController.navigate(QuickAddRoute(StudyFlowWorkspaceRoot.TODAY, plan.id.value))
                 },
                 onOpenFocus = { session -> navController.navigate(session.focusRoute()) },
-                onOpenReviews = {
+                onOpenReviews = { subjectId, topicId ->
                     navController.navigate(
-                        PracticeWorkspaceRoute(plan.id.value, PracticeWorkspaceTab.REVIEWS),
+                        PracticeWorkspaceRoute(
+                            planId = plan.id.value,
+                            tab = PracticeWorkspaceTab.REVIEWS,
+                            subjectId = subjectId?.value,
+                            topicId = topicId?.value,
+                        ),
+                    )
+                },
+                onOpenQuestions = { subjectId, topicId ->
+                    navController.navigate(
+                        PracticeWorkspaceRoute(
+                            planId = plan.id.value,
+                            tab = PracticeWorkspaceTab.QUESTIONS,
+                            subjectId = subjectId?.value,
+                            topicId = topicId?.value,
+                        ),
+                    )
+                },
+                onOpenMockExamStudio = {
+                    navController.navigate(
+                        PracticeWorkspaceRoute(
+                            planId = plan.id.value,
+                            tab = PracticeWorkspaceTab.QUESTIONS,
+                            openMockStudio = true,
+                        ),
                     )
                 },
                 onOpenSchedule = {
@@ -366,6 +390,9 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 plan = plan,
                 selectedTab = route.tab,
                 targetId = route.targetId,
+                subjectFilterId = route.subjectId,
+                topicFilterId = route.topicId,
+                openMockStudio = route.openMockStudio,
                 practiceManager = container.manageStudyPractice,
                 reviewManager = container.manageStudyReview,
                 contentManager = container.manageStudyContent,
