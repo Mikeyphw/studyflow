@@ -66,7 +66,7 @@ function normalizePlanConfiguration(input, mode) {
             target: normalizeExamTarget(p.target),
             stages: arr(p.stages).map((s, i) => ({ id: text(s?.id) ?? `stage-${i + 1}`, name: text(s?.name) ?? `Stage ${i + 1}`, date: dateOnly(s?.date), status: ["planned", "completed", "cancelled"].includes(String(s?.status)) ? s.status : "planned" })),
             noticeRevisions: arr(p.noticeRevisions).map((r, i) => ({ id: text(r?.id) ?? `notice-${i + 1}`, acceptedAt: iso(r?.acceptedAt) ?? new Date(0).toISOString(), sourceHash: text(r?.sourceHash) ?? `legacy-${i + 1}`, added: Math.max(0, Math.trunc(n(r?.added) ?? 0)), archived: Math.max(0, Math.trunc(n(r?.archived) ?? 0)) })),
-            reviewIntervalsDays: uniqueStrings(p.reviewIntervalsDays).map(Number).filter(v => Number.isInteger(v) && v > 0 && v <= 365).slice(0, 8),
+            reviewIntervalsDays: arr(p.reviewIntervalsDays).map(Number).filter(v => Number.isInteger(v) && v > 0 && v <= 365).slice(0, 8),
             legislation: arr(p.legislation).map((d, i) => ({ id: text(d?.id) ?? `law-${i + 1}`, title: text(d?.title) ?? `Legislation ${i + 1}`, reference: text(d?.reference), notes: text(d?.notes), provisions: arr(d?.provisions).map((q, j) => ({ id: text(q?.id) ?? `provision-${i + 1}-${j + 1}`, label: text(q?.label) ?? `Provision ${j + 1}`, text: text(q?.text) ?? "", status: ["unseen", "studying", "reviewing", "known"].includes(String(q?.status)) ? q.status : "unseen" })) })),
             mockBlueprint: normalizeMockBlueprint(p.mockBlueprint ?? d.mockBlueprint),
         };
@@ -111,8 +111,10 @@ function validatePlanConfiguration(config, mode) {
                 errors.push("public-exam organization, role and board must be supplied together or all blank");
             if (t.estimatedCutoff != null && (t.estimatedCutoff < 0 || t.estimatedCutoff > 100))
                 errors.push("estimated cutoff must be between 0 and 100");
-            if (!p.reviewIntervalsDays.length || p.reviewIntervalsDays.some(v => !Number.isInteger(v) || v <= 0))
-                errors.push("review intervals must be positive whole days");
+            if (!p.reviewIntervalsDays.length || p.reviewIntervalsDays.length > 8 || p.reviewIntervalsDays.some(v => !Number.isInteger(v) || v <= 0 || v > 365))
+                errors.push("review intervals must be 1 to 8 whole-day values from 1 to 365");
+            if (p.reviewIntervalsDays.some((v, i) => i > 0 && v < p.reviewIntervalsDays[i - 1]))
+                errors.push("review intervals must be non-decreasing");
         }
     }
     if (mode === "PROGRAMMING_COURSE" && !config.programming)
@@ -128,13 +130,13 @@ function validatePlanConfiguration(config, mode) {
 function normalizeMockBlueprint(input) {
     const x = (input && typeof input === "object" ? input : {});
     const scoring = EXAM_SCORING.includes(x.scoring) ? x.scoring : "no-penalty";
-    return { scoring, negativePoints: Math.max(0, n(x.negativePoints) ?? 0), totalQuestions: Math.max(1, Math.min(500, Math.trunc(n(x.totalQuestions) ?? 20))), durationMinutes: Math.max(5, Math.min(1440, Math.trunc(n(x.durationMinutes) ?? 60))), sections: arr(x.sections).map((s, i) => ({ id: text(s?.id) ?? `section-${i + 1}`, subjectId: text(s?.subjectId), count: Math.max(1, Math.trunc(n(s?.count) ?? 1)), weight: Math.max(0, n(s?.weight) ?? 1) })) };
+    return { scoring, negativePoints: Math.max(0, n(x.negativePoints) ?? 0), totalQuestions: Math.max(1, Math.min(500, Math.trunc(n(x.totalQuestions) ?? 20))), durationMinutes: Math.max(5, Math.min(1440, Math.trunc(n(x.durationMinutes) ?? 60))), sections: arr(x.sections).map((s, i) => { const weight = n(s?.weight); return { id: text(s?.id) ?? `section-${i + 1}`, subjectId: text(s?.subjectId), count: Math.max(1, Math.trunc(n(s?.count) ?? 1)), weight: weight != null && weight > 0 ? weight : 1 }; }) };
 }
 function normalizeProgrammingExercise(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `exercise-${index + 1}`, title: text(x.title) ?? `Exercise ${index + 1}`, language: text(x.language) ?? "TypeScript", prompt: text(x.prompt) ?? "", starterCode: String(x.starterCode ?? ""), expectedOutput: text(x.expectedOutput), hints: uniqueStrings(x.hints), solutionNotes: text(x.solutionNotes), difficulty: ["easy", "medium", "hard"].includes(String(x.difficulty)) ? x.difficulty : "medium", status: ["todo", "attempted", "completed"].includes(String(x.status)) ? x.status : "todo" }; }
 function normalizeLanguageExpression(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `expression-${index + 1}`, expression: text(x.expression) ?? `Expression ${index + 1}`, meaning: text(x.meaning) ?? "", literalTranslation: text(x.literalTranslation), region: text(x.region), register: text(x.register), pronunciationNote: text(x.pronunciationNote), commonMistakes: uniqueStrings(x.commonMistakes) }; }
 function normalizeReadingItem(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); const total = Math.max(1, Math.trunc(n(x.totalUnits) ?? 1)); return { id: text(x.id) ?? `reading-${index + 1}`, title: text(x.title) ?? `Reading ${index + 1}`, totalUnits: total, currentUnit: Math.max(0, Math.min(total, Math.trunc(n(x.currentUnit) ?? 0))), unit: text(x.unit) ?? "pages", status: ["planned", "reading", "completed"].includes(String(x.status)) ? x.status : "planned", notes: text(x.notes) }; }
 function normalizeGeneralDrill(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `drill-${index + 1}`, title: text(x.title) ?? `Drill ${index + 1}`, metric: text(x.metric) ?? "repetitions", target: Math.max(0, n(x.target) ?? 1), unit: text(x.unit) ?? "count", status: ["active", "paused", "completed"].includes(String(x.status)) ? x.status : "active" }; }
-function normalizeQuestionMetadata(input) { return { organization: text(input.organization), role: text(input.role), examStage: text(input.examStage), examBoard: text(input.examBoard), year: n(input.year) == null ? null : Math.trunc(n(input.year)), authorship: text(input.authorship), editalRevision: text(input.editalRevision), externalReference: text(input.externalReference), points: n(input.points) }; }
+function normalizeQuestionMetadata(input) { const points = n(input.points); return { organization: text(input.organization), role: text(input.role), examStage: text(input.examStage), examBoard: text(input.examBoard), year: n(input.year) == null ? null : Math.trunc(n(input.year)), authorship: text(input.authorship), editalRevision: text(input.editalRevision), externalReference: text(input.externalReference), points: points != null && points > 0 ? points : null }; }
 function hashText(source) { let h = 2166136261; for (let i = 0; i < source.length; i++) {
     h ^= source.charCodeAt(i);
     h = Math.imul(h, 16777619);
@@ -208,42 +210,77 @@ function deriveFinalStretchGuidance(plan, at = new Date()) {
 }
 function filterExamQuestions(state, filter = {}) { return state.questions.filter(q => q.planId === state.activePlanId).filter(q => filter.board ? String(q.examBoard ?? "").toLowerCase() === filter.board.toLowerCase() : true).filter(q => filter.organization ? String(q.organization ?? "").toLowerCase() === filter.organization.toLowerCase() : true).filter(q => filter.role ? String(q.role ?? "").toLowerCase() === filter.role.toLowerCase() : true).filter(q => filter.subjectId ? q.subjectId === filter.subjectId : true).filter(q => filter.topicId ? q.topicId === filter.topicId : true).filter(q => filter.yearFrom != null ? (q.year ?? -Infinity) >= filter.yearFrom : true).filter(q => filter.yearTo != null ? (q.year ?? Infinity) <= filter.yearTo : true).filter(q => filter.disputed != null ? q.disputed === filter.disputed : true); }
 function previewMockExam(state, blueprintInput = {}) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan || plan.mode !== "EXAM_PLAN")
-    throw new TypeError("Mock preview requires an EXAM_PLAN"); const blueprint = normalizeMockBlueprint({ ...plan.configuration.publicExam?.mockBlueprint, ...blueprintInput }); const bank = state.questions.filter(q => q.planId === plan.id && !q.disputed); const selected = []; const deficits = []; if (blueprint.sections.length) {
+    throw new TypeError("Mock preview requires an EXAM_PLAN"); const blueprint = normalizeMockBlueprint({ ...plan.configuration.publicExam?.mockBlueprint, ...blueprintInput }); const bank = state.questions.filter(q => q.planId === plan.id && !q.disputed && Boolean(q.answer)); const selected = []; const deficits = []; if (blueprint.sections.length) {
     for (const s of blueprint.sections) {
-        const candidates = bank.filter(q => !selected.includes(q.id) && (!s.subjectId || q.subjectId === s.subjectId)).sort((a, b) => a.id.localeCompare(b.id));
+        const candidates = bank.filter(q => !selected.includes(q.id) && (!s.subjectId || q.subjectId === s.subjectId)).sort((a, b) => (b.points ?? 1) - (a.points ?? 1) || a.id.localeCompare(b.id));
         if (candidates.length < s.count)
             deficits.push(`${s.subjectId ?? "all"}: need ${s.count}, have ${candidates.length}`);
         selected.push(...candidates.slice(0, s.count).map(q => q.id));
     }
 }
 else {
-    selected.push(...bank.slice(0, blueprint.totalQuestions).map(q => q.id));
+    selected.push(...bank.sort((a, b) => (b.points ?? 1) - (a.points ?? 1) || a.id.localeCompare(b.id)).slice(0, blueprint.totalQuestions).map(q => q.id));
     if (selected.length < blueprint.totalQuestions)
         deficits.push(`need ${blueprint.totalQuestions}, have ${selected.length}`);
 } return { baseRevision: state.revision, generatedAt: new Date().toISOString(), blueprint, questionIds: selected, deficits, ready: deficits.length === 0 }; }
-function scoreMockExam(preview, answers, state) { let correct = 0, wrong = 0, unanswered = 0, score = 0; for (const qid of preview.questionIds) {
-    const q = state.questions.find(x => x.id === qid);
-    if (!q || !q.answer) {
-        unanswered++;
-        continue;
+const roundScore = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+const clampPercent = (value) => Math.max(0, Math.min(100, roundScore(value)));
+function scoreMockExam(preview, answers, state) {
+    const byId = new Map(state.questions.map(q => [q.id, q]));
+    const groups = [];
+    if (preview.blueprint.sections.length) {
+        let offset = 0;
+        for (const section of preview.blueprint.sections) {
+            groups.push({ id: section.id, subjectId: section.subjectId, weight: section.weight, questionIds: preview.questionIds.slice(offset, offset + section.count) });
+            offset += section.count;
+        }
     }
-    const submitted = String(answers[qid] ?? "").trim();
-    if (!submitted) {
-        unanswered++;
-        continue;
+    else
+        groups.push({ id: "general", subjectId: null, weight: null, questionIds: [...preview.questionIds] });
+    let correct = 0, wrong = 0, unanswered = 0, rawScore = 0, maximumScore = 0;
+    const sections = [];
+    const questions = [];
+    for (const group of groups) {
+        const selected = group.questionIds.map(id => byId.get(id)).filter(Boolean);
+        const bases = selected.map(q => q.points != null && q.points > 0 ? q.points : 1);
+        const baseTotal = bases.reduce((sum, value) => sum + value, 0) || 1;
+        const sectionMaximum = group.weight == null ? baseTotal : group.weight;
+        let sectionEarned = 0, sectionCorrect = 0, sectionWrong = 0, sectionUnanswered = 0;
+        selected.forEach((q, index) => {
+            const maximum = group.weight == null ? bases[index] : sectionMaximum * (bases[index] / baseTotal);
+            const submitted = String(answers[q.id] ?? "").trim();
+            let outcome = "unanswered";
+            let earned = 0;
+            if (!q.answer || !submitted) {
+                unanswered++;
+                sectionUnanswered++;
+            }
+            else if (submitted.toLowerCase() === q.answer.trim().toLowerCase()) {
+                outcome = "correct";
+                correct++;
+                sectionCorrect++;
+                earned = maximum;
+            }
+            else {
+                outcome = "wrong";
+                wrong++;
+                sectionWrong++;
+                if (preview.blueprint.scoring === "right-minus-wrong")
+                    earned = -maximum;
+                else if (preview.blueprint.scoring === "fixed-negative")
+                    earned = -(preview.blueprint.negativePoints * maximum);
+            }
+            sectionEarned += earned;
+            rawScore += earned;
+            maximumScore += maximum;
+            questions.push({ questionId: q.id, sectionId: group.id, subjectId: q.subjectId, outcome, basePoints: roundScore(bases[index]), maximumPoints: roundScore(maximum), earnedPoints: roundScore(earned) });
+        });
+        sections.push({ sectionId: group.id, subjectId: group.subjectId, correct: sectionCorrect, wrong: sectionWrong, unanswered: sectionUnanswered, earnedPoints: roundScore(sectionEarned), maximumPoints: roundScore(sectionMaximum), percent: sectionMaximum > 0 ? clampPercent((Math.max(0, sectionEarned) / sectionMaximum) * 100) : 0 });
     }
-    if (submitted.toLowerCase() === q.answer.trim().toLowerCase()) {
-        correct++;
-        score += 1;
-    }
-    else {
-        wrong++;
-        if (preview.blueprint.scoring === "fixed-negative" || preview.blueprint.scoring === "right-minus-wrong")
-            score -= preview.blueprint.negativePoints || 1;
-    }
-} return { correct, wrong, unanswered, rawScore: score, percent: preview.questionIds.length ? Math.round((score / preview.questionIds.length) * 10000) / 100 : null }; }
+    return { scoringPolicy: preview.blueprint.scoring, correct, wrong, unanswered, rawScore: roundScore(rawScore), maximumScore: roundScore(maximumScore), percent: maximumScore > 0 ? clampPercent((Math.max(0, rawScore) / maximumScore) * 100) : null, rounding: "nearest-0.01", sections, questions };
+}
 function derivePublicExamDashboard(state) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan || plan.mode !== "EXAM_PLAN")
-    return null; const activeTopics = state.topics.filter(t => t.planId === plan.id && t.status !== "archived"); const evidenced = new Set(state.evidence.filter(e => e.planId === plan.id && e.topicId).map(e => e.topicId)); const attempts = state.evidence.filter(e => e.planId === plan.id && e.kind === "question-attempt" && typeof e.value === "object" && e.value && "gradable" in e.value && e.value.gradable === true); const correct = attempts.filter(e => e.value.correct === true).length; const due = state.reviews.filter(r => r.planId === plan.id && r.status === "due").length; const mocks = state.evidence.filter(e => e.planId === plan.id && e.kind === "mock-exam-result").sort((a, b) => b.observedAt.localeCompare(a.observedAt)); const latest = mocks[0]?.value; const cutoff = plan.configuration.publicExam?.target.estimatedCutoff ?? null; return { coverage: activeTopics.length ? evidenced.size / activeTopics.length : null, accuracy: attempts.length ? correct / attempts.length : null, reviewBacklog: due, cutoffGap: cutoff != null && typeof latest?.percent === "number" ? latest.percent - cutoff : null, noticeRevisionCount: plan.configuration.publicExam?.noticeRevisions.length ?? 0, legislationCount: plan.configuration.publicExam?.legislation.length ?? 0 }; }
+    return null; const activeTopics = state.topics.filter(t => t.planId === plan.id && t.status !== "archived"); const evidenced = new Set(state.evidence.filter(e => e.planId === plan.id && e.topicId).map(e => e.topicId)); const attempts = state.evidence.filter(e => e.planId === plan.id && e.kind === "question-attempt" && typeof e.value === "object" && e.value && "gradable" in e.value && e.value.gradable === true); const correct = attempts.filter(e => e.value.correct === true).length; const due = state.reviews.filter(r => r.planId === plan.id && r.status === "due").length; const mocks = state.evidence.filter(e => e.planId === plan.id && e.kind === "mock-exam-result").sort((a, b) => b.observedAt.localeCompare(a.observedAt)); const latest = mocks[0]?.value; const cutoff = plan.configuration.publicExam?.target.estimatedCutoff ?? null; return { coverage: activeTopics.length ? evidenced.size / activeTopics.length : null, accuracy: attempts.length ? correct / attempts.length : null, reviewBacklog: due, cutoffGap: cutoff != null && typeof latest?.percent === "number" ? roundScore(latest.percent - cutoff) : null, noticeRevisionCount: plan.configuration.publicExam?.noticeRevisions.length ?? 0, legislationCount: plan.configuration.publicExam?.legislation.length ?? 0 }; }
 function createProgrammingExercise(input) { return normalizeProgrammingExercise({ ...input, id: input.id ?? id("exercise") }); }
 function createLanguageExpression(input) { return normalizeLanguageExpression({ ...input, id: input.id ?? id("expression") }); }
 function createReadingItem(input) { return normalizeReadingItem({ ...input, id: input.id ?? id("reading") }); }

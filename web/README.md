@@ -78,3 +78,7 @@ The remaining plan modes are also functional: programming exercises/projects use
 W18 completes the release hardening pass: ARIA/keyboard tab semantics, main-landmark focus management, accessible names for every form control, forced-colors support, explicit PWA listener cleanup, an app-shell-only cache policy, IndexedDB last-known-good recovery, and a storage-health audit with explicit orphan cleanup. Missing attachment references are reported but never silently rewritten.
 
 W19 seals the browser edition as **StudyFlow Local 1.0.0**. `npm run release:check` verifies release identity and offline-shell completeness in addition to the cumulative validator, strict TypeScript compile/runtime parity, tests, and lint. The 1.0 contract remains local-first with no required backend/account/telemetry/CDN, state schema v5, IndexedDB schema v1, and portable package format v1.
+
+## PC00/PC01 correctness closure
+
+Post-W19 correctness hardening fixes weighted mock scoring and makes the configured spaced-review intervals authoritative. See `../docs/web/PC00_PC01_CORRECTNESS_CLOSURE.md`.

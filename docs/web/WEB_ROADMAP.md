@@ -24,3 +24,8 @@
 | W19 | StudyFlow Local 1.0 release seal — delivered |
 
 Each phase must preserve mobile-first behavior, local ownership, truthful evidence semantics and framework-independent domain rules.
+
+## Post-W19 parity closure
+
+- PC00 | Mock scoring correctness — delivered: weighted scoring now honors question points and section weights, penalty modes are value-aware, unanswered questions remain neutral, and score evidence includes section/question breakdowns.
+- PC01 | Configurable review progression — delivered: review intervals are actionable, persisted review stages advance through the configured policy, failed reviews reset progression, and successor scheduling is duplicate-safe.

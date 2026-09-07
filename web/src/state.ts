@@ -46,6 +46,19 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
     }
     function activePlanId() { if (!state.activePlanId) throw new TypeError("No active plan"); return state.activePlanId; }
     function nowIso() { return now(); }
+    function reviewIntervals(planId = activePlanId()) {
+        const plan = state.plans.find((candidate) => candidate.id === planId);
+        const configured = plan?.mode === "EXAM_PLAN" ? plan.configuration.publicExam?.reviewIntervalsDays : null;
+        return Array.isArray(configured) && configured.length ? [...configured] : [1, 7, 30];
+    }
+    function normalizeReviewGrade(value) {
+        if (value == null || value === "") return 3;
+        const labels = { again: 1, hard: 2, good: 3, easy: 5 };
+        if (typeof value === "string" && value.toLowerCase() in labels) return labels[value.toLowerCase()];
+        const grade = Number(value);
+        if (!Number.isFinite(grade)) throw new TypeError("Review rating must be a grade from 0 to 5");
+        return Math.max(0, Math.min(5, Math.round(grade)));
+    }
     function focusSnapshot(at = nowIso()) {
         const focus = createFocusState(state.focus ?? {});
         return { ...focus, remainingMs: focusRemainingMs(focus, at) };
@@ -107,6 +120,11 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
         addLegislation(input) {
             const current=state.plans.find((plan)=>plan.id===activePlanId());if(!current||current.mode!=="EXAM_PLAN")throw new TypeError("Legislation requires an EXAM_PLAN");const at=nowIso();const title=String(input.title??"").trim();if(!title)throw new TypeError("Legislation title is required");
             const document={id:`law-${Date.now().toString(36)}`,title,reference:input.reference??null,notes:input.notes??null,provisions:(input.provisions??[]).map((p,i)=>({id:`provision-${Date.now().toString(36)}-${i}`,label:String(p.label??`Provision ${i+1}`),text:String(p.text??""),status:"unseen"}))};const updated=createPlan({...current,configuration:{...current.configuration,publicExam:{...current.configuration.publicExam,legislation:[...current.configuration.publicExam.legislation,document]}},createdAt:current.createdAt,updatedAt:at});commit({...state,plans:state.plans.map(x=>x.id===current.id?updated:x)},"legislation-added");return updated;
+        },
+        setReviewIntervalsDays(intervals) {
+            const current=state.plans.find((plan)=>plan.id===activePlanId());if(!current||current.mode!=="EXAM_PLAN")throw new TypeError("Review intervals require an EXAM_PLAN");
+            const values=Array.isArray(intervals)?intervals.map(Number):[];if(values.length<1||values.length>8||values.some((value)=>!Number.isInteger(value)||value<1||value>365)||values.some((value,index)=>index>0&&value<values[index-1]))throw new TypeError("Review intervals must contain 1 to 8 non-decreasing whole-day values from 1 to 365");
+            const at=nowIso();const updated=createPlan({...current,configuration:{...current.configuration,publicExam:{...current.configuration.publicExam,reviewIntervalsDays:values}},createdAt:current.createdAt,updatedAt:at});commit({...state,plans:state.plans.map(x=>x.id===current.id?updated:x)},"review-policy-updated");return updated;
         },
         setMockBlueprint(input) {
             const current=state.plans.find((plan)=>plan.id===activePlanId());if(!current||current.mode!=="EXAM_PLAN")throw new TypeError("Mock blueprint requires an EXAM_PLAN");const at=nowIso();const blueprint=normalizeMockBlueprint({...current.configuration.publicExam.mockBlueprint,...input});const updated=createPlan({...current,configuration:{...current.configuration,publicExam:{...current.configuration.publicExam,mockBlueprint:blueprint}},createdAt:current.createdAt,updatedAt:at});commit({...state,plans:state.plans.map(x=>x.id===current.id?updated:x)},"mock-blueprint-updated");return updated;
@@ -284,7 +302,8 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
             if (result.gradable && result.correct === false) {
                 review = state.reviews.find((candidate) => candidate.status === "due" && candidate.sourceType === "question" && candidate.sourceId === question.id) ?? null;
                 if (!review) {
-                    review = createReview({ planId: activePlanId(), subjectId: question.subjectId, topicId: question.topicId, dueAt: new Date(Date.parse(at)+86_400_000).toISOString(), status: "due", sourceType: "question", sourceId: question.id, createdAt: at, updatedAt: at });
+                    const intervals = reviewIntervals();
+                    review = createReview({ planId: activePlanId(), subjectId: question.subjectId, topicId: question.topicId, dueAt: new Date(Date.parse(at)+intervals[0]*86_400_000).toISOString(), status: "due", sourceType: "question", sourceId: question.id, intervalIndex: 0, intervalDays: intervals[0], repetitionCount: 0, createdAt: at, updatedAt: at });
                     reviews = [...reviews, review];
                 }
                 const existing = state.errorEntries.find((candidate) => candidate.status === "open" && candidate.questionId === question.id && candidate.category === errorCategory);
@@ -303,9 +322,15 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
             const at = nowIso(); const review = state.reviews.find((candidate) => candidate.id === reviewId && candidate.planId === activePlanId());
             if (!review) throw new TypeError("Review not found in the active plan");
             if (review.status !== "due") return review;
-            const completed = createReview({ ...review, status: "completed", updatedAt: at });
-            const evidence = createEvidence({ planId: activePlanId(), subjectId: review.subjectId, topicId: review.topicId, kind: "review-completed", observedAt: at, provenance: "user", value: { reviewId: review.id, rating }, createdAt: at, updatedAt: at });
-            commit({ ...state, reviews: state.reviews.map((candidate) => candidate.id === review.id ? completed : candidate), evidence: [...state.evidence, evidence] }, "review-completed");
+            const grade = normalizeReviewGrade(rating); const intervals = reviewIntervals(review.planId); const currentIndex = Math.max(0, Math.min(intervals.length - 1, Number.isInteger(review.intervalIndex) ? review.intervalIndex : 0));
+            const nextIndex = grade < 3 ? 0 : Math.min(currentIndex + 1, intervals.length - 1); const nextInterval = intervals[nextIndex];
+            const completed = createReview({ ...review, status: "completed", completedAt: at, updatedAt: at });
+            const duplicate = review.sourceId == null ? null : state.reviews.find((candidate) => candidate.id !== review.id && candidate.status === "due" && candidate.planId === review.planId && candidate.sourceType === review.sourceType && candidate.sourceId === review.sourceId) ?? null;
+            const successor = duplicate ?? createReview({ planId: review.planId, subjectId: review.subjectId, topicId: review.topicId, dueAt: new Date(Date.parse(at)+nextInterval*86_400_000).toISOString(), status: "due", sourceType: review.sourceType, sourceId: review.sourceId, intervalIndex: nextIndex, intervalDays: nextInterval, repetitionCount: (review.repetitionCount ?? 0) + 1, previousReviewId: review.id, createdAt: at, updatedAt: at });
+            let reviews = state.reviews.map((candidate) => candidate.id === review.id ? completed : candidate); if (!duplicate) reviews = [...reviews, successor];
+            const errorEntries = state.errorEntries.map((entry) => entry.status === "open" && entry.reviewId === review.id ? createErrorEntry({ ...entry, reviewId: successor.id, updatedAt: at }) : entry);
+            const evidence = createEvidence({ planId: activePlanId(), subjectId: review.subjectId, topicId: review.topicId, kind: "review-completed", observedAt: at, provenance: "user", value: { reviewId: review.id, rating, grade, intervalIndex: currentIndex, intervalDays: review.intervalDays, policyIntervalsDays: intervals, nextReviewId: successor.id, nextIntervalIndex: nextIndex, nextIntervalDays: nextInterval, nextDueAt: successor.dueAt }, createdAt: at, updatedAt: at });
+            commit({ ...state, reviews, errorEntries, evidence: [...state.evidence, evidence] }, "review-completed");
             return completed;
         },
         resolveError(errorId, { note = null } = {}) {

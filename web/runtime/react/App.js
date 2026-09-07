@@ -260,6 +260,7 @@ function PublicExamWorkspace({ state, store, run }) {
     const [notice, setNotice] = React.useState("");
     const [noticePreview, setNoticePreview] = React.useState(null);
     const [law, setLaw] = React.useState("");
+    const [reviewDays, setReviewDays] = React.useState(c.reviewIntervalsDays.join(", "));
     const dashboard = (0, modes_1.derivePublicExamDashboard)(state);
     const guidance = (0, modes_1.deriveFinalStretchGuidance)(plan);
     return React.createElement("div", { className: "content-grid two-column" },
@@ -332,7 +333,12 @@ function PublicExamWorkspace({ state, store, run }) {
             React.createElement("label", null,
                 "Duration (min)",
                 React.createElement("input", { "aria-label": "Mock duration minutes", type: "number", min: "5", value: c.mockBlueprint.durationMinutes, onChange: (e) => run(() => store.setMockBlueprint({ durationMinutes: Number(e.target.value) }), "Mock blueprint updated.") })),
-            React.createElement("p", { className: "muted" }, "Supply is checked before a mock can start; unanswered questions stay neutral.")));
+            React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); const days = reviewDays.split(/[ ,;]+/).filter(Boolean).map(Number); run(() => store.setReviewIntervalsDays(days), "Review intervals updated."); } },
+                React.createElement("label", null,
+                    "Review intervals (days)",
+                    React.createElement("input", { "aria-label": "Review interval days", value: reviewDays, onChange: (e) => setReviewDays(e.target.value), placeholder: "1, 7, 30" })),
+                React.createElement("button", { className: "button button-quiet", type: "submit" }, "Save review policy")),
+            React.createElement("p", { className: "muted" }, "Weighted mocks use question points and section weights. Unanswered questions stay neutral. Review progression follows the configured intervals.")));
 }
 function ProgrammingWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.programming; const [name, setName] = React.useState(""); const [prompt, setPrompt] = React.useState(""); return React.createElement("article", { className: "card" },
     React.createElement("h2", null,
@@ -449,7 +455,11 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, run })
             React.createElement("ul", { className: "activity-list" },
                 due.map(r => React.createElement("li", { key: r.id },
                     React.createElement("strong", null, state.topics.find(t => t.id === r.topicId)?.name ?? title(r.sourceType ?? "Review")),
-                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.completeReview(r.id), "Review completed and evidenced.") }, "Complete"))),
+                    React.createElement("span", null, r.intervalDays ? `${r.intervalDays}d interval · stage ${r.intervalIndex + 1}` : "Legacy review"),
+                    React.createElement("div", { className: "button-row" },
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.completeReview(r.id, { rating: 1 }), "Review recorded; progression reset.") }, "Again"),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.completeReview(r.id, { rating: 3 }), "Review completed; next interval scheduled.") }, "Good"),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.completeReview(r.id, { rating: 5 }), "Review completed; next interval scheduled.") }, "Easy")))),
                 !due.length && React.createElement("li", null, "No reviews due.")))),
     tab === "questions" && React.createElement("section", { id: "practice-questions", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "content-grid two-column" },

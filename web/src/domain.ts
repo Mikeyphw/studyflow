@@ -217,6 +217,11 @@ export function createMaterial(input = {}) {
 }
 
 export function createReview(input = {}) {
+    const intervalDays = input.intervalDays == null ? null : requirePositiveInteger(input.intervalDays, "review.intervalDays", { min: 1, max: 365 });
+    const intervalIndex = Number(input.intervalIndex ?? 0);
+    const repetitionCount = Number(input.repetitionCount ?? 0);
+    if (!Number.isInteger(intervalIndex) || intervalIndex < 0 || intervalIndex > 7) throw new TypeError("review.intervalIndex must be an integer from 0 to 7");
+    if (!Number.isInteger(repetitionCount) || repetitionCount < 0 || repetitionCount > 9999) throw new TypeError("review.repetitionCount must be an integer from 0 to 9999");
     return {
         ...entityBase("review", input),
         planId: requireText(input.planId, "review.planId"),
@@ -226,6 +231,11 @@ export function createReview(input = {}) {
         status: requireOneOf(input.status ?? "due", ["due", "completed", "dismissed"], "review.status"),
         sourceType: optionalText(input.sourceType),
         sourceId: optionalId(input.sourceId),
+        intervalIndex,
+        intervalDays,
+        repetitionCount,
+        previousReviewId: optionalId(input.previousReviewId),
+        completedAt: optionalText(input.completedAt),
     };
 }
 
@@ -415,6 +425,7 @@ export function migrateStudyState(input, { now = isoNow() } = {}) {
     state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
     state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
     state.materials = Array.isArray(state.materials) ? state.materials.map((material) => ({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null })) : [];
+    state.reviews = Array.isArray(state.reviews) ? state.reviews.map((review) => createReview(review)) : [];
     state.questions = Array.isArray(state.questions) ? state.questions.map((question) => createQuestion(question)) : [];
     if (originalVersion !== STATE_SCHEMA_VERSION) state.migratedAt = now;
     return state;
@@ -625,6 +636,9 @@ export function validateStudyState(state) {
         }
         if (review.sourceType === "activity" && review.sourceId != null && !activityIds.has(review.sourceId)) {
             errors.push(`review ${review.id} references missing activity sourceId: ${review.sourceId}`);
+        }
+        if (review.previousReviewId != null && !reviewIds.has(review.previousReviewId)) {
+            errors.push(`review ${review.id} references missing previousReviewId: ${review.previousReviewId}`);
         }
     }
     for (const errorEntry of state.errorEntries) {

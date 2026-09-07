@@ -155,6 +155,18 @@ def validate_release()->list[str]:
     for forbidden in ('firebase','supabase','google-analytics','segment.io'):_require(e,forbidden not in runtime_sources.lower(),f'W19 runtime must not introduce {forbidden}')
     return e
 
+def validate_parity_correctness()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); domain=_text(WEB/'src/domain.ts',e); modes=_text(WEB/'src/modes.ts',e); state=_text(WEB/'src/state.ts',e); ui=_text(WEB/'src/react/App.tsx',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC00_PC01_CORRECTNESS_CLOSURE.md',e)
+    for token in ('MockExamScoreResult','MockExamSectionScore','MockExamQuestionScore','intervalIndex','intervalDays','previousReviewId'):_require(e,token in types,f'PC00/PC01 typed contract missing {token}')
+    for token in ('maximumScore','sectionMaximum','negativePoints*maximum','right-minus-wrong','rounding:"nearest-0.01"'):_require(e,token in modes,f'PC00 scoring closure missing {token}')
+    for token in ('setReviewIntervalsDays','reviewIntervals(','normalizeReviewGrade','nextInterval','previousReviewId','policyIntervalsDays'):_require(e,token in state,f'PC01 review progression missing {token}')
+    _require(e,'state.reviews = Array.isArray(state.reviews) ? state.reviews.map((review) => createReview(review)) : [];' in domain,'legacy v5 reviews must normalize progression fields')
+    for token in ('Review intervals (days)','Again','Good','Easy','Weighted mocks use question points and section weights'):_require(e,token in ui,f'PC00/PC01 React workflow missing {token}')
+    _require(e,'PC00 | Mock scoring correctness — delivered' in roadmap,'PC00 roadmap delivery marker missing'); _require(e,'PC01 | Configurable review progression — delivered' in roadmap,'PC01 roadmap delivery marker missing')
+    for token in ('question points','section weight','failed reviews reset progression','top-level state schema remains v5'):_require(e,token in doc,f'PC00/PC01 correctness documentation missing {token}')
+    for rel in ('tests/test_pc00_mock_scoring.py','tests/test_pc01_review_progression.py'):_require(e,(WEB/rel).is_file(),f'PC00/PC01 regression suite missing {rel}')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -166,7 +178,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness)
     out=[]
     for fn in groups:
         for item in fn():
@@ -174,8 +186,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1
