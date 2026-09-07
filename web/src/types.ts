@@ -28,11 +28,15 @@ export interface ReadingItem { id:string; title:string; totalUnits:number; curre
 export interface ReadingConfiguration { items:ReadingItem[]; }
 export interface GeneralSkillDrill { id:string; title:string; metric:string; target:number; unit:string; status:"active"|"paused"|"completed"; }
 export interface GeneralSkillConfiguration { drills:GeneralSkillDrill[]; }
-export interface PlanConfiguration { version:1; publicExam?:PublicExamConfiguration; programming?:ProgrammingConfiguration; language?:LanguageConfiguration; reading?:ReadingConfiguration; general?:GeneralSkillConfiguration; }
+export interface ScheduleAvailabilityWindow { id:string; weekday:number; startMinute:number; endMinute:number; }
+export interface FixedScheduleBlock { id:string; title:string; date:string|null; weekday:number|null; startMinute:number; durationMinutes:number; }
+export interface ScheduleConfiguration { dailyCapacityMinutes:number; availability:ScheduleAvailabilityWindow[]; fixedBlocks:FixedScheduleBlock[]; }
+export interface PlanConfiguration { version:1; schedule:ScheduleConfiguration; publicExam?:PublicExamConfiguration; programming?:ProgrammingConfiguration; language?:LanguageConfiguration; reading?:ReadingConfiguration; general?:GeneralSkillConfiguration; }
 export interface Plan extends EntityBase { name: string; mode: StudyMode; status: "active" | "archived"; examDate: string | null; configuration:PlanConfiguration; }
 export interface Subject extends EntityBase { planId: string; name: string; weight: number | null; order: number; notes: string | null; archived: boolean; }
 export interface Topic extends EntityBase { planId: string; subjectId: string; parentTopicId: string | null; name: string; order: number; priority: TopicPriority; status: TopicStatus; notes: string | null; }
-export interface Activity extends EntityBase { planId: string; subjectId: string | null; topicId: string | null; title: string; kind: ActivityKind; durationMinutes: number; status: ActivityStatus; origin: "manual"|"seed"|"cycle"|"review"|"import"|"schedule"; queue: "today"|"future"|"backlog"; scheduledFor: string | null; }
+export interface ActivityScheduleProvenance { source:"manual"|"adaptive"; reason:string|null; previewGeneratedAt:string|null; baseRevision:number|null; }
+export interface Activity extends EntityBase { planId: string; subjectId: string | null; topicId: string | null; title: string; kind: ActivityKind; durationMinutes: number; status: ActivityStatus; origin: "manual"|"seed"|"cycle"|"review"|"import"|"schedule"; queue: "today"|"future"|"backlog"; scheduledFor: string | null; scheduledStartMinute:number|null; locked:boolean; scheduleProvenance:ActivityScheduleProvenance|null; }
 export interface StudySession extends EntityBase { planId: string; activityId: string | null; subjectId: string | null; topicId: string | null; startedAt: string; endedAt: string | null; durationMinutes: number | null; status: "running"|"paused"|"completed"|"cancelled"; note: string | null; }
 export interface Goal extends EntityBase { planId: string; name: string; metric: string; target: number; period: "daily"|"weekly"|"monthly"|"plan"; active: boolean; }
 export interface Material extends EntityBase { planId: string; subjectId: string | null; topicId: string | null; title: string; kind: "note"|"file"|"link"|"book"|"legislation"; locator: string | null; mimeType: string | null; attachmentId: string | null; sizeBytes: number | null; }
@@ -51,9 +55,13 @@ export interface AttachmentMetadata { id: string; name: string; mimeType: string
 export interface AttachmentRecord extends AttachmentMetadata { blob: Blob; }
 export interface AttachmentRepository { put(file: File|Blob, metadata?: Record<string, unknown>): Promise<AttachmentMetadata>; get(id: string): Promise<AttachmentRecord|null>; list(): Promise<AttachmentMetadata[]>; delete(id: string): Promise<void>; clear(): Promise<void>; }
 export interface BrowserPersistence { backend: string; repository: StudyRepository; attachments: AttachmentRepository | null; }
-export interface ScheduleOperation { action: "add"|"move"; activityId?: string; from?: string|null; to?: string; scheduledFor?: string; activity?: Partial<Activity>; reason?: string; }
-export interface SchedulePreview { baseRevision: number; generatedAt: string; operations: ScheduleOperation[]; summary: {add:number; move:number}; reasons: string[]; }
-export interface PortableImportPreview { baseRevision: number; generatedAt: string; packageExportedAt: string|null; sourceActivePlanId: string|null; summary: {add:number; update:number; remove:number; unchanged:number}; collections: Record<string,{add:number;update:number;remove:number;unchanged:number}>; nextState: StudyState; }
+export interface ScheduleOperation { action: "add"|"move"; activityId?: string; from?: string|null; to?: string; fromStartMinute?:number|null; toStartMinute?:number|null; scheduledFor?: string; scheduledStartMinute?:number|null; activity?: Partial<Activity>; reason?: string; }
+export interface ScheduleConflict { date:string; kind:"capacity"|"overlap"|"locked-overdue"; activityId:string|null; fixedBlockId:string|null; message:string; }
+export interface ScheduleDaySummary { date:string; capacityMinutes:number; fixedMinutes:number; plannedMinutes:number; remainingMinutes:number; overloaded:boolean; }
+export interface SchedulePreview { baseRevision: number; generatedAt: string; operations: ScheduleOperation[]; summary: {add:number; move:number; conflicts:number; overloadedDays:number; unscheduled:number}; reasons: string[]; conflicts:ScheduleConflict[]; days:ScheduleDaySummary[]; unscheduled:Array<{activityId:string|null;title:string;durationMinutes:number;reason:string}>; }
+export interface PortableAttachmentPayload { id:string; name:string; mimeType:string; sizeBytes:number; lastModified:number|null; createdAt:string; sha256:string; base64:string; }
+export type PortableImportMode="replace"|"new-plan";
+export interface PortableImportPreview { baseRevision: number; generatedAt: string; packageExportedAt: string|null; sourceActivePlanId: string|null; mode?:PortableImportMode; summary: {add:number; update:number; remove:number; unchanged:number}; collections: Record<string,{add:number;update:number;remove:number;unchanged:number}>; nextState: StudyState; attachmentRecords?:PortableAttachmentPayload[]; attachmentIdMap?:Record<string,string>; }
 
 export type PlanContentImportFormat = "txt"|"markdown"|"csv"|"tsv"|"json";
 export type PlanContentImportMode = "merge"|"reconcile";
@@ -85,7 +93,7 @@ export interface StudyStore {
   addSubject(input: Partial<Subject> & Pick<Subject,"name">):Subject; updateSubject(id:string,changes:Partial<Subject>):Subject; deleteSubject(id:string):void; moveSubject(id:string,direction:"up"|"down"):void;
   addTopic(input: Partial<Topic> & Pick<Topic,"subjectId"|"name">):Topic; updateTopic(id:string,changes:Partial<Topic>):Topic; deleteTopic(id:string):void; moveTopic(id:string,direction:"up"|"down"):void;
   previewPlanContentImport(source:string,options:{format:PlanContentImportFormat;mode?:PlanContentImportMode;target?:"active"|"new-plan";planName?:string;planMode?:StudyMode}):PlanContentImportPreview; applyPlanContentImportPreview(preview:PlanContentImportPreview):StudyState;
-  previewSchedule(options?:Record<string,unknown>):SchedulePreview; applySchedulePreview(preview:SchedulePreview): Activity[];
+  setScheduleConfiguration(input:Partial<ScheduleConfiguration>):Plan; setActivityLocked(activityId:string,locked?:boolean):Activity; previewSchedule(options?:Record<string,unknown>):SchedulePreview; applySchedulePreview(preview:SchedulePreview): Activity[];
   addMaterial(input: Partial<Material> & Pick<Material,"title">):Material; deleteMaterial(id:string):void;
   addGoal(input: Partial<Goal> & Pick<Goal,"name"|"metric"|"target">):Goal; toggleGoal(id:string):Goal; deleteGoal(id:string):void;
   applyPortableImportPreview(preview:PortableImportPreview):StudyState;

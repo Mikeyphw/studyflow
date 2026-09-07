@@ -181,6 +181,22 @@ def validate_parity_plan_content()->list[str]:
     for rel in ('tests/test_pc02_plan_content_import.py','tests/test_pc03_plan_lifecycle_hierarchy.py'):_require(e,(WEB/rel).is_file(),f'PC02/PC03 regression suite missing {rel}')
     return e
 
+
+def validate_parity_schedule_portable()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); schedule=_text(WEB/'src/schedule.ts',e); modes=_text(WEB/'src/modes.ts',e); state=_text(WEB/'src/state.ts',e); portable=_text(WEB/'src/portable.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC04_PC05_SCHEDULER_PORTABILITY.md',e)
+    for token in ('ScheduleConfiguration','ScheduleAvailabilityWindow','FixedScheduleBlock','ScheduleConflict','ActivityScheduleProvenance','PortableAttachmentPayload','PortableImportMode'):_require(e,token in types,f'PC04/PC05 typed contract missing {token}')
+    for token in ('buildAdaptiveSchedulePreview','locked-overdue','No remaining capacity','Study-cycle subject in persisted cursor order','fixedBlocks','availability'):_require(e,token in schedule,f'PC04 scheduler closure missing {token}')
+    for token in ('setScheduleConfiguration','setActivityLocked','scheduleProvenance','buildAdaptiveSchedulePreview'):_require(e,token in state,f'PC04 store integration missing {token}')
+    _require(e,'schedule:defaultScheduleConfiguration()' in modes and 'normalizeScheduleConfiguration(raw.schedule)' in modes,'PC04 schedule configuration must normalize for every study mode')
+    for token in ('Capacity & availability','Fixed commitments','Preview 7 days','Unscheduled work','Schedule placement locked'):_require(e,token in ui,f'PC04 React workflow missing {token}')
+    for token in ('PORTABLE_FORMAT_VERSION = 2','LEGACY_PORTABLE_FORMAT_VERSION = 1','createPortablePackageV2','parsePortablePackageV2','SHA-256','applyPortableImportWithAttachments','new-plan','attachmentIdMap'):_require(e,token in portable,f'PC05 portable v2 closure missing {token}')
+    for token in ('Portable package v2','Export full v2','Export state-only v1','Import active package plan as new'):_require(e,token in ui,f'PC05 React workflow missing {token}')
+    _require(e,'runtime/schedule.js' in sw,'PC04 schedule runtime must be cached by the offline app shell')
+    _require(e,'PC04 | Full scheduler/conflicts/locks/overload/rescheduling — delivered' in roadmap,'PC04 roadmap delivery marker missing'); _require(e,'PC05 | Portable package v2 — delivered' in roadmap,'PC05 roadmap delivery marker missing')
+    for token in ('Completed/cancelled history is never rewritten','attachment bytes encoded','SHA-256','Import active package plan as new','state schema remains **v6**'):_require(e,token in doc,f'PC04/PC05 documentation missing {token}')
+    for rel in ('tests/test_pc04_schedule_capacity_conflicts.py','tests/test_pc05_portable_v2_attachments.py'):_require(e,(WEB/rel).is_file(),f'PC04/PC05 regression suite missing {rel}')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -192,7 +208,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable)
     out=[]
     for fn in groups:
         for item in fn():
@@ -200,8 +216,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

@@ -1,5 +1,6 @@
 "use strict";
 
+import { defaultScheduleConfiguration, normalizeScheduleConfiguration, validateScheduleConfiguration } from "./schedule";
 import type {
   ExamNoticePreview, ExamQuestionFilter, ExamTargetProfile, FinalStretchGuidance,
   GeneralSkillDrill, LanguageExpression, LanguageReviewDirection, MockExamBlueprint,
@@ -22,7 +23,7 @@ const dateOnly=(value:unknown):string|null=>{const v=text(value);if(!v)return nu
 const uniqueStrings=(value:unknown):string[]=>[...new Set(arr<unknown>(value).map(x=>String(x??"").trim()).filter(Boolean))];
 
 export function defaultPlanConfiguration(mode:StudyMode="GENERAL_SKILL"):PlanConfiguration {
-  const base:PlanConfiguration={version:1};
+  const base:PlanConfiguration={version:1,schedule:defaultScheduleConfiguration()};
   if(mode==="EXAM_PLAN")base.publicExam={
     target:{organization:null,role:null,board:null,editalRef:null,dateStatus:"unknown",examDate:null,openings:null,estimatedCutoff:null},
     stages:[],noticeRevisions:[],reviewIntervalsDays:[1,7,30],legislation:[],mockBlueprint:{scoring:"no-penalty",negativePoints:0,totalQuestions:20,durationMinutes:60,sections:[]}
@@ -43,7 +44,7 @@ function normalizeExamTarget(input:unknown):ExamTargetProfile {
 
 export function normalizePlanConfiguration(input:unknown,mode:StudyMode):PlanConfiguration {
   const raw=(input&&typeof input==="object"&&!Array.isArray(input)?clone(input):{}) as Record<string,any>;
-  const out:PlanConfiguration={version:1};
+  const out:PlanConfiguration={version:1,schedule:normalizeScheduleConfiguration(raw.schedule)};
   if(mode==="EXAM_PLAN"){
     const d=defaultPlanConfiguration(mode).publicExam!; const p=raw.publicExam??{};
     out.publicExam={
@@ -77,6 +78,7 @@ export function validatePlanConfiguration(config:PlanConfiguration,mode:StudyMod
   const errors:string[]=[];
   if(!STUDY_MODES.includes(mode))errors.push(`unsupported study mode: ${mode}`);
   if(config.version!==1)errors.push("plan configuration version must be 1");
+  errors.push(...validateScheduleConfiguration(config.schedule));
   if(mode==="EXAM_PLAN"){
     const p=config.publicExam;if(!p)errors.push("public-exam configuration is required");else{
       const t=p.target;const identity=[t.organization,t.role,t.board].filter(Boolean).length;if(identity!==0&&identity!==3)errors.push("public-exam organization, role and board must be supplied together or all blank");

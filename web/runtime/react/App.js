@@ -280,20 +280,7 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
                     state.subjects.find(s => s.id === id)?.name ?? id,
                     i === state.studyCycle.cursor ? " · current" : ""))),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.advanceStudyCycle(), "Study cycle advanced.") }, "Advance"))),
-        tab === "schedule" && React.createElement("section", { id: "plan-schedule", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-            React.createElement("article", { className: "card" },
-                React.createElement("div", { className: "card-heading-row" },
-                    React.createElement("h2", null, "Adaptive schedule"),
-                    React.createElement("button", { className: "button", type: "button", onClick: () => setPreview(store.previewSchedule()) }, "Preview")),
-                preview ? React.createElement(React.Fragment, null,
-                    React.createElement("p", null,
-                        preview.summary.add,
-                        " add \u00B7 ",
-                        preview.summary.move,
-                        " move"),
-                    React.createElement("ul", null, preview.operations.map((op, i) => React.createElement("li", { key: i }, op.action === "move" ? `Move ${op.activityId} → ${op.to}` : `Add ${op.activity?.title ?? "activity"} · ${op.scheduledFor}`))),
-                    React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applySchedulePreview(preview), "Schedule preview applied."))
-                            setPreview(null); } }, "Apply preview")) : React.createElement("p", { className: "muted" }, "Preview first; no schedule changes are silent."))),
+        tab === "schedule" && React.createElement(ScheduleWorkspace, { state: state, store: store, preview: preview, setPreview: setPreview, run: run }),
         tab === "content" && React.createElement("section", { id: "plan-content", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
             React.createElement("div", { className: "content-grid two-column" },
                 React.createElement("article", { className: "card" },
@@ -388,6 +375,125 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
                         React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateSubject(s.id, { notes: s.notes ? null : "Review this subject" }), "Subject notes updated.") }, "Notes"))),
                 React.createElement(TopicTree, { state: state, store: store, subjectId: s.id, run: run })))),
         tab === "library" && React.createElement(Library, { materials: materials, store: store, persistence: persistence, run: run }));
+}
+function minuteOfDay(value) { const [h, m] = value.split(":").map(Number); return Math.max(0, Math.min(1439, (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0))); }
+function minuteClock(value) { if (value == null)
+    return "Any time"; return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`; }
+function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
+    const plan = state.plans.find(p => p.id === state.activePlanId);
+    const config = plan?.configuration.schedule;
+    const [capacity, setCapacity] = React.useState(String(config?.dailyCapacityMinutes ?? 120));
+    const [weekday, setWeekday] = React.useState("1");
+    const [start, setStart] = React.useState("18:00");
+    const [end, setEnd] = React.useState("20:00");
+    const [fixedTitle, setFixedTitle] = React.useState("");
+    const [fixedDate, setFixedDate] = React.useState("");
+    const [fixedStart, setFixedStart] = React.useState("18:00");
+    const [fixedDuration, setFixedDuration] = React.useState("60");
+    React.useEffect(() => { setCapacity(String(plan?.configuration.schedule.dailyCapacityMinutes ?? 120)); setPreview(null); }, [plan?.id]);
+    const scheduled = state.activities.filter(a => a.planId === state.activePlanId && a.status === "planned").slice().sort((a, b) => String(a.scheduledFor ?? "9999").localeCompare(String(b.scheduledFor ?? "9999")) || a.title.localeCompare(b.title));
+    const saveCapacity = () => run(() => store.setScheduleConfiguration({ dailyCapacityMinutes: Number(capacity) }), "Daily schedule capacity saved.");
+    const addWindow = () => run(() => store.setScheduleConfiguration({ availability: [...(config?.availability ?? []), { id: `window-${Date.now()}`, weekday: Number(weekday), startMinute: minuteOfDay(start), endMinute: minuteOfDay(end) }] }), "Availability window added.");
+    const addFixed = () => { if (!fixedTitle.trim() || !fixedDate)
+        return; const result = run(() => store.setScheduleConfiguration({ fixedBlocks: [...(config?.fixedBlocks ?? []), { id: `fixed-${Date.now()}`, title: fixedTitle.trim(), date: fixedDate, weekday: null, startMinute: minuteOfDay(fixedStart), durationMinutes: Number(fixedDuration) }] }), "Fixed block added."); if (result)
+        setFixedTitle(""); };
+    return React.createElement("section", { id: "plan-schedule", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+        React.createElement("div", { className: "content-grid two-column" },
+            React.createElement("article", { className: "card" },
+                React.createElement("h2", null, "Capacity & availability"),
+                React.createElement("div", { className: "stack-form" },
+                    React.createElement("input", { "aria-label": "Daily study capacity minutes", type: "number", min: "30", max: "1440", value: capacity, onChange: (e) => setCapacity(e.target.value) }),
+                    React.createElement("button", { className: "button", type: "button", onClick: saveCapacity }, "Save daily capacity"),
+                    React.createElement("select", { "aria-label": "Availability weekday", value: weekday, onChange: (e) => setWeekday(e.target.value) },
+                        React.createElement("option", { value: "0" }, "Sunday"),
+                        React.createElement("option", { value: "1" }, "Monday"),
+                        React.createElement("option", { value: "2" }, "Tuesday"),
+                        React.createElement("option", { value: "3" }, "Wednesday"),
+                        React.createElement("option", { value: "4" }, "Thursday"),
+                        React.createElement("option", { value: "5" }, "Friday"),
+                        React.createElement("option", { value: "6" }, "Saturday")),
+                    React.createElement("input", { "aria-label": "Availability start time", type: "time", value: start, onChange: (e) => setStart(e.target.value) }),
+                    React.createElement("input", { "aria-label": "Availability end time", type: "time", value: end, onChange: (e) => setEnd(e.target.value) }),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: addWindow }, "Add availability window")),
+                React.createElement("ul", { className: "activity-list" },
+                    (config?.availability ?? []).map(w => React.createElement("li", { key: w.id },
+                        React.createElement("strong", null, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][w.weekday]),
+                        React.createElement("span", null,
+                            minuteClock(w.startMinute),
+                            "\u2013",
+                            minuteClock(w.endMinute)),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setScheduleConfiguration({ availability: (config?.availability ?? []).filter(x => x.id !== w.id) }), "Availability removed.") }, "Remove"))),
+                    !(config?.availability ?? []).length && React.createElement("li", null, "Capacity-only scheduling; no clock windows configured."))),
+            React.createElement("article", { className: "card" },
+                React.createElement("h2", null, "Fixed commitments"),
+                React.createElement("div", { className: "stack-form" },
+                    React.createElement("input", { "aria-label": "Fixed block title", value: fixedTitle, onChange: (e) => setFixedTitle(e.target.value), placeholder: "Work / class / appointment" }),
+                    React.createElement("input", { "aria-label": "Fixed block date", type: "date", value: fixedDate, onChange: (e) => setFixedDate(e.target.value) }),
+                    React.createElement("input", { "aria-label": "Fixed block start time", type: "time", value: fixedStart, onChange: (e) => setFixedStart(e.target.value) }),
+                    React.createElement("input", { "aria-label": "Fixed block duration minutes", type: "number", min: "5", max: "1440", value: fixedDuration, onChange: (e) => setFixedDuration(e.target.value) }),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: addFixed }, "Add fixed block")),
+                React.createElement("ul", { className: "activity-list" },
+                    (config?.fixedBlocks ?? []).map(b => React.createElement("li", { key: b.id },
+                        React.createElement("strong", null, b.title),
+                        React.createElement("span", null,
+                            b.date ?? `weekday ${b.weekday}`,
+                            " \u00B7 ",
+                            minuteClock(b.startMinute),
+                            " \u00B7 ",
+                            b.durationMinutes,
+                            " min"),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setScheduleConfiguration({ fixedBlocks: (config?.fixedBlocks ?? []).filter(x => x.id !== b.id) }), "Fixed block removed.") }, "Remove"))),
+                    !(config?.fixedBlocks ?? []).length && React.createElement("li", null, "No fixed commitments configured.")))),
+        React.createElement("article", { className: "card" },
+            React.createElement("div", { className: "card-heading-row" },
+                React.createElement("div", null,
+                    React.createElement("h2", null, "Adaptive schedule preview"),
+                    React.createElement("p", { className: "muted" }, "Conflicts, overload and work that cannot fit stay visible; locked activities are never moved.")),
+                React.createElement("button", { className: "button", type: "button", onClick: () => setPreview(store.previewSchedule({ days: 7, maxBlocks: 14 })) }, "Preview 7 days")),
+            preview ? React.createElement(React.Fragment, null,
+                React.createElement("p", null,
+                    React.createElement("strong", null, preview.summary.add),
+                    " add \u00B7 ",
+                    React.createElement("strong", null, preview.summary.move),
+                    " move \u00B7 ",
+                    React.createElement("strong", null, preview.summary.conflicts),
+                    " conflicts \u00B7 ",
+                    React.createElement("strong", null, preview.summary.unscheduled),
+                    " unscheduled"),
+                preview.conflicts.length > 0 && React.createElement("details", { open: true },
+                    React.createElement("summary", null, "Conflicts"),
+                    React.createElement("ul", null, preview.conflicts.map((c, i) => React.createElement("li", { key: i },
+                        c.date,
+                        " \u00B7 ",
+                        c.message)))),
+                React.createElement("ul", null, preview.operations.map((op, i) => React.createElement("li", { key: i },
+                    op.action === "move" ? `Move ${op.activityId} → ${op.to} ${minuteClock(op.toStartMinute)}` : `Add ${op.activity?.title ?? "activity"} · ${op.scheduledFor} ${minuteClock(op.scheduledStartMinute)}`,
+                    " \u00B7 ",
+                    op.reason))),
+                preview.unscheduled.length > 0 && React.createElement("details", null,
+                    React.createElement("summary", null, "Unscheduled work"),
+                    React.createElement("ul", null, preview.unscheduled.map((x, i) => React.createElement("li", { key: i },
+                        x.title,
+                        " \u00B7 ",
+                        x.durationMinutes,
+                        " min \u00B7 ",
+                        x.reason)))),
+                React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applySchedulePreview(preview), "Schedule preview applied."))
+                        setPreview(null); } }, "Apply preview")) : React.createElement("p", { className: "muted" }, "Preview first; no schedule changes are silent.")),
+        React.createElement("article", { className: "card" },
+            React.createElement("h2", null, "Planned activities"),
+            React.createElement("ul", { className: "activity-list" }, scheduled.map(a => React.createElement("li", { key: a.id },
+                React.createElement("div", null,
+                    React.createElement("strong", null, a.title),
+                    React.createElement("span", { className: "muted" },
+                        a.scheduledFor ?? "Unscheduled",
+                        " \u00B7 ",
+                        minuteClock(a.scheduledStartMinute),
+                        " \u00B7 ",
+                        a.durationMinutes,
+                        " min",
+                        a.scheduleProvenance?.reason ? ` · ${a.scheduleProvenance.reason}` : "")),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setActivityLocked(a.id, !a.locked), a.locked ? "Schedule placement unlocked." : "Schedule placement locked.") }, a.locked ? "Unlock" : "Lock"))))));
 }
 function PublicExamWorkspace({ state, store, run }) {
     const plan = state.plans.find(p => p.id === state.activePlanId);
@@ -684,19 +790,7 @@ function ModePractice({ state, store, run }) { const plan = state.plans.find(p =
         React.createElement("p", { className: "muted" }, "Use Plan \u2192 Overview to record explicit reading progress; no passive progress is inferred.")); return React.createElement("article", { className: "card" },
     React.createElement("h2", null, "Skill practice"),
     React.createElement("p", { className: "muted" }, "Record drill outcomes from Plan \u2192 Overview so only explicit results become evidence.")); }
-function Progress({ state, store, tab, setTab, persistence, portable, setPortable, portableStatus, setPortableStatus, run }) { const m = (0, domain_1.deriveProgressMetrics)(state), timeline = (0, domain_1.buildEvidenceTimeline)(state, { limit: 30 }), integrity = (0, domain_1.buildContentIntegrityReport)(state), goals = state.goals.filter(g => g.planId === state.activePlanId), modeAnalytics = (0, modes_1.deriveModeAnalytics)(state); const [goal, setGoal] = React.useState(""); const exportData = () => { const pkg = (0, portable_1.createPortablePackage)(state); const url = URL.createObjectURL(new Blob([(0, portable_1.serializePortablePackage)(pkg)], { type: "application/json" })); const a = document.createElement("a"); a.href = url; a.download = (0, portable_1.portablePackageFilename)(state); a.click(); URL.revokeObjectURL(url); setPortableStatus("Portable package exported."); }; const importData = async (e) => { const file = e.target.files?.[0]; if (!file)
-    return; try {
-    const p = (0, portable_1.buildPortableImportPreview)(state, (0, portable_1.parsePortablePackage)(await file.text()));
-    setPortable(p);
-    setPortableStatus(`Preview ready: ${p.summary.add} add · ${p.summary.update} update · ${p.summary.remove} remove.`);
-}
-catch (err) {
-    setPortable(null);
-    setPortableStatus(err instanceof Error ? err.message : String(err));
-}
-finally {
-    e.target.value = "";
-} }; return React.createElement("section", { id: "progress", "data-screen": "progress", className: "screen-section" },
+function Progress({ state, store, tab, setTab, persistence, portable, setPortable, portableStatus, setPortableStatus, run }) { const m = (0, domain_1.deriveProgressMetrics)(state), timeline = (0, domain_1.buildEvidenceTimeline)(state, { limit: 30 }), integrity = (0, domain_1.buildContentIntegrityReport)(state), goals = state.goals.filter(g => g.planId === state.activePlanId), modeAnalytics = (0, modes_1.deriveModeAnalytics)(state); const [goal, setGoal] = React.useState(""); return React.createElement("section", { id: "progress", "data-screen": "progress", className: "screen-section" },
     React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "progress", label: "Progress sections", items: [["summary", "Summary"], ["performance", "Performance"], ["goals", "Goals"], ["tools", "Tools"]] }),
     tab === "summary" && React.createElement("section", { id: "progress-summary", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "metric-grid" },
@@ -741,17 +835,7 @@ finally {
                 React.createElement("h2", null, "Content Integrity"),
                 React.createElement("strong", null, integrity.valid ? "Local state references are valid" : "Integrity issue detected"),
                 React.createElement("p", { className: "muted" }, integrity.valid ? `${Object.values(integrity.counts).reduce((a, b) => a + b, 0)} structured records checked.` : integrity.errors[0])),
-            React.createElement("article", { className: "card" },
-                React.createElement("h2", null, "Portable package"),
-                React.createElement("button", { className: "button", type: "button", onClick: exportData }, "Export package"),
-                React.createElement("label", { className: "button button-quiet file-button" },
-                    "Choose import",
-                    React.createElement("input", { "aria-label": "Import StudyFlow package", type: "file", accept: ".json,.studyflow.json,application/json", onChange: importData })),
-                React.createElement("p", { className: "muted" }, portableStatus),
-                portable && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applyPortableImportPreview(portable), "Import applied.")) {
-                        setPortable(null);
-                        setPortableStatus("Imported state applied locally.");
-                    } } }, "Apply preview")),
+            React.createElement(PortablePackageTools, { state: state, store: store, persistence: persistence, portable: portable, setPortable: setPortable, portableStatus: portableStatus, setPortableStatus: setPortableStatus }),
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Local state"),
                 React.createElement("p", { className: "muted" }, store.getPersistenceStatus().message),
@@ -782,6 +866,68 @@ finally {
     React.createElement("div", { className: "button-row" },
         React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(false) }, busy ? "Checking…" : "Check storage"),
         Boolean(report?.orphanAttachmentIds.length) && React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(true) }, "Clean orphan files"))); }
+function PortablePackageTools({ state, store, persistence, portable, setPortable, portableStatus, setPortableStatus }) {
+    const [mode, setMode] = React.useState("replace");
+    const download = (pkg) => { const url = URL.createObjectURL(new Blob([(0, portable_1.serializePortablePackage)(pkg)], { type: "application/json" })); const a = document.createElement("a"); a.href = url; a.download = (0, portable_1.portablePackageFilename)(state); a.click(); URL.revokeObjectURL(url); };
+    const exportFull = async () => { try {
+        setPortableStatus("Building checksum-verified full package…");
+        const pkg = await (0, portable_1.createPortablePackageV2)(state, persistence.attachments);
+        download(pkg);
+        setPortableStatus(`Portable v2 exported with ${pkg.manifest.attachments.count} attachment payloads.`);
+    }
+    catch (err) {
+        setPortableStatus(err instanceof Error ? err.message : String(err));
+    } };
+    const exportLegacy = () => { const pkg = (0, portable_1.createPortablePackage)(state); download(pkg); setPortableStatus("State-only portable v1 exported for backward compatibility."); };
+    const importData = async (e) => { const file = e.target.files?.[0]; if (!file)
+        return; try {
+        const text = await file.text();
+        const version = (0, portable_1.portablePackageVersion)(text);
+        const parsed = version === 2 ? await (0, portable_1.parsePortablePackageV2)(text) : (0, portable_1.parsePortablePackage)(text);
+        const next = (0, portable_1.buildPortableImportPreview)(state, parsed, { mode });
+        setPortable(next);
+        setPortableStatus(`Portable v${version} preview · ${next.summary.add} add · ${next.summary.update} update · ${next.summary.remove} remove${next.attachmentRecords?.length ? ` · ${next.attachmentRecords.length} attachment payloads` : ""}.`);
+    }
+    catch (err) {
+        setPortable(null);
+        setPortableStatus(err instanceof Error ? err.message : String(err));
+    }
+    finally {
+        e.target.value = "";
+    } };
+    const apply = async () => { if (!portable)
+        return; try {
+        if (portable.attachmentRecords?.length)
+            await (0, portable_1.applyPortableImportWithAttachments)(store, portable, persistence.attachments);
+        else
+            store.applyPortableImportPreview(portable);
+        setPortable(null);
+        setPortableStatus(portable.mode === "new-plan" ? "Imported package as a new active plan." : "Imported package replaced local structured state.");
+    }
+    catch (err) {
+        setPortableStatus(err instanceof Error ? err.message : String(err));
+    } };
+    return React.createElement("article", { className: "card" },
+        React.createElement("h2", null, "Portable package v2"),
+        React.createElement("p", { className: "muted" }, "Full export includes attachment bytes, MIME metadata and SHA-256 checksums. Legacy v1 remains importable."),
+        React.createElement("div", { className: "button-row" },
+            React.createElement("button", { className: "button", type: "button", onClick: () => void exportFull() }, "Export full v2"),
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: exportLegacy }, "Export state-only v1")),
+        React.createElement("select", { "aria-label": "Portable import mode", value: mode, onChange: (e) => { setMode(e.target.value); setPortable(null); } },
+            React.createElement("option", { value: "replace" }, "Replace current local state"),
+            React.createElement("option", { value: "new-plan" }, "Import active package plan as new")),
+        React.createElement("label", { className: "button button-quiet file-button" },
+            "Choose import",
+            React.createElement("input", { "aria-label": "Import StudyFlow package", type: "file", accept: ".json,.studyflow.json,application/json", onChange: importData })),
+        React.createElement("p", { className: "muted" }, portableStatus),
+        portable && React.createElement(React.Fragment, null,
+            React.createElement("p", { className: "muted" },
+                "Mode: ",
+                portable.mode ?? "replace",
+                " \u00B7 attachments: ",
+                portable.attachmentRecords?.length ?? 0),
+            React.createElement("button", { className: "button button-primary", type: "button", onClick: () => void apply() }, "Apply preview")));
+}
 function ReleaseCard({ state, persistence }) { const readiness = (0, release_1.evaluateReleaseReadiness)(state, persistence.backend); return React.createElement("article", { className: "card" },
     React.createElement("h2", null,
         "StudyFlow Local ",

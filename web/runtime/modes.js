@@ -17,6 +17,7 @@ exports.createLanguageExpression = createLanguageExpression;
 exports.createReadingItem = createReadingItem;
 exports.createGeneralSkillDrill = createGeneralSkillDrill;
 exports.deriveModeAnalytics = deriveModeAnalytics;
+const schedule_1 = require("./schedule");
 const STUDY_MODES = ["EXAM_PLAN", "PROGRAMMING_COURSE", "LANGUAGE_DECK", "READING_STUDY", "GENERAL_SKILL"];
 const LANGUAGE_DIRECTIONS = ["recognition", "production", "fill-blank", "natural-usage", "mistake-spotting", "sentence-creation"];
 const EXAM_SCORING = ["no-penalty", "fixed-negative", "right-minus-wrong", "weighted"];
@@ -33,7 +34,7 @@ const dateOnly = (value) => { const v = text(value); if (!v)
     return null; const m = v.match(/^\d{4}-\d{2}-\d{2}$/); return m ? v : null; };
 const uniqueStrings = (value) => [...new Set(arr(value).map(x => String(x ?? "").trim()).filter(Boolean))];
 function defaultPlanConfiguration(mode = "GENERAL_SKILL") {
-    const base = { version: 1 };
+    const base = { version: 1, schedule: (0, schedule_1.defaultScheduleConfiguration)() };
     if (mode === "EXAM_PLAN")
         base.publicExam = {
             target: { organization: null, role: null, board: null, editalRef: null, dateStatus: "unknown", examDate: null, openings: null, estimatedCutoff: null },
@@ -58,7 +59,7 @@ function normalizeExamTarget(input) {
 }
 function normalizePlanConfiguration(input, mode) {
     const raw = (input && typeof input === "object" && !Array.isArray(input) ? clone(input) : {});
-    const out = { version: 1 };
+    const out = { version: 1, schedule: (0, schedule_1.normalizeScheduleConfiguration)(raw.schedule) };
     if (mode === "EXAM_PLAN") {
         const d = defaultPlanConfiguration(mode).publicExam;
         const p = raw.publicExam ?? {};
@@ -100,6 +101,7 @@ function validatePlanConfiguration(config, mode) {
         errors.push(`unsupported study mode: ${mode}`);
     if (config.version !== 1)
         errors.push("plan configuration version must be 1");
+    errors.push(...(0, schedule_1.validateScheduleConfiguration)(config.schedule));
     if (mode === "EXAM_PLAN") {
         const p = config.publicExam;
         if (!p)

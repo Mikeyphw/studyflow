@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createStudyStore = createStudyStore;
 const domain_js_1 = require("./domain.js");
 const content_import_js_1 = require("./content_import.js");
+const schedule_js_1 = require("./schedule.js");
 const modes_js_1 = require("./modes.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
 function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms))
@@ -713,7 +714,29 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 studyCycle = studyCycles[planId];
             return commit({ ...state, plans, subjects, topics, activePlanId, studyCycle, studyCycles }, "plan-content-import-applied");
         },
-        previewSchedule(options = {}) { return (0, domain_js_1.buildSchedulePreview)(state, { ...options, at: options.at ?? nowIso() }); },
+        setScheduleConfiguration(input) {
+            const planId = activePlanId();
+            const current = state.plans.find((plan) => plan.id === planId);
+            if (!current)
+                throw new TypeError("No active plan");
+            const at = nowIso();
+            const schedule = (0, schedule_js_1.normalizeScheduleConfiguration)({ ...current.configuration.schedule, ...input });
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, schedule }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, plans: state.plans.map((plan) => plan.id === planId ? updated : plan) }, "schedule-configuration-updated");
+            return updated;
+        },
+        setActivityLocked(activityId, locked = true) {
+            const current = state.activities.find((activity) => activity.id === activityId && activity.planId === activePlanId());
+            if (!current)
+                throw new TypeError("Activity not found in the active plan");
+            if (current.status !== "planned")
+                throw new TypeError("Only planned activities can be locked");
+            const at = nowIso();
+            const updated = (0, domain_js_1.createActivity)({ ...current, locked: Boolean(locked), scheduleProvenance: { source: "manual", reason: Boolean(locked) ? "User locked this schedule placement" : "User unlocked this schedule placement", previewGeneratedAt: null, baseRevision: state.revision }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, activities: state.activities.map((activity) => activity.id === activityId ? updated : activity) }, "activity-schedule-lock-updated");
+            return updated;
+        },
+        previewSchedule(options = {}) { return (0, schedule_js_1.buildAdaptiveSchedulePreview)(state, { ...options, at: options.at ?? nowIso() }); },
         applySchedulePreview(preview) {
             if (!preview || typeof preview !== "object" || !Array.isArray(preview.operations))
                 throw new TypeError("Schedule preview is required");
@@ -726,12 +749,14 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                     const index = activities.findIndex((activity) => activity.id === operation.activityId && activity.status === "planned");
                     if (index < 0)
                         throw new TypeError(`Schedule move references missing planned activity: ${operation.activityId}`);
+                    if (activities[index].locked)
+                        throw new TypeError(`Schedule preview cannot move locked activity: ${operation.activityId}`);
                     const scheduledFor = operation.to;
                     const today = at.slice(0, 10);
-                    activities[index] = { ...activities[index], scheduledFor, queue: scheduledFor === today ? "today" : "future", updatedAt: at };
+                    activities[index] = (0, domain_js_1.createActivity)({ ...activities[index], scheduledFor, scheduledStartMinute: operation.toStartMinute ?? null, queue: scheduledFor === today ? "today" : "future", scheduleProvenance: { source: "adaptive", reason: operation.reason ?? null, previewGeneratedAt: preview.generatedAt, baseRevision: preview.baseRevision }, createdAt: activities[index].createdAt, updatedAt: at });
                 }
                 else if (operation.action === "add") {
-                    const activity = (0, domain_js_1.createActivity)({ ...operation.activity, planId: activePlanId(), scheduledFor: operation.scheduledFor, origin: operation.activity.origin ?? "schedule", createdAt: at, updatedAt: at });
+                    const activity = (0, domain_js_1.createActivity)({ ...operation.activity, planId: activePlanId(), scheduledFor: operation.scheduledFor, scheduledStartMinute: operation.scheduledStartMinute ?? null, origin: operation.activity.origin ?? "schedule", scheduleProvenance: { source: "adaptive", reason: operation.reason ?? null, previewGeneratedAt: preview.generatedAt, baseRevision: preview.baseRevision }, createdAt: at, updatedAt: at });
                     activities.push(activity);
                 }
                 else

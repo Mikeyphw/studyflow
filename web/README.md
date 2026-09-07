@@ -89,3 +89,8 @@ Post-W19 correctness hardening fixes weighted mock scoring and makes the configu
 Plan Content now has a local generic TXT/Markdown/CSV/TSV/JSON import pipeline with parse → normalize → validate → preview/diff → explicit apply. Merge and reconcile modes are distinct; reconcile archives missing canonical content instead of deleting history. Imports can target the active plan or create a new plan.
 
 Plans are now first-class local workspaces: create, rename, switch, duplicate, archive/restore, and safe-delete are available. Topic hierarchy supports parent/child nesting with cycle prevention and sibling-local reordering. Study-cycle cursors persist per plan.
+
+
+## Post-1.0 parity closure: PC04 / PC05
+
+Adaptive scheduling now honors plan capacity, optional clock windows, fixed commitments and user locks while exposing conflicts/overload/unscheduled work before Apply. Portable v2 is a full local backup with attachment bytes and SHA-256 verification; portable v1 remains supported for compatibility.

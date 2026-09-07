@@ -3,10 +3,11 @@
 "use strict";
 
 import {
-    buildSchedulePreview, createActivity, createErrorEntry, createEvidence, createFocusState, createInitialStudyState, createQuestion, createReview, createStudySession, createPlan as makePlan,
+    createActivity, createErrorEntry, createEvidence, createFocusState, createInitialStudyState, createQuestion, createReview, createStudySession, createPlan as makePlan,
     createStudyCycleState, createSubject, createTopic, createGoal, createMaterial, focusRemainingMs, gradeQuestion, migrateStudyState, selectActivitiesForQueue, validateStudyState,
 } from "./domain.js";
 import { buildPlanContentImportPreview } from "./content_import.js";
+import { buildAdaptiveSchedulePreview, normalizeScheduleConfiguration } from "./schedule.js";
 import { buildExamNoticePreview, createGeneralSkillDrill, createLanguageExpression, createProgrammingExercise, createReadingItem, normalizeMockBlueprint, previewMockExam, scoreMockExam } from "./modes.js";
 
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
@@ -311,7 +312,13 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
             const activeSubjects=subjects.filter((item)=>item.planId===planId&&!item.archived).sort((a,b)=>(a.order??0)-(b.order??0));const prior=studyCycles[planId]??createStudyCycleState();const allowed=new Set(activeSubjects.map((item)=>item.id));let ids=prior.subjectIds.filter((id)=>allowed.has(id));if(!ids.length)ids=activeSubjects.map((item)=>item.id);studyCycles[planId]=createStudyCycleState({subjectIds:ids,cursor:prior.cursor});if(activePlanId===planId)studyCycle=studyCycles[planId];
             return commit({...state,plans,subjects,topics,activePlanId,studyCycle,studyCycles},"plan-content-import-applied");
         },
-        previewSchedule(options = {}) { return buildSchedulePreview(state, { ...options, at: options.at ?? nowIso() }); },
+        setScheduleConfiguration(input) {
+            const planId=activePlanId();const current=state.plans.find((plan)=>plan.id===planId);if(!current)throw new TypeError("No active plan");const at=nowIso();const schedule=normalizeScheduleConfiguration({...current.configuration.schedule,...input});const updated=makePlan({...current,configuration:{...current.configuration,schedule},createdAt:current.createdAt,updatedAt:at});commit({...state,plans:state.plans.map((plan)=>plan.id===planId?updated:plan)},"schedule-configuration-updated");return updated;
+        },
+        setActivityLocked(activityId,locked=true) {
+            const current=state.activities.find((activity)=>activity.id===activityId&&activity.planId===activePlanId());if(!current)throw new TypeError("Activity not found in the active plan");if(current.status!=="planned")throw new TypeError("Only planned activities can be locked");const at=nowIso();const updated=createActivity({...current,locked:Boolean(locked),scheduleProvenance:{source:"manual",reason:Boolean(locked)?"User locked this schedule placement":"User unlocked this schedule placement",previewGeneratedAt:null,baseRevision:state.revision},createdAt:current.createdAt,updatedAt:at});commit({...state,activities:state.activities.map((activity)=>activity.id===activityId?updated:activity)},"activity-schedule-lock-updated");return updated;
+        },
+        previewSchedule(options = {}) { return buildAdaptiveSchedulePreview(state, { ...options, at: options.at ?? nowIso() }); },
         applySchedulePreview(preview) {
             if (!preview || typeof preview !== "object" || !Array.isArray(preview.operations)) throw new TypeError("Schedule preview is required");
             if (preview.baseRevision !== state.revision) throw new TypeError("Schedule preview is stale; preview again before applying");
@@ -320,10 +327,11 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
                 if (operation.action === "move") {
                     const index = activities.findIndex((activity) => activity.id === operation.activityId && activity.status === "planned");
                     if (index < 0) throw new TypeError(`Schedule move references missing planned activity: ${operation.activityId}`);
+                    if(activities[index].locked) throw new TypeError(`Schedule preview cannot move locked activity: ${operation.activityId}`);
                     const scheduledFor = operation.to; const today = at.slice(0,10);
-                    activities[index] = { ...activities[index], scheduledFor, queue: scheduledFor === today ? "today" : "future", updatedAt: at };
+                    activities[index] = createActivity({ ...activities[index], scheduledFor, scheduledStartMinute:operation.toStartMinute??null, queue: scheduledFor === today ? "today" : "future", scheduleProvenance:{source:"adaptive",reason:operation.reason??null,previewGeneratedAt:preview.generatedAt,baseRevision:preview.baseRevision}, createdAt:activities[index].createdAt, updatedAt: at });
                 } else if (operation.action === "add") {
-                    const activity = createActivity({ ...operation.activity, planId: activePlanId(), scheduledFor: operation.scheduledFor, origin: operation.activity.origin ?? "schedule", createdAt: at, updatedAt: at });
+                    const activity = createActivity({ ...operation.activity, planId: activePlanId(), scheduledFor: operation.scheduledFor, scheduledStartMinute:operation.scheduledStartMinute??null, origin: operation.activity.origin ?? "schedule", scheduleProvenance:{source:"adaptive",reason:operation.reason??null,previewGeneratedAt:preview.generatedAt,baseRevision:preview.baseRevision}, createdAt: at, updatedAt: at });
                     activities.push(activity);
                 } else throw new TypeError(`Unsupported schedule operation: ${operation.action}`);
             }

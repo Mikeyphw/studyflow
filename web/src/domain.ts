@@ -165,6 +165,13 @@ export function createActivity(input = {}) {
         origin: requireOneOf(input.origin ?? "manual", ["manual", "seed", "cycle", "review", "import", "schedule"], "activity.origin"),
         queue: requireOneOf(input.queue ?? "today", ["today", "future", "backlog"], "activity.queue"),
         scheduledFor: optionalText(input.scheduledFor),
+        scheduledStartMinute: input.scheduledStartMinute == null ? null : requirePositiveInteger(Number(input.scheduledStartMinute) + 1, "activity.scheduledStartMinute", { min: 1, max: 1440 }) - 1,
+        locked: Boolean(input.locked),
+        scheduleProvenance: input.scheduleProvenance && typeof input.scheduleProvenance === "object" ? {
+            source: requireOneOf(input.scheduleProvenance.source ?? "manual", ["manual", "adaptive"], "activity.scheduleProvenance.source"),
+            reason: optionalText(input.scheduleProvenance.reason), previewGeneratedAt: optionalText(input.scheduleProvenance.previewGeneratedAt),
+            baseRevision: input.scheduleProvenance.baseRevision == null ? null : Math.max(0, Math.trunc(Number(input.scheduleProvenance.baseRevision))),
+        } : null,
     };
 }
 
@@ -423,6 +430,7 @@ export function migrateStudyState(input, { now = isoNow() } = {}) {
     state.focus = createFocusState(state.focus ?? {});
     state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => createSubject({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : [];
     state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => createTopic({ ...topic, parentTopicId: topic.parentTopicId ?? null, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
+    state.activities = Array.isArray(state.activities) ? state.activities.map((activity) => createActivity(activity)) : [];
     state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
     state.materials = Array.isArray(state.materials) ? state.materials.map((material) => ({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null })) : [];
     state.reviews = Array.isArray(state.reviews) ? state.reviews.map((review) => createReview(review)) : [];
