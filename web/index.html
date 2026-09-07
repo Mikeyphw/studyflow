@@ -187,38 +187,34 @@
         </section>
 
         <section id="progress" class="screen" data-screen="progress" aria-labelledby="progress-heading">
-            <header class="screen-header">
-                <p class="eyebrow">Evidence, not decoration</p>
-                <h1 id="progress-heading">Progress</h1>
-            </header>
+            <header class="screen-header"><p class="eyebrow">Evidence, not decoration</p><h1 id="progress-heading">Progress</h1></header>
             <nav class="subnav" aria-label="Progress areas" data-tab-nav="progress">
-                <a href="#progress-summary" data-tab="progress-summary" aria-current="page">Summary</a>
-                <a href="#progress-performance" data-tab="progress-performance">Performance</a>
-                <a href="#progress-goals" data-tab="progress-goals">Goals</a>
-                <a href="#progress-tools" data-tab="progress-tools">Tools</a>
+                <a href="#progress-summary" data-tab="progress-summary" aria-current="page">Summary</a><a href="#progress-performance" data-tab="progress-performance">Performance</a><a href="#progress-goals" data-tab="progress-goals">Goals</a><a href="#progress-tools" data-tab="progress-tools">Tools</a>
             </nav>
             <section id="progress-summary" class="tab-panel" data-tab-panel="progress">
                 <div class="metric-grid">
-                    <article class="metric-card"><span>Readiness</span><strong>No data</strong><small>Insufficient evidence</small></article>
-                    <article class="metric-card"><span>This week</span><strong>0 min</strong><small>Observed study time</small></article>
-                    <article class="metric-card"><span>Accuracy</span><strong>No data</strong><small>No answered questions</small></article>
+                    <article class="metric-card"><span>Readiness</span><strong id="progress-readiness">No data</strong><small id="progress-readiness-detail">Insufficient evidence</small></article>
+                    <article class="metric-card"><span>This week</span><strong id="progress-study-time">0 min</strong><small>Observed completed study time</small></article>
+                    <article class="metric-card"><span>Accuracy</span><strong id="progress-accuracy">No data</strong><small id="progress-accuracy-detail">No graded attempts</small></article>
+                    <article class="metric-card"><span>Coverage</span><strong id="progress-coverage">No data</strong><small id="progress-coverage-detail">No active topics</small></article>
                 </div>
-                <article class="card"><h2>Summary</h2><p>Readiness, weekly pacing and coach conclusions will be derived from evidence rather than placeholders.</p></article>
+                <article class="card"><h2>Evidence summary</h2><p id="progress-summary-copy">Metrics are calculated only from persisted StudyFlow evidence. Unknown values stay “No data”; measured zero stays zero.</p></article>
             </section>
-            <section id="progress-performance" class="tab-panel" data-tab-panel="progress"><article class="card"><h2>Performance</h2><p>Time, accuracy, coverage and review health; unavailable evidence is shown as no data, never invented zero.</p></article></section>
-            <section id="progress-goals" class="tab-panel" data-tab-panel="progress"><article class="card"><h2>Goals</h2><p>Study time, questions, coverage and mode-aware objectives.</p></article></section>
+            <section id="progress-performance" class="tab-panel" data-tab-panel="progress">
+                <div class="content-grid two-column">
+                    <article class="card"><h2>Evidence Timeline</h2><p class="muted">Newest observed evidence first. Timeline records are read-only history.</p><ol id="evidence-timeline" class="evidence-timeline"></ol></article>
+                    <article class="card"><h2>Review health</h2><strong id="progress-review-health">No data</strong><p id="progress-review-detail" class="muted">No review history available.</p></article>
+                </div>
+            </section>
+            <section id="progress-goals" class="tab-panel" data-tab-panel="progress">
+                <article class="card"><div class="card-heading-row"><div><p class="eyebrow">Measured locally</p><h2>Goals</h2></div><button class="button button-quiet" type="button" data-open-dialog="goal-dialog">Add goal</button></div><p class="muted">Goal progress is derived from observed sessions, graded attempts, evidenced topics, or completed reviews.</p><div id="goal-list" class="goal-list"></div></article>
+            </section>
             <section id="progress-tools" class="tab-panel" data-tab-panel="progress">
-                <article class="card">
-                    <h2>Tools</h2>
-                    <p>Evidence Timeline, Content Integrity, adaptive reschedule, sprint and backup health.</p>
-                    <div class="tool-row">
-                        <div>
-                            <strong>Local state</strong>
-                            <span class="muted">W04 uses versioned browser storage until IndexedDB arrives in W12.</span>
-                        </div>
-                        <button id="reset-local-state" type="button" class="button button-quiet">Reset sample data</button>
-                    </div>
-                </article>
+                <div class="content-grid two-column">
+                    <article class="card"><h2>Content Integrity</h2><strong id="integrity-status">Checking local state…</strong><p id="integrity-detail" class="muted"></p></article>
+                    <article class="card"><h2>Portable package</h2><p class="muted">Export all structured local StudyFlow data as JSON. Import never changes local data until you preview and explicitly apply it.</p><div class="tool-actions"><button id="portable-export" type="button" class="button">Export package</button><label class="button button-quiet file-button">Choose import<input id="portable-import-file" type="file" accept=".json,.studyflow.json,application/json"></label></div><p id="portable-status" class="muted">No package selected.</p><div id="portable-preview" class="portable-preview" hidden><strong>Import preview</strong><p id="portable-preview-summary"></p><ul id="portable-preview-list"></ul><button id="portable-import-apply" type="button" class="button" disabled>Apply imported state</button></div></article>
+                    <article class="card"><h2>Local state</h2><p class="muted">Browser storage remains the temporary repository until IndexedDB/attachment storage arrives in W12.</p><button id="reset-local-state" type="button" class="button button-quiet">Reset sample data</button></article>
+                </div>
             </section>
         </section>
     </main>
@@ -229,6 +225,17 @@
         <a href="#practice" data-screen-link="practice"><span>Practice</span></a>
         <a href="#progress" data-screen-link="progress"><span>Progress</span></a>
     </nav>
+
+    <dialog id="goal-dialog" class="dialog">
+        <form id="goal-form" method="dialog">
+            <div class="dialog-header"><div><p class="eyebrow">Evidence-backed target</p><h2>Add goal</h2></div><button type="button" class="icon-button" data-close-dialog aria-label="Close">×</button></div>
+            <label>Name<input name="name" required maxlength="80" placeholder="Weekly study time"></label>
+            <label>Metric<select name="metric"><option value="study-minutes">Study minutes</option><option value="graded-questions">Graded questions</option><option value="topics-covered">Topics evidenced</option><option value="reviews-completed">Reviews completed</option></select></label>
+            <label>Target<input name="target" type="number" min="1" step="1" required value="120"></label>
+            <label>Period<select name="period"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="plan">Whole plan</option></select></label>
+            <div class="dialog-actions"><button type="button" class="button button-quiet" data-close-dialog>Cancel</button><button type="submit" class="button">Save goal</button></div>
+        </form>
+    </dialog>
 
     <dialog id="quick-add-dialog" class="dialog">
         <form id="quick-add-form" method="dialog">

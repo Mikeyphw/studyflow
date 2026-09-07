@@ -42,3 +42,10 @@ The current browser build now has durable focus sessions and editable plan conte
 ## W08/W09
 
 Schedule changes are now preview-first and revision-guarded. Practice questions, review completion and the Error Notebook are stored locally and generate evidence only from actual user actions. Ungraded questions remain truthfully ungraded.
+
+
+## W10/W11
+
+Progress now derives study time, graded accuracy, topic coverage, review health and readiness only from persisted evidence. Unknown measurements render as `No data`; a measured zero remains `0`. Goals use supported evidence metrics. Tools expose a read-only evidence timeline and content-integrity status.
+
+Portable packages use the local `studyflow-local-package` JSON format. Export is self-contained structured data. Import is limited to 5 MiB, validated, previewed as add/update/remove counts, revision-guarded, and only replaces local structured state after explicit Apply. Attachments/IndexedDB remain W12.

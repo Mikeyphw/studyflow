@@ -701,6 +701,88 @@ export function derivePlanInventory(state, planId = state.activePlanId) {
 }
 
 
+
+
+export const GOAL_METRICS = Object.freeze(["study-minutes", "graded-questions", "topics-covered", "reviews-completed"]);
+
+function periodStartMs(period, atMs) {
+    const date = new Date(atMs);
+    if (period === "daily") return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    if (period === "weekly") return atMs - 7 * 86_400_000;
+    if (period === "monthly") return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
+    return Number.NEGATIVE_INFINITY;
+}
+
+function observedWithin(value, period, atMs) {
+    const ms = Date.parse(String(value ?? ""));
+    return Number.isFinite(ms) && ms <= atMs && ms >= periodStartMs(period, atMs);
+}
+
+function completedSessionsForPeriod(state, planId, period, atMs) {
+    return state.sessions.filter((session) => session.planId === planId && session.status === "completed" && session.durationMinutes != null && observedWithin(session.endedAt ?? session.updatedAt ?? session.startedAt, period, atMs));
+}
+
+function gradedAttemptsForPeriod(state, planId, period, atMs) {
+    return state.evidence.filter((item) => item.planId === planId && item.kind === "question-attempt" && item.value?.gradable === true && observedWithin(item.observedAt, period, atMs));
+}
+
+function topicEvidenceForPeriod(state, planId, period, atMs) {
+    return state.evidence.filter((item) => item.planId === planId && item.topicId && observedWithin(item.observedAt, period, atMs));
+}
+
+export function deriveProgressMetrics(state, { at = isoNow(), planId = state.activePlanId } = {}) {
+    const atMs = Date.parse(at);
+    if (!Number.isFinite(atMs)) throw new TypeError("Progress timestamp must be valid ISO time");
+    if (!planId) return { weeklyStudyMinutes: 0, gradedAttempts: 0, accuracy: null, topicCoverage: null, coveredTopics: 0, activeTopics: 0, reviewCompletionRate: null, readiness: null, readinessReason: "No active plan", confidence: "none" };
+    const weekSessions = completedSessionsForPeriod(state, planId, "weekly", atMs);
+    const weeklyStudyMinutes = weekSessions.reduce((total, session) => total + Number(session.durationMinutes || 0), 0);
+    const allGraded = state.evidence.filter((item) => item.planId === planId && item.kind === "question-attempt" && item.value?.gradable === true);
+    const correct = allGraded.filter((item) => item.value?.correct === true).length;
+    const accuracy = allGraded.length ? correct / allGraded.length : null;
+    const topics = state.topics.filter((topic) => topic.planId === planId && topic.status !== "archived");
+    const observedTopicIds = new Set(state.evidence.filter((item) => item.planId === planId && item.topicId).map((item) => item.topicId));
+    const coveredTopics = topics.filter((topic) => observedTopicIds.has(topic.id)).length;
+    const topicCoverage = topics.length ? coveredTopics / topics.length : null;
+    const reviewPool = state.reviews.filter((review) => review.planId === planId && ["due", "completed"].includes(review.status));
+    const reviewCompletionRate = reviewPool.length ? reviewPool.filter((review) => review.status === "completed").length / reviewPool.length : null;
+    let readiness = null; let readinessReason = "Insufficient evidence"; let confidence = "none";
+    if (accuracy != null && topicCoverage != null && allGraded.length >= 5 && coveredTopics >= 2) {
+        readiness = Math.round((accuracy * 0.7 + topicCoverage * 0.3) * 100);
+        confidence = allGraded.length >= 20 && coveredTopics >= 5 ? "moderate" : "limited";
+        readinessReason = `${allGraded.length} graded attempts · ${coveredTopics} evidenced topics · ${confidence} confidence`;
+    } else {
+        const needs = [];
+        if (allGraded.length < 5) needs.push(`${Math.max(0, 5-allGraded.length)} more graded attempt${Math.max(0,5-allGraded.length)===1?"":"s"}`);
+        if (coveredTopics < 2) needs.push(`${Math.max(0, 2-coveredTopics)} more evidenced topic${Math.max(0,2-coveredTopics)===1?"":"s"}`);
+        readinessReason = needs.length ? `Needs ${needs.join(" and ")}` : "Insufficient evidence";
+    }
+    return { weeklyStudyMinutes, gradedAttempts: allGraded.length, accuracy, topicCoverage, coveredTopics, activeTopics: topics.length, reviewCompletionRate, readiness, readinessReason, confidence };
+}
+
+export function goalMetricValue(state, goal, { at = isoNow() } = {}) {
+    const atMs = Date.parse(at); if (!Number.isFinite(atMs)) throw new TypeError("Goal timestamp must be valid ISO time");
+    const planId = goal.planId ?? state.activePlanId;
+    if (goal.metric === "study-minutes") return completedSessionsForPeriod(state, planId, goal.period, atMs).reduce((sum, session) => sum + Number(session.durationMinutes || 0), 0);
+    if (goal.metric === "graded-questions") return gradedAttemptsForPeriod(state, planId, goal.period, atMs).length;
+    if (goal.metric === "topics-covered") return new Set(topicEvidenceForPeriod(state, planId, goal.period, atMs).map((item) => item.topicId)).size;
+    if (goal.metric === "reviews-completed") return state.evidence.filter((item) => item.planId === planId && item.kind === "review-completed" && observedWithin(item.observedAt, goal.period, atMs)).length;
+    return null;
+}
+
+export function deriveGoalProgress(state, goal, options = {}) {
+    const actual = goalMetricValue(state, goal, options);
+    const progress = actual == null ? null : goal.target > 0 ? Math.max(0, actual / goal.target) : null;
+    return { goal, actual, target: goal.target, progress, reached: actual != null && goal.target > 0 && actual >= goal.target };
+}
+
+export function buildEvidenceTimeline(state, { planId = state.activePlanId, limit = 50 } = {}) {
+    return state.evidence.filter((item) => !planId || item.planId === planId).slice().sort((a,b) => Date.parse(b.observedAt)-Date.parse(a.observedAt)).slice(0, Math.max(1, Math.min(500, Number(limit)||50)));
+}
+
+export function buildContentIntegrityReport(state) {
+    const errors = validateStudyState(state);
+    return { valid: errors.length === 0, errors, counts: Object.fromEntries(ENTITY_COLLECTIONS.map((name) => [name, Array.isArray(state[name]) ? state[name].length : 0])), revision: state.revision };
+}
 export function selectDueReviews(state, at = Date.now(), planId = state.activePlanId) {
     return selectOverdueReviews(state, at, planId).sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
 }

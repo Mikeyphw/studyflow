@@ -2,7 +2,7 @@
 
 import {
     buildSchedulePreview, createActivity, createErrorEntry, createEvidence, createFocusState, createInitialStudyState, createQuestion, createReview, createStudySession,
-    createStudyCycleState, createSubject, createTopic, focusRemainingMs, gradeQuestion, migrateStudyState, selectActivitiesForQueue, validateStudyState,
+    createStudyCycleState, createSubject, createTopic, createGoal, focusRemainingMs, gradeQuestion, migrateStudyState, selectActivitiesForQueue, validateStudyState,
 } from "./domain.js";
 
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
@@ -171,6 +171,26 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
             }
             commit({ ...state, activities }, "schedule-preview-applied");
             return preview;
+        },
+        addGoal(input) {
+            const at=nowIso(); const goal=createGoal({ ...input, planId:input.planId??activePlanId(), createdAt:at, updatedAt:at });
+            commit({ ...state, goals:[...state.goals,goal] }, "goal-added"); return goal;
+        },
+        toggleGoal(goalId) {
+            const current=state.goals.find((goal)=>goal.id===goalId&&goal.planId===activePlanId()); if(!current) throw new TypeError("Goal not found in the active plan");
+            const at=nowIso(); const updated=createGoal({ ...current, active:!current.active, createdAt:current.createdAt, updatedAt:at });
+            commit({ ...state, goals:state.goals.map((goal)=>goal.id===goalId?updated:goal) }, "goal-toggled"); return updated;
+        },
+        deleteGoal(goalId) {
+            const current=state.goals.find((goal)=>goal.id===goalId&&goal.planId===activePlanId()); if(!current) throw new TypeError("Goal not found in the active plan");
+            commit({ ...state, goals:state.goals.filter((goal)=>goal.id!==goalId) }, "goal-deleted");
+        },
+        applyPortableImportPreview(preview) {
+            if(!preview||typeof preview!=="object"||!preview.nextState) throw new TypeError("Portable import preview is required");
+            if(preview.baseRevision!==state.revision) throw new TypeError("Portable import preview is stale; preview the package again before applying");
+            const candidate=migrateStudyState(cloneState(preview.nextState),{now:nowIso()}); const errors=validateStudyState(candidate);
+            if(errors.length) throw new TypeError(`Portable import state is invalid: ${errors[0]}`);
+            return commit({ ...candidate, revision:state.revision }, "portable-import-applied");
         },
         addQuestion(input) {
             const at = nowIso(); const question = createQuestion({ ...input, planId: input.planId ?? activePlanId(), createdAt: at, updatedAt: at });

@@ -430,6 +430,52 @@ def validate_practice() -> list[str]:
         _node_check(errors, WEB / relative)
     return errors
 
+
+def validate_progress() -> list[str]:
+    errors = validate_practice()
+    html, parser = parse_shell(errors)
+    domain = read_text(WEB / "src/domain.js", errors)
+    state = read_text(WEB / "src/state.js", errors)
+    render = read_text(WEB / "src/render.js", errors)
+    events = read_text(WEB / "src/events.js", errors)
+    if parser is not None:
+        for element_id in ("progress-readiness", "progress-study-time", "progress-accuracy", "progress-coverage", "evidence-timeline", "goal-list", "goal-dialog", "goal-form", "integrity-status"):
+            fail(errors, element_id not in parser.ids, f"W10 progress UI hook missing: {element_id}")
+    for token in ("deriveProgressMetrics", "deriveGoalProgress", "buildEvidenceTimeline", "buildContentIntegrityReport", "readinessReason"):
+        fail(errors, token not in domain, f"W10 progress-domain contract missing token: {token}")
+    for token in ("addGoal", "toggleGoal", "deleteGoal"):
+        fail(errors, token not in state, f"W10 goal state contract missing token: {token}")
+    for token in ("renderProgressState", "No data", "integrity"):
+        fail(errors, token.lower() not in render.lower(), f"W10 progress rendering missing token: {token}")
+    fail(errors, "goal-form" not in events, "W10 goal event wiring missing")
+    return errors
+
+
+def validate_portable() -> list[str]:
+    errors = validate_progress()
+    html, parser = parse_shell(errors)
+    portable = read_text(WEB / "src/portable.js", errors)
+    state = read_text(WEB / "src/state.js", errors)
+    events = read_text(WEB / "src/events.js", errors)
+    if parser is not None:
+        for element_id in ("portable-export", "portable-import-file", "portable-status", "portable-preview", "portable-preview-summary", "portable-import-apply"):
+            fail(errors, element_id not in parser.ids, f"W11 portable UI hook missing: {element_id}")
+    for token in ("studyflow-local-package", "PORTABLE_FORMAT_VERSION", "parsePortablePackage", "buildPortableImportPreview", "MAX_PORTABLE_BYTES", "manifest counts"):
+        fail(errors, token.lower() not in portable.lower(), f"W11 portable contract missing token: {token}")
+    for token in ("applyPortableImportPreview", "preview is stale"):
+        fail(errors, token.lower() not in state.lower(), f"W11 import apply guard missing token: {token}")
+    for token in ("portable-export", "portable-import-file", "No local data has changed"):
+        fail(errors, token not in events, f"W11 portable event wiring missing token: {token}")
+    lowered=portable.lower()
+    for forbidden in ("document.", "window.", "localstorage", "indexeddb", "fetch("):
+        fail(errors, forbidden in lowered, f"W11 portable core must stay platform-independent: {forbidden}")
+    for relative in ("src/domain.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js", "src/portable.js", "app.js"):
+        _node_check(errors, WEB / relative)
+    doc = read_text(ROOT / "docs/web/W10_W11_PROGRESS_PORTABLE.md", errors)
+    for token in ("No data", "measured zero", "preview", "replace", "5 MiB"):
+        fail(errors, token.lower() not in doc.lower(), f"W10/W11 delivery doc missing: {token}")
+    return errors
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -443,6 +489,8 @@ def main() -> int:
     mode.add_argument("--content", action="store_true")
     mode.add_argument("--schedule", action="store_true")
     mode.add_argument("--practice", action="store_true")
+    mode.add_argument("--progress", action="store_true")
+    mode.add_argument("--portable", action="store_true")
     mode.add_argument("--all", action="store_true")
     args = parser.parse_args()
 
@@ -473,9 +521,15 @@ def main() -> int:
     elif args.schedule:
         errors = validate_schedule()
         label = "W08 schedule intelligence + adaptive preview"
-    else:
+    elif args.practice:
         errors = validate_practice()
         label = "W08/W09 schedule intelligence + practice"
+    elif args.progress:
+        errors = validate_progress()
+        label = "W10 truthful progress, evidence and goals"
+    else:
+        errors = validate_portable()
+        label = "W10/W11 truthful progress + portable packages"
 
     if errors:
         print("StudyFlow web validation FAILED:", file=sys.stderr)
