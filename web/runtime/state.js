@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createStudyStore = createStudyStore;
 const domain_js_1 = require("./domain.js");
 const content_import_js_1 = require("./content_import.js");
+const question_import_js_1 = require("./question_import.js");
 const schedule_js_1 = require("./schedule.js");
 const modes_js_1 = require("./modes.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
@@ -238,6 +239,21 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, plans: state.plans.map((plan) => plan.id === current.id ? updated : plan) }, "plan-mode-updated");
             return updated;
         },
+        setPracticeConfiguration(input) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current)
+            throw new TypeError("Active plan not found"); const at = nowIso(); const practice = { ...current.configuration.practice, ...input }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, practice }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "practice-config-updated"); return updated; },
+        savePracticeSet(name, filter = {}, questionIds = []) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current)
+            throw new TypeError("Active plan not found"); const trimmed = String(name ?? "").trim(); if (!trimmed)
+            throw new TypeError("Practice set name is required"); const at = nowIso(); const ids = (questionIds.length ? questionIds : state.questions.filter(q => q.planId === current.id).map(q => q.id)).filter(id => state.questions.some(q => q.id === id && q.planId === current.id)); const set = { id: `practice-set-${Date.now().toString(36)}`, name: trimmed, questionIds: [...new Set(ids)], filter: { ...filter }, createdAt: at }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, practice: { ...current.configuration.practice, savedSets: [...current.configuration.practice.savedSets, set] } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "practice-set-saved"); return set; },
+        deletePracticeSet(id) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current)
+            throw new TypeError("Active plan not found"); const at = nowIso(); const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, practice: { ...current.configuration.practice, savedSets: current.configuration.practice.savedSets.filter(x => x.id !== id) } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "practice-set-deleted"); return updated; },
+        setPublicExamStudyPhase(phase) { if (!["pre-edital", "post-edital", "final-stretch"].includes(String(phase)))
+            throw new TypeError("Unsupported public-exam study phase"); const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
+            throw new TypeError("Study phase requires EXAM_PLAN"); const at = nowIso(); const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, studyPhase: phase } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "public-exam-phase-updated"); return updated; },
+        applyPublicExamStarterTemplate(templateId) { const template = modes_js_1.PUBLIC_EXAM_STARTER_TEMPLATES[templateId]; if (!template)
+            throw new TypeError("Unknown public-exam starter template"); const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
+            throw new TypeError("Starter template requires EXAM_PLAN"); const at = nowIso(); const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, practice: { ...current.configuration.practice, weeklyQuestionQuota: template.weeklyQuestionQuota }, publicExam: { ...current.configuration.publicExam, reviewIntervalsDays: [...template.reviewIntervalsDays], mockBlueprint: { ...current.configuration.publicExam.mockBlueprint, totalQuestions: template.mockQuestions } } }, createdAt: current.createdAt, updatedAt: at }); const wanted = [{ name: "Weekly questions", metric: "graded-questions", target: template.weeklyQuestionQuota, period: "weekly" }, { name: "Weekly study time", metric: "study-minutes", target: 300, period: "weekly" }]; let goals = [...state.goals]; for (const g of wanted)
+            if (!goals.some(x => x.planId === current.id && x.name === g.name))
+                goals.push((0, domain_js_1.createGoal)({ ...g, planId: current.id, active: true, createdAt: at, updatedAt: at })); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p), goals }, "public-exam-starter-template-applied"); return updated; },
         updatePublicExamTarget(input) {
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "EXAM_PLAN")
@@ -268,11 +284,17 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             if (!current || current.mode !== "EXAM_PLAN")
                 throw new TypeError("Edital import requires an EXAM_PLAN");
             const at = nowIso();
-            let subjects = state.subjects.map((x) => ({ ...x })), topics = state.topics.map((x) => ({ ...x }));
-            const touchedSubjects = new Set(), touchedTopics = new Set();
-            let added = 0, archived = 0;
+            const currentFingerprint = (() => { const ss = state.subjects.filter(x => x.planId === current.id).map(x => `${x.name}|${x.archived}`).sort(); const tt = state.topics.filter(x => x.planId === current.id).map(x => `${x.subjectId}|${x.parentTopicId ?? ""}|${x.name}|${x.status}`).sort(); let h = 2166136261; const raw = JSON.stringify([ss, tt]); for (let i = 0; i < raw.length; i++) {
+                h ^= raw.charCodeAt(i);
+                h = Math.imul(h, 16777619);
+            } return (h >>> 0).toString(16).padStart(8, "0"); })();
+            if (preview.syllabusFingerprint !== currentFingerprint)
+                throw new TypeError("Edital preview syllabus changed; preview again before applying");
+            let subjects = state.subjects.map(x => ({ ...x })), topics = state.topics.map(x => ({ ...x }));
+            let added = 0, archived = 0, reactivated = 0, unchanged = 0;
+            const desiredSubjects = new Set(), desiredTopics = new Set();
             for (const row of preview.subjects) {
-                let subject = subjects.find((x) => x.planId === current.id && x.name.trim().toLowerCase() === row.name.trim().toLowerCase());
+                let subject = subjects.find(x => x.planId === current.id && x.name.trim().toLowerCase() === row.name.trim().toLowerCase());
                 if (!subject) {
                     subject = (0, domain_js_1.createSubject)({ planId: current.id, name: row.name, order: subjects.filter(x => x.planId === current.id).length, createdAt: at, updatedAt: at });
                     subjects.push(subject);
@@ -281,38 +303,37 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 else if (subject.archived) {
                     subject = (0, domain_js_1.createSubject)({ ...subject, archived: false, createdAt: subject.createdAt, updatedAt: at });
                     subjects = subjects.map(x => x.id === subject.id ? subject : x);
+                    reactivated++;
                 }
-                touchedSubjects.add(subject.id);
-                for (const name of row.topics) {
-                    let topic = topics.find(x => x.subjectId === subject.id && x.name.trim().toLowerCase() === name.trim().toLowerCase());
-                    if (!topic) {
-                        topic = (0, domain_js_1.createTopic)({ planId: current.id, subjectId: subject.id, name, order: topics.filter(x => x.subjectId === subject.id).length, createdAt: at, updatedAt: at });
-                        topics.push(topic);
-                        added++;
+                else
+                    unchanged++;
+                desiredSubjects.add(subject.id);
+                for (const path of row.topicPaths ?? row.topics.map(x => [x])) {
+                    let parentId = null;
+                    for (const name of path) {
+                        let topic = topics.find(x => x.subjectId === subject.id && (x.parentTopicId ?? null) === parentId && x.name.trim().toLowerCase() === name.trim().toLowerCase());
+                        if (!topic) {
+                            topic = (0, domain_js_1.createTopic)({ planId: current.id, subjectId: subject.id, parentTopicId: parentId, name, order: topics.filter(x => x.subjectId === subject.id && (x.parentTopicId ?? null) === parentId).length, createdAt: at, updatedAt: at });
+                            topics.push(topic);
+                            added++;
+                        }
+                        else if (topic.status === "archived") {
+                            topic = (0, domain_js_1.createTopic)({ ...topic, status: "not-started", createdAt: topic.createdAt, updatedAt: at });
+                            topics = topics.map(x => x.id === topic.id ? topic : x);
+                            reactivated++;
+                        }
+                        else
+                            unchanged++;
+                        desiredTopics.add(topic.id);
+                        parentId = topic.id;
                     }
-                    else if (topic.status === "archived") {
-                        topic = (0, domain_js_1.createTopic)({ ...topic, status: "not-started", createdAt: topic.createdAt, updatedAt: at });
-                        topics = topics.map(x => x.id === topic.id ? topic : x);
-                    }
-                    touchedTopics.add(topic.id);
                 }
             }
-            for (const topic of topics.filter(x => x.planId === current.id && x.status !== "archived")) {
-                if (!touchedTopics.has(topic.id)) {
-                    topics = topics.map(x => x.id === topic.id ? { ...x, status: "archived", updatedAt: at } : x);
-                    archived++;
-                }
-            }
-            for (const subject of subjects.filter(x => x.planId === current.id && !x.archived)) {
-                if (!touchedSubjects.has(subject.id)) {
-                    subjects = subjects.map(x => x.id === subject.id ? { ...x, archived: true, updatedAt: at } : x);
-                    archived++;
-                }
-            }
-            const revision = { id: `notice-${Date.now().toString(36)}`, acceptedAt: at, sourceHash: preview.sourceHash, added, archived };
-            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, noticeRevisions: [...current.configuration.publicExam.noticeRevisions, revision] } }, createdAt: current.createdAt, updatedAt: at });
-            const cycleIds = subjects.filter(x => x.planId === current.id && !x.archived).sort((a, b) => a.order - b.order).map(x => x.id);
-            commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x), subjects, topics, studyCycle: (0, domain_js_1.createStudyCycleState)({ subjectIds: cycleIds, cursor: Math.min(state.studyCycle.cursor, Math.max(0, cycleIds.length - 1)) }) }, "exam-notice-applied");
+            subjects = subjects.map(x => x.planId === current.id && !desiredSubjects.has(x.id) && !x.archived ? (archived++, (0, domain_js_1.createSubject)({ ...x, archived: true, createdAt: x.createdAt, updatedAt: at })) : x);
+            topics = topics.map(x => x.planId === current.id && !desiredTopics.has(x.id) && x.status !== "archived" ? (archived++, (0, domain_js_1.createTopic)({ ...x, status: "archived", createdAt: x.createdAt, updatedAt: at })) : x);
+            const revision = { id: `notice-${Date.now().toString(36)}`, acceptedAt: at, sourceHash: preview.sourceHash, added, archived, reactivated, unchanged, previousRevisionId: preview.previousRevisionId ?? null, syllabusFingerprint: preview.syllabusFingerprint };
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, studyPhase: "post-edital", noticeRevisions: [...current.configuration.publicExam.noticeRevisions, revision] } }, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, subjects, topics, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "exam-notice-applied");
             return updated;
         },
         addLegislation(input) {
@@ -328,6 +349,16 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "legislation-added");
             return updated;
         },
+        verifyLegislation(documentId, verifiedAt = nowIso()) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
+            throw new TypeError("Legislation verification requires EXAM_PLAN"); const docs = current.configuration.publicExam.legislation; const doc = docs.find(x => x.id === documentId); if (!doc)
+            throw new TypeError("Legislation document not found"); const at = nowIso(); const updatedDoc = { ...doc, verifiedAt: new Date(verifiedAt).toISOString() }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, legislation: docs.map(x => x.id === documentId ? updatedDoc : x) } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "legislation-verified"); return updated; },
+        linkLegislationEvidence(documentId, input) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
+            throw new TypeError("Legislation evidence link requires EXAM_PLAN"); const docs = current.configuration.publicExam.legislation; const doc = docs.find(x => x.id === documentId); if (!doc)
+            throw new TypeError("Legislation document not found"); if (!doc.provisions.some(x => x.id === input.provisionId))
+            throw new TypeError("Legislation provision not found"); if (input.questionId && !state.questions.some(x => x.id === input.questionId && x.planId === current.id))
+            throw new TypeError("Question evidence link does not belong to active plan"); if (input.errorId && !state.errorEntries.some(x => x.id === input.errorId && x.planId === current.id))
+            throw new TypeError("Error evidence link does not belong to active plan"); if (input.reviewId && !state.reviews.some(x => x.id === input.reviewId && x.planId === current.id))
+            throw new TypeError("Review evidence link does not belong to active plan"); const at = nowIso(); const link = { id: `law-link-${Date.now().toString(36)}`, provisionId: input.provisionId, questionId: input.questionId ?? null, errorId: input.errorId ?? null, reviewId: input.reviewId ?? null, note: input.note ?? null, createdAt: at }; const updatedDoc = { ...doc, evidenceLinks: [...doc.evidenceLinks, link] }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, legislation: docs.map(x => x.id === documentId ? updatedDoc : x) } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "legislation-evidence-linked"); return updated; },
         setReviewIntervalsDays(intervals) {
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "EXAM_PLAN")
@@ -527,6 +558,9 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit(withPlanCycle(state, planId, next), "study-cycle-advanced");
             return next;
         },
+        skipStudyCycleSubject() { return this.advanceStudyCycle(); },
+        moveCurrentCycleSubjectToEnd() { const planId = activePlanId(); const cycle = planCycle(planId); if (cycle.subjectIds.length < 2)
+            return cycle; const idx = Math.max(0, Math.min(cycle.cursor, cycle.subjectIds.length - 1)); const ids = [...cycle.subjectIds]; const [current] = ids.splice(idx, 1); ids.push(current); const next = (0, domain_js_1.createStudyCycleState)({ subjectIds: ids, cursor: Math.min(idx, ids.length - 1) }); commit(withPlanCycle(state, planId, next), "study-cycle-current-moved-to-end"); return next; },
         addSubject(input) {
             const at = nowIso();
             const existing = state.subjects.filter((subject) => subject.planId === activePlanId());
@@ -810,6 +844,32 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError(`Portable import state is invalid: ${errors[0]}`);
             return commit({ ...candidate, revision: state.revision }, "portable-import-applied");
         },
+        previewQuestionImport(source, format) { return (0, question_import_js_1.buildQuestionImportPreview)(state, source, format); },
+        applyQuestionImportPreview(preview) { if (!preview || preview.baseRevision !== state.revision)
+            throw new TypeError("Question import preview is stale; preview again before applying"); if (!preview.ready)
+            throw new TypeError("Question import preview is not ready"); const at = nowIso(); const planId = activePlanId(); const added = []; for (const d of preview.accepted) {
+            let subjectId = null, topicId = null;
+            if (d.subjectName) {
+                const subj = state.subjects.find(x => x.planId === planId && x.name.toLowerCase() === d.subjectName.toLowerCase());
+                subjectId = subj?.id ?? null;
+                if (d.topicPath.length && subj) {
+                    let parent = null;
+                    for (const name of d.topicPath) {
+                        const topic = state.topics.find(x => x.subjectId === subj.id && (x.parentTopicId ?? null) === parent && x.name.toLowerCase() === name.toLowerCase());
+                        if (!topic) {
+                            parent = null;
+                            break;
+                        }
+                        parent = topic.id;
+                    }
+                    topicId = parent;
+                }
+            }
+            const q = (0, domain_js_1.createQuestion)({ ...d, planId, subjectId, topicId, createdAt: at, updatedAt: at });
+            added.push(q);
+        } commit({ ...state, questions: [...state.questions, ...added] }, "question-import-applied"); return added; },
+        reclassifyError(errorId, category) { const entry = state.errorEntries.find(x => x.id === errorId && x.planId === activePlanId()); if (!entry)
+            throw new TypeError("Error entry not found in active plan"); const at = nowIso(); const updated = (0, domain_js_1.createErrorEntry)({ ...entry, category, createdAt: entry.createdAt, updatedAt: at }); commit({ ...state, errorEntries: state.errorEntries.map(x => x.id === errorId ? updated : x) }, "error-reclassified"); return updated; },
         addQuestion(input) {
             const at = nowIso();
             const question = (0, domain_js_1.createQuestion)({ ...input, planId: input.planId ?? activePlanId(), createdAt: at, updatedAt: at });

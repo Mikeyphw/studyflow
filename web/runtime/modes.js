@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.filterPracticeQuestions = exports.PUBLIC_EXAM_STARTER_TEMPLATES = void 0;
 exports.defaultPlanConfiguration = defaultPlanConfiguration;
 exports.normalizePlanConfiguration = normalizePlanConfiguration;
 exports.validatePlanConfiguration = validatePlanConfiguration;
@@ -9,6 +10,9 @@ exports.parseExamNoticeText = parseExamNoticeText;
 exports.buildExamNoticePreview = buildExamNoticePreview;
 exports.deriveFinalStretchGuidance = deriveFinalStretchGuidance;
 exports.filterExamQuestions = filterExamQuestions;
+exports.buildWeaknessDrill = buildWeaknessDrill;
+exports.derivePublicExamNextActions = derivePublicExamNextActions;
+exports.deriveEditalMatrix = deriveEditalMatrix;
 exports.previewMockExam = previewMockExam;
 exports.scoreMockExam = scoreMockExam;
 exports.derivePublicExamDashboard = derivePublicExamDashboard;
@@ -34,11 +38,11 @@ const dateOnly = (value) => { const v = text(value); if (!v)
     return null; const m = v.match(/^\d{4}-\d{2}-\d{2}$/); return m ? v : null; };
 const uniqueStrings = (value) => [...new Set(arr(value).map(x => String(x ?? "").trim()).filter(Boolean))];
 function defaultPlanConfiguration(mode = "GENERAL_SKILL") {
-    const base = { version: 1, schedule: (0, schedule_1.defaultScheduleConfiguration)() };
+    const base = { version: 1, schedule: (0, schedule_1.defaultScheduleConfiguration)(), practice: { savedSets: [], weeklyQuestionQuota: null } };
     if (mode === "EXAM_PLAN")
         base.publicExam = {
             target: { organization: null, role: null, board: null, editalRef: null, dateStatus: "unknown", examDate: null, openings: null, estimatedCutoff: null },
-            stages: [], noticeRevisions: [], reviewIntervalsDays: [1, 7, 30], legislation: [], mockBlueprint: { scoring: "no-penalty", negativePoints: 0, totalQuestions: 20, durationMinutes: 60, sections: [] }
+            stages: [], noticeRevisions: [], reviewIntervalsDays: [1, 7, 30], legislation: [], studyPhase: "pre-edital", mockBlueprint: { scoring: "no-penalty", negativePoints: 0, totalQuestions: 20, durationMinutes: 60, sections: [] }
         };
     if (mode === "PROGRAMMING_COURSE")
         base.programming = { language: "TypeScript", level: "beginner", runtime: "browser-only", exercises: [], projects: [] };
@@ -59,16 +63,17 @@ function normalizeExamTarget(input) {
 }
 function normalizePlanConfiguration(input, mode) {
     const raw = (input && typeof input === "object" && !Array.isArray(input) ? clone(input) : {});
-    const out = { version: 1, schedule: (0, schedule_1.normalizeScheduleConfiguration)(raw.schedule) };
+    const out = { version: 1, schedule: (0, schedule_1.normalizeScheduleConfiguration)(raw.schedule), practice: { savedSets: arr(raw.practice?.savedSets).map((x, i) => ({ id: text(x?.id) ?? `practice-set-${i + 1}`, name: text(x?.name) ?? `Set ${i + 1}`, questionIds: uniqueStrings(x?.questionIds), filter: (x?.filter && typeof x.filter === "object" ? x.filter : {}), createdAt: iso(x?.createdAt) ?? new Date(0).toISOString() })), weeklyQuestionQuota: n(raw.practice?.weeklyQuestionQuota) == null ? null : Math.max(1, Math.trunc(n(raw.practice?.weeklyQuestionQuota))) } };
     if (mode === "EXAM_PLAN") {
         const d = defaultPlanConfiguration(mode).publicExam;
         const p = raw.publicExam ?? {};
         out.publicExam = {
             target: normalizeExamTarget(p.target),
             stages: arr(p.stages).map((s, i) => ({ id: text(s?.id) ?? `stage-${i + 1}`, name: text(s?.name) ?? `Stage ${i + 1}`, date: dateOnly(s?.date), status: ["planned", "completed", "cancelled"].includes(String(s?.status)) ? s.status : "planned" })),
-            noticeRevisions: arr(p.noticeRevisions).map((r, i) => ({ id: text(r?.id) ?? `notice-${i + 1}`, acceptedAt: iso(r?.acceptedAt) ?? new Date(0).toISOString(), sourceHash: text(r?.sourceHash) ?? `legacy-${i + 1}`, added: Math.max(0, Math.trunc(n(r?.added) ?? 0)), archived: Math.max(0, Math.trunc(n(r?.archived) ?? 0)) })),
+            noticeRevisions: arr(p.noticeRevisions).map((r, i) => ({ id: text(r?.id) ?? `notice-${i + 1}`, acceptedAt: iso(r?.acceptedAt) ?? new Date(0).toISOString(), sourceHash: text(r?.sourceHash) ?? `legacy-${i + 1}`, added: Math.max(0, Math.trunc(n(r?.added) ?? 0)), archived: Math.max(0, Math.trunc(n(r?.archived) ?? 0)), reactivated: Math.max(0, Math.trunc(n(r?.reactivated) ?? 0)), unchanged: Math.max(0, Math.trunc(n(r?.unchanged) ?? 0)), previousRevisionId: text(r?.previousRevisionId), syllabusFingerprint: text(r?.syllabusFingerprint) })),
             reviewIntervalsDays: arr(p.reviewIntervalsDays).map(Number).filter(v => Number.isInteger(v) && v > 0 && v <= 365).slice(0, 8),
-            legislation: arr(p.legislation).map((d, i) => ({ id: text(d?.id) ?? `law-${i + 1}`, title: text(d?.title) ?? `Legislation ${i + 1}`, reference: text(d?.reference), notes: text(d?.notes), provisions: arr(d?.provisions).map((q, j) => ({ id: text(q?.id) ?? `provision-${i + 1}-${j + 1}`, label: text(q?.label) ?? `Provision ${j + 1}`, text: text(q?.text) ?? "", status: ["unseen", "studying", "reviewing", "known"].includes(String(q?.status)) ? q.status : "unseen" })) })),
+            legislation: arr(p.legislation).map((d, i) => ({ id: text(d?.id) ?? `law-${i + 1}`, title: text(d?.title) ?? `Legislation ${i + 1}`, reference: text(d?.reference), notes: text(d?.notes), sourceUpdatedAt: iso(d?.sourceUpdatedAt), verifiedAt: iso(d?.verifiedAt), provisions: arr(d?.provisions).map((q, j) => ({ id: text(q?.id) ?? `provision-${i + 1}-${j + 1}`, label: text(q?.label) ?? `Provision ${j + 1}`, text: text(q?.text) ?? "", status: ["unseen", "studying", "reviewing", "known"].includes(String(q?.status)) ? q.status : "unseen" })), evidenceLinks: arr(d?.evidenceLinks).map((l, j) => ({ id: text(l?.id) ?? `law-link-${i + 1}-${j + 1}`, provisionId: text(l?.provisionId) ?? "", questionId: text(l?.questionId), errorId: text(l?.errorId), reviewId: text(l?.reviewId), note: text(l?.note), createdAt: iso(l?.createdAt) ?? new Date(0).toISOString() })) })),
+            studyPhase: ["pre-edital", "post-edital", "final-stretch"].includes(String(p.studyPhase)) ? p.studyPhase : (arr(p.noticeRevisions).length ? "post-edital" : "pre-edital"),
             mockBlueprint: normalizeMockBlueprint(p.mockBlueprint ?? d.mockBlueprint),
         };
         if (!out.publicExam.reviewIntervalsDays.length)
@@ -129,6 +134,11 @@ function validatePlanConfiguration(config, mode) {
         errors.push("general-skill configuration is required");
     return errors;
 }
+exports.PUBLIC_EXAM_STARTER_TEMPLATES = Object.freeze({
+    balanced: { id: "balanced", label: "Balanced", weeklyQuestionQuota: 100, reviewIntervalsDays: [1, 7, 30], mockQuestions: 40 },
+    questions: { id: "questions", label: "Question intensive", weeklyQuestionQuota: 200, reviewIntervalsDays: [1, 5, 20], mockQuestions: 60 },
+    revision: { id: "revision", label: "Revision intensive", weeklyQuestionQuota: 75, reviewIntervalsDays: [1, 3, 10, 30], mockQuestions: 30 },
+});
 function normalizeMockBlueprint(input) {
     const x = (input && typeof input === "object" ? input : {});
     const scoring = EXAM_SCORING.includes(x.scoring) ? x.scoring : "no-penalty";
@@ -138,36 +148,49 @@ function normalizeProgrammingExercise(input, index = 0) { const x = (input && ty
 function normalizeLanguageExpression(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `expression-${index + 1}`, expression: text(x.expression) ?? `Expression ${index + 1}`, meaning: text(x.meaning) ?? "", literalTranslation: text(x.literalTranslation), region: text(x.region), register: text(x.register), pronunciationNote: text(x.pronunciationNote), commonMistakes: uniqueStrings(x.commonMistakes) }; }
 function normalizeReadingItem(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); const total = Math.max(1, Math.trunc(n(x.totalUnits) ?? 1)); return { id: text(x.id) ?? `reading-${index + 1}`, title: text(x.title) ?? `Reading ${index + 1}`, totalUnits: total, currentUnit: Math.max(0, Math.min(total, Math.trunc(n(x.currentUnit) ?? 0))), unit: text(x.unit) ?? "pages", status: ["planned", "reading", "completed"].includes(String(x.status)) ? x.status : "planned", notes: text(x.notes) }; }
 function normalizeGeneralDrill(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `drill-${index + 1}`, title: text(x.title) ?? `Drill ${index + 1}`, metric: text(x.metric) ?? "repetitions", target: Math.max(0, n(x.target) ?? 1), unit: text(x.unit) ?? "count", status: ["active", "paused", "completed"].includes(String(x.status)) ? x.status : "active" }; }
-function normalizeQuestionMetadata(input) { const points = n(input.points); return { organization: text(input.organization), role: text(input.role), examStage: text(input.examStage), examBoard: text(input.examBoard), year: n(input.year) == null ? null : Math.trunc(n(input.year)), authorship: text(input.authorship), editalRevision: text(input.editalRevision), externalReference: text(input.externalReference), points: points != null && points > 0 ? points : null }; }
+function normalizeQuestionMetadata(input) { const points = n(input.points); const diff = text(input.difficulty); return { difficulty: ["easy", "medium", "hard"].includes(String(diff)) ? diff : null, favorite: bool(input.favorite), organization: text(input.organization), role: text(input.role), examStage: text(input.examStage), examBoard: text(input.examBoard), year: n(input.year) == null ? null : Math.trunc(n(input.year)), authorship: text(input.authorship), editalRevision: text(input.editalRevision), externalReference: text(input.externalReference), points: points != null && points > 0 ? points : null }; }
 function hashText(source) { let h = 2166136261; for (let i = 0; i < source.length; i++) {
     h ^= source.charCodeAt(i);
     h = Math.imul(h, 16777619);
 } return (h >>> 0).toString(16).padStart(8, "0"); }
+function syllabusFingerprint(state, planId) { const subjects = state.subjects.filter(x => x.planId === planId).map(x => `${x.name}|${x.archived}`).sort(); const topics = state.topics.filter(x => x.planId === planId).map(x => `${x.subjectId}|${x.parentTopicId ?? ""}|${x.name}|${x.status}`).sort(); return hashText(JSON.stringify([subjects, topics])); }
 function parseExamNoticeText(source) {
     const subjects = [];
     const unrecognized = [];
     let current = null;
+    const numbered = new Map();
     for (const raw of String(source ?? "").split(/\r?\n/)) {
         const line = raw.trim();
         if (!line)
             continue;
         const heading = line.match(/^(?:disciplina|mat[eé]ria|subject)\s*:\s*(.+)$/i);
         if (heading) {
-            current = { name: heading[1].trim(), topics: [] };
+            current = { name: heading[1].trim(), topics: [], topicPaths: [] };
             subjects.push(current);
-            continue;
-        }
-        const bullet = line.match(/^(?:[-*•]|\d+[.)])\s*(.+)$/);
-        if (bullet && current) {
-            current.topics.push(bullet[1].trim());
+            numbered.clear();
             continue;
         }
         if (!current) {
-            current = { name: line.replace(/:$/, "").trim(), topics: [] };
+            current = { name: line.replace(/:$/, "").trim(), topics: [], topicPaths: [] };
             subjects.push(current);
+            numbered.clear();
             continue;
         }
-        current.topics.push(line);
+        const m = line.match(/^(?:(\d+(?:\.\d+)*)[.)]?\s+|[-*•]\s*)(.+)$/);
+        const label = (m?.[2] ?? line).trim();
+        if (!label) {
+            unrecognized.push(line);
+            continue;
+        }
+        let path = [label];
+        if (m?.[1]) {
+            const num = m[1];
+            const parent = num.includes(".") ? num.slice(0, num.lastIndexOf(".")) : "";
+            path = parent && numbered.has(parent) ? [...numbered.get(parent), label] : [label];
+            numbered.set(num, path);
+        }
+        current.topics.push(label);
+        current.topicPaths.push(path);
     }
     const seen = new Set(), duplicates = [];
     for (const s of subjects) {
@@ -175,19 +198,62 @@ function parseExamNoticeText(source) {
         if (seen.has(key))
             duplicates.push(s.name);
         seen.add(key);
-        const ts = new Set();
-        s.topics = s.topics.filter(t => { const k = t.toLowerCase(); if (ts.has(k)) {
-            duplicates.push(`${s.name} / ${t}`);
-            return false;
-        } ts.add(k); return true; });
-        if (!s.name)
-            unrecognized.push("blank subject");
+        const paths = new Set();
+        const keep = [];
+        s.topicPaths.forEach((p, i) => { const k = p.map(x => x.toLowerCase()).join(">"); if (paths.has(k))
+            duplicates.push(`${s.name} / ${p.join(" > ")}`);
+        else {
+            paths.add(k);
+            keep.push(i);
+        } });
+        s.topicPaths = keep.map(i => s.topicPaths[i]);
+        s.topics = keep.map(i => s.topics[i]);
     }
     return { subjects: subjects.filter(s => s.name), unrecognized, duplicates };
 }
-function buildExamNoticePreview(state, source) { const parsed = parseExamNoticeText(source); const planId = state.activePlanId; if (!planId)
-    throw new TypeError("No active plan"); const plan = state.plans.find(p => p.id === planId); if (plan?.mode !== "EXAM_PLAN")
-    throw new TypeError("Edital import requires an EXAM_PLAN"); return { baseRevision: state.revision, generatedAt: new Date().toISOString(), sourceHash: hashText(source), subjects: parsed.subjects, duplicates: parsed.duplicates, unrecognized: parsed.unrecognized }; }
+function buildExamNoticePreview(state, source) {
+    const parsed = parseExamNoticeText(source);
+    const planId = state.activePlanId;
+    if (!planId)
+        throw new TypeError("No active plan");
+    const plan = state.plans.find(p => p.id === planId);
+    if (plan?.mode !== "EXAM_PLAN")
+        throw new TypeError("Edital import requires an EXAM_PLAN");
+    const desiredSubjects = new Set(parsed.subjects.map(s => s.name.toLowerCase()));
+    const desiredTopics = new Set(parsed.subjects.flatMap(s => s.topicPaths.map(p => `${s.name.toLowerCase()}|${p.map(x => x.toLowerCase()).join(">")}`)));
+    const add = [], archive = [], reactivate = [], unchanged = [];
+    for (const subj of parsed.subjects) {
+        const existing = state.subjects.find(x => x.planId === planId && x.name.toLowerCase() === subj.name.toLowerCase());
+        if (!existing)
+            add.push(`subject:${subj.name}`);
+        else if (existing.archived)
+            reactivate.push(`subject:${subj.name}`);
+        else
+            unchanged.push(`subject:${subj.name}`);
+        for (const path of subj.topicPaths) {
+            const leaf = path[path.length - 1];
+            const topic = existing ? state.topics.find(x => x.subjectId === existing.id && x.name.toLowerCase() === leaf.toLowerCase()) : null;
+            if (!topic)
+                add.push(`topic:${subj.name}>${path.join(">")}`);
+            else if (topic.status === "archived")
+                reactivate.push(`topic:${subj.name}>${path.join(">")}`);
+            else
+                unchanged.push(`topic:${subj.name}>${path.join(">")}`);
+        }
+    }
+    for (const subj of state.subjects.filter(x => x.planId === planId && !x.archived)) {
+        if (!desiredSubjects.has(subj.name.toLowerCase()))
+            archive.push(`subject:${subj.name}`);
+        for (const topic of state.topics.filter(x => x.subjectId === subj.id && x.status !== "archived")) {
+            const key = `${subj.name.toLowerCase()}|${topic.name.toLowerCase()}`;
+            if (![...desiredTopics].some(x => x.endsWith(`>${topic.name.toLowerCase()}`) || x === `${subj.name.toLowerCase()}|${topic.name.toLowerCase()}`))
+                archive.push(`topic:${subj.name}>${topic.name}`);
+        }
+    }
+    const revisions = plan.configuration.publicExam?.noticeRevisions ?? [];
+    const latest = revisions.length ? revisions[revisions.length - 1] : null;
+    return { baseRevision: state.revision, generatedAt: new Date().toISOString(), sourceHash: hashText(source), syllabusFingerprint: syllabusFingerprint(state, planId), previousRevisionId: latest?.id ?? null, subjects: parsed.subjects, duplicates: parsed.duplicates, unrecognized: parsed.unrecognized, destructiveChanges: archive.length, diff: { add, archive, reactivate, unchanged } };
+}
 function deriveFinalStretchGuidance(plan, at = new Date()) {
     const target = plan.configuration.publicExam?.target;
     const exam = target?.examDate ?? plan.examDate;
@@ -210,7 +276,31 @@ function deriveFinalStretchGuidance(plan, at = new Date()) {
     const a = table[band];
     return { band, daysRemaining: d, allocation: { newContent: a[0], reviews: a[1], errors: a[2], questions: a[3], mocks: a[4], legislation: a[5] } };
 }
-function filterExamQuestions(state, filter = {}) { return state.questions.filter(q => q.planId === state.activePlanId).filter(q => filter.board ? String(q.examBoard ?? "").toLowerCase() === filter.board.toLowerCase() : true).filter(q => filter.organization ? String(q.organization ?? "").toLowerCase() === filter.organization.toLowerCase() : true).filter(q => filter.role ? String(q.role ?? "").toLowerCase() === filter.role.toLowerCase() : true).filter(q => filter.subjectId ? q.subjectId === filter.subjectId : true).filter(q => filter.topicId ? q.topicId === filter.topicId : true).filter(q => filter.yearFrom != null ? (q.year ?? -Infinity) >= filter.yearFrom : true).filter(q => filter.yearTo != null ? (q.year ?? Infinity) <= filter.yearTo : true).filter(q => filter.disputed != null ? q.disputed === filter.disputed : true); }
+function questionEvidenceStatus(state, questionId) { const attempts = state.evidence.filter(e => e.questionId === questionId && e.kind === "question-attempt" && typeof e.value === "object" && e.value).sort((a, b) => b.observedAt.localeCompare(a.observedAt)); if (!attempts.length)
+    return "unseen"; return attempts[0].value.correct === true ? "correct" : "wrong"; }
+function filterExamQuestions(state, filter = {}) { return state.questions.filter(q => q.planId === state.activePlanId).filter(q => filter.board ? String(q.examBoard ?? "").toLowerCase() === filter.board.toLowerCase() : true).filter(q => filter.organization ? String(q.organization ?? "").toLowerCase() === filter.organization.toLowerCase() : true).filter(q => filter.role ? String(q.role ?? "").toLowerCase() === filter.role.toLowerCase() : true).filter(q => filter.stage ? String(q.examStage ?? "").toLowerCase() === filter.stage.toLowerCase() : true).filter(q => filter.subjectId ? q.subjectId === filter.subjectId : true).filter(q => filter.topicId ? q.topicId === filter.topicId : true).filter(q => filter.yearFrom != null ? (q.year ?? -Infinity) >= filter.yearFrom : true).filter(q => filter.yearTo != null ? (q.year ?? Infinity) <= filter.yearTo : true).filter(q => filter.authorship ? String(q.authorship ?? "").toLowerCase() === filter.authorship.toLowerCase() : true).filter(q => filter.difficulty ? q.difficulty === filter.difficulty : true).filter(q => filter.favorite != null ? q.favorite === filter.favorite : true).filter(q => filter.disputed != null ? q.disputed === filter.disputed : true).filter(q => filter.evidence ? questionEvidenceStatus(state, q.id) === filter.evidence : true); }
+exports.filterPracticeQuestions = filterExamQuestions;
+function buildWeaknessDrill(state, { limit = 10, minQuestions = 2 } = {}) { const planId = state.activePlanId; if (!planId)
+    return { baseRevision: state.revision, generatedAt: new Date().toISOString(), ready: false, questionIds: [], reasons: ["No active plan"], signals: [] }; const scores = new Map(); const add = (subjectId, topicId, score, reason) => { const k = `${subjectId ?? ""}|${topicId ?? ""}`; const x = scores.get(k) ?? { subjectId, topicId, score: 0, reasons: new Set() }; x.score += score; x.reasons.add(reason); scores.set(k, x); }; for (const err of state.errorEntries.filter(e => e.planId === planId && e.status === "open")) {
+    add(err.subjectId, err.topicId, 2 + Math.min(5, err.recurrenceCount), `open ${err.category} error ×${err.recurrenceCount}`);
+} for (const r of state.reviews.filter(r => r.planId === planId && r.status === "due" && Date.parse(r.dueAt) <= Date.now()))
+    add(r.subjectId, r.topicId, 2, "overdue review"); for (const ev of state.evidence.filter(e => e.planId === planId && e.kind === "question-attempt" && e.value?.correct === false))
+    add(ev.subjectId, ev.topicId, 1, "wrong question attempt"); const signals = [...scores.values()].sort((a, b) => b.score - a.score || String(a.topicId ?? a.subjectId).localeCompare(String(b.topicId ?? b.subjectId))).map(x => ({ ...x, reasons: [...x.reasons] })); if (!signals.length)
+    return { baseRevision: state.revision, generatedAt: new Date().toISOString(), ready: false, questionIds: [], reasons: ["No persisted weakness signal exists yet."], signals: [] }; const candidates = state.questions.filter(q => q.planId === planId && !q.disputed).map(q => { let score = 0; for (const s of signals) {
+    if (s.topicId && q.topicId === s.topicId)
+        score = Math.max(score, s.score + 4);
+    else if (s.subjectId && q.subjectId === s.subjectId)
+        score = Math.max(score, s.score);
+} return { q, score }; }).filter(x => x.score > 0).sort((a, b) => b.score - a.score || a.q.id.localeCompare(b.q.id)); const ids = candidates.slice(0, Math.max(1, limit)).map(x => x.q.id); return { baseRevision: state.revision, generatedAt: new Date().toISOString(), ready: ids.length >= minQuestions, questionIds: ids, reasons: ids.length >= minQuestions ? [`${ids.length} questions matched persisted weakness signals.`] : [`Only ${ids.length} matching question(s); at least ${minQuestions} required.`], signals }; }
+function derivePublicExamNextActions(state, limit = 5) { const planId = state.activePlanId; if (!planId)
+    return []; const topics = state.topics.filter(t => t.planId === planId && t.status !== "archived"); const attempts = state.evidence.filter(e => e.planId === planId && e.kind === "question-attempt"); return topics.map(topic => { const subject = state.subjects.find(s => s.id === topic.subjectId); const ta = attempts.filter(e => e.topicId === topic.id && e.value?.gradable === true); const accuracy = ta.length ? ta.filter(e => e.value.correct === true).length / ta.length : null; const errors = state.errorEntries.filter(e => e.topicId === topic.id && e.status === "open").reduce((n, e) => n + e.recurrenceCount, 0); const reviews = state.reviews.filter(r => r.topicId === topic.id && r.status === "due").length; let score = (subject?.weight ?? 1) * 10 + (topic.priority === "high" ? 20 : topic.priority === "low" ? 0 : 10) + errors * 5 + reviews * 4 + (accuracy == null ? 5 : (1 - accuracy) * 25); const reasonCodes = []; if (topic.priority === "high")
+    reasonCodes.push("high-topic-priority"); if (errors)
+    reasonCodes.push("open-error-backlog"); if (reviews)
+    reasonCodes.push("due-review-backlog"); if (accuracy != null && accuracy < 0.7)
+    reasonCodes.push("low-observed-accuracy"); if (accuracy == null)
+    reasonCodes.push("limited-evidence"); return { subjectId: topic.subjectId, topicId: topic.id, score: roundScore(score), reasonCodes, explanation: reasonCodes.length ? reasonCodes.join(", ") : "baseline cycle priority" }; }).sort((a, b) => b.score - a.score || String(a.topicId).localeCompare(String(b.topicId))).slice(0, limit); }
+function deriveEditalMatrix(state) { const planId = state.activePlanId; if (!planId)
+    return []; const activeSubjects = state.subjects.filter(s => s.planId === planId && !s.archived); const weights = activeSubjects.map(s => s.weight ?? 1); const maxWeight = Math.max(1, ...weights); return activeSubjects.map(subject => { const topics = state.topics.filter(t => t.subjectId === subject.id && t.status !== "archived"); const masteryValues = topics.map(t => t.status === "mastered" ? 1 : t.status === "reviewing" ? .75 : t.status === "learning" ? .4 : 0); const mastery = topics.length ? masteryValues.reduce((a, b) => a + b, 0) / topics.length : null; const incidence = subject.examIncidence == null ? null : subject.examIncidence / 100; const backlog = state.errorEntries.filter(e => e.subjectId === subject.id && e.status === "open").reduce((n, e) => n + e.recurrenceCount, 0) + state.reviews.filter(r => r.subjectId === subject.id && r.status === "due").length; const relativeWeight = (subject.weight ?? 1) / maxWeight; const priority = roundScore((.35 * relativeWeight + .20 * (incidence ?? .5) + .30 * (1 - (mastery ?? 0)) + .15 * Math.min(1, backlog / 10)) * 100); return { subjectId: subject.id, subjectName: subject.name, relativeWeight, incidence, mastery, backlog, priority }; }).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.subjectName.localeCompare(b.subjectName)); }
 function previewMockExam(state, blueprintInput = {}) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan || plan.mode !== "EXAM_PLAN")
     throw new TypeError("Mock preview requires an EXAM_PLAN"); const blueprint = normalizeMockBlueprint({ ...plan.configuration.publicExam?.mockBlueprint, ...blueprintInput }); const bank = state.questions.filter(q => q.planId === plan.id && !q.disputed && Boolean(q.answer)); const selected = []; const deficits = []; if (blueprint.sections.length) {
     for (const s of blueprint.sections) {
@@ -282,7 +372,7 @@ function scoreMockExam(preview, answers, state) {
     return { scoringPolicy: preview.blueprint.scoring, correct, wrong, unanswered, rawScore: roundScore(rawScore), maximumScore: roundScore(maximumScore), percent: maximumScore > 0 ? clampPercent((Math.max(0, rawScore) / maximumScore) * 100) : null, rounding: "nearest-0.01", sections, questions };
 }
 function derivePublicExamDashboard(state) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan || plan.mode !== "EXAM_PLAN")
-    return null; const activeTopics = state.topics.filter(t => t.planId === plan.id && t.status !== "archived"); const evidenced = new Set(state.evidence.filter(e => e.planId === plan.id && e.topicId).map(e => e.topicId)); const attempts = state.evidence.filter(e => e.planId === plan.id && e.kind === "question-attempt" && typeof e.value === "object" && e.value && "gradable" in e.value && e.value.gradable === true); const correct = attempts.filter(e => e.value.correct === true).length; const due = state.reviews.filter(r => r.planId === plan.id && r.status === "due").length; const mocks = state.evidence.filter(e => e.planId === plan.id && e.kind === "mock-exam-result").sort((a, b) => b.observedAt.localeCompare(a.observedAt)); const latest = mocks[0]?.value; const cutoff = plan.configuration.publicExam?.target.estimatedCutoff ?? null; return { coverage: activeTopics.length ? evidenced.size / activeTopics.length : null, accuracy: attempts.length ? correct / attempts.length : null, reviewBacklog: due, cutoffGap: cutoff != null && typeof latest?.percent === "number" ? roundScore(latest.percent - cutoff) : null, noticeRevisionCount: plan.configuration.publicExam?.noticeRevisions.length ?? 0, legislationCount: plan.configuration.publicExam?.legislation.length ?? 0 }; }
+    return null; const activeTopics = state.topics.filter(t => t.planId === plan.id && t.status !== "archived"); const progressed = activeTopics.filter(t => t.status !== "not-started"); const attempts = state.evidence.filter(e => e.planId === plan.id && e.kind === "question-attempt" && typeof e.value === "object" && e.value && "gradable" in e.value && e.value.gradable === true); const correct = attempts.filter(e => e.value.correct === true).length; const due = state.reviews.filter(r => r.planId === plan.id && r.status === "due").length; const mocks = state.evidence.filter(e => e.planId === plan.id && e.kind === "mock-exam-result").sort((a, b) => b.observedAt.localeCompare(a.observedAt)); const latest = mocks[0]?.value; const cutoff = plan.configuration.publicExam?.target.estimatedCutoff ?? null; const window = (days) => { const since = Date.now() - days * 86400000; const xs = attempts.filter(e => Date.parse(e.observedAt) >= since); return xs.length ? xs.filter(e => e.value.correct === true).length / xs.length : null; }; const matrix = deriveEditalMatrix(state); const known = matrix.filter(r => r.mastery != null); const weightedMastery = known.length ? known.reduce((n, r) => n + (r.mastery ?? 0) * (r.relativeWeight ?? 0), 0) / known.reduce((n, r) => n + (r.relativeWeight ?? 0), 0) : null; return { coverage: activeTopics.length ? progressed.length / activeTopics.length : null, accuracy: attempts.length ? correct / attempts.length : null, accuracy7: window(7), accuracy30: window(30), accuracy90: window(90), weightedMastery, reviewBacklog: due, cutoffGap: cutoff != null && typeof latest?.percent === "number" ? roundScore(latest.percent - cutoff) : null, noticeRevisionCount: plan.configuration.publicExam?.noticeRevisions.length ?? 0, legislationCount: plan.configuration.publicExam?.legislation.length ?? 0, matrix }; }
 function createProgrammingExercise(input) { return normalizeProgrammingExercise({ ...input, id: input.id ?? id("exercise") }); }
 function createLanguageExpression(input) { return normalizeLanguageExpression({ ...input, id: input.id ?? id("expression") }); }
 function createReadingItem(input) { return normalizeReadingItem({ ...input, id: input.id ?? id("reading") }); }

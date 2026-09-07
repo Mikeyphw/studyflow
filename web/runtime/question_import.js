@@ -1,0 +1,112 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.detectQuestionImportFormat = detectQuestionImportFormat;
+exports.parseQuestionImport = parseQuestionImport;
+exports.buildQuestionImportPreview = buildQuestionImportPreview;
+const clean = (v) => String(v ?? "").trim();
+const opt = (v) => { const x = clean(v); return x || null; };
+const numeric = (v) => { if (v == null || v === "")
+    return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
+const splitChoices = (v) => clean(v).split(/\s*\|\s*/).map(clean).filter(Boolean);
+const difficulty = (v) => { const x = clean(v).toLowerCase(); return ["easy", "medium", "hard"].includes(x) ? x : null; };
+const bool = (v) => ["1", "true", "yes", "y", "sim"].includes(clean(v).toLowerCase());
+function csvLine(line, delimiter) { const out = []; let cur = "", quoted = false; for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+        if (quoted && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+        }
+        else
+            quoted = !quoted;
+    }
+    else if (c === delimiter && !quoted) {
+        out.push(cur);
+        cur = "";
+    }
+    else
+        cur += c;
+} out.push(cur); return out.map(clean); }
+function fingerprint(prompt, answer) { return `${prompt.toLowerCase().replace(/\s+/g, " ")}|${String(answer ?? "").toLowerCase().trim()}`; }
+function draft(row, x) { const prompt = clean(x.prompt ?? x.question ?? x.front); if (!prompt)
+    return null; const topic = clean(x.topic ?? x.topicPath ?? x.topic_path); const year = numeric(x.year), points = numeric(x.points); return { row, prompt, choices: splitChoices(x.choices ?? x.options), answer: opt(x.answer ?? x.back), explanation: opt(x.explanation), source: opt(x.source), subjectName: opt(x.subject ?? x.subjectName), topicPath: topic ? topic.split(/\s*>\s*/).filter(Boolean) : [], examBoard: opt(x.examBoard ?? x.board ?? x.banca), organization: opt(x.organization), role: opt(x.role ?? x.cargo), examStage: opt(x.examStage ?? x.stage), year: year == null ? null : Math.trunc(year), authorship: opt(x.authorship), externalReference: opt(x.externalReference ?? x.reference), points: points != null && points > 0 ? points : null, difficulty: difficulty(x.difficulty), favorite: bool(x.favorite), disputed: bool(x.disputed) }; }
+function detectQuestionImportFormat(source) { const first = String(source ?? "").split(/\r?\n/).find(x => x.trim()) ?? ""; if (/^#{1,6}\s+/.test(first) || /^Q(?:uestion)?\s*:/i.test(first))
+    return "markdown"; return first.includes("\t") ? "tsv" : "csv"; }
+function parseQuestionImport(source, format = detectQuestionImportFormat(source)) {
+    const issues = [];
+    const drafts = [];
+    const text = String(source ?? "").trim();
+    if (!text)
+        return { drafts, issues: [{ severity: "error", row: null, code: "empty", message: "Question import source is empty." }] };
+    if (format === "markdown") {
+        const blocks = text.split(/\n\s*\n(?=(?:#{1,6}\s+|Q(?:uestion)?\s*:))/i);
+        let row = 1;
+        for (const block of blocks) {
+            const lines = block.split(/\r?\n/).map(clean).filter(Boolean);
+            const header = lines.shift() ?? "";
+            const prompt = header.replace(/^#{1,6}\s*/, "").replace(/^Q(?:uestion)?\s*:\s*/i, "");
+            const x = { prompt };
+            for (const line of lines) {
+                const m = line.match(/^([A-Za-z][A-Za-z _-]*):\s*(.*)$/);
+                if (m)
+                    x[m[1].replace(/[ -]+/g, "").toLowerCase()] = m[2];
+                else if (/^[-*]\s+/.test(line))
+                    x.choices = [...(Array.isArray(x.choices) ? x.choices : []), line.replace(/^[-*]\s+/, "")].join("|");
+            }
+            const d = draft(row++, x);
+            if (d)
+                drafts.push(d);
+            else
+                issues.push({ severity: "error", row: row - 1, code: "missing-prompt", message: "Question block has no prompt." });
+        }
+    }
+    else {
+        const delimiter = format === "tsv" ? "\t" : ",";
+        const lines = text.split(/\r?\n/).filter(x => x.trim());
+        const headers = csvLine(lines.shift() ?? "", delimiter).map(x => x.replace(/[ -]+/g, "").toLowerCase());
+        if (!headers.some(x => ["prompt", "question", "front"].includes(x.toLowerCase())))
+            return { drafts, issues: [{ severity: "error", row: 1, code: "header", message: "Delimited import requires a prompt/question/front column." }] };
+        lines.forEach((line, i) => { const cells = csvLine(line, delimiter); const x = {}; headers.forEach((h, j) => x[h] = cells[j] ?? ""); const d = draft(i + 2, x); if (d)
+            drafts.push(d);
+        else
+            issues.push({ severity: "error", row: i + 2, code: "missing-prompt", message: "Question row has no prompt." }); });
+    }
+    return { drafts, issues };
+}
+function buildQuestionImportPreview(state, source, format = detectQuestionImportFormat(source)) { const { drafts, issues } = parseQuestionImport(source, format); const existing = new Set(state.questions.filter(q => q.planId === state.activePlanId).map(q => fingerprint(q.prompt, q.answer))); const seen = new Set(), accepted = []; let duplicates = 0; for (const d of drafts) {
+    const key = fingerprint(d.prompt, d.answer);
+    if (existing.has(key) || seen.has(key)) {
+        duplicates++;
+        issues.push({ severity: "warning", row: d.row, code: "duplicate", message: "Duplicate question was excluded from Apply." });
+        continue;
+    }
+    seen.add(key);
+    if (d.year != null && (d.year < 1900 || d.year > 2200)) {
+        issues.push({ severity: "error", row: d.row, code: "year", message: "Question year must be between 1900 and 2200." });
+        continue;
+    }
+    if (d.subjectName) {
+        const subject = state.subjects.find(s => s.planId === state.activePlanId && s.name.toLowerCase() === d.subjectName.toLowerCase());
+        if (!subject) {
+            issues.push({ severity: "error", row: d.row, code: "subject", message: `Subject not found in active plan: ${d.subjectName}.` });
+            continue;
+        }
+        if (d.topicPath.length) {
+            let parent = null;
+            let ok = true;
+            for (const name of d.topicPath) {
+                const topic = state.topics.find(t => t.subjectId === subject.id && (t.parentTopicId ?? null) === parent && t.name.toLowerCase() === name.toLowerCase());
+                if (!topic) {
+                    ok = false;
+                    break;
+                }
+                parent = topic.id;
+            }
+            if (!ok) {
+                issues.push({ severity: "error", row: d.row, code: "topic", message: `Topic path not found in active plan: ${d.topicPath.join(" > ")}.` });
+                continue;
+            }
+        }
+    }
+    accepted.push(d);
+} const invalid = issues.filter(x => x.severity === "error").length; return { baseRevision: state.revision, generatedAt: new Date().toISOString(), format, ready: invalid === 0 && accepted.length > 0, drafts, accepted, issues, summary: { parsed: drafts.length, accepted: accepted.length, duplicates, invalid } }; }

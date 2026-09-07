@@ -127,11 +127,16 @@ export function createSubject(input = {}) {
     if (weight != null && (!Number.isFinite(weight) || weight < 0)) {
         throw new TypeError("subject.weight must be null or a non-negative number");
     }
+    const examIncidence = input.examIncidence == null ? null : Number(input.examIncidence);
+    if (examIncidence != null && (!Number.isFinite(examIncidence) || examIncidence < 0 || examIncidence > 100)) {
+        throw new TypeError("subject.examIncidence must be null or a number from 0 to 100");
+    }
     return {
         ...entityBase("subject", input),
         planId: requireText(input.planId, "subject.planId"),
         name: requireText(input.name, "subject.name"),
         weight,
+        examIncidence,
         order: Number.isInteger(Number(input.order)) ? Math.max(0, Number(input.order)) : 0,
         notes: optionalText(input.notes),
         archived: Boolean(input.archived),

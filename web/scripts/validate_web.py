@@ -197,6 +197,20 @@ def validate_parity_schedule_portable()->list[str]:
     for rel in ('tests/test_pc04_schedule_capacity_conflicts.py','tests/test_pc05_portable_v2_attachments.py'):_require(e,(WEB/rel).is_file(),f'PC04/PC05 regression suite missing {rel}')
     return e
 
+def validate_parity_practice_concurso()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); importer=_text(WEB/'src/question_import.ts',e); modes=_text(WEB/'src/modes.ts',e); state=_text(WEB/'src/state.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC06_PC07_PRACTICE_CONCURSO_PARITY.md',e)
+    for token in ('QuestionImportPreview','WeaknessDrillPreview','SavedPracticeSet','PracticeConfiguration','PublicExamStudyPhase','LegislationEvidenceLink','PublicExamPriorityAction','EditalMatrixRow'):_require(e,token in types,f'PC06/PC07 typed contract missing {token}')
+    for token in ('detectQuestionImportFormat','parseQuestionImport','buildQuestionImportPreview','duplicate','subject','topic'):_require(e,token in importer,f'PC06 question import pipeline missing {token}')
+    for token in ('buildWeaknessDrill','filterPracticeQuestions','derivePublicExamNextActions','deriveEditalMatrix','PUBLIC_EXAM_STARTER_TEMPLATES','topicPaths','syllabusFingerprint'):_require(e,token in modes,f'PC06/PC07 domain workflow missing {token}')
+    for token in ('previewQuestionImport','applyQuestionImportPreview','savePracticeSet','deletePracticeSet','reclassifyError','setPublicExamStudyPhase','applyPublicExamStarterTemplate','verifyLegislation','linkLegislationEvidence','moveCurrentCycleSubjectToEnd','skipStudyCycleSubject'):_require(e,token in state,f'PC06/PC07 store workflow missing {token}')
+    for token in ('Question import','Weakness drill','Save current filter','Weekly question quota','Study phase','Edital Matrix','Explainable next actions','Local starter templates','Exam incidence'):_require(e,token in ui,f'PC06/PC07 React workflow missing {token}')
+    _require(e,'runtime/question_import.js' in sw,'PC06 question-import runtime must be cached by the offline app shell')
+    _require(e,'PC06 | Practice parity: question import/filtering/saved sets/weakness drills — delivered' in roadmap,'PC06 roadmap delivery marker missing')
+    _require(e,'PC07 | Full Concurso Público parity closure — delivered' in roadmap,'PC07 roadmap delivery marker missing')
+    for token in ('preview-first CSV, TSV/Anki-style and Markdown question import','only questions matching the signaled topic/subject','pre-edital, post-edital and final-stretch','archive-not-delete','Unknown incidence/mastery/cutoff values remain unknown'):_require(e,token in doc,f'PC06/PC07 documentation missing {token}')
+    for rel in ('tests/test_pc06_practice_parity.py','tests/test_pc07_concurso_parity.py'):_require(e,(WEB/rel).is_file(),f'PC06/PC07 regression suite missing {rel}')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -208,7 +222,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso)
     out=[]
     for fn in groups:
         for item in fn():
@@ -216,8 +230,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

@@ -34,3 +34,6 @@ Each phase must preserve mobile-first behavior, local ownership, truthful eviden
 - PC03 | Plan lifecycle + nested topics — delivered: create/rename/switch/duplicate/archive/restore/safe-delete, nested topic hierarchy, and per-plan study-cycle persistence.
 - PC04 | Full scheduler/conflicts/locks/overload/rescheduling — delivered: capacity/windows/fixed commitments, user locks, explicit conflicts/overload/unscheduled work, missed-session recovery, cursor-aware adaptive placement and provenance.
 - PC05 | Portable package v2 — delivered: full attachment bytes + MIME/name/size metadata + SHA-256 verification, v1 compatibility, rollback-aware restore, and import-active-plan-as-new with ID remapping.
+
+| PC06 | Practice parity: question import/filtering/saved sets/weakness drills — delivered |
+| PC07 | Full Concurso Público parity closure — delivered |

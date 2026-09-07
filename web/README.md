@@ -94,3 +94,7 @@ Plans are now first-class local workspaces: create, rename, switch, duplicate, a
 ## Post-1.0 parity closure: PC04 / PC05
 
 Adaptive scheduling now honors plan capacity, optional clock windows, fixed commitments and user locks while exposing conflicts/overload/unscheduled work before Apply. Portable v2 is a full local backup with attachment bytes and SHA-256 verification; portable v1 remains supported for compatibility.
+
+## PC06/PC07 practice + Concurso parity
+
+Question import, weakness drills, saved sets, full banca filters, hierarchical edital revisions, explainable priorities, legislation verification links and the Edital Matrix are local and preview/evidence driven.
