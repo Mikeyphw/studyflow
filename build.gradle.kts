@@ -640,6 +640,12 @@ tasks.register<Exec>("verifyStudyFlowTvAppModule") {
     commandLine("python3", "scripts/verify_tvov01_app_module.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvDependencyBudget") {
+    group = "verification"
+    description = "Checks TVOV02 app-tv dependency budget, lint-clean manifest, and size-safe resources."
+    commandLine("python3", "scripts/verify_tvov02_dependency_budget.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
     description = "Compatibility alias for the final source/static acceptance contract."

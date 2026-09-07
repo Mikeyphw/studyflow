@@ -56,7 +56,7 @@ bloat and phone-only dependency coupling before the module is introduced.
 ```text
 TVOV00  Architecture boundary, size budget, Devtool target, and control/cast contract
 TVOV01  Minimal app-tv application module [implemented]
-TVOV02  TV dependency budget and release shrink setup
+TVOV02  TV dependency budget and lint-clean app module [implemented]
 TVOV03  Phone-to-TV pairing, protocol, and cast foundation
 TVOV04  D-pad and focus primitives
 TVOV05  TV navigation shell
@@ -96,3 +96,8 @@ roadmap still requires complete paired-phone control and cast support in later o
 The `studyflow_tv` Devtool target now validates the real module with `:app-tv:compileDebugKotlin`,
 `:app-tv:testDebugUnitTest`, `:app-tv:assembleDebug`, and `:app-tv:lintDebug` in addition to the TV
 architecture, size-budget, and control/cast source contracts.
+
+
+## TVOV02 implementation note
+
+TVOV02 keeps the newly created `:app-tv` module small and lint-clean before any TV UI stack is added. No Cast SDK before TVOV04. No AndroidX TV UI before TVOV03. No phone feature-module fanout, and no fixed-orientation manifest assumptions. The mobile-control and cast contract remains architectural until pairing/control protocol overlays implement it.

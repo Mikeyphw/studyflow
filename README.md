@@ -340,3 +340,8 @@ The optional cloud sync roadmap is sealed with local-first defaults, encrypted r
 TVOV01 adds a real `:app-tv` module with Compose compiler disabled for `:app-tv` for a small Android TV APK. It currently boots to a minimal TV
 receiver shell and deliberately avoids feature-module fanout, AndroidX TV UI, MediaRouter, and Cast
 SDK dependencies until later size-budgeted overlays add pairing, focus navigation, and cast control.
+
+
+### Android TV TVOV02
+
+TVOV02 keeps the TV APK dependency budget explicit before feature wiring. The `:app-tv` manifest now declares backup/data-extraction rules, avoids fixed-orientation and minSdk-guarded resizeable attributes, and uses a lightweight banner resource so TV lint can run without source warnings.

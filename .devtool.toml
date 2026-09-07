@@ -419,12 +419,14 @@ build = [
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
+  "verifyStudyFlowTvDependencyBudget",
   ":app-tv:assembleDebug",
 ]
 test = [
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
+  "verifyStudyFlowTvDependencyBudget",
   ":app-tv:testDebugUnitTest",
 ]
 lint = [
@@ -433,6 +435,7 @@ lint = [
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
+  "verifyStudyFlowTvDependencyBudget",
   ":app-tv:lintDebug",
 ]
 clean = ["clean"]
@@ -456,23 +459,27 @@ preflight = [
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
+  "verifyStudyFlowTvDependencyBudget",
 ]
 compile = [
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
+  "verifyStudyFlowTvDependencyBudget",
   ":app-tv:compileDebugKotlin",
 ]
 unit-test = [
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
+  "verifyStudyFlowTvDependencyBudget",
   ":app-tv:testDebugUnitTest",
 ]
 package = [
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
+  "verifyStudyFlowTvDependencyBudget",
   ":app-tv:assembleDebug",
 ]
 lint = [
@@ -481,6 +488,7 @@ lint = [
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
+  "verifyStudyFlowTvDependencyBudget",
   ":app-tv:lintDebug",
 ]
 

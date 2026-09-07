@@ -73,9 +73,11 @@ for token in (
     'android.intent.category.LEANBACK_LAUNCHER',
     'android:banner="@drawable/studyflow_tv_banner"',
     'android:exported="true"',
-    'android:screenOrientation="landscape"',
 ):
     require(token in manifest, f"app-tv manifest missing TV token: {token}")
+
+require('android:resizeableActivity="true"' not in manifest, "app-tv manifest must not reintroduce resizeableActivity lint warning")
+require('android:screenOrientation="landscape"' not in manifest, "app-tv manifest must not reintroduce fixed-orientation lint warning")
 
 for token in (
     "class StudyFlowTvActivity : Activity()",

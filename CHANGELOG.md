@@ -352,3 +352,11 @@ copy.
 - Added a Leanback launcher manifest with touchscreen marked optional and a separate TV package id.
 - Kept TVOV01 dependency-light: no phone feature modules, Cast SDK, MediaRouter, AndroidX TV UI, or Compose runtime dependencies are pulled into the TV APK yet.
 - Retained the TV size budget and paired phone-to-TV control/cast contract for later overlays.
+
+
+## TVOV02 - TV dependency budget and lint cleanup
+
+- Added `verifyStudyFlowTvDependencyBudget` to keep the TV app dependency boundary explicit.
+- Removed the initial `app-tv` manifest lint warnings by declaring data extraction/backup rules and dropping fixed-orientation/resizeable assumptions.
+- Replaced the large vector TV banner with a lightweight layer-list resource.
+- Kept Cast, MediaRouter, AndroidX TV UI, Compose Runtime, and phone feature dependencies out of `:app-tv`.
