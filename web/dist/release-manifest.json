@@ -46,8 +46,13 @@
     },
     {
       "path": "runtime/domain.js",
-      "sha256": "fc6010877e23c65a398e147f7bd445d1c5bd718aa80c378e7d5109490d00d68c",
-      "bytes": 53935
+      "sha256": "fe0ee2c9cc60b2121cc222936c4015f3e9c8045d6119e928038aa392636dd4c5",
+      "bytes": 54185
+    },
+    {
+      "path": "runtime/exam_foundation.js",
+      "sha256": "6be9756a7083c7774fbec2789b22dcbb7106066762d7f69e92fbe6d8055a3e4e",
+      "bytes": 10041
     },
     {
       "path": "runtime/hardening.js",
@@ -76,8 +81,8 @@
     },
     {
       "path": "runtime/modes.js",
-      "sha256": "f462543d5aeeaa6bbbe8cc758c91d992bfeff3683b3a9679d68b85e8dca204a9",
-      "bytes": 43406
+      "sha256": "e85b54a9fbf2eb9e1ec3198ce3bdd61027ab92d128cc87fb7d3fe7f84f34280b",
+      "bytes": 46589
     },
     {
       "path": "runtime/package.json",
@@ -106,8 +111,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "ef12e4d17caf3def6295848f809328a0b7a973a02cc56b56f0d260debd2924e6",
-      "bytes": 117334
+      "sha256": "c356da35431d0cc2b427a89cbee7d8d5c85e714243b3a604979cf1a108b623c6",
+      "bytes": 130831
     },
     {
       "path": "runtime/release.js",
@@ -116,13 +121,13 @@
     },
     {
       "path": "runtime/schedule.js",
-      "sha256": "d0b5374d11c29cee8d06c0a6040c6dfb78fd2886373ad1eaafa7ff5a67e44206",
-      "bytes": 15581
+      "sha256": "95fcc0fc75245caf001853cf01123623e6103c24b40d26cebaa8200c58dd6267",
+      "bytes": 17423
     },
     {
       "path": "runtime/state.js",
-      "sha256": "7e446515c8f77b68067170ebabc154f452b8d27c7ddff58120fa250cdfea6da2",
-      "bytes": 88734
+      "sha256": "b6f94f1b9d3ab246970c19dce85a2c567189d7453e16ccc2034e6f85c33a681f",
+      "bytes": 94205
     },
     {
       "path": "runtime/storage.js",
@@ -136,8 +141,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "41d33e31da76295faf84f6cd052ca3be7376ea6a476deb2b2ae3d56148052b3b",
-      "bytes": 2078
+      "sha256": "557c4d13ac5fc17952d5eb2c921ed0f9f3adc050aa3fdcb64ad514fd732dd85f",
+      "bytes": 2110
     },
     {
       "path": "styles.css",

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.filterPracticeQuestions = exports.PUBLIC_EXAM_STARTER_TEMPLATES = void 0;
+exports.filterPracticeQuestions = exports.PUBLIC_EXAM_STARTER_TEMPLATES = exports.validateStudyPhaseDefinitions = exports.normalizeStudyPhaseDefinitions = exports.encodeReferenceProvenance = exports.derivePreEditalCockpit = exports.deriveMaterialReferenceFreshness = exports.deriveActiveStudyPhase = exports.decodeReferenceProvenance = exports.cloneBbStudyPhaseSuggestions = exports.REFERENCE_POSSIBLY_STALE_AFTER_DAYS = exports.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS = exports.BB_STUDY_PHASE_SUGGESTIONS = void 0;
 exports.defaultPlanConfiguration = defaultPlanConfiguration;
 exports.normalizePlanConfiguration = normalizePlanConfiguration;
 exports.validatePlanConfiguration = validatePlanConfiguration;
@@ -25,6 +25,19 @@ exports.tokenizeCode = tokenizeCode;
 exports.assessProgrammingAttempt = assessProgrammingAttempt;
 exports.buildLanguageReviewPrompt = buildLanguageReviewPrompt;
 const schedule_1 = require("./schedule");
+const exam_foundation_1 = require("./exam_foundation");
+var exam_foundation_2 = require("./exam_foundation");
+Object.defineProperty(exports, "BB_STUDY_PHASE_SUGGESTIONS", { enumerable: true, get: function () { return exam_foundation_2.BB_STUDY_PHASE_SUGGESTIONS; } });
+Object.defineProperty(exports, "PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS", { enumerable: true, get: function () { return exam_foundation_2.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS; } });
+Object.defineProperty(exports, "REFERENCE_POSSIBLY_STALE_AFTER_DAYS", { enumerable: true, get: function () { return exam_foundation_2.REFERENCE_POSSIBLY_STALE_AFTER_DAYS; } });
+Object.defineProperty(exports, "cloneBbStudyPhaseSuggestions", { enumerable: true, get: function () { return exam_foundation_2.cloneBbStudyPhaseSuggestions; } });
+Object.defineProperty(exports, "decodeReferenceProvenance", { enumerable: true, get: function () { return exam_foundation_2.decodeReferenceProvenance; } });
+Object.defineProperty(exports, "deriveActiveStudyPhase", { enumerable: true, get: function () { return exam_foundation_2.deriveActiveStudyPhase; } });
+Object.defineProperty(exports, "deriveMaterialReferenceFreshness", { enumerable: true, get: function () { return exam_foundation_2.deriveMaterialReferenceFreshness; } });
+Object.defineProperty(exports, "derivePreEditalCockpit", { enumerable: true, get: function () { return exam_foundation_2.derivePreEditalCockpit; } });
+Object.defineProperty(exports, "encodeReferenceProvenance", { enumerable: true, get: function () { return exam_foundation_2.encodeReferenceProvenance; } });
+Object.defineProperty(exports, "normalizeStudyPhaseDefinitions", { enumerable: true, get: function () { return exam_foundation_2.normalizeStudyPhaseDefinitions; } });
+Object.defineProperty(exports, "validateStudyPhaseDefinitions", { enumerable: true, get: function () { return exam_foundation_2.validateStudyPhaseDefinitions; } });
 const STUDY_MODES = ["EXAM_PLAN", "PROGRAMMING_COURSE", "LANGUAGE_DECK", "READING_STUDY", "GENERAL_SKILL"];
 const LANGUAGE_DIRECTIONS = ["recognition", "production", "fill-blank", "natural-usage", "mistake-spotting", "sentence-creation"];
 const EXAM_SCORING = ["no-penalty", "fixed-negative", "right-minus-wrong", "weighted"];
@@ -45,7 +58,7 @@ function defaultPlanConfiguration(mode = "GENERAL_SKILL") {
     if (mode === "EXAM_PLAN")
         base.publicExam = {
             target: { organization: null, role: null, board: null, editalRef: null, dateStatus: "unknown", examDate: null, openings: null, estimatedCutoff: null },
-            stages: [], noticeRevisions: [], reviewIntervalsDays: [1, 7, 30], legislation: [], studyPhase: "pre-edital", mockBlueprint: { scoring: "no-penalty", negativePoints: 0, totalQuestions: 20, durationMinutes: 60, sections: [] }
+            stages: [], noticeRevisions: [], reviewIntervalsDays: [1, 7, 30], legislation: [], studyPhase: "pre-edital", phaseDefinitions: [], cockpitStaleReferenceDays: exam_foundation_1.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS, mockBlueprint: { scoring: "no-penalty", negativePoints: 0, totalQuestions: 20, durationMinutes: 60, sections: [] }
         };
     if (mode === "PROGRAMMING_COURSE")
         base.programming = { language: "TypeScript", level: "beginner", runtime: "browser-only", exercises: [], projects: [] };
@@ -73,10 +86,12 @@ function normalizePlanConfiguration(input, mode) {
         out.publicExam = {
             target: normalizeExamTarget(p.target),
             stages: arr(p.stages).map((s, i) => ({ id: text(s?.id) ?? `stage-${i + 1}`, name: text(s?.name) ?? `Stage ${i + 1}`, date: dateOnly(s?.date), status: ["planned", "completed", "cancelled"].includes(String(s?.status)) ? s.status : "planned" })),
-            noticeRevisions: arr(p.noticeRevisions).map((r, i) => ({ id: text(r?.id) ?? `notice-${i + 1}`, acceptedAt: iso(r?.acceptedAt) ?? new Date(0).toISOString(), sourceHash: text(r?.sourceHash) ?? `legacy-${i + 1}`, added: Math.max(0, Math.trunc(n(r?.added) ?? 0)), archived: Math.max(0, Math.trunc(n(r?.archived) ?? 0)), reactivated: Math.max(0, Math.trunc(n(r?.reactivated) ?? 0)), unchanged: Math.max(0, Math.trunc(n(r?.unchanged) ?? 0)), previousRevisionId: text(r?.previousRevisionId), syllabusFingerprint: text(r?.syllabusFingerprint) })),
+            noticeRevisions: arr(p.noticeRevisions).map((r, i) => ({ id: text(r?.id) ?? `notice-${i + 1}`, acceptedAt: iso(r?.acceptedAt) ?? new Date(0).toISOString(), sourceHash: text(r?.sourceHash) ?? `legacy-${i + 1}`, added: Math.max(0, Math.trunc(n(r?.added) ?? 0)), archived: Math.max(0, Math.trunc(n(r?.archived) ?? 0)), reactivated: Math.max(0, Math.trunc(n(r?.reactivated) ?? 0)), unchanged: Math.max(0, Math.trunc(n(r?.unchanged) ?? 0)), previousRevisionId: text(r?.previousRevisionId), syllabusFingerprint: text(r?.syllabusFingerprint), reference: text(r?.reference), publishedAt: dateOnly(r?.publishedAt) })),
             reviewIntervalsDays: arr(p.reviewIntervalsDays).map(Number).filter(v => Number.isInteger(v) && v > 0 && v <= 365).slice(0, 8),
             legislation: arr(p.legislation).map((d, i) => ({ id: text(d?.id) ?? `law-${i + 1}`, title: text(d?.title) ?? `Legislation ${i + 1}`, reference: text(d?.reference), notes: text(d?.notes), sourceUpdatedAt: iso(d?.sourceUpdatedAt), verifiedAt: iso(d?.verifiedAt), provisions: arr(d?.provisions).map((q, j) => ({ id: text(q?.id) ?? `provision-${i + 1}-${j + 1}`, label: text(q?.label) ?? `Provision ${j + 1}`, text: text(q?.text) ?? "", status: ["unseen", "studying", "reviewing", "known"].includes(String(q?.status)) ? q.status : "unseen" })), evidenceLinks: arr(d?.evidenceLinks).map((l, j) => ({ id: text(l?.id) ?? `law-link-${i + 1}-${j + 1}`, provisionId: text(l?.provisionId) ?? "", questionId: text(l?.questionId), errorId: text(l?.errorId), reviewId: text(l?.reviewId), note: text(l?.note), createdAt: iso(l?.createdAt) ?? new Date(0).toISOString() })) })),
             studyPhase: ["pre-edital", "post-edital", "final-stretch"].includes(String(p.studyPhase)) ? p.studyPhase : (arr(p.noticeRevisions).length ? "post-edital" : "pre-edital"),
+            phaseDefinitions: (0, exam_foundation_1.normalizeStudyPhaseDefinitions)(p.phaseDefinitions),
+            cockpitStaleReferenceDays: Number.isInteger(Number(p.cockpitStaleReferenceDays)) && Number(p.cockpitStaleReferenceDays) > 0 ? Math.trunc(Number(p.cockpitStaleReferenceDays)) : exam_foundation_1.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS,
             mockBlueprint: normalizeMockBlueprint(p.mockBlueprint ?? d.mockBlueprint),
         };
         if (!out.publicExam.reviewIntervalsDays.length)
@@ -125,6 +140,9 @@ function validatePlanConfiguration(config, mode) {
                 errors.push("review intervals must be 1 to 8 whole-day values from 1 to 365");
             if (p.reviewIntervalsDays.some((v, i) => i > 0 && v < p.reviewIntervalsDays[i - 1]))
                 errors.push("review intervals must be non-decreasing");
+            errors.push(...(0, exam_foundation_1.validateStudyPhaseDefinitions)(p.phaseDefinitions));
+            if (!Number.isInteger(p.cockpitStaleReferenceDays) || p.cockpitStaleReferenceDays <= 0)
+                errors.push("pre-edital reference staleness window must be a positive number of days");
         }
     }
     if (mode === "PROGRAMMING_COURSE" && !config.programming)

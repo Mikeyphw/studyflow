@@ -227,6 +227,8 @@ export function createMaterial(input = {}) {
         mimeType: optionalText(input.mimeType),
         attachmentId: optionalId(input.attachmentId),
         sizeBytes,
+        archived: Boolean(input.archived),
+        tags: Array.isArray(input.tags) ? [...new Set(input.tags.map((tag) => String(tag ?? "").trim()).filter(Boolean))] : [],
     };
 }
 
@@ -439,7 +441,7 @@ export function migrateStudyState(input, { now = isoNow() } = {}) {
     state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => createTopic({ ...topic, parentTopicId: topic.parentTopicId ?? null, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
     state.activities = Array.isArray(state.activities) ? state.activities.map((activity) => createActivity(activity)) : [];
     state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
-    state.materials = Array.isArray(state.materials) ? state.materials.map((material) => ({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null })) : [];
+    state.materials = Array.isArray(state.materials) ? state.materials.map((material) => createMaterial({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null, archived: material.archived ?? false, tags: material.tags ?? [] })) : [];
     state.reviews = Array.isArray(state.reviews) ? state.reviews.map((review) => createReview(review)) : [];
     state.questions = Array.isArray(state.questions) ? state.questions.map((question) => createQuestion(question)) : [];
     const cycles = {};

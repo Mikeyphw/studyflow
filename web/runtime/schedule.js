@@ -6,6 +6,7 @@ exports.validateScheduleConfiguration = validateScheduleConfiguration;
 exports.addAvailabilityWindow = addAvailabilityWindow;
 exports.addFixedScheduleBlock = addFixedScheduleBlock;
 exports.buildAdaptiveSchedulePreview = buildAdaptiveSchedulePreview;
+const exam_foundation_1 = require("./exam_foundation");
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const dayKey = (value) => { const d = value instanceof Date ? value : new Date(value); if (Number.isNaN(d.getTime()))
@@ -70,6 +71,21 @@ function findStart(config, date, duration, activities) {
 function cycleSubjects(state, planId) { const subjects = state.subjects.filter(s => s.planId === planId && !s.archived).sort((a, b) => a.order - b.order); const cycle = state.studyCycles?.[planId] ?? state.studyCycle; const ids = (cycle?.subjectIds ?? []).filter(id => subjects.some(s => s.id === id)); if (!ids.length)
     return subjects; const cursor = Math.max(0, Math.min(ids.length - 1, cycle?.cursor ?? 0)); const rotated = [...ids.slice(cursor), ...ids.slice(0, cursor)]; return rotated.map(id => subjects.find(s => s.id === id)).filter(Boolean); }
 function topicFor(state, subjectId) { return state.topics.filter(t => t.subjectId === subjectId && t.status !== "archived").sort((a, b) => { const p = (x) => x.priority === "high" ? 0 : x.priority === "normal" ? 1 : 2; return p(a) - p(b) || a.order - b.order; })[0] ?? null; }
+function phaseKinds(phase, count) {
+    if (!phase || count <= 0)
+        return Array.from({ length: Math.max(0, count) }, () => "study");
+    const weighted = [{ kind: "study", ratio: phase.theoryRatioPercent }, { kind: "questions", ratio: phase.questionRatioPercent }, { kind: "review", ratio: phase.reviewRatioPercent }];
+    const exact = weighted.map(x => x.ratio * count / 100), counts = exact.map(Math.floor);
+    let remaining = count - counts.reduce((a, b) => a + b, 0);
+    const order = weighted.map((_, i) => i).sort((a, b) => (exact[b] - counts[b]) - (exact[a] - counts[a]) || b - a);
+    for (let i = 0; i < remaining; i++)
+        counts[order[i % order.length]]++;
+    const result = [];
+    for (let i = 0; i < weighted.length; i++)
+        for (let j = 0; j < counts[i]; j++)
+            result.push(weighted[i].kind);
+    return result.length ? result : Array.from({ length: count }, () => "study");
+}
 function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), days = 7, maxBlocks = 14 } = {}) {
     const generatedAt = new Date(at).toISOString();
     const plan = state.plans.find(p => p.id === state.activePlanId);
@@ -124,11 +140,15 @@ function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), da
             continue;
         candidates.push({ activity: null, title: state.topics.find(t => t.id === r.topicId)?.name ?? "Due review", kind: "review", durationMinutes: 20, subjectId: r.subjectId, topicId: r.topicId, origin: "review", reason: "Due review backed by persisted review evidence" });
     }
-    for (const subject of cycleSubjects(state, plan.id)) {
-        const topic = topicFor(state, subject.id);
-        if (planned.some(a => a.kind === "study" && a.subjectId === subject.id))
+    const cycle = cycleSubjects(state, plan.id), activePhase = (0, exam_foundation_1.deriveActiveStudyPhase)(plan, generatedAt), phaseSlots = cycle.length ? (activePhase ? Math.min(limit, Math.max(cycle.length, 4)) : cycle.length) : 0, mix = phaseKinds(activePhase, phaseSlots);
+    for (let index = 0; index < phaseSlots; index++) {
+        const subject = cycle[index % cycle.length], topic = topicFor(state, subject.id), kind = mix[index] ?? "study";
+        if (planned.some(a => a.kind === kind && a.subjectId === subject.id))
             continue;
-        candidates.push({ activity: null, title: topic ? `${subject.name}: ${topic.name}` : subject.name, kind: "study", durationMinutes: 40, subjectId: subject.id, topicId: topic?.id ?? null, origin: "cycle", reason: topic?.priority === "high" ? "Study-cycle subject with high-priority topic" : "Study-cycle subject in persisted cursor order" });
+        const suffix = kind === "questions" ? "questions" : kind === "review" ? "review" : "study";
+        const durationMinutes = kind === "study" ? 40 : kind === "questions" ? 30 : 20;
+        const phaseReason = activePhase ? `Active phase ${activePhase.label}: ${activePhase.theoryRatioPercent}% theory / ${activePhase.questionRatioPercent}% questions / ${activePhase.reviewRatioPercent}% review${activePhase.allocationIsStudyFlowSuggested ? " (StudyFlow suggestion)" : ""}` : null;
+        candidates.push({ activity: null, title: topic ? `${subject.name}: ${topic.name} · ${suffix}` : `${subject.name} · ${suffix}`, kind, durationMinutes, subjectId: subject.id, topicId: topic?.id ?? null, origin: "cycle", reason: phaseReason ?? (topic?.priority === "high" ? "Study-cycle subject with high-priority topic" : "Study-cycle subject in persisted cursor order") });
     }
     let usedOps = 0;
     for (const c of candidates) {

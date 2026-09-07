@@ -617,30 +617,103 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                         a.scheduleProvenance?.reason ? ` · ${a.scheduleProvenance.reason}` : "")),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setActivityLocked(a.id, !a.locked), a.locked ? "Schedule placement unlocked." : "Schedule placement locked.") }, a.locked ? "Unlock" : "Lock"))))));
 }
+function cockpitIssueText(issue, locale) {
+    const pt = { "no-confirmed-exam-date": "Sem data oficial confirmada; nenhuma contagem regressiva oficial é exibida.", "no-reference-notice": "Nenhum edital de referência foi registrado.", "reference-publication-date-unknown": "A data de publicação do edital de referência é desconhecida.", "stale-reference-notice": "O edital de referência ultrapassou a janela de verificação configurada." };
+    const en = { "no-confirmed-exam-date": "No confirmed official exam date; no official countdown is shown.", "no-reference-notice": "No reference notice has been recorded.", "reference-publication-date-unknown": "The reference notice publication date is unknown.", "stale-reference-notice": "The reference notice is older than the configured verification window." };
+    return (locale === "pt-BR" ? pt : en)[issue] ?? issue;
+}
+function StudyPhaseEditor({ phase, phases, store, run }) {
+    const [draft, setDraft] = React.useState({ ...phase });
+    React.useEffect(() => setDraft({ ...phase }), [phase]);
+    const number = (value) => value === "" ? null : Number(value);
+    const save = (e) => { e.preventDefault(); const next = { ...draft, theoryRatioPercent: Number(draft.theoryRatioPercent), questionRatioPercent: Number(draft.questionRatioPercent), reviewRatioPercent: Number(draft.reviewRatioPercent), questionGoal: number(draft.questionGoal), mockExamGoal: number(draft.mockExamGoal) }; run(() => store.setStudyPhaseDefinitions(phases.map(x => x.id === phase.id ? next : x)), "Study phase saved."); };
+    return React.createElement("form", { className: "stack-form", onSubmit: save },
+        React.createElement("div", { className: "button-row" },
+            React.createElement("input", { "aria-label": `Study phase label ${phase.id}`, value: draft.label, onChange: (e) => setDraft({ ...draft, label: e.target.value }) }),
+            React.createElement("select", { "aria-label": `Study phase kind ${phase.id}`, value: draft.kind, onChange: (e) => setDraft({ ...draft, kind: e.target.value }) },
+                React.createElement("option", { value: "foundation" }, "Foundation"),
+                React.createElement("option", { value: "expansion" }, "Expansion"),
+                React.createElement("option", { value: "consolidation" }, "Consolidation"),
+                React.createElement("option", { value: "questions-reviews" }, "Questions & reviews"),
+                React.createElement("option", { value: "custom" }, "Custom"))),
+        React.createElement("div", { className: "button-row" },
+            React.createElement("label", null,
+                "Starts",
+                React.createElement("input", { "aria-label": `Study phase start ${phase.id}`, type: "date", value: draft.startsOn, onChange: (e) => setDraft({ ...draft, startsOn: e.target.value }) })),
+            React.createElement("label", null,
+                "Ends",
+                React.createElement("input", { "aria-label": `Study phase end ${phase.id}`, type: "date", value: draft.endsOn, onChange: (e) => setDraft({ ...draft, endsOn: e.target.value }) }))),
+        React.createElement("div", { className: "button-row" },
+            React.createElement("label", null,
+                "Theory %",
+                React.createElement("input", { "aria-label": `Theory allocation ${phase.id}`, type: "number", min: "0", max: "100", value: draft.theoryRatioPercent, onChange: (e) => setDraft({ ...draft, theoryRatioPercent: e.target.value }) })),
+            React.createElement("label", null,
+                "Questions %",
+                React.createElement("input", { "aria-label": `Question allocation ${phase.id}`, type: "number", min: "0", max: "100", value: draft.questionRatioPercent, onChange: (e) => setDraft({ ...draft, questionRatioPercent: e.target.value }) })),
+            React.createElement("label", null,
+                "Review %",
+                React.createElement("input", { "aria-label": `Review allocation ${phase.id}`, type: "number", min: "0", max: "100", value: draft.reviewRatioPercent, onChange: (e) => setDraft({ ...draft, reviewRatioPercent: e.target.value }) }))),
+        React.createElement("div", { className: "button-row" },
+            React.createElement("label", null,
+                "Question target",
+                React.createElement("input", { "aria-label": `Question target ${phase.id}`, type: "number", min: "0", value: draft.questionGoal ?? "", onChange: (e) => setDraft({ ...draft, questionGoal: e.target.value }) })),
+            React.createElement("label", null,
+                "Mock target",
+                React.createElement("input", { "aria-label": `Mock target ${phase.id}`, type: "number", min: "0", value: draft.mockExamGoal ?? "", onChange: (e) => setDraft({ ...draft, mockExamGoal: e.target.value }) }))),
+        React.createElement("div", { className: "button-row" },
+            React.createElement("button", { className: "button", type: "submit" }, "Save phase"),
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setStudyPhaseDefinitions(phases.filter(x => x.id !== phase.id)), "Study phase removed.") }, "Remove")),
+        draft.allocationIsStudyFlowSuggested && React.createElement("span", { className: "muted" }, "Allocation is a StudyFlow planning suggestion, not an official edital value."));
+}
+function MaterialReferenceControls({ material, store, run }) {
+    const freshness = (0, modes_1.deriveMaterialReferenceFreshness)(material);
+    const [replacement, setReplacement] = React.useState("");
+    const tracked = freshness.provenance.origin != null;
+    return React.createElement("div", { className: "stack-form" },
+        React.createElement("span", { className: "muted" },
+            "Reference: ",
+            freshness.status.replace(/-/g, " "),
+            freshness.ageDays == null ? "" : ` · ${freshness.ageDays} days since verification`,
+            freshness.provenance.supersedesMaterialId ? ` · supersedes ${freshness.provenance.supersedesMaterialId}` : "",
+            material.archived ? " · archived history" : ""),
+        !tracked && !material.archived && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setMaterialReferenceProvenance(material.id, { origin: "EDITAL_2022", verifiedOn: null }), "Material tracked as edital-2022 reference; verification is still required.") }, "Track as edital 2022 reference"),
+        tracked && !material.archived && React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "button-row" },
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.verifyMaterialReference(material.id), "Reference verification date recorded.") }, "Verify reference now")),
+            React.createElement("input", { "aria-label": `Replacement source for ${material.title}`, value: replacement, onChange: (e) => setReplacement(e.target.value), placeholder: "Replacement URL / locator" }),
+            React.createElement("button", { className: "button button-quiet", type: "button", disabled: !replacement.trim(), onClick: () => { const next = run(() => store.replaceMaterialReference(material.id, { locator: replacement.trim() }), "Reference replaced; previous material archived for provenance."); if (next)
+                    setReplacement(""); } }, "Replace reference")));
+}
 function PublicExamWorkspace({ state, store, run }) {
     const plan = state.plans.find(p => p.id === state.activePlanId);
     const c = plan.configuration.publicExam;
     const [org, setOrg] = React.useState(c.target.organization ?? "");
     const [role, setRole] = React.useState(c.target.role ?? "");
     const [board, setBoard] = React.useState(c.target.board ?? "");
+    const [editalRef, setEditalRef] = React.useState(c.target.editalRef ?? "");
     const [examDate, setExamDate] = React.useState(c.target.examDate ?? "");
     const [dateStatus, setDateStatus] = React.useState(c.target.dateStatus);
     const [stage, setStage] = React.useState("");
     const [notice, setNotice] = React.useState("");
+    const [noticeRef, setNoticeRef] = React.useState(c.target.editalRef ?? "");
+    const [noticePublished, setNoticePublished] = React.useState("");
     const [noticePreview, setNoticePreview] = React.useState(null);
     const [law, setLaw] = React.useState("");
     const [reviewDays, setReviewDays] = React.useState(c.reviewIntervalsDays.join(", "));
     const dashboard = (0, modes_1.derivePublicExamDashboard)(state);
     const guidance = (0, modes_1.deriveFinalStretchGuidance)(plan);
+    const cockpit = (0, modes_1.derivePreEditalCockpit)(plan);
+    const activePhase = (0, modes_1.deriveActiveStudyPhase)(plan);
     const matrix = (0, modes_1.deriveEditalMatrix)(state);
     const priorities = (0, modes_1.derivePublicExamNextActions)(state);
     return React.createElement("div", { className: "content-grid two-column" },
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Concurso target"),
-            React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); run(() => store.updatePublicExamTarget({ organization: org || null, role: role || null, board: board || null, examDate: examDate || null, dateStatus }), "Concurso target saved."); } },
+            React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); run(() => store.updatePublicExamTarget({ organization: org || null, role: role || null, board: board || null, editalRef: editalRef || null, examDate: examDate || null, dateStatus }), "Concurso target saved."); } },
                 React.createElement("input", { "aria-label": "Organization", value: org, onChange: (e) => setOrg(e.target.value), placeholder: "Organization" }),
                 React.createElement("input", { "aria-label": "Role or cargo", value: role, onChange: (e) => setRole(e.target.value), placeholder: "Role / cargo" }),
                 React.createElement("input", { "aria-label": "Exam board or banca", value: board, onChange: (e) => setBoard(e.target.value), placeholder: "Exam board / banca" }),
+                React.createElement("input", { "aria-label": "Reference edital", value: editalRef, onChange: (e) => setEditalRef(e.target.value), placeholder: "Reference notice / edital" }),
                 React.createElement("input", { "aria-label": "Exam date", type: "date", value: examDate, onChange: (e) => setExamDate(e.target.value) }),
                 React.createElement("select", { "aria-label": "Exam date status", value: dateStatus, onChange: (e) => setDateStatus(e.target.value) },
                     React.createElement("option", { value: "unknown" }, "Date unknown"),
@@ -658,6 +731,47 @@ function PublicExamWorkspace({ state, store, run }) {
                 React.createElement("strong", null, "Local starter templates"),
                 React.createElement("div", { className: "button-row" }, Object.values(modes_1.PUBLIC_EXAM_STARTER_TEMPLATES).map(t => React.createElement("button", { key: t.id, className: "button button-quiet", type: "button", onClick: () => run(() => store.applyPublicExamStarterTemplate(t.id), `${t.label} starter applied.`) }, t.label))),
                 React.createElement("span", { className: "muted" }, "Templates never invent organization, banca, edital or exam date."))),
+        React.createElement("article", { className: "card", id: "pre-edital-cockpit" },
+            React.createElement("h2", null, "Truthful pre-edital cockpit"),
+            !cockpit ? React.createElement("p", { className: "muted" }, "Available for Concurso plans.") : !cockpit.preEdital ? React.createElement("p", null,
+                React.createElement("strong", null, "Post-edital context:"),
+                " confirmed exam date recorded. The pre-edital verification issues are cleared.") : React.createElement(React.Fragment, null,
+                React.createElement("p", null,
+                    React.createElement("strong", null, "No official countdown."),
+                    " ",
+                    cockpit.resolvedDate.source === "expected-target" ? "The saved exam date is an expectation, not an official date." : "A confirmed exam date has not been recorded."),
+                React.createElement("p", { className: "muted" },
+                    "Reference: ",
+                    cockpit.referenceLabel ?? "none",
+                    cockpit.referenceAgeDays == null ? "" : ` · ${cockpit.referenceAgeDays} days old`,
+                    " \u00B7 stale warning after ",
+                    cockpit.staleReferenceDays,
+                    " days"),
+                React.createElement("ul", { className: "activity-list" }, cockpit.issues.map(issue => React.createElement("li", { key: issue },
+                    React.createElement("strong", null, cockpitIssueText(issue, state.preferences.locale))))),
+                React.createElement("a", { className: "button button-quiet", href: "#edital-revision" }, "Review assumptions in edital workflow"))),
+        React.createElement("article", { className: "card" },
+            React.createElement("div", { className: "card-heading-row" },
+                React.createElement("div", null,
+                    React.createElement("h2", null, "Study phase planner"),
+                    React.createElement("p", { className: "muted" }, "Editable dated phases cannot overlap. Theory + questions + review must total 100%.")),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.applyBbStudyPhaseSuggestions(), "BB Sep–Dec 2026 phase suggestions applied.") }, "Use BB Sep\u2013Dec 2026 suggestions")),
+            React.createElement("p", null,
+                React.createElement("strong", null, "Active dated phase:"),
+                " ",
+                activePhase ? `${activePhase.label} · ${activePhase.theoryRatioPercent}% theory / ${activePhase.questionRatioPercent}% questions / ${activePhase.reviewRatioPercent}% review` : "No dated phase active today"),
+            c.phaseDefinitions.map(phase => React.createElement("details", { key: phase.id, open: true },
+                React.createElement("summary", null,
+                    phase.label,
+                    " \u00B7 ",
+                    phase.startsOn,
+                    " \u2192 ",
+                    phase.endsOn),
+                React.createElement(StudyPhaseEditor, { phase: phase, phases: c.phaseDefinitions, store: store, run: run }))),
+            !c.phaseDefinitions.length && React.createElement("p", { className: "muted" }, "No dated phase definitions yet."),
+            React.createElement("button", { className: "button button-quiet", type: "button", disabled: c.phaseDefinitions.length >= 5, onClick: () => { const kinds = ["foundation", "expansion", "consolidation", "questions-reviews", "custom"]; const kind = kinds.find(k => !c.phaseDefinitions.some(p => p.kind === k)); if (!kind)
+                    return; const day = new Date().toISOString().slice(0, 10); run(() => store.setStudyPhaseDefinitions([...c.phaseDefinitions, { id: `phase-${Date.now().toString(36)}`, kind, label: title(kind), startsOn: day, endsOn: day, theoryRatioPercent: 60, questionRatioPercent: 25, reviewRatioPercent: 15, questionGoal: null, mockExamGoal: null, allocationIsStudyFlowSuggested: false }]), "Study phase added."); } }, "Add phase"),
+            React.createElement("p", { className: "muted" }, "BB allocation ratios are StudyFlow planning suggestions, not official edital values. The scheduler uses the active dated allocation for generated-week study/question/review blocks.")),
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Concurso dashboard"),
             React.createElement("div", { className: "metric-grid compact-grid" },
@@ -698,13 +812,15 @@ function PublicExamWorkspace({ state, store, run }) {
                 s.name,
                 " \u00B7 ",
                 s.status)))),
-        React.createElement("article", { className: "card" },
+        React.createElement("article", { className: "card", id: "edital-revision" },
             React.createElement("h2", null, "Edital revision"),
+            React.createElement("input", { "aria-label": "Edital revision reference", value: noticeRef, onChange: (e) => setNoticeRef(e.target.value), placeholder: "Reference / label / URL" }),
+            React.createElement("input", { "aria-label": "Edital publication date", type: "date", value: noticePublished, onChange: (e) => setNoticePublished(e.target.value) }),
             React.createElement("textarea", { "aria-label": "Edital revision text", value: notice, onChange: (e) => { setNotice(e.target.value); setNoticePreview(null); }, placeholder: "Disciplina: Direito Constitucional\n- Direitos fundamentais\n- Administração pública" }),
             React.createElement("div", { className: "button-row" },
                 React.createElement("button", { className: "button", type: "button", onClick: () => { const p = run(() => store.previewExamNotice(notice)); if (p)
                         setNoticePreview(p); } }, "Preview edital"),
-                noticePreview && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applyExamNoticePreview(noticePreview), "Edital revision applied; removed content archived."))
+                noticePreview && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applyExamNoticePreview(noticePreview, { reference: noticeRef || null, publishedAt: noticePublished || null }), "Edital revision applied; removed content archived."))
                         setNoticePreview(null); } }, "Apply preview")),
             noticePreview && React.createElement("p", { className: "muted" },
                 noticePreview.subjects.length,
@@ -882,32 +998,40 @@ function ModeWorkspace({ state, store, run }) { const plan = state.plans.find(p 
     return React.createElement(ProgrammingWorkspace, { state: state, store: store, run: run }); if (plan.mode === "LANGUAGE_DECK")
     return React.createElement(LanguageWorkspace, { state: state, store: store, run: run }); if (plan.mode === "READING_STUDY")
     return React.createElement(ReadingWorkspace, { state: state, store: store, run: run }); return React.createElement(GeneralSkillWorkspace, { state: state, store: store, run: run }); }
-function Library({ materials, store, persistence, run }) { const add = async (e) => { const file = e.target.files?.[0]; if (!file || !persistence.attachments)
-    return; if (file.size > 50 * 1024 * 1024)
-    throw new Error("Attachment exceeds the 50 MiB local limit"); let meta = null; try {
-    meta = await persistence.attachments.put(file);
-    store.addMaterial({ title: file.name, kind: "file", attachmentId: meta.id, locator: `local-blob:${meta.id}`, mimeType: meta.mimeType, sizeBytes: meta.sizeBytes });
+function Library({ materials, store, persistence, run }) {
+    const add = async (e) => { const file = e.target.files?.[0]; if (!file || !persistence.attachments)
+        return; if (file.size > 50 * 1024 * 1024)
+        throw new Error("Attachment exceeds the 50 MiB local limit"); let meta = null; try {
+        meta = await persistence.attachments.put(file);
+        store.addMaterial({ title: file.name, kind: "file", attachmentId: meta.id, locator: `local-blob:${meta.id}`, mimeType: meta.mimeType, sizeBytes: meta.sizeBytes });
+    }
+    catch (err) {
+        if (meta)
+            await persistence.attachments.delete(meta.id);
+        throw err;
+    }
+    finally {
+        e.target.value = "";
+    } };
+    return React.createElement("section", { id: "plan-library", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+        React.createElement("article", { className: "card" },
+            React.createElement("div", { className: "card-heading-row" },
+                React.createElement("h2", null, "Local materials & reference provenance"),
+                React.createElement("label", { className: "button button-quiet file-button" },
+                    "Add file",
+                    React.createElement("input", { "aria-label": "Local material file", type: "file", onChange: (e) => add(e).catch(err => console.error(err)) }))),
+            React.createElement("p", { className: "muted" }, "Tracked edital references use the existing material record. StudyFlow warns after 90 days without re-verification; that is a product policy, not an edital rule."),
+            React.createElement("ul", { className: "activity-list" },
+                materials.map(m => React.createElement("li", { key: m.id },
+                    React.createElement("div", null,
+                        React.createElement("strong", null, m.title),
+                        React.createElement("span", null,
+                            m.mimeType ?? title(m.kind),
+                            m.locator ? ` · ${m.locator}` : ""),
+                        React.createElement(MaterialReferenceControls, { material: m, store: store, run: run })),
+                    !m.archived && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deleteMaterial(m.id), "Material removed.") }, "Delete"))),
+                !materials.length && React.createElement("li", null, "No local materials yet."))));
 }
-catch (err) {
-    if (meta)
-        await persistence.attachments.delete(meta.id);
-    throw err;
-}
-finally {
-    e.target.value = "";
-} }; return React.createElement("section", { id: "plan-library", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-    React.createElement("article", { className: "card" },
-        React.createElement("div", { className: "card-heading-row" },
-            React.createElement("h2", null, "Local materials"),
-            React.createElement("label", { className: "button button-quiet file-button" },
-                "Add file",
-                React.createElement("input", { "aria-label": "Local material file", type: "file", onChange: (e) => add(e).catch(err => console.error(err)) }))),
-        React.createElement("ul", { className: "activity-list" },
-            materials.map(m => React.createElement("li", { key: m.id },
-                React.createElement("strong", null, m.title),
-                React.createElement("span", null, m.mimeType ?? title(m.kind)),
-                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deleteMaterial(m.id), "Material removed.") }, "Delete"))),
-            !materials.length && React.createElement("li", null, "No local materials yet.")))); }
 function Practice({ state, store, tab, setTab, questionId, setQuestionId, run }) {
     const due = (0, domain_1.selectDueReviews)(state), errors = (0, domain_1.selectOpenErrors)(state), plan = state.plans.find(p => p.id === state.activePlanId);
     const [filter, setFilter] = React.useState({});

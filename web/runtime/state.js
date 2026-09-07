@@ -11,6 +11,7 @@ const intelligence_js_1 = require("./intelligence.js");
 const product_js_1 = require("./product.js");
 const schedule_js_1 = require("./schedule.js");
 const modes_js_1 = require("./modes.js");
+const exam_foundation_js_1 = require("./exam_foundation.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
 function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms))
     throw new TypeError(`Invalid timestamp: ${value}`); return ms; }
@@ -273,6 +274,10 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         setPublicExamStudyPhase(phase) { if (!["pre-edital", "post-edital", "final-stretch"].includes(String(phase)))
             throw new TypeError("Unsupported public-exam study phase"); const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
             throw new TypeError("Study phase requires EXAM_PLAN"); const at = nowIso(); const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, studyPhase: phase } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "public-exam-phase-updated"); return updated; },
+        setStudyPhaseDefinitions(input) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
+            throw new TypeError("Study phase planning requires EXAM_PLAN"); const phases = (0, exam_foundation_js_1.normalizeStudyPhaseDefinitions)(input); const errors = (0, exam_foundation_js_1.validateStudyPhaseDefinitions)(phases); if (errors.length)
+            throw new TypeError(errors[0]); const at = nowIso(); const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, phaseDefinitions: phases } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "study-phase-definitions-updated"); return updated; },
+        applyBbStudyPhaseSuggestions() { return this.setStudyPhaseDefinitions((0, exam_foundation_js_1.cloneBbStudyPhaseSuggestions)()); },
         applyPublicExamStarterTemplate(templateId) { const template = modes_js_1.PUBLIC_EXAM_STARTER_TEMPLATES[templateId]; if (!template)
             throw new TypeError("Unknown public-exam starter template"); const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
             throw new TypeError("Starter template requires EXAM_PLAN"); const at = nowIso(); const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, practice: { ...current.configuration.practice, weeklyQuestionQuota: template.weeklyQuestionQuota }, publicExam: { ...current.configuration.publicExam, reviewIntervalsDays: [...template.reviewIntervalsDays], mockBlueprint: { ...current.configuration.publicExam.mockBlueprint, totalQuestions: template.mockQuestions } } }, createdAt: current.createdAt, updatedAt: at }); const wanted = [{ name: "Weekly questions", metric: "graded-questions", target: template.weeklyQuestionQuota, period: "weekly" }, { name: "Weekly study time", metric: "study-minutes", target: 300, period: "weekly" }]; let goals = [...state.goals]; for (const g of wanted)
@@ -284,7 +289,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError("Public-exam target requires an EXAM_PLAN");
             const at = nowIso();
             const target = { ...current.configuration.publicExam.target, ...input };
-            const updated = (0, domain_js_1.createPlan)({ ...current, examDate: target.examDate ?? current.examDate, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, target } }, createdAt: current.createdAt, updatedAt: at });
+            const updated = (0, domain_js_1.createPlan)({ ...current, examDate: target.dateStatus === "confirmed" ? (target.examDate ?? null) : null, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, target } }, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, plans: state.plans.map((plan) => plan.id === current.id ? updated : plan) }, "public-exam-target-updated");
             return updated;
         },
@@ -301,7 +306,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return updated;
         },
         previewExamNotice(source) { return (0, modes_js_1.buildExamNoticePreview)(state, source); },
-        applyExamNoticePreview(preview) {
+        applyExamNoticePreview(preview, metadata = {}) {
             if (!preview || preview.baseRevision !== state.revision)
                 throw new TypeError("Edital preview is stale; preview again before applying");
             const current = state.plans.find((plan) => plan.id === activePlanId());
@@ -355,8 +360,13 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             }
             subjects = subjects.map(x => x.planId === current.id && !desiredSubjects.has(x.id) && !x.archived ? (archived++, (0, domain_js_1.createSubject)({ ...x, archived: true, createdAt: x.createdAt, updatedAt: at })) : x);
             topics = topics.map(x => x.planId === current.id && !desiredTopics.has(x.id) && x.status !== "archived" ? (archived++, (0, domain_js_1.createTopic)({ ...x, status: "archived", createdAt: x.createdAt, updatedAt: at })) : x);
-            const revision = { id: `notice-${Date.now().toString(36)}`, acceptedAt: at, sourceHash: preview.sourceHash, added, archived, reactivated, unchanged, previousRevisionId: preview.previousRevisionId ?? null, syllabusFingerprint: preview.syllabusFingerprint };
-            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, studyPhase: "post-edital", noticeRevisions: [...current.configuration.publicExam.noticeRevisions, revision] } }, createdAt: current.createdAt, updatedAt: at });
+            const reference = String(metadata.reference ?? "").trim() || null;
+            const publishedAt = metadata.publishedAt == null || metadata.publishedAt === "" ? null : String(metadata.publishedAt);
+            if (publishedAt && !/^\d{4}-\d{2}-\d{2}$/.test(publishedAt))
+                throw new TypeError("Edital publication date must use YYYY-MM-DD");
+            const revision = { id: `notice-${Date.now().toString(36)}`, acceptedAt: at, sourceHash: preview.sourceHash, added, archived, reactivated, unchanged, previousRevisionId: preview.previousRevisionId ?? null, syllabusFingerprint: preview.syllabusFingerprint, reference, publishedAt };
+            const target = reference ? { ...current.configuration.publicExam.target, editalRef: reference } : current.configuration.publicExam.target;
+            const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, target, studyPhase: "post-edital", noticeRevisions: [...current.configuration.publicExam.noticeRevisions, revision] } }, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, subjects, topics, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "exam-notice-applied");
             return updated;
         },
@@ -885,10 +895,52 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, materials: [...state.materials, material] }, "material-added");
             return material;
         },
+        setMaterialReferenceProvenance(materialId, { origin = "EDITAL_2022", verifiedOn = null } = {}) {
+            const current = state.materials.find((material) => material.id === materialId && material.planId === activePlanId());
+            if (!current)
+                throw new TypeError("Material not found in the active plan");
+            if (origin !== "EDITAL_2022")
+                throw new TypeError("Unsupported material reference origin");
+            const date = verifiedOn == null ? null : String(verifiedOn);
+            if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date))
+                throw new TypeError("Reference verification date must use YYYY-MM-DD");
+            const at = nowIso();
+            const previous = (0, exam_foundation_js_1.decodeReferenceProvenance)(current);
+            const updated = (0, domain_js_1.createMaterial)({ ...current, tags: (0, exam_foundation_js_1.encodeReferenceProvenance)(current.tags, { origin, verifiedOn: date, supersedesMaterialId: previous.supersedesMaterialId }), createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, materials: state.materials.map(material => material.id === materialId ? updated : material) }, "material-reference-provenance-updated");
+            return updated;
+        },
+        verifyMaterialReference(materialId, verifiedOn = nowIso().slice(0, 10)) {
+            const current = state.materials.find((material) => material.id === materialId && material.planId === activePlanId());
+            if (!current)
+                throw new TypeError("Material not found in the active plan");
+            const provenance = (0, exam_foundation_js_1.decodeReferenceProvenance)(current);
+            if (!provenance.origin)
+                throw new TypeError("Track this material as a reference before verifying it");
+            return this.setMaterialReferenceProvenance(materialId, { origin: provenance.origin, verifiedOn });
+        },
+        replaceMaterialReference(materialId, input = {}) {
+            const current = state.materials.find((material) => material.id === materialId && material.planId === activePlanId());
+            if (!current)
+                throw new TypeError("Material not found in the active plan");
+            const provenance = (0, exam_foundation_js_1.decodeReferenceProvenance)(current);
+            if (!provenance.origin)
+                throw new TypeError("Only tracked references can be replaced");
+            const at = nowIso();
+            const verifiedOn = String(input.verifiedOn ?? at.slice(0, 10));
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(verifiedOn))
+                throw new TypeError("Reference verification date must use YYYY-MM-DD");
+            const archived = (0, domain_js_1.createMaterial)({ ...current, archived: true, createdAt: current.createdAt, updatedAt: at });
+            const successor = (0, domain_js_1.createMaterial)({ ...current, ...input, id: input.id, planId: current.planId, subjectId: input.subjectId ?? current.subjectId, topicId: input.topicId ?? current.topicId, title: input.title ?? current.title, locator: input.locator ?? null, attachmentId: input.attachmentId ?? null, sizeBytes: input.sizeBytes ?? null, archived: false, tags: (0, exam_foundation_js_1.encodeReferenceProvenance)(current.tags, { origin: provenance.origin, verifiedOn, supersedesMaterialId: current.id }), createdAt: at, updatedAt: at });
+            commit({ ...state, materials: [...state.materials.map(material => material.id === materialId ? archived : material), successor] }, "material-reference-replaced");
+            return successor;
+        },
         deleteMaterial(materialId) {
             const current = state.materials.find((material) => material.id === materialId && material.planId === activePlanId());
             if (!current)
                 throw new TypeError("Material not found in the active plan");
+            if (current.archived && (0, exam_foundation_js_1.decodeReferenceProvenance)(current).origin)
+                throw new TypeError("Archived reference history is retained for provenance");
             commit({ ...state, materials: state.materials.filter((material) => material.id !== materialId) }, "material-deleted");
             return current;
         },

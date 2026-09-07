@@ -1,14 +1,14 @@
 import * as React from "react";
 import type {
   AppLocale, BrowserPersistence, ContentCleanupPreview, ExamNoticePreview, GlobalSearchResult, LanguageReviewDirection, ModeImportPreview, MockExamPreview, QuestionImportPreview, WeaknessDrillPreview, PlanContentImportFormat, PlanContentImportPreview, PortableImportMode, PortableImportPreview, SchedulePreview, StudySprintPreview,
-  StudyMode, StudyState, StudyStore, Topic,
+  StudyMode, StudyPhaseDefinition, StudyState, StudyStore, Topic,
 } from "../types";
 import {
   buildContentIntegrityReport, buildEvidenceTimeline, deriveGoalProgress, derivePlanInventory,
   deriveProgressMetrics, deriveQuestionStats, recommendNextActivity, selectDueReviews, selectOpenErrors,
 } from "../domain";
 import {
-  buildLanguageReviewPrompt, buildWeaknessDrill, PUBLIC_EXAM_STARTER_TEMPLATES, deriveEditalMatrix, deriveFinalStretchGuidance, deriveModeAnalytics, derivePublicExamDashboard, derivePublicExamNextActions, filterPracticeQuestions, previewMockExam, tokenizeCode,
+  buildLanguageReviewPrompt, buildWeaknessDrill, PUBLIC_EXAM_STARTER_TEMPLATES, deriveActiveStudyPhase, deriveEditalMatrix, deriveFinalStretchGuidance, deriveMaterialReferenceFreshness, deriveModeAnalytics, derivePreEditalCockpit, derivePublicExamDashboard, derivePublicExamNextActions, filterPracticeQuestions, previewMockExam, tokenizeCode,
 } from "../modes";
 import {
   applyPortableImportWithAttachments, buildPortableImportPreview, createPortablePackage, createPortablePackageV2, parsePortablePackage, parsePortablePackageV2, portablePackageFilename, portablePackageVersion,
@@ -103,34 +103,67 @@ function ScheduleWorkspace({state,store,preview,setPreview,run}:{state:StudyStat
  </section>
 }
 
+
+function cockpitIssueText(issue:string,locale:AppLocale){
+ const pt:Record<string,string>={"no-confirmed-exam-date":"Sem data oficial confirmada; nenhuma contagem regressiva oficial é exibida.","no-reference-notice":"Nenhum edital de referência foi registrado.","reference-publication-date-unknown":"A data de publicação do edital de referência é desconhecida.","stale-reference-notice":"O edital de referência ultrapassou a janela de verificação configurada."};
+ const en:Record<string,string>={"no-confirmed-exam-date":"No confirmed official exam date; no official countdown is shown.","no-reference-notice":"No reference notice has been recorded.","reference-publication-date-unknown":"The reference notice publication date is unknown.","stale-reference-notice":"The reference notice is older than the configured verification window."};
+ return (locale==="pt-BR"?pt:en)[issue]??issue;
+}
+function StudyPhaseEditor({phase,phases,store,run}:{phase:StudyPhaseDefinition;phases:StudyPhaseDefinition[];store:StudyStore;run:Run}){
+ const [draft,setDraft]=React.useState({...phase});React.useEffect(()=>setDraft({...phase}),[phase]);
+ const number=(value:any)=>value===""?null:Number(value);const save=(e:any)=>{e.preventDefault();const next={...draft,theoryRatioPercent:Number(draft.theoryRatioPercent),questionRatioPercent:Number(draft.questionRatioPercent),reviewRatioPercent:Number(draft.reviewRatioPercent),questionGoal:number(draft.questionGoal),mockExamGoal:number(draft.mockExamGoal)} as StudyPhaseDefinition;run(()=>store.setStudyPhaseDefinitions(phases.map(x=>x.id===phase.id?next:x)),"Study phase saved.")};
+ return <form className="stack-form" onSubmit={save}><div className="button-row"><input aria-label={`Study phase label ${phase.id}`} value={draft.label} onChange={(e:any)=>setDraft({...draft,label:e.target.value})}/><select aria-label={`Study phase kind ${phase.id}`} value={draft.kind} onChange={(e:any)=>setDraft({...draft,kind:e.target.value})}><option value="foundation">Foundation</option><option value="expansion">Expansion</option><option value="consolidation">Consolidation</option><option value="questions-reviews">Questions & reviews</option><option value="custom">Custom</option></select></div><div className="button-row"><label>Starts<input aria-label={`Study phase start ${phase.id}`} type="date" value={draft.startsOn} onChange={(e:any)=>setDraft({...draft,startsOn:e.target.value})}/></label><label>Ends<input aria-label={`Study phase end ${phase.id}`} type="date" value={draft.endsOn} onChange={(e:any)=>setDraft({...draft,endsOn:e.target.value})}/></label></div><div className="button-row"><label>Theory %<input aria-label={`Theory allocation ${phase.id}`} type="number" min="0" max="100" value={draft.theoryRatioPercent} onChange={(e:any)=>setDraft({...draft,theoryRatioPercent:e.target.value as any})}/></label><label>Questions %<input aria-label={`Question allocation ${phase.id}`} type="number" min="0" max="100" value={draft.questionRatioPercent} onChange={(e:any)=>setDraft({...draft,questionRatioPercent:e.target.value as any})}/></label><label>Review %<input aria-label={`Review allocation ${phase.id}`} type="number" min="0" max="100" value={draft.reviewRatioPercent} onChange={(e:any)=>setDraft({...draft,reviewRatioPercent:e.target.value as any})}/></label></div><div className="button-row"><label>Question target<input aria-label={`Question target ${phase.id}`} type="number" min="0" value={draft.questionGoal??""} onChange={(e:any)=>setDraft({...draft,questionGoal:e.target.value as any})}/></label><label>Mock target<input aria-label={`Mock target ${phase.id}`} type="number" min="0" value={draft.mockExamGoal??""} onChange={(e:any)=>setDraft({...draft,mockExamGoal:e.target.value as any})}/></label></div><div className="button-row"><button className="button" type="submit">Save phase</button><button className="button button-quiet" type="button" onClick={()=>run(()=>store.setStudyPhaseDefinitions(phases.filter(x=>x.id!==phase.id)),"Study phase removed.")}>Remove</button></div>{draft.allocationIsStudyFlowSuggested&&<span className="muted">Allocation is a StudyFlow planning suggestion, not an official edital value.</span>}</form>
+}
+function MaterialReferenceControls({material,store,run}:{material:StudyState["materials"][number];store:StudyStore;run:Run}){
+ const freshness=deriveMaterialReferenceFreshness(material);const [replacement,setReplacement]=React.useState("");const tracked=freshness.provenance.origin!=null;
+ return <div className="stack-form"><span className="muted">Reference: {freshness.status.replace(/-/g," ")}{freshness.ageDays==null?"":` · ${freshness.ageDays} days since verification`}{freshness.provenance.supersedesMaterialId?` · supersedes ${freshness.provenance.supersedesMaterialId}`:""}{material.archived?" · archived history":""}</span>{!tracked&&!material.archived&&<button className="button button-quiet" type="button" onClick={()=>run(()=>store.setMaterialReferenceProvenance(material.id,{origin:"EDITAL_2022",verifiedOn:null}),"Material tracked as edital-2022 reference; verification is still required.")}>Track as edital 2022 reference</button>}{tracked&&!material.archived&&<><div className="button-row"><button className="button button-quiet" type="button" onClick={()=>run(()=>store.verifyMaterialReference(material.id),"Reference verification date recorded.")}>Verify reference now</button></div><input aria-label={`Replacement source for ${material.title}`} value={replacement} onChange={(e:any)=>setReplacement(e.target.value)} placeholder="Replacement URL / locator"/><button className="button button-quiet" type="button" disabled={!replacement.trim()} onClick={()=>{const next=run(()=>store.replaceMaterialReference(material.id,{locator:replacement.trim()}),"Reference replaced; previous material archived for provenance.");if(next)setReplacement("")}}>Replace reference</button></>}</div>
+}
+
 function PublicExamWorkspace({state,store,run}:{state:StudyState;store:StudyStore;run:Run}) {
   const plan=state.plans.find(p=>p.id===state.activePlanId)!;
   const c=plan.configuration.publicExam!;
   const [org,setOrg]=React.useState(c.target.organization??"");
   const [role,setRole]=React.useState(c.target.role??"");
   const [board,setBoard]=React.useState(c.target.board??"");
+  const [editalRef,setEditalRef]=React.useState(c.target.editalRef??"");
   const [examDate,setExamDate]=React.useState(c.target.examDate??"");
   const [dateStatus,setDateStatus]=React.useState(c.target.dateStatus);
   const [stage,setStage]=React.useState("");
   const [notice,setNotice]=React.useState("");
+  const [noticeRef,setNoticeRef]=React.useState(c.target.editalRef??"");
+  const [noticePublished,setNoticePublished]=React.useState("");
   const [noticePreview,setNoticePreview]=React.useState<ExamNoticePreview|null>(null);
   const [law,setLaw]=React.useState("");
   const [reviewDays,setReviewDays]=React.useState(c.reviewIntervalsDays.join(", "));
   const dashboard=derivePublicExamDashboard(state);
   const guidance=deriveFinalStretchGuidance(plan);
+  const cockpit=derivePreEditalCockpit(plan); const activePhase=deriveActiveStudyPhase(plan);
   const matrix=deriveEditalMatrix(state); const priorities=derivePublicExamNextActions(state);
   return <div className="content-grid two-column">
     <article className="card">
       <h2>Concurso target</h2>
-      <form className="stack-form" onSubmit={(e:any)=>{e.preventDefault();run(()=>store.updatePublicExamTarget({organization:org||null,role:role||null,board:board||null,examDate:examDate||null,dateStatus}),"Concurso target saved.")}}>
+      <form className="stack-form" onSubmit={(e:any)=>{e.preventDefault();run(()=>store.updatePublicExamTarget({organization:org||null,role:role||null,board:board||null,editalRef:editalRef||null,examDate:examDate||null,dateStatus}),"Concurso target saved.")}}>
         <input aria-label="Organization" value={org} onChange={(e:any)=>setOrg(e.target.value)} placeholder="Organization"/>
         <input aria-label="Role or cargo" value={role} onChange={(e:any)=>setRole(e.target.value)} placeholder="Role / cargo"/>
         <input aria-label="Exam board or banca" value={board} onChange={(e:any)=>setBoard(e.target.value)} placeholder="Exam board / banca"/>
+        <input aria-label="Reference edital" value={editalRef} onChange={(e:any)=>setEditalRef(e.target.value)} placeholder="Reference notice / edital"/>
         <input aria-label="Exam date" type="date" value={examDate} onChange={(e:any)=>setExamDate(e.target.value)}/>
         <select aria-label="Exam date status" value={dateStatus} onChange={(e:any)=>setDateStatus(e.target.value)}><option value="unknown">Date unknown</option><option value="expected">Expected date</option><option value="confirmed">Confirmed date</option></select>
         <button className="button" type="submit">Save target</button>
       </form>
       <p className="muted">Identity is accepted only when organization, role and board are all filled or all blank.</p><label>Study phase<select aria-label="Public exam study phase" value={c.studyPhase} onChange={(e:any)=>run(()=>store.setPublicExamStudyPhase(e.target.value),"Study phase updated.")}><option value="pre-edital">Pre-edital</option><option value="post-edital">Post-edital</option><option value="final-stretch">Final stretch</option></select></label><div><strong>Local starter templates</strong><div className="button-row">{Object.values(PUBLIC_EXAM_STARTER_TEMPLATES).map(t=><button key={t.id} className="button button-quiet" type="button" onClick={()=>run(()=>store.applyPublicExamStarterTemplate(t.id as any),`${t.label} starter applied.`)}>{t.label}</button>)}</div><span className="muted">Templates never invent organization, banca, edital or exam date.</span></div>
+    </article>
+    <article className="card" id="pre-edital-cockpit">
+      <h2>Truthful pre-edital cockpit</h2>
+      {!cockpit?<p className="muted">Available for Concurso plans.</p>:!cockpit.preEdital?<p><strong>Post-edital context:</strong> confirmed exam date recorded. The pre-edital verification issues are cleared.</p>:<><p><strong>No official countdown.</strong> {cockpit.resolvedDate.source==="expected-target"?"The saved exam date is an expectation, not an official date.":"A confirmed exam date has not been recorded."}</p><p className="muted">Reference: {cockpit.referenceLabel??"none"}{cockpit.referenceAgeDays==null?"":` · ${cockpit.referenceAgeDays} days old`} · stale warning after {cockpit.staleReferenceDays} days</p><ul className="activity-list">{cockpit.issues.map(issue=><li key={issue}><strong>{cockpitIssueText(issue,state.preferences.locale)}</strong></li>)}</ul><a className="button button-quiet" href="#edital-revision">Review assumptions in edital workflow</a></>}
+    </article>
+    <article className="card">
+      <div className="card-heading-row"><div><h2>Study phase planner</h2><p className="muted">Editable dated phases cannot overlap. Theory + questions + review must total 100%.</p></div><button className="button button-quiet" type="button" onClick={()=>run(()=>store.applyBbStudyPhaseSuggestions(),"BB Sep–Dec 2026 phase suggestions applied.")}>Use BB Sep–Dec 2026 suggestions</button></div>
+      <p><strong>Active dated phase:</strong> {activePhase?`${activePhase.label} · ${activePhase.theoryRatioPercent}% theory / ${activePhase.questionRatioPercent}% questions / ${activePhase.reviewRatioPercent}% review`:"No dated phase active today"}</p>
+      {c.phaseDefinitions.map(phase=><details key={phase.id} open><summary>{phase.label} · {phase.startsOn} → {phase.endsOn}</summary><StudyPhaseEditor phase={phase} phases={c.phaseDefinitions} store={store} run={run}/></details>)}
+      {!c.phaseDefinitions.length&&<p className="muted">No dated phase definitions yet.</p>}
+      <button className="button button-quiet" type="button" disabled={c.phaseDefinitions.length>=5} onClick={()=>{const kinds=["foundation","expansion","consolidation","questions-reviews","custom"] as const;const kind=kinds.find(k=>!c.phaseDefinitions.some(p=>p.kind===k));if(!kind)return;const day=new Date().toISOString().slice(0,10);run(()=>store.setStudyPhaseDefinitions([...c.phaseDefinitions,{id:`phase-${Date.now().toString(36)}`,kind,label:title(kind),startsOn:day,endsOn:day,theoryRatioPercent:60,questionRatioPercent:25,reviewRatioPercent:15,questionGoal:null,mockExamGoal:null,allocationIsStudyFlowSuggested:false}]),"Study phase added.")}}>Add phase</button>
+      <p className="muted">BB allocation ratios are StudyFlow planning suggestions, not official edital values. The scheduler uses the active dated allocation for generated-week study/question/review blocks.</p>
     </article>
     <article className="card">
       <h2>Concurso dashboard</h2>
@@ -149,10 +182,12 @@ function PublicExamWorkspace({state,store,run}:{state:StudyState;store:StudyStor
       </form>
       <ul>{c.stages.map(s=><li key={s.id}>{s.name} · {s.status}</li>)}</ul>
     </article>
-    <article className="card">
+    <article className="card" id="edital-revision">
       <h2>Edital revision</h2>
+      <input aria-label="Edital revision reference" value={noticeRef} onChange={(e:any)=>setNoticeRef(e.target.value)} placeholder="Reference / label / URL"/>
+      <input aria-label="Edital publication date" type="date" value={noticePublished} onChange={(e:any)=>setNoticePublished(e.target.value)}/>
       <textarea aria-label="Edital revision text" value={notice} onChange={(e:any)=>{setNotice(e.target.value);setNoticePreview(null)}} placeholder={"Disciplina: Direito Constitucional\n- Direitos fundamentais\n- Administração pública"}/>
-      <div className="button-row"><button className="button" type="button" onClick={()=>{const p=run(()=>store.previewExamNotice(notice));if(p)setNoticePreview(p)}}>Preview edital</button>{noticePreview&&<button className="button button-primary" type="button" onClick={()=>{if(run(()=>store.applyExamNoticePreview(noticePreview),"Edital revision applied; removed content archived."))setNoticePreview(null)}}>Apply preview</button>}</div>
+      <div className="button-row"><button className="button" type="button" onClick={()=>{const p=run(()=>store.previewExamNotice(notice));if(p)setNoticePreview(p)}}>Preview edital</button>{noticePreview&&<button className="button button-primary" type="button" onClick={()=>{if(run(()=>store.applyExamNoticePreview(noticePreview,{reference:noticeRef||null,publishedAt:noticePublished||null}),"Edital revision applied; removed content archived."))setNoticePreview(null)}}>Apply preview</button>}</div>
       {noticePreview&&<p className="muted">{noticePreview.subjects.length} subjects · {noticePreview.duplicates.length} duplicates · {noticePreview.unrecognized.length} unrecognized</p>}
     </article>
     <article className="card">
@@ -180,8 +215,10 @@ function ReadingWorkspace({state,store,run}:{state:StudyState;store:StudyStore;r
 function GeneralSkillWorkspace({state,store,run}:{state:StudyState;store:StudyStore;run:Run}){const plan=state.plans.find(p=>p.id===state.activePlanId)!;const cfg=plan.configuration.general!;const [name,setName]=React.useState("");return <article className="card"><h2>General skill</h2><form className="stack-form" onSubmit={(e:any)=>{e.preventDefault();if(name.trim()){run(()=>store.addGeneralSkillDrill({title:name.trim(),metric:"score",target:10,unit:"points"}),"Skill drill added.");setName("")}}}><input aria-label="Skill drill name" value={name} onChange={(e:any)=>setName(e.target.value)} placeholder="Drill name"/><button className="button" type="submit">Add drill</button></form>{cfg.drills.map(x=><div className="mode-item" key={x.id}><strong>{x.title}</strong><span>Target {x.target} {x.unit}</span><button className="button button-quiet" type="button" onClick={()=>run(()=>store.recordGeneralSkillDrill(x.id,x.target),"Drill result evidenced.")}>Record target</button></div>)}</article>}
 function ModeWorkspace({state,store,run}:{state:StudyState;store:StudyStore;run:Run}){const plan=state.plans.find(p=>p.id===state.activePlanId);if(!plan)return null;if(plan.mode==="EXAM_PLAN")return <PublicExamWorkspace state={state} store={store} run={run}/>;if(plan.mode==="PROGRAMMING_COURSE")return <ProgrammingWorkspace state={state} store={store} run={run}/>;if(plan.mode==="LANGUAGE_DECK")return <LanguageWorkspace state={state} store={store} run={run}/>;if(plan.mode==="READING_STUDY")return <ReadingWorkspace state={state} store={store} run={run}/>;return <GeneralSkillWorkspace state={state} store={store} run={run}/>}
 
-function Library({materials,store,persistence,run}:{materials:StudyState["materials"];store:StudyStore;persistence:BrowserPersistence;run:Run}){const add=async(e:any)=>{const file=e.target.files?.[0] as File|undefined;if(!file||!persistence.attachments)return;if(file.size>50*1024*1024)throw new Error("Attachment exceeds the 50 MiB local limit");let meta:any=null;try{meta=await persistence.attachments.put(file);store.addMaterial({title:file.name,kind:"file",attachmentId:meta.id,locator:`local-blob:${meta.id}`,mimeType:meta.mimeType,sizeBytes:meta.sizeBytes})}catch(err){if(meta)await persistence.attachments.delete(meta.id);throw err}finally{e.target.value=""}};return <section id="plan-library" className="tab-panel" role="tabpanel" tabIndex={0}><article className="card"><div className="card-heading-row"><h2>Local materials</h2><label className="button button-quiet file-button">Add file<input aria-label="Local material file" type="file" onChange={(e:any)=>add(e).catch(err=>console.error(err))}/></label></div><ul className="activity-list">{materials.map(m=><li key={m.id}><strong>{m.title}</strong><span>{m.mimeType??title(m.kind)}</span><button className="button button-quiet" type="button" onClick={()=>run(()=>store.deleteMaterial(m.id),"Material removed.")}>Delete</button></li>)}{!materials.length&&<li>No local materials yet.</li>}</ul></article></section>}
-
+function Library({materials,store,persistence,run}:{materials:StudyState["materials"];store:StudyStore;persistence:BrowserPersistence;run:Run}){
+ const add=async(e:any)=>{const file=e.target.files?.[0] as File|undefined;if(!file||!persistence.attachments)return;if(file.size>50*1024*1024)throw new Error("Attachment exceeds the 50 MiB local limit");let meta:any=null;try{meta=await persistence.attachments.put(file);store.addMaterial({title:file.name,kind:"file",attachmentId:meta.id,locator:`local-blob:${meta.id}`,mimeType:meta.mimeType,sizeBytes:meta.sizeBytes})}catch(err){if(meta)await persistence.attachments.delete(meta.id);throw err}finally{e.target.value=""}};
+ return <section id="plan-library" className="tab-panel" role="tabpanel" tabIndex={0}><article className="card"><div className="card-heading-row"><h2>Local materials & reference provenance</h2><label className="button button-quiet file-button">Add file<input aria-label="Local material file" type="file" onChange={(e:any)=>add(e).catch(err=>console.error(err))}/></label></div><p className="muted">Tracked edital references use the existing material record. StudyFlow warns after 90 days without re-verification; that is a product policy, not an edital rule.</p><ul className="activity-list">{materials.map(m=><li key={m.id}><div><strong>{m.title}</strong><span>{m.mimeType??title(m.kind)}{m.locator?` · ${m.locator}`:""}</span><MaterialReferenceControls material={m} store={store} run={run}/></div>{!m.archived&&<button className="button button-quiet" type="button" onClick={()=>run(()=>store.deleteMaterial(m.id),"Material removed.")}>Delete</button>}</li>)}{!materials.length&&<li>No local materials yet.</li>}</ul></article></section>
+}
 function Practice({state,store,tab,setTab,questionId,setQuestionId,run}:{state:StudyState;store:StudyStore;tab:Tab;setTab:(v:Tab)=>void;questionId:string|null;setQuestionId:(v:string|null)=>void;run:Run}){
  const due=selectDueReviews(state),errors=selectOpenErrors(state),plan=state.plans.find(p=>p.id===state.activePlanId);const [filter,setFilter]=React.useState<any>({});const filtered=filterPracticeQuestions(state,filter);const current=filtered.find(q=>q.id===questionId)??filtered[0]??null;const [answer,setAnswer]=React.useState("");const [importText,setImportText]=React.useState("");const [importPreview,setImportPreview]=React.useState<QuestionImportPreview|null>(null);const [drill,setDrill]=React.useState<WeaknessDrillPreview|null>(null);const [setName,setSetName]=React.useState("");const [manualPrompt,setManualPrompt]=React.useState("");const saved=plan?.configuration.practice.savedSets??[];const quota=plan?.configuration.practice.weeklyQuestionQuota??null;const weekAttempts=state.evidence.filter(e=>e.planId===state.activePlanId&&e.kind==="question-attempt"&&Date.parse(e.observedAt)>=Date.now()-7*86400000).length;
  return <section id="practice" data-screen="practice" className="screen-section"><Tabs value={tab} setValue={setTab} prefix="practice" label="Practice sections" items={[["reviews","Reviews"],["questions","Questions"],["tests","Tests"],["errors","Errors"]]}/>

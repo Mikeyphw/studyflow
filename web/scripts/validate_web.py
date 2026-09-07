@@ -64,7 +64,7 @@ def validate_interactions()->list[str]:
 
 def validate_typescript()->list[str]:
     e=[]
-    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/content_import.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/mode_import.ts','src/intelligence.ts','src/hardening.ts','src/release.ts','src/product.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w18_hardening.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
+    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/exam_foundation.ts','src/content_import.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/mode_import.ts','src/intelligence.ts','src/hardening.ts','src/release.ts','src/product.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w18_hardening.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
     ts=_text(WEB/'tsconfig.json',e)
     try:cfg=json.loads(ts); _require(e,cfg.get('compilerOptions',{}).get('strict') is True,'TypeScript strict mode must be enabled'); _require(e,cfg.get('compilerOptions',{}).get('module')=='CommonJS','tracked browser runtime must compile to CommonJS')
     except Exception as exc:e.append(f'tsconfig invalid: {exc}')
@@ -95,7 +95,7 @@ def validate_indexeddb()->list[str]:
 def validate_pwa()->list[str]:
     e=[]; p=_text(WEB/'src/pwa.ts',e); sw=_text(WEB/'service-worker.js',e); ui=_text(WEB/'src/react/App.tsx',e)
     for token in ('serviceWorker.register','beforeinstallprompt','appinstalled','offline'):_require(e,token in p,f'PWA registration missing {token}')
-    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','caches.match("./index.html")','appShellUrls.has(url.href)','runtime/main.js','runtime/content_import.js','runtime/modes.js','runtime/hardening.js','runtime/release.js','runtime/product.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
+    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','caches.match("./index.html")','appShellUrls.has(url.href)','runtime/main.js','runtime/content_import.js','runtime/modes.js','runtime/exam_foundation.js','runtime/hardening.js','runtime/release.js','runtime/product.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
     _require(e,'id="install-app"' in ui and 'id="pwa-status"' in ui,'React PWA controls missing'); return e
 
 def validate_react()->list[str]:
@@ -245,6 +245,20 @@ def validate_parity_product_release()->list[str]:
     for rel in ('tests/test_pc10_product_shell.py','tests/test_pc11_release_artifact.py'):_require(e,(WEB/rel).is_file(),f'PC10/PC11 regression suite missing {rel}')
     return e
 
+def validate_parity_exam_foundation()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); foundation=_text(WEB/'src/exam_foundation.ts',e); modes=_text(WEB/'src/modes.ts',e); state=_text(WEB/'src/state.ts',e); schedule=_text(WEB/'src/schedule.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC12_EXAM_FOUNDATION_PARITY.md',e)
+    for token in ('StudyPhaseDefinition','PublicExamPreEditalSnapshot','StudyReferenceProvenance','archived:boolean','tags:string[]'):_require(e,token in types,f'PC12 typed foundation contract missing {token}')
+    for token in ('derivePreEditalCockpit','PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS','BB_STUDY_PHASE_SUGGESTIONS','validateStudyPhaseDefinitions','deriveActiveStudyPhase','REFERENCE_POSSIBLY_STALE_AFTER_DAYS','encodeReferenceProvenance','deriveMaterialReferenceFreshness'):_require(e,token in foundation,f'PC12 foundation logic missing {token}')
+    for token in ('PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS','phaseDefinitions','cockpitStaleReferenceDays'):_require(e,token in modes,f'PC12 public-exam normalization missing {token}')
+    for token in ('setStudyPhaseDefinitions','applyBbStudyPhaseSuggestions','setMaterialReferenceProvenance','verifyMaterialReference','replaceMaterialReference'):_require(e,token in state,f'PC12 store integration missing {token}')
+    for token in ('deriveActiveStudyPhase','Active phase'):_require(e,token in schedule,f'PC12 scheduler integration missing {token}')
+    for token in ('pre-edital-cockpit','Study phase planner','MaterialReferenceControls','reference provenance','90 days'):_require(e,token in ui,f'PC12 React workflow missing {token}')
+    _require(e,'runtime/exam_foundation.js' in sw,'PC12 foundation runtime must be cached by the offline app shell')
+    _require(e,'PC12 | Cockpit/reference/phase foundation (OV09 + OV14 + OV15) — delivered' in roadmap,'PC12 roadmap delivery marker missing')
+    for token in ('OV09','OV14','OV15','365 days','90 days','StudyFlow suggestion','Replacement'):_require(e,token in doc,f'PC12 documentation missing {token}')
+    _require(e,(WEB/'tests/test_pc12_exam_foundation.py').is_file(),'PC12 regression suite missing tests/test_pc12_exam_foundation.py')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -256,7 +270,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach,validate_parity_product_release)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach,validate_parity_product_release,validate_parity_exam_foundation)
     out=[]
     for fn in groups:
         for item in fn():
@@ -264,8 +278,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--parity-product-release',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_parity_product_release() if args.parity_product_release else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--parity-product-release',action='store_true'); parser.add_argument('--parity-exam-foundation',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_parity_product_release() if args.parity_product_release else validate_parity_exam_foundation() if args.parity_exam_foundation else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

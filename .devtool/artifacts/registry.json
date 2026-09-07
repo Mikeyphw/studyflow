@@ -2,6 +2,152 @@
   "schema_version": 2,
   "items": [
     {
+      "id": "ec73a1244df3",
+      "name": "study-flow-debug.apk",
+      "path": ".devtool/build-artifacts/study-flow-debug.apk",
+      "canonical_path": ".devtool/build-artifacts/study-flow-debug.apk",
+      "source_path": ".devtool/build-artifacts/study-flow-debug.apk",
+      "exported_path": "",
+      "type": "apk",
+      "size": 27059234,
+      "sha256": "dcc59481537be119165a45cfa6d75022d43022392966bc9a666d9ff81d6284c0",
+      "commit": "1b324731333f8658521058c5a35f75e941f0b5d5",
+      "run_id": "f967d756c06f4bedafca7901139c514f",
+      "producer": "android",
+      "command": "build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "produced",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T17:40:33.486131Z",
+      "registered_at": "2026-09-07T17:40:33.486131Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "f967d756c06f4bedafca7901139c514f",
+        "path": ".devtool/build-artifacts/study-flow-debug.apk",
+        "source_path": ".devtool/build-artifacts/study-flow-debug.apk",
+        "type": "apk",
+        "size": 27059234,
+        "sha256": "dcc59481537be119165a45cfa6d75022d43022392966bc9a666d9ff81d6284c0",
+        "valid": true,
+        "state": "produced",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "member:AndroidManifest.xml",
+            "status": "passed",
+            "detail": "present"
+          },
+          {
+            "name": "aapt2_badging",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "signature",
+            "status": "skipped",
+            "detail": "apksigner not found; JAR signature entries present"
+          }
+        ],
+        "metadata": {
+          "path": ".devtool/build-artifacts/study-flow-debug.apk",
+          "type": "apk",
+          "variant": "study-flow-debug",
+          "module": "",
+          "size": 27059234,
+          "sha256": "dcc59481537be119165a45cfa6d75022d43022392966bc9a666d9ff81d6284c0",
+          "valid": true,
+          "package_id": "com.mikeyphw.studyflow",
+          "version_code": "37",
+          "version_name": "1.0.0-rc1",
+          "min_sdk": "",
+          "target_sdk": "36",
+          "launchable_activity": "com.mikeyphw.studyflow.MainActivity",
+          "signed": null,
+          "abis": [
+            "arm64-v8a",
+            "armeabi-v7a",
+            "x86",
+            "x86_64"
+          ],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "member:AndroidManifest.xml",
+              "status": "passed",
+              "detail": "present"
+            },
+            {
+              "name": "aapt2_badging",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "signature",
+              "status": "skipped",
+              "detail": "apksigner not found; JAR signature entries present"
+            }
+          ]
+        },
+        "module": "",
+        "package_id": "com.mikeyphw.studyflow",
+        "version_code": "37",
+        "version_name": "1.0.0-rc1",
+        "min_sdk": "",
+        "target_sdk": "36",
+        "launchable_activity": "com.mikeyphw.studyflow.MainActivity",
+        "signed": null,
+        "abis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "f967d756c06f4bedafca7901139c514f:dcc59481537be119165a45cfa6d75022d43022392966bc9a666d9ff81d6284c0:ec73a1244df3"
+    },
+    {
       "id": "18c755a08f90",
       "name": "navigation.jar",
       "path": "core/navigation/build/libs/navigation.jar",
@@ -1314,6 +1460,6 @@
       }
     }
   ],
-  "updated_at": "2026-09-07T15:23:10.048272Z",
+  "updated_at": "2026-09-07T17:40:33.487520Z",
   "verifications": []
 }

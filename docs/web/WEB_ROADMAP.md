@@ -42,4 +42,7 @@ Each phase must preserve mobile-first behavior, local ownership, truthful eviden
 | PC09 | Weekly coach/readiness/cleanup/report/runbook/sprint parity — delivered |
 | PC10 | Product shell parity: search/settings/privacy/i18n/onboarding — delivered |
 | PC11 | Self-contained production artifact + parity-closure release seal — delivered |
+| PC12 | Cockpit/reference/phase foundation (OV09 + OV14 + OV15) — delivered |
+
+> Post-PC11 audit note: original functional parity remains partial after PC12; this row closes only the first audited foundation block.
 
