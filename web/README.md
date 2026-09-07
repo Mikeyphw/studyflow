@@ -77,7 +77,7 @@ The remaining plan modes are also functional: programming exercises/projects use
 
 W18 completes the release hardening pass: ARIA/keyboard tab semantics, main-landmark focus management, accessible names for every form control, forced-colors support, explicit PWA listener cleanup, an app-shell-only cache policy, IndexedDB last-known-good recovery, and a storage-health audit with explicit orphan cleanup. Missing attachment references are reported but never silently rewritten.
 
-W19 seals the browser edition as **StudyFlow Local 1.0.0**. `npm run release:check` verifies release identity and offline-shell completeness in addition to the cumulative validator, strict TypeScript compile/runtime parity, tests, and lint. The 1.0 contract remains local-first with no required backend/account/telemetry/CDN, current state schema v6, IndexedDB schema v1, and portable package format v1.
+W19 seals the browser edition as **StudyFlow Local 1.0.0**. `npm run release:check` verifies release identity and offline-shell completeness in addition to the cumulative validator, strict TypeScript compile/runtime parity, tests, and lint. The 1.0 contract remains local-first with no required backend/account/telemetry/CDN, historical W19 state schema v6, IndexedDB schema v1, and portable package format v1; parity closure later advances structured state to v7 and portable packages to v2.
 
 ## PC00/PC01 correctness closure
 
@@ -103,4 +103,8 @@ Question import, weakness drills, saved sets, full banca filters, hierarchical e
 ## PC08 / PC09 parity closure
 
 Programming and language plans now include preview-first import templates, full six-direction language review, local syntax tokenization, trusted-output programming attempts, and solution-reveal evidence. Progress tools now include evidence-backed weekly coaching, readiness explanations, question quota planning, smart cleanup preview/apply, local HTML exam reports, a confirmed-date exam runbook, and a preview-first seven-day sprint.
+
+## PC10 / PC11 final parity closure
+
+Global local search, settings/privacy/storage, onboarding and persisted English/pt-BR shell localization complete the product shell. Structured state is schema v7 with safe v6 migration. `npm run build` now emits a self-contained `dist/` tree whose production runtime uses local `vendor/` files instead of `node_modules`; `npm run release:package` creates the deterministic Local 1.0 ZIP and SHA-256 sidecar. Portable-backup encryption is deliberately not claimed in Local 1.0.
 

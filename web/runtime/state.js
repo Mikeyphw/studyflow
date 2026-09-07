@@ -8,6 +8,7 @@ const content_import_js_1 = require("./content_import.js");
 const question_import_js_1 = require("./question_import.js");
 const mode_import_js_1 = require("./mode_import.js");
 const intelligence_js_1 = require("./intelligence.js");
+const product_js_1 = require("./product.js");
 const schedule_js_1 = require("./schedule.js");
 const modes_js_1 = require("./modes.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
@@ -121,6 +122,27 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         getFocusSnapshot: (at) => focusSnapshot(at),
         subscribe(listener) { if (typeof listener !== "function")
             throw new TypeError("listener must be a function"); listeners.add(listener); return () => listeners.delete(listener); },
+        setPreferences(input) { const preferences = (0, product_js_1.normalizeAppPreferences)({ ...(state.preferences ?? {}), ...(input ?? {}) }); commit({ ...state, preferences }, "preferences-updated"); return preferences; },
+        completeOnboarding(input) {
+            const cfg = (0, product_js_1.validateStarterWorkspace)(input);
+            if (cfg.useSample) {
+                const active = state.plans.find((plan) => plan.id === state.activePlanId) ?? state.plans[0] ?? null;
+                let next = { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, locale: cfg.locale, onboardingCompleted: true }) };
+                if (active) {
+                    const at = nowIso();
+                    const updated = (0, domain_js_1.createPlan)({ ...active, name: cfg.planName, mode: cfg.mode, createdAt: active.createdAt, updatedAt: at });
+                    next = { ...next, plans: next.plans.map((plan) => plan.id === active.id ? updated : plan) };
+                }
+                commit(next, "onboarding-completed");
+                return state;
+            }
+            const at = nowIso();
+            const plan = (0, domain_js_1.createPlan)({ name: cfg.planName, mode: cfg.mode, status: "active", createdAt: at, updatedAt: at });
+            const cycle = (0, domain_js_1.createStudyCycleState)();
+            const next = { ...(0, domain_js_1.createInitialStudyState)({ now: at }), preferences: (0, product_js_1.normalizeAppPreferences)({ locale: cfg.locale, onboardingCompleted: true }), activePlanId: plan.id, plans: [plan], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], reviews: [], questions: [], evidence: [], errorEntries: [], studyCycle: cycle, studyCycles: { [plan.id]: cycle }, revision: state.revision };
+            commit(next, "onboarding-completed");
+            return state;
+        },
         createPlan(input, { activate = true } = {}) {
             const at = nowIso();
             const plan = (0, domain_js_1.createPlan)({ ...input, mode: input.mode ?? "GENERAL_SKILL", status: "active", createdAt: at, updatedAt: at });

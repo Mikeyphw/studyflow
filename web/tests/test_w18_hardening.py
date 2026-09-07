@@ -43,7 +43,7 @@ class W18HardeningTest(unittest.TestCase):
             assert.match(loaded.reason,/last verified local checkpoint/i);
             assert.equal(loaded.state.activities.some((item)=>item.title==='Recovery checkpoint'),true);
             assert.equal(loaded.state.activities.some((item)=>item.title==='Current state'),false);
-            assert.equal(stateStore.get('current').schemaVersion,6);
+            assert.equal(stateStore.get('current').schemaVersion,7);
         '''))
 
     def test_storage_audit_finds_missing_and_orphan_blobs_without_rewriting_state(self):

@@ -45,6 +45,7 @@ const intelligence_1 = require("../intelligence");
 const pwa_1 = require("../pwa");
 const hardening_1 = require("../hardening");
 const release_1 = require("../release");
+const product_1 = require("../product");
 const title = (v) => v.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
@@ -77,6 +78,8 @@ function App({ store, persistence }) {
     const [portableStatus, setPortableStatus] = React.useState("No package selected.");
     const [questionId, setQuestionId] = React.useState(state.questions[0]?.id ?? null);
     const [toast, setToast] = React.useState(null);
+    const [searchOpen, setSearchOpen] = React.useState(false);
+    const [settingsOpen, setSettingsOpen] = React.useState(false);
     const [, tick] = React.useState(0);
     React.useEffect(() => { const onHash = () => { const x = location.hash.slice(1); if (["today", "plan", "practice", "progress"].includes(x))
         setScreen(x); }; onHash(); addEventListener("hashchange", onHash); if (!location.hash)
@@ -85,6 +88,14 @@ function App({ store, persistence }) {
     React.useEffect(() => { const id = setInterval(() => tick(v => v + 1), 1000); return () => clearInterval(id); }, []);
     React.useEffect(() => { if (!toast)
         return; const id = setTimeout(() => setToast(null), 2500); return () => clearTimeout(id); }, [toast]);
+    React.useEffect(() => { const handle = (0, product_1.installDocumentLocalization)(state.preferences.locale); return () => handle.dispose(); }, [state.preferences.locale]);
+    React.useEffect(() => { const key = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" || e.key === "/" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        setSearchOpen(true);
+    } if (e.key === "Escape") {
+        setSearchOpen(false);
+        setSettingsOpen(false);
+    } }; addEventListener("keydown", key); return () => removeEventListener("keydown", key); }, []);
     const run = (fn, msg) => { try {
         const r = fn();
         if (msg)
@@ -97,6 +108,28 @@ function App({ store, persistence }) {
     } };
     const focus = store.getFocusSnapshot(new Date().toISOString());
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
+    const openSearchResult = (item) => { if (item.planId !== state.activePlanId && !run(() => store.switchPlan(item.planId), "Plan switched for search result."))
+        return; if (item.type === "question") {
+        setQuestionId(item.id);
+        setPracticeTab("questions");
+        location.hash = "#practice";
+    }
+    else if (item.type === "error") {
+        setPracticeTab("errors");
+        location.hash = "#practice";
+    }
+    else if (item.type === "material") {
+        setPlanTab("library");
+        location.hash = "#plan";
+    }
+    else if (item.type === "subject" || item.type === "topic") {
+        setPlanTab("content");
+        location.hash = "#plan";
+    }
+    else {
+        setPlanTab("overview");
+        location.hash = "#plan";
+    } setSearchOpen(false); };
     return React.createElement(React.Fragment, null,
         React.createElement("a", { className: "skip-link", href: "#main-content" }, "Skip to content"),
         React.createElement("header", { className: "app-header" },
@@ -104,11 +137,14 @@ function App({ store, persistence }) {
                 React.createElement("p", { className: "eyebrow" }, "StudyFlow Local"),
                 React.createElement("h1", { id: "screen-title" }, title(screen)),
                 React.createElement("p", { className: "muted compact-copy" }, activePlan ? modes.find(([id]) => id === activePlan.mode)?.[1] : "No active plan")),
-            React.createElement("span", { className: "status-pill" },
-                "v",
-                release_1.STUDYFLOW_LOCAL_RELEASE.version,
-                " \u00B7 ",
-                persistence.backend)),
+            React.createElement("div", { className: "header-actions" },
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSearchOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "search")),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSettingsOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "settings")),
+                React.createElement("span", { className: "status-pill" },
+                    "v",
+                    release_1.STUDYFLOW_LOCAL_RELEASE.version,
+                    " \u00B7 ",
+                    persistence.backend))),
         React.createElement("main", { id: "main-content", ref: mainRef, tabIndex: -1, "aria-labelledby": "screen-title", className: "app-main" },
             screen === "today" && React.createElement(Today, { state: state, store: store, focus: focus, run: run }),
             " ",
@@ -119,8 +155,91 @@ function App({ store, persistence }) {
             screen === "progress" && React.createElement(Progress, { state: state, store: store, tab: progressTab, setTab: setProgressTab, persistence: persistence, portable: portable, setPortable: setPortable, portableStatus: portableStatus, setPortableStatus: setPortableStatus, run: run })),
         React.createElement("nav", { className: "bottom-nav", "aria-label": "Main navigation" }, ["today", "plan", "practice", "progress"].map(id => React.createElement("a", { key: id, href: `#${id}`, "aria-current": screen === id ? "page" : undefined },
             React.createElement("span", null, title(id))))),
+        searchOpen && React.createElement(GlobalSearchDialog, { state: state, onClose: () => setSearchOpen(false), onOpen: openSearchResult }),
+        " ",
+        settingsOpen && React.createElement(SettingsDialog, { state: state, store: store, persistence: persistence, onClose: () => setSettingsOpen(false), run: run }),
+        " ",
+        !state.preferences.onboardingCompleted && React.createElement(OnboardingWizard, { state: state, store: store, run: run }),
         React.createElement("div", { id: "toast-region", className: "toast-region", role: "status", "aria-live": "polite", "aria-atomic": "true" }, toast && React.createElement("div", { className: "toast" }, toast)));
 }
+function GlobalSearchDialog({ state, onClose, onOpen }) { const [query, setQuery] = React.useState(""); const results = (0, product_1.searchStudyState)(state, query, { limit: 50 }); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
+    React.createElement("section", { className: "modal-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "global-search-title" },
+        React.createElement("div", { className: "dialog-title" },
+            React.createElement("h2", { id: "global-search-title" }, (0, product_1.uiText)(state.preferences.locale, "search")),
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: onClose }, (0, product_1.uiText)(state.preferences.locale, "close"))),
+        React.createElement("input", { autoFocus: true, "aria-label": "Search local study data", value: query, onChange: (e) => setQuery(e.target.value), placeholder: "Subjects, topics, questions, materials, errors\u2026" }),
+        React.createElement("p", { className: "muted" },
+            "Local-only search \u00B7 Ctrl/\u2318+K or / \u00B7 ",
+            state.preferences.showArchivedInSearch ? "archived plans included" : "active plans only"),
+        React.createElement("ul", { className: "search-results" },
+            results.map(item => React.createElement("li", { key: `${item.type}:${item.id}` },
+                React.createElement("button", { type: "button", onClick: () => onOpen(item) },
+                    React.createElement("strong", null, item.title),
+                    React.createElement("span", null,
+                        title(item.type),
+                        " \u00B7 ",
+                        item.detail)))),
+            query.trim().length >= 2 && !results.length && React.createElement("li", null, (0, product_1.uiText)(state.preferences.locale, "noResults"))))); }
+function SettingsDialog({ state, store, persistence, onClose, run }) { const plan = state.plans.find(p => p.id === state.activePlanId) ?? null; const schedule = plan?.configuration.schedule; const review = plan?.mode === "EXAM_PLAN" ? plan.configuration.publicExam?.reviewIntervalsDays ?? [1, 7, 30] : null; const [capacity, setCapacity] = React.useState(schedule?.dailyCapacityMinutes ?? 120); const [intervals, setIntervals] = React.useState(review?.join(", ") ?? "1, 7, 30"); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
+    React.createElement("section", { className: "modal-card settings-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "settings-title" },
+        React.createElement("div", { className: "dialog-title" },
+            React.createElement("h2", { id: "settings-title" }, (0, product_1.uiText)(state.preferences.locale, "settings")),
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: onClose }, (0, product_1.uiText)(state.preferences.locale, "close"))),
+        React.createElement("div", { className: "content-grid two-column" },
+            React.createElement("article", { className: "card" },
+                React.createElement("h3", null, (0, product_1.uiText)(state.preferences.locale, "language")),
+                React.createElement("select", { "aria-label": "Application language", value: state.preferences.locale, onChange: (e) => run(() => store.setPreferences({ locale: e.target.value }), "Language preference saved locally.") },
+                    React.createElement("option", { value: "en" }, "English"),
+                    React.createElement("option", { value: "pt-BR" }, "Portugu\u00EAs (Brasil)")),
+                React.createElement("label", { className: "check-row" },
+                    React.createElement("input", { "aria-label": "Include archived plans in global search", type: "checkbox", checked: state.preferences.showArchivedInSearch, onChange: (e) => run(() => store.setPreferences({ showArchivedInSearch: e.target.checked }), "Search preference saved.") }),
+                    "Include archived plans in global search"),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setPreferences({ onboardingCompleted: false }), "Onboarding reopened.") }, "Run onboarding again")),
+            React.createElement("article", { className: "card" },
+                React.createElement("h3", null, "Plan preferences"),
+                plan ? React.createElement(React.Fragment, null,
+                    React.createElement("label", null,
+                        "Daily capacity (minutes)",
+                        React.createElement("input", { "aria-label": "Settings daily capacity", type: "number", min: "15", max: "1440", value: capacity, onChange: (e) => setCapacity(Number(e.target.value)) })),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setScheduleConfiguration({ dailyCapacityMinutes: capacity }), "Schedule preference saved.") }, "Save capacity"),
+                    review && React.createElement(React.Fragment, null,
+                        React.createElement("label", null,
+                            "Review intervals (days)",
+                            React.createElement("input", { "aria-label": "Settings review intervals", value: intervals, onChange: (e) => setIntervals(e.target.value) })),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setReviewIntervalsDays(intervals.split(/[,\s]+/).filter(Boolean).map(Number)), "Review preference saved.") }, "Save review policy"))) : React.createElement("p", null, "No active plan.")),
+            React.createElement("article", { className: "card" },
+                React.createElement("h3", null, (0, product_1.uiText)(state.preferences.locale, "privacy")),
+                React.createElement("p", null, (0, product_1.uiText)(state.preferences.locale, "localOnly")),
+                React.createElement("ul", null,
+                    React.createElement("li", null, "Required account/backend: none"),
+                    React.createElement("li", null, "Telemetry/ads: none"),
+                    React.createElement("li", null,
+                        "Persistence: ",
+                        persistence.backend),
+                    React.createElement("li", null, "Portable backup: v2 includes attachment bytes and SHA-256 integrity")),
+                React.createElement("p", { className: "muted" }, (0, product_1.uiText)(state.preferences.locale, "encryption"))),
+            React.createElement(StorageHealthCard, { state: state, persistence: persistence })))); }
+function OnboardingWizard({ state, store, run }) { const [locale, setLocale] = React.useState(state.preferences.locale); const [mode, setMode] = React.useState(state.plans.find(p => p.id === state.activePlanId)?.mode ?? "EXAM_PLAN"); const [name, setName] = React.useState(state.plans.find(p => p.id === state.activePlanId)?.name ?? "My Study Plan"); const [sample, setSample] = React.useState(true); return React.createElement("div", { className: "modal-backdrop onboarding-backdrop", role: "presentation" },
+    React.createElement("section", { className: "modal-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "onboarding-title" },
+        React.createElement("h2", { id: "onboarding-title" }, (0, product_1.uiText)(locale, "onboarding")),
+        React.createElement("p", { className: "muted" }, "Choose a local workspace. Nothing is sent to a server and you can change these settings later."),
+        React.createElement("label", null,
+            (0, product_1.uiText)(locale, "language"),
+            React.createElement("select", { "aria-label": "Onboarding language", value: locale, onChange: (e) => setLocale(e.target.value) },
+                React.createElement("option", { value: "en" }, "English"),
+                React.createElement("option", { value: "pt-BR" }, "Portugu\u00EAs (Brasil)"))),
+        React.createElement("label", null,
+            "Study mode",
+            React.createElement("select", { "aria-label": "Onboarding study mode", value: mode, onChange: (e) => setMode(e.target.value) }, modes.map(([id, label]) => React.createElement("option", { key: id, value: id }, label)))),
+        React.createElement("label", null,
+            "Plan name",
+            React.createElement("input", { "aria-label": "Onboarding plan name", value: name, onChange: (e) => setName(e.target.value), maxLength: 120 })),
+        React.createElement("label", { className: "check-row" },
+            React.createElement("input", { "aria-label": "Keep sample content", type: "checkbox", checked: sample, onChange: (e) => setSample(e.target.checked) }),
+            "Keep the local sample content as a starting point"),
+        React.createElement("div", { className: "button-row" },
+            React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.completeOnboarding({ locale, mode, planName: name, useSample: sample }), "Local workspace ready.") }, (0, product_1.uiText)(locale, "start")),
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setPreferences({ locale, onboardingCompleted: true }), "Sample workspace kept.") }, (0, product_1.uiText)(locale, "skip"))))); }
 function Today({ state, store, focus, run }) { const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState(focus.note ?? ""); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
     React.createElement("article", { className: "hero-card" },
         React.createElement("p", { className: "eyebrow" }, "Next up"),

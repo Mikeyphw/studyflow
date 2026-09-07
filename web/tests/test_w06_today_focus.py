@@ -102,7 +102,7 @@ const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, valu
 const now = () => "2026-09-06T19:05:00.000Z";
 const store = createStudyStore({ repository: createBrowserRepository({ storage, now }), now });
 assert.equal(store.getPersistenceStatus().status, "migrated");
-assert.equal(store.getState().schemaVersion, 6);
+assert.equal(store.getState().schemaVersion, 7);
 assert.ok(store.getState().activities.some((activity) => activity.id === "activity-user-v1"));
 assert.ok(values.has(STORAGE_KEY));
 ''')

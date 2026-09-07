@@ -12,6 +12,8 @@ exports.STUDYFLOW_LOCAL_RELEASE = Object.freeze({
     indexedDbSchema: indexeddb_1.STUDYFLOW_DB_VERSION,
     portableFormat: portable_1.PORTABLE_FORMAT_VERSION,
     channel: "local-first",
+    releaseSeal: "parity-closure",
+    runtimeArtifact: "self-contained-dist",
 });
 function evaluateReleaseReadiness(state, persistenceBackend) {
     const errors = (0, domain_1.validateStudyState)(state);

@@ -14,7 +14,7 @@ class W16PublicExamWorkflowTest(unittest.TestCase):
             import { createInitialStudyState, migrateStudyState, validateStudyState } from './runtime/domain.js';
             const legacy=createInitialStudyState({now:'2026-09-01T00:00:00.000Z'}); legacy.schemaVersion=4; delete legacy.plans[0].configuration;
             const migrated=migrateStudyState(legacy,{now:'2026-09-07T00:00:00.000Z'});
-            assert.equal(migrated.schemaVersion,6); assert.equal(migrated.plans[0].mode,'EXAM_PLAN'); assert.deepEqual(migrated.plans[0].configuration.publicExam.reviewIntervalsDays,[1,7,30]); assert.equal(validateStudyState(migrated).length,0);
+            assert.equal(migrated.schemaVersion,7); assert.equal(migrated.plans[0].mode,'EXAM_PLAN'); assert.deepEqual(migrated.plans[0].configuration.publicExam.reviewIntervalsDays,[1,7,30]); assert.equal(validateStudyState(migrated).length,0);
         '''))
 
     def test_target_identity_and_final_stretch_are_truthful(self):

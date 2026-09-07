@@ -10,6 +10,7 @@ import { buildPlanContentImportPreview } from "./content_import.js";
 import { buildQuestionImportPreview } from "./question_import.js";
 import { buildModeImportPreview } from "./mode_import.js";
 import { buildContentCleanupPreview } from "./intelligence.js";
+import { normalizeAppPreferences, validateStarterWorkspace } from "./product.js";
 import { buildAdaptiveSchedulePreview, normalizeScheduleConfiguration } from "./schedule.js";
 import { assessProgrammingAttempt, buildExamNoticePreview, buildLanguageReviewPrompt, createGeneralSkillDrill, createLanguageExpression, createProgrammingExercise, createReadingItem, normalizeMockBlueprint, previewMockExam, scoreMockExam, PUBLIC_EXAM_STARTER_TEMPLATES } from "./modes.js";
 
@@ -106,6 +107,14 @@ export function createStudyStore({ repository, initialStateFactory = createIniti
         getPersistenceStatus: () => ({ ...persistence }),
         getFocusSnapshot: (at) => focusSnapshot(at),
         subscribe(listener) { if (typeof listener !== "function") throw new TypeError("listener must be a function"); listeners.add(listener); return () => listeners.delete(listener); },
+        setPreferences(input) { const preferences=normalizeAppPreferences({...(state.preferences??{}),...(input??{})}); commit({...state,preferences},"preferences-updated"); return preferences; },
+        completeOnboarding(input) {
+            const cfg=validateStarterWorkspace(input);
+            if(cfg.useSample){ const active=state.plans.find((plan)=>plan.id===state.activePlanId)??state.plans[0]??null; let next={...state,preferences:normalizeAppPreferences({...state.preferences,locale:cfg.locale,onboardingCompleted:true})}; if(active){const at=nowIso();const updated=makePlan({...active,name:cfg.planName,mode:cfg.mode,createdAt:active.createdAt,updatedAt:at});next={...next,plans:next.plans.map((plan)=>plan.id===active.id?updated:plan)};} commit(next,"onboarding-completed"); return state; }
+            const at=nowIso(); const plan=makePlan({name:cfg.planName,mode:cfg.mode,status:"active",createdAt:at,updatedAt:at}); const cycle=createStudyCycleState();
+            const next={...createInitialStudyState({now:at}),preferences:normalizeAppPreferences({locale:cfg.locale,onboardingCompleted:true}),activePlanId:plan.id,plans:[plan],subjects:[],topics:[],activities:[],sessions:[],goals:[],materials:[],reviews:[],questions:[],evidence:[],errorEntries:[],studyCycle:cycle,studyCycles:{[plan.id]:cycle},revision:state.revision};
+            commit(next,"onboarding-completed"); return state;
+        },
         createPlan(input, { activate = true } = {}) {
             const at=nowIso(); const plan=makePlan({ ...input, mode:input.mode??"GENERAL_SKILL", status:"active", createdAt:at, updatedAt:at });
             const cycle=createStudyCycleState(); const shouldActivate=activate||!state.activePlanId;

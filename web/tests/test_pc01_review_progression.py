@@ -38,7 +38,7 @@ class Pc01ReviewProgressionTest(unittest.TestCase):
     def test_legacy_v5_reviews_normalize_without_schema_bump(self):
         node('''
         import assert from "node:assert/strict"; import { createInitialStudyState,migrateStudyState,validateStudyState } from "./runtime/domain.js";
-        const state=createInitialStudyState({now:"2026-09-07T09:00:00.000Z"}); const legacy={...state,reviews:state.reviews.map(({intervalIndex,intervalDays,repetitionCount,previousReviewId,completedAt,...r})=>r)}; const migrated=migrateStudyState(legacy,{now:"2026-09-07T10:00:00.000Z"}); assert.equal(migrated.schemaVersion,6); assert.equal(migrated.reviews[0].intervalIndex,0); assert.equal(migrated.reviews[0].intervalDays,null); assert.equal(migrated.reviews[0].repetitionCount,0); assert.equal(validateStudyState(migrated).length,0);
+        const state=createInitialStudyState({now:"2026-09-07T09:00:00.000Z"}); const legacy={...state,reviews:state.reviews.map(({intervalIndex,intervalDays,repetitionCount,previousReviewId,completedAt,...r})=>r)}; const migrated=migrateStudyState(legacy,{now:"2026-09-07T10:00:00.000Z"}); assert.equal(migrated.schemaVersion,7); assert.equal(migrated.reviews[0].intervalIndex,0); assert.equal(migrated.reviews[0].intervalDays,null); assert.equal(migrated.reviews[0].repetitionCount,0); assert.equal(validateStudyState(migrated).length,0);
         ''')
 
     def test_invalid_review_policy_is_rejected(self):

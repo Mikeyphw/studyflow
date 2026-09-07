@@ -11,7 +11,7 @@ class Pc03PlanLifecycleHierarchyTest(unittest.TestCase):
     def test_v5_state_migrates_to_v6_with_parent_links_and_per_plan_cycles(self):
         node('''
         import assert from "node:assert/strict"; import {createInitialStudyState,migrateStudyState,validateStudyState} from "./runtime/domain.js";
-        const current=createInitialStudyState({now:"2026-09-07T04:00:00.000Z"});const legacy=JSON.parse(JSON.stringify(current));legacy.schemaVersion=5;delete legacy.studyCycles;for(const topic of legacy.topics)delete topic.parentTopicId;const migrated=migrateStudyState(legacy,{now:"2026-09-07T05:00:00.000Z"});assert.equal(migrated.schemaVersion,6);assert.ok(migrated.studyCycles[migrated.activePlanId]);assert.deepEqual(migrated.studyCycles[migrated.activePlanId],migrated.studyCycle);assert.equal(migrated.topics.every(x=>x.parentTopicId===null),true);assert.equal(validateStudyState(migrated).length,0);
+        const current=createInitialStudyState({now:"2026-09-07T04:00:00.000Z"});const legacy=JSON.parse(JSON.stringify(current));legacy.schemaVersion=5;delete legacy.studyCycles;for(const topic of legacy.topics)delete topic.parentTopicId;const migrated=migrateStudyState(legacy,{now:"2026-09-07T05:00:00.000Z"});assert.equal(migrated.schemaVersion,7);assert.ok(migrated.studyCycles[migrated.activePlanId]);assert.deepEqual(migrated.studyCycles[migrated.activePlanId],migrated.studyCycle);assert.equal(migrated.topics.every(x=>x.parentTopicId===null),true);assert.equal(validateStudyState(migrated).length,0);
         ''')
 
     def test_create_rename_switch_archive_restore_and_focus_switch_guard(self):

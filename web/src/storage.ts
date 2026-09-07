@@ -5,7 +5,7 @@ import { createIndexedDbPersistence } from "./indexeddb";
 import type { AttachmentRepository, BrowserPersistence, StudyRepository, StudyState } from "./types";
 
 export const STORAGE_KEY = `studyflow.local.state.v${STATE_SCHEMA_VERSION}`;
-export const LEGACY_STORAGE_KEYS = Object.freeze(["studyflow.local.state.v5", "studyflow.local.state.v4", "studyflow.local.state.v3", "studyflow.local.state.v2", "studyflow.local.state.v1"]);
+export const LEGACY_STORAGE_KEYS = Object.freeze(["studyflow.local.state.v6", "studyflow.local.state.v5", "studyflow.local.state.v4", "studyflow.local.state.v3", "studyflow.local.state.v2", "studyflow.local.state.v1"]);
 
 type RepositoryResult = { status: string; state?: StudyState | null; reason?: string | null; legacyKey?: string };
 type BrowserRepository = StudyRepository & { backend: "localstorage"; key: string };

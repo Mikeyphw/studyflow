@@ -46,8 +46,9 @@ exports.selectDueReviews = selectDueReviews;
 exports.selectOpenErrors = selectOpenErrors;
 exports.deriveQuestionStats = deriveQuestionStats;
 const modes_1 = require("./modes");
-exports.STATE_SCHEMA_VERSION = 6;
-exports.LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3, 4, 5]);
+const product_1 = require("./product");
+exports.STATE_SCHEMA_VERSION = 7;
+exports.LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1, 2, 3, 4, 5, 6]);
 exports.ENTITY_COLLECTIONS = Object.freeze([
     "plans",
     "subjects",
@@ -455,11 +456,12 @@ function focusRemainingMs(focus, at = Date.now()) {
 function migrateStudyState(input, { now = isoNow() } = {}) {
     if (!input || typeof input !== "object" || Array.isArray(input))
         return input;
-    if (![1, 2, 3, 4, 5, exports.STATE_SCHEMA_VERSION].includes(input.schemaVersion))
+    if (![1, 2, 3, 4, 5, 6, exports.STATE_SCHEMA_VERSION].includes(input.schemaVersion))
         return input;
     const state = JSON.parse(JSON.stringify(input));
     const originalVersion = state.schemaVersion;
     state.schemaVersion = exports.STATE_SCHEMA_VERSION;
+    state.preferences = (0, product_1.normalizeAppPreferences)(state.preferences ?? (originalVersion !== exports.STATE_SCHEMA_VERSION ? { onboardingCompleted: true } : null));
     state.plans = Array.isArray(state.plans) ? state.plans.map((plan) => createPlan(plan)) : [];
     state.focus = createFocusState(state.focus ?? {});
     state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => createSubject({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : [];
@@ -489,6 +491,7 @@ function createEmptyStudyState() {
     return {
         schemaVersion: exports.STATE_SCHEMA_VERSION,
         revision: 0,
+        preferences: (0, product_1.normalizeAppPreferences)(null),
         activePlanId: null,
         focus: createFocusState(),
         studyCycle: createStudyCycleState(),
@@ -598,6 +601,12 @@ function validateEntityContracts(state, errors) {
 }
 function validateStudyState(state) {
     const errors = [];
+    try {
+        (0, product_1.normalizeAppPreferences)(state?.preferences);
+    }
+    catch (error) {
+        errors.push(`preferences are invalid: ${error instanceof Error ? error.message : String(error)}`);
+    }
     if (!state || typeof state !== "object" || Array.isArray(state))
         return ["state must be an object"];
     if (state.schemaVersion !== exports.STATE_SCHEMA_VERSION) {

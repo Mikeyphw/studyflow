@@ -40,3 +40,6 @@ Each phase must preserve mobile-first behavior, local ownership, truthful eviden
 
 | PC08 | Programming + Language content-mode parity closure — delivered |
 | PC09 | Weekly coach/readiness/cleanup/report/runbook/sprint parity — delivered |
+| PC10 | Product shell parity: search/settings/privacy/i18n/onboarding — delivered |
+| PC11 | Self-contained production artifact + parity-closure release seal — delivered |
+

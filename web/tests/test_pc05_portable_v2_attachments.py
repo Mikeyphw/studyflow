@@ -29,7 +29,7 @@ class PC05PortableV2Attachments(unittest.TestCase):
 
     def test_v1_remains_importable_while_v2_is_latest(self):
         self.run_node(textwrap.dedent('''
-            import assert from 'node:assert/strict'; import { createInitialStudyState } from './runtime/domain.js'; import { PORTABLE_FORMAT_VERSION, createPortablePackage, parsePortablePackage, serializePortablePackage } from './runtime/portable.js'; const now=()=> '2026-09-07T12:00:00.000Z'; const state=createInitialStudyState({now:now()}); const legacy=createPortablePackage(state,{now}); assert.equal(legacy.formatVersion,1); assert.equal(PORTABLE_FORMAT_VERSION,2); assert.equal(parsePortablePackage(serializePortablePackage(legacy),{now}).payload.schemaVersion,6);
+            import assert from 'node:assert/strict'; import { createInitialStudyState } from './runtime/domain.js'; import { PORTABLE_FORMAT_VERSION, createPortablePackage, parsePortablePackage, serializePortablePackage } from './runtime/portable.js'; const now=()=> '2026-09-07T12:00:00.000Z'; const state=createInitialStudyState({now:now()}); const legacy=createPortablePackage(state,{now}); assert.equal(legacy.formatVersion,1); assert.equal(PORTABLE_FORMAT_VERSION,2); assert.equal(parsePortablePackage(serializePortablePackage(legacy),{now}).payload.schemaVersion,7);
         '''))
 
     def test_create_as_new_plan_remaps_state_and_attachment_ids(self):
