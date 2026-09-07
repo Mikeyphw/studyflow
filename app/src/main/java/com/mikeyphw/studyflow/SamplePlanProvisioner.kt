@@ -314,6 +314,7 @@ class SamplePlanProvisioner internal constructor(
                     startsOnIso = LocalDate.now().toString(),
                     idFactory = { UUID.randomUUID().toString() },
                     accuracySubjectId = subjects.firstOrNull()?.id,
+                    coverageTopicCount = topics.count { !it.archived },
                 )
             }.orEmpty(),
         )

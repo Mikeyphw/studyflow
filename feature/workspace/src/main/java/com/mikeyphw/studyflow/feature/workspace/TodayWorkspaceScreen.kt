@@ -61,6 +61,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
+import com.mikeyphw.studyflow.core.model.StudyStrategyType
 import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
@@ -141,8 +142,16 @@ fun TodayWorkspaceScreen(
         }
     }
 
-    LaunchedEffect(plan.id, cycleSnapshot?.cycle?.currentItemId, cycleSnapshot?.cycle?.enabled) {
-        cycleAction = if (plan.type == StudyType.PUBLIC_EXAMINATION) {
+    LaunchedEffect(
+        plan.id,
+        readySchedule.strategy?.type,
+        cycleSnapshot?.cycle?.currentItemId,
+        cycleSnapshot?.cycle?.enabled,
+    ) {
+        cycleAction = if (
+            plan.type == StudyType.PUBLIC_EXAMINATION &&
+            readySchedule.strategy?.type == StudyStrategyType.STUDY_CYCLE
+        ) {
             try {
                 publicExamManager.nextStudyCycleAction(plan.id)
             } catch (cancelled: CancellationException) {

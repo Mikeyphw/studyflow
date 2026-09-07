@@ -65,6 +65,7 @@ class PublicExamOnboardingTest {
         val accuracySubject = SubjectId("subject")
         val goals = PublicExamOnboardingBuilder.buildGoals(
             planId, publicExam, titles, "2026-08-28", { itName() }, accuracySubject,
+            coverageTopicCount = 99,
         )
         assertEquals(6, goals.size)
         assertTrue(goals.all { goal -> goal.studyPlanId == planId })
@@ -73,7 +74,20 @@ class PublicExamOnboardingTest {
             "2026-12-01",
             goals.single { it.type == GoalType.TOPIC_COMPLETION }.endsOnIso,
         )
+        assertEquals(99.0, goals.single { it.type == GoalType.TOPIC_COMPLETION }.targetValue, 0.0)
         assertTrue(goals.any { it.type == GoalType.CUSTOM })
+    }
+
+    @Test
+    fun `coverage goal is omitted when topic count is unknown instead of pretending 100 topics`() {
+        val blueprint = PublicExamOnboardingBuilder.build(
+            PublicExamOnboardingInput(coverageGoalDateIso = "2026-12-01"),
+        )
+        val titles = PublicExamGoalPreset.entries.associateWith { it.name }
+        val goals = PublicExamOnboardingBuilder.buildGoals(
+            planId, blueprint, titles, "2026-08-28", { itName() },
+        )
+        assertTrue(goals.none { it.type == GoalType.TOPIC_COMPLETION })
     }
 
     @Test

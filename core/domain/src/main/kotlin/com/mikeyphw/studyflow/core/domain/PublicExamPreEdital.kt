@@ -44,6 +44,27 @@ object PublicExamDateResolver {
             else -> PublicExamResolvedDate(null, PublicExamDateSource.NONE)
         }
     }
+
+    fun officialCountdownDate(plan: StudyPlan, target: StudyTarget?): PublicExamResolvedDate? {
+        val resolved = resolve(plan, target)
+        return when (resolved.source) {
+            PublicExamDateSource.CONFIRMED_TARGET -> resolved
+            PublicExamDateSource.LEGACY_PLAN -> resolved.takeIf { target == null }
+            PublicExamDateSource.EXPECTED_TARGET, PublicExamDateSource.NONE -> null
+        }
+    }
+
+    fun daysUntilOfficial(
+        plan: StudyPlan,
+        target: StudyTarget?,
+        nowEpochMillis: Long,
+        zoneId: ZoneId = ZoneId.systemDefault(),
+    ): Int? {
+        val iso = officialCountdownDate(plan, target)?.dateIso ?: return null
+        val examDate = LocalDate.parse(iso)
+        val today = Instant.ofEpochMilli(nowEpochMillis).atZone(zoneId).toLocalDate()
+        return ChronoUnit.DAYS.between(today, examDate).toInt().coerceAtLeast(0)
+    }
 }
 
 enum class PublicExamPreEditalIssue {

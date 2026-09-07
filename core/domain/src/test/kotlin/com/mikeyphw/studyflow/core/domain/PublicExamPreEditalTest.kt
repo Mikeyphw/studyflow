@@ -55,6 +55,21 @@ class PublicExamPreEditalTest {
     }
 
     @Test
+    fun `canonical official countdown ignores expected target and uses confirmed target`() {
+        assertNull(
+            PublicExamDateResolver.daysUntilOfficial(
+                plan(), target(expectedDate = "2026-12-20"), now, zone,
+            ),
+        )
+        assertEquals(
+            105,
+            PublicExamDateResolver.daysUntilOfficial(
+                plan(), target(confirmedDate = "2026-12-20"), now, zone,
+            ),
+        )
+    }
+
+    @Test
     fun `confirmed target leaves pre-edital mode`() {
         val snapshot = requireNotNull(
             PublicExamPreEditalBuilder.build(

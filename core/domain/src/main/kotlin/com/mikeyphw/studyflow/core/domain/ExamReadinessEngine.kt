@@ -9,6 +9,7 @@ import com.mikeyphw.studyflow.core.model.ReadinessSignal
 import com.mikeyphw.studyflow.core.model.ReadinessSignalKind
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
+import com.mikeyphw.studyflow.core.model.StudyTarget
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -46,8 +47,9 @@ object ExamReadinessEngine {
         mockExams: List<MockExam>,
         nowEpochMillis: Long,
         zoneId: ZoneId = ZoneId.systemDefault(),
+        target: StudyTarget? = null,
     ): ExamReadinessScore {
-        val daysUntilExam = daysUntil(plan.examDateIso, nowEpochMillis, zoneId)
+        val daysUntilExam = PublicExamDateResolver.daysUntilOfficial(plan, target, nowEpochMillis, zoneId)
         val coverage = averagePercent(plan.progressPercent, analytics.contentProgressPercent)
         val reviewEvidenceCount = reviewEvidenceCount(analytics)
         val reviewHealth = reviewHealth(analytics.dueReviewCount, analytics.overdueReviewCount)

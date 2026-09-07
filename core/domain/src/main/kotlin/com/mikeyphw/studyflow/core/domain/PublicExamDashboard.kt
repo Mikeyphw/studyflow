@@ -13,10 +13,7 @@ import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
-import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 
 data class PublicExamDashboardMetrics(
     val editalCoveragePercent: Double?,
@@ -88,7 +85,7 @@ object PublicExamDashboardBuilder {
         val currentScore = mockExams.filter { it.studyPlanId == plan.id && it.submittedAtEpochMillis != null }
             .maxByOrNull { it.submittedAtEpochMillis ?: Long.MIN_VALUE }?.scorePercent
         val targetCutoff = target?.estimatedCutoffPercent?.toDouble()
-        val examDate = target?.confirmedExamDateIso ?: target?.expectedExamDateIso ?: plan.examDateIso
+        val daysUntilExam = PublicExamDateResolver.daysUntilOfficial(plan, target, nowEpochMillis, zoneId)
         val metrics = PublicExamDashboardMetrics(
             editalCoveragePercent = coverage,
             weightedMasteryPercent = weightedMastery,
@@ -109,7 +106,7 @@ object PublicExamDashboardBuilder {
             latestMockScorePercent = currentScore,
             estimatedCutoffGapPercent =
                 if (currentScore != null && targetCutoff != null) currentScore - targetCutoff else null,
-            daysUntilExam = examDate?.let { daysUntil(it, nowEpochMillis, zoneId) },
+            daysUntilExam = daysUntilExam,
         )
         val matrix = buildMatrix(plan, syllabus, reviews, errors, completedSessions, nowEpochMillis)
         return PublicExamDashboardSnapshot(metrics, matrix)
@@ -238,9 +235,4 @@ object PublicExamDashboardBuilder {
         return if (questions > 0 && seconds > 0) seconds.toDouble() / questions else null
     }
 
-    private fun daysUntil(dateIso: String, now: Long, zoneId: ZoneId): Int? {
-        val exam = runCatching { LocalDate.parse(dateIso) }.getOrNull() ?: return null
-        val today = Instant.ofEpochMilli(now).atZone(zoneId).toLocalDate()
-        return ChronoUnit.DAYS.between(today, exam).toInt().coerceAtLeast(0)
-    }
 }

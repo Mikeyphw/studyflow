@@ -54,6 +54,7 @@ import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardBuilder
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardSnapshot
+import com.mikeyphw.studyflow.core.domain.PublicExamDateResolver
 import com.mikeyphw.studyflow.core.domain.PublicExamPreEditalBuilder
 import com.mikeyphw.studyflow.core.domain.StudyPhaseDefinition
 import com.mikeyphw.studyflow.core.domain.StudyPhasePlanCodec
@@ -80,6 +81,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySyllabus
+import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.navigation.PlanWorkspaceTab
 import java.time.LocalDate
@@ -259,6 +261,7 @@ fun PlanWorkspaceScreen(
                 schedule = readySchedule,
                 sessions = readySessions,
                 studyCycle = readyStudyCycle,
+                target = readyTarget,
                 nowEpochMillis = System.currentTimeMillis(),
             )
         }
@@ -842,6 +845,7 @@ private fun buildPublicExamPriorityRecommendations(
     schedule: StudySchedule,
     sessions: List<com.mikeyphw.studyflow.core.model.StudySession>,
     studyCycle: com.mikeyphw.studyflow.core.model.StudyCycleSnapshot?,
+    target: StudyTarget?,
     nowEpochMillis: Long,
 ): List<PublicExamPriorityRecommendation> {
     val source = syllabus ?: return emptyList()
@@ -855,14 +859,12 @@ private fun buildPublicExamPriorityRecommendations(
     val cyclePointerIndex = studyCycle?.cycle?.currentItemId?.let { pointer ->
         cycleItems.indexOfFirst { it.id == pointer }.takeIf { it >= 0 }
     } ?: 0
-    val daysUntilExam = plan.examDateIso?.let { iso ->
-        runCatching {
-            java.time.temporal.ChronoUnit.DAYS.between(
-                java.time.LocalDate.now(),
-                java.time.LocalDate.parse(iso),
-            ).toInt().coerceAtLeast(0)
-        }.getOrNull()
-    }
+    val daysUntilExam = PublicExamDateResolver.daysUntilOfficial(
+        plan = plan,
+        target = target,
+        nowEpochMillis = nowEpochMillis,
+        zoneId = java.time.ZoneId.systemDefault(),
+    )
     val subjectById = source.subjects.associateBy { it.id }
     val evidence = source.topics.filterNot { it.archived }.mapNotNull { topic ->
         val subject = subjectById[topic.subjectId]?.takeUnless { it.archived } ?: return@mapNotNull null

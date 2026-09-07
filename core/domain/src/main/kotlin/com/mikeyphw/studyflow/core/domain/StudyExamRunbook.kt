@@ -6,6 +6,7 @@ import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
+import com.mikeyphw.studyflow.core.model.StudyTarget
 
 enum class StudyExamRunbookState {
     READY,
@@ -53,6 +54,7 @@ object StudyExamRunbookPlanner {
         readiness: ExamReadinessScore,
         schedule: StudySchedule,
         mockExams: List<MockExam>,
+        target: StudyTarget? = null,
     ): StudyExamRunbook {
         require(analytics.studyPlanId == plan.id) { "Runbook analytics belong to another Study Plan." }
         require(readiness.studyPlanId == plan.id) { "Runbook readiness belongs to another Study Plan." }
@@ -71,7 +73,8 @@ object StudyExamRunbookPlanner {
             "Runbook mock evidence belongs to another Study Plan."
         }
         val daysUntilExam = readiness.daysUntilExam
-        if (plan.examDateIso == null || daysUntilExam == null) {
+        val officialDate = PublicExamDateResolver.officialCountdownDate(plan, target)
+        if (officialDate == null || daysUntilExam == null) {
             return StudyExamRunbook(
                 state = StudyExamRunbookState.NO_EXAM_DATE,
                 daysUntilExam = null,

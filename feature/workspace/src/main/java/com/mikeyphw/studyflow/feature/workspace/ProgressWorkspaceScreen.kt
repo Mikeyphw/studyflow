@@ -142,6 +142,9 @@ fun ProgressWorkspaceScreen(
     val syllabusFlow = remember(plan.id, loadAttempt) {
         contentManager.observeSyllabus(plan.id).asStudyFlowLoadState()
     }
+    val targetFlow = remember(plan.id, loadAttempt) {
+        contentManager.observeStudyTarget(plan.id).asStudyFlowLoadState()
+    }
     val libraryFlow = remember(plan.id, loadAttempt) {
         libraryManager.observeSnapshot(plan.id).asStudyFlowLoadState()
     }
@@ -178,6 +181,7 @@ fun ProgressWorkspaceScreen(
     val analyticsState by analyticsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val progressState by progressFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val syllabusState by syllabusFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val targetState by targetFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val libraryState by libraryFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
@@ -197,6 +201,7 @@ fun ProgressWorkspaceScreen(
                 analyticsState,
                 progressState,
                 syllabusState,
+                targetState,
                 libraryState,
                 sessionsState,
                 scheduleState,
@@ -215,6 +220,7 @@ fun ProgressWorkspaceScreen(
     val analytics = analyticsState.readyValue()
     val progress = progressState.readyValue()
     val syllabus = syllabusState.readyValue()
+    val target = targetState.readyValue()
     val library = libraryState.readyValue()
     val sessions = sessionsState.readyValue()
     val schedule = scheduleState.readyValue()
@@ -233,7 +239,16 @@ fun ProgressWorkspaceScreen(
     var reportExportResult by rememberSaveable(plan.id.value) { mutableStateOf<Boolean?>(null) }
     val wallClockFlow = remember(plan.id) { tickingClockFlow() }
     val nowEpochMillis by wallClockFlow.collectAsStateWithLifecycle(initialValue = System.currentTimeMillis())
-    val questionQuota = remember(schedule.strategy, syllabus.subjects, sessions, reviewItems, errorEntries, tests, mockExams, nowEpochMillis) {
+    val questionQuota = remember(
+        schedule.strategy,
+        syllabus.subjects,
+        sessions,
+        reviewItems,
+        errorEntries,
+        tests,
+        mockExams,
+        nowEpochMillis,
+    ) {
         val zoneId = ZoneId.systemDefault()
         val today = Instant.ofEpochMilli(nowEpochMillis).atZone(zoneId).toLocalDate()
         StudyPhasePlanCodec.decode(schedule.strategy?.configurationJson.orEmpty()).activeOn(today)?.let { phase ->
@@ -250,7 +265,7 @@ fun ProgressWorkspaceScreen(
             )
         }
     }
-    val readiness = remember(plan, analytics, schedule, mockExams, nowEpochMillis) {
+    val readiness = remember(plan, target, analytics, schedule, mockExams, nowEpochMillis) {
         ExamReadinessEngine.calculate(
             plan = plan,
             analytics = analytics,
@@ -258,6 +273,7 @@ fun ProgressWorkspaceScreen(
             mockExams = mockExams,
             nowEpochMillis = nowEpochMillis,
             zoneId = ZoneId.systemDefault(),
+            target = target,
         )
     }
     val reschedulePreview = remember(plan, analytics, schedule, readiness, planSettings, nowEpochMillis) {
@@ -279,13 +295,14 @@ fun ProgressWorkspaceScreen(
             )
         }
     }
-    val examRunbook = remember(plan, analytics, readiness, schedule, mockExams) {
+    val examRunbook = remember(plan, target, analytics, readiness, schedule, mockExams) {
         StudyExamRunbookPlanner.build(
             plan = plan,
             analytics = analytics,
             readiness = readiness,
             schedule = schedule,
             mockExams = mockExams,
+            target = target,
         )
     }
     val sprintPreview = remember(plan, analytics, readiness, schedule, nowEpochMillis) {
@@ -668,7 +685,10 @@ fun ProgressWorkspaceScreen(
                     )
                 }
                 questionQuota?.let { quota ->
-                    studyFlowSectionHeader(key = "question-quota", title = { stringResource(R.string.question_quota_title) })
+                    studyFlowSectionHeader(
+                        key = "question-quota",
+                        title = { stringResource(R.string.question_quota_title) },
+                    )
                     item(key = "question-quota-summary", contentType = "question-quota") {
                         StudyFlowFocusActionSurface(
                             title = stringResource(R.string.question_quota_next_7_days, quota.nextSevenDaysQuestions),

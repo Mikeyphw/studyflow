@@ -224,7 +224,9 @@ object PublicExamOnboardingBuilder {
         startsOnIso: String,
         idFactory: () -> String,
         accuracySubjectId: SubjectId? = null,
+        coverageTopicCount: Int? = null,
     ): List<StudyGoal> = buildList {
+        require(coverageTopicCount == null || coverageTopicCount >= 0) { "Coverage topic count cannot be negative." }
         addGoal(
             planId,
             GoalType.STUDY_TIME,
@@ -265,11 +267,13 @@ object PublicExamOnboardingBuilder {
             )
         }
         blueprint.coverageGoalDateIso?.let { targetDate ->
-            addGoal(
-                planId, GoalType.TOPIC_COMPLETION, GoalPeriod.CUSTOM,
-                goalTitles.getValue(PublicExamGoalPreset.EDITAL_COVERAGE_BY_DATE),
-                100.0, startsOnIso, idFactory, endsOnIso = targetDate,
-            )
+            coverageTopicCount?.takeIf { it > 0 }?.let { topicCount ->
+                addGoal(
+                    planId, GoalType.TOPIC_COMPLETION, GoalPeriod.CUSTOM,
+                    goalTitles.getValue(PublicExamGoalPreset.EDITAL_COVERAGE_BY_DATE),
+                    topicCount.toDouble(), startsOnIso, idFactory, endsOnIso = targetDate,
+                )
+            }
         }
         if (blueprint.monthlyMockGoal > 0) {
             addGoal(
