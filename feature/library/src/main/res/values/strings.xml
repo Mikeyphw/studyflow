@@ -54,4 +54,20 @@
     <string name="resource_integrity_failure">The resource changed or failed its size/checksum verification.</string>
     <string name="resource_no_handler">No installed app can open this resource.</string>
     <string name="resource_launch_failed">Android could not open this resource.</string>
+
+    <string name="reference_mark_edital_2022">Mark as 2022 edital reference</string>
+    <string name="reference_origin_edital_2022">Reference origin: edital 2022</string>
+    <string name="reference_verified_on">Verified on %1$s</string>
+    <string name="reference_never_verified">Not verified yet</string>
+    <string name="reference_current">Reference checked recently</string>
+    <string name="reference_possibly_stale">Possibly outdated reference</string>
+    <string name="reference_needs_verification">Reference needs verification</string>
+    <string name="reference_untracked">Untracked reference</string>
+    <string name="reference_stale_policy">StudyFlow freshness warning: last verification is more than %1$d days old. This is a product policy, not an edital rule.</string>
+    <string name="reference_verify_today">Verify today</string>
+    <string name="reference_replace">Replace reference</string>
+    <string name="reference_replace_history_notice">The previous reference will be archived, not deleted, so its history remains available.</string>
+    <string name="reference_new_source">New source URL</string>
+    <string name="reference_verified_date">Verified on (YYYY-MM-DD)</string>
+    <string name="reference_supersedes">Replaces material %1$s</string>
 </resources>

@@ -56,4 +56,20 @@
     <string name="resource_integrity_failure">O recurso foi alterado ou falhou na verificação de tamanho/checksum.</string>
     <string name="resource_no_handler">Nenhum aplicativo instalado pode abrir este recurso.</string>
     <string name="resource_launch_failed">O Android não conseguiu abrir este recurso.</string>
+
+    <string name="reference_mark_edital_2022">Marcar como referência do edital 2022</string>
+    <string name="reference_origin_edital_2022">Origem da referência: edital 2022</string>
+    <string name="reference_verified_on">Verificado em %1$s</string>
+    <string name="reference_never_verified">Ainda não verificado</string>
+    <string name="reference_current">Referência verificada recentemente</string>
+    <string name="reference_possibly_stale">Referência possivelmente desatualizada</string>
+    <string name="reference_needs_verification">Referência precisa de verificação</string>
+    <string name="reference_untracked">Referência sem rastreamento</string>
+    <string name="reference_stale_policy">Alerta de atualização do StudyFlow: a última verificação tem mais de %1$d dias. Esta é uma regra do produto, não do edital.</string>
+    <string name="reference_verify_today">Verificar hoje</string>
+    <string name="reference_replace">Substituir referência</string>
+    <string name="reference_replace_history_notice">A referência anterior será arquivada, não apagada, para manter o histórico.</string>
+    <string name="reference_new_source">URL da nova fonte</string>
+    <string name="reference_verified_date">Verificado em (AAAA-MM-DD)</string>
+    <string name="reference_supersedes">Substitui o material %1$s</string>
 </resources>

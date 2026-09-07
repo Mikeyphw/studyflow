@@ -34,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -49,6 +50,10 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
+import com.mikeyphw.studyflow.core.domain.StudyReferenceFreshnessPolicy
+import com.mikeyphw.studyflow.core.domain.StudyReferenceFreshnessStatus
+import com.mikeyphw.studyflow.core.domain.StudyReferenceOrigin
+import com.mikeyphw.studyflow.core.domain.StudyReferenceProvenanceCodec
 import com.mikeyphw.studyflow.core.domain.ManageStudyResourceViewer
 import com.mikeyphw.studyflow.core.domain.StudyLibrarySnapshot
 import com.mikeyphw.studyflow.core.model.Annex
@@ -59,6 +64,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.VideoResource
 import com.mikeyphw.studyflow.core.model.VideoResourceId
 import com.mikeyphw.studyflow.core.model.VideoSourceType
+import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.launch
 
@@ -338,6 +344,7 @@ private fun MaterialList(
             val row = material.asRowState()
             StudyFlowSectionCard(title = row.title) {
                 Text(stringResource(R.string.progress_percent, row.progressPercent))
+                MaterialReferenceControls(material = material, library = library, plan = plan)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = {
@@ -372,6 +379,112 @@ private fun MaterialList(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MaterialReferenceControls(
+    material: StudyMaterial,
+    library: ManageStudyLibrary,
+    plan: StudyPlan,
+) {
+    val scope = rememberCoroutineScope()
+    val provenance = remember(material.tags) { StudyReferenceProvenanceCodec.decode(material) }
+    val freshness = remember(material.tags) {
+        StudyReferenceFreshnessPolicy.evaluate(material, LocalDate.now())
+    }
+    var replacing by rememberSaveable(material.id.value) { mutableStateOf(false) }
+    var replacementSource by rememberSaveable(material.id.value) { mutableStateOf("") }
+    var verifiedOn by rememberSaveable(material.id.value) { mutableStateOf(LocalDate.now().toString()) }
+
+    if (provenance.origin == null) {
+        OutlinedButton(onClick = {
+            scope.launch {
+                library.markReferenceOrigin(
+                    plan.id,
+                    material.id,
+                    StudyReferenceOrigin.EDITAL_2022,
+                    LocalDate.now().toString(),
+                )
+            }
+        }) { Text(stringResource(R.string.reference_mark_edital_2022)) }
+        return
+    }
+
+    Text(stringResource(R.string.reference_origin_edital_2022))
+    Text(
+        provenance.verifiedOn?.let { stringResource(R.string.reference_verified_on, it.toString()) }
+            ?: stringResource(R.string.reference_never_verified),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    StudyFlowStatusPill(
+        text = stringResource(
+            when (freshness.status) {
+                StudyReferenceFreshnessStatus.POSSIBLY_STALE -> R.string.reference_possibly_stale
+                StudyReferenceFreshnessStatus.NEEDS_VERIFICATION -> R.string.reference_needs_verification
+                StudyReferenceFreshnessStatus.CURRENT -> R.string.reference_current
+                StudyReferenceFreshnessStatus.UNTRACKED -> R.string.reference_untracked
+            },
+        ),
+    )
+    if (freshness.status == StudyReferenceFreshnessStatus.POSSIBLY_STALE) {
+        Text(
+            stringResource(R.string.reference_stale_policy, StudyReferenceFreshnessPolicy.PossiblyStaleAfterDays),
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
+    provenance.supersedesMaterialId?.let {
+        Text(stringResource(R.string.reference_supersedes, it.value), color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = {
+            scope.launch { library.verifyReference(plan.id, material.id, LocalDate.now().toString()) }
+        }) { Text(stringResource(R.string.reference_verify_today)) }
+        OutlinedButton(onClick = { replacing = true }) {
+            Text(stringResource(R.string.reference_replace))
+        }
+    }
+
+    if (replacing) {
+        AlertDialog(
+            onDismissRequest = { replacing = false },
+            title = { Text(stringResource(R.string.reference_replace)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.reference_replace_history_notice))
+                    OutlinedTextField(
+                        value = replacementSource,
+                        onValueChange = { replacementSource = it },
+                        label = { Text(stringResource(R.string.reference_new_source)) },
+                    )
+                    OutlinedTextField(
+                        value = verifiedOn,
+                        onValueChange = { verifiedOn = it },
+                        label = { Text(stringResource(R.string.reference_verified_date)) },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = replacementSource.isNotBlank() && runCatching { LocalDate.parse(verifiedOn) }.isSuccess,
+                    onClick = {
+                        replacing = false
+                        scope.launch {
+                            library.replaceReference(
+                                plan.id,
+                                material.id,
+                                StudyMaterialId(UUID.randomUUID().toString()),
+                                replacementSource,
+                                verifiedOn,
+                            )
+                        }
+                    },
+                ) { Text(stringResource(R.string.reference_replace)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { replacing = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
     }
 }
 

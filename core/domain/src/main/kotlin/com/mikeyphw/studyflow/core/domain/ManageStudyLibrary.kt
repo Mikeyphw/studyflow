@@ -11,6 +11,7 @@ import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.VideoResource
 import com.mikeyphw.studyflow.core.model.VideoResourceId
 import com.mikeyphw.studyflow.core.model.VideoSourceType
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -112,6 +113,87 @@ class ManageStudyLibrary(
     suspend fun restoreMaterial(planId: StudyPlanId, materialId: StudyMaterialId): StudyMaterial {
         val material = requireNotNull(repository.findMaterial(planId, materialId)) { "Material does not exist." }
         return repository.upsertMaterial(material.copy(archived = false, updatedAtEpochMillis = clock()))
+    }
+
+    suspend fun markReferenceOrigin(
+        planId: StudyPlanId,
+        materialId: StudyMaterialId,
+        origin: StudyReferenceOrigin,
+        verifiedOnIso: String? = null,
+    ): StudyMaterial {
+        val material = requireNotNull(repository.findMaterial(planId, materialId)) { "Material does not exist." }
+        val existing = StudyReferenceProvenanceCodec.decode(material)
+        val verifiedOn = verifiedOnIso?.takeIf(String::isNotBlank)?.let(LocalDate::parse)
+        return repository.upsertMaterial(
+            material.copy(
+                tags = StudyReferenceProvenanceCodec.encode(
+                    material.tags,
+                    origin = origin,
+                    verifiedOn = verifiedOn ?: existing.verifiedOn,
+                    supersedesMaterialId = existing.supersedesMaterialId,
+                ),
+                updatedAtEpochMillis = clock(),
+            ),
+        )
+    }
+
+    suspend fun verifyReference(
+        planId: StudyPlanId,
+        materialId: StudyMaterialId,
+        verifiedOnIso: String,
+    ): StudyMaterial {
+        val material = requireNotNull(repository.findMaterial(planId, materialId)) { "Material does not exist." }
+        val existing = StudyReferenceProvenanceCodec.decode(material)
+        require(existing.origin != null) { "Material must be marked as a tracked reference before verification." }
+        val verifiedOn = LocalDate.parse(verifiedOnIso)
+        return repository.upsertMaterial(
+            material.copy(
+                tags = StudyReferenceProvenanceCodec.encode(
+                    material.tags,
+                    origin = existing.origin,
+                    verifiedOn = verifiedOn,
+                    supersedesMaterialId = existing.supersedesMaterialId,
+                ),
+                updatedAtEpochMillis = clock(),
+            ),
+        )
+    }
+
+    suspend fun replaceReference(
+        planId: StudyPlanId,
+        materialId: StudyMaterialId,
+        replacementId: StudyMaterialId,
+        sourceUri: String,
+        verifiedOnIso: String,
+    ): StudyMaterial {
+        val previous = requireNotNull(repository.findMaterial(planId, materialId)) { "Material does not exist." }
+        require(replacementId != previous.id) { "Replacement material needs a new ID." }
+        val existing = StudyReferenceProvenanceCodec.decode(previous)
+        require(existing.origin != null) { "Only tracked references can be replaced." }
+        val normalizedSource = sourceUri.trim()
+        require(isValidMaterialSource(previous.type, normalizedSource)) {
+            "Replacement source URI is invalid for this material type."
+        }
+        val verifiedOn = LocalDate.parse(verifiedOnIso)
+        val now = clock()
+        val replacement = previous.copy(
+            id = replacementId,
+            sourceUri = normalizedSource,
+            completedUnits = 0,
+            archived = false,
+            tags = StudyReferenceProvenanceCodec.encode(
+                previous.tags,
+                origin = existing.origin,
+                verifiedOn = verifiedOn,
+                supersedesMaterialId = previous.id,
+            ),
+            createdAtEpochMillis = now,
+            updatedAtEpochMillis = now,
+        )
+        // Create first; archive second. A failure never destroys the historical reference.
+        repository.upsertMaterial(replacement)
+        repository.upsertMaterial(previous.copy(archived = true, updatedAtEpochMillis = now))
+        return replacement
     }
 
     suspend fun createVideo(
