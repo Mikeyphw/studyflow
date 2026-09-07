@@ -723,4 +723,12 @@
     <string name="bb_mock_exam_missing">Question bank is short by %1$d matching Cesgranrio question(s). The preset will not substitute other subjects or boards.</string>
     <string name="bb_mock_exam_essay_separate">Essay training remains separate from the 70 objective questions. Reference eliminatory minimum: %1$d/100.</string>
     <string name="bb_mock_exam_create">Create BB reference mock</string>
+
+    <string name="study_phase_title">Study phase</string>
+    <string name="study_phase_foundation">Foundation</string>
+    <string name="study_phase_expansion">Expansion</string>
+    <string name="study_phase_consolidation">Consolidation</string>
+    <string name="study_phase_questions_reviews">Questions &amp; reviews</string>
+    <string name="study_phase_summary">Theory %1$d%% · Questions %2$d%% · Reviews %3$d%%</string>
+    <string name="study_phase_question_goal">%1$d-question phase target</string>
 </resources>

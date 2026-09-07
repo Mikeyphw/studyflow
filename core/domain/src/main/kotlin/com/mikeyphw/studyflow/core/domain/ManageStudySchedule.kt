@@ -12,6 +12,7 @@ import com.mikeyphw.studyflow.core.model.ScheduleRuleId
 import com.mikeyphw.studyflow.core.model.ScheduleRuleType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyStrategy
+import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 
 class ManageStudySchedule(
@@ -31,6 +32,15 @@ class ManageStudySchedule(
         val ratioTotal = strategy.theoryRatioPercent + strategy.questionRatioPercent + strategy.reviewRatioPercent
         require(ratioTotal == 100) { "Theory, question and review ratios must total 100 percent." }
         return repository.upsertStrategy(strategy)
+    }
+
+    suspend fun savePhasePlan(strategy: StudyStrategy, phasePlan: StudyPhasePlan): StudyStrategy = saveStrategy(
+        strategy.copy(configurationJson = StudyPhasePlanCodec.encode(strategy.configurationJson, phasePlan)),
+    )
+
+    fun effectiveStrategyForDate(strategy: StudyStrategy?, date: LocalDate): StudyStrategy? {
+        val plan = StudyPhasePlanCodec.decode(strategy?.configurationJson.orEmpty())
+        return StudyPhasePlanning.effectiveStrategy(strategy, plan, date)
     }
 
     suspend fun saveRule(rule: ScheduleRule): ScheduleRule {

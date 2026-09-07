@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -59,6 +60,12 @@ import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
+import com.mikeyphw.studyflow.core.domain.BancoDoBrasilAgenteComercialPreset
+import com.mikeyphw.studyflow.core.domain.BancoDoBrasilStudyPhasePreset
+import com.mikeyphw.studyflow.core.domain.StudyPhaseDefinition
+import com.mikeyphw.studyflow.core.domain.StudyPhaseKind
+import com.mikeyphw.studyflow.core.domain.StudyPhasePlan
+import com.mikeyphw.studyflow.core.domain.StudyPhasePlanCodec
 import com.mikeyphw.studyflow.core.model.MissedActivityHandling
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityId
@@ -113,6 +120,7 @@ fun StudyScheduleScreen(
     val cycle by cycleFlow.collectAsStateWithLifecycle(initialValue = null)
     var showRuleDialog by remember { mutableStateOf(false) }
     var showActivityDialog by remember { mutableStateOf(false) }
+    var showPhaseDialog by remember { mutableStateOf(false) }
     var strategyName by rememberSaveable(schedule.strategy?.id?.value) {
         mutableStateOf((schedule.strategy?.type ?: StudyStrategyType.FIXED_WEEKLY).name)
     }
@@ -124,6 +132,10 @@ fun StudyScheduleScreen(
     var confirmingBulkDelete by rememberSaveable(plan.id.value) { mutableStateOf(false) }
 
     val zoneId = remember { ZoneId.systemDefault() }
+    val phasePlan = remember(schedule.strategy?.configurationJson) {
+        StudyPhasePlanCodec.decode(schedule.strategy?.configurationJson.orEmpty())
+    }
+    val activePhase = remember(phasePlan) { phasePlan.activeOn(LocalDate.now()) }
     val subjectById = remember(syllabus) { syllabus.subjects.associateBy { it.id.value } }
     val activityFilter = ScheduleActivityFilter(
         subjectId = subjectFilterId.takeIf(String::isNotEmpty)?.let { com.mikeyphw.studyflow.core.model.SubjectId(it) },
@@ -288,6 +300,64 @@ fun StudyScheduleScreen(
                 }
             }
             item {
+                StudyFlowSectionCard(title = stringResource(R.string.study_phase_title)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (phasePlan.phases.isEmpty()) {
+                            Text(stringResource(R.string.study_phase_not_configured))
+                        } else {
+                            phasePlan.phases.sortedBy(StudyPhaseDefinition::startsOn).forEach { phase ->
+                                val active = phase == activePhase
+                                StudyFlowStatusPill(
+                                    text = buildString {
+                                        append(stringResource(phase.kind.phaseLabelKey()))
+                                        append(" · ")
+                                        append(phase.startsOn)
+                                        append(" → ")
+                                        append(phase.endsOn)
+                                        if (active) append(" · ").append(stringResource(R.string.study_phase_active))
+                                    },
+                                )
+                                Text(
+                                    stringResource(
+                                        R.string.study_phase_summary,
+                                        phase.theoryRatioPercent,
+                                        phase.questionRatioPercent,
+                                        phase.reviewRatioPercent,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Button(
+                                onClick = { showPhaseDialog = true },
+                                enabled = schedule.strategy != null,
+                            ) { Text(stringResource(R.string.study_phase_edit)) }
+                            if (BancoDoBrasilAgenteComercialPreset.matchesReferencePlanName(plan.name)) {
+                                OutlinedButton(
+                                    onClick = {
+                                        schedule.strategy?.let { strategy ->
+                                            launchAction(blockSaved) {
+                                                scheduleManager.savePhasePlan(strategy, BancoDoBrasilStudyPhasePreset.plan())
+                                            }
+                                        }
+                                    },
+                                    enabled = schedule.strategy != null,
+                                ) { Text(stringResource(R.string.study_phase_use_bb_reference)) }
+                            }
+                        }
+                        Text(
+                            stringResource(R.string.study_phase_allocation_notice),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            item {
                 StudyFlowSectionCard(title = stringResource(R.string.study_strategy)) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
@@ -342,7 +412,10 @@ fun StudyScheduleScreen(
                                             replaceUnlocked = true,
                                         ),
                                         currentRules = schedule.scheduleRules,
-                                        strategy = schedule.strategy,
+                                        strategy = scheduleManager.effectiveStrategyForDate(
+                                            schedule.strategy,
+                                            LocalDate.now(),
+                                        ),
                                     )
                                 }
                             },
@@ -617,6 +690,25 @@ fun StudyScheduleScreen(
         )
     }
 
+    if (showPhaseDialog) {
+        StudyPhaseEditorDialog(
+            existing = phasePlan,
+            onDismiss = { showPhaseDialog = false },
+            onSave = { phase ->
+                val strategy = schedule.strategy
+                if (strategy == null) {
+                    showPhaseDialog = false
+                } else {
+                    val merged = StudyPhasePlan(
+                        (phasePlan.phases.filterNot { it.kind == phase.kind } + phase).sortedBy { it.startsOn },
+                    )
+                    launchAction(blockSaved) { scheduleManager.savePhasePlan(strategy, merged) }
+                    showPhaseDialog = false
+                }
+            },
+        )
+    }
+
     if (showRuleDialog) {
         ScheduleRuleDialog(
             onDismiss = { showRuleDialog = false },
@@ -829,3 +921,76 @@ private fun startOfTodayEpochMillis(): Long = Calendar.getInstance().apply {
 
 private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
     enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue
+
+
+@Composable
+private fun StudyPhaseEditorDialog(
+    existing: StudyPhasePlan,
+    onDismiss: () -> Unit,
+    onSave: (StudyPhaseDefinition) -> Unit,
+) {
+    var kindName by rememberSaveable { mutableStateOf(StudyPhaseKind.FOUNDATION.name) }
+    val existingPhase = existing.phases.firstOrNull { it.kind.name == kindName }
+    var startsOn by rememberSaveable(kindName) { mutableStateOf(existingPhase?.startsOn?.toString().orEmpty()) }
+    var endsOn by rememberSaveable(kindName) { mutableStateOf(existingPhase?.endsOn?.toString().orEmpty()) }
+    var theory by rememberSaveable(kindName) { mutableStateOf((existingPhase?.theoryRatioPercent ?: 50).toString()) }
+    var questions by rememberSaveable(kindName) { mutableStateOf((existingPhase?.questionRatioPercent ?: 35).toString()) }
+    var reviews by rememberSaveable(kindName) { mutableStateOf((existingPhase?.reviewRatioPercent ?: 15).toString()) }
+    var questionGoal by rememberSaveable(kindName) { mutableStateOf(existingPhase?.questionGoal?.toString().orEmpty()) }
+    var mockGoal by rememberSaveable(kindName) { mutableStateOf(existingPhase?.mockExamGoal?.toString().orEmpty()) }
+    val candidate = runCatching {
+        StudyPhaseDefinition(
+            kind = StudyPhaseKind.valueOf(kindName),
+            startsOn = LocalDate.parse(startsOn),
+            endsOn = LocalDate.parse(endsOn),
+            theoryRatioPercent = theory.toInt(),
+            questionRatioPercent = questions.toInt(),
+            reviewRatioPercent = reviews.toInt(),
+            questionGoal = questionGoal.takeIf(String::isNotBlank)?.toInt(),
+            mockExamGoal = mockGoal.takeIf(String::isNotBlank)?.toInt(),
+            allocationIsStudyFlowSuggested = false,
+        )
+    }.getOrNull()
+    val validCandidate = candidate?.takeIf { phase ->
+        runCatching {
+            StudyPhasePlan((existing.phases.filterNot { it.kind == phase.kind } + phase).sortedBy { it.startsOn })
+        }.isSuccess
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.study_phase_edit)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StudyPhaseKind.entries.forEach { kind ->
+                        FilterChip(
+                            selected = kindName == kind.name,
+                            onClick = { kindName = kind.name },
+                            label = { Text(stringResource(kind.phaseLabelKey())) },
+                        )
+                    }
+                }
+                OutlinedTextField(startsOn, { startsOn = it }, label = { Text(stringResource(R.string.study_phase_start)) })
+                OutlinedTextField(endsOn, { endsOn = it }, label = { Text(stringResource(R.string.study_phase_end)) })
+                OutlinedTextField(theory, { theory = it }, label = { Text(stringResource(R.string.study_phase_theory_ratio)) })
+                OutlinedTextField(questions, { questions = it }, label = { Text(stringResource(R.string.study_phase_question_ratio)) })
+                OutlinedTextField(reviews, { reviews = it }, label = { Text(stringResource(R.string.study_phase_review_ratio)) })
+                OutlinedTextField(questionGoal, { questionGoal = it }, label = { Text(stringResource(R.string.study_phase_question_goal_label)) })
+                OutlinedTextField(mockGoal, { mockGoal = it }, label = { Text(stringResource(R.string.study_phase_mock_goal_label)) })
+            }
+        },
+        confirmButton = {
+            Button(enabled = validCandidate != null, onClick = { validCandidate?.let(onSave) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+private fun StudyPhaseKind.phaseLabelKey(): Int = when (this) {
+    StudyPhaseKind.FOUNDATION -> R.string.study_phase_foundation
+    StudyPhaseKind.EXPANSION -> R.string.study_phase_expansion
+    StudyPhaseKind.CONSOLIDATION -> R.string.study_phase_consolidation
+    StudyPhaseKind.QUESTIONS_REVIEWS -> R.string.study_phase_questions_reviews
+}

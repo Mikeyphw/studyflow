@@ -143,6 +143,7 @@ data class PublicExamOnboardingBlueprint(
     val coverageGoalDateIso: String?,
     val includeOverdueReviewGoal: Boolean,
     val importTemplates: List<PublicExamImportTemplate> = PublicExamOnboardingTemplates.importTemplates,
+    val phasePlan: StudyPhasePlan? = null,
 ) {
     val hasTargetProfile: Boolean = organization.isNotBlank() && role.isNotBlank() && examBoard.isNotBlank()
 }
@@ -164,6 +165,7 @@ object PublicExamOnboardingBuilder {
         monthlyMockGoal = input.monthlyMockGoal,
         coverageGoalDateIso = input.coverageGoalDateIso.trim().ifBlank { null },
         includeOverdueReviewGoal = input.includeOverdueReviewGoal,
+        phasePlan = null,
     )
 
     fun buildTarget(
@@ -210,7 +212,9 @@ object PublicExamOnboardingBuilder {
         questionRatioPercent = 40,
         reviewRatioPercent = 20,
         adaptivePlanningEnabled = blueprint.cyclePreference == PublicExamCyclePreference.ADAPTIVE,
-        configurationJson = "{}",
+        configurationJson = blueprint.phasePlan?.let { phasePlan ->
+            StudyPhasePlanCodec.encode("{}", phasePlan)
+        } ?: "{}",
     )
 
     fun buildGoals(

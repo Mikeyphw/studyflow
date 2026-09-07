@@ -262,6 +262,7 @@ object StudyOnboardingSamplePlanWizard {
             ),
         )
         val objective = OnboardingSampleExamStageKind.OBJECTIVE
+        val phasedProfile = profile.copy(phasePlan = BancoDoBrasilStudyPhasePreset.plan())
         return OnboardingSamplePlanBlueprint(
             template = OnboardingSamplePlanTemplate.BB_AGENTE_COMERCIAL_PRE_EDITAL,
             studyType = StudyType.PUBLIC_EXAMINATION,
@@ -314,7 +315,7 @@ object StudyOnboardingSamplePlanWizard {
                     minimumScorePercent = 70,
                 ),
             ),
-            publicExam = profile,
+            publicExam = phasedProfile,
         )
     }
 

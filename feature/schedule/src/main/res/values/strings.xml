@@ -112,4 +112,23 @@
     <string name="bulk_protection_note">Locked, in-progress, and historical activities are protected from bulk actions.</string>
     <string name="no_filter_matches_title">No activities match these filters</string>
     <string name="no_filter_matches_message">Adjust subject, type, status, or provenance to see other activities.</string>
+
+    <string name="study_phase_title">Study phases</string>
+    <string name="study_phase_not_configured">No phase plan configured.</string>
+    <string name="study_phase_active">Active</string>
+    <string name="study_phase_edit">Edit phase</string>
+    <string name="study_phase_use_bb_reference">Use BB reference phases</string>
+    <string name="study_phase_allocation_notice">Phase ratios are planning controls. BB preset ratios are StudyFlow suggestions, not official edital data.</string>
+    <string name="study_phase_foundation">Foundation</string>
+    <string name="study_phase_expansion">Expansion</string>
+    <string name="study_phase_consolidation">Consolidation</string>
+    <string name="study_phase_questions_reviews">Questions &amp; reviews</string>
+    <string name="study_phase_summary">Theory %1$d%% · Questions %2$d%% · Reviews %3$d%%</string>
+    <string name="study_phase_start">Start date (YYYY-MM-DD)</string>
+    <string name="study_phase_end">End date (YYYY-MM-DD)</string>
+    <string name="study_phase_theory_ratio">Theory %</string>
+    <string name="study_phase_question_ratio">Questions %</string>
+    <string name="study_phase_review_ratio">Reviews %</string>
+    <string name="study_phase_question_goal_label">Question target (optional)</string>
+    <string name="study_phase_mock_goal_label">Mock target (optional)</string>
 </resources>

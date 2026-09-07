@@ -760,4 +760,12 @@
     <string name="bb_mock_exam_missing">Faltam %1$d questão(ões) Cesgranrio compatível(is) no banco local. O preset não substitui por outra disciplina ou banca.</string>
     <string name="bb_mock_exam_essay_separate">O treino de Redação permanece separado das 70 questões objetivas. Mínimo eliminatório de referência: %1$d/100.</string>
     <string name="bb_mock_exam_create">Criar simulado de referência do BB</string>
+
+    <string name="study_phase_title">Fase de estudo</string>
+    <string name="study_phase_foundation">Fundação</string>
+    <string name="study_phase_expansion">Expansão</string>
+    <string name="study_phase_consolidation">Consolidação</string>
+    <string name="study_phase_questions_reviews">Questões e revisões</string>
+    <string name="study_phase_summary">Teoria %1$d%% · Questões %2$d%% · Revisões %3$d%%</string>
+    <string name="study_phase_question_goal">Meta da fase: %1$d questões</string>
 </resources>

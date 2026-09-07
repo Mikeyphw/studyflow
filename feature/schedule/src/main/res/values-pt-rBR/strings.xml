@@ -114,4 +114,23 @@
     <string name="bulk_protection_note">Atividades travadas, em andamento e históricas não entram nas ações em lote.</string>
     <string name="no_filter_matches_title">Nenhuma atividade corresponde aos filtros</string>
     <string name="no_filter_matches_message">Ajuste matéria, tipo, status ou origem para ver outras atividades.</string>
+
+    <string name="study_phase_title">Fases de estudo</string>
+    <string name="study_phase_not_configured">Nenhum plano de fases configurado.</string>
+    <string name="study_phase_active">Ativa</string>
+    <string name="study_phase_edit">Editar fase</string>
+    <string name="study_phase_use_bb_reference">Usar fases de referência do BB</string>
+    <string name="study_phase_allocation_notice">As proporções das fases são controles de planejamento. No preset do BB, são sugestões do StudyFlow, não dados oficiais do edital.</string>
+    <string name="study_phase_foundation">Fundação</string>
+    <string name="study_phase_expansion">Expansão</string>
+    <string name="study_phase_consolidation">Consolidação</string>
+    <string name="study_phase_questions_reviews">Questões e revisões</string>
+    <string name="study_phase_summary">Teoria %1$d%% · Questões %2$d%% · Revisões %3$d%%</string>
+    <string name="study_phase_start">Data inicial (AAAA-MM-DD)</string>
+    <string name="study_phase_end">Data final (AAAA-MM-DD)</string>
+    <string name="study_phase_theory_ratio">Teoria %</string>
+    <string name="study_phase_question_ratio">Questões %</string>
+    <string name="study_phase_review_ratio">Revisões %</string>
+    <string name="study_phase_question_goal_label">Meta de questões (opcional)</string>
+    <string name="study_phase_mock_goal_label">Meta de simulados (opcional)</string>
 </resources>

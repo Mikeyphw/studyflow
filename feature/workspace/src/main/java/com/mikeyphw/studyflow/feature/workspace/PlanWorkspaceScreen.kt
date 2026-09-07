@@ -55,6 +55,9 @@ import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardBuilder
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardSnapshot
 import com.mikeyphw.studyflow.core.domain.PublicExamPreEditalBuilder
+import com.mikeyphw.studyflow.core.domain.StudyPhaseDefinition
+import com.mikeyphw.studyflow.core.domain.StudyPhasePlanCodec
+import com.mikeyphw.studyflow.core.domain.StudyPhaseKind
 import com.mikeyphw.studyflow.core.domain.PublicExamPreEditalIssue
 import com.mikeyphw.studyflow.core.domain.PublicExamPreEditalSnapshot
 import com.mikeyphw.studyflow.core.domain.PublicExamPriorityEvidence
@@ -79,6 +82,7 @@ import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySyllabus
 import com.mikeyphw.studyflow.core.model.StudyFlowLoadState
 import com.mikeyphw.studyflow.core.navigation.PlanWorkspaceTab
+import java.time.LocalDate
 
 @Composable
 fun PlanWorkspaceScreen(
@@ -202,6 +206,9 @@ fun PlanWorkspaceScreen(
     val readyLegislation = legislationState.readyValue()
     val readyStudyCycle = studyCycleState.readyValue()
     val readyExamNoticeRevisions = examNoticeRevisionsState.readyValue()
+    val currentStudyPhase = remember(readySchedule.strategy?.configurationJson) {
+        StudyPhasePlanCodec.decode(readySchedule.strategy?.configurationJson.orEmpty()).activeOn(LocalDate.now())
+    }
     val cleanupReport = remember(
         plan,
         readySyllabus,
@@ -325,7 +332,9 @@ fun PlanWorkspaceScreen(
                 priorityRecommendations = priorityRecommendations,
                 publicExamDashboard = publicExamDashboard,
                 preEditalCockpit = preEditalCockpit,
+                currentStudyPhase = currentStudyPhase,
                 onPrioritySelected = onManageContent,
+                onManageStudyPhases = onManageSchedule,
                 onReviewPreEditalAssumptions = onManageContent,
                 onEditPlan = onEditPlan,
                 onPlanSettings = onPlanSettings,
@@ -370,7 +379,9 @@ private fun PlanOverviewPane(
     priorityRecommendations: List<PublicExamPriorityRecommendation>,
     publicExamDashboard: PublicExamDashboardSnapshot?,
     preEditalCockpit: PublicExamPreEditalSnapshot?,
+    currentStudyPhase: StudyPhaseDefinition?,
     onPrioritySelected: () -> Unit,
+    onManageStudyPhases: () -> Unit,
     onReviewPreEditalAssumptions: () -> Unit,
     onEditPlan: () -> Unit,
     onPlanSettings: () -> Unit,
@@ -410,6 +421,28 @@ private fun PlanOverviewPane(
                 libraryLabel = stringResource(planLibraryLabel(plan)),
                 materialCount = pluralStringResource(R.plurals.materials_count, materialCount, materialCount),
             )
+        }
+        currentStudyPhase?.let { phase ->
+            item(key = "section:study-phase", contentType = "section") {
+                StudyFlowSectionTitle(title = stringResource(R.string.study_phase_title))
+            }
+            item(key = "study-phase", contentType = "study-phase") {
+                StudyFlowTimelineItem(
+                    title = stringResource(phase.kind.labelKey()),
+                    metadata = stringResource(
+                        R.string.study_phase_summary,
+                        phase.theoryRatioPercent,
+                        phase.questionRatioPercent,
+                        phase.reviewRatioPercent,
+                    ),
+                    icon = Icons.Outlined.AutoFixHigh,
+                    status = phase.questionGoal?.let { goal ->
+                        stringResource(R.string.study_phase_question_goal, goal)
+                    },
+                    actionLabel = stringResource(R.string.manage_schedule),
+                    onClick = onManageStudyPhases,
+                )
+            }
         }
         preEditalCockpit?.let { cockpit ->
             item(key = "section:pre-edital-cockpit", contentType = "section") {
@@ -1098,3 +1131,10 @@ private fun Double?.signedPercentOrUnknown(): String =
 
 @Composable
 private fun Double?.numberOrUnknown(): String = this?.let { "%.1f".format(it) } ?: stringResource(R.string.unknown)
+
+private fun StudyPhaseKind.labelKey(): Int = when (this) {
+    StudyPhaseKind.FOUNDATION -> R.string.study_phase_foundation
+    StudyPhaseKind.EXPANSION -> R.string.study_phase_expansion
+    StudyPhaseKind.CONSOLIDATION -> R.string.study_phase_consolidation
+    StudyPhaseKind.QUESTIONS_REVIEWS -> R.string.study_phase_questions_reviews
+}
