@@ -1,36 +1,27 @@
 "use strict";
 
-function normalizedDuration(value) {
-    return Math.max(5, Math.min(240, Number(value) || 25));
-}
+function normalizedDuration(value){return Math.max(5,Math.min(240,Number(value)||25));}
+function dialog(id){const node=document.getElementById(id);return node instanceof HTMLDialogElement?node:null;}
+function formValue(form,name){return String(new FormData(form).get(name)||"").trim();}
+function showError(showToast,error){showToast(error instanceof Error?error.message:String(error));}
+function openSubjectEditor(store,id=null){const form=document.getElementById("subject-form");if(!form)return;form.reset();const subject=id?store.getState().subjects.find((candidate)=>candidate.id===id):null;form.elements.namedItem("id").value=subject?.id??"";form.elements.namedItem("name").value=subject?.name??"";form.elements.namedItem("weight").value=subject?.weight??"";form.elements.namedItem("notes").value=subject?.notes??"";form.elements.namedItem("archived").checked=Boolean(subject?.archived);document.getElementById("subject-delete").hidden=!subject;dialog("subject-dialog")?.showModal();}
+function openTopicEditor(store,id=null,subjectId=null){const form=document.getElementById("topic-form");if(!form)return;form.reset();const state=store.getState();const topic=id?state.topics.find((candidate)=>candidate.id===id):null;const select=form.elements.namedItem("subjectId");select.replaceChildren();for(const subject of state.subjects.filter((candidate)=>candidate.planId===state.activePlanId)){const option=document.createElement("option");option.value=subject.id;option.textContent=subject.name;select.append(option);}form.elements.namedItem("id").value=topic?.id??"";select.value=topic?.subjectId??subjectId??select.options[0]?.value??"";form.elements.namedItem("name").value=topic?.name??"";form.elements.namedItem("priority").value=topic?.priority??"normal";form.elements.namedItem("status").value=topic?.status??"not-started";form.elements.namedItem("notes").value=topic?.notes??"";document.getElementById("topic-delete").hidden=!topic;dialog("topic-dialog")?.showModal();}
 
-export function bindPersistentStudyEvents({ store, showToast }) {
-    const form = document.getElementById("quick-add-form");
-    form?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const data = new FormData(form);
-        const title = String(data.get("title") || "").trim();
-        if (!title) return;
-        const activity = store.addActivity({
-            title,
-            kind: String(data.get("type") || "study"),
-            durationMinutes: normalizedDuration(data.get("duration")),
-            origin: "manual",
-            queue: "today",
-        });
-        form.reset();
-        const durationInput = form.elements.namedItem("duration");
-        if (durationInput instanceof HTMLInputElement) durationInput.value = "25";
-        form.closest("dialog")?.close();
-        const status = store.getPersistenceStatus();
-        showToast(status.durable ? `${activity.title} saved locally.` : `${activity.title} added in memory; local persistence is unavailable.`);
-    });
-
-    const reset = document.getElementById("reset-local-state");
-    reset?.addEventListener("click", () => {
-        const confirmed = globalThis.confirm?.("Reset StudyFlow Local to its sample state on this device?") ?? true;
-        if (!confirmed) return;
-        store.resetLocalState();
-        showToast("Local StudyFlow sample state reset.");
-    });
+export function bindPersistentStudyEvents({store,showToast,onContentFilterChange=()=>{}}){
+    const quick=document.getElementById("quick-add-form");quick?.addEventListener("submit",(event)=>{event.preventDefault();const data=new FormData(quick);const title=String(data.get("title")||"").trim();if(!title)return;const activity=store.addActivity({title,kind:String(data.get("type")||"study"),durationMinutes:normalizedDuration(data.get("duration")),origin:"manual",queue:"today"});quick.reset();const duration=quick.elements.namedItem("duration");if(duration instanceof HTMLInputElement)duration.value="25";quick.closest("dialog")?.close();showToast(store.getPersistenceStatus().durable?`${activity.title} saved locally.`:`${activity.title} added in memory; local persistence is unavailable.`);});
+    document.getElementById("reset-local-state")?.addEventListener("click",()=>{const confirmed=globalThis.confirm?.("Reset StudyFlow Local to its sample state on this device?")??true;if(!confirmed)return;store.resetLocalState();showToast("Local StudyFlow sample state reset.");});
+    document.getElementById("study-cycle-advance")?.addEventListener("click",()=>{store.advanceStudyCycle();showToast("Study cycle advanced.");});
+    document.getElementById("focus-start")?.addEventListener("click",()=>{try{const activityId=document.getElementById("focus-activity")?.value||null;const durationMinutes=normalizedDuration(document.getElementById("focus-duration")?.value);const note=document.getElementById("focus-note")?.value||null;store.startFocus({activityId,durationMinutes,note});showToast("Focus session saved and started.");}catch(error){showError(showToast,error);}});
+    document.getElementById("focus-pause")?.addEventListener("click",()=>{store.pauseFocus();showToast("Focus session paused and saved.");});
+    document.getElementById("focus-complete")?.addEventListener("click",()=>{const note=document.getElementById("focus-note")?.value||null;const session=store.completeFocus({note});if(session)showToast("Focus session completed and recorded as evidence.");});
+    document.getElementById("focus-cancel")?.addEventListener("click",()=>{const note=document.getElementById("focus-note")?.value||null;const session=store.cancelFocus({note});if(session)showToast("Focus session cancelled and kept in history.");});
+    document.getElementById("focus-reset")?.addEventListener("click",()=>{store.resetFocus();showToast("Focus controls reset.");});
+    document.getElementById("today-activity-list")?.addEventListener("click",(event)=>{const target=event.target.closest("[data-focus-activity]");if(!target)return;const activity=store.getState().activities.find((candidate)=>candidate.id===target.dataset.focusActivity);const select=document.getElementById("focus-activity");const duration=document.getElementById("focus-duration");if(select)select.value=activity?.id??"";if(duration&&activity)duration.value=String(activity.durationMinutes);document.getElementById("focus-start")?.focus();});
+    const search=document.getElementById("content-search"),filter=document.getElementById("content-filter");const emitFilter=()=>onContentFilterChange({query:search?.value??"",filter:filter?.value??"active"});search?.addEventListener("input",emitFilter);filter?.addEventListener("change",emitFilter);
+    document.getElementById("add-subject")?.addEventListener("click",()=>openSubjectEditor(store));
+    document.getElementById("plan-subject-list")?.addEventListener("click",(event)=>{const editSubject=event.target.closest("[data-edit-subject]");const addTopic=event.target.closest("[data-add-topic]");const editTopic=event.target.closest("[data-edit-topic]");const moveSubject=event.target.closest("[data-move-subject]");const moveTopic=event.target.closest("[data-move-topic]");if(editSubject)openSubjectEditor(store,editSubject.dataset.editSubject);else if(addTopic)openTopicEditor(store,null,addTopic.dataset.addTopic);else if(editTopic)openTopicEditor(store,editTopic.dataset.editTopic);else if(moveSubject)store.moveSubject(moveSubject.dataset.moveSubject,moveSubject.dataset.direction);else if(moveTopic)store.moveTopic(moveTopic.dataset.moveTopic,moveTopic.dataset.direction);});
+    const subjectForm=document.getElementById("subject-form");subjectForm?.addEventListener("submit",(event)=>{event.preventDefault();try{const id=formValue(subjectForm,"id");const weightRaw=formValue(subjectForm,"weight");const input={name:formValue(subjectForm,"name"),weight:weightRaw===""?null:Number(weightRaw),notes:formValue(subjectForm,"notes")||null,archived:Boolean(subjectForm.elements.namedItem("archived").checked)};const subject=id?store.updateSubject(id,input):store.addSubject(input);dialog("subject-dialog")?.close();showToast(`${subject.name} saved.`);}catch(error){showError(showToast,error);}});
+    document.getElementById("subject-delete")?.addEventListener("click",()=>{const id=formValue(subjectForm,"id");if(!id)return;try{store.deleteSubject(id);dialog("subject-dialog")?.close();showToast("Subject deleted.");}catch(error){showError(showToast,error);}});
+    const topicForm=document.getElementById("topic-form");topicForm?.addEventListener("submit",(event)=>{event.preventDefault();try{const id=formValue(topicForm,"id");const input={subjectId:formValue(topicForm,"subjectId"),name:formValue(topicForm,"name"),priority:formValue(topicForm,"priority"),status:formValue(topicForm,"status"),notes:formValue(topicForm,"notes")||null};const topic=id?store.updateTopic(id,input):store.addTopic(input);dialog("topic-dialog")?.close();showToast(`${topic.name} saved.`);}catch(error){showError(showToast,error);}});
+    document.getElementById("topic-delete")?.addEventListener("click",()=>{const id=formValue(topicForm,"id");if(!id)return;try{store.deleteTopic(id);dialog("topic-dialog")?.close();showToast("Topic deleted.");}catch(error){showError(showToast,error);}});
 }

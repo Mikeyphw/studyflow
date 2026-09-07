@@ -61,8 +61,9 @@ class W03InteractionFoundationTest(unittest.TestCase):
             self.assertIn(token, self.js + self.html)
 
     def test_focus_timer_uses_absolute_time_for_truth(self) -> None:
-        self.assertIn("Date.now()", self.js)
-        self.assertIn("endsAt", self.js)
+        domain = (WEB / "src/domain.js").read_text(encoding="utf-8") if (WEB / "src/domain.js").is_file() else ""
+        self.assertIn("endsAt", self.js + domain)
+        self.assertTrue("Date.now()" in self.js + domain or "Date.parse" in self.js + domain)
         self.assertIn("setInterval", self.js)
         self.assertIn("clearInterval", self.js)
 

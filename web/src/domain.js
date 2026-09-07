@@ -1,6 +1,7 @@
 "use strict";
 
-export const STATE_SCHEMA_VERSION = 1;
+export const STATE_SCHEMA_VERSION = 2;
+export const LEGACY_STATE_SCHEMA_VERSIONS = Object.freeze([1]);
 
 export const ENTITY_COLLECTIONS = Object.freeze([
     "plans",
@@ -25,6 +26,7 @@ export const STUDY_MODES = Object.freeze([
 
 export const ACTIVITY_KINDS = Object.freeze(["study", "questions", "review"]);
 export const ACTIVITY_STATUSES = Object.freeze(["planned", "completed", "cancelled"]);
+export const FOCUS_STATUSES = Object.freeze(["idle", "running", "paused"]);
 
 const ID_PREFIXES = Object.freeze({
     plan: "plan",
@@ -114,6 +116,8 @@ export function createSubject(input = {}) {
         planId: requireText(input.planId, "subject.planId"),
         name: requireText(input.name, "subject.name"),
         weight,
+        order: Number.isInteger(Number(input.order)) ? Math.max(0, Number(input.order)) : 0,
+        notes: optionalText(input.notes),
         archived: Boolean(input.archived),
     };
 }
@@ -124,8 +128,10 @@ export function createTopic(input = {}) {
         planId: requireText(input.planId, "topic.planId"),
         subjectId: requireText(input.subjectId, "topic.subjectId"),
         name: requireText(input.name, "topic.name"),
+        order: Number.isInteger(Number(input.order)) ? Math.max(0, Number(input.order)) : 0,
         priority: requireOneOf(input.priority ?? "normal", ["low", "normal", "high"], "topic.priority"),
         status: requireOneOf(input.status ?? "not-started", ["not-started", "learning", "reviewing", "mastered", "archived"], "topic.status"),
+        notes: optionalText(input.notes),
     };
 }
 
@@ -233,11 +239,76 @@ export function createEvidence(input = {}) {
     };
 }
 
+export function createStudyCycleState(input = {}) {
+    const subjectIds = Array.isArray(input.subjectIds) ? input.subjectIds.map((value) => requireText(value, "studyCycle.subjectId")) : [];
+    const cursor = subjectIds.length ? Math.max(0, Math.min(subjectIds.length - 1, Number.isInteger(Number(input.cursor)) ? Number(input.cursor) : 0)) : 0;
+    return { subjectIds, cursor };
+}
+
+export function selectCurrentCycleSubject(state) {
+    const cycle = createStudyCycleState(state.studyCycle ?? {});
+    if (!cycle.subjectIds.length) return null;
+    return state.subjects.find((subject) => subject.id === cycle.subjectIds[cycle.cursor] && !subject.archived) ?? null;
+}
+
+export function createFocusState(input = {}) {
+    const durationMinutes = requirePositiveInteger(input.durationMinutes ?? 25, "focus.durationMinutes", { min: 5, max: 240 });
+    const remainingMs = input.remainingMs == null ? durationMinutes * 60_000 : Number(input.remainingMs);
+    if (!Number.isFinite(remainingMs) || remainingMs < 0 || remainingMs > durationMinutes * 60_000) {
+        throw new TypeError("focus.remainingMs must be within the configured duration");
+    }
+    const elapsedMs = input.elapsedMs == null ? 0 : Number(input.elapsedMs);
+    if (!Number.isFinite(elapsedMs) || elapsedMs < 0) throw new TypeError("focus.elapsedMs must be non-negative");
+    return {
+        status: requireOneOf(input.status ?? "idle", FOCUS_STATUSES, "focus.status"),
+        activityId: optionalId(input.activityId),
+        durationMinutes,
+        remainingMs: Math.round(remainingMs),
+        elapsedMs: Math.round(elapsedMs),
+        startedAt: optionalText(input.startedAt),
+        lastResumedAt: optionalText(input.lastResumedAt),
+        endsAt: optionalText(input.endsAt),
+        note: optionalText(input.note),
+    };
+}
+
+export function focusRemainingMs(focus, at = Date.now()) {
+    const current = createFocusState(focus ?? {});
+    if (current.status !== "running" || !current.endsAt) return current.remainingMs;
+    const atMs = typeof at === "number" ? at : Date.parse(String(at));
+    const endsAtMs = Date.parse(current.endsAt);
+    if (!Number.isFinite(atMs) || !Number.isFinite(endsAtMs)) return current.remainingMs;
+    return Math.max(0, endsAtMs - atMs);
+}
+
+export function migrateStudyState(input, { now = isoNow() } = {}) {
+    if (!input || typeof input !== "object" || Array.isArray(input)) return input;
+    if (input.schemaVersion === STATE_SCHEMA_VERSION) {
+        const state = JSON.parse(JSON.stringify(input));
+        state.focus = createFocusState(state.focus ?? {});
+        state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => ({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : state.subjects;
+        state.studyCycle = createStudyCycleState(state.studyCycle ?? { subjectIds: state.subjects.filter((subject) => !subject.archived).map((subject) => subject.id), cursor: 0 });
+        state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : state.topics;
+        return state;
+    }
+    if (input.schemaVersion !== 1) return input;
+    const state = JSON.parse(JSON.stringify(input));
+    state.schemaVersion = STATE_SCHEMA_VERSION;
+    state.focus = createFocusState({ durationMinutes: 25 });
+    state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => ({ ...subject, order: index, notes: subject.notes ?? null })) : [];
+    state.studyCycle = createStudyCycleState({ subjectIds: state.subjects.filter((subject) => !subject.archived).map((subject) => subject.id), cursor: 0 });
+    state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => ({ ...topic, order: index, notes: topic.notes ?? null })) : [];
+    state.migratedAt = now;
+    return state;
+}
+
 export function createEmptyStudyState() {
     return {
         schemaVersion: STATE_SCHEMA_VERSION,
         revision: 0,
         activePlanId: null,
+        focus: createFocusState(),
+        studyCycle: createStudyCycleState(),
         plans: [],
         subjects: [],
         topics: [],
@@ -268,16 +339,17 @@ export function createInitialStudyState({ now = isoNow() } = {}) {
         updatedAt: now,
     })];
     state.subjects = [
-        createSubject({ id: constitutionalId, planId, name: "Constitutional Law", weight: null, createdAt: now, updatedAt: now }),
-        createSubject({ id: portugueseId, planId, name: "Portuguese", weight: null, createdAt: now, updatedAt: now }),
-        createSubject({ id: bankingId, planId, name: "Banking Knowledge", weight: null, createdAt: now, updatedAt: now }),
+        createSubject({ id: constitutionalId, planId, name: "Constitutional Law", weight: null, order: 0, createdAt: now, updatedAt: now }),
+        createSubject({ id: portugueseId, planId, name: "Portuguese", weight: null, order: 1, createdAt: now, updatedAt: now }),
+        createSubject({ id: bankingId, planId, name: "Banking Knowledge", weight: null, order: 2, createdAt: now, updatedAt: now }),
     ];
+    state.studyCycle = createStudyCycleState({ subjectIds: state.subjects.map((subject) => subject.id), cursor: 0 });
     state.topics = [
-        createTopic({ id: "topic-fundamental-rights", planId, subjectId: constitutionalId, name: "Fundamental rights", priority: "high", createdAt: now, updatedAt: now }),
-        createTopic({ id: "topic-public-administration", planId, subjectId: constitutionalId, name: "Public administration", priority: "normal", createdAt: now, updatedAt: now }),
-        createTopic({ id: "topic-constitutional-remedies", planId, subjectId: constitutionalId, name: "Constitutional remedies", priority: "high", createdAt: now, updatedAt: now }),
-        createTopic({ id: "topic-text-interpretation", planId, subjectId: portugueseId, name: "Text interpretation", priority: "normal", createdAt: now, updatedAt: now }),
-        createTopic({ id: "topic-grammar", planId, subjectId: portugueseId, name: "Grammar", priority: "normal", createdAt: now, updatedAt: now }),
+        createTopic({ id: "topic-fundamental-rights", planId, order: 0, subjectId: constitutionalId, name: "Fundamental rights", priority: "high", createdAt: now, updatedAt: now }),
+        createTopic({ id: "topic-public-administration", planId, order: 1, subjectId: constitutionalId, name: "Public administration", priority: "normal", createdAt: now, updatedAt: now }),
+        createTopic({ id: "topic-constitutional-remedies", planId, order: 2, subjectId: constitutionalId, name: "Constitutional remedies", priority: "high", createdAt: now, updatedAt: now }),
+        createTopic({ id: "topic-text-interpretation", planId, order: 3, subjectId: portugueseId, name: "Text interpretation", priority: "normal", createdAt: now, updatedAt: now }),
+        createTopic({ id: "topic-grammar", planId, order: 4, subjectId: portugueseId, name: "Grammar", priority: "normal", createdAt: now, updatedAt: now }),
     ];
     state.activities = [
         createActivity({ id: "activity-seed-admin-review", planId, title: "Administrative Law review", kind: "review", durationMinutes: 20, origin: "seed", createdAt: now, updatedAt: now }),
@@ -337,6 +409,14 @@ export function validateStudyState(state) {
         errors.push(`unsupported state schemaVersion: ${String(state.schemaVersion)}`);
     }
     if (!Number.isInteger(state.revision) || state.revision < 0) errors.push("revision must be a non-negative integer");
+    try {
+        const focus = createFocusState(state.focus ?? {});
+        if (focus.status === "running" && (!focus.startedAt || !focus.lastResumedAt || !focus.endsAt)) errors.push("running focus requires startedAt, lastResumedAt and endsAt");
+        if (focus.status === "paused" && (!focus.startedAt || focus.endsAt != null)) errors.push("paused focus requires startedAt and no endsAt");
+    } catch (error) {
+        errors.push(`focus is invalid: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    try { createStudyCycleState(state.studyCycle ?? {}); } catch (error) { errors.push(`studyCycle is invalid: ${error instanceof Error ? error.message : String(error)}`); }
     validateCollectionShape(state, errors);
     if (errors.some((error) => error.endsWith("must be an array"))) return errors;
 
@@ -367,6 +447,14 @@ export function validateStudyState(state) {
 
     if (state.activePlanId != null && !planIds.has(state.activePlanId)) {
         errors.push(`activePlanId references missing plan: ${state.activePlanId}`);
+    }
+    if (state.focus?.activityId != null && !activityIds.has(state.focus.activityId)) {
+        errors.push(`focus references missing activityId: ${state.focus.activityId}`);
+    }
+    for (const subjectId of state.studyCycle?.subjectIds ?? []) {
+        const subject = state.subjects.find((candidate) => candidate.id === subjectId);
+        if (!subject) errors.push(`studyCycle references missing subjectId: ${subjectId}`);
+        else if (state.activePlanId && subject.planId !== state.activePlanId) errors.push(`studyCycle subject ${subjectId} does not belong to active plan`);
     }
 
     for (const subject of state.subjects) requireReference(errors, subject, "planId", planIds, "subject");
@@ -424,16 +512,60 @@ export function selectActivePlan(state) {
     return state.plans.find((plan) => plan.id === state.activePlanId) ?? null;
 }
 
+export function selectAllSubjectsForPlan(state, planId = state.activePlanId) {
+    return state.subjects
+        .filter((subject) => subject.planId === planId)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+}
+
 export function selectSubjectsForPlan(state, planId = state.activePlanId) {
-    return state.subjects.filter((subject) => subject.planId === planId && !subject.archived);
+    return selectAllSubjectsForPlan(state, planId).filter((subject) => !subject.archived);
+}
+
+export function selectAllTopicsForSubject(state, subjectId) {
+    return state.topics
+        .filter((topic) => topic.subjectId === subjectId)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
 }
 
 export function selectTopicsForSubject(state, subjectId) {
-    return state.topics.filter((topic) => topic.subjectId === subjectId && topic.status !== "archived");
+    return selectAllTopicsForSubject(state, subjectId).filter((topic) => topic.status !== "archived");
 }
 
 export function selectActivitiesForQueue(state, queue = "today", planId = state.activePlanId) {
     return state.activities.filter((activity) => activity.planId === planId && activity.queue === queue && activity.status === "planned");
+}
+
+export function selectOverdueReviews(state, at = Date.now(), planId = state.activePlanId) {
+    const atMs = typeof at === "number" ? at : Date.parse(String(at));
+    return state.reviews.filter((review) => review.planId === planId && review.status === "due" && Date.parse(review.dueAt) <= atMs);
+}
+
+export function recommendNextActivity(state) {
+    const activities = selectActivitiesForQueue(state, "today");
+    if (!activities.length) return null;
+    const kindScore = { review: 30, questions: 20, study: 10 };
+    const priorityScore = { high: 8, normal: 4, low: 0 };
+    const scored = activities.map((activity, index) => {
+        const topic = activity.topicId ? state.topics.find((candidate) => candidate.id === activity.topicId) : null;
+        const subject = activity.subjectId ? state.subjects.find((candidate) => candidate.id === activity.subjectId) : null;
+        const weight = Number.isFinite(Number(subject?.weight)) ? Number(subject.weight) : 0;
+        const score = (kindScore[activity.kind] ?? 0) + (priorityScore[topic?.priority] ?? 0) + Math.min(10, weight) - index / 100;
+        const signals = ["Queued for today"];
+        if (activity.kind === "review") signals.push("Review work");
+        if (activity.kind === "questions") signals.push("Question practice");
+        if (topic?.priority === "high") signals.push("High-priority topic");
+        if (weight > 0) signals.push(`Subject weight ${weight}`);
+        if (activity.origin === "cycle") signals.push("Study-cycle item");
+        return { activity, score, signals };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const winner = scored[0];
+    return {
+        activity: winner.activity,
+        signals: winner.signals,
+        reason: `Recommended from current local plan data: ${winner.signals.join(", ").toLowerCase()}.`,
+    };
 }
 
 export function derivePlanInventory(state, planId = state.activePlanId) {

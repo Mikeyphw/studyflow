@@ -85,14 +85,15 @@ assert.doesNotThrow(() => JSON.parse(values.get(STORAGE_KEY)));
 '''
         )
 
-    def test_focus_remains_outside_persisted_state_until_w06(self) -> None:
+    def test_w04_persistence_boundary_remains_separate_after_w06_extension(self) -> None:
+        app = (WEB / "app.js").read_text(encoding="utf-8").lower()
+        storage = (WEB / "src/storage.js").read_text(encoding="utf-8").lower()
         state = (WEB / "src/state.js").read_text(encoding="utf-8").lower()
-        domain = (WEB / "src/domain.js").read_text(encoding="utf-8").lower()
-        app = (WEB / "app.js").read_text(encoding="utf-8")
-        self.assertNotIn("focus:", state)
-        self.assertNotIn("focus:", domain)
-        self.assertIn("FOCUS_DEFAULT_MS", app)
-        self.assertIn("endsAt", app)
+        self.assertNotIn("localstorage", app)
+        self.assertIn("localstorage", storage)
+        self.assertIn("startfocus", state)
+        self.assertIn("studyflow.local.state.v1", storage)
+        self.assertNotIn("indexeddb", storage)
 
 
 if __name__ == "__main__":

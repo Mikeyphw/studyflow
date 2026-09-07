@@ -1,17 +1,15 @@
 "use strict";
 
 import {
-    createActivity,
-    createInitialStudyState,
-    validateStudyState,
+    createActivity, createEvidence, createFocusState, createInitialStudyState, createStudySession,
+    createStudyCycleState, createSubject, createTopic, focusRemainingMs, migrateStudyState, selectActivitiesForQueue, validateStudyState,
 } from "./domain.js";
 
-function cloneState(state) {
-    return JSON.parse(JSON.stringify(state));
-}
-
+function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
+function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms)) throw new TypeError(`Invalid timestamp: ${value}`); return ms; }
 function persistenceMessage(status, reason = null) {
     if (status === "loaded") return "Local state loaded from this browser.";
+    if (status === "migrated") return "Older local state migrated safely to the current schema.";
     if (status === "saved") return "Saved locally on this device.";
     if (status === "empty") return "Local state initialized on this device.";
     if (status === "invalid") return reason ?? "Saved local state was invalid; using a safe in-memory baseline.";
@@ -19,102 +17,145 @@ function persistenceMessage(status, reason = null) {
     if (status === "cleared") return "Local state reset to the StudyFlow sample baseline.";
     return reason ?? "Local state ready.";
 }
+function referenceCollections(state) { return [state.activities, state.sessions, state.materials, state.reviews, state.questions, state.evidence]; }
 
 export function createStudyStore({ repository, initialStateFactory = createInitialStudyState, now = () => new Date().toISOString() } = {}) {
-    if (!repository || typeof repository.load !== "function" || typeof repository.save !== "function") {
-        throw new TypeError("createStudyStore requires a repository with load/save methods");
-    }
-
+    if (!repository || typeof repository.load !== "function" || typeof repository.save !== "function") throw new TypeError("createStudyStore requires a repository with load/save methods");
     const loaded = repository.load();
-    let state = loaded.state ? cloneState(loaded.state) : initialStateFactory({ now: now() });
-    let persistence = {
-        status: loaded.status,
-        message: persistenceMessage(loaded.status, loaded.reason),
-        durable: loaded.status !== "unavailable" && loaded.status !== "invalid",
-    };
+    let state = loaded.state ? migrateStudyState(cloneState(loaded.state), { now: now() }) : initialStateFactory({ now: now() });
+    let persistence = { status: loaded.status, message: persistenceMessage(loaded.status, loaded.reason), durable: loaded.status !== "unavailable" && loaded.status !== "invalid" };
     const listeners = new Set();
-
-    if (!loaded.state && loaded.status === "empty") {
+    if (!loaded.state && loaded.status === "empty" || loaded.status === "migrated") {
         const seeded = repository.save(state);
-        persistence = {
-            status: seeded.status === "saved" ? "saved" : seeded.status,
-            message: seeded.status === "saved"
-                ? "Local state initialized and saved on this device."
-                : persistenceMessage(seeded.status, seeded.reason),
-            durable: seeded.status === "saved",
-        };
+        persistence = { status: loaded.status === "migrated" && seeded.status === "saved" ? "migrated" : seeded.status, message: loaded.status === "migrated" && seeded.status === "saved" ? persistenceMessage("migrated") : seeded.status === "saved" ? "Local state initialized and saved on this device." : persistenceMessage(seeded.status, seeded.reason), durable: seeded.status === "saved" };
     }
-
-    function notify(reason) {
-        for (const listener of listeners) listener(state, persistence, reason);
-    }
-
+    function notify(reason) { for (const listener of listeners) listener(state, persistence, reason); }
     function commit(nextState, reason) {
-        const errors = validateStudyState(nextState);
+        const migrated = migrateStudyState(nextState, { now: now() });
+        const errors = validateStudyState(migrated);
         if (errors.length) throw new TypeError(`Invalid StudyFlow state: ${errors[0]}`);
-        state = {
-            ...cloneState(nextState),
-            revision: state.revision + 1,
-        };
+        state = { ...cloneState(migrated), revision: state.revision + 1 };
         const saved = repository.save(state);
-        persistence = {
-            status: saved.status,
-            message: persistenceMessage(saved.status, saved.reason),
-            durable: saved.status === "saved",
-        };
+        persistence = { status: saved.status, message: persistenceMessage(saved.status, saved.reason), durable: saved.status === "saved" };
         notify(reason);
         return state;
     }
+    function activePlanId() { if (!state.activePlanId) throw new TypeError("No active plan"); return state.activePlanId; }
+    function nowIso() { return now(); }
+    function focusSnapshot(at = nowIso()) {
+        const focus = createFocusState(state.focus ?? {});
+        return { ...focus, remainingMs: focusRemainingMs(focus, at) };
+    }
+    function finishFocus(status, note = null) {
+        const at = nowIso();
+        const focus = focusSnapshot(at);
+        if (focus.status === "idle") return null;
+        const activity = focus.activityId ? state.activities.find((candidate) => candidate.id === focus.activityId) : null;
+        const currentRunMs = focus.status === "running" && focus.lastResumedAt ? Math.max(0, isoMs(at) - isoMs(focus.lastResumedAt)) : 0;
+        const elapsedMs = focus.elapsedMs + currentRunMs;
+        const durationMinutes = elapsedMs > 0 ? Math.max(1, Math.round(elapsedMs / 60_000)) : null;
+        const session = createStudySession({
+            planId: activePlanId(), activityId: activity?.id ?? null, subjectId: activity?.subjectId ?? null, topicId: activity?.topicId ?? null,
+            startedAt: focus.startedAt ?? at, endedAt: at, durationMinutes, status, note: note ?? focus.note, createdAt: at, updatedAt: at,
+        });
+        let activities = state.activities;
+        let evidence = state.evidence;
+        if (status === "completed") {
+            activities = state.activities.map((candidate) => candidate.id === activity?.id ? { ...candidate, status: "completed", updatedAt: at } : candidate);
+            evidence = [...state.evidence, createEvidence({ planId: activePlanId(), subjectId: activity?.subjectId ?? null, topicId: activity?.topicId ?? null, activityId: activity?.id ?? null, sessionId: session.id, kind: "focus-session-completed", observedAt: at, value: { durationMinutes: durationMinutes ?? 0 }, provenance: "session", createdAt: at, updatedAt: at })];
+        }
+        commit({ ...state, activities, sessions: [...state.sessions, session], evidence, focus: createFocusState({ durationMinutes: focus.durationMinutes }) }, `focus-${status}`);
+        return session;
+    }
 
     return {
-        getState() {
-            return state;
-        },
-
-        getSnapshot() {
-            return cloneState(state);
-        },
-
-        getPersistenceStatus() {
-            return { ...persistence };
-        },
-
-        subscribe(listener) {
-            if (typeof listener !== "function") throw new TypeError("listener must be a function");
-            listeners.add(listener);
-            return () => listeners.delete(listener);
-        },
-
+        getState: () => state,
+        getSnapshot: () => cloneState(state),
+        getPersistenceStatus: () => ({ ...persistence }),
+        getFocusSnapshot: (at) => focusSnapshot(at),
+        subscribe(listener) { if (typeof listener !== "function") throw new TypeError("listener must be a function"); listeners.add(listener); return () => listeners.delete(listener); },
         addActivity(input) {
-            if (!state.activePlanId) throw new TypeError("Cannot add an activity without an active plan");
-            const activity = createActivity({
-                ...input,
-                planId: input.planId ?? state.activePlanId,
-                createdAt: input.createdAt ?? now(),
-                updatedAt: input.updatedAt ?? now(),
-            });
-            commit({ ...state, activities: [...state.activities, activity] }, "activity-added");
-            return activity;
+            const at = nowIso();
+            const activity = createActivity({ ...input, planId: input.planId ?? activePlanId(), createdAt: input.createdAt ?? at, updatedAt: input.updatedAt ?? at });
+            commit({ ...state, activities: [...state.activities, activity] }, "activity-added"); return activity;
         },
-
-        replaceState(nextState, reason = "state-replaced") {
-            return commit(nextState, reason);
+        startFocus({ activityId = null, durationMinutes = null, note = null } = {}) {
+            const at = nowIso();
+            const current = focusSnapshot(at);
+            if (current.status === "running") return current;
+            const activity = activityId ? state.activities.find((candidate) => candidate.id === activityId && candidate.status === "planned") : selectActivitiesForQueue(state, "today")[0] ?? null;
+            if (activityId && !activity) throw new TypeError("Focus activity must reference a planned activity");
+            const configuredMinutes = durationMinutes ?? current.durationMinutes ?? activity?.durationMinutes ?? 25;
+            const baseRemaining = current.status === "paused" ? current.remainingMs : Number(configuredMinutes) * 60_000;
+            const startedAt = current.status === "paused" ? current.startedAt : at;
+            const elapsedMs = current.status === "paused" ? current.elapsedMs : 0;
+            const next = createFocusState({ status: "running", activityId: activity?.id ?? current.activityId, durationMinutes: configuredMinutes, remainingMs: baseRemaining, elapsedMs, startedAt, lastResumedAt: at, endsAt: new Date(isoMs(at) + baseRemaining).toISOString(), note: note ?? current.note });
+            commit({ ...state, focus: next }, current.status === "paused" ? "focus-resumed" : "focus-started"); return next;
         },
-
+        pauseFocus() {
+            const at = nowIso(); const current = focusSnapshot(at); if (current.status !== "running") return current;
+            const runMs = current.lastResumedAt ? Math.max(0, isoMs(at) - isoMs(current.lastResumedAt)) : 0;
+            const next = createFocusState({ ...current, status: "paused", remainingMs: current.remainingMs, elapsedMs: current.elapsedMs + runMs, lastResumedAt: null, endsAt: null });
+            commit({ ...state, focus: next }, "focus-paused"); return next;
+        },
+        completeFocus({ note = null } = {}) { return finishFocus("completed", note); },
+        cancelFocus({ note = null } = {}) { return finishFocus("cancelled", note); },
+        resetFocus() { const current = focusSnapshot(); const next = createFocusState({ durationMinutes: current.durationMinutes }); commit({ ...state, focus: next }, "focus-reset"); return next; },
+        setFocusNote(note) { const next = createFocusState({ ...state.focus, note }); commit({ ...state, focus: next }, "focus-note-updated"); return next; },
+        setStudyCycle(subjectIds) {
+            const allowed = new Set(state.subjects.filter((subject) => subject.planId === activePlanId() && !subject.archived).map((subject) => subject.id));
+            const ids = [...new Set(subjectIds)];
+            if (ids.some((id) => !allowed.has(id))) throw new TypeError("Study cycle subjects must be active subjects in the current plan");
+            const cycle = createStudyCycleState({ subjectIds: ids, cursor: 0 });
+            commit({ ...state, studyCycle: cycle }, "study-cycle-updated"); return cycle;
+        },
+        advanceStudyCycle() {
+            const cycle = createStudyCycleState(state.studyCycle ?? {});
+            if (!cycle.subjectIds.length) return cycle;
+            const next = createStudyCycleState({ ...cycle, cursor: (cycle.cursor + 1) % cycle.subjectIds.length });
+            commit({ ...state, studyCycle: next }, "study-cycle-advanced"); return next;
+        },
+        addSubject(input) {
+            const at=nowIso(); const existing=state.subjects.filter((subject)=>subject.planId===activePlanId());
+            const subject=createSubject({ ...input, planId: activePlanId(), order: input.order ?? existing.length, createdAt: at, updatedAt: at });
+            commit({ ...state, subjects:[...state.subjects, subject] }, "subject-added"); return subject;
+        },
+        updateSubject(id, changes) {
+            const current=state.subjects.find((subject)=>subject.id===id); if(!current) throw new TypeError("Subject not found"); const at=nowIso();
+            const updated=createSubject({ ...current, ...changes, id: current.id, planId: current.planId, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, subjects:state.subjects.map((subject)=>subject.id===id?updated:subject) }, "subject-updated"); return updated;
+        },
+        deleteSubject(id) {
+            const current=state.subjects.find((subject)=>subject.id===id); if(!current) throw new TypeError("Subject not found");
+            if(state.topics.some((topic)=>topic.subjectId===id)) throw new TypeError("Archive or remove this subject's topics before deleting it");
+            if(referenceCollections(state).some((collection)=>collection.some((entity)=>entity.subjectId===id))) throw new TypeError("Subject has study history or linked records and cannot be deleted; archive it instead");
+            commit({ ...state, subjects:state.subjects.filter((subject)=>subject.id!==id) }, "subject-deleted");
+        },
+        moveSubject(id, direction) {
+            const ordered=state.subjects.filter((subject)=>subject.planId===activePlanId()).sort((a,b)=>(a.order??0)-(b.order??0)); const index=ordered.findIndex((subject)=>subject.id===id);
+            const target=index+(direction==="up"?-1:1); if(index<0||target<0||target>=ordered.length) return; [ordered[index],ordered[target]]=[ordered[target],ordered[index]];
+            const ranks=new Map(ordered.map((subject,i)=>[subject.id,i])); const at=nowIso(); commit({ ...state, subjects:state.subjects.map((subject)=>ranks.has(subject.id)?{...subject,order:ranks.get(subject.id),updatedAt:at}:subject) }, "subject-reordered");
+        },
+        addTopic(input) {
+            const subject=state.subjects.find((candidate)=>candidate.id===input.subjectId && candidate.planId===activePlanId()); if(!subject) throw new TypeError("Topic requires a subject in the active plan");
+            const at=nowIso(); const siblings=state.topics.filter((topic)=>topic.subjectId===subject.id); const topic=createTopic({ ...input, planId:activePlanId(), order:input.order??siblings.length, createdAt:at, updatedAt:at });
+            commit({ ...state, topics:[...state.topics,topic] }, "topic-added"); return topic;
+        },
+        updateTopic(id, changes) {
+            const current=state.topics.find((topic)=>topic.id===id); if(!current) throw new TypeError("Topic not found"); const subjectId=changes.subjectId??current.subjectId; const subject=state.subjects.find((candidate)=>candidate.id===subjectId && candidate.planId===current.planId); if(!subject) throw new TypeError("Topic subject must belong to the same plan"); const at=nowIso();
+            const updated=createTopic({ ...current,...changes,id:current.id,planId:current.planId,subjectId,createdAt:current.createdAt,updatedAt:at }); commit({ ...state,topics:state.topics.map((topic)=>topic.id===id?updated:topic) },"topic-updated"); return updated;
+        },
+        deleteTopic(id) {
+            const current=state.topics.find((topic)=>topic.id===id); if(!current) throw new TypeError("Topic not found");
+            if(referenceCollections(state).some((collection)=>collection.some((entity)=>entity.topicId===id)) || state.reviews.some((review)=>review.sourceType==="topic"&&review.sourceId===id)) throw new TypeError("Topic has study history or linked records and cannot be deleted; archive it instead");
+            commit({ ...state,topics:state.topics.filter((topic)=>topic.id!==id) },"topic-deleted");
+        },
+        moveTopic(id, direction) {
+            const current=state.topics.find((topic)=>topic.id===id); if(!current) return; const ordered=state.topics.filter((topic)=>topic.subjectId===current.subjectId).sort((a,b)=>(a.order??0)-(b.order??0)); const index=ordered.findIndex((topic)=>topic.id===id); const target=index+(direction==="up"?-1:1); if(index<0||target<0||target>=ordered.length)return; [ordered[index],ordered[target]]=[ordered[target],ordered[index]]; const ranks=new Map(ordered.map((topic,i)=>[topic.id,i])); const at=nowIso(); commit({ ...state,topics:state.topics.map((topic)=>ranks.has(topic.id)?{...topic,order:ranks.get(topic.id),updatedAt:at}:topic) },"topic-reordered");
+        },
+        replaceState(nextState, reason="state-replaced") { return commit(nextState,reason); },
         resetLocalState() {
-            const cleared = typeof repository.clear === "function" ? repository.clear() : { status: "cleared" };
-            state = initialStateFactory({ now: now() });
-            const saved = repository.save(state);
-            const status = saved.status === "saved" ? "cleared" : saved.status;
-            persistence = {
-                status,
-                message: saved.status === "saved"
-                    ? persistenceMessage("cleared")
-                    : persistenceMessage(saved.status, saved.reason ?? cleared.reason),
-                durable: saved.status === "saved",
-            };
-            notify("state-reset");
-            return state;
+            const cleared=typeof repository.clear==="function"?repository.clear():{status:"cleared"}; state=initialStateFactory({now:nowIso()}); const saved=repository.save(state); const status=saved.status==="saved"?"cleared":saved.status; persistence={status,message:saved.status==="saved"?persistenceMessage("cleared"):persistenceMessage(saved.status,saved.reason??cleared.reason),durable:saved.status==="saved"}; notify("state-reset"); return state;
         },
     };
 }

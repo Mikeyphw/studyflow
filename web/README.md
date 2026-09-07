@@ -33,3 +33,8 @@ npm run dev
 ## W04/W05 foundation
 
 W04 introduces the versioned temporary browser-state repository and makes Quick Add durable across reloads. W05 adds the framework-independent Plan/Subject/Topic/Activity/StudySession/Goal/Material/Review/Question/Evidence model plus reference validation and pure selectors. Focus/session evidence remains deferred to W06, and IndexedDB remains deferred to W12.
+
+
+## WEB-W06/W07
+
+The current browser build now has durable focus sessions and editable plan content. Focus uses absolute persisted timestamps, survives reload, records completed/cancelled `StudySession` history, and emits completion `Evidence` without inventing performance data. Plan Content supports subject/topic create, edit, safe delete, archive, reorder, weight, priority, status, notes, search, filters and evidence counts. The W04 v1 localStorage key is migrated into schema v2 instead of discarded.

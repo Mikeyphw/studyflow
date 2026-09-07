@@ -221,12 +221,14 @@ def validate_interactions() -> list[str]:
     ):
         fail(errors, element_id not in parser.ids, f"W03 interactive element missing: {element_id}")
 
+    domain_clock = read_text(WEB / "src/domain.js", []) if (WEB / "src/domain.js").is_file() else ""
+    interaction_source = js + "\n" + text + "\n" + domain_clock
     for token in (
         "showScreen", "activateTab", "showModal", "FormData", "addEventListener",
         "aria-current", "aria-pressed", "createElement", "textContent",
-        "Date.now()", "endsAt", "setInterval", "clearInterval",
+        "endsAt", "setInterval", "clearInterval",
     ):
-        fail(errors, token not in js and token not in text, f"W03 interaction contract missing token: {token}")
+        fail(errors, token not in interaction_source, f"W03 interaction contract missing token: {token}")
 
     lowered = js.lower()
     for forbidden in ("localstorage", "indexeddb", "fetch("):
@@ -331,6 +333,54 @@ def validate_domain() -> list[str]:
     _node_check(errors, WEB / "src/domain.js")
     return errors
 
+
+def validate_focus() -> list[str]:
+    errors = validate_domain()
+    html, parser = parse_shell(errors)
+    state = read_text(WEB / "src/state.js", errors)
+    domain = read_text(WEB / "src/domain.js", errors)
+    storage = read_text(WEB / "src/storage.js", errors)
+    app = read_text(WEB / "app.js", errors)
+    if parser is not None:
+        for element_id in ("focus-complete", "focus-cancel", "focus-note", "focus-history", "recommendation-title", "today-overdue-review-count", "study-cycle-next", "study-cycle-advance"):
+            fail(errors, element_id not in parser.ids, f"W06 focus UI hook missing: {element_id}")
+    for token in ("createFocusState", "focusRemainingMs", "recommendNextActivity", "selectOverdueReviews", "createStudyCycleState", "selectCurrentCycleSubject"):
+        fail(errors, token not in domain, f"W06 domain contract missing token: {token}")
+    for token in ("startFocus", "pauseFocus", "completeFocus", "cancelFocus", "getFocusSnapshot", "focus-session-completed", "advanceStudyCycle", "setStudyCycle"):
+        fail(errors, token not in state, f"W06 store contract missing token: {token}")
+    for token in ("studyflow.local.state.v1", "LEGACY_STORAGE_KEYS", "migrated"):
+        fail(errors, token not in storage, f"W06 migration contract missing token: {token}")
+    for token in ("setInterval", "clearInterval", "remainingMs"):
+        fail(errors, token not in app, f"W06 timer orchestration missing token: {token}")
+    doc = read_text(ROOT / "docs/web/W06_W07_TODAY_FOCUS_PLAN_CONTENT.md", errors)
+    for token in ("absolute", "StudySession", "Evidence", "migration", "overdue"):
+        fail(errors, token.lower() not in doc.lower(), f"W06/W07 delivery doc missing: {token}")
+    return errors
+
+
+def validate_plan_content() -> list[str]:
+    errors = validate_focus()
+    html, parser = parse_shell(errors)
+    state = read_text(WEB / "src/state.js", errors)
+    domain = read_text(WEB / "src/domain.js", errors)
+    render = read_text(WEB / "src/render.js", errors)
+    events = read_text(WEB / "src/events.js", errors)
+    if parser is not None:
+        for element_id in ("content-search", "content-filter", "add-subject", "subject-dialog", "subject-form", "topic-dialog", "topic-form"):
+            fail(errors, element_id not in parser.ids, f"W07 Plan Content UI hook missing: {element_id}")
+    for token in ("addSubject", "updateSubject", "deleteSubject", "moveSubject", "addTopic", "updateTopic", "deleteTopic", "moveTopic"):
+        fail(errors, token not in state, f"W07 state contract missing token: {token}")
+    for token in ("selectAllSubjectsForPlan", "selectAllTopicsForSubject", "notes", "order"):
+        fail(errors, token not in domain, f"W07 domain contract missing token: {token}")
+    for token in ("evidence", "content", "filter"):
+        fail(errors, token.lower() not in (render + events).lower(), f"W07 rendering/event contract missing token: {token}")
+    lowered = domain.lower()
+    for forbidden in ("document.", "window.", "localstorage", "indexeddb", "fetch("):
+        fail(errors, forbidden in lowered, f"W07 must keep domain independent: {forbidden}")
+    for relative in ("src/domain.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js", "app.js"):
+        _node_check(errors, WEB / relative)
+    return errors
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -340,6 +390,8 @@ def main() -> int:
     mode.add_argument("--interactions", action="store_true")
     mode.add_argument("--state", action="store_true")
     mode.add_argument("--domain", action="store_true")
+    mode.add_argument("--focus", action="store_true")
+    mode.add_argument("--content", action="store_true")
     mode.add_argument("--all", action="store_true")
     args = parser.parse_args()
 
@@ -358,9 +410,15 @@ def main() -> int:
     elif args.state:
         errors = validate_state()
         label = "W04 application state + temporary persistence"
-    else:
+    elif args.domain:
         errors = validate_domain()
         label = "W04/W05 state + core domain foundation"
+    elif args.focus:
+        errors = validate_focus()
+        label = "W06 Today + durable focus"
+    else:
+        errors = validate_plan_content()
+        label = "W06/W07 Today, Focus + Plan Content"
 
     if errors:
         print("StudyFlow web validation FAILED:", file=sys.stderr)
