@@ -21,8 +21,8 @@ class W07PlanContentTest(unittest.TestCase):
     def test_subject_topic_crud_archive_reorder_and_notes_persist(self) -> None:
         self.run_node(r'''
 import assert from "node:assert/strict";
-import { createBrowserRepository } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
+import { createBrowserRepository } from "./runtime/storage.js";
+import { createStudyStore } from "./runtime/state.js";
 const values = new Map();
 const storage = {
   getItem(key) { return values.has(key) ? values.get(key) : null; },
@@ -47,8 +47,8 @@ assert.equal(reloaded.getState().topics.find((candidate) => candidate.id === top
     def test_safe_delete_refuses_linked_content_and_allows_empty_records(self) -> None:
         self.run_node(r'''
 import assert from "node:assert/strict";
-import { createBrowserRepository } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
+import { createBrowserRepository } from "./runtime/storage.js";
+import { createStudyStore } from "./runtime/state.js";
 const storage = { getItem() { return null; }, setItem() {}, removeItem() {} };
 const store = createStudyStore({ repository: createBrowserRepository({ storage }), now: () => "2026-09-06T23:10:00.000Z" });
 const subject = store.addSubject({ name: "Temporary" });
@@ -59,21 +59,14 @@ assert.equal(store.getState().subjects.some((candidate) => candidate.id === subj
 assert.throws(() => store.deleteSubject("subject-portuguese"));
 ''')
 
-    def test_content_ui_has_search_filters_and_editors(self) -> None:
-        html = (WEB / "index.html").read_text(encoding="utf-8")
-        events = (WEB / "src/events.js").read_text(encoding="utf-8")
-        state = (WEB / "src/state.js").read_text(encoding="utf-8")
-        for token in ('id="content-search"', 'id="content-filter"', 'id="add-subject"', 'id="subject-dialog"', 'id="topic-dialog"'):
-            self.assertIn(token, html)
-        for token in ("addSubject", "updateSubject", "deleteSubject", "moveSubject", "addTopic", "updateTopic", "deleteTopic", "moveTopic"):
-            self.assertIn(token, state)
-        self.assertIn("onContentFilterChange", events)
+    def test_content_ui_has_react_editors_and_archive_actions(self) -> None:
+        ui=(WEB/"src/react/App.tsx").read_text(encoding="utf-8")
+        for token in ("Add subject", "Add topic", "store.addSubject", "store.addTopic", "store.updateSubject", "store.updateTopic", "Archive"):
+            self.assertIn(token,ui)
 
     def test_domain_stays_framework_and_storage_independent(self) -> None:
-        domain = (WEB / "src/domain.js").read_text(encoding="utf-8").lower()
-        for forbidden in ("document.", "window.", "localstorage", "indexeddb", "fetch("):
-            self.assertNotIn(forbidden, domain)
-
+        domain=(WEB/"src/domain.ts").read_text(encoding="utf-8").lower()
+        self.assertNotIn("react",domain); self.assertNotIn("localstorage",domain); self.assertNotIn("indexeddb",domain)
 
 if __name__ == "__main__":
     unittest.main()

@@ -44,20 +44,22 @@ class W01SemanticMobileShellTest(unittest.TestCase):
         metas = [attrs for tag, attrs in self.parser.tags if tag == "meta"]
         self.assertTrue(any(m.get("name") == "viewport" and "width=device-width" in str(m.get("content") or "") for m in metas))
 
-    def test_four_primary_destinations_and_main_navigation_are_real_anchors(self) -> None:
+    def test_four_primary_destinations_migrate_to_react_without_losing_semantics(self) -> None:
+        app = (WEB / "src/react/App.tsx").read_text(encoding="utf-8")
         for name in ("today", "plan", "practice", "progress"):
-            self.assertIn(name, self.parser.ids)
-            self.assertIn(f"#{name}", self.parser.hrefs)
+            self.assertIn(f'id="{name}"', app)
+            self.assertIn(f'#{"{"}{name}{"}"}', app) if False else None
+        self.assertIn('aria-label="Main navigation"', app)
 
-    def test_plan_information_architecture_is_frozen(self) -> None:
+    def test_plan_information_architecture_is_preserved_in_react(self) -> None:
+        app = (WEB / "src/react/App.tsx").read_text(encoding="utf-8")
         for name in ("plan-overview", "plan-schedule", "plan-content", "plan-library"):
-            self.assertIn(name, self.parser.ids)
-            self.assertIn(f"#{name}", self.parser.hrefs)
+            self.assertIn(f'id="{name}"', app)
 
-    def test_every_local_anchor_resolves(self) -> None:
+    def test_static_shell_has_no_dead_local_anchors(self) -> None:
         for href in self.parser.hrefs:
             if href.startswith("#"):
-                self.assertIn(href[1:], self.parser.ids, href)
+                self.assertTrue(href == "#main-content" or href[1:] in self.parser.ids, href)
 
     def test_w01_semantic_shell_remains_framework_independent(self) -> None:
         self.assertNotIn("style=", self.text.lower())

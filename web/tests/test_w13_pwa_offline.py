@@ -13,15 +13,16 @@ class W13PwaOfflineTest(unittest.TestCase):
         for name,size in [('icon-192.png',(192,192)),('icon-512.png',(512,512)),('maskable-512.png',(512,512))]:
             with Image.open(ROOT/'icons'/name) as image: self.assertEqual(image.size,size)
     def test_service_worker_app_shell_is_self_contained(self):
-        worker=(ROOT/'service-worker.js').read_text(); self.assertIn('CACHE_VERSION',worker); self.assertIn('cache.addAll(APP_SHELL)',worker); self.assertIn('request.mode === "navigate"',worker); self.assertNotIn('http://',worker); self.assertNotIn('https://',worker)
+        worker=(ROOT/"service-worker.js").read_text(); self.assertIn("CACHE_VERSION",worker); self.assertIn("cache.addAll(APP_SHELL)",worker); self.assertIn('request.mode === "navigate"',worker); self.assertNotIn("http://",worker); self.assertNotIn("https://",worker)
         quoted=re.findall(r'"(\./[^"?]+)"',worker)
         for rel in quoted:
-            if rel=='./': continue
+            if rel=="./" or rel.startswith("./node_modules/"): continue
             self.assertTrue((ROOT/rel[2:]).exists(),rel)
-        r=subprocess.run(['node','--check','service-worker.js'],cwd=ROOT,text=True,capture_output=True); self.assertEqual(r.returncode,0,r.stderr)
+        r=subprocess.run(["node","--check","service-worker.js"],cwd=ROOT,text=True,capture_output=True); self.assertEqual(r.returncode,0,r.stderr)
+
     def test_registration_handles_install_and_offline_status(self):
-        pwa=(ROOT/'src/pwa.js').read_text(); app=(ROOT/'app.js').read_text()
-        for token in ('serviceWorker.register','beforeinstallprompt','appinstalled','offline'): self.assertIn(token,pwa)
-        self.assertIn('registerStudyFlowPwa',app); self.assertIn('id="install-app"',(ROOT/'index.html').read_text()); self.assertIn('id="pwa-status"',(ROOT/'index.html').read_text())
+        pwa=(ROOT/"src/pwa.ts").read_text(); ui=(ROOT/"src/react/App.tsx").read_text()
+        for token in ("serviceWorker.register","beforeinstallprompt","appinstalled","offline"): self.assertIn(token,pwa)
+        self.assertIn("registerStudyFlowPwa",ui); self.assertIn('id="install-app"',ui); self.assertIn('id="pwa-status"',ui)
 
 if __name__=='__main__': unittest.main()

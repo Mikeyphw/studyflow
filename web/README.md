@@ -55,4 +55,13 @@ Portable packages use the local `studyflow-local-package` JSON format. Import is
 
 Structured state now prefers IndexedDB, with verified migration from the old localStorage keys and a compatibility fallback when IndexedDB is unavailable. Local Library files are stored as Blob/File records in a separate IndexedDB attachment store while domain `Material` entities retain only metadata and attachment IDs.
 
-StudyFlow Local is also an installable PWA. The manifest supplies 192/512/maskable icons and standalone launch metadata; the service worker caches the self-contained app shell, supports offline navigation fallback, cleans old cache versions, and exposes install/offline status in Tools. TypeScript and React remain future W14/W15 work.
+StudyFlow Local is also an installable PWA. The manifest supplies 192/512/maskable icons and standalone launch metadata; the service worker caches the self-contained app shell, supports offline navigation fallback, cleans old cache versions, and exposes install/offline status in Tools. TypeScript and React are now implemented by W14/W15; the domain/store/persistence architecture remains outside the React component tree.
+
+
+## W14/W15
+
+The authoritative application source is now TypeScript under `src/`, compiled into the tracked CommonJS browser runtime under `runtime/`. `tsconfig.json` uses strict checking, and `scripts/compile_runtime.mjs` recompiles into a temporary directory and byte-compares every generated runtime file so committed browser output cannot silently drift from TypeScript source.
+
+React owns the presentation layer through `src/react/App.tsx`, but it does not own StudyFlow state or business logic. `src/main.tsx` composes persistence, attachments, the StudyFlow store, and PWA services before mounting React; components subscribe with `useSyncExternalStore` and invoke typed store actions. The former vanilla `src/*.js` implementation files remain only as migration tombstones so this overlay does not depend on unproven file-delete inventory semantics.
+
+The browser bootloader stays local and dependency-pinned. It loads the generated CommonJS runtime plus the exact React/ReactDOM/Scheduler files installed by `npm ci`; the W15 service-worker app shell caches that runtime graph for offline use after installation. There is still no backend, account, telemetry, or remote runtime CDN dependency.

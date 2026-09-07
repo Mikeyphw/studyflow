@@ -18,26 +18,21 @@ class W04StatePersistenceTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
 
-    def test_state_storage_render_and_event_boundaries_are_separate(self) -> None:
-        app = (WEB / "app.js").read_text(encoding="utf-8")
-        for path in ("domain.js", "storage.js", "state.js", "render.js", "events.js"):
+    def test_state_storage_and_react_ui_boundaries_are_separate(self) -> None:
+        for path in ("domain.ts", "storage.ts", "state.ts", "indexeddb.ts", "main.tsx", "react/App.tsx"):
             self.assertTrue((WEB / "src" / path).is_file(), path)
-        for token in ("createBrowserPersistence", "createStudyStore", "renderStudyState", "bindPersistentStudyEvents"):
-            self.assertIn(token, app)
-        self.assertNotIn("localStorage", app)
-        storage = (WEB / "src/storage.js").read_text(encoding="utf-8")
-        self.assertIn("localStorage", storage)
-        self.assertIn("studyflow.local.state.v", storage)
-        self.assertIn("createBrowserRepository", storage)
-        self.assertIn("createBrowserPersistence", storage)
-        self.assertNotIn("fetch(", storage)
+        main=(WEB/"src/main.tsx").read_text(encoding="utf-8")
+        ui=(WEB/"src/react/App.tsx").read_text(encoding="utf-8")
+        self.assertIn("createBrowserPersistence", main); self.assertIn("createStudyStore", main)
+        self.assertIn("useSyncExternalStore", ui)
+        self.assertNotIn("localStorage", main)
 
     def test_quick_add_domain_activity_persists_across_store_recreation(self) -> None:
         self.run_node(
             r'''
 import assert from "node:assert/strict";
-import { createBrowserRepository, STORAGE_KEY } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
+import { createBrowserRepository, STORAGE_KEY } from "./runtime/storage.js";
+import { createStudyStore } from "./runtime/state.js";
 
 const values = new Map();
 const storage = {
@@ -64,8 +59,8 @@ assert.equal(second.getState().activities.find((activity) => activity.id === add
         self.run_node(
             r'''
 import assert from "node:assert/strict";
-import { createBrowserRepository, STORAGE_KEY } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
+import { createBrowserRepository, STORAGE_KEY } from "./runtime/storage.js";
+import { createStudyStore } from "./runtime/state.js";
 
 const values = new Map([[STORAGE_KEY, "{not-json"]]);
 const storage = {
@@ -86,18 +81,11 @@ assert.doesNotThrow(() => JSON.parse(values.get(STORAGE_KEY)));
 '''
         )
 
-    def test_w04_persistence_boundary_remains_separate_after_w12_upgrade(self) -> None:
-        app = (WEB / "app.js").read_text(encoding="utf-8").lower()
-        storage = (WEB / "src/storage.js").read_text(encoding="utf-8").lower()
-        state = (WEB / "src/state.js").read_text(encoding="utf-8").lower()
-        indexed = (WEB / "src/indexeddb.js").read_text(encoding="utf-8").lower()
-        self.assertNotIn("localstorage", app)
-        self.assertIn("localstorage", storage)
-        self.assertIn("startfocus", state)
-        self.assertIn("studyflow.local.state.v1", storage)
-        self.assertNotIn("indexeddb", state)
-        self.assertIn("indexeddb", indexed)
-
+    def test_w04_persistence_boundary_remains_separate_after_w15_upgrade(self) -> None:
+        storage=(WEB/"src/storage.ts").read_text(encoding="utf-8").lower()
+        state=(WEB/"src/state.ts").read_text(encoding="utf-8").lower()
+        indexed=(WEB/"src/indexeddb.ts").read_text(encoding="utf-8").lower()
+        self.assertIn("localstorage", storage); self.assertIn("startfocus", state); self.assertNotIn("indexeddb", state); self.assertIn("indexeddb", indexed)
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,12 +3,13 @@ import json, subprocess, textwrap, unittest
 ROOT=Path(__file__).resolve().parents[1]
 class W10ProgressTests(unittest.TestCase):
     def test_progress_ui_and_truthfulness_copy_exist(self):
-        html=(ROOT/'index.html').read_text()
-        for token in ('progress-readiness','progress-study-time','progress-accuracy','progress-coverage','evidence-timeline','goal-form','integrity-status'): self.assertIn(token,html)
-        self.assertIn('No data',html)
+        ui=(ROOT/"src/react/App.tsx").read_text()
+        for token in ("Readiness", "Study this week", "Accuracy", "Coverage", "Evidence Timeline", "Content Integrity", "No data"):
+            self.assertIn(token,ui)
+
     def test_progress_metrics_keep_unknown_distinct_from_measured_zero(self):
         script=textwrap.dedent('''
-            import { createInitialStudyState, deriveProgressMetrics, createEvidence } from './src/domain.js';
+            import { createInitialStudyState, deriveProgressMetrics, createEvidence } from './runtime/domain.js';
             const now='2026-09-07T00:00:00.000Z'; const state=createInitialStudyState({now});
             let m=deriveProgressMetrics(state,{at:now});
             if(m.weeklyStudyMinutes!==0) throw new Error('study zero must be measured zero');
@@ -22,7 +23,7 @@ class W10ProgressTests(unittest.TestCase):
         subprocess.run(['node','--input-type=module','-e',script],cwd=ROOT,check=True)
     def test_goal_progress_and_integrity_are_derived(self):
         script=textwrap.dedent('''
-            import { createInitialStudyState, createGoal, deriveGoalProgress, buildContentIntegrityReport } from './src/domain.js';
+            import { createInitialStudyState, createGoal, deriveGoalProgress, buildContentIntegrityReport } from './runtime/domain.js';
             const now='2026-09-07T00:00:00.000Z'; const state=createInitialStudyState({now});
             const goal=createGoal({planId:state.activePlanId,name:'Weekly minutes',metric:'study-minutes',target:120,period:'weekly',createdAt:now,updatedAt:now});
             const p=deriveGoalProgress(state,goal,{at:now}); if(p.actual!==0||p.progress!==0) throw new Error('goal zero must be measured');

@@ -21,8 +21,8 @@ class W06TodayFocusTest(unittest.TestCase):
     def test_focus_uses_persisted_absolute_timestamps_and_survives_reload(self) -> None:
         self.run_node(r'''
 import assert from "node:assert/strict";
-import { createBrowserRepository } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
+import { createBrowserRepository } from "./runtime/storage.js";
+import { createStudyStore } from "./runtime/state.js";
 const values = new Map();
 const storage = {
   getItem(key) { return values.has(key) ? values.get(key) : null; },
@@ -58,8 +58,8 @@ assert.equal(second.getFocusSnapshot().status, "idle");
     def test_cancelled_focus_is_history_but_not_completion_evidence(self) -> None:
         self.run_node(r'''
 import assert from "node:assert/strict";
-import { createBrowserRepository } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
+import { createBrowserRepository } from "./runtime/storage.js";
+import { createStudyStore } from "./runtime/state.js";
 const values = new Map();
 const storage = {
   getItem(key) { return values.has(key) ? values.get(key) : null; },
@@ -80,7 +80,7 @@ assert.equal(store.getState().sessions.at(-1).note, "interrupted");
     def test_recommendation_is_derived_only_from_existing_queue_data(self) -> None:
         self.run_node(r'''
 import assert from "node:assert/strict";
-import { createInitialStudyState, recommendNextActivity } from "./src/domain.js";
+import { createInitialStudyState, recommendNextActivity } from "./runtime/domain.js";
 const state = createInitialStudyState({ now: "2026-09-06T22:00:00.000Z" });
 const recommendation = recommendNextActivity(state);
 assert.ok(state.activities.some((activity) => activity.id === recommendation.activity.id));
@@ -91,9 +91,9 @@ assert.equal(recommendation.reason.includes("weak"), false);
     def test_w04_v1_storage_is_migrated_without_losing_user_activities(self) -> None:
         self.run_node(r'''
 import assert from "node:assert/strict";
-import { createInitialStudyState } from "./src/domain.js";
-import { createBrowserRepository, STORAGE_KEY } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
+import { createInitialStudyState } from "./runtime/domain.js";
+import { createBrowserRepository, STORAGE_KEY } from "./runtime/storage.js";
+import { createStudyStore } from "./runtime/state.js";
 const legacy = createInitialStudyState({ now: "2026-09-06T19:00:00.000Z" });
 legacy.schemaVersion = 1; delete legacy.focus; delete legacy.studyCycle;
 legacy.activities.push({ ...legacy.activities[0], id: "activity-user-v1", title: "My existing W04 activity" });
@@ -110,23 +110,19 @@ assert.ok(values.has(STORAGE_KEY));
     def test_study_cycle_cursor_is_persistent_and_explicit(self) -> None:
         self.run_node(r'''
 import assert from "node:assert/strict";
-import { createBrowserRepository } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
-import { selectCurrentCycleSubject } from "./src/domain.js";
+import { createBrowserRepository } from "./runtime/storage.js";
+import { createStudyStore } from "./runtime/state.js";
+import { selectCurrentCycleSubject } from "./runtime/domain.js";
 const values = new Map(); const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), removeItem: (key) => values.delete(key) };
 const now = () => "2026-09-06T22:30:00.000Z"; const first = createStudyStore({ repository: createBrowserRepository({ storage, now }), now });
 const before = selectCurrentCycleSubject(first.getState()).id; first.advanceStudyCycle(); const after = selectCurrentCycleSubject(first.getState()).id; assert.notEqual(before, after);
 const second = createStudyStore({ repository: createBrowserRepository({ storage, now }), now }); assert.equal(selectCurrentCycleSubject(second.getState()).id, after);
 ''')
 
-    def test_focus_ui_exposes_complete_cancel_note_and_history(self) -> None:
-        html = (WEB / "index.html").read_text(encoding="utf-8")
-        for token in (
-            'id="focus-complete"', 'id="focus-cancel"', 'id="focus-note"',
-            'id="focus-history"', 'id="recommendation-title"', 'id="study-cycle-next"',
-        ):
-            self.assertIn(token, html)
-
+    def test_focus_ui_exposes_complete_cancel_note_and_queue(self) -> None:
+        ui=(WEB/"src/react/App.tsx").read_text(encoding="utf-8")
+        for token in ("Focus", "Session note", "Complete", "Cancel", "Today queue", "getFocusSnapshot"):
+            self.assertIn(token,ui)
 
 if __name__ == "__main__":
     unittest.main()

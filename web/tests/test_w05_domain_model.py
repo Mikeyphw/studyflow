@@ -19,9 +19,9 @@ class W05DomainModelTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
 
     def test_domain_module_is_framework_storage_and_network_independent(self) -> None:
-        text = (WEB / "src/domain.js").read_text(encoding="utf-8").lower()
-        for forbidden in ("document.", "window.", "localstorage", "indexeddb", "htmlelement", "fetch("):
-            self.assertNotIn(forbidden, text)
+        text=(WEB/"src/domain.ts").read_text(encoding="utf-8").lower()
+        for forbidden in ("react", "document.", "window.", "localstorage", "indexeddb", "fetch("):
+            self.assertNotIn(forbidden,text)
 
     def test_all_core_entity_families_validate_together(self) -> None:
         self.run_node(
@@ -32,7 +32,7 @@ import {
   createMaterial, createQuestion, createReview, createStudySession,
   derivePlanInventory, selectActivePlan, selectSubjectsForPlan, selectTopicsForSubject,
   validateStudyState,
-} from "./src/domain.js";
+} from "./runtime/domain.js";
 
 const now = "2026-09-06T23:32:00.000Z";
 const state = createInitialStudyState({ now });
@@ -72,7 +72,7 @@ assert.ok(inventory.plannedMinutes > 0);
         self.run_node(
             r'''
 import assert from "node:assert/strict";
-import { createInitialStudyState, validateStudyState } from "./src/domain.js";
+import { createInitialStudyState, validateStudyState } from "./runtime/domain.js";
 const state = createInitialStudyState({ now: "2026-09-06T23:33:00.000Z" });
 state.topics[0] = { ...state.topics[0], subjectId: "subject-missing" };
 const errors = validateStudyState(state);
@@ -81,10 +81,9 @@ assert.ok(errors.some((error) => error.includes("missing subjectId")));
         )
 
     def test_supported_study_modes_are_explicit(self) -> None:
-        text = (WEB / "src/domain.js").read_text(encoding="utf-8")
-        for mode in ("EXAM_PLAN", "PROGRAMMING_COURSE", "LANGUAGE_DECK", "READING_STUDY", "GENERAL_SKILL"):
-            self.assertIn(mode, text)
-
+        text=(WEB/"src/domain.ts").read_text(encoding="utf-8")
+        for mode in ("EXAM_PLAN","PROGRAMMING_COURSE","LANGUAGE_DECK","READING_STUDY","GENERAL_SKILL"):
+            self.assertIn(mode,text)
 
 if __name__ == "__main__":
     unittest.main()

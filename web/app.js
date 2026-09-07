@@ -1,38 +1,51 @@
 "use strict";
 
-import { createBrowserPersistence } from "./src/storage.js";
-import { createStudyStore } from "./src/state.js";
-import { renderFocusState, renderPlanContent, renderPracticeState, renderScheduleState, renderProgressState, renderStudyState } from "./src/render.js";
-import { bindPersistentStudyEvents } from "./src/events.js";
-import { registerStudyFlowPwa } from "./src/pwa.js";
-
 (() => {
-    const SCREEN_IDS=["today","plan","practice","progress"];const DEFAULT_TABS={plan:"plan-overview",practice:"practice-reviews",progress:"progress-summary"};
-    const uiState={screen:"today",tabs:{...DEFAULT_TABS},scheduleFilter:"all",content:{query:"",filter:"active"},schedulePreview:null,selectedQuestionId:null,portablePreview:null,portableStatus:"No package selected."};let toastTimeout=null;let focusInterval=null;let store=null;let persistenceServices=null;
-    const byId=(id)=>document.getElementById(id);
-    function screenForTarget(targetId){if(SCREEN_IDS.includes(targetId))return targetId;const target=byId(targetId);return target?.dataset.tabPanel||target?.closest("[data-screen]")?.dataset.screen||"today";}
-    function activateTab(group,targetId){const fallback=DEFAULT_TABS[group];const target=byId(targetId)?.dataset.tabPanel===group?targetId:fallback;if(!target)return;document.querySelectorAll(`[data-tab-panel="${group}"]`).forEach((panel)=>{panel.hidden=panel.id!==target;});document.querySelectorAll(`[data-tab-nav="${group}"] [data-tab]`).forEach((link)=>{if(link.dataset.tab===target)link.setAttribute("aria-current","page");else link.removeAttribute("aria-current");});uiState.tabs[group]=target;}
-    function showScreen(screenId,targetId=null){const next=SCREEN_IDS.includes(screenId)?screenId:"today";document.querySelectorAll("[data-screen]").forEach((screen)=>{screen.hidden=screen.dataset.screen!==next;});document.querySelectorAll("[data-screen-link]").forEach((link)=>{if(link.dataset.screenLink===next)link.setAttribute("aria-current","page");else link.removeAttribute("aria-current");});uiState.screen=next;if(DEFAULT_TABS[next])activateTab(next,targetId&&byId(targetId)?.dataset.tabPanel===next?targetId:uiState.tabs[next]||DEFAULT_TABS[next]);}
-    function routeFromHash({replace=false}={}){const targetId=window.location.hash.slice(1)||"today";showScreen(screenForTarget(targetId),targetId);if(!window.location.hash&&replace)history.replaceState(null,"","#today");}
-    function openDialog(id){const node=byId(id);if(!(node instanceof HTMLDialogElement))return;if(!node.open)node.showModal();node.querySelector("input, select, textarea, button")?.focus();}
-    function closeDialog(button){const node=button.closest("dialog");if(node instanceof HTMLDialogElement)node.close();}
-    function showToast(message){const region=byId("toast-region");if(!region)return;window.clearTimeout(toastTimeout);region.replaceChildren();const toast=document.createElement("div");toast.className="toast";toast.textContent=message;region.append(toast);toastTimeout=window.setTimeout(()=>region.replaceChildren(),2600);}
-    function applyScheduleFilter(filter){const normalized=["all","study","questions","review"].includes(filter)?filter:"all";uiState.scheduleFilter=normalized;document.querySelectorAll("[data-schedule-filter]").forEach((button)=>button.setAttribute("aria-pressed",String(button.dataset.scheduleFilter===normalized)));document.querySelectorAll("[data-schedule-kind]").forEach((row)=>{row.hidden=normalized!=="all"&&row.dataset.scheduleKind!==normalized;});}
-    function render(){const focusSnapshot=store.getFocusSnapshot();renderStudyState(store.getState(),store.getPersistenceStatus(),{focusSnapshot,content:uiState.content,schedulePreview:uiState.schedulePreview,selectedQuestionId:uiState.selectedQuestionId,progress:{portablePreview:uiState.portablePreview,portableStatus:uiState.portableStatus}});syncFocusTicker(focusSnapshot);}
-    function focusTick(){const snapshot=store.getFocusSnapshot();if(snapshot.status==="running"&&snapshot.remainingMs<=0){store.completeFocus({note:snapshot.note});showToast("Focus timer completed and evidence was recorded.");return;}renderFocusState(store.getState(),snapshot);}
-    function syncFocusTicker(snapshot){if(snapshot.status==="running"&&focusInterval===null)focusInterval=window.setInterval(focusTick,250);if(snapshot.status!=="running"&&focusInterval!==null){window.clearInterval(focusInterval);focusInterval=null;}}
-    function bindNavigation(){document.querySelectorAll("[data-screen-link]").forEach((link)=>link.addEventListener("click",()=>showScreen(link.dataset.screenLink||"today")));document.querySelectorAll("[data-tab-nav] [data-tab]").forEach((link)=>link.addEventListener("click",()=>{const group=link.closest("[data-tab-nav]")?.dataset.tabNav;if(group&&link.dataset.tab)showScreen(group,link.dataset.tab);}));document.querySelectorAll("[data-route-target]").forEach((link)=>link.addEventListener("click",()=>{const target=link.dataset.routeTarget;if(target)showScreen(screenForTarget(target),target);}));window.addEventListener("hashchange",()=>routeFromHash());}
-    function bindDialogs(){document.querySelectorAll("[data-open-dialog]").forEach((button)=>button.addEventListener("click",()=>openDialog(button.dataset.openDialog||"")));document.querySelectorAll("[data-close-dialog]").forEach((button)=>button.addEventListener("click",()=>closeDialog(button)));}
-    function bindSchedule(){document.querySelectorAll("[data-schedule-filter]").forEach((button)=>button.addEventListener("click",()=>applyScheduleFilter(button.dataset.scheduleFilter||"all")));}
-    async function init(){
-        persistenceServices=await createBrowserPersistence();
-        store=createStudyStore({repository:persistenceServices.repository});
-        const backendStatus=byId("storage-backend-status");if(backendStatus)backendStatus.textContent=persistenceServices.attachments?.backend!=="unavailable"?"The browser database is the primary structured-state and attachment store.":`Compatibility storage active. ${persistenceServices.fallbackReason??"Durable browser database unavailable."}`;
-        const materialStatus=byId("material-storage-status");if(materialStatus)materialStatus.textContent=persistenceServices.attachments?.backend!=="unavailable"?"Attachment bytes stay private in this browser database.":"Attachments are unavailable because durable browser storage is not active.";
-        bindNavigation();bindDialogs();bindSchedule();
-        bindPersistentStudyEvents({store,attachments:persistenceServices.attachments,showToast,onContentFilterChange:(content)=>{uiState.content=content;renderPlanContent(store.getState(),uiState.content);},onSchedulePreview:function(value){if(arguments.length===0)return uiState.schedulePreview;uiState.schedulePreview=value;renderScheduleState(store.getState(),uiState.schedulePreview);return uiState.schedulePreview;},onQuestionSelectionChange:(id)=>{uiState.selectedQuestionId=id;renderPracticeState(store.getState(),id);},onPortablePreview:function(value){if(arguments.length===0)return uiState.portablePreview;uiState.portablePreview=value;renderProgressState(store.getState(),{portablePreview:uiState.portablePreview,portableStatus:uiState.portableStatus});return uiState.portablePreview;},onPortableStatus:(value)=>{uiState.portableStatus=value;renderProgressState(store.getState(),{portablePreview:uiState.portablePreview,portableStatus:uiState.portableStatus});}});
-        store.subscribe(()=>{uiState.schedulePreview=null;render();});routeFromHash({replace:true});Object.entries(DEFAULT_TABS).forEach(([group,target])=>activateTab(group,uiState.tabs[group]||target));applyScheduleFilter("all");render();focusTick();
-        registerStudyFlowPwa({statusElement:byId("pwa-status"),installButton:byId("install-app")});
-    }
-    document.addEventListener("DOMContentLoaded",()=>{void init().catch((error)=>{const status=byId("persistence-status");if(status)status.textContent=`StudyFlow startup failed: ${error instanceof Error?error.message:String(error)}`;});});
+  const PACKAGE_MODULES = Object.freeze({
+    react: "./node_modules/react/cjs/react.production.js",
+    "react-dom": "./node_modules/react-dom/cjs/react-dom.production.js",
+    "react-dom/client": "./node_modules/react-dom/cjs/react-dom-client.production.js",
+    scheduler: "./node_modules/scheduler/cjs/scheduler.production.js",
+  });
+  const sources = new Map();
+  const loading = new Set();
+  const modules = new Map();
+  const processObject = Object.freeze({ env: Object.freeze({ NODE_ENV: "production" }) });
+
+  function resolveModule(specifier, parentUrl) {
+    if (Object.prototype.hasOwnProperty.call(PACKAGE_MODULES, specifier)) return new URL(PACKAGE_MODULES[specifier], location.href).href;
+    if (!specifier.startsWith(".") && !specifier.startsWith("/")) throw new Error(`Unsupported browser module: ${specifier}`);
+    let url = new URL(specifier, parentUrl);
+    if (!/\.[a-z0-9]+$/i.test(url.pathname)) url = new URL(`${url.href}.js`);
+    return url.href;
+  }
+  function requires(source) { return [...source.matchAll(/\brequire\(["']([^"']+)["']\)/g)].map((match) => match[1]); }
+  async function preload(url) {
+    if (sources.has(url) || loading.has(url)) return;
+    loading.add(url);
+    try {
+      const response = await fetch(url, { cache: "no-cache" });
+      if (!response.ok) throw new Error(`Failed to load ${new URL(url).pathname}: HTTP ${response.status}`);
+      const source = await response.text(); sources.set(url, source);
+      await Promise.all(requires(source).map((specifier) => preload(resolveModule(specifier, url))));
+    } finally { loading.delete(url); }
+  }
+  function execute(url) {
+    if (modules.has(url)) return modules.get(url).exports;
+    const source = sources.get(url); if (source == null) throw new Error(`Module was not preloaded: ${url}`);
+    const module = { exports: {} }; modules.set(url, module);
+    const localRequire = (specifier) => execute(resolveModule(specifier, url));
+    const factory = new Function("module", "exports", "require", "process", "globalThis", `${source}\n//# sourceURL=${url}`);
+    factory(module, module.exports, localRequire, processObject, globalThis);
+    return module.exports;
+  }
+  async function boot() {
+    const entry = new URL("./runtime/main.js", location.href).href;
+    await preload(entry); execute(entry);
+  }
+  boot().catch((error) => {
+    console.error(error);
+    const root = document.getElementById("root");
+    if (root) root.textContent = `StudyFlow could not start: ${error instanceof Error ? error.message : String(error)}`;
+  });
 })();

@@ -39,41 +39,33 @@ class W03InteractionFoundationTest(unittest.TestCase):
         self.assertIn("defer", scripts[0])
         self.assertFalse(str(scripts[0].get("src")).startswith(("http://", "https://")))
 
-    def test_interactive_controls_have_real_semantic_targets(self) -> None:
-        for element_id in (
-            "quick-add-dialog", "quick-add-form", "today-activity-list",
-            "focus-timer", "focus-start", "focus-pause", "focus-reset",
-            "practice-question-form", "practice-feedback", "toast-region",
-        ):
-            self.assertIn(element_id, self.parser.ids)
-        tags = [tag for tag, _ in self.parser.tags]
-        self.assertIn("dialog", tags)
-        self.assertIn("form", tags)
-        self.assertIn("fieldset", tags)
-        self.assertIn("legend", tags)
+    def test_interactive_controls_have_react_semantic_targets(self) -> None:
+        app = (WEB / "src/react/App.tsx").read_text(encoding="utf-8")
+        for token in ("Today queue", "Quick Add", "Adaptive schedule", "Question practice", "Error Notebook", "Portable package", "Install & offline", "toast-region"):
+            self.assertIn(token, app)
+        self.assertIn("<form", app)
+        self.assertIn("<button", app)
 
-    def test_navigation_tabs_dialogs_filters_and_forms_are_bound(self) -> None:
-        for token in (
-            "data-screen-link", "data-tab-nav", "data-schedule-filter",
-            "showScreen", "activateTab", "showModal", "FormData",
-            "addEventListener", "aria-current", "aria-pressed",
-            "createElement", "textContent",
-        ):
-            self.assertIn(token, self.js + self.events + self.html)
+    def test_navigation_tabs_filters_and_forms_are_react_bound(self) -> None:
+        app=(WEB/"src/react/App.tsx").read_text(encoding="utf-8")
+        for token in ("useState", "useSyncExternalStore", "onClick", "onSubmit", "aria-current", "setPlanTab", "setPracticeTab", "setProgressTab"):
+            self.assertIn(token, app)
 
     def test_focus_timer_uses_absolute_time_for_truth(self) -> None:
-        domain = (WEB / "src/domain.js").read_text(encoding="utf-8") if (WEB / "src/domain.js").is_file() else ""
-        self.assertIn("endsAt", self.js + domain)
-        self.assertTrue("Date.now()" in self.js + domain or "Date.parse" in self.js + domain)
-        self.assertIn("setInterval", self.js)
-        self.assertIn("clearInterval", self.js)
+        domain=(WEB/"src/domain.ts").read_text(encoding="utf-8")
+        app=(WEB/"src/react/App.tsx").read_text(encoding="utf-8")
+        self.assertIn("endsAt", domain)
+        self.assertIn("Date.parse", domain)
+        self.assertIn("setInterval", app)
+        self.assertIn("clearInterval", app)
 
-    def test_w03_keeps_persistence_behind_dedicated_modules(self) -> None:
-        lowered = self.js.lower()
-        self.assertNotIn("localstorage", lowered)
-        self.assertNotIn("globalthis.indexeddb", lowered)
-        self.assertNotIn("fetch(", lowered)
-        self.assertIn("createbrowserpersistence", lowered)
+    def test_w03_persistence_boundary_survives_react_migration(self) -> None:
+        app=(WEB/"src/react/App.tsx").read_text(encoding="utf-8").lower()
+        main=(WEB/"src/main.tsx").read_text(encoding="utf-8")
+        self.assertNotIn("localstorage", app)
+        self.assertNotIn("indexeddb.open", app)
+        self.assertIn("createBrowserPersistence", main)
+        self.assertIn("createStudyStore", main)
 
     def test_javascript_syntax_is_valid(self) -> None:
         result = subprocess.run(

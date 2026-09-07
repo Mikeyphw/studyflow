@@ -1,609 +1,129 @@
-#!/usr/bin/env python3
 from __future__ import annotations
-
-import argparse
-import json
-import re
-import subprocess
-import sys
-import tomllib
+import argparse, json, re, subprocess, sys, tomllib
 from html.parser import HTMLParser
 from pathlib import Path
 
-WEB = Path(__file__).resolve().parents[1]
-ROOT = WEB.parent
-
-
-def fail(errors: list[str], condition: bool, message: str) -> None:
-    if condition:
-        errors.append(message)
-
-
-def read_text(path: Path, errors: list[str]) -> str:
-    if not path.is_file():
-        errors.append(f"missing file: {path.relative_to(ROOT)}")
-        return ""
-    return path.read_text(encoding="utf-8")
-
-
-def validate_contract() -> list[str]:
-    errors: list[str] = []
-    devtool = ROOT / ".devtool.toml"
-    if not devtool.is_file():
-        return ["missing .devtool.toml"]
-    try:
-        config = tomllib.loads(devtool.read_text(encoding="utf-8"))
-    except Exception as exc:
-        return [f".devtool.toml parse failed: {exc}"]
-
-    targets = config.get("targets", {})
-    web = targets.get("studyflow_web", {})
-    fail(errors, not isinstance(web, dict), "missing targets.studyflow_web")
-    if isinstance(web, dict):
-        fail(errors, web.get("type") != "node", "studyflow_web type must be node")
-        fail(errors, web.get("root") != "web", "studyflow_web root must be web")
-        fail(errors, web.get("execution_environment") != "native-termux", "studyflow_web execution_environment must be native-termux")
-        fail(errors, "tasks" in web, "Node target must not retain generic targets.studyflow_web.tasks")
-        validation = web.get("validation", {})
-        fail(errors, validation.get("max_workers") != 1, "studyflow_web validation max_workers must be 1")
-        fail(errors, validation.get("parallel") is not False, "studyflow_web validation parallel must be false")
-        fail(errors, validation.get("cpu_limit") != 1, "studyflow_web validation cpu_limit must be 1")
-        fail(errors, "phases" in validation, "Node target must not retain generic validation.phases")
-
-    fail(errors, "studyflow_android" not in targets, "existing studyflow_android target must be preserved")
-    fail(errors, "studyflow_desktop" not in targets, "existing studyflow_desktop target must be preserved")
-    fail(errors, config.get("project", {}).get("default_target") != "studyflow_desktop", "web overlays must not change the established default target")
-
-    package_text = read_text(WEB / "package.json", errors)
-    if package_text:
-        try:
-            package = json.loads(package_text)
-        except Exception as exc:
-            errors.append(f"package.json parse failed: {exc}")
-            package = {}
-        fail(errors, package.get("name") != "studyflow-local-web", "package name drift")
-        fail(errors, package.get("private") is not True, "web package must remain private")
-        scripts = package.get("scripts", {})
-        for script in ("build", "test", "lint", "dev"):
-            fail(errors, not str(scripts.get(script, "")).strip(), f"missing npm script: {script}")
-        fail(errors, bool(package.get("dependencies")), "web target must remain dependency-free")
-        fail(errors, bool(package.get("devDependencies")), "web target must remain dependency-free")
-
-    lock_text = read_text(WEB / "package-lock.json", errors)
-    if lock_text:
-        try:
-            lock = json.loads(lock_text)
-            fail(errors, lock.get("lockfileVersion") != 3, "package-lock.json must use lockfileVersion 3")
-        except Exception as exc:
-            errors.append(f"package-lock.json parse failed: {exc}")
-
-    readme = read_text(WEB / "README.md", errors)
-    for token in ("mobile-first", "no account", "Today → Plan → Practice → Progress", "dependency-free", "Node target"):
-        fail(errors, token.lower() not in readme.lower(), f"web README missing contract token: {token}")
-
-    contract = read_text(ROOT / "docs/web/W00_WEB_PRODUCT_CONTRACT.md", errors)
-    for token in ("Mobile first", "Local ownership", "Offline core", "Truthful evidence", "Preview before mutation", "Framework-independent domain"):
-        fail(errors, token.lower() not in contract.lower(), f"W00 contract missing: {token}")
-
-    read_text(ROOT / "docs/web/WEB_ROADMAP.md", errors)
-    read_text(WEB / ".npmrc", errors)
-    return errors
-
-
-class ShellParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.tags: list[tuple[str, dict[str, str | None]]] = []
-        self.doctype = False
-        self.ids: set[str] = set()
-        self.hrefs: list[str] = []
-        self.main_count = 0
-        self.stylesheets: list[str] = []
-        self.scripts: list[dict[str, str | None]] = []
-
-    def handle_decl(self, decl: str) -> None:
-        if decl.lower().strip() == "doctype html":
-            self.doctype = True
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        values = dict(attrs)
-        self.tags.append((tag, values))
-        if values.get("id"):
-            self.ids.add(str(values["id"]))
-        if tag == "a" and values.get("href"):
-            self.hrefs.append(str(values["href"]))
-        if tag == "main":
-            self.main_count += 1
-        elif tag == "link" and values.get("rel") == "stylesheet" and values.get("href"):
-            self.stylesheets.append(str(values["href"]))
-        elif tag == "script":
-            self.scripts.append(values)
-
-
-def parse_shell(errors: list[str]) -> tuple[str, ShellParser | None]:
-    index = WEB / "index.html"
-    text = read_text(index, errors)
-    if not text:
-        return "", None
-    parser = ShellParser()
-    try:
-        parser.feed(text)
-        parser.close()
-    except Exception as exc:
-        errors.append(f"index.html parse failed: {exc}")
-        return text, None
-    return text, parser
-
-
-def validate_shell() -> list[str]:
-    errors = validate_contract()
-    text, parser = parse_shell(errors)
-    if parser is None:
-        return errors
-
-    fail(errors, not parser.doctype, "index.html must declare <!doctype html>")
-    html_attrs = next((attrs for tag, attrs in parser.tags if tag == "html"), {})
-    fail(errors, not str(html_attrs.get("lang") or "").strip(), "html lang is required")
-    metas = [attrs for tag, attrs in parser.tags if tag == "meta"]
-    fail(errors, not any(m.get("charset") == "utf-8" for m in metas), "utf-8 meta charset is required")
-    fail(errors, not any(m.get("name") == "viewport" and "width=device-width" in str(m.get("content") or "") for m in metas), "mobile viewport meta is required")
-    fail(errors, parser.main_count != 1, "exactly one main element is required")
-    fail(errors, "style=" in text.lower() or "<style" in text.lower(), "presentation must remain external; inline styles are forbidden")
-
-    required_ids = {
-        "today", "plan", "practice", "progress",
-        "plan-overview", "plan-schedule", "plan-content", "plan-library",
-        "practice-reviews", "practice-questions", "practice-tests", "practice-errors",
-        "progress-summary", "progress-performance", "progress-goals", "progress-tools",
-    }
-    for required in sorted(required_ids):
-        fail(errors, required not in parser.ids, f"missing semantic section id: {required}")
-
-    for target in ("#today", "#plan", "#practice", "#progress"):
-        fail(errors, target not in parser.hrefs, f"main navigation missing working anchor: {target}")
-
-    for href in parser.hrefs:
-        if href.startswith("#") and len(href) > 1:
-            fail(errors, href[1:] not in parser.ids, f"anchor points to missing id: {href}")
-
-    fail(errors, "Today" not in text or "Plan" not in text or "Practice" not in text or "Progress" not in text, "primary product labels missing")
-    return errors
-
-
-def validate_visual() -> list[str]:
-    errors = validate_shell()
-    text, parser = parse_shell(errors)
-    if parser is None:
-        return errors
-    css = read_text(WEB / "styles.css", errors)
-    if not css:
-        return errors
-
-    fail(errors, parser.stylesheets != ["styles.css"], "W02 requires exactly one local styles.css stylesheet")
-    for token in (
-        "--bg", "--surface", "--text", "--muted", "--border", "--accent",
-        "--success", "--warning", "--danger", "--tap-size", "--content-max",
-    ):
-        fail(errors, token not in css, f"styles.css missing design token: {token}")
-    fail(errors, "box-sizing: border-box" not in css, "W02 requires universal border-box sizing")
-    fail(errors, "--tap-size: 44px" not in css, "W02 touch target baseline must remain 44px")
-    fail(errors, not re.search(r"\.bottom-nav\s*\{[^}]*position:\s*fixed", css, re.S), "bottom navigation must remain fixed on the phone baseline")
-    fail(errors, "env(safe-area-inset-bottom)" not in css, "bottom safe-area handling is required")
-    fail(errors, "@media (min-width: 700px)" not in css, "W02 wide-screen progressive enhancement breakpoint missing")
-    fail(errors, "@media (max-width:" in css, "W02 must remain mobile-first; max-width media-query baseline is forbidden")
-    fail(errors, "prefers-reduced-motion: reduce" not in css, "reduced-motion handling missing")
-    fail(errors, ":focus-visible" not in css, "visible keyboard focus treatment missing")
-    fail(errors, "clamp(" not in css, "fluid clamp typography missing")
-    fail(errors, "url(http://" in css.lower() or "url(https://" in css.lower(), "W02 must not depend on remote CSS assets")
-    return errors
-
-
-def validate_interactions() -> list[str]:
-    errors = validate_visual()
-    text, parser = parse_shell(errors)
-    if parser is None:
-        return errors
-    js = read_text(WEB / "app.js", errors)
-    if not js:
-        return errors
-
-    fail(errors, len(parser.scripts) != 1, "W03 requires exactly one local application script")
-    if parser.scripts:
-        script = parser.scripts[0]
-        fail(errors, script.get("src") != "app.js", "application script must be app.js")
-        fail(errors, "defer" not in script, "app.js must be loaded with defer")
-        fail(errors, str(script.get("src") or "").startswith(("http://", "https://")), "remote application scripts are forbidden")
-
-    for element_id in (
-        "quick-add-dialog", "quick-add-form", "today-activity-list",
-        "focus-timer", "focus-start", "focus-pause", "focus-reset",
-        "practice-question-form", "practice-feedback", "toast-region",
-    ):
-        fail(errors, element_id not in parser.ids, f"W03 interactive element missing: {element_id}")
-
-    domain_clock = read_text(WEB / "src/domain.js", []) if (WEB / "src/domain.js").is_file() else ""
-    interaction_source = js + "\n" + text + "\n" + domain_clock + "\n" + (read_text(WEB / "src/events.js", []) if (WEB / "src/events.js").is_file() else "")
-    for token in (
-        "showScreen", "activateTab", "showModal", "FormData", "addEventListener",
-        "aria-current", "aria-pressed", "createElement", "textContent",
-        "endsAt", "setInterval", "clearInterval",
-    ):
-        fail(errors, token not in interaction_source, f"W03 interaction contract missing token: {token}")
-
-    lowered = js.lower()
-    for forbidden in ("localstorage", "indexeddb", "fetch("):
-        fail(errors, forbidden in lowered, f"W03 must not cross persistence/network boundary: {forbidden}")
-
-    try:
-        result = subprocess.run(
-            ["node", "--check", str(WEB / "app.js")],
-            text=True,
-            capture_output=True,
-            check=False,
-            timeout=30,
-        )
-    except Exception as exc:
-        errors.append(f"node --check app.js failed to run: {exc}")
-    else:
-        if result.returncode != 0:
-            errors.append(f"app.js syntax invalid: {result.stderr.strip() or result.stdout.strip()}")
-
-    doc = read_text(ROOT / "docs/web/W02_W03_VISUAL_INTERACTION_FOUNDATION.md", errors)
-    for token in ("mobile-first", "44px", "prefers-reduced-motion", "Quick Add", "ephemeral", "W04"):
-        fail(errors, token.lower() not in doc.lower(), f"W02/W03 delivery doc missing: {token}")
-    return errors
-
-
-
-def _node_check(errors: list[str], path: Path) -> None:
-    try:
-        result = subprocess.run(
-            ["node", "--check", str(path)],
-            text=True,
-            capture_output=True,
-            check=False,
-            timeout=30,
-            cwd=WEB,
-        )
-    except Exception as exc:
-        errors.append(f"node --check {path.relative_to(WEB)} failed to run: {exc}")
-        return
-    if result.returncode != 0:
-        errors.append(f"{path.relative_to(WEB)} syntax invalid: {result.stderr.strip() or result.stdout.strip()}")
-
-
-def validate_state() -> list[str]:
-    errors = validate_interactions()
-    package_text = read_text(WEB / "package.json", errors)
-    if package_text:
-        try:
-            package = json.loads(package_text)
-        except Exception:
-            package = {}
-        fail(errors, package.get("type") != "module", "W04 requires package type=module for native ES modules")
-
-    html, parser = parse_shell(errors)
-    if parser is not None:
-        for element_id in ("persistence-status", "plan-subject-list", "reset-local-state"):
-            fail(errors, element_id not in parser.ids, f"W04 state UI hook missing: {element_id}")
-        if parser.scripts:
-            fail(errors, parser.scripts[0].get("type") != "module", "W04 app.js must load as an ES module")
-
-    modules = {
-        "storage": read_text(WEB / "src/storage.js", errors),
-        "state": read_text(WEB / "src/state.js", errors),
-        "render": read_text(WEB / "src/render.js", errors),
-        "events": read_text(WEB / "src/events.js", errors),
-    }
-    storage = modules["storage"]
-    state = modules["state"]
-    app = read_text(WEB / "app.js", errors)
-    for token in ("studyflow.local.state.v", "JSON.parse", "JSON.stringify", "validateStudyState", "getItem", "setItem", "removeItem"):
-        fail(errors, token not in storage, f"W04 storage contract missing token: {token}")
-    for token in ("createStudyStore", "subscribe", "addActivity", "resetLocalState", "repository.save"):
-        fail(errors, token not in state, f"W04 state contract missing token: {token}")
-    for token in ("createStudyStore", "renderStudyState", "bindPersistentStudyEvents"):
-        fail(errors, token not in app, f"W04 application wiring missing token: {token}")
-    fail(errors, "createBrowserRepository" not in storage, "W04 localStorage compatibility repository must remain available for migration/fallback")
-    lowered_state = (modules["state"] + modules["render"]).lower()
-    fail(errors, "indexeddb" in lowered_state, "State/render layers must not directly depend on IndexedDB")
-    fail(errors, "fetch(" in "\n".join(modules.values()).lower(), "W04 local state must not introduce network access")
-    for relative in ("app.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js"):
-        _node_check(errors, WEB / relative)
-
-    doc = read_text(ROOT / "docs/web/W04_W05_STATE_DOMAIN_FOUNDATION.md", errors)
-    for token in ("localStorage", "schemaVersion", "Quick Add", "in memory only", "IndexedDB", "W05"):
-        fail(errors, token.lower() not in doc.lower(), f"W04/W05 delivery doc missing: {token}")
-    return errors
-
-
-def validate_domain() -> list[str]:
-    errors = validate_state()
-    domain = read_text(WEB / "src/domain.js", errors)
-    for token in (
-        "createPlan", "createSubject", "createTopic", "createActivity", "createStudySession",
-        "createGoal", "createMaterial", "createReview", "createQuestion", "createEvidence",
-        "createEntityId", "validateStudyState", "selectActivePlan", "selectSubjectsForPlan",
-        "selectTopicsForSubject", "selectActivitiesForQueue", "derivePlanInventory",
-        "EXAM_PLAN", "PROGRAMMING_COURSE", "LANGUAGE_DECK", "READING_STUDY", "GENERAL_SKILL",
-    ):
-        fail(errors, token not in domain, f"W05 domain contract missing token: {token}")
-    lowered = domain.lower()
-    for forbidden in ("document.", "window.", "localstorage", "indexeddb", "htmlelement", "fetch("):
-        fail(errors, forbidden in lowered, f"W05 domain must remain UI/storage/network independent: {forbidden}")
-    _node_check(errors, WEB / "src/domain.js")
-    return errors
-
-
-def validate_focus() -> list[str]:
-    errors = validate_domain()
-    html, parser = parse_shell(errors)
-    state = read_text(WEB / "src/state.js", errors)
-    domain = read_text(WEB / "src/domain.js", errors)
-    storage = read_text(WEB / "src/storage.js", errors)
-    app = read_text(WEB / "app.js", errors)
-    if parser is not None:
-        for element_id in ("focus-complete", "focus-cancel", "focus-note", "focus-history", "recommendation-title", "today-overdue-review-count", "study-cycle-next", "study-cycle-advance"):
-            fail(errors, element_id not in parser.ids, f"W06 focus UI hook missing: {element_id}")
-    for token in ("createFocusState", "focusRemainingMs", "recommendNextActivity", "selectOverdueReviews", "createStudyCycleState", "selectCurrentCycleSubject"):
-        fail(errors, token not in domain, f"W06 domain contract missing token: {token}")
-    for token in ("startFocus", "pauseFocus", "completeFocus", "cancelFocus", "getFocusSnapshot", "focus-session-completed", "advanceStudyCycle", "setStudyCycle"):
-        fail(errors, token not in state, f"W06 store contract missing token: {token}")
-    for token in ("studyflow.local.state.v1", "LEGACY_STORAGE_KEYS", "migrated"):
-        fail(errors, token not in storage, f"W06 migration contract missing token: {token}")
-    for token in ("setInterval", "clearInterval", "remainingMs"):
-        fail(errors, token not in app, f"W06 timer orchestration missing token: {token}")
-    doc = read_text(ROOT / "docs/web/W06_W07_TODAY_FOCUS_PLAN_CONTENT.md", errors)
-    for token in ("absolute", "StudySession", "Evidence", "migration", "overdue"):
-        fail(errors, token.lower() not in doc.lower(), f"W06/W07 delivery doc missing: {token}")
-    return errors
-
-
-def validate_plan_content() -> list[str]:
-    errors = validate_focus()
-    html, parser = parse_shell(errors)
-    state = read_text(WEB / "src/state.js", errors)
-    domain = read_text(WEB / "src/domain.js", errors)
-    render = read_text(WEB / "src/render.js", errors)
-    events = read_text(WEB / "src/events.js", errors)
-    if parser is not None:
-        for element_id in ("content-search", "content-filter", "add-subject", "subject-dialog", "subject-form", "topic-dialog", "topic-form"):
-            fail(errors, element_id not in parser.ids, f"W07 Plan Content UI hook missing: {element_id}")
-    for token in ("addSubject", "updateSubject", "deleteSubject", "moveSubject", "addTopic", "updateTopic", "deleteTopic", "moveTopic"):
-        fail(errors, token not in state, f"W07 state contract missing token: {token}")
-    for token in ("selectAllSubjectsForPlan", "selectAllTopicsForSubject", "notes", "order"):
-        fail(errors, token not in domain, f"W07 domain contract missing token: {token}")
-    for token in ("evidence", "content", "filter"):
-        fail(errors, token.lower() not in (render + events).lower(), f"W07 rendering/event contract missing token: {token}")
-    lowered = domain.lower()
-    for forbidden in ("document.", "window.", "localstorage", "indexeddb", "fetch("):
-        fail(errors, forbidden in lowered, f"W07 must keep domain independent: {forbidden}")
-    for relative in ("src/domain.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js", "app.js"):
-        _node_check(errors, WEB / relative)
-    return errors
-
-
-def validate_schedule() -> list[str]:
-    errors = validate_plan_content()
-    html, parser = parse_shell(errors)
-    domain = read_text(WEB / "src/domain.js", errors)
-    state = read_text(WEB / "src/state.js", errors)
-    render = read_text(WEB / "src/render.js", errors)
-    events = read_text(WEB / "src/events.js", errors)
-    if parser is not None:
-        for element_id in ("schedule-preview", "schedule-apply", "schedule-preview-list", "schedule-current-list", "schedule-preview-status"):
-            fail(errors, element_id not in parser.ids, f"W08 schedule UI hook missing: {element_id}")
-    for token in ("buildSchedulePreview", "baseRevision", "operations", "Overdue planned activity", "scheduledFor"):
-        fail(errors, token not in domain, f"W08 schedule-domain contract missing token: {token}")
-    for token in ("previewSchedule", "applySchedulePreview", "Schedule preview is stale"):
-        fail(errors, token not in state, f"W08 schedule-store contract missing token: {token}")
-    for token in ("renderScheduleState", "Preview ready"):
-        fail(errors, token not in render, f"W08 schedule rendering missing token: {token}")
-    fail(errors, "schedule-preview" not in events or "schedule-apply" not in events, "W08 schedule event wiring missing")
-    doc = read_text(ROOT / "docs/web/W08_W09_SCHEDULE_PRACTICE.md", errors)
-    for token in ("preview before apply", "stale", "immutable history", "overdue review"):
-        fail(errors, token.lower() not in doc.lower(), f"W08/W09 delivery doc missing: {token}")
-    return errors
-
-
-def validate_practice() -> list[str]:
-    errors = validate_schedule()
-    html, parser = parse_shell(errors)
-    domain = read_text(WEB / "src/domain.js", errors)
-    state = read_text(WEB / "src/state.js", errors)
-    render = read_text(WEB / "src/render.js", errors)
-    events = read_text(WEB / "src/events.js", errors)
-    storage = read_text(WEB / "src/storage.js", errors)
-    if parser is not None:
-        for element_id in ("practice-question-select", "practice-question-form", "practice-review-list", "practice-error-list", "question-dialog", "question-form"):
-            fail(errors, element_id not in parser.ids, f"W09 practice UI hook missing: {element_id}")
-    for token in ("createErrorEntry", "ERROR_CATEGORIES", "gradeQuestion", "deriveQuestionStats", "selectOpenErrors"):
-        fail(errors, token not in domain, f"W09 practice-domain contract missing token: {token}")
-    for token in ("addQuestion", "answerQuestion", "completeReview", "resolveError", "question-attempt"):
-        fail(errors, token not in state, f"W09 practice-store contract missing token: {token}")
-    for token in ("renderPracticeState", "graded accuracy", "recurrence"):
-        fail(errors, token not in render, f"W09 practice rendering missing token: {token}")
-    for token in ("practice-question-form", "data-complete-review", "data-resolve-error"):
-        fail(errors, token not in events, f"W09 event wiring missing token: {token}")
-    for token in ("studyflow.local.state.v2", "studyflow.local.state.v1"):
-        fail(errors, token not in storage, f"W09 state migration missing legacy key: {token}")
-    for relative in ("src/domain.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js", "app.js"):
-        _node_check(errors, WEB / relative)
-    return errors
-
-
-def validate_progress() -> list[str]:
-    errors = validate_practice()
-    html, parser = parse_shell(errors)
-    domain = read_text(WEB / "src/domain.js", errors)
-    state = read_text(WEB / "src/state.js", errors)
-    render = read_text(WEB / "src/render.js", errors)
-    events = read_text(WEB / "src/events.js", errors)
-    if parser is not None:
-        for element_id in ("progress-readiness", "progress-study-time", "progress-accuracy", "progress-coverage", "evidence-timeline", "goal-list", "goal-dialog", "goal-form", "integrity-status"):
-            fail(errors, element_id not in parser.ids, f"W10 progress UI hook missing: {element_id}")
-    for token in ("deriveProgressMetrics", "deriveGoalProgress", "buildEvidenceTimeline", "buildContentIntegrityReport", "readinessReason"):
-        fail(errors, token not in domain, f"W10 progress-domain contract missing token: {token}")
-    for token in ("addGoal", "toggleGoal", "deleteGoal"):
-        fail(errors, token not in state, f"W10 goal state contract missing token: {token}")
-    for token in ("renderProgressState", "No data", "integrity"):
-        fail(errors, token.lower() not in render.lower(), f"W10 progress rendering missing token: {token}")
-    fail(errors, "goal-form" not in events, "W10 goal event wiring missing")
-    return errors
-
-
-def validate_portable() -> list[str]:
-    errors = validate_progress()
-    html, parser = parse_shell(errors)
-    portable = read_text(WEB / "src/portable.js", errors)
-    state = read_text(WEB / "src/state.js", errors)
-    events = read_text(WEB / "src/events.js", errors)
-    if parser is not None:
-        for element_id in ("portable-export", "portable-import-file", "portable-status", "portable-preview", "portable-preview-summary", "portable-import-apply"):
-            fail(errors, element_id not in parser.ids, f"W11 portable UI hook missing: {element_id}")
-    for token in ("studyflow-local-package", "PORTABLE_FORMAT_VERSION", "parsePortablePackage", "buildPortableImportPreview", "MAX_PORTABLE_BYTES", "manifest counts"):
-        fail(errors, token.lower() not in portable.lower(), f"W11 portable contract missing token: {token}")
-    for token in ("applyPortableImportPreview", "preview is stale"):
-        fail(errors, token.lower() not in state.lower(), f"W11 import apply guard missing token: {token}")
-    for token in ("portable-export", "portable-import-file", "No local data has changed"):
-        fail(errors, token not in events, f"W11 portable event wiring missing token: {token}")
-    lowered=portable.lower()
-    for forbidden in ("document.", "window.", "localstorage", "indexeddb", "fetch("):
-        fail(errors, forbidden in lowered, f"W11 portable core must stay platform-independent: {forbidden}")
-    for relative in ("src/domain.js", "src/storage.js", "src/state.js", "src/render.js", "src/events.js", "src/portable.js", "app.js"):
-        _node_check(errors, WEB / relative)
-    doc = read_text(ROOT / "docs/web/W10_W11_PROGRESS_PORTABLE.md", errors)
-    for token in ("No data", "measured zero", "preview", "replace", "5 MiB"):
-        fail(errors, token.lower() not in doc.lower(), f"W10/W11 delivery doc missing: {token}")
-    return errors
-
-
-def validate_indexeddb() -> list[str]:
-    errors = validate_portable()
-    html, parser = parse_shell(errors)
-    storage = read_text(WEB / "src/storage.js", errors)
-    indexed = read_text(WEB / "src/indexeddb.js", errors)
-    domain = read_text(WEB / "src/domain.js", errors)
-    state = read_text(WEB / "src/state.js", errors)
-    events = read_text(WEB / "src/events.js", errors)
-    portable = read_text(WEB / "src/portable.js", errors)
-    app = read_text(WEB / "app.js", errors)
-    if parser is not None:
-        for element_id in ("material-form", "material-list", "material-count", "material-storage-status", "storage-backend-status"):
-            fail(errors, element_id not in parser.ids, f"W12 IndexedDB/material UI hook missing: {element_id}")
-    for token in ("createBrowserPersistence", "createBrowserRepository", "studyflow.local.state.v3"):
-        fail(errors, token not in storage, f"W12 storage migration contract missing token: {token}")
-    for token in ("openStudyFlowDatabase", "createIndexedDbPersistence", "createIndexedDbAttachmentRepository", "attachments", "transaction", "flush"):
-        fail(errors, token.lower() not in indexed.lower(), f"W12 IndexedDB contract missing token: {token}")
-    for token in ("attachmentId", "sizeBytes"):
-        fail(errors, token not in domain, f"W12 Material metadata contract missing token: {token}")
-    for token in ("addMaterial", "deleteMaterial"):
-        fail(errors, token not in state, f"W12 material state contract missing token: {token}")
-    for token in ("material-form", "data-open-material", "data-delete-material", "attachments.put", "attachments.get"):
-        fail(errors, token not in events, f"W12 attachment event wiring missing token: {token}")
-    fail(errors, "bytesIncluded: false" not in portable, "W12 portable package must truthfully declare that attachment bytes are not embedded")
-    fail(errors, "createBrowserPersistence" not in app, "W12 app startup must prefer the IndexedDB persistence bootstrap")
-    for relative in ("src/indexeddb.js", "src/storage.js", "src/domain.js", "src/state.js", "src/events.js", "src/portable.js", "app.js"):
-        _node_check(errors, WEB / relative)
-    doc = read_text(ROOT / "docs/web/W12_W13_INDEXEDDB_PWA.md", errors)
-    for token in ("IndexedDB", "attachment", "localStorage", "50 MiB", "fallback"):
-        fail(errors, token.lower() not in doc.lower(), f"W12/W13 delivery doc missing: {token}")
-    return errors
-
-
-def validate_pwa() -> list[str]:
-    errors = validate_indexeddb()
-    html, parser = parse_shell(errors)
-    manifest = read_text(WEB / "manifest.webmanifest", errors)
-    worker = read_text(WEB / "service-worker.js", errors)
-    pwa = read_text(WEB / "src/pwa.js", errors)
-    if parser is not None:
-        for element_id in ("pwa-status", "install-app"):
-            fail(errors, element_id not in parser.ids, f"W13 PWA UI hook missing: {element_id}")
-    for token in ('"display": "standalone"', '"start_url": "./#today"', '"192x192"', '"512x512"', '"maskable"'):
-        fail(errors, token not in manifest, f"W13 manifest contract missing token: {token}")
-    for token in ("CACHE_VERSION", "APP_SHELL", "install", "activate", "fetch", "index.html"):
-        fail(errors, token not in worker, f"W13 service-worker contract missing token: {token}")
-    for token in ("serviceWorker.register", "beforeinstallprompt", "appinstalled", "offline"):
-        fail(errors, token not in pwa, f"W13 PWA registration contract missing token: {token}")
-    for relative in ("icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"):
-        fail(errors, not (WEB / relative).is_file(), f"W13 required install icon missing: {relative}")
-    fail(errors, 'rel="manifest"' not in html, "W13 index.html must link the web app manifest")
-    _node_check(errors, WEB / "service-worker.js")
-    _node_check(errors, WEB / "src/pwa.js")
-    return errors
-
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--contract", action="store_true")
-    mode.add_argument("--shell", action="store_true")
-    mode.add_argument("--visual", action="store_true")
-    mode.add_argument("--interactions", action="store_true")
-    mode.add_argument("--state", action="store_true")
-    mode.add_argument("--domain", action="store_true")
-    mode.add_argument("--focus", action="store_true")
-    mode.add_argument("--content", action="store_true")
-    mode.add_argument("--schedule", action="store_true")
-    mode.add_argument("--practice", action="store_true")
-    mode.add_argument("--progress", action="store_true")
-    mode.add_argument("--portable", action="store_true")
-    mode.add_argument("--storage", action="store_true")
-    mode.add_argument("--pwa", action="store_true")
-    mode.add_argument("--all", action="store_true")
-    args = parser.parse_args()
-
-    if args.contract:
-        errors = validate_contract()
-        label = "W00 product contract"
-    elif args.shell:
-        errors = validate_shell()
-        label = "W01 semantic shell"
-    elif args.visual:
-        errors = validate_visual()
-        label = "W02 visual system"
-    elif args.interactions:
-        errors = validate_interactions()
-        label = "W02/W03 visual + interaction foundation"
-    elif args.state:
-        errors = validate_state()
-        label = "W04 application state + temporary persistence"
-    elif args.domain:
-        errors = validate_domain()
-        label = "W04/W05 state + core domain foundation"
-    elif args.focus:
-        errors = validate_focus()
-        label = "W06 Today + durable focus"
-    elif args.content:
-        errors = validate_plan_content()
-        label = "W06/W07 Today, Focus + Plan Content"
-    elif args.schedule:
-        errors = validate_schedule()
-        label = "W08 schedule intelligence + adaptive preview"
-    elif args.practice:
-        errors = validate_practice()
-        label = "W08/W09 schedule intelligence + practice"
-    elif args.progress:
-        errors = validate_progress()
-        label = "W10 truthful progress, evidence and goals"
-    elif args.portable:
-        errors = validate_portable()
-        label = "W10/W11 truthful progress + portable packages"
-    elif args.storage:
-        errors = validate_indexeddb()
-        label = "W12 IndexedDB state + attachment storage"
-    else:
-        errors = validate_pwa()
-        label = "W12/W13 IndexedDB storage + installable offline PWA"
-
+WEB=Path(__file__).resolve().parents[1]; ROOT=WEB.parent
+
+def _text(path:Path, errors:list[str])->str:
+    try:return path.read_text(encoding='utf-8')
+    except Exception as exc: errors.append(f'missing/unreadable {path.relative_to(ROOT)}: {exc}'); return ''
+def _require(errors:list[str], condition:bool, message:str)->None:
+    if not condition: errors.append(message)
+
+def validate_contract()->list[str]:
+    e=[]
+    try:data=tomllib.loads((ROOT/'.devtool.toml').read_text(encoding='utf-8'))
+    except Exception as exc:return [f'.devtool.toml invalid: {exc}']
+    target=data.get('targets',{}).get('studyflow_web',{})
+    _require(e,target.get('type')=='node','studyflow_web must remain a Node target'); _require(e,target.get('root')=='web','studyflow_web root must remain web'); _require(e,target.get('execution_environment')=='native-termux','studyflow_web must remain native-termux'); _require(e,'tasks' not in target,'web target must not define custom task overrides')
+    v=target.get('validation',{}); _require(e,v.get('max_workers')==1,'web validation max_workers must remain 1'); _require(e,v.get('cpu_limit')==1,'web validation cpu_limit must remain 1'); _require(e,v.get('parallel') is False,'web validation parallel must remain false')
+    try:pkg=json.loads((WEB/'package.json').read_text()); lock=json.loads((WEB/'package-lock.json').read_text())
+    except Exception as exc:return e+[f'package metadata invalid: {exc}']
+    _require(e,pkg.get('private') is True,'web package must remain private')
+    _require(e,pkg.get('dependencies')=={'react':'19.2.8','react-dom':'19.2.8'},'React runtime dependencies must be pinned')
+    _require(e,pkg.get('devDependencies')=={'typescript':'5.8.3'},'TypeScript dependency must be pinned')
+    for script in ('build','test','lint','dev'): _require(e,script in pkg.get('scripts',{}),f'missing npm script: {script}')
+    _require(e,lock.get('lockfileVersion')==3,'package-lock must remain v3')
+    for key in ('node_modules/react','node_modules/react-dom','node_modules/scheduler','node_modules/typescript'): _require(e,key in lock.get('packages',{}),f'lock missing {key}')
+    return e
+
+class Shell(HTMLParser):
+    def __init__(self):super().__init__();self.scripts=[];self.links=[];self.ids=set();self.metas=[];self.doctype=False
+    def handle_decl(self,decl):self.doctype=self.doctype or decl.lower().strip()=='doctype html'
+    def handle_starttag(self,tag,attrs):
+        d=dict(attrs); self.ids.add(d['id']) if d.get('id') else None
+        if tag=='script':self.scripts.append(d)
+        if tag=='link':self.links.append(d)
+        if tag=='meta':self.metas.append(d)
+
+def validate_shell()->list[str]:
+    e=validate_contract(); html=_text(WEB/'index.html',e); ui=_text(WEB/'src/react/App.tsx',e); p=Shell(); p.feed(html)
+    _require(e,p.doctype,'index must use HTML5 doctype'); _require(e,'root' in p.ids,'React root missing'); _require(e,any(m.get('name')=='viewport' and 'width=device-width' in str(m.get('content','')) for m in p.metas),'mobile viewport missing')
+    _require(e,len(p.scripts)==1 and p.scripts[0].get('src')=='app.js' and 'defer' in p.scripts[0],'index must load one deferred local app.js bootloader')
+    _require(e,any(l.get('rel')=='stylesheet' and l.get('href')=='styles.css' for l in p.links),'styles.css link missing'); _require(e,any(l.get('rel')=='manifest' for l in p.links),'PWA manifest link missing')
+    for token in ('id="today"','id="plan"','id="practice"','id="progress"','id="plan-overview"','id="plan-schedule"','id="plan-content"','id="plan-library"','id="practice-reviews"','id="practice-questions"','id="practice-tests"','id="practice-errors"','id="progress-summary"','id="progress-performance"','id="progress-goals"','id="progress-tools"'):_require(e,token in ui,f'React semantic destination missing: {token}')
+    _require(e,'http://' not in html and 'https://' not in html,'runtime shell must not depend on remote URLs')
+    return e
+
+def validate_visual()->list[str]:
+    e=[]; css=_text(WEB/'styles.css',e)
+    for token in ('--bg','--surface','--text','--muted','--border','--accent','safe-area-inset-bottom','focus-visible','prefers-reduced-motion','clamp('):_require(e,token in css,f'CSS system missing {token}')
+    _require(e,'@media (max-width:' not in css,'CSS must remain mobile-first (no max-width breakpoint)'); _require(e,bool(re.search(r'@media[^\{]*min-width\s*:\s*(?:700|768)px',css)),'tablet min-width enhancement missing')
+    return e
+
+def validate_interactions()->list[str]:
+    e=[]; loader=_text(WEB/'app.js',e); ui=_text(WEB/'src/react/App.tsx',e)
+    for token in ('useSyncExternalStore','onClick','onSubmit','setInterval','clearInterval','store.startFocus','store.previewSchedule','store.answerQuestion','store.applyPortableImportPreview'):_require(e,token in ui,f'React interaction missing {token}')
+    for token in ('PACKAGE_MODULES','react-dom/client','runtime/main.js','fetch(','localRequire'):_require(e,token in loader,f'browser runtime loader missing {token}')
+    try:r=subprocess.run(['node','--check','app.js'],cwd=WEB,text=True,capture_output=True); _require(e,r.returncode==0,f'app.js syntax invalid: {r.stderr.strip()}')
+    except Exception as exc:e.append(f'node app.js syntax check failed: {exc}')
+    return e
+
+def validate_typescript()->list[str]:
+    e=[]
+    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
+    ts=_text(WEB/'tsconfig.json',e)
+    try:cfg=json.loads(ts); _require(e,cfg.get('compilerOptions',{}).get('strict') is True,'TypeScript strict mode must be enabled'); _require(e,cfg.get('compilerOptions',{}).get('module')=='CommonJS','tracked browser runtime must compile to CommonJS')
+    except Exception as exc:e.append(f'tsconfig invalid: {exc}')
+    types=_text(WEB/'src/types.ts',e)
+    for token in ('interface StudyState','interface StudyStore','interface StudyRepository','interface AttachmentRepository','interface SchedulePreview','interface PortableImportPreview'):_require(e,token in types,f'typed contract missing {token}')
+    for legacy in ('domain.js','indexeddb.js','storage.js','state.js','portable.js','pwa.js','events.js','render.js'):
+        text=_text(WEB/'src'/legacy,e)
+        _require(e,'migration tombstone' in text and len(text)<500,f'legacy source must be a migration tombstone: {legacy}')
+    return e
+
+def validate_domain()->list[str]:
+    e=[]; d=_text(WEB/'src/domain.ts',e).lower()
+    for forbidden in ('react','document.','window.','localstorage','indexeddb','fetch('):_require(e,forbidden not in d,f'domain must not depend on {forbidden}')
+    for token in ('createplan','createsubject','createtopic','createactivity','createstudysession','creategoal','creatematerial','createreview','createquestion','createevidence','validateStudyState'.lower()):_require(e,token in d,f'domain API missing {token}')
+    return e
+
+def validate_state()->list[str]:
+    e=[]; s=_text(WEB/'src/state.ts',e).lower(); main=_text(WEB/'src/main.tsx',e)
+    for token in ('startfocus','addsubject','addtopic','previewschedule','answerquestion','applyportableimportpreview'):_require(e,token in s,f'store API missing {token}')
+    _require(e,'indexeddb' not in s,'state module must not own IndexedDB'); _require(e,'createBrowserPersistence' in main and 'createStudyStore' in main,'main must compose persistence + store outside React')
+    return e
+
+def validate_indexeddb()->list[str]:
+    e=[]; s=_text(WEB/'src/indexeddb.ts',e); storage=_text(WEB/'src/storage.ts',e)
+    for token in ('createIndexedDbPersistence','ATTACHMENT_STORE','objectStore','indexedDB'):_require(e,token in s,f'IndexedDB layer missing {token}')
+    _require(e,'createBrowserPersistence' in storage,'storage composition missing createBrowserPersistence'); return e
+
+def validate_pwa()->list[str]:
+    e=[]; p=_text(WEB/'src/pwa.ts',e); sw=_text(WEB/'service-worker.js',e); ui=_text(WEB/'src/react/App.tsx',e)
+    for token in ('serviceWorker.register','beforeinstallprompt','appinstalled','offline'):_require(e,token in p,f'PWA registration missing {token}')
+    for token in ('CACHE_VERSION','cache.addAll(APP_SHELL)','request.mode === "navigate"','runtime/main.js','react.production.js','react-dom-client.production.js'):_require(e,token in sw,f'service worker missing {token}')
+    _require(e,'id="install-app"' in ui and 'id="pwa-status"' in ui,'React PWA controls missing'); return e
+
+def validate_react()->list[str]:
+    e=[]; ui=_text(WEB/'src/react/App.tsx',e); main=_text(WEB/'src/main.tsx',e)
+    for token in ('from "react"','useSyncExternalStore','function Today','function Plan','function Practice','function Progress'):_require(e,token in ui,f'React UI missing {token}')
+    _require(e,'createRoot' in main,'React createRoot bootstrap missing'); _require(e,'createStudyStore' in main,'store must be constructed outside React component tree'); return e
+
+def validate_focus():return validate_state()
+def validate_plan_content():return validate_state()
+def validate_schedule():return validate_state()
+def validate_practice():return validate_state()
+def validate_progress():return validate_domain()
+def validate_portable():
+    e=[]; p=_text(WEB/'src/portable.ts',e)
+    for token in ('createPortablePackage','buildPortableImportPreview','bytesIncluded'):_require(e,token in p,f'portable layer missing {token}')
+    return e
+
+def validate_all()->list[str]:
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable)
+    out=[]
+    for fn in groups:
+        for item in fn():
+            if item not in out: out.append(item)
+    return out
+
+def main()->int:
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_all()
     if errors:
-        print("StudyFlow web validation FAILED:", file=sys.stderr)
-        for error in errors:
-            print(f"- {error}", file=sys.stderr)
+        for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1
-    print(f"StudyFlow web validation passed: {label}.")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    print('StudyFlow web validation passed'); return 0
+if __name__=='__main__':raise SystemExit(main())

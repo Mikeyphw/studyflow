@@ -27,15 +27,17 @@ class W00WebContractTest(unittest.TestCase):
         self.assertIn("studyflow_desktop", targets)
         self.assertEqual(data["project"]["default_target"], "studyflow_desktop")
 
-    def test_bootstrap_is_dependency_free_and_has_devtool_scripts(self) -> None:
+    def test_bootstrap_has_local_pinned_react_typescript_and_devtool_scripts(self) -> None:
         package = json.loads((WEB / "package.json").read_text(encoding="utf-8"))
         self.assertTrue(package["private"])
-        self.assertFalse(package.get("dependencies"))
-        self.assertFalse(package.get("devDependencies"))
+        self.assertEqual(package["dependencies"], {"react": "19.2.8", "react-dom": "19.2.8"})
+        self.assertEqual(package["devDependencies"], {"typescript": "5.8.3"})
         for name in ("build", "test", "lint", "dev"):
             self.assertIn(name, package["scripts"])
         lock = json.loads((WEB / "package-lock.json").read_text(encoding="utf-8"))
         self.assertEqual(lock["lockfileVersion"], 3)
+        self.assertIn("node_modules/react", lock["packages"])
+        self.assertIn("node_modules/react-dom", lock["packages"])
 
     def test_contract_validator_passes(self) -> None:
         path = WEB / "scripts/validate_web.py"
