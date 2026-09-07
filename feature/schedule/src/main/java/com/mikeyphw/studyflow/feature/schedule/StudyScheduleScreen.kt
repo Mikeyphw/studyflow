@@ -130,8 +130,14 @@ fun StudyScheduleScreen(
     var provenanceFilterName by rememberSaveable(plan.id.value) { mutableStateOf("") }
     var selectedActivityIds by rememberSaveable(plan.id.value) { mutableStateOf(setOf<String>()) }
     var confirmingBulkDelete by rememberSaveable(plan.id.value) { mutableStateOf(false) }
+    var calendarViewName by rememberSaveable(plan.id.value) {
+        mutableStateOf(ScheduleCalendarView.THIS_WEEK.name)
+    }
 
     val zoneId = remember { ZoneId.systemDefault() }
+    val today = remember(zoneId) { LocalDate.now(zoneId) }
+    val calendarView = ScheduleCalendarView.valueOf(calendarViewName)
+    val calendarWindow = remember(calendarView, today) { ScheduleCalendarPlanner.window(calendarView, today) }
     val phasePlan = remember(schedule.strategy?.configurationJson) {
         StudyPhasePlanCodec.decode(schedule.strategy?.configurationJson.orEmpty())
     }
@@ -143,8 +149,11 @@ fun StudyScheduleScreen(
         status = statusFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, PlannedActivityStatus.PLANNED) },
         provenance = provenanceFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, ScheduleActivityProvenance.MANUAL) },
     )
-    val visibleActivities = remember(schedule.plannedActivities, activityFilter) {
+    val criteriaActivities = remember(schedule.plannedActivities, activityFilter) {
         ScheduleIntelligence.filter(schedule.plannedActivities, activityFilter)
+    }
+    val visibleActivities = remember(criteriaActivities, calendarView, today, zoneId) {
+        ScheduleCalendarPlanner.filter(criteriaActivities, calendarView, today, zoneId)
     }
     val dayGroups = remember(visibleActivities, zoneId) { ScheduleIntelligence.groupByDay(visibleActivities, zoneId) }
     val intelligence = remember(schedule.plannedActivities, zoneId) {
@@ -214,6 +223,38 @@ fun StudyScheduleScreen(
                     text = stringResource(R.string.schedule_subtitle, plan.name),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            item {
+                StudyFlowSectionCard(title = stringResource(R.string.schedule_view_title)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            ScheduleCalendarView.entries.forEach { candidate ->
+                                FilterChip(
+                                    selected = calendarView == candidate,
+                                    onClick = { calendarViewName = candidate.name },
+                                    label = { Text(stringResource(candidate.scheduleViewLabelKey())) },
+                                )
+                            }
+                        }
+                        Text(
+                            text = calendarWindow.scheduleWindowLabel(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.schedule_view_summary,
+                                visibleActivities.size,
+                                ScheduleCalendarPlanner.plannedMinutes(visibleActivities),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
             if (plan.type == StudyType.PUBLIC_EXAMINATION && publicExamManager != null) {
                 item {
@@ -893,6 +934,20 @@ private fun DeleteOverflowMenu(onConfirmed: () -> Unit) {
             },
         )
     }
+}
+
+@Composable
+private fun ScheduleCalendarWindow.scheduleWindowLabel(): String = when {
+    !bounded -> stringResource(R.string.schedule_view_all_dates)
+    startsOn == endsOnInclusive -> requireNotNull(startsOn).toString()
+    else -> "${requireNotNull(startsOn)} → ${requireNotNull(endsOnInclusive)}"
+}
+
+private fun ScheduleCalendarView.scheduleViewLabelKey(): Int = when (this) {
+    ScheduleCalendarView.TODAY -> R.string.schedule_view_today
+    ScheduleCalendarView.THIS_WEEK -> R.string.schedule_view_this_week
+    ScheduleCalendarView.NEXT_WEEK -> R.string.schedule_view_next_week
+    ScheduleCalendarView.CALENDAR -> R.string.schedule_view_calendar
 }
 
 @Composable

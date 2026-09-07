@@ -133,4 +133,11 @@
     <string name="study_phase_review_ratio">Revisões %</string>
     <string name="study_phase_question_goal_label">Meta de questões (opcional)</string>
     <string name="study_phase_mock_goal_label">Meta de simulados (opcional)</string>
+    <string name="schedule_view_title">Visão da agenda</string>
+    <string name="schedule_view_today">Hoje</string>
+    <string name="schedule_view_this_week">Esta semana</string>
+    <string name="schedule_view_next_week">Próxima semana</string>
+    <string name="schedule_view_calendar">Calendário</string>
+    <string name="schedule_view_all_dates">Todas as atividades agendadas e sem data</string>
+    <string name="schedule_view_summary">%1$d atividades · %2$d minutos planejados</string>
 </resources>

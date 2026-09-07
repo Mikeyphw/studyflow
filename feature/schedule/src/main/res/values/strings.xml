@@ -131,4 +131,11 @@
     <string name="study_phase_review_ratio">Reviews %</string>
     <string name="study_phase_question_goal_label">Question target (optional)</string>
     <string name="study_phase_mock_goal_label">Mock target (optional)</string>
+    <string name="schedule_view_title">Schedule view</string>
+    <string name="schedule_view_today">Today</string>
+    <string name="schedule_view_this_week">This week</string>
+    <string name="schedule_view_next_week">Next week</string>
+    <string name="schedule_view_calendar">Calendar</string>
+    <string name="schedule_view_all_dates">All scheduled and unscheduled activities</string>
+    <string name="schedule_view_summary">%1$d activities · %2$d planned minutes</string>
 </resources>
