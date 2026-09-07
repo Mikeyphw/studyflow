@@ -158,8 +158,15 @@ for rel in [
     "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanPortabilityScreen.kt",
 ]:
     text = read(rel)
-    require("AlertDialog" in text and ("ConfirmingDelete" in text or "ConfirmingSnapshotDelete" in text),
-            f"{rel} must confirm destructive deletes")
+    confirmation_contract = (
+        "AlertDialog" in text
+        and (
+            "ConfirmingDelete" in text
+            or "ConfirmingSnapshotDelete" in text
+            or ("DeleteOverflowMenu" in text and "confirm_delete_title" in text)
+        )
+    )
+    require(confirmation_contract, f"{rel} must confirm destructive deletes")
 for module in ["progress", "library", "practice", "schedule", "plans"]:
     for values in ["values", "values-pt-rBR"]:
         rel = f"feature/{module}/src/main/res/{values}/strings.xml"

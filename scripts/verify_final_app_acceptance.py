@@ -96,8 +96,10 @@ for token in (
     "versionName = \"1.0.0-rc1\"",
 ):
     require(token in text("app/build.gradle.kts"), f"release identity missing: {token}")
-require(":app:assembleRelease" in build + devtool, "Release APK assembly gate is missing")
-require(":app:bundleRelease" in build + devtool, "Release AAB bundle gate is missing")
+require(":app:assembleRelease" in build, "credentialed Release APK assembly gate is missing")
+require(":app:bundleRelease" in build, "credentialed Release AAB bundle gate is missing")
+require('build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]' in devtool,
+        "ordinary Devtool build must not produce an unsigned Release APK/AAB")
 require("android.intent.action.MAIN" in manifest, "launcher MAIN intent is missing")
 require("android.intent.category.LAUNCHER" in manifest, "launcher category is missing")
 require("startDestination = TodayRoute()" in app, "V2 Today route must remain the release startup destination")

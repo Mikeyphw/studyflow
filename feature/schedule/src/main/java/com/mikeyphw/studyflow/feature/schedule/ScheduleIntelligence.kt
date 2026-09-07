@@ -90,7 +90,9 @@ object ScheduleIntelligence {
         }
         val overloadedDates = active
             .groupBy { requireNotNull(it.localDate(zoneId)) }
-            .filterValues { dayActivities -> dayActivities.sumOf(PlannedActivity::plannedDurationMinutes) > dailyOverloadMinutes }
+            .filterValues { dayActivities ->
+                dayActivities.sumOf(PlannedActivity::plannedDurationMinutes) > dailyOverloadMinutes
+            }
             .keys
         return ScheduleIntelligenceReport(conflicts, overloadedDates)
     }

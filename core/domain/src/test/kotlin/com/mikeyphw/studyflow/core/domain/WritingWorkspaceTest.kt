@@ -65,7 +65,10 @@ class WritingWorkspaceTest {
         assertEquals(1, progress.completed)
         assertEquals(1, progress.target)
         assertTrue(progress.reached)
-        assertEquals(listOf("this-week", "old"), WritingWorkspaceAnalytics.history(sessions).map { it.session.id.value })
+        assertEquals(
+            listOf("this-week", "old"),
+            WritingWorkspaceAnalytics.history(sessions).map { it.session.id.value },
+        )
     }
 
     @Test

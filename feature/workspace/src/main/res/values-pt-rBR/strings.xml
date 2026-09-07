@@ -737,27 +737,72 @@
     <string name="metric_confidence_low">confiança baixa</string>
     <string name="metric_confidence_medium">confiança média</string>
     <string name="metric_confidence_high">confiança alta</string>
-    <string name="metric_accuracy_evidence">Baseado em %1$d respostas recentes · %2$s</string>
+    <plurals name="metric_accuracy_evidence">
+        <item quantity="one">Baseado em %1$d resposta recente · %2$s</item>
+        <item quantity="many">Baseado em %1$d respostas recentes · %2$s</item>
+        <item quantity="other">Baseado em %1$d respostas recentes · %2$s</item>
+    </plurals>
     <string name="metric_accuracy_no_evidence">Responda questões para criar evidência.</string>
-    <string name="metric_schedule_evidence">Baseado em %1$d blocos observados · %2$s</string>
+    <plurals name="metric_schedule_evidence">
+        <item quantity="one">Baseado em %1$d bloco observado · %2$s</item>
+        <item quantity="many">Baseado em %1$d blocos observados · %2$s</item>
+        <item quantity="other">Baseado em %1$d blocos observados · %2$s</item>
+    </plurals>
     <string name="metric_schedule_no_evidence">Execute ou deixe vencer blocos do cronograma para criar evidência.</string>
-    <string name="metric_goal_evidence">Baseado em %1$d metas registradas · %2$s</string>
+    <plurals name="metric_goal_evidence">
+        <item quantity="one">Baseado em %1$d meta registrada · %2$s</item>
+        <item quantity="many">Baseado em %1$d metas registradas · %2$s</item>
+        <item quantity="other">Baseado em %1$d metas registradas · %2$s</item>
+    </plurals>
     <string name="metric_goal_no_evidence">Crie uma meta para medir progresso.</string>
     <string name="pre_edital_cockpit_title">Painel pré-edital</string>
     <string name="pre_edital_cockpit_status">Pré-edital — modo de referência</string>
     <string name="pre_edital_reference_not_set">Nenhuma referência de edital salva</string>
-    <string name="pre_edital_cockpit_message">Referência: %1$s. Restam %2$d itens para verificar. Nenhuma contagem regressiva oficial é exibida até existir uma data confirmada.</string>
-    <string name="pre_edital_cockpit_stale_message">Referência: %1$s (%2$d dias). Restam %3$d itens para verificar. Revise a referência antes de tratá-la como atual; nenhuma contagem regressiva oficial é exibida.</string>
-    <string name="pre_edital_cockpit_unknown_date_message">Referência: %1$s. A data de publicação é desconhecida e restam %2$d itens para verificar. Nenhuma contagem regressiva oficial é exibida.</string>
-    <string name="pre_edital_cockpit_missing_reference_message">Ainda não há uma referência de edital salva. Restam %1$d itens para verificar, e o StudyFlow não inventa uma contagem regressiva.</string>
+    <plurals name="pre_edital_cockpit_message">
+        <item quantity="one">Referência: %1$s. Resta %2$d item para verificar. Nenhuma contagem regressiva oficial é exibida até existir uma data confirmada.</item>
+        <item quantity="many">Referência: %1$s. Restam %2$d itens para verificar. Nenhuma contagem regressiva oficial é exibida até existir uma data confirmada.</item>
+        <item quantity="other">Referência: %1$s. Restam %2$d itens para verificar. Nenhuma contagem regressiva oficial é exibida até existir uma data confirmada.</item>
+    </plurals>
+    <plurals name="pre_edital_reference_age_days">
+        <item quantity="one">%1$d dia</item>
+        <item quantity="many">%1$d dias</item>
+        <item quantity="other">%1$d dias</item>
+    </plurals>
+    <plurals name="pre_edital_cockpit_stale_message">
+        <item quantity="one">Referência: %1$s (%2$s). Resta %3$d item para verificar. Revise a referência antes de tratá-la como atual; nenhuma contagem regressiva oficial é exibida.</item>
+        <item quantity="many">Referência: %1$s (%2$s). Restam %3$d itens para verificar. Revise a referência antes de tratá-la como atual; nenhuma contagem regressiva oficial é exibida.</item>
+        <item quantity="other">Referência: %1$s (%2$s). Restam %3$d itens para verificar. Revise a referência antes de tratá-la como atual; nenhuma contagem regressiva oficial é exibida.</item>
+    </plurals>
+    <plurals name="pre_edital_cockpit_unknown_date_message">
+        <item quantity="one">Referência: %1$s. A data de publicação é desconhecida e resta %2$d item para verificar. Nenhuma contagem regressiva oficial é exibida.</item>
+        <item quantity="many">Referência: %1$s. A data de publicação é desconhecida e restam %2$d itens para verificar. Nenhuma contagem regressiva oficial é exibida.</item>
+        <item quantity="other">Referência: %1$s. A data de publicação é desconhecida e restam %2$d itens para verificar. Nenhuma contagem regressiva oficial é exibida.</item>
+    </plurals>
+    <plurals name="pre_edital_cockpit_missing_reference_message">
+        <item quantity="one">Ainda não há uma referência de edital salva. Resta %1$d item para verificar, e o StudyFlow não inventa uma contagem regressiva.</item>
+        <item quantity="many">Ainda não há uma referência de edital salva. Restam %1$d itens para verificar, e o StudyFlow não inventa uma contagem regressiva.</item>
+        <item quantity="other">Ainda não há uma referência de edital salva. Restam %1$d itens para verificar, e o StudyFlow não inventa uma contagem regressiva.</item>
+    </plurals>
     <string name="pre_edital_review_assumptions">Revisar premissas</string>
 
     <string name="bb_mock_exam_title">BB Agente Comercial · simulado de referência 2022/001</string>
-    <string name="bb_mock_exam_reference">Filtro Cesgranrio · %1$d questões objetivas · simulado completo de referência de %2$d min · 100 pontos de referência</string>
+    <plurals name="bb_mock_exam_reference">
+        <item quantity="one">Filtro Cesgranrio · %1$d questão objetiva · simulado completo de referência de %2$d min · 100 pontos de referência</item>
+        <item quantity="many">Filtro Cesgranrio · %1$d questões objetivas · simulado completo de referência de %2$d min · 100 pontos de referência</item>
+        <item quantity="other">Filtro Cesgranrio · %1$d questões objetivas · simulado completo de referência de %2$d min · 100 pontos de referência</item>
+    </plurals>
     <string name="bb_mock_exam_allocation_notice">As metas de questões são derivadas proporcionalmente dos pesos em pontos fornecidos para totalizar 70. Elas não são apresentadas como quantidade oficial de questões por disciplina.</string>
-    <string name="bb_mock_exam_section">%1$s · meta de %2$d questões · %3$.1f pontos</string>
+    <plurals name="bb_mock_exam_section">
+        <item quantity="one">%1$s · meta de %2$d questão · %3$.1f pontos</item>
+        <item quantity="many">%1$s · meta de %2$d questões · %3$.1f pontos</item>
+        <item quantity="other">%1$s · meta de %2$d questões · %3$.1f pontos</item>
+    </plurals>
     <string name="bb_mock_exam_ready">O banco local possui cobertura completa para este preset.</string>
-    <string name="bb_mock_exam_missing">Faltam %1$d questão(ões) Cesgranrio compatível(is) no banco local. O preset não substitui por outra disciplina ou banca.</string>
+    <plurals name="bb_mock_exam_missing">
+        <item quantity="one">Falta %1$d questão Cesgranrio compatível no banco local. O preset não substitui por outra disciplina ou banca.</item>
+        <item quantity="many">Faltam %1$d questões Cesgranrio compatíveis no banco local. O preset não substitui por outra disciplina ou banca.</item>
+        <item quantity="other">Faltam %1$d questões Cesgranrio compatíveis no banco local. O preset não substitui por outra disciplina ou banca.</item>
+    </plurals>
     <string name="bb_mock_exam_essay_separate">O treino de Redação permanece separado das 70 questões objetivas. Mínimo eliminatório de referência: %1$d/100.</string>
     <string name="bb_mock_exam_create">Criar simulado de referência do BB</string>
 
@@ -770,10 +815,26 @@
     <string name="study_phase_question_goal">Meta da fase: %1$d questões</string>
 
     <string name="question_quota_title">Planejador de cota de questões</string>
-    <string name="question_quota_next_7_days">Próximos 7 dias: %1$d questões</string>
-    <string name="question_quota_daily">Ritmo diário: %1$d questões</string>
-    <string name="question_quota_summary">Progresso da fase: %1$d / %2$d respondidas · %3$d restantes em %4$d dias.</string>
-    <string name="question_quota_subject_target">%1$d nesta semana</string>
+    <plurals name="question_quota_next_7_days">
+        <item quantity="one">Próximos 7 dias: %1$d questão</item>
+        <item quantity="many">Próximos 7 dias: %1$d questões</item>
+        <item quantity="other">Próximos 7 dias: %1$d questões</item>
+    </plurals>
+    <plurals name="question_quota_daily">
+        <item quantity="one">Ritmo diário: %1$d questão</item>
+        <item quantity="many">Ritmo diário: %1$d questões</item>
+        <item quantity="other">Ritmo diário: %1$d questões</item>
+    </plurals>
+    <plurals name="question_quota_summary">
+        <item quantity="one">Progresso da fase: %1$d / %2$d respondidas · %3$d restantes em %4$d dia.</item>
+        <item quantity="many">Progresso da fase: %1$d / %2$d respondidas · %3$d restantes em %4$d dias.</item>
+        <item quantity="other">Progresso da fase: %1$d / %2$d respondidas · %3$d restantes em %4$d dias.</item>
+    </plurals>
+    <plurals name="question_quota_subject_target">
+        <item quantity="one">%1$d nesta semana</item>
+        <item quantity="many">%1$d nesta semana</item>
+        <item quantity="other">%1$d nesta semana</item>
+    </plurals>
     <string name="question_quota_subject_evidence">Respondidas na fase %1$d · acurácia %2$s%% · erros recorrentes %3$d · revisões vencidas %4$d</string>
     <string name="question_quota_formula">Fórmula de distribuição: 35% peso da prova, 20% subtreino em relação ao peso, 20% déficit de acurácia recente, 15% erros recorrentes e 10% revisões vencidas. Evidência ausente vale zero; os totais são normalizados para a meta da fase ativa.</string>
     <string name="dashboard_questions_label">Banco de questões</string>
@@ -785,7 +846,11 @@
     <string name="dashboard_cutoff_gap_value">Diferença estimada para corte %1$s</string>
     <string name="dashboard_exam_countdown_label">Dias até a prova confirmada</string>
     <string name="dashboard_subject_weight">Peso %1$s</string>
-    <string name="dashboard_subject_questions">%1$d questões</string>
+    <plurals name="dashboard_subject_questions">
+        <item quantity="one">%1$d questão</item>
+        <item quantity="many">%1$d questões</item>
+        <item quantity="other">%1$d questões</item>
+    </plurals>
     <string name="dashboard_subject_priority">Prioridade %1$d</string>
     <string name="dashboard_subject_incidence">Incidência %1$d%%</string>
     <string name="dashboard_subject_accuracy">Acurácia %1$s</string>

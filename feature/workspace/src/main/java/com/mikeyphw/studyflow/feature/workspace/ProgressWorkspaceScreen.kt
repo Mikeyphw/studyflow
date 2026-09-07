@@ -691,15 +691,24 @@ fun ProgressWorkspaceScreen(
                     )
                     item(key = "question-quota-summary", contentType = "question-quota") {
                         StudyFlowFocusActionSurface(
-                            title = stringResource(R.string.question_quota_next_7_days, quota.nextSevenDaysQuestions),
-                            message = stringResource(
-                                R.string.question_quota_summary,
+                            title = pluralStringResource(
+                                R.plurals.question_quota_next_7_days,
+                                quota.nextSevenDaysQuestions,
+                                quota.nextSevenDaysQuestions,
+                            ),
+                            message = pluralStringResource(
+                                R.plurals.question_quota_summary,
+                                quota.remainingDays,
                                 quota.phaseQuestionsAnswered,
                                 quota.phaseTargetQuestions,
                                 quota.remainingQuestions,
                                 quota.remainingDays,
                             ),
-                            supportingLabel = stringResource(R.string.question_quota_daily, quota.dailyQuestions),
+                            supportingLabel = pluralStringResource(
+                                R.plurals.question_quota_daily,
+                                quota.dailyQuestions,
+                                quota.dailyQuestions,
+                            ),
                             actionLabel = stringResource(R.string.open_practice),
                             onAction = onOpenPractice,
                         )
@@ -719,7 +728,11 @@ fun ProgressWorkspaceScreen(
                                 row.overdueReviews,
                             ),
                             icon = Icons.Outlined.CheckCircle,
-                            status = stringResource(R.string.question_quota_subject_target, row.weeklyQuestions),
+                            status = pluralStringResource(
+                                R.plurals.question_quota_subject_target,
+                                row.weeklyQuestions,
+                                row.weeklyQuestions,
+                            ),
                             onClick = onOpenPractice,
                         )
                     }
@@ -1080,8 +1093,9 @@ fun ProgressWorkspaceScreen(
                                     stringResource(R.string.percent_value, value)
                                 } ?: stringResource(R.string.no_data),
                                 supportingText = periodAccuracyMetric.confidence?.let { confidence ->
-                                    stringResource(
-                                        R.string.metric_accuracy_evidence,
+                                    pluralStringResource(
+                                        R.plurals.metric_accuracy_evidence,
+                                        periodAccuracyMetric.evidenceCount,
                                         periodAccuracyMetric.evidenceCount,
                                         stringResource(metricConfidenceLabel(confidence)),
                                     )
@@ -1100,8 +1114,9 @@ fun ProgressWorkspaceScreen(
                                     stringResource(R.string.percent_value, value)
                                 } ?: stringResource(R.string.no_data),
                                 supportingText = scheduleMetric.confidence?.let { confidence ->
-                                    stringResource(
-                                        R.string.metric_schedule_evidence,
+                                    pluralStringResource(
+                                        R.plurals.metric_schedule_evidence,
+                                        scheduleMetric.evidenceCount,
                                         scheduleMetric.evidenceCount,
                                         stringResource(metricConfidenceLabel(confidence)),
                                     )
@@ -1116,8 +1131,9 @@ fun ProgressWorkspaceScreen(
                                     stringResource(R.string.percent_value, value)
                                 } ?: stringResource(R.string.no_data),
                                 supportingText = goalMetric.confidence?.let { confidence ->
-                                    stringResource(
-                                        R.string.metric_goal_evidence,
+                                    pluralStringResource(
+                                        R.plurals.metric_goal_evidence,
+                                        goalMetric.evidenceCount,
                                         goalMetric.evidenceCount,
                                         stringResource(metricConfidenceLabel(confidence)),
                                     )
@@ -1183,8 +1199,9 @@ fun ProgressWorkspaceScreen(
                                     stringResource(R.string.percent_value, value)
                                 } ?: stringResource(R.string.no_data),
                                 supportingText = goalMetric.confidence?.let { confidence ->
-                                    stringResource(
-                                        R.string.metric_goal_evidence,
+                                    pluralStringResource(
+                                        R.plurals.metric_goal_evidence,
+                                        goalMetric.evidenceCount,
                                         goalMetric.evidenceCount,
                                         stringResource(metricConfidenceLabel(confidence)),
                                     )

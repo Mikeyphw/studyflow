@@ -680,8 +680,9 @@ private fun BancoDoBrasilMockExamPresetCard(
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
-                text = stringResource(
-                    R.string.bb_mock_exam_reference,
+                text = pluralStringResource(
+                    R.plurals.bb_mock_exam_reference,
+                    preset.blueprint.requestedQuestionCount,
                     preset.blueprint.requestedQuestionCount,
                     preset.blueprint.timeLimitMinutes,
                 ),
@@ -695,8 +696,9 @@ private fun BancoDoBrasilMockExamPresetCard(
             preset.preview.sections.forEach { sectionPreview ->
                 val section = sectionPreview.section
                 Text(
-                    text = stringResource(
-                        R.string.bb_mock_exam_section,
+                    text = pluralStringResource(
+                        R.plurals.bb_mock_exam_section,
+                        section.questionCount,
                         section.key,
                         section.questionCount,
                         section.weight,
@@ -708,7 +710,11 @@ private fun BancoDoBrasilMockExamPresetCard(
                 text = if (preset.executable) {
                     stringResource(R.string.bb_mock_exam_ready)
                 } else {
-                    stringResource(R.string.bb_mock_exam_missing, preset.missingQuestionCount)
+                    pluralStringResource(
+                        R.plurals.bb_mock_exam_missing,
+                        preset.missingQuestionCount,
+                        preset.missingQuestionCount,
+                    )
                 },
                 color = if (preset.executable) {
                     MaterialTheme.colorScheme.primary

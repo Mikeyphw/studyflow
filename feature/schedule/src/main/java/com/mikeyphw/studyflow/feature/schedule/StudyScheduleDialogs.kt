@@ -255,7 +255,7 @@ internal fun PlannedActivityDialog(
                             scheduledStartEpochMillis = requireNotNull(scheduledStart),
                             title = title.ifBlank { defaultActivityTitle },
                             durationMinutes = requireNotNull(parsedActivityDuration),
-                            type = enumValueOf<StudyActivityType>(typeName),
+                            type = enumValueOrDefault(typeName, StudyActivityType.THEORY),
                             locked = locked,
                         ),
                     )
@@ -400,3 +400,6 @@ private fun parseMinuteOfDay(value: String): Int? {
     if (hour !in 0..23 || minute !in 0..59) return null
     return hour * 60 + minute
 }
+private inline fun <reified T : Enum<T>> enumValueOrDefault(name: String, defaultValue: T): T =
+    enumValues<T>().firstOrNull { value -> value.name == name } ?: defaultValue
+

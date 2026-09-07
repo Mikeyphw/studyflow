@@ -17,7 +17,9 @@ class Ov14StudyPhasePlanningContractTest {
 
     @Test
     fun `schedule editor persists phases and applies active allocation to generation`() {
-        val screen = repoFile("feature/schedule/src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleScreen.kt")
+        val screen = repoFile(
+            "feature/schedule/src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleScreen.kt",
+        )
         assertTrue("StudyPhasePlanCodec.decode" in screen)
         assertTrue("savePhasePlan" in screen)
         assertTrue("effectiveStrategyForDate" in screen)

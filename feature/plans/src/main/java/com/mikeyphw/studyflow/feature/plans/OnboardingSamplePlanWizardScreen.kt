@@ -730,7 +730,8 @@ fun OnboardingSampleSubjectKind.titleRes(): Int = when (this) {
     OnboardingSampleSubjectKind.BB_PORTUGUESE -> R.string.onboarding_subject_bb_portuguese
     OnboardingSampleSubjectKind.BB_ENGLISH -> R.string.onboarding_subject_bb_english
     OnboardingSampleSubjectKind.BB_MATHEMATICS -> R.string.onboarding_subject_bb_mathematics
-    OnboardingSampleSubjectKind.BB_FINANCIAL_MARKET_CURRENT_AFFAIRS -> R.string.onboarding_subject_bb_financial_market_current_affairs
+    OnboardingSampleSubjectKind.BB_FINANCIAL_MARKET_CURRENT_AFFAIRS ->
+        R.string.onboarding_subject_bb_financial_market_current_affairs
     OnboardingSampleSubjectKind.BB_FINANCIAL_MATHEMATICS -> R.string.onboarding_subject_bb_financial_mathematics
     OnboardingSampleSubjectKind.BB_BANKING_KNOWLEDGE -> R.string.onboarding_subject_bb_banking_knowledge
     OnboardingSampleSubjectKind.BB_INFORMATION_TECHNOLOGY -> R.string.onboarding_subject_bb_information_technology

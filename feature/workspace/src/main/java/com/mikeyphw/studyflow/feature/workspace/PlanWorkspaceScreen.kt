@@ -950,23 +950,35 @@ private fun PublicExamPreEditalCockpit(
 ) {
     val reference = snapshot.referenceLabel ?: stringResource(R.string.pre_edital_reference_not_set)
     val message = when {
-        PublicExamPreEditalIssue.STALE_REFERENCE_NOTICE in snapshot.issues -> stringResource(
-            R.string.pre_edital_cockpit_stale_message,
+        PublicExamPreEditalIssue.STALE_REFERENCE_NOTICE in snapshot.issues -> {
+            val referenceAgeDays = (snapshot.referenceAgeDays ?: 0L).coerceAtLeast(0L)
+            val referenceAgeText = pluralStringResource(
+                R.plurals.pre_edital_reference_age_days,
+                referenceAgeDays.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                referenceAgeDays,
+            )
+            pluralStringResource(
+                R.plurals.pre_edital_cockpit_stale_message,
+                snapshot.verificationCount,
+                reference,
+                referenceAgeText,
+                snapshot.verificationCount,
+            )
+        }
+        PublicExamPreEditalIssue.REFERENCE_PUBLICATION_DATE_UNKNOWN in snapshot.issues -> pluralStringResource(
+            R.plurals.pre_edital_cockpit_unknown_date_message,
+            snapshot.verificationCount,
             reference,
-            snapshot.referenceAgeDays ?: 0L,
             snapshot.verificationCount,
         )
-        PublicExamPreEditalIssue.REFERENCE_PUBLICATION_DATE_UNKNOWN in snapshot.issues -> stringResource(
-            R.string.pre_edital_cockpit_unknown_date_message,
-            reference,
+        PublicExamPreEditalIssue.NO_REFERENCE_NOTICE in snapshot.issues -> pluralStringResource(
+            R.plurals.pre_edital_cockpit_missing_reference_message,
+            snapshot.verificationCount,
             snapshot.verificationCount,
         )
-        PublicExamPreEditalIssue.NO_REFERENCE_NOTICE in snapshot.issues -> stringResource(
-            R.string.pre_edital_cockpit_missing_reference_message,
+        else -> pluralStringResource(
+            R.plurals.pre_edital_cockpit_message,
             snapshot.verificationCount,
-        )
-        else -> stringResource(
-            R.string.pre_edital_cockpit_message,
             reference,
             snapshot.verificationCount,
         )
@@ -1044,7 +1056,11 @@ private fun PublicExamDashboardSummary(snapshot: PublicExamDashboardSnapshot) {
             }
             val supporting = listOfNotNull(
                 weightText,
-                stringResource(R.string.dashboard_subject_questions, row.questionsAnswered),
+                pluralStringResource(
+                    R.plurals.dashboard_subject_questions,
+                    row.questionsAnswered,
+                    row.questionsAnswered,
+                ),
                 stringResource(row.status.workspaceLabelRes()),
             ).joinToString(" · ")
             val priority = stringResource(R.string.dashboard_subject_priority, (row.priorityScore * 100).toInt())

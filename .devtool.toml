@@ -38,7 +38,7 @@ args = [
 ]
 
 [targets.studyflow_android.tasks]
-build = [":app:assembleDebug", ":app:assembleRelease", ":app:bundleRelease"]
+build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]
 test = [
     "verifyRepositoryContracts",
     "verifyAndroidFocusShellFinalSeal",
@@ -46,6 +46,8 @@ test = [
     "verifyPhase63_64ExamRunbookSprintSeal",
     "verifyPostPhase64FinalValidationRefresh",
     "verifyFormatting",
+    "verifyOv19PromiseAudit",
+    "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",
     ":core:data:testDebugUnitTest",
     ":core:database:testDebugUnitTest",
@@ -152,6 +154,8 @@ preflight = [
     "verifyRemediationOv13",
     "verifyPhase63_64ExamRunbookSprintSeal",
     "verifyPostPhase64FinalValidationRefresh",
+    "verifyOv19PromiseAudit",
+    "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",
 ]
 compile = [
@@ -217,9 +221,8 @@ unit-test = [
     ":app:testReleaseUnitTest",
 ]
 package = [
+  "prepareDevtoolValidationArtifacts",
   ":app:assembleDebug",
-  ":app:assembleRelease",
-  ":app:bundleRelease",
 ]
 
 instrumentation = [
@@ -346,6 +349,8 @@ preflight = [
     "verifyCpov11Cpov12FinalStretchOnboarding",
     "verifyCpov13PublicExamReleaseSeal",
     "verifyCpovRoadmapReconciliation",
+    "verifyOv19PromiseAudit",
+    "verifyOv20FinalIntegration",
     "verifyStudyFlowDesktopFoundation",
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",

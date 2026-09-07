@@ -114,7 +114,8 @@ object StudyPlanImportDiffEngine {
         },
     )
 
-    private fun canonical(row: PortableRow): String = row.values.toSortedMap().entries.joinToString("|") { (name, value) ->
-        "$name=${value.type}:${value.value.orEmpty()}"
-    }
+    private fun canonical(row: PortableRow): String =
+        row.values.toSortedMap().entries.joinToString("|") { (name, value) ->
+            "$name=${value.type}:${value.value.orEmpty()}"
+        }
 }

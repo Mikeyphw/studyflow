@@ -192,14 +192,22 @@ for token in [
     '":app:processDebugResources"',
     '":app:processReleaseResources"',
     '":app:assembleDebug"',
-    '":app:assembleRelease"',
-    '":app:bundleRelease"',
     '":desktopApp:compileKotlin"',
     '":core:database:connectedDebugAndroidTest"',
     '":feature:workspace:connectedDebugAndroidTest"',
     '":app:connectedReleaseAndroidTest"',
 ]:
     require(token in devtool, f"Devtool final validation is missing {token}")
+require(
+    'build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]' in devtool,
+    "ordinary Devtool validation must keep signed Release packaging outside its artifact scan",
+)
+for token in (
+    'tasks.register("verifyFinalReleaseHostGate")',
+    '":app:assembleRelease"',
+    '":app:bundleRelease"',
+):
+    require(token in build, f"credentialed final Release gate is missing {token}")
 android_modules = [
     "core:data",
     "core:database",

@@ -68,7 +68,23 @@ require(
     "final automated Release gate does not own the signed host gate and Release assembly",
 )
 require("ANDROID VALIDATION: SKIPPED" not in validate, "validate_repo.sh still permits a false-green Android skip")
-require(":app:assembleRelease" in devtool, "Devtool does not package the Release variant")
+require(
+    'build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]' in devtool,
+    "ordinary Devtool build must emit only the Debug APK after stale Release-output cleanup",
+)
+require(
+    'package = [\n  "prepareDevtoolValidationArtifacts",\n  ":app:assembleDebug",\n]' in devtool,
+    "ordinary Devtool package phase must not emit an unsigned Release artifact",
+)
+require(
+    'tasks.register<Delete>("prepareDevtoolValidationArtifacts")' in build,
+    "Devtool validation cleanup task is missing",
+)
+require(
+    'layout.projectDirectory.dir("app/build/outputs/apk/release")' in build
+    and 'layout.projectDirectory.dir("app/build/outputs/bundle/release")' in build,
+    "Devtool validation cleanup does not cover stale Release APK/AAB outputs",
+)
 
 # One process-owned data graph.
 app = text("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt")

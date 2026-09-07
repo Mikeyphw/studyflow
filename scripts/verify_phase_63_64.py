@@ -46,7 +46,7 @@ for token in (
     "data class StudyExamRunbookItem",
     "data class StudyExamRunbook",
     "object StudyExamRunbookPlanner",
-    "plan.examDateIso == null",
+    "PublicExamDateResolver.officialCountdownDate(plan, target)",
     "analytics.overdueReviewCount",
     "analytics.weakAreas.take",
     "analytics.questionAccuracyPercent",

@@ -148,10 +148,18 @@ fun StudyScheduleScreen(
     val subjectById = remember(syllabus) { syllabus.subjects.associateBy { it.id.value } }
     val topicById = remember(syllabus) { syllabus.topics.associateBy { it.id.value } }
     val activityFilter = ScheduleActivityFilter(
-        subjectId = subjectFilterId.takeIf(String::isNotEmpty)?.let { com.mikeyphw.studyflow.core.model.SubjectId(it) },
-        type = typeFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, StudyActivityType.CUSTOM) },
-        status = statusFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, PlannedActivityStatus.PLANNED) },
-        provenance = provenanceFilterName.takeIf(String::isNotEmpty)?.let { enumValueOrDefault(it, ScheduleActivityProvenance.MANUAL) },
+        subjectId = subjectFilterId.takeIf(String::isNotEmpty)?.let {
+            com.mikeyphw.studyflow.core.model.SubjectId(it)
+        },
+        type = typeFilterName.takeIf(String::isNotEmpty)?.let {
+            enumValueOrDefault(it, StudyActivityType.CUSTOM)
+        },
+        status = statusFilterName.takeIf(String::isNotEmpty)?.let {
+            enumValueOrDefault(it, PlannedActivityStatus.PLANNED)
+        },
+        provenance = provenanceFilterName.takeIf(String::isNotEmpty)?.let {
+            enumValueOrDefault(it, ScheduleActivityProvenance.MANUAL)
+        },
     )
     val criteriaActivities = remember(schedule.plannedActivities, activityFilter) {
         ScheduleIntelligence.filter(schedule.plannedActivities, activityFilter)
@@ -189,7 +197,9 @@ fun StudyScheduleScreen(
         ScheduleIntelligence.inspect(schedule.plannedActivities, zoneId)
     }
     val selectedMutableActivities = remember(schedule.plannedActivities, selectedActivityIds) {
-        schedule.plannedActivities.filter { it.id.value in selectedActivityIds && ScheduleIntelligence.isBulkMutable(it) }
+        schedule.plannedActivities.filter { activity ->
+            activity.id.value in selectedActivityIds && ScheduleIntelligence.isBulkMutable(activity)
+        }
     }
 
     val operationFailed = stringResource(R.string.operation_failed)
@@ -419,7 +429,10 @@ fun StudyScheduleScreen(
                                     onClick = {
                                         schedule.strategy?.let { strategy ->
                                             launchAction(blockSaved) {
-                                                scheduleManager.savePhasePlan(strategy, BancoDoBrasilStudyPhasePreset.plan())
+                                                scheduleManager.savePhasePlan(
+                                                    strategy,
+                                                    BancoDoBrasilStudyPhasePreset.plan(),
+                                                )
                                             }
                                         }
                                     },
@@ -746,10 +759,14 @@ fun StudyScheduleScreen(
                                 }
                             },
                             onComplete = {
-                                launchAction(activityCompleted) { scheduleManager.completeActivity(plan.id, activity.id) }
+                                launchAction(activityCompleted) {
+                                    scheduleManager.completeActivity(plan.id, activity.id)
+                                }
                             },
                             onMissed = {
-                                launchAction(activityMissed) { scheduleManager.markActivityMissed(plan.id, activity.id) }
+                                launchAction(activityMissed) {
+                                    scheduleManager.markActivityMissed(plan.id, activity.id)
+                                }
                             },
                             onDelete = {
                                 launchAction(itemDeleted) { scheduleManager.deleteActivity(plan.id, activity.id) }
@@ -780,7 +797,9 @@ fun StudyScheduleScreen(
                         val selected = selectedMutableActivities
                         confirmingBulkDelete = false
                         selectedActivityIds = emptySet()
-                        launchAction(itemDeleted) { selected.forEach { scheduleManager.deleteActivity(plan.id, it.id) } }
+                        launchAction(itemDeleted) {
+                            selected.forEach { scheduleManager.deleteActivity(plan.id, it.id) }
+                        }
                     },
                 ) { Text(stringResource(R.string.confirm_delete)) }
             },
@@ -1070,10 +1089,18 @@ private fun StudyPhaseEditorDialog(
     val existingPhase = existing.phases.firstOrNull { it.kind.name == kindName }
     var startsOn by rememberSaveable(kindName) { mutableStateOf(existingPhase?.startsOn?.toString().orEmpty()) }
     var endsOn by rememberSaveable(kindName) { mutableStateOf(existingPhase?.endsOn?.toString().orEmpty()) }
-    var theory by rememberSaveable(kindName) { mutableStateOf((existingPhase?.theoryRatioPercent ?: 50).toString()) }
-    var questions by rememberSaveable(kindName) { mutableStateOf((existingPhase?.questionRatioPercent ?: 35).toString()) }
-    var reviews by rememberSaveable(kindName) { mutableStateOf((existingPhase?.reviewRatioPercent ?: 15).toString()) }
-    var questionGoal by rememberSaveable(kindName) { mutableStateOf(existingPhase?.questionGoal?.toString().orEmpty()) }
+    var theory by rememberSaveable(kindName) {
+        mutableStateOf((existingPhase?.theoryRatioPercent ?: 50).toString())
+    }
+    var questions by rememberSaveable(kindName) {
+        mutableStateOf((existingPhase?.questionRatioPercent ?: 35).toString())
+    }
+    var reviews by rememberSaveable(kindName) {
+        mutableStateOf((existingPhase?.reviewRatioPercent ?: 15).toString())
+    }
+    var questionGoal by rememberSaveable(kindName) {
+        mutableStateOf(existingPhase?.questionGoal?.toString().orEmpty())
+    }
     var mockGoal by rememberSaveable(kindName) { mutableStateOf(existingPhase?.mockExamGoal?.toString().orEmpty()) }
     val candidate = runCatching {
         StudyPhaseDefinition(
@@ -1107,17 +1134,41 @@ private fun StudyPhaseEditorDialog(
                         )
                     }
                 }
-                OutlinedTextField(startsOn, { startsOn = it }, label = { Text(stringResource(R.string.study_phase_start)) })
-                OutlinedTextField(endsOn, { endsOn = it }, label = { Text(stringResource(R.string.study_phase_end)) })
-                OutlinedTextField(theory, { theory = it }, label = { Text(stringResource(R.string.study_phase_theory_ratio)) })
-                OutlinedTextField(questions, { questions = it }, label = { Text(stringResource(R.string.study_phase_question_ratio)) })
-                OutlinedTextField(reviews, { reviews = it }, label = { Text(stringResource(R.string.study_phase_review_ratio)) })
+                OutlinedTextField(
+                    startsOn,
+                    { startsOn = it },
+                    label = { Text(stringResource(R.string.study_phase_start)) },
+                )
+                OutlinedTextField(
+                    endsOn,
+                    { endsOn = it },
+                    label = { Text(stringResource(R.string.study_phase_end)) },
+                )
+                OutlinedTextField(
+                    theory,
+                    { theory = it },
+                    label = { Text(stringResource(R.string.study_phase_theory_ratio)) },
+                )
+                OutlinedTextField(
+                    questions,
+                    { questions = it },
+                    label = { Text(stringResource(R.string.study_phase_question_ratio)) },
+                )
+                OutlinedTextField(
+                    reviews,
+                    { reviews = it },
+                    label = { Text(stringResource(R.string.study_phase_review_ratio)) },
+                )
                 OutlinedTextField(
                     questionGoal,
                     { questionGoal = it },
                     label = { Text(stringResource(R.string.study_phase_question_goal_label)) },
                 )
-                OutlinedTextField(mockGoal, { mockGoal = it }, label = { Text(stringResource(R.string.study_phase_mock_goal_label)) })
+                OutlinedTextField(
+                    mockGoal,
+                    { mockGoal = it },
+                    label = { Text(stringResource(R.string.study_phase_mock_goal_label)) },
+                )
             }
         },
         confirmButton = {

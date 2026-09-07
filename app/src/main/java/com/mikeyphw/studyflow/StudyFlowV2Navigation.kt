@@ -57,6 +57,7 @@ import com.mikeyphw.studyflow.core.navigation.PlanWorkspaceRoute
 import com.mikeyphw.studyflow.core.navigation.PlanWorkspaceTab
 import com.mikeyphw.studyflow.core.navigation.PracticeRoute
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceRoute
+import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceEntry
 import com.mikeyphw.studyflow.core.navigation.PracticeWorkspaceTab
 import com.mikeyphw.studyflow.core.navigation.PrivacyRoute
 import com.mikeyphw.studyflow.core.navigation.ProgressCenterRoute
@@ -292,7 +293,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                         PracticeWorkspaceRoute(
                             planId = plan.id.value,
                             tab = PracticeWorkspaceTab.QUESTIONS,
-                            openMockStudio = true,
+                            entry = PracticeWorkspaceEntry.MOCK_EXAM_STUDIO,
                         ),
                     )
                 },
@@ -392,7 +393,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 targetId = route.targetId,
                 subjectFilterId = route.subjectId,
                 topicFilterId = route.topicId,
-                openMockStudio = route.openMockStudio,
+                openMockStudio = route.entry == PracticeWorkspaceEntry.MOCK_EXAM_STUDIO,
                 practiceManager = container.manageStudyPractice,
                 reviewManager = container.manageStudyReview,
                 contentManager = container.manageStudyContent,

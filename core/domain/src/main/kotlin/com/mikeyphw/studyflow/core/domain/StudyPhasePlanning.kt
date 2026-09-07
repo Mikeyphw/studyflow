@@ -48,7 +48,8 @@ data class StudyPhasePlan(val phases: List<StudyPhaseDefinition>) {
     }
 
     fun activeOn(date: LocalDate): StudyPhaseDefinition? = phases.firstOrNull { it.contains(date) }
-    fun nextAfter(date: LocalDate): StudyPhaseDefinition? = phases.filter { it.startsOn.isAfter(date) }.minByOrNull { it.startsOn }
+    fun nextAfter(date: LocalDate): StudyPhaseDefinition? =
+        phases.filter { it.startsOn.isAfter(date) }.minByOrNull { it.startsOn }
 }
 
 object StudyPhasePlanning {

@@ -97,6 +97,13 @@ enum class PracticeWorkspaceTab {
 
 @Keep
 @Serializable
+enum class PracticeWorkspaceEntry {
+    DEFAULT,
+    MOCK_EXAM_STUDIO,
+}
+
+@Keep
+@Serializable
 enum class ProgressWorkspacePeriod(val days: Int) {
     SEVEN_DAYS(7),
     THIRTY_DAYS(30),
@@ -120,7 +127,7 @@ data class PracticeWorkspaceRoute(
     val targetId: String? = null,
     val subjectId: String? = null,
     val topicId: String? = null,
-    val openMockStudio: Boolean = false,
+    val entry: PracticeWorkspaceEntry = PracticeWorkspaceEntry.DEFAULT,
 )
 
 @Serializable

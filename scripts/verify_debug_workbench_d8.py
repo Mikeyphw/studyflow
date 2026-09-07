@@ -169,22 +169,46 @@ for mapper in database_mappers:
     require("java.util.Base64" not in mapper_text, f"{mapper} must not use java.util.Base64")
 
 
-# D8 r6 lint seal: Android UI modules must not use java.time APIs without desugaring on minSdk 23.
+# D8 r6/r7 lint seal: java.time is allowed on minSdk 23 only when the shared Android
+# conventions enable core-library desugaring and both Android convention plugins provide
+# desugar_jdk_libs. This keeps the original compatibility boundary while recognizing the
+# repository's later, explicit desugaring baseline.
+android_convention = read("build-logic/convention/src/main/kotlin/AndroidConvention.kt")
+application_convention = read(
+    "build-logic/convention/src/main/kotlin/AndroidApplicationConventionPlugin.kt"
+)
+library_convention = read(
+    "build-logic/convention/src/main/kotlin/AndroidLibraryConventionPlugin.kt"
+)
+desugaring_enabled = android_convention.count("isCoreLibraryDesugaringEnabled = true") >= 2
+desugaring_dependency = (
+    'dependencies.add("coreLibraryDesugaring", "com.android.tools:desugar_jdk_libs:2.1.5")'
+    in application_convention
+    and 'dependencies.add("coreLibraryDesugaring", "com.android.tools:desugar_jdk_libs:2.1.5")'
+    in library_convention
+)
+require(desugaring_enabled, "Android application/library conventions must enable core-library desugaring")
+require(desugaring_dependency, "Android convention plugins must provide desugar_jdk_libs")
+
 android_time_files = [
     "feature/progress/src/main/java/com/mikeyphw/studyflow/feature/progress/StudyProgressScreen.kt",
     "feature/schedule/src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleScreen.kt",
     "feature/sessions/src/main/java/com/mikeyphw/studyflow/feature/sessions/StudySessionScreen.kt",
 ]
-for time_file in android_time_files:
-    time_text = read(time_file)
-    require("java.time" not in time_text, f"{time_file} must not use java.time APIs without desugaring on minSdk 23")
+if not (desugaring_enabled and desugaring_dependency):
+    for time_file in android_time_files:
+        time_text = read(time_file)
+        require(
+            "java.time" not in time_text,
+            f"{time_file} must not use java.time APIs without desugaring on minSdk 23",
+        )
 require("todayIsoDate()" in read("feature/progress/src/main/java/com/mikeyphw/studyflow/feature/progress/StudyProgressScreen.kt"),
         "Progress screen must use minSdk-safe todayIsoDate helper")
 require("startOfTodayEpochMillis()" in read("feature/schedule/src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleScreen.kt"),
         "Schedule screen must use minSdk-safe startOfTodayEpochMillis helper")
 sessions_text = read("feature/sessions/src/main/java/com/mikeyphw/studyflow/feature/sessions/StudySessionScreen.kt")
 require("SimpleDateFormat" in sessions_text and "yyyy-MM-dd HH:mm" in sessions_text and "Date(epochMillis)" in sessions_text,
-        "Sessions screen must use minSdk-safe SimpleDateFormat helper")
+        "Sessions screen must preserve its minSdk-safe SimpleDateFormat helper")
 
 
 # Full-app final-user readiness seal checks.

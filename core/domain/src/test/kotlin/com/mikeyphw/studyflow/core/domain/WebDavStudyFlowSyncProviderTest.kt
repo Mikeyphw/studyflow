@@ -127,7 +127,11 @@ class WebDavStudyFlowSyncProviderTest {
         provider.uploadCheckpoint(upload)
 
         assertEquals(listOf("checkpoint-1"), provider.listCheckpoints().map { it.id })
-        assertTrue(transport.requests.any { request -> request.method == "GET" && request.url == config.bundleUrl(upload.fileName) })
+        assertTrue(
+            transport.requests.any { request ->
+                request.method == "GET" && request.url == config.bundleUrl(upload.fileName)
+            },
+        )
     }
 
     @Test(expected = IllegalArgumentException::class)

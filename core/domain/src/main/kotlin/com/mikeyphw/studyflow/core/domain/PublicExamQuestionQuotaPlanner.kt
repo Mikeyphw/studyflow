@@ -77,8 +77,12 @@ object PublicExamQuestionQuotaPlanner {
             session.status == StudySessionStatus.COMPLETED && inPhase(session.startedAtEpochMillis)
         }
         val sessionAnswered = completedSessions.sumOf(StudySession::questionsAnswered)
-        val testAnswered = tests.filter { it.submittedAtEpochMillis?.let(::inPhase) == true }.sumOf(StudyTest::answeredCount)
-        val mockAnswered = mockExams.filter { it.submittedAtEpochMillis?.let(::inPhase) == true }.sumOf(MockExam::answeredCount)
+        val testAnswered = tests
+            .filter { it.submittedAtEpochMillis?.let(::inPhase) == true }
+            .sumOf(StudyTest::answeredCount)
+        val mockAnswered = mockExams
+            .filter { it.submittedAtEpochMillis?.let(::inPhase) == true }
+            .sumOf(MockExam::answeredCount)
         val answered = sessionAnswered + testAnswered + mockAnswered
         val remaining = (target - answered).coerceAtLeast(0)
         val remainingDays = (ChronoUnit.DAYS.between(today, phase.endsOn) + 1).toInt().coerceAtLeast(1)
@@ -145,7 +149,10 @@ object PublicExamQuestionQuotaPlanner {
                 overdueReviews = overdue.getValue(subject.id),
                 priorityShare = priorityShares[index],
             )
-        }.sortedWith(compareByDescending<PublicExamQuestionQuotaSubject> { it.weeklyQuestions }.thenBy { it.subjectName })
+        }.sortedWith(
+            compareByDescending<PublicExamQuestionQuotaSubject> { it.weeklyQuestions }
+                .thenBy { it.subjectName },
+        )
 
         return PublicExamQuestionQuotaPlan(
             phase = phase,

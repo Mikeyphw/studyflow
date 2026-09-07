@@ -700,27 +700,61 @@
     <string name="metric_confidence_low">low confidence</string>
     <string name="metric_confidence_medium">medium confidence</string>
     <string name="metric_confidence_high">high confidence</string>
-    <string name="metric_accuracy_evidence">Based on %1$d recent answers · %2$s</string>
+    <plurals name="metric_accuracy_evidence">
+        <item quantity="one">Based on %1$d recent answer · %2$s</item>
+        <item quantity="other">Based on %1$d recent answers · %2$s</item>
+    </plurals>
     <string name="metric_accuracy_no_evidence">Answer questions to create evidence.</string>
-    <string name="metric_schedule_evidence">Based on %1$d observed schedule blocks · %2$s</string>
+    <plurals name="metric_schedule_evidence">
+        <item quantity="one">Based on %1$d observed schedule block · %2$s</item>
+        <item quantity="other">Based on %1$d observed schedule blocks · %2$s</item>
+    </plurals>
     <string name="metric_schedule_no_evidence">Execute or let schedule blocks become due to create evidence.</string>
-    <string name="metric_goal_evidence">Based on %1$d recorded goals · %2$s</string>
+    <plurals name="metric_goal_evidence">
+        <item quantity="one">Based on %1$d recorded goal · %2$s</item>
+        <item quantity="other">Based on %1$d recorded goals · %2$s</item>
+    </plurals>
     <string name="metric_goal_no_evidence">Create a goal before measuring goal progress.</string>
     <string name="pre_edital_cockpit_title">Pre-edital cockpit</string>
     <string name="pre_edital_cockpit_status">Pre-edital — reference mode</string>
     <string name="pre_edital_reference_not_set">No notice reference saved</string>
-    <string name="pre_edital_cockpit_message">Reference: %1$s. %2$d verification items remain. No official exam countdown is shown until a confirmed date is saved.</string>
-    <string name="pre_edital_cockpit_stale_message">Reference: %1$s (%2$d days old). %3$d verification items remain. Review the reference before treating it as current; no official exam countdown is shown.</string>
-    <string name="pre_edital_cockpit_unknown_date_message">Reference: %1$s. Its publication date is unknown and %2$d verification items remain. No official exam countdown is shown.</string>
-    <string name="pre_edital_cockpit_missing_reference_message">No edital reference is saved yet. %1$d verification items remain, and StudyFlow will not invent an exam countdown.</string>
+    <plurals name="pre_edital_cockpit_message">
+        <item quantity="one">Reference: %1$s. %2$d verification item remains. No official exam countdown is shown until a confirmed date is saved.</item>
+        <item quantity="other">Reference: %1$s. %2$d verification items remain. No official exam countdown is shown until a confirmed date is saved.</item>
+    </plurals>
+    <plurals name="pre_edital_reference_age_days">
+        <item quantity="one">%1$d day old</item>
+        <item quantity="other">%1$d days old</item>
+    </plurals>
+    <plurals name="pre_edital_cockpit_stale_message">
+        <item quantity="one">Reference: %1$s (%2$s). %3$d verification item remains. Review the reference before treating it as current; no official exam countdown is shown.</item>
+        <item quantity="other">Reference: %1$s (%2$s). %3$d verification items remain. Review the reference before treating it as current; no official exam countdown is shown.</item>
+    </plurals>
+    <plurals name="pre_edital_cockpit_unknown_date_message">
+        <item quantity="one">Reference: %1$s. Its publication date is unknown and %2$d verification item remains. No official exam countdown is shown.</item>
+        <item quantity="other">Reference: %1$s. Its publication date is unknown and %2$d verification items remain. No official exam countdown is shown.</item>
+    </plurals>
+    <plurals name="pre_edital_cockpit_missing_reference_message">
+        <item quantity="one">No edital reference is saved yet. %1$d verification item remains, and StudyFlow will not invent an exam countdown.</item>
+        <item quantity="other">No edital reference is saved yet. %1$d verification items remain, and StudyFlow will not invent an exam countdown.</item>
+    </plurals>
     <string name="pre_edital_review_assumptions">Review assumptions</string>
 
     <string name="bb_mock_exam_title">BB Agente Comercial · 2022/001 reference mock</string>
-    <string name="bb_mock_exam_reference">Cesgranrio filter · %1$d objective questions · %2$d min reference full mock · 100 reference points</string>
+    <plurals name="bb_mock_exam_reference">
+        <item quantity="one">Cesgranrio filter · %1$d objective question · %2$d min reference full mock · 100 reference points</item>
+        <item quantity="other">Cesgranrio filter · %1$d objective questions · %2$d min reference full mock · 100 reference points</item>
+    </plurals>
     <string name="bb_mock_exam_allocation_notice">Question targets are derived proportionally from the supplied reference point weights so they total 70. They are not presented as official per-subject question counts.</string>
-    <string name="bb_mock_exam_section">%1$s · target %2$d questions · %3$.1f points</string>
+    <plurals name="bb_mock_exam_section">
+        <item quantity="one">%1$s · target %2$d question · %3$.1f points</item>
+        <item quantity="other">%1$s · target %2$d questions · %3$.1f points</item>
+    </plurals>
     <string name="bb_mock_exam_ready">Local question coverage is complete for this preset.</string>
-    <string name="bb_mock_exam_missing">Question bank is short by %1$d matching Cesgranrio question(s). The preset will not substitute other subjects or boards.</string>
+    <plurals name="bb_mock_exam_missing">
+        <item quantity="one">Question bank is short by %1$d matching Cesgranrio question. The preset will not substitute other subjects or boards.</item>
+        <item quantity="other">Question bank is short by %1$d matching Cesgranrio questions. The preset will not substitute other subjects or boards.</item>
+    </plurals>
     <string name="bb_mock_exam_essay_separate">Essay training remains separate from the 70 objective questions. Reference eliminatory minimum: %1$d/100.</string>
     <string name="bb_mock_exam_create">Create BB reference mock</string>
 
@@ -733,10 +767,22 @@
     <string name="study_phase_question_goal">%1$d-question phase target</string>
 
     <string name="question_quota_title">Question quota planner</string>
-    <string name="question_quota_next_7_days">Next 7 days: %1$d questions</string>
-    <string name="question_quota_daily">Daily pace: %1$d questions</string>
-    <string name="question_quota_summary">Phase progress: %1$d / %2$d answered · %3$d remaining across %4$d days.</string>
-    <string name="question_quota_subject_target">%1$d this week</string>
+    <plurals name="question_quota_next_7_days">
+        <item quantity="one">Next 7 days: %1$d question</item>
+        <item quantity="other">Next 7 days: %1$d questions</item>
+    </plurals>
+    <plurals name="question_quota_daily">
+        <item quantity="one">Daily pace: %1$d question</item>
+        <item quantity="other">Daily pace: %1$d questions</item>
+    </plurals>
+    <plurals name="question_quota_summary">
+        <item quantity="one">Phase progress: %1$d / %2$d answered · %3$d remaining across %4$d day.</item>
+        <item quantity="other">Phase progress: %1$d / %2$d answered · %3$d remaining across %4$d days.</item>
+    </plurals>
+    <plurals name="question_quota_subject_target">
+        <item quantity="one">%1$d this week</item>
+        <item quantity="other">%1$d this week</item>
+    </plurals>
     <string name="question_quota_subject_evidence">Phase answered %1$d · accuracy %2$s%% · recurring errors %3$d · overdue reviews %4$d</string>
     <string name="question_quota_formula">Distribution formula: 35% exam weight, 20% under-practice versus weight, 20% recent accuracy deficit, 15% recurring errors, 10% overdue reviews. Missing evidence contributes zero; totals are normalized to the active phase target.</string>
     <string name="dashboard_questions_label">Question bank</string>
@@ -748,7 +794,10 @@
     <string name="dashboard_cutoff_gap_value">Estimated cutoff gap %1$s</string>
     <string name="dashboard_exam_countdown_label">Days until confirmed exam</string>
     <string name="dashboard_subject_weight">Weight %1$s</string>
-    <string name="dashboard_subject_questions">%1$d questions</string>
+    <plurals name="dashboard_subject_questions">
+        <item quantity="one">%1$d question</item>
+        <item quantity="other">%1$d questions</item>
+    </plurals>
     <string name="dashboard_subject_priority">Priority %1$d</string>
     <string name="dashboard_subject_incidence">Incidence %1$d%%</string>
     <string name="dashboard_subject_accuracy">Accuracy %1$s</string>

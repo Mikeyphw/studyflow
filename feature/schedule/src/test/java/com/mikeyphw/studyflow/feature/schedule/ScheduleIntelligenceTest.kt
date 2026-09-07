@@ -17,7 +17,10 @@ class ScheduleIntelligenceTest {
 
     @Test
     fun generatedPrefixIsDurableProvenance() {
-        assertEquals(ScheduleActivityProvenance.GENERATED, ScheduleIntelligence.provenance(activity("generated:abc:1", 0L)))
+        assertEquals(
+            ScheduleActivityProvenance.GENERATED,
+            ScheduleIntelligence.provenance(activity("generated:abc:1", 0L)),
+        )
         assertEquals(ScheduleActivityProvenance.MANUAL, ScheduleIntelligence.provenance(activity("manual", 0L)))
     }
 

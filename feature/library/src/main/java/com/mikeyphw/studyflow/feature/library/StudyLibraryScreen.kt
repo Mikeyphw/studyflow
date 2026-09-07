@@ -434,7 +434,10 @@ private fun MaterialReferenceControls(
         )
     }
     provenance.supersedesMaterialId?.let {
-        Text(stringResource(R.string.reference_supersedes, it.value), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            stringResource(R.string.reference_supersedes, it.value),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(onClick = {

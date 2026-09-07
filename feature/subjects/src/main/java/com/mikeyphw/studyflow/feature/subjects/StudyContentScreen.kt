@@ -673,7 +673,9 @@ private fun SubjectCard(
                             leadingIcon = { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null) },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(if (subject.archived) R.string.restore else R.string.archive)) },
+                            text = {
+                                Text(stringResource(if (subject.archived) R.string.restore else R.string.archive))
+                            },
                             onClick = { menuExpanded = false; onToggleSubjectArchived() },
                             leadingIcon = {
                                 Icon(

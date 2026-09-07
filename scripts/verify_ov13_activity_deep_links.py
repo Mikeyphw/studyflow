@@ -14,9 +14,14 @@ for token in ["MOCK_EXAM_STUDIO", "WRITING_WORKSPACE", "QUESTIONS", "REVIEWS", "
 require("StudyActivityLaunchPlanner.plan(activity)" in today, "Today does not use canonical activity launch planner")
 require("onOpenQuestions(intent.subjectId, intent.topicId)" in today, "question deep link missing typed context")
 require("onOpenReviews(intent.subjectId, intent.topicId)" in today, "review deep link missing typed context")
-require("openMockStudio = true" in nav, "mock activity does not request Mock Exam Studio")
-for token in ["val subjectId: String? = null", "val topicId: String? = null", "val openMockStudio: Boolean = false"]:
+require("entry = PracticeWorkspaceEntry.MOCK_EXAM_STUDIO" in nav, "mock activity does not request Mock Exam Studio")
+for token in [
+    "val subjectId: String? = null",
+    "val topicId: String? = null",
+    "val entry: PracticeWorkspaceEntry = PracticeWorkspaceEntry.DEFAULT",
+]:
     require(token in routes, f"Practice route missing {token}")
+require("enum class PracticeWorkspaceEntry" in routes and "MOCK_EXAM_STUDIO" in routes, "Practice entry enum missing")
 require("StudyActivityLaunchPlanner.matchesQuestion" in practice, "Practice does not filter questions by activity context")
 require("StudyActivityLaunchPlanner.matchesReview" in practice, "Practice does not filter reviews by activity context")
 require("rememberSaveable(openMockStudio)" in practice, "Mock Studio does not honor deep-link open request")

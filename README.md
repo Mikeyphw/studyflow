@@ -1,6 +1,16 @@
 # StudyFlow Android
 
-## Current status: CPOV13 public-exam integration seal implemented
+## Current status: OV20 public-exam promise audit and integrated validation seal implemented
+
+The post-CPOV specialization is complete through OV20: the BB pre-edital preset, Redação workspace,
+reference mock blueprint, typed activity deep-links, phase planning, reference freshness, adaptive
+question quotas, readable calendar schedule, correctness seal, literal promise audit, and final
+integrated validation layer all reuse the existing Study Plan graph. See
+`docs/roadmap/OV01_OV20_PUBLIC_EXAM_COMPLETION_MATRIX.md`.
+
+The earlier **CPOV13 public-exam integration seal implemented** status remains valid as the
+architecture/persistence foundation underneath this specialization; OV20 extends its validation
+coverage rather than replacing that graph.
 
 StudyFlow includes the completed remediation roadmap through OV-13 and the Concurso Público
 specialization through CPOV13. Source/static contracts do not claim product sealing: target-machine
@@ -133,8 +143,6 @@ devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply over
   --task :app:lintDebug \
   --task :app:lintRelease \
   --task :app:assembleDebug \
-  --task :app:assembleRelease \
-  --task :app:bundleRelease \
   --commit "Apply StudyFlow overlay" \
   /path/to/overlay.zip
 ```
@@ -149,7 +157,9 @@ devtool --yes --copy -r /path/to/studyflow --target studyflow_android apply over
 launcher or Android SDK is available. Source-only contract checks can still be run explicitly with
 the individual `scripts/verify_*.py` validators. Devtool on the Android build host remains the source
 of truth for target-machine gates such as compile, resource merge, lint, assemble, package signing,
-install, upgrade, and device-smoke evidence.
+install, upgrade, and device-smoke evidence. Ordinary `studyflow_android` validation packages the
+Debug APK only; signed Release APK/AAB generation is intentionally reserved for the credentialed
+final-release gate in `scripts/run_final_release_acceptance.sh`.
 
 Useful focused checks:
 
@@ -305,3 +315,5 @@ The optional cloud sync roadmap is sealed with local-first defaults, encrypted r
 
 - Added sync execution planner for manual upload, remote check, restore preview, and background modes.
 - Restore preview stays dry-run-only and conflict-gated.
+
+> OV20 navigation note: Mock Exam Studio deep-link launch state is encoded with the serializable `PracticeWorkspaceEntry` small enum; workspace routes do not carry Boolean UI state.

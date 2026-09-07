@@ -7,7 +7,11 @@ import org.junit.Test
 class StudyPlanImportDiffEngineTest {
     @Test
     fun createAsNewMarksEveryIncomingRowAsAdded() {
-        val incoming = payload("source", table("study_plans", row("id" to "source")), table("subjects", row("id" to "s1", "studyPlanId" to "source")))
+        val incoming = payload(
+            "source",
+            table("study_plans", row("id" to "source")),
+            table("subjects", row("id" to "s1", "studyPlanId" to "source")),
+        )
         val diffs = StudyPlanImportDiffEngine.diff(incoming, null, StudyPlanImportStrategy.CREATE_AS_NEW, null)
         assertEquals(2, diffs.sumOf { it.addedRows })
         assertEquals(0, diffs.sumOf { it.removedRows + it.changedRows })

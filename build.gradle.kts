@@ -583,6 +583,36 @@ tasks.register<Exec>("verifyFinalSourceAcceptance") {
     commandLine("python3", "scripts/verify_final_app_acceptance.py")
 }
 
+val studyFlowReleaseSigningVariables = listOf(
+    "STUDYFLOW_RELEASE_STORE_FILE",
+    "STUDYFLOW_RELEASE_STORE_PASSWORD",
+    "STUDYFLOW_RELEASE_KEY_ALIAS",
+    "STUDYFLOW_RELEASE_KEY_PASSWORD",
+)
+
+tasks.register<Delete>("prepareDevtoolValidationArtifacts") {
+    group = "verification"
+    description =
+        "Removes stale unsigned Release outputs before ordinary Devtool validation when signing is unavailable."
+    onlyIf { studyFlowReleaseSigningVariables.any { name -> System.getenv(name).isNullOrBlank() } }
+    delete(
+        layout.projectDirectory.dir("app/build/outputs/apk/release"),
+        layout.projectDirectory.dir("app/build/outputs/bundle/release"),
+    )
+}
+
+tasks.register<Exec>("verifyOv19PromiseAudit") {
+    group = "verification"
+    description = "Checks the OV19 public-exam promise audit and backlog-closure contracts."
+    commandLine("python3", "scripts/verify_ov19_promise_audit.py")
+}
+
+tasks.register<Exec>("verifyOv20FinalIntegration") {
+    group = "verification"
+    description = "Runs the fail-closed OV20 public-exam integration/source seal."
+    commandLine("python3", "scripts/verify_ov20_final_integration.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
     description = "Compatibility alias for the final source/static acceptance contract."
@@ -866,6 +896,8 @@ tasks.register("checkAll") {
         "verifyProgrammingCourseModel",
         "verifyCodeBlocksSyntax",
         "verifyContentModesFinalIntegrationSeal",
+        "verifyOv19PromiseAudit",
+        "verifyOv20FinalIntegration",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",

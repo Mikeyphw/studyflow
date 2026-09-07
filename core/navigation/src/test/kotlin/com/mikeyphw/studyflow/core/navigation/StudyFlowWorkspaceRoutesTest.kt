@@ -38,6 +38,11 @@ class StudyFlowWorkspaceRoutesTest {
     @Test
     fun typedWorkspaceCoordinatesRoundTripThroughSavedNavigationPayloads() {
         val planRoute = PlanWorkspaceRoute("plan", PlanWorkspaceTab.LIBRARY)
+        val practiceRoute = PracticeWorkspaceRoute(
+            planId = "plan",
+            tab = PracticeWorkspaceTab.QUESTIONS,
+            entry = PracticeWorkspaceEntry.MOCK_EXAM_STUDIO,
+        )
         val pickerRoute = PlanPickerRoute(
             root = StudyFlowWorkspaceRoot.PROGRESS,
             planId = "plan",
@@ -47,6 +52,10 @@ class StudyFlowWorkspaceRoutesTest {
         )
 
         assertEquals(planRoute, Json.decodeFromString<PlanWorkspaceRoute>(Json.encodeToString(planRoute)))
+        assertEquals(
+            practiceRoute,
+            Json.decodeFromString<PracticeWorkspaceRoute>(Json.encodeToString(practiceRoute)),
+        )
         assertEquals(pickerRoute, Json.decodeFromString<PlanPickerRoute>(Json.encodeToString(pickerRoute)))
     }
 
@@ -91,6 +100,7 @@ class StudyFlowWorkspaceRoutesTest {
             StudyFlowWorkspaceRoot::class.java,
             PlanWorkspaceTab::class.java,
             PracticeWorkspaceTab::class.java,
+            PracticeWorkspaceEntry::class.java,
             ProgressWorkspacePeriod::class.java,
         )
 

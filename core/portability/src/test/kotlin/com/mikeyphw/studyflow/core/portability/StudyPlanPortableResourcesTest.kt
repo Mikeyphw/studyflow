@@ -10,11 +10,17 @@ class StudyPlanPortableResourcesTest {
         assertEquals(PortableResourceHandler.DOCUMENT, StudyPlanPortableResources.handlerForMimeType(
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         ))
-        assertEquals(PortableResourceHandler.TEXT, StudyPlanPortableResources.handlerForMimeType("text/markdown; charset=utf-8"))
+        assertEquals(
+            PortableResourceHandler.TEXT,
+            StudyPlanPortableResources.handlerForMimeType("text/markdown; charset=utf-8"),
+        )
         assertEquals(PortableResourceHandler.IMAGE, StudyPlanPortableResources.handlerForMimeType("image/png"))
         assertEquals(PortableResourceHandler.AUDIO, StudyPlanPortableResources.handlerForMimeType("audio/mpeg"))
         assertEquals(PortableResourceHandler.VIDEO, StudyPlanPortableResources.handlerForMimeType("video/mp4"))
-        assertEquals(PortableResourceHandler.GENERIC, StudyPlanPortableResources.handlerForMimeType("application/octet-stream"))
+        assertEquals(
+            PortableResourceHandler.GENERIC,
+            StudyPlanPortableResources.handlerForMimeType("application/octet-stream"),
+        )
     }
 
     @Test

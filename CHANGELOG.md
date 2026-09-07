@@ -1,3 +1,27 @@
+# OV20 final integrated public-exam validation seal
+
+### OV20 v5 navigation contract hotfix
+
+- Replaced `PracticeWorkspaceRoute.openMockStudio: Boolean` with the small serializable `PracticeWorkspaceEntry` enum so workspace route payloads remain limited to identifiers and small enums.
+- Preserved Mock Exam Studio deep-link behavior by deriving the screen-level open flag from `PracticeWorkspaceEntry.MOCK_EXAM_STUDIO`.
+- Extended navigation serialization and OV13/OV20 source contracts so Boolean route state cannot regress.
+
+
+- Added the OV01–OV20 completion matrix and fail-closed integrated source validator.
+- Re-ran OV/BH/CPOV and selected historical release contracts rather than treating new source checks as sufficient evidence.
+- Reconciled the Phase-63 date contract with the canonical `PublicExamDateResolver` introduced by OV18.
+- Hardened manual-activity enum restore and reconciled the existing confirmed-delete helper with the final-user-readiness contract.
+- Preserved the release boundary: no usable device means no claim of connected/manual device acceptance.
+- Cleared the remaining workspace plural-candidate warnings with real EN/pt-BR plural resources and observable Compose call sites.
+- Split ordinary Devtool validation from credentialed Release artifact generation: normal validation keeps Release compile/resources/tests/lint but packages only Debug, while the existing fail-closed final Release gate remains responsible for signed APK/AAB outputs.
+- Added signing-aware cleanup of stale Release output directories before ordinary validation so a rolled-back `app-release-unsigned.apk` cannot poison the next artifact scan.
+
+# OV19 public-exam promise audit and cleanup
+
+- Closed the remaining literal screenshot/backlog gaps: scheduled manual activities, subject-owned weekly rules, all strategy types, schedule search/past readability, and a signal-first concurso dashboard.
+- Removed the unnecessary `StudyTarget` safe-call warning in the pre-edital resolver path.
+- Preserved existing engines, ownership boundaries, bilingual resources, and unknown-data truthfulness.
+
 # CPOV roadmap reconciliation hotfix
 
 - Reconciled the applied CPOV00-CPOV13 tree against every literal concurso-publico roadmap promise.
