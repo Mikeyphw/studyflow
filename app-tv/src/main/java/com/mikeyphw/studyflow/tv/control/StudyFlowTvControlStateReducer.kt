@@ -172,6 +172,9 @@ object StudyFlowTvControlStateReducer {
         command: StudyFlowTvControlCommand,
         nowEpochMillis: Long,
     ): StudyFlowTvControlState {
+        if (command.action == StudyFlowTvControlAction.STOP_CAST) {
+            return state
+        }
         if (command.action == StudyFlowTvControlAction.REVOKE_PAIRING) {
             val revoked = state.session.revoke(nowEpochMillis)
             return state.copy(

@@ -1204,6 +1204,12 @@ tasks.register<Exec>("verifyStudyFlowTvPhoneController") {
     commandLine("python3", "scripts/verify_tvov23_phone_controller.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvCastStateSynchronization") {
+    group = "verification"
+    description = "Checks TVOV24 canonical presentation streaming, exact TV receipt acknowledgement, reconnect resync, and explicit STOP_CAST lifecycle."
+    commandLine("python3", "scripts/verify_tvov24_cast_state_synchronization.py")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."

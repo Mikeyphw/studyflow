@@ -78,8 +78,8 @@ TVOV20  Real-device acceptance and release seal [implemented]
 TVOV21  Typed presentation snapshots and canonical data projection [implemented]
 TVOV22  Local pairing, discovery, and transport [implemented]
 TVOV23  Android phone TV controller [implemented]
-TVOV24  Real cast/state synchronization [next]
-TVOV25  Domain truth and persistence convergence [planned]
+TVOV24  Real cast/state synchronization [implemented]
+TVOV25  Domain truth and persistence convergence [next]
 TVOV26  End-to-end physical-device final seal [planned]
 ```
 
@@ -338,7 +338,7 @@ Validation:
 Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v2.zip`.
 
 Scope:
-- stable TV package identity `com.mikeyphw.studyflow.tv`, current version code 23 / `0.1.0-tv23`;
+- stable TV package identity `com.mikeyphw.studyflow.tv`, current version code 24 / `0.1.0-tv24`;
 - required Leanback + optional touchscreen launcher contract, Leanback-only exported activity, TV banner/icon resources, productivity app category, and cleartext framework traffic disabled;
 - cloud backup and device-transfer exclusions for all TV-local storage domains;
 - conditional production signing using the complete `STUDYFLOW_RELEASE_*` credential set and fail-fast rejection of partial signing configuration;
@@ -434,3 +434,28 @@ Validation:
 - `app/src/test/.../StudyFlowTvPhoneControllerContractTest.kt`;
 - cumulative TVOV00-TVOV23 source verifiers;
 - final cross-device validation remains reserved for the later end-to-end seal.
+
+## TVOV24 — Real cast/state synchronization
+
+Status: implemented in `studyflow_tvov24_real_cast_state_synchronization_v1.zip`.
+
+Scope:
+- explicit Start cast / Stop cast / Resync now controls in the Android phone TV controller;
+- live subscription to the canonical TVOV21 `StudyFlowTvPresentationSource` for the current default plan;
+- serialized latest-snapshot delivery through the authenticated TVOV22 `StudyFlowTvLocalTransportClient`;
+- exact TV presentation receipts (`snapshotId` + generation time) used as the synchronization acknowledgement;
+- rediscovery/reconnect resends the latest snapshot when cast remains enabled;
+- pending remote `STOP_CAST` is retried after rediscovery, and the TV clears its presentation inbox back to the truthful waiting state;
+- continuity responses also carry the current presentation receipt so the phone can detect drift and request resync;
+- invalid/expired sessions end live synchronization and require explicit re-pairing;
+- no Cast SDK, MediaRouter, raw database rows, Room entities, or second transport stack;
+- TV package version code 24 / `0.1.0-tv24`; domain-action persistence convergence remains TVOV25.
+
+Validation:
+- `verifyStudyFlowTvCastStateSynchronization`;
+- `app/src/test/.../StudyFlowTvCastSynchronizationTest.kt`;
+- `core:tvcontrol` presentation-receipt wire round-trip;
+- TV inbox receipt/clear and revisioned `STOP_CAST` reducer tests;
+- cumulative TVOV00-TVOV24 source verifiers;
+- final two-device validation remains TVOV26.
+

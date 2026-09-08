@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV23"
+    const val currentTvOverlay = "TVOV24"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -208,7 +208,7 @@ object StudyFlowTvPackagingBuildContract {
     const val cleartextTrafficDisabled = true
     const val tvTargetRejectsPhoneTasks = true
     const val conditionalReleaseSigningSupported = true
-    const val packageVersionCode = 23
+    const val packageVersionCode = 24
 }
 
 // TVOV20 Real-device acceptance and release seal contract.
@@ -266,5 +266,18 @@ object StudyFlowTvPhoneControllerBuildContract {
     const val reviewControlsRequired = true
     const val continuityRefreshRequired = true
     const val revokeAndForgetRequired = true
-    const val livePresentationSynchronizationDeferredToTvov24 = true
+    const val livePresentationSynchronizationDeferredToTvov24 = false
+}
+
+// TVOV24 Real cast/state synchronization contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvCastSynchronizationBuildContract {
+    const val realCastStateSynchronizationIntroduced = true
+    const val canonicalPhonePresentationStreamRequired = true
+    const val authenticatedTvov22TransportRequired = true
+    const val explicitStartStopCastRequired = true
+    const val presentationReceiptAcknowledgementRequired = true
+    const val reconnectResyncRequired = true
+    const val pendingStopRetriesAfterReconnect = true
+    const val tvStopCastClearsPresentationInbox = true
 }

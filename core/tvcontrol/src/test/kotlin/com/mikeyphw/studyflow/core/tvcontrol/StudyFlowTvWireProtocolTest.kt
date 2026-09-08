@@ -105,4 +105,24 @@ class StudyFlowTvWireProtocolTest {
         assertFalse(encoded.contains("activeSurfaceTitle"))
     }
 
+
+    @Test
+    fun presentationReceiptRoundTripsForExactCastAcknowledgement() {
+        val response = StudyFlowTvWireResponse(
+            requestId = "presentation-ack",
+            ok = true,
+            applied = true,
+            presentationReceipt = StudyFlowTvPresentationReceipt(
+                snapshotId = "snapshot-42",
+                generatedAtEpochMillis = 42_000L,
+            ),
+            respondedAtEpochMillis = 42_100L,
+        )
+
+        val decoded = StudyFlowTvWireCodec.decodeResponse(StudyFlowTvWireCodec.encodeResponse(response))
+
+        assertEquals("snapshot-42", decoded.presentationReceipt?.snapshotId)
+        assertEquals(42_000L, decoded.presentationReceipt?.generatedAtEpochMillis)
+    }
+
 }

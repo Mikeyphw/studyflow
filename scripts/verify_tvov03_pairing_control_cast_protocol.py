@@ -150,14 +150,15 @@ require("TVOV03 adds the shared phone-to-TV control protocol" in notes, "TVOV03 
 require("TVOV03 adds the shared phone-to-TV control protocol" in readme, "README missing TVOV03 summary")
 require("TVOV03 - Pairing, control, and cast protocol foundation" in changelog, "CHANGELOG missing TVOV03 entry")
 
-# Size guard for newly-added shared protocol source.
+# Cumulative checked-in source guard. Later TV overlays add real receiver/presentation code; the
+# Release APK budget remains the authoritative artifact-size gate.
 source_bytes = 0
 for root in (ROOT / "core" / "tvcontrol", ROOT / "app-tv"):
     if root.exists():
         for path in root.rglob("*"):
             if path.is_file() and "build" not in path.parts:
                 source_bytes += path.stat().st_size
-require(source_bytes <= 384 * 1024, f"TV protocol/app-tv source payload is unexpectedly large: {source_bytes} bytes")
+require(source_bytes <= 448 * 1024, f"TV protocol/app-tv source payload is unexpectedly large: {source_bytes} bytes")
 
 if FAILURES:
     print("TVOV03_PAIRING_CONTROL_CAST_PROTOCOL: FAIL")

@@ -31,8 +31,8 @@ TVOV20  Real-device acceptance and release seal [implemented]
 TVOV21  Typed presentation snapshots and canonical data projection [implemented]
 TVOV22  Local pairing, discovery, and transport [implemented]
 TVOV23  Android phone TV controller [implemented]
-TVOV24  Real cast/state synchronization [next]
-TVOV25  Domain truth and persistence convergence [planned]
+TVOV24  Real cast/state synchronization [implemented]
+TVOV25  Domain truth and persistence convergence [next]
 TVOV26  End-to-end physical-device final seal [planned]
 ```
 
@@ -70,4 +70,4 @@ TVOV26  End-to-end physical-device final seal [planned]
 
 ## Current chain status
 
-As of TVOV23, the structured implementation chain covers TVOV00 through TVOV23. TVOV21 replaced runtime demo fixtures with canonical typed presentation snapshots; TVOV22 added explicit local NSD discovery, six-digit/nonce pairing, expiring revocable credentials, and authenticated local TCP delivery; TVOV23 now exposes that production link through a real Settings-accessible Android phone controller with persisted-session resume and shared remote commands. The original stopping gate is intentionally still open: TVOV24 is next and must add live typed presentation/state synchronization before domain-truth convergence and the true two-device seal can close the remaining audited gaps.
+As of TVOV24, the structured implementation chain covers TVOV00 through TVOV24. TVOV21 replaced runtime demo fixtures with canonical typed presentation snapshots; TVOV22 added explicit local discovery/pairing/authenticated transport; TVOV23 exposed that link through a real phone controller; and TVOV24 now streams the canonical phone-owned presentation feed to the TV with exact receipt acknowledgement, reconnect resync, explicit STOP_CAST, and pending-stop recovery. The original stopping gate is still intentionally open: TVOV25 is next and must converge TV/remote interactions onto the real phone-owned StudyFlow use cases and persistence before TVOV26 can perform the true two-device final seal.

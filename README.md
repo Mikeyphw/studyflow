@@ -437,3 +437,8 @@ TVOV22 closes the wire-transport gap with a small shared `:core:tvlink` Android 
 ### Android TV TVOV23 phone controller
 
 TVOV23 adds the real Android phone controller on top of TVOV22 instead of introducing another transport. Settings opens an app-owned controller screen that discovers nearby StudyFlow TVs, selects a receiver, checks the TV pairing window, accepts the six-digit TV code, resumes an unexpired saved session, refreshes continuity, navigates every TV destination, and sends Study Session, Question, Mock Exam, Review, and Back commands through the shared control protocol. Remote revoke and local forget are explicit. `feature:settings` stays transport-agnostic, discovery remains foreground-only, and live typed-presentation synchronization remains the TVOV24 boundary. The TV package identity advances to version code 23 / `0.1.0-tv23`.
+
+### Android TV TVOV24 — real cast/state synchronization
+
+TVOV24 connects the TVOV21 canonical presentation feed to the paired TV over the existing TVOV22 local link. The phone controller now offers explicit Start cast, Resync now, and Stop cast actions; snapshots are serialized toward the latest repository state, the TV acknowledges the exact retained snapshot id/time, and receiver rediscovery triggers resync. STOP_CAST clears the TV inbox to the truthful waiting state and remains pending for retry when requested while the paired TV is temporarily unavailable. No Cast SDK, MediaRouter, raw database payloads, or second transport stack are added. Domain-action persistence convergence remains TVOV25. The TV package is version code 24 / `0.1.0-tv24`.
+

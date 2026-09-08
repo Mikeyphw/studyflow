@@ -144,6 +144,7 @@ data class StudyFlowTvWireResponse(
     val credential: StudyFlowTvSessionCredential? = null,
     val applied: Boolean? = null,
     val continuity: StudyFlowTvControlContinuityState? = null,
+    val presentationReceipt: StudyFlowTvPresentationReceipt? = null,
     val respondedAtEpochMillis: Long,
 ) {
     init {

@@ -169,7 +169,7 @@ def run_real_device_acceptance() -> bool:
     require(package_dump is not None and package_dump.returncode == 0, "could not inspect installed TV package")
     if package_dump is not None and package_dump.returncode == 0:
         require(re.search(r"versionCode=22(?:\s|$)", package_dump.stdout) is not None, "installed TV package versionCode is not 22")
-        require("versionName=0.1.0-tv23" in package_dump.stdout, "installed TV package versionName mismatch")
+        require("versionName=0.1.0-tv24" in package_dump.stdout, "installed TV package versionName mismatch")
 
     if not FAILURES:
         print("TVOV20_REAL_DEVICE_ACCEPTANCE: PASS")
@@ -230,7 +230,7 @@ require("## TVOV20" in roadmap, "roadmap missing TVOV20 implementation note")
 require("no-device" in quality.lower() and "D-pad" in quality and "Release APK" in quality, "TVOV20 quality contract incomplete")
 require("physical-device acceptance" in notes and "clean skip" in notes, "TVOV20 implementation note incomplete")
 require("TVOV19 and TVOV20" in readme, "README missing TVOV19/20 summary")
-require("TVOV00 through TVOV23" in rules, "working rules must record the current TV implementation chain")
+require("TVOV00 through TVOV24" in rules, "working rules must record the current TV implementation chain")
 
 if args.require_release_artifact:
     verify_release_artifact()

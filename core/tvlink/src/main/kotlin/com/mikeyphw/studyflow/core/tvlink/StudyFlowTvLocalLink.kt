@@ -15,6 +15,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingEngine
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingInfo
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingOffer
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationReceipt
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvReceiverEndpoint
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSessionCredential
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireCodec
@@ -66,6 +67,7 @@ data class StudyFlowTvTransportApplyResult(
     val applied: Boolean,
     val reason: String? = null,
     val continuity: StudyFlowTvControlContinuityState? = null,
+    val presentationReceipt: StudyFlowTvPresentationReceipt? = null,
 )
 
 interface StudyFlowTvLocalTransportDelegate {
@@ -74,6 +76,7 @@ interface StudyFlowTvLocalTransportDelegate {
     fun applyRemoteCommand(command: StudyFlowTvControlCommand, nowEpochMillis: Long): StudyFlowTvTransportApplyResult
     fun applyPresentationSnapshot(snapshot: StudyFlowTvPresentationSnapshot, nowEpochMillis: Long): StudyFlowTvTransportApplyResult
     fun currentContinuityState(): StudyFlowTvControlContinuityState
+    fun currentPresentationReceipt(): StudyFlowTvPresentationReceipt?
 }
 
 /** Small SharedPreferences credential store. Both application manifests disable backup. */
@@ -624,14 +627,30 @@ class StudyFlowTvLocalTransportHost(
                     pairingAttemptCount = 0
                     sessionStore.clear()
                 }
-                response(request, true, applied.reason, nowEpochMillis, applied.applied, applied.continuity)
+                response(
+                    request = request,
+                    ok = true,
+                    reason = applied.reason,
+                    nowEpochMillis = nowEpochMillis,
+                    applied = applied.applied,
+                    continuity = applied.continuity,
+                    presentationReceipt = applied.presentationReceipt,
+                )
             }
             StudyFlowTvWireOperation.PRESENTATION -> {
                 val snapshot = request.presentation ?: return response(request, false, "presentation-required", nowEpochMillis)
                 val applied = callOnMain {
                     delegate.applyPresentationSnapshot(snapshot, nowEpochMillis)
                 } ?: return response(request, false, "main-thread-timeout", nowEpochMillis)
-                response(request, true, applied.reason, nowEpochMillis, applied.applied, applied.continuity)
+                response(
+                    request = request,
+                    ok = true,
+                    reason = applied.reason,
+                    nowEpochMillis = nowEpochMillis,
+                    applied = applied.applied,
+                    continuity = applied.continuity,
+                    presentationReceipt = applied.presentationReceipt,
+                )
             }
             StudyFlowTvWireOperation.CONTINUITY -> response(
                 request = request,
@@ -639,6 +658,7 @@ class StudyFlowTvLocalTransportHost(
                 reason = null,
                 nowEpochMillis = nowEpochMillis,
                 continuity = safeContinuity(),
+                presentationReceipt = safePresentationReceipt(),
             )
             StudyFlowTvWireOperation.REVOKE -> {
                 val revoked = activeCredential.toControlSession().revoke(nowEpochMillis)
@@ -647,13 +667,24 @@ class StudyFlowTvLocalTransportHost(
                 pairingAttemptCount = 0
                 sessionStore.clear()
                 publishSession(revoked)
-                response(request, true, null, nowEpochMillis, applied = true, continuity = safeContinuity())
+                response(
+                    request = request,
+                    ok = true,
+                    reason = null,
+                    nowEpochMillis = nowEpochMillis,
+                    applied = true,
+                    continuity = safeContinuity(),
+                    presentationReceipt = safePresentationReceipt(),
+                )
             }
             else -> response(request, false, "invalid-authenticated-operation", nowEpochMillis)
         }
     }
 
     private fun safeContinuity(): StudyFlowTvControlContinuityState? = callOnMain { delegate.currentContinuityState() }
+
+    private fun safePresentationReceipt(): StudyFlowTvPresentationReceipt? =
+        callOnMain { delegate.currentPresentationReceipt() }
 
     private fun response(
         request: StudyFlowTvWireRequest,
@@ -662,12 +693,14 @@ class StudyFlowTvLocalTransportHost(
         nowEpochMillis: Long,
         applied: Boolean? = null,
         continuity: StudyFlowTvControlContinuityState? = null,
+        presentationReceipt: StudyFlowTvPresentationReceipt? = null,
     ): StudyFlowTvWireResponse = StudyFlowTvWireResponse(
         requestId = request.requestId,
         ok = ok,
         reason = reason,
         applied = applied,
         continuity = continuity,
+        presentationReceipt = presentationReceipt,
         respondedAtEpochMillis = nowEpochMillis,
     )
 

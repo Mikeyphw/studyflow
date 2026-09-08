@@ -44,7 +44,7 @@ controller = require_tokens(
     'gateway.revoke(endpoint)',
     'gateway.clearSavedSession()',
     'requiresUserPresence = true',
-    'presentationCastSynchronizationDeferredToTvov24 = true',
+    'presentationCastSynchronizationDeferredToTvov24 = false',
 )
 for action in (
     'StudyFlowTvControlAction.OPEN', 'StudyFlowTvControlAction.START', 'StudyFlowTvControlAction.PAUSE',
@@ -52,7 +52,7 @@ for action in (
     'StudyFlowTvControlAction.SELECT_ANSWER', 'StudyFlowTvControlAction.SHOW_EXPLANATION',
     'StudyFlowTvControlAction.MARK_FOR_REVIEW', 'StudyFlowTvControlAction.SUBMIT',
     'StudyFlowTvControlAction.REVIEW_RESULTS', 'StudyFlowTvControlAction.COMPLETE',
-    'StudyFlowTvControlAction.BACK', 'StudyFlowTvControlAction.REVOKE_PAIRING',
+    'StudyFlowTvControlAction.BACK', 'StudyFlowTvControlAction.STOP_CAST', 'StudyFlowTvControlAction.REVOKE_PAIRING',
 ):
     require(action in controller, f"phone controller contract missing action {action}")
 for forbidden in ('CastContext', 'MediaRouter', 'RoomDatabase', '@Dao', 'ServerSocket('):
@@ -78,9 +78,11 @@ screen = require_tokens(
     'StudyFlowTvControlAction.SUBMIT',
     'StudyFlowTvControlAction.REVIEW_RESULTS',
     'StudyFlowTvControlAction.BACK',
-    'tv_controller_cast_deferred',
+    'tv_controller_cast_title',
+    'controller.startCast(defaultPlanId)',
+    'controller::stopCast',
 )
-require('sendPresentation(' not in screen, "TVOV23 must not prematurely claim TVOV24 live presentation synchronization")
+require('tv_controller_cast_deferred' not in screen, "TVOV24 must retire the TVOV23 cast-deferred notice")
 
 settings = require_tokens(
     "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
@@ -109,6 +111,8 @@ app_nav = require_tokens(
     'composable<TvControllerRoute>',
     'discovery = container.tvReceiverDiscovery',
     'client = container.tvLinkClient',
+    'presentationSource = container.tvPresentationSource',
+    'defaultPlanId = preferences.defaultStudyPlanId',
 )
 
 require_tokens(
@@ -124,24 +128,24 @@ require_tokens(
 
 build_contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV23"',
-    'packageVersionCode = 23',
+    'currentTvOverlay = "TVOV24"',
+    'packageVersionCode = 24',
     'phoneControllerUiStillDeferredToTvov23 = false',
     'object StudyFlowTvPhoneControllerBuildContract',
     'phoneControllerIntroduced = true',
     'productionDiscoveryClientConsumed = true',
     'allTvDestinationsControllable = true',
-    'livePresentationSynchronizationDeferredToTvov24 = true',
+    'livePresentationSynchronizationDeferredToTvov24 = false',
 )
 require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContractTest.kt",
     'phoneControllerIsProductionWiredFromSettings',
-    'assertEquals("TVOV23", StudyFlowTvBuildContract.currentTvOverlay)',
-    'assertEquals(23, StudyFlowTvPackagingBuildContract.packageVersionCode)',
+    'assertEquals("TVOV24", StudyFlowTvBuildContract.currentTvOverlay)',
+    'assertEquals(24, StudyFlowTvPackagingBuildContract.packageVersionCode)',
 )
 
 tv_build = read("app-tv/build.gradle.kts")
-require('versionCode = 23' in tv_build and 'versionName = "0.1.0-tv23"' in tv_build, "TV package must advance to TVOV23 identity")
+require('versionCode = 24' in tv_build and 'versionName = "0.1.0-tv24"' in tv_build, "TV package must retain the current TVOV24 identity")
 for forbidden in (':app:', ':feature:', ':core:data', ':core:database'):
     require(forbidden not in tv_build, f"TV APK dependency boundary regressed: {forbidden}")
 
@@ -162,10 +166,10 @@ readme = read("README.md")
 notes = read("TVOV23_ANDROID_PHONE_TV_CONTROLLER.md")
 quality = read("docs/quality/TVOV23_ANDROID_PHONE_TV_CONTROLLER_CONTRACTS.md")
 require("TVOV23  Android phone TV controller [implemented]" in roadmap, "roadmap must mark TVOV23 implemented")
-require("TVOV24  Real cast/state synchronization [next]" in roadmap, "roadmap must mark TVOV24 next")
+require("TVOV24  Real cast/state synchronization [implemented]" in roadmap, "roadmap must mark TVOV24 implemented")
 require("TVOV23  Android phone TV controller [implemented]" in rules, "working rules must mark TVOV23 implemented")
-require("TVOV24  Real cast/state synchronization [next]" in rules, "working rules must mark TVOV24 next")
-require("TVOV00 through TVOV23" in rules, "working rules must record current TV chain")
+require("TVOV24  Real cast/state synchronization [implemented]" in rules, "working rules must mark TVOV24 implemented")
+require("TVOV00 through TVOV24" in rules, "working rules must record current TV chain")
 for token in ("Settings", "six-digit", "persisted", "all ten", "TVOV24"):
     require(token.lower() in notes.lower(), f"TVOV23 implementation notes missing {token}")
 for token in ("receiver selection", "user-present", "revoke", "Cast SDK", "TVOV24"):

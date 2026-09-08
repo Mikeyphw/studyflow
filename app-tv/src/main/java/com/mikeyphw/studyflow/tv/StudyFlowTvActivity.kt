@@ -19,6 +19,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlSession
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlOrigin
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationReceipt
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLinkStatus
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalNetworkPermission
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportDelegate
@@ -156,6 +157,7 @@ class StudyFlowTvActivity : Activity() {
                         applied = applied,
                         reason = if (applied) null else "command-rejected",
                         continuity = StudyFlowTvControlStateReducer.continuityState(controlState),
+                        presentationReceipt = presentationInbox.receipt(),
                     )
                 }
 
@@ -168,11 +170,15 @@ class StudyFlowTvActivity : Activity() {
                         applied = applied,
                         reason = if (applied) null else "presentation-stale-or-duplicate",
                         continuity = StudyFlowTvControlStateReducer.continuityState(controlState),
+                        presentationReceipt = presentationInbox.receipt(),
                     )
                 }
 
                 override fun currentContinuityState(): StudyFlowTvControlContinuityState =
                     StudyFlowTvControlStateReducer.continuityState(controlState)
+
+                override fun currentPresentationReceipt(): StudyFlowTvPresentationReceipt? =
+                    presentationInbox.receipt()
             },
         )
         setContentView(createContentView())
@@ -470,6 +476,10 @@ class StudyFlowTvActivity : Activity() {
     ): Boolean {
         val reduction = StudyFlowTvControlStateReducer.reduce(controlState, command, origin, nowEpochMillis)
         controlState = reduction.state
+        if (reduction.applied && command.action == com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction.STOP_CAST) {
+            presentationInbox.clear()
+            controlState = StudyFlowTvPresentationAdapter.waitingState(controlState)
+        }
         if (reduction.applied && ::contentTitle.isInitialized) {
             renderDestination(controlState.destination)
         } else if (::continuityStatus.isInitialized) {

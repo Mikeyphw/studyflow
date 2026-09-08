@@ -162,4 +162,33 @@ class StudyFlowTvControlStateReducerTest {
         targetId = target,
         issuedAtEpochMillis = issuedAt,
     )
+
+    @Test
+    fun stopCastIsAcceptedAsARevisionedPresentationLifecycleCommand() {
+        val session = StudyFlowTvControlSession.paired(
+            sessionId = "session-stop",
+            pairedDeviceName = "Phone",
+            pairedAtEpochMillis = 100L,
+            expiresAtEpochMillis = 10_000L,
+        )
+        val state = StudyFlowTvControlStateReducer.defaultState(session)
+        val command = StudyFlowTvControlCommand(
+            commandId = "stop-cast",
+            surface = StudyFlowTvSurface.HOME,
+            action = StudyFlowTvControlAction.STOP_CAST,
+            issuedAtEpochMillis = 500L,
+        )
+
+        val result = StudyFlowTvControlStateReducer.reduce(
+            state = state,
+            command = command,
+            origin = StudyFlowTvControlOrigin.PAIRED_PHONE,
+            nowEpochMillis = 500L,
+        )
+
+        assertTrue(result.applied)
+        assertEquals(1L, result.state.commandRevision)
+        assertEquals("stop-cast", result.state.lastCommandId)
+    }
+
 }

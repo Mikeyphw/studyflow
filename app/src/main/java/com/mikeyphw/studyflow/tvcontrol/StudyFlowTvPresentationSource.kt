@@ -42,10 +42,10 @@ class StudyFlowTvPresentationSource(
     private val analyticsRepository: StudyAnalyticsRepository,
     private val libraryRepository: StudyLibraryRepository,
     private val clock: () -> Long = System::currentTimeMillis,
-) {
+) : StudyFlowTvPresentationFeed {
     private val sequence = AtomicLong(0L)
 
-    fun observe(planId: StudyPlanId): Flow<StudyFlowTvPresentationSnapshot> {
+    override fun observe(planId: StudyPlanId): Flow<StudyFlowTvPresentationSnapshot> {
         val primary = combine(
             planRepository.observePlan(planId),
             contentRepository.observeSyllabus(planId),

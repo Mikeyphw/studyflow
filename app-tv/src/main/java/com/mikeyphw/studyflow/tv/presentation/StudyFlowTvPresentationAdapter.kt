@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.tv.presentation
 
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationAvailability
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationReceipt
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
 import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlState
 import com.mikeyphw.studyflow.tv.library.StudyFlowTvLibraryReference
@@ -481,6 +482,17 @@ class StudyFlowTvPresentationInbox {
         if (previous != null && snapshot.generatedAtEpochMillis < previous.generatedAtEpochMillis) return false
         current = snapshot
         return true
+    }
+
+    fun clear() {
+        current = null
+    }
+
+    fun receipt(): StudyFlowTvPresentationReceipt? = current?.let { snapshot ->
+        StudyFlowTvPresentationReceipt(
+            snapshotId = snapshot.snapshotId,
+            generatedAtEpochMillis = snapshot.generatedAtEpochMillis,
+        )
     }
 
     fun isReady(): Boolean = current?.availability == StudyFlowTvPresentationAvailability.READY

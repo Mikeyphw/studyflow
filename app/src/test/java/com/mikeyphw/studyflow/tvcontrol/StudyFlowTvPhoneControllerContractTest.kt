@@ -22,10 +22,11 @@ class StudyFlowTvPhoneControllerContractTest {
                 StudyFlowTvControlAction.SHOW_EXPLANATION,
                 StudyFlowTvControlAction.SUBMIT,
                 StudyFlowTvControlAction.REVIEW_RESULTS,
+                StudyFlowTvControlAction.STOP_CAST,
                 StudyFlowTvControlAction.REVOKE_PAIRING,
             ),
         ))
-        assertTrue(StudyFlowTvPhoneControllerContract.presentationCastSynchronizationDeferredToTvov24)
+        assertTrue(!StudyFlowTvPhoneControllerContract.presentationCastSynchronizationDeferredToTvov24)
     }
 
     @Test

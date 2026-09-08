@@ -1,9 +1,11 @@
 package com.mikeyphw.studyflow.tvcontrol
 
+import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlContinuityState
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlProtocol
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvReceiverEndpoint
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSessionCredential
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
@@ -14,6 +16,7 @@ import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvReceiverDiscovery
 import java.io.Closeable
 import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +25,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -36,7 +40,10 @@ object StudyFlowTvPhoneControllerContract {
     const val revokeAndForgetRequired = true
     const val allTvDestinationsControllable = true
     const val sessionQuestionMockAndReviewControlsRequired = true
-    const val presentationCastSynchronizationDeferredToTvov24 = true
+    const val presentationCastSynchronizationDeferredToTvov24 = false
+    const val livePresentationSynchronizationImplemented = true
+    const val explicitStartStopCastRequired = true
+    const val reconnectResyncRequired = true
 
     val navigationSurfaces: Set<StudyFlowTvSurface> = StudyFlowTvSurface.entries.toSet()
 
@@ -54,6 +61,7 @@ object StudyFlowTvPhoneControllerContract {
         StudyFlowTvControlAction.REVIEW_RESULTS,
         StudyFlowTvControlAction.COMPLETE,
         StudyFlowTvControlAction.BACK,
+        StudyFlowTvControlAction.STOP_CAST,
         StudyFlowTvControlAction.REVOKE_PAIRING,
     )
 }
@@ -76,6 +84,7 @@ data class StudyFlowTvPhoneControllerState(
     val pairingActive: Boolean? = null,
     val pairingExpiresAtEpochMillis: Long? = null,
     val operation: StudyFlowTvPhoneControllerOperation = StudyFlowTvPhoneControllerOperation.IDLE,
+    val castSync: StudyFlowTvCastSyncState = StudyFlowTvCastSyncState(),
     val lastMessage: String? = null,
 ) {
     val paired: Boolean get() = credential != null
@@ -90,6 +99,7 @@ interface StudyFlowTvPhoneLinkGateway {
     fun pairingInfo(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse
     fun pair(endpoint: StudyFlowTvReceiverEndpoint, pairingCode: String, phoneDeviceName: String): StudyFlowTvWireResponse
     fun sendCommand(endpoint: StudyFlowTvReceiverEndpoint, command: StudyFlowTvControlCommand): StudyFlowTvWireResponse
+    fun sendPresentation(endpoint: StudyFlowTvReceiverEndpoint, snapshot: StudyFlowTvPresentationSnapshot): StudyFlowTvWireResponse
     fun fetchContinuity(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse
     fun revoke(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse
     fun clearSavedSession()
@@ -112,6 +122,10 @@ class DefaultStudyFlowTvPhoneLinkGateway(
         endpoint: StudyFlowTvReceiverEndpoint,
         command: StudyFlowTvControlCommand,
     ): StudyFlowTvWireResponse = client.sendCommand(endpoint, command)
+    override fun sendPresentation(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        snapshot: StudyFlowTvPresentationSnapshot,
+    ): StudyFlowTvWireResponse = client.sendPresentation(endpoint, snapshot)
     override fun fetchContinuity(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse = client.fetchContinuity(endpoint)
     override fun revoke(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse = client.revoke(endpoint)
     override fun clearSavedSession() = client.clearSavedSession()
@@ -158,9 +172,15 @@ object StudyFlowTvPhoneCommandFactory {
  */
 class StudyFlowTvPhoneController(
     private val gateway: StudyFlowTvPhoneLinkGateway,
+    private val presentationFeed: StudyFlowTvPresentationFeed,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) : StudyFlowTvReceiverDiscovery.Listener, Closeable {
+    private var castCollectionJob: Job? = null
+    private var castDeliveryJob: Job? = null
+    private var latestCastSnapshot: StudyFlowTvPresentationSnapshot? = null
+    private var castDeliveryRequested = false
+
     private val mutableState = MutableStateFlow(
         StudyFlowTvPhoneControllerState(credential = gateway.savedCredential()),
     )
@@ -189,6 +209,7 @@ class StudyFlowTvPhoneController(
                 current = state.selectedReceiver,
             ),
         )
+        requestCastDelivery()
     }
 
     fun selectReceiver(endpoint: StudyFlowTvReceiverEndpoint) {
@@ -198,6 +219,7 @@ class StudyFlowTvPhoneController(
             pairingExpiresAtEpochMillis = null,
             lastMessage = null,
         )
+        requestCastDelivery()
     }
 
     fun checkPairing() {
@@ -257,6 +279,97 @@ class StudyFlowTvPhoneController(
         }
     }
 
+    fun startCast(planId: StudyPlanId?) {
+        if (planId == null) {
+            mutableState.value = mutableState.value.copy(
+                castSync = StudyFlowTvCastSyncState(status = StudyFlowTvCastSyncStatus.WAITING_FOR_PLAN),
+                lastMessage = "cast-plan-required",
+            )
+            return
+        }
+        if (mutableState.value.credential == null) {
+            mutableState.value = mutableState.value.copy(
+                castSync = StudyFlowTvCastSyncState(
+                    enabled = false,
+                    status = StudyFlowTvCastSyncStatus.WAITING_FOR_PAIRING,
+                    planId = planId.value,
+                ),
+                lastMessage = "pair-first",
+            )
+            return
+        }
+
+        castCollectionJob?.cancel()
+        latestCastSnapshot = null
+        mutableState.value = mutableState.value.copy(
+            castSync = StudyFlowTvCastSyncState(
+                enabled = true,
+                status = if (mutableState.value.selectedReceiver == null) {
+                    StudyFlowTvCastSyncStatus.WAITING_FOR_RECEIVER
+                } else {
+                    StudyFlowTvCastSyncStatus.SYNCING
+                },
+                planId = planId.value,
+            ),
+            lastMessage = "cast-started",
+        )
+        castCollectionJob = scope.launch {
+            try {
+                presentationFeed.observe(planId).collect { snapshot ->
+                    latestCastSnapshot = snapshot
+                    val cast = mutableState.value.castSync
+                    mutableState.value = mutableState.value.copy(
+                        castSync = cast.copy(
+                            latestSnapshotId = snapshot.snapshotId,
+                            status = if (mutableState.value.selectedReceiver == null) {
+                                StudyFlowTvCastSyncStatus.WAITING_FOR_RECEIVER
+                            } else {
+                                StudyFlowTvCastSyncStatus.SYNCING
+                            },
+                            lastError = null,
+                        ),
+                    )
+                    requestCastDelivery()
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                mutableState.value = mutableState.value.copy(
+                    castSync = mutableState.value.castSync.copy(
+                        status = StudyFlowTvCastSyncStatus.ERROR,
+                        lastError = "presentation-${error.javaClass.simpleName.lowercase()}",
+                    ),
+                )
+            }
+        }
+    }
+
+    fun resyncCast() {
+        if (!mutableState.value.castSync.enabled) {
+            mutableState.value = mutableState.value.copy(lastMessage = "cast-not-active")
+            return
+        }
+        requestCastDelivery()
+    }
+
+    fun stopCast() {
+        castCollectionJob?.cancel()
+        castCollectionJob = null
+        latestCastSnapshot = null
+        val paired = mutableState.value.credential != null
+        mutableState.value = mutableState.value.copy(
+            castSync = mutableState.value.castSync.copy(
+                enabled = false,
+                status = if (paired) StudyFlowTvCastSyncStatus.STOPPING else StudyFlowTvCastSyncStatus.STOPPED,
+                remoteStopPending = paired,
+                latestSnapshotId = null,
+                lastError = null,
+            ),
+            lastMessage = "cast-stop-requested",
+        )
+        requestCastDelivery()
+    }
+
     fun refreshContinuity() {
         val endpoint = requireSelectedReceiver() ?: return
         if (mutableState.value.credential == null) {
@@ -272,7 +385,13 @@ class StudyFlowTvPhoneController(
         val endpoint = requireSelectedReceiver() ?: return
         launchOperation(StudyFlowTvPhoneControllerOperation.REVOKE) {
             val response = gateway.revoke(endpoint)
-            if (response.ok) gateway.clearSavedSession()
+            if (response.ok) {
+                gateway.clearSavedSession()
+                castCollectionJob?.cancel()
+                castCollectionJob = null
+                latestCastSnapshot = null
+                mutableState.value = mutableState.value.copy(castSync = StudyFlowTvCastSyncState())
+            }
             applyResponse(
                 response = response,
                 successMessage = "pairing-revoked",
@@ -284,11 +403,167 @@ class StudyFlowTvPhoneController(
 
     fun forgetSavedSession() {
         gateway.clearSavedSession()
+        castCollectionJob?.cancel()
+        castCollectionJob = null
+        latestCastSnapshot = null
         mutableState.value = mutableState.value.copy(
             credential = null,
             continuity = null,
+            castSync = StudyFlowTvCastSyncState(),
             lastMessage = "local-session-forgotten",
         )
+    }
+
+    private fun requestCastDelivery() {
+        castDeliveryRequested = true
+        if (castDeliveryJob?.isActive == true) return
+        castDeliveryJob = scope.launch {
+            while (castDeliveryRequested) {
+                castDeliveryRequested = false
+                val state = mutableState.value
+                val endpoint = state.selectedReceiver
+                val cast = state.castSync
+
+                if (state.credential == null) {
+                    if (cast.enabled || cast.remoteStopPending) {
+                        mutableState.value = state.copy(
+                            castSync = cast.copy(
+                                status = StudyFlowTvCastSyncStatus.WAITING_FOR_PAIRING,
+                                remoteStopPending = false,
+                            ),
+                        )
+                    }
+                    continue
+                }
+                if (endpoint == null) {
+                    if (cast.enabled || cast.remoteStopPending) {
+                        mutableState.value = state.copy(
+                            castSync = cast.copy(
+                                status = StudyFlowTvCastSyncStatus.WAITING_FOR_RECEIVER,
+                            ),
+                        )
+                    }
+                    continue
+                }
+
+                if (cast.remoteStopPending) {
+                    deliverPendingCastStop(endpoint)
+                    continue
+                }
+                if (!cast.enabled) continue
+                val snapshot = latestCastSnapshot ?: continue
+                deliverLatestPresentation(endpoint, snapshot)
+                if (latestCastSnapshot?.snapshotId != snapshot.snapshotId) {
+                    castDeliveryRequested = true
+                }
+            }
+        }
+    }
+
+    private suspend fun deliverLatestPresentation(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        snapshot: StudyFlowTvPresentationSnapshot,
+    ) {
+        mutableState.value = mutableState.value.copy(
+            castSync = mutableState.value.castSync.copy(
+                status = StudyFlowTvCastSyncStatus.SYNCING,
+                lastError = null,
+            ),
+        )
+        val response = withContext(ioDispatcher) { gateway.sendPresentation(endpoint, snapshot) }
+        if (StudyFlowTvCastSynchronizationPolicy.isSessionFailure(response)) {
+            invalidateSessionForCast(response.reason ?: "session-invalid")
+            return
+        }
+        val acknowledged = StudyFlowTvCastSynchronizationPolicy.acknowledges(snapshot, response)
+        mutableState.value = mutableState.value.copy(
+            continuity = response.continuity ?: mutableState.value.continuity,
+            castSync = mutableState.value.castSync.copy(
+                status = if (acknowledged) StudyFlowTvCastSyncStatus.LIVE else StudyFlowTvCastSyncStatus.ERROR,
+                acknowledgedSnapshotId = response.presentationReceipt?.snapshotId,
+                acknowledgedAtEpochMillis = if (acknowledged) response.respondedAtEpochMillis else mutableState.value.castSync.acknowledgedAtEpochMillis,
+                lastError = if (acknowledged) null else response.reason ?: "presentation-not-acknowledged",
+            ),
+            lastMessage = if (acknowledged) "cast-synchronized" else response.reason ?: "cast-sync-failed",
+        )
+    }
+
+    private suspend fun deliverPendingCastStop(endpoint: StudyFlowTvReceiverEndpoint) {
+        mutableState.value = mutableState.value.copy(
+            castSync = mutableState.value.castSync.copy(status = StudyFlowTvCastSyncStatus.STOPPING),
+        )
+        val now = System.currentTimeMillis()
+        val surface = mutableState.value.continuity?.currentSurface ?: StudyFlowTvSurface.HOME
+        val response = withContext(ioDispatcher) {
+            gateway.sendCommand(
+                endpoint,
+                StudyFlowTvPhoneCommandFactory.command(
+                    surface = surface,
+                    action = StudyFlowTvControlAction.STOP_CAST,
+                    nowEpochMillis = now,
+                ),
+            )
+        }
+        if (StudyFlowTvCastSynchronizationPolicy.isSessionFailure(response)) {
+            invalidateSessionForCast(response.reason ?: "session-invalid")
+            return
+        }
+        if (response.ok && response.applied == true && response.presentationReceipt == null) {
+            mutableState.value = mutableState.value.copy(
+                continuity = response.continuity ?: mutableState.value.continuity,
+                castSync = StudyFlowTvCastSyncState(status = StudyFlowTvCastSyncStatus.STOPPED),
+                lastMessage = "cast-stopped",
+            )
+        } else {
+            mutableState.value = mutableState.value.copy(
+                castSync = mutableState.value.castSync.copy(
+                    status = StudyFlowTvCastSyncStatus.ERROR,
+                    remoteStopPending = true,
+                    lastError = response.reason ?: "cast-stop-not-acknowledged",
+                ),
+                lastMessage = response.reason ?: "cast-stop-failed",
+            )
+        }
+    }
+
+    private fun invalidateSessionForCast(reason: String) {
+        gateway.clearSavedSession()
+        castCollectionJob?.cancel()
+        castCollectionJob = null
+        latestCastSnapshot = null
+        mutableState.value = mutableState.value.copy(
+            credential = null,
+            continuity = null,
+            castSync = mutableState.value.castSync.copy(
+                enabled = false,
+                status = StudyFlowTvCastSyncStatus.WAITING_FOR_PAIRING,
+                remoteStopPending = false,
+                lastError = reason,
+            ),
+            lastMessage = reason,
+        )
+    }
+
+    private fun reconcilePresentationReceipt(response: StudyFlowTvWireResponse) {
+        val cast = mutableState.value.castSync
+        if (!cast.enabled) return
+        val latest = latestCastSnapshot ?: return
+        val receipt = response.presentationReceipt
+        val exactReceipt = receipt != null &&
+            receipt.snapshotId == latest.snapshotId &&
+            receipt.generatedAtEpochMillis == latest.generatedAtEpochMillis
+        if (!exactReceipt) {
+            requestCastDelivery()
+        } else if (cast.status != StudyFlowTvCastSyncStatus.LIVE) {
+            mutableState.value = mutableState.value.copy(
+                castSync = cast.copy(
+                    status = StudyFlowTvCastSyncStatus.LIVE,
+                    acknowledgedSnapshotId = latest.snapshotId,
+                    acknowledgedAtEpochMillis = response.respondedAtEpochMillis,
+                    lastError = null,
+                ),
+            )
+        }
     }
 
     override fun close() {
@@ -344,7 +619,18 @@ class StudyFlowTvPhoneController(
             continuity = if (staleSession) null else continuity,
             pairingActive = pairingActive,
             pairingExpiresAtEpochMillis = pairingExpiresAtEpochMillis,
+            castSync = if (staleSession) {
+                mutableState.value.castSync.copy(
+                    enabled = false,
+                    status = StudyFlowTvCastSyncStatus.WAITING_FOR_PAIRING,
+                    remoteStopPending = false,
+                    lastError = response.reason,
+                )
+            } else {
+                mutableState.value.castSync
+            },
             lastMessage = if (response.ok) successMessage else response.reason ?: "request-failed",
         )
+        if (!staleSession && response.ok) reconcilePresentationReceipt(response)
     }
 }

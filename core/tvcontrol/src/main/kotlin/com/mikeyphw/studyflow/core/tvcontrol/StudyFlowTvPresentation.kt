@@ -27,6 +27,18 @@ enum class StudyFlowTvPresentationAvailability {
     READY,
 }
 
+/** Minimal acknowledgement of the presentation currently retained by the TV receiver. */
+@Serializable
+data class StudyFlowTvPresentationReceipt(
+    val snapshotId: String,
+    val generatedAtEpochMillis: Long,
+) {
+    init {
+        require(snapshotId.isNotBlank()) { "TV presentation receipt snapshot id must not be blank." }
+        require(generatedAtEpochMillis >= 0L) { "TV presentation receipt time cannot be negative." }
+    }
+}
+
 @Serializable
 data class StudyFlowTvPresentationSnapshot(
     val snapshotId: String,

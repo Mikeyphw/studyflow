@@ -45,6 +45,21 @@ class StudyFlowTvPresentationAdapterTest {
     }
 
     @Test
+    fun inboxReceiptTracksCurrentSnapshotAndClearEndsCast() {
+        val inbox = StudyFlowTvPresentationInbox()
+        val snapshot = snapshot("snap-live", 200L)
+        assertTrue(inbox.apply(snapshot))
+        assertEquals("snap-live", inbox.receipt()?.snapshotId)
+        assertEquals(200L, inbox.receipt()?.generatedAtEpochMillis)
+
+        inbox.clear()
+
+        assertEquals(null, inbox.current)
+        assertEquals(null, inbox.receipt())
+        assertFalse(inbox.isReady())
+    }
+
+    @Test
     fun waitingStateIsExplicitAndContainsNoHistoricalExamFixture() {
         val state = StudyFlowTvPresentationAdapter.waitingState()
         assertTrue(state.today.nextBlockTitle.contains("Waiting"))

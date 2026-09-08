@@ -1,4 +1,10 @@
 
+
+## TVOV24 — Android TV real cast/state synchronization
+
+- Connected the phone-owned canonical TVOV21 presentation stream to the authenticated TVOV22 link with explicit Start cast / Stop cast / Resync controls.
+- Added exact presentation-receipt acknowledgement, serialized latest-snapshot delivery, reconnect resync, pending STOP_CAST retry, and TV inbox clearing back to the waiting state.
+- Advanced the TV package to version code 24 / `0.1.0-tv24`; TVOV25 remains the domain-truth/persistence convergence boundary.
 ## TVOV23 — Android phone TV controller
 
 - Added a Settings-accessible production Android phone controller backed by the existing TVOV22 NSD/TCP client.

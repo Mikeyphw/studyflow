@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.R
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionCard
+import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalNetworkPermission
@@ -43,12 +44,19 @@ import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvReceiverDiscovery
 internal fun StudyFlowTvPhoneControllerScreen(
     discovery: StudyFlowTvReceiverDiscovery,
     client: StudyFlowTvLocalTransportClient,
+    presentationSource: StudyFlowTvPresentationSource,
+    defaultPlanId: StudyPlanId?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val gateway = remember(discovery, client) { DefaultStudyFlowTvPhoneLinkGateway(discovery, client) }
-    val controller = remember(gateway) { StudyFlowTvPhoneController(gateway) }
+    val controller = remember(gateway, presentationSource) {
+        StudyFlowTvPhoneController(
+            gateway = gateway,
+            presentationFeed = presentationSource,
+        )
+    }
     val state by controller.state.collectAsStateWithLifecycle()
     var pairingCode by rememberSaveable { mutableStateOf("") }
     val phoneName = remember {
@@ -326,11 +334,64 @@ internal fun StudyFlowTvPhoneControllerScreen(
             )
         }
 
-        Text(
-            text = stringResource(R.string.tv_controller_cast_deferred),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-        )
+        StudyFlowSectionCard(title = stringResource(R.string.tv_controller_cast_title)) {
+            Text(
+                text = stringResource(
+                    R.string.tv_controller_cast_status,
+                    state.castSync.status.name,
+                ),
+                color = if (state.castSync.status == StudyFlowTvCastSyncStatus.LIVE) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+            val planText = defaultPlanId?.value ?: stringResource(R.string.tv_controller_cast_no_plan)
+            Text(
+                text = stringResource(R.string.tv_controller_cast_plan, planText),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            state.castSync.latestSnapshotId?.let { snapshotId ->
+                Text(
+                    text = stringResource(R.string.tv_controller_cast_latest_snapshot, snapshotId),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            state.castSync.acknowledgedSnapshotId?.let { snapshotId ->
+                Text(
+                    text = stringResource(R.string.tv_controller_cast_acknowledged_snapshot, snapshotId),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            state.castSync.lastError?.let { error ->
+                Text(
+                    text = stringResource(R.string.tv_controller_cast_error, error),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            ControllerActionRow(
+                firstLabel = stringResource(R.string.tv_controller_cast_start),
+                onFirst = { controller.startCast(defaultPlanId) },
+                secondLabel = stringResource(R.string.tv_controller_cast_resync),
+                onSecond = controller::resyncCast,
+                enabled = state.paired && !state.busy,
+            )
+            OutlinedButton(
+                onClick = controller::stopCast,
+                enabled = (state.castSync.enabled || state.castSync.remoteStopPending) && !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.tv_controller_cast_stop))
+            }
+            if (state.castSync.remoteStopPending) {
+                Text(
+                    text = stringResource(R.string.tv_controller_cast_stop_pending),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
     }
 }
 
