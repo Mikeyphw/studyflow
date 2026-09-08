@@ -1,3 +1,16 @@
+
+## TVOV16 - Cross-device control/state continuity
+
+- Added shared control-session and continuity-state schema in `:core:tvcontrol`.
+- Added one deterministic reducer for local TV remote and paired-phone commands across all TV surfaces.
+- Added monotonic revisions, active-item/playback continuity, duplicate/stale rejection, and expiry/revocation behavior.
+- Kept network/Cast transport deferred and preserved the TV dependency boundary.
+
+## TVOV15 - Minimal TV settings
+
+- Replaced the Settings placeholder with a native TV-safe Settings surface.
+- Added pairing status/manage/revoke, focus-visibility preference representation, local-first privacy, and safe About/diagnostics.
+- Added shared revoke-pairing intent modeling, unit tests, verifier wiring, and documentation.
 ## TVOV13/TVOV14 - Android TV Schedule and Library Reference
 
 - Added the Android TV read-only Schedule surface with today/week schedule context, review windows, study blocks, practice entries, mock-exam rehearsal, D-pad focus, paired-phone navigation commands, cast-state output, unit tests, and verifier wiring.

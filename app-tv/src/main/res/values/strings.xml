@@ -149,4 +149,15 @@
     <string name="tv_library_action_next">Next</string>
     <string name="tv_library_action_practice">Practice</string>
     <string name="tv_library_action_home">Home</string>
+
+    <string name="tv_settings_section_title">TV-safe settings</string>
+    <string name="tv_settings_status_format">pairing=%1$s · focus=%2$s · local-first controls only</string>
+    <string name="tv_settings_focus_standard">standard</string>
+    <string name="tv_settings_focus_high">high visibility</string>
+    <string name="tv_settings_action_manage_pairing">Manage pairing</string>
+    <string name="tv_settings_action_revoke_pairing">Revoke phone</string>
+    <string name="tv_settings_action_toggle_focus">Toggle focus visibility</string>
+    <string name="tv_settings_action_about">About</string>
+    <string name="tv_settings_about_detail">TV-safe diagnostics: package identity, protocol version, and local presentation state only. Account management, storage, import/export, and database access remain on the phone.</string>
+    <string name="tv_control_continuity_status_format">control state · %1$s · revision %2$d · pairing %3$s</string>
 </resources>

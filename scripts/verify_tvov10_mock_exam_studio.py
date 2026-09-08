@@ -71,7 +71,7 @@ for token in (
     "StudyFlowTvDestination.MOCK_EXAM -> renderMockExamDestination()",
     "StudyFlowTvMockExamStudio.defaultState()",
     "StudyFlowTvMockExamStudio.availableActions",
-    "StudyFlowTvMockExamStudio.applyAction",
+    "StudyFlowTvMockExamStudio.commandForAction",
     "private fun toggleMockExamPlayback()",
     "private fun tvMockExamSection(section: StudyFlowTvMockExamSection): Button",
     "private fun tvMockExamAction(action: StudyFlowTvMockExamAction): Button",

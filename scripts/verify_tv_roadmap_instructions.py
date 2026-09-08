@@ -34,7 +34,7 @@ for index in range(0, 21):
     require(token in rules, f"full roadmap missing {token} in working-rules document")
     require(token in roadmap, f"full roadmap missing {token} in ANDROID_TV_ROADMAP.md")
 
-for index in range(0, 15):
+for index in range(0, 17):
     require(f"TVOV{index:02d}" in rules and "[implemented]" in rules.split(f"TVOV{index:02d}", 1)[1].split("\n", 1)[0], f"TVOV{index:02d} not marked implemented in working-rules roadmap")
 
 required_phrases = [
@@ -60,8 +60,9 @@ required_phrases = [
 for phrase in required_phrases:
     require(phrase in combined, f"missing roadmap/instruction phrase: {phrase}")
 
-require("TVOV15  Minimal TV settings [next]" in rules, "TVOV15 must remain the next TV roadmap item")
-require("TVOV16  Cross-device control/state continuity" in rules, "TVOV16 continuity roadmap item must be present")
+require("TVOV15  Minimal TV settings [implemented]" in rules, "TVOV15 settings roadmap item must be implemented")
+require("TVOV16  Cross-device control/state continuity [implemented]" in rules, "TVOV16 continuity roadmap item must be implemented")
+require("TVOV17" in rules and "[next]" in rules.split("TVOV17", 1)[1].split("\n", 1)[0], "TVOV17 must be the next TV roadmap item")
 require('tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions")' in root_gradle, "missing Gradle roadmap/instructions verifier task")
 require("verifyStudyFlowTvRoadmapInstructions" in devtool, "studyflow_tv target missing roadmap/instructions verifier")
 if validate:

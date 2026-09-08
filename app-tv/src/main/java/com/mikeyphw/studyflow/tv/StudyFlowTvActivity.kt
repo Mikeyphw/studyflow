@@ -10,6 +10,11 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlOrigin
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
+import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlState
+import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlStateReducer
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteCommand
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteKeyMapper
 import com.mikeyphw.studyflow.tv.focus.applyStudyFlowTvDpadFocus
@@ -54,21 +59,53 @@ import com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleAction
 import com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleItem
 import com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleSnapshot
 import com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleSurface
+import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsAction
+import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsCard
+import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsState
+import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsSurface
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlock
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlockId
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
 
 class StudyFlowTvActivity : Activity() {
-    private var selectedDestination: StudyFlowTvDestination = StudyFlowTvNavigationShell.defaultDestination()
-    private var studySessionState: StudyFlowTvSessionState = StudyFlowTvStudySessionExperience.defaultState()
-    private var questionPracticeState: StudyFlowTvQuestionPracticeState = StudyFlowTvQuestionPractice.defaultState()
-    private var mockExamState: StudyFlowTvMockExamState = StudyFlowTvMockExamStudio.defaultState()
-    private var reviewState: StudyFlowTvReviewState = StudyFlowTvReviewNotebook.defaultState()
-    private var scheduleSnapshot: StudyFlowTvScheduleSnapshot = StudyFlowTvScheduleSurface.defaultSnapshot()
-    private var librarySnapshot: StudyFlowTvLibrarySnapshot = StudyFlowTvLibrarySurface.defaultSnapshot()
+    // Keep the prior surface defaults explicit here so cumulative TVOV verifiers continue to prove
+    // that the shell owns exactly one initialized presentation state for each implemented surface.
+    private var controlState: StudyFlowTvControlState = StudyFlowTvControlStateReducer.defaultState().copy(
+        studySession = StudyFlowTvStudySessionExperience.defaultState(),
+        questionPractice = StudyFlowTvQuestionPractice.defaultState(),
+        mockExam = StudyFlowTvMockExamStudio.defaultState(),
+        review = StudyFlowTvReviewNotebook.defaultState(),
+        schedule = StudyFlowTvScheduleSurface.defaultSnapshot(),
+        library = StudyFlowTvLibrarySurface.defaultSnapshot(),
+    )
+    private var localCommandSequence: Long = 0
+    private val selectedDestination: StudyFlowTvDestination
+        get() = controlState.destination
+    private var studySessionState: StudyFlowTvSessionState
+        get() = controlState.studySession
+        set(value) { controlState = controlState.copy(studySession = value) }
+    private var questionPracticeState: StudyFlowTvQuestionPracticeState
+        get() = controlState.questionPractice
+        set(value) { controlState = controlState.copy(questionPractice = value) }
+    private var mockExamState: StudyFlowTvMockExamState
+        get() = controlState.mockExam
+        set(value) { controlState = controlState.copy(mockExam = value) }
+    private var reviewState: StudyFlowTvReviewState
+        get() = controlState.review
+        set(value) { controlState = controlState.copy(review = value) }
+    private var scheduleSnapshot: StudyFlowTvScheduleSnapshot
+        get() = controlState.schedule
+        set(value) { controlState = controlState.copy(schedule = value) }
+    private var librarySnapshot: StudyFlowTvLibrarySnapshot
+        get() = controlState.library
+        set(value) { controlState = controlState.copy(library = value) }
+    private var settingsState: StudyFlowTvSettingsState
+        get() = controlState.settings
+        set(value) { controlState = controlState.copy(settings = value) }
     private lateinit var contentTitle: TextView
     private lateinit var contentBody: TextView
     private lateinit var contentCards: LinearLayout
+    private lateinit var continuityStatus: TextView
     private lateinit var navButtons: Map<StudyFlowTvDestination, Button>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -158,6 +195,12 @@ class StudyFlowTvActivity : Activity() {
             gravity = Gravity.START
             setPadding(0, dp(26), 0, 0)
         }
+        continuityStatus = TextView(this).apply {
+            setTextColor(Color.rgb(148, 163, 184))
+            textSize = 15f
+            gravity = Gravity.START
+            setPadding(0, dp(16), 0, 0)
+        }
 
         val contentPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -167,6 +210,7 @@ class StudyFlowTvActivity : Activity() {
             addView(contentTitle)
             addView(contentBody)
             addView(contentCards)
+            addView(continuityStatus)
             addView(
                 TextView(context).apply {
                     text = getString(R.string.tv_shell_remote_hint)
@@ -221,8 +265,53 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun selectDestination(destination: StudyFlowTvDestination) {
-        selectedDestination = destination
-        renderDestination(destination)
+        val now = System.currentTimeMillis()
+        applyControlCommand(
+            command = StudyFlowTvNavigationShell.openCommandFor(
+                destination = destination,
+                commandId = nextLocalCommandId(),
+                issuedAtEpochMillis = now,
+            ),
+            origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+            nowEpochMillis = now,
+        )
+    }
+
+    internal fun applyPairedPhoneCommand(
+        command: StudyFlowTvControlCommand,
+        nowEpochMillis: Long,
+    ): Boolean = applyControlCommand(
+        command = command,
+        origin = StudyFlowTvControlOrigin.PAIRED_PHONE,
+        nowEpochMillis = nowEpochMillis,
+    )
+
+    private fun applyControlCommand(
+        command: StudyFlowTvControlCommand,
+        origin: StudyFlowTvControlOrigin,
+        nowEpochMillis: Long,
+    ): Boolean {
+        val reduction = StudyFlowTvControlStateReducer.reduce(controlState, command, origin, nowEpochMillis)
+        controlState = reduction.state
+        if (reduction.applied && ::contentTitle.isInitialized) {
+            renderDestination(controlState.destination)
+        } else if (::continuityStatus.isInitialized) {
+            renderContinuityStatus()
+        }
+        return reduction.applied
+    }
+
+    private fun nextLocalCommandId(): String = "tv-local-${++localCommandSequence}"
+
+    private fun dispatchLocalCommand(
+        factory: (commandId: String, issuedAtEpochMillis: Long) -> StudyFlowTvControlCommand,
+    ): Boolean {
+        val now = System.currentTimeMillis()
+        return applyControlCommand(
+            command = factory(nextLocalCommandId(), now),
+            origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+            nowEpochMillis = now,
+        )
     }
 
     private fun renderDestination(destination: StudyFlowTvDestination) {
@@ -236,8 +325,9 @@ class StudyFlowTvActivity : Activity() {
             StudyFlowTvDestination.PROGRESS -> renderProgressDestination()
             StudyFlowTvDestination.SCHEDULE -> renderScheduleDestination()
             StudyFlowTvDestination.LIBRARY -> renderLibraryDestination()
-            else -> renderStaticDestination(destination)
+            StudyFlowTvDestination.SETTINGS -> renderSettingsDestination()
         }
+        renderContinuityStatus()
         navButtons.forEach { (itemDestination, button) ->
             button.isSelected = itemDestination == destination
         }
@@ -614,33 +704,84 @@ class StudyFlowTvActivity : Activity() {
         )
     }
 
-    private fun toggleStudySessionPlayback() {
-        studySessionState = StudyFlowTvStudySessionExperience.applyAction(
-            studySessionState,
-            when (studySessionState.status) {
-                StudyFlowTvSessionStatus.RUNNING -> StudyFlowTvSessionAction.PAUSE
-                StudyFlowTvSessionStatus.PAUSED -> StudyFlowTvSessionAction.RESUME
-                StudyFlowTvSessionStatus.READY,
-                StudyFlowTvSessionStatus.COMPLETED,
-                -> StudyFlowTvSessionAction.START
+    private fun renderSettingsDestination() {
+        val state = settingsState
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        contentTitle.text = getString(R.string.tv_content_title_settings)
+        contentBody.text = getString(
+            R.string.tv_settings_status_format,
+            state.pairingState.name.lowercase(),
+            if (state.highVisibilityFocus) getString(R.string.tv_settings_focus_high) else getString(R.string.tv_settings_focus_standard),
+        )
+        contentCards.addView(sectionLabel(R.string.tv_settings_section_title))
+        StudyFlowTvSettingsSurface.cards(state).chunked(2).forEach { rowCards ->
+            contentCards.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    rowCards.forEach { card -> addView(tvSettingsCard(card)) }
+                },
+            )
+        }
+        if (state.aboutVisible) {
+            contentCards.addView(
+                TextView(this).apply {
+                    text = getString(R.string.tv_settings_about_detail)
+                    setTextColor(Color.rgb(226, 232, 240))
+                    textSize = 18f
+                    gravity = Gravity.START
+                    setPadding(0, dp(8), 0, dp(8))
+                },
+            )
+        }
+        contentCards.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START
+                setPadding(0, dp(12), 0, 0)
+                StudyFlowTvSettingsSurface.availableActions(state).forEach { action ->
+                    addView(tvSettingsAction(action))
+                }
             },
         )
-        renderStudySessionDestination()
     }
 
+    private fun renderContinuityStatus() {
+        if (!::continuityStatus.isInitialized) return
+        val continuity = StudyFlowTvControlStateReducer.continuityState(controlState)
+        continuityStatus.text = getString(
+            R.string.tv_control_continuity_status_format,
+            continuity.currentDestination,
+            continuity.commandRevision,
+            continuity.pairingState.name.lowercase(),
+        )
+    }
+
+    private fun toggleStudySessionPlayback() {
+        val action = when (studySessionState.status) {
+            StudyFlowTvSessionStatus.RUNNING -> StudyFlowTvSessionAction.PAUSE
+            StudyFlowTvSessionStatus.PAUSED -> StudyFlowTvSessionAction.RESUME
+            StudyFlowTvSessionStatus.READY,
+            StudyFlowTvSessionStatus.COMPLETED,
+            -> StudyFlowTvSessionAction.START
+        }
+        dispatchLocalCommand { commandId, issuedAt ->
+            StudyFlowTvStudySessionExperience.commandForAction(action, studySessionState, commandId, issuedAt)
+        }
+    }
 
     private fun toggleMockExamPlayback() {
-        mockExamState = StudyFlowTvMockExamStudio.applyAction(
-            mockExamState,
-            when (mockExamState.status) {
-                StudyFlowTvMockExamStatus.RUNNING -> StudyFlowTvMockExamAction.PAUSE
-                StudyFlowTvMockExamStatus.PAUSED -> StudyFlowTvMockExamAction.RESUME
-                StudyFlowTvMockExamStatus.READY -> StudyFlowTvMockExamAction.START
-                StudyFlowTvMockExamStatus.SUBMITTED -> StudyFlowTvMockExamAction.REVIEW_RESULTS
-                StudyFlowTvMockExamStatus.RESULTS -> StudyFlowTvMockExamAction.RETURN_HOME
-            },
-        )
-        renderMockExamDestination()
+        val action = when (mockExamState.status) {
+            StudyFlowTvMockExamStatus.RUNNING -> StudyFlowTvMockExamAction.PAUSE
+            StudyFlowTvMockExamStatus.PAUSED -> StudyFlowTvMockExamAction.RESUME
+            StudyFlowTvMockExamStatus.READY -> StudyFlowTvMockExamAction.START
+            StudyFlowTvMockExamStatus.SUBMITTED -> StudyFlowTvMockExamAction.REVIEW_RESULTS
+            StudyFlowTvMockExamStatus.RESULTS -> StudyFlowTvMockExamAction.RETURN_HOME
+        }
+        dispatchLocalCommand { commandId, issuedAt ->
+            StudyFlowTvMockExamStudio.commandForAction(action, mockExamState, commandId, issuedAt)
+        }
     }
 
     private fun tvHomeCard(card: StudyFlowTvHomeCard): Button = tvCardButton(
@@ -659,21 +800,21 @@ class StudyFlowTvActivity : Activity() {
         title = getString(segment.titleResId()),
         body = getString(R.string.tv_session_segment_body_format, segment.minutes),
         onClick = {
-            studySessionState = StudyFlowTvStudySessionExperience.applyAction(
-                studySessionState,
-                StudyFlowTvSessionAction.NEXT_SEGMENT,
-            )
-            renderStudySessionDestination()
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvStudySessionExperience.commandForAction(
+                    StudyFlowTvSessionAction.NEXT_SEGMENT,
+                    studySessionState,
+                    commandId,
+                    issuedAt,
+                )
+            }
         },
     )
 
     private fun tvSessionAction(action: StudyFlowTvSessionAction): Button = tvActionButton(action.labelResId()).apply {
         setOnClickListener {
-            if (action == StudyFlowTvSessionAction.RETURN_TODAY) {
-                selectDestination(StudyFlowTvDestination.TODAY)
-            } else {
-                studySessionState = StudyFlowTvStudySessionExperience.applyAction(studySessionState, action)
-                renderStudySessionDestination()
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvStudySessionExperience.commandForAction(action, studySessionState, commandId, issuedAt)
             }
         }
     }
@@ -682,23 +823,23 @@ class StudyFlowTvActivity : Activity() {
         title = getString(R.string.tv_practice_choice_format, choice.id.optionId),
         body = choice.label,
         onClick = {
-            questionPracticeState = StudyFlowTvQuestionPractice.applyAction(
-                questionPracticeState,
-                when (choice.id.optionId) {
-                    "A" -> StudyFlowTvPracticeAction.SELECT_A
-                    "B" -> StudyFlowTvPracticeAction.SELECT_B
-                    "C" -> StudyFlowTvPracticeAction.SELECT_C
-                    else -> StudyFlowTvPracticeAction.SELECT_D
-                },
-            )
-            renderQuestionPracticeDestination()
+            val action = when (choice.id.optionId) {
+                "A" -> StudyFlowTvPracticeAction.SELECT_A
+                "B" -> StudyFlowTvPracticeAction.SELECT_B
+                "C" -> StudyFlowTvPracticeAction.SELECT_C
+                else -> StudyFlowTvPracticeAction.SELECT_D
+            }
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvQuestionPractice.commandForAction(action, questionPracticeState, commandId, issuedAt)
+            }
         },
     )
 
     private fun tvPracticeAction(action: StudyFlowTvPracticeAction): Button = tvActionButton(action.labelResId()).apply {
         setOnClickListener {
-            questionPracticeState = StudyFlowTvQuestionPractice.applyAction(questionPracticeState, action)
-            renderQuestionPracticeDestination()
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvQuestionPractice.commandForAction(action, questionPracticeState, commandId, issuedAt)
+            }
         }
     }
 
@@ -706,18 +847,21 @@ class StudyFlowTvActivity : Activity() {
         title = section.title,
         body = getString(R.string.tv_mock_section_body_format, section.questionCount, section.minutes),
         onClick = {
-            mockExamState = StudyFlowTvMockExamStudio.applyAction(mockExamState, StudyFlowTvMockExamAction.NEXT_SECTION)
-            renderMockExamDestination()
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvMockExamStudio.commandForAction(
+                    StudyFlowTvMockExamAction.NEXT_SECTION,
+                    mockExamState,
+                    commandId,
+                    issuedAt,
+                )
+            }
         },
     )
 
     private fun tvMockExamAction(action: StudyFlowTvMockExamAction): Button = tvActionButton(action.labelResId()).apply {
         setOnClickListener {
-            if (action == StudyFlowTvMockExamAction.RETURN_HOME) {
-                selectDestination(StudyFlowTvDestination.HOME)
-            } else {
-                mockExamState = StudyFlowTvMockExamStudio.applyAction(mockExamState, action)
-                renderMockExamDestination()
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvMockExamStudio.commandForAction(action, mockExamState, commandId, issuedAt)
             }
         }
     }
@@ -731,22 +875,22 @@ class StudyFlowTvActivity : Activity() {
             item.reason,
         ),
         onClick = {
-            reviewState = reviewState.copy(
-                status = StudyFlowTvReviewStatus.REVIEWING,
-                activeReviewIndex = reviewState.items.indexOfFirst { it.id == item.id }.coerceAtLeast(0),
-                explanationVisible = false,
-            )
-            renderReviewDestination()
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvControlCommand(
+                    commandId = commandId,
+                    surface = StudyFlowTvSurface.REVIEW,
+                    action = com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction.OPEN,
+                    targetId = item.id.name.lowercase(),
+                    issuedAtEpochMillis = issuedAt,
+                )
+            }
         },
     )
 
     private fun tvReviewAction(action: StudyFlowTvReviewAction): Button = tvActionButton(action.labelResId()).apply {
         setOnClickListener {
-            if (action == StudyFlowTvReviewAction.RETURN_TODAY) {
-                selectDestination(StudyFlowTvDestination.TODAY)
-            } else {
-                reviewState = StudyFlowTvReviewNotebook.applyAction(reviewState, action)
-                renderReviewDestination()
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvReviewNotebook.commandForAction(action, reviewState, commandId, issuedAt)
             }
         }
     }
@@ -782,21 +926,23 @@ class StudyFlowTvActivity : Activity() {
         title = item.title,
         body = getString(R.string.tv_schedule_item_body_format, item.timeLabel, item.kind.name.lowercase()),
         onClick = {
-            scheduleSnapshot = scheduleSnapshot.copy(
-                activeItemIndex = scheduleSnapshot.items.indexOfFirst { it.id == item.id }.coerceAtLeast(0),
-            )
-            selectDestination(item.destination)
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvControlCommand(
+                    commandId = commandId,
+                    surface = StudyFlowTvSurface.SCHEDULE,
+                    action = com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction.OPEN,
+                    targetId = item.id.name.lowercase(),
+                    issuedAtEpochMillis = issuedAt,
+                )
+            }
+            if (item.destination != StudyFlowTvDestination.SCHEDULE) selectDestination(item.destination)
         },
     )
 
     private fun tvScheduleAction(action: StudyFlowTvScheduleAction): Button = tvActionButton(action.labelResId()).apply {
         setOnClickListener {
-            scheduleSnapshot = StudyFlowTvScheduleSurface.applyAction(scheduleSnapshot, action)
-            val destination = StudyFlowTvScheduleSurface.destinationForAction(action, scheduleSnapshot)
-            if (destination == StudyFlowTvDestination.SCHEDULE) {
-                renderScheduleDestination()
-            } else {
-                selectDestination(destination)
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvScheduleSurface.commandForAction(action, scheduleSnapshot, commandId, issuedAt)
             }
         }
     }
@@ -805,23 +951,68 @@ class StudyFlowTvActivity : Activity() {
         title = reference.title,
         body = getString(R.string.tv_library_reference_body_format, reference.subject, reference.sourceLabel),
         onClick = {
-            librarySnapshot = librarySnapshot.copy(
-                activeReferenceIndex = librarySnapshot.references.indexOfFirst { it.id == reference.id }.coerceAtLeast(0),
-            )
-            renderLibraryDestination()
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvControlCommand(
+                    commandId = commandId,
+                    surface = StudyFlowTvSurface.LIBRARY,
+                    action = com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction.OPEN,
+                    targetId = reference.id.name.lowercase(),
+                    issuedAtEpochMillis = issuedAt,
+                )
+            }
         },
     )
 
     private fun tvLibraryAction(action: StudyFlowTvLibraryAction): Button = tvActionButton(action.labelResId()).apply {
         setOnClickListener {
-            librarySnapshot = StudyFlowTvLibrarySurface.applyAction(librarySnapshot, action)
-            val destination = StudyFlowTvLibrarySurface.destinationForAction(action, librarySnapshot)
-            if (destination == StudyFlowTvDestination.LIBRARY) {
-                renderLibraryDestination()
-            } else {
-                selectDestination(destination)
+            dispatchLocalCommand { commandId, issuedAt ->
+                StudyFlowTvLibrarySurface.commandForAction(action, librarySnapshot, commandId, issuedAt)
             }
         }
+    }
+
+    private fun tvSettingsCard(card: StudyFlowTvSettingsCard): Button = tvCardButton(
+        title = card.title,
+        body = card.body,
+        onClick = { selectDestination(StudyFlowTvDestination.SETTINGS) },
+    )
+
+    private fun tvSettingsAction(action: StudyFlowTvSettingsAction): Button = tvTextActionButton(action.label()).apply {
+        setOnClickListener {
+            val now = System.currentTimeMillis()
+            applyControlCommand(
+                command = StudyFlowTvSettingsSurface.commandForAction(
+                    action = action,
+                    commandId = nextLocalCommandId(),
+                    issuedAtEpochMillis = now,
+                ),
+                origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+                nowEpochMillis = now,
+            )
+        }
+    }
+
+    private fun tvTextActionButton(label: String): Button = Button(this).apply {
+        id = View.generateViewId()
+        text = label
+        textSize = 18f
+        isAllCaps = false
+        setTextColor(Color.WHITE)
+        setPadding(dp(32), dp(18), dp(32), dp(18))
+        applyStudyFlowTvDpadFocus()
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            marginEnd = dp(12)
+        }
+    }
+
+    private fun StudyFlowTvSettingsAction.label(): String = when (this) {
+        StudyFlowTvSettingsAction.MANAGE_PAIRING -> getString(R.string.tv_settings_action_manage_pairing)
+        StudyFlowTvSettingsAction.REVOKE_PAIRING -> getString(R.string.tv_settings_action_revoke_pairing)
+        StudyFlowTvSettingsAction.TOGGLE_HIGH_VISIBILITY_FOCUS -> getString(R.string.tv_settings_action_toggle_focus)
+        StudyFlowTvSettingsAction.OPEN_ABOUT -> getString(R.string.tv_settings_action_about)
     }
 
     private fun tvCardButton(

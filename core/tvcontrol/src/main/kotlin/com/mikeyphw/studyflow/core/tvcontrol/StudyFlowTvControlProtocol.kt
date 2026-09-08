@@ -63,6 +63,7 @@ enum class StudyFlowTvControlAction {
     COMPLETE,
     BACK,
     STOP_CAST,
+    REVOKE_PAIRING,
 }
 
 @Serializable

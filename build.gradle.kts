@@ -1105,6 +1105,19 @@ tasks.register<Exec>("verifyStudyFlowTvLibraryReference") {
 }
 
 
+tasks.register<Exec>("verifyStudyFlowTvSettings") {
+    group = "verification"
+    description = "Checks TVOV15 Android TV minimal Settings source, control, shell, test, and documentation contracts."
+    commandLine("python3", "scripts/verify_tvov15_settings.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvControlStateContinuity") {
+    group = "verification"
+    description = "Checks TVOV16 Android TV local/paired control and state-continuity contracts."
+    commandLine("python3", "scripts/verify_tvov16_control_state_continuity.py")
+}
+
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."

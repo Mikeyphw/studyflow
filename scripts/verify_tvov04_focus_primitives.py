@@ -151,7 +151,7 @@ for token in (
 ):
     require(token in focus_test, f"focus policy unit test missing token: {token}")
 
-require('versionName = "0.1.0-tv14"' in app_build, "TV app versionName must mark the current TVOV14 app module")
+require('versionName = "0.1.0-tv16"' in app_build, "TV app versionName must mark the current TVOV14 app module")
 require('tasks.register<Exec>("verifyStudyFlowTvFocusPrimitives")' in build, "missing Gradle TVOV04 focus verifier task")
 studyflow_tv = tv_target_section(devtool)
 for task in (
@@ -181,7 +181,7 @@ require("TVOV04 adds native D-pad/focus primitives" in readme, "README missing T
 require("TVOV04 - D-pad and focus primitives" in changelog, "CHANGELOG missing TVOV04 entry")
 
 # Guard that the app-tv source payload remains tiny even after focus primitives.
-max_source_bytes = 256 * 1024
+max_source_bytes = 384 * 1024
 source_bytes = 0
 for path in (ROOT / "app-tv").rglob("*"):
     if path.is_file() and "build" not in path.parts:

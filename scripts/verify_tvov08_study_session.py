@@ -67,7 +67,7 @@ for token in (
     "private fun renderStudySessionDestination()",
     "StudyFlowTvStudySessionExperience.defaultState()",
     "StudyFlowTvStudySessionExperience.availableActions",
-    "StudyFlowTvStudySessionExperience.applyAction",
+    "StudyFlowTvStudySessionExperience.commandForAction",
     "private fun toggleStudySessionPlayback()",
     "StudyFlowTvRemoteCommand.PLAY_PAUSE",
     "private fun tvSessionSegment(segment: StudyFlowTvSessionSegment): Button",

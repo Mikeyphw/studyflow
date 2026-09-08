@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV14"
+    const val currentTvOverlay = "TVOV16"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -143,4 +143,31 @@ object StudyFlowTvLibraryBuildContract {
     const val libraryEmitsCastState = true
     const val libraryReferenceCount = 4
     const val libraryActionCount = 5
+}
+
+// TVOV15 Minimal TV settings contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvSettingsBuildContract {
+    const val minimalTvSettingsIntroduced = true
+    const val settingsRequireNoComposeRuntime = true
+    const val settingsArePresentationOnly = true
+    const val settingsUseSharedControlProtocol = true
+    const val accountManagementDisabledOnTv = true
+    const val importExportDisabledOnTv = true
+    const val pairingRevocationVisible = true
+    const val focusAccessibilityPreferenceRepresented = true
+    const val settingsCardCount = 4
+    const val settingsActionCount = 4
+}
+
+// TVOV16 Cross-device control/state continuity contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvControlContinuityBuildContract {
+    const val controlStateContinuityIntroduced = true
+    const val localAndPairedPhoneUseSameReducer = true
+    const val controlTransportStillDeferred = true
+    const val monotonicCommandRevisionRequired = true
+    const val duplicateAndStaleCommandsRejected = true
+    const val expiredAndRevokedPairingsRejected = true
+    const val continuitySurfaceCount = 10
 }

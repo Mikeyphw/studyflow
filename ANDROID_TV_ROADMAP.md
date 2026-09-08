@@ -69,9 +69,9 @@ TVOV11  Review and error notebook [implemented]
 TVOV12  Progress and analytics [implemented]
 TVOV13  Read-only schedule [implemented]
 TVOV14  Limited library/reference material [implemented]
-TVOV15  Minimal TV settings
-TVOV16  Cross-device control/state continuity
-TVOV17  Accessibility and 10-foot UI seal
+TVOV15  Minimal TV settings [implemented]
+TVOV16  Cross-device control/state continuity [implemented]
+TVOV17  Accessibility and 10-foot UI seal [next]
 TVOV18  Size optimization, R8, and resource shrinking
 TVOV19  Android TV manifest, packaging, and Devtool TV target hardening
 TVOV20  Real-device acceptance and release seal
@@ -272,3 +272,22 @@ The full TVOV00-TVOV20 roadmap and the user's overlay preferences are preserved 
 `TV_ANDROID_TV_FULL_ROADMAP_AND_WORKING_RULES.md`. Future TV overlays must remain structured
 implementation units, never light placeholder patches, and must keep using the `studyflow_tv` target
 with explicit Devtool overlay commit metadata.
+
+
+## TVOV15 — Minimal TV settings
+
+Status: implemented in `studyflow_tvov15_16_settings_control_continuity_v1.zip`.
+
+TVOV15 replaces the static Settings placeholder with `StudyFlowTvSettingsSurface`: pairing status
+and revocation, focus-visibility preference representation, a local-first privacy reminder, and a
+TV-safe About/diagnostics view. Settings remains presentation-only with no account, storage, SAF,
+repository, Room, or phone-feature dependencies.
+
+## TVOV16 — Cross-device control/state continuity
+
+Status: implemented in `studyflow_tvov15_16_settings_control_continuity_v1.zip`.
+
+TVOV16 adds shared session/continuity schemas in `:core:tvcontrol` and a deterministic TV-side
+`StudyFlowTvControlStateReducer`. Local remote and paired-phone commands converge on one TV state,
+cover all ten TV destinations, expose a monotonic revision and active presentation identifiers, and
+fail closed for duplicate, stale, expired, or revoked paired commands. Real transport remains deferred.

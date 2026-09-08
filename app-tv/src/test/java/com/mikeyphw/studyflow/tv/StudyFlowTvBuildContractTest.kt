@@ -26,7 +26,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV14", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV16", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
@@ -115,4 +115,26 @@ class StudyFlowTvBuildContractTest {
         assertEquals(4, StudyFlowTvLibraryBuildContract.libraryReferenceCount)
         assertEquals(5, StudyFlowTvLibraryBuildContract.libraryActionCount)
     }
+
+    @Test
+    fun settingsAndControlContinuityContractsAreInstalled() {
+        assertTrue(StudyFlowTvSettingsBuildContract.minimalTvSettingsIntroduced)
+        assertTrue(StudyFlowTvSettingsBuildContract.settingsRequireNoComposeRuntime)
+        assertTrue(StudyFlowTvSettingsBuildContract.settingsArePresentationOnly)
+        assertTrue(StudyFlowTvSettingsBuildContract.settingsUseSharedControlProtocol)
+        assertTrue(StudyFlowTvSettingsBuildContract.accountManagementDisabledOnTv)
+        assertTrue(StudyFlowTvSettingsBuildContract.importExportDisabledOnTv)
+        assertTrue(StudyFlowTvSettingsBuildContract.pairingRevocationVisible)
+        assertTrue(StudyFlowTvSettingsBuildContract.focusAccessibilityPreferenceRepresented)
+        assertEquals(4, StudyFlowTvSettingsBuildContract.settingsCardCount)
+        assertEquals(4, StudyFlowTvSettingsBuildContract.settingsActionCount)
+        assertTrue(StudyFlowTvControlContinuityBuildContract.controlStateContinuityIntroduced)
+        assertTrue(StudyFlowTvControlContinuityBuildContract.localAndPairedPhoneUseSameReducer)
+        assertTrue(StudyFlowTvControlContinuityBuildContract.controlTransportStillDeferred)
+        assertTrue(StudyFlowTvControlContinuityBuildContract.monotonicCommandRevisionRequired)
+        assertTrue(StudyFlowTvControlContinuityBuildContract.duplicateAndStaleCommandsRejected)
+        assertTrue(StudyFlowTvControlContinuityBuildContract.expiredAndRevokedPairingsRejected)
+        assertEquals(10, StudyFlowTvControlContinuityBuildContract.continuitySurfaceCount)
+    }
+
 }

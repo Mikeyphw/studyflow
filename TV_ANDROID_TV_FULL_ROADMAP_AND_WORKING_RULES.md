@@ -22,9 +22,9 @@ TVOV11  Review and error notebook [implemented]
 TVOV12  Progress and analytics [implemented]
 TVOV13  Read-only schedule [implemented]
 TVOV14  Limited library/reference material [implemented]
-TVOV15  Minimal TV settings [next]
-TVOV16  Cross-device control/state continuity
-TVOV17  Accessibility and 10-foot UI seal
+TVOV15  Minimal TV settings [implemented]
+TVOV16  Cross-device control/state continuity [implemented]
+TVOV17  Accessibility and 10-foot UI seal [next]
 TVOV18  Size optimization, R8, and resource shrinking
 TVOV19  Android TV manifest, packaging, and Devtool TV target hardening
 TVOV20  Real-device acceptance and release seal
@@ -64,5 +64,4 @@ TVOV20  Real-device acceptance and release seal
 
 ## Current chain status
 
-As of TVOV13/14 v2, the TV track has implemented TVOV00 through TVOV14. The next planned structured
-unit is TVOV15 Minimal TV settings, followed by TVOV16 Cross-device control/state continuity.
+As of TVOV15/16, the TV track has implemented TVOV00 through TVOV16. The next planned structured unit is TVOV17 Accessibility and 10-foot UI seal, followed by TVOV18 size optimization, R8, and resource shrinking.

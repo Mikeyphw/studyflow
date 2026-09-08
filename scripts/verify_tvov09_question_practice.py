@@ -67,7 +67,7 @@ for token in (
     "StudyFlowTvDestination.PRACTICE -> renderQuestionPracticeDestination()",
     "StudyFlowTvQuestionPractice.defaultState()",
     "StudyFlowTvQuestionPractice.availableActions",
-    "StudyFlowTvQuestionPractice.applyAction",
+    "StudyFlowTvQuestionPractice.commandForAction",
     "private fun tvPracticeChoice(choice: StudyFlowTvPracticeChoice): Button",
     "private fun tvPracticeAction(action: StudyFlowTvPracticeAction): Button",
 ):

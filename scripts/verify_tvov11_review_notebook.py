@@ -71,7 +71,7 @@ for token in (
     "StudyFlowTvDestination.REVIEWS -> renderReviewDestination()",
     "StudyFlowTvReviewNotebook.defaultState()",
     "StudyFlowTvReviewNotebook.availableActions",
-    "StudyFlowTvReviewNotebook.applyAction",
+    "StudyFlowTvReviewNotebook.commandForAction",
     "private fun tvReviewItem(item: StudyFlowTvReviewItem): Button",
     "private fun tvReviewAction(action: StudyFlowTvReviewAction): Button",
 ):

@@ -405,3 +405,12 @@ standing implementation preferences for this track. TV overlays must be structur
 units with source, shell rendering, control/cast integration where relevant, tests, verifiers,
 Devtool `studyflow_tv` wiring, docs, and commit-enabled overlay metadata. Light placeholder overlays
 are not acceptable for this roadmap.
+
+
+### Android TV TVOV15/TVOV16
+
+TVOV15 adds a native TV-safe Settings surface for pairing status/revocation, focus-visibility
+preference representation, local-first privacy, and safe About/diagnostics without phone-only
+storage or account dependencies. TVOV16 adds deterministic cross-device control/state continuity:
+local remote and paired-phone intents reduce into the same TV presentation state with active-item,
+playback, pairing-expiry, and monotonic revision fields. Transport remains deferred.
