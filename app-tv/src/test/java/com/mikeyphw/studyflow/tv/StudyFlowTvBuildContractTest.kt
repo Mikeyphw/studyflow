@@ -26,7 +26,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV21", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV23", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
@@ -185,7 +185,24 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvLocalLinkBuildContract.persistentSessionCredentialRequired)
         assertTrue(StudyFlowTvLocalLinkBuildContract.pairedCommandsReachSharedReducer)
         assertTrue(StudyFlowTvLocalLinkBuildContract.typedPresentationSnapshotsReachTvInbox)
-        assertTrue(StudyFlowTvLocalLinkBuildContract.phoneControllerUiStillDeferredToTvov23)
+        assertTrue(!StudyFlowTvLocalLinkBuildContract.phoneControllerUiStillDeferredToTvov23)
+    }
+
+    @Test
+    fun phoneControllerIsProductionWiredFromSettings() {
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.phoneControllerIntroduced)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.settingsEntryIntroduced)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.productionDiscoveryClientConsumed)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.explicitSixDigitPairingUiRequired)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.persistedSessionResumeRequired)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.allTvDestinationsControllable)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.studySessionControlsRequired)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.questionAnswerControlsRequired)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.mockExamControlsRequired)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.reviewControlsRequired)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.continuityRefreshRequired)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.revokeAndForgetRequired)
+        assertTrue(StudyFlowTvPhoneControllerBuildContract.livePresentationSynchronizationDeferredToTvov24)
     }
 
     @Test
@@ -197,7 +214,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvPackagingBuildContract.cleartextTrafficDisabled)
         assertTrue(StudyFlowTvPackagingBuildContract.tvTargetRejectsPhoneTasks)
         assertTrue(StudyFlowTvPackagingBuildContract.conditionalReleaseSigningSupported)
-        assertEquals(22, StudyFlowTvPackagingBuildContract.packageVersionCode)
+        assertEquals(23, StudyFlowTvPackagingBuildContract.packageVersionCode)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.finalAcceptanceSealIntroduced)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.optimizedReleaseArtifactRequired)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.packageIdentityVerificationRequired)

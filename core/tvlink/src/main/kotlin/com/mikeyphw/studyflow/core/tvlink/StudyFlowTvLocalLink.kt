@@ -242,6 +242,7 @@ class StudyFlowTvReceiverDiscovery(context: Context) : Closeable {
         synchronized(receivers) { receivers.clear() }
         publishReceivers()
         publishStatus(StudyFlowTvLinkStatus.STOPPED)
+        listener = null
     }
 
     override fun close() = stop()

@@ -63,6 +63,7 @@ fun SettingsScreen(
     onOpenDefaultPlanReminders: () -> Unit,
     onOpenPrivacyCenter: () -> Unit,
     onOpenSyncCenter: () -> Unit,
+    onOpenTvController: () -> Unit = {},
     onOpenDebugWorkbench: () -> Unit,
     modifier: Modifier = Modifier,
     diagnosticsAvailable: Boolean = true,
@@ -196,6 +197,15 @@ fun SettingsScreen(
             )
             Button(onClick = onOpenSyncCenter) {
                 Text(stringResource(R.string.open_sync_center))
+            }
+        }
+        StudyFlowSectionCard(title = stringResource(R.string.tv_controller_settings_title)) {
+            Text(
+                text = stringResource(R.string.tv_controller_settings_message),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onOpenTvController) {
+                Text(stringResource(R.string.open_tv_controller))
             }
         }
         if (diagnosticsAvailable) {

@@ -1198,6 +1198,12 @@ tasks.register<Exec>("verifyStudyFlowTvLocalPairingTransport") {
     commandLine("python3", "scripts/verify_tvov22_local_pairing_transport.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvPhoneController") {
+    group = "verification"
+    description = "Checks TVOV23 Settings-accessible Android phone TV controller, explicit pairing UI, persisted-session resume, and shared remote-command coverage."
+    commandLine("python3", "scripts/verify_tvov23_phone_controller.py")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."

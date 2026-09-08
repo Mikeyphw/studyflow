@@ -10,8 +10,8 @@ class StudyFlowTvPackagingPolicyTest {
     fun packageIdentityAndTvLauncherContractAreStable() {
         assertEquals("TVOV19", StudyFlowTvPackagingPolicy.overlay)
         assertEquals("com.mikeyphw.studyflow.tv", StudyFlowTvPackagingPolicy.applicationId)
-        assertEquals(22, StudyFlowTvPackagingPolicy.versionCode)
-        assertEquals("0.1.0-tv22", StudyFlowTvPackagingPolicy.versionName)
+        assertEquals(23, StudyFlowTvPackagingPolicy.versionCode)
+        assertEquals("0.1.0-tv23", StudyFlowTvPackagingPolicy.versionName)
         assertTrue(StudyFlowTvPackagingPolicy.backupDisabled)
         assertTrue(StudyFlowTvPackagingPolicy.cleartextTrafficDisabled)
         assertEquals(160, StudyFlowTvPackagingPolicy.bannerWidthDp)

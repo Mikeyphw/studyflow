@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV22"
+    const val currentTvOverlay = "TVOV23"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -208,7 +208,7 @@ object StudyFlowTvPackagingBuildContract {
     const val cleartextTrafficDisabled = true
     const val tvTargetRejectsPhoneTasks = true
     const val conditionalReleaseSigningSupported = true
-    const val packageVersionCode = 22
+    const val packageVersionCode = 23
 }
 
 // TVOV20 Real-device acceptance and release seal contract.
@@ -247,6 +247,24 @@ object StudyFlowTvLocalLinkBuildContract {
     const val persistentSessionCredentialRequired = true
     const val pairedCommandsReachSharedReducer = true
     const val typedPresentationSnapshotsReachTvInbox = true
-    const val phoneControllerUiStillDeferredToTvov23 = true
+    const val phoneControllerUiStillDeferredToTvov23 = false
 }
 
+
+// TVOV23 Android phone TV controller contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvPhoneControllerBuildContract {
+    const val phoneControllerIntroduced = true
+    const val settingsEntryIntroduced = true
+    const val productionDiscoveryClientConsumed = true
+    const val explicitSixDigitPairingUiRequired = true
+    const val persistedSessionResumeRequired = true
+    const val allTvDestinationsControllable = true
+    const val studySessionControlsRequired = true
+    const val questionAnswerControlsRequired = true
+    const val mockExamControlsRequired = true
+    const val reviewControlsRequired = true
+    const val continuityRefreshRequired = true
+    const val revokeAndForgetRequired = true
+    const val livePresentationSynchronizationDeferredToTvov24 = true
+}

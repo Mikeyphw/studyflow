@@ -469,4 +469,7 @@
     <string name="sync_history_events">Eventos disponíveis: %1$d</string>
     <string name="sync_history_latest_checkpoint">Checkpoint mais recente: %1$s</string>
     <string name="sync_history_latest_event">Evento mais recente: %1$s</string>
+    <string name="tv_controller_settings_title">Controle da TV</string>
+    <string name="tv_controller_settings_message">Encontre e pareie uma StudyFlow TV próxima e use este celular como controle remoto.</string>
+    <string name="open_tv_controller">Abrir controle da TV</string>
 </resources>

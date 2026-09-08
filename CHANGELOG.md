@@ -1,3 +1,12 @@
+
+## TVOV23 — Android phone TV controller
+
+- Added a Settings-accessible production Android phone controller backed by the existing TVOV22 NSD/TCP client.
+- Added explicit receiver selection, pairing-window check, six-digit pairing, persisted-session resume, continuity refresh, remote revoke, and local forget.
+- Added shared command controls for all TV destinations plus Study Session, Questions, Mock Exam, Review, and Back.
+- Kept `feature:settings` free of TV transport dependencies and kept live typed-presentation synchronization deferred to TVOV24.
+- Advanced the TV package to version code 23 / `0.1.0-tv23` and added TVOV23 verifier/build-contract/docs coverage.
+
 ## TVOV22 — local pairing, discovery, and transport
 
 - Added shared `:core:tvlink` Android NSD discovery plus a bounded local TCP request/response transport.

@@ -132,6 +132,7 @@ import com.mikeyphw.studyflow.core.navigation.SettingsRoute
 import com.mikeyphw.studyflow.core.navigation.SyncRoute
 import com.mikeyphw.studyflow.core.navigation.SubjectsRoute
 import com.mikeyphw.studyflow.core.navigation.TodayRoute
+import com.mikeyphw.studyflow.core.navigation.TvControllerRoute
 import com.mikeyphw.studyflow.core.domain.RuntimeSmokeWorkbench
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.core.model.RuntimeSmokeProbeKind
@@ -163,6 +164,7 @@ import com.mikeyphw.studyflow.feature.settings.DebugWorkbenchScreen
 import com.mikeyphw.studyflow.feature.settings.DebugLabsPanel
 import com.mikeyphw.studyflow.feature.settings.RuntimeSmokeWorkbenchScreen
 import com.mikeyphw.studyflow.feature.settings.SettingsScreen
+import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvPhoneControllerScreen
 import com.mikeyphw.studyflow.feature.settings.SyncFoundationScreen
 import com.mikeyphw.studyflow.feature.subjects.StudyContentScreen
 import java.util.UUID
@@ -1025,8 +1027,16 @@ internal fun StudyFlowNavHost(
                 },
                 onOpenPrivacyCenter = { navController.navigate(PrivacyRoute) },
                 onOpenSyncCenter = { navController.navigate(SyncRoute) },
+                onOpenTvController = { navController.navigate(TvControllerRoute) },
                 onOpenDebugWorkbench = { navController.navigate(DebugWorkbenchRoute) },
                 diagnosticsAvailable = BuildConfig.DEBUG,
+            )
+        }
+        composable<TvControllerRoute> {
+            StudyFlowTvPhoneControllerScreen(
+                discovery = container.tvReceiverDiscovery,
+                client = container.tvLinkClient,
+                onBack = navController::popBackStack,
             )
         }
     }

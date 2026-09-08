@@ -63,6 +63,23 @@ class SettingsContractTest {
     }
 
     @Test
+    fun `settings exposes production tv controller entry without tv dependencies`() {
+        val source = readSource(
+            modulePath = "src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
+            rootPath = "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SettingsScreen.kt",
+        )
+        val strings = readSource(
+            modulePath = "src/main/res/values/strings.xml",
+            rootPath = "feature/settings/src/main/res/values/strings.xml",
+        )
+        assertTrue(source.contains("onOpenTvController"))
+        assertTrue(source.contains("tv_controller_settings_title"))
+        assertTrue(strings.contains("Open TV controller"))
+        assertFalse(source.contains("StudyFlowTvLocalTransportClient"))
+        assertFalse(source.contains("StudyFlowTvReceiverDiscovery"))
+    }
+
+    @Test
     fun `optional sync onboarding keeps offline as first class path`() {
         val source = readSource(
             modulePath = "src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",

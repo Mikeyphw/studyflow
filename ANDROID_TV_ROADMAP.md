@@ -77,8 +77,8 @@ TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [impleme
 TVOV20  Real-device acceptance and release seal [implemented]
 TVOV21  Typed presentation snapshots and canonical data projection [implemented]
 TVOV22  Local pairing, discovery, and transport [implemented]
-TVOV23  Android phone TV controller [next]
-TVOV24  Real cast/state synchronization [planned]
+TVOV23  Android phone TV controller [implemented]
+TVOV24  Real cast/state synchronization [next]
 TVOV25  Domain truth and persistence convergence [planned]
 TVOV26  End-to-end physical-device final seal [planned]
 ```
@@ -338,7 +338,7 @@ Validation:
 Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v2.zip`.
 
 Scope:
-- stable TV package identity `com.mikeyphw.studyflow.tv`, current version code 22 / `0.1.0-tv22`;
+- stable TV package identity `com.mikeyphw.studyflow.tv`, current version code 23 / `0.1.0-tv23`;
 - required Leanback + optional touchscreen launcher contract, Leanback-only exported activity, TV banner/icon resources, productivity app category, and cleartext framework traffic disabled;
 - cloud backup and device-transfer exclusions for all TV-local storage domains;
 - conditional production signing using the complete `STUDYFLOW_RELEASE_*` credential set and fail-fast rejection of partial signing configuration;
@@ -400,7 +400,7 @@ Scope:
 - authenticated command, typed presentation, continuity, revoke, and ping operations over strict length-prefixed JSON frames;
 - TV receiver host active only while the TV Activity is started; remote commands use the TVOV16 reducer and presentations use the TVOV21 inbox;
 - production phone discovery/client objects are installed in the app container, while the user-facing controller remains TVOV23 work;
-- TV package version code 22 / `0.1.0-tv22`.
+- TV package version code 22 / `0.1.0-tv22`; TVOV23 advances it to 23 / `0.1.0-tv23`.
 
 Validation:
 - `verifyStudyFlowTvLocalPairingTransport`;
@@ -412,3 +412,25 @@ Validation:
 - `:app-tv:testDebugUnitTest`;
 - cumulative TVOV00-TVOV22 source verifiers and existing package/release gates.
 
+
+
+## TVOV23 — Android phone TV controller
+
+Status: implemented in `studyflow_tvov23_android_phone_tv_controller_v1.zip`.
+
+Scope:
+- Settings entry into an app-owned production TV controller without coupling `feature:settings` to TV-link types;
+- foreground Android NSD discovery, explicit receiver selection, pairing-window check, and six-digit code entry using the TVOV22 client;
+- persisted credential resume plus automatic matching of the paired TV when it is rediscovered;
+- continuity refresh and navigation to all ten TV destinations;
+- study-session, question-answer/explanation/review, mock-exam, review, and Back controls through shared `StudyFlowTvControlCommand` intents;
+- remote revoke, local forget, stale-session cleanup, and user-presence-required commands;
+- no second transport stack, Cast SDK, MediaRouter, raw database payloads, or background discovery;
+- live typed-presentation synchronization remains TVOV24 and is not falsely claimed by this overlay;
+- TV package version code 23 / `0.1.0-tv23`.
+
+Validation:
+- `verifyStudyFlowTvPhoneController`;
+- `app/src/test/.../StudyFlowTvPhoneControllerContractTest.kt`;
+- cumulative TVOV00-TVOV23 source verifiers;
+- final cross-device validation remains reserved for the later end-to-end seal.
