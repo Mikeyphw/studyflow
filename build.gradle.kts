@@ -1065,3 +1065,16 @@ tasks.register<Exec>("verifyCpovRoadmapReconciliation") {
     commandLine("python3", "scripts/verify_cpov_roadmap_reconciliation.py")
 }
 
+
+
+tasks.register<Exec>("verifyStudyFlowTvQuestionPractice") {
+    group = "verification"
+    description = "Checks TVOV09 Android TV question-practice source, control, focus, shell, test, and documentation contracts."
+    commandLine("python3", "scripts/verify_tvov09_question_practice.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvMockExamStudio") {
+    group = "verification"
+    description = "Checks TVOV10 Android TV Mock Exam Studio source, control, focus, shell, test, and documentation contracts."
+    commandLine("python3", "scripts/verify_tvov10_mock_exam_studio.py")
+}

@@ -65,4 +65,28 @@ class StudyFlowTvControlProtocolTest {
 
         assertEquals(castState, json.decodeFromString<StudyFlowTvCastState>(json.encodeToString(castState)))
     }
+
+    @Test
+    fun practiceAndMockExamActionsRoundTripThroughSharedControlProtocol() {
+        val practiceCommand = StudyFlowTvControlCommand(
+            commandId = "cmd-practice-explain",
+            surface = StudyFlowTvSurface.QUESTION_SET,
+            action = StudyFlowTvControlAction.SHOW_EXPLANATION,
+            targetId = "question_one",
+            issuedAtEpochMillis = 4_000L,
+        )
+        val mockCommand = StudyFlowTvControlCommand(
+            commandId = "cmd-mock-submit",
+            surface = StudyFlowTvSurface.MOCK_EXAM,
+            action = StudyFlowTvControlAction.SUBMIT,
+            targetId = "specific_knowledge",
+            issuedAtEpochMillis = 5_000L,
+        )
+
+        assertEquals(practiceCommand, json.decodeFromString<StudyFlowTvControlCommand>(json.encodeToString(practiceCommand)))
+        assertEquals(mockCommand, json.decodeFromString<StudyFlowTvControlCommand>(json.encodeToString(mockCommand)))
+        assertTrue(StudyFlowTvControlProtocol.isCastable(StudyFlowTvSurface.QUESTION_SET))
+        assertTrue(StudyFlowTvControlProtocol.isCastable(StudyFlowTvSurface.MOCK_EXAM))
+    }
+
 }

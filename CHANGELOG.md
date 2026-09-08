@@ -416,3 +416,14 @@ copy.
 - Routed Home primary actions through the shared navigation and TV control protocol.
 - Removed unused TVOV05 TV string resources reported by lint.
 - Added `verifyStudyFlowTvHomeSurface` and focused app-tv unit coverage.
+
+
+## TVOV09/TVOV10 - Android TV Question Practice and Mock Exam Studio
+
+- Added TV Question Practice with answer selection, explanation reveal, progress, focus items,
+  paired-phone commands, cast state, tests, and verifier.
+- Added TV Mock Exam Studio with timed sections, start/pause/resume, mark-for-review, submit,
+  result review, focus items, paired-phone commands, cast state, tests, and verifier.
+- Fixed the TV Today status string that triggered the lint plural-candidate warning.
+- Preserved the TV dependency boundary: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter,
+  phone feature-module fanout, `core:data`, or `core:database` in `:app-tv`.

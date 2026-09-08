@@ -426,6 +426,8 @@ build = [
   "verifyStudyFlowTvHomeSurface",
   "verifyStudyFlowTvTodayWorkspace",
   "verifyStudyFlowTvStudySessionExperience",
+  "verifyStudyFlowTvQuestionPractice",
+  "verifyStudyFlowTvMockExamStudio",
   ":core:tvcontrol:compileKotlin",
   ":app-tv:assembleDebug",
 ]
@@ -440,6 +442,8 @@ test = [
   "verifyStudyFlowTvHomeSurface",
   "verifyStudyFlowTvTodayWorkspace",
   "verifyStudyFlowTvStudySessionExperience",
+  "verifyStudyFlowTvQuestionPractice",
+  "verifyStudyFlowTvMockExamStudio",
   ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
 ]
@@ -456,6 +460,8 @@ lint = [
   "verifyStudyFlowTvHomeSurface",
   "verifyStudyFlowTvTodayWorkspace",
   "verifyStudyFlowTvStudySessionExperience",
+  "verifyStudyFlowTvQuestionPractice",
+  "verifyStudyFlowTvMockExamStudio",
   ":app-tv:lintDebug",
 ]
 clean = ["clean"]
@@ -493,6 +499,8 @@ compile = [
   "verifyStudyFlowTvHomeSurface",
   "verifyStudyFlowTvTodayWorkspace",
   "verifyStudyFlowTvStudySessionExperience",
+  "verifyStudyFlowTvQuestionPractice",
+  "verifyStudyFlowTvMockExamStudio",
   ":core:tvcontrol:compileKotlin",
   ":app-tv:compileDebugKotlin",
 ]
@@ -507,6 +515,8 @@ unit-test = [
   "verifyStudyFlowTvHomeSurface",
   "verifyStudyFlowTvTodayWorkspace",
   "verifyStudyFlowTvStudySessionExperience",
+  "verifyStudyFlowTvQuestionPractice",
+  "verifyStudyFlowTvMockExamStudio",
   ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
 ]
@@ -518,6 +528,8 @@ package = [
   "verifyStudyFlowTvPairingControlCastProtocol",
   "verifyStudyFlowTvTodayWorkspace",
   "verifyStudyFlowTvStudySessionExperience",
+  "verifyStudyFlowTvQuestionPractice",
+  "verifyStudyFlowTvMockExamStudio",
   ":app-tv:assembleDebug",
 ]
 lint = [
@@ -533,6 +545,8 @@ lint = [
   "verifyStudyFlowTvHomeSurface",
   "verifyStudyFlowTvTodayWorkspace",
   "verifyStudyFlowTvStudySessionExperience",
+  "verifyStudyFlowTvQuestionPractice",
+  "verifyStudyFlowTvMockExamStudio",
   ":app-tv:lintDebug",
 ]
 

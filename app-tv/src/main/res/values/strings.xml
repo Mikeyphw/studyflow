@@ -44,7 +44,7 @@
     <string name="tv_home_card_mock_exam_title">Mock exam</string>
     <string name="tv_home_card_mock_exam_body">Enter the TV mock-exam studio when timed practice is ready.</string>
     <string name="tv_today_section_title">Today workspace</string>
-    <string name="tv_today_status_format">%1$s · %2$s · next block %3$d min · %4$d reviews · %5$d questions · %6$d%% weekly progress</string>
+    <string name="tv_today_status_format">%1$s · %2$s · next block %3$d min · reviews due: %4$d · questions queued: %5$d · %6$d%% weekly progress</string>
     <string name="tv_today_block_next_title">Next study block</string>
     <string name="tv_today_block_next_body">Start the active block and keep progress visible on TV.</string>
     <string name="tv_today_block_reviews_title">Due reviews</string>
@@ -66,4 +66,32 @@
     <string name="tv_session_action_next">Next</string>
     <string name="tv_session_action_complete">Complete</string>
     <string name="tv_session_action_return_today">Today</string>
+
+    <string name="tv_practice_section_title">Question practice</string>
+    <string name="tv_practice_status_format">%1$s · question %2$d/%3$d · %4$d%% answered · %5$s</string>
+    <string name="tv_practice_answer_pending">answer pending</string>
+    <string name="tv_practice_answer_correct">correct</string>
+    <string name="tv_practice_answer_incorrect">review needed</string>
+    <string name="tv_practice_choice_format">Choice %1$s</string>
+    <string name="tv_practice_explanation_format">Explanation: %1$s</string>
+    <string name="tv_practice_action_select_a">A</string>
+    <string name="tv_practice_action_select_b">B</string>
+    <string name="tv_practice_action_select_c">C</string>
+    <string name="tv_practice_action_select_d">D</string>
+    <string name="tv_practice_action_previous">Previous</string>
+    <string name="tv_practice_action_next">Next</string>
+    <string name="tv_practice_action_explanation">Explain</string>
+    <string name="tv_practice_action_finish">Finish</string>
+    <string name="tv_mock_section_title">Mock Exam Studio</string>
+    <string name="tv_mock_status_format">%1$s · %2$s · time %3$d/%4$d min · %5$d%% complete · marked: %6$d</string>
+    <string name="tv_mock_section_body_format">questions: %1$d · time: %2$d min</string>
+    <string name="tv_mock_result_format">Result: %1$s</string>
+    <string name="tv_mock_action_start">Start</string>
+    <string name="tv_mock_action_pause">Pause</string>
+    <string name="tv_mock_action_resume">Resume</string>
+    <string name="tv_mock_action_next_section">Next section</string>
+    <string name="tv_mock_action_mark_review">Mark review</string>
+    <string name="tv_mock_action_submit">Submit</string>
+    <string name="tv_mock_action_results">Results</string>
+    <string name="tv_mock_action_home">Home</string>
 </resources>

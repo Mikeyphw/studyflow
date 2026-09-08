@@ -60,7 +60,7 @@ def main() -> None:
     )
     require(
         "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-        "const val currentTvOverlay = \"TVOV08\"",
+        "const val currentTvOverlay = \"TVOV10\"",
         "object StudyFlowTvHomeBuildContract",
         "const val homeSurfaceIntroduced = true",
         "const val homeCardCount = 4",

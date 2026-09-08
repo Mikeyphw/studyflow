@@ -26,7 +26,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV08", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV10", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
@@ -55,5 +55,24 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvStudySessionBuildContract.studySessionEmitsCastState)
         assertEquals(4, StudyFlowTvStudySessionBuildContract.studySessionSegmentCount)
         assertEquals(6, StudyFlowTvStudySessionBuildContract.studySessionActionCount)
+    }
+
+    @Test
+    fun questionPracticeAndMockExamContractsAreRealTvSurfaces() {
+        assertTrue(StudyFlowTvQuestionPracticeBuildContract.questionPracticeIntroduced)
+        assertTrue(StudyFlowTvQuestionPracticeBuildContract.questionPracticeRequiresNoComposeRuntime)
+        assertTrue(StudyFlowTvQuestionPracticeBuildContract.questionPracticeUsesSharedControlProtocol)
+        assertTrue(StudyFlowTvQuestionPracticeBuildContract.questionPracticeSupportsRemoteAndPhoneControls)
+        assertTrue(StudyFlowTvQuestionPracticeBuildContract.questionPracticeEmitsCastState)
+        assertEquals(3, StudyFlowTvQuestionPracticeBuildContract.questionPracticeQuestionCount)
+        assertEquals(4, StudyFlowTvQuestionPracticeBuildContract.questionPracticeChoiceCount)
+        assertEquals(8, StudyFlowTvQuestionPracticeBuildContract.questionPracticeActionCount)
+        assertTrue(StudyFlowTvMockExamBuildContract.mockExamStudioIntroduced)
+        assertTrue(StudyFlowTvMockExamBuildContract.mockExamRequiresNoComposeRuntime)
+        assertTrue(StudyFlowTvMockExamBuildContract.mockExamUsesSharedControlProtocol)
+        assertTrue(StudyFlowTvMockExamBuildContract.mockExamSupportsRemoteAndPhoneControls)
+        assertTrue(StudyFlowTvMockExamBuildContract.mockExamEmitsCastState)
+        assertEquals(4, StudyFlowTvMockExamBuildContract.mockExamSectionCount)
+        assertEquals(8, StudyFlowTvMockExamBuildContract.mockExamActionCount)
     }
 }

@@ -5,8 +5,8 @@ package com.mikeyphw.studyflow.tv
  * structured TV roadmap overlays.
  *
  * The TV APK remains a separate, measured target. TVOV07 and TVOV08 add real Today and Study
- * Session surfaces through native Android views, small Kotlin models, and the shared tv-control
- * protocol instead of pulling phone feature modules into the TV APK.
+ * Session, Question Practice, and Mock Exam surfaces through native Android views, small Kotlin
+ * models, and the shared tv-control protocol instead of pulling phone feature modules into the TV APK.
  */
 object StudyFlowTvBuildContract {
     const val tvOverlay = "TVOV01"
@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV08"
+    const val currentTvOverlay = "TVOV10"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -65,4 +65,30 @@ object StudyFlowTvStudySessionBuildContract {
     const val studySessionEmitsCastState = true
     const val studySessionSegmentCount = 4
     const val studySessionActionCount = 6
+}
+
+
+// TVOV09 Question practice contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvQuestionPracticeBuildContract {
+    const val questionPracticeIntroduced = true
+    const val questionPracticeRequiresNoComposeRuntime = true
+    const val questionPracticeUsesSharedControlProtocol = true
+    const val questionPracticeSupportsRemoteAndPhoneControls = true
+    const val questionPracticeEmitsCastState = true
+    const val questionPracticeQuestionCount = 3
+    const val questionPracticeChoiceCount = 4
+    const val questionPracticeActionCount = 8
+}
+
+// TVOV10 Mock Exam Studio contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvMockExamBuildContract {
+    const val mockExamStudioIntroduced = true
+    const val mockExamRequiresNoComposeRuntime = true
+    const val mockExamUsesSharedControlProtocol = true
+    const val mockExamSupportsRemoteAndPhoneControls = true
+    const val mockExamEmitsCastState = true
+    const val mockExamSectionCount = 4
+    const val mockExamActionCount = 8
 }

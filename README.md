@@ -378,3 +378,11 @@ TVOV07 adds the Android TV Today workspace as a structured TV surface. It render
 
 TVOV08 adds the Android TV Study session experience. It introduces a dedicated Study Session destination, a ready/running/paused/completed state machine, TV remote and paired-phone start/pause/resume/next/complete actions, Play/Pause remote-key handling, and `StudyFlowTvCastState` output for session casting.
 
+
+
+### Android TV TVOV09/TVOV10
+
+TVOV09 and TVOV10 add the Android TV Question Practice and Mock Exam Studio surfaces as one
+structured overlay. Both surfaces have real TV models, native shell rendering, D-pad focus contracts,
+paired-phone command routing, cast-state generation, unit tests, and verifier tasks while preserving
+the separate TV APK dependency and size budget.

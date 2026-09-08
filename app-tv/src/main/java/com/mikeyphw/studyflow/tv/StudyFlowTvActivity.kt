@@ -17,6 +17,11 @@ import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeAction
 import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeCard
 import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeCardId
 import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeSurface
+import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamAction
+import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamSection
+import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamState
+import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamStatus
+import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamStudio
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvDestination
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvNavigationShell
 import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionAction
@@ -25,6 +30,10 @@ import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionSegmentId
 import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionState
 import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionStatus
 import com.mikeyphw.studyflow.tv.session.StudyFlowTvStudySessionExperience
+import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeAction
+import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeChoice
+import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPractice
+import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPracticeState
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlock
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlockId
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
@@ -32,6 +41,8 @@ import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
 class StudyFlowTvActivity : Activity() {
     private var selectedDestination: StudyFlowTvDestination = StudyFlowTvNavigationShell.defaultDestination()
     private var studySessionState: StudyFlowTvSessionState = StudyFlowTvStudySessionExperience.defaultState()
+    private var questionPracticeState: StudyFlowTvQuestionPracticeState = StudyFlowTvQuestionPractice.defaultState()
+    private var mockExamState: StudyFlowTvMockExamState = StudyFlowTvMockExamStudio.defaultState()
     private lateinit var contentTitle: TextView
     private lateinit var contentBody: TextView
     private lateinit var contentCards: LinearLayout
@@ -51,6 +62,10 @@ class StudyFlowTvActivity : Activity() {
             }
             if (command == StudyFlowTvRemoteCommand.PLAY_PAUSE && selectedDestination == StudyFlowTvDestination.STUDY_SESSION) {
                 toggleStudySessionPlayback()
+                return true
+            }
+            if (command == StudyFlowTvRemoteCommand.PLAY_PAUSE && selectedDestination == StudyFlowTvDestination.MOCK_EXAM) {
+                toggleMockExamPlayback()
                 return true
             }
         }
@@ -192,6 +207,8 @@ class StudyFlowTvActivity : Activity() {
             StudyFlowTvDestination.HOME -> renderHomeDestination()
             StudyFlowTvDestination.TODAY -> renderTodayDestination()
             StudyFlowTvDestination.STUDY_SESSION -> renderStudySessionDestination()
+            StudyFlowTvDestination.PRACTICE -> renderQuestionPracticeDestination()
+            StudyFlowTvDestination.MOCK_EXAM -> renderMockExamDestination()
             else -> renderStaticDestination(destination)
         }
         navButtons.forEach { (itemDestination, button) ->
@@ -283,6 +300,110 @@ class StudyFlowTvActivity : Activity() {
         )
     }
 
+    private fun renderQuestionPracticeDestination() {
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        val state = questionPracticeState
+        val question = state.activeQuestion
+        val answerStatus = when (StudyFlowTvQuestionPractice.isCurrentAnswerCorrect(state)) {
+            true -> getString(R.string.tv_practice_answer_correct)
+            false -> getString(R.string.tv_practice_answer_incorrect)
+            null -> getString(R.string.tv_practice_answer_pending)
+        }
+        contentTitle.text = getString(R.string.tv_content_title_practice)
+        contentBody.text = getString(
+            R.string.tv_practice_status_format,
+            state.subject,
+            state.activeQuestionIndex + 1,
+            state.questions.size,
+            state.progressPercent,
+            answerStatus,
+        )
+        contentCards.addView(sectionLabel(R.string.tv_practice_section_title))
+        contentCards.addView(
+            TextView(this).apply {
+                text = question.prompt
+                setTextColor(Color.WHITE)
+                textSize = 22f
+                gravity = Gravity.START
+                setPadding(0, 0, 0, dp(16))
+            },
+        )
+        contentCards.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START
+                question.choices.forEach { choice -> addView(tvPracticeChoice(choice)) }
+            },
+        )
+        if (state.explanationVisible) {
+            contentCards.addView(
+                TextView(this).apply {
+                    text = getString(R.string.tv_practice_explanation_format, question.explanation)
+                    setTextColor(Color.rgb(226, 232, 240))
+                    textSize = 18f
+                    gravity = Gravity.START
+                    setPadding(0, dp(8), 0, dp(8))
+                },
+            )
+        }
+        contentCards.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START
+                setPadding(0, dp(12), 0, 0)
+                StudyFlowTvQuestionPractice.availableActions(questionPracticeState)
+                    .forEach { action -> addView(tvPracticeAction(action)) }
+            },
+        )
+    }
+
+    private fun renderMockExamDestination() {
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        val state = mockExamState
+        contentTitle.text = getString(R.string.tv_content_title_mock_exam)
+        contentBody.text = getString(
+            R.string.tv_mock_status_format,
+            state.status.name.lowercase(),
+            state.activeSection.title,
+            state.elapsedMinutes,
+            state.totalMinutes,
+            state.progressPercent,
+            state.flaggedSectionIds.size,
+        )
+        contentCards.addView(sectionLabel(R.string.tv_mock_section_title))
+        state.sections.chunked(2).forEach { rowSections ->
+            contentCards.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    rowSections.forEach { section -> addView(tvMockExamSection(section)) }
+                },
+            )
+        }
+        if (state.status == StudyFlowTvMockExamStatus.RESULTS) {
+            contentCards.addView(
+                TextView(this).apply {
+                    text = getString(R.string.tv_mock_result_format, StudyFlowTvMockExamStudio.resultSummary(state))
+                    setTextColor(Color.rgb(226, 232, 240))
+                    textSize = 18f
+                    gravity = Gravity.START
+                    setPadding(0, dp(8), 0, dp(8))
+                },
+            )
+        }
+        contentCards.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START
+                setPadding(0, dp(12), 0, 0)
+                StudyFlowTvMockExamStudio.availableActions(mockExamState)
+                    .forEach { action -> addView(tvMockExamAction(action)) }
+            },
+        )
+    }
+
     private fun toggleStudySessionPlayback() {
         studySessionState = StudyFlowTvStudySessionExperience.applyAction(
             studySessionState,
@@ -295,6 +416,21 @@ class StudyFlowTvActivity : Activity() {
             },
         )
         renderStudySessionDestination()
+    }
+
+
+    private fun toggleMockExamPlayback() {
+        mockExamState = StudyFlowTvMockExamStudio.applyAction(
+            mockExamState,
+            when (mockExamState.status) {
+                StudyFlowTvMockExamStatus.RUNNING -> StudyFlowTvMockExamAction.PAUSE
+                StudyFlowTvMockExamStatus.PAUSED -> StudyFlowTvMockExamAction.RESUME
+                StudyFlowTvMockExamStatus.READY -> StudyFlowTvMockExamAction.START
+                StudyFlowTvMockExamStatus.SUBMITTED -> StudyFlowTvMockExamAction.REVIEW_RESULTS
+                StudyFlowTvMockExamStatus.RESULTS -> StudyFlowTvMockExamAction.RETURN_HOME
+            },
+        )
+        renderMockExamDestination()
     }
 
     private fun tvHomeCard(card: StudyFlowTvHomeCard): Button = tvCardButton(
@@ -328,6 +464,50 @@ class StudyFlowTvActivity : Activity() {
             } else {
                 studySessionState = StudyFlowTvStudySessionExperience.applyAction(studySessionState, action)
                 renderStudySessionDestination()
+            }
+        }
+    }
+
+    private fun tvPracticeChoice(choice: StudyFlowTvPracticeChoice): Button = tvCardButton(
+        title = getString(R.string.tv_practice_choice_format, choice.id.optionId),
+        body = choice.label,
+        onClick = {
+            questionPracticeState = StudyFlowTvQuestionPractice.applyAction(
+                questionPracticeState,
+                when (choice.id.optionId) {
+                    "A" -> StudyFlowTvPracticeAction.SELECT_A
+                    "B" -> StudyFlowTvPracticeAction.SELECT_B
+                    "C" -> StudyFlowTvPracticeAction.SELECT_C
+                    else -> StudyFlowTvPracticeAction.SELECT_D
+                },
+            )
+            renderQuestionPracticeDestination()
+        },
+    )
+
+    private fun tvPracticeAction(action: StudyFlowTvPracticeAction): Button = tvActionButton(action.labelResId()).apply {
+        setOnClickListener {
+            questionPracticeState = StudyFlowTvQuestionPractice.applyAction(questionPracticeState, action)
+            renderQuestionPracticeDestination()
+        }
+    }
+
+    private fun tvMockExamSection(section: StudyFlowTvMockExamSection): Button = tvCardButton(
+        title = section.title,
+        body = getString(R.string.tv_mock_section_body_format, section.questionCount, section.minutes),
+        onClick = {
+            mockExamState = StudyFlowTvMockExamStudio.applyAction(mockExamState, StudyFlowTvMockExamAction.NEXT_SECTION)
+            renderMockExamDestination()
+        },
+    )
+
+    private fun tvMockExamAction(action: StudyFlowTvMockExamAction): Button = tvActionButton(action.labelResId()).apply {
+        setOnClickListener {
+            if (action == StudyFlowTvMockExamAction.RETURN_HOME) {
+                selectDestination(StudyFlowTvDestination.HOME)
+            } else {
+                mockExamState = StudyFlowTvMockExamStudio.applyAction(mockExamState, action)
+                renderMockExamDestination()
             }
         }
     }
@@ -473,6 +653,29 @@ class StudyFlowTvActivity : Activity() {
         StudyFlowTvSessionAction.NEXT_SEGMENT -> R.string.tv_session_action_next
         StudyFlowTvSessionAction.COMPLETE -> R.string.tv_session_action_complete
         StudyFlowTvSessionAction.RETURN_TODAY -> R.string.tv_session_action_return_today
+    }
+
+
+    private fun StudyFlowTvPracticeAction.labelResId(): Int = when (this) {
+        StudyFlowTvPracticeAction.SELECT_A -> R.string.tv_practice_action_select_a
+        StudyFlowTvPracticeAction.SELECT_B -> R.string.tv_practice_action_select_b
+        StudyFlowTvPracticeAction.SELECT_C -> R.string.tv_practice_action_select_c
+        StudyFlowTvPracticeAction.SELECT_D -> R.string.tv_practice_action_select_d
+        StudyFlowTvPracticeAction.PREVIOUS_QUESTION -> R.string.tv_practice_action_previous
+        StudyFlowTvPracticeAction.NEXT_QUESTION -> R.string.tv_practice_action_next
+        StudyFlowTvPracticeAction.SHOW_EXPLANATION -> R.string.tv_practice_action_explanation
+        StudyFlowTvPracticeAction.FINISH_SET -> R.string.tv_practice_action_finish
+    }
+
+    private fun StudyFlowTvMockExamAction.labelResId(): Int = when (this) {
+        StudyFlowTvMockExamAction.START -> R.string.tv_mock_action_start
+        StudyFlowTvMockExamAction.PAUSE -> R.string.tv_mock_action_pause
+        StudyFlowTvMockExamAction.RESUME -> R.string.tv_mock_action_resume
+        StudyFlowTvMockExamAction.NEXT_SECTION -> R.string.tv_mock_action_next_section
+        StudyFlowTvMockExamAction.MARK_FOR_REVIEW -> R.string.tv_mock_action_mark_review
+        StudyFlowTvMockExamAction.SUBMIT -> R.string.tv_mock_action_submit
+        StudyFlowTvMockExamAction.REVIEW_RESULTS -> R.string.tv_mock_action_results
+        StudyFlowTvMockExamAction.RETURN_HOME -> R.string.tv_mock_action_home
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

@@ -63,8 +63,8 @@ TVOV05  TV navigation shell [implemented]
 TVOV06  TV Home / dashboard
 TVOV07  Today workspace for TV [implemented]
 TVOV08  Study session experience [implemented]
-TVOV09  Question practice
-TVOV10  Mock Exam Studio
+TVOV09  Question practice [implemented]
+TVOV10  Mock Exam Studio [implemented]
 TVOV11  Review and error notebook
 TVOV12  Progress and analytics
 TVOV13  Read-only schedule
@@ -175,3 +175,18 @@ Validation:
 - `:app-tv:compileDebugKotlin`;
 - `:app-tv:lintDebug`.
 
+
+
+## TVOV09 — Question practice
+
+TVOV09 implements a real Android TV question-practice surface. It contains a question set model,
+answer choices, answer selection, explanation reveal, previous/next navigation, completion, D-pad
+focus items, paired-phone command generation, and cast-state generation. The TV app renders the
+surface in the native TV shell and keeps the dependency budget intact.
+
+## TVOV10 — Mock Exam Studio
+
+TVOV10 implements a real Android TV Mock Exam Studio. It contains timed sections, running/paused/
+submitted/results states, section advancement, mark-for-review, submit, result review, D-pad focus
+items, paired-phone command generation, and cast-state generation. It does not import phone feature
+modules, Room repositories, Compose, AndroidX TV UI, Cast SDK, or MediaRouter.
