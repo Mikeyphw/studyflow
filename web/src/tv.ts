@@ -81,11 +81,12 @@ function applyCapabilityFlags():void{
  root.dataset.studyflowTvSubtleCrypto=typeof globalThis.crypto?.subtle!=="undefined"?"true":"false";
  root.dataset.studyflowTvServiceWorker=typeof globalThis.navigator?.serviceWorker!=="undefined"?"true":"false";
  root.dataset.studyflowTvFlexGap=supportsFlexGap()?"true":"false";
+ root.dataset.studyflowTvInputMode="remote-first";
 }
 
 export function installTvBrowserAdapter():TvBrowserAdapterHandle{
  const resolution=resolveTvBrowserMode();if(typeof document==="undefined")return{resolution,dispose:()=>{}};
  const root=document.documentElement;root.dataset.studyflowTv=resolution.enabled?"true":"false";root.dataset.studyflowTvMode=resolution.source;applyCapabilityFlags();
  const disposeDpad=resolution.enabled?installDpadNavigation():()=>{};
- return{resolution,dispose:()=>{disposeDpad();delete root.dataset.studyflowTv;delete root.dataset.studyflowTvMode;delete root.dataset.studyflowTvSecureContext;delete root.dataset.studyflowTvIndexedDb;delete root.dataset.studyflowTvSubtleCrypto;delete root.dataset.studyflowTvServiceWorker;delete root.dataset.studyflowTvFlexGap;}};
+ return{resolution,dispose:()=>{disposeDpad();delete root.dataset.studyflowTv;delete root.dataset.studyflowTvMode;delete root.dataset.studyflowTvSecureContext;delete root.dataset.studyflowTvIndexedDb;delete root.dataset.studyflowTvSubtleCrypto;delete root.dataset.studyflowTvServiceWorker;delete root.dataset.studyflowTvFlexGap;delete root.dataset.studyflowTvInputMode;}};
 }

@@ -66,7 +66,7 @@ Each phase must preserve mobile-first behavior, local ownership, truthful eviden
 - **WTV01 — LAN TV server — delivered.** Dependency-free Node static server, `0.0.0.0` binding, printed LAN addresses, `/tv` redirect, and normal loopback development preserved.
 - **WTV02 — older Smart-TV runtime compatibility — delivered.** TypeScript output downleveled to ES2019 and IndexedDB state cloning no longer requires `structuredClone`.
 - **WTV03 — deterministic D-pad spatial navigation — delivered.** Page-wide Arrow navigation, modal focus scoping, native input/select arrow ownership, existing tablist semantics preservation, and deterministic geometry scoring.
-- **WTV04 — 10-foot visual polish — pending.** Refine density, typography, rail hierarchy, and TV-specific read-only/editor presentation.
-- **WTV05 — TV interaction simplification — pending.** De-emphasize typing/import/backup workflows and add continue-on-phone/computer affordances.
+- **WTV04 — 10-foot visual polish — delivered.** Larger metric/hero hierarchy, readable line lengths, stronger rail/tab hierarchy, focused-control scale cues, 720p/1080p-friendly density, TV modal sizing, and material/question presentation.
+- **WTV05 — TV interaction simplification — delivered.** Remote-first Plan/Practice/Progress/Settings surfaces preserve viewing and low-input actions while moving authoring, imports, backup passwords, file selection, destructive state reset and typed grading to phone/computer.
 - **WTV06 — TV Back/history semantics — pending.** Route dialogs/screens through History API with remote-friendly Back behavior.
 - **WTV07 — phone-controlled browser receiver — pending.** Reuse the `core:tvcontrol` concepts through a lightweight browser/server relay.

@@ -1,792 +1,257 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_web_wtv00_03_tv_browser_foundation_v1",
+  "name": "studyflow_web_wtv04_05_ten_foot_remote_workflows_v1",
   "target": "studyflow_web",
-  "description": "WTV00-WTV03 TV-browser foundation: TV-mode detection and capability flags, LAN /tv server, ES2019 Smart-TV runtime compatibility, structuredClone/flex-gap fallbacks, and deterministic page-wide D-pad focus navigation.",
-  "commit_message": "WTV00-WTV03: add TV-browser foundation and D-pad adapter",
+  "description": "WTV04-WTV05 TV-browser batch: refines 10-foot presentation and introduces explicit remote-first Plan/Practice/Progress/Settings/Today workflows while retaining material viewing, reviews, error actions, focus controls and analytics.",
+  "commit_message": "WTV04-WTV05: refine TV UI and remote-first workflows",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "WTV00-WTV03: add TV-browser foundation and D-pad adapter"
+    "message": "WTV04-WTV05: refine TV UI and remote-first workflows"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "WTV00-WTV03: add TV-browser foundation and D-pad adapter"
+      "message": "WTV04-WTV05: refine TV UI and remote-first workflows"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_web",
     "expected_target_type": "node",
-    "requires_previous_overlay": "studyflow_web_pc19_interaction_runtime_audit_hotfix_v2.zip"
+    "requires_previous_overlay": "studyflow_web_wtv00_03_tv_browser_foundation_v1.zip",
+    "requires_previous_overlay_sha256": "e873611a4216e24ac75069dedb210699095c3debdf09ffe0c2dc76ebc3fbbb78"
   },
   "structure": {
     "format": 1,
     "sections": [
       {
-        "id": "wtv00-mode-shell",
-        "purpose": "TV-mode resolution, capability flags, and TV shell styling",
+        "id": "wtv04-ten-foot-polish",
+        "purpose": "10-foot hierarchy, TV rail/tab/list/modal readability and focus presentation",
         "paths": [
-          "web/src/tv.ts",
-          "web/src/main.tsx",
+          "web/styles.css",
+          "web/dist/styles.css"
+        ]
+      },
+      {
+        "id": "wtv05-remote-workflows",
+        "purpose": "Remote-first Plan, Practice, Progress, Settings, Today and read-only Library presentation",
+        "paths": [
           "web/src/react/App.tsx",
-          "web/styles.css"
+          "web/runtime/react/App.js",
+          "web/dist/runtime/react/App.js"
         ]
       },
       {
-        "id": "wtv01-lan-server",
-        "purpose": "Dependency-free LAN TV server and /tv entrypoint",
-        "paths": [
-          "web/scripts/serve_tv.mjs",
-          "web/package.json",
-          "web/README.md"
-        ]
-      },
-      {
-        "id": "wtv02-compatibility",
-        "purpose": "ES2019 runtime plus structuredClone/flex-gap compatibility",
-        "paths": [
-          "web/tsconfig.json",
-          "web/src/indexeddb.ts",
-          "web/runtime",
-          "web/dist/runtime"
-        ]
-      },
-      {
-        "id": "wtv03-dpad",
-        "purpose": "Geometry-based page-wide D-pad focus with modal and input ownership rules",
+        "id": "wtv05-adapter-contract",
+        "purpose": "Expose explicit remote-first TV input-mode capability",
         "paths": [
           "web/src/tv.ts",
-          "web/tests/test_wtv00_03_tv_browser_foundation.py"
+          "web/runtime/tv.js",
+          "web/dist/runtime/tv.js"
         ]
       },
       {
-        "id": "release-docs",
-        "purpose": "Tracked PWA/release artifact and roadmap documentation",
+        "id": "tests-docs-release",
+        "purpose": "Regression coverage, roadmap notes and content-addressed tracked release refresh",
         "paths": [
-          "web/service-worker.js",
-          "web/dist/service-worker.js",
-          "web/dist/release-manifest.json",
+          "web/tests/test_wtv00_03_tv_browser_foundation.py",
+          "web/tests/test_wtv04_05_ten_foot_remote_workflows.py",
           "docs/web/WEB_ROADMAP.md",
-          "docs/web/WTV00_WTV03_TV_BROWSER_FOUNDATION.md"
+          "docs/web/WTV04_WTV05_TEN_FOOT_REMOTE_WORKFLOWS.md",
+          "web/README.md",
+          "web/dist/service-worker.js",
+          "web/dist/release-manifest.json"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 64,
+    "count": 15,
     "entries": [
       {
         "action": "modify",
         "path": "docs/web/WEB_ROADMAP.md",
         "mode": "0o600",
-        "sha256": "dbe24a49525b0160a75d4882d134f892d089fecdfae380021ca1385d1da711b3",
-        "size": 6467,
+        "sha256": "c7bf93432b7a91c3088df0010386b25564a64d5ef1a0550575615fd7cd275fe7",
+        "size": 6701,
         "source_mode": "0o600",
-        "source_sha256": "0a76d8acf9309d7860f82842be6cfb916e3942af4e53aa480c4f53f569e3a668",
-        "source_size": 5037
+        "source_sha256": "dbe24a49525b0160a75d4882d134f892d089fecdfae380021ca1385d1da711b3",
+        "source_size": 6467
       },
       {
         "action": "add",
-        "path": "docs/web/WTV00_WTV03_TV_BROWSER_FOUNDATION.md",
+        "path": "docs/web/WTV04_WTV05_TEN_FOOT_REMOTE_WORKFLOWS.md",
         "mode": "0o644",
-        "sha256": "2ec1e32f73e98521633b70ab9fabf11cae758d3556cb0affee9715f79fba5aca",
-        "size": 2773
+        "sha256": "87a4d57076c12a3f143a16dd6e0511b95fbcf3b09a5689a0f188301bf6120f5a",
+        "size": 2530
       },
       {
         "action": "modify",
         "path": "web/README.md",
         "mode": "0o600",
-        "sha256": "10475e3da509dcec398d4866c8c9e54a484e9c3c9e99184094a31299da3e44c8",
-        "size": 11748,
+        "sha256": "e600f51d4876f485aa5dcb80d8b5122e6e424464e23e5b20c77571fff25a81f4",
+        "size": 12216,
         "source_mode": "0o600",
-        "source_sha256": "acf3fe888a6e9af2d4940272d032640d9655caa91d6adf99c5f891ee41f5f0d1",
-        "source_size": 10969
+        "source_sha256": "10475e3da509dcec398d4866c8c9e54a484e9c3c9e99184094a31299da3e44c8",
+        "source_size": 11748
       },
       {
         "action": "modify",
         "path": "web/dist/release-manifest.json",
         "mode": "0o644",
-        "sha256": "ccc309f257f09861bc5bc72ae532789ca3bba6fbeeec6fef61045fc170e0b951",
+        "sha256": "c040f3b0e79fff871930820caa3057dfdbba9fc8d7cd765628078356645ec3ab",
         "size": 6444,
-        "source_mode": "0o600",
-        "source_sha256": "855dd1b9cad891bce62e9b9014848eeacbda876078d223484d891f5cee1e54f1",
-        "source_size": 6295
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/content_import.js",
-        "mode": "0o600",
-        "sha256": "047b0e4c0cd55b2ff4af2e55643d6e5031823d6675ba05ee1ea792c2c5d892ea",
-        "size": 27112,
-        "source_mode": "0o600",
-        "source_sha256": "49d805cbe867f0a6de8abd04b66cd267342cb8e6c72c31934273b32102442af0",
-        "source_size": 25451
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/domain.js",
-        "mode": "0o600",
-        "sha256": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
-        "size": 61493,
-        "source_mode": "0o600",
-        "source_sha256": "d30d3e2996272a72691ab5ce5963b466e6d8732f61c64411bcb615caa2401bff",
-        "source_size": 56574
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/encrypted_portable.js",
-        "mode": "0o600",
-        "sha256": "f54d2163d210b5192304448b73b3e23346a777737564d3f30a0b8aa57567a770",
-        "size": 9937,
-        "source_mode": "0o600",
-        "source_sha256": "3a808872716bd79bb929fe6bb752ccde7067d46b1c6e6f2def8c432d077d3f08",
-        "source_size": 9792
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/exam_foundation.js",
-        "mode": "0o600",
-        "sha256": "c396cd179efe9a8ba34d575a394b253f5f1b3518fac8e49db518699b15d7f3e8",
-        "size": 11049,
-        "source_mode": "0o600",
-        "source_sha256": "90557d1cfcb0368801eff26226b8dd53cca0f6662cb093d481e4aaa8d61888c8",
-        "source_size": 9918
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/hardening.js",
-        "mode": "0o600",
-        "sha256": "7f6e6485f11b7ddf4a38fd7a98b1a3a846f62337c7da63e940755825f7da3791",
-        "size": 3998,
-        "source_mode": "0o600",
-        "source_sha256": "ce0adbf147035cd4b5a99d5df47896f72a4fb3f60ab9b3968ad431f6bd045b52",
-        "source_size": 3921
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/indexeddb.js",
-        "mode": "0o600",
-        "sha256": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
-        "size": 9872,
-        "source_mode": "0o600",
-        "source_sha256": "a9763e14906fcd3e5f6720e135ef76fae9cdb29ac5f2008e5020321f83140aca",
-        "source_size": 8823
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/intelligence.js",
-        "mode": "0o600",
-        "sha256": "2006af64e01ffa1aba25d942387c1e1c334dc7fae605c4e883b950a89751f588",
-        "size": 2103,
-        "source_mode": "0o600",
-        "source_sha256": "5fc5a4d6db4afb005b7c05f9bf39de1e42aa7fd2480b6a9e0783d8d4be3b709d",
-        "source_size": 2058
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/main.js",
-        "mode": "0o600",
-        "sha256": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
-        "size": 2341,
-        "source_mode": "0o600",
-        "source_sha256": "7f025afecc84e10b63a0b33b6f7db85218101e900eab168c74233f21cc9068b0",
-        "source_size": 2274
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/mode_import.js",
-        "mode": "0o600",
-        "sha256": "22ceed694a399fb0fe0442716f2f381decde5016a04f0757d9875bc8fa6fdf46",
-        "size": 5376,
-        "source_mode": "0o600",
-        "source_sha256": "70615ef84756a3eb01796515ab04a08c5e19a86768736517ea433167bdec8cb1",
-        "source_size": 5205
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/modes.js",
-        "mode": "0o600",
-        "sha256": "0a161c42ea1b0f3696d4d3e96850c10cdcdf573204aa469760b9fac6a45b08ca",
-        "size": 60831,
-        "source_mode": "0o600",
-        "source_sha256": "3fd2c576479b584ef91e2df28ba2cae092578a9cd791d89e1cea9bfb64b81413",
-        "source_size": 51946
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/parity_intelligence.js",
-        "mode": "0o600",
-        "sha256": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
-        "size": 24192,
-        "source_mode": "0o600",
-        "source_sha256": "74fcc4756ab67e7626c187342500f204e066c52caaaec7f4a15995e5d2b812eb",
-        "source_size": 22996
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/portable.js",
-        "mode": "0o600",
-        "sha256": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
-        "size": 22084,
-        "source_mode": "0o600",
-        "source_sha256": "5dd9b0edce77eed4dd180d9d1aabb110a3be3b1e42013e804af16d31dc9e002d",
-        "source_size": 19319
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/product.js",
-        "mode": "0o600",
-        "sha256": "764b81296db1d973d6bcf226c3bfdaafbb634e13871346e132f58ba2d211461c",
-        "size": 14924,
-        "source_mode": "0o600",
-        "source_sha256": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
-        "source_size": 13059
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/promise_cleanup.js",
-        "mode": "0o600",
-        "sha256": "eefeebdcdfb442bb79d84fcfc7c5ad808dc69392d4dbfad6657f65a8252ac334",
-        "size": 3020,
-        "source_mode": "0o600",
-        "source_sha256": "524f1fbf18f9681c481130519ba9baf6f7b9a68838c2be7d9eeb70a0bdaca048",
-        "source_size": 2779
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/pwa.js",
-        "mode": "0o600",
-        "sha256": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
-        "size": 3648,
-        "source_mode": "0o600",
-        "source_sha256": "ceb9a72e61743a93554bd84a55b10bba45e54e44ee5a963a292a97adc5adc87c",
-        "source_size": 2864
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/question_import.js",
-        "mode": "0o600",
-        "sha256": "72a6ec334ba1cfd6c0e7f8cb9b0a77aeb5d13706702f6756157c7f3f01fbd927",
-        "size": 8226,
-        "source_mode": "0o600",
-        "source_sha256": "f35f60cc8757be0faa6346acad9936bc6b42deae9add4d1712d7fc6960d61165",
-        "source_size": 7298
+        "source_mode": "0o644",
+        "source_sha256": "ccc309f257f09861bc5bc72ae532789ca3bba6fbeeec6fef61045fc170e0b951",
+        "source_size": 6444
       },
       {
         "action": "modify",
         "path": "web/dist/runtime/react/App.js",
-        "mode": "0o600",
-        "sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
-        "size": 201914,
+        "mode": "0o644",
+        "sha256": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
+        "size": 223266,
         "source_mode": "0o600",
-        "source_sha256": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
-        "source_size": 191170
+        "source_sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
+        "source_size": 201914
       },
       {
         "action": "modify",
-        "path": "web/dist/runtime/refinement.js",
-        "mode": "0o600",
-        "sha256": "6077e426784058b932755c1bc8b7606bc93b93552cca8a5532e795d5983c7555",
-        "size": 40542,
-        "source_mode": "0o600",
-        "source_sha256": "904df12757590abf2ce0a29d3250a13205590001d4d323dac7362c5a3158bf20",
-        "source_size": 37964
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/retention_viewer.js",
-        "mode": "0o600",
-        "sha256": "d281cb15de7b4355d214f19cf878393629676cdbf14131fe5d6b01a115107784",
-        "size": 2493,
-        "source_mode": "0o600",
-        "source_sha256": "7fe69a81b201176a5e410a26a747e0661174dd97d524fc7654b6105d286b4d5d",
-        "source_size": 2367
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/schedule.js",
-        "mode": "0o600",
-        "sha256": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
-        "size": 23492,
-        "source_mode": "0o600",
-        "source_sha256": "bc11c8f8f6045df432ba1ccbbb0886264d48213076d9fd525f98000c5e3cad81",
-        "source_size": 21197
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/state.js",
-        "mode": "0o600",
-        "sha256": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
-        "size": 128434,
-        "source_mode": "0o600",
-        "source_sha256": "1787daf8d4028dcc168b8a9cb0c7aba99d754ef0f52506e201da48e9bca44aec",
-        "source_size": 120164
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/storage.js",
-        "mode": "0o600",
-        "sha256": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
-        "size": 5409,
-        "source_mode": "0o600",
-        "source_sha256": "c370aa9771abc815459a150de8a563b46cb0f2ae8f93d9df92fd655da3ace216",
-        "source_size": 5295
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/task_workflows.js",
-        "mode": "0o600",
-        "sha256": "b28c785074021d808fb6e633c9a0f4644190fd76a8a85954340e1c9a84419ccc",
-        "size": 13561,
-        "source_mode": "0o600",
-        "source_sha256": "9b39d1fe717e9f5f7d8813a97c9fe014bb5949257c8fc667e580bc15e129d1ab",
-        "source_size": 12667
-      },
-      {
-        "action": "add",
         "path": "web/dist/runtime/tv.js",
         "mode": "0o644",
-        "sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
-        "size": 8481
+        "sha256": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
+        "size": 8579,
+        "source_mode": "0o644",
+        "source_sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
+        "source_size": 8481
       },
       {
         "action": "modify",
         "path": "web/dist/service-worker.js",
         "mode": "0o644",
-        "sha256": "1bd053770663a52303382d9ca631b89a4f828416427d4ed109196e1df87ee6ae",
+        "sha256": "b895fe86f5ce6249d27962826ab39225ba2bc8557f00165c7894d5681564f006",
         "size": 2333,
-        "source_mode": "0o600",
-        "source_sha256": "cec74555eeb1d56e1f9ed93691571db8872db021d2a381637398561c758189d3",
-        "source_size": 2314
+        "source_mode": "0o644",
+        "source_sha256": "1bd053770663a52303382d9ca631b89a4f828416427d4ed109196e1df87ee6ae",
+        "source_size": 2333
       },
       {
         "action": "modify",
         "path": "web/dist/styles.css",
         "mode": "0o600",
-        "sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
-        "size": 25276,
+        "sha256": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
+        "size": 32605,
         "source_mode": "0o600",
-        "source_sha256": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
-        "source_size": 21136
-      },
-      {
-        "action": "modify",
-        "path": "web/package.json",
-        "mode": "0o600",
-        "sha256": "c0845437f038876827776ebcb66291dd524dbd74ad88fcacf58b31a669b37e8f",
-        "size": 1137,
-        "source_mode": "0o600",
-        "source_sha256": "c6e2d8a40fc4fc6a6664210b5ab8b3e3115c0c4e0e525502011e752026314e37",
-        "source_size": 1021
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/content_import.js",
-        "mode": "0o600",
-        "sha256": "047b0e4c0cd55b2ff4af2e55643d6e5031823d6675ba05ee1ea792c2c5d892ea",
-        "size": 27112,
-        "source_mode": "0o600",
-        "source_sha256": "49d805cbe867f0a6de8abd04b66cd267342cb8e6c72c31934273b32102442af0",
-        "source_size": 25451
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/domain.js",
-        "mode": "0o600",
-        "sha256": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
-        "size": 61493,
-        "source_mode": "0o600",
-        "source_sha256": "d30d3e2996272a72691ab5ce5963b466e6d8732f61c64411bcb615caa2401bff",
-        "source_size": 56574
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/encrypted_portable.js",
-        "mode": "0o600",
-        "sha256": "f54d2163d210b5192304448b73b3e23346a777737564d3f30a0b8aa57567a770",
-        "size": 9937,
-        "source_mode": "0o600",
-        "source_sha256": "3a808872716bd79bb929fe6bb752ccde7067d46b1c6e6f2def8c432d077d3f08",
-        "source_size": 9792
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/exam_foundation.js",
-        "mode": "0o600",
-        "sha256": "c396cd179efe9a8ba34d575a394b253f5f1b3518fac8e49db518699b15d7f3e8",
-        "size": 11049,
-        "source_mode": "0o600",
-        "source_sha256": "90557d1cfcb0368801eff26226b8dd53cca0f6662cb093d481e4aaa8d61888c8",
-        "source_size": 9918
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/hardening.js",
-        "mode": "0o600",
-        "sha256": "7f6e6485f11b7ddf4a38fd7a98b1a3a846f62337c7da63e940755825f7da3791",
-        "size": 3998,
-        "source_mode": "0o600",
-        "source_sha256": "ce0adbf147035cd4b5a99d5df47896f72a4fb3f60ab9b3968ad431f6bd045b52",
-        "source_size": 3921
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/indexeddb.js",
-        "mode": "0o600",
-        "sha256": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
-        "size": 9872,
-        "source_mode": "0o600",
-        "source_sha256": "a9763e14906fcd3e5f6720e135ef76fae9cdb29ac5f2008e5020321f83140aca",
-        "source_size": 8823
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/intelligence.js",
-        "mode": "0o600",
-        "sha256": "2006af64e01ffa1aba25d942387c1e1c334dc7fae605c4e883b950a89751f588",
-        "size": 2103,
-        "source_mode": "0o600",
-        "source_sha256": "5fc5a4d6db4afb005b7c05f9bf39de1e42aa7fd2480b6a9e0783d8d4be3b709d",
-        "source_size": 2058
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/main.js",
-        "mode": "0o600",
-        "sha256": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
-        "size": 2341,
-        "source_mode": "0o600",
-        "source_sha256": "7f025afecc84e10b63a0b33b6f7db85218101e900eab168c74233f21cc9068b0",
-        "source_size": 2274
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/mode_import.js",
-        "mode": "0o600",
-        "sha256": "22ceed694a399fb0fe0442716f2f381decde5016a04f0757d9875bc8fa6fdf46",
-        "size": 5376,
-        "source_mode": "0o600",
-        "source_sha256": "70615ef84756a3eb01796515ab04a08c5e19a86768736517ea433167bdec8cb1",
-        "source_size": 5205
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/modes.js",
-        "mode": "0o600",
-        "sha256": "0a161c42ea1b0f3696d4d3e96850c10cdcdf573204aa469760b9fac6a45b08ca",
-        "size": 60831,
-        "source_mode": "0o600",
-        "source_sha256": "3fd2c576479b584ef91e2df28ba2cae092578a9cd791d89e1cea9bfb64b81413",
-        "source_size": 51946
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/parity_intelligence.js",
-        "mode": "0o600",
-        "sha256": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
-        "size": 24192,
-        "source_mode": "0o600",
-        "source_sha256": "74fcc4756ab67e7626c187342500f204e066c52caaaec7f4a15995e5d2b812eb",
-        "source_size": 22996
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/portable.js",
-        "mode": "0o600",
-        "sha256": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
-        "size": 22084,
-        "source_mode": "0o600",
-        "source_sha256": "5dd9b0edce77eed4dd180d9d1aabb110a3be3b1e42013e804af16d31dc9e002d",
-        "source_size": 19319
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/product.js",
-        "mode": "0o600",
-        "sha256": "764b81296db1d973d6bcf226c3bfdaafbb634e13871346e132f58ba2d211461c",
-        "size": 14924,
-        "source_mode": "0o600",
-        "source_sha256": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
-        "source_size": 13059
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/promise_cleanup.js",
-        "mode": "0o600",
-        "sha256": "eefeebdcdfb442bb79d84fcfc7c5ad808dc69392d4dbfad6657f65a8252ac334",
-        "size": 3020,
-        "source_mode": "0o600",
-        "source_sha256": "524f1fbf18f9681c481130519ba9baf6f7b9a68838c2be7d9eeb70a0bdaca048",
-        "source_size": 2779
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/pwa.js",
-        "mode": "0o600",
-        "sha256": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
-        "size": 3648,
-        "source_mode": "0o600",
-        "source_sha256": "ceb9a72e61743a93554bd84a55b10bba45e54e44ee5a963a292a97adc5adc87c",
-        "source_size": 2864
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/question_import.js",
-        "mode": "0o600",
-        "sha256": "72a6ec334ba1cfd6c0e7f8cb9b0a77aeb5d13706702f6756157c7f3f01fbd927",
-        "size": 8226,
-        "source_mode": "0o600",
-        "source_sha256": "f35f60cc8757be0faa6346acad9936bc6b42deae9add4d1712d7fc6960d61165",
-        "source_size": 7298
+        "source_sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
+        "source_size": 25276
       },
       {
         "action": "modify",
         "path": "web/runtime/react/App.js",
-        "mode": "0o600",
-        "sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
-        "size": 201914,
+        "mode": "0o644",
+        "sha256": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
+        "size": 223266,
         "source_mode": "0o600",
-        "source_sha256": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
-        "source_size": 191170
+        "source_sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
+        "source_size": 201914
       },
       {
         "action": "modify",
-        "path": "web/runtime/refinement.js",
-        "mode": "0o600",
-        "sha256": "6077e426784058b932755c1bc8b7606bc93b93552cca8a5532e795d5983c7555",
-        "size": 40542,
-        "source_mode": "0o600",
-        "source_sha256": "904df12757590abf2ce0a29d3250a13205590001d4d323dac7362c5a3158bf20",
-        "source_size": 37964
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/retention_viewer.js",
-        "mode": "0o600",
-        "sha256": "d281cb15de7b4355d214f19cf878393629676cdbf14131fe5d6b01a115107784",
-        "size": 2493,
-        "source_mode": "0o600",
-        "source_sha256": "7fe69a81b201176a5e410a26a747e0661174dd97d524fc7654b6105d286b4d5d",
-        "source_size": 2367
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/schedule.js",
-        "mode": "0o600",
-        "sha256": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
-        "size": 23492,
-        "source_mode": "0o600",
-        "source_sha256": "bc11c8f8f6045df432ba1ccbbb0886264d48213076d9fd525f98000c5e3cad81",
-        "source_size": 21197
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/state.js",
-        "mode": "0o600",
-        "sha256": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
-        "size": 128434,
-        "source_mode": "0o600",
-        "source_sha256": "1787daf8d4028dcc168b8a9cb0c7aba99d754ef0f52506e201da48e9bca44aec",
-        "source_size": 120164
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/storage.js",
-        "mode": "0o600",
-        "sha256": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
-        "size": 5409,
-        "source_mode": "0o600",
-        "source_sha256": "c370aa9771abc815459a150de8a563b46cb0f2ae8f93d9df92fd655da3ace216",
-        "source_size": 5295
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/task_workflows.js",
-        "mode": "0o600",
-        "sha256": "b28c785074021d808fb6e633c9a0f4644190fd76a8a85954340e1c9a84419ccc",
-        "size": 13561,
-        "source_mode": "0o600",
-        "source_sha256": "9b39d1fe717e9f5f7d8813a97c9fe014bb5949257c8fc667e580bc15e129d1ab",
-        "source_size": 12667
-      },
-      {
-        "action": "add",
         "path": "web/runtime/tv.js",
         "mode": "0o644",
-        "sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
-        "size": 8481
-      },
-      {
-        "action": "add",
-        "path": "web/scripts/serve_tv.mjs",
-        "mode": "0o644",
-        "sha256": "243ef6fbdd814a3362f9ccbc9bf33480e2f9f059c581c6c7d59d83ff527e5aa6",
-        "size": 2780
-      },
-      {
-        "action": "modify",
-        "path": "web/service-worker.js",
-        "mode": "0o600",
-        "sha256": "e992ad136f6a890490debf05aa4785894ac19122415d226a58260bc22ebd3bee",
-        "size": 2398,
-        "source_mode": "0o600",
-        "source_sha256": "d978649e4c6499c72ff89b03d27b25e946d185f010d81c179ad8d5820c7e75ac",
-        "source_size": 2379
-      },
-      {
-        "action": "modify",
-        "path": "web/src/indexeddb.ts",
-        "mode": "0o600",
-        "sha256": "8b4246832fee1871b28df10c206e26dfe7bb6a994a84dbd32ece7e3d759e626f",
-        "size": 8209,
-        "source_mode": "0o600",
-        "source_sha256": "491604ad157fd267f525f23be1e45cf1066dd5c7132acac2f7c3d82e1f06baa8",
-        "source_size": 8077
-      },
-      {
-        "action": "modify",
-        "path": "web/src/main.tsx",
-        "mode": "0o600",
-        "sha256": "2274c3171cbff43cd4d2e33cf0031e404313a0b68cf1f65b687ae45a29291dda",
-        "size": 1018,
-        "source_mode": "0o600",
-        "source_sha256": "445b08687af20e18b8213ef5bc6bd0d66de29fbb4de5a1cc79232a4493f6e7f1",
-        "source_size": 942
+        "sha256": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
+        "size": 8579,
+        "source_mode": "0o644",
+        "source_sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
+        "source_size": 8481
       },
       {
         "action": "modify",
         "path": "web/src/react/App.tsx",
         "mode": "0o600",
-        "sha256": "f4de55ba1038d59f17b055cf7ae7cca9e5e8d6f31e35ccb17fe9c36026271760",
-        "size": 136511,
+        "sha256": "6ce52feca71ac27e08de9dbc3c68e6e28038985dd35b6c9af9f47df5d663bb2a",
+        "size": 151089,
         "source_mode": "0o600",
-        "source_sha256": "237fcef312fd9cda6ee121d8e87d200dc0511f85acf9d00148458530990e699d",
-        "source_size": 135816
+        "source_sha256": "f4de55ba1038d59f17b055cf7ae7cca9e5e8d6f31e35ccb17fe9c36026271760",
+        "source_size": 136511
       },
       {
-        "action": "add",
+        "action": "modify",
         "path": "web/src/tv.ts",
         "mode": "0o644",
-        "sha256": "a65d1778679877bf640c049806aafb4ab572150e7f8d543532b4f6600e2f81e8",
-        "size": 7272
+        "sha256": "b238561a4af905e2c41c3f2483b5d51bc7d0e3e7d6c226a068a3e8788f581372",
+        "size": 7364,
+        "source_mode": "0o644",
+        "source_sha256": "a65d1778679877bf640c049806aafb4ab572150e7f8d543532b4f6600e2f81e8",
+        "source_size": 7272
       },
       {
         "action": "modify",
         "path": "web/styles.css",
         "mode": "0o600",
-        "sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
-        "size": 25276,
+        "sha256": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
+        "size": 32605,
         "source_mode": "0o600",
-        "source_sha256": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
-        "source_size": 21136
-      },
-      {
-        "action": "add",
-        "path": "web/tests/test_wtv00_03_tv_browser_foundation.py",
-        "mode": "0o644",
-        "sha256": "6ea5060c36de0b4f2f8a8f9ac0ae23207e5a1ea7055ac4607f1d471fad3b5665",
-        "size": 3586
+        "source_sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
+        "source_size": 25276
       },
       {
         "action": "modify",
-        "path": "web/tsconfig.json",
-        "mode": "0o600",
-        "sha256": "1ab749fac0623b001bf849b988ec94a679a36427b3c454e3b8928b7a0fbe7b05",
-        "size": 504,
-        "source_mode": "0o600",
-        "source_sha256": "3ae48c10ec2ad90f157ccfe3e309c202d3e4d3f6fa1baf48bbae4e030b241351",
-        "source_size": 504
+        "path": "web/tests/test_wtv00_03_tv_browser_foundation.py",
+        "mode": "0o644",
+        "sha256": "f0c33d1edf05e8ea28ec04c983875cdd641c6d53f7be328ba2c77b6b512532ba",
+        "size": 3644,
+        "source_mode": "0o644",
+        "source_sha256": "6ea5060c36de0b4f2f8a8f9ac0ae23207e5a1ea7055ac4607f1d471fad3b5665",
+        "source_size": 3586
+      },
+      {
+        "action": "add",
+        "path": "web/tests/test_wtv04_05_ten_foot_remote_workflows.py",
+        "mode": "0o644",
+        "sha256": "c34b41fc8664352eef51b9c8679648102adb315b356fb666f1b11fb9ad5a8b49",
+        "size": 2670
       }
     ]
   },
   "integrity": {
     "sha256": {
-      "docs/web/WEB_ROADMAP.md": "dbe24a49525b0160a75d4882d134f892d089fecdfae380021ca1385d1da711b3",
-      "docs/web/WTV00_WTV03_TV_BROWSER_FOUNDATION.md": "2ec1e32f73e98521633b70ab9fabf11cae758d3556cb0affee9715f79fba5aca",
-      "web/README.md": "10475e3da509dcec398d4866c8c9e54a484e9c3c9e99184094a31299da3e44c8",
-      "web/dist/release-manifest.json": "ccc309f257f09861bc5bc72ae532789ca3bba6fbeeec6fef61045fc170e0b951",
-      "web/dist/runtime/content_import.js": "047b0e4c0cd55b2ff4af2e55643d6e5031823d6675ba05ee1ea792c2c5d892ea",
-      "web/dist/runtime/domain.js": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
-      "web/dist/runtime/encrypted_portable.js": "f54d2163d210b5192304448b73b3e23346a777737564d3f30a0b8aa57567a770",
-      "web/dist/runtime/exam_foundation.js": "c396cd179efe9a8ba34d575a394b253f5f1b3518fac8e49db518699b15d7f3e8",
-      "web/dist/runtime/hardening.js": "7f6e6485f11b7ddf4a38fd7a98b1a3a846f62337c7da63e940755825f7da3791",
-      "web/dist/runtime/indexeddb.js": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
-      "web/dist/runtime/intelligence.js": "2006af64e01ffa1aba25d942387c1e1c334dc7fae605c4e883b950a89751f588",
-      "web/dist/runtime/main.js": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
-      "web/dist/runtime/mode_import.js": "22ceed694a399fb0fe0442716f2f381decde5016a04f0757d9875bc8fa6fdf46",
-      "web/dist/runtime/modes.js": "0a161c42ea1b0f3696d4d3e96850c10cdcdf573204aa469760b9fac6a45b08ca",
-      "web/dist/runtime/parity_intelligence.js": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
-      "web/dist/runtime/portable.js": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
-      "web/dist/runtime/product.js": "764b81296db1d973d6bcf226c3bfdaafbb634e13871346e132f58ba2d211461c",
-      "web/dist/runtime/promise_cleanup.js": "eefeebdcdfb442bb79d84fcfc7c5ad808dc69392d4dbfad6657f65a8252ac334",
-      "web/dist/runtime/pwa.js": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
-      "web/dist/runtime/question_import.js": "72a6ec334ba1cfd6c0e7f8cb9b0a77aeb5d13706702f6756157c7f3f01fbd927",
-      "web/dist/runtime/react/App.js": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
-      "web/dist/runtime/refinement.js": "6077e426784058b932755c1bc8b7606bc93b93552cca8a5532e795d5983c7555",
-      "web/dist/runtime/retention_viewer.js": "d281cb15de7b4355d214f19cf878393629676cdbf14131fe5d6b01a115107784",
-      "web/dist/runtime/schedule.js": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
-      "web/dist/runtime/state.js": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
-      "web/dist/runtime/storage.js": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
-      "web/dist/runtime/task_workflows.js": "b28c785074021d808fb6e633c9a0f4644190fd76a8a85954340e1c9a84419ccc",
-      "web/dist/runtime/tv.js": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
-      "web/dist/service-worker.js": "1bd053770663a52303382d9ca631b89a4f828416427d4ed109196e1df87ee6ae",
-      "web/dist/styles.css": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
-      "web/package.json": "c0845437f038876827776ebcb66291dd524dbd74ad88fcacf58b31a669b37e8f",
-      "web/runtime/content_import.js": "047b0e4c0cd55b2ff4af2e55643d6e5031823d6675ba05ee1ea792c2c5d892ea",
-      "web/runtime/domain.js": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
-      "web/runtime/encrypted_portable.js": "f54d2163d210b5192304448b73b3e23346a777737564d3f30a0b8aa57567a770",
-      "web/runtime/exam_foundation.js": "c396cd179efe9a8ba34d575a394b253f5f1b3518fac8e49db518699b15d7f3e8",
-      "web/runtime/hardening.js": "7f6e6485f11b7ddf4a38fd7a98b1a3a846f62337c7da63e940755825f7da3791",
-      "web/runtime/indexeddb.js": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
-      "web/runtime/intelligence.js": "2006af64e01ffa1aba25d942387c1e1c334dc7fae605c4e883b950a89751f588",
-      "web/runtime/main.js": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
-      "web/runtime/mode_import.js": "22ceed694a399fb0fe0442716f2f381decde5016a04f0757d9875bc8fa6fdf46",
-      "web/runtime/modes.js": "0a161c42ea1b0f3696d4d3e96850c10cdcdf573204aa469760b9fac6a45b08ca",
-      "web/runtime/parity_intelligence.js": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
-      "web/runtime/portable.js": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
-      "web/runtime/product.js": "764b81296db1d973d6bcf226c3bfdaafbb634e13871346e132f58ba2d211461c",
-      "web/runtime/promise_cleanup.js": "eefeebdcdfb442bb79d84fcfc7c5ad808dc69392d4dbfad6657f65a8252ac334",
-      "web/runtime/pwa.js": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
-      "web/runtime/question_import.js": "72a6ec334ba1cfd6c0e7f8cb9b0a77aeb5d13706702f6756157c7f3f01fbd927",
-      "web/runtime/react/App.js": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
-      "web/runtime/refinement.js": "6077e426784058b932755c1bc8b7606bc93b93552cca8a5532e795d5983c7555",
-      "web/runtime/retention_viewer.js": "d281cb15de7b4355d214f19cf878393629676cdbf14131fe5d6b01a115107784",
-      "web/runtime/schedule.js": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
-      "web/runtime/state.js": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
-      "web/runtime/storage.js": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
-      "web/runtime/task_workflows.js": "b28c785074021d808fb6e633c9a0f4644190fd76a8a85954340e1c9a84419ccc",
-      "web/runtime/tv.js": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
-      "web/scripts/serve_tv.mjs": "243ef6fbdd814a3362f9ccbc9bf33480e2f9f059c581c6c7d59d83ff527e5aa6",
-      "web/service-worker.js": "e992ad136f6a890490debf05aa4785894ac19122415d226a58260bc22ebd3bee",
-      "web/src/indexeddb.ts": "8b4246832fee1871b28df10c206e26dfe7bb6a994a84dbd32ece7e3d759e626f",
-      "web/src/main.tsx": "2274c3171cbff43cd4d2e33cf0031e404313a0b68cf1f65b687ae45a29291dda",
-      "web/src/react/App.tsx": "f4de55ba1038d59f17b055cf7ae7cca9e5e8d6f31e35ccb17fe9c36026271760",
-      "web/src/tv.ts": "a65d1778679877bf640c049806aafb4ab572150e7f8d543532b4f6600e2f81e8",
-      "web/styles.css": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
-      "web/tests/test_wtv00_03_tv_browser_foundation.py": "6ea5060c36de0b4f2f8a8f9ac0ae23207e5a1ea7055ac4607f1d471fad3b5665",
-      "web/tsconfig.json": "1ab749fac0623b001bf849b988ec94a679a36427b3c454e3b8928b7a0fbe7b05"
+      "docs/web/WEB_ROADMAP.md": "c7bf93432b7a91c3088df0010386b25564a64d5ef1a0550575615fd7cd275fe7",
+      "docs/web/WTV04_WTV05_TEN_FOOT_REMOTE_WORKFLOWS.md": "87a4d57076c12a3f143a16dd6e0511b95fbcf3b09a5689a0f188301bf6120f5a",
+      "web/README.md": "e600f51d4876f485aa5dcb80d8b5122e6e424464e23e5b20c77571fff25a81f4",
+      "web/dist/release-manifest.json": "c040f3b0e79fff871930820caa3057dfdbba9fc8d7cd765628078356645ec3ab",
+      "web/dist/runtime/react/App.js": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
+      "web/dist/runtime/tv.js": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
+      "web/dist/service-worker.js": "b895fe86f5ce6249d27962826ab39225ba2bc8557f00165c7894d5681564f006",
+      "web/dist/styles.css": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
+      "web/runtime/react/App.js": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
+      "web/runtime/tv.js": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
+      "web/src/react/App.tsx": "6ce52feca71ac27e08de9dbc3c68e6e28038985dd35b6c9af9f47df5d663bb2a",
+      "web/src/tv.ts": "b238561a4af905e2c41c3f2483b5d51bc7d0e3e7d6c226a068a3e8788f581372",
+      "web/styles.css": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
+      "web/tests/test_wtv00_03_tv_browser_foundation.py": "f0c33d1edf05e8ea28ec04c983875cdd641c6d53f7be328ba2c77b6b512532ba",
+      "web/tests/test_wtv04_05_ten_foot_remote_workflows.py": "c34b41fc8664352eef51b9c8679648102adb315b356fb666f1b11fb9ad5a8b49"
     }
   },
   "validation": {
     "mode": "required",
     "required": true,
     "script": {
-      "description": "Run web lint/runtime parity, all web regressions, tracked release integrity, TV server syntax, and source/dist TV parity.",
+      "description": "Run web lint/runtime parity, all regressions, tracked release integrity, TV server syntax, and source/dist parity.",
       "interpreter": "sh",
       "path": ".devtool-artifact/validation/validate.sh",
-      "sha256": "81127ef470cc800f402da5000baf29f2749fe5b04ec3b54d691d3eb755278d7a",
+      "sha256": "e5156e0b31626e9dd1dc26eea2de197c2a60d9fe65a33b6c2e9824e1c2e0bb01",
       "timeout_seconds": 900,
       "working_directory": "."
     },
     "notes": [
       "Target is explicitly studyflow_web.",
-      "Validator does not rebuild dist; tracked dist is already included and release-checked.",
-      "Full npm test regression suite is required."
+      "Validator does not require npm install or rebuild dist; tracked dist is release-checked.",
+      "apply.commit is explicitly enabled so Devtool should create the Git commit after successful validation."
     ]
   }
 }

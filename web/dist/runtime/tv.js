@@ -171,6 +171,7 @@ function applyCapabilityFlags() {
     root.dataset.studyflowTvSubtleCrypto = typeof ((_a = globalThis.crypto) === null || _a === void 0 ? void 0 : _a.subtle) !== "undefined" ? "true" : "false";
     root.dataset.studyflowTvServiceWorker = typeof ((_b = globalThis.navigator) === null || _b === void 0 ? void 0 : _b.serviceWorker) !== "undefined" ? "true" : "false";
     root.dataset.studyflowTvFlexGap = supportsFlexGap() ? "true" : "false";
+    root.dataset.studyflowTvInputMode = "remote-first";
 }
 function installTvBrowserAdapter() {
     const resolution = resolveTvBrowserMode();
@@ -181,5 +182,5 @@ function installTvBrowserAdapter() {
     root.dataset.studyflowTvMode = resolution.source;
     applyCapabilityFlags();
     const disposeDpad = resolution.enabled ? installDpadNavigation() : () => { };
-    return { resolution, dispose: () => { disposeDpad(); delete root.dataset.studyflowTv; delete root.dataset.studyflowTvMode; delete root.dataset.studyflowTvSecureContext; delete root.dataset.studyflowTvIndexedDb; delete root.dataset.studyflowTvSubtleCrypto; delete root.dataset.studyflowTvServiceWorker; delete root.dataset.studyflowTvFlexGap; } };
+    return { resolution, dispose: () => { disposeDpad(); delete root.dataset.studyflowTv; delete root.dataset.studyflowTvMode; delete root.dataset.studyflowTvSecureContext; delete root.dataset.studyflowTvIndexedDb; delete root.dataset.studyflowTvSubtleCrypto; delete root.dataset.studyflowTvServiceWorker; delete root.dataset.studyflowTvFlexGap; delete root.dataset.studyflowTvInputMode; } };
 }

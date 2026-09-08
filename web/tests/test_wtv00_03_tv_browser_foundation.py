@@ -48,7 +48,7 @@ class TvBrowserFoundationTest(unittest.TestCase):
 
     def test_roadmap_and_delivery_notes(self):
         roadmap=(ROOT/'docs/web/WEB_ROADMAP.md').read_text(); doc=(ROOT/'docs/web/WTV00_WTV03_TV_BROWSER_FOUNDATION.md').read_text()
-        for token in ('WTV00','WTV01','WTV02','WTV03','WTV04 — 10-foot visual polish — pending'):
+        for token in ('WTV00','WTV01','WTV02','WTV03','WTV04 — 10-foot visual polish — delivered','WTV05 — TV interaction simplification — delivered'):
             self.assertIn(token,roadmap)
         for token in ('geometry-based spatial navigation','secure context','structuredClone','`?tv=0`'):
             self.assertIn(token,doc)

@@ -139,3 +139,5 @@ npm run serve:tv
 The server binds to `0.0.0.0`, prints detected IPv4 LAN URLs, and exposes `/tv` as the simple television entry point. `?tv=1` forces the 10-foot/D-pad adapter; `?tv=0` disables automatic TV user-agent detection. The normal `npm run dev` command remains loopback-only.
 
 TV mode uses standard Arrow keys + Enter and page-wide spatial focus. Editable text/select controls retain their native arrow behavior. On plain LAN HTTP, secure-context-only features such as service workers and Web Crypto may be unavailable; the app reports those capabilities separately instead of treating them as required for TV navigation or IndexedDB state.
+
+WTV04/WTV05 make this a remote-first 10-foot surface rather than a desktop UI enlarged for a television. Plan becomes reference-oriented, Library keeps Material Viewer but hides file/provenance mutation, Practice keeps due-review ratings and error actions while question answers become reveal/review, and Progress keeps analytics while backup/import/reset/export workflows show a clear continue-on-phone/computer handoff. Normal web mode retains the full editing UI.

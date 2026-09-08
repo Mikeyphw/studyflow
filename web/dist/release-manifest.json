@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-23255f4ecc17e3b6",
+  "cacheVersion": "studyflow-local-1.0.0-8417bd9ca22d411b",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -127,8 +127,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
-      "bytes": 201914
+      "sha256": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
+      "bytes": 223266
     },
     {
       "path": "runtime/refinement.js",
@@ -167,8 +167,8 @@
     },
     {
       "path": "runtime/tv.js",
-      "sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
-      "bytes": 8481
+      "sha256": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
+      "bytes": 8579
     },
     {
       "path": "runtime/types.js",
@@ -177,13 +177,13 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "1bd053770663a52303382d9ca631b89a4f828416427d4ed109196e1df87ee6ae",
+      "sha256": "b895fe86f5ce6249d27962826ab39225ba2bc8557f00165c7894d5681564f006",
       "bytes": 2333
     },
     {
       "path": "styles.css",
-      "sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
-      "bytes": 25276
+      "sha256": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
+      "bytes": 32605
     },
     {
       "path": "vendor/react-dom-client.production.js",
