@@ -36,7 +36,7 @@ require(nav, "StudyFlowTvNavigationShell", "navigation shell")
 require(nav, "StudyFlowTvControlCommand", "phone control command bridge")
 require(nav, "StudyFlowTvFocusItem", "focus bridge")
 require(nav, "routePayloadsUseSmallEnums = true", "route contract")
-require(nav, "destinationCount = 8", "destination count contract")
+require(nav, "destinationCount = 9", "destination count contract")
 require(nav, "openCommandFor", "paired-phone open command")
 
 require(activity, "StudyFlowTvNavigationShell.primaryDestinations", "activity nav rail")

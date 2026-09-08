@@ -26,6 +26,7 @@ enum class StudyFlowTvDestination(
     MOCK_EXAM("mock-exam", StudyFlowTvSurface.MOCK_EXAM),
     PROGRESS("progress", StudyFlowTvSurface.PROGRESS),
     SCHEDULE("schedule", StudyFlowTvSurface.SCHEDULE),
+    LIBRARY("library", StudyFlowTvSurface.LIBRARY),
     SETTINGS("settings", StudyFlowTvSurface.SETTINGS),
 }
 
@@ -45,9 +46,9 @@ object StudyFlowTvNavigationShell {
     const val shellOwnsTopLevelNavigation = true
     const val remoteAndPhoneControlShareDestinations = true
     const val routePayloadsUseSmallEnums = true
-    const val destinationCount = 8
+    const val destinationCount = 9
     const val secondaryDestinationCount = 1
-    const val allDestinationCount = 9
+    const val allDestinationCount = 10
     const val navigationRailColumn = 0
 
     val primaryDestinations: List<StudyFlowTvDestination> = listOf(
@@ -58,6 +59,7 @@ object StudyFlowTvNavigationShell {
         StudyFlowTvDestination.MOCK_EXAM,
         StudyFlowTvDestination.PROGRESS,
         StudyFlowTvDestination.SCHEDULE,
+        StudyFlowTvDestination.LIBRARY,
         StudyFlowTvDestination.SETTINGS,
     )
 

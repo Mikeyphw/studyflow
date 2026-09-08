@@ -391,3 +391,17 @@ the separate TV APK dependency and size budget.
 ### Android TV TVOV11/TVOV12
 
 TVOV11 and TVOV12 add the Android TV Review/Error Notebook and Progress/Analytics surfaces as one structured overlay. Reviews now have a source model, due queue, confidence/reason metadata, error-note state, native rendering, D-pad focus, paired-phone command routing, cast-state output, tests, and verifier. Progress now has weekly progress, accuracy, question-volume, readiness, weak-subject summaries, recommended next actions, native rendering, D-pad focus, paired-phone control routing, cast-state output, tests, and verifier while preserving the separate TV APK dependency and size budget.
+
+
+### Android TV TVOV13/TVOV14
+
+TVOV13 and TVOV14 add the Android TV read-only Schedule and limited Library/reference material surfaces as one structured overlay. Schedule now has today/week context, review windows, study blocks, practice entries, mock-exam rehearsal, D-pad focus, paired-phone navigation, and cast-state generation while keeping schedule mutation outside `:app-tv`. Library now has curated reference cards, source labels, short TV-readable excerpts, related practice/review navigation, D-pad focus, paired-phone command routing, and Library cast-state output while keeping file management, SAF, Room, and repositories outside the TV APK.
+
+
+### Android TV roadmap and working rules
+
+`TV_ANDROID_TV_FULL_ROADMAP_AND_WORKING_RULES.md` carries the full TVOV00-TVOV20 roadmap and the
+standing implementation preferences for this track. TV overlays must be structured implementation
+units with source, shell rendering, control/cast integration where relevant, tests, verifiers,
+Devtool `studyflow_tv` wiring, docs, and commit-enabled overlay metadata. Light placeholder overlays
+are not acceptable for this roadmap.

@@ -67,8 +67,8 @@ TVOV09  Question practice [implemented]
 TVOV10  Mock Exam Studio [implemented]
 TVOV11  Review and error notebook [implemented]
 TVOV12  Progress and analytics [implemented]
-TVOV13  Read-only schedule
-TVOV14  Limited library/reference material
+TVOV13  Read-only schedule [implemented]
+TVOV14  Limited library/reference material [implemented]
 TVOV15  Minimal TV settings
 TVOV16  Cross-device control/state continuity
 TVOV17  Accessibility and 10-foot UI seal
@@ -227,3 +227,48 @@ Validation:
 - `:app-tv:testDebugUnitTest`;
 - `:app-tv:compileDebugKotlin`;
 - `:app-tv:lintDebug`.
+
+
+## TVOV13 — Read-only schedule
+
+Status: implemented in `studyflow_tvov13_14_schedule_library_v1.zip`.
+
+Scope:
+- structured read-only TV schedule model with today/week context;
+- visible schedule items for review windows, study blocks, practice, mock-exam rehearsal, and recovery buffer;
+- D-pad focus items for schedule cards and actions;
+- paired-phone schedule navigation through the shared TV control protocol;
+- cast-state output for the Schedule surface without mirroring UI or exposing database rows;
+- no TV-side editing, import, deletion, rescheduling, SAF file picking, `core:data`, or `core:database` dependency.
+
+Validation:
+- `verifyStudyFlowTvReadOnlySchedule`;
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:lintDebug`.
+
+## TVOV14 — Limited library/reference material
+
+Status: implemented in `studyflow_tvov13_14_schedule_library_v1.zip`.
+
+Scope:
+- structured limited Library/reference surface with curated, read-only reference cards;
+- short TV-readable excerpts for legislation, summaries, error-notebook excerpts, and checklists;
+- D-pad focus items for references and actions;
+- paired-phone reference opening through the shared TV control protocol;
+- cast-state output for the Library surface without raw file paths, SAF handles, repositories, or database rows;
+- no TV-side library management, import/export, file deletion, note editing, `core:data`, or `core:database` dependency.
+
+Validation:
+- `verifyStudyFlowTvLibraryReference`;
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:lintDebug`.
+
+
+## Roadmap and working-rules carry-forward
+
+The full TVOV00-TVOV20 roadmap and the user's overlay preferences are preserved in
+`TV_ANDROID_TV_FULL_ROADMAP_AND_WORKING_RULES.md`. Future TV overlays must remain structured
+implementation units, never light placeholder patches, and must keep using the `studyflow_tv` target
+with explicit Devtool overlay commit metadata.

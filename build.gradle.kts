@@ -1090,3 +1090,23 @@ tasks.register<Exec>("verifyStudyFlowTvProgressAnalytics") {
     description = "Checks TVOV12 Android TV Progress and analytics source, control, focus, shell, test, and documentation contracts."
     commandLine("python3", "scripts/verify_tvov12_progress_analytics.py")
 }
+
+
+tasks.register<Exec>("verifyStudyFlowTvReadOnlySchedule") {
+    group = "verification"
+    description = "Checks TVOV13 Android TV read-only Schedule source, control, focus, shell, test, and documentation contracts."
+    commandLine("python3", "scripts/verify_tvov13_read_only_schedule.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvLibraryReference") {
+    group = "verification"
+    description = "Checks TVOV14 Android TV limited Library/reference source, control, focus, shell, test, and documentation contracts."
+    commandLine("python3", "scripts/verify_tvov14_library_reference.py")
+}
+
+
+tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
+    group = "verification"
+    description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."
+    commandLine("python3", "scripts/verify_tv_roadmap_instructions.py")
+}

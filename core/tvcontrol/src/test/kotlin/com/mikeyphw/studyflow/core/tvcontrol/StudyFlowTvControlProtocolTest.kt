@@ -89,4 +89,26 @@ class StudyFlowTvControlProtocolTest {
         assertTrue(StudyFlowTvControlProtocol.isCastable(StudyFlowTvSurface.MOCK_EXAM))
     }
 
+
+    @Test
+    fun scheduleAndLibraryCastStatesArePresentationOnly() {
+        assertTrue(StudyFlowTvControlProtocol.isCastable(StudyFlowTvSurface.SCHEDULE))
+        assertTrue(StudyFlowTvControlProtocol.isCastable(StudyFlowTvSurface.LIBRARY))
+
+        val libraryCast = StudyFlowTvCastState(
+            castId = "cast-library-1",
+            surface = StudyFlowTvSurface.LIBRARY,
+            title = "Reference card",
+            subtitle = "Pinned excerpt",
+            progressPercent = 50,
+            activeItemId = "constitution_article_five",
+            updatedAtEpochMillis = 6_000L,
+        )
+
+        val encoded = json.encodeToString(libraryCast)
+        assertEquals(libraryCast, json.decodeFromString<StudyFlowTvCastState>(encoded))
+        assertFalse(encoded.contains("file://"))
+        assertFalse(encoded.contains("Room"))
+        assertFalse(encoded.contains("Dao"))
+    }
 }

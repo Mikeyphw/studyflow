@@ -25,6 +25,7 @@ object StudyFlowTvControlProtocol {
         StudyFlowTvSurface.MOCK_EXAM,
         StudyFlowTvSurface.PROGRESS,
         StudyFlowTvSurface.SCHEDULE,
+        StudyFlowTvSurface.LIBRARY,
     )
 
     fun isControllable(surface: StudyFlowTvSurface): Boolean = surface in controllableSurfaces

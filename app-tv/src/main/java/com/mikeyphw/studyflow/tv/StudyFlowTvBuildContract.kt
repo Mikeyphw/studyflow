@@ -25,11 +25,11 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV12"
+    const val currentTvOverlay = "TVOV14"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
-    const val navigationDestinationCount = 8
+    const val navigationDestinationCount = 9
     const val secondaryNavigationDestinationCount = 1
 }
 
@@ -116,4 +116,31 @@ object StudyFlowTvProgressAnalyticsBuildContract {
     const val progressAnalyticsMetricCount = 4
     const val progressAnalyticsSubjectCount = 4
     const val progressAnalyticsActionCount = 4
+}
+
+
+// TVOV13 Read-only schedule contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvScheduleBuildContract {
+    const val readOnlyScheduleIntroduced = true
+    const val scheduleRequiresNoComposeRuntime = true
+    const val scheduleUsesSharedControlProtocol = true
+    const val scheduleSupportsRemoteAndPhoneNavigation = true
+    const val scheduleEditingDisabledOnTv = true
+    const val scheduleEmitsCastState = true
+    const val scheduleItemCount = 5
+    const val scheduleActionCount = 5
+}
+
+// TVOV14 Limited library/reference material contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvLibraryBuildContract {
+    const val limitedLibraryReferenceIntroduced = true
+    const val libraryRequiresNoComposeRuntime = true
+    const val libraryUsesSharedControlProtocol = true
+    const val librarySupportsRemoteAndPhoneNavigation = true
+    const val libraryFileManagementDisabledOnTv = true
+    const val libraryEmitsCastState = true
+    const val libraryReferenceCount = 4
+    const val libraryActionCount = 5
 }

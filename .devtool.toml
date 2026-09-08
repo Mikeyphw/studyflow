@@ -430,6 +430,9 @@ build = [
   "verifyStudyFlowTvMockExamStudio",
   "verifyStudyFlowTvReviewNotebook",
   "verifyStudyFlowTvProgressAnalytics",
+  "verifyStudyFlowTvReadOnlySchedule",
+  "verifyStudyFlowTvLibraryReference",
+  "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:compileKotlin",
   ":app-tv:assembleDebug",
 ]
@@ -448,6 +451,9 @@ test = [
   "verifyStudyFlowTvMockExamStudio",
   "verifyStudyFlowTvReviewNotebook",
   "verifyStudyFlowTvProgressAnalytics",
+  "verifyStudyFlowTvReadOnlySchedule",
+  "verifyStudyFlowTvLibraryReference",
+  "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
 ]
@@ -468,6 +474,9 @@ lint = [
   "verifyStudyFlowTvMockExamStudio",
   "verifyStudyFlowTvReviewNotebook",
   "verifyStudyFlowTvProgressAnalytics",
+  "verifyStudyFlowTvReadOnlySchedule",
+  "verifyStudyFlowTvLibraryReference",
+  "verifyStudyFlowTvRoadmapInstructions",
   ":app-tv:lintDebug",
 ]
 clean = ["clean"]
@@ -493,6 +502,9 @@ preflight = [
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
   "verifyStudyFlowTvPairingControlCastProtocol",
+  "verifyStudyFlowTvReadOnlySchedule",
+  "verifyStudyFlowTvLibraryReference",
+  "verifyStudyFlowTvRoadmapInstructions",
 ]
 compile = [
   "verifyStudyFlowTvArchitecture",
@@ -509,6 +521,9 @@ compile = [
   "verifyStudyFlowTvMockExamStudio",
   "verifyStudyFlowTvReviewNotebook",
   "verifyStudyFlowTvProgressAnalytics",
+  "verifyStudyFlowTvReadOnlySchedule",
+  "verifyStudyFlowTvLibraryReference",
+  "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:compileKotlin",
   ":app-tv:compileDebugKotlin",
 ]
@@ -527,6 +542,9 @@ unit-test = [
   "verifyStudyFlowTvMockExamStudio",
   "verifyStudyFlowTvReviewNotebook",
   "verifyStudyFlowTvProgressAnalytics",
+  "verifyStudyFlowTvReadOnlySchedule",
+  "verifyStudyFlowTvLibraryReference",
+  "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
 ]
@@ -542,6 +560,9 @@ package = [
   "verifyStudyFlowTvMockExamStudio",
   "verifyStudyFlowTvReviewNotebook",
   "verifyStudyFlowTvProgressAnalytics",
+  "verifyStudyFlowTvReadOnlySchedule",
+  "verifyStudyFlowTvLibraryReference",
+  "verifyStudyFlowTvRoadmapInstructions",
   ":app-tv:assembleDebug",
 ]
 lint = [
@@ -561,6 +582,9 @@ lint = [
   "verifyStudyFlowTvMockExamStudio",
   "verifyStudyFlowTvReviewNotebook",
   "verifyStudyFlowTvProgressAnalytics",
+  "verifyStudyFlowTvReadOnlySchedule",
+  "verifyStudyFlowTvLibraryReference",
+  "verifyStudyFlowTvRoadmapInstructions",
   ":app-tv:lintDebug",
 ]
 

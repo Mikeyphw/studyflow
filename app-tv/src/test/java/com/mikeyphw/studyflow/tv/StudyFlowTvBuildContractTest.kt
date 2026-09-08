@@ -26,11 +26,11 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV12", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV14", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
-        assertEquals(8, StudyFlowTvBuildContract.navigationDestinationCount)
+        assertEquals(9, StudyFlowTvBuildContract.navigationDestinationCount)
         assertEquals(1, StudyFlowTvBuildContract.secondaryNavigationDestinationCount)
         assertTrue(StudyFlowTvHomeBuildContract.homeSurfaceIntroduced)
         assertTrue(StudyFlowTvHomeBuildContract.homeSurfaceRequiresNoComposeRuntime)
@@ -94,5 +94,25 @@ class StudyFlowTvBuildContractTest {
         assertEquals(4, StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsMetricCount)
         assertEquals(4, StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsSubjectCount)
         assertEquals(4, StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsActionCount)
+    }
+
+    @Test
+    fun scheduleAndLibraryContractsAreRealTvSurfaces() {
+        assertTrue(StudyFlowTvScheduleBuildContract.readOnlyScheduleIntroduced)
+        assertTrue(StudyFlowTvScheduleBuildContract.scheduleRequiresNoComposeRuntime)
+        assertTrue(StudyFlowTvScheduleBuildContract.scheduleUsesSharedControlProtocol)
+        assertTrue(StudyFlowTvScheduleBuildContract.scheduleSupportsRemoteAndPhoneNavigation)
+        assertTrue(StudyFlowTvScheduleBuildContract.scheduleEditingDisabledOnTv)
+        assertTrue(StudyFlowTvScheduleBuildContract.scheduleEmitsCastState)
+        assertEquals(5, StudyFlowTvScheduleBuildContract.scheduleItemCount)
+        assertEquals(5, StudyFlowTvScheduleBuildContract.scheduleActionCount)
+        assertTrue(StudyFlowTvLibraryBuildContract.limitedLibraryReferenceIntroduced)
+        assertTrue(StudyFlowTvLibraryBuildContract.libraryRequiresNoComposeRuntime)
+        assertTrue(StudyFlowTvLibraryBuildContract.libraryUsesSharedControlProtocol)
+        assertTrue(StudyFlowTvLibraryBuildContract.librarySupportsRemoteAndPhoneNavigation)
+        assertTrue(StudyFlowTvLibraryBuildContract.libraryFileManagementDisabledOnTv)
+        assertTrue(StudyFlowTvLibraryBuildContract.libraryEmitsCastState)
+        assertEquals(4, StudyFlowTvLibraryBuildContract.libraryReferenceCount)
+        assertEquals(5, StudyFlowTvLibraryBuildContract.libraryActionCount)
     }
 }

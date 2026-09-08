@@ -6,7 +6,6 @@ import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusPolicy
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusRole
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -21,7 +20,7 @@ class StudyFlowTvNavigationShellTest {
         assertTrue(StudyFlowTvNavigationShell.routePayloadsUseSmallEnums)
         assertEquals(StudyFlowTvNavigationShell.destinationCount, destinations.size)
         assertEquals(1, StudyFlowTvNavigationShell.secondaryDestinationCount)
-        assertEquals(9, StudyFlowTvNavigationShell.allDestinationCount)
+        assertEquals(10, StudyFlowTvNavigationShell.allDestinationCount)
         assertEquals(StudyFlowTvDestination.HOME, StudyFlowTvNavigationShell.defaultDestination())
         assertEquals(destinations.size, destinations.map { it.route }.toSet().size)
         assertEquals(destinations.size, destinations.map { it.surface }.toSet().size)
@@ -45,7 +44,8 @@ class StudyFlowTvNavigationShellTest {
         assertEquals(StudyFlowTvDestination.MOCK_EXAM, StudyFlowTvNavigationShell.destinationForSurface(StudyFlowTvSurface.MOCK_EXAM))
         assertEquals(StudyFlowTvDestination.STUDY_SESSION, StudyFlowTvNavigationShell.destinationForSurface(StudyFlowTvSurface.STUDY_SESSION))
         assertEquals(StudyFlowTvDestination.STUDY_SESSION, StudyFlowTvNavigationShell.destinationForRoute("session"))
-        assertNull(StudyFlowTvNavigationShell.destinationForSurface(StudyFlowTvSurface.LIBRARY))
+        assertEquals(StudyFlowTvDestination.LIBRARY, StudyFlowTvNavigationShell.destinationForRoute("library"))
+        assertEquals(StudyFlowTvDestination.LIBRARY, StudyFlowTvNavigationShell.destinationForSurface(StudyFlowTvSurface.LIBRARY))
     }
 
     @Test

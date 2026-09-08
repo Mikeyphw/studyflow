@@ -1,3 +1,10 @@
+## TVOV13/TVOV14 - Android TV Schedule and Library Reference
+
+- Added the Android TV read-only Schedule surface with today/week schedule context, review windows, study blocks, practice entries, mock-exam rehearsal, D-pad focus, paired-phone navigation commands, cast-state output, unit tests, and verifier wiring.
+- Added the Android TV limited Library/reference surface with curated reference cards, short excerpts, source labels, related learning navigation, D-pad focus, paired-phone commands, Library cast-state output, unit tests, and verifier wiring.
+- Added `StudyFlowTvSurface.LIBRARY` as a castable presentation surface and mapped `StudyFlowTvDestination.LIBRARY` into the native TV navigation shell.
+- Preserved the TV APK dependency boundary: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, `core:data`, `core:database`, SAF file management, or phone feature-module fanout in `:app-tv`.
+
 # TVOV07/TVOV08 Today workspace and Study session
 
 ## TVOV07 - Android TV Today workspace
