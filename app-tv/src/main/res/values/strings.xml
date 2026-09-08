@@ -44,7 +44,7 @@
     <string name="tv_home_card_mock_exam_title">Mock exam</string>
     <string name="tv_home_card_mock_exam_body">Enter the TV mock-exam studio when timed practice is ready.</string>
     <string name="tv_today_section_title">Today workspace</string>
-    <string name="tv_today_status_format">%1$s · %2$s · next block %3$d min · reviews due: %4$d · questions queued: %5$d · %6$d%% weekly progress</string>
+    <string name="tv_today_status_format">%1$s · %2$s · next-block-minutes=%3$d · review-count=%4$d · question-count=%5$d · weekly-progress=%6$d%%</string>
     <string name="tv_today_block_next_title">Next study block</string>
     <string name="tv_today_block_next_body">Start the active block and keep progress visible on TV.</string>
     <string name="tv_today_block_reviews_title">Due reviews</string>
@@ -94,4 +94,37 @@
     <string name="tv_mock_action_submit">Submit</string>
     <string name="tv_mock_action_results">Results</string>
     <string name="tv_mock_action_home">Home</string>
+
+    <string name="tv_reviews_section_title">Review and error notebook</string>
+    <string name="tv_reviews_status_format">%1$s · %2$s · progress=%3$d%% · due-count=%4$d · error-notes=%5$d</string>
+    <string name="tv_reviews_card_body_format">%1$s · confidence=%2$d%%\n%3$s</string>
+    <string name="tv_reviews_note_format">Review note: %1$s · confidence=%2$d%%</string>
+    <string name="tv_reviews_item_constitution_title">Constitution flashcards</string>
+    <string name="tv_reviews_item_admin_title">Administrative law errors</string>
+    <string name="tv_reviews_item_portuguese_title">Portuguese grammar traps</string>
+    <string name="tv_reviews_item_informatics_title">Informatics short notes</string>
+    <string name="tv_reviews_action_start">Start review</string>
+    <string name="tv_reviews_action_next">Next item</string>
+    <string name="tv_reviews_action_known">Known</string>
+    <string name="tv_reviews_action_error_note">Error note</string>
+    <string name="tv_reviews_action_explain">Explain</string>
+    <string name="tv_reviews_action_complete">Complete</string>
+    <string name="tv_reviews_action_today">Today</string>
+    <string name="tv_progress_section_title">Progress overview</string>
+    <string name="tv_progress_weak_subjects_title">Weak subjects</string>
+    <string name="tv_progress_status_format">%1$s · %2$s · weekly=%3$d%% · readiness=%4$d%% · weakest=%5$s</string>
+    <string name="tv_progress_metric_body_format">%1$s · %2$s · score=%3$d%%</string>
+    <string name="tv_progress_subject_body_format">readiness=%1$d%% · weak area: %2$s</string>
+    <string name="tv_progress_metric_weekly_title">Weekly progress</string>
+    <string name="tv_progress_metric_accuracy_title">Accuracy</string>
+    <string name="tv_progress_metric_volume_title">Question volume</string>
+    <string name="tv_progress_metric_readiness_title">Readiness</string>
+    <string name="tv_progress_subject_constitutional_title">Constitutional Law</string>
+    <string name="tv_progress_subject_admin_title">Administrative Law</string>
+    <string name="tv_progress_subject_portuguese_title">Portuguese</string>
+    <string name="tv_progress_subject_informatics_title">Informatics</string>
+    <string name="tv_progress_action_today">Today</string>
+    <string name="tv_progress_action_practice">Practice</string>
+    <string name="tv_progress_action_reviews">Reviews</string>
+    <string name="tv_progress_action_mock">Mock exam</string>
 </resources>

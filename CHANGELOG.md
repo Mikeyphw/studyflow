@@ -427,3 +427,11 @@ copy.
 - Fixed the TV Today status string that triggered the lint plural-candidate warning.
 - Preserved the TV dependency boundary: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter,
   phone feature-module fanout, `core:data`, or `core:database` in `:app-tv`.
+
+
+## TVOV11/TVOV12 - Android TV Review Notebook and Progress Analytics
+
+- Added TV Review/Error Notebook with due review cards, confidence/reason metadata, known/error-note state transitions, D-pad focus, paired-phone commands, cast state, tests, and verifier.
+- Added TV Progress/Analytics with weekly progress, accuracy, question-volume, readiness, weak-subject summaries, recommended next actions, D-pad focus, paired-phone commands, cast state, tests, and verifier.
+- Fixed the TV Today status string plural-candidate warning by removing `%d` followed by plural words.
+- Preserved the TV dependency boundary: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature-module fanout, `core:data`, or `core:database` in `:app-tv`.

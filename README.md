@@ -386,3 +386,8 @@ TVOV09 and TVOV10 add the Android TV Question Practice and Mock Exam Studio surf
 structured overlay. Both surfaces have real TV models, native shell rendering, D-pad focus contracts,
 paired-phone command routing, cast-state generation, unit tests, and verifier tasks while preserving
 the separate TV APK dependency and size budget.
+
+
+### Android TV TVOV11/TVOV12
+
+TVOV11 and TVOV12 add the Android TV Review/Error Notebook and Progress/Analytics surfaces as one structured overlay. Reviews now have a source model, due queue, confidence/reason metadata, error-note state, native rendering, D-pad focus, paired-phone command routing, cast-state output, tests, and verifier. Progress now has weekly progress, accuracy, question-volume, readiness, weak-subject summaries, recommended next actions, native rendering, D-pad focus, paired-phone control routing, cast-state output, tests, and verifier while preserving the separate TV APK dependency and size budget.

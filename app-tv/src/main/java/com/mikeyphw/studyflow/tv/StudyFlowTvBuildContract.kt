@@ -5,8 +5,8 @@ package com.mikeyphw.studyflow.tv
  * structured TV roadmap overlays.
  *
  * The TV APK remains a separate, measured target. TVOV07 and TVOV08 add real Today and Study
- * Session, Question Practice, and Mock Exam surfaces through native Android views, small Kotlin
- * models, and the shared tv-control protocol instead of pulling phone feature modules into the TV APK.
+ * Session, Question Practice, Mock Exam, Review Notebook, and Progress surfaces through
+ * native Android views, small Kotlin models, and the shared tv-control protocol instead of pulling phone feature modules into the TV APK.
  */
 object StudyFlowTvBuildContract {
     const val tvOverlay = "TVOV01"
@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV10"
+    const val currentTvOverlay = "TVOV12"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -91,4 +91,29 @@ object StudyFlowTvMockExamBuildContract {
     const val mockExamEmitsCastState = true
     const val mockExamSectionCount = 4
     const val mockExamActionCount = 8
+}
+
+// TVOV11 Review and error-notebook contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvReviewNotebookBuildContract {
+    const val reviewNotebookIntroduced = true
+    const val reviewNotebookRequiresNoComposeRuntime = true
+    const val reviewNotebookUsesSharedControlProtocol = true
+    const val reviewNotebookSupportsRemoteAndPhoneControls = true
+    const val reviewNotebookEmitsCastState = true
+    const val reviewNotebookItemCount = 4
+    const val reviewNotebookActionCount = 7
+}
+
+// TVOV12 Progress and analytics contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvProgressAnalyticsBuildContract {
+    const val progressAnalyticsIntroduced = true
+    const val progressAnalyticsRequiresNoComposeRuntime = true
+    const val progressAnalyticsUsesSharedControlProtocol = true
+    const val progressAnalyticsSupportsRemoteAndPhoneControls = true
+    const val progressAnalyticsEmitsCastState = true
+    const val progressAnalyticsMetricCount = 4
+    const val progressAnalyticsSubjectCount = 4
+    const val progressAnalyticsActionCount = 4
 }

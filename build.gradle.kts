@@ -1078,3 +1078,15 @@ tasks.register<Exec>("verifyStudyFlowTvMockExamStudio") {
     description = "Checks TVOV10 Android TV Mock Exam Studio source, control, focus, shell, test, and documentation contracts."
     commandLine("python3", "scripts/verify_tvov10_mock_exam_studio.py")
 }
+
+tasks.register<Exec>("verifyStudyFlowTvReviewNotebook") {
+    group = "verification"
+    description = "Checks TVOV11 Android TV Review and error-notebook source, control, focus, shell, test, and documentation contracts."
+    commandLine("python3", "scripts/verify_tvov11_review_notebook.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvProgressAnalytics") {
+    group = "verification"
+    description = "Checks TVOV12 Android TV Progress and analytics source, control, focus, shell, test, and documentation contracts."
+    commandLine("python3", "scripts/verify_tvov12_progress_analytics.py")
+}

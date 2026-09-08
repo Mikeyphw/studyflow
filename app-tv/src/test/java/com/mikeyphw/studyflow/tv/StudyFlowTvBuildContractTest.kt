@@ -26,7 +26,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV10", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV12", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
@@ -74,5 +74,25 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvMockExamBuildContract.mockExamEmitsCastState)
         assertEquals(4, StudyFlowTvMockExamBuildContract.mockExamSectionCount)
         assertEquals(8, StudyFlowTvMockExamBuildContract.mockExamActionCount)
+    }
+
+
+    @Test
+    fun reviewNotebookAndProgressContractsAreRealTvSurfaces() {
+        assertTrue(StudyFlowTvReviewNotebookBuildContract.reviewNotebookIntroduced)
+        assertTrue(StudyFlowTvReviewNotebookBuildContract.reviewNotebookRequiresNoComposeRuntime)
+        assertTrue(StudyFlowTvReviewNotebookBuildContract.reviewNotebookUsesSharedControlProtocol)
+        assertTrue(StudyFlowTvReviewNotebookBuildContract.reviewNotebookSupportsRemoteAndPhoneControls)
+        assertTrue(StudyFlowTvReviewNotebookBuildContract.reviewNotebookEmitsCastState)
+        assertEquals(4, StudyFlowTvReviewNotebookBuildContract.reviewNotebookItemCount)
+        assertEquals(7, StudyFlowTvReviewNotebookBuildContract.reviewNotebookActionCount)
+        assertTrue(StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsIntroduced)
+        assertTrue(StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsRequiresNoComposeRuntime)
+        assertTrue(StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsUsesSharedControlProtocol)
+        assertTrue(StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsSupportsRemoteAndPhoneControls)
+        assertTrue(StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsEmitsCastState)
+        assertEquals(4, StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsMetricCount)
+        assertEquals(4, StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsSubjectCount)
+        assertEquals(4, StudyFlowTvProgressAnalyticsBuildContract.progressAnalyticsActionCount)
     }
 }

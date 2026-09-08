@@ -34,6 +34,18 @@ import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeAction
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeChoice
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPractice
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPracticeState
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressAction
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressAnalytics
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressMetric
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressMetricId
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressSubject
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressSubjectId
+import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewAction
+import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewId
+import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewItem
+import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewNotebook
+import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewState
+import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewStatus
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlock
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlockId
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
@@ -43,6 +55,7 @@ class StudyFlowTvActivity : Activity() {
     private var studySessionState: StudyFlowTvSessionState = StudyFlowTvStudySessionExperience.defaultState()
     private var questionPracticeState: StudyFlowTvQuestionPracticeState = StudyFlowTvQuestionPractice.defaultState()
     private var mockExamState: StudyFlowTvMockExamState = StudyFlowTvMockExamStudio.defaultState()
+    private var reviewState: StudyFlowTvReviewState = StudyFlowTvReviewNotebook.defaultState()
     private lateinit var contentTitle: TextView
     private lateinit var contentBody: TextView
     private lateinit var contentCards: LinearLayout
@@ -209,6 +222,8 @@ class StudyFlowTvActivity : Activity() {
             StudyFlowTvDestination.STUDY_SESSION -> renderStudySessionDestination()
             StudyFlowTvDestination.PRACTICE -> renderQuestionPracticeDestination()
             StudyFlowTvDestination.MOCK_EXAM -> renderMockExamDestination()
+            StudyFlowTvDestination.REVIEWS -> renderReviewDestination()
+            StudyFlowTvDestination.PROGRESS -> renderProgressDestination()
             else -> renderStaticDestination(destination)
         }
         navButtons.forEach { (itemDestination, button) ->
@@ -404,6 +419,99 @@ class StudyFlowTvActivity : Activity() {
         )
     }
 
+    private fun renderReviewDestination() {
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        val state = reviewState
+        contentTitle.text = getString(R.string.tv_content_title_reviews)
+        contentBody.text = getString(
+            R.string.tv_reviews_status_format,
+            state.status.name.lowercase(),
+            state.activeReview.subject,
+            state.progressPercent,
+            state.dueCount,
+            state.errorNoteIds.size,
+        )
+        contentCards.addView(sectionLabel(R.string.tv_reviews_section_title))
+        state.items.chunked(2).forEach { rowItems ->
+            contentCards.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    rowItems.forEach { item -> addView(tvReviewItem(item)) }
+                },
+            )
+        }
+        if (state.explanationVisible || state.status == StudyFlowTvReviewStatus.ERROR_NOTEBOOK) {
+            contentCards.addView(
+                TextView(this).apply {
+                    text = getString(
+                        R.string.tv_reviews_note_format,
+                        state.activeReview.reason,
+                        state.activeReview.confidencePercent,
+                    )
+                    setTextColor(Color.rgb(226, 232, 240))
+                    textSize = 18f
+                    gravity = Gravity.START
+                    setPadding(0, dp(8), 0, dp(8))
+                },
+            )
+        }
+        contentCards.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START
+                setPadding(0, dp(12), 0, 0)
+                StudyFlowTvReviewNotebook.availableActions(reviewState)
+                    .forEach { action -> addView(tvReviewAction(action)) }
+            },
+        )
+    }
+
+    private fun renderProgressDestination() {
+        val snapshot = StudyFlowTvProgressAnalytics.defaultSnapshot()
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        contentTitle.text = getString(R.string.tv_content_title_progress)
+        contentBody.text = getString(
+            R.string.tv_progress_status_format,
+            snapshot.examName,
+            snapshot.weekLabel,
+            snapshot.weeklyProgressPercent,
+            snapshot.averageReadinessPercent,
+            snapshot.weakestSubject.title,
+        )
+        contentCards.addView(sectionLabel(R.string.tv_progress_section_title))
+        snapshot.metrics.chunked(2).forEach { rowMetrics ->
+            contentCards.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    rowMetrics.forEach { metric -> addView(tvProgressMetric(metric)) }
+                },
+            )
+        }
+        contentCards.addView(sectionLabel(R.string.tv_progress_weak_subjects_title))
+        snapshot.subjects.chunked(2).forEach { rowSubjects ->
+            contentCards.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    rowSubjects.forEach { subject -> addView(tvProgressSubject(subject)) }
+                },
+            )
+        }
+        contentCards.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START
+                setPadding(0, dp(12), 0, 0)
+                StudyFlowTvProgressAnalytics.actions
+                    .forEach { action -> addView(tvProgressAction(action)) }
+            },
+        )
+    }
+
     private fun toggleStudySessionPlayback() {
         studySessionState = StudyFlowTvStudySessionExperience.applyAction(
             studySessionState,
@@ -509,6 +617,62 @@ class StudyFlowTvActivity : Activity() {
                 mockExamState = StudyFlowTvMockExamStudio.applyAction(mockExamState, action)
                 renderMockExamDestination()
             }
+        }
+    }
+
+    private fun tvReviewItem(item: StudyFlowTvReviewItem): Button = tvCardButton(
+        title = getString(item.titleResId()),
+        body = getString(
+            R.string.tv_reviews_card_body_format,
+            item.subject,
+            item.confidencePercent,
+            item.reason,
+        ),
+        onClick = {
+            reviewState = reviewState.copy(
+                status = StudyFlowTvReviewStatus.REVIEWING,
+                activeReviewIndex = reviewState.items.indexOfFirst { it.id == item.id }.coerceAtLeast(0),
+                explanationVisible = false,
+            )
+            renderReviewDestination()
+        },
+    )
+
+    private fun tvReviewAction(action: StudyFlowTvReviewAction): Button = tvActionButton(action.labelResId()).apply {
+        setOnClickListener {
+            if (action == StudyFlowTvReviewAction.RETURN_TODAY) {
+                selectDestination(StudyFlowTvDestination.TODAY)
+            } else {
+                reviewState = StudyFlowTvReviewNotebook.applyAction(reviewState, action)
+                renderReviewDestination()
+            }
+        }
+    }
+
+    private fun tvProgressMetric(metric: StudyFlowTvProgressMetric): Button = tvCardButton(
+        title = getString(metric.titleResId()),
+        body = getString(
+            R.string.tv_progress_metric_body_format,
+            metric.valueLabel,
+            metric.trendLabel,
+            metric.percent,
+        ),
+        onClick = { selectDestination(StudyFlowTvDestination.PROGRESS) },
+    )
+
+    private fun tvProgressSubject(subject: StudyFlowTvProgressSubject): Button = tvCardButton(
+        title = getString(subject.titleResId()),
+        body = getString(
+            R.string.tv_progress_subject_body_format,
+            subject.readinessPercent,
+            subject.weakArea,
+        ),
+        onClick = { selectDestination(subject.recommendedDestination) },
+    )
+
+    private fun tvProgressAction(action: StudyFlowTvProgressAction): Button = tvActionButton(action.labelResId()).apply {
+        setOnClickListener {
+            selectDestination(StudyFlowTvProgressAnalytics.destinationForAction(action))
         }
     }
 
@@ -676,6 +840,44 @@ class StudyFlowTvActivity : Activity() {
         StudyFlowTvMockExamAction.SUBMIT -> R.string.tv_mock_action_submit
         StudyFlowTvMockExamAction.REVIEW_RESULTS -> R.string.tv_mock_action_results
         StudyFlowTvMockExamAction.RETURN_HOME -> R.string.tv_mock_action_home
+    }
+
+    private fun StudyFlowTvReviewItem.titleResId(): Int = when (id) {
+        StudyFlowTvReviewId.CONSTITUTION_FLASHCARDS -> R.string.tv_reviews_item_constitution_title
+        StudyFlowTvReviewId.ADMINISTRATIVE_LAW_ERRORS -> R.string.tv_reviews_item_admin_title
+        StudyFlowTvReviewId.PORTUGUESE_GRAMMAR -> R.string.tv_reviews_item_portuguese_title
+        StudyFlowTvReviewId.INFORMATICS_SHORT_NOTES -> R.string.tv_reviews_item_informatics_title
+    }
+
+    private fun StudyFlowTvReviewAction.labelResId(): Int = when (this) {
+        StudyFlowTvReviewAction.START_REVIEW -> R.string.tv_reviews_action_start
+        StudyFlowTvReviewAction.NEXT_ITEM -> R.string.tv_reviews_action_next
+        StudyFlowTvReviewAction.MARK_KNOWN -> R.string.tv_reviews_action_known
+        StudyFlowTvReviewAction.ADD_ERROR_NOTE -> R.string.tv_reviews_action_error_note
+        StudyFlowTvReviewAction.SHOW_EXPLANATION -> R.string.tv_reviews_action_explain
+        StudyFlowTvReviewAction.COMPLETE_REVIEW -> R.string.tv_reviews_action_complete
+        StudyFlowTvReviewAction.RETURN_TODAY -> R.string.tv_reviews_action_today
+    }
+
+    private fun StudyFlowTvProgressMetric.titleResId(): Int = when (id) {
+        StudyFlowTvProgressMetricId.WEEKLY_PROGRESS -> R.string.tv_progress_metric_weekly_title
+        StudyFlowTvProgressMetricId.ACCURACY -> R.string.tv_progress_metric_accuracy_title
+        StudyFlowTvProgressMetricId.QUESTION_VOLUME -> R.string.tv_progress_metric_volume_title
+        StudyFlowTvProgressMetricId.READINESS -> R.string.tv_progress_metric_readiness_title
+    }
+
+    private fun StudyFlowTvProgressSubject.titleResId(): Int = when (id) {
+        StudyFlowTvProgressSubjectId.CONSTITUTIONAL_LAW -> R.string.tv_progress_subject_constitutional_title
+        StudyFlowTvProgressSubjectId.ADMINISTRATIVE_LAW -> R.string.tv_progress_subject_admin_title
+        StudyFlowTvProgressSubjectId.PORTUGUESE -> R.string.tv_progress_subject_portuguese_title
+        StudyFlowTvProgressSubjectId.INFORMATICS -> R.string.tv_progress_subject_informatics_title
+    }
+
+    private fun StudyFlowTvProgressAction.labelResId(): Int = when (this) {
+        StudyFlowTvProgressAction.OPEN_TODAY -> R.string.tv_progress_action_today
+        StudyFlowTvProgressAction.OPEN_PRACTICE -> R.string.tv_progress_action_practice
+        StudyFlowTvProgressAction.OPEN_REVIEWS -> R.string.tv_progress_action_reviews
+        StudyFlowTvProgressAction.OPEN_MOCK_EXAM -> R.string.tv_progress_action_mock
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

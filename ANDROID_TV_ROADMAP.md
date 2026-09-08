@@ -60,13 +60,13 @@ TVOV02  TV dependency budget and lint-clean app module [implemented]
 TVOV03  Phone-to-TV pairing, protocol, and cast foundation [implemented]
 TVOV04  D-pad and focus primitives [implemented]
 TVOV05  TV navigation shell [implemented]
-TVOV06  TV Home / dashboard
+TVOV06  TV Home / dashboard [implemented]
 TVOV07  Today workspace for TV [implemented]
 TVOV08  Study session experience [implemented]
 TVOV09  Question practice [implemented]
 TVOV10  Mock Exam Studio [implemented]
-TVOV11  Review and error notebook
-TVOV12  Progress and analytics
+TVOV11  Review and error notebook [implemented]
+TVOV12  Progress and analytics [implemented]
 TVOV13  Read-only schedule
 TVOV14  Limited library/reference material
 TVOV15  Minimal TV settings
@@ -190,3 +190,40 @@ TVOV10 implements a real Android TV Mock Exam Studio. It contains timed sections
 submitted/results states, section advancement, mark-for-review, submit, result review, D-pad focus
 items, paired-phone command generation, and cast-state generation. It does not import phone feature
 modules, Room repositories, Compose, AndroidX TV UI, Cast SDK, or MediaRouter.
+
+
+## TVOV11 — Review and error notebook
+
+Status: implemented in `studyflow_tvov11_12_review_progress_v1.zip`.
+
+Scope:
+- structured review queue with due items, confidence, reasons, active item, known markers, and error-note markers;
+- state machine for ready, reviewing, explanation, error-notebook, and completed states;
+- TV-rendered review cards and actions for start, next, known, error note, explanation, complete, and Today;
+- D-pad focus items for cards and actions;
+- paired-phone command generation and cast-state output through the shared `:core:tvcontrol` protocol;
+- no Compose, AndroidX TV UI, Cast SDK, MediaRouter, `core:data`, `core:database`, or phone feature-module dependency is introduced.
+
+Validation:
+- `verifyStudyFlowTvReviewNotebook`;
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:lintDebug`.
+
+## TVOV12 — Progress and analytics
+
+Status: implemented in `studyflow_tvov11_12_review_progress_v1.zip`.
+
+Scope:
+- structured progress snapshot with weekly progress, accuracy, question volume, readiness, and weak-subject summaries;
+- TV-rendered metric cards, weak-subject cards, and recommended next actions;
+- D-pad focus items for metrics, subjects, and actions;
+- paired-phone command generation through shared TV navigation/control protocol;
+- cast-state output for the `PROGRESS` surface;
+- no Compose, AndroidX TV UI, Cast SDK, MediaRouter, `core:data`, `core:database`, or phone feature-module dependency is introduced.
+
+Validation:
+- `verifyStudyFlowTvProgressAnalytics`;
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:lintDebug`.
