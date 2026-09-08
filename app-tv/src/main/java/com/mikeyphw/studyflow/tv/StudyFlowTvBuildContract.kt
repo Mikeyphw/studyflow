@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV20"
+    const val currentTvOverlay = "TVOV21"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -208,7 +208,7 @@ object StudyFlowTvPackagingBuildContract {
     const val cleartextTrafficDisabled = true
     const val tvTargetRejectsPhoneTasks = true
     const val conditionalReleaseSigningSupported = true
-    const val packageVersionCode = 20
+    const val packageVersionCode = 21
 }
 
 // TVOV20 Real-device acceptance and release seal contract.
@@ -224,3 +224,14 @@ object StudyFlowTvFinalAcceptanceBuildContract {
     const val physicalDeviceAcceptanceMustNotBeClaimedWhenSkipped = true
     const val releaseTargetMiB = 25
 }
+// TVOV21 Typed presentation snapshots and canonical data projection contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvPresentationBuildContract {
+    const val typedPresentationProtocolIntroduced = true
+    const val phoneOwnsCanonicalProjection = true
+    const val tvRuntimeFixtureDefaultsDisabled = true
+    const val tvHasNoRepositoryOrDatabaseDependency = true
+    const val presentationTransportStillDeferred = true
+    const val projectedSurfaceCount = 8
+}
+

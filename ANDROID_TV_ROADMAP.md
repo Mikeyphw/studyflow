@@ -75,6 +75,12 @@ TVOV17  Accessibility and 10-foot UI seal [implemented]
 TVOV18  Size optimization, R8, and resource shrinking [implemented]
 TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [implemented]
 TVOV20  Real-device acceptance and release seal [implemented]
+TVOV21  Typed presentation snapshots and canonical data projection [implemented]
+TVOV22  Local pairing, discovery, and transport [next]
+TVOV23  Android phone TV controller [planned]
+TVOV24  Real cast/state synchronization [planned]
+TVOV25  Domain truth and persistence convergence [planned]
+TVOV26  End-to-end physical-device final seal [planned]
 ```
 
 ## Stopping gate
@@ -268,7 +274,7 @@ Validation:
 
 ## Roadmap and working-rules carry-forward
 
-The full TVOV00-TVOV20 roadmap and the user's overlay preferences are preserved in
+The TVOV00-TVOV21 implementation chain, corrective roadmap, and the user's overlay preferences are preserved in
 `TV_ANDROID_TV_FULL_ROADMAP_AND_WORKING_RULES.md`. Future TV overlays must remain structured
 implementation units, never light placeholder patches, and must keep using the `studyflow_tv` target
 with explicit Devtool overlay commit metadata.
@@ -329,10 +335,10 @@ Validation:
 
 ## TVOV19 — Android TV manifest, packaging, and Devtool TV target hardening
 
-Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v1.zip`.
+Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v2.zip`.
 
 Scope:
-- stable TV package identity `com.mikeyphw.studyflow.tv`, version code 20 / `0.1.0-tv20`;
+- stable TV package identity `com.mikeyphw.studyflow.tv`, version code 21 / `0.1.0-tv21`;
 - required Leanback + optional touchscreen launcher contract, Leanback-only exported activity, TV banner/icon resources, productivity app category, and cleartext framework traffic disabled;
 - cloud backup and device-transfer exclusions for all TV-local storage domains;
 - conditional production signing using the complete `STUDYFLOW_RELEASE_*` credential set and fail-fast rejection of partial signing configuration;
@@ -347,7 +353,7 @@ Validation:
 
 ## TVOV20 — Real-device acceptance and release seal
 
-Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v1.zip`.
+Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v2.zip`.
 
 Scope:
 - pure Kotlin final acceptance policy distinguishing clean no-device skip from real-device pass/fail;
@@ -362,4 +368,24 @@ Validation:
 - `verifyStudyFlowTvRealDeviceAcceptance`;
 - `verifyStudyFlowTvFinalReleaseSeal`;
 - cumulative TVOV00-TVOV20 verifiers and the existing optimized Release gate.
+
+## TVOV21 — Typed presentation snapshots and canonical data projection
+
+Status: implemented in `studyflow_tvov21_typed_presentation_projection_v1.zip`.
+
+Scope:
+- serializable typed presentation snapshots in `:core:tvcontrol` for Today, session, questions, mock, review, progress, schedule, and library;
+- production phone/data-owner projection from the real StudyFlow repositories and canonical domain models;
+- TV-side presentation adapter/inbox with duplicate/stale snapshot rejection and canonical source-ID retention;
+- the TV Activity starts with a truthful waiting state and no longer uses historical demo fixture defaults as runtime data;
+- `app-tv` remains isolated from Room, `core:data`, `core:database`, phone feature modules, Cast SDK, MediaRouter, and networking;
+- Home `PAIR_PHONE` protocol routing is corrected to the Settings pairing surface;
+- wire pairing/discovery/transport remains explicitly deferred to TVOV22.
+
+Validation:
+- `verifyStudyFlowTvPresentationProjection`;
+- `:core:tvcontrol:test`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:testDebugUnitTest`;
+- cumulative TVOV00-TVOV21 source verifiers and existing package/release gates.
 

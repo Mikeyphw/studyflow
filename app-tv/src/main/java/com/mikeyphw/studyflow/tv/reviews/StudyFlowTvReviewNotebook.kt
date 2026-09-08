@@ -44,6 +44,7 @@ enum class StudyFlowTvReviewAction {
 
 data class StudyFlowTvReviewItem(
     val id: StudyFlowTvReviewId,
+    val sourceId: String = id.name.lowercase(),
     val title: String,
     val subject: String,
     val reason: String,
@@ -51,6 +52,7 @@ data class StudyFlowTvReviewItem(
     val dueNow: Boolean,
 ) {
     init {
+        require(sourceId.isNotBlank()) { "TV review source id must not be blank." }
         require(title.isNotBlank()) { "TV review title must not be blank." }
         require(subject.isNotBlank()) { "TV review subject must not be blank." }
         require(reason.isNotBlank()) { "TV review reason must not be blank." }
@@ -232,7 +234,7 @@ object StudyFlowTvReviewNotebook {
             commandId = commandId,
             surface = StudyFlowTvSurface.REVIEW,
             action = controlActionFor(action),
-            targetId = state.activeReview.id.name.lowercase(),
+            targetId = state.activeReview.sourceId,
             issuedAtEpochMillis = issuedAtEpochMillis,
         )
     }
@@ -247,7 +249,7 @@ object StudyFlowTvReviewNotebook {
         title = state.activeReview.title,
         subtitle = "${state.status.name.lowercase()} · ${state.activeReview.subject}",
         progressPercent = state.progressPercent,
-        activeItemId = state.activeReview.id.name.lowercase(),
+        activeItemId = state.activeReview.sourceId,
         updatedAtEpochMillis = updatedAtEpochMillis,
     )
 

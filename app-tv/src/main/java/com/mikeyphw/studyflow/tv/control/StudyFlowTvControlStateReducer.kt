@@ -20,6 +20,8 @@ import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvNavigationShell
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeAction
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPractice
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPracticeState
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressAnalytics
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressSnapshot
 import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewAction
 import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewNotebook
 import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewState
@@ -34,15 +36,19 @@ import com.mikeyphw.studyflow.tv.session.StudyFlowTvStudySessionExperience
 import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsAction
 import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsState
 import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsSurface
+import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodaySnapshot
+import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
 
 /** Complete in-memory TV presentation model controlled by the TV remote or a paired phone. */
 data class StudyFlowTvControlState(
     val destination: StudyFlowTvDestination = StudyFlowTvNavigationShell.defaultDestination(),
     val session: StudyFlowTvControlSession = StudyFlowTvControlSession(),
+    val today: StudyFlowTvTodaySnapshot = StudyFlowTvTodayWorkspace.defaultSnapshot(),
     val studySession: StudyFlowTvSessionState = StudyFlowTvStudySessionExperience.defaultState(),
     val questionPractice: StudyFlowTvQuestionPracticeState = StudyFlowTvQuestionPractice.defaultState(),
     val mockExam: StudyFlowTvMockExamState = StudyFlowTvMockExamStudio.defaultState(),
     val review: StudyFlowTvReviewState = StudyFlowTvReviewNotebook.defaultState(),
+    val progress: StudyFlowTvProgressSnapshot = StudyFlowTvProgressAnalytics.defaultSnapshot(),
     val schedule: StudyFlowTvScheduleSnapshot = StudyFlowTvScheduleSurface.defaultSnapshot(),
     val library: StudyFlowTvLibrarySnapshot = StudyFlowTvLibrarySurface.defaultSnapshot(),
     val settings: StudyFlowTvSettingsState = StudyFlowTvSettingsSurface.defaultState(),
@@ -194,7 +200,7 @@ object StudyFlowTvControlStateReducer {
 
         return when (command.surface) {
             StudyFlowTvSurface.REVIEW -> {
-                val index = state.review.items.indexOfFirst { it.id.name.lowercase() == command.targetId }
+                val index = state.review.items.indexOfFirst { it.sourceId == command.targetId || it.id.name.lowercase() == command.targetId }
                 state.copy(
                     destination = StudyFlowTvDestination.REVIEWS,
                     review = if (index >= 0) {
@@ -209,14 +215,14 @@ object StudyFlowTvControlStateReducer {
                 )
             }
             StudyFlowTvSurface.SCHEDULE -> {
-                val index = state.schedule.items.indexOfFirst { it.id.name.lowercase() == command.targetId }
+                val index = state.schedule.items.indexOfFirst { it.sourceId == command.targetId || it.id.name.lowercase() == command.targetId }
                 state.copy(
                     destination = StudyFlowTvDestination.SCHEDULE,
                     schedule = if (index >= 0) state.schedule.copy(activeItemIndex = index) else state.schedule,
                 )
             }
             StudyFlowTvSurface.LIBRARY -> {
-                val index = state.library.references.indexOfFirst { it.id.name.lowercase() == command.targetId }
+                val index = state.library.references.indexOfFirst { it.sourceId == command.targetId || it.id.name.lowercase() == command.targetId }
                 state.copy(
                     destination = StudyFlowTvDestination.LIBRARY,
                     library = if (index >= 0) state.library.copy(activeReferenceIndex = index) else state.library,
@@ -393,11 +399,11 @@ object StudyFlowTvControlStateReducer {
 
     private fun activeItemId(state: StudyFlowTvControlState): String? = when (state.destination) {
         StudyFlowTvDestination.STUDY_SESSION -> state.studySession.activeSegment.id.name.lowercase()
-        StudyFlowTvDestination.PRACTICE -> state.questionPractice.activeQuestion.id.name.lowercase()
-        StudyFlowTvDestination.REVIEWS -> state.review.activeReview.id.name.lowercase()
-        StudyFlowTvDestination.MOCK_EXAM -> state.mockExam.activeSection.id.name.lowercase()
-        StudyFlowTvDestination.SCHEDULE -> state.schedule.activeItem.id.name.lowercase()
-        StudyFlowTvDestination.LIBRARY -> state.library.activeReference.id.name.lowercase()
+        StudyFlowTvDestination.PRACTICE -> state.questionPractice.activeQuestion.sourceId
+        StudyFlowTvDestination.REVIEWS -> state.review.activeReview.sourceId
+        StudyFlowTvDestination.MOCK_EXAM -> state.mockExam.activeSection.sourceId
+        StudyFlowTvDestination.SCHEDULE -> state.schedule.activeItem.sourceId
+        StudyFlowTvDestination.LIBRARY -> state.library.activeReference.sourceId
         else -> null
     }
 

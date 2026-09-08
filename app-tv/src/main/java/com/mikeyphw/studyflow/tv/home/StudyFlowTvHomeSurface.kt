@@ -98,9 +98,9 @@ object StudyFlowTvHomeSurface {
         if (action == StudyFlowTvHomeAction.PAIR_PHONE) {
             return StudyFlowTvControlCommand(
                 commandId = commandId,
-                surface = StudyFlowTvSurface.HOME,
+                surface = StudyFlowTvSurface.SETTINGS,
                 action = StudyFlowTvControlAction.OPEN,
-                targetId = "pair-phone",
+                targetId = "manage-pairing",
                 issuedAtEpochMillis = issuedAtEpochMillis,
             )
         }

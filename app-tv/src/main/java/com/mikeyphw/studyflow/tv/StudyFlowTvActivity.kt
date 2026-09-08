@@ -15,6 +15,7 @@ import android.widget.TextView
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlOrigin
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
 import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvAccessibilityPolicy
 import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvTextRole
 import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvAccessibilityNode
@@ -51,6 +52,7 @@ import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressMetric
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressMetricId
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressSubject
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressSubjectId
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressSnapshot
 import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewAction
 import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewId
 import com.mikeyphw.studyflow.tv.reviews.StudyFlowTvReviewItem
@@ -69,24 +71,24 @@ import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsAction
 import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsCard
 import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsState
 import com.mikeyphw.studyflow.tv.settings.StudyFlowTvSettingsSurface
+import com.mikeyphw.studyflow.tv.presentation.StudyFlowTvPresentationAdapter
+import com.mikeyphw.studyflow.tv.presentation.StudyFlowTvPresentationInbox
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlock
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlockId
+import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodaySnapshot
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
 
 class StudyFlowTvActivity : Activity() {
-    // Keep the prior surface defaults explicit here so cumulative TVOV verifiers continue to prove
-    // that the shell owns exactly one initialized presentation state for each implemented surface.
-    private var controlState: StudyFlowTvControlState = StudyFlowTvControlStateReducer.defaultState().copy(
-        studySession = StudyFlowTvStudySessionExperience.defaultState(),
-        questionPractice = StudyFlowTvQuestionPractice.defaultState(),
-        mockExam = StudyFlowTvMockExamStudio.defaultState(),
-        review = StudyFlowTvReviewNotebook.defaultState(),
-        schedule = StudyFlowTvScheduleSurface.defaultSnapshot(),
-        library = StudyFlowTvLibrarySurface.defaultSnapshot(),
-    )
+    // TVOV21: the runtime shell starts from an explicit waiting state. Historical fixture defaults
+    // remain unit-test helpers only and are never the Activity's presentation source.
+    private val presentationInbox = StudyFlowTvPresentationInbox()
+    private var controlState: StudyFlowTvControlState = StudyFlowTvPresentationAdapter.waitingState()
     private var localCommandSequence: Long = 0
     private val selectedDestination: StudyFlowTvDestination
         get() = controlState.destination
+    private var todaySnapshot: StudyFlowTvTodaySnapshot
+        get() = controlState.today
+        set(value) { controlState = controlState.copy(today = value) }
     private var studySessionState: StudyFlowTvSessionState
         get() = controlState.studySession
         set(value) { controlState = controlState.copy(studySession = value) }
@@ -99,6 +101,9 @@ class StudyFlowTvActivity : Activity() {
     private var reviewState: StudyFlowTvReviewState
         get() = controlState.review
         set(value) { controlState = controlState.copy(review = value) }
+    private var progressSnapshot: StudyFlowTvProgressSnapshot
+        get() = controlState.progress
+        set(value) { controlState = controlState.copy(progress = value) }
     private var scheduleSnapshot: StudyFlowTvScheduleSnapshot
         get() = controlState.schedule
         set(value) { controlState = controlState.copy(schedule = value) }
@@ -305,6 +310,13 @@ class StudyFlowTvActivity : Activity() {
         )
     }
 
+    internal fun applyPresentationSnapshot(snapshot: StudyFlowTvPresentationSnapshot): Boolean {
+        if (!presentationInbox.apply(snapshot)) return false
+        controlState = StudyFlowTvPresentationAdapter.applySnapshot(controlState, snapshot)
+        if (::contentTitle.isInitialized) renderDestination(controlState.destination)
+        return true
+    }
+
     internal fun applyPairedPhoneCommand(
         command: StudyFlowTvControlCommand,
         nowEpochMillis: Long,
@@ -387,7 +399,8 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderTodayDestination() {
-        val workspace = StudyFlowTvTodayWorkspace.workspaceForSnapshot(StudyFlowTvTodayWorkspace.defaultSnapshot())
+        if (!hasPresentationFor(StudyFlowTvDestination.TODAY)) return renderPresentationUnavailableDestination()
+        val workspace = StudyFlowTvTodayWorkspace.workspaceForSnapshot(todaySnapshot)
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
         contentTitle.text = getString(R.string.tv_content_title_today)
@@ -413,6 +426,7 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderStudySessionDestination() {
+        if (!hasPresentationFor(StudyFlowTvDestination.STUDY_SESSION)) return renderPresentationUnavailableDestination()
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
         contentTitle.text = getString(R.string.tv_content_title_study_session)
@@ -447,6 +461,7 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderQuestionPracticeDestination() {
+        if (!hasPresentationFor(StudyFlowTvDestination.PRACTICE)) return renderPresentationUnavailableDestination()
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
         val state = questionPracticeState
@@ -505,6 +520,7 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderMockExamDestination() {
+        if (!hasPresentationFor(StudyFlowTvDestination.MOCK_EXAM)) return renderPresentationUnavailableDestination()
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
         val state = mockExamState
@@ -551,6 +567,7 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderReviewDestination() {
+        if (!hasPresentationFor(StudyFlowTvDestination.REVIEWS)) return renderPresentationUnavailableDestination()
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
         val state = reviewState
@@ -600,7 +617,8 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderProgressDestination() {
-        val snapshot = StudyFlowTvProgressAnalytics.defaultSnapshot()
+        if (!hasPresentationFor(StudyFlowTvDestination.PROGRESS)) return renderPresentationUnavailableDestination()
+        val snapshot = progressSnapshot
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
         contentTitle.text = getString(R.string.tv_content_title_progress)
@@ -644,6 +662,7 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderScheduleDestination() {
+        if (!hasPresentationFor(StudyFlowTvDestination.SCHEDULE)) return renderPresentationUnavailableDestination()
         val snapshot = scheduleSnapshot
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
@@ -689,6 +708,7 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderLibraryDestination() {
+        if (!hasPresentationFor(StudyFlowTvDestination.LIBRARY)) return renderPresentationUnavailableDestination()
         val snapshot = librarySnapshot
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
@@ -731,6 +751,32 @@ class StudyFlowTvActivity : Activity() {
                 StudyFlowTvLibrarySurface.actions.forEach { action -> addView(tvLibraryAction(action)) }
             },
         )
+    }
+
+    private fun hasPresentationFor(destination: StudyFlowTvDestination): Boolean {
+        val snapshot = presentationInbox.current ?: return false
+        return when (destination) {
+            StudyFlowTvDestination.TODAY -> snapshot.today != null
+            StudyFlowTvDestination.STUDY_SESSION -> snapshot.studySession != null
+            StudyFlowTvDestination.PRACTICE -> snapshot.questionSet?.questions?.isNotEmpty() == true
+            StudyFlowTvDestination.MOCK_EXAM -> snapshot.mockExam != null
+            StudyFlowTvDestination.REVIEWS -> snapshot.review?.items?.isNotEmpty() == true
+            StudyFlowTvDestination.PROGRESS -> snapshot.progress != null
+            StudyFlowTvDestination.SCHEDULE -> snapshot.schedule?.items?.isNotEmpty() == true
+            StudyFlowTvDestination.LIBRARY -> snapshot.library?.references?.isNotEmpty() == true
+            StudyFlowTvDestination.HOME, StudyFlowTvDestination.SETTINGS -> true
+        }
+    }
+
+    private fun renderPresentationUnavailableDestination() {
+        contentCards.removeAllViews()
+        contentCards.visibility = View.GONE
+        contentTitle.text = getString(selectedDestination.titleResId())
+        contentBody.text = if (presentationInbox.isReady()) {
+            getString(R.string.tv_presentation_empty_body)
+        } else {
+            getString(R.string.tv_presentation_waiting_body)
+        }
     }
 
     private fun renderSettingsDestination() {

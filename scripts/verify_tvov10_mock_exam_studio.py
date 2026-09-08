@@ -69,7 +69,8 @@ for token in (
 for token in (
     "private fun renderMockExamDestination()",
     "StudyFlowTvDestination.MOCK_EXAM -> renderMockExamDestination()",
-    "StudyFlowTvMockExamStudio.defaultState()",
+    "private var mockExamState: StudyFlowTvMockExamState",
+    "StudyFlowTvPresentationAdapter.waitingState()",
     "StudyFlowTvMockExamStudio.availableActions",
     "StudyFlowTvMockExamStudio.commandForAction",
     "private fun toggleMockExamPlayback()",

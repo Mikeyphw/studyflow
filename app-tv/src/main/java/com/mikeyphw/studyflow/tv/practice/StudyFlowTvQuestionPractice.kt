@@ -49,6 +49,7 @@ data class StudyFlowTvPracticeChoice(
 
 data class StudyFlowTvPracticeQuestion(
     val id: StudyFlowTvPracticeQuestionId,
+    val sourceId: String = id.name.lowercase(),
     val prompt: String,
     val choices: List<StudyFlowTvPracticeChoice>,
     val correctChoiceId: StudyFlowTvPracticeChoiceId,
@@ -57,9 +58,10 @@ data class StudyFlowTvPracticeQuestion(
     val column: Int,
 ) {
     init {
+        require(sourceId.isNotBlank()) { "TV practice source id must not be blank." }
         require(prompt.isNotBlank()) { "TV practice prompt must not be blank." }
-        require(choices.size == StudyFlowTvQuestionPractice.choiceCount) {
-            "TV practice question must expose exactly ${StudyFlowTvQuestionPractice.choiceCount} choices."
+        require(choices.size in 2..StudyFlowTvQuestionPractice.choiceCount) {
+            "TV practice question must expose between 2 and ${StudyFlowTvQuestionPractice.choiceCount} choices."
         }
         require(choices.map { it.id }.toSet().size == choices.size) { "TV practice choices must be unique." }
         require(choices.any { it.id == correctChoiceId }) { "TV practice correct choice must exist." }
@@ -168,12 +170,14 @@ object StudyFlowTvQuestionPractice {
     )
 
     fun availableActions(state: StudyFlowTvQuestionPracticeState): List<StudyFlowTvPracticeAction> {
-        val selectionActions = listOf(
-            StudyFlowTvPracticeAction.SELECT_A,
-            StudyFlowTvPracticeAction.SELECT_B,
-            StudyFlowTvPracticeAction.SELECT_C,
-            StudyFlowTvPracticeAction.SELECT_D,
-        )
+        val selectionActions = state.activeQuestion.choices.map { choice ->
+            when (choice.id) {
+                StudyFlowTvPracticeChoiceId.A -> StudyFlowTvPracticeAction.SELECT_A
+                StudyFlowTvPracticeChoiceId.B -> StudyFlowTvPracticeAction.SELECT_B
+                StudyFlowTvPracticeChoiceId.C -> StudyFlowTvPracticeAction.SELECT_C
+                StudyFlowTvPracticeChoiceId.D -> StudyFlowTvPracticeAction.SELECT_D
+            }
+        }
         val navigationActions = buildList {
             add(StudyFlowTvPracticeAction.PREVIOUS_QUESTION)
             add(StudyFlowTvPracticeAction.NEXT_QUESTION)
@@ -232,7 +236,7 @@ object StudyFlowTvQuestionPractice {
         commandId = commandId,
         surface = StudyFlowTvSurface.QUESTION_SET,
         action = controlActionFor(action),
-        targetId = state.activeQuestion.id.name.lowercase(),
+        targetId = state.activeQuestion.sourceId,
         optionId = choiceIdFor(action)?.optionId,
         issuedAtEpochMillis = issuedAtEpochMillis,
     )
@@ -247,7 +251,7 @@ object StudyFlowTvQuestionPractice {
         title = state.title,
         subtitle = "${state.subject} · question ${state.activeQuestionIndex + 1}/${state.questions.size}",
         progressPercent = state.progressPercent,
-        activeItemId = state.activeQuestion.id.name.lowercase(),
+        activeItemId = state.activeQuestion.sourceId,
         updatedAtEpochMillis = updatedAtEpochMillis,
     )
 

@@ -26,7 +26,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV20", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV21", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
@@ -164,6 +164,16 @@ class StudyFlowTvBuildContractTest {
 
 
     @Test
+    fun typedPresentationProjectionUsesCanonicalPhoneDataWithoutTvRepositories() {
+        assertTrue(StudyFlowTvPresentationBuildContract.typedPresentationProtocolIntroduced)
+        assertTrue(StudyFlowTvPresentationBuildContract.phoneOwnsCanonicalProjection)
+        assertTrue(StudyFlowTvPresentationBuildContract.tvRuntimeFixtureDefaultsDisabled)
+        assertTrue(StudyFlowTvPresentationBuildContract.tvHasNoRepositoryOrDatabaseDependency)
+        assertTrue(StudyFlowTvPresentationBuildContract.presentationTransportStillDeferred)
+        assertEquals(8, StudyFlowTvPresentationBuildContract.projectedSurfaceCount)
+    }
+
+    @Test
     fun packagingAndFinalAcceptanceContractsAreExplicit() {
         assertTrue(StudyFlowTvPackagingBuildContract.packagingHardeningIntroduced)
         assertTrue(StudyFlowTvPackagingBuildContract.leanbackLauncherRequired)
@@ -172,7 +182,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvPackagingBuildContract.cleartextTrafficDisabled)
         assertTrue(StudyFlowTvPackagingBuildContract.tvTargetRejectsPhoneTasks)
         assertTrue(StudyFlowTvPackagingBuildContract.conditionalReleaseSigningSupported)
-        assertEquals(20, StudyFlowTvPackagingBuildContract.packageVersionCode)
+        assertEquals(21, StudyFlowTvPackagingBuildContract.packageVersionCode)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.finalAcceptanceSealIntroduced)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.optimizedReleaseArtifactRequired)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.packageIdentityVerificationRequired)

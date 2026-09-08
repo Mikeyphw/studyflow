@@ -42,6 +42,7 @@ enum class StudyFlowTvMockExamAction {
 
 data class StudyFlowTvMockExamSection(
     val id: StudyFlowTvMockExamSectionId,
+    val sourceId: String = id.name.lowercase(),
     val title: String,
     val questionCount: Int,
     val minutes: Int,
@@ -49,6 +50,7 @@ data class StudyFlowTvMockExamSection(
     val column: Int,
 ) {
     init {
+        require(sourceId.isNotBlank()) { "TV mock exam source id must not be blank." }
         require(title.isNotBlank()) { "TV mock exam section title must not be blank." }
         require(questionCount > 0) { "TV mock exam section must contain questions." }
         require(minutes > 0) { "TV mock exam section minutes must be positive." }
@@ -223,7 +225,7 @@ object StudyFlowTvMockExamStudio {
         commandId = commandId,
         surface = StudyFlowTvSurface.MOCK_EXAM,
         action = controlActionFor(action),
-        targetId = state.activeSection.id.name.lowercase(),
+        targetId = state.activeSection.sourceId,
         issuedAtEpochMillis = issuedAtEpochMillis,
     )
 
@@ -237,7 +239,7 @@ object StudyFlowTvMockExamStudio {
         title = state.title,
         subtitle = "${state.status.name.lowercase()} · ${state.activeSection.title}",
         progressPercent = state.progressPercent,
-        activeItemId = state.activeSection.id.name.lowercase(),
+        activeItemId = state.activeSection.sourceId,
         updatedAtEpochMillis = updatedAtEpochMillis,
     )
 

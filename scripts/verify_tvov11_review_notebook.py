@@ -69,7 +69,8 @@ for token in (
 for token in (
     "private fun renderReviewDestination()",
     "StudyFlowTvDestination.REVIEWS -> renderReviewDestination()",
-    "StudyFlowTvReviewNotebook.defaultState()",
+    "private var reviewState: StudyFlowTvReviewState",
+    "StudyFlowTvPresentationAdapter.waitingState()",
     "StudyFlowTvReviewNotebook.availableActions",
     "StudyFlowTvReviewNotebook.commandForAction",
     "private fun tvReviewItem(item: StudyFlowTvReviewItem): Button",

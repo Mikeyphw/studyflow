@@ -423,3 +423,7 @@ TVOV17 and TVOV18 seal the automated accessibility/10-foot and optimized-Release
 
 TVOV19 and TVOV20 finish the planned TV package/device acceptance sequence. TVOV19 hardens the Leanback manifest, stable `com.mikeyphw.studyflow.tv` package/version identity, banner/icon/backup rules, conditional `STUDYFLOW_RELEASE_*` signing, packaged APK inspection, and strict `studyflow_tv` task isolation so phone `:app` and feature-module work cannot leak into the TV target. TVOV20 adds a final optimized Release gate plus an optional connected-TV acceptance path for Leanback detection, install/upgrade, launch, D-pad smoke, process survival, and installed version verification. No-device validation is a clean skip and is never described as physical-device acceptance. The existing TVOV16 network-transport deferral remains explicit; the final seal does not invent a wire transport that is absent from source.
 
+### Android TV TVOV21 typed presentation projection
+
+TVOV21 adds a typed presentation schema in `:core:tvcontrol`, a production phone-side projector/source backed by the canonical StudyFlow repositories, and a TV-side adapter/inbox. The TV runtime no longer treats historical demo defaults as user data: until a real typed presentation snapshot arrives it shows an explicit waiting/empty state. Pairing and transport remain deferred to TVOV22.
+

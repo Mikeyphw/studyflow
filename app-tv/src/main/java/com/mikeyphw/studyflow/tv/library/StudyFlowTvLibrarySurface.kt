@@ -41,6 +41,7 @@ enum class StudyFlowTvLibraryAction {
 
 data class StudyFlowTvLibraryReference(
     val id: StudyFlowTvLibraryReferenceId,
+    val sourceId: String = id.name.lowercase(),
     val title: String,
     val subject: String,
     val sourceLabel: String,
@@ -51,6 +52,7 @@ data class StudyFlowTvLibraryReference(
     val column: Int,
 ) {
     init {
+        require(sourceId.isNotBlank()) { "TV library source id must not be blank." }
         require(title.isNotBlank()) { "TV library reference title must not be blank." }
         require(subject.isNotBlank()) { "TV library reference subject must not be blank." }
         require(sourceLabel.isNotBlank()) { "TV library reference source must not be blank." }
@@ -228,7 +230,7 @@ object StudyFlowTvLibrarySurface {
         title = snapshot.activeReference.title,
         subtitle = "${snapshot.activeReference.subject} · ${snapshot.activeReference.sourceLabel}",
         progressPercent = ((snapshot.activeReferenceIndex + 1) * 100 / snapshot.references.size).coerceIn(0, 100),
-        activeItemId = snapshot.activeReference.id.name.lowercase(),
+        activeItemId = snapshot.activeReference.sourceId,
         updatedAtEpochMillis = updatedAtEpochMillis,
     )
 
@@ -242,7 +244,7 @@ object StudyFlowTvLibrarySurface {
         commandId = commandId,
         surface = StudyFlowTvSurface.LIBRARY,
         action = controlAction,
-        targetId = snapshot.activeReference.id.name.lowercase(),
+        targetId = snapshot.activeReference.sourceId,
         optionId = action.name.lowercase(),
         issuedAtEpochMillis = issuedAtEpochMillis,
     )

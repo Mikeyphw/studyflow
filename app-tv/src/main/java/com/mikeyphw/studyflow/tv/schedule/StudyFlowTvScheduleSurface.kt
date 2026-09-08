@@ -44,6 +44,7 @@ enum class StudyFlowTvScheduleAction {
 
 data class StudyFlowTvScheduleItem(
     val id: StudyFlowTvScheduleItemId,
+    val sourceId: String = id.name.lowercase(),
     val title: String,
     val timeLabel: String,
     val kind: StudyFlowTvScheduleItemKind,
@@ -52,6 +53,7 @@ data class StudyFlowTvScheduleItem(
     val column: Int,
 ) {
     init {
+        require(sourceId.isNotBlank()) { "TV schedule source id must not be blank." }
         require(title.isNotBlank()) { "TV schedule item title must not be blank." }
         require(timeLabel.isNotBlank()) { "TV schedule item time label must not be blank." }
         require(row >= 0) { "TV schedule item row must be non-negative." }
@@ -234,7 +236,7 @@ object StudyFlowTvScheduleSurface {
         title = snapshot.title,
         subtitle = "${snapshot.weekLabel} · ${snapshot.activeItem.title}",
         progressPercent = ((snapshot.activeItemIndex + 1) * 100 / snapshot.items.size).coerceIn(0, 100),
-        activeItemId = snapshot.activeItem.id.name.lowercase(),
+        activeItemId = snapshot.activeItem.sourceId,
         updatedAtEpochMillis = updatedAtEpochMillis,
     )
 
@@ -248,7 +250,7 @@ object StudyFlowTvScheduleSurface {
         commandId = commandId,
         surface = StudyFlowTvSurface.SCHEDULE,
         action = controlAction,
-        targetId = snapshot.activeItem.id.name.lowercase(),
+        targetId = snapshot.activeItem.sourceId,
         optionId = action.name.lowercase(),
         issuedAtEpochMillis = issuedAtEpochMillis,
     )

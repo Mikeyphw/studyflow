@@ -73,7 +73,8 @@ for surface in ("HOME", "TODAY", "STUDY_SESSION", "QUESTION_SET", "REVIEW", "MOC
     require(f"StudyFlowTvSurface.{surface}" in reducer, f"TVOV16 reducer must map surface {surface}")
 
 for token in (
-    'StudyFlowTvControlStateReducer.defaultState()',
+    'StudyFlowTvPresentationAdapter.waitingState()',
+    'applyPresentationSnapshot',
     'StudyFlowTvControlOrigin.LOCAL_REMOTE',
     'StudyFlowTvControlOrigin.PAIRED_PHONE',
     'applyPairedPhoneCommand',

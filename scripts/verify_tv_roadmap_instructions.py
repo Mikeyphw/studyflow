@@ -29,12 +29,12 @@ validate = read(".devtool-artifact/validate.sh") if (ROOT / ".devtool-artifact/v
 
 combined = "\n".join([roadmap, rules, readme, quality])
 
-for index in range(0, 21):
+for index in range(0, 22):
     token = f"TVOV{index:02d}"
     require(token in rules, f"full roadmap missing {token} in working-rules document")
     require(token in roadmap, f"full roadmap missing {token} in ANDROID_TV_ROADMAP.md")
 
-for index in range(0, 21):
+for index in range(0, 22):
     require(f"TVOV{index:02d}" in rules and "[implemented]" in rules.split(f"TVOV{index:02d}", 1)[1].split("\n", 1)[0], f"TVOV{index:02d} not marked implemented in working-rules roadmap")
 
 required_phrases = [
@@ -66,7 +66,9 @@ require("TVOV17  Accessibility and 10-foot UI seal [implemented]" in rules, "TVO
 require("TVOV18  Size optimization, R8, and resource shrinking [implemented]" in rules, "TVOV18 size optimization roadmap item must be implemented")
 require("TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [implemented]" in rules, "TVOV19 packaging roadmap item must be implemented")
 require("TVOV20  Real-device acceptance and release seal [implemented]" in rules, "TVOV20 final acceptance roadmap item must be implemented")
-require("TVOV00 through TVOV20" in rules, "working-rules current chain status must record TVOV00 through TVOV20")
+require("TVOV21  Typed presentation snapshots and canonical data projection [implemented]" in rules, "TVOV21 typed presentation roadmap item must be implemented")
+require("TVOV22  Local pairing, discovery, and transport [next]" in rules, "TVOV22 must be marked next")
+require("TVOV00 through TVOV21" in rules, "working-rules current chain status must record TVOV00 through TVOV21")
 require('tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions")' in root_gradle, "missing Gradle roadmap/instructions verifier task")
 require("verifyStudyFlowTvRoadmapInstructions" in devtool, "studyflow_tv target missing roadmap/instructions verifier")
 if validate:

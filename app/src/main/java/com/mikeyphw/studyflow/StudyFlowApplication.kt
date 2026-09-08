@@ -31,6 +31,7 @@ import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
+import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvPresentationSource
 import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -114,6 +115,7 @@ interface AppContainer : DiagnosticRecorderProvider {
     val manageAdaptiveReschedule: ManageAdaptiveReschedule
     val manageAnnexFileStorage: ManageAnnexFileStorage
     val manageStudyPlanPortability: ManageStudyPlanPortability
+    val tvPresentationSource: StudyFlowTvPresentationSource
     suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport
 }
 
@@ -217,6 +219,16 @@ private class DefaultAppContainer(
     override val manageAnnexFileStorage = ManageAnnexFileStorage(annexFileStorageRepository)
     override val manageStudyPlanPortability =
         ManageStudyPlanPortability(dataLayer.studyPlanPortabilityRepository)
+    override val tvPresentationSource = StudyFlowTvPresentationSource(
+        planRepository = studyPlanRepository,
+        contentRepository = studyContentRepository,
+        scheduleRepository = studyScheduleRepository,
+        sessionRepository = studySessionRepository,
+        practiceRepository = studyPracticeRepository,
+        reviewRepository = studyReviewRepository,
+        analyticsRepository = studyAnalyticsRepository,
+        libraryRepository = studyLibraryRepository,
+    )
 
     override suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport =
         dataLayer.inspectDatabaseHealth()

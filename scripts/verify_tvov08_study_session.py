@@ -65,7 +65,8 @@ for token in (
 
 for token in (
     "private fun renderStudySessionDestination()",
-    "StudyFlowTvStudySessionExperience.defaultState()",
+    "private var studySessionState: StudyFlowTvSessionState",
+    "StudyFlowTvPresentationAdapter.waitingState()",
     "StudyFlowTvStudySessionExperience.availableActions",
     "StudyFlowTvStudySessionExperience.commandForAction",
     "private fun toggleStudySessionPlayback()",

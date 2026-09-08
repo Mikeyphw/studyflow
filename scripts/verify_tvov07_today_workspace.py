@@ -64,7 +64,8 @@ for token in (
 for token in (
     "private fun renderTodayDestination()",
     "StudyFlowTvTodayWorkspace.workspaceForSnapshot",
-    "StudyFlowTvTodayWorkspace.defaultSnapshot()",
+    "private var todaySnapshot: StudyFlowTvTodaySnapshot",
+    "StudyFlowTvPresentationAdapter.waitingState()",
     "workspace.blocks.chunked(2)",
     "private fun tvTodayBlock(block: StudyFlowTvTodayBlock): Button",
     "StudyFlowTvTodayWorkspace.destinationForAction(block.action)",

@@ -71,7 +71,8 @@ if activity.count("private var librarySnapshot: StudyFlowTvLibrarySnapshot") != 
 for token in (
     "private fun renderScheduleDestination()",
     "StudyFlowTvDestination.SCHEDULE -> renderScheduleDestination()",
-    "StudyFlowTvScheduleSurface.defaultSnapshot()",
+    "private var scheduleSnapshot: StudyFlowTvScheduleSnapshot",
+    "StudyFlowTvPresentationAdapter.waitingState()",
     "StudyFlowTvScheduleSurface.actions",
     "private fun tvScheduleItem(item: StudyFlowTvScheduleItem): Button",
     "private fun tvScheduleAction(action: StudyFlowTvScheduleAction): Button",

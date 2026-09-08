@@ -1184,6 +1184,12 @@ tasks.register<Exec>("verifyStudyFlowTvFinalReleaseSeal") {
 }
 
 
+tasks.register<Exec>("verifyStudyFlowTvPresentationProjection") {
+    group = "verification"
+    description = "Checks TVOV21 typed presentation snapshots, canonical phone-side projection, fixture-free TV runtime wiring, and source-ID continuity."
+    commandLine("python3", "scripts/verify_tvov21_presentation_projection.py")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."

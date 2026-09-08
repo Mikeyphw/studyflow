@@ -66,7 +66,8 @@ for token in (
 for token in (
     "private fun renderProgressDestination()",
     "StudyFlowTvDestination.PROGRESS -> renderProgressDestination()",
-    "StudyFlowTvProgressAnalytics.defaultSnapshot()",
+    "private var progressSnapshot: StudyFlowTvProgressSnapshot",
+    "StudyFlowTvPresentationAdapter.waitingState()",
     "StudyFlowTvProgressAnalytics.actions",
     "private fun tvProgressMetric(metric: StudyFlowTvProgressMetric): Button",
     "private fun tvProgressSubject(subject: StudyFlowTvProgressSubject): Button",

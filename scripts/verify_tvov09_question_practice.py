@@ -65,7 +65,8 @@ for token in (
 for token in (
     "private fun renderQuestionPracticeDestination()",
     "StudyFlowTvDestination.PRACTICE -> renderQuestionPracticeDestination()",
-    "StudyFlowTvQuestionPractice.defaultState()",
+    "private var questionPracticeState: StudyFlowTvQuestionPracticeState",
+    "StudyFlowTvPresentationAdapter.waitingState()",
     "StudyFlowTvQuestionPractice.availableActions",
     "StudyFlowTvQuestionPractice.commandForAction",
     "private fun tvPracticeChoice(choice: StudyFlowTvPracticeChoice): Button",

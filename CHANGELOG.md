@@ -1,5 +1,15 @@
 ## TVOV19/TVOV20 - Android TV package hardening and release acceptance
 
+## TVOV21 — typed TV presentation projection
+
+- Added serializable typed TV presentation snapshots for eight StudyFlow surfaces.
+- Added a production phone/data-owner projector and repository-backed presentation source.
+- Replaced TV Activity runtime demo fixtures with an explicit waiting state and typed snapshot adapter/inbox.
+- Preserved canonical source IDs across TV display slots and reject duplicate/stale presentation snapshots.
+- Corrected the Home pair-phone command to route to Settings pairing.
+- Bumped the TV package to version code 21 / `0.1.0-tv21`; transport remains TVOV22 work.
+
+
 - Hardened the Leanback manifest/package identity, TV banner, backup/data-transfer exclusions, and cleartext policy.
 - Added conditional TV Release signing using the complete `STUDYFLOW_RELEASE_*` contract with partial-configuration rejection.
 - Hardened the `studyflow_tv` Devtool target so phone `:app`, feature modules, data/database modules, and repository-wide formatting are excluded.
