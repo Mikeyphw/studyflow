@@ -421,6 +421,7 @@ build = [
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
   "verifyStudyFlowTvPairingControlCastProtocol",
+  "verifyStudyFlowTvFocusPrimitives",
   ":core:tvcontrol:compileKotlin",
   ":app-tv:assembleDebug",
 ]
@@ -430,6 +431,7 @@ test = [
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
   "verifyStudyFlowTvPairingControlCastProtocol",
+  "verifyStudyFlowTvFocusPrimitives",
   ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
 ]
@@ -441,6 +443,7 @@ lint = [
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
   "verifyStudyFlowTvPairingControlCastProtocol",
+  "verifyStudyFlowTvFocusPrimitives",
   ":app-tv:lintDebug",
 ]
 clean = ["clean"]
@@ -473,6 +476,7 @@ compile = [
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
   "verifyStudyFlowTvPairingControlCastProtocol",
+  "verifyStudyFlowTvFocusPrimitives",
   ":core:tvcontrol:compileKotlin",
   ":app-tv:compileDebugKotlin",
 ]
@@ -482,6 +486,7 @@ unit-test = [
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
   "verifyStudyFlowTvPairingControlCastProtocol",
+  "verifyStudyFlowTvFocusPrimitives",
   ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
 ]
@@ -501,6 +506,7 @@ lint = [
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
   "verifyStudyFlowTvPairingControlCastProtocol",
+  "verifyStudyFlowTvFocusPrimitives",
   ":app-tv:lintDebug",
 ]
 

@@ -344,9 +344,14 @@ SDK dependencies until later size-budgeted overlays add pairing, focus navigatio
 
 ### Android TV TVOV02
 
-TVOV02 keeps the TV APK dependency budget explicit before feature wiring. The `:app-tv` manifest now declares backup/data-extraction rules, avoids fixed-orientation and minSdk-guarded resizeable attributes, and uses a lightweight banner resource so TV lint can run without source warnings.
+TVOV02 keeps the TV APK dependency budget explicit before feature wiring. The `:app-tv` manifest now declares backup/data-extraction rules, avoids fixed-orientation and minSdk-guarded resizeable attributes, and uses a compact banner resource so TV lint can run without source warnings.
 
 
 ### Android TV TVOV03
 
 TVOV03 adds the shared phone-to-TV control protocol in `:core:tvcontrol`. The Android mobile app and the TV app now share the same protocol module for revocable pairing, remote-control commands, and castable presentation state. The implementation remains size-first: no Cast SDK, MediaRouter, AndroidX TV UI, Compose Runtime, phone feature-module fanout, `core:data`, or `core:database` is added to `:app-tv`.
+
+
+### Android TV TVOV04
+
+TVOV04 adds native D-pad/focus primitives to the size-first Android TV app. The focus policy is pure Kotlin, maps Android remote key codes to small commands, provides deterministic initial focus and non-wrapping directional movement, and gives the placeholder TV shell a visible focusable action row. The TV APK still avoids Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature-module fanout, `core:data`, and `core:database`.

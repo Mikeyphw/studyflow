@@ -652,6 +652,12 @@ tasks.register<Exec>("verifyStudyFlowTvPairingControlCastProtocol") {
     commandLine("python3", "scripts/verify_tvov03_pairing_control_cast_protocol.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvFocusPrimitives") {
+    group = "verification"
+    description = "Checks TVOV04 native Android TV D-pad/focus primitive contracts."
+    commandLine("python3", "scripts/verify_tvov04_focus_primitives.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
     description = "Compatibility alias for the final source/static acceptance contract."

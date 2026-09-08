@@ -18,5 +18,9 @@ class StudyFlowTvBuildContractTest {
         assertEquals(":core:tvcontrol", StudyFlowTvBuildContract.sharedControlProtocolModule)
         assertEquals(1, StudyFlowTvBuildContract.controlProtocolVersion)
         assertTrue(StudyFlowTvBuildContract.castTransportDeferred)
+        assertTrue(StudyFlowTvBuildContract.dpadFocusPrimitivesIntroduced)
+        assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
+        assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
+        assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
     }
 }

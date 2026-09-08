@@ -197,7 +197,7 @@
 ## Phases 38-47 complete UI/UX V2 workspace migration
 
 - Replaced the feature-catalog shell with adaptive Today, Plan, Practice, and Progress roots.
-- Added saved root back stacks, typed lightweight routes, legacy-route translation, and distinct full-editor routes.
+- Added saved root back stacks, typed compact routes, legacy-route translation, and distinct full-editor routes.
 - Added repository-backed command-center, plan, practice, progress, plan-picker, system-hub, and contextual quick-add screens.
 - Added expandable subject/topic sections, direct V2 review grading and skipping, test/mock visibility, progress trend semantics, and actionable adaptation previews.
 - Added persistent focus mode with Room schema 3, migration 1 to 3 / 2 to 3 coverage, notes, pause/resume, completion, cancellation, and restoration.
@@ -350,7 +350,7 @@ copy.
 - Added `:app-tv` as the first small, separate Android TV application module.
 - Upgraded the `studyflow_tv` Devtool target to compile, unit-test, package, and lint the TV module.
 - Added a Leanback launcher manifest with touchscreen marked optional and a separate TV package id.
-- Kept TVOV01 dependency-light: no phone feature modules, Cast SDK, MediaRouter, AndroidX TV UI, or Compose runtime dependencies are pulled into the TV APK yet.
+- Kept TVOV01 dependency-budgeted: no phone feature modules, Cast SDK, MediaRouter, AndroidX TV UI, or Compose runtime dependencies are pulled into the TV APK yet.
 - Retained the TV size budget and paired phone-to-TV control/cast contract for later overlays.
 
 
@@ -358,7 +358,7 @@ copy.
 
 - Added `verifyStudyFlowTvDependencyBudget` to keep the TV app dependency boundary explicit.
 - Removed the initial `app-tv` manifest lint warnings by declaring data extraction/backup rules and dropping fixed-orientation/resizeable assumptions.
-- Replaced the large vector TV banner with a lightweight layer-list resource.
+- Replaced the large vector TV banner with a compact layer-list resource.
 - Kept Cast, MediaRouter, AndroidX TV UI, Compose Runtime, and phone feature dependencies out of `:app-tv`.
 
 
@@ -370,3 +370,14 @@ copy.
 - Added serialization round-trip tests for commands and cast state.
 - Added `verifyStudyFlowTvPairingControlCastProtocol` to the `studyflow_tv` target.
 - Kept transport deferred: no Cast SDK, MediaRouter, AndroidX TV UI, Compose Runtime, or phone feature-module fanout in `:app-tv`.
+
+
+## TVOV04 - D-pad and focus primitives
+
+- Added pure Kotlin TV remote command, key mapping, focus role, focus item, and focus policy contracts.
+- Added deterministic initial focus, disabled-item skipping, non-wrapping directional movement, and select/back/play-pause focus retention.
+- Added native View focus helper with 64dp minimum target and visible focus drawable state.
+- Added a structured focusable action row to the placeholder `:app-tv` shell.
+- Added JVM tests for D-pad focus policy and Android remote key-code mapping.
+- Added `verifyStudyFlowTvFocusPrimitives` to the `studyflow_tv` target.
+- Kept the TV app dependency-budgeted: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature modules, `core:data`, or `core:database`.

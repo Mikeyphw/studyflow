@@ -20,4 +20,8 @@ object StudyFlowTvBuildContract {
     const val sharedControlProtocolModule = ":core:tvcontrol"
     const val controlProtocolVersion = 1
     const val castTransportDeferred = true
+    const val dpadFocusPrimitivesIntroduced = true
+    const val focusPrimitivesRequireNoComposeRuntime = true
+    const val minimumFocusTargetDp = 64
+    const val deterministicInitialFocusRequired = true
 }

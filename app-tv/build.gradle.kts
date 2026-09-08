@@ -8,7 +8,7 @@ android {
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow.tv"
         versionCode = 1
-        versionName = "0.1.0-tv01"
+        versionName = "0.1.0-tv04"
     }
 
     buildTypes {
