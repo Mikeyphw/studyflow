@@ -1,3 +1,11 @@
+## TVOV19/TVOV20 - Android TV package hardening and release acceptance
+
+- Hardened the Leanback manifest/package identity, TV banner, backup/data-transfer exclusions, and cleartext policy.
+- Added conditional TV Release signing using the complete `STUDYFLOW_RELEASE_*` contract with partial-configuration rejection.
+- Hardened the `studyflow_tv` Devtool target so phone `:app`, feature modules, data/database modules, and repository-wide formatting are excluded.
+- Added packaged APK inspection plus TVOV20 optimized Release, no-device-clean-skip, connected Leanback install/upgrade, launch, D-pad, process, and installed-version acceptance gates.
+- Kept TVOV16's wire/network transport deferral explicit rather than claiming an unimplemented physical phone-to-TV transport.
+
 ## TVOV17/TVOV18 - Android TV accessibility and optimized Release
 
 - Added the TVOV17 pure Kotlin accessibility/10-foot policy, semantic headings/live status, scrollable focus-following content, and real high-visibility focus rendering.

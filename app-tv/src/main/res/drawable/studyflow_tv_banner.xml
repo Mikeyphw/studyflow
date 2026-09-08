@@ -2,32 +2,35 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
+            <size
+                android:width="160dp"
+                android:height="90dp" />
             <solid android:color="#0B1220" />
         </shape>
     </item>
     <item
-        android:left="34dp"
-        android:right="34dp"
-        android:top="44dp"
-        android:bottom="118dp">
+        android:left="27dp"
+        android:right="27dp"
+        android:top="22dp"
+        android:bottom="56dp">
         <shape android:shape="rectangle">
             <solid android:color="#C7D2FE" />
         </shape>
     </item>
     <item
-        android:left="34dp"
-        android:right="120dp"
-        android:top="82dp"
-        android:bottom="80dp">
+        android:left="27dp"
+        android:right="53dp"
+        android:top="39dp"
+        android:bottom="39dp">
         <shape android:shape="rectangle">
             <solid android:color="#C7D2FE" />
         </shape>
     </item>
     <item
-        android:left="34dp"
-        android:right="34dp"
-        android:top="120dp"
-        android:bottom="42dp">
+        android:left="27dp"
+        android:right="27dp"
+        android:top="56dp"
+        android:bottom="22dp">
         <shape android:shape="rectangle">
             <solid android:color="#C7D2FE" />
         </shape>

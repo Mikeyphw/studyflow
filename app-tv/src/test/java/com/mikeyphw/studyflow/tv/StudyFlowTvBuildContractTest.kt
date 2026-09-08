@@ -26,7 +26,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV18", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV20", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
@@ -160,6 +160,28 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvReleaseOptimizationBuildContract.mappingEvidenceRequired)
         assertEquals(25, StudyFlowTvReleaseOptimizationBuildContract.releaseTargetMiB)
         assertEquals(35, StudyFlowTvReleaseOptimizationBuildContract.releaseHardCeilingMiB)
+    }
+
+
+    @Test
+    fun packagingAndFinalAcceptanceContractsAreExplicit() {
+        assertTrue(StudyFlowTvPackagingBuildContract.packagingHardeningIntroduced)
+        assertTrue(StudyFlowTvPackagingBuildContract.leanbackLauncherRequired)
+        assertTrue(StudyFlowTvPackagingBuildContract.touchscreenNotRequired)
+        assertTrue(StudyFlowTvPackagingBuildContract.backupAndDeviceTransferDisabled)
+        assertTrue(StudyFlowTvPackagingBuildContract.cleartextTrafficDisabled)
+        assertTrue(StudyFlowTvPackagingBuildContract.tvTargetRejectsPhoneTasks)
+        assertTrue(StudyFlowTvPackagingBuildContract.conditionalReleaseSigningSupported)
+        assertEquals(20, StudyFlowTvPackagingBuildContract.packageVersionCode)
+        assertTrue(StudyFlowTvFinalAcceptanceBuildContract.finalAcceptanceSealIntroduced)
+        assertTrue(StudyFlowTvFinalAcceptanceBuildContract.optimizedReleaseArtifactRequired)
+        assertTrue(StudyFlowTvFinalAcceptanceBuildContract.packageIdentityVerificationRequired)
+        assertTrue(StudyFlowTvFinalAcceptanceBuildContract.leanbackDeviceCheckRequiredWhenConnected)
+        assertTrue(StudyFlowTvFinalAcceptanceBuildContract.installOrUpgradeCheckRequiredWhenConnected)
+        assertTrue(StudyFlowTvFinalAcceptanceBuildContract.launchAndDpadSmokeRequiredWhenConnected)
+        assertTrue(StudyFlowTvFinalAcceptanceBuildContract.noDeviceMustSkipCleanly)
+        assertTrue(StudyFlowTvFinalAcceptanceBuildContract.physicalDeviceAcceptanceMustNotBeClaimedWhenSkipped)
+        assertEquals(25, StudyFlowTvFinalAcceptanceBuildContract.releaseTargetMiB)
     }
 
 }

@@ -42,7 +42,7 @@ notes = read("TVOV18_ANDROID_TV_SIZE_R8_RESOURCE_SHRINKING.md")
 readme = read("README.md")
 
 for token in (
-    'versionName = "0.1.0-tv18"',
+    'versionName = "0.1.0-tv20"',
     "isMinifyEnabled = true",
     "isShrinkResources = true",
     'getDefaultProguardFile("proguard-android-optimize.txt")',

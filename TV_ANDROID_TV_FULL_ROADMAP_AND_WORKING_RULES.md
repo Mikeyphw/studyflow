@@ -26,8 +26,8 @@ TVOV15  Minimal TV settings [implemented]
 TVOV16  Cross-device control/state continuity [implemented]
 TVOV17  Accessibility and 10-foot UI seal [implemented]
 TVOV18  Size optimization, R8, and resource shrinking [implemented]
-TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [next]
-TVOV20  Real-device acceptance and release seal
+TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [implemented]
+TVOV20  Real-device acceptance and release seal [implemented]
 ```
 
 ## Instructions and preferences
@@ -64,4 +64,4 @@ TVOV20  Real-device acceptance and release seal
 
 ## Current chain status
 
-As of TVOV17/18, the TV track has implemented TVOV00 through TVOV18. The next planned structured unit is TVOV19 Android TV manifest, packaging, and Devtool TV target hardening, followed by TVOV20 real-device acceptance and release seal.
+As of TVOV19/20, the structured TV roadmap has implemented TVOV00 through TVOV20. TVOV20 makes connected-device acceptance conditional and truthful: no usable ADB device is a clean skip, not a physical-device pass. Production signing is checked when the existing `STUDYFLOW_RELEASE_*` credentials are configured. The TVOV16 wire/network transport boundary remains deferred and is not falsely claimed by the package/device release seal.

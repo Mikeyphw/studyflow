@@ -73,8 +73,8 @@ TVOV15  Minimal TV settings [implemented]
 TVOV16  Cross-device control/state continuity [implemented]
 TVOV17  Accessibility and 10-foot UI seal [implemented]
 TVOV18  Size optimization, R8, and resource shrinking [implemented]
-TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [next]
-TVOV20  Real-device acceptance and release seal
+TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [implemented]
+TVOV20  Real-device acceptance and release seal [implemented]
 ```
 
 ## Stopping gate
@@ -231,7 +231,7 @@ Validation:
 
 ## TVOV13 — Read-only schedule
 
-Status: implemented in `studyflow_tvov13_14_schedule_library_v1.zip`.
+Status: implemented in `studyflow_tvov13_14_schedule_library_v2.zip`.
 
 Scope:
 - structured read-only TV schedule model with today/week context;
@@ -249,7 +249,7 @@ Validation:
 
 ## TVOV14 — Limited library/reference material
 
-Status: implemented in `studyflow_tvov13_14_schedule_library_v1.zip`.
+Status: implemented in `studyflow_tvov13_14_schedule_library_v2.zip`.
 
 Scope:
 - structured limited Library/reference surface with curated, read-only reference cards;
@@ -276,7 +276,7 @@ with explicit Devtool overlay commit metadata.
 
 ## TVOV15 — Minimal TV settings
 
-Status: implemented in `studyflow_tvov15_16_settings_control_continuity_v1.zip`.
+Status: implemented in `studyflow_tvov15_16_settings_control_continuity_v2.zip`.
 
 TVOV15 replaces the static Settings placeholder with `StudyFlowTvSettingsSurface`: pairing status
 and revocation, focus-visibility preference representation, a local-first privacy reminder, and a
@@ -285,7 +285,7 @@ repository, Room, or phone-feature dependencies.
 
 ## TVOV16 — Cross-device control/state continuity
 
-Status: implemented in `studyflow_tvov15_16_settings_control_continuity_v1.zip`.
+Status: implemented in `studyflow_tvov15_16_settings_control_continuity_v2.zip`.
 
 TVOV16 adds shared session/continuity schemas in `:core:tvcontrol` and a deterministic TV-side
 `StudyFlowTvControlStateReducer`. Local remote and paired-phone commands converge on one TV state,
@@ -295,7 +295,7 @@ fail closed for duplicate, stale, expired, or revoked paired commands. Real tran
 
 ## TVOV17 — Accessibility and 10-foot UI seal
 
-Status: implemented in `studyflow_tvov17_18_accessibility_size_release_optimization_v1.zip`.
+Status: implemented in `studyflow_tvov17_18_accessibility_size_release_optimization_v2.zip`.
 
 Scope:
 - centralized pure Kotlin 10-foot typography, layout, contrast, and focus policy;
@@ -312,7 +312,7 @@ Validation:
 
 ## TVOV18 — Size optimization, R8, and resource shrinking
 
-Status: implemented in `studyflow_tvov17_18_accessibility_size_release_optimization_v1.zip`.
+Status: implemented in `studyflow_tvov17_18_accessibility_size_release_optimization_v2.zip`.
 
 Scope:
 - R8 minification and resource shrinking remain mandatory for Release and now use Android's optimized default ProGuard configuration;
@@ -326,3 +326,40 @@ Validation:
 - `verifyStudyFlowTvOptimizedReleaseArtifact` (depends on `:app-tv:assembleRelease`);
 - `:app-tv:testDebugUnitTest`;
 - `:app-tv:lintRelease`.
+
+## TVOV19 — Android TV manifest, packaging, and Devtool TV target hardening
+
+Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v1.zip`.
+
+Scope:
+- stable TV package identity `com.mikeyphw.studyflow.tv`, version code 20 / `0.1.0-tv20`;
+- required Leanback + optional touchscreen launcher contract, Leanback-only exported activity, TV banner/icon resources, productivity app category, and cleartext framework traffic disabled;
+- cloud backup and device-transfer exclusions for all TV-local storage domains;
+- conditional production signing using the complete `STUDYFLOW_RELEASE_*` credential set and fail-fast rejection of partial signing configuration;
+- `studyflow_tv` Devtool target isolation from phone `:app`, feature modules, `core:data`, `core:database`, and repository-wide formatting;
+- built Debug/Release APK package inspection.
+
+Validation:
+- `verifyStudyFlowTvManifestPackaging`;
+- `verifyStudyFlowTvTargetIsolation`;
+- `verifyStudyFlowTvPackagedArtifacts`;
+- `:app-tv:assembleDebug` and `:app-tv:assembleRelease`.
+
+## TVOV20 — Real-device acceptance and release seal
+
+Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v1.zip`.
+
+Scope:
+- pure Kotlin final acceptance policy distinguishing clean no-device skip from real-device pass/fail;
+- final Release gate requiring optimized Release output, R8 mapping, package/Leanback identity, unit tests, Debug/Release lint, and the 25 MiB target;
+- optional connected-TV acceptance: Leanback feature check, install/upgrade, activity launch, D-pad smoke input, process-survival check, and installed package/version verification;
+- no connected device or unusable ADB is a clean skip and never counts as physical-device acceptance;
+- production signing is verified when signing credentials are present;
+- TVOV16's real wire/network transport remains explicitly deferred, so this package/device seal does not claim a phone-to-TV network transport that is not implemented.
+
+Validation:
+- `verifyStudyFlowTvFinalAcceptanceContracts`;
+- `verifyStudyFlowTvRealDeviceAcceptance`;
+- `verifyStudyFlowTvFinalReleaseSeal`;
+- cumulative TVOV00-TVOV20 verifiers and the existing optimized Release gate.
+

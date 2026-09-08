@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StudyFlow TV</string>
+    <string name="tv_app_description">StudyFlow companion display for focused study sessions, practice, review, progress, schedule, and reference material.</string>
     <string name="tv_app_title">StudyFlow TV</string>
     <string name="tv_app_primary_action">Continue</string>
     <string name="tv_app_pair_phone_action">Pair phone</string>

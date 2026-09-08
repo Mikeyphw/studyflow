@@ -1137,6 +1137,52 @@ tasks.register<Exec>("verifyStudyFlowTvOptimizedReleaseArtifact") {
     commandLine("python3", "scripts/verify_tvov18_size_optimization.py", "--require-release-artifact")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvManifestPackaging") {
+    group = "verification"
+    description = "Checks TVOV19 Leanback manifest, package identity, backup/data-extraction hardening, signing contract, and banner resources."
+    commandLine("python3", "scripts/verify_tvov19_manifest_packaging.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvTargetIsolation") {
+    group = "verification"
+    description = "Checks that the studyflow_tv Devtool target contains only TV/shared-control tasks and never phone :app or feature-module work."
+    commandLine("python3", "scripts/verify_tvov19_manifest_packaging.py", "--target-isolation")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvPackagedArtifacts") {
+    group = "verification"
+    description = "Builds and inspects Debug/Release TV APK packaging, Leanback identity, ZIP integrity, and optional production signing."
+    dependsOn(":app-tv:assembleDebug", ":app-tv:assembleRelease")
+    commandLine("python3", "scripts/verify_tvov19_manifest_packaging.py", "--require-packaged-artifacts")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvFinalAcceptanceContracts") {
+    group = "verification"
+    description = "Checks TVOV20 final release/real-device acceptance policy, tests, docs, and validation wiring without requiring a connected device."
+    commandLine("python3", "scripts/verify_tvov20_real_device_release_seal.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvRealDeviceAcceptance") {
+    group = "verification"
+    description = "Runs TVOV20 install/upgrade, launch, Leanback-device, and D-pad smoke checks when exactly one usable TV ADB device is connected; otherwise skips cleanly."
+    dependsOn(":app-tv:assembleDebug", "verifyStudyFlowTvManifestPackaging")
+    commandLine("python3", "scripts/verify_tvov20_real_device_release_seal.py", "--device-acceptance")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvFinalReleaseSeal") {
+    group = "verification"
+    description = "Seals TVOV20 Release criteria from optimized artifact, package hardening, unit tests, lint, and optional production signing evidence."
+    dependsOn(
+        "verifyStudyFlowTvOptimizedReleaseArtifact",
+        "verifyStudyFlowTvPackagedArtifacts",
+        ":core:tvcontrol:test",
+        ":app-tv:testDebugUnitTest",
+        ":app-tv:lintDebug",
+        ":app-tv:lintRelease",
+    )
+    commandLine("python3", "scripts/verify_tvov20_real_device_release_seal.py", "--require-release-artifact")
+}
+
 
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"

@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV18"
+    const val currentTvOverlay = "TVOV20"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -198,3 +198,29 @@ object StudyFlowTvReleaseOptimizationBuildContract {
     const val releaseHardCeilingMiB = 35
 }
 
+// TVOV19 Android TV manifest, packaging, and Devtool target hardening contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvPackagingBuildContract {
+    const val packagingHardeningIntroduced = true
+    const val leanbackLauncherRequired = true
+    const val touchscreenNotRequired = true
+    const val backupAndDeviceTransferDisabled = true
+    const val cleartextTrafficDisabled = true
+    const val tvTargetRejectsPhoneTasks = true
+    const val conditionalReleaseSigningSupported = true
+    const val packageVersionCode = 20
+}
+
+// TVOV20 Real-device acceptance and release seal contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvFinalAcceptanceBuildContract {
+    const val finalAcceptanceSealIntroduced = true
+    const val optimizedReleaseArtifactRequired = true
+    const val packageIdentityVerificationRequired = true
+    const val leanbackDeviceCheckRequiredWhenConnected = true
+    const val installOrUpgradeCheckRequiredWhenConnected = true
+    const val launchAndDpadSmokeRequiredWhenConnected = true
+    const val noDeviceMustSkipCleanly = true
+    const val physicalDeviceAcceptanceMustNotBeClaimedWhenSkipped = true
+    const val releaseTargetMiB = 25
+}

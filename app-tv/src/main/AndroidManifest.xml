@@ -10,16 +10,20 @@
 
     <application
         android:allowBackup="false"
-        android:dataExtractionRules="@xml/studyflow_tv_data_extraction_rules"
-        android:fullBackupContent="@xml/studyflow_tv_backup_rules"
+        android:appCategory="productivity"
         android:banner="@drawable/studyflow_tv_banner"
+        android:dataExtractionRules="@xml/studyflow_tv_data_extraction_rules"
+        android:description="@string/tv_app_description"
+        android:fullBackupContent="@xml/studyflow_tv_backup_rules"
         android:icon="@drawable/studyflow_tv_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.StudyFlowTv">
+        android:theme="@style/Theme.StudyFlowTv"
+        android:usesCleartextTraffic="false">
         <activity
             android:name=".StudyFlowTvActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
