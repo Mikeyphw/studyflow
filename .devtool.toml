@@ -420,6 +420,8 @@ build = [
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
+  "verifyStudyFlowTvPairingControlCastProtocol",
+  ":core:tvcontrol:compileKotlin",
   ":app-tv:assembleDebug",
 ]
 test = [
@@ -427,6 +429,8 @@ test = [
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
+  "verifyStudyFlowTvPairingControlCastProtocol",
+  ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
 ]
 lint = [
@@ -436,6 +440,7 @@ lint = [
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
+  "verifyStudyFlowTvPairingControlCastProtocol",
   ":app-tv:lintDebug",
 ]
 clean = ["clean"]
@@ -460,12 +465,15 @@ preflight = [
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
+  "verifyStudyFlowTvPairingControlCastProtocol",
 ]
 compile = [
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
+  "verifyStudyFlowTvPairingControlCastProtocol",
+  ":core:tvcontrol:compileKotlin",
   ":app-tv:compileDebugKotlin",
 ]
 unit-test = [
@@ -473,6 +481,8 @@ unit-test = [
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
+  "verifyStudyFlowTvPairingControlCastProtocol",
+  ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
 ]
 package = [
@@ -480,6 +490,7 @@ package = [
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
+  "verifyStudyFlowTvPairingControlCastProtocol",
   ":app-tv:assembleDebug",
 ]
 lint = [
@@ -489,6 +500,7 @@ lint = [
   "verifyStudyFlowTvControlCast",
   "verifyStudyFlowTvAppModule",
   "verifyStudyFlowTvDependencyBudget",
+  "verifyStudyFlowTvPairingControlCastProtocol",
   ":app-tv:lintDebug",
 ]
 

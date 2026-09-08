@@ -30,6 +30,7 @@ include(
     ":core:navigation",
     ":core:portability",
     ":core:testing",
+    ":core:tvcontrol",
     ":feature:dashboard",
     ":feature:analytics",
     ":feature:library",

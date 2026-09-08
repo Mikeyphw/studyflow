@@ -57,7 +57,7 @@ bloat and phone-only dependency coupling before the module is introduced.
 TVOV00  Architecture boundary, size budget, Devtool target, and control/cast contract
 TVOV01  Minimal app-tv application module [implemented]
 TVOV02  TV dependency budget and lint-clean app module [implemented]
-TVOV03  Phone-to-TV pairing, protocol, and cast foundation
+TVOV03  Phone-to-TV pairing, protocol, and cast foundation [implemented]
 TVOV04  D-pad and focus primitives
 TVOV05  TV navigation shell
 TVOV06  TV Home / dashboard
@@ -101,3 +101,8 @@ architecture, size-budget, and control/cast source contracts.
 ## TVOV02 implementation note
 
 TVOV02 keeps the newly created `:app-tv` module small and lint-clean before any TV UI stack is added. No Cast SDK before TVOV04. No AndroidX TV UI before TVOV03. No phone feature-module fanout, and no fixed-orientation manifest assumptions. The mobile-control and cast contract remains architectural until pairing/control protocol overlays implement it.
+
+
+## TVOV03 implementation note
+
+TVOV03 adds the shared phone-to-TV control protocol in `:core:tvcontrol`. The mobile app depends on `:core:tvcontrol`, and `:app-tv` depends on the same module, so later pairing/control work cannot drift into two incompatible schemas. The protocol covers revocable pairing, controllable TV surfaces, castable presentation surfaces, remote commands, and cast state. The transport remains deferred: no Cast SDK, MediaRouter, network discovery, or raw screen mirroring is added in TVOV03.

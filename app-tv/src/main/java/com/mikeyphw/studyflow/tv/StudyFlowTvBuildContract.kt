@@ -17,4 +17,7 @@ object StudyFlowTvBuildContract {
     const val startsWithoutCastSdk = true
     const val startsWithoutAndroidxTvUi = true
     const val pairedPhoneControlRequiredByRoadmap = true
+    const val sharedControlProtocolModule = ":core:tvcontrol"
+    const val controlProtocolVersion = 1
+    const val castTransportDeferred = true
 }

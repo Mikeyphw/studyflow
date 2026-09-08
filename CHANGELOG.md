@@ -360,3 +360,13 @@ copy.
 - Removed the initial `app-tv` manifest lint warnings by declaring data extraction/backup rules and dropping fixed-orientation/resizeable assumptions.
 - Replaced the large vector TV banner with a lightweight layer-list resource.
 - Kept Cast, MediaRouter, AndroidX TV UI, Compose Runtime, and phone feature dependencies out of `:app-tv`.
+
+
+## TVOV03 - Pairing, control, and cast protocol foundation
+
+- Added `:core:tvcontrol` as the shared pure-Kotlin phone-to-TV protocol module.
+- Added revocable pairing token, pairing-state, control-command, TV-surface, control-action, and cast-state contracts.
+- Wired both the Android mobile app and `:app-tv` to the shared protocol module.
+- Added serialization round-trip tests for commands and cast state.
+- Added `verifyStudyFlowTvPairingControlCastProtocol` to the `studyflow_tv` target.
+- Kept transport deferred: no Cast SDK, MediaRouter, AndroidX TV UI, Compose Runtime, or phone feature-module fanout in `:app-tv`.

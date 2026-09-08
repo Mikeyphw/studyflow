@@ -646,6 +646,12 @@ tasks.register<Exec>("verifyStudyFlowTvDependencyBudget") {
     commandLine("python3", "scripts/verify_tvov02_dependency_budget.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvPairingControlCastProtocol") {
+    group = "verification"
+    description = "Checks TVOV03 shared phone-to-TV pairing, control, and cast protocol contracts."
+    commandLine("python3", "scripts/verify_tvov03_pairing_control_cast_protocol.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
     description = "Compatibility alias for the final source/static acceptance contract."

@@ -31,5 +31,6 @@ android {
 // TVOV01 intentionally has no feature-module, Cast SDK, MediaRouter, AndroidX TV, or Compose runtime
 // dependencies. Later TV overlays must add dependencies through measured size-budget contracts.
 dependencies {
+    implementation(project(":core:tvcontrol"))
     testImplementation(libs.junit4)
 }

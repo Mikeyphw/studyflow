@@ -15,5 +15,8 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.startsWithoutCastSdk)
         assertTrue(StudyFlowTvBuildContract.startsWithoutAndroidxTvUi)
         assertTrue(StudyFlowTvBuildContract.pairedPhoneControlRequiredByRoadmap)
+        assertEquals(":core:tvcontrol", StudyFlowTvBuildContract.sharedControlProtocolModule)
+        assertEquals(1, StudyFlowTvBuildContract.controlProtocolVersion)
+        assertTrue(StudyFlowTvBuildContract.castTransportDeferred)
     }
 }
