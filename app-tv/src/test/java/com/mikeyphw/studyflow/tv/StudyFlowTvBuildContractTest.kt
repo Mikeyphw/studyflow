@@ -26,7 +26,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV16", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV18", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
@@ -135,6 +135,31 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvControlContinuityBuildContract.duplicateAndStaleCommandsRejected)
         assertTrue(StudyFlowTvControlContinuityBuildContract.expiredAndRevokedPairingsRejected)
         assertEquals(10, StudyFlowTvControlContinuityBuildContract.continuitySurfaceCount)
+    }
+
+
+    @Test
+    fun accessibilityAndTenFootUiSealIsExplicit() {
+        assertTrue(StudyFlowTvAccessibilityBuildContract.accessibilityTenFootSealIntroduced)
+        assertTrue(StudyFlowTvAccessibilityBuildContract.nativeAccessibilitySemanticsRequired)
+        assertTrue(StudyFlowTvAccessibilityBuildContract.scrollableFocusedContentRequired)
+        assertTrue(StudyFlowTvAccessibilityBuildContract.semanticHeadingsRequired)
+        assertTrue(StudyFlowTvAccessibilityBuildContract.politeLiveStatusRequired)
+        assertTrue(StudyFlowTvAccessibilityBuildContract.highVisibilityFocusAffectsRendering)
+        assertEquals(20, StudyFlowTvAccessibilityBuildContract.minimumBodyTextSp)
+        assertEquals(18, StudyFlowTvAccessibilityBuildContract.minimumControlTextSp)
+        assertEquals(64, StudyFlowTvAccessibilityBuildContract.minimumFocusTargetDp)
+    }
+
+    @Test
+    fun releaseOptimizationSealRequiresR8ShrinkingAndTargetBudget() {
+        assertTrue(StudyFlowTvReleaseOptimizationBuildContract.sizeOptimizationSealIntroduced)
+        assertTrue(StudyFlowTvReleaseOptimizationBuildContract.r8Required)
+        assertTrue(StudyFlowTvReleaseOptimizationBuildContract.resourceShrinkingRequired)
+        assertTrue(StudyFlowTvReleaseOptimizationBuildContract.optimizedDefaultRulesRequired)
+        assertTrue(StudyFlowTvReleaseOptimizationBuildContract.mappingEvidenceRequired)
+        assertEquals(25, StudyFlowTvReleaseOptimizationBuildContract.releaseTargetMiB)
+        assertEquals(35, StudyFlowTvReleaseOptimizationBuildContract.releaseHardCeilingMiB)
     }
 
 }

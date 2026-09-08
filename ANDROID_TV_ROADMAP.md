@@ -71,9 +71,9 @@ TVOV13  Read-only schedule [implemented]
 TVOV14  Limited library/reference material [implemented]
 TVOV15  Minimal TV settings [implemented]
 TVOV16  Cross-device control/state continuity [implemented]
-TVOV17  Accessibility and 10-foot UI seal [next]
-TVOV18  Size optimization, R8, and resource shrinking
-TVOV19  Android TV manifest, packaging, and Devtool TV target hardening
+TVOV17  Accessibility and 10-foot UI seal [implemented]
+TVOV18  Size optimization, R8, and resource shrinking [implemented]
+TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [next]
 TVOV20  Real-device acceptance and release seal
 ```
 
@@ -291,3 +291,38 @@ TVOV16 adds shared session/continuity schemas in `:core:tvcontrol` and a determi
 `StudyFlowTvControlStateReducer`. Local remote and paired-phone commands converge on one TV state,
 cover all ten TV destinations, expose a monotonic revision and active presentation identifiers, and
 fail closed for duplicate, stale, expired, or revoked paired commands. Real transport remains deferred.
+
+
+## TVOV17 — Accessibility and 10-foot UI seal
+
+Status: implemented in `studyflow_tvov17_18_accessibility_size_release_optimization_v1.zip`.
+
+Scope:
+- centralized pure Kotlin 10-foot typography, layout, contrast, and focus policy;
+- native semantic headings, polite live continuity status, and accessibility-important controls;
+- focus-following `ScrollView` content so dense TV surfaces remain reachable on shorter viewports;
+- actual rendering support for the TVOV15 high-visibility focus setting using a 5dp yellow focus ring;
+- no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature modules, `core:data`, or `core:database` added.
+
+Validation:
+- `verifyStudyFlowTvAccessibilityTenFootUi`;
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:lintDebug` and `:app-tv:lintRelease`.
+
+## TVOV18 — Size optimization, R8, and resource shrinking
+
+Status: implemented in `studyflow_tvov17_18_accessibility_size_release_optimization_v1.zip`.
+
+Scope:
+- R8 minification and resource shrinking remain mandatory for Release and now use Android's optimized default ProGuard configuration;
+- TV release budget is modeled independently in pure Kotlin at a 25 MiB target / 35 MiB hard ceiling;
+- optimized Release validation requires `:app-tv:assembleRelease`, R8 `mapping.txt`, APK ZIP integrity, and a Release APK at or below 25 MiB;
+- packaging omits dependency metadata and intentionally avoids broad keep rules so unused TV code/resources remain shrinkable;
+- signing, launcher/package hardening, install/upgrade, and real-device acceptance remain TVOV19/TVOV20.
+
+Validation:
+- `verifyStudyFlowTvSizeOptimization`;
+- `verifyStudyFlowTvOptimizedReleaseArtifact` (depends on `:app-tv:assembleRelease`);
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:lintRelease`.

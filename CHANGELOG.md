@@ -1,3 +1,11 @@
+## TVOV17/TVOV18 - Android TV accessibility and optimized Release
+
+- Added the TVOV17 pure Kotlin accessibility/10-foot policy, semantic headings/live status, scrollable focus-following content, and real high-visibility focus rendering.
+- Kept 64dp focus targets and centralized title/body/control/status text metrics with automated contrast checks.
+- Added the TVOV18 optimized Release path using R8, resource shrinking, Android's optimized default ProGuard rules, and no broad keep-all rule.
+- Added a Release artifact gate that requires `mapping.txt`, validates APK ZIP integrity, and enforces the 25 MiB release target while preserving the 35 MiB architectural ceiling.
+- Added TVOV17/18 tests, verifiers, Gradle tasks, Devtool phase wiring, documentation, and cumulative roadmap updates.
+
 
 ## TVOV16 - Cross-device control/state continuity
 

@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV16"
+    const val currentTvOverlay = "TVOV18"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -171,3 +171,30 @@ object StudyFlowTvControlContinuityBuildContract {
     const val expiredAndRevokedPairingsRejected = true
     const val continuitySurfaceCount = 10
 }
+
+// TVOV17 Accessibility and 10-foot UI seal contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvAccessibilityBuildContract {
+    const val accessibilityTenFootSealIntroduced = true
+    const val nativeAccessibilitySemanticsRequired = true
+    const val scrollableFocusedContentRequired = true
+    const val semanticHeadingsRequired = true
+    const val politeLiveStatusRequired = true
+    const val highVisibilityFocusAffectsRendering = true
+    const val minimumBodyTextSp = 20
+    const val minimumControlTextSp = 18
+    const val minimumFocusTargetDp = 64
+}
+
+// TVOV18 Size optimization, R8, and resource shrinking contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvReleaseOptimizationBuildContract {
+    const val sizeOptimizationSealIntroduced = true
+    const val r8Required = true
+    const val resourceShrinkingRequired = true
+    const val optimizedDefaultRulesRequired = true
+    const val mappingEvidenceRequired = true
+    const val releaseTargetMiB = 25
+    const val releaseHardCeilingMiB = 35
+}
+

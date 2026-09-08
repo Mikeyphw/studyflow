@@ -414,3 +414,8 @@ preference representation, local-first privacy, and safe About/diagnostics witho
 storage or account dependencies. TVOV16 adds deterministic cross-device control/state continuity:
 local remote and paired-phone intents reduce into the same TV presentation state with active-item,
 playback, pairing-expiry, and monotonic revision fields. Transport remains deferred.
+
+### Android TV TVOV17/TVOV18
+
+TVOV17 and TVOV18 seal the automated accessibility/10-foot and optimized-Release boundaries for the separate TV APK. The native TV shell now centralizes readable typography and safe-area metrics, exposes semantic headings and polite status updates, scrolls focused content instead of clipping dense surfaces, and makes the Settings high-visibility-focus preference change the rendered focus ring. Release validation now uses R8 with optimized default rules plus resource shrinking, requires R8 mapping evidence, verifies the Release APK as a ZIP, and enforces the 25 MiB target without adding Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature modules, `core:data`, or `core:database`. TVOV19/20 still own manifest/package hardening and real-device/release acceptance.
+

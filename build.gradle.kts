@@ -1118,6 +1118,26 @@ tasks.register<Exec>("verifyStudyFlowTvControlStateContinuity") {
 }
 
 
+tasks.register<Exec>("verifyStudyFlowTvAccessibilityTenFootUi") {
+    group = "verification"
+    description = "Checks TVOV17 Android TV accessibility, 10-foot typography/layout, focus visibility, tests, and shell contracts."
+    commandLine("python3", "scripts/verify_tvov17_accessibility_10foot_ui.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvSizeOptimization") {
+    group = "verification"
+    description = "Checks TVOV18 Android TV R8, resource shrinking, release budget policy, tests, and Devtool contracts."
+    commandLine("python3", "scripts/verify_tvov18_size_optimization.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvOptimizedReleaseArtifact") {
+    group = "verification"
+    description = "Builds and verifies the optimized TV Release APK, R8 mapping evidence, ZIP integrity, and 25 MiB target."
+    dependsOn(":app-tv:assembleRelease")
+    commandLine("python3", "scripts/verify_tvov18_size_optimization.py", "--require-release-artifact")
+}
+
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."

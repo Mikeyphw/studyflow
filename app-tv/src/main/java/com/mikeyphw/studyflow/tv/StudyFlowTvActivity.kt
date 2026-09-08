@@ -8,11 +8,17 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlOrigin
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
+import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvAccessibilityPolicy
+import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvTextRole
+import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvAccessibilityNode
+import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvTenFootText
 import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlState
 import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlStateReducer
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteCommand
@@ -107,6 +113,7 @@ class StudyFlowTvActivity : Activity() {
     private lateinit var contentCards: LinearLayout
     private lateinit var continuityStatus: TextView
     private lateinit var navButtons: Map<StudyFlowTvDestination, Button>
+    private lateinit var globalActionButtons: List<Button>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -148,7 +155,12 @@ class StudyFlowTvActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(Color.rgb(11, 18, 32))
-            setPadding(dp(56), dp(48), dp(56), dp(48))
+            setPadding(
+                dp(StudyFlowTvAccessibilityPolicy.layout.horizontalSafeAreaDp),
+                dp(StudyFlowTvAccessibilityPolicy.layout.verticalSafeAreaDp),
+                dp(StudyFlowTvAccessibilityPolicy.layout.horizontalSafeAreaDp),
+                dp(StudyFlowTvAccessibilityPolicy.layout.verticalSafeAreaDp),
+            )
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -158,12 +170,15 @@ class StudyFlowTvActivity : Activity() {
         val navRail = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(dp(292), ViewGroup.LayoutParams.MATCH_PARENT)
+            layoutParams = LinearLayout.LayoutParams(
+                dp(StudyFlowTvAccessibilityPolicy.layout.navigationRailWidthDp),
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
             addView(
                 TextView(context).apply {
                     text = getString(R.string.tv_app_title)
                     setTextColor(Color.WHITE)
-                    textSize = 28f
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.BRAND, heading = true)
                     gravity = Gravity.START
                     setPadding(0, 0, 0, dp(28))
                 },
@@ -181,12 +196,12 @@ class StudyFlowTvActivity : Activity() {
 
         contentTitle = TextView(this).apply {
             setTextColor(Color.WHITE)
-            textSize = 34f
+            applyStudyFlowTvTenFootText(StudyFlowTvTextRole.TITLE, heading = true)
             gravity = Gravity.START
         }
         contentBody = TextView(this).apply {
             setTextColor(Color.rgb(199, 210, 254))
-            textSize = 20f
+            applyStudyFlowTvTenFootText(StudyFlowTvTextRole.BODY)
             gravity = Gravity.START
             setPadding(0, dp(22), 0, 0)
         }
@@ -197,7 +212,8 @@ class StudyFlowTvActivity : Activity() {
         }
         continuityStatus = TextView(this).apply {
             setTextColor(Color.rgb(148, 163, 184))
-            textSize = 15f
+            applyStudyFlowTvTenFootText(StudyFlowTvTextRole.STATUS)
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
             gravity = Gravity.START
             setPadding(0, dp(16), 0, 0)
         }
@@ -205,8 +221,11 @@ class StudyFlowTvActivity : Activity() {
         val contentPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(48), 0, 0, 0)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            setPadding(dp(StudyFlowTvAccessibilityPolicy.layout.contentGapDp), 0, 0, 0)
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
             addView(contentTitle)
             addView(contentBody)
             addView(contentCards)
@@ -215,7 +234,7 @@ class StudyFlowTvActivity : Activity() {
                 TextView(context).apply {
                     text = getString(R.string.tv_shell_remote_hint)
                     setTextColor(Color.rgb(148, 163, 184))
-                    textSize = 16f
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.STATUS)
                     gravity = Gravity.START
                     setPadding(0, dp(18), 0, 0)
                 },
@@ -231,6 +250,15 @@ class StudyFlowTvActivity : Activity() {
                 },
             )
         }
+        val contentScroll = ScrollView(this).apply {
+            isFillViewport = true
+            isFocusable = false
+            clipToPadding = false
+            descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            addView(contentPanel)
+        }
+        globalActionButtons = listOf(primaryAction, pairPhoneAction, practiceAction)
 
         primaryAction.nextFocusLeftId = navigationButtons[selectedDestination]?.id ?: View.NO_ID
         pairPhoneAction.nextFocusLeftId = primaryAction.id
@@ -239,7 +267,7 @@ class StudyFlowTvActivity : Activity() {
         primaryAction.nextFocusRightId = pairPhoneAction.id
 
         root.addView(navRail)
-        root.addView(contentPanel)
+        root.addView(contentScroll)
 
         renderDestination(selectedDestination)
         // TVOV04 compatibility marker: post { primaryAction.requestFocus() }
@@ -331,6 +359,7 @@ class StudyFlowTvActivity : Activity() {
         navButtons.forEach { (itemDestination, button) ->
             button.isSelected = itemDestination == destination
         }
+        refreshAccessibilityProfile()
     }
 
     private fun renderStaticDestination(destination: StudyFlowTvDestination) {
@@ -441,7 +470,7 @@ class StudyFlowTvActivity : Activity() {
             TextView(this).apply {
                 text = question.prompt
                 setTextColor(Color.WHITE)
-                textSize = 22f
+                applyStudyFlowTvTenFootText(StudyFlowTvTextRole.QUESTION)
                 gravity = Gravity.START
                 setPadding(0, 0, 0, dp(16))
             },
@@ -458,7 +487,7 @@ class StudyFlowTvActivity : Activity() {
                 TextView(this).apply {
                     text = getString(R.string.tv_practice_explanation_format, question.explanation)
                     setTextColor(Color.rgb(226, 232, 240))
-                    textSize = 18f
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
                     gravity = Gravity.START
                     setPadding(0, dp(8), 0, dp(8))
                 },
@@ -504,7 +533,7 @@ class StudyFlowTvActivity : Activity() {
                 TextView(this).apply {
                     text = getString(R.string.tv_mock_result_format, StudyFlowTvMockExamStudio.resultSummary(state))
                     setTextColor(Color.rgb(226, 232, 240))
-                    textSize = 18f
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
                     gravity = Gravity.START
                     setPadding(0, dp(8), 0, dp(8))
                 },
@@ -553,7 +582,7 @@ class StudyFlowTvActivity : Activity() {
                         state.activeReview.confidencePercent,
                     )
                     setTextColor(Color.rgb(226, 232, 240))
-                    textSize = 18f
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
                     gravity = Gravity.START
                     setPadding(0, dp(8), 0, dp(8))
                 },
@@ -644,7 +673,7 @@ class StudyFlowTvActivity : Activity() {
                     snapshot.mockExamCount,
                 )
                 setTextColor(Color.rgb(226, 232, 240))
-                textSize = 18f
+                applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
                 gravity = Gravity.START
                 setPadding(0, dp(8), 0, dp(8))
             },
@@ -689,7 +718,7 @@ class StudyFlowTvActivity : Activity() {
                     snapshot.activeReference.excerpt,
                 )
                 setTextColor(Color.rgb(226, 232, 240))
-                textSize = 18f
+                applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
                 gravity = Gravity.START
                 setPadding(0, dp(8), 0, dp(8))
             },
@@ -729,7 +758,7 @@ class StudyFlowTvActivity : Activity() {
                 TextView(this).apply {
                     text = getString(R.string.tv_settings_about_detail)
                     setTextColor(Color.rgb(226, 232, 240))
-                    textSize = 18f
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
                     gravity = Gravity.START
                     setPadding(0, dp(8), 0, dp(8))
                 },
@@ -995,11 +1024,11 @@ class StudyFlowTvActivity : Activity() {
     private fun tvTextActionButton(label: String): Button = Button(this).apply {
         id = View.generateViewId()
         text = label
-        textSize = 18f
+        applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
         isAllCaps = false
         setTextColor(Color.WHITE)
         setPadding(dp(32), dp(18), dp(32), dp(18))
-        applyStudyFlowTvDpadFocus()
+        applyCurrentTvFocusProfile()
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -1022,14 +1051,17 @@ class StudyFlowTvActivity : Activity() {
     ): Button = Button(this).apply {
         id = View.generateViewId()
         text = getString(R.string.tv_home_card_format, title, body)
-        textSize = 17f
+        applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
         isAllCaps = false
         gravity = Gravity.START or Gravity.CENTER_VERTICAL
         setTextColor(Color.WHITE)
         setPadding(dp(22), dp(16), dp(22), dp(16))
-        applyStudyFlowTvDpadFocus()
+        applyCurrentTvFocusProfile()
         setOnClickListener { onClick() }
-        layoutParams = LinearLayout.LayoutParams(dp(260), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+        layoutParams = LinearLayout.LayoutParams(
+            dp(StudyFlowTvAccessibilityPolicy.layout.cardWidthDp),
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
             marginEnd = dp(14)
             bottomMargin = dp(14)
         }
@@ -1038,7 +1070,7 @@ class StudyFlowTvActivity : Activity() {
     private fun sectionLabel(labelResId: Int): TextView = TextView(this).apply {
         text = getString(labelResId)
         setTextColor(Color.rgb(226, 232, 240))
-        textSize = 18f
+        applyStudyFlowTvTenFootText(StudyFlowTvTextRole.SECTION, heading = true)
         gravity = Gravity.START
         setPadding(0, 0, 0, dp(12))
     }
@@ -1046,12 +1078,12 @@ class StudyFlowTvActivity : Activity() {
     private fun tvNavigationButton(destination: StudyFlowTvDestination): Button = Button(this).apply {
         id = View.generateViewId()
         text = getString(destination.labelResId())
-        textSize = 18f
+        applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
         isAllCaps = false
         gravity = Gravity.START or Gravity.CENTER_VERTICAL
         setTextColor(Color.WHITE)
         setPadding(dp(20), dp(14), dp(20), dp(14))
-        applyStudyFlowTvDpadFocus()
+        applyCurrentTvFocusProfile()
         setOnClickListener { selectDestination(destination) }
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -1065,16 +1097,40 @@ class StudyFlowTvActivity : Activity() {
     private fun tvActionButton(labelResId: Int): Button = Button(this).apply {
         id = View.generateViewId()
         text = getString(labelResId)
-        textSize = 18f
+        applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
         isAllCaps = false
         setTextColor(Color.WHITE)
         setPadding(dp(32), dp(18), dp(32), dp(18))
-        applyStudyFlowTvDpadFocus()
+        applyCurrentTvFocusProfile()
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
         ).apply {
             marginEnd = dp(12)
+        }
+    }
+
+    private fun View.applyCurrentTvFocusProfile() {
+        // TVOV04 compatibility marker and standard fallback: applyStudyFlowTvDpadFocus()
+        applyStudyFlowTvDpadFocus(highVisibility = settingsState.highVisibilityFocus)
+        applyStudyFlowTvAccessibilityNode()
+    }
+
+    private fun refreshAccessibilityProfile() {
+        if (::navButtons.isInitialized) {
+            navButtons.values.forEach { it.applyCurrentTvFocusProfile() }
+        }
+        if (::globalActionButtons.isInitialized) {
+            globalActionButtons.forEach { it.applyCurrentTvFocusProfile() }
+        }
+        if (::contentTitle.isInitialized) {
+            contentTitle.applyStudyFlowTvTenFootText(StudyFlowTvTextRole.TITLE, heading = true)
+        }
+        if (::contentBody.isInitialized) {
+            contentBody.applyStudyFlowTvTenFootText(StudyFlowTvTextRole.BODY)
+        }
+        if (::continuityStatus.isInitialized) {
+            continuityStatus.applyStudyFlowTvTenFootText(StudyFlowTvTextRole.STATUS)
         }
     }
 

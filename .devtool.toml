@@ -434,7 +434,10 @@ build = [
   "verifyStudyFlowTvLibraryReference",
   "verifyStudyFlowTvSettings",
   "verifyStudyFlowTvControlStateContinuity",
+  "verifyStudyFlowTvAccessibilityTenFootUi",
+  "verifyStudyFlowTvSizeOptimization",
   "verifyStudyFlowTvRoadmapInstructions",
+  "verifyStudyFlowTvOptimizedReleaseArtifact",
   ":core:tvcontrol:compileKotlin",
   ":app-tv:assembleDebug",
 ]
@@ -457,6 +460,8 @@ test = [
   "verifyStudyFlowTvLibraryReference",
   "verifyStudyFlowTvSettings",
   "verifyStudyFlowTvControlStateContinuity",
+  "verifyStudyFlowTvAccessibilityTenFootUi",
+  "verifyStudyFlowTvSizeOptimization",
   "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
@@ -482,8 +487,11 @@ lint = [
   "verifyStudyFlowTvLibraryReference",
   "verifyStudyFlowTvSettings",
   "verifyStudyFlowTvControlStateContinuity",
+  "verifyStudyFlowTvAccessibilityTenFootUi",
+  "verifyStudyFlowTvSizeOptimization",
   "verifyStudyFlowTvRoadmapInstructions",
   ":app-tv:lintDebug",
+  ":app-tv:lintRelease",
 ]
 clean = ["clean"]
 
@@ -512,6 +520,8 @@ preflight = [
   "verifyStudyFlowTvLibraryReference",
   "verifyStudyFlowTvSettings",
   "verifyStudyFlowTvControlStateContinuity",
+  "verifyStudyFlowTvAccessibilityTenFootUi",
+  "verifyStudyFlowTvSizeOptimization",
   "verifyStudyFlowTvRoadmapInstructions",
 ]
 compile = [
@@ -533,6 +543,8 @@ compile = [
   "verifyStudyFlowTvLibraryReference",
   "verifyStudyFlowTvSettings",
   "verifyStudyFlowTvControlStateContinuity",
+  "verifyStudyFlowTvAccessibilityTenFootUi",
+  "verifyStudyFlowTvSizeOptimization",
   "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:compileKotlin",
   ":app-tv:compileDebugKotlin",
@@ -556,6 +568,8 @@ unit-test = [
   "verifyStudyFlowTvLibraryReference",
   "verifyStudyFlowTvSettings",
   "verifyStudyFlowTvControlStateContinuity",
+  "verifyStudyFlowTvAccessibilityTenFootUi",
+  "verifyStudyFlowTvSizeOptimization",
   "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:test",
   ":app-tv:testDebugUnitTest",
@@ -576,7 +590,10 @@ package = [
   "verifyStudyFlowTvLibraryReference",
   "verifyStudyFlowTvSettings",
   "verifyStudyFlowTvControlStateContinuity",
+  "verifyStudyFlowTvAccessibilityTenFootUi",
+  "verifyStudyFlowTvSizeOptimization",
   "verifyStudyFlowTvRoadmapInstructions",
+  "verifyStudyFlowTvOptimizedReleaseArtifact",
   ":app-tv:assembleDebug",
 ]
 lint = [
@@ -600,8 +617,11 @@ lint = [
   "verifyStudyFlowTvLibraryReference",
   "verifyStudyFlowTvSettings",
   "verifyStudyFlowTvControlStateContinuity",
+  "verifyStudyFlowTvAccessibilityTenFootUi",
+  "verifyStudyFlowTvSizeOptimization",
   "verifyStudyFlowTvRoadmapInstructions",
   ":app-tv:lintDebug",
+  ":app-tv:lintRelease",
 ]
 
 [targets.studyflow_android.validation.phase_profiles.preflight]

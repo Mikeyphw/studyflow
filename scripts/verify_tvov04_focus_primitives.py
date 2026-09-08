@@ -151,7 +151,7 @@ for token in (
 ):
     require(token in focus_test, f"focus policy unit test missing token: {token}")
 
-require('versionName = "0.1.0-tv16"' in app_build, "TV app versionName must mark the current TVOV14 app module")
+require('versionName = "0.1.0-tv18"' in app_build, "TV app versionName must mark the current TVOV18 app module")
 require('tasks.register<Exec>("verifyStudyFlowTvFocusPrimitives")' in build, "missing Gradle TVOV04 focus verifier task")
 studyflow_tv = tv_target_section(devtool)
 for task in (
