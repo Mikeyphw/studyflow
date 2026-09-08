@@ -1,5 +1,7 @@
 # PC18 — Encrypted portable backup + full applicable functional parity seal
 
+> **PC19 runtime audit supersession:** PC18 closed the feature-level browser-applicable rows, but a later real-device audit found an interaction-blocking localization `MutationObserver` loop. The operational/runtime-validity portion of this seal is superseded by PC19; apply PC19 before treating the browser build as interactively validated.
+
 PC18 closes the final browser-applicable rows left by the post-PC11 promise audit. It does **not** claim that a browser is Android: platform-only distribution, Android Keystore/FileProvider behavior, native Termux arbitrary execution, and cloud/provider integrations remain explicit platform divergences. StudyFlow Local remains local-first, offline-capable, account-free and dark-only.
 
 ## Android-compatible encrypted portable envelope

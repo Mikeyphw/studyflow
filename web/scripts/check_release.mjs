@@ -77,5 +77,8 @@ const lock=JSON.parse(readFileSync(join(root,"package-lock.json"),"utf8"));
 if(pkg.version!=="1.0.0"||lock.version!=="1.0.0"||lock.packages?.[""]?.version!=="1.0.0")fail("release identity must stay 1.0.0");
 const manifest=JSON.parse(readFileSync(join(dist,"release-manifest.json"),"utf8"));
 if(manifest.version!=="1.0.0"||manifest.channel!=="parity-closure"||manifest.runtimeDependency!=="self-contained")fail("parity-closure release manifest identity invalid");
+if(typeof manifest.cacheVersion!=="string"||!/^studyflow-local-1\.0\.0-[0-9a-f]{16}$/.test(manifest.cacheVersion))fail("content-addressed cache version missing from release manifest");
+if(!sw.includes(`const CACHE_VERSION = "${manifest.cacheVersion}";`))fail("service worker cache version does not match release manifest");
+if(sw.includes("__STUDYFLOW_CACHE_VERSION__"))fail("unresolved service-worker cache placeholder in dist");
 for(const item of manifest.files){const p=join(dist,item.path);if(!existsSync(p))fail(`manifest file missing: ${item.path}`);const digest=createHash("sha256").update(readFileSync(p)).digest("hex");if(digest!==item.sha256||statSync(p).size!==item.bytes)fail(`manifest mismatch: ${item.path}`)}
 console.log(`StudyFlow Local ${pkg.version} parity release OK (${manifest.files.length+1} dist files; ${entries.length} cached shell files)`);

@@ -47,7 +47,7 @@ Each phase must preserve mobile-first behavior, local ownership, truthful eviden
 | PC14 | Multi-signal readiness + subject quota + unified Evidence Timeline + local readable schedule (Phase 48/55 + OV16 + OV17) — delivered |
 | PC15 | Intelligence refinement: coach + cleanup + source-backed report + runbook + safe 7-day sprint + onboarding blueprints (Phases 58–64) — delivered |
 
-> Post-PC11 audit note: PC12–PC18 close the audited browser-applicable foundation, task-workflow, intelligence/schedule, refinement, flashcard/viewer, OV18/OV19 correctness, temporal/mock, and encrypted-portability blocks. PC18 seals **full applicable functional parity** only; platform-specific distribution and native Android/Termux/provider behavior remain explicit divergences.
+> Post-PC11 audit note: PC12–PC18 close the audited browser-applicable feature blocks, but PC19 supersedes the runtime-validity portion of the PC18 seal after a real-device interaction audit found main-thread starvation in localization. With PC19 applied, full applicable functional parity includes behavioral browser interaction evidence; platform-specific distribution and native Android/Termux/provider behavior remain explicit divergences.
 
 
 | PC16 | Flashcards + Material Viewer parity — delivered | Persisted BASIC/CLOZE flashcards with SRS links/suspension/search/portable ownership; browser-local MIME viewer for attachments and explicit HTTP(S) resources. |
@@ -55,3 +55,6 @@ Each phase must preserve mobile-first behavior, local ownership, truthful eviden
 | PC17 | OV18 + OV19 correctness/promise cleanup parity — delivered (including the dark-only shell contract) | Canonical official-date resolver, truthful topic-count coverage goals, seven persisted strategies, Study Cycle gating, manual/recurring subject-topic ownership, calendar search/past collapse and dashboard evidence cleanup. |
 
 | PC18 | Encrypted portable backup + final applicable parity seal — delivered (dark-only) | Android-compatible WebCrypto envelope, local Today correctness, confirmed-exam proximity, generic Mock Studio source/tag/disputed/cutoff controls, and Banco do Brasil 70-question reference mock gating. |
+
+
+| PC19 | Interaction runtime audit/hotfix — delivered (dark-only) | Idempotent dynamic localization, browser liveness/interaction smoke, content-addressed PWA cache identity, dark install manifest and corrected encrypted-backup copy. |

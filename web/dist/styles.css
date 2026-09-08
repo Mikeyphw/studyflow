@@ -51,13 +51,15 @@ body {
 button,
 input,
 select,
+textarea,
 a {
     font: inherit;
 }
 
 button,
 input,
-select {
+select,
+textarea {
     min-height: var(--tap-size);
 }
 
@@ -65,7 +67,8 @@ button,
 a,
 summary,
 input,
-select {
+select,
+textarea {
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -73,7 +76,8 @@ button:focus-visible,
 a:focus-visible,
 summary:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+textarea:focus-visible {
     outline: 3px solid rgba(142, 162, 255, 0.42);
     outline-offset: 2px;
 }
@@ -109,6 +113,56 @@ ul {
 
 [hidden] {
     display: none !important;
+}
+
+/* Keyboard-only skip link: accessible without permanently occupying the visual shell. */
+.skip-link {
+    position: fixed;
+    top: var(--space-2);
+    left: var(--space-2);
+    z-index: 100;
+    max-width: calc(100vw - 1rem);
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--accent-strong);
+    font-weight: 750;
+    text-decoration: none;
+    transform: translateY(calc(-100% - 1rem));
+    transition: transform 120ms ease-out;
+}
+
+.skip-link:focus-visible {
+    transform: translateY(0);
+}
+
+/* Keep all editable controls inside the same dark visual system as the app shell. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+textarea {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-muted);
+    color: var(--text);
+    caret-color: var(--accent-strong);
+}
+
+textarea {
+    min-height: 3rem;
+    line-height: 1.45;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--muted);
+    opacity: 1;
+}
+
+select {
+    color-scheme: dark;
 }
 
 .app-header {

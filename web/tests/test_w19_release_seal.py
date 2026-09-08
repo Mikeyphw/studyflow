@@ -14,7 +14,9 @@ class W19ReleaseSealTest(unittest.TestCase):
         release=(ROOT/'src/release.ts').read_text()
         for token in ('version:"1.0.0"','STATE_SCHEMA_VERSION','STUDYFLOW_DB_VERSION','PORTABLE_FORMAT_VERSION','evaluateReleaseReadiness'):
             self.assertIn(token,release)
-        self.assertIn('studyflow-local-1.0.0',(ROOT/'service-worker.js').read_text())
+        self.assertIn('__STUDYFLOW_CACHE_VERSION__',(ROOT/'service-worker.js').read_text())
+        build=(ROOT/'scripts/build_dist.mjs').read_text()
+        self.assertIn('studyflow-local-${pkg.version}-${createHash("sha256").update(cacheSeed)',build)
 
     def test_release_readiness_is_truthful_about_browser_storage(self):
         source='''

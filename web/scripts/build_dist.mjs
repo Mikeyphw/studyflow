@@ -22,11 +22,15 @@ let app=readFileSync(join(root,"app.js"),"utf8");
 app=app.replace('./node_modules/react/cjs/react.production.js','./vendor/react.production.js').replace('./node_modules/react-dom/cjs/react-dom.production.js','./vendor/react-dom.production.js').replace('./node_modules/react-dom/cjs/react-dom-client.production.js','./vendor/react-dom-client.production.js').replace('./node_modules/scheduler/cjs/scheduler.production.js','./vendor/scheduler.production.js');
 writeFileSync(join(dist,"app.js"),app);
 let sw=readFileSync(join(root,"service-worker.js"),"utf8");
-sw=sw.replaceAll('./node_modules/react/cjs/react.production.js','./vendor/react.production.js').replaceAll('./node_modules/react-dom/cjs/react-dom.production.js','./vendor/react-dom.production.js').replaceAll('./node_modules/react-dom/cjs/react-dom-client.production.js','./vendor/react-dom-client.production.js').replaceAll('./node_modules/scheduler/cjs/scheduler.production.js','./vendor/scheduler.production.js').replace('studyflow-local-1.0.0','studyflow-local-1.0.0-parity');
+sw=sw.replaceAll('./node_modules/react/cjs/react.production.js','./vendor/react.production.js').replaceAll('./node_modules/react-dom/cjs/react-dom.production.js','./vendor/react-dom.production.js').replaceAll('./node_modules/react-dom/cjs/react-dom-client.production.js','./vendor/react-dom-client.production.js').replaceAll('./node_modules/scheduler/cjs/scheduler.production.js','./vendor/scheduler.production.js');
+const cacheSeed=files(dist).map(p=>`${relative(dist,p).replaceAll("\\","/")}\0${sha(p)}`).join("\n");
+const cacheVersion=`studyflow-local-${pkg.version}-${createHash("sha256").update(cacheSeed).digest("hex").slice(0,16)}`;
+if(!sw.includes('__STUDYFLOW_CACHE_VERSION__'))throw new Error('service-worker cache-version placeholder missing');
+sw=sw.replace('__STUDYFLOW_CACHE_VERSION__',cacheVersion);
 writeFileSync(join(dist,"service-worker.js"),sw);
 let notices=`StudyFlow Local ${pkg.version} third-party notices\n\n`;
 for(const [name,version] of Object.entries(expected)){const lic=join(sourcePackage(name),"LICENSE");notices+=`${name} ${version} — MIT\n`;if(existsSync(lic))notices+=readFileSync(lic,"utf8").trim()+"\n";notices+="\n"}
 writeFileSync(join(dist,"THIRD_PARTY_NOTICES.txt"),notices);
 const manifestFiles=files(dist).filter(p=>!p.endsWith("release-manifest.json")).map(p=>({path:relative(dist,p).replaceAll("\\","/"),sha256:sha(p),bytes:statSync(p).size}));
-writeFileSync(join(dist,"release-manifest.json"),JSON.stringify({product:"StudyFlow Local",version:pkg.version,channel:"parity-closure",runtimeDependency:"self-contained",files:manifestFiles},null,2)+"\n");
+writeFileSync(join(dist,"release-manifest.json"),JSON.stringify({product:"StudyFlow Local",version:pkg.version,channel:"parity-closure",runtimeDependency:"self-contained",cacheVersion,files:manifestFiles},null,2)+"\n");
 console.log(`StudyFlow dist built: ${dist} (${manifestFiles.length+1} files)`);

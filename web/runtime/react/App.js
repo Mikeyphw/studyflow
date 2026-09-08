@@ -103,6 +103,7 @@ function App({ store, persistence }) {
         setSearchOpen(false);
         setSettingsOpen(false);
     } }; addEventListener("keydown", key); return () => removeEventListener("keydown", key); }, []);
+    React.useEffect(() => { const id = setTimeout(() => { document.documentElement.dataset.studyflowInteractive = "ready"; }, 0); return () => { clearTimeout(id); delete document.documentElement.dataset.studyflowInteractive; }; }, []);
     const run = (fn, msg) => { try {
         const r = fn();
         if (msg)

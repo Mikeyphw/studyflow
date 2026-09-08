@@ -58,8 +58,8 @@ function validateStarterWorkspace(input) { const name = String(input.planName ??
     throw new TypeError("Plan name must be 120 characters or fewer"); const template = input.template ?? (input.useSample ? "sample" : "blank"); if (!["sample", "blank", "bb-agente-comercial-pre-edital", "public-exam-12-week", "university-semester", "certification-bootcamp", "free-study-habit"].includes(template))
     throw new TypeError("Unsupported onboarding template"); return { ...input, template, planName: name, locale: input.locale === "pt-BR" ? "pt-BR" : "en", useSample: template === "sample" }; }
 exports.UI_TEXT = Object.freeze({
-    en: { search: "Search", settings: "Settings", close: "Close", language: "Language", privacy: "Privacy & storage", onboarding: "Welcome to StudyFlow Local", start: "Start workspace", skip: "Keep sample workspace", noResults: "No matching local records.", localOnly: "Your study data stays in this browser unless you explicitly export it.", encryption: "Encrypted portable backups are not included in StudyFlow Local 1.0. Use device/OS encryption for at-rest protection." },
-    "pt-BR": { search: "Pesquisar", settings: "Configurações", close: "Fechar", language: "Idioma", privacy: "Privacidade e armazenamento", onboarding: "Bem-vindo ao StudyFlow Local", start: "Criar espaço de estudo", skip: "Manter espaço de exemplo", noResults: "Nenhum registro local encontrado.", localOnly: "Seus dados de estudo permanecem neste navegador, a menos que você os exporte explicitamente.", encryption: "Backups portáteis criptografados não fazem parte do StudyFlow Local 1.0. Use a criptografia do dispositivo/sistema operacional para proteção em repouso." }
+    en: { search: "Search", settings: "Settings", close: "Close", language: "Language", privacy: "Privacy & storage", onboarding: "Welcome to StudyFlow Local", start: "Start workspace", skip: "Keep sample workspace", noResults: "No matching local records.", localOnly: "Your study data stays in this browser unless you explicitly export it.", encryption: "Password-encrypted portable backups are supported locally with the StudyFlow encrypted envelope. Keep the password separately; StudyFlow cannot recover it." },
+    "pt-BR": { search: "Pesquisar", settings: "Configurações", close: "Fechar", language: "Idioma", privacy: "Privacidade e armazenamento", onboarding: "Bem-vindo ao StudyFlow Local", start: "Criar espaço de estudo", skip: "Manter espaço de exemplo", noResults: "Nenhum registro local encontrado.", localOnly: "Seus dados de estudo permanecem neste navegador, a menos que você os exporte explicitamente.", encryption: "Backups portáteis protegidos por senha são suportados localmente pelo envelope criptografado do StudyFlow. Guarde a senha separadamente; o StudyFlow não consegue recuperá-la." }
 });
 function uiText(locale, key) { return exports.UI_TEXT[locale]?.[key] ?? exports.UI_TEXT.en[key]; }
 const PT_BR_EXACT = Object.freeze({
@@ -77,37 +77,50 @@ function installDocumentLocalization(locale) {
     if (typeof document === "undefined" || typeof MutationObserver === "undefined")
         return { dispose() { } };
     document.documentElement.lang = locale;
-    const textOriginal = new WeakMap();
-    const attrOriginal = new WeakMap();
+    const textState = new WeakMap();
+    const attrState = new WeakMap();
     const translated = new Map(Object.entries(PT_BR_EXACT).map(([en, pt]) => [pt, en]));
     function canonical(value) { return translated.get(value) ?? value; }
     function translate(value) { const key = canonical(value); return locale === "pt-BR" ? (PT_BR_EXACT[key] ?? key) : key; }
+    function localizedText(value) { const lead = value.match(/^\s*/)?.[0] ?? "", trail = value.match(/\s*$/)?.[0] ?? "", core = value.trim(); return core && PT_BR_EXACT[canonical(core)] ? lead + translate(core) + trail : value; }
     function visit(node) {
         if (node.nodeType === Node.TEXT_NODE) {
             const t = node;
-            const raw = textOriginal.get(t) ?? canonical(t.nodeValue ?? "");
-            textOriginal.set(t, raw);
-            const lead = raw.match(/^\s*/)?.[0] ?? "", trail = raw.match(/\s*$/)?.[0] ?? "", core = raw.trim();
-            if (core && PT_BR_EXACT[core])
-                t.nodeValue = lead + translate(core) + trail;
+            const current = t.nodeValue ?? "";
+            let state = textState.get(t);
+            if (!state || current !== state.rendered) {
+                const source = canonical(current.trim());
+                const lead = current.match(/^\s*/)?.[0] ?? "", trail = current.match(/\s*$/)?.[0] ?? "";
+                state = { source: lead + source + trail, rendered: current };
+                textState.set(t, state);
+            }
+            const next = localizedText(state.source);
+            state.rendered = next;
+            if (next !== current)
+                t.nodeValue = next;
             return;
         }
         if (!(node instanceof Element))
             return;
         const attrs = ["placeholder", "aria-label", "title"];
-        let originals = attrOriginal.get(node);
-        if (!originals) {
-            originals = {};
-            attrOriginal.set(node, originals);
+        let states = attrState.get(node);
+        if (!states) {
+            states = {};
+            attrState.set(node, states);
         }
         for (const name of attrs) {
-            const value = node.getAttribute(name);
-            if (value == null)
+            const current = node.getAttribute(name);
+            if (current == null)
                 continue;
-            const raw = originals[name] ?? canonical(value);
-            originals[name] = raw;
-            if (PT_BR_EXACT[raw])
-                node.setAttribute(name, translate(raw));
+            let state = states[name];
+            if (!state || current !== state.rendered) {
+                state = { source: canonical(current), rendered: current };
+                states[name] = state;
+            }
+            const next = translate(state.source);
+            state.rendered = next;
+            if (next !== current)
+                node.setAttribute(name, next);
         }
         for (const child of Array.from(node.childNodes))
             visit(child);

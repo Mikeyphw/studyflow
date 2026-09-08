@@ -143,7 +143,7 @@ def validate_release()->list[str]:
     _require(e,'"version": "1.0.0"' in pkg,'W19 package version must be 1.0.0')
     _require(e,'"version": "1.0.0"' in lock,'W19 lockfile version must be 1.0.0')
     for token in ('version:"1.0.0"','STATE_SCHEMA_VERSION','STUDYFLOW_DB_VERSION','PORTABLE_FORMAT_VERSION','evaluateReleaseReadiness'):_require(e,token in release,f'W19 release contract missing {token}')
-    _require(e,'studyflow-local-1.0.0' in sw,'W19 service-worker cache must use 1.0.0 release identity')
+    _require(e,'__STUDYFLOW_CACHE_VERSION__' in sw,'W19/PC19 service-worker must expose the build-time content-addressed cache placeholder')
     _require(e,'W18 | Accessibility/testing/offline/storage hardening — delivered' in roadmap,'W18 roadmap delivery marker missing')
     _require(e,'W19 | StudyFlow Local 1.0 release seal — delivered' in roadmap,'W19 roadmap delivery marker missing')
     for token in ('StudyFlow Local 1.0.0','no required backend','unknown evidence remains distinct','npm run release:check'):_require(e,token in doc,f'W19 release documentation missing {token}')
@@ -352,6 +352,26 @@ def validate_parity_final_seal()->list[str]:
     _require(e,(WEB/'tests/test_pc18_encrypted_final_parity.py').is_file(),'PC18 regression suite missing tests/test_pc18_encrypted_final_parity.py')
     return e
 
+def validate_interaction_runtime_audit()->list[str]:
+    e=[]; product=_text(WEB/'src/product.ts',e); ui=_text(WEB/'src/react/App.tsx',e); worker=_text(WEB/'service-worker.js',e); build=_text(WEB/'scripts/build_dist.mjs',e); check=_text(WEB/'scripts/check_release.mjs',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC19_INTERACTION_RUNTIME_AUDIT_HOTFIX.md',e)
+    for token in ('current!==state.rendered','next!==current','LocalizedValue','MutationObserver'):_require(e,token in product,f'PC19 idempotent dynamic localization missing {token}')
+    _require(e,'Encrypted portable backups are not included' not in product and 'Backups portáteis criptografados não fazem parte' not in product,'PC19 product copy still denies encrypted portable backups')
+    for token in ('dataset.studyflowInteractive="ready"','delete document.documentElement.dataset.studyflowInteractive'):_require(e,token in ui,f'PC19 interaction liveness marker missing {token}')
+    _require(e,'__STUDYFLOW_CACHE_VERSION__' in worker,'PC19 service-worker cache placeholder missing')
+    for token in ('const cacheSeed=','createHash("sha256").update(cacheSeed)','cacheVersion'):_require(e,token in build,f'PC19 content-addressed cache build missing {token}')
+    for token in ('manifest.cacheVersion','service worker cache version does not match release manifest'):_require(e,token in check,f'PC19 release cache verification missing {token}')
+    try:
+        manifest=json.loads((WEB/'manifest.webmanifest').read_text(encoding='utf-8')); _require(e,manifest.get('background_color')=='#0b0f14','PC19 PWA background must match dark-only shell'); _require(e,manifest.get('theme_color')=='#121923','PC19 PWA theme must match dark-only shell')
+    except Exception as exc:e.append(f'PC19 manifest invalid: {exc}')
+    styles=_text(WEB/'styles.css',e)
+    for token in ('.skip-link {','transform: translateY(calc(-100% - 1rem))','.skip-link:focus-visible','textarea:focus-visible','background: var(--surface-muted)','select {\n    color-scheme: dark;'):_require(e,token in styles,f'PC19 real-device dark shell styling missing {token}')
+    _require(e,'input:not([type="checkbox"]):not([type="radio"]):not([type="file"])' in styles,'PC19 general editable-control dark styling missing')
+    _require(e,(WEB/'tests/test_pc19_interaction_runtime.py').is_file(),'PC19 regression suite missing')
+    _require(e,(WEB/'scripts/browser_interaction_smoke.py').is_file(),'PC19 browser interaction smoke missing')
+    _require(e,'PC19 | Interaction runtime audit/hotfix — delivered' in roadmap,'PC19 roadmap delivery marker missing')
+    for token in ('main-thread starvation','MutationObserver','content-addressed','browser interaction smoke','dark-only'):_require(e,token in doc,f'PC19 audit documentation missing {token}')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -363,7 +383,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach,validate_parity_product_release,validate_parity_exam_foundation,validate_parity_task_workflows,validate_parity_intelligence_schedule,validate_parity_intelligence_refinement,validate_parity_flashcards_viewer,validate_parity_promise_cleanup,validate_parity_final_seal)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach,validate_parity_product_release,validate_parity_exam_foundation,validate_parity_task_workflows,validate_parity_intelligence_schedule,validate_parity_intelligence_refinement,validate_parity_flashcards_viewer,validate_parity_promise_cleanup,validate_parity_final_seal,validate_interaction_runtime_audit)
     out=[]
     for fn in groups:
         for item in fn():
@@ -371,8 +391,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--parity-product-release',action='store_true'); parser.add_argument('--parity-exam-foundation',action='store_true'); parser.add_argument('--parity-task-workflows',action='store_true'); parser.add_argument('--parity-intelligence-schedule',action='store_true'); parser.add_argument('--parity-intelligence-refinement',action='store_true'); parser.add_argument('--parity-flashcards-viewer',action='store_true'); parser.add_argument('--parity-promise-cleanup',action='store_true'); parser.add_argument('--parity-final-seal',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_parity_product_release() if args.parity_product_release else validate_parity_exam_foundation() if args.parity_exam_foundation else validate_parity_task_workflows() if args.parity_task_workflows else validate_parity_intelligence_schedule() if args.parity_intelligence_schedule else validate_parity_intelligence_refinement() if args.parity_intelligence_refinement else validate_parity_flashcards_viewer() if args.parity_flashcards_viewer else validate_parity_promise_cleanup() if args.parity_promise_cleanup else validate_parity_final_seal() if args.parity_final_seal else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--parity-product-release',action='store_true'); parser.add_argument('--parity-exam-foundation',action='store_true'); parser.add_argument('--parity-task-workflows',action='store_true'); parser.add_argument('--parity-intelligence-schedule',action='store_true'); parser.add_argument('--parity-intelligence-refinement',action='store_true'); parser.add_argument('--parity-flashcards-viewer',action='store_true'); parser.add_argument('--parity-promise-cleanup',action='store_true'); parser.add_argument('--parity-final-seal',action='store_true'); parser.add_argument('--interaction-runtime-audit',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_parity_product_release() if args.parity_product_release else validate_parity_exam_foundation() if args.parity_exam_foundation else validate_parity_task_workflows() if args.parity_task_workflows else validate_parity_intelligence_schedule() if args.parity_intelligence_schedule else validate_parity_intelligence_refinement() if args.parity_intelligence_refinement else validate_parity_flashcards_viewer() if args.parity_flashcards_viewer else validate_parity_promise_cleanup() if args.parity_promise_cleanup else validate_parity_final_seal() if args.parity_final_seal else validate_interaction_runtime_audit() if args.interaction_runtime_audit else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

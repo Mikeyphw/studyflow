@@ -1,13 +1,13 @@
 {
   "name": "StudyFlow Local",
   "short_name": "StudyFlow",
-  "description": "StudyFlow Local 1.0 \u2014 private, local-first study planning, practice and evidence.",
+  "description": "StudyFlow Local 1.0 — private, local-first study planning, practice and evidence.",
   "id": "./",
   "start_url": "./#today",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f6f7fb",
-  "theme_color": "#f6f7fb",
+  "background_color": "#0b0f14",
+  "theme_color": "#121923",
   "orientation": "any",
   "icons": [
     {

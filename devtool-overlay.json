@@ -1,102 +1,378 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_web_pc13_task_workflows_parity_v1",
+  "name": "studyflow_web_pc19_interaction_runtime_audit_hotfix_v2",
   "target": "studyflow_web",
-  "description": "PC13 closes OV10 + OV11 + OV13 web parity with the BB Agente Comercial pre-edital preset, canonical Writing Workspace, and explicit activity-type deep links.",
-  "baseline": {
-    "repo": "studyflow",
-    "target": "studyflow_web",
-    "expected_target_type": "node",
-    "requires_previous_overlay": "studyflow_web_pc12_exam_foundation_parity_v2.zip",
-    "requires_previous_overlay_sha256": "eb6e7d9795a0b144fb3f0daf054c5b34fdb92aafee86397e76a8e2d520ad52db"
+  "description": "Critical structured PC19 v2 real-browser hotfix: fixes localization observer starvation/static UI, proves actual click/state behavior, closes screenshot-visible skip-link and dark form-control regressions, fingerprints PWA cache identity, aligns dark install metadata, and corrects runtime parity evidence.",
+  "commit_message": "PC19: fix static UI and seal real-browser interaction audit",
+  "commit": {
+    "enabled": true,
+    "strategy": "single",
+    "message": "PC19: fix static UI and seal real-browser interaction audit"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "PC13 add BB writing deep-link parity"
+      "message": "PC19: fix static UI and seal real-browser interaction audit"
     }
   },
-  "commit_message": "PC13 add BB writing deep-link parity",
+  "supersedes": "studyflow_web_pc19_interaction_runtime_audit_hotfix_v1.zip",
+  "baseline": {
+    "repo": "studyflow",
+    "target": "studyflow_web",
+    "expected_target_type": "node",
+    "requires_previous_overlay": "studyflow_web_pc18_encrypted_full_applicable_parity_seal_v1.zip",
+    "requires_previous_overlay_sha256": "d9c32a63d3233b72957a1c8f787cd8cfb7332360f78da044b9697e725dd78abb"
+  },
+  "structure": {
+    "format": 1,
+    "theme_policy": "dark-only",
+    "parity_claim": "full-applicable-functional-parity-with-behavioral-runtime-evidence",
+    "severity": "critical-runtime-hotfix",
+    "sections": [
+      {
+        "id": "01-localization-runtime",
+        "purpose": "Idempotent dynamic document localization that cannot starve the main thread or revert React updates",
+        "paths": [
+          "web/src/product.ts",
+          "web/runtime/product.js",
+          "web/dist/runtime/product.js"
+        ]
+      },
+      {
+        "id": "02-behavioral-interaction",
+        "purpose": "Event-loop liveness marker and real Chromium click/state smoke",
+        "paths": [
+          "web/src/react/App.tsx",
+          "web/runtime/react/App.js",
+          "web/dist/runtime/react/App.js",
+          "web/scripts/browser_interaction_smoke.py"
+        ]
+      },
+      {
+        "id": "03-real-device-dark-shell",
+        "purpose": "Keyboard-only skip link plus dark app-native editable controls from the real-device screenshots",
+        "paths": [
+          "web/styles.css",
+          "web/dist/styles.css",
+          "web/manifest.webmanifest",
+          "web/dist/manifest.webmanifest"
+        ]
+      },
+      {
+        "id": "04-pwa-cache-release",
+        "purpose": "Content-addressed service-worker cache identity and release consistency verification",
+        "paths": [
+          "web/service-worker.js",
+          "web/scripts/build_dist.mjs",
+          "web/scripts/check_release.mjs",
+          "web/dist/service-worker.js",
+          "web/dist/release-manifest.json"
+        ]
+      },
+      {
+        "id": "05-tests-validation",
+        "purpose": "Focused runtime/visual audit regressions and release-seal compatibility update",
+        "paths": [
+          "web/scripts/validate_web.py",
+          "web/tests/test_pc19_interaction_runtime.py",
+          "web/tests/test_w19_release_seal.py"
+        ]
+      },
+      {
+        "id": "06-docs-parity-correction",
+        "purpose": "Correct PC18 runtime-validity claim and document the device-driven audit",
+        "paths": [
+          "docs/web/PC18_ENCRYPTED_PORTABLE_FULL_APPLICABLE_PARITY_SEAL.md",
+          "docs/web/PC19_INTERACTION_RUNTIME_AUDIT_HOTFIX.md",
+          "docs/web/WEB_ROADMAP.md",
+          "web/README.md"
+        ]
+      }
+    ],
+    "artifact_metadata": [
+      ".devtool-artifact/README.md",
+      ".devtool-artifact/structure.json",
+      ".devtool-artifact/contracts/dark-only.md",
+      ".devtool-artifact/contracts/interaction-runtime.md",
+      ".devtool-artifact/contracts/real-device-visual-shell.md",
+      ".devtool-artifact/contracts/pwa-cache.md",
+      ".devtool-artifact/contracts/parity-claim-correction.md",
+      ".devtool-artifact/validation/validate.sh"
+    ]
+  },
+  "inventory": {
+    "format": 1,
+    "count": 23,
+    "entries": [
+      {
+        "action": "modify",
+        "path": "docs/web/PC18_ENCRYPTED_PORTABLE_FULL_APPLICABLE_PARITY_SEAL.md",
+        "mode": "0o644",
+        "sha256": "d3395fd30c11c54e4ee4d4ca7d0570b938b6b169c05f0f46f3d31ed1ed287545",
+        "size": 3959,
+        "source_mode": "0o644",
+        "source_sha256": "6cdceb0b9150aa2aa08b94236ec06c42f6cd7c3dc752cf483d8d318301a3f425",
+        "source_size": 3616
+      },
+      {
+        "action": "add",
+        "path": "docs/web/PC19_INTERACTION_RUNTIME_AUDIT_HOTFIX.md",
+        "mode": "0o644",
+        "sha256": "376e390ee20503fca1ab57f69bb9f1bd86638089faf1e01bf6d85018e7a5467e",
+        "size": 5683
+      },
+      {
+        "action": "modify",
+        "path": "docs/web/WEB_ROADMAP.md",
+        "mode": "0o644",
+        "sha256": "0a76d8acf9309d7860f82842be6cfb916e3942af4e53aa480c4f53f569e3a668",
+        "size": 5037,
+        "source_mode": "0o644",
+        "source_sha256": "6ff36fc6d6668f08f7681d22e3b3feac19c7db2049fd75d7cbbd5c82a77e7000",
+        "source_size": 4735
+      },
+      {
+        "action": "modify",
+        "path": "web/README.md",
+        "mode": "0o600",
+        "sha256": "acf3fe888a6e9af2d4940272d032640d9655caa91d6adf99c5f891ee41f5f0d1",
+        "size": 10969,
+        "source_mode": "0o600",
+        "source_sha256": "f09f72e32ec959f75babf6e109c7ff5e4902020bc2f02fb17c1694bd4c8d1b49",
+        "source_size": 10213
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/manifest.webmanifest",
+        "mode": "0o600",
+        "sha256": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
+        "size": 808,
+        "source_mode": "0o600",
+        "source_sha256": "f2ca2e367b90875e741fbc3981fc60706c116dc26612eca7eb966df3ac7d7598",
+        "source_size": 811
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/release-manifest.json",
+        "mode": "0o644",
+        "sha256": "855dd1b9cad891bce62e9b9014848eeacbda876078d223484d891f5cee1e54f1",
+        "size": 6295,
+        "source_mode": "0o644",
+        "source_sha256": "179b7f7cf301f55ab9a720b22275e0e2c5f55fa6d0297965cb4471776fb5f8c3",
+        "source_size": 6235
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/product.js",
+        "mode": "0o644",
+        "sha256": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
+        "size": 13059,
+        "source_mode": "0o644",
+        "source_sha256": "808cc76d21765c866f41525c90fed3c520963bfc627d7f41b0b2cfd0e8f45d3c",
+        "source_size": 12320
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/react/App.js",
+        "mode": "0o644",
+        "sha256": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
+        "size": 191170,
+        "source_mode": "0o644",
+        "source_sha256": "404c5db33248bd370df3af0db62eb2725e318d56b81468832e9e9d5201ef00ef",
+        "source_size": 190934
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/service-worker.js",
+        "mode": "0o644",
+        "sha256": "cec74555eeb1d56e1f9ed93691571db8872db021d2a381637398561c758189d3",
+        "size": 2314,
+        "source_mode": "0o644",
+        "source_sha256": "8f9f147c273eb9cafde8db4177700ca092a59c1e2e19433ebfb2cd90642101f8",
+        "source_size": 2304
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/styles.css",
+        "mode": "0o644",
+        "sha256": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
+        "size": 21136,
+        "source_mode": "0o644",
+        "source_sha256": "95e33c3865dea66aad496bbff3f0c0c6151e7634940518c2e2107b5eeb1178ed",
+        "source_size": 19905
+      },
+      {
+        "action": "modify",
+        "path": "web/manifest.webmanifest",
+        "mode": "0o600",
+        "sha256": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
+        "size": 808,
+        "source_mode": "0o600",
+        "source_sha256": "f2ca2e367b90875e741fbc3981fc60706c116dc26612eca7eb966df3ac7d7598",
+        "source_size": 811
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/product.js",
+        "mode": "0o644",
+        "sha256": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
+        "size": 13059,
+        "source_mode": "0o644",
+        "source_sha256": "808cc76d21765c866f41525c90fed3c520963bfc627d7f41b0b2cfd0e8f45d3c",
+        "source_size": 12320
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/react/App.js",
+        "mode": "0o644",
+        "sha256": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
+        "size": 191170,
+        "source_mode": "0o644",
+        "source_sha256": "404c5db33248bd370df3af0db62eb2725e318d56b81468832e9e9d5201ef00ef",
+        "source_size": 190934
+      },
+      {
+        "action": "add",
+        "path": "web/scripts/browser_interaction_smoke.py",
+        "mode": "0o755",
+        "sha256": "8896fb1331953dd50d06337398056192e599800af08ae985e359de1c3aef8251",
+        "size": 7617
+      },
+      {
+        "action": "modify",
+        "path": "web/scripts/build_dist.mjs",
+        "mode": "0o600",
+        "sha256": "564393551d76218ef3f78156d2a59e326b3c78e5b6890e7f0487a998fb00fc4d",
+        "size": 4471,
+        "source_mode": "0o600",
+        "source_sha256": "2a146ef10d4a42dc4f3080b13e256de5f3992a03b2dd1200c5c196df0f13c0d5",
+        "source_size": 4124
+      },
+      {
+        "action": "modify",
+        "path": "web/scripts/check_release.mjs",
+        "mode": "0o600",
+        "sha256": "a61c1e0d06c5fb2bd3c04e621f00613515e93b1ec40692391d920d2b0411cba3",
+        "size": 5900,
+        "source_mode": "0o600",
+        "source_sha256": "395566337e102c4249f890e5eb3a9defca9a1cbbf69a2e528623331009997408",
+        "source_size": 5469
+      },
+      {
+        "action": "modify",
+        "path": "web/scripts/validate_web.py",
+        "mode": "0o644",
+        "sha256": "42572116f455fb153bec6c1c3bd9b89e4f869f9e73bc25fd1850377e1eee4b2c",
+        "size": 59315,
+        "source_mode": "0o644",
+        "source_sha256": "bafbf8aa633c1b3ac3ad3b1c2b2e509bf6d7b626b0f7171b4f8d5533c5ffdb64",
+        "source_size": 56269
+      },
+      {
+        "action": "modify",
+        "path": "web/service-worker.js",
+        "mode": "0o644",
+        "sha256": "d978649e4c6499c72ff89b03d27b25e946d185f010d81c179ad8d5820c7e75ac",
+        "size": 2379,
+        "source_mode": "0o644",
+        "source_sha256": "7a39bd01b86528a56419ee910845959b0dd0593b1dfcd7018da744f8b26dbccb",
+        "source_size": 2373
+      },
+      {
+        "action": "modify",
+        "path": "web/src/product.ts",
+        "mode": "0o644",
+        "sha256": "f01d51af0f4b8e9852a9a9d4b9b022db9ec44dec6140d89f5a5f4b96936a7d3b",
+        "size": 12006,
+        "source_mode": "0o644",
+        "source_sha256": "f990854fb246caee121ab41bede862bc4ef5d5b34b3bbae04073b16858e08bbe",
+        "source_size": 11383
+      },
+      {
+        "action": "modify",
+        "path": "web/src/react/App.tsx",
+        "mode": "0o644",
+        "sha256": "237fcef312fd9cda6ee121d8e87d200dc0511f85acf9d00148458530990e699d",
+        "size": 135816,
+        "source_mode": "0o644",
+        "source_sha256": "ce4d96438bdad1042a718da3850c3c47544d0bd753089cddac9989eae70243d8",
+        "source_size": 135607
+      },
+      {
+        "action": "modify",
+        "path": "web/styles.css",
+        "mode": "0o644",
+        "sha256": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
+        "size": 21136,
+        "source_mode": "0o644",
+        "source_sha256": "95e33c3865dea66aad496bbff3f0c0c6151e7634940518c2e2107b5eeb1178ed",
+        "source_size": 19905
+      },
+      {
+        "action": "add",
+        "path": "web/tests/test_pc19_interaction_runtime.py",
+        "mode": "0o644",
+        "sha256": "ae21a8d2bc148197a28df821cf60272ce3d520b67656cf5d7807a8a916c3c6a9",
+        "size": 6490
+      },
+      {
+        "action": "modify",
+        "path": "web/tests/test_w19_release_seal.py",
+        "mode": "0o600",
+        "sha256": "b41c44d60d903a924ccd3d3d58904eff409b2673c6f1d0583b8f89c77a213628",
+        "size": 3637,
+        "source_mode": "0o600",
+        "source_sha256": "d94e1c0b7dc538351a41d89420d61ca869418b5e8d241a9d6a01260e084fa39b",
+        "source_size": 3470
+      }
+    ]
+  },
+  "integrity": {
+    "sha256": {
+      "docs/web/PC18_ENCRYPTED_PORTABLE_FULL_APPLICABLE_PARITY_SEAL.md": "d3395fd30c11c54e4ee4d4ca7d0570b938b6b169c05f0f46f3d31ed1ed287545",
+      "docs/web/PC19_INTERACTION_RUNTIME_AUDIT_HOTFIX.md": "376e390ee20503fca1ab57f69bb9f1bd86638089faf1e01bf6d85018e7a5467e",
+      "docs/web/WEB_ROADMAP.md": "0a76d8acf9309d7860f82842be6cfb916e3942af4e53aa480c4f53f569e3a668",
+      "web/README.md": "acf3fe888a6e9af2d4940272d032640d9655caa91d6adf99c5f891ee41f5f0d1",
+      "web/dist/manifest.webmanifest": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
+      "web/dist/release-manifest.json": "855dd1b9cad891bce62e9b9014848eeacbda876078d223484d891f5cee1e54f1",
+      "web/dist/runtime/product.js": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
+      "web/dist/runtime/react/App.js": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
+      "web/dist/service-worker.js": "cec74555eeb1d56e1f9ed93691571db8872db021d2a381637398561c758189d3",
+      "web/dist/styles.css": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
+      "web/manifest.webmanifest": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
+      "web/runtime/product.js": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
+      "web/runtime/react/App.js": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
+      "web/scripts/browser_interaction_smoke.py": "8896fb1331953dd50d06337398056192e599800af08ae985e359de1c3aef8251",
+      "web/scripts/build_dist.mjs": "564393551d76218ef3f78156d2a59e326b3c78e5b6890e7f0487a998fb00fc4d",
+      "web/scripts/check_release.mjs": "a61c1e0d06c5fb2bd3c04e621f00613515e93b1ec40692391d920d2b0411cba3",
+      "web/scripts/validate_web.py": "42572116f455fb153bec6c1c3bd9b89e4f869f9e73bc25fd1850377e1eee4b2c",
+      "web/service-worker.js": "d978649e4c6499c72ff89b03d27b25e946d185f010d81c179ad8d5820c7e75ac",
+      "web/src/product.ts": "f01d51af0f4b8e9852a9a9d4b9b022db9ec44dec6140d89f5a5f4b96936a7d3b",
+      "web/src/react/App.tsx": "237fcef312fd9cda6ee121d8e87d200dc0511f85acf9d00148458530990e699d",
+      "web/styles.css": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
+      "web/tests/test_pc19_interaction_runtime.py": "ae21a8d2bc148197a28df821cf60272ce3d520b67656cf5d7807a8a916c3c6a9",
+      "web/tests/test_w19_release_seal.py": "b41c44d60d903a924ccd3d3d58904eff409b2673c6f1d0583b8f89c77a213628"
+    }
+  },
   "validation": {
     "mode": "required",
     "required": true,
     "script": {
-      "description": "Run only PC13 task-workflow acceptance, TypeScript compile/runtime parity, focused PC13 regressions, and committed release integrity.",
+      "description": "Run focused PC19 runtime/visual acceptance, TypeScript/runtime parity, affected regressions, committed release integrity, and optional host Chromium smoke.",
       "interpreter": "sh",
-      "path": ".devtool-artifact/validate.sh",
-      "sha256": "631a608fa84900a5b0901e0c1379906f36c62e998dd9481f037014af604542c0",
+      "path": ".devtool-artifact/validation/validate.sh",
+      "sha256": "923e768fb5a89b3bd7fa4eabadbb8a9e8c470cce0604b19085c7ed16a56af27d",
       "timeout_seconds": 900,
       "working_directory": "."
     },
     "notes": [
       "target is explicitly studyflow_web (Node, root=web).",
-      "validation.tasks is intentionally omitted so Devtool does not expand into target-wide validation.",
-      "Focused validation runs: validate_web.py --parity-task-workflows; TypeScript --noEmit; compile_runtime.mjs; test_pc13_task_workflows.py; check_release.mjs.",
-      "No npm test, npm lint, npm build, validate_web.py --all, package generation, or Android/Desktop validation is requested by this artifact."
+      "validation.tasks is intentionally omitted.",
+      "No npm test/lint/build, validate_web.py --all, Android or Desktop validation is requested.",
+      "Browser smoke is behavioral when Playwright + Chromium are present; --optional skips only when those host tools are unavailable.",
+      "Dark-only and real-device visual-shell behavior are explicit artifact contracts."
     ]
-  },
-  "files": [
-    "docs/web/PC13_TASK_WORKFLOWS_PARITY.md",
-    "docs/web/WEB_ROADMAP.md",
-    "web/dist/release-manifest.json",
-    "web/dist/runtime/domain.js",
-    "web/dist/runtime/modes.js",
-    "web/dist/runtime/product.js",
-    "web/dist/runtime/react/App.js",
-    "web/dist/runtime/state.js",
-    "web/dist/runtime/task_workflows.js",
-    "web/dist/service-worker.js",
-    "web/dist/styles.css",
-    "web/runtime/domain.js",
-    "web/runtime/modes.js",
-    "web/runtime/product.js",
-    "web/runtime/react/App.js",
-    "web/runtime/state.js",
-    "web/runtime/task_workflows.js",
-    "web/scripts/validate_web.py",
-    "web/service-worker.js",
-    "web/src/domain.ts",
-    "web/src/modes.ts",
-    "web/src/product.ts",
-    "web/src/react/App.tsx",
-    "web/src/state.ts",
-    "web/src/task_workflows.ts",
-    "web/src/types.ts",
-    "web/styles.css",
-    "web/tests/test_pc13_task_workflows.py"
-  ],
-  "integrity": {
-    "sha256": {
-      "docs/web/PC13_TASK_WORKFLOWS_PARITY.md": "8cd36352ea50e6044a9ce0a418893924473e1731421b5c1dba9c6dcb2c2dbd18",
-      "docs/web/WEB_ROADMAP.md": "35e712673a19c8918c68a8d996e48f22772c9e5bd8bc8717e7c769983c2b5858",
-      "web/dist/release-manifest.json": "3ffbb9370f2dd526c6051e17f9dabd8ef776cff4c9a97c18b87d18e21f3bf51f",
-      "web/dist/runtime/domain.js": "84fb6eee2bbbee78f332aeaa1e8d463336ada14c374ac31e942a70848830b33a",
-      "web/dist/runtime/modes.js": "baa586537fde7dc2061b178b7fc372f118f698b2dddcb68979b7f62d7276391c",
-      "web/dist/runtime/product.js": "09325270cc2aaa9213a810b5c8abec4aecfd7e31dc4575ad48a2aa46ffa1870b",
-      "web/dist/runtime/react/App.js": "41720f1a470d361e18e9c7c7504828170b71c8dcc97ba02854fb29031fa7dc95",
-      "web/dist/runtime/state.js": "a8f6dcec7fffd17c0e89ee94f5d0165c09d399e880b929571e70c5e1a116fec8",
-      "web/dist/runtime/task_workflows.js": "f8d2f9610a2eec48e1e8cca6405529a12c37b2f7ef9146f7f984f5c7dc8392fa",
-      "web/dist/service-worker.js": "f77a7b56a66a1ecd646cf66266de694353a2c6721f9bf58c029e1138ce2ee244",
-      "web/dist/styles.css": "41542bdce4dd85a9169443a589f51c04c6028c6ee6f777a26f7e95d569b797c0",
-      "web/runtime/domain.js": "84fb6eee2bbbee78f332aeaa1e8d463336ada14c374ac31e942a70848830b33a",
-      "web/runtime/modes.js": "baa586537fde7dc2061b178b7fc372f118f698b2dddcb68979b7f62d7276391c",
-      "web/runtime/product.js": "09325270cc2aaa9213a810b5c8abec4aecfd7e31dc4575ad48a2aa46ffa1870b",
-      "web/runtime/react/App.js": "41720f1a470d361e18e9c7c7504828170b71c8dcc97ba02854fb29031fa7dc95",
-      "web/runtime/state.js": "a8f6dcec7fffd17c0e89ee94f5d0165c09d399e880b929571e70c5e1a116fec8",
-      "web/runtime/task_workflows.js": "f8d2f9610a2eec48e1e8cca6405529a12c37b2f7ef9146f7f984f5c7dc8392fa",
-      "web/scripts/validate_web.py": "f9de2394e27885d3945e6cc7929ca294fa8ae23ad0ee248262b1b0f4396e73e0",
-      "web/service-worker.js": "765e89891fe6df0d32899a61ebc814ff31d2f96fdd541f176b762bbab22cae77",
-      "web/src/domain.ts": "2489cc16e142c5fbbec416c951258fe76ac3ec5f12cf58b7448e9a0624f5b0e8",
-      "web/src/modes.ts": "3754294ae778fbf01a1cf952ce244866f0047a8d9b0ff96f05dd14bef53f4ae1",
-      "web/src/product.ts": "9e012e1f332c6b50ee1cf4db0f3a862ee67b5544b3268fa2ea104e9abe18d465",
-      "web/src/react/App.tsx": "cc39840856de5686d1dcef5ff5296d903a477e3562fc1b1ea2ecf8e7f8358794",
-      "web/src/state.ts": "7453f7df1dcd115e5c0fd1dcd4cb3155764a2908287a7ff74775eadf8ecc3ea0",
-      "web/src/task_workflows.ts": "2c6e151d1fc1fbacd87ccd2f65b6b1a77f734658bef9a02ec03fae98de7358c9",
-      "web/src/types.ts": "8d8408cfa01337ec9dd0e8d5f624029879775b8d8836f0a602c3e02dd9aed713",
-      "web/styles.css": "41542bdce4dd85a9169443a589f51c04c6028c6ee6f777a26f7e95d569b797c0",
-      "web/tests/test_pc13_task_workflows.py": "76c974a7e95b3e32a7400001bef8e711e735bfa243367616d7356338ca77fddf"
-    }
   }
 }
