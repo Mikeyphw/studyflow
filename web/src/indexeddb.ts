@@ -13,7 +13,7 @@ export const ATTACHMENT_STORE="attachments";
 export const CURRENT_STATE_KEY="current";
 export const RECOVERY_STATE_KEY="recovery";
 
-function clone<T>(value:T):T{return value==null?value:structuredClone(value);}
+function clone<T>(value:T):T{if(value==null)return value;const nativeClone=globalThis.structuredClone;if(typeof nativeClone==="function")return nativeClone(value);return JSON.parse(JSON.stringify(value)) as T;}
 function requestResult<T>(request:IDBRequest<T>):Promise<T>{return new Promise<T>((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error??new Error("IndexedDB request failed"));});}
 function transactionDone(transaction:IDBTransaction):Promise<void>{return new Promise<void>((resolve,reject)=>{transaction.oncomplete=()=>resolve();transaction.onerror=()=>reject(transaction.error??new Error("IndexedDB transaction failed"));transaction.onabort=()=>reject(transaction.error??new Error("IndexedDB transaction aborted"));});}
 function idFactory():string{return globalThis.crypto?.randomUUID?.()??`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,12)}`;}

@@ -26,12 +26,13 @@ function addLocalDays(value, days) { const d = localDate(value); d.setDate(d.get
 function localDayNumber(value) { const [y, m, d] = value.split("-").map(Number); return Math.floor(Date.UTC(y, m - 1, d) / DAY_MS); }
 function daysBetween(start, end) { return localDayNumber(end) - localDayNumber(start); }
 function mondayFor(value) { const d = localDate(value), offset = (d.getDay() + 6) % 7; d.setDate(d.getDate() - offset); return localDateKey(d); }
-function activePlan(state) { return state.plans.find(p => p.id === state.activePlanId) ?? null; }
+function activePlan(state) { var _a; return (_a = state.plans.find(p => p.id === state.activePlanId)) !== null && _a !== void 0 ? _a : null; }
 function valueObject(e) { return e && typeof e.value === "object" && e.value && !Array.isArray(e.value) ? e.value : {}; }
 function bandFor(score) { return score >= 80 ? "on-track" : score >= 65 ? "watch" : score >= 45 ? "at-risk" : "critical"; }
 function signal(id, label, value, reason, weight, evidenceCount) { return { id, label, value, status: value == null ? "unknown" : value >= 80 ? "good" : "risk", reason, weight, severity: value == null ? null : bandFor(value), evidenceCount }; }
 function weightedPresent(items) { const present = items.filter(([v, w]) => v != null && w > 0); const total = present.reduce((n, [, w]) => n + w, 0); return total ? clamp(Math.round(present.reduce((n, [v, w]) => n + clamp(v) * w, 0) / total)) : null; }
 function deriveExamReadinessParity(state, at = new Date()) {
+    var _a;
     const plan = activePlan(state);
     if (!plan)
         return { value: null, band: null, confidence: "none", reason: "No active plan", daysUntilExam: null, evidenceDimensionCount: 0, evidenceSampleCount: 0, signals: [] };
@@ -51,15 +52,15 @@ function deriveExamReadinessParity(state, at = new Date()) {
     const reviewHealth = reviewEvidenceCount ? clamp((100 - (overdue.length * 9 + due.length * 3)) | 0) : null;
     const mocks = state.evidence.filter(e => e.planId === planId && e.kind === "mock-exam-result").filter(e => Number.isFinite(Number(valueObject(e).percent))).sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt)).slice(0, 3);
     const mockHealth = mocks.length ? clamp(Math.round(mocks.reduce((n, e) => n + Number(valueObject(e).percent), 0) / mocks.length)) : null;
-    const recentSessions = state.sessions.filter(s => s.planId === planId && s.status === "completed" && Date.parse(s.endedAt ?? s.updatedAt) >= weekAgo && Date.parse(s.endedAt ?? s.updatedAt) <= at.getTime());
-    const activeDays = new Set(recentSessions.map(s => localDateKey(s.endedAt ?? s.updatedAt))).size;
+    const recentSessions = state.sessions.filter(s => { var _a, _b; return s.planId === planId && s.status === "completed" && Date.parse((_a = s.endedAt) !== null && _a !== void 0 ? _a : s.updatedAt) >= weekAgo && Date.parse((_b = s.endedAt) !== null && _b !== void 0 ? _b : s.updatedAt) <= at.getTime(); });
+    const activeDays = new Set(recentSessions.map(s => { var _a; return localDateKey((_a = s.endedAt) !== null && _a !== void 0 ? _a : s.updatedAt); })).size;
     const consistency = recentSessions.length ? pct(activeDays, 5) : null;
     const observedSchedule = state.activities.filter(a => a.planId === planId && a.scheduledFor && ((a.status !== "planned") || a.scheduledFor <= today));
     const scheduleHealth = observedSchedule.length ? pct(observedSchedule.filter(a => a.status === "completed").length, observedSchedule.length) : null;
     const daysUntilExam = plan.mode === "EXAM_PLAN" ? (0, promise_cleanup_1.daysUntilOfficialExam)(plan, at) : null;
     const studyHoursGoal = state.goals.find(g => g.planId === planId && g.active && g.period === "weekly" && g.metric === "study-hours");
     const studyMinutesGoal = state.goals.find(g => g.planId === planId && g.active && g.period === "weekly" && g.metric === "study-minutes");
-    const weeklyGoalHours = studyHoursGoal?.target ?? (studyMinutesGoal ? studyMinutesGoal.target / 60 : null);
+    const weeklyGoalHours = (_a = studyHoursGoal === null || studyHoursGoal === void 0 ? void 0 : studyHoursGoal.target) !== null && _a !== void 0 ? _a : (studyMinutesGoal ? studyMinutesGoal.target / 60 : null);
     const pendingMinutes = state.activities.filter(a => a.planId === planId && a.status === "planned").reduce((n, a) => n + a.durationMinutes, 0);
     let timeFeasibility = null;
     if (daysUntilExam != null && weeklyGoalHours != null && weeklyGoalHours > 0) {
@@ -80,7 +81,7 @@ function deriveExamReadinessParity(state, at = new Date()) {
     const minimum = mocks.length >= 1 || graded.length >= 30 || recentSessions.length >= 3 || (behavioralDimensions >= 2 && evidenceSampleCount >= 10);
     const value = minimum ? weightedPresent([[coverage, 24], [reviewHealth, 18], [practiceHealth, 14], [mockHealth, 14], [consistency, 10], [scheduleHealth, 10], [timeFeasibility, 10]]) : null;
     const confidence = value == null ? "none" : availableDimensions >= 5 && graded.length >= 200 && recentSessions.length >= 5 && mocks.length >= 2 ? "high" : availableDimensions >= 4 && (graded.length >= 50 || recentSessions.length >= 5 || mocks.length >= 2) ? "medium" : "low";
-    const weakAreaCount = new Set(state.errorEntries.filter(e => e.planId === planId && e.status === "open" && e.recurrenceCount > 1).map(e => e.subjectId ?? e.topicId ?? e.id)).size;
+    const weakAreaCount = new Set(state.errorEntries.filter(e => e.planId === planId && e.status === "open" && e.recurrenceCount > 1).map(e => { var _a, _b; return (_b = (_a = e.subjectId) !== null && _a !== void 0 ? _a : e.topicId) !== null && _b !== void 0 ? _b : e.id; })).size;
     const signals = [
         signal("coverage", "Coverage", coverage, coverage == null ? "No active syllabus coverage can be derived." : `${covered}/${topics.length} active topics have evidence.`, 24, covered),
         signal("reviews", "Reviews", reviewHealth, reviewHealth == null ? "No review evidence yet." : `${due.length} due · ${overdue.length} overdue reviews.`, 18, reviewEvidenceCount),
@@ -137,21 +138,23 @@ function derivePublicExamQuestionQuotaPlan(state, at = new Date()) {
     return { source: "phase", configured: phase.questionGoal, completed, remaining, dailyTarget, reason: remaining ? `${remaining} phase questions remain; ${nextSeven} are allocated across the next ${horizon} day${horizon === 1 ? "" : "s"}.` : "Active phase question target is complete.", phaseId: phase.id, phaseLabel: phase.label, remainingDays, nextSevenDaysQuestions: nextSeven, subjects: rows };
 }
 function deriveGenericQuestionQuotaPlan(state, at = new Date()) {
-    const plan = activePlan(state), configured = plan?.configuration.practice.weeklyQuestionQuota ?? null, today = localDateKey(at), monday = mondayFor(today), completed = state.evidence.filter(e => e.planId === plan?.id && e.kind === "question-attempt" && localDateKey(e.observedAt) >= monday && localDateKey(e.observedAt) <= today).length;
+    var _a;
+    const plan = activePlan(state), configured = (_a = plan === null || plan === void 0 ? void 0 : plan.configuration.practice.weeklyQuestionQuota) !== null && _a !== void 0 ? _a : null, today = localDateKey(at), monday = mondayFor(today), completed = state.evidence.filter(e => e.planId === (plan === null || plan === void 0 ? void 0 : plan.id) && e.kind === "question-attempt" && localDateKey(e.observedAt) >= monday && localDateKey(e.observedAt) <= today).length;
     if (configured == null)
         return { source: "none", configured: null, completed, remaining: null, dailyTarget: null, reason: "No weekly question quota is configured.", phaseId: null, phaseLabel: null, remainingDays: null, nextSevenDaysQuestions: null, subjects: [] };
     const elapsed = (localDate(today).getDay() + 6) % 7, daysLeft = Math.max(1, 7 - elapsed), remaining = Math.max(0, configured - completed);
     return { source: "practice", configured, completed, remaining, dailyTarget: Math.ceil(remaining / daysLeft), reason: remaining ? `${remaining} questions remain in the configured weekly quota.` : "Weekly question quota is complete.", phaseId: null, phaseLabel: null, remainingDays: daysLeft, nextSevenDaysQuestions: remaining, subjects: [] };
 }
 function buildUnifiedEvidenceTimeline(state, { planId = state.activePlanId, limit = 50, at = new Date() } = {}) {
+    var _a, _b, _c;
     const events = [];
     const within = (id) => !planId || id === planId;
     const sessionActivityIds = new Set(state.sessions.filter(s => within(s.planId) && s.status === "completed" && s.activityId).map(s => s.activityId));
     for (const s of state.sessions.filter(s => within(s.planId))) {
         if (s.status !== "completed" && s.status !== "cancelled")
             continue;
-        const when = s.endedAt ?? s.startedAt;
-        events.push({ id: `session:${s.id}`, kind: s.status === "completed" ? "session-completed" : "session-cancelled", occurredAt: when, label: state.activities.find(a => a.id === s.activityId)?.title ?? "Study session", minutes: s.durationMinutes, count: null, percent: null, source: "session" });
+        const when = (_a = s.endedAt) !== null && _a !== void 0 ? _a : s.startedAt;
+        events.push({ id: `session:${s.id}`, kind: s.status === "completed" ? "session-completed" : "session-cancelled", occurredAt: when, label: (_c = (_b = state.activities.find(a => a.id === s.activityId)) === null || _b === void 0 ? void 0 : _b.title) !== null && _c !== void 0 ? _c : "Study session", minutes: s.durationMinutes, count: null, percent: null, source: "session" });
     }
     for (const a of state.activities.filter(a => within(a.planId))) {
         if (a.status !== "completed" && a.status !== "cancelled")
@@ -190,7 +193,7 @@ function scheduleCalendarWindow(view, at = new Date()) { const today = localDate
     return { startsOn: m, endsOnInclusive: addLocalDays(m, 6), bounded: true };
 } return { startsOn: null, endsOnInclusive: null, bounded: false }; }
 function deriveScheduleCalendarSnapshot(state, { view = "this-week", at = new Date(), subjectId = null, activityType = null, status = null, provenance = null, query = "", includePast = false } = {}) {
-    const planId = state.activePlanId, window = scheduleCalendarWindow(view, at), today = localDateKey(at), normalizedQuery = String(query ?? "").trim().toLowerCase();
+    const planId = state.activePlanId, window = scheduleCalendarWindow(view, at), today = localDateKey(at), normalizedQuery = String(query !== null && query !== void 0 ? query : "").trim().toLowerCase();
     let activities = state.activities.filter(a => !planId || a.planId === planId);
     let hiddenPastCount = 0;
     if (window.bounded)
@@ -206,9 +209,9 @@ function deriveScheduleCalendarSnapshot(state, { view = "this-week", at = new Da
     if (status)
         activities = activities.filter(a => a.status === status);
     if (provenance)
-        activities = activities.filter(a => (a.scheduleProvenance?.source ?? "manual") === provenance);
+        activities = activities.filter(a => { var _a, _b; return ((_b = (_a = a.scheduleProvenance) === null || _a === void 0 ? void 0 : _a.source) !== null && _b !== void 0 ? _b : "manual") === provenance; });
     if (normalizedQuery)
-        activities = activities.filter(a => { const subject = state.subjects.find(s => s.id === a.subjectId)?.name ?? "", topic = state.topics.find(t => t.id === a.topicId)?.name ?? ""; return `${a.title} ${subject} ${topic}`.toLowerCase().includes(normalizedQuery); });
-    activities = activities.slice().sort((a, b) => String(a.scheduledFor ?? "9999").localeCompare(String(b.scheduledFor ?? "9999")) || (a.scheduledStartMinute ?? 9999) - (b.scheduledStartMinute ?? 9999) || a.title.localeCompare(b.title));
+        activities = activities.filter(a => { var _a, _b, _c, _d; const subject = (_b = (_a = state.subjects.find(s => s.id === a.subjectId)) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : "", topic = (_d = (_c = state.topics.find(t => t.id === a.topicId)) === null || _c === void 0 ? void 0 : _c.name) !== null && _d !== void 0 ? _d : ""; return `${a.title} ${subject} ${topic}`.toLowerCase().includes(normalizedQuery); });
+    activities = activities.slice().sort((a, b) => { var _a, _b, _c, _d; return String((_a = a.scheduledFor) !== null && _a !== void 0 ? _a : "9999").localeCompare(String((_b = b.scheduledFor) !== null && _b !== void 0 ? _b : "9999")) || ((_c = a.scheduledStartMinute) !== null && _c !== void 0 ? _c : 9999) - ((_d = b.scheduledStartMinute) !== null && _d !== void 0 ? _d : 9999) || a.title.localeCompare(b.title); });
     return { view, window, activities, visibleCount: activities.length, plannedMinutes: activities.reduce((n, a) => n + a.durationMinutes, 0), hiddenPastCount, query: normalizedQuery, includesPast: view !== "calendar" || includePast };
 }

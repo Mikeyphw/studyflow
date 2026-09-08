@@ -11,12 +11,14 @@ exports.STATE_STORE = "state";
 exports.ATTACHMENT_STORE = "attachments";
 exports.CURRENT_STATE_KEY = "current";
 exports.RECOVERY_STATE_KEY = "recovery";
-function clone(value) { return value == null ? value : structuredClone(value); }
-function requestResult(request) { return new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error ?? new Error("IndexedDB request failed")); }); }
-function transactionDone(transaction) { return new Promise((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => reject(transaction.error ?? new Error("IndexedDB transaction failed")); transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB transaction aborted")); }); }
-function idFactory() { return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`; }
+function clone(value) { if (value == null)
+    return value; const nativeClone = globalThis.structuredClone; if (typeof nativeClone === "function")
+    return nativeClone(value); return JSON.parse(JSON.stringify(value)); }
+function requestResult(request) { return new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => { var _a; return reject((_a = request.error) !== null && _a !== void 0 ? _a : new Error("IndexedDB request failed")); }; }); }
+function transactionDone(transaction) { return new Promise((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => { var _a; return reject((_a = transaction.error) !== null && _a !== void 0 ? _a : new Error("IndexedDB transaction failed")); }; transaction.onabort = () => { var _a; return reject((_a = transaction.error) !== null && _a !== void 0 ? _a : new Error("IndexedDB transaction aborted")); }; }); }
+function idFactory() { var _a, _b, _c; return (_c = (_b = (_a = globalThis.crypto) === null || _a === void 0 ? void 0 : _a.randomUUID) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`; }
 async function openStudyFlowDatabase({ indexedDBFactory = globalThis.indexedDB, name = exports.STUDYFLOW_DB_NAME } = {}) {
-    if (!indexedDBFactory?.open)
+    if (!(indexedDBFactory === null || indexedDBFactory === void 0 ? void 0 : indexedDBFactory.open))
         throw new TypeError("IndexedDB is unavailable");
     const request = indexedDBFactory.open(name, exports.STUDYFLOW_DB_VERSION);
     request.onupgradeneeded = () => {
@@ -32,7 +34,7 @@ async function readStoredState(db, key) {
     const tx = db.transaction(exports.STATE_STORE, "readonly");
     const value = await requestResult(tx.objectStore(exports.STATE_STORE).get(key));
     await transactionDone(tx);
-    return value ?? null;
+    return value !== null && value !== void 0 ? value : null;
 }
 async function writeCurrentOnly(db, state) {
     const tx = db.transaction(exports.STATE_STORE, "readwrite");
@@ -69,7 +71,7 @@ function createIndexedDbAttachmentRepository(db, { now = () => new Date().toISOS
                 throw new TypeError("Attachment must be a Blob or File");
             const fileName = file instanceof File && file.name ? file.name : "attachment";
             const lastModified = file instanceof File && Number.isFinite(file.lastModified) ? file.lastModified : null;
-            const record = { id: id ?? `attachment-${idFactory()}`, name: name ?? fileName, mimeType: file.type || "application/octet-stream", sizeBytes: file.size, lastModified, createdAt: now(), blob: file };
+            const record = { id: id !== null && id !== void 0 ? id : `attachment-${idFactory()}`, name: name !== null && name !== void 0 ? name : fileName, mimeType: file.type || "application/octet-stream", sizeBytes: file.size, lastModified, createdAt: now(), blob: file };
             const tx = db.transaction(exports.ATTACHMENT_STORE, "readwrite");
             tx.objectStore(exports.ATTACHMENT_STORE).put(record);
             await transactionDone(tx);
@@ -80,13 +82,13 @@ function createIndexedDbAttachmentRepository(db, { now = () => new Date().toISOS
             const tx = db.transaction(exports.ATTACHMENT_STORE, "readonly");
             const record = await requestResult(tx.objectStore(exports.ATTACHMENT_STORE).get(id));
             await transactionDone(tx);
-            return record ?? null;
+            return record !== null && record !== void 0 ? record : null;
         },
         async list() {
             const tx = db.transaction(exports.ATTACHMENT_STORE, "readonly");
             const records = await requestResult(tx.objectStore(exports.ATTACHMENT_STORE).getAll());
             await transactionDone(tx);
-            return (records ?? []).map(({ blob: _, ...metadata }) => metadata).sort((a, b) => a.name.localeCompare(b.name));
+            return (records !== null && records !== void 0 ? records : []).map(({ blob: _, ...metadata }) => metadata).sort((a, b) => a.name.localeCompare(b.name));
         },
         async delete(id) { const tx = db.transaction(exports.ATTACHMENT_STORE, "readwrite"); tx.objectStore(exports.ATTACHMENT_STORE).delete(id); await transactionDone(tx); },
         async clear() { const tx = db.transaction(exports.ATTACHMENT_STORE, "readwrite"); tx.objectStore(exports.ATTACHMENT_STORE).clear(); await transactionDone(tx); },
@@ -98,9 +100,9 @@ async function createIndexedDbPersistence({ indexedDBFactory = globalThis.indexe
     let status = "empty";
     let reason = null;
     let cache = null;
-    if (raw == null && legacyRepository?.load) {
+    if (raw == null && (legacyRepository === null || legacyRepository === void 0 ? void 0 : legacyRepository.load)) {
         const legacy = legacyRepository.load();
-        if (legacy?.state) {
+        if (legacy === null || legacy === void 0 ? void 0 : legacy.state) {
             raw = legacy.state;
             status = "migrated";
             reason = "Migrated browser localStorage state into IndexedDB.";
@@ -113,7 +115,7 @@ async function createIndexedDbPersistence({ indexedDBFactory = globalThis.indexe
             if (status !== "migrated")
                 status = raw.schemaVersion === candidate.schemaVersion ? "loaded" : "migrated";
             await writeStateWithRecovery(db, candidate, raw.schemaVersion === candidate.schemaVersion ? null : raw);
-            if (status === "migrated" && legacyRepository?.clear)
+            if (status === "migrated" && (legacyRepository === null || legacyRepository === void 0 ? void 0 : legacyRepository.clear))
                 legacyRepository.clear();
         }
         catch (currentError) {
@@ -150,12 +152,13 @@ async function createIndexedDbPersistence({ indexedDBFactory = globalThis.indexe
             return { status: "saved", reason: null };
         },
         clear() {
+            var _a;
             cache = null;
             status = "empty";
             reason = null;
             lastAsyncError = null;
             queue = queue.then(() => clearAll(db)).catch((error) => { lastAsyncError = error; });
-            legacyRepository?.clear?.();
+            (_a = legacyRepository === null || legacyRepository === void 0 ? void 0 : legacyRepository.clear) === null || _a === void 0 ? void 0 : _a.call(legacyRepository);
             return { status: "cleared", reason: null };
         },
         async flush() { await queue; if (lastAsyncError)

@@ -16,15 +16,15 @@ const dayKey = (value) => { const d = value instanceof Date ? new Date(value.get
 const plusDays = (value, days) => { const d = new Date(value); if (Number.isNaN(d.getTime()))
     throw new TypeError(`Invalid date: ${value}`); d.setDate(d.getDate() + days); return d; };
 const dateWeekday = (date) => { const [y, m, d] = date.split("-").map(Number); return new Date(y, m - 1, d, 12, 0, 0, 0).getDay(); };
-const cleanText = (v) => String(v ?? "").trim();
-const makeId = (prefix) => `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`}`;
+const cleanText = (v) => String(v !== null && v !== void 0 ? v : "").trim();
+const makeId = (prefix) => { var _a, _b, _c; return `${prefix}-${(_c = (_b = (_a = globalThis.crypto) === null || _a === void 0 ? void 0 : _a.randomUUID) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`}`; };
 function defaultScheduleConfiguration() { return { dailyCapacityMinutes: 120, strategyType: "FIXED_WEEKLY", availability: [], fixedBlocks: [], recurringBlocks: [] }; }
 function normalizeScheduleConfiguration(input) {
     const raw = input && typeof input === "object" && !Array.isArray(input) ? input : {};
     const daily = Number(raw.dailyCapacityMinutes);
-    const availability = (Array.isArray(raw.availability) ? raw.availability : []).map((w, i) => ({ id: cleanText(w?.id) || `window-${i + 1}`, weekday: clamp(Math.trunc(Number(w?.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(w?.startMinute) || 0), 0, 1439), endMinute: clamp(Math.trunc(Number(w?.endMinute) || 0), 1, 1440) })).filter((w) => w.endMinute > w.startMinute);
-    const fixedBlocks = (Array.isArray(raw.fixedBlocks) ? raw.fixedBlocks : []).map((b, i) => ({ id: cleanText(b?.id) || `fixed-${i + 1}`, title: cleanText(b?.title) || `Fixed block ${i + 1}`, date: /^\d{4}-\d{2}-\d{2}$/.test(cleanText(b?.date)) ? cleanText(b.date) : null, weekday: b?.weekday == null ? null : clamp(Math.trunc(Number(b.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(b?.startMinute) || 0), 0, 1439), durationMinutes: clamp(Math.trunc(Number(b?.durationMinutes) || 30), 5, 1440) }));
-    const recurringBlocks = (Array.isArray(raw.recurringBlocks) ? raw.recurringBlocks : []).map((b, i) => ({ id: cleanText(b?.id) || `recurring-${i + 1}`, title: cleanText(b?.title) || `Recurring block ${i + 1}`, subjectId: cleanText(b?.subjectId) || null, topicId: cleanText(b?.topicId) || null, weekday: clamp(Math.trunc(Number(b?.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(b?.startMinute) || 0), 0, 1439), durationMinutes: clamp(Math.trunc(Number(b?.durationMinutes) || 30), 5, 240), activityType: (0, task_workflows_1.normalizeStudyActivityType)(b?.activityType, "study"), enabled: b?.enabled !== false }));
+    const availability = (Array.isArray(raw.availability) ? raw.availability : []).map((w, i) => ({ id: cleanText(w === null || w === void 0 ? void 0 : w.id) || `window-${i + 1}`, weekday: clamp(Math.trunc(Number(w === null || w === void 0 ? void 0 : w.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(w === null || w === void 0 ? void 0 : w.startMinute) || 0), 0, 1439), endMinute: clamp(Math.trunc(Number(w === null || w === void 0 ? void 0 : w.endMinute) || 0), 1, 1440) })).filter((w) => w.endMinute > w.startMinute);
+    const fixedBlocks = (Array.isArray(raw.fixedBlocks) ? raw.fixedBlocks : []).map((b, i) => ({ id: cleanText(b === null || b === void 0 ? void 0 : b.id) || `fixed-${i + 1}`, title: cleanText(b === null || b === void 0 ? void 0 : b.title) || `Fixed block ${i + 1}`, date: /^\d{4}-\d{2}-\d{2}$/.test(cleanText(b === null || b === void 0 ? void 0 : b.date)) ? cleanText(b.date) : null, weekday: (b === null || b === void 0 ? void 0 : b.weekday) == null ? null : clamp(Math.trunc(Number(b.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(b === null || b === void 0 ? void 0 : b.startMinute) || 0), 0, 1439), durationMinutes: clamp(Math.trunc(Number(b === null || b === void 0 ? void 0 : b.durationMinutes) || 30), 5, 1440) }));
+    const recurringBlocks = (Array.isArray(raw.recurringBlocks) ? raw.recurringBlocks : []).map((b, i) => ({ id: cleanText(b === null || b === void 0 ? void 0 : b.id) || `recurring-${i + 1}`, title: cleanText(b === null || b === void 0 ? void 0 : b.title) || `Recurring block ${i + 1}`, subjectId: cleanText(b === null || b === void 0 ? void 0 : b.subjectId) || null, topicId: cleanText(b === null || b === void 0 ? void 0 : b.topicId) || null, weekday: clamp(Math.trunc(Number(b === null || b === void 0 ? void 0 : b.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(b === null || b === void 0 ? void 0 : b.startMinute) || 0), 0, 1439), durationMinutes: clamp(Math.trunc(Number(b === null || b === void 0 ? void 0 : b.durationMinutes) || 30), 5, 240), activityType: (0, task_workflows_1.normalizeStudyActivityType)(b === null || b === void 0 ? void 0 : b.activityType, "study"), enabled: (b === null || b === void 0 ? void 0 : b.enabled) !== false }));
     return { dailyCapacityMinutes: Number.isInteger(daily) && daily >= 30 && daily <= 1440 ? daily : 120, strategyType: (0, promise_cleanup_1.normalizeStudyStrategyType)(raw.strategyType), availability, fixedBlocks, recurringBlocks };
 }
 function validateScheduleConfiguration(input) { const c = normalizeScheduleConfiguration(input); const e = []; if (c.dailyCapacityMinutes < 30 || c.dailyCapacityMinutes > 1440)
@@ -35,9 +35,9 @@ function validateScheduleConfiguration(input) { const c = normalizeScheduleConfi
         e.push(`fixed block ${b.id} needs a date or weekday`); for (const b of c.recurringBlocks)
     if (b.startMinute + b.durationMinutes > 1440)
         e.push(`recurring block ${b.id} must end within its local day`); return e; }
-function addAvailabilityWindow(config, input) { return normalizeScheduleConfiguration({ ...config, availability: [...config.availability, { id: input.id ?? makeId("window"), weekday: input.weekday ?? 1, startMinute: input.startMinute ?? 1080, endMinute: input.endMinute ?? 1200 }] }); }
-function addFixedScheduleBlock(config, input) { return normalizeScheduleConfiguration({ ...config, fixedBlocks: [...config.fixedBlocks, { id: input.id ?? makeId("fixed"), title: input.title ?? "Fixed block", date: input.date ?? null, weekday: input.weekday ?? null, startMinute: input.startMinute ?? 1080, durationMinutes: input.durationMinutes ?? 30 }] }); }
-function planConfig(state) { const plan = state.plans.find(p => p.id === state.activePlanId); return normalizeScheduleConfiguration(plan?.configuration.schedule); }
+function addAvailabilityWindow(config, input) { var _a, _b, _c, _d; return normalizeScheduleConfiguration({ ...config, availability: [...config.availability, { id: (_a = input.id) !== null && _a !== void 0 ? _a : makeId("window"), weekday: (_b = input.weekday) !== null && _b !== void 0 ? _b : 1, startMinute: (_c = input.startMinute) !== null && _c !== void 0 ? _c : 1080, endMinute: (_d = input.endMinute) !== null && _d !== void 0 ? _d : 1200 }] }); }
+function addFixedScheduleBlock(config, input) { var _a, _b, _c, _d, _e, _f; return normalizeScheduleConfiguration({ ...config, fixedBlocks: [...config.fixedBlocks, { id: (_a = input.id) !== null && _a !== void 0 ? _a : makeId("fixed"), title: (_b = input.title) !== null && _b !== void 0 ? _b : "Fixed block", date: (_c = input.date) !== null && _c !== void 0 ? _c : null, weekday: (_d = input.weekday) !== null && _d !== void 0 ? _d : null, startMinute: (_e = input.startMinute) !== null && _e !== void 0 ? _e : 1080, durationMinutes: (_f = input.durationMinutes) !== null && _f !== void 0 ? _f : 30 }] }); }
+function planConfig(state) { const plan = state.plans.find(p => p.id === state.activePlanId); return normalizeScheduleConfiguration(plan === null || plan === void 0 ? void 0 : plan.configuration.schedule); }
 function windowsFor(config, date) { const weekday = dateWeekday(date); return config.availability.filter(w => w.weekday === weekday).sort((a, b) => a.startMinute - b.startMinute); }
 function fixedFor(config, date) { const weekday = dateWeekday(date); return config.fixedBlocks.filter(b => b.date === date || (b.date == null && b.weekday === weekday)); }
 function overlap(a0, a1, b0, b1) { return Math.max(a0, b0) < Math.min(a1, b1); }
@@ -83,15 +83,16 @@ function findStart(config, date, duration, activities) {
     }
     return null;
 }
-function cycleSubjects(state, planId) { const subjects = state.subjects.filter(s => s.planId === planId && !s.archived).sort((a, b) => a.order - b.order); const cycle = state.studyCycles?.[planId] ?? state.studyCycle; const ids = (cycle?.subjectIds ?? []).filter(id => subjects.some(s => s.id === id)); if (!ids.length)
-    return subjects; const cursor = Math.max(0, Math.min(ids.length - 1, cycle?.cursor ?? 0)); const rotated = [...ids.slice(cursor), ...ids.slice(0, cursor)]; return rotated.map(id => subjects.find(s => s.id === id)).filter(Boolean); }
-function topicFor(state, subjectId) { return state.topics.filter(t => t.subjectId === subjectId && t.status !== "archived").sort((a, b) => { const p = (x) => x.priority === "high" ? 0 : x.priority === "normal" ? 1 : 2; return p(a) - p(b) || a.order - b.order; })[0] ?? null; }
+function cycleSubjects(state, planId) { var _a, _b, _c, _d; const subjects = state.subjects.filter(s => s.planId === planId && !s.archived).sort((a, b) => a.order - b.order); const cycle = (_b = (_a = state.studyCycles) === null || _a === void 0 ? void 0 : _a[planId]) !== null && _b !== void 0 ? _b : state.studyCycle; const ids = ((_c = cycle === null || cycle === void 0 ? void 0 : cycle.subjectIds) !== null && _c !== void 0 ? _c : []).filter(id => subjects.some(s => s.id === id)); if (!ids.length)
+    return subjects; const cursor = Math.max(0, Math.min(ids.length - 1, (_d = cycle === null || cycle === void 0 ? void 0 : cycle.cursor) !== null && _d !== void 0 ? _d : 0)); const rotated = [...ids.slice(cursor), ...ids.slice(0, cursor)]; return rotated.map(id => subjects.find(s => s.id === id)).filter(Boolean); }
+function topicFor(state, subjectId) { var _a; return (_a = state.topics.filter(t => t.subjectId === subjectId && t.status !== "archived").sort((a, b) => { const p = (x) => x.priority === "high" ? 0 : x.priority === "normal" ? 1 : 2; return p(a) - p(b) || a.order - b.order; })[0]) !== null && _a !== void 0 ? _a : null; }
 function phaseKinds(phase, count) { if (!phase || count <= 0)
     return Array.from({ length: Math.max(0, count) }, () => "study"); const weighted = [{ kind: "study", ratio: phase.theoryRatioPercent }, { kind: "questions", ratio: phase.questionRatioPercent }, { kind: "review", ratio: phase.reviewRatioPercent }]; const exact = weighted.map(x => x.ratio * count / 100), counts = exact.map(Math.floor); let remaining = count - counts.reduce((a, b) => a + b, 0); const order = weighted.map((_, i) => i).sort((a, b) => (exact[b] - counts[b]) - (exact[a] - counts[a]) || b - a); for (let i = 0; i < remaining; i++)
     counts[order[i % order.length]]++; const result = []; for (let i = 0; i < weighted.length; i++)
     for (let j = 0; j < counts[i]; j++)
         result.push(weighted[i].kind); return result.length ? result : Array.from({ length: count }, () => "study"); }
 function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), days = 7, maxBlocks = 14 } = {}) {
+    var _a, _b, _c, _d, _e, _f;
     const generatedAt = new Date(at).toISOString();
     const plan = state.plans.find(p => p.id === state.activePlanId);
     const empty = { baseRevision: state.revision, generatedAt, operations: [], summary: { add: 0, move: 0, conflicts: 0, overloadedDays: 0, unscheduled: 0 }, reasons: ["No active plan"], conflicts: [], days: [], unscheduled: [] };
@@ -138,7 +139,7 @@ function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), da
     for (const block of config.recurringBlocks.filter(b => b.enabled)) {
         for (const date of dates.filter(d => dateWeekday(d) === block.weekday)) {
             const reason = `Recurring schedule block:${block.id}`;
-            if (planned.some(a => a.scheduledFor === date && a.scheduleProvenance?.reason === reason))
+            if (planned.some(a => { var _a; return a.scheduledFor === date && ((_a = a.scheduleProvenance) === null || _a === void 0 ? void 0 : _a.reason) === reason; }))
                 continue;
             candidates.push({ activity: null, title: block.title, kind: (0, task_workflows_1.activityKindForType)(block.activityType), activityType: block.activityType, durationMinutes: block.durationMinutes, subjectId: block.subjectId, topicId: block.topicId, origin: "schedule", reason, preferredDate: date, preferredStart: block.startMinute, urgency: 500 });
         }
@@ -151,21 +152,21 @@ function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), da
     for (const r of due) {
         if (planned.some(a => a.kind === "review" && a.topicId === r.topicId))
             continue;
-        candidates.push({ activity: null, title: state.topics.find(t => t.id === r.topicId)?.name ?? "Due review", kind: "review", activityType: "REVIEW", durationMinutes: 20, subjectId: r.subjectId, topicId: r.topicId, origin: "review", reason: "Due review backed by persisted review evidence", urgency: 200 });
+        candidates.push({ activity: null, title: (_b = (_a = state.topics.find(t => t.id === r.topicId)) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : "Due review", kind: "review", activityType: "REVIEW", durationMinutes: 20, subjectId: r.subjectId, topicId: r.topicId, origin: "review", reason: "Due review backed by persisted review evidence", urgency: 200 });
     }
     const examDays = (0, promise_cleanup_1.daysUntilOfficialExam)(plan, new Date(generatedAt));
     const examUrgency = examDays == null ? 0 : examDays <= 7 ? 30 : examDays <= 30 ? 20 : examDays <= 90 ? 10 : 0;
     const cycle = cycleSubjects(state, plan.id), activePhase = (0, exam_foundation_1.deriveActiveStudyPhase)(plan, generatedAt), phaseSlots = cycle.length ? (activePhase ? Math.min(limit, Math.max(cycle.length, 4)) : cycle.length) : 0, mix = phaseKinds(activePhase, phaseSlots);
     for (let index = 0; index < phaseSlots; index++) {
-        const subject = cycle[index % cycle.length], topic = topicFor(state, subject.id), kind = mix[index] ?? "study";
+        const subject = cycle[index % cycle.length], topic = topicFor(state, subject.id), kind = (_c = mix[index]) !== null && _c !== void 0 ? _c : "study";
         if (planned.some(a => a.kind === kind && a.subjectId === subject.id))
             continue;
         const suffix = kind === "questions" ? "questions" : kind === "review" ? "review" : "study";
         const durationMinutes = kind === "study" ? 40 : kind === "questions" ? 30 : 20;
         const phaseReason = activePhase ? `Active phase ${activePhase.label}: ${activePhase.theoryRatioPercent}% theory / ${activePhase.questionRatioPercent}% questions / ${activePhase.reviewRatioPercent}% review${activePhase.allocationIsStudyFlowSuggested ? " (StudyFlow suggestion)" : ""}` : null;
-        candidates.push({ activity: null, title: topic ? `${subject.name}: ${topic.name} · ${suffix}` : `${subject.name} · ${suffix}`, kind, activityType: kind === "questions" ? "QUESTIONS" : kind === "review" ? "REVIEW" : "THEORY", durationMinutes, subjectId: subject.id, topicId: topic?.id ?? null, origin: "cycle", reason: (phaseReason ?? (topic?.priority === "high" ? "Study-cycle subject with high-priority topic" : "Study-cycle subject in persisted cursor order")) + (examUrgency ? ` · confirmed exam proximity ${examDays} day(s)` : ""), urgency: 100 + examUrgency + (topic?.priority === "high" ? 5 : 0) });
+        candidates.push({ activity: null, title: topic ? `${subject.name}: ${topic.name} · ${suffix}` : `${subject.name} · ${suffix}`, kind, activityType: kind === "questions" ? "QUESTIONS" : kind === "review" ? "REVIEW" : "THEORY", durationMinutes, subjectId: subject.id, topicId: (_d = topic === null || topic === void 0 ? void 0 : topic.id) !== null && _d !== void 0 ? _d : null, origin: "cycle", reason: (phaseReason !== null && phaseReason !== void 0 ? phaseReason : ((topic === null || topic === void 0 ? void 0 : topic.priority) === "high" ? "Study-cycle subject with high-priority topic" : "Study-cycle subject in persisted cursor order")) + (examUrgency ? ` · confirmed exam proximity ${examDays} day(s)` : ""), urgency: 100 + examUrgency + ((topic === null || topic === void 0 ? void 0 : topic.priority) === "high" ? 5 : 0) });
     }
-    candidates.sort((a, b) => (b.urgency ?? 0) - (a.urgency ?? 0));
+    candidates.sort((a, b) => { var _a, _b; return ((_a = b.urgency) !== null && _a !== void 0 ? _a : 0) - ((_b = a.urgency) !== null && _b !== void 0 ? _b : 0); });
     let usedOps = 0;
     for (const c of candidates) {
         if (usedOps >= limit)
@@ -198,7 +199,7 @@ function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), da
             break;
         }
         if (!placed)
-            unscheduled.push({ activityId: c.activity?.id ?? null, title: c.title, durationMinutes: c.durationMinutes, reason: c.preferredDate ? "Recurring block cannot fit its persisted local date/time without conflict" : "No remaining capacity inside the preview horizon" });
+            unscheduled.push({ activityId: (_f = (_e = c.activity) === null || _e === void 0 ? void 0 : _e.id) !== null && _f !== void 0 ? _f : null, title: c.title, durationMinutes: c.durationMinutes, reason: c.preferredDate ? "Recurring block cannot fit its persisted local date/time without conflict" : "No remaining capacity inside the preview horizon" });
     }
     const finalDays = dates.map(date => { const fixed = fixedMinutes(config, date), capacity = capacityFor(config, date), used = mutableByDate.get(date).reduce((s, a) => s + a.durationMinutes, 0); return { date, capacityMinutes: capacity, fixedMinutes: fixed, plannedMinutes: used, remainingMinutes: Math.max(0, capacity - fixed - used), overloaded: used > Math.max(0, capacity - fixed) }; });
     const reasons = [];

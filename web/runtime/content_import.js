@@ -5,7 +5,7 @@ exports.parsePlanContentImport = parsePlanContentImport;
 exports.buildPlanContentImportPreview = buildPlanContentImportPreview;
 const PRIORITIES = new Set(["low", "normal", "high"]);
 const STATUSES = new Set(["not-started", "learning", "reviewing", "mastered", "archived"]);
-function text(value) { return String(value ?? "").trim(); }
+function text(value) { return String(value !== null && value !== void 0 ? value : "").trim(); }
 function optionalText(value) { const valueText = text(value); return valueText || null; }
 function normalized(value) { return text(value).replace(/\s+/g, " ").toLocaleLowerCase(); }
 function pathKey(subject, path) { return [normalized(subject), ...path.map(normalized)].join("\u001f"); }
@@ -55,16 +55,17 @@ function parseDelimitedLine(line, delimiter) {
     return out;
 }
 function rowFromObject(value, row, issues) {
-    const subject = text(value.subject ?? value.subjectName ?? value.discipline ?? value.disciplina);
-    const explicitPath = value.path ?? value.topicPath ?? value.topics;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    const subject = text((_c = (_b = (_a = value.subject) !== null && _a !== void 0 ? _a : value.subjectName) !== null && _b !== void 0 ? _b : value.discipline) !== null && _c !== void 0 ? _c : value.disciplina);
+    const explicitPath = (_e = (_d = value.path) !== null && _d !== void 0 ? _d : value.topicPath) !== null && _e !== void 0 ? _e : value.topics;
     let topicPath = [];
     if (Array.isArray(explicitPath))
         topicPath = cleanPath(explicitPath);
     else if (text(explicitPath))
         topicPath = splitPath(explicitPath);
     else {
-        const parent = splitPath(value.parent ?? value.parentTopic ?? value.parentPath);
-        const topic = text(value.topic ?? value.topicName ?? value.name);
+        const parent = splitPath((_g = (_f = value.parent) !== null && _f !== void 0 ? _f : value.parentTopic) !== null && _g !== void 0 ? _g : value.parentPath);
+        const topic = text((_j = (_h = value.topic) !== null && _h !== void 0 ? _h : value.topicName) !== null && _j !== void 0 ? _j : value.name);
         topicPath = topic ? [...parent, topic] : parent;
     }
     if (!subject) {
@@ -86,10 +87,11 @@ function rowFromObject(value, row, issues) {
         issues.push({ severity: "error", code: "invalid-status", row, message: `Unknown topic status: ${text(value.status)}.` });
         return null;
     }
-    return { row, subject, topicPath, weight: weightValue, subjectNotes: optionalText(value.subjectNotes ?? value.subject_notes), priority: priorityValue, status: statusValue, topicNotes: optionalText(value.topicNotes ?? value.topic_notes ?? value.notes) };
+    return { row, subject, topicPath, weight: weightValue, subjectNotes: optionalText((_k = value.subjectNotes) !== null && _k !== void 0 ? _k : value.subject_notes), priority: priorityValue, status: statusValue, topicNotes: optionalText((_m = (_l = value.topicNotes) !== null && _l !== void 0 ? _l : value.topic_notes) !== null && _m !== void 0 ? _m : value.notes) };
 }
 function flattenJsonSubject(subjectValue, rowStart, issues) {
-    const subject = text(subjectValue.name ?? subjectValue.subject);
+    var _a;
+    const subject = text((_a = subjectValue.name) !== null && _a !== void 0 ? _a : subjectValue.subject);
     if (!subject) {
         issues.push({ severity: "error", code: "missing-subject", row: rowStart, message: "JSON subject is missing name." });
         return [];
@@ -103,6 +105,7 @@ function flattenJsonSubject(subjectValue, rowStart, issues) {
     rows.push({ row: rowStart, subject, topicPath: [], weight: weightValue, subjectNotes: optionalText(subjectValue.notes) });
     let row = rowStart + 1;
     function visit(nodes, path) {
+        var _a, _b;
         if (!Array.isArray(nodes))
             return;
         for (const raw of nodes) {
@@ -117,7 +120,7 @@ function flattenJsonSubject(subjectValue, rowStart, issues) {
                 continue;
             }
             const obj = raw;
-            const name = text(obj.name ?? obj.topic);
+            const name = text((_a = obj.name) !== null && _a !== void 0 ? _a : obj.topic);
             if (!name) {
                 issues.push({ severity: "error", code: "missing-topic", row: row++, message: `JSON topic under ${subject} is missing name.` });
                 continue;
@@ -132,7 +135,7 @@ function flattenJsonSubject(subjectValue, rowStart, issues) {
             }
             const current = [...path, name];
             rows.push({ row: row++, subject, topicPath: current, priority: priorityValue, status: statusValue, topicNotes: optionalText(obj.notes) });
-            visit(obj.children ?? obj.topics, current);
+            visit((_b = obj.children) !== null && _b !== void 0 ? _b : obj.topics, current);
         }
     }
     visit(subjectValue.topics, []);
@@ -199,14 +202,14 @@ function parseDelimited(source, format) {
     const delimiter = format === "csv" ? "," : "\t";
     const headers = parseDelimitedLine(lines[0], delimiter).map(normalized);
     const aliases = new Map([["discipline", "subject"], ["disciplina", "subject"], ["subjectname", "subject"], ["topicname", "topic"], ["parenttopic", "parent"], ["topicpath", "path"], ["subject_notes", "subjectnotes"], ["topic_notes", "topicnotes"]]);
-    const canonical = headers.map((header) => aliases.get(header.replace(/\s+/g, "")) ?? header.replace(/\s+/g, ""));
+    const canonical = headers.map((header) => { var _a; return (_a = aliases.get(header.replace(/\s+/g, ""))) !== null && _a !== void 0 ? _a : header.replace(/\s+/g, ""); });
     if (!canonical.includes("subject"))
         issues.push({ severity: "error", code: "missing-header", row: 1, message: "Delimited import requires a subject column." });
     const records = [];
     lines.slice(1).forEach((line, index) => {
         const values = parseDelimitedLine(line, delimiter);
         const object = {};
-        canonical.forEach((header, column) => { object[header] = values[column] ?? ""; });
+        canonical.forEach((header, column) => { var _a; object[header] = (_a = values[column]) !== null && _a !== void 0 ? _a : ""; });
         const record = rowFromObject(object, index + 2, issues);
         if (record)
             records.push(record);
@@ -263,6 +266,7 @@ function parseText(source) {
     const records = [];
     let currentSubject = "";
     source.replace(/^\uFEFF/, "").split(/\r?\n/).forEach((raw, index) => {
+        var _a;
         const line = raw.trim();
         if (!line || line.startsWith("#"))
             return;
@@ -290,7 +294,7 @@ function parseText(source) {
             records.push({ row: index + 1, subject: parts[0], topicPath: parts.slice(1) });
         }
         else {
-            currentSubject = parts[0] ?? "";
+            currentSubject = (_a = parts[0]) !== null && _a !== void 0 ? _a : "";
             if (currentSubject)
                 records.push({ row: index + 1, subject: currentSubject, topicPath: [] });
         }
@@ -344,15 +348,16 @@ function uniqueInput(records, issues) {
     return out;
 }
 function matchingSubjects(state, planId, name) { const key = normalized(name); return state.subjects.filter((item) => item.planId === planId && normalized(item.name) === key); }
-function matchingTopics(state, planId, subjectId, parentTopicId, name) { const key = normalized(name); return state.topics.filter((item) => item.planId === planId && item.subjectId === subjectId && (item.parentTopicId ?? null) === parentTopicId && normalized(item.name) === key); }
+function matchingTopics(state, planId, subjectId, parentTopicId, name) { const key = normalized(name); return state.topics.filter((item) => { var _a; return item.planId === planId && item.subjectId === subjectId && ((_a = item.parentTopicId) !== null && _a !== void 0 ? _a : null) === parentTopicId && normalized(item.name) === key; }); }
 function buildPlanContentImportPreview(state, source, options) {
-    const mode = options.mode ?? "merge";
-    const target = options.target ?? "active";
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+    const mode = (_a = options.mode) !== null && _a !== void 0 ? _a : "merge";
+    const target = (_b = options.target) !== null && _b !== void 0 ? _b : "active";
     const parsed = parsePlanContentImport(source, { format: options.format });
     const issues = [...parsed.issues];
     const records = uniqueInput(parsed.records, issues);
-    const active = state.plans.find((plan) => plan.id === state.activePlanId) ?? null;
-    const targetPlanId = target === "active" ? active?.id ?? null : null;
+    const active = (_c = state.plans.find((plan) => plan.id === state.activePlanId)) !== null && _c !== void 0 ? _c : null;
+    const targetPlanId = target === "active" ? (_d = active === null || active === void 0 ? void 0 : active.id) !== null && _d !== void 0 ? _d : null : null;
     const targetPlanName = target === "new-plan" ? text(options.planName) : null;
     if (target === "active" && !targetPlanId)
         issues.push({ severity: "error", code: "missing-active-plan", row: null, message: "An active plan is required for this import." });
@@ -367,7 +372,7 @@ function buildPlanContentImportPreview(state, source, options) {
     for (const record of records) {
         const subjectKey = normalized(record.subject);
         includedSubjects.add(subjectKey);
-        let subjectRef = subjectTokens.get(subjectKey) ?? null;
+        let subjectRef = (_e = subjectTokens.get(subjectKey)) !== null && _e !== void 0 ? _e : null;
         if (!subjectRef) {
             if (targetPlanId) {
                 const matches = matchingSubjects(state, targetPlanId, record.subject);
@@ -401,7 +406,7 @@ function buildPlanContentImportPreview(state, source, options) {
             if (!subjectRef) {
                 subjectRef = `import-subject:${subjectKey}`;
                 subjectTokens.set(subjectKey, subjectRef);
-                operations.push({ action: "add-subject", subjectRef, subjectName: record.subject, changes: { weight: record.weight ?? null, notes: record.subjectNotes ?? null } });
+                operations.push({ action: "add-subject", subjectRef, subjectName: record.subject, changes: { weight: (_f = record.weight) !== null && _f !== void 0 ? _f : null, notes: (_g = record.subjectNotes) !== null && _g !== void 0 ? _g : null } });
             }
         }
         let parentRef = null;
@@ -411,11 +416,11 @@ function buildPlanContentImportPreview(state, source, options) {
             currentPath.push(name);
             const topicKey = pathKey(record.subject, currentPath);
             includedTopics.add(topicKey);
-            let topicRef = topicTokens.get(topicKey) ?? null;
+            let topicRef = (_h = topicTokens.get(topicKey)) !== null && _h !== void 0 ? _h : null;
             if (!topicRef && targetPlanId && !subjectRef.startsWith("import-subject:")) {
                 const matches = matchingTopics(state, targetPlanId, subjectRef, parentRef && parentRef.startsWith("import-topic:") ? null : parentRef, name);
                 // A not-yet-created parent cannot have an existing child; if parent is temporary we intentionally add the child too.
-                if (parentRef?.startsWith("import-topic:")) { }
+                if (parentRef === null || parentRef === void 0 ? void 0 : parentRef.startsWith("import-topic:")) { }
                 else if (matches.length > 1) {
                     issues.push({ severity: "error", code: "ambiguous-topic", row: record.row, message: `Multiple existing topics match ${[record.subject, ...currentPath].join(" > ")}.` });
                     break;
@@ -452,7 +457,7 @@ function buildPlanContentImportPreview(state, source, options) {
                 topicRef = `import-topic:${topicKey}`;
                 topicTokens.set(topicKey, topicRef);
                 const isLeaf = depth === record.topicPath.length - 1;
-                operations.push({ action: "add-topic", subjectRef, topicRef, subjectName: record.subject, topicPath: [...currentPath], parentRef, changes: { priority: isLeaf ? record.priority ?? "normal" : "normal", status: isLeaf ? record.status ?? "not-started" : "not-started", notes: isLeaf ? record.topicNotes ?? null : null } });
+                operations.push({ action: "add-topic", subjectRef, topicRef, subjectName: record.subject, topicPath: [...currentPath], parentRef, changes: { priority: isLeaf ? (_j = record.priority) !== null && _j !== void 0 ? _j : "normal" : "normal", status: isLeaf ? (_k = record.status) !== null && _k !== void 0 ? _k : "not-started" : "not-started", notes: isLeaf ? (_l = record.topicNotes) !== null && _l !== void 0 ? _l : null : null } });
             }
             parentRef = topicRef;
         }
@@ -474,7 +479,7 @@ function buildPlanContentImportPreview(state, source, options) {
             }
             const key = pathKey(subject.name, parts);
             if (!includedTopics.has(key))
-                operations.push({ action: "archive-topic", subjectRef: topic.subjectId, topicRef: topic.id, subjectName: subject.name, topicPath: parts, parentRef: topic.parentTopicId ?? null, changes: { status: "archived" } });
+                operations.push({ action: "archive-topic", subjectRef: topic.subjectId, topicRef: topic.id, subjectName: subject.name, topicPath: parts, parentRef: (_m = topic.parentTopicId) !== null && _m !== void 0 ? _m : null, changes: { status: "archived" } });
         }
         for (const subject of state.subjects.filter((item) => item.planId === targetPlanId && !item.archived)) {
             if (!includedSubjects.has(normalized(subject.name)))
@@ -495,5 +500,5 @@ function buildPlanContentImportPreview(state, source, options) {
         invalid: errors - ambiguous,
         ambiguous,
     };
-    return { baseRevision: state.revision, generatedAt: (options.now ?? (() => new Date().toISOString()))(), sourceFingerprint: fingerprint(source), format: options.format, mode, target, targetPlanId, targetPlanName, targetPlanMode: options.planMode ?? active?.mode ?? "GENERAL_SKILL", ready: errors === 0 && records.length > 0, summary, issues, operations };
+    return { baseRevision: state.revision, generatedAt: ((_o = options.now) !== null && _o !== void 0 ? _o : (() => new Date().toISOString()))(), sourceFingerprint: fingerprint(source), format: options.format, mode, target, targetPlanId, targetPlanName, targetPlanMode: (_q = (_p = options.planMode) !== null && _p !== void 0 ? _p : active === null || active === void 0 ? void 0 : active.mode) !== null && _q !== void 0 ? _q : "GENERAL_SKILL", ready: errors === 0 && records.length > 0, summary, issues, operations };
 }

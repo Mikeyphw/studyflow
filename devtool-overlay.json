@@ -1,378 +1,792 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_web_pc19_interaction_runtime_audit_hotfix_v2",
+  "name": "studyflow_web_wtv00_03_tv_browser_foundation_v1",
   "target": "studyflow_web",
-  "description": "Critical structured PC19 v2 real-browser hotfix: fixes localization observer starvation/static UI, proves actual click/state behavior, closes screenshot-visible skip-link and dark form-control regressions, fingerprints PWA cache identity, aligns dark install metadata, and corrects runtime parity evidence.",
-  "commit_message": "PC19: fix static UI and seal real-browser interaction audit",
+  "description": "WTV00-WTV03 TV-browser foundation: TV-mode detection and capability flags, LAN /tv server, ES2019 Smart-TV runtime compatibility, structuredClone/flex-gap fallbacks, and deterministic page-wide D-pad focus navigation.",
+  "commit_message": "WTV00-WTV03: add TV-browser foundation and D-pad adapter",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "PC19: fix static UI and seal real-browser interaction audit"
+    "message": "WTV00-WTV03: add TV-browser foundation and D-pad adapter"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "PC19: fix static UI and seal real-browser interaction audit"
+      "message": "WTV00-WTV03: add TV-browser foundation and D-pad adapter"
     }
   },
-  "supersedes": "studyflow_web_pc19_interaction_runtime_audit_hotfix_v1.zip",
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_web",
     "expected_target_type": "node",
-    "requires_previous_overlay": "studyflow_web_pc18_encrypted_full_applicable_parity_seal_v1.zip",
-    "requires_previous_overlay_sha256": "d9c32a63d3233b72957a1c8f787cd8cfb7332360f78da044b9697e725dd78abb"
+    "requires_previous_overlay": "studyflow_web_pc19_interaction_runtime_audit_hotfix_v2.zip"
   },
   "structure": {
     "format": 1,
-    "theme_policy": "dark-only",
-    "parity_claim": "full-applicable-functional-parity-with-behavioral-runtime-evidence",
-    "severity": "critical-runtime-hotfix",
     "sections": [
       {
-        "id": "01-localization-runtime",
-        "purpose": "Idempotent dynamic document localization that cannot starve the main thread or revert React updates",
+        "id": "wtv00-mode-shell",
+        "purpose": "TV-mode resolution, capability flags, and TV shell styling",
         "paths": [
-          "web/src/product.ts",
-          "web/runtime/product.js",
-          "web/dist/runtime/product.js"
-        ]
-      },
-      {
-        "id": "02-behavioral-interaction",
-        "purpose": "Event-loop liveness marker and real Chromium click/state smoke",
-        "paths": [
+          "web/src/tv.ts",
+          "web/src/main.tsx",
           "web/src/react/App.tsx",
-          "web/runtime/react/App.js",
-          "web/dist/runtime/react/App.js",
-          "web/scripts/browser_interaction_smoke.py"
+          "web/styles.css"
         ]
       },
       {
-        "id": "03-real-device-dark-shell",
-        "purpose": "Keyboard-only skip link plus dark app-native editable controls from the real-device screenshots",
+        "id": "wtv01-lan-server",
+        "purpose": "Dependency-free LAN TV server and /tv entrypoint",
         "paths": [
-          "web/styles.css",
-          "web/dist/styles.css",
-          "web/manifest.webmanifest",
-          "web/dist/manifest.webmanifest"
-        ]
-      },
-      {
-        "id": "04-pwa-cache-release",
-        "purpose": "Content-addressed service-worker cache identity and release consistency verification",
-        "paths": [
-          "web/service-worker.js",
-          "web/scripts/build_dist.mjs",
-          "web/scripts/check_release.mjs",
-          "web/dist/service-worker.js",
-          "web/dist/release-manifest.json"
-        ]
-      },
-      {
-        "id": "05-tests-validation",
-        "purpose": "Focused runtime/visual audit regressions and release-seal compatibility update",
-        "paths": [
-          "web/scripts/validate_web.py",
-          "web/tests/test_pc19_interaction_runtime.py",
-          "web/tests/test_w19_release_seal.py"
-        ]
-      },
-      {
-        "id": "06-docs-parity-correction",
-        "purpose": "Correct PC18 runtime-validity claim and document the device-driven audit",
-        "paths": [
-          "docs/web/PC18_ENCRYPTED_PORTABLE_FULL_APPLICABLE_PARITY_SEAL.md",
-          "docs/web/PC19_INTERACTION_RUNTIME_AUDIT_HOTFIX.md",
-          "docs/web/WEB_ROADMAP.md",
+          "web/scripts/serve_tv.mjs",
+          "web/package.json",
           "web/README.md"
         ]
+      },
+      {
+        "id": "wtv02-compatibility",
+        "purpose": "ES2019 runtime plus structuredClone/flex-gap compatibility",
+        "paths": [
+          "web/tsconfig.json",
+          "web/src/indexeddb.ts",
+          "web/runtime",
+          "web/dist/runtime"
+        ]
+      },
+      {
+        "id": "wtv03-dpad",
+        "purpose": "Geometry-based page-wide D-pad focus with modal and input ownership rules",
+        "paths": [
+          "web/src/tv.ts",
+          "web/tests/test_wtv00_03_tv_browser_foundation.py"
+        ]
+      },
+      {
+        "id": "release-docs",
+        "purpose": "Tracked PWA/release artifact and roadmap documentation",
+        "paths": [
+          "web/service-worker.js",
+          "web/dist/service-worker.js",
+          "web/dist/release-manifest.json",
+          "docs/web/WEB_ROADMAP.md",
+          "docs/web/WTV00_WTV03_TV_BROWSER_FOUNDATION.md"
+        ]
       }
-    ],
-    "artifact_metadata": [
-      ".devtool-artifact/README.md",
-      ".devtool-artifact/structure.json",
-      ".devtool-artifact/contracts/dark-only.md",
-      ".devtool-artifact/contracts/interaction-runtime.md",
-      ".devtool-artifact/contracts/real-device-visual-shell.md",
-      ".devtool-artifact/contracts/pwa-cache.md",
-      ".devtool-artifact/contracts/parity-claim-correction.md",
-      ".devtool-artifact/validation/validate.sh"
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 23,
+    "count": 64,
     "entries": [
       {
         "action": "modify",
-        "path": "docs/web/PC18_ENCRYPTED_PORTABLE_FULL_APPLICABLE_PARITY_SEAL.md",
-        "mode": "0o644",
-        "sha256": "d3395fd30c11c54e4ee4d4ca7d0570b938b6b169c05f0f46f3d31ed1ed287545",
-        "size": 3959,
-        "source_mode": "0o644",
-        "source_sha256": "6cdceb0b9150aa2aa08b94236ec06c42f6cd7c3dc752cf483d8d318301a3f425",
-        "source_size": 3616
+        "path": "docs/web/WEB_ROADMAP.md",
+        "mode": "0o600",
+        "sha256": "dbe24a49525b0160a75d4882d134f892d089fecdfae380021ca1385d1da711b3",
+        "size": 6467,
+        "source_mode": "0o600",
+        "source_sha256": "0a76d8acf9309d7860f82842be6cfb916e3942af4e53aa480c4f53f569e3a668",
+        "source_size": 5037
       },
       {
         "action": "add",
-        "path": "docs/web/PC19_INTERACTION_RUNTIME_AUDIT_HOTFIX.md",
+        "path": "docs/web/WTV00_WTV03_TV_BROWSER_FOUNDATION.md",
         "mode": "0o644",
-        "sha256": "376e390ee20503fca1ab57f69bb9f1bd86638089faf1e01bf6d85018e7a5467e",
-        "size": 5683
-      },
-      {
-        "action": "modify",
-        "path": "docs/web/WEB_ROADMAP.md",
-        "mode": "0o644",
-        "sha256": "0a76d8acf9309d7860f82842be6cfb916e3942af4e53aa480c4f53f569e3a668",
-        "size": 5037,
-        "source_mode": "0o644",
-        "source_sha256": "6ff36fc6d6668f08f7681d22e3b3feac19c7db2049fd75d7cbbd5c82a77e7000",
-        "source_size": 4735
+        "sha256": "2ec1e32f73e98521633b70ab9fabf11cae758d3556cb0affee9715f79fba5aca",
+        "size": 2773
       },
       {
         "action": "modify",
         "path": "web/README.md",
         "mode": "0o600",
-        "sha256": "acf3fe888a6e9af2d4940272d032640d9655caa91d6adf99c5f891ee41f5f0d1",
-        "size": 10969,
+        "sha256": "10475e3da509dcec398d4866c8c9e54a484e9c3c9e99184094a31299da3e44c8",
+        "size": 11748,
         "source_mode": "0o600",
-        "source_sha256": "f09f72e32ec959f75babf6e109c7ff5e4902020bc2f02fb17c1694bd4c8d1b49",
-        "source_size": 10213
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/manifest.webmanifest",
-        "mode": "0o600",
-        "sha256": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
-        "size": 808,
-        "source_mode": "0o600",
-        "source_sha256": "f2ca2e367b90875e741fbc3981fc60706c116dc26612eca7eb966df3ac7d7598",
-        "source_size": 811
+        "source_sha256": "acf3fe888a6e9af2d4940272d032640d9655caa91d6adf99c5f891ee41f5f0d1",
+        "source_size": 10969
       },
       {
         "action": "modify",
         "path": "web/dist/release-manifest.json",
         "mode": "0o644",
-        "sha256": "855dd1b9cad891bce62e9b9014848eeacbda876078d223484d891f5cee1e54f1",
-        "size": 6295,
-        "source_mode": "0o644",
-        "source_sha256": "179b7f7cf301f55ab9a720b22275e0e2c5f55fa6d0297965cb4471776fb5f8c3",
-        "source_size": 6235
+        "sha256": "ccc309f257f09861bc5bc72ae532789ca3bba6fbeeec6fef61045fc170e0b951",
+        "size": 6444,
+        "source_mode": "0o600",
+        "source_sha256": "855dd1b9cad891bce62e9b9014848eeacbda876078d223484d891f5cee1e54f1",
+        "source_size": 6295
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/content_import.js",
+        "mode": "0o600",
+        "sha256": "047b0e4c0cd55b2ff4af2e55643d6e5031823d6675ba05ee1ea792c2c5d892ea",
+        "size": 27112,
+        "source_mode": "0o600",
+        "source_sha256": "49d805cbe867f0a6de8abd04b66cd267342cb8e6c72c31934273b32102442af0",
+        "source_size": 25451
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/domain.js",
+        "mode": "0o600",
+        "sha256": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
+        "size": 61493,
+        "source_mode": "0o600",
+        "source_sha256": "d30d3e2996272a72691ab5ce5963b466e6d8732f61c64411bcb615caa2401bff",
+        "source_size": 56574
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/encrypted_portable.js",
+        "mode": "0o600",
+        "sha256": "f54d2163d210b5192304448b73b3e23346a777737564d3f30a0b8aa57567a770",
+        "size": 9937,
+        "source_mode": "0o600",
+        "source_sha256": "3a808872716bd79bb929fe6bb752ccde7067d46b1c6e6f2def8c432d077d3f08",
+        "source_size": 9792
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/exam_foundation.js",
+        "mode": "0o600",
+        "sha256": "c396cd179efe9a8ba34d575a394b253f5f1b3518fac8e49db518699b15d7f3e8",
+        "size": 11049,
+        "source_mode": "0o600",
+        "source_sha256": "90557d1cfcb0368801eff26226b8dd53cca0f6662cb093d481e4aaa8d61888c8",
+        "source_size": 9918
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/hardening.js",
+        "mode": "0o600",
+        "sha256": "7f6e6485f11b7ddf4a38fd7a98b1a3a846f62337c7da63e940755825f7da3791",
+        "size": 3998,
+        "source_mode": "0o600",
+        "source_sha256": "ce0adbf147035cd4b5a99d5df47896f72a4fb3f60ab9b3968ad431f6bd045b52",
+        "source_size": 3921
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/indexeddb.js",
+        "mode": "0o600",
+        "sha256": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
+        "size": 9872,
+        "source_mode": "0o600",
+        "source_sha256": "a9763e14906fcd3e5f6720e135ef76fae9cdb29ac5f2008e5020321f83140aca",
+        "source_size": 8823
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/intelligence.js",
+        "mode": "0o600",
+        "sha256": "2006af64e01ffa1aba25d942387c1e1c334dc7fae605c4e883b950a89751f588",
+        "size": 2103,
+        "source_mode": "0o600",
+        "source_sha256": "5fc5a4d6db4afb005b7c05f9bf39de1e42aa7fd2480b6a9e0783d8d4be3b709d",
+        "source_size": 2058
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/main.js",
+        "mode": "0o600",
+        "sha256": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
+        "size": 2341,
+        "source_mode": "0o600",
+        "source_sha256": "7f025afecc84e10b63a0b33b6f7db85218101e900eab168c74233f21cc9068b0",
+        "source_size": 2274
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/mode_import.js",
+        "mode": "0o600",
+        "sha256": "22ceed694a399fb0fe0442716f2f381decde5016a04f0757d9875bc8fa6fdf46",
+        "size": 5376,
+        "source_mode": "0o600",
+        "source_sha256": "70615ef84756a3eb01796515ab04a08c5e19a86768736517ea433167bdec8cb1",
+        "source_size": 5205
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/modes.js",
+        "mode": "0o600",
+        "sha256": "0a161c42ea1b0f3696d4d3e96850c10cdcdf573204aa469760b9fac6a45b08ca",
+        "size": 60831,
+        "source_mode": "0o600",
+        "source_sha256": "3fd2c576479b584ef91e2df28ba2cae092578a9cd791d89e1cea9bfb64b81413",
+        "source_size": 51946
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/parity_intelligence.js",
+        "mode": "0o600",
+        "sha256": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
+        "size": 24192,
+        "source_mode": "0o600",
+        "source_sha256": "74fcc4756ab67e7626c187342500f204e066c52caaaec7f4a15995e5d2b812eb",
+        "source_size": 22996
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/portable.js",
+        "mode": "0o600",
+        "sha256": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
+        "size": 22084,
+        "source_mode": "0o600",
+        "source_sha256": "5dd9b0edce77eed4dd180d9d1aabb110a3be3b1e42013e804af16d31dc9e002d",
+        "source_size": 19319
       },
       {
         "action": "modify",
         "path": "web/dist/runtime/product.js",
-        "mode": "0o644",
-        "sha256": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
-        "size": 13059,
-        "source_mode": "0o644",
-        "source_sha256": "808cc76d21765c866f41525c90fed3c520963bfc627d7f41b0b2cfd0e8f45d3c",
-        "source_size": 12320
+        "mode": "0o600",
+        "sha256": "764b81296db1d973d6bcf226c3bfdaafbb634e13871346e132f58ba2d211461c",
+        "size": 14924,
+        "source_mode": "0o600",
+        "source_sha256": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
+        "source_size": 13059
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/promise_cleanup.js",
+        "mode": "0o600",
+        "sha256": "eefeebdcdfb442bb79d84fcfc7c5ad808dc69392d4dbfad6657f65a8252ac334",
+        "size": 3020,
+        "source_mode": "0o600",
+        "source_sha256": "524f1fbf18f9681c481130519ba9baf6f7b9a68838c2be7d9eeb70a0bdaca048",
+        "source_size": 2779
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/pwa.js",
+        "mode": "0o600",
+        "sha256": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
+        "size": 3648,
+        "source_mode": "0o600",
+        "source_sha256": "ceb9a72e61743a93554bd84a55b10bba45e54e44ee5a963a292a97adc5adc87c",
+        "source_size": 2864
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/question_import.js",
+        "mode": "0o600",
+        "sha256": "72a6ec334ba1cfd6c0e7f8cb9b0a77aeb5d13706702f6756157c7f3f01fbd927",
+        "size": 8226,
+        "source_mode": "0o600",
+        "source_sha256": "f35f60cc8757be0faa6346acad9936bc6b42deae9add4d1712d7fc6960d61165",
+        "source_size": 7298
       },
       {
         "action": "modify",
         "path": "web/dist/runtime/react/App.js",
+        "mode": "0o600",
+        "sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
+        "size": 201914,
+        "source_mode": "0o600",
+        "source_sha256": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
+        "source_size": 191170
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/refinement.js",
+        "mode": "0o600",
+        "sha256": "6077e426784058b932755c1bc8b7606bc93b93552cca8a5532e795d5983c7555",
+        "size": 40542,
+        "source_mode": "0o600",
+        "source_sha256": "904df12757590abf2ce0a29d3250a13205590001d4d323dac7362c5a3158bf20",
+        "source_size": 37964
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/retention_viewer.js",
+        "mode": "0o600",
+        "sha256": "d281cb15de7b4355d214f19cf878393629676cdbf14131fe5d6b01a115107784",
+        "size": 2493,
+        "source_mode": "0o600",
+        "source_sha256": "7fe69a81b201176a5e410a26a747e0661174dd97d524fc7654b6105d286b4d5d",
+        "source_size": 2367
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/schedule.js",
+        "mode": "0o600",
+        "sha256": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
+        "size": 23492,
+        "source_mode": "0o600",
+        "source_sha256": "bc11c8f8f6045df432ba1ccbbb0886264d48213076d9fd525f98000c5e3cad81",
+        "source_size": 21197
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/state.js",
+        "mode": "0o600",
+        "sha256": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
+        "size": 128434,
+        "source_mode": "0o600",
+        "source_sha256": "1787daf8d4028dcc168b8a9cb0c7aba99d754ef0f52506e201da48e9bca44aec",
+        "source_size": 120164
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/storage.js",
+        "mode": "0o600",
+        "sha256": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
+        "size": 5409,
+        "source_mode": "0o600",
+        "source_sha256": "c370aa9771abc815459a150de8a563b46cb0f2ae8f93d9df92fd655da3ace216",
+        "source_size": 5295
+      },
+      {
+        "action": "modify",
+        "path": "web/dist/runtime/task_workflows.js",
+        "mode": "0o600",
+        "sha256": "b28c785074021d808fb6e633c9a0f4644190fd76a8a85954340e1c9a84419ccc",
+        "size": 13561,
+        "source_mode": "0o600",
+        "source_sha256": "9b39d1fe717e9f5f7d8813a97c9fe014bb5949257c8fc667e580bc15e129d1ab",
+        "source_size": 12667
+      },
+      {
+        "action": "add",
+        "path": "web/dist/runtime/tv.js",
         "mode": "0o644",
-        "sha256": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
-        "size": 191170,
-        "source_mode": "0o644",
-        "source_sha256": "404c5db33248bd370df3af0db62eb2725e318d56b81468832e9e9d5201ef00ef",
-        "source_size": 190934
+        "sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
+        "size": 8481
       },
       {
         "action": "modify",
         "path": "web/dist/service-worker.js",
         "mode": "0o644",
-        "sha256": "cec74555eeb1d56e1f9ed93691571db8872db021d2a381637398561c758189d3",
-        "size": 2314,
-        "source_mode": "0o644",
-        "source_sha256": "8f9f147c273eb9cafde8db4177700ca092a59c1e2e19433ebfb2cd90642101f8",
-        "source_size": 2304
+        "sha256": "1bd053770663a52303382d9ca631b89a4f828416427d4ed109196e1df87ee6ae",
+        "size": 2333,
+        "source_mode": "0o600",
+        "source_sha256": "cec74555eeb1d56e1f9ed93691571db8872db021d2a381637398561c758189d3",
+        "source_size": 2314
       },
       {
         "action": "modify",
         "path": "web/dist/styles.css",
-        "mode": "0o644",
-        "sha256": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
-        "size": 21136,
-        "source_mode": "0o644",
-        "source_sha256": "95e33c3865dea66aad496bbff3f0c0c6151e7634940518c2e2107b5eeb1178ed",
-        "source_size": 19905
+        "mode": "0o600",
+        "sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
+        "size": 25276,
+        "source_mode": "0o600",
+        "source_sha256": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
+        "source_size": 21136
       },
       {
         "action": "modify",
-        "path": "web/manifest.webmanifest",
+        "path": "web/package.json",
         "mode": "0o600",
-        "sha256": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
-        "size": 808,
+        "sha256": "c0845437f038876827776ebcb66291dd524dbd74ad88fcacf58b31a669b37e8f",
+        "size": 1137,
         "source_mode": "0o600",
-        "source_sha256": "f2ca2e367b90875e741fbc3981fc60706c116dc26612eca7eb966df3ac7d7598",
-        "source_size": 811
+        "source_sha256": "c6e2d8a40fc4fc6a6664210b5ab8b3e3115c0c4e0e525502011e752026314e37",
+        "source_size": 1021
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/content_import.js",
+        "mode": "0o600",
+        "sha256": "047b0e4c0cd55b2ff4af2e55643d6e5031823d6675ba05ee1ea792c2c5d892ea",
+        "size": 27112,
+        "source_mode": "0o600",
+        "source_sha256": "49d805cbe867f0a6de8abd04b66cd267342cb8e6c72c31934273b32102442af0",
+        "source_size": 25451
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/domain.js",
+        "mode": "0o600",
+        "sha256": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
+        "size": 61493,
+        "source_mode": "0o600",
+        "source_sha256": "d30d3e2996272a72691ab5ce5963b466e6d8732f61c64411bcb615caa2401bff",
+        "source_size": 56574
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/encrypted_portable.js",
+        "mode": "0o600",
+        "sha256": "f54d2163d210b5192304448b73b3e23346a777737564d3f30a0b8aa57567a770",
+        "size": 9937,
+        "source_mode": "0o600",
+        "source_sha256": "3a808872716bd79bb929fe6bb752ccde7067d46b1c6e6f2def8c432d077d3f08",
+        "source_size": 9792
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/exam_foundation.js",
+        "mode": "0o600",
+        "sha256": "c396cd179efe9a8ba34d575a394b253f5f1b3518fac8e49db518699b15d7f3e8",
+        "size": 11049,
+        "source_mode": "0o600",
+        "source_sha256": "90557d1cfcb0368801eff26226b8dd53cca0f6662cb093d481e4aaa8d61888c8",
+        "source_size": 9918
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/hardening.js",
+        "mode": "0o600",
+        "sha256": "7f6e6485f11b7ddf4a38fd7a98b1a3a846f62337c7da63e940755825f7da3791",
+        "size": 3998,
+        "source_mode": "0o600",
+        "source_sha256": "ce0adbf147035cd4b5a99d5df47896f72a4fb3f60ab9b3968ad431f6bd045b52",
+        "source_size": 3921
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/indexeddb.js",
+        "mode": "0o600",
+        "sha256": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
+        "size": 9872,
+        "source_mode": "0o600",
+        "source_sha256": "a9763e14906fcd3e5f6720e135ef76fae9cdb29ac5f2008e5020321f83140aca",
+        "source_size": 8823
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/intelligence.js",
+        "mode": "0o600",
+        "sha256": "2006af64e01ffa1aba25d942387c1e1c334dc7fae605c4e883b950a89751f588",
+        "size": 2103,
+        "source_mode": "0o600",
+        "source_sha256": "5fc5a4d6db4afb005b7c05f9bf39de1e42aa7fd2480b6a9e0783d8d4be3b709d",
+        "source_size": 2058
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/main.js",
+        "mode": "0o600",
+        "sha256": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
+        "size": 2341,
+        "source_mode": "0o600",
+        "source_sha256": "7f025afecc84e10b63a0b33b6f7db85218101e900eab168c74233f21cc9068b0",
+        "source_size": 2274
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/mode_import.js",
+        "mode": "0o600",
+        "sha256": "22ceed694a399fb0fe0442716f2f381decde5016a04f0757d9875bc8fa6fdf46",
+        "size": 5376,
+        "source_mode": "0o600",
+        "source_sha256": "70615ef84756a3eb01796515ab04a08c5e19a86768736517ea433167bdec8cb1",
+        "source_size": 5205
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/modes.js",
+        "mode": "0o600",
+        "sha256": "0a161c42ea1b0f3696d4d3e96850c10cdcdf573204aa469760b9fac6a45b08ca",
+        "size": 60831,
+        "source_mode": "0o600",
+        "source_sha256": "3fd2c576479b584ef91e2df28ba2cae092578a9cd791d89e1cea9bfb64b81413",
+        "source_size": 51946
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/parity_intelligence.js",
+        "mode": "0o600",
+        "sha256": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
+        "size": 24192,
+        "source_mode": "0o600",
+        "source_sha256": "74fcc4756ab67e7626c187342500f204e066c52caaaec7f4a15995e5d2b812eb",
+        "source_size": 22996
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/portable.js",
+        "mode": "0o600",
+        "sha256": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
+        "size": 22084,
+        "source_mode": "0o600",
+        "source_sha256": "5dd9b0edce77eed4dd180d9d1aabb110a3be3b1e42013e804af16d31dc9e002d",
+        "source_size": 19319
       },
       {
         "action": "modify",
         "path": "web/runtime/product.js",
-        "mode": "0o644",
-        "sha256": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
-        "size": 13059,
-        "source_mode": "0o644",
-        "source_sha256": "808cc76d21765c866f41525c90fed3c520963bfc627d7f41b0b2cfd0e8f45d3c",
-        "source_size": 12320
+        "mode": "0o600",
+        "sha256": "764b81296db1d973d6bcf226c3bfdaafbb634e13871346e132f58ba2d211461c",
+        "size": 14924,
+        "source_mode": "0o600",
+        "source_sha256": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
+        "source_size": 13059
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/promise_cleanup.js",
+        "mode": "0o600",
+        "sha256": "eefeebdcdfb442bb79d84fcfc7c5ad808dc69392d4dbfad6657f65a8252ac334",
+        "size": 3020,
+        "source_mode": "0o600",
+        "source_sha256": "524f1fbf18f9681c481130519ba9baf6f7b9a68838c2be7d9eeb70a0bdaca048",
+        "source_size": 2779
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/pwa.js",
+        "mode": "0o600",
+        "sha256": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
+        "size": 3648,
+        "source_mode": "0o600",
+        "source_sha256": "ceb9a72e61743a93554bd84a55b10bba45e54e44ee5a963a292a97adc5adc87c",
+        "source_size": 2864
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/question_import.js",
+        "mode": "0o600",
+        "sha256": "72a6ec334ba1cfd6c0e7f8cb9b0a77aeb5d13706702f6756157c7f3f01fbd927",
+        "size": 8226,
+        "source_mode": "0o600",
+        "source_sha256": "f35f60cc8757be0faa6346acad9936bc6b42deae9add4d1712d7fc6960d61165",
+        "source_size": 7298
       },
       {
         "action": "modify",
         "path": "web/runtime/react/App.js",
-        "mode": "0o644",
-        "sha256": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
-        "size": 191170,
-        "source_mode": "0o644",
-        "source_sha256": "404c5db33248bd370df3af0db62eb2725e318d56b81468832e9e9d5201ef00ef",
-        "source_size": 190934
+        "mode": "0o600",
+        "sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
+        "size": 201914,
+        "source_mode": "0o600",
+        "source_sha256": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
+        "source_size": 191170
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/refinement.js",
+        "mode": "0o600",
+        "sha256": "6077e426784058b932755c1bc8b7606bc93b93552cca8a5532e795d5983c7555",
+        "size": 40542,
+        "source_mode": "0o600",
+        "source_sha256": "904df12757590abf2ce0a29d3250a13205590001d4d323dac7362c5a3158bf20",
+        "source_size": 37964
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/retention_viewer.js",
+        "mode": "0o600",
+        "sha256": "d281cb15de7b4355d214f19cf878393629676cdbf14131fe5d6b01a115107784",
+        "size": 2493,
+        "source_mode": "0o600",
+        "source_sha256": "7fe69a81b201176a5e410a26a747e0661174dd97d524fc7654b6105d286b4d5d",
+        "source_size": 2367
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/schedule.js",
+        "mode": "0o600",
+        "sha256": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
+        "size": 23492,
+        "source_mode": "0o600",
+        "source_sha256": "bc11c8f8f6045df432ba1ccbbb0886264d48213076d9fd525f98000c5e3cad81",
+        "source_size": 21197
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/state.js",
+        "mode": "0o600",
+        "sha256": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
+        "size": 128434,
+        "source_mode": "0o600",
+        "source_sha256": "1787daf8d4028dcc168b8a9cb0c7aba99d754ef0f52506e201da48e9bca44aec",
+        "source_size": 120164
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/storage.js",
+        "mode": "0o600",
+        "sha256": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
+        "size": 5409,
+        "source_mode": "0o600",
+        "source_sha256": "c370aa9771abc815459a150de8a563b46cb0f2ae8f93d9df92fd655da3ace216",
+        "source_size": 5295
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/task_workflows.js",
+        "mode": "0o600",
+        "sha256": "b28c785074021d808fb6e633c9a0f4644190fd76a8a85954340e1c9a84419ccc",
+        "size": 13561,
+        "source_mode": "0o600",
+        "source_sha256": "9b39d1fe717e9f5f7d8813a97c9fe014bb5949257c8fc667e580bc15e129d1ab",
+        "source_size": 12667
       },
       {
         "action": "add",
-        "path": "web/scripts/browser_interaction_smoke.py",
-        "mode": "0o755",
-        "sha256": "8896fb1331953dd50d06337398056192e599800af08ae985e359de1c3aef8251",
-        "size": 7617
-      },
-      {
-        "action": "modify",
-        "path": "web/scripts/build_dist.mjs",
-        "mode": "0o600",
-        "sha256": "564393551d76218ef3f78156d2a59e326b3c78e5b6890e7f0487a998fb00fc4d",
-        "size": 4471,
-        "source_mode": "0o600",
-        "source_sha256": "2a146ef10d4a42dc4f3080b13e256de5f3992a03b2dd1200c5c196df0f13c0d5",
-        "source_size": 4124
-      },
-      {
-        "action": "modify",
-        "path": "web/scripts/check_release.mjs",
-        "mode": "0o600",
-        "sha256": "a61c1e0d06c5fb2bd3c04e621f00613515e93b1ec40692391d920d2b0411cba3",
-        "size": 5900,
-        "source_mode": "0o600",
-        "source_sha256": "395566337e102c4249f890e5eb3a9defca9a1cbbf69a2e528623331009997408",
-        "source_size": 5469
-      },
-      {
-        "action": "modify",
-        "path": "web/scripts/validate_web.py",
+        "path": "web/runtime/tv.js",
         "mode": "0o644",
-        "sha256": "42572116f455fb153bec6c1c3bd9b89e4f869f9e73bc25fd1850377e1eee4b2c",
-        "size": 59315,
-        "source_mode": "0o644",
-        "source_sha256": "bafbf8aa633c1b3ac3ad3b1c2b2e509bf6d7b626b0f7171b4f8d5533c5ffdb64",
-        "source_size": 56269
+        "sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
+        "size": 8481
+      },
+      {
+        "action": "add",
+        "path": "web/scripts/serve_tv.mjs",
+        "mode": "0o644",
+        "sha256": "243ef6fbdd814a3362f9ccbc9bf33480e2f9f059c581c6c7d59d83ff527e5aa6",
+        "size": 2780
       },
       {
         "action": "modify",
         "path": "web/service-worker.js",
-        "mode": "0o644",
-        "sha256": "d978649e4c6499c72ff89b03d27b25e946d185f010d81c179ad8d5820c7e75ac",
-        "size": 2379,
-        "source_mode": "0o644",
-        "source_sha256": "7a39bd01b86528a56419ee910845959b0dd0593b1dfcd7018da744f8b26dbccb",
-        "source_size": 2373
+        "mode": "0o600",
+        "sha256": "e992ad136f6a890490debf05aa4785894ac19122415d226a58260bc22ebd3bee",
+        "size": 2398,
+        "source_mode": "0o600",
+        "source_sha256": "d978649e4c6499c72ff89b03d27b25e946d185f010d81c179ad8d5820c7e75ac",
+        "source_size": 2379
       },
       {
         "action": "modify",
-        "path": "web/src/product.ts",
-        "mode": "0o644",
-        "sha256": "f01d51af0f4b8e9852a9a9d4b9b022db9ec44dec6140d89f5a5f4b96936a7d3b",
-        "size": 12006,
-        "source_mode": "0o644",
-        "source_sha256": "f990854fb246caee121ab41bede862bc4ef5d5b34b3bbae04073b16858e08bbe",
-        "source_size": 11383
+        "path": "web/src/indexeddb.ts",
+        "mode": "0o600",
+        "sha256": "8b4246832fee1871b28df10c206e26dfe7bb6a994a84dbd32ece7e3d759e626f",
+        "size": 8209,
+        "source_mode": "0o600",
+        "source_sha256": "491604ad157fd267f525f23be1e45cf1066dd5c7132acac2f7c3d82e1f06baa8",
+        "source_size": 8077
+      },
+      {
+        "action": "modify",
+        "path": "web/src/main.tsx",
+        "mode": "0o600",
+        "sha256": "2274c3171cbff43cd4d2e33cf0031e404313a0b68cf1f65b687ae45a29291dda",
+        "size": 1018,
+        "source_mode": "0o600",
+        "source_sha256": "445b08687af20e18b8213ef5bc6bd0d66de29fbb4de5a1cc79232a4493f6e7f1",
+        "source_size": 942
       },
       {
         "action": "modify",
         "path": "web/src/react/App.tsx",
+        "mode": "0o600",
+        "sha256": "f4de55ba1038d59f17b055cf7ae7cca9e5e8d6f31e35ccb17fe9c36026271760",
+        "size": 136511,
+        "source_mode": "0o600",
+        "source_sha256": "237fcef312fd9cda6ee121d8e87d200dc0511f85acf9d00148458530990e699d",
+        "source_size": 135816
+      },
+      {
+        "action": "add",
+        "path": "web/src/tv.ts",
         "mode": "0o644",
-        "sha256": "237fcef312fd9cda6ee121d8e87d200dc0511f85acf9d00148458530990e699d",
-        "size": 135816,
-        "source_mode": "0o644",
-        "source_sha256": "ce4d96438bdad1042a718da3850c3c47544d0bd753089cddac9989eae70243d8",
-        "source_size": 135607
+        "sha256": "a65d1778679877bf640c049806aafb4ab572150e7f8d543532b4f6600e2f81e8",
+        "size": 7272
       },
       {
         "action": "modify",
         "path": "web/styles.css",
-        "mode": "0o644",
-        "sha256": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
-        "size": 21136,
-        "source_mode": "0o644",
-        "source_sha256": "95e33c3865dea66aad496bbff3f0c0c6151e7634940518c2e2107b5eeb1178ed",
-        "source_size": 19905
+        "mode": "0o600",
+        "sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
+        "size": 25276,
+        "source_mode": "0o600",
+        "source_sha256": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
+        "source_size": 21136
       },
       {
         "action": "add",
-        "path": "web/tests/test_pc19_interaction_runtime.py",
+        "path": "web/tests/test_wtv00_03_tv_browser_foundation.py",
         "mode": "0o644",
-        "sha256": "ae21a8d2bc148197a28df821cf60272ce3d520b67656cf5d7807a8a916c3c6a9",
-        "size": 6490
+        "sha256": "6ea5060c36de0b4f2f8a8f9ac0ae23207e5a1ea7055ac4607f1d471fad3b5665",
+        "size": 3586
       },
       {
         "action": "modify",
-        "path": "web/tests/test_w19_release_seal.py",
+        "path": "web/tsconfig.json",
         "mode": "0o600",
-        "sha256": "b41c44d60d903a924ccd3d3d58904eff409b2673c6f1d0583b8f89c77a213628",
-        "size": 3637,
+        "sha256": "1ab749fac0623b001bf849b988ec94a679a36427b3c454e3b8928b7a0fbe7b05",
+        "size": 504,
         "source_mode": "0o600",
-        "source_sha256": "d94e1c0b7dc538351a41d89420d61ca869418b5e8d241a9d6a01260e084fa39b",
-        "source_size": 3470
+        "source_sha256": "3ae48c10ec2ad90f157ccfe3e309c202d3e4d3f6fa1baf48bbae4e030b241351",
+        "source_size": 504
       }
     ]
   },
   "integrity": {
     "sha256": {
-      "docs/web/PC18_ENCRYPTED_PORTABLE_FULL_APPLICABLE_PARITY_SEAL.md": "d3395fd30c11c54e4ee4d4ca7d0570b938b6b169c05f0f46f3d31ed1ed287545",
-      "docs/web/PC19_INTERACTION_RUNTIME_AUDIT_HOTFIX.md": "376e390ee20503fca1ab57f69bb9f1bd86638089faf1e01bf6d85018e7a5467e",
-      "docs/web/WEB_ROADMAP.md": "0a76d8acf9309d7860f82842be6cfb916e3942af4e53aa480c4f53f569e3a668",
-      "web/README.md": "acf3fe888a6e9af2d4940272d032640d9655caa91d6adf99c5f891ee41f5f0d1",
-      "web/dist/manifest.webmanifest": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
-      "web/dist/release-manifest.json": "855dd1b9cad891bce62e9b9014848eeacbda876078d223484d891f5cee1e54f1",
-      "web/dist/runtime/product.js": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
-      "web/dist/runtime/react/App.js": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
-      "web/dist/service-worker.js": "cec74555eeb1d56e1f9ed93691571db8872db021d2a381637398561c758189d3",
-      "web/dist/styles.css": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
-      "web/manifest.webmanifest": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
-      "web/runtime/product.js": "015b9e945220a42399ad843e94e2926910f49dcd53322ce579c742e1b354d427",
-      "web/runtime/react/App.js": "e5b9154b1ade8825fb531b19fadeff4f2016618792a2f5e79f815bce3199826c",
-      "web/scripts/browser_interaction_smoke.py": "8896fb1331953dd50d06337398056192e599800af08ae985e359de1c3aef8251",
-      "web/scripts/build_dist.mjs": "564393551d76218ef3f78156d2a59e326b3c78e5b6890e7f0487a998fb00fc4d",
-      "web/scripts/check_release.mjs": "a61c1e0d06c5fb2bd3c04e621f00613515e93b1ec40692391d920d2b0411cba3",
-      "web/scripts/validate_web.py": "42572116f455fb153bec6c1c3bd9b89e4f869f9e73bc25fd1850377e1eee4b2c",
-      "web/service-worker.js": "d978649e4c6499c72ff89b03d27b25e946d185f010d81c179ad8d5820c7e75ac",
-      "web/src/product.ts": "f01d51af0f4b8e9852a9a9d4b9b022db9ec44dec6140d89f5a5f4b96936a7d3b",
-      "web/src/react/App.tsx": "237fcef312fd9cda6ee121d8e87d200dc0511f85acf9d00148458530990e699d",
-      "web/styles.css": "8b2eb827cdfec85861675b558daab2a86e83e0dcc629f64e83d7207e59ac7bbd",
-      "web/tests/test_pc19_interaction_runtime.py": "ae21a8d2bc148197a28df821cf60272ce3d520b67656cf5d7807a8a916c3c6a9",
-      "web/tests/test_w19_release_seal.py": "b41c44d60d903a924ccd3d3d58904eff409b2673c6f1d0583b8f89c77a213628"
+      "docs/web/WEB_ROADMAP.md": "dbe24a49525b0160a75d4882d134f892d089fecdfae380021ca1385d1da711b3",
+      "docs/web/WTV00_WTV03_TV_BROWSER_FOUNDATION.md": "2ec1e32f73e98521633b70ab9fabf11cae758d3556cb0affee9715f79fba5aca",
+      "web/README.md": "10475e3da509dcec398d4866c8c9e54a484e9c3c9e99184094a31299da3e44c8",
+      "web/dist/release-manifest.json": "ccc309f257f09861bc5bc72ae532789ca3bba6fbeeec6fef61045fc170e0b951",
+      "web/dist/runtime/content_import.js": "047b0e4c0cd55b2ff4af2e55643d6e5031823d6675ba05ee1ea792c2c5d892ea",
+      "web/dist/runtime/domain.js": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
+      "web/dist/runtime/encrypted_portable.js": "f54d2163d210b5192304448b73b3e23346a777737564d3f30a0b8aa57567a770",
+      "web/dist/runtime/exam_foundation.js": "c396cd179efe9a8ba34d575a394b253f5f1b3518fac8e49db518699b15d7f3e8",
+      "web/dist/runtime/hardening.js": "7f6e6485f11b7ddf4a38fd7a98b1a3a846f62337c7da63e940755825f7da3791",
+      "web/dist/runtime/indexeddb.js": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
+      "web/dist/runtime/intelligence.js": "2006af64e01ffa1aba25d942387c1e1c334dc7fae605c4e883b950a89751f588",
+      "web/dist/runtime/main.js": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
+      "web/dist/runtime/mode_import.js": "22ceed694a399fb0fe0442716f2f381decde5016a04f0757d9875bc8fa6fdf46",
+      "web/dist/runtime/modes.js": "0a161c42ea1b0f3696d4d3e96850c10cdcdf573204aa469760b9fac6a45b08ca",
+      "web/dist/runtime/parity_intelligence.js": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
+      "web/dist/runtime/portable.js": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
+      "web/dist/runtime/product.js": "764b81296db1d973d6bcf226c3bfdaafbb634e13871346e132f58ba2d211461c",
+      "web/dist/runtime/promise_cleanup.js": "eefeebdcdfb442bb79d84fcfc7c5ad808dc69392d4dbfad6657f65a8252ac334",
+      "web/dist/runtime/pwa.js": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
+      "web/dist/runtime/question_import.js": "72a6ec334ba1cfd6c0e7f8cb9b0a77aeb5d13706702f6756157c7f3f01fbd927",
+      "web/dist/runtime/react/App.js": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
+      "web/dist/runtime/refinement.js": "6077e426784058b932755c1bc8b7606bc93b93552cca8a5532e795d5983c7555",
+      "web/dist/runtime/retention_viewer.js": "d281cb15de7b4355d214f19cf878393629676cdbf14131fe5d6b01a115107784",
+      "web/dist/runtime/schedule.js": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
+      "web/dist/runtime/state.js": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
+      "web/dist/runtime/storage.js": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
+      "web/dist/runtime/task_workflows.js": "b28c785074021d808fb6e633c9a0f4644190fd76a8a85954340e1c9a84419ccc",
+      "web/dist/runtime/tv.js": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
+      "web/dist/service-worker.js": "1bd053770663a52303382d9ca631b89a4f828416427d4ed109196e1df87ee6ae",
+      "web/dist/styles.css": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
+      "web/package.json": "c0845437f038876827776ebcb66291dd524dbd74ad88fcacf58b31a669b37e8f",
+      "web/runtime/content_import.js": "047b0e4c0cd55b2ff4af2e55643d6e5031823d6675ba05ee1ea792c2c5d892ea",
+      "web/runtime/domain.js": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
+      "web/runtime/encrypted_portable.js": "f54d2163d210b5192304448b73b3e23346a777737564d3f30a0b8aa57567a770",
+      "web/runtime/exam_foundation.js": "c396cd179efe9a8ba34d575a394b253f5f1b3518fac8e49db518699b15d7f3e8",
+      "web/runtime/hardening.js": "7f6e6485f11b7ddf4a38fd7a98b1a3a846f62337c7da63e940755825f7da3791",
+      "web/runtime/indexeddb.js": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
+      "web/runtime/intelligence.js": "2006af64e01ffa1aba25d942387c1e1c334dc7fae605c4e883b950a89751f588",
+      "web/runtime/main.js": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
+      "web/runtime/mode_import.js": "22ceed694a399fb0fe0442716f2f381decde5016a04f0757d9875bc8fa6fdf46",
+      "web/runtime/modes.js": "0a161c42ea1b0f3696d4d3e96850c10cdcdf573204aa469760b9fac6a45b08ca",
+      "web/runtime/parity_intelligence.js": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
+      "web/runtime/portable.js": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
+      "web/runtime/product.js": "764b81296db1d973d6bcf226c3bfdaafbb634e13871346e132f58ba2d211461c",
+      "web/runtime/promise_cleanup.js": "eefeebdcdfb442bb79d84fcfc7c5ad808dc69392d4dbfad6657f65a8252ac334",
+      "web/runtime/pwa.js": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
+      "web/runtime/question_import.js": "72a6ec334ba1cfd6c0e7f8cb9b0a77aeb5d13706702f6756157c7f3f01fbd927",
+      "web/runtime/react/App.js": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
+      "web/runtime/refinement.js": "6077e426784058b932755c1bc8b7606bc93b93552cca8a5532e795d5983c7555",
+      "web/runtime/retention_viewer.js": "d281cb15de7b4355d214f19cf878393629676cdbf14131fe5d6b01a115107784",
+      "web/runtime/schedule.js": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
+      "web/runtime/state.js": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
+      "web/runtime/storage.js": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
+      "web/runtime/task_workflows.js": "b28c785074021d808fb6e633c9a0f4644190fd76a8a85954340e1c9a84419ccc",
+      "web/runtime/tv.js": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
+      "web/scripts/serve_tv.mjs": "243ef6fbdd814a3362f9ccbc9bf33480e2f9f059c581c6c7d59d83ff527e5aa6",
+      "web/service-worker.js": "e992ad136f6a890490debf05aa4785894ac19122415d226a58260bc22ebd3bee",
+      "web/src/indexeddb.ts": "8b4246832fee1871b28df10c206e26dfe7bb6a994a84dbd32ece7e3d759e626f",
+      "web/src/main.tsx": "2274c3171cbff43cd4d2e33cf0031e404313a0b68cf1f65b687ae45a29291dda",
+      "web/src/react/App.tsx": "f4de55ba1038d59f17b055cf7ae7cca9e5e8d6f31e35ccb17fe9c36026271760",
+      "web/src/tv.ts": "a65d1778679877bf640c049806aafb4ab572150e7f8d543532b4f6600e2f81e8",
+      "web/styles.css": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
+      "web/tests/test_wtv00_03_tv_browser_foundation.py": "6ea5060c36de0b4f2f8a8f9ac0ae23207e5a1ea7055ac4607f1d471fad3b5665",
+      "web/tsconfig.json": "1ab749fac0623b001bf849b988ec94a679a36427b3c454e3b8928b7a0fbe7b05"
     }
   },
   "validation": {
     "mode": "required",
     "required": true,
     "script": {
-      "description": "Run focused PC19 runtime/visual acceptance, TypeScript/runtime parity, affected regressions, committed release integrity, and optional host Chromium smoke.",
+      "description": "Run web lint/runtime parity, all web regressions, tracked release integrity, TV server syntax, and source/dist TV parity.",
       "interpreter": "sh",
       "path": ".devtool-artifact/validation/validate.sh",
-      "sha256": "923e768fb5a89b3bd7fa4eabadbb8a9e8c470cce0604b19085c7ed16a56af27d",
+      "sha256": "81127ef470cc800f402da5000baf29f2749fe5b04ec3b54d691d3eb755278d7a",
       "timeout_seconds": 900,
       "working_directory": "."
     },
     "notes": [
-      "target is explicitly studyflow_web (Node, root=web).",
-      "validation.tasks is intentionally omitted.",
-      "No npm test/lint/build, validate_web.py --all, Android or Desktop validation is requested.",
-      "Browser smoke is behavioral when Playwright + Chromium are present; --optional skips only when those host tools are unavailable.",
-      "Dark-only and real-device visual-shell behavior are explicit artifact contracts."
+      "Target is explicitly studyflow_web.",
+      "Validator does not rebuild dist; tracked dist is already included and release-checked.",
+      "Full npm test regression suite is required."
     ]
   }
 }

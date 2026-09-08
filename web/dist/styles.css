@@ -848,3 +848,121 @@ legend {
 .material-image-viewer,.material-video-viewer{display:block;max-width:100%;max-height:65vh;margin:auto}
 .material-pdf-viewer{width:100%;height:65vh;border:0;border-radius:.75rem;background:white}
 .material-viewer audio{width:100%}
+
+/* WTV00-WTV03 TV-browser foundation: 10-foot baseline + deterministic focus visibility. */
+html[data-studyflow-tv="true"] {
+    --tap-size: 60px;
+    --content-max: 1560px;
+    --radius-sm: 12px;
+    --radius: 18px;
+    scroll-padding: 2rem;
+}
+
+html[data-studyflow-tv="true"] body {
+    font-size: 1.1rem;
+    line-height: 1.55;
+}
+
+html[data-studyflow-tv="true"] .app-header {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 1.1rem 3rem 1.1rem 15rem;
+    background: #0b0f14;
+    backdrop-filter: none;
+}
+
+html[data-studyflow-tv="true"] .app-main {
+    width: calc(100% - 15rem);
+    max-width: var(--content-max);
+    margin: 0 auto 0 15rem;
+    padding: 2rem 3rem 4rem;
+}
+
+html[data-studyflow-tv="true"] h1 { font-size: 2.6rem; }
+html[data-studyflow-tv="true"] h2 { font-size: 1.6rem; }
+html[data-studyflow-tv="true"] h3 { font-size: 1.15rem; }
+html[data-studyflow-tv="true"] .compact-copy,
+html[data-studyflow-tv="true"] .activity-list span,
+html[data-studyflow-tv="true"] .schedule-list span { font-size: .95rem; }
+
+html[data-studyflow-tv="true"] .bottom-nav {
+    top: 0;
+    right: auto;
+    bottom: 0;
+    left: 0;
+    width: 13rem;
+    transform: none;
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: .75rem;
+    padding: 2rem 1rem;
+    border: 0;
+    border-right: 1px solid var(--border);
+    background: #0b0f14;
+    box-shadow: 8px 0 28px rgba(0,0,0,.3);
+    backdrop-filter: none;
+}
+
+html[data-studyflow-tv="true"] .bottom-nav a {
+    min-height: 64px;
+    padding: .8rem 1rem;
+    place-items: center start;
+    font-size: 1.05rem;
+}
+
+html[data-studyflow-tv="true"] .bottom-nav a[aria-current="page"] {
+    border: 1px solid var(--accent);
+}
+
+html[data-studyflow-tv="true"] .subnav {
+    margin-inline: 0;
+    padding-inline: 0;
+    padding-bottom: .75rem;
+    overflow-x: visible;
+    flex-wrap: wrap;
+}
+
+html[data-studyflow-tv="true"] .tab-link,
+html[data-studyflow-tv="true"] .button,
+html[data-studyflow-tv="true"] select,
+html[data-studyflow-tv="true"] input,
+html[data-studyflow-tv="true"] textarea,
+html[data-studyflow-tv="true"] summary {
+    min-height: 60px;
+}
+
+html[data-studyflow-tv="true"] button:focus-visible,
+html[data-studyflow-tv="true"] a:focus-visible,
+html[data-studyflow-tv="true"] summary:focus-visible,
+html[data-studyflow-tv="true"] input:focus-visible,
+html[data-studyflow-tv="true"] select:focus-visible,
+html[data-studyflow-tv="true"] textarea:focus-visible,
+html[data-studyflow-tv="true"] [tabindex]:focus-visible {
+    outline: 5px solid var(--accent-strong);
+    outline-offset: 4px;
+    box-shadow: 0 0 0 8px rgba(142,162,255,.2);
+}
+
+html[data-studyflow-tv="true"] .card,
+html[data-studyflow-tv="true"] .metric-card { box-shadow: none; }
+html[data-studyflow-tv="true"] .card { padding: 1.5rem; margin-bottom: 1.25rem; }
+html[data-studyflow-tv="true"] .metric-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; }
+html[data-studyflow-tv="true"] .content-grid.two-column { grid-template-columns: repeat(2,minmax(0,1fr)); }
+html[data-studyflow-tv="true"] .modal-card { width: calc(100vw - 18rem); max-width: 72rem; max-height: 88vh; }
+html[data-studyflow-tv="true"] .tv-status-pill { border-color: var(--accent); color: var(--accent-strong); }
+
+
+
+/* Chromium 76/79 TV engines predate flex-gap support. The adapter probes it at runtime. */
+html[data-studyflow-tv="true"][data-studyflow-tv-flex-gap="false"] .button-row > *,
+html[data-studyflow-tv="true"][data-studyflow-tv-flex-gap="false"] .chip-row > *,
+html[data-studyflow-tv="true"][data-studyflow-tv-flex-gap="false"] .header-actions > *,
+html[data-studyflow-tv="true"][data-studyflow-tv-flex-gap="false"] .subnav > * {
+    margin-right: .75rem;
+    margin-bottom: .75rem;
+}
+html[data-studyflow-tv="true"][data-studyflow-tv-flex-gap="false"] .bottom-nav > * + * { margin-top: .75rem; }
+html[data-studyflow-tv="true"][data-studyflow-tv-flex-gap="false"] .activity-list li > * + *,
+html[data-studyflow-tv="true"][data-studyflow-tv-flex-gap="false"] .schedule-list li > * + *,
+html[data-studyflow-tv="true"][data-studyflow-tv-flex-gap="false"] .topic-list li > * + * { margin-left: .75rem; }

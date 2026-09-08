@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.detectQuestionImportFormat = detectQuestionImportFormat;
 exports.parseQuestionImport = parseQuestionImport;
 exports.buildQuestionImportPreview = buildQuestionImportPreview;
-const clean = (v) => String(v ?? "").trim();
+const clean = (v) => String(v !== null && v !== void 0 ? v : "").trim();
 const opt = (v) => { const x = clean(v); return x || null; };
 const numeric = (v) => { if (v == null || v === "")
     return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -28,15 +28,16 @@ function csvLine(line, delimiter) { const out = []; let cur = "", quoted = false
     else
         cur += c;
 } out.push(cur); return out.map(clean); }
-function fingerprint(prompt, answer) { return `${prompt.toLowerCase().replace(/\s+/g, " ")}|${String(answer ?? "").toLowerCase().trim()}`; }
-function draft(row, x) { const prompt = clean(x.prompt ?? x.question ?? x.front); if (!prompt)
-    return null; const topic = clean(x.topic ?? x.topicPath ?? x.topic_path); const year = numeric(x.year), points = numeric(x.points); return { row, prompt, choices: splitChoices(x.choices ?? x.options), answer: opt(x.answer ?? x.back), explanation: opt(x.explanation), source: opt(x.source), subjectName: opt(x.subject ?? x.subjectName), topicPath: topic ? topic.split(/\s*>\s*/).filter(Boolean) : [], examBoard: opt(x.examBoard ?? x.board ?? x.banca), organization: opt(x.organization), role: opt(x.role ?? x.cargo), examStage: opt(x.examStage ?? x.stage), year: year == null ? null : Math.trunc(year), authorship: opt(x.authorship), externalReference: opt(x.externalReference ?? x.reference), points: points != null && points > 0 ? points : null, difficulty: difficulty(x.difficulty), favorite: bool(x.favorite), disputed: bool(x.disputed), tags: splitTags(x.tags ?? x.tag) }; }
-function detectQuestionImportFormat(source) { const first = String(source ?? "").split(/\r?\n/).find(x => x.trim()) ?? ""; if (/^#{1,6}\s+/.test(first) || /^Q(?:uestion)?\s*:/i.test(first))
+function fingerprint(prompt, answer) { return `${prompt.toLowerCase().replace(/\s+/g, " ")}|${String(answer !== null && answer !== void 0 ? answer : "").toLowerCase().trim()}`; }
+function draft(row, x) { var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o; const prompt = clean((_b = (_a = x.prompt) !== null && _a !== void 0 ? _a : x.question) !== null && _b !== void 0 ? _b : x.front); if (!prompt)
+    return null; const topic = clean((_d = (_c = x.topic) !== null && _c !== void 0 ? _c : x.topicPath) !== null && _d !== void 0 ? _d : x.topic_path); const year = numeric(x.year), points = numeric(x.points); return { row, prompt, choices: splitChoices((_e = x.choices) !== null && _e !== void 0 ? _e : x.options), answer: opt((_f = x.answer) !== null && _f !== void 0 ? _f : x.back), explanation: opt(x.explanation), source: opt(x.source), subjectName: opt((_g = x.subject) !== null && _g !== void 0 ? _g : x.subjectName), topicPath: topic ? topic.split(/\s*>\s*/).filter(Boolean) : [], examBoard: opt((_j = (_h = x.examBoard) !== null && _h !== void 0 ? _h : x.board) !== null && _j !== void 0 ? _j : x.banca), organization: opt(x.organization), role: opt((_k = x.role) !== null && _k !== void 0 ? _k : x.cargo), examStage: opt((_l = x.examStage) !== null && _l !== void 0 ? _l : x.stage), year: year == null ? null : Math.trunc(year), authorship: opt(x.authorship), externalReference: opt((_m = x.externalReference) !== null && _m !== void 0 ? _m : x.reference), points: points != null && points > 0 ? points : null, difficulty: difficulty(x.difficulty), favorite: bool(x.favorite), disputed: bool(x.disputed), tags: splitTags((_o = x.tags) !== null && _o !== void 0 ? _o : x.tag) }; }
+function detectQuestionImportFormat(source) { var _a; const first = (_a = String(source !== null && source !== void 0 ? source : "").split(/\r?\n/).find(x => x.trim())) !== null && _a !== void 0 ? _a : ""; if (/^#{1,6}\s+/.test(first) || /^Q(?:uestion)?\s*:/i.test(first))
     return "markdown"; return first.includes("\t") ? "tsv" : "csv"; }
 function parseQuestionImport(source, format = detectQuestionImportFormat(source)) {
+    var _a, _b;
     const issues = [];
     const drafts = [];
-    const text = String(source ?? "").trim();
+    const text = String(source !== null && source !== void 0 ? source : "").trim();
     if (!text)
         return { drafts, issues: [{ severity: "error", row: null, code: "empty", message: "Question import source is empty." }] };
     if (format === "markdown") {
@@ -44,7 +45,7 @@ function parseQuestionImport(source, format = detectQuestionImportFormat(source)
         let row = 1;
         for (const block of blocks) {
             const lines = block.split(/\r?\n/).map(clean).filter(Boolean);
-            const header = lines.shift() ?? "";
+            const header = (_a = lines.shift()) !== null && _a !== void 0 ? _a : "";
             const prompt = header.replace(/^#{1,6}\s*/, "").replace(/^Q(?:uestion)?\s*:\s*/i, "");
             const x = { prompt };
             for (const line of lines) {
@@ -64,10 +65,10 @@ function parseQuestionImport(source, format = detectQuestionImportFormat(source)
     else {
         const delimiter = format === "tsv" ? "\t" : ",";
         const lines = text.split(/\r?\n/).filter(x => x.trim());
-        const headers = csvLine(lines.shift() ?? "", delimiter).map(x => x.replace(/[ -]+/g, "").toLowerCase());
+        const headers = csvLine((_b = lines.shift()) !== null && _b !== void 0 ? _b : "", delimiter).map(x => x.replace(/[ -]+/g, "").toLowerCase());
         if (!headers.some(x => ["prompt", "question", "front"].includes(x.toLowerCase())))
             return { drafts, issues: [{ severity: "error", row: 1, code: "header", message: "Delimited import requires a prompt/question/front column." }] };
-        lines.forEach((line, i) => { const cells = csvLine(line, delimiter); const x = {}; headers.forEach((h, j) => x[h] = cells[j] ?? ""); const d = draft(i + 2, x); if (d)
+        lines.forEach((line, i) => { const cells = csvLine(line, delimiter); const x = {}; headers.forEach((h, j) => { var _a; return x[h] = (_a = cells[j]) !== null && _a !== void 0 ? _a : ""; }); const d = draft(i + 2, x); if (d)
             drafts.push(d);
         else
             issues.push({ severity: "error", row: i + 2, code: "missing-prompt", message: "Question row has no prompt." }); });
@@ -96,7 +97,7 @@ function buildQuestionImportPreview(state, source, format = detectQuestionImport
             let parent = null;
             let ok = true;
             for (const name of d.topicPath) {
-                const topic = state.topics.find(t => t.subjectId === subject.id && (t.parentTopicId ?? null) === parent && t.name.toLowerCase() === name.toLowerCase());
+                const topic = state.topics.find(t => { var _a; return t.subjectId === subject.id && ((_a = t.parentTopicId) !== null && _a !== void 0 ? _a : null) === parent && t.name.toLowerCase() === name.toLowerCase(); });
                 if (!topic) {
                     ok = false;
                     break;

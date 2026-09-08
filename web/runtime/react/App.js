@@ -57,7 +57,7 @@ const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
 const modes = [["EXAM_PLAN", "Concurso público"], ["PROGRAMMING_COURSE", "Programming course"], ["LANGUAGE_DECK", "Language deck"], ["READING_STUDY", "Reading study"], ["GENERAL_SKILL", "General skill"]];
 function useStudyState(store) { return React.useSyncExternalStore((notify) => store.subscribe(() => notify()), store.getState, store.getState); }
-function Tabs({ value, setValue, items, prefix, label }) { const refs = React.useRef([]); const move = (e, index) => { let next = index; if (e.key === "ArrowRight")
+function Tabs({ value, setValue, items, prefix, label }) { const refs = React.useRef([]); const move = (e, index) => { var _a, _b; let next = index; if (e.key === "ArrowRight")
     next = (index + 1) % items.length;
 else if (e.key === "ArrowLeft")
     next = (index - 1 + items.length) % items.length;
@@ -66,13 +66,14 @@ else if (e.key === "Home")
 else if (e.key === "End")
     next = items.length - 1;
 else
-    return; e.preventDefault(); const id = items[next][0]; setValue(id); refs.current?.[next]?.focus(); }; return React.createElement("nav", { className: "subnav", "aria-label": label, role: "tablist" }, items.map(([id, text], index) => React.createElement("button", { key: id, ref: (node) => { if (refs.current)
+    return; e.preventDefault(); const id = items[next][0]; setValue(id); (_b = (_a = refs.current) === null || _a === void 0 ? void 0 : _a[next]) === null || _b === void 0 ? void 0 : _b.focus(); }; return React.createElement("nav", { className: "subnav", "aria-label": label, role: "tablist" }, items.map(([id, text], index) => React.createElement("button", { key: id, ref: (node) => { if (refs.current)
         refs.current[index] = node; }, id: `tab-${prefix}-${id}`, type: "button", role: "tab", className: "tab-link", "aria-selected": value === id, "aria-controls": `${prefix}-${id}`, tabIndex: value === id ? 0 : -1, onKeyDown: (e) => move(e, index), onClick: () => setValue(id) }, text))); }
 function Metric({ label, value, detail }) { return React.createElement("article", { className: "metric-card" },
     React.createElement("span", null, label),
     React.createElement("strong", null, value),
     React.createElement("small", null, detail)); }
 function App({ store, persistence }) {
+    var _a, _b, _c;
     const state = useStudyState(store);
     const mainRef = React.useRef(null);
     const [screen, setScreen] = React.useState("today");
@@ -82,7 +83,7 @@ function App({ store, persistence }) {
     const [preview, setPreview] = React.useState(null);
     const [portable, setPortable] = React.useState(null);
     const [portableStatus, setPortableStatus] = React.useState("No package selected.");
-    const [questionId, setQuestionId] = React.useState(state.questions[0]?.id ?? null);
+    const [questionId, setQuestionId] = React.useState((_b = (_a = state.questions[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null);
     const [practiceContext, setPracticeContext] = React.useState(null);
     const [toast, setToast] = React.useState(null);
     const [searchOpen, setSearchOpen] = React.useState(false);
@@ -91,7 +92,20 @@ function App({ store, persistence }) {
     React.useEffect(() => { const onHash = () => { const x = location.hash.slice(1); if (["today", "plan", "practice", "progress"].includes(x))
         setScreen(x); }; onHash(); addEventListener("hashchange", onHash); if (!location.hash)
         history.replaceState(null, "", "#today"); return () => removeEventListener("hashchange", onHash); }, []);
-    React.useEffect(() => { mainRef.current?.focus({ preventScroll: true }); }, [screen]);
+    React.useEffect(() => { var _a; if (document.documentElement.dataset.studyflowTv !== "true") {
+        (_a = mainRef.current) === null || _a === void 0 ? void 0 : _a.focus({ preventScroll: true });
+        return;
+    } const main = mainRef.current; if (!main)
+        return; const id = requestAnimationFrame(() => { const target = main.querySelector('[role="tab"][aria-selected="true"],button:not([disabled]),a[href],select:not([disabled]),input:not([disabled]),textarea:not([disabled]),summary'); if (target) {
+        try {
+            target.focus({ preventScroll: true });
+        }
+        catch {
+            target.focus();
+        }
+    }
+    else
+        main.focus({ preventScroll: true }); }); return () => cancelAnimationFrame(id); }, [screen]);
     React.useEffect(() => { const id = setInterval(() => tick(v => v + 1), 1000); return () => clearInterval(id); }, []);
     React.useEffect(() => { if (!toast)
         return; const id = setTimeout(() => setToast(null), 2500); return () => clearTimeout(id); }, [toast]);
@@ -159,7 +173,7 @@ function App({ store, persistence }) {
             React.createElement("div", null,
                 React.createElement("p", { className: "eyebrow" }, "StudyFlow Local"),
                 React.createElement("h1", { id: "screen-title" }, title(screen)),
-                React.createElement("p", { className: "muted compact-copy" }, activePlan ? modes.find(([id]) => id === activePlan.mode)?.[1] : "No active plan")),
+                React.createElement("p", { className: "muted compact-copy" }, activePlan ? (_c = modes.find(([id]) => id === activePlan.mode)) === null || _c === void 0 ? void 0 : _c[1] : "No active plan")),
             React.createElement("div", { className: "header-actions" },
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSearchOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "search")),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSettingsOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "settings")),
@@ -167,7 +181,10 @@ function App({ store, persistence }) {
                     "v",
                     release_1.STUDYFLOW_LOCAL_RELEASE.version,
                     " \u00B7 ",
-                    persistence.backend))),
+                    persistence.backend),
+                document.documentElement.dataset.studyflowTv === "true" && React.createElement("span", { className: "status-pill tv-status-pill" },
+                    "TV browser \u00B7 ",
+                    document.documentElement.dataset.studyflowTvSecureContext === "true" ? "secure" : "LAN HTTP"))),
         React.createElement("main", { id: "main-content", ref: mainRef, tabIndex: -1, "aria-labelledby": "screen-title", className: "app-main" },
             screen === "today" && React.createElement(Today, { state: state, store: store, focus: focus, run: run, onLaunch: launchActivity }),
             " ",
@@ -203,7 +220,7 @@ function GlobalSearchDialog({ state, onClose, onOpen }) { const [query, setQuery
                         " \u00B7 ",
                         item.detail)))),
             query.trim().length >= 2 && !results.length && React.createElement("li", null, (0, product_1.uiText)(state.preferences.locale, "noResults"))))); }
-function SettingsDialog({ state, store, persistence, onClose, run }) { const plan = state.plans.find(p => p.id === state.activePlanId) ?? null; const schedule = plan?.configuration.schedule; const review = plan?.mode === "EXAM_PLAN" ? plan.configuration.publicExam?.reviewIntervalsDays ?? [1, 7, 30] : null; const [capacity, setCapacity] = React.useState(schedule?.dailyCapacityMinutes ?? 120); const [intervals, setIntervals] = React.useState(review?.join(", ") ?? "1, 7, 30"); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
+function SettingsDialog({ state, store, persistence, onClose, run }) { var _a, _b, _c, _d, _e; const plan = (_a = state.plans.find(p => p.id === state.activePlanId)) !== null && _a !== void 0 ? _a : null; const schedule = plan === null || plan === void 0 ? void 0 : plan.configuration.schedule; const review = (plan === null || plan === void 0 ? void 0 : plan.mode) === "EXAM_PLAN" ? (_c = (_b = plan.configuration.publicExam) === null || _b === void 0 ? void 0 : _b.reviewIntervalsDays) !== null && _c !== void 0 ? _c : [1, 7, 30] : null; const [capacity, setCapacity] = React.useState((_d = schedule === null || schedule === void 0 ? void 0 : schedule.dailyCapacityMinutes) !== null && _d !== void 0 ? _d : 120); const [intervals, setIntervals] = React.useState((_e = review === null || review === void 0 ? void 0 : review.join(", ")) !== null && _e !== void 0 ? _e : "1, 7, 30"); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
     React.createElement("section", { className: "modal-card settings-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "settings-title" },
         React.createElement("div", { className: "dialog-title" },
             React.createElement("h2", { id: "settings-title" }, (0, product_1.uiText)(state.preferences.locale, "settings")),
@@ -243,9 +260,10 @@ function SettingsDialog({ state, store, persistence, onClose, run }) { const pla
                 React.createElement("p", { className: "muted" }, (0, product_1.uiText)(state.preferences.locale, "encryption"))),
             React.createElement(StorageHealthCard, { state: state, persistence: persistence })))); }
 function OnboardingWizard({ state, store, run }) {
+    var _a, _b, _c, _d;
     const [locale, setLocale] = React.useState(state.preferences.locale);
-    const [mode, setMode] = React.useState(state.plans.find(p => p.id === state.activePlanId)?.mode ?? "EXAM_PLAN");
-    const [name, setName] = React.useState(state.plans.find(p => p.id === state.activePlanId)?.name ?? "My Study Plan");
+    const [mode, setMode] = React.useState((_b = (_a = state.plans.find(p => p.id === state.activePlanId)) === null || _a === void 0 ? void 0 : _a.mode) !== null && _b !== void 0 ? _b : "EXAM_PLAN");
+    const [name, setName] = React.useState((_d = (_c = state.plans.find(p => p.id === state.activePlanId)) === null || _c === void 0 ? void 0 : _c.name) !== null && _d !== void 0 ? _d : "My Study Plan");
     const [template, setTemplate] = React.useState("public-exam-12-week");
     const bb = template === "bb-agente-comercial-pre-edital", blueprint = !bb && template !== "blank" ? refinement_1.SAMPLE_PLAN_BLUEPRINTS[template] : null;
     const choose = (value) => { const next = value; setTemplate(next); if (next === "bb-agente-comercial-pre-edital") {
@@ -296,7 +314,7 @@ function OnboardingWizard({ state, store, run }) {
                     React.createElement("strong", null, subject.name[locale]),
                     React.createElement("span", null, subject.topics.map(t => t.name[locale]).join(" · "))))),
                 React.createElement("h3", null, "Weekly schedule preview"),
-                React.createElement("ul", { className: "activity-list" }, blueprint.scheduleRules.map((r, i) => React.createElement("li", { key: i },
+                React.createElement("ul", { className: "activity-list" }, blueprint.scheduleRules.map((r, i) => { var _a, _b; return React.createElement("li", { key: i },
                     React.createElement("strong", null,
                         days[fromIsoDay(r.weekday)],
                         " ",
@@ -304,7 +322,7 @@ function OnboardingWizard({ state, store, run }) {
                         " \u00B7 ",
                         r.durationMinutes,
                         " min"),
-                    React.createElement("span", null, r.subjectKey ? blueprint.subjects.find(x => x.key === r.subjectKey)?.name[locale] ?? "Study block" : "Flexible study block"))))),
+                    React.createElement("span", null, r.subjectKey ? (_b = (_a = blueprint.subjects.find(x => x.key === r.subjectKey)) === null || _a === void 0 ? void 0 : _a.name[locale]) !== null && _b !== void 0 ? _b : "Study block" : "Flexible study block")); }))),
             bb && React.createElement("article", { className: "mode-banner" },
                 React.createElement("strong", null, task_workflows_1.BB_AGENTE_COMERCIAL_PRE_EDITAL),
                 React.createElement("span", { className: "muted" }, "Banco do Brasil \u00B7 Escritur\u00E1rio \u2014 Agente Comercial \u00B7 Funda\u00E7\u00E3o Cesgranrio \u00B7 Sele\u00E7\u00E3o Externa 2022/001 reference only."),
@@ -320,11 +338,11 @@ function OnboardingWizard({ state, store, run }) {
                 React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.completeOnboarding({ locale, mode, planName: name, useSample: false, template }), bb ? "BB Agente Comercial reference workspace created." : blueprint ? "Starter plan created from the approved preview." : "Local workspace ready.") }, (0, product_1.uiText)(locale, "start")),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setPreferences({ locale, onboardingCompleted: true }), "Sample workspace kept.") }, (0, product_1.uiText)(locale, "skip")))));
 }
-function Today({ state, store, focus, run, onLaunch }) { const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState(focus.note ?? ""); const [activityType, setActivityType] = React.useState("THEORY"); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); const activeActivity = focus.activityId ? state.activities.find(a => a.id === focus.activityId) ?? null : null; const writing = (0, task_workflows_1.writingActivity)(activeActivity); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
+function Today({ state, store, focus, run, onLaunch }) { var _a, _b, _c, _d; const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState((_a = focus.note) !== null && _a !== void 0 ? _a : ""); const [activityType, setActivityType] = React.useState("THEORY"); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); const activeActivity = focus.activityId ? (_b = state.activities.find(a => a.id === focus.activityId)) !== null && _b !== void 0 ? _b : null : null; const writing = (0, task_workflows_1.writingActivity)(activeActivity); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
     React.createElement("article", { className: "hero-card" },
         React.createElement("p", { className: "eyebrow" }, "Next up"),
-        React.createElement("h2", null, rec?.activity.title ?? "No queued activity"),
-        React.createElement("p", { className: "muted" }, rec?.reason ?? "Add an activity or generate a schedule preview.")),
+        React.createElement("h2", null, (_c = rec === null || rec === void 0 ? void 0 : rec.activity.title) !== null && _c !== void 0 ? _c : "No queued activity"),
+        React.createElement("p", { className: "muted" }, (_d = rec === null || rec === void 0 ? void 0 : rec.reason) !== null && _d !== void 0 ? _d : "Add an activity or generate a schedule preview.")),
     React.createElement(ModeToday, { state: state }),
     React.createElement(StudyCycleTodayCard, { state: state, store: store, run: run }),
     React.createElement("div", { className: "content-grid two-column" },
@@ -335,7 +353,7 @@ function Today({ state, store, focus, run, onLaunch }) { const rec = (0, domain_
             writing && React.createElement("p", { className: "muted" }, "This is a WRITING session. Draft, rubric and mandatory completion checklist are owned by the Writing Workspace below; the generic Finish action is intentionally unavailable."),
             React.createElement("div", { className: "button-row" },
                 focus.status !== "running" && !writing && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.startFocus({ note }), "Focus started.") }, focus.status === "paused" ? "Resume" : "Start"),
-                focus.status !== "running" && writing && activeActivity && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.startWritingSession({ activityId: activeActivity.id, prompt: (0, task_workflows_1.decodeWritingSessionRecord)((0, task_workflows_1.activeWritingSession)(state)?.note)?.prompt ?? activeActivity.title, durationMinutes: activeActivity.durationMinutes }), "Writing resumed.") }, "Resume Writing"),
+                focus.status !== "running" && writing && activeActivity && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => { var _a, _b, _c; return store.startWritingSession({ activityId: activeActivity.id, prompt: (_c = (_b = (0, task_workflows_1.decodeWritingSessionRecord)((_a = (0, task_workflows_1.activeWritingSession)(state)) === null || _a === void 0 ? void 0 : _a.note)) === null || _b === void 0 ? void 0 : _b.prompt) !== null && _c !== void 0 ? _c : activeActivity.title, durationMinutes: activeActivity.durationMinutes }); }, "Writing resumed.") }, "Resume Writing"),
                 focus.status === "running" && React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.pauseFocus(), "Focus paused.") }, "Pause"),
                 focus.status !== "idle" && React.createElement(React.Fragment, null,
                     !writing && React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.completeFocus({ note }), "Focus completed and evidenced.") }, "Complete"),
@@ -363,12 +381,12 @@ function Today({ state, store, focus, run, onLaunch }) { const rec = (0, domain_
                     "Open ",
                     title(a.activityType)))),
             !planned.length && React.createElement("li", null, "No planned activities remain today.")))); }
-function WritingWorkspace({ state, store, run }) { const session = (0, task_workflows_1.activeWritingSession)(state); const record = (0, task_workflows_1.decodeWritingSessionRecord)(session?.note); const progress = (0, task_workflows_1.deriveWritingWeeklyProgress)(state, new Date()); const history = state.sessions.filter(item => item.planId === state.activePlanId && item.status === "completed" && (0, task_workflows_1.decodeWritingSessionRecord)(item.note) != null).sort((a, b) => String(b.endedAt ?? "").localeCompare(String(a.endedAt ?? ""))); const [prompt, setPrompt] = React.useState(record?.prompt ?? ""); const [draft, setDraft] = React.useState(record?.draftText ?? ""); const [rubric, setRubric] = React.useState(record?.rubric ?? { themeAndTask: 0, textType: 0, cohesion: 0, argumentation: 0, standardLanguage: 0 }); const [checklist, setChecklist] = React.useState(record?.checklist ?? { taskReviewed: false, structureReviewed: false, cohesionReviewed: false, languageReviewed: false }); React.useEffect(() => { const next = (0, task_workflows_1.decodeWritingSessionRecord)((0, task_workflows_1.activeWritingSession)(state)?.note); if (next) {
+function WritingWorkspace({ state, store, run }) { var _a, _b, _c, _d; const session = (0, task_workflows_1.activeWritingSession)(state); const record = (0, task_workflows_1.decodeWritingSessionRecord)(session === null || session === void 0 ? void 0 : session.note); const progress = (0, task_workflows_1.deriveWritingWeeklyProgress)(state, new Date()); const history = state.sessions.filter(item => item.planId === state.activePlanId && item.status === "completed" && (0, task_workflows_1.decodeWritingSessionRecord)(item.note) != null).sort((a, b) => { var _a, _b; return String((_a = b.endedAt) !== null && _a !== void 0 ? _a : "").localeCompare(String((_b = a.endedAt) !== null && _b !== void 0 ? _b : "")); }); const [prompt, setPrompt] = React.useState((_a = record === null || record === void 0 ? void 0 : record.prompt) !== null && _a !== void 0 ? _a : ""); const [draft, setDraft] = React.useState((_b = record === null || record === void 0 ? void 0 : record.draftText) !== null && _b !== void 0 ? _b : ""); const [rubric, setRubric] = React.useState((_c = record === null || record === void 0 ? void 0 : record.rubric) !== null && _c !== void 0 ? _c : { themeAndTask: 0, textType: 0, cohesion: 0, argumentation: 0, standardLanguage: 0 }); const [checklist, setChecklist] = React.useState((_d = record === null || record === void 0 ? void 0 : record.checklist) !== null && _d !== void 0 ? _d : { taskReviewed: false, structureReviewed: false, cohesionReviewed: false, languageReviewed: false }); React.useEffect(() => { var _a, _b; const next = (0, task_workflows_1.decodeWritingSessionRecord)((_a = (0, task_workflows_1.activeWritingSession)(state)) === null || _a === void 0 ? void 0 : _a.note); if (next) {
     setPrompt(next.prompt);
     setDraft(next.draftText);
-    setRubric(next.rubric ?? { themeAndTask: 0, textType: 0, cohesion: 0, argumentation: 0, standardLanguage: 0 });
+    setRubric((_b = next.rubric) !== null && _b !== void 0 ? _b : { themeAndTask: 0, textType: 0, cohesion: 0, argumentation: 0, standardLanguage: 0 });
     setChecklist(next.checklist);
-} }, [session?.id, session?.updatedAt]); const score = (0, task_workflows_1.writingRubricTotal)(rubric); const dimension = (key, label) => React.createElement("label", null,
+} }, [session === null || session === void 0 ? void 0 : session.id, session === null || session === void 0 ? void 0 : session.updatedAt]); const score = (0, task_workflows_1.writingRubricTotal)(rubric); const dimension = (key, label) => React.createElement("label", null,
     label,
     React.createElement("input", { "aria-label": `Writing rubric ${label}`, type: "number", min: "0", max: "20", value: rubric[key], onChange: (e) => setRubric({ ...rubric, [key]: Math.max(0, Math.min(20, Number(e.target.value) || 0)) }) })); const check = (key, label) => React.createElement("label", { className: "check-row" },
     React.createElement("input", { "aria-label": `Writing checklist ${label}`, type: "checkbox", checked: checklist[key], onChange: (e) => setChecklist({ ...checklist, [key]: e.target.checked }) }),
@@ -410,14 +428,13 @@ function WritingWorkspace({ state, store, run }) { const session = (0, task_work
             "Writing history \u00B7 ",
             history.length),
         React.createElement("ul", { className: "activity-list" },
-            history.map(item => { const r = (0, task_workflows_1.decodeWritingSessionRecord)(item.note); return React.createElement("li", { key: item.id },
+            history.map(item => { var _a, _b; const r = (0, task_workflows_1.decodeWritingSessionRecord)(item.note); return React.createElement("li", { key: item.id },
                 React.createElement("strong", null, r.prompt),
-                React.createElement("span", null,
-                    item.endedAt?.slice(0, 10) ?? "",
+                React.createElement("span", null, (_b = (_a = item.endedAt) === null || _a === void 0 ? void 0 : _a.slice(0, 10)) !== null && _b !== void 0 ? _b : "",
                     " \u00B7 ",
                     r.rubric ? `${(0, task_workflows_1.writingRubricTotal)(r.rubric)}/100` : "No rubric")); }),
             !history.length && React.createElement("li", null, "No completed writing sessions yet.")))); }
-function ModeToday({ state }) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan)
+function ModeToday({ state }) { var _a, _b; const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan)
     return null; if (plan.mode === "EXAM_PLAN") {
     const g = (0, modes_1.deriveFinalStretchGuidance)(plan);
     return React.createElement("article", { className: "card mode-banner" },
@@ -427,13 +444,13 @@ function ModeToday({ state }) { const plan = state.plans.find(p => p.id === stat
         React.createElement("span", { className: "muted" }, "Final-stretch guidance is derived only from a confirmed date."));
 } if (plan.mode === "PROGRAMMING_COURSE")
     return React.createElement("article", { className: "card mode-banner" },
-        React.createElement("strong", null,
-            plan.configuration.programming?.language,
+        React.createElement("strong", null, (_a = plan.configuration.programming) === null || _a === void 0 ? void 0 :
+            _a.language,
             " course"),
         React.createElement("span", { className: "muted" }, "Exercises remain local; browser StudyFlow does not execute arbitrary shell commands.")); if (plan.mode === "LANGUAGE_DECK")
     return React.createElement("article", { className: "card mode-banner" },
-        React.createElement("strong", null,
-            plan.configuration.language?.language,
+        React.createElement("strong", null, (_b = plan.configuration.language) === null || _b === void 0 ? void 0 :
+            _b.language,
             " language deck"),
         React.createElement("span", { className: "muted" }, "Recognition, production, fill-in, usage, mistake spotting and sentence creation.")); if (plan.mode === "READING_STUDY")
     return React.createElement("article", { className: "card mode-banner" },
@@ -441,18 +458,18 @@ function ModeToday({ state }) { const plan = state.plans.find(p => p.id === stat
         React.createElement("span", { className: "muted" }, "Progress is recorded from explicit reading updates.")); return React.createElement("article", { className: "card mode-banner" },
     React.createElement("strong", null, "General skill"),
     React.createElement("span", { className: "muted" }, "Drill outcomes become evidence only when you record them.")); }
-function StudyCycleTodayCard({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!(0, promise_cleanup_1.shouldOfferStudyCycle)(plan))
-    return null; const cycle = state.studyCycles?.[plan.id] ?? state.studyCycle, currentId = cycle.subjectIds[cycle.cursor] ?? null, current = state.subjects.find(subject => subject.id === currentId); return React.createElement("article", { className: "card" },
+function StudyCycleTodayCard({ state, store, run }) { var _a, _b, _c, _d; const plan = state.plans.find(p => p.id === state.activePlanId); if (!(0, promise_cleanup_1.shouldOfferStudyCycle)(plan))
+    return null; const cycle = (_b = (_a = state.studyCycles) === null || _a === void 0 ? void 0 : _a[plan.id]) !== null && _b !== void 0 ? _b : state.studyCycle, currentId = (_c = cycle.subjectIds[cycle.cursor]) !== null && _c !== void 0 ? _c : null, current = state.subjects.find(subject => subject.id === currentId); return React.createElement("article", { className: "card" },
     React.createElement("h2", null, "Study Cycle"),
     React.createElement("p", null,
-        React.createElement("strong", null, current?.name ?? "No active cycle subject")),
+        React.createElement("strong", null, (_d = current === null || current === void 0 ? void 0 : current.name) !== null && _d !== void 0 ? _d : "No active cycle subject")),
     React.createElement("p", { className: "muted" }, "Available here because the persisted schedule strategy is STUDY_CYCLE."),
     React.createElement("div", { className: "button-row" },
         React.createElement("button", { className: "button button-quiet", type: "button", disabled: !currentId, onClick: () => run(() => store.advanceStudyCycle(), "Study cycle advanced.") }, "Advance"),
         React.createElement("button", { className: "button button-quiet", type: "button", disabled: !currentId, onClick: () => run(() => store.skipStudyCycleSubject(), "Current cycle subject skipped.") }, "Skip"),
         React.createElement("button", { className: "button button-quiet", type: "button", disabled: !currentId, onClick: () => run(() => store.moveCurrentCycleSubjectToEnd(), "Current cycle subject moved to end.") }, "Move current to end"))); }
 function TopicTree({ state, store, subjectId, parentTopicId = null, run }) {
-    const topics = state.topics.filter(t => t.subjectId === subjectId && (t.parentTopicId ?? null) === parentTopicId).slice().sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+    const topics = state.topics.filter(t => { var _a; return t.subjectId === subjectId && ((_a = t.parentTopicId) !== null && _a !== void 0 ? _a : null) === parentTopicId; }).slice().sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
     if (!topics.length)
         return null;
     return React.createElement("ul", { className: parentTopicId ? "activity-list nested-topic-list" : "activity-list" }, topics.map(t => React.createElement("li", { key: t.id },
@@ -470,23 +487,24 @@ function TopicTree({ state, store, subjectId, parentTopicId = null, run }) {
         React.createElement(TopicTree, { state: state, store: store, subjectId: subjectId, parentTopicId: t.id, run: run }))));
 }
 function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run }) {
+    var _a, _b, _c, _d, _e;
     const inv = (0, domain_1.derivePlanInventory)(state);
     const plan = state.plans.find(p => p.id === state.activePlanId);
     const activePlans = state.plans.filter(p => p.status !== "archived");
     const archivedPlans = state.plans.filter(p => p.status === "archived");
     const [newPlanName, setNewPlanName] = React.useState("");
     const [newPlanMode, setNewPlanMode] = React.useState("GENERAL_SKILL");
-    const [rename, setRename] = React.useState(plan?.name ?? "");
-    React.useEffect(() => setRename(plan?.name ?? ""), [plan?.id, plan?.name]);
+    const [rename, setRename] = React.useState((_a = plan === null || plan === void 0 ? void 0 : plan.name) !== null && _a !== void 0 ? _a : "");
+    React.useEffect(() => { var _a; return setRename((_a = plan === null || plan === void 0 ? void 0 : plan.name) !== null && _a !== void 0 ? _a : ""); }, [plan === null || plan === void 0 ? void 0 : plan.id, plan === null || plan === void 0 ? void 0 : plan.name]);
     const [subject, setSubject] = React.useState("");
     const [topic, setTopic] = React.useState("");
-    const [subjectId, setSubjectId] = React.useState(state.subjects.find(s => s.planId === state.activePlanId)?.id ?? "");
+    const [subjectId, setSubjectId] = React.useState((_c = (_b = state.subjects.find(s => s.planId === state.activePlanId)) === null || _b === void 0 ? void 0 : _b.id) !== null && _c !== void 0 ? _c : "");
     const [parentTopicId, setParentTopicId] = React.useState("");
     const subjects = state.subjects.filter(s => s.planId === state.activePlanId).slice().sort((a, b) => a.order - b.order);
     const materials = state.materials.filter(m => m.planId === state.activePlanId);
     const topicChoices = state.topics.filter(t => t.planId === state.activePlanId && t.subjectId === subjectId && t.status !== "archived").slice().sort((a, b) => a.order - b.order);
-    React.useEffect(() => { if (!subjects.some(s => s.id === subjectId)) {
-        setSubjectId(subjects[0]?.id ?? "");
+    React.useEffect(() => { var _a, _b; if (!subjects.some(s => s.id === subjectId)) {
+        setSubjectId((_b = (_a = subjects[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : "");
         setParentTopicId("");
     } }, [state.activePlanId, subjects.length]);
     const [importText, setImportText] = React.useState("");
@@ -496,8 +514,8 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
     const [importPlanName, setImportPlanName] = React.useState("");
     const [contentPreview, setContentPreview] = React.useState(null);
     React.useEffect(() => setContentPreview(null), [state.activePlanId, importText, importFormat, importMode, importTarget, importPlanName]);
-    const previewImport = () => run(() => { const next = store.previewPlanContentImport(importText, { format: importFormat, mode: importMode, target: importTarget, planName: importTarget === "new-plan" ? importPlanName : undefined, planMode: plan?.mode ?? newPlanMode }); setContentPreview(next); return next; }, "Plan Content import preview generated.");
-    const loadImportFile = async (e) => { const file = e.target.files?.[0]; if (!file)
+    const previewImport = () => run(() => { var _a; const next = store.previewPlanContentImport(importText, { format: importFormat, mode: importMode, target: importTarget, planName: importTarget === "new-plan" ? importPlanName : undefined, planMode: (_a = plan === null || plan === void 0 ? void 0 : plan.mode) !== null && _a !== void 0 ? _a : newPlanMode }); setContentPreview(next); return next; }, "Plan Content import preview generated.");
+    const loadImportFile = async (e) => { var _a; const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (!file)
         return; try {
         const source = await file.text();
         setImportText(source);
@@ -518,7 +536,7 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
             React.createElement("div", { className: "content-grid two-column" },
                 React.createElement("article", { className: "card" },
                     React.createElement("h2", null, "Plan workspace"),
-                    React.createElement("select", { "aria-label": "Active study plan", value: state.activePlanId ?? "", onChange: (e) => run(() => store.switchPlan(e.target.value), "Active plan switched.") }, activePlans.map(item => React.createElement("option", { key: item.id, value: item.id }, item.name))),
+                    React.createElement("select", { "aria-label": "Active study plan", value: (_d = state.activePlanId) !== null && _d !== void 0 ? _d : "", onChange: (e) => run(() => store.switchPlan(e.target.value), "Active plan switched.") }, activePlans.map(item => React.createElement("option", { key: item.id, value: item.id }, item.name))),
                     React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (plan && rename.trim())
                             run(() => store.renamePlan(plan.id, rename.trim()), "Plan renamed."); } },
                         React.createElement("input", { "aria-label": "Rename active plan", value: rename, onChange: (e) => setRename(e.target.value), required: true }),
@@ -545,13 +563,12 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
                     React.createElement("p", { className: "muted" }, "Plans have isolated content, schedules, evidence and study-cycle cursors."))),
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Study mode"),
-                React.createElement("select", { "aria-label": "Study mode", value: plan?.mode ?? "GENERAL_SKILL", onChange: (e) => run(() => store.setPlanMode(e.target.value), "Study mode updated.") }, modes.map(([id, label]) => React.createElement("option", { key: id, value: id }, label)))),
+                React.createElement("select", { "aria-label": "Study mode", value: (_e = plan === null || plan === void 0 ? void 0 : plan.mode) !== null && _e !== void 0 ? _e : "GENERAL_SKILL", onChange: (e) => run(() => store.setPlanMode(e.target.value), "Study mode updated.") }, modes.map(([id, label]) => React.createElement("option", { key: id, value: id }, label)))),
             React.createElement(ModeWorkspace, { state: state, store: store, run: run }),
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Study cycle"),
-                React.createElement("ol", null, state.studyCycle.subjectIds.map((id, i) => React.createElement("li", { key: id },
-                    state.subjects.find(s => s.id === id)?.name ?? id,
-                    i === state.studyCycle.cursor ? " · current" : ""))),
+                React.createElement("ol", null, state.studyCycle.subjectIds.map((id, i) => { var _a, _b; return React.createElement("li", { key: id }, (_b = (_a = state.subjects.find(s => s.id === id)) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : id,
+                    i === state.studyCycle.cursor ? " · current" : ""); })),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.advanceStudyCycle(), "Study cycle advanced.") }, "Advance"))),
         tab === "schedule" && React.createElement(ScheduleWorkspace, { state: state, store: store, preview: preview, setPreview: setPreview, run: run }),
         tab === "content" && React.createElement("section", { id: "plan-content", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
@@ -626,36 +643,36 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
                         React.createElement("summary", null,
                             "Diff operations \u00B7 ",
                             contentPreview.operations.length),
-                        React.createElement("ul", null, contentPreview.operations.map((op, index) => React.createElement("li", { key: index },
+                        React.createElement("ul", null, contentPreview.operations.map((op, index) => { var _a; return React.createElement("li", { key: index },
                             title(op.action),
                             " \u00B7 ",
-                            [op.subjectName, ...(op.topicPath ?? [])].join(" > "))))),
+                            [op.subjectName, ...((_a = op.topicPath) !== null && _a !== void 0 ? _a : [])].join(" > ")); }))),
                     React.createElement("button", { className: "button button-primary", type: "button", disabled: !contentPreview.ready, onClick: () => { if (run(() => store.applyPlanContentImportPreview(contentPreview), contentPreview.target === "new-plan" ? "New plan imported and activated." : "Plan Content import applied.")) {
                             setContentPreview(null);
                             setImportText("");
                         } } }, "Apply import preview"))),
-            subjects.map(s => React.createElement("article", { className: "card", key: s.id },
+            subjects.map(s => { var _a; return React.createElement("article", { className: "card", key: s.id },
                 React.createElement("div", { className: "card-heading-row" },
                     React.createElement("div", null,
                         React.createElement("h2", null, s.name),
                         React.createElement("p", { className: "muted" },
-                            "Weight ",
-                            s.weight ?? "No data",
+                            "Weight ", (_a = s.weight) !== null && _a !== void 0 ? _a : "No data",
                             " \u00B7 ",
                             s.archived ? "Archived" : "Active")),
                     React.createElement("div", { className: "button-row" },
                         React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateSubject(s.id, { archived: !s.archived }), s.archived ? "Subject restored." : "Subject archived.") }, s.archived ? "Restore" : "Archive"),
                         React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateSubject(s.id, { notes: s.notes ? null : "Review this subject" }), "Subject notes updated.") }, "Notes"))),
-                React.createElement(TopicTree, { state: state, store: store, subjectId: s.id, run: run })))),
+                React.createElement(TopicTree, { state: state, store: store, subjectId: s.id, run: run })); })),
         tab === "library" && React.createElement(Library, { materials: materials, store: store, persistence: persistence, run: run }));
 }
 function minuteOfDay(value) { const [h, m] = value.split(":").map(Number); return Math.max(0, Math.min(1439, (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0))); }
 function minuteClock(value) { if (value == null)
     return "Any time"; return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`; }
 function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const plan = state.plans.find(p => p.id === state.activePlanId);
-    const config = plan?.configuration.schedule;
-    const [capacity, setCapacity] = React.useState(String(config?.dailyCapacityMinutes ?? 120));
+    const config = plan === null || plan === void 0 ? void 0 : plan.configuration.schedule;
+    const [capacity, setCapacity] = React.useState(String((_a = config === null || config === void 0 ? void 0 : config.dailyCapacityMinutes) !== null && _a !== void 0 ? _a : 120));
     const [weekday, setWeekday] = React.useState("1");
     const [start, setStart] = React.useState("18:00");
     const [endTime, setEndTime] = React.useState("20:00");
@@ -685,7 +702,7 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
     const [recTime, setRecTime] = React.useState("18:00");
     const [recDuration, setRecDuration] = React.useState("45");
     const [recType, setRecType] = React.useState("THEORY");
-    React.useEffect(() => { setCapacity(String(plan?.configuration.schedule.dailyCapacityMinutes ?? 120)); setPreview(null); setSelected([]); }, [plan?.id]);
+    React.useEffect(() => { var _a; setCapacity(String((_a = plan === null || plan === void 0 ? void 0 : plan.configuration.schedule.dailyCapacityMinutes) !== null && _a !== void 0 ? _a : 120)); setPreview(null); setSelected([]); }, [plan === null || plan === void 0 ? void 0 : plan.id]);
     React.useEffect(() => setSelected([]), [calendarView, subjectFilter, typeFilter, statusFilter, provenanceFilter, calendarSearch, showPastCalendarActivities]);
     const calendar = (0, parity_intelligence_1.deriveScheduleCalendarSnapshot)(state, { view: calendarView, subjectId: subjectFilter || null, activityType: typeFilter || null, status: statusFilter || null, provenance: provenanceFilter || null, query: calendarSearch, includePast: showPastCalendarActivities });
     const subjects = state.subjects.filter(s => s.planId === state.activePlanId && !s.archived).slice().sort((a, b) => a.order - b.order);
@@ -693,15 +710,15 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
     const recurringTopics = state.topics.filter(t => t.planId === state.activePlanId && t.status !== "archived" && (!recSubject || t.subjectId === recSubject));
     const allSelected = calendar.activities.length > 0 && calendar.activities.every(a => selected.includes(a.id));
     const saveCapacity = () => run(() => store.setScheduleConfiguration({ dailyCapacityMinutes: Number(capacity) }), "Daily schedule capacity saved.");
-    const addWindow = () => run(() => store.setScheduleConfiguration({ availability: [...(config?.availability ?? []), { id: `window-${Date.now()}`, weekday: Number(weekday), startMinute: minuteOfDay(start), endMinute: minuteOfDay(endTime) }] }), "Availability window added.");
+    const addWindow = () => run(() => { var _a; return store.setScheduleConfiguration({ availability: [...((_a = config === null || config === void 0 ? void 0 : config.availability) !== null && _a !== void 0 ? _a : []), { id: `window-${Date.now()}`, weekday: Number(weekday), startMinute: minuteOfDay(start), endMinute: minuteOfDay(endTime) }] }); }, "Availability window added.");
     const addFixed = () => { if (!fixedTitle.trim() || !fixedDate)
-        return; const result = run(() => store.setScheduleConfiguration({ fixedBlocks: [...(config?.fixedBlocks ?? []), { id: `fixed-${Date.now()}`, title: fixedTitle.trim(), date: fixedDate, weekday: null, startMinute: minuteOfDay(fixedStart), durationMinutes: Number(fixedDuration) }] }), "Fixed block added."); if (result)
+        return; const result = run(() => { var _a; return store.setScheduleConfiguration({ fixedBlocks: [...((_a = config === null || config === void 0 ? void 0 : config.fixedBlocks) !== null && _a !== void 0 ? _a : []), { id: `fixed-${Date.now()}`, title: fixedTitle.trim(), date: fixedDate, weekday: null, startMinute: minuteOfDay(fixedStart), durationMinutes: Number(fixedDuration) }] }); }, "Fixed block added."); if (result)
         setFixedTitle(""); };
     const addManual = () => { if (!manualTitle.trim() || !manualDate)
         return; const result = run(() => store.addScheduledActivity({ title: manualTitle.trim(), activityType: manualType, durationMinutes: Number(manualDuration), subjectId: manualSubject || null, topicId: manualTopic || null, scheduledFor: manualDate, scheduledStartMinute: minuteOfDay(manualTime) }), "Manual scheduled activity created with local date/time."); if (result)
         setManualTitle(""); };
     const addRecurring = () => { if (!recTitle.trim())
-        return; const result = run(() => store.setScheduleConfiguration({ recurringBlocks: [...(config?.recurringBlocks ?? []), { id: `recurring-${Date.now()}`, title: recTitle.trim(), subjectId: recSubject || null, topicId: recTopic || null, weekday: Number(recWeekday), startMinute: minuteOfDay(recTime), durationMinutes: Number(recDuration), activityType: recType, enabled: true }] }), "Weekly recurring block saved with subject/topic ownership."); if (result)
+        return; const result = run(() => { var _a; return store.setScheduleConfiguration({ recurringBlocks: [...((_a = config === null || config === void 0 ? void 0 : config.recurringBlocks) !== null && _a !== void 0 ? _a : []), { id: `recurring-${Date.now()}`, title: recTitle.trim(), subjectId: recSubject || null, topicId: recTopic || null, weekday: Number(recWeekday), startMinute: minuteOfDay(recTime), durationMinutes: Number(recDuration), activityType: recType, enabled: true }] }); }, "Weekly recurring block saved with subject/topic ownership."); if (result)
         setRecTitle(""); };
     const bulkLock = (locked) => { if (!selected.length)
         return; run(() => { for (const id of selected)
@@ -710,7 +727,7 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Study strategy"),
             React.createElement("p", { className: "muted" }, "All seven canonical strategies are persisted. Study Cycle actions appear on Today only when STUDY_CYCLE is selected."),
-            React.createElement("select", { "aria-label": "Study strategy type", value: config?.strategyType ?? "FIXED_WEEKLY", onChange: (e) => run(() => store.setScheduleConfiguration({ strategyType: e.target.value }), "Study strategy updated.") }, promise_cleanup_1.STUDY_STRATEGY_TYPES.map(strategy => React.createElement("option", { key: strategy, value: strategy }, title(strategy))))),
+            React.createElement("select", { "aria-label": "Study strategy type", value: (_b = config === null || config === void 0 ? void 0 : config.strategyType) !== null && _b !== void 0 ? _b : "FIXED_WEEKLY", onChange: (e) => run(() => store.setScheduleConfiguration({ strategyType: e.target.value }), "Study strategy updated.") }, promise_cleanup_1.STUDY_STRATEGY_TYPES.map(strategy => React.createElement("option", { key: strategy, value: strategy }, title(strategy))))),
         React.createElement("div", { className: "content-grid two-column" },
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Capacity & availability"),
@@ -729,14 +746,14 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                     React.createElement("input", { "aria-label": "Availability end time", type: "time", value: endTime, onChange: (e) => setEndTime(e.target.value) }),
                     React.createElement("button", { className: "button button-quiet", type: "button", onClick: addWindow }, "Add availability window")),
                 React.createElement("ul", { className: "activity-list" },
-                    (config?.availability ?? []).map(w => React.createElement("li", { key: w.id },
+                    ((_c = config === null || config === void 0 ? void 0 : config.availability) !== null && _c !== void 0 ? _c : []).map(w => React.createElement("li", { key: w.id },
                         React.createElement("strong", null, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][w.weekday]),
                         React.createElement("span", null,
                             minuteClock(w.startMinute),
                             "\u2013",
                             minuteClock(w.endMinute)),
-                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setScheduleConfiguration({ availability: (config?.availability ?? []).filter(x => x.id !== w.id) }), "Availability removed.") }, "Remove"))),
-                    !(config?.availability ?? []).length && React.createElement("li", null, "Capacity-only scheduling; no clock windows configured."))),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => { var _a; return store.setScheduleConfiguration({ availability: ((_a = config === null || config === void 0 ? void 0 : config.availability) !== null && _a !== void 0 ? _a : []).filter(x => x.id !== w.id) }); }, "Availability removed.") }, "Remove"))),
+                    !((_d = config === null || config === void 0 ? void 0 : config.availability) !== null && _d !== void 0 ? _d : []).length && React.createElement("li", null, "Capacity-only scheduling; no clock windows configured."))),
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Fixed commitments"),
                 React.createElement("div", { className: "stack-form" },
@@ -746,17 +763,16 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                     React.createElement("input", { "aria-label": "Fixed block duration minutes", type: "number", min: "5", max: "1440", value: fixedDuration, onChange: (e) => setFixedDuration(e.target.value) }),
                     React.createElement("button", { className: "button button-quiet", type: "button", onClick: addFixed }, "Add fixed block")),
                 React.createElement("ul", { className: "activity-list" },
-                    (config?.fixedBlocks ?? []).map(b => React.createElement("li", { key: b.id },
+                    ((_e = config === null || config === void 0 ? void 0 : config.fixedBlocks) !== null && _e !== void 0 ? _e : []).map(b => { var _a; return React.createElement("li", { key: b.id },
                         React.createElement("strong", null, b.title),
-                        React.createElement("span", null,
-                            b.date ?? `weekday ${b.weekday}`,
+                        React.createElement("span", null, (_a = b.date) !== null && _a !== void 0 ? _a : `weekday ${b.weekday}`,
                             " \u00B7 ",
                             minuteClock(b.startMinute),
                             " \u00B7 ",
                             b.durationMinutes,
                             " min"),
-                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setScheduleConfiguration({ fixedBlocks: (config?.fixedBlocks ?? []).filter(x => x.id !== b.id) }), "Fixed block removed.") }, "Remove"))),
-                    !(config?.fixedBlocks ?? []).length && React.createElement("li", null, "No fixed commitments configured.")))),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => { var _a; return store.setScheduleConfiguration({ fixedBlocks: ((_a = config === null || config === void 0 ? void 0 : config.fixedBlocks) !== null && _a !== void 0 ? _a : []).filter(x => x.id !== b.id) }); }, "Fixed block removed.") }, "Remove")); }),
+                    !((_f = config === null || config === void 0 ? void 0 : config.fixedBlocks) !== null && _f !== void 0 ? _f : []).length && React.createElement("li", null, "No fixed commitments configured.")))),
         React.createElement("div", { className: "content-grid two-column" },
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Manual scheduled activity"),
@@ -791,7 +807,7 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                     React.createElement("select", { "aria-label": "Recurring block activity type", value: recType, onChange: (e) => setRecType(e.target.value) }, ["THEORY", "VIDEO", "READING", "CUSTOM", "QUESTIONS", "FLASHCARDS", "REVIEW", "MOCK_EXAM", "WRITING"].map(x => React.createElement("option", { key: x, value: x }, title(x)))),
                     React.createElement("button", { className: "button button-quiet", type: "button", onClick: addRecurring }, "Add weekly block")),
                 React.createElement("ul", { className: "activity-list" },
-                    (config?.recurringBlocks ?? []).map(block => React.createElement("li", { key: block.id },
+                    ((_g = config === null || config === void 0 ? void 0 : config.recurringBlocks) !== null && _g !== void 0 ? _g : []).map(block => { var _a, _b; return React.createElement("li", { key: block.id },
                         React.createElement("strong", null, block.title),
                         React.createElement("span", null,
                             ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][block.weekday],
@@ -799,12 +815,11 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                             minuteClock(block.startMinute),
                             " \u00B7 ",
                             block.durationMinutes,
-                            " min \u00B7 ",
-                            subjects.find(s => s.id === block.subjectId)?.name ?? "No subject",
+                            " min \u00B7 ", (_b = (_a = subjects.find(s => s.id === block.subjectId)) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : "No subject",
                             " \u00B7 ",
                             title(block.activityType)),
-                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setScheduleConfiguration({ recurringBlocks: (config?.recurringBlocks ?? []).filter(x => x.id !== block.id) }), "Recurring block removed.") }, "Remove"))),
-                    !(config?.recurringBlocks ?? []).length && React.createElement("li", null, "No weekly recurring blocks configured.")))),
+                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => { var _a; return store.setScheduleConfiguration({ recurringBlocks: ((_a = config === null || config === void 0 ? void 0 : config.recurringBlocks) !== null && _a !== void 0 ? _a : []).filter(x => x.id !== block.id) }); }, "Recurring block removed.") }, "Remove")); }),
+                    !((_h = config === null || config === void 0 ? void 0 : config.recurringBlocks) !== null && _h !== void 0 ? _h : []).length && React.createElement("li", null, "No weekly recurring blocks configured.")))),
         React.createElement("article", { className: "card" },
             React.createElement("div", { className: "card-heading-row" },
                 React.createElement("div", null,
@@ -846,12 +861,11 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                 React.createElement("button", { className: "button button-quiet", type: "button", disabled: !selected.length, onClick: () => bulkLock(true) }, "Lock selected"),
                 React.createElement("button", { className: "button button-quiet", type: "button", disabled: !selected.length, onClick: () => bulkLock(false) }, "Unlock selected")),
             React.createElement("ul", { className: "activity-list" },
-                calendar.activities.map(a => React.createElement("li", { key: a.id },
+                calendar.activities.map(a => { var _a, _b, _c; return React.createElement("li", { key: a.id },
                     React.createElement("label", null,
                         React.createElement("input", { "aria-label": `Select schedule activity ${a.title}`, type: "checkbox", checked: selected.includes(a.id), onChange: (e) => setSelected(e.target.checked ? [...new Set([...selected, a.id])] : selected.filter(id => id !== a.id)) }),
                         React.createElement("strong", null, a.title)),
-                    React.createElement("span", { className: "muted" },
-                        a.scheduledFor ?? "Unscheduled",
+                    React.createElement("span", { className: "muted" }, (_a = a.scheduledFor) !== null && _a !== void 0 ? _a : "Unscheduled",
                         " \u00B7 ",
                         minuteClock(a.scheduledStartMinute),
                         " \u00B7 ",
@@ -860,9 +874,8 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                         title(a.activityType),
                         " \u00B7 ",
                         a.status,
-                        " \u00B7 ",
-                        a.scheduleProvenance?.source ?? "manual",
-                        a.locked ? " · locked" : ""))),
+                        " \u00B7 ", (_c = (_b = a.scheduleProvenance) === null || _b === void 0 ? void 0 : _b.source) !== null && _c !== void 0 ? _c : "manual",
+                        a.locked ? " · locked" : "")); }),
                 !calendar.activities.length && React.createElement("li", null, "No activities in the visible window."))),
         React.createElement("article", { className: "card" },
             React.createElement("div", { className: "card-heading-row" },
@@ -886,10 +899,10 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                         c.date,
                         " \u00B7 ",
                         c.message)))),
-                React.createElement("ul", null, preview.operations.map((op, i) => React.createElement("li", { key: i },
-                    op.action === "move" ? `Move ${op.activityId} → ${op.to} ${minuteClock(op.toStartMinute)}` : `Add ${op.activity?.title ?? "activity"} · ${op.scheduledFor} ${minuteClock(op.scheduledStartMinute)}`,
+                React.createElement("ul", null, preview.operations.map((op, i) => { var _a, _b; return React.createElement("li", { key: i },
+                    op.action === "move" ? `Move ${op.activityId} → ${op.to} ${minuteClock(op.toStartMinute)}` : `Add ${(_b = (_a = op.activity) === null || _a === void 0 ? void 0 : _a.title) !== null && _b !== void 0 ? _b : "activity"} · ${op.scheduledFor} ${minuteClock(op.scheduledStartMinute)}`,
                     " \u00B7 ",
-                    op.reason))),
+                    op.reason); })),
                 preview.unscheduled.length > 0 && React.createElement("details", null,
                     React.createElement("summary", null, "Unscheduled work"),
                     React.createElement("ul", null, preview.unscheduled.map((x, i) => React.createElement("li", { key: i },
@@ -902,11 +915,13 @@ function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
                         setPreview(null); } }, "Apply preview")) : React.createElement("p", { className: "muted" }, "Preview first; no schedule changes are silent.")));
 }
 function cockpitIssueText(issue, locale) {
+    var _a;
     const pt = { "no-confirmed-exam-date": "Sem data oficial confirmada; nenhuma contagem regressiva oficial é exibida.", "no-reference-notice": "Nenhum edital de referência foi registrado.", "reference-publication-date-unknown": "A data de publicação do edital de referência é desconhecida.", "stale-reference-notice": "O edital de referência ultrapassou a janela de verificação configurada." };
     const en = { "no-confirmed-exam-date": "No confirmed official exam date; no official countdown is shown.", "no-reference-notice": "No reference notice has been recorded.", "reference-publication-date-unknown": "The reference notice publication date is unknown.", "stale-reference-notice": "The reference notice is older than the configured verification window." };
-    return (locale === "pt-BR" ? pt : en)[issue] ?? issue;
+    return (_a = (locale === "pt-BR" ? pt : en)[issue]) !== null && _a !== void 0 ? _a : issue;
 }
 function StudyPhaseEditor({ phase, phases, store, run }) {
+    var _a, _b;
     const [draft, setDraft] = React.useState({ ...phase });
     React.useEffect(() => setDraft({ ...phase }), [phase]);
     const number = (value) => value === "" ? null : Number(value);
@@ -940,10 +955,10 @@ function StudyPhaseEditor({ phase, phases, store, run }) {
         React.createElement("div", { className: "button-row" },
             React.createElement("label", null,
                 "Question target",
-                React.createElement("input", { "aria-label": `Question target ${phase.id}`, type: "number", min: "0", value: draft.questionGoal ?? "", onChange: (e) => setDraft({ ...draft, questionGoal: e.target.value }) })),
+                React.createElement("input", { "aria-label": `Question target ${phase.id}`, type: "number", min: "0", value: (_a = draft.questionGoal) !== null && _a !== void 0 ? _a : "", onChange: (e) => setDraft({ ...draft, questionGoal: e.target.value }) })),
             React.createElement("label", null,
                 "Mock target",
-                React.createElement("input", { "aria-label": `Mock target ${phase.id}`, type: "number", min: "0", value: draft.mockExamGoal ?? "", onChange: (e) => setDraft({ ...draft, mockExamGoal: e.target.value }) }))),
+                React.createElement("input", { "aria-label": `Mock target ${phase.id}`, type: "number", min: "0", value: (_b = draft.mockExamGoal) !== null && _b !== void 0 ? _b : "", onChange: (e) => setDraft({ ...draft, mockExamGoal: e.target.value }) }))),
         React.createElement("div", { className: "button-row" },
             React.createElement("button", { className: "button", type: "submit" }, "Save phase"),
             React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setStudyPhaseDefinitions(phases.filter(x => x.id !== phase.id)), "Study phase removed.") }, "Remove")),
@@ -969,17 +984,18 @@ function MaterialReferenceControls({ material, store, run }) {
                     setReplacement(""); } }, "Replace reference")));
 }
 function PublicExamWorkspace({ state, store, run }) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
     const plan = state.plans.find(p => p.id === state.activePlanId);
     const c = plan.configuration.publicExam;
-    const [org, setOrg] = React.useState(c.target.organization ?? "");
-    const [role, setRole] = React.useState(c.target.role ?? "");
-    const [board, setBoard] = React.useState(c.target.board ?? "");
-    const [editalRef, setEditalRef] = React.useState(c.target.editalRef ?? "");
-    const [examDate, setExamDate] = React.useState(c.target.examDate ?? "");
+    const [org, setOrg] = React.useState((_a = c.target.organization) !== null && _a !== void 0 ? _a : "");
+    const [role, setRole] = React.useState((_b = c.target.role) !== null && _b !== void 0 ? _b : "");
+    const [board, setBoard] = React.useState((_c = c.target.board) !== null && _c !== void 0 ? _c : "");
+    const [editalRef, setEditalRef] = React.useState((_d = c.target.editalRef) !== null && _d !== void 0 ? _d : "");
+    const [examDate, setExamDate] = React.useState((_e = c.target.examDate) !== null && _e !== void 0 ? _e : "");
     const [dateStatus, setDateStatus] = React.useState(c.target.dateStatus);
     const [stage, setStage] = React.useState("");
     const [notice, setNotice] = React.useState("");
-    const [noticeRef, setNoticeRef] = React.useState(c.target.editalRef ?? "");
+    const [noticeRef, setNoticeRef] = React.useState((_f = c.target.editalRef) !== null && _f !== void 0 ? _f : "");
     const [noticePublished, setNoticePublished] = React.useState("");
     const [noticePreview, setNoticePreview] = React.useState(null);
     const [law, setLaw] = React.useState("");
@@ -1027,8 +1043,7 @@ function PublicExamWorkspace({ state, store, run }) {
                     " ",
                     cockpit.resolvedDate.source === "expected-target" ? "The saved exam date is an expectation, not an official date." : "A confirmed exam date has not been recorded."),
                 React.createElement("p", { className: "muted" },
-                    "Reference: ",
-                    cockpit.referenceLabel ?? "none",
+                    "Reference: ", (_g = cockpit.referenceLabel) !== null && _g !== void 0 ? _g : "none",
                     cockpit.referenceAgeDays == null ? "" : ` · ${cockpit.referenceAgeDays} days old`,
                     " \u00B7 stale warning after ",
                     cockpit.staleReferenceDays,
@@ -1061,36 +1076,35 @@ function PublicExamWorkspace({ state, store, run }) {
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Concurso dashboard"),
             React.createElement("div", { className: "metric-grid compact-grid" },
-                React.createElement(Metric, { label: "Edital coverage", value: pct(dashboard?.coverage ?? null), detail: `${dashboard?.noticeRevisionCount ?? 0} accepted revisions` }),
-                React.createElement(Metric, { label: "Question accuracy", value: pct(dashboard?.accuracy ?? null), detail: `${dashboard?.reviewBacklog ?? 0} due reviews` }),
-                React.createElement(Metric, { label: "Cutoff gap", value: dashboard?.cutoffGap == null ? "No data" : `${dashboard.cutoffGap.toFixed(1)} pp`, detail: "Only after a recorded mock + cutoff" }),
-                React.createElement(Metric, { label: "Weighted mastery", value: pct(dashboard?.weightedMastery ?? null), detail: "Subject weight \u00D7 observed topic progress" }),
-                React.createElement(Metric, { label: "Accuracy 30d", value: pct(dashboard?.accuracy30 ?? null), detail: "Graded attempts in rolling window" })),
+                React.createElement(Metric, { label: "Edital coverage", value: pct((_h = dashboard === null || dashboard === void 0 ? void 0 : dashboard.coverage) !== null && _h !== void 0 ? _h : null), detail: `${(_j = dashboard === null || dashboard === void 0 ? void 0 : dashboard.noticeRevisionCount) !== null && _j !== void 0 ? _j : 0} accepted revisions` }),
+                React.createElement(Metric, { label: "Question accuracy", value: pct((_k = dashboard === null || dashboard === void 0 ? void 0 : dashboard.accuracy) !== null && _k !== void 0 ? _k : null), detail: `${(_l = dashboard === null || dashboard === void 0 ? void 0 : dashboard.reviewBacklog) !== null && _l !== void 0 ? _l : 0} due reviews` }),
+                React.createElement(Metric, { label: "Cutoff gap", value: (dashboard === null || dashboard === void 0 ? void 0 : dashboard.cutoffGap) == null ? "No data" : `${dashboard.cutoffGap.toFixed(1)} pp`, detail: "Only after a recorded mock + cutoff" }),
+                React.createElement(Metric, { label: "Weighted mastery", value: pct((_m = dashboard === null || dashboard === void 0 ? void 0 : dashboard.weightedMastery) !== null && _m !== void 0 ? _m : null), detail: "Subject weight \u00D7 observed topic progress" }),
+                React.createElement(Metric, { label: "Accuracy 30d", value: pct((_o = dashboard === null || dashboard === void 0 ? void 0 : dashboard.accuracy30) !== null && _o !== void 0 ? _o : null), detail: "Graded attempts in rolling window" })),
             React.createElement("p", null,
                 React.createElement("strong", null, "Final stretch:"),
                 " ",
                 guidance.band === "unknown" ? "No confirmed exam date" : `${guidance.daysRemaining} days · ${guidance.band}`),
             React.createElement("details", null,
                 React.createElement("summary", null, "Subject evidence"),
-                React.createElement("ul", null, matrix.map(r => { const subject = state.subjects.find(s => s.id === r.subjectId); const known = [subject?.weight != null ? `weight ${subject.weight}` : null, subject?.examIncidence != null ? `incidence ${subject.examIncidence}%` : null, r.mastery != null ? `mastery ${Math.round(r.mastery * 100)}%` : null, r.backlog > 0 ? `backlog ${r.backlog}` : null].filter(Boolean); return React.createElement("li", { key: r.subjectId },
+                React.createElement("ul", null, matrix.map(r => { const subject = state.subjects.find(s => s.id === r.subjectId); const known = [(subject === null || subject === void 0 ? void 0 : subject.weight) != null ? `weight ${subject.weight}` : null, (subject === null || subject === void 0 ? void 0 : subject.examIncidence) != null ? `incidence ${subject.examIncidence}%` : null, r.mastery != null ? `mastery ${Math.round(r.mastery * 100)}%` : null, r.backlog > 0 ? `backlog ${r.backlog}` : null].filter(Boolean); return React.createElement("li", { key: r.subjectId },
                     React.createElement("strong", null, r.subjectName),
                     React.createElement("span", null, known.length ? known.join(" · ") : "No observed subject evidence yet")); }))),
             React.createElement("details", null,
                 React.createElement("summary", null, "Edital Matrix \u00B7 detailed importance/mastery"),
-                React.createElement("ul", null, matrix.map(r => React.createElement("li", { key: r.subjectId },
+                React.createElement("ul", null, matrix.map(r => { var _a, _b, _c; return React.createElement("li", { key: r.subjectId },
                     React.createElement("strong", null, r.subjectName),
-                    " \u00B7 priority ",
-                    r.priority ?? "No data",
+                    " \u00B7 priority ", (_a = r.priority) !== null && _a !== void 0 ? _a : "No data",
                     " \u00B7 mastery ",
                     pct(r.mastery),
                     " ",
-                    React.createElement("input", { "aria-label": `Exam incidence ${r.subjectName}`, type: "number", min: "0", max: "100", placeholder: "Incidence %", value: state.subjects.find(s => s.id === r.subjectId)?.examIncidence ?? "", onChange: (e) => run(() => store.updateSubject(r.subjectId, { examIncidence: e.target.value === "" ? null : Number(e.target.value) }), "Incidence updated.") }))))),
+                    React.createElement("input", { "aria-label": `Exam incidence ${r.subjectName}`, type: "number", min: "0", max: "100", placeholder: "Incidence %", value: (_c = (_b = state.subjects.find(s => s.id === r.subjectId)) === null || _b === void 0 ? void 0 : _b.examIncidence) !== null && _c !== void 0 ? _c : "", onChange: (e) => run(() => store.updateSubject(r.subjectId, { examIncidence: e.target.value === "" ? null : Number(e.target.value) }), "Incidence updated.") })); }))),
             React.createElement("details", null,
                 React.createElement("summary", null, "Explainable next actions"),
-                React.createElement("ul", null, priorities.map(x => React.createElement("li", { key: x.topicId ?? x.subjectId },
+                React.createElement("ul", null, priorities.map(x => { var _a; return React.createElement("li", { key: (_a = x.topicId) !== null && _a !== void 0 ? _a : x.subjectId },
                     x.explanation,
                     " \u00B7 ",
-                    x.score))))),
+                    x.score); })))),
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Exam stages"),
             React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (stage.trim()) {
@@ -1113,7 +1127,7 @@ function PublicExamWorkspace({ state, store, run }) {
                     c.bbReferencePreset.weeklyScheduledMinutes,
                     " min/week"),
                 React.createElement("p", { className: "muted" }, "The configured availability windows mirror the supplied Monday\u2013Saturday reference rhythm. The 19-hour goal is retained independently; no 2026 exam date is created."),
-                React.createElement("ul", null, c.bbReferencePreset.scheduleRhythm.map((b, i) => React.createElement("li", { key: i },
+                React.createElement("ul", null, c.bbReferencePreset.scheduleRhythm.map((b, i) => { var _a; return React.createElement("li", { key: i },
                     "Day ",
                     b.weekday,
                     " \u00B7 ",
@@ -1122,8 +1136,7 @@ function PublicExamWorkspace({ state, store, run }) {
                     String(b.startMinute % 60).padStart(2, "0"),
                     " \u00B7 ",
                     b.durationMinutes,
-                    " min \u00B7 ",
-                    b.subjectName ?? "general review/mock/writing window"))))),
+                    " min \u00B7 ", (_a = b.subjectName) !== null && _a !== void 0 ? _a : "general review/mock/writing window"); })))),
         React.createElement("article", { className: "card", id: "edital-revision" },
             React.createElement("h2", null, "Edital revision"),
             React.createElement("input", { "aria-label": "Edital revision reference", value: noticeRef, onChange: (e) => setNoticeRef(e.target.value), placeholder: "Reference / label / URL" }),
@@ -1216,7 +1229,7 @@ function ProgrammingWorkspace({ state, store, run }) { const plan = state.plans.
             React.createElement("button", { className: "button", type: "submit" }, "Add exercise")),
         React.createElement("p", { className: "muted" }, "Safety boundary: StudyFlow never runs arbitrary shell commands or pasted code. You can edit code locally and record observed output from a trusted runtime.")),
     React.createElement(ModeImportTools, { state: state, store: store, run: run }),
-    cfg.exercises.map(x => React.createElement("article", { className: "card", key: x.id },
+    cfg.exercises.map(x => { var _a; return React.createElement("article", { className: "card", key: x.id },
         React.createElement("h3", null, x.title),
         React.createElement("p", null, x.prompt),
         React.createElement("span", { className: "muted" },
@@ -1229,13 +1242,13 @@ function ProgrammingWorkspace({ state, store, run }) { const plan = state.plans.
         x.files.map(f => React.createElement("details", { key: f.path },
             React.createElement("summary", null, f.path),
             React.createElement(CodeBlock, { code: f.content, language: f.language }))),
-        React.createElement("input", { "aria-label": `Observed output for ${x.title}`, value: output[x.id] ?? "", onChange: (e) => setOutput({ ...output, [x.id]: e.target.value }), placeholder: "Observed output from trusted runtime" }),
+        React.createElement("input", { "aria-label": `Observed output for ${x.title}`, value: (_a = output[x.id]) !== null && _a !== void 0 ? _a : "", onChange: (e) => setOutput({ ...output, [x.id]: e.target.value }), placeholder: "Observed output from trusted runtime" }),
         React.createElement("div", { className: "button-row" },
-            React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.recordProgrammingExercise(x.id, { observedOutput: output[x.id] ?? null }), "Attempt recorded without executing code.") }, "Record attempt"),
-            React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.recordProgrammingExercise(x.id, { completed: true, observedOutput: output[x.id] ?? null }), "Exercise completion evidenced.") }, "Mark completed"),
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => { var _a; return store.recordProgrammingExercise(x.id, { observedOutput: (_a = output[x.id]) !== null && _a !== void 0 ? _a : null }); }, "Attempt recorded without executing code.") }, "Record attempt"),
+            React.createElement("button", { className: "button", type: "button", onClick: () => run(() => { var _a; return store.recordProgrammingExercise(x.id, { completed: true, observedOutput: (_a = output[x.id]) !== null && _a !== void 0 ? _a : null }); }, "Exercise completion evidenced.") }, "Mark completed"),
             x.solutionNotes && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.revealProgrammingSolution(x.id), `Solution reveal recorded: ${x.solutionNotes}`) }, "Reveal solution")),
-        x.expectedOutput && React.createElement("p", { className: "muted" }, "Expected output is stored for explicit comparison after an attempt.")))); }
-function LanguageWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.language; const [expression, setExpression] = React.useState(""); const [meaning, setMeaning] = React.useState(""); const [selected, setSelected] = React.useState(cfg.expressions[0]?.id ?? ""); const [direction, setDirection] = React.useState("recognition"); const [answer, setAnswer] = React.useState(""); const [rating, setRating] = React.useState(3); const card = cfg.expressions.find(x => x.id === selected) ?? cfg.expressions[0] ?? null; const prompt = card ? (0, modes_1.buildLanguageReviewPrompt)(card, direction) : null; return React.createElement("div", { className: "content-grid two-column" },
+        x.expectedOutput && React.createElement("p", { className: "muted" }, "Expected output is stored for explicit comparison after an attempt.")); })); }
+function LanguageWorkspace({ state, store, run }) { var _a, _b, _c, _d; const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.language; const [expression, setExpression] = React.useState(""); const [meaning, setMeaning] = React.useState(""); const [selected, setSelected] = React.useState((_b = (_a = cfg.expressions[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : ""); const [direction, setDirection] = React.useState("recognition"); const [answer, setAnswer] = React.useState(""); const [rating, setRating] = React.useState(3); const card = (_d = (_c = cfg.expressions.find(x => x.id === selected)) !== null && _c !== void 0 ? _c : cfg.expressions[0]) !== null && _d !== void 0 ? _d : null; const prompt = card ? (0, modes_1.buildLanguageReviewPrompt)(card, direction) : null; return React.createElement("div", { className: "content-grid two-column" },
     React.createElement("article", { className: "card" },
         React.createElement("h2", null,
             "Language deck \u00B7 ",
@@ -1260,14 +1273,14 @@ function LanguageWorkspace({ state, store, run }) { const plan = state.plans.fin
             React.createElement("select", { "aria-label": "Language review expression", value: card.id, onChange: (e) => { setSelected(e.target.value); setAnswer(""); } }, cfg.expressions.map(x => React.createElement("option", { key: x.id, value: x.id }, x.expression))),
             React.createElement("select", { "aria-label": "Language review direction", value: direction, onChange: (e) => { setDirection(e.target.value); setAnswer(""); } }, cfg.reviewDirections.map(x => React.createElement("option", { key: x, value: x }, title(x)))),
             React.createElement("p", null,
-                React.createElement("strong", null, prompt?.prompt)),
-            prompt?.reason && React.createElement("p", { className: "muted" }, prompt.reason),
-            React.createElement("textarea", { "aria-label": "Language review answer", disabled: !prompt?.ready, value: answer, onChange: (e) => setAnswer(e.target.value), placeholder: prompt?.manualReview ? "Write your response; grade it manually" : "Your answer" }),
+                React.createElement("strong", null, prompt === null || prompt === void 0 ? void 0 : prompt.prompt)),
+            (prompt === null || prompt === void 0 ? void 0 : prompt.reason) && React.createElement("p", { className: "muted" }, prompt.reason),
+            React.createElement("textarea", { "aria-label": "Language review answer", disabled: !(prompt === null || prompt === void 0 ? void 0 : prompt.ready), value: answer, onChange: (e) => setAnswer(e.target.value), placeholder: (prompt === null || prompt === void 0 ? void 0 : prompt.manualReview) ? "Write your response; grade it manually" : "Your answer" }),
             React.createElement("label", null,
                 "Rating 0\u20135",
                 React.createElement("input", { "aria-label": "Language review rating", type: "number", min: "0", max: "5", value: rating, onChange: (e) => setRating(Number(e.target.value)) })),
-            React.createElement("button", { className: "button", type: "button", disabled: !prompt?.ready, onClick: () => run(() => store.recordLanguageReview(card.id, direction, rating, { answer }), prompt?.manualReview ? "Manual-review language evidence recorded." : "Language review recorded.") }, "Record review"),
-            prompt?.expected && React.createElement("details", null,
+            React.createElement("button", { className: "button", type: "button", disabled: !(prompt === null || prompt === void 0 ? void 0 : prompt.ready), onClick: () => run(() => store.recordLanguageReview(card.id, direction, rating, { answer }), (prompt === null || prompt === void 0 ? void 0 : prompt.manualReview) ? "Manual-review language evidence recorded." : "Language review recorded.") }, "Record review"),
+            (prompt === null || prompt === void 0 ? void 0 : prompt.expected) && React.createElement("details", null,
                 React.createElement("summary", null, "Expected answer"),
                 React.createElement("p", null, prompt.expected))))); }
 function ReadingWorkspace({ state, store, run }) { const plan = state.plans.find(p => p.id === state.activePlanId); const cfg = plan.configuration.reading; const [name, setName] = React.useState(""); const [units, setUnits] = React.useState(100); return React.createElement("article", { className: "card" },
@@ -1311,12 +1324,13 @@ function ModeWorkspace({ state, store, run }) { const plan = state.plans.find(p 
     return React.createElement(LanguageWorkspace, { state: state, store: store, run: run }); if (plan.mode === "READING_STUDY")
     return React.createElement(ReadingWorkspace, { state: state, store: store, run: run }); return React.createElement(GeneralSkillWorkspace, { state: state, store: store, run: run }); }
 function MaterialViewer({ material, persistence, onClose }) {
+    var _a;
     const plan = (0, retention_viewer_1.planMaterialViewer)(material);
     const [url, setUrl] = React.useState(null);
     const [text, setText] = React.useState(null);
     const [error, setError] = React.useState(plan.reason);
-    React.useEffect(() => { let revoked = null, cancelled = false; (async () => { if (!(0, retention_viewer_1.materialViewerNeedsAttachment)(plan) || !plan.attachmentId)
-        return; const record = await persistence.attachments?.get(plan.attachmentId); if (cancelled)
+    React.useEffect(() => { let revoked = null, cancelled = false; (async () => { var _a; if (!(0, retention_viewer_1.materialViewerNeedsAttachment)(plan) || !plan.attachmentId)
+        return; const record = await ((_a = persistence.attachments) === null || _a === void 0 ? void 0 : _a.get(plan.attachmentId)); if (cancelled)
         return; if (!record) {
         setError("Local attachment bytes are missing from IndexedDB.");
         return;
@@ -1332,8 +1346,7 @@ function MaterialViewer({ material, persistence, onClose }) {
                     React.createElement("h2", { id: "material-viewer-title" }, "Material Viewer"),
                     React.createElement("p", { className: "muted" },
                         material.title,
-                        " \u00B7 ",
-                        plan.mimeType ?? "unknown MIME",
+                        " \u00B7 ", (_a = plan.mimeType) !== null && _a !== void 0 ? _a : "unknown MIME",
                         " \u00B7 ",
                         title(plan.kind))),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: onClose }, "Close")),
@@ -1355,7 +1368,7 @@ function MaterialViewer({ material, persistence, onClose }) {
 }
 function Library({ materials, store, persistence, run }) {
     const [viewing, setViewing] = React.useState(null);
-    const add = async (e) => { const file = e.target.files?.[0]; if (!file || !persistence.attachments)
+    const add = async (e) => { var _a; const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (!file || !persistence.attachments)
         return; if (file.size > 50 * 1024 * 1024)
         throw new Error("Attachment exceeds the 50 MiB local limit"); let meta = null; try {
         meta = await persistence.attachments.put(file);
@@ -1380,27 +1393,27 @@ function Library({ materials, store, persistence, run }) {
                     React.createElement("input", { "aria-label": "Local material file", type: "file", onChange: (e) => add(e).catch(err => console.error(err)) }))),
             React.createElement("p", { className: "muted" }, "Tracked edital references use the existing material record. StudyFlow warns after 90 days without re-verification; that is a product policy, not an edital rule."),
             React.createElement("ul", { className: "activity-list" },
-                materials.map(m => React.createElement("li", { key: m.id },
+                materials.map(m => { var _a; return React.createElement("li", { key: m.id },
                     React.createElement("div", null,
                         React.createElement("strong", null, m.title),
-                        React.createElement("span", null,
-                            m.mimeType ?? title(m.kind),
+                        React.createElement("span", null, (_a = m.mimeType) !== null && _a !== void 0 ? _a : title(m.kind),
                             m.locator ? ` · ${m.locator}` : ""),
                         React.createElement(MaterialReferenceControls, { material: m, store: store, run: run })),
                     React.createElement("div", { className: "button-row" },
                         React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setViewing(m) }, "Open"),
-                        !m.archived && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deleteMaterial(m.id), "Material removed.") }, "Delete")))),
+                        !m.archived && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deleteMaterial(m.id), "Material removed.") }, "Delete"))); }),
                 !materials.length && React.createElement("li", null, "No local materials yet."))),
         viewing && React.createElement(MaterialViewer, { material: viewing, persistence: persistence, onClose: () => setViewing(null) }));
 }
 function Practice({ state, store, tab, setTab, questionId, setQuestionId, context, run }) {
+    var _a, _b, _c, _d, _e, _f;
     const dueAll = (0, domain_1.selectDueReviews)(state), errors = (0, domain_1.selectOpenErrors)(state), plan = state.plans.find(p => p.id === state.activePlanId);
     const [filter, setFilter] = React.useState({});
     React.useEffect(() => { if (!context || context.screen !== "practice")
-        return; setFilter(context.topicId ? { topicId: context.topicId } : context.subjectId ? { subjectId: context.subjectId } : {}); }, [context?.activityId]);
-    const due = (context?.screen === "practice" && context.practiceTab === "reviews" ? dueAll.filter(r => context.topicId ? r.topicId === context.topicId : context.subjectId ? r.subjectId === context.subjectId : true) : dueAll).sort((a, b) => context?.reviewId === a.id ? -1 : context?.reviewId === b.id ? 1 : a.dueAt.localeCompare(b.dueAt));
+        return; setFilter(context.topicId ? { topicId: context.topicId } : context.subjectId ? { subjectId: context.subjectId } : {}); }, [context === null || context === void 0 ? void 0 : context.activityId]);
+    const due = ((context === null || context === void 0 ? void 0 : context.screen) === "practice" && context.practiceTab === "reviews" ? dueAll.filter(r => context.topicId ? r.topicId === context.topicId : context.subjectId ? r.subjectId === context.subjectId : true) : dueAll).sort((a, b) => (context === null || context === void 0 ? void 0 : context.reviewId) === a.id ? -1 : (context === null || context === void 0 ? void 0 : context.reviewId) === b.id ? 1 : a.dueAt.localeCompare(b.dueAt));
     const filtered = (0, modes_1.filterPracticeQuestions)(state, filter);
-    const current = filtered.find(q => q.id === questionId) ?? filtered[0] ?? null;
+    const current = (_b = (_a = filtered.find(q => q.id === questionId)) !== null && _a !== void 0 ? _a : filtered[0]) !== null && _b !== void 0 ? _b : null;
     const [answer, setAnswer] = React.useState("");
     const [importText, setImportText] = React.useState("");
     const [importPreview, setImportPreview] = React.useState(null);
@@ -1416,11 +1429,11 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
     const [flashCloze, setFlashCloze] = React.useState("");
     const [flashTags, setFlashTags] = React.useState("");
     const flashcards = state.flashcards.filter(f => f.planId === state.activePlanId).sort((a, b) => Number(a.suspended) - Number(b.suspended) || b.updatedAt.localeCompare(a.updatedAt));
-    const saved = plan?.configuration.practice.savedSets ?? [];
-    const quota = plan?.configuration.practice.weeklyQuestionQuota ?? null;
+    const saved = (_c = plan === null || plan === void 0 ? void 0 : plan.configuration.practice.savedSets) !== null && _c !== void 0 ? _c : [];
+    const quota = (_d = plan === null || plan === void 0 ? void 0 : plan.configuration.practice.weeklyQuestionQuota) !== null && _d !== void 0 ? _d : null;
     const weekAttempts = state.evidence.filter(e => e.planId === state.activePlanId && e.kind === "question-attempt" && Date.parse(e.observedAt) >= Date.now() - 7 * 86400000).length;
     return React.createElement("section", { id: "practice", "data-screen": "practice", className: "screen-section" },
-        context?.screen === "practice" && React.createElement("article", { className: "mode-banner" },
+        (context === null || context === void 0 ? void 0 : context.screen) === "practice" && React.createElement("article", { className: "mode-banner" },
             React.createElement("strong", null,
                 title(context.activityType),
                 " activity context"),
@@ -1430,21 +1443,21 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
             React.createElement("div", { className: "content-grid two-column" },
                 React.createElement("article", { className: "card" },
                     React.createElement("h2", null, "Due reviews"),
-                    context?.activityType === "FLASHCARDS" && React.createElement("p", { className: "muted" }, "Flashcards activity context \u00B7 due cards are shown first and unrelated review types are hidden."),
+                    (context === null || context === void 0 ? void 0 : context.activityType) === "FLASHCARDS" && React.createElement("p", { className: "muted" }, "Flashcards activity context \u00B7 due cards are shown first and unrelated review types are hidden."),
                     React.createElement("ul", { className: "activity-list" },
-                        due.filter(r => context?.activityType === "FLASHCARDS" ? r.sourceType === "flashcard" : true).map(r => { const card = r.sourceType === "flashcard" && r.sourceId ? state.flashcards.find(f => f.id === r.sourceId) : null; return React.createElement("li", { key: r.id },
-                            React.createElement("strong", null, card ? card.front : r.sourceType ?? "Review"),
-                            React.createElement("span", null, card ? `${card.back} · ${card.type}` : `${r.dueAt} · interval ${r.intervalDays ?? "—"}d`),
+                        due.filter(r => (context === null || context === void 0 ? void 0 : context.activityType) === "FLASHCARDS" ? r.sourceType === "flashcard" : true).map(r => { var _a, _b; const card = r.sourceType === "flashcard" && r.sourceId ? state.flashcards.find(f => f.id === r.sourceId) : null; return React.createElement("li", { key: r.id },
+                            React.createElement("strong", null, card ? card.front : (_a = r.sourceType) !== null && _a !== void 0 ? _a : "Review"),
+                            React.createElement("span", null, card ? `${card.back} · ${card.type}` : `${r.dueAt} · interval ${(_b = r.intervalDays) !== null && _b !== void 0 ? _b : "—"}d`),
                             React.createElement("div", { className: "button-row" },
                                 React.createElement("button", { className: "button button-quiet", onClick: () => run(() => store.completeReview(r.id, { rating: "again" }), "Review reset to first interval.") }, "Again"),
                                 React.createElement("button", { className: "button", onClick: () => run(() => store.completeReview(r.id, { rating: "good" }), "Review advanced.") }, "Good"),
                                 React.createElement("button", { className: "button button-primary", onClick: () => run(() => store.completeReview(r.id, { rating: "easy" }), "Review advanced.") }, "Easy"))); }),
-                        !due.filter(r => context?.activityType === "FLASHCARDS" ? r.sourceType === "flashcard" : true).length && React.createElement("li", null, "No due reviews."))),
+                        !due.filter(r => (context === null || context === void 0 ? void 0 : context.activityType) === "FLASHCARDS" ? r.sourceType === "flashcard" : true).length && React.createElement("li", null, "No due reviews."))),
                 React.createElement("article", { className: "card" },
                     React.createElement("h2", null, "Flashcards"),
                     React.createElement("p", { className: "muted" }, "Persisted BASIC/CLOZE cards schedule an immediate first review. Suspending a card dismisses its pending review until resumed."),
                     React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (!flashFront.trim() || !flashBack.trim())
-                            return; const added = run(() => store.addFlashcard({ front: flashFront.trim(), back: flashBack.trim(), type: flashType, clozeText: flashType === "CLOZE" ? flashCloze.trim() : null, tags: flashTags.split(",").map(x => x.trim()).filter(Boolean), subjectId: context?.subjectId ?? null, topicId: context?.topicId ?? null }), "Flashcard created and first review scheduled."); if (added) {
+                            return; const added = run(() => { var _a, _b; return store.addFlashcard({ front: flashFront.trim(), back: flashBack.trim(), type: flashType, clozeText: flashType === "CLOZE" ? flashCloze.trim() : null, tags: flashTags.split(",").map(x => x.trim()).filter(Boolean), subjectId: (_a = context === null || context === void 0 ? void 0 : context.subjectId) !== null && _a !== void 0 ? _a : null, topicId: (_b = context === null || context === void 0 ? void 0 : context.topicId) !== null && _b !== void 0 ? _b : null }); }, "Flashcard created and first review scheduled."); if (added) {
                             setFlashFront("");
                             setFlashBack("");
                             setFlashCloze("");
@@ -1479,12 +1492,12 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
                     React.createElement("h2", null, "Question practice \u00B7 Question bank"),
                     React.createElement("h3", null, "Banca / evidence filters"),
                     React.createElement("div", { className: "stack-form" },
-                        React.createElement("select", { "aria-label": "Question evidence filter", value: filter.evidence ?? "", onChange: (e) => setFilter({ ...filter, evidence: e.target.value || undefined }) },
+                        React.createElement("select", { "aria-label": "Question evidence filter", value: (_e = filter.evidence) !== null && _e !== void 0 ? _e : "", onChange: (e) => setFilter({ ...filter, evidence: e.target.value || undefined }) },
                             React.createElement("option", { value: "" }, "All evidence"),
                             React.createElement("option", { value: "wrong" }, "Wrong"),
                             React.createElement("option", { value: "correct" }, "Correct"),
                             React.createElement("option", { value: "unseen" }, "Unseen")),
-                        React.createElement("select", { "aria-label": "Question difficulty filter", value: filter.difficulty ?? "", onChange: (e) => setFilter({ ...filter, difficulty: e.target.value || undefined }) },
+                        React.createElement("select", { "aria-label": "Question difficulty filter", value: (_f = filter.difficulty) !== null && _f !== void 0 ? _f : "", onChange: (e) => setFilter({ ...filter, difficulty: e.target.value || undefined }) },
                             React.createElement("option", { value: "" }, "All difficulty"),
                             React.createElement("option", { value: "easy" }, "Easy"),
                             React.createElement("option", { value: "medium" }, "Medium"),
@@ -1498,7 +1511,7 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
                         quota == null ? "not configured" : `${weekAttempts}/${quota}`),
                     React.createElement("label", null,
                         "Weekly question quota",
-                        React.createElement("input", { "aria-label": "Weekly question quota", type: "number", min: "1", value: quota ?? "", onChange: (e) => run(() => store.setPracticeConfiguration({ weeklyQuestionQuota: e.target.value === "" ? null : Number(e.target.value) }), "Question quota updated.") })),
+                        React.createElement("input", { "aria-label": "Weekly question quota", type: "number", min: "1", value: quota !== null && quota !== void 0 ? quota : "", onChange: (e) => run(() => store.setPracticeConfiguration({ weeklyQuestionQuota: e.target.value === "" ? null : Number(e.target.value) }), "Question quota updated.") })),
                     React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (manualPrompt.trim()) {
                             run(() => store.addQuestion({ prompt: manualPrompt.trim(), examBoard: manualBoard.trim() || null, source: manualSource.trim() || null, tags: manualTags.split(",").map(x => x.trim()).filter(Boolean) }), "Question added.");
                             setManualPrompt("");
@@ -1511,14 +1524,11 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
                         React.createElement("input", { "aria-label": "Manual question source", value: manualSource, onChange: (e) => setManualSource(e.target.value), placeholder: "Source, optional" }),
                         React.createElement("input", { "aria-label": "Manual question tags", value: manualTags, onChange: (e) => setManualTags(e.target.value), placeholder: "tags, comma-separated" }),
                         React.createElement("button", { className: "button button-quiet", type: "submit" }, "Add manual question")),
-                    React.createElement("ul", { className: "activity-list" }, filtered.slice(0, 50).map(q => React.createElement("li", { key: q.id },
+                    React.createElement("ul", { className: "activity-list" }, filtered.slice(0, 50).map(q => { var _a, _b, _c; return React.createElement("li", { key: q.id },
                         React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setQuestionId(q.id) }, q.prompt),
-                        React.createElement("span", null,
-                            q.examBoard ?? "No banca",
-                            " \u00B7 ",
-                            q.year ?? "No year",
-                            " \u00B7 ",
-                            q.difficulty ?? "No difficulty")))),
+                        React.createElement("span", null, (_a = q.examBoard) !== null && _a !== void 0 ? _a : "No banca",
+                            " \u00B7 ", (_b = q.year) !== null && _b !== void 0 ? _b : "No year",
+                            " \u00B7 ", (_c = q.difficulty) !== null && _c !== void 0 ? _c : "No difficulty")); })),
                     current && React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (run(() => store.answerQuestion(current.id, answer), "Question attempt recorded.")) {
                             setAnswer("");
                         } } },
@@ -1531,7 +1541,7 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
                     React.createElement("textarea", { "aria-label": "Question import source", value: importText, onChange: (e) => { setImportText(e.target.value); setImportPreview(null); }, placeholder: 'prompt,answer,subject,topic,board,source,tags,year\n"Question?","Answer","Law","Rights","CEBRASPE","Official bank","bb;reference",2025' }),
                     React.createElement("div", { className: "button-row" },
                         React.createElement("button", { className: "button", type: "button", onClick: () => setImportPreview(store.previewQuestionImport(importText, (0, question_import_1.detectQuestionImportFormat)(importText))) }, "Preview import"),
-                        importPreview?.ready && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applyQuestionImportPreview(importPreview), "Question import applied.")) {
+                        (importPreview === null || importPreview === void 0 ? void 0 : importPreview.ready) && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => { if (run(() => store.applyQuestionImportPreview(importPreview), "Question import applied.")) {
                                 setImportText("");
                                 setImportPreview(null);
                             } } }, "Apply accepted questions")),
@@ -1565,7 +1575,7 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
                         x.reasons.join(", "),
                         " \u00B7 score ",
                         x.score))))),
-            plan?.mode === "EXAM_PLAN" && React.createElement(PublicExamMock, { state: state, store: store, run: run })),
+            (plan === null || plan === void 0 ? void 0 : plan.mode) === "EXAM_PLAN" && React.createElement(PublicExamMock, { state: state, store: store, run: run })),
         tab === "errors" && React.createElement("section", { id: "practice-errors", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Error Notebook"),
@@ -1581,21 +1591,22 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
                     !errors.length && React.createElement("li", null, "No open errors.")))));
 }
 function PublicExamMock({ state, store, run }) {
+    var _a, _b, _c, _d, _e;
     const plan = state.plans.find(p => p.id === state.activePlanId);
-    const saved = plan.configuration.publicExam?.mockBlueprint;
+    const saved = (_a = plan.configuration.publicExam) === null || _a === void 0 ? void 0 : _a.mockBlueprint;
     const [preview, setPreview] = React.useState(null);
     const [answers, setAnswers] = React.useState({});
-    const [board, setBoard] = React.useState(saved?.examBoard ?? "");
-    const [source, setSource] = React.useState(saved?.sourceFilter ?? "");
-    const [tags, setTags] = React.useState((saved?.requiredTags ?? []).join(", "));
-    const [includeDisputed, setIncludeDisputed] = React.useState(Boolean(saved?.includeDisputed));
-    const [passing, setPassing] = React.useState(saved?.minimumOverallScorePercent == null ? "" : String(saved.minimumOverallScorePercent));
+    const [board, setBoard] = React.useState((_b = saved === null || saved === void 0 ? void 0 : saved.examBoard) !== null && _b !== void 0 ? _b : "");
+    const [source, setSource] = React.useState((_c = saved === null || saved === void 0 ? void 0 : saved.sourceFilter) !== null && _c !== void 0 ? _c : "");
+    const [tags, setTags] = React.useState(((_d = saved === null || saved === void 0 ? void 0 : saved.requiredTags) !== null && _d !== void 0 ? _d : []).join(", "));
+    const [includeDisputed, setIncludeDisputed] = React.useState(Boolean(saved === null || saved === void 0 ? void 0 : saved.includeDisputed));
+    const [passing, setPassing] = React.useState((saved === null || saved === void 0 ? void 0 : saved.minimumOverallScorePercent) == null ? "" : String(saved.minimumOverallScorePercent));
     const currentInput = () => ({ examBoard: board.trim() || null, sourceFilter: source.trim() || null, requiredTags: tags.split(",").map(x => x.trim()).filter(Boolean), includeDisputed, minimumOverallScorePercent: passing === "" ? null : Number(passing) });
-    const bb = plan.configuration.publicExam?.bbReferencePreset ? (0, modes_1.previewBbReferenceMockExam)(state) : null;
+    const bb = ((_e = plan.configuration.publicExam) === null || _e === void 0 ? void 0 : _e.bbReferencePreset) ? (0, modes_1.previewBbReferenceMockExam)(state) : null;
     const submit = () => { if (!preview)
         return; const result = run(() => store.recordMockExam(preview, answers), "Mock result recorded."); if (result) {
         const value = result.value;
-        const passed = value?.passed;
+        const passed = value === null || value === void 0 ? void 0 : value.passed;
         setPreview(null);
         setAnswers({});
         if (passed === true)
@@ -1621,8 +1632,7 @@ function PublicExamMock({ state, store, run }) {
             React.createElement("h3", null, "BB Agente Comercial \u00B7 reference mock"),
             React.createElement("p", { className: "muted" }, "70 objective questions \u00B7 Cesgranrio exact-name matching \u00B7 300 min reference full mock \u00B7 100 reference points. Question counts are derived from reference point weights, not claimed as official per-subject item counts."),
             bb.preview ? React.createElement(React.Fragment, null,
-                React.createElement("ul", null, bb.preview.blueprint.sections.map(section => { const subject = state.subjects.find(s => s.id === section.subjectId); return React.createElement("li", { key: section.id },
-                    subject?.name ?? section.subjectId,
+                React.createElement("ul", null, bb.preview.blueprint.sections.map(section => { var _a; const subject = state.subjects.find(s => s.id === section.subjectId); return React.createElement("li", { key: section.id }, (_a = subject === null || subject === void 0 ? void 0 : subject.name) !== null && _a !== void 0 ? _a : section.subjectId,
                     ": ",
                     section.count,
                     " questions \u00B7 ",
@@ -1636,16 +1646,16 @@ function PublicExamMock({ state, store, run }) {
                 React.createElement("button", { className: "button button-quiet", type: "button", disabled: !bb.preview.ready, onClick: () => setPreview(bb.preview) }, "Use BB reference mock preview")) : React.createElement("p", { className: "muted" }, "The active plan no longer matches all eight BB reference subjects/weights.")),
         preview && React.createElement(React.Fragment, null,
             React.createElement("p", null, preview.ready ? `${preview.questionIds.length} questions ready${preview.blueprint.minimumOverallScorePercent == null ? "" : ` · passing score ${preview.blueprint.minimumOverallScorePercent}%`}` : preview.deficits.join("; ")),
-            preview.ready && preview.questionIds.map(id => { const q = state.questions.find(x => x.id === id); return React.createElement("label", { key: id },
+            preview.ready && preview.questionIds.map(id => { var _a, _b; const q = state.questions.find(x => x.id === id); return React.createElement("label", { key: id },
                 q.prompt,
-                React.createElement("small", null,
-                    q.examBoard ?? "No banca",
+                React.createElement("small", null, (_a = q.examBoard) !== null && _a !== void 0 ? _a : "No banca",
                     q.source ? ` · ${q.source}` : "",
                     q.tags.length ? ` · ${q.tags.join(", ")}` : ""),
-                React.createElement("input", { "aria-label": `Mock answer ${id}`, value: answers[id] ?? "", onChange: (e) => setAnswers({ ...answers, [id]: e.target.value }) })); }),
+                React.createElement("input", { "aria-label": `Mock answer ${id}`, value: (_b = answers[id]) !== null && _b !== void 0 ? _b : "", onChange: (e) => setAnswers({ ...answers, [id]: e.target.value }) })); }),
             preview.ready && React.createElement("button", { className: "button button-primary", type: "button", onClick: submit }, "Submit mock")));
 }
 function Progress({ state, store, tab, setTab, persistence, portable, setPortable, portableStatus, setPortableStatus, run }) {
+    var _a;
     const m = (0, domain_1.deriveProgressMetrics)(state), timeline = (0, domain_1.buildEvidenceTimeline)(state, { limit: 30, at: new Date().toISOString() }), integrity = (0, domain_1.buildContentIntegrityReport)(state), goals = state.goals.filter(g => g.planId === state.activePlanId), modeAnalytics = (0, modes_1.deriveModeAnalytics)(state), readiness = (0, intelligence_1.deriveReadinessExplanation)(state), coach = (0, intelligence_1.deriveWeeklyCoach)(state), quota = (0, intelligence_1.deriveQuestionQuotaPlan)(state);
     const [goal, setGoal] = React.useState("");
     return React.createElement("section", { id: "progress", "data-screen": "progress", className: "screen-section" },
@@ -1659,20 +1669,20 @@ function Progress({ state, store, tab, setTab, persistence, portable, setPortabl
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Exam readiness model"),
                 React.createElement("p", null,
-                    React.createElement("strong", null, readiness.value == null ? "No readiness score" : `${readiness.value}% · ${title(readiness.band ?? "")}`)),
+                    React.createElement("strong", null, readiness.value == null ? "No readiness score" : `${readiness.value}% · ${title((_a = readiness.band) !== null && _a !== void 0 ? _a : "")}`)),
                 React.createElement("p", { className: "muted" },
                     readiness.reason,
                     readiness.daysUntilExam == null ? "" : ` · ${readiness.daysUntilExam} days to confirmed exam`),
-                React.createElement("ul", { className: "activity-list" }, readiness.signals.map(s => React.createElement("li", { key: s.id },
+                React.createElement("ul", { className: "activity-list" }, readiness.signals.map(s => { var _a; return React.createElement("li", { key: s.id },
                     React.createElement("div", null,
                         React.createElement("strong", null, s.label),
                         React.createElement("span", null,
-                            s.value == null ? "No data" : `${s.value}% · ${title(s.severity ?? "")}`,
+                            s.value == null ? "No data" : `${s.value}% · ${title((_a = s.severity) !== null && _a !== void 0 ? _a : "")}`,
                             " \u00B7 weight ",
                             s.weight,
                             "% \u00B7 evidence ",
                             s.evidenceCount)),
-                    React.createElement("small", null, s.reason))))),
+                    React.createElement("small", null, s.reason)); }))),
             React.createElement("article", { className: "card" },
                 React.createElement("h2", null, "Mode-aware analytics"),
                 React.createElement("div", { className: "metric-grid compact-grid" }, modeAnalytics.metrics.map(x => { const low = x.label.toLowerCase(), ratio = typeof x.value === "number" && x.value >= 0 && x.value <= 1 && (low.includes("accuracy") || low.includes("progress") || low.includes("coverage")); return React.createElement(Metric, { key: x.label, label: x.label, value: ratio ? pct(x.value) : x.value == null ? "No data" : String(x.value), detail: modeAnalytics.mode ? title(modeAnalytics.mode) : "No plan" }); }))),
@@ -1737,13 +1747,12 @@ function Progress({ state, store, tab, setTab, persistence, portable, setPortabl
                     } } },
                     React.createElement("input", { "aria-label": "Weekly goal name", value: goal, onChange: (e) => setGoal(e.target.value), placeholder: "Weekly goal", required: true }),
                     React.createElement("button", { className: "button", type: "submit" }, "Add 120 min goal")),
-                goals.map(g => { const p = (0, domain_1.deriveGoalProgress)(state, g); return React.createElement("div", { className: "goal-row", key: g.id },
+                goals.map(g => { var _a; const p = (0, domain_1.deriveGoalProgress)(state, g); return React.createElement("div", { className: "goal-row", key: g.id },
                     React.createElement("div", null,
                         React.createElement("strong", null,
                             g.name,
                             g.completedAt ? " · completed" : ""),
-                        React.createElement("span", { className: "muted" },
-                            p.actual ?? "No data",
+                        React.createElement("span", { className: "muted" }, (_a = p.actual) !== null && _a !== void 0 ? _a : "No data",
                             " / ",
                             g.target,
                             g.completedAt ? ` · ${g.completedAt}` : "")),
@@ -1863,8 +1872,9 @@ finally {
         " orphan"),
     React.createElement("div", { className: "button-row" },
         React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(false) }, busy ? "Checking…" : "Check storage"),
-        Boolean(report?.orphanAttachmentIds.length) && React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(true) }, "Clean orphan files"))); }
+        Boolean(report === null || report === void 0 ? void 0 : report.orphanAttachmentIds.length) && React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(true) }, "Clean orphan files"))); }
 function PortablePackageTools({ state, store, persistence, portable, setPortable, portableStatus, setPortableStatus }) {
+    var _a, _b, _c;
     const [mode, setMode] = React.useState("replace");
     const [exportPassword, setExportPassword] = React.useState("");
     const [exportConfirm, setExportConfirm] = React.useState("");
@@ -1898,8 +1908,8 @@ function PortablePackageTools({ state, store, persistence, portable, setPortable
         setPortableStatus(err instanceof Error ? err.message : String(err));
     } };
     const exportLegacy = () => { const pkg = (0, portable_1.createPortablePackage)(state); downloadText(pkg); setPortableStatus("State-only portable v1 exported for backward compatibility."); };
-    const parseText = async (text) => { const version = (0, portable_1.portablePackageVersion)(text); const parsed = version === 2 ? await (0, portable_1.parsePortablePackageV2)(text) : (0, portable_1.parsePortablePackage)(text); const next = (0, portable_1.buildPortableImportPreview)(state, parsed, { mode }); setPortable(next); setPortableStatus(`Portable v${version} preview · ${next.summary.add} add · ${next.summary.update} update · ${next.summary.remove} remove${next.attachmentRecords?.length ? ` · ${next.attachmentRecords.length} attachment payloads` : ""}.`); };
-    const importData = async (e) => { const file = e.target.files?.[0]; if (!file)
+    const parseText = async (text) => { var _a; const version = (0, portable_1.portablePackageVersion)(text); const parsed = version === 2 ? await (0, portable_1.parsePortablePackageV2)(text) : (0, portable_1.parsePortablePackage)(text); const next = (0, portable_1.buildPortableImportPreview)(state, parsed, { mode }); setPortable(next); setPortableStatus(`Portable v${version} preview · ${next.summary.add} add · ${next.summary.update} update · ${next.summary.remove} remove${((_a = next.attachmentRecords) === null || _a === void 0 ? void 0 : _a.length) ? ` · ${next.attachmentRecords.length} attachment payloads` : ""}.`); };
+    const importData = async (e) => { var _a; const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (!file)
         return; try {
         const bytes = new Uint8Array(await file.arrayBuffer());
         if ((0, encrypted_portable_1.isEncryptedPortableBytes)(bytes)) {
@@ -1930,9 +1940,9 @@ function PortablePackageTools({ state, store, persistence, portable, setPortable
         setPortable(null);
         setPortableStatus(err instanceof Error ? err.message : String(err));
     } };
-    const apply = async () => { if (!portable)
+    const apply = async () => { var _a; if (!portable)
         return; try {
-        if (portable.attachmentRecords?.length)
+        if ((_a = portable.attachmentRecords) === null || _a === void 0 ? void 0 : _a.length)
             await (0, portable_1.applyPortableImportWithAttachments)(store, portable, persistence.attachments);
         else
             store.applyPortableImportPreview(portable);
@@ -1967,10 +1977,8 @@ function PortablePackageTools({ state, store, persistence, portable, setPortable
         React.createElement("p", { className: "muted", role: "status" }, portableStatus),
         portable && React.createElement(React.Fragment, null,
             React.createElement("p", { className: "muted" },
-                "Mode: ",
-                portable.mode ?? "replace",
-                " \u00B7 attachments: ",
-                portable.attachmentRecords?.length ?? 0),
+                "Mode: ", (_a = portable.mode) !== null && _a !== void 0 ? _a : "replace",
+                " \u00B7 attachments: ", (_c = (_b = portable.attachmentRecords) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : 0),
             React.createElement("button", { className: "button button-primary", type: "button", onClick: () => void apply() }, "Apply preview")));
 }
 function ReleaseCard({ state, persistence }) { const readiness = (0, release_1.evaluateReleaseReadiness)(state, persistence.backend); return React.createElement("article", { className: "card" },

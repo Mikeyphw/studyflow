@@ -126,3 +126,16 @@ python3 scripts/browser_interaction_smoke.py
 ```
 
 Use `--optional` in validation environments where browser instrumentation is not installed.
+
+
+## TV-browser mode
+
+StudyFlow can be served to a television on the same LAN without creating a second web product:
+
+```sh
+npm run serve:tv
+```
+
+The server binds to `0.0.0.0`, prints detected IPv4 LAN URLs, and exposes `/tv` as the simple television entry point. `?tv=1` forces the 10-foot/D-pad adapter; `?tv=0` disables automatic TV user-agent detection. The normal `npm run dev` command remains loopback-only.
+
+TV mode uses standard Arrow keys + Enter and page-wide spatial focus. Editable text/select controls retain their native arrow behavior. On plain LAN HTTP, secure-context-only features such as service workers and Web Crypto may be unavailable; the app reports those capabilities separately instead of treating them as required for TV navigation or IndexedDB state.

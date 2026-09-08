@@ -95,13 +95,13 @@ const ID_PREFIXES = Object.freeze({
     errorEntry: "error",
 });
 function requireText(value, field) {
-    const text = String(value ?? "").trim();
+    const text = String(value !== null && value !== void 0 ? value : "").trim();
     if (!text)
         throw new TypeError(`${field} is required`);
     return text;
 }
 function optionalText(value) {
-    const text = String(value ?? "").trim();
+    const text = String(value !== null && value !== void 0 ? value : "").trim();
     return text || null;
 }
 function optionalId(value) {
@@ -132,29 +132,31 @@ function createEntityId(kind, uuidFactory = null) {
     const prefix = ID_PREFIXES[kind];
     if (!prefix)
         throw new TypeError(`Unknown entity kind: ${kind}`);
-    const factory = uuidFactory ?? (() => globalThis.crypto?.randomUUID?.() ?? fallbackUuid());
+    const factory = uuidFactory !== null && uuidFactory !== void 0 ? uuidFactory : (() => { var _a, _b, _c; return (_c = (_b = (_a = globalThis.crypto) === null || _a === void 0 ? void 0 : _a.randomUUID) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : fallbackUuid(); });
     return `${prefix}-${String(factory())}`;
 }
 function entityBase(kind, input = {}) {
+    var _a, _b, _c, _d;
     return {
-        id: optionalId(input.id) ?? createEntityId(kind, input.uuidFactory),
-        createdAt: optionalText(input.createdAt) ?? isoNow(),
-        updatedAt: optionalText(input.updatedAt) ?? optionalText(input.createdAt) ?? isoNow(),
+        id: (_a = optionalId(input.id)) !== null && _a !== void 0 ? _a : createEntityId(kind, input.uuidFactory),
+        createdAt: (_b = optionalText(input.createdAt)) !== null && _b !== void 0 ? _b : isoNow(),
+        updatedAt: (_d = (_c = optionalText(input.updatedAt)) !== null && _c !== void 0 ? _c : optionalText(input.createdAt)) !== null && _d !== void 0 ? _d : isoNow(),
     };
 }
 function createPlan(input = {}) {
-    const mode = requireOneOf(input.mode ?? "GENERAL_SKILL", exports.STUDY_MODES, "plan.mode");
-    const configuration = (0, modes_1.normalizePlanConfiguration)(input.configuration ?? {}, mode);
+    var _a, _b, _c, _d, _e, _f;
+    const mode = requireOneOf((_a = input.mode) !== null && _a !== void 0 ? _a : "GENERAL_SKILL", exports.STUDY_MODES, "plan.mode");
+    const configuration = (0, modes_1.normalizePlanConfiguration)((_b = input.configuration) !== null && _b !== void 0 ? _b : {}, mode);
     const configErrors = (0, modes_1.validatePlanConfiguration)(configuration, mode);
     if (configErrors.length)
         throw new TypeError(`plan.configuration is invalid: ${configErrors[0]}`);
-    const configuredExamDate = mode === "EXAM_PLAN" ? configuration.publicExam?.target.examDate ?? null : null;
+    const configuredExamDate = mode === "EXAM_PLAN" ? (_d = (_c = configuration.publicExam) === null || _c === void 0 ? void 0 : _c.target.examDate) !== null && _d !== void 0 ? _d : null : null;
     return {
         ...entityBase("plan", input),
         name: requireText(input.name, "plan.name"),
         mode,
-        status: requireOneOf(input.status ?? "active", ["active", "archived"], "plan.status"),
-        examDate: optionalText(input.examDate) ?? configuredExamDate,
+        status: requireOneOf((_e = input.status) !== null && _e !== void 0 ? _e : "active", ["active", "archived"], "plan.status"),
+        examDate: (_f = optionalText(input.examDate)) !== null && _f !== void 0 ? _f : configuredExamDate,
         configuration,
     };
 }
@@ -179,6 +181,7 @@ function createSubject(input = {}) {
     };
 }
 function createTopic(input = {}) {
+    var _a, _b;
     return {
         ...entityBase("topic", input),
         planId: requireText(input.planId, "topic.planId"),
@@ -186,35 +189,37 @@ function createTopic(input = {}) {
         parentTopicId: optionalId(input.parentTopicId),
         name: requireText(input.name, "topic.name"),
         order: Number.isInteger(Number(input.order)) ? Math.max(0, Number(input.order)) : 0,
-        priority: requireOneOf(input.priority ?? "normal", ["low", "normal", "high"], "topic.priority"),
-        status: requireOneOf(input.status ?? "not-started", ["not-started", "learning", "reviewing", "mastered", "archived"], "topic.status"),
+        priority: requireOneOf((_a = input.priority) !== null && _a !== void 0 ? _a : "normal", ["low", "normal", "high"], "topic.priority"),
+        status: requireOneOf((_b = input.status) !== null && _b !== void 0 ? _b : "not-started", ["not-started", "learning", "reviewing", "mastered", "archived"], "topic.status"),
         notes: optionalText(input.notes),
     };
 }
 function createActivity(input = {}) {
+    var _a, _b, _c, _d, _e, _f, _g;
     return {
         ...entityBase("activity", input),
         planId: requireText(input.planId, "activity.planId"),
         subjectId: optionalId(input.subjectId),
         topicId: optionalId(input.topicId),
         title: requireText(input.title, "activity.title"),
-        kind: requireOneOf(input.kind ?? "study", exports.ACTIVITY_KINDS, "activity.kind"),
-        activityType: (0, task_workflows_1.normalizeStudyActivityType)(input.activityType, input.kind ?? "study"),
-        durationMinutes: requirePositiveInteger(input.durationMinutes ?? 25, "activity.durationMinutes", { min: 5, max: 240 }),
-        status: requireOneOf(input.status ?? "planned", exports.ACTIVITY_STATUSES, "activity.status"),
-        origin: requireOneOf(input.origin ?? "manual", ["manual", "seed", "cycle", "review", "import", "schedule"], "activity.origin"),
-        queue: requireOneOf(input.queue ?? "today", ["today", "future", "backlog"], "activity.queue"),
+        kind: requireOneOf((_a = input.kind) !== null && _a !== void 0 ? _a : "study", exports.ACTIVITY_KINDS, "activity.kind"),
+        activityType: (0, task_workflows_1.normalizeStudyActivityType)(input.activityType, (_b = input.kind) !== null && _b !== void 0 ? _b : "study"),
+        durationMinutes: requirePositiveInteger((_c = input.durationMinutes) !== null && _c !== void 0 ? _c : 25, "activity.durationMinutes", { min: 5, max: 240 }),
+        status: requireOneOf((_d = input.status) !== null && _d !== void 0 ? _d : "planned", exports.ACTIVITY_STATUSES, "activity.status"),
+        origin: requireOneOf((_e = input.origin) !== null && _e !== void 0 ? _e : "manual", ["manual", "seed", "cycle", "review", "import", "schedule"], "activity.origin"),
+        queue: requireOneOf((_f = input.queue) !== null && _f !== void 0 ? _f : "today", ["today", "future", "backlog"], "activity.queue"),
         scheduledFor: optionalText(input.scheduledFor),
         scheduledStartMinute: input.scheduledStartMinute == null ? null : requirePositiveInteger(Number(input.scheduledStartMinute) + 1, "activity.scheduledStartMinute", { min: 1, max: 1440 }) - 1,
         locked: Boolean(input.locked),
         scheduleProvenance: input.scheduleProvenance && typeof input.scheduleProvenance === "object" ? {
-            source: requireOneOf(input.scheduleProvenance.source ?? "manual", ["manual", "adaptive"], "activity.scheduleProvenance.source"),
+            source: requireOneOf((_g = input.scheduleProvenance.source) !== null && _g !== void 0 ? _g : "manual", ["manual", "adaptive"], "activity.scheduleProvenance.source"),
             reason: optionalText(input.scheduleProvenance.reason), previewGeneratedAt: optionalText(input.scheduleProvenance.previewGeneratedAt),
             baseRevision: input.scheduleProvenance.baseRevision == null ? null : Math.max(0, Math.trunc(Number(input.scheduleProvenance.baseRevision))),
         } : null,
     };
 }
 function createStudySession(input = {}) {
+    var _a;
     const durationMinutes = input.durationMinutes == null
         ? null
         : requirePositiveInteger(input.durationMinutes, "session.durationMinutes", { min: 1, max: 24 * 60 });
@@ -227,11 +232,12 @@ function createStudySession(input = {}) {
         startedAt: requireText(input.startedAt, "session.startedAt"),
         endedAt: optionalText(input.endedAt),
         durationMinutes,
-        status: requireOneOf(input.status ?? "completed", ["running", "paused", "completed", "cancelled"], "session.status"),
+        status: requireOneOf((_a = input.status) !== null && _a !== void 0 ? _a : "completed", ["running", "paused", "completed", "cancelled"], "session.status"),
         note: optionalText(input.note),
     };
 }
 function createGoal(input = {}) {
+    var _a;
     const target = Number(input.target);
     if (!Number.isFinite(target))
         throw new TypeError("goal.target must be a finite number");
@@ -241,12 +247,13 @@ function createGoal(input = {}) {
         name: requireText(input.name, "goal.name"),
         metric: requireText(input.metric, "goal.metric"),
         target,
-        period: requireOneOf(input.period ?? "weekly", ["daily", "weekly", "monthly", "plan"], "goal.period"),
+        period: requireOneOf((_a = input.period) !== null && _a !== void 0 ? _a : "weekly", ["daily", "weekly", "monthly", "plan"], "goal.period"),
         active: input.active !== false,
         completedAt: optionalText(input.completedAt),
     };
 }
 function createMaterial(input = {}) {
+    var _a;
     const sizeBytes = input.sizeBytes == null ? null : Number(input.sizeBytes);
     if (sizeBytes != null && (!Number.isInteger(sizeBytes) || sizeBytes < 0))
         throw new TypeError("material.sizeBytes must be null or a non-negative integer");
@@ -256,17 +263,18 @@ function createMaterial(input = {}) {
         subjectId: optionalId(input.subjectId),
         topicId: optionalId(input.topicId),
         title: requireText(input.title, "material.title"),
-        kind: requireOneOf(input.kind ?? "note", ["note", "file", "link", "book", "legislation"], "material.kind"),
+        kind: requireOneOf((_a = input.kind) !== null && _a !== void 0 ? _a : "note", ["note", "file", "link", "book", "legislation"], "material.kind"),
         locator: optionalText(input.locator),
         mimeType: optionalText(input.mimeType),
         attachmentId: optionalId(input.attachmentId),
         sizeBytes,
         archived: Boolean(input.archived),
-        tags: Array.isArray(input.tags) ? [...new Set(input.tags.map((tag) => String(tag ?? "").trim()).filter(Boolean))] : [],
+        tags: Array.isArray(input.tags) ? [...new Set(input.tags.map((tag) => String(tag !== null && tag !== void 0 ? tag : "").trim()).filter(Boolean))] : [],
     };
 }
 function createFlashcard(input = {}) {
-    const type = requireOneOf(input.type ?? "BASIC", ["BASIC", "CLOZE"], "flashcard.type");
+    var _a;
+    const type = requireOneOf((_a = input.type) !== null && _a !== void 0 ? _a : "BASIC", ["BASIC", "CLOZE"], "flashcard.type");
     const front = requireText(input.front, "flashcard.front"), back = requireText(input.back, "flashcard.back");
     const clozeText = optionalText(input.clozeText);
     if (type === "CLOZE" && !clozeText)
@@ -274,13 +282,14 @@ function createFlashcard(input = {}) {
     return {
         ...entityBase("flashcard", input),
         planId: requireText(input.planId, "flashcard.planId"), subjectId: optionalId(input.subjectId), topicId: optionalId(input.topicId), type, front, back, clozeText,
-        tags: Array.isArray(input.tags) ? [...new Set(input.tags.map(tag => String(tag ?? "").trim()).filter(Boolean))] : [], suspended: Boolean(input.suspended),
+        tags: Array.isArray(input.tags) ? [...new Set(input.tags.map(tag => String(tag !== null && tag !== void 0 ? tag : "").trim()).filter(Boolean))] : [], suspended: Boolean(input.suspended),
     };
 }
 function createReview(input = {}) {
+    var _a, _b, _c;
     const intervalDays = input.intervalDays == null ? null : requirePositiveInteger(input.intervalDays, "review.intervalDays", { min: 1, max: 365 });
-    const intervalIndex = Number(input.intervalIndex ?? 0);
-    const repetitionCount = Number(input.repetitionCount ?? 0);
+    const intervalIndex = Number((_a = input.intervalIndex) !== null && _a !== void 0 ? _a : 0);
+    const repetitionCount = Number((_b = input.repetitionCount) !== null && _b !== void 0 ? _b : 0);
     if (!Number.isInteger(intervalIndex) || intervalIndex < 0 || intervalIndex > 7)
         throw new TypeError("review.intervalIndex must be an integer from 0 to 7");
     if (!Number.isInteger(repetitionCount) || repetitionCount < 0 || repetitionCount > 9999)
@@ -291,7 +300,7 @@ function createReview(input = {}) {
         subjectId: optionalId(input.subjectId),
         topicId: optionalId(input.topicId),
         dueAt: requireText(input.dueAt, "review.dueAt"),
-        status: requireOneOf(input.status ?? "due", ["due", "completed", "dismissed"], "review.status"),
+        status: requireOneOf((_c = input.status) !== null && _c !== void 0 ? _c : "due", ["due", "completed", "dismissed"], "review.status"),
         sourceType: optionalText(input.sourceType),
         sourceId: optionalId(input.sourceId),
         intervalIndex,
@@ -314,11 +323,12 @@ function createQuestion(input = {}) {
         source: optionalText(input.source),
         explanation: optionalText(input.explanation),
         disputed: Boolean(input.disputed),
-        tags: [...new Set((Array.isArray(input.tags) ? input.tags : []).map((value) => String(value ?? "").trim()).filter(Boolean))],
+        tags: [...new Set((Array.isArray(input.tags) ? input.tags : []).map((value) => String(value !== null && value !== void 0 ? value : "").trim()).filter(Boolean))],
         ...(0, modes_1.normalizeQuestionMetadata)(input),
     };
 }
 function createEvidence(input = {}) {
+    var _a, _b;
     return {
         ...entityBase("evidence", input),
         planId: requireText(input.planId, "evidence.planId"),
@@ -329,11 +339,12 @@ function createEvidence(input = {}) {
         questionId: optionalId(input.questionId),
         kind: requireText(input.kind, "evidence.kind"),
         observedAt: requireText(input.observedAt, "evidence.observedAt"),
-        value: input.value ?? null,
-        provenance: requireOneOf(input.provenance ?? "user", ["user", "session", "question", "import", "derived"], "evidence.provenance"),
+        value: (_a = input.value) !== null && _a !== void 0 ? _a : null,
+        provenance: requireOneOf((_b = input.provenance) !== null && _b !== void 0 ? _b : "user", ["user", "session", "question", "import", "derived"], "evidence.provenance"),
     };
 }
 function createErrorEntry(input = {}) {
+    var _a, _b, _c;
     return {
         ...entityBase("errorEntry", input),
         planId: requireText(input.planId, "errorEntry.planId"),
@@ -341,10 +352,10 @@ function createErrorEntry(input = {}) {
         topicId: optionalId(input.topicId),
         questionId: optionalId(input.questionId),
         reviewId: optionalId(input.reviewId),
-        category: requireOneOf(input.category ?? "other", exports.ERROR_CATEGORIES, "errorEntry.category"),
+        category: requireOneOf((_a = input.category) !== null && _a !== void 0 ? _a : "other", exports.ERROR_CATEGORIES, "errorEntry.category"),
         note: optionalText(input.note),
-        recurrenceCount: requirePositiveInteger(input.recurrenceCount ?? 1, "errorEntry.recurrenceCount", { min: 1, max: 9999 }),
-        status: requireOneOf(input.status ?? "open", ["open", "resolved"], "errorEntry.status"),
+        recurrenceCount: requirePositiveInteger((_b = input.recurrenceCount) !== null && _b !== void 0 ? _b : 1, "errorEntry.recurrenceCount", { min: 1, max: 9999 }),
+        status: requireOneOf((_c = input.status) !== null && _c !== void 0 ? _c : "open", ["open", "resolved"], "errorEntry.status"),
         observedAt: requireText(input.observedAt, "errorEntry.observedAt"),
         resolvedAt: optionalText(input.resolvedAt),
     };
@@ -363,15 +374,17 @@ function plusDays(value, days) {
     return date.toISOString();
 }
 function gradeQuestion(question, answer) {
-    const submitted = String(answer ?? "").trim();
+    var _a;
+    const submitted = String(answer !== null && answer !== void 0 ? answer : "").trim();
     if (!submitted)
-        return { gradable: Boolean(question.answer), correct: null, submitted: null, expected: question.answer ?? null };
+        return { gradable: Boolean(question.answer), correct: null, submitted: null, expected: (_a = question.answer) !== null && _a !== void 0 ? _a : null };
     if (!question.answer)
         return { gradable: false, correct: null, submitted, expected: null };
     const expected = String(question.answer).trim();
     return { gradable: true, correct: submitted === expected, submitted, expected };
 }
 function buildSchedulePreview(state, { at = isoNow(), days = 7, maxBlocks = 7 } = {}) {
+    var _a, _b, _c, _d, _e, _f;
     const generatedAt = new Date(at).toISOString();
     const activePlan = selectActivePlan(state);
     if (!activePlan)
@@ -394,31 +407,31 @@ function buildSchedulePreview(state, { at = isoNow(), days = 7, maxBlocks = 7 } 
         });
     }
     const remainingSlots = Math.max(0, maxBlocks - operations.length);
-    const existingKeys = new Set(planned.map((activity) => `${activity.kind}|${activity.subjectId ?? ""}|${activity.topicId ?? ""}|${activity.scheduledFor ?? ""}`));
+    const existingKeys = new Set(planned.map((activity) => { var _a, _b, _c; return `${activity.kind}|${(_a = activity.subjectId) !== null && _a !== void 0 ? _a : ""}|${(_b = activity.topicId) !== null && _b !== void 0 ? _b : ""}|${(_c = activity.scheduledFor) !== null && _c !== void 0 ? _c : ""}`; }));
     const dueReviews = selectOverdueReviews(state, generatedAt, activePlan.id);
     const cycleSubjects = selectSubjectsForPlan(state, activePlan.id);
     let slot = 0;
     const candidates = [];
     for (const review of dueReviews) {
         candidates.push({
-            title: state.topics.find((topic) => topic.id === review.topicId)?.name ?? "Due review",
+            title: (_b = (_a = state.topics.find((topic) => topic.id === review.topicId)) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : "Due review",
             kind: "review", durationMinutes: 20, subjectId: review.subjectId, topicId: review.topicId, origin: "review",
             reason: "Overdue review backed by a persisted review record",
         });
     }
     for (const subject of cycleSubjects) {
-        const topic = selectTopicsForSubject(state, subject.id).sort((a, b) => (a.priority === "high" ? -1 : 0) - (b.priority === "high" ? -1 : 0))[0] ?? null;
+        const topic = (_c = selectTopicsForSubject(state, subject.id).sort((a, b) => (a.priority === "high" ? -1 : 0) - (b.priority === "high" ? -1 : 0))[0]) !== null && _c !== void 0 ? _c : null;
         candidates.push({
             title: topic ? `${subject.name}: ${topic.name}` : subject.name,
-            kind: "study", durationMinutes: 40, subjectId: subject.id, topicId: topic?.id ?? null, origin: "cycle",
-            reason: topic?.priority === "high" ? "Study-cycle subject with a high-priority topic" : "Study-cycle subject",
+            kind: "study", durationMinutes: 40, subjectId: subject.id, topicId: (_d = topic === null || topic === void 0 ? void 0 : topic.id) !== null && _d !== void 0 ? _d : null, origin: "cycle",
+            reason: (topic === null || topic === void 0 ? void 0 : topic.priority) === "high" ? "Study-cycle subject with a high-priority topic" : "Study-cycle subject",
         });
     }
     for (const candidate of candidates) {
         if (slot >= remainingSlots)
             break;
         const scheduledFor = dayKey(plusDays(generatedAt, Math.min(days - 1, slot)));
-        const key = `${candidate.kind}|${candidate.subjectId ?? ""}|${candidate.topicId ?? ""}|${scheduledFor}`;
+        const key = `${candidate.kind}|${(_e = candidate.subjectId) !== null && _e !== void 0 ? _e : ""}|${(_f = candidate.topicId) !== null && _f !== void 0 ? _f : ""}|${scheduledFor}`;
         if (existingKeys.has(key))
             continue;
         operations.push({ action: "add", scheduledFor, activity: { ...candidate, queue: scheduledFor === today ? "today" : "future" } });
@@ -439,13 +452,15 @@ function createStudyCycleState(input = {}) {
     return { subjectIds, cursor };
 }
 function selectCurrentCycleSubject(state) {
-    const cycle = createStudyCycleState(state.studyCycle ?? {});
+    var _a, _b;
+    const cycle = createStudyCycleState((_a = state.studyCycle) !== null && _a !== void 0 ? _a : {});
     if (!cycle.subjectIds.length)
         return null;
-    return state.subjects.find((subject) => subject.id === cycle.subjectIds[cycle.cursor] && !subject.archived) ?? null;
+    return (_b = state.subjects.find((subject) => subject.id === cycle.subjectIds[cycle.cursor] && !subject.archived)) !== null && _b !== void 0 ? _b : null;
 }
 function createFocusState(input = {}) {
-    const durationMinutes = requirePositiveInteger(input.durationMinutes ?? 25, "focus.durationMinutes", { min: 5, max: 240 });
+    var _a, _b;
+    const durationMinutes = requirePositiveInteger((_a = input.durationMinutes) !== null && _a !== void 0 ? _a : 25, "focus.durationMinutes", { min: 5, max: 240 });
     const remainingMs = input.remainingMs == null ? durationMinutes * 60000 : Number(input.remainingMs);
     if (!Number.isFinite(remainingMs) || remainingMs < 0 || remainingMs > durationMinutes * 60000) {
         throw new TypeError("focus.remainingMs must be within the configured duration");
@@ -454,7 +469,7 @@ function createFocusState(input = {}) {
     if (!Number.isFinite(elapsedMs) || elapsedMs < 0)
         throw new TypeError("focus.elapsedMs must be non-negative");
     return {
-        status: requireOneOf(input.status ?? "idle", exports.FOCUS_STATUSES, "focus.status"),
+        status: requireOneOf((_b = input.status) !== null && _b !== void 0 ? _b : "idle", exports.FOCUS_STATUSES, "focus.status"),
         activityId: optionalId(input.activityId),
         durationMinutes,
         remainingMs: Math.round(remainingMs),
@@ -466,7 +481,7 @@ function createFocusState(input = {}) {
     };
 }
 function focusRemainingMs(focus, at = Date.now()) {
-    const current = createFocusState(focus ?? {});
+    const current = createFocusState(focus !== null && focus !== void 0 ? focus : {});
     if (current.status !== "running" || !current.endsAt)
         return current.remainingMs;
     const atMs = typeof at === "number" ? at : Date.parse(String(at));
@@ -476,6 +491,7 @@ function focusRemainingMs(focus, at = Date.now()) {
     return Math.max(0, endsAtMs - atMs);
 }
 function migrateStudyState(input, { now = isoNow() } = {}) {
+    var _a, _b, _c, _d;
     if (!input || typeof input !== "object" || Array.isArray(input))
         return input;
     if (![1, 2, 3, 4, 5, 6, exports.STATE_SCHEMA_VERSION].includes(input.schemaVersion))
@@ -483,14 +499,14 @@ function migrateStudyState(input, { now = isoNow() } = {}) {
     const state = JSON.parse(JSON.stringify(input));
     const originalVersion = state.schemaVersion;
     state.schemaVersion = exports.STATE_SCHEMA_VERSION;
-    state.preferences = (0, product_1.normalizeAppPreferences)(state.preferences ?? (originalVersion !== exports.STATE_SCHEMA_VERSION ? { onboardingCompleted: true } : null));
+    state.preferences = (0, product_1.normalizeAppPreferences)((_a = state.preferences) !== null && _a !== void 0 ? _a : (originalVersion !== exports.STATE_SCHEMA_VERSION ? { onboardingCompleted: true } : null));
     state.plans = Array.isArray(state.plans) ? state.plans.map((plan) => createPlan(plan)) : [];
-    state.focus = createFocusState(state.focus ?? {});
-    state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => createSubject({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: subject.notes ?? null })) : [];
-    state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => createTopic({ ...topic, parentTopicId: topic.parentTopicId ?? null, order: Number.isInteger(topic.order) ? topic.order : index, notes: topic.notes ?? null })) : [];
+    state.focus = createFocusState((_b = state.focus) !== null && _b !== void 0 ? _b : {});
+    state.subjects = Array.isArray(state.subjects) ? state.subjects.map((subject, index) => { var _a; return createSubject({ ...subject, order: Number.isInteger(subject.order) ? subject.order : index, notes: (_a = subject.notes) !== null && _a !== void 0 ? _a : null }); }) : [];
+    state.topics = Array.isArray(state.topics) ? state.topics.map((topic, index) => { var _a, _b; return createTopic({ ...topic, parentTopicId: (_a = topic.parentTopicId) !== null && _a !== void 0 ? _a : null, order: Number.isInteger(topic.order) ? topic.order : index, notes: (_b = topic.notes) !== null && _b !== void 0 ? _b : null }); }) : [];
     state.activities = Array.isArray(state.activities) ? state.activities.map((activity) => createActivity(activity)) : [];
     state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
-    state.materials = Array.isArray(state.materials) ? state.materials.map((material) => createMaterial({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null, archived: material.archived ?? false, tags: material.tags ?? [] })) : [];
+    state.materials = Array.isArray(state.materials) ? state.materials.map((material) => { var _a, _b, _c, _d; return createMaterial({ ...material, attachmentId: (_a = material.attachmentId) !== null && _a !== void 0 ? _a : null, sizeBytes: (_b = material.sizeBytes) !== null && _b !== void 0 ? _b : null, archived: (_c = material.archived) !== null && _c !== void 0 ? _c : false, tags: (_d = material.tags) !== null && _d !== void 0 ? _d : [] }); }) : [];
     state.flashcards = Array.isArray(state.flashcards) ? state.flashcards.map((flashcard) => createFlashcard(flashcard)) : [];
     state.reviews = Array.isArray(state.reviews) ? state.reviews.map((review) => createReview(review)) : [];
     state.questions = Array.isArray(state.questions) ? state.questions.map((question) => createQuestion(question)) : [];
@@ -498,7 +514,7 @@ function migrateStudyState(input, { now = isoNow() } = {}) {
     const savedCycles = state.studyCycles && typeof state.studyCycles === "object" && !Array.isArray(state.studyCycles) ? state.studyCycles : {};
     for (const plan of state.plans) {
         const allowed = state.subjects.filter((subject) => subject.planId === plan.id && !subject.archived).map((subject) => subject.id);
-        const source = savedCycles[plan.id] ?? (plan.id === state.activePlanId ? state.studyCycle : null) ?? { subjectIds: allowed, cursor: 0 };
+        const source = (_d = (_c = savedCycles[plan.id]) !== null && _c !== void 0 ? _c : (plan.id === state.activePlanId ? state.studyCycle : null)) !== null && _d !== void 0 ? _d : { subjectIds: allowed, cursor: 0 };
         const sourceCycle = createStudyCycleState(source);
         const filtered = sourceCycle.subjectIds.filter((subjectId) => allowed.includes(subjectId));
         const subjectIds = filtered.length ? filtered : allowed;
@@ -596,6 +612,7 @@ function requireReference(errors, entity, field, ids, label) {
     }
 }
 function validateEntityContracts(state, errors) {
+    var _a;
     const constructors = {
         plans: createPlan,
         subjects: createSubject,
@@ -612,7 +629,7 @@ function validateEntityContracts(state, errors) {
     };
     for (const [collectionName, create] of Object.entries(constructors)) {
         for (const entity of state[collectionName]) {
-            if (!entity || typeof entity !== "object" || Array.isArray(entity) || !String(entity.id ?? "").trim())
+            if (!entity || typeof entity !== "object" || Array.isArray(entity) || !String((_a = entity.id) !== null && _a !== void 0 ? _a : "").trim())
                 continue;
             try {
                 create(entity);
@@ -625,9 +642,10 @@ function validateEntityContracts(state, errors) {
     }
 }
 function validateStudyState(state) {
+    var _a, _b, _c, _d, _e, _f, _g;
     const errors = [];
     try {
-        (0, product_1.normalizeAppPreferences)(state?.preferences);
+        (0, product_1.normalizeAppPreferences)(state === null || state === void 0 ? void 0 : state.preferences);
     }
     catch (error) {
         errors.push(`preferences are invalid: ${error instanceof Error ? error.message : String(error)}`);
@@ -640,7 +658,7 @@ function validateStudyState(state) {
     if (!Number.isInteger(state.revision) || state.revision < 0)
         errors.push("revision must be a non-negative integer");
     try {
-        const focus = createFocusState(state.focus ?? {});
+        const focus = createFocusState((_a = state.focus) !== null && _a !== void 0 ? _a : {});
         if (focus.status === "running" && (!focus.startedAt || !focus.lastResumedAt || !focus.endsAt))
             errors.push("running focus requires startedAt, lastResumedAt and endsAt");
         if (focus.status === "paused" && (!focus.startedAt || focus.endsAt != null))
@@ -650,7 +668,7 @@ function validateStudyState(state) {
         errors.push(`focus is invalid: ${error instanceof Error ? error.message : String(error)}`);
     }
     try {
-        createStudyCycleState(state.studyCycle ?? {});
+        createStudyCycleState((_b = state.studyCycle) !== null && _b !== void 0 ? _b : {});
     }
     catch (error) {
         errors.push(`studyCycle is invalid: ${error instanceof Error ? error.message : String(error)}`);
@@ -667,7 +685,7 @@ function validateStudyState(state) {
                 errors.push(`${key} contains a non-object entity`);
                 continue;
             }
-            if (!String(entity.id ?? "").trim()) {
+            if (!String((_c = entity.id) !== null && _c !== void 0 ? _c : "").trim()) {
                 errors.push(`${key} contains an entity without an id`);
                 continue;
             }
@@ -689,7 +707,7 @@ function validateStudyState(state) {
         errors.push(`activePlanId references missing plan: ${state.activePlanId}`);
     }
     const activePlan = state.activePlanId == null ? null : state.plans.find((plan) => plan.id === state.activePlanId);
-    if (activePlan?.status === "archived")
+    if ((activePlan === null || activePlan === void 0 ? void 0 : activePlan.status) === "archived")
         errors.push(`activePlanId references archived plan: ${state.activePlanId}`);
     if (state.studyCycles && typeof state.studyCycles === "object" && !Array.isArray(state.studyCycles)) {
         for (const [planId, rawCycle] of Object.entries(state.studyCycles)) {
@@ -716,15 +734,15 @@ function validateStudyState(state) {
                 errors.push(`studyCycles is missing plan: ${plan.id}`);
         if (state.activePlanId && state.studyCycles[state.activePlanId]) {
             const canonical = createStudyCycleState(state.studyCycles[state.activePlanId]);
-            const activeCycle = createStudyCycleState(state.studyCycle ?? {});
+            const activeCycle = createStudyCycleState((_d = state.studyCycle) !== null && _d !== void 0 ? _d : {});
             if (JSON.stringify(canonical) !== JSON.stringify(activeCycle))
                 errors.push("studyCycle must match the active plan's studyCycles entry");
         }
     }
-    if (state.focus?.activityId != null && !activityIds.has(state.focus.activityId)) {
+    if (((_e = state.focus) === null || _e === void 0 ? void 0 : _e.activityId) != null && !activityIds.has(state.focus.activityId)) {
         errors.push(`focus references missing activityId: ${state.focus.activityId}`);
     }
-    for (const subjectId of state.studyCycle?.subjectIds ?? []) {
+    for (const subjectId of (_g = (_f = state.studyCycle) === null || _f === void 0 ? void 0 : _f.subjectIds) !== null && _g !== void 0 ? _g : []) {
         const subject = state.subjects.find((candidate) => candidate.id === subjectId);
         if (!subject)
             errors.push(`studyCycle references missing subjectId: ${subjectId}`);
@@ -825,12 +843,13 @@ function validateStudyState(state) {
     return errors;
 }
 function selectActivePlan(state) {
-    return state.plans.find((plan) => plan.id === state.activePlanId) ?? null;
+    var _a;
+    return (_a = state.plans.find((plan) => plan.id === state.activePlanId)) !== null && _a !== void 0 ? _a : null;
 }
 function selectAllSubjectsForPlan(state, planId = state.activePlanId) {
     return state.subjects
         .filter((subject) => subject.planId === planId)
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+        .sort((a, b) => { var _a, _b; return ((_a = a.order) !== null && _a !== void 0 ? _a : 0) - ((_b = b.order) !== null && _b !== void 0 ? _b : 0) || a.name.localeCompare(b.name); });
 }
 function selectSubjectsForPlan(state, planId = state.activePlanId) {
     return selectAllSubjectsForPlan(state, planId).filter((subject) => !subject.archived);
@@ -838,34 +857,36 @@ function selectSubjectsForPlan(state, planId = state.activePlanId) {
 function selectAllTopicsForSubject(state, subjectId) {
     return state.topics
         .filter((topic) => topic.subjectId === subjectId)
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+        .sort((a, b) => { var _a, _b; return ((_a = a.order) !== null && _a !== void 0 ? _a : 0) - ((_b = b.order) !== null && _b !== void 0 ? _b : 0) || a.name.localeCompare(b.name); });
 }
 function selectTopicChildren(state, parentTopicId = null, subjectId = null) {
-    return state.topics.filter((topic) => (topic.parentTopicId ?? null) === parentTopicId && (subjectId == null || topic.subjectId === subjectId)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+    return state.topics.filter((topic) => { var _a; return ((_a = topic.parentTopicId) !== null && _a !== void 0 ? _a : null) === parentTopicId && (subjectId == null || topic.subjectId === subjectId); }).sort((a, b) => { var _a, _b; return ((_a = a.order) !== null && _a !== void 0 ? _a : 0) - ((_b = b.order) !== null && _b !== void 0 ? _b : 0) || a.name.localeCompare(b.name); });
 }
 function topicDepth(state, topicId) {
+    var _a, _b;
     let depth = 0;
-    let current = state.topics.find((topic) => topic.id === topicId) ?? null;
+    let current = (_a = state.topics.find((topic) => topic.id === topicId)) !== null && _a !== void 0 ? _a : null;
     const visited = new Set();
-    while (current?.parentTopicId) {
+    while (current === null || current === void 0 ? void 0 : current.parentTopicId) {
         if (visited.has(current.id))
             return depth;
         visited.add(current.id);
         depth += 1;
-        current = state.topics.find((topic) => topic.id === current.parentTopicId) ?? null;
+        current = (_b = state.topics.find((topic) => topic.id === current.parentTopicId)) !== null && _b !== void 0 ? _b : null;
     }
     return depth;
 }
 function buildTopicPath(state, topicId) {
+    var _a, _b;
     const names = [];
-    let current = state.topics.find((topic) => topic.id === topicId) ?? null;
+    let current = (_a = state.topics.find((topic) => topic.id === topicId)) !== null && _a !== void 0 ? _a : null;
     const visited = new Set();
     while (current) {
         if (visited.has(current.id))
             break;
         visited.add(current.id);
         names.unshift(current.name);
-        current = current.parentTopicId ? state.topics.find((topic) => topic.id === current.parentTopicId) ?? null : null;
+        current = current.parentTopicId ? (_b = state.topics.find((topic) => topic.id === current.parentTopicId)) !== null && _b !== void 0 ? _b : null : null;
     }
     return names;
 }
@@ -886,11 +907,12 @@ function localCivilDay(value = new Date()) {
     return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 function recommendNextActivity(state, at = new Date()) {
+    var _a;
     const today = localCivilDay(at);
     const pending = state.activities.filter((activity) => activity.planId === state.activePlanId && activity.status === "planned");
     const todayActivities = pending.filter((activity) => activity.scheduledFor === today || (activity.scheduledFor == null && activity.queue === "today"));
     const futureDates = pending.filter((activity) => activity.scheduledFor != null && activity.scheduledFor > today).map((activity) => activity.scheduledFor).sort();
-    const earliestFuture = futureDates[0] ?? null;
+    const earliestFuture = (_a = futureDates[0]) !== null && _a !== void 0 ? _a : null;
     const activities = todayActivities.length ? todayActivities : earliestFuture ? pending.filter((activity) => activity.scheduledFor === earliestFuture) : [];
     if (!activities.length)
         return null;
@@ -898,16 +920,17 @@ function recommendNextActivity(state, at = new Date()) {
     const kindScore = { review: 30, questions: 20, study: 10 };
     const priorityScore = { high: 8, normal: 4, low: 0 };
     const scored = activities.map((activity, index) => {
+        var _a, _b;
         const topic = activity.topicId ? state.topics.find((candidate) => candidate.id === activity.topicId) : null;
         const subject = activity.subjectId ? state.subjects.find((candidate) => candidate.id === activity.subjectId) : null;
-        const weight = Number.isFinite(Number(subject?.weight)) ? Number(subject.weight) : 0;
-        const score = (kindScore[activity.kind] ?? 0) + (priorityScore[topic?.priority] ?? 0) + Math.min(10, weight) - index / 100;
+        const weight = Number.isFinite(Number(subject === null || subject === void 0 ? void 0 : subject.weight)) ? Number(subject.weight) : 0;
+        const score = ((_a = kindScore[activity.kind]) !== null && _a !== void 0 ? _a : 0) + ((_b = priorityScore[topic === null || topic === void 0 ? void 0 : topic.priority]) !== null && _b !== void 0 ? _b : 0) + Math.min(10, weight) - index / 100;
         const signals = future ? ["Earliest future scheduled work"] : ["Queued for today", "Scheduled for current local day"];
         if (activity.kind === "review")
             signals.push("Review work");
         if (activity.kind === "questions")
             signals.push("Question practice");
-        if (topic?.priority === "high")
+        if ((topic === null || topic === void 0 ? void 0 : topic.priority) === "high")
             signals.push("High-priority topic");
         if (weight > 0)
             signals.push(`Subject weight ${weight}`);
@@ -915,7 +938,7 @@ function recommendNextActivity(state, at = new Date()) {
             signals.push("Study-cycle item");
         return { activity, score, signals };
     });
-    scored.sort((a, b) => b.score - a.score || (a.activity.scheduledStartMinute ?? 1440) - (b.activity.scheduledStartMinute ?? 1440) || a.activity.id.localeCompare(b.activity.id));
+    scored.sort((a, b) => { var _a, _b; return b.score - a.score || ((_a = a.activity.scheduledStartMinute) !== null && _a !== void 0 ? _a : 1440) - ((_b = b.activity.scheduledStartMinute) !== null && _b !== void 0 ? _b : 1440) || a.activity.id.localeCompare(b.activity.id); });
     const winner = scored[0];
     return {
         activity: winner.activity,
@@ -944,14 +967,14 @@ function periodStartMs(period, atMs) {
     return Number.NEGATIVE_INFINITY;
 }
 function observedWithin(value, period, atMs) {
-    const ms = Date.parse(String(value ?? ""));
+    const ms = Date.parse(String(value !== null && value !== void 0 ? value : ""));
     return Number.isFinite(ms) && ms <= atMs && ms >= periodStartMs(period, atMs);
 }
 function completedSessionsForPeriod(state, planId, period, atMs) {
-    return state.sessions.filter((session) => session.planId === planId && session.status === "completed" && session.durationMinutes != null && observedWithin(session.endedAt ?? session.updatedAt ?? session.startedAt, period, atMs));
+    return state.sessions.filter((session) => { var _a, _b; return session.planId === planId && session.status === "completed" && session.durationMinutes != null && observedWithin((_b = (_a = session.endedAt) !== null && _a !== void 0 ? _a : session.updatedAt) !== null && _b !== void 0 ? _b : session.startedAt, period, atMs); });
 }
 function gradedAttemptsForPeriod(state, planId, period, atMs) {
-    return state.evidence.filter((item) => item.planId === planId && item.kind === "question-attempt" && item.value?.gradable === true && observedWithin(item.observedAt, period, atMs));
+    return state.evidence.filter((item) => { var _a; return item.planId === planId && item.kind === "question-attempt" && ((_a = item.value) === null || _a === void 0 ? void 0 : _a.gradable) === true && observedWithin(item.observedAt, period, atMs); });
 }
 function topicEvidenceForPeriod(state, planId, period, atMs) {
     return state.evidence.filter((item) => item.planId === planId && item.topicId && observedWithin(item.observedAt, period, atMs));
@@ -964,8 +987,8 @@ function deriveProgressMetrics(state, { at = isoNow(), planId = state.activePlan
         return { weeklyStudyMinutes: 0, gradedAttempts: 0, accuracy: null, topicCoverage: null, coveredTopics: 0, activeTopics: 0, reviewCompletionRate: null, readiness: null, readinessReason: "No active plan", confidence: "none" };
     const weekSessions = completedSessionsForPeriod(state, planId, "weekly", atMs);
     const weeklyStudyMinutes = weekSessions.reduce((total, session) => total + Number(session.durationMinutes || 0), 0);
-    const allGraded = state.evidence.filter((item) => item.planId === planId && item.kind === "question-attempt" && item.value?.gradable === true);
-    const correct = allGraded.filter((item) => item.value?.correct === true).length;
+    const allGraded = state.evidence.filter((item) => { var _a; return item.planId === planId && item.kind === "question-attempt" && ((_a = item.value) === null || _a === void 0 ? void 0 : _a.gradable) === true; });
+    const correct = allGraded.filter((item) => { var _a; return ((_a = item.value) === null || _a === void 0 ? void 0 : _a.correct) === true; }).length;
     const accuracy = allGraded.length ? correct / allGraded.length : null;
     const topics = state.topics.filter((topic) => topic.planId === planId && topic.status !== "archived");
     const observedTopicIds = new Set(state.evidence.filter((item) => item.planId === planId && item.topicId).map((item) => item.topicId));
@@ -980,10 +1003,11 @@ function deriveProgressMetrics(state, { at = isoNow(), planId = state.activePlan
     return { weeklyStudyMinutes, gradedAttempts: allGraded.length, accuracy, topicCoverage, coveredTopics, activeTopics: topics.length, reviewCompletionRate, readiness, readinessReason, confidence };
 }
 function goalMetricValue(state, goal, { at = isoNow() } = {}) {
+    var _a;
     const atMs = Date.parse(at);
     if (!Number.isFinite(atMs))
         throw new TypeError("Goal timestamp must be valid ISO time");
-    const planId = goal.planId ?? state.activePlanId;
+    const planId = (_a = goal.planId) !== null && _a !== void 0 ? _a : state.activePlanId;
     if (goal.metric === "study-minutes")
         return completedSessionsForPeriod(state, planId, goal.period, atMs).reduce((sum, session) => sum + Number(session.durationMinutes || 0), 0);
     if (goal.metric === "graded-questions")

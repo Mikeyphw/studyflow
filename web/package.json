@@ -9,7 +9,9 @@
     "lint": "python3 scripts/validate_web.py --all && tsc -p tsconfig.json --noEmit --pretty false && node scripts/compile_runtime.mjs",
     "dev": "npm run build && python3 -m http.server 8000 --bind 127.0.0.1 --directory dist",
     "release:check": "python3 scripts/validate_web.py --release && node scripts/check_release.mjs",
-    "release:package": "node scripts/build_dist.mjs && python3 scripts/package_release.py"
+    "release:package": "node scripts/build_dist.mjs && python3 scripts/package_release.py",
+    "serve:tv": "npm run build && node scripts/serve_tv.mjs",
+    "serve:tv:no-build": "node scripts/serve_tv.mjs"
   },
   "type": "module",
   "dependencies": {

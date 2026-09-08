@@ -30,7 +30,7 @@ class EncryptedPortableAuthenticationError extends TypeError {
 }
 exports.EncryptedPortableAuthenticationError = EncryptedPortableAuthenticationError;
 function requireCrypto(value = globalThis.crypto) {
-    if (!value?.subtle || typeof value.getRandomValues !== "function")
+    if (!(value === null || value === void 0 ? void 0 : value.subtle) || typeof value.getRandomValues !== "function")
         throw new TypeError("WebCrypto is unavailable in this browser");
     return value;
 }
@@ -116,8 +116,9 @@ async function deriveAesKey(password, salt, iterations, cryptoImpl) {
     }
 }
 async function encryptPortableBytes(plain, password, options = {}) {
+    var _a;
     const cryptoImpl = requireCrypto(options.crypto);
-    const iterations = validateIterations(options.iterations ?? exports.ENCRYPTED_PORTABLE_PBKDF2_ITERATIONS);
+    const iterations = validateIterations((_a = options.iterations) !== null && _a !== void 0 ? _a : exports.ENCRYPTED_PORTABLE_PBKDF2_ITERATIONS);
     const salt = options.salt ? new Uint8Array(options.salt) : cryptoImpl.getRandomValues(new Uint8Array(exports.ENCRYPTED_PORTABLE_SALT_BYTES));
     const nonce = options.nonce ? new Uint8Array(options.nonce) : cryptoImpl.getRandomValues(new Uint8Array(exports.ENCRYPTED_PORTABLE_NONCE_BYTES));
     if (options.salt)
@@ -134,9 +135,10 @@ async function encryptPortableBytes(plain, password, options = {}) {
     return output;
 }
 async function decryptPortableBytes(encrypted, password, options = {}) {
+    var _a;
     const cryptoImpl = requireCrypto(options.crypto);
     const bytes = encrypted instanceof Uint8Array ? encrypted : new Uint8Array(encrypted);
-    const maximum = options.maximumEncryptedBytes ?? exports.MAX_ENCRYPTED_PORTABLE_BYTES;
+    const maximum = (_a = options.maximumEncryptedBytes) !== null && _a !== void 0 ? _a : exports.MAX_ENCRYPTED_PORTABLE_BYTES;
     if (bytes.byteLength > maximum)
         throw new TypeError("Encrypted StudyFlow package exceeds the supported size.");
     const envelope = parseEncryptedPortableHeader(bytes);

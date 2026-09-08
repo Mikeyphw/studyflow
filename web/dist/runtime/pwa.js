@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerStudyFlowPwa = registerStudyFlowPwa;
-function registerStudyFlowPwa({ statusElement = null, installButton = null, navigatorObject = globalThis.navigator ?? null, windowObject = globalThis.window ?? null, } = {}) {
+function registerStudyFlowPwa(_a) {
+    var _b, _c;
+    var { statusElement = null, installButton = null, navigatorObject = (_b = globalThis.navigator) !== null && _b !== void 0 ? _b : null, windowObject = (_c = globalThis.window) !== null && _c !== void 0 ? _c : null, } = _a === void 0 ? {} : _a;
     let installPrompt = null;
     const setStatus = (message) => { if (statusElement)
         statusElement.textContent = message; };
@@ -13,7 +15,7 @@ function registerStudyFlowPwa({ statusElement = null, installButton = null, navi
             : "Online. StudyFlow core data remains local; the service worker keeps the app shell offline-ready.");
     };
     const noop = () => undefined;
-    if (!navigatorObject?.serviceWorker) {
+    if (!(navigatorObject === null || navigatorObject === void 0 ? void 0 : navigatorObject.serviceWorker)) {
         setStatus("Service workers are unavailable in this browser context.");
         return { supported: false, dispose: noop };
     }
@@ -43,20 +45,20 @@ function registerStudyFlowPwa({ statusElement = null, installButton = null, navi
             installButton.hidden = true;
         syncNetworkStatus();
     };
-    windowObject?.addEventListener("online", syncNetworkStatus);
-    windowObject?.addEventListener("offline", syncNetworkStatus);
-    windowObject?.addEventListener("beforeinstallprompt", onBeforeInstall);
-    windowObject?.addEventListener("appinstalled", onInstalled);
-    installButton?.addEventListener("click", onInstallClick);
+    windowObject === null || windowObject === void 0 ? void 0 : windowObject.addEventListener("online", syncNetworkStatus);
+    windowObject === null || windowObject === void 0 ? void 0 : windowObject.addEventListener("offline", syncNetworkStatus);
+    windowObject === null || windowObject === void 0 ? void 0 : windowObject.addEventListener("beforeinstallprompt", onBeforeInstall);
+    windowObject === null || windowObject === void 0 ? void 0 : windowObject.addEventListener("appinstalled", onInstalled);
+    installButton === null || installButton === void 0 ? void 0 : installButton.addEventListener("click", onInstallClick);
     syncNetworkStatus();
     return {
         supported: true,
         dispose() {
-            windowObject?.removeEventListener("online", syncNetworkStatus);
-            windowObject?.removeEventListener("offline", syncNetworkStatus);
-            windowObject?.removeEventListener("beforeinstallprompt", onBeforeInstall);
-            windowObject?.removeEventListener("appinstalled", onInstalled);
-            installButton?.removeEventListener("click", onInstallClick);
+            windowObject === null || windowObject === void 0 ? void 0 : windowObject.removeEventListener("online", syncNetworkStatus);
+            windowObject === null || windowObject === void 0 ? void 0 : windowObject.removeEventListener("offline", syncNetworkStatus);
+            windowObject === null || windowObject === void 0 ? void 0 : windowObject.removeEventListener("beforeinstallprompt", onBeforeInstall);
+            windowObject === null || windowObject === void 0 ? void 0 : windowObject.removeEventListener("appinstalled", onInstalled);
+            installButton === null || installButton === void 0 ? void 0 : installButton.removeEventListener("click", onInstallClick);
             installPrompt = null;
         },
     };

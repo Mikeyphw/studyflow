@@ -4,9 +4,10 @@ exports.auditBrowserStorage = auditBrowserStorage;
 exports.purgeOrphanAttachments = purgeOrphanAttachments;
 const domain_1 = require("./domain");
 async function auditBrowserStorage(state, persistence, { now = () => new Date().toISOString() } = {}) {
+    var _a, _b;
     const stateErrors = (0, domain_1.validateStudyState)(state);
     try {
-        await persistence.repository.flush?.();
+        await ((_b = (_a = persistence.repository).flush) === null || _b === void 0 ? void 0 : _b.call(_a));
     }
     catch (error) {
         const message = `Pending structured-state write failed: ${error instanceof Error ? error.message : String(error)}`;

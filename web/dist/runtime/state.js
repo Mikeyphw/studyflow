@@ -24,18 +24,18 @@ function persistenceMessage(status, reason = null) {
     if (status === "migrated")
         return "Older local state migrated safely to the current schema.";
     if (status === "recovered")
-        return reason ?? "Recovered the last verified local checkpoint.";
+        return reason !== null && reason !== void 0 ? reason : "Recovered the last verified local checkpoint.";
     if (status === "saved")
         return "Saved locally on this device.";
     if (status === "empty")
         return "Local state initialized on this device.";
     if (status === "invalid")
-        return reason ?? "Saved local state was invalid; using a safe in-memory baseline.";
+        return reason !== null && reason !== void 0 ? reason : "Saved local state was invalid; using a safe in-memory baseline.";
     if (status === "unavailable")
-        return reason ?? "Local persistence is unavailable; changes remain in memory only.";
+        return reason !== null && reason !== void 0 ? reason : "Local persistence is unavailable; changes remain in memory only.";
     if (status === "cleared")
         return "Local state reset to the StudyFlow sample baseline.";
-    return reason ?? "Local state ready.";
+    return reason !== null && reason !== void 0 ? reason : "Local state ready.";
 }
 function referenceCollections(state) { return [state.activities, state.sessions, state.materials, state.flashcards, state.reviews, state.questions, state.evidence, state.errorEntries]; }
 function createStudyStore({ repository, initialStateFactory = domain_js_1.createInitialStudyState, now = () => new Date().toISOString() } = {}) {
@@ -66,8 +66,9 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         throw new TypeError("No active plan"); return state.activePlanId; }
     function nowIso() { return now(); }
     function reviewIntervals(planId = activePlanId()) {
+        var _a;
         const plan = state.plans.find((candidate) => candidate.id === planId);
-        const configured = plan?.mode === "EXAM_PLAN" ? plan.configuration.publicExam?.reviewIntervalsDays : null;
+        const configured = (plan === null || plan === void 0 ? void 0 : plan.mode) === "EXAM_PLAN" ? (_a = plan.configuration.publicExam) === null || _a === void 0 ? void 0 : _a.reviewIntervalsDays : null;
         return Array.isArray(configured) && configured.length ? [...configured] : [1, 7, 30];
     }
     function normalizeReviewGrade(value) {
@@ -82,22 +83,26 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         return Math.max(0, Math.min(5, Math.round(grade)));
     }
     function planCycle(planId, sourceState = state) {
+        var _a, _b;
         const allowed = sourceState.subjects.filter((subject) => subject.planId === planId && !subject.archived).map((subject) => subject.id);
-        const raw = sourceState.studyCycles?.[planId] ?? { subjectIds: allowed, cursor: 0 };
+        const raw = (_b = (_a = sourceState.studyCycles) === null || _a === void 0 ? void 0 : _a[planId]) !== null && _b !== void 0 ? _b : { subjectIds: allowed, cursor: 0 };
         const cycle = (0, domain_js_1.createStudyCycleState)(raw);
         const filtered = cycle.subjectIds.filter((subjectId) => allowed.includes(subjectId));
         return (0, domain_js_1.createStudyCycleState)({ subjectIds: filtered.length ? filtered : allowed, cursor: cycle.cursor });
     }
     function withPlanCycle(sourceState, planId, cycle) {
+        var _a;
         const canonical = (0, domain_js_1.createStudyCycleState)(cycle);
-        const studyCycles = { ...(sourceState.studyCycles ?? {}), [planId]: canonical };
+        const studyCycles = { ...((_a = sourceState.studyCycles) !== null && _a !== void 0 ? _a : {}), [planId]: canonical };
         return { ...sourceState, studyCycles, studyCycle: sourceState.activePlanId === planId ? canonical : sourceState.studyCycle };
     }
     function focusSnapshot(at = nowIso()) {
-        const focus = (0, domain_js_1.createFocusState)(state.focus ?? {});
+        var _a;
+        const focus = (0, domain_js_1.createFocusState)((_a = state.focus) !== null && _a !== void 0 ? _a : {});
         return { ...focus, remainingMs: (0, domain_js_1.focusRemainingMs)(focus, at) };
     }
     function finishFocus(status, note = null) {
+        var _a, _b, _c, _d, _e, _f, _g;
         const at = nowIso();
         const focus = focusSnapshot(at);
         if (focus.status === "idle")
@@ -117,19 +122,20 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return cancelled;
         }
         const session = (0, domain_js_1.createStudySession)({
-            planId: activePlanId(), activityId: activity?.id ?? null, subjectId: activity?.subjectId ?? null, topicId: activity?.topicId ?? null,
-            startedAt: focus.startedAt ?? at, endedAt: at, durationMinutes, status, note: note ?? focus.note, createdAt: at, updatedAt: at,
+            planId: activePlanId(), activityId: (_a = activity === null || activity === void 0 ? void 0 : activity.id) !== null && _a !== void 0 ? _a : null, subjectId: (_b = activity === null || activity === void 0 ? void 0 : activity.subjectId) !== null && _b !== void 0 ? _b : null, topicId: (_c = activity === null || activity === void 0 ? void 0 : activity.topicId) !== null && _c !== void 0 ? _c : null,
+            startedAt: (_d = focus.startedAt) !== null && _d !== void 0 ? _d : at, endedAt: at, durationMinutes, status, note: note !== null && note !== void 0 ? note : focus.note, createdAt: at, updatedAt: at,
         });
         let activities = state.activities;
         let evidence = state.evidence;
         if (status === "completed") {
-            activities = state.activities.map((candidate) => candidate.id === activity?.id ? { ...candidate, status: "completed", updatedAt: at } : candidate);
-            evidence = [...state.evidence, (0, domain_js_1.createEvidence)({ planId: activePlanId(), subjectId: activity?.subjectId ?? null, topicId: activity?.topicId ?? null, activityId: activity?.id ?? null, sessionId: session.id, kind: "focus-session-completed", observedAt: at, value: { durationMinutes: durationMinutes ?? 0 }, provenance: "session", createdAt: at, updatedAt: at })];
+            activities = state.activities.map((candidate) => candidate.id === (activity === null || activity === void 0 ? void 0 : activity.id) ? { ...candidate, status: "completed", updatedAt: at } : candidate);
+            evidence = [...state.evidence, (0, domain_js_1.createEvidence)({ planId: activePlanId(), subjectId: (_e = activity === null || activity === void 0 ? void 0 : activity.subjectId) !== null && _e !== void 0 ? _e : null, topicId: (_f = activity === null || activity === void 0 ? void 0 : activity.topicId) !== null && _f !== void 0 ? _f : null, activityId: (_g = activity === null || activity === void 0 ? void 0 : activity.id) !== null && _g !== void 0 ? _g : null, sessionId: session.id, kind: "focus-session-completed", observedAt: at, value: { durationMinutes: durationMinutes !== null && durationMinutes !== void 0 ? durationMinutes : 0 }, provenance: "session", createdAt: at, updatedAt: at })];
         }
         commit({ ...state, activities, sessions: [...state.sessions, session], evidence, focus: (0, domain_js_1.createFocusState)({ durationMinutes: focus.durationMinutes }) }, `focus-${status}`);
         return session;
     }
     function provisionSampleTemplate(templateId, { locale = "en", planName = null, activate = true, replaceSample = false, preferences = null } = {}) {
+        var _a, _b, _c, _d;
         const blueprint = refinement_js_1.SAMPLE_PLAN_BLUEPRINTS[templateId];
         if (!blueprint)
             throw new TypeError("Unknown sample plan template");
@@ -137,11 +143,11 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         const configuration = (0, modes_js_1.defaultPlanConfiguration)(blueprint.mode);
         const weekdayToWeb = (weekday) => weekday === 7 ? 0 : weekday;
         configuration.schedule = { dailyCapacityMinutes: Math.max(60, Math.min(1440, blueprint.preferredSessionMinutes * 4)), strategyType: blueprint.adaptivePlanningEnabled ? "ADAPTIVE" : "FIXED_WEEKLY", availability: blueprint.scheduleRules.map((rule, index) => ({ id: `sample-window-${index + 1}`, weekday: weekdayToWeb(rule.weekday), startMinute: rule.startMinute, endMinute: rule.startMinute + rule.durationMinutes })), fixedBlocks: [], recurringBlocks: [] };
-        const plan = (0, domain_js_1.createPlan)({ name: String(planName ?? blueprint.label[locale] ?? blueprint.label.en).trim(), mode: blueprint.mode, status: "active", configuration, createdAt: at, updatedAt: at });
+        const plan = (0, domain_js_1.createPlan)({ name: String((_a = planName !== null && planName !== void 0 ? planName : blueprint.label[locale]) !== null && _a !== void 0 ? _a : blueprint.label.en).trim(), mode: blueprint.mode, status: "active", configuration, createdAt: at, updatedAt: at });
         const subjects = [];
         const subjectByKey = new Map();
         for (const [order, subjectBlueprint] of blueprint.subjects.entries()) {
-            const subject = (0, domain_js_1.createSubject)({ planId: plan.id, name: subjectBlueprint.name[locale] ?? subjectBlueprint.name.en, weight: subjectBlueprint.weight, examIncidence: null, order, notes: null, archived: false, createdAt: at, updatedAt: at });
+            const subject = (0, domain_js_1.createSubject)({ planId: plan.id, name: (_b = subjectBlueprint.name[locale]) !== null && _b !== void 0 ? _b : subjectBlueprint.name.en, weight: subjectBlueprint.weight, examIncidence: null, order, notes: null, archived: false, createdAt: at, updatedAt: at });
             subjects.push(subject);
             subjectByKey.set(subjectBlueprint.key, subject);
         }
@@ -149,22 +155,23 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         for (const subjectBlueprint of blueprint.subjects) {
             const subject = subjectByKey.get(subjectBlueprint.key);
             for (const [order, topicBlueprint] of subjectBlueprint.topics.entries())
-                topics.push((0, domain_js_1.createTopic)({ planId: plan.id, subjectId: subject.id, parentTopicId: null, name: topicBlueprint.name[locale] ?? topicBlueprint.name.en, order, priority: "normal", status: "not-started", notes: null, createdAt: at, updatedAt: at }));
+                topics.push((0, domain_js_1.createTopic)({ planId: plan.id, subjectId: subject.id, parentTopicId: null, name: (_c = topicBlueprint.name[locale]) !== null && _c !== void 0 ? _c : topicBlueprint.name.en, order, priority: "normal", status: "not-started", notes: null, createdAt: at, updatedAt: at }));
         }
         const today = (0, parity_intelligence_js_1.localDateKey)(at);
         const dayNumber = (date) => { const [y, m, d] = date.split("-").map(Number); return new Date(y, m - 1, d, 12).getDay(); };
         const addDays = (date, days) => { const [y, m, d] = date.split("-").map(Number); const x = new Date(y, m - 1, d, 12); x.setDate(x.getDate() + days); return (0, parity_intelligence_js_1.localDateKey)(x); };
-        const activities = blueprint.scheduleRules.map((rule, index) => { const webDay = weekdayToWeb(rule.weekday), offset = (webDay - dayNumber(today) + 7) % 7, date = addDays(today, offset), subject = rule.subjectKey ? subjectByKey.get(rule.subjectKey) ?? null : null; return (0, domain_js_1.createActivity)({ planId: plan.id, subjectId: subject?.id ?? null, topicId: null, title: subject?.name ?? (locale === "pt-BR" ? "Bloco de estudo" : "Study block"), kind: "study", activityType: "THEORY", durationMinutes: rule.durationMinutes, status: "planned", origin: "seed", queue: offset === 0 ? "today" : "future", scheduledFor: date, scheduledStartMinute: rule.startMinute, locked: false, scheduleProvenance: { source: "manual", reason: "Onboarding sample weekly schedule", previewGeneratedAt: at, baseRevision: null }, createdAt: at, updatedAt: at }); });
+        const activities = blueprint.scheduleRules.map((rule, index) => { var _a, _b, _c; const webDay = weekdayToWeb(rule.weekday), offset = (webDay - dayNumber(today) + 7) % 7, date = addDays(today, offset), subject = rule.subjectKey ? (_a = subjectByKey.get(rule.subjectKey)) !== null && _a !== void 0 ? _a : null : null; return (0, domain_js_1.createActivity)({ planId: plan.id, subjectId: (_b = subject === null || subject === void 0 ? void 0 : subject.id) !== null && _b !== void 0 ? _b : null, topicId: null, title: (_c = subject === null || subject === void 0 ? void 0 : subject.name) !== null && _c !== void 0 ? _c : (locale === "pt-BR" ? "Bloco de estudo" : "Study block"), kind: "study", activityType: "THEORY", durationMinutes: rule.durationMinutes, status: "planned", origin: "seed", queue: offset === 0 ? "today" : "future", scheduledFor: date, scheduledStartMinute: rule.startMinute, locked: false, scheduleProvenance: { source: "manual", reason: "Onboarding sample weekly schedule", previewGeneratedAt: at, baseRevision: null }, createdAt: at, updatedAt: at }); });
         const goals = [(0, domain_js_1.createGoal)({ planId: plan.id, name: locale === "pt-BR" ? "Meta semanal de estudo" : "Weekly study time", metric: "study-hours", target: blueprint.weeklyGoalHours, period: "weekly", active: true, createdAt: at, updatedAt: at })];
         if (blueprint.mode === "EXAM_PLAN" && topics.length > 0)
             goals.push((0, domain_js_1.createGoal)({ planId: plan.id, name: locale === "pt-BR" ? "Cobertura de tópicos" : "Topic coverage", metric: "topics-covered", target: topics.length, period: "plan", active: true, createdAt: at, updatedAt: at }));
         const cycle = (0, domain_js_1.createStudyCycleState)({ subjectIds: subjects.map(x => x.id), cursor: 0 });
         const base = replaceSample ? { ...state, preferences: preferences ? (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) : state.preferences, activePlanId: null, focus: (0, domain_js_1.createFocusState)(), studyCycle: (0, domain_js_1.createStudyCycleState)(), studyCycles: {}, plans: [], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], flashcards: [], reviews: [], questions: [], evidence: [], errorEntries: [] } : preferences ? { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) } : state;
-        const next = { ...base, plans: [...base.plans, plan], subjects: [...base.subjects, ...subjects], topics: [...base.topics, ...topics], activities: [...base.activities, ...activities], goals: [...base.goals, ...goals], studyCycles: { ...(base.studyCycles ?? {}), [plan.id]: cycle }, activePlanId: activate ? plan.id : base.activePlanId, studyCycle: activate ? cycle : base.studyCycle };
+        const next = { ...base, plans: [...base.plans, plan], subjects: [...base.subjects, ...subjects], topics: [...base.topics, ...topics], activities: [...base.activities, ...activities], goals: [...base.goals, ...goals], studyCycles: { ...((_d = base.studyCycles) !== null && _d !== void 0 ? _d : {}), [plan.id]: cycle }, activePlanId: activate ? plan.id : base.activePlanId, studyCycle: activate ? cycle : base.studyCycle };
         commit(next, "sample-plan-provisioned");
         return plan;
     }
     function provisionBbPreset({ planName = "BB Agente Comercial — pré-edital", activate = true, replaceSample = false, preferences = null } = {}) {
+        var _a;
         const at = nowIso();
         const preset = (0, task_workflows_js_1.createBbAgenteComercialReferencePreset)();
         const configuration = (0, modes_js_1.defaultPlanConfiguration)("EXAM_PLAN");
@@ -177,7 +184,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         const cycle = (0, domain_js_1.createStudyCycleState)({ subjectIds: subjects.map(subject => subject.id), cursor: 0 });
         const goals = (0, task_workflows_js_1.bbReferenceGoals)(plan.id, at);
         const base = replaceSample ? { ...state, preferences: preferences ? (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) : state.preferences, activePlanId: null, focus: (0, domain_js_1.createFocusState)(), studyCycle: (0, domain_js_1.createStudyCycleState)(), studyCycles: {}, plans: [], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], flashcards: [], reviews: [], questions: [], evidence: [], errorEntries: [] } : preferences ? { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) } : state;
-        const next = { ...base, plans: [...base.plans, normalizedPlan], subjects: [...base.subjects, ...subjects], goals: [...base.goals, ...goals], studyCycles: { ...(base.studyCycles ?? {}), [plan.id]: cycle }, activePlanId: activate ? plan.id : base.activePlanId, studyCycle: activate ? cycle : base.studyCycle };
+        const next = { ...base, plans: [...base.plans, normalizedPlan], subjects: [...base.subjects, ...subjects], goals: [...base.goals, ...goals], studyCycles: { ...((_a = base.studyCycles) !== null && _a !== void 0 ? _a : {}), [plan.id]: cycle }, activePlanId: activate ? plan.id : base.activePlanId, studyCycle: activate ? cycle : base.studyCycle };
         commit(next, "bb-agente-comercial-preset-provisioned");
         return normalizedPlan;
     }
@@ -188,8 +195,9 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         getFocusSnapshot: (at) => focusSnapshot(at),
         subscribe(listener) { if (typeof listener !== "function")
             throw new TypeError("listener must be a function"); listeners.add(listener); return () => listeners.delete(listener); },
-        setPreferences(input) { const preferences = (0, product_js_1.normalizeAppPreferences)({ ...(state.preferences ?? {}), ...(input ?? {}) }); commit({ ...state, preferences }, "preferences-updated"); return preferences; },
+        setPreferences(input) { var _a; const preferences = (0, product_js_1.normalizeAppPreferences)({ ...((_a = state.preferences) !== null && _a !== void 0 ? _a : {}), ...(input !== null && input !== void 0 ? input : {}) }); commit({ ...state, preferences }, "preferences-updated"); return preferences; },
         completeOnboarding(input) {
+            var _a, _b;
             const cfg = (0, product_js_1.validateStarterWorkspace)(input);
             if (cfg.template === "bb-agente-comercial-pre-edital") {
                 provisionBbPreset({ planName: cfg.planName, replaceSample: true, activate: true, preferences: { locale: cfg.locale, onboardingCompleted: true } });
@@ -200,7 +208,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 return state;
             }
             if (cfg.useSample) {
-                const active = state.plans.find((plan) => plan.id === state.activePlanId) ?? state.plans[0] ?? null;
+                const active = (_b = (_a = state.plans.find((plan) => plan.id === state.activePlanId)) !== null && _a !== void 0 ? _a : state.plans[0]) !== null && _b !== void 0 ? _b : null;
                 let next = { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, locale: cfg.locale, onboardingCompleted: true }) };
                 if (active) {
                     const at = nowIso();
@@ -220,11 +228,12 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         provisionSamplePlan(template, options = {}) { return provisionSampleTemplate(template, options); },
         provisionBbAgenteComercialPreset(options = {}) { return provisionBbPreset(options); },
         createPlan(input, { activate = true } = {}) {
+            var _a, _b;
             const at = nowIso();
-            const plan = (0, domain_js_1.createPlan)({ ...input, mode: input.mode ?? "GENERAL_SKILL", status: "active", createdAt: at, updatedAt: at });
+            const plan = (0, domain_js_1.createPlan)({ ...input, mode: (_a = input.mode) !== null && _a !== void 0 ? _a : "GENERAL_SKILL", status: "active", createdAt: at, updatedAt: at });
             const cycle = (0, domain_js_1.createStudyCycleState)();
             const shouldActivate = activate || !state.activePlanId;
-            const next = { ...state, plans: [...state.plans, plan], studyCycles: { ...(state.studyCycles ?? {}), [plan.id]: cycle }, activePlanId: shouldActivate ? plan.id : state.activePlanId, studyCycle: shouldActivate ? cycle : state.studyCycle };
+            const next = { ...state, plans: [...state.plans, plan], studyCycles: { ...((_b = state.studyCycles) !== null && _b !== void 0 ? _b : {}), [plan.id]: cycle }, activePlanId: shouldActivate ? plan.id : state.activePlanId, studyCycle: shouldActivate ? cycle : state.studyCycle };
             commit(next, "plan-created");
             return plan;
         },
@@ -238,25 +247,27 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return updated;
         },
         switchPlan(planId) {
+            var _a, _b;
             const target = state.plans.find((plan) => plan.id === planId);
             if (!target)
                 throw new TypeError("Plan not found");
             if (target.status === "archived")
                 throw new TypeError("Archived plans must be restored before they can be activated");
-            if (state.focus?.status !== "idle")
+            if (((_a = state.focus) === null || _a === void 0 ? void 0 : _a.status) !== "idle")
                 throw new TypeError("Finish or cancel the current focus session before switching plans");
             const cycle = planCycle(planId);
-            commit({ ...state, activePlanId: planId, studyCycle: cycle, studyCycles: { ...(state.studyCycles ?? {}), [planId]: cycle } }, "plan-switched");
+            commit({ ...state, activePlanId: planId, studyCycle: cycle, studyCycles: { ...((_b = state.studyCycles) !== null && _b !== void 0 ? _b : {}), [planId]: cycle } }, "plan-switched");
             return target;
         },
         setPlanArchived(planId, archived = true) {
+            var _a, _b;
             const current = state.plans.find((plan) => plan.id === planId);
             if (!current)
                 throw new TypeError("Plan not found");
             const at = nowIso();
             if (Boolean(archived) === (current.status === "archived"))
                 return current;
-            if (archived && planId === state.activePlanId && state.focus?.status !== "idle")
+            if (archived && planId === state.activePlanId && ((_a = state.focus) === null || _a === void 0 ? void 0 : _a.status) !== "idle")
                 throw new TypeError("Finish or cancel the current focus session before archiving the active plan");
             let activePlanId = state.activePlanId;
             let studyCycle = state.studyCycle;
@@ -268,21 +279,22 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 studyCycle = planCycle(replacement.id);
             }
             const updated = (0, domain_js_1.createPlan)({ ...current, status: archived ? "archived" : "active", createdAt: current.createdAt, updatedAt: at });
-            const cycles = { ...(state.studyCycles ?? {}) };
+            const cycles = { ...((_b = state.studyCycles) !== null && _b !== void 0 ? _b : {}) };
             if (!cycles[planId])
                 cycles[planId] = planCycle(planId);
             commit({ ...state, plans: state.plans.map((plan) => plan.id === planId ? updated : plan), activePlanId, studyCycle, studyCycles: cycles }, archived ? "plan-archived" : "plan-restored");
             return updated;
         },
         duplicatePlan(planId, { name = null, activate = false } = {}) {
+            var _a;
             const source = state.plans.find((plan) => plan.id === planId);
             if (!source)
                 throw new TypeError("Plan not found");
             const at = nowIso();
-            const plan = (0, domain_js_1.createPlan)({ ...source, id: undefined, name: name ?? `${source.name} copy`, status: "active", configuration: cloneState(source.configuration), createdAt: at, updatedAt: at });
+            const plan = (0, domain_js_1.createPlan)({ ...source, id: undefined, name: name !== null && name !== void 0 ? name : `${source.name} copy`, status: "active", configuration: cloneState(source.configuration), createdAt: at, updatedAt: at });
             const subjectMap = new Map();
             const subjects = [];
-            for (const item of state.subjects.filter((subject) => subject.planId === planId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))) {
+            for (const item of state.subjects.filter((subject) => subject.planId === planId).sort((a, b) => { var _a, _b; return ((_a = a.order) !== null && _a !== void 0 ? _a : 0) - ((_b = b.order) !== null && _b !== void 0 ? _b : 0); })) {
                 const copy = (0, domain_js_1.createSubject)({ ...item, id: undefined, planId: plan.id, createdAt: at, updatedAt: at });
                 subjectMap.set(item.id, copy.id);
                 subjects.push(copy);
@@ -306,16 +318,17 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 if (!progressed)
                     throw new TypeError("Cannot duplicate plan because its topic hierarchy is invalid");
             }
-            const questions = state.questions.filter((question) => question.planId === planId).map((item) => (0, domain_js_1.createQuestion)({ ...item, id: undefined, planId: plan.id, subjectId: item.subjectId ? subjectMap.get(item.subjectId) ?? null : null, topicId: item.topicId ? topicMap.get(item.topicId) ?? null : null, createdAt: at, updatedAt: at }));
+            const questions = state.questions.filter((question) => question.planId === planId).map((item) => { var _a, _b; return (0, domain_js_1.createQuestion)({ ...item, id: undefined, planId: plan.id, subjectId: item.subjectId ? (_a = subjectMap.get(item.subjectId)) !== null && _a !== void 0 ? _a : null : null, topicId: item.topicId ? (_b = topicMap.get(item.topicId)) !== null && _b !== void 0 ? _b : null : null, createdAt: at, updatedAt: at }); });
             const goals = state.goals.filter((goal) => goal.planId === planId).map((item) => (0, domain_js_1.createGoal)({ ...item, id: undefined, planId: plan.id, createdAt: at, updatedAt: at }));
-            const activities = state.activities.filter((activity) => activity.planId === planId && activity.status === "planned").map((item) => (0, domain_js_1.createActivity)({ ...item, id: undefined, planId: plan.id, subjectId: item.subjectId ? subjectMap.get(item.subjectId) ?? null : null, topicId: item.topicId ? topicMap.get(item.topicId) ?? null : null, createdAt: at, updatedAt: at }));
+            const activities = state.activities.filter((activity) => activity.planId === planId && activity.status === "planned").map((item) => { var _a, _b; return (0, domain_js_1.createActivity)({ ...item, id: undefined, planId: plan.id, subjectId: item.subjectId ? (_a = subjectMap.get(item.subjectId)) !== null && _a !== void 0 ? _a : null : null, topicId: item.topicId ? (_b = topicMap.get(item.topicId)) !== null && _b !== void 0 ? _b : null : null, createdAt: at, updatedAt: at }); });
             const sourceCycle = planCycle(planId);
             const cycle = (0, domain_js_1.createStudyCycleState)({ subjectIds: sourceCycle.subjectIds.map((id) => subjectMap.get(id)).filter(Boolean), cursor: sourceCycle.cursor });
-            const cycles = { ...(state.studyCycles ?? {}), [plan.id]: cycle };
+            const cycles = { ...((_a = state.studyCycles) !== null && _a !== void 0 ? _a : {}), [plan.id]: cycle };
             commit({ ...state, plans: [...state.plans, plan], subjects: [...state.subjects, ...subjects], topics: [...state.topics, ...topics], questions: [...state.questions, ...questions], goals: [...state.goals, ...goals], activities: [...state.activities, ...activities], studyCycles: cycles, activePlanId: activate ? plan.id : state.activePlanId, studyCycle: activate ? cycle : state.studyCycle }, "plan-duplicated");
             return plan;
         },
         deletePlan(planId) {
+            var _a;
             const current = state.plans.find((plan) => plan.id === planId);
             if (!current)
                 throw new TypeError("Plan not found");
@@ -326,7 +339,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const owned = [state.subjects, state.topics, state.activities, state.sessions, state.goals, state.materials, state.flashcards, state.reviews, state.questions, state.evidence, state.errorEntries].some((collection) => collection.some((entity) => entity.planId === planId));
             if (owned)
                 throw new TypeError("Plan still owns content or history and cannot be deleted; keep it archived instead");
-            const cycles = { ...(state.studyCycles ?? {}) };
+            const cycles = { ...((_a = state.studyCycles) !== null && _a !== void 0 ? _a : {}) };
             delete cycles[planId];
             commit({ ...state, plans: state.plans.filter((plan) => plan.id !== planId), studyCycles: cycles }, "plan-deleted");
         },
@@ -342,7 +355,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         setPracticeConfiguration(input) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current)
             throw new TypeError("Active plan not found"); const at = nowIso(); const practice = { ...current.configuration.practice, ...input }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, practice }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "practice-config-updated"); return updated; },
         savePracticeSet(name, filter = {}, questionIds = []) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current)
-            throw new TypeError("Active plan not found"); const trimmed = String(name ?? "").trim(); if (!trimmed)
+            throw new TypeError("Active plan not found"); const trimmed = String(name !== null && name !== void 0 ? name : "").trim(); if (!trimmed)
             throw new TypeError("Practice set name is required"); const at = nowIso(); const ids = (questionIds.length ? questionIds : state.questions.filter(q => q.planId === current.id).map(q => q.id)).filter(id => state.questions.some(q => q.id === id && q.planId === current.id)); const set = { id: `practice-set-${Date.now().toString(36)}`, name: trimmed, questionIds: [...new Set(ids)], filter: { ...filter }, createdAt: at }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, practice: { ...current.configuration.practice, savedSets: [...current.configuration.practice.savedSets, set] } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "practice-set-saved"); return set; },
         deletePracticeSet(id) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current)
             throw new TypeError("Active plan not found"); const at = nowIso(); const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, practice: { ...current.configuration.practice, savedSets: current.configuration.practice.savedSets.filter(x => x.id !== id) } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p) }, "practice-set-deleted"); return updated; },
@@ -359,21 +372,23 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             if (!goals.some(x => x.planId === current.id && x.name === g.name))
                 goals.push((0, domain_js_1.createGoal)({ ...g, planId: current.id, active: true, createdAt: at, updatedAt: at })); commit({ ...state, plans: state.plans.map(p => p.id === current.id ? updated : p), goals }, "public-exam-starter-template-applied"); return updated; },
         updatePublicExamTarget(input) {
+            var _a;
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "EXAM_PLAN")
                 throw new TypeError("Public-exam target requires an EXAM_PLAN");
             const at = nowIso();
             const target = { ...current.configuration.publicExam.target, ...input };
-            const updated = (0, domain_js_1.createPlan)({ ...current, examDate: target.dateStatus === "confirmed" ? (target.examDate ?? null) : null, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, target } }, createdAt: current.createdAt, updatedAt: at });
+            const updated = (0, domain_js_1.createPlan)({ ...current, examDate: target.dateStatus === "confirmed" ? ((_a = target.examDate) !== null && _a !== void 0 ? _a : null) : null, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, target } }, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, plans: state.plans.map((plan) => plan.id === current.id ? updated : plan) }, "public-exam-target-updated");
             return updated;
         },
         addExamStage(input) {
+            var _a, _b, _c, _d;
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "EXAM_PLAN")
                 throw new TypeError("Exam stages require an EXAM_PLAN");
             const at = nowIso();
-            const stage = { id: input.id ?? `stage-${Date.now().toString(36)}`, name: String(input.name ?? "").trim(), date: input.date ?? null, status: input.status ?? "planned" };
+            const stage = { id: (_a = input.id) !== null && _a !== void 0 ? _a : `stage-${Date.now().toString(36)}`, name: String((_b = input.name) !== null && _b !== void 0 ? _b : "").trim(), date: (_c = input.date) !== null && _c !== void 0 ? _c : null, status: (_d = input.status) !== null && _d !== void 0 ? _d : "planned" };
             if (!stage.name)
                 throw new TypeError("Exam stage name is required");
             const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, stages: [...current.configuration.publicExam.stages, stage] } }, createdAt: current.createdAt, updatedAt: at });
@@ -382,13 +397,14 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         },
         previewExamNotice(source) { return (0, modes_js_1.buildExamNoticePreview)(state, source); },
         applyExamNoticePreview(preview, metadata = {}) {
+            var _a, _b, _c;
             if (!preview || preview.baseRevision !== state.revision)
                 throw new TypeError("Edital preview is stale; preview again before applying");
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "EXAM_PLAN")
                 throw new TypeError("Edital import requires an EXAM_PLAN");
             const at = nowIso();
-            const currentFingerprint = (() => { const ss = state.subjects.filter(x => x.planId === current.id).map(x => `${x.name}|${x.archived}`).sort(); const tt = state.topics.filter(x => x.planId === current.id).map(x => `${x.subjectId}|${x.parentTopicId ?? ""}|${x.name}|${x.status}`).sort(); let h = 2166136261; const raw = JSON.stringify([ss, tt]); for (let i = 0; i < raw.length; i++) {
+            const currentFingerprint = (() => { const ss = state.subjects.filter(x => x.planId === current.id).map(x => `${x.name}|${x.archived}`).sort(); const tt = state.topics.filter(x => x.planId === current.id).map(x => { var _a; return `${x.subjectId}|${(_a = x.parentTopicId) !== null && _a !== void 0 ? _a : ""}|${x.name}|${x.status}`; }).sort(); let h = 2166136261; const raw = JSON.stringify([ss, tt]); for (let i = 0; i < raw.length; i++) {
                 h ^= raw.charCodeAt(i);
                 h = Math.imul(h, 16777619);
             } return (h >>> 0).toString(16).padStart(8, "0"); })();
@@ -412,12 +428,12 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 else
                     unchanged++;
                 desiredSubjects.add(subject.id);
-                for (const path of row.topicPaths ?? row.topics.map(x => [x])) {
+                for (const path of (_a = row.topicPaths) !== null && _a !== void 0 ? _a : row.topics.map(x => [x])) {
                     let parentId = null;
                     for (const name of path) {
-                        let topic = topics.find(x => x.subjectId === subject.id && (x.parentTopicId ?? null) === parentId && x.name.trim().toLowerCase() === name.trim().toLowerCase());
+                        let topic = topics.find(x => { var _a; return x.subjectId === subject.id && ((_a = x.parentTopicId) !== null && _a !== void 0 ? _a : null) === parentId && x.name.trim().toLowerCase() === name.trim().toLowerCase(); });
                         if (!topic) {
-                            topic = (0, domain_js_1.createTopic)({ planId: current.id, subjectId: subject.id, parentTopicId: parentId, name, order: topics.filter(x => x.subjectId === subject.id && (x.parentTopicId ?? null) === parentId).length, createdAt: at, updatedAt: at });
+                            topic = (0, domain_js_1.createTopic)({ planId: current.id, subjectId: subject.id, parentTopicId: parentId, name, order: topics.filter(x => { var _a; return x.subjectId === subject.id && ((_a = x.parentTopicId) !== null && _a !== void 0 ? _a : null) === parentId; }).length, createdAt: at, updatedAt: at });
                             topics.push(topic);
                             added++;
                         }
@@ -435,25 +451,26 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             }
             subjects = subjects.map(x => x.planId === current.id && !desiredSubjects.has(x.id) && !x.archived ? (archived++, (0, domain_js_1.createSubject)({ ...x, archived: true, createdAt: x.createdAt, updatedAt: at })) : x);
             topics = topics.map(x => x.planId === current.id && !desiredTopics.has(x.id) && x.status !== "archived" ? (archived++, (0, domain_js_1.createTopic)({ ...x, status: "archived", createdAt: x.createdAt, updatedAt: at })) : x);
-            const reference = String(metadata.reference ?? "").trim() || null;
+            const reference = String((_b = metadata.reference) !== null && _b !== void 0 ? _b : "").trim() || null;
             const publishedAt = metadata.publishedAt == null || metadata.publishedAt === "" ? null : String(metadata.publishedAt);
             if (publishedAt && !/^\d{4}-\d{2}-\d{2}$/.test(publishedAt))
                 throw new TypeError("Edital publication date must use YYYY-MM-DD");
-            const revision = { id: `notice-${Date.now().toString(36)}`, acceptedAt: at, sourceHash: preview.sourceHash, added, archived, reactivated, unchanged, previousRevisionId: preview.previousRevisionId ?? null, syllabusFingerprint: preview.syllabusFingerprint, reference, publishedAt };
+            const revision = { id: `notice-${Date.now().toString(36)}`, acceptedAt: at, sourceHash: preview.sourceHash, added, archived, reactivated, unchanged, previousRevisionId: (_c = preview.previousRevisionId) !== null && _c !== void 0 ? _c : null, syllabusFingerprint: preview.syllabusFingerprint, reference, publishedAt };
             const target = reference ? { ...current.configuration.publicExam.target, editalRef: reference } : current.configuration.publicExam.target;
             const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, target, studyPhase: "post-edital", noticeRevisions: [...current.configuration.publicExam.noticeRevisions, revision] } }, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, subjects, topics, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "exam-notice-applied");
             return updated;
         },
         addLegislation(input) {
+            var _a, _b, _c, _d;
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "EXAM_PLAN")
                 throw new TypeError("Legislation requires an EXAM_PLAN");
             const at = nowIso();
-            const title = String(input.title ?? "").trim();
+            const title = String((_a = input.title) !== null && _a !== void 0 ? _a : "").trim();
             if (!title)
                 throw new TypeError("Legislation title is required");
-            const document = { id: `law-${Date.now().toString(36)}`, title, reference: input.reference ?? null, notes: input.notes ?? null, provisions: (input.provisions ?? []).map((p, i) => ({ id: `provision-${Date.now().toString(36)}-${i}`, label: String(p.label ?? `Provision ${i + 1}`), text: String(p.text ?? ""), status: "unseen" })) };
+            const document = { id: `law-${Date.now().toString(36)}`, title, reference: (_b = input.reference) !== null && _b !== void 0 ? _b : null, notes: (_c = input.notes) !== null && _c !== void 0 ? _c : null, provisions: ((_d = input.provisions) !== null && _d !== void 0 ? _d : []).map((p, i) => { var _a, _b; return ({ id: `provision-${Date.now().toString(36)}-${i}`, label: String((_a = p.label) !== null && _a !== void 0 ? _a : `Provision ${i + 1}`), text: String((_b = p.text) !== null && _b !== void 0 ? _b : ""), status: "unseen" }); }) };
             const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, legislation: [...current.configuration.publicExam.legislation, document] } }, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "legislation-added");
             return updated;
@@ -461,13 +478,13 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         verifyLegislation(documentId, verifiedAt = nowIso()) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
             throw new TypeError("Legislation verification requires EXAM_PLAN"); const docs = current.configuration.publicExam.legislation; const doc = docs.find(x => x.id === documentId); if (!doc)
             throw new TypeError("Legislation document not found"); const at = nowIso(); const updatedDoc = { ...doc, verifiedAt: new Date(verifiedAt).toISOString() }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, legislation: docs.map(x => x.id === documentId ? updatedDoc : x) } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "legislation-verified"); return updated; },
-        linkLegislationEvidence(documentId, input) { const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
+        linkLegislationEvidence(documentId, input) { var _a, _b, _c, _d; const current = state.plans.find(plan => plan.id === activePlanId()); if (!current || current.mode !== "EXAM_PLAN")
             throw new TypeError("Legislation evidence link requires EXAM_PLAN"); const docs = current.configuration.publicExam.legislation; const doc = docs.find(x => x.id === documentId); if (!doc)
             throw new TypeError("Legislation document not found"); if (!doc.provisions.some(x => x.id === input.provisionId))
             throw new TypeError("Legislation provision not found"); if (input.questionId && !state.questions.some(x => x.id === input.questionId && x.planId === current.id))
             throw new TypeError("Question evidence link does not belong to active plan"); if (input.errorId && !state.errorEntries.some(x => x.id === input.errorId && x.planId === current.id))
             throw new TypeError("Error evidence link does not belong to active plan"); if (input.reviewId && !state.reviews.some(x => x.id === input.reviewId && x.planId === current.id))
-            throw new TypeError("Review evidence link does not belong to active plan"); const at = nowIso(); const link = { id: `law-link-${Date.now().toString(36)}`, provisionId: input.provisionId, questionId: input.questionId ?? null, errorId: input.errorId ?? null, reviewId: input.reviewId ?? null, note: input.note ?? null, createdAt: at }; const updatedDoc = { ...doc, evidenceLinks: [...doc.evidenceLinks, link] }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, legislation: docs.map(x => x.id === documentId ? updatedDoc : x) } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "legislation-evidence-linked"); return updated; },
+            throw new TypeError("Review evidence link does not belong to active plan"); const at = nowIso(); const link = { id: `law-link-${Date.now().toString(36)}`, provisionId: input.provisionId, questionId: (_a = input.questionId) !== null && _a !== void 0 ? _a : null, errorId: (_b = input.errorId) !== null && _b !== void 0 ? _b : null, reviewId: (_c = input.reviewId) !== null && _c !== void 0 ? _c : null, note: (_d = input.note) !== null && _d !== void 0 ? _d : null, createdAt: at }; const updatedDoc = { ...doc, evidenceLinks: [...doc.evidenceLinks, link] }; const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, publicExam: { ...current.configuration.publicExam, legislation: docs.map(x => x.id === documentId ? updatedDoc : x) } }, createdAt: current.createdAt, updatedAt: at }); commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "legislation-evidence-linked"); return updated; },
         setReviewIntervalsDays(intervals) {
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "EXAM_PLAN")
@@ -502,11 +519,12 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return evidence;
         },
         addProgrammingExercise(input) {
+            var _a;
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "PROGRAMMING_COURSE")
                 throw new TypeError("Programming exercises require PROGRAMMING_COURSE mode");
             const at = nowIso();
-            const exercise = (0, modes_js_1.createProgrammingExercise)({ ...input, language: input.language ?? current.configuration.programming.language });
+            const exercise = (0, modes_js_1.createProgrammingExercise)({ ...input, language: (_a = input.language) !== null && _a !== void 0 ? _a : current.configuration.programming.language });
             const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, programming: { ...current.configuration.programming, exercises: [...current.configuration.programming.exercises, exercise] } }, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, plans: state.plans.map(x => x.id === current.id ? updated : x) }, "programming-exercise-added");
             return updated;
@@ -552,6 +570,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return evidence;
         },
         setProgrammingProjectCheckpoint(projectId, checkpoint, completed = true) {
+            var _a;
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "PROGRAMMING_COURSE")
                 throw new TypeError("Programming project requires PROGRAMMING_COURSE mode");
@@ -560,7 +579,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError("Programming project not found");
             if (!project.checkpoints.includes(checkpoint))
                 throw new TypeError("Programming checkpoint not found");
-            const done = new Set(project.completedCheckpoints ?? []);
+            const done = new Set((_a = project.completedCheckpoints) !== null && _a !== void 0 ? _a : []);
             completed ? done.add(checkpoint) : done.delete(checkpoint);
             const next = { ...project, completedCheckpoints: [...done], status: done.size === project.checkpoints.length && project.checkpoints.length ? "completed" : done.size ? "active" : "planned" };
             const at = nowIso();
@@ -579,7 +598,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const at = nowIso();
             let updated = current;
             if (current.mode === "PROGRAMMING_COURSE") {
-                const exercises = accepted.map((x, i) => (0, modes_js_1.createProgrammingExercise)({ ...x.payload, id: undefined, language: x.payload.language ?? current.configuration.programming.language }));
+                const exercises = accepted.map((x, i) => { var _a; return (0, modes_js_1.createProgrammingExercise)({ ...x.payload, id: undefined, language: (_a = x.payload.language) !== null && _a !== void 0 ? _a : current.configuration.programming.language }); });
                 updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, programming: { ...current.configuration.programming, exercises: [...current.configuration.programming.exercises, ...exercises] } }, createdAt: current.createdAt, updatedAt: at });
             }
             else if (current.mode === "LANGUAGE_DECK") {
@@ -602,6 +621,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return updated;
         },
         recordLanguageReview(expressionId, direction, rating, { answer = null, note = null } = {}) {
+            var _a;
             const current = state.plans.find((plan) => plan.id === activePlanId());
             if (!current || current.mode !== "LANGUAGE_DECK")
                 throw new TypeError("Language review requires LANGUAGE_DECK mode");
@@ -612,7 +632,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError("Unsupported language review direction");
             const prompt = (0, modes_js_1.buildLanguageReviewPrompt)(expression, direction);
             if (!prompt.ready)
-                throw new TypeError(prompt.reason ?? "Language review direction is not ready");
+                throw new TypeError((_a = prompt.reason) !== null && _a !== void 0 ? _a : "Language review direction is not ready");
             const at = nowIso();
             const value = { expressionId, direction, rating: Math.max(0, Math.min(5, Number(rating) || 0)), answer, note, manualReview: prompt.manualReview, expected: prompt.expected };
             const evidence = (0, domain_js_1.createEvidence)({ planId: current.id, kind: "language-review", observedAt: at, provenance: "user", value, createdAt: at, updatedAt: at });
@@ -669,18 +689,20 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return evidence;
         },
         addActivity(input) {
+            var _a, _b, _c;
             const at = nowIso();
-            const activity = (0, domain_js_1.createActivity)({ ...input, planId: input.planId ?? activePlanId(), createdAt: input.createdAt ?? at, updatedAt: input.updatedAt ?? at });
+            const activity = (0, domain_js_1.createActivity)({ ...input, planId: (_a = input.planId) !== null && _a !== void 0 ? _a : activePlanId(), createdAt: (_b = input.createdAt) !== null && _b !== void 0 ? _b : at, updatedAt: (_c = input.updatedAt) !== null && _c !== void 0 ? _c : at });
             commit({ ...state, activities: [...state.activities, activity] }, "activity-added");
             return activity;
         },
         addScheduledActivity(input) {
-            const planId = activePlanId(), at = nowIso(), date = String(input?.scheduledFor ?? "").trim(), minute = Number(input?.scheduledStartMinute);
+            var _a, _b, _c, _d;
+            const planId = activePlanId(), at = nowIso(), date = String((_a = input === null || input === void 0 ? void 0 : input.scheduledFor) !== null && _a !== void 0 ? _a : "").trim(), minute = Number(input === null || input === void 0 ? void 0 : input.scheduledStartMinute);
             if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
                 throw new TypeError("Scheduled activity requires an explicit local date");
             if (!Number.isInteger(minute) || minute < 0 || minute > 1439)
                 throw new TypeError("Scheduled activity requires a local start minute between 0 and 1439");
-            const subjectId = input?.subjectId ?? null, topicId = input?.topicId ?? null;
+            const subjectId = (_b = input === null || input === void 0 ? void 0 : input.subjectId) !== null && _b !== void 0 ? _b : null, topicId = (_c = input === null || input === void 0 ? void 0 : input.topicId) !== null && _c !== void 0 ? _c : null;
             const subject = subjectId ? state.subjects.find(s => s.id === subjectId && s.planId === planId && !s.archived) : null;
             if (subjectId && !subject)
                 throw new TypeError("Scheduled activity subject must belong to the active plan");
@@ -689,30 +711,32 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError("Scheduled activity topic must belong to the active plan");
             if (topic && subjectId && topic.subjectId !== subjectId)
                 throw new TypeError("Scheduled activity topic must belong to the selected subject");
-            const effectiveSubjectId = subjectId ?? topic?.subjectId ?? null, activityType = (0, task_workflows_js_1.normalizeStudyActivityType)(input.activityType, "study"), today = (0, parity_intelligence_js_1.localDateKey)(at);
+            const effectiveSubjectId = (_d = subjectId !== null && subjectId !== void 0 ? subjectId : topic === null || topic === void 0 ? void 0 : topic.subjectId) !== null && _d !== void 0 ? _d : null, activityType = (0, task_workflows_js_1.normalizeStudyActivityType)(input.activityType, "study"), today = (0, parity_intelligence_js_1.localDateKey)(at);
             const activity = (0, domain_js_1.createActivity)({ planId, title: input.title, kind: (0, task_workflows_js_1.activityKindForType)(activityType), activityType, durationMinutes: input.durationMinutes, subjectId: effectiveSubjectId, topicId, status: "planned", origin: "manual", queue: date === today ? "today" : "future", scheduledFor: date, scheduledStartMinute: minute, locked: false, scheduleProvenance: { source: "manual", reason: "Manual scheduled activity", previewGeneratedAt: null, baseRevision: state.revision }, createdAt: at, updatedAt: at });
             commit({ ...state, activities: [...state.activities, activity] }, "scheduled-activity-added");
             return activity;
         },
         startFocus({ activityId = null, durationMinutes = null, note = null } = {}) {
+            var _a, _b, _c, _d;
             const at = nowIso();
             const current = focusSnapshot(at);
             if (current.status === "running")
                 return current;
-            const activity = activityId ? state.activities.find((candidate) => candidate.id === activityId && candidate.status === "planned") : (0, domain_js_1.selectActivitiesForQueue)(state, "today")[0] ?? null;
+            const activity = activityId ? state.activities.find((candidate) => candidate.id === activityId && candidate.status === "planned") : (_a = (0, domain_js_1.selectActivitiesForQueue)(state, "today")[0]) !== null && _a !== void 0 ? _a : null;
             if (activityId && !activity)
                 throw new TypeError("Focus activity must reference a planned activity");
             if ((0, task_workflows_js_1.writingActivity)(activity))
                 throw new TypeError("Writing activities must open through the Writing Workspace");
-            const configuredMinutes = durationMinutes ?? current.durationMinutes ?? activity?.durationMinutes ?? 25;
+            const configuredMinutes = (_c = (_b = durationMinutes !== null && durationMinutes !== void 0 ? durationMinutes : current.durationMinutes) !== null && _b !== void 0 ? _b : activity === null || activity === void 0 ? void 0 : activity.durationMinutes) !== null && _c !== void 0 ? _c : 25;
             const baseRemaining = current.status === "paused" ? current.remainingMs : Number(configuredMinutes) * 60000;
             const startedAt = current.status === "paused" ? current.startedAt : at;
             const elapsedMs = current.status === "paused" ? current.elapsedMs : 0;
-            const next = (0, domain_js_1.createFocusState)({ status: "running", activityId: activity?.id ?? current.activityId, durationMinutes: configuredMinutes, remainingMs: baseRemaining, elapsedMs, startedAt, lastResumedAt: at, endsAt: new Date(isoMs(at) + baseRemaining).toISOString(), note: note ?? current.note });
+            const next = (0, domain_js_1.createFocusState)({ status: "running", activityId: (_d = activity === null || activity === void 0 ? void 0 : activity.id) !== null && _d !== void 0 ? _d : current.activityId, durationMinutes: configuredMinutes, remainingMs: baseRemaining, elapsedMs, startedAt, lastResumedAt: at, endsAt: new Date(isoMs(at) + baseRemaining).toISOString(), note: note !== null && note !== void 0 ? note : current.note });
             commit({ ...state, focus: next }, current.status === "paused" ? "focus-resumed" : "focus-started");
             return next;
         },
         startWritingSession({ activityId, prompt, durationMinutes = null }) {
+            var _a, _b;
             const at = nowIso();
             const activity = state.activities.find(candidate => candidate.id === activityId && candidate.planId === activePlanId() && candidate.status === "planned");
             if (!activity)
@@ -723,7 +747,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const current = focusSnapshot(at);
             if (current.status !== "idle" && current.activityId !== activity.id)
                 throw new TypeError("Finish or cancel the current focus session before opening Writing");
-            const configuredMinutes = durationMinutes ?? current.durationMinutes ?? activity.durationMinutes ?? 60;
+            const configuredMinutes = (_b = (_a = durationMinutes !== null && durationMinutes !== void 0 ? durationMinutes : current.durationMinutes) !== null && _a !== void 0 ? _a : activity.durationMinutes) !== null && _b !== void 0 ? _b : 60;
             const baseRemaining = current.status === "paused" ? current.remainingMs : Number(configuredMinutes) * 60000;
             const startedAt = current.status === "paused" ? current.startedAt : at;
             const elapsedMs = current.status === "paused" ? current.elapsedMs : 0;
@@ -732,7 +756,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             let session;
             if (existing) {
                 const old = (0, task_workflows_js_1.decodeWritingSessionRecord)(existing.note);
-                session = (0, domain_js_1.createStudySession)({ ...existing, status: "running", endedAt: null, durationMinutes: null, note: (0, task_workflows_js_1.encodeWritingSessionRecord)(old ?? record), createdAt: existing.createdAt, updatedAt: at });
+                session = (0, domain_js_1.createStudySession)({ ...existing, status: "running", endedAt: null, durationMinutes: null, note: (0, task_workflows_js_1.encodeWritingSessionRecord)(old !== null && old !== void 0 ? old : record), createdAt: existing.createdAt, updatedAt: at });
             }
             else {
                 session = (0, domain_js_1.createStudySession)({ planId: activePlanId(), activityId: activity.id, subjectId: activity.subjectId, topicId: activity.topicId, startedAt: at, endedAt: null, durationMinutes: null, status: "running", note: (0, task_workflows_js_1.encodeWritingSessionRecord)(record), createdAt: at, updatedAt: at });
@@ -741,12 +765,13 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return session;
         },
         saveWritingDraft({ prompt, draftText }) {
+            var _a;
             const at = nowIso();
             const session = (0, task_workflows_js_1.activeWritingSession)(state);
             if (!session)
                 throw new TypeError("No active Writing Study Session");
             const existing = (0, task_workflows_js_1.decodeWritingSessionRecord)(session.note);
-            const record = (0, task_workflows_js_1.createWritingSessionRecord)({ prompt: String(prompt ?? "").trim() || existing?.prompt || "", draftText: String(draftText ?? ""), rubric: existing?.rubric ?? null, checklist: existing?.checklist });
+            const record = (0, task_workflows_js_1.createWritingSessionRecord)({ prompt: String(prompt !== null && prompt !== void 0 ? prompt : "").trim() || (existing === null || existing === void 0 ? void 0 : existing.prompt) || "", draftText: String(draftText !== null && draftText !== void 0 ? draftText : ""), rubric: (_a = existing === null || existing === void 0 ? void 0 : existing.rubric) !== null && _a !== void 0 ? _a : null, checklist: existing === null || existing === void 0 ? void 0 : existing.checklist });
             const updated = (0, domain_js_1.createStudySession)({ ...session, note: (0, task_workflows_js_1.encodeWritingSessionRecord)(record), createdAt: session.createdAt, updatedAt: at });
             commit({ ...state, sessions: state.sessions.map(item => item.id === session.id ? updated : item) }, "writing-draft-saved");
             return updated;
@@ -762,7 +787,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const session = (0, task_workflows_js_1.activeWritingSession)(state);
             if (!session)
                 throw new TypeError("Active Writing Study Session not found");
-            const cleanPrompt = String(prompt ?? "").trim(), cleanDraft = String(draftText ?? "");
+            const cleanPrompt = String(prompt !== null && prompt !== void 0 ? prompt : "").trim(), cleanDraft = String(draftText !== null && draftText !== void 0 ? draftText : "");
             if (!cleanPrompt)
                 throw new TypeError("Writing prompt cannot be blank");
             if (!cleanDraft.trim())
@@ -776,7 +801,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const record = (0, task_workflows_js_1.createWritingSessionRecord)({ prompt: cleanPrompt, draftText: cleanDraft, rubric: cleanRubric, checklist: cleanChecklist });
             const completed = (0, domain_js_1.createStudySession)({ ...session, status: "completed", endedAt: at, durationMinutes, note: (0, task_workflows_js_1.encodeWritingSessionRecord)(record), createdAt: session.createdAt, updatedAt: at });
             const activities = state.activities.map(candidate => candidate.id === activity.id ? { ...candidate, status: "completed", updatedAt: at } : candidate);
-            const evidence = (0, domain_js_1.createEvidence)({ planId: activePlanId(), subjectId: activity.subjectId, topicId: activity.topicId, activityId: activity.id, sessionId: completed.id, kind: "writing-session-completed", observedAt: at, value: { durationMinutes: durationMinutes ?? 0, scorePercent: (0, task_workflows_js_1.writingRubricTotal)(cleanRubric) }, provenance: "session", createdAt: at, updatedAt: at });
+            const evidence = (0, domain_js_1.createEvidence)({ planId: activePlanId(), subjectId: activity.subjectId, topicId: activity.topicId, activityId: activity.id, sessionId: completed.id, kind: "writing-session-completed", observedAt: at, value: { durationMinutes: durationMinutes !== null && durationMinutes !== void 0 ? durationMinutes : 0, scorePercent: (0, task_workflows_js_1.writingRubricTotal)(cleanRubric) }, provenance: "session", createdAt: at, updatedAt: at });
             commit({ ...state, activities, sessions: state.sessions.map(item => item.id === session.id ? completed : item), evidence: [...state.evidence, evidence], focus: (0, domain_js_1.createFocusState)({ durationMinutes: focus.durationMinutes }) }, "writing-session-completed");
             return completed;
         },
@@ -807,8 +832,9 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return cycle;
         },
         advanceStudyCycle() {
+            var _a;
             const planId = activePlanId();
-            const cycle = (0, domain_js_1.createStudyCycleState)(state.studyCycle ?? {});
+            const cycle = (0, domain_js_1.createStudyCycleState)((_a = state.studyCycle) !== null && _a !== void 0 ? _a : {});
             if (!cycle.subjectIds.length)
                 return cycle;
             const next = (0, domain_js_1.createStudyCycleState)({ ...cycle, cursor: (cycle.cursor + 1) % cycle.subjectIds.length });
@@ -819,9 +845,10 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         moveCurrentCycleSubjectToEnd() { const planId = activePlanId(); const cycle = planCycle(planId); if (cycle.subjectIds.length < 2)
             return cycle; const idx = Math.max(0, Math.min(cycle.cursor, cycle.subjectIds.length - 1)); const ids = [...cycle.subjectIds]; const [current] = ids.splice(idx, 1); ids.push(current); const next = (0, domain_js_1.createStudyCycleState)({ subjectIds: ids, cursor: Math.min(idx, ids.length - 1) }); commit(withPlanCycle(state, planId, next), "study-cycle-current-moved-to-end"); return next; },
         addSubject(input) {
+            var _a;
             const at = nowIso();
             const existing = state.subjects.filter((subject) => subject.planId === activePlanId());
-            const subject = (0, domain_js_1.createSubject)({ ...input, planId: activePlanId(), order: input.order ?? existing.length, createdAt: at, updatedAt: at });
+            const subject = (0, domain_js_1.createSubject)({ ...input, planId: activePlanId(), order: (_a = input.order) !== null && _a !== void 0 ? _a : existing.length, createdAt: at, updatedAt: at });
             commit({ ...state, subjects: [...state.subjects, subject] }, "subject-added");
             return subject;
         },
@@ -845,7 +872,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, subjects: state.subjects.filter((subject) => subject.id !== id) }, "subject-deleted");
         },
         moveSubject(id, direction) {
-            const ordered = state.subjects.filter((subject) => subject.planId === activePlanId()).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            const ordered = state.subjects.filter((subject) => subject.planId === activePlanId()).sort((a, b) => { var _a, _b; return ((_a = a.order) !== null && _a !== void 0 ? _a : 0) - ((_b = b.order) !== null && _b !== void 0 ? _b : 0); });
             const index = ordered.findIndex((subject) => subject.id === id);
             const target = index + (direction === "up" ? -1 : 1);
             if (index < 0 || target < 0 || target >= ordered.length)
@@ -856,31 +883,33 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, subjects: state.subjects.map((subject) => ranks.has(subject.id) ? { ...subject, order: ranks.get(subject.id), updatedAt: at } : subject) }, "subject-reordered");
         },
         addTopic(input) {
+            var _a, _b;
             const planId = activePlanId();
             const subject = state.subjects.find((candidate) => candidate.id === input.subjectId && candidate.planId === planId);
             if (!subject)
                 throw new TypeError("Topic requires a subject in the active plan");
-            const parentTopicId = input.parentTopicId ?? null;
+            const parentTopicId = (_a = input.parentTopicId) !== null && _a !== void 0 ? _a : null;
             if (parentTopicId) {
                 const parent = state.topics.find((candidate) => candidate.id === parentTopicId && candidate.planId === planId && candidate.subjectId === subject.id);
                 if (!parent)
                     throw new TypeError("Parent topic must belong to the same subject and active plan");
             }
             const at = nowIso();
-            const siblings = state.topics.filter((topic) => topic.subjectId === subject.id && (topic.parentTopicId ?? null) === parentTopicId);
-            const topic = (0, domain_js_1.createTopic)({ ...input, planId, parentTopicId, order: input.order ?? siblings.length, createdAt: at, updatedAt: at });
+            const siblings = state.topics.filter((topic) => { var _a; return topic.subjectId === subject.id && ((_a = topic.parentTopicId) !== null && _a !== void 0 ? _a : null) === parentTopicId; });
+            const topic = (0, domain_js_1.createTopic)({ ...input, planId, parentTopicId, order: (_b = input.order) !== null && _b !== void 0 ? _b : siblings.length, createdAt: at, updatedAt: at });
             commit({ ...state, topics: [...state.topics, topic] }, "topic-added");
             return topic;
         },
         updateTopic(id, changes) {
+            var _a, _b, _c;
             const current = state.topics.find((topic) => topic.id === id);
             if (!current)
                 throw new TypeError("Topic not found");
-            const subjectId = changes.subjectId ?? current.subjectId;
+            const subjectId = (_a = changes.subjectId) !== null && _a !== void 0 ? _a : current.subjectId;
             const subject = state.subjects.find((candidate) => candidate.id === subjectId && candidate.planId === current.planId);
             if (!subject)
                 throw new TypeError("Topic subject must belong to the same plan");
-            const parentTopicId = changes.parentTopicId === undefined ? (current.parentTopicId ?? null) : (changes.parentTopicId ?? null);
+            const parentTopicId = changes.parentTopicId === undefined ? ((_b = current.parentTopicId) !== null && _b !== void 0 ? _b : null) : ((_c = changes.parentTopicId) !== null && _c !== void 0 ? _c : null);
             if (parentTopicId === id)
                 throw new TypeError("Topic cannot parent itself");
             if (parentTopicId) {
@@ -915,7 +944,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const current = state.topics.find((topic) => topic.id === id);
             if (!current)
                 return;
-            const ordered = state.topics.filter((topic) => topic.subjectId === current.subjectId && (topic.parentTopicId ?? null) === (current.parentTopicId ?? null)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            const ordered = state.topics.filter((topic) => { var _a, _b; return topic.subjectId === current.subjectId && ((_a = topic.parentTopicId) !== null && _a !== void 0 ? _a : null) === ((_b = current.parentTopicId) !== null && _b !== void 0 ? _b : null); }).sort((a, b) => { var _a, _b; return ((_a = a.order) !== null && _a !== void 0 ? _a : 0) - ((_b = b.order) !== null && _b !== void 0 ? _b : 0); });
             const index = ordered.findIndex((topic) => topic.id === id);
             const target = index + (direction === "up" ? -1 : 1);
             if (index < 0 || target < 0 || target >= ordered.length)
@@ -927,6 +956,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         },
         previewPlanContentImport(source, options) { return (0, content_import_js_1.buildPlanContentImportPreview)(state, source, { ...options, now: nowIso }); },
         applyPlanContentImportPreview(preview) {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
             if (!preview || typeof preview !== "object" || !Array.isArray(preview.operations))
                 throw new TypeError("Plan Content import preview is required");
             if (!preview.ready)
@@ -942,9 +972,9 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const topicRefs = new Map();
             let activePlanId = state.activePlanId;
             let studyCycle = state.studyCycle;
-            const studyCycles = { ...(state.studyCycles ?? {}) };
+            const studyCycles = { ...((_a = state.studyCycles) !== null && _a !== void 0 ? _a : {}) };
             if (preview.target === "new-plan") {
-                if (state.focus?.status !== "idle")
+                if (((_b = state.focus) === null || _b === void 0 ? void 0 : _b.status) !== "idle")
                     throw new TypeError("Finish or cancel the current focus session before importing and activating a new plan");
                 const plan = (0, domain_js_1.createPlan)({ name: preview.targetPlanName, mode: preview.targetPlanMode, status: "active", createdAt: at, updatedAt: at });
                 plans.push(plan);
@@ -963,7 +993,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                     subjectRefs.set(op.subjectRef, item.id);
                     continue;
                 }
-                const subjectId = subjectRefs.get(op.subjectRef) ?? op.subjectRef;
+                const subjectId = (_c = subjectRefs.get(op.subjectRef)) !== null && _c !== void 0 ? _c : op.subjectRef;
                 const subject = subjects.find((item) => item.id === subjectId && item.planId === planId);
                 if (!subject)
                     throw new TypeError(`Import operation references missing subject: ${op.subjectName}`);
@@ -973,29 +1003,29 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                     subjects = subjects.map((item) => item.id === subject.id ? updated : item);
                     continue;
                 }
-                const parentTopicId = op.parentRef ? (topicRefs.get(op.parentRef) ?? op.parentRef) : null;
+                const parentTopicId = op.parentRef ? ((_d = topicRefs.get(op.parentRef)) !== null && _d !== void 0 ? _d : op.parentRef) : null;
                 if (op.action === "add-topic") {
-                    const siblings = topics.filter((item) => item.subjectId === subject.id && (item.parentTopicId ?? null) === parentTopicId);
-                    const name = op.topicPath?.[op.topicPath.length - 1] ?? "Topic";
+                    const siblings = topics.filter((item) => { var _a; return item.subjectId === subject.id && ((_a = item.parentTopicId) !== null && _a !== void 0 ? _a : null) === parentTopicId; });
+                    const name = (_f = (_e = op.topicPath) === null || _e === void 0 ? void 0 : _e[op.topicPath.length - 1]) !== null && _f !== void 0 ? _f : "Topic";
                     const item = (0, domain_js_1.createTopic)({ name, planId, subjectId: subject.id, parentTopicId, order: siblings.length, ...op.changes, createdAt: at, updatedAt: at });
                     topics.push(item);
                     if (op.topicRef)
                         topicRefs.set(op.topicRef, item.id);
                     continue;
                 }
-                const topicId = op.topicRef ? (topicRefs.get(op.topicRef) ?? op.topicRef) : null;
+                const topicId = op.topicRef ? ((_g = topicRefs.get(op.topicRef)) !== null && _g !== void 0 ? _g : op.topicRef) : null;
                 const topic = topicId ? topics.find((item) => item.id === topicId && item.planId === planId) : null;
                 if (!topic)
-                    throw new TypeError(`Import operation references missing topic: ${(op.topicPath ?? []).join(" > ")}`);
+                    throw new TypeError(`Import operation references missing topic: ${((_h = op.topicPath) !== null && _h !== void 0 ? _h : []).join(" > ")}`);
                 if (op.topicRef)
                     topicRefs.set(op.topicRef, topic.id);
                 if (op.action === "update-topic" || op.action === "archive-topic") {
-                    const updated = (0, domain_js_1.createTopic)({ ...topic, ...op.changes, id: topic.id, planId, subjectId: subject.id, parentTopicId: topic.parentTopicId ?? null, createdAt: topic.createdAt, updatedAt: at });
+                    const updated = (0, domain_js_1.createTopic)({ ...topic, ...op.changes, id: topic.id, planId, subjectId: subject.id, parentTopicId: (_j = topic.parentTopicId) !== null && _j !== void 0 ? _j : null, createdAt: topic.createdAt, updatedAt: at });
                     topics = topics.map((item) => item.id === topic.id ? updated : item);
                 }
             }
-            const activeSubjects = subjects.filter((item) => item.planId === planId && !item.archived).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-            const prior = studyCycles[planId] ?? (0, domain_js_1.createStudyCycleState)();
+            const activeSubjects = subjects.filter((item) => item.planId === planId && !item.archived).sort((a, b) => { var _a, _b; return ((_a = a.order) !== null && _a !== void 0 ? _a : 0) - ((_b = b.order) !== null && _b !== void 0 ? _b : 0); });
+            const prior = (_k = studyCycles[planId]) !== null && _k !== void 0 ? _k : (0, domain_js_1.createStudyCycleState)();
             const allowed = new Set(activeSubjects.map((item) => item.id));
             let ids = prior.subjectIds.filter((id) => allowed.has(id));
             if (!ids.length)
@@ -1038,8 +1068,9 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, activities: state.activities.map((activity) => activity.id === activityId ? updated : activity) }, "activity-schedule-lock-updated");
             return updated;
         },
-        previewSchedule(options = {}) { return (0, schedule_js_1.buildAdaptiveSchedulePreview)(state, { ...options, at: options.at ?? nowIso() }); },
+        previewSchedule(options = {}) { var _a; return (0, schedule_js_1.buildAdaptiveSchedulePreview)(state, { ...options, at: (_a = options.at) !== null && _a !== void 0 ? _a : nowIso() }); },
         applySchedulePreview(preview) {
+            var _a, _b, _c, _d, _e;
             if (!preview || typeof preview !== "object" || !Array.isArray(preview.operations))
                 throw new TypeError("Schedule preview is required");
             if (preview.baseRevision !== state.revision)
@@ -1055,10 +1086,10 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                         throw new TypeError(`Schedule preview cannot move locked activity: ${operation.activityId}`);
                     const scheduledFor = operation.to;
                     const today = (0, parity_intelligence_js_1.localDateKey)(at);
-                    activities[index] = (0, domain_js_1.createActivity)({ ...activities[index], scheduledFor, scheduledStartMinute: operation.toStartMinute ?? null, queue: scheduledFor === today ? "today" : "future", scheduleProvenance: { source: "adaptive", reason: operation.reason ?? null, previewGeneratedAt: preview.generatedAt, baseRevision: preview.baseRevision }, createdAt: activities[index].createdAt, updatedAt: at });
+                    activities[index] = (0, domain_js_1.createActivity)({ ...activities[index], scheduledFor, scheduledStartMinute: (_a = operation.toStartMinute) !== null && _a !== void 0 ? _a : null, queue: scheduledFor === today ? "today" : "future", scheduleProvenance: { source: "adaptive", reason: (_b = operation.reason) !== null && _b !== void 0 ? _b : null, previewGeneratedAt: preview.generatedAt, baseRevision: preview.baseRevision }, createdAt: activities[index].createdAt, updatedAt: at });
                 }
                 else if (operation.action === "add") {
-                    const activity = (0, domain_js_1.createActivity)({ ...operation.activity, planId: activePlanId(), scheduledFor: operation.scheduledFor, scheduledStartMinute: operation.scheduledStartMinute ?? null, origin: operation.activity.origin ?? "schedule", scheduleProvenance: { source: "adaptive", reason: operation.reason ?? null, previewGeneratedAt: preview.generatedAt, baseRevision: preview.baseRevision }, createdAt: at, updatedAt: at });
+                    const activity = (0, domain_js_1.createActivity)({ ...operation.activity, planId: activePlanId(), scheduledFor: operation.scheduledFor, scheduledStartMinute: (_c = operation.scheduledStartMinute) !== null && _c !== void 0 ? _c : null, origin: (_d = operation.activity.origin) !== null && _d !== void 0 ? _d : "schedule", scheduleProvenance: { source: "adaptive", reason: (_e = operation.reason) !== null && _e !== void 0 ? _e : null, previewGeneratedAt: preview.generatedAt, baseRevision: preview.baseRevision }, createdAt: at, updatedAt: at });
                     activities.push(activity);
                 }
                 else
@@ -1068,14 +1099,16 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return preview;
         },
         addMaterial(input) {
+            var _a, _b, _c;
             const at = nowIso();
-            const material = (0, domain_js_1.createMaterial)({ ...input, planId: input.planId ?? activePlanId(), createdAt: input.createdAt ?? at, updatedAt: input.updatedAt ?? at });
+            const material = (0, domain_js_1.createMaterial)({ ...input, planId: (_a = input.planId) !== null && _a !== void 0 ? _a : activePlanId(), createdAt: (_b = input.createdAt) !== null && _b !== void 0 ? _b : at, updatedAt: (_c = input.updatedAt) !== null && _c !== void 0 ? _c : at });
             commit({ ...state, materials: [...state.materials, material] }, "material-added");
             return material;
         },
         addFlashcard(input) {
+            var _a, _b, _c;
             const at = nowIso();
-            const card = (0, domain_js_1.createFlashcard)({ ...input, planId: input.planId ?? activePlanId(), suspended: false, createdAt: input.createdAt ?? at, updatedAt: input.updatedAt ?? at });
+            const card = (0, domain_js_1.createFlashcard)({ ...input, planId: (_a = input.planId) !== null && _a !== void 0 ? _a : activePlanId(), suspended: false, createdAt: (_b = input.createdAt) !== null && _b !== void 0 ? _b : at, updatedAt: (_c = input.updatedAt) !== null && _c !== void 0 ? _c : at });
             const review = (0, domain_js_1.createReview)({ planId: card.planId, subjectId: card.subjectId, topicId: card.topicId, dueAt: at, status: "due", sourceType: "flashcard", sourceId: card.id, intervalIndex: 0, intervalDays: null, repetitionCount: 0, createdAt: at, updatedAt: at });
             const evidence = (0, domain_js_1.createEvidence)({ planId: card.planId, subjectId: card.subjectId, topicId: card.topicId, kind: "flashcard-created", observedAt: at, provenance: "user", value: { flashcardId: card.id, type: card.type, tagCount: card.tags.length }, createdAt: at, updatedAt: at });
             commit({ ...state, flashcards: [...state.flashcards, card], reviews: [...state.reviews, review], evidence: [...state.evidence, evidence] }, "flashcard-created");
@@ -1130,6 +1163,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return this.setMaterialReferenceProvenance(materialId, { origin: provenance.origin, verifiedOn });
         },
         replaceMaterialReference(materialId, input = {}) {
+            var _a, _b, _c, _d, _e, _f, _g;
             const current = state.materials.find((material) => material.id === materialId && material.planId === activePlanId());
             if (!current)
                 throw new TypeError("Material not found in the active plan");
@@ -1137,11 +1171,11 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             if (!provenance.origin)
                 throw new TypeError("Only tracked references can be replaced");
             const at = nowIso();
-            const verifiedOn = String(input.verifiedOn ?? at.slice(0, 10));
+            const verifiedOn = String((_a = input.verifiedOn) !== null && _a !== void 0 ? _a : at.slice(0, 10));
             if (!/^\d{4}-\d{2}-\d{2}$/.test(verifiedOn))
                 throw new TypeError("Reference verification date must use YYYY-MM-DD");
             const archived = (0, domain_js_1.createMaterial)({ ...current, archived: true, createdAt: current.createdAt, updatedAt: at });
-            const successor = (0, domain_js_1.createMaterial)({ ...current, ...input, id: input.id, planId: current.planId, subjectId: input.subjectId ?? current.subjectId, topicId: input.topicId ?? current.topicId, title: input.title ?? current.title, locator: input.locator ?? null, attachmentId: input.attachmentId ?? null, sizeBytes: input.sizeBytes ?? null, archived: false, tags: (0, exam_foundation_js_1.encodeReferenceProvenance)(current.tags, { origin: provenance.origin, verifiedOn, supersedesMaterialId: current.id }), createdAt: at, updatedAt: at });
+            const successor = (0, domain_js_1.createMaterial)({ ...current, ...input, id: input.id, planId: current.planId, subjectId: (_b = input.subjectId) !== null && _b !== void 0 ? _b : current.subjectId, topicId: (_c = input.topicId) !== null && _c !== void 0 ? _c : current.topicId, title: (_d = input.title) !== null && _d !== void 0 ? _d : current.title, locator: (_e = input.locator) !== null && _e !== void 0 ? _e : null, attachmentId: (_f = input.attachmentId) !== null && _f !== void 0 ? _f : null, sizeBytes: (_g = input.sizeBytes) !== null && _g !== void 0 ? _g : null, archived: false, tags: (0, exam_foundation_js_1.encodeReferenceProvenance)(current.tags, { origin: provenance.origin, verifiedOn, supersedesMaterialId: current.id }), createdAt: at, updatedAt: at });
             commit({ ...state, materials: [...state.materials.map(material => material.id === materialId ? archived : material), successor] }, "material-reference-replaced");
             return successor;
         },
@@ -1155,8 +1189,9 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return current;
         },
         addGoal(input) {
+            var _a;
             const at = nowIso();
-            const goal = (0, domain_js_1.createGoal)({ ...input, planId: input.planId ?? activePlanId(), createdAt: at, updatedAt: at });
+            const goal = (0, domain_js_1.createGoal)({ ...input, planId: (_a = input.planId) !== null && _a !== void 0 ? _a : activePlanId(), createdAt: at, updatedAt: at });
             commit({ ...state, goals: [...state.goals, goal] }, "goal-added");
             return goal;
         },
@@ -1170,11 +1205,12 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return updated;
         },
         completeGoal(goalId) {
+            var _a;
             const current = state.goals.find((goal) => goal.id === goalId && goal.planId === activePlanId());
             if (!current)
                 throw new TypeError("Goal not found in the active plan");
             const at = nowIso();
-            const updated = (0, domain_js_1.createGoal)({ ...current, active: false, completedAt: current.completedAt ?? at, createdAt: current.createdAt, updatedAt: at });
+            const updated = (0, domain_js_1.createGoal)({ ...current, active: false, completedAt: (_a = current.completedAt) !== null && _a !== void 0 ? _a : at, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, goals: state.goals.map((goal) => goal.id === goalId ? updated : goal) }, "goal-completed");
             return updated;
         },
@@ -1196,17 +1232,17 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return commit({ ...candidate, revision: state.revision }, "portable-import-applied");
         },
         previewQuestionImport(source, format) { return (0, question_import_js_1.buildQuestionImportPreview)(state, source, format); },
-        applyQuestionImportPreview(preview) { if (!preview || preview.baseRevision !== state.revision)
+        applyQuestionImportPreview(preview) { var _a; if (!preview || preview.baseRevision !== state.revision)
             throw new TypeError("Question import preview is stale; preview again before applying"); if (!preview.ready)
             throw new TypeError("Question import preview is not ready"); const at = nowIso(); const planId = activePlanId(); const added = []; for (const d of preview.accepted) {
             let subjectId = null, topicId = null;
             if (d.subjectName) {
                 const subj = state.subjects.find(x => x.planId === planId && x.name.toLowerCase() === d.subjectName.toLowerCase());
-                subjectId = subj?.id ?? null;
+                subjectId = (_a = subj === null || subj === void 0 ? void 0 : subj.id) !== null && _a !== void 0 ? _a : null;
                 if (d.topicPath.length && subj) {
                     let parent = null;
                     for (const name of d.topicPath) {
-                        const topic = state.topics.find(x => x.subjectId === subj.id && (x.parentTopicId ?? null) === parent && x.name.toLowerCase() === name.toLowerCase());
+                        const topic = state.topics.find(x => { var _a; return x.subjectId === subj.id && ((_a = x.parentTopicId) !== null && _a !== void 0 ? _a : null) === parent && x.name.toLowerCase() === name.toLowerCase(); });
                         if (!topic) {
                             parent = null;
                             break;
@@ -1222,12 +1258,14 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         reclassifyError(errorId, category) { const entry = state.errorEntries.find(x => x.id === errorId && x.planId === activePlanId()); if (!entry)
             throw new TypeError("Error entry not found in active plan"); const at = nowIso(); const updated = (0, domain_js_1.createErrorEntry)({ ...entry, category, createdAt: entry.createdAt, updatedAt: at }); commit({ ...state, errorEntries: state.errorEntries.map(x => x.id === errorId ? updated : x) }, "error-reclassified"); return updated; },
         addQuestion(input) {
+            var _a;
             const at = nowIso();
-            const question = (0, domain_js_1.createQuestion)({ ...input, planId: input.planId ?? activePlanId(), createdAt: at, updatedAt: at });
+            const question = (0, domain_js_1.createQuestion)({ ...input, planId: (_a = input.planId) !== null && _a !== void 0 ? _a : activePlanId(), createdAt: at, updatedAt: at });
             commit({ ...state, questions: [...state.questions, question] }, "question-added");
             return question;
         },
         answerQuestion(questionId, answer, { durationSeconds = null, errorCategory = "other", note = null } = {}) {
+            var _a;
             const at = nowIso();
             const question = state.questions.find((candidate) => candidate.id === questionId && candidate.planId === activePlanId());
             if (!question)
@@ -1242,7 +1280,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             let review = null;
             let errorEntry = null;
             if (result.gradable && result.correct === false) {
-                review = state.reviews.find((candidate) => candidate.status === "due" && candidate.sourceType === "question" && candidate.sourceId === question.id) ?? null;
+                review = (_a = state.reviews.find((candidate) => candidate.status === "due" && candidate.sourceType === "question" && candidate.sourceId === question.id)) !== null && _a !== void 0 ? _a : null;
                 if (!review) {
                     const intervals = reviewIntervals();
                     review = (0, domain_js_1.createReview)({ planId: activePlanId(), subjectId: question.subjectId, topicId: question.topicId, dueAt: new Date(Date.parse(at) + intervals[0] * 86400000).toISOString(), status: "due", sourceType: "question", sourceId: question.id, intervalIndex: 0, intervalDays: intervals[0], repetitionCount: 0, createdAt: at, updatedAt: at });
@@ -1250,7 +1288,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 }
                 const existing = state.errorEntries.find((candidate) => candidate.status === "open" && candidate.questionId === question.id && candidate.category === errorCategory);
                 if (existing) {
-                    errorEntry = (0, domain_js_1.createErrorEntry)({ ...existing, recurrenceCount: existing.recurrenceCount + 1, reviewId: review.id, note: note ?? existing.note, updatedAt: at });
+                    errorEntry = (0, domain_js_1.createErrorEntry)({ ...existing, recurrenceCount: existing.recurrenceCount + 1, reviewId: review.id, note: note !== null && note !== void 0 ? note : existing.note, updatedAt: at });
                     errorEntries = state.errorEntries.map((candidate) => candidate.id === existing.id ? errorEntry : candidate);
                 }
                 else {
@@ -1262,6 +1300,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return { result, attempt, review, errorEntry };
         },
         completeReview(reviewId, { rating = null } = {}) {
+            var _a, _b;
             const at = nowIso();
             const review = state.reviews.find((candidate) => candidate.id === reviewId && candidate.planId === activePlanId());
             if (!review)
@@ -1279,8 +1318,8 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const nextIndex = grade < 3 ? 0 : Math.min(currentIndex + 1, intervals.length - 1);
             const nextInterval = intervals[nextIndex];
             const completed = (0, domain_js_1.createReview)({ ...review, status: "completed", completedAt: at, updatedAt: at });
-            const duplicate = review.sourceId == null ? null : state.reviews.find((candidate) => candidate.id !== review.id && candidate.status === "due" && candidate.planId === review.planId && candidate.sourceType === review.sourceType && candidate.sourceId === review.sourceId) ?? null;
-            const successor = duplicate ?? (0, domain_js_1.createReview)({ planId: review.planId, subjectId: review.subjectId, topicId: review.topicId, dueAt: new Date(Date.parse(at) + nextInterval * 86400000).toISOString(), status: "due", sourceType: review.sourceType, sourceId: review.sourceId, intervalIndex: nextIndex, intervalDays: nextInterval, repetitionCount: (review.repetitionCount ?? 0) + 1, previousReviewId: review.id, createdAt: at, updatedAt: at });
+            const duplicate = review.sourceId == null ? null : (_a = state.reviews.find((candidate) => candidate.id !== review.id && candidate.status === "due" && candidate.planId === review.planId && candidate.sourceType === review.sourceType && candidate.sourceId === review.sourceId)) !== null && _a !== void 0 ? _a : null;
+            const successor = duplicate !== null && duplicate !== void 0 ? duplicate : (0, domain_js_1.createReview)({ planId: review.planId, subjectId: review.subjectId, topicId: review.topicId, dueAt: new Date(Date.parse(at) + nextInterval * 86400000).toISOString(), status: "due", sourceType: review.sourceType, sourceId: review.sourceId, intervalIndex: nextIndex, intervalDays: nextInterval, repetitionCount: ((_b = review.repetitionCount) !== null && _b !== void 0 ? _b : 0) + 1, previousReviewId: review.id, createdAt: at, updatedAt: at });
             let reviews = state.reviews.map((candidate) => candidate.id === review.id ? completed : candidate);
             if (!duplicate)
                 reviews = [...reviews, successor];
@@ -1294,7 +1333,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const entry = state.errorEntries.find((candidate) => candidate.id === errorId && candidate.planId === activePlanId());
             if (!entry)
                 throw new TypeError("Error entry not found in the active plan");
-            const resolved = (0, domain_js_1.createErrorEntry)({ ...entry, status: "resolved", resolvedAt: at, note: note ?? entry.note, updatedAt: at });
+            const resolved = (0, domain_js_1.createErrorEntry)({ ...entry, status: "resolved", resolvedAt: at, note: note !== null && note !== void 0 ? note : entry.note, updatedAt: at });
             commit({ ...state, errorEntries: state.errorEntries.map((candidate) => candidate.id === errorId ? resolved : candidate) }, "error-resolved");
             return resolved;
         },
@@ -1317,11 +1356,12 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         },
         replaceState(nextState, reason = "state-replaced") { return commit(nextState, reason); },
         resetLocalState() {
+            var _a;
             const cleared = typeof repository.clear === "function" ? repository.clear() : { status: "cleared" };
             state = initialStateFactory({ now: nowIso() });
             const saved = repository.save(state);
             const status = saved.status === "saved" ? "cleared" : saved.status;
-            persistence = { status, message: saved.status === "saved" ? persistenceMessage("cleared") : persistenceMessage(saved.status, saved.reason ?? cleared.reason), durable: saved.status === "saved" };
+            persistence = { status, message: saved.status === "saved" ? persistenceMessage("cleared") : persistenceMessage(saved.status, (_a = saved.reason) !== null && _a !== void 0 ? _a : cleared.reason), durable: saved.status === "saved" };
             notify("state-reset");
             return state;
         },

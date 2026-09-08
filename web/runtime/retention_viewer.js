@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.planMaterialViewer = planMaterialViewer;
 exports.materialViewerIsInline = materialViewerIsInline;
 exports.materialViewerNeedsAttachment = materialViewerNeedsAttachment;
-function mime(material) { return String(material.mimeType ?? "").trim().toLowerCase() || "application/octet-stream"; }
-function safeWebUri(raw) { const value = String(raw ?? "").trim(); if (!value)
+function mime(material) { var _a; return String((_a = material.mimeType) !== null && _a !== void 0 ? _a : "").trim().toLowerCase() || "application/octet-stream"; }
+function safeWebUri(raw) { const value = String(raw !== null && raw !== void 0 ? raw : "").trim(); if (!value)
     return null; try {
     const u = new URL(value);
     return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
@@ -13,6 +13,7 @@ catch {
     return null;
 } }
 function planMaterialViewer(material) {
+    var _a;
     if (!material || typeof material !== "object")
         throw new TypeError("Material is required");
     const m = mime(material);
@@ -20,7 +21,7 @@ function planMaterialViewer(material) {
         const kind = m === "application/pdf" ? "local-pdf" : m.startsWith("image/") ? "local-image" : m.startsWith("audio/") ? "local-audio" : m.startsWith("video/") ? "local-video" : m.startsWith("text/") || m === "application/json" || m === "application/xml" || m === "application/javascript" ? "local-text" : "local-download";
         return { kind, title: material.title, mimeType: m, attachmentId: material.attachmentId, uri: null, reason: null };
     }
-    const locator = String(material.locator ?? "").trim();
+    const locator = String((_a = material.locator) !== null && _a !== void 0 ? _a : "").trim();
     if (!locator)
         return { kind: "missing", title: material.title, mimeType: material.mimeType, attachmentId: null, uri: null, reason: "Material has no local attachment or source URI." };
     if (locator.startsWith("local-blob:"))

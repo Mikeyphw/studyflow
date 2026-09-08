@@ -91,7 +91,7 @@ function bbReferenceGoals(planId, at) {
     ];
 }
 function normalizeStudyActivityType(value, kind = "study") {
-    const raw = String(value ?? "").trim().toUpperCase();
+    const raw = String(value !== null && value !== void 0 ? value : "").trim().toUpperCase();
     const supported = ["THEORY", "VIDEO", "READING", "CUSTOM", "QUESTIONS", "FLASHCARDS", "REVIEW", "MOCK_EXAM", "WRITING"];
     if (supported.includes(raw))
         return raw;
@@ -105,6 +105,7 @@ function activityKindForType(type) {
     return "study";
 }
 function routeActivityDeepLink(state, activityId) {
+    var _a, _b;
     const activity = state.activities.find(item => item.id === activityId && item.planId === state.activePlanId);
     if (!activity)
         throw new TypeError("Activity not found in the active plan");
@@ -117,10 +118,10 @@ function routeActivityDeepLink(state, activityId) {
     if (activityType === "FLASHCARDS")
         return { ...base, screen: "practice", practiceTab: "reviews", focusMode: null, reviewId: null };
     if (activityType === "REVIEW") {
-        const due = state.reviews.filter(review => review.planId === activity.planId && review.status === "due")
+        const due = (_a = state.reviews.filter(review => review.planId === activity.planId && review.status === "due")
             .filter(review => activity.topicId ? review.topicId === activity.topicId : activity.subjectId ? review.subjectId === activity.subjectId : true)
-            .sort((a, b) => a.dueAt.localeCompare(b.dueAt))[0] ?? null;
-        return { ...base, screen: "practice", practiceTab: "reviews", focusMode: null, reviewId: due?.id ?? null };
+            .sort((a, b) => a.dueAt.localeCompare(b.dueAt))[0]) !== null && _a !== void 0 ? _a : null;
+        return { ...base, screen: "practice", practiceTab: "reviews", focusMode: null, reviewId: (_b = due === null || due === void 0 ? void 0 : due.id) !== null && _b !== void 0 ? _b : null };
     }
     if (activityType === "WRITING")
         return { ...base, screen: "today", practiceTab: null, focusMode: "writing", reviewId: null };
@@ -128,7 +129,7 @@ function routeActivityDeepLink(state, activityId) {
 }
 const WRITING_PREFIX = "studyflowWritingV1=";
 const defaultChecklist = () => ({ taskReviewed: false, structureReviewed: false, cohesionReviewed: false, languageReviewed: false });
-function normalizeWritingChecklist(input) { return { taskReviewed: Boolean(input?.taskReviewed), structureReviewed: Boolean(input?.structureReviewed), cohesionReviewed: Boolean(input?.cohesionReviewed), languageReviewed: Boolean(input?.languageReviewed) }; }
+function normalizeWritingChecklist(input) { return { taskReviewed: Boolean(input === null || input === void 0 ? void 0 : input.taskReviewed), structureReviewed: Boolean(input === null || input === void 0 ? void 0 : input.structureReviewed), cohesionReviewed: Boolean(input === null || input === void 0 ? void 0 : input.cohesionReviewed), languageReviewed: Boolean(input === null || input === void 0 ? void 0 : input.languageReviewed) }; }
 ;
 function writingChecklistComplete(checklist) { return checklist.taskReviewed && checklist.structureReviewed && checklist.cohesionReviewed && checklist.languageReviewed; }
 function normalizeWritingRubric(input) {
@@ -140,18 +141,19 @@ function normalizeWritingRubric(input) {
 }
 function writingRubricTotal(rubric) { return rubric.themeAndTask + rubric.textType + rubric.cohesion + rubric.argumentation + rubric.standardLanguage; }
 function createWritingSessionRecord(input) {
-    const prompt = String(input.prompt ?? "").trim();
+    var _a, _b, _c;
+    const prompt = String((_a = input.prompt) !== null && _a !== void 0 ? _a : "").trim();
     if (!prompt)
         throw new TypeError("Writing prompt cannot be blank");
-    return { version: 1, prompt, draftText: String(input.draftText ?? ""), rubric: input.rubric ? normalizeWritingRubric(input.rubric) : null, checklist: normalizeWritingChecklist(input.checklist ?? defaultChecklist()) };
+    return { version: 1, prompt, draftText: String((_b = input.draftText) !== null && _b !== void 0 ? _b : ""), rubric: input.rubric ? normalizeWritingRubric(input.rubric) : null, checklist: normalizeWritingChecklist((_c = input.checklist) !== null && _c !== void 0 ? _c : defaultChecklist()) };
 }
 function encodeWritingSessionRecord(record) { return WRITING_PREFIX + JSON.stringify(createWritingSessionRecord(record)); }
 function decodeWritingSessionRecord(note) {
-    if (!String(note ?? "").startsWith(WRITING_PREFIX))
+    if (!String(note !== null && note !== void 0 ? note : "").startsWith(WRITING_PREFIX))
         return null;
     try {
         const raw = JSON.parse(String(note).slice(WRITING_PREFIX.length));
-        if (raw?.version !== 1)
+        if ((raw === null || raw === void 0 ? void 0 : raw.version) !== 1)
             return null;
         return createWritingSessionRecord(raw);
     }
@@ -162,21 +164,23 @@ function decodeWritingSessionRecord(note) {
 function localWeekBounds(at) { const d = at instanceof Date ? new Date(at) : new Date(at); if (!Number.isFinite(d.getTime()))
     throw new TypeError("Invalid writing progress timestamp"); const day = (d.getDay() + 6) % 7; const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - day, 0, 0, 0, 0).getTime(); return [start, start + 7 * 86400000]; }
 function deriveWritingWeeklyProgress(state, at = new Date()) {
+    var _a, _b, _c, _d;
     if (!state.activePlanId)
         return { completed: 0, target: null, reached: false };
     const [start, end] = localWeekBounds(at);
     const completed = state.sessions.filter(session => session.planId === state.activePlanId && session.status === "completed" && decodeWritingSessionRecord(session.note) != null && session.endedAt != null).filter(session => { const ms = Date.parse(session.endedAt); return ms >= start && ms < end; }).length;
     const goal = state.goals.find(item => item.planId === state.activePlanId && item.active && item.metric === "writing-sessions" && item.period === "weekly");
-    const target = goal ? Math.max(1, Math.round(goal.target)) : state.plans.find(plan => plan.id === state.activePlanId)?.configuration.publicExam?.bbReferencePreset?.weeklyWritingSessionGoal ?? null;
+    const target = goal ? Math.max(1, Math.round(goal.target)) : (_d = (_c = (_b = (_a = state.plans.find(plan => plan.id === state.activePlanId)) === null || _a === void 0 ? void 0 : _a.configuration.publicExam) === null || _b === void 0 ? void 0 : _b.bbReferencePreset) === null || _c === void 0 ? void 0 : _c.weeklyWritingSessionGoal) !== null && _d !== void 0 ? _d : null;
     return { completed, target, reached: target != null && completed >= target };
 }
 function activeWritingSession(state) {
-    const activityId = state.focus?.activityId ?? null;
+    var _a, _b, _c;
+    const activityId = (_b = (_a = state.focus) === null || _a === void 0 ? void 0 : _a.activityId) !== null && _b !== void 0 ? _b : null;
     if (!activityId)
         return null;
     const activity = state.activities.find(item => item.id === activityId);
     if (!activity || normalizeStudyActivityType(activity.activityType, activity.kind) !== "WRITING")
         return null;
-    return state.sessions.filter(session => session.planId === state.activePlanId && session.activityId === activityId && (session.status === "running" || session.status === "paused")).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
+    return (_c = state.sessions.filter(session => session.planId === state.activePlanId && session.activityId === activityId && (session.status === "running" || session.status === "paused")).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]) !== null && _c !== void 0 ? _c : null;
 }
 function writingActivity(activity) { return Boolean(activity && normalizeStudyActivityType(activity.activityType, activity.kind) === "WRITING"); }

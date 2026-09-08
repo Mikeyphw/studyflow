@@ -38,6 +38,8 @@ const client_1 = require("react-dom/client");
 const storage_1 = require("./storage");
 const state_1 = require("./state");
 const App_1 = require("./react/App");
+const tv_1 = require("./tv");
+(0, tv_1.installTvBrowserAdapter)();
 async function boot() { const node = document.getElementById("root"); if (!node)
     throw new Error("StudyFlow React root is missing"); const persistence = await (0, storage_1.createBrowserPersistence)(); const store = state_1.createStudyStore({ repository: persistence.repository }); (0, client_1.createRoot)(node).render(React.createElement(App_1.App, { store, persistence })); }
 void boot().catch((error) => { const node = document.getElementById("root"); const message = error instanceof Error ? error.message : String(error); if (node)

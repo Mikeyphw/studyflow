@@ -23,19 +23,20 @@ exports.STUDY_STRATEGY_TYPES = [
     "COUNTDOWN",
 ];
 function normalizeStudyStrategyType(value) {
-    const candidate = String(value ?? "").trim().toUpperCase();
+    const candidate = String(value !== null && value !== void 0 ? value : "").trim().toUpperCase();
     return exports.STUDY_STRATEGY_TYPES.includes(candidate) ? candidate : "FIXED_WEEKLY";
 }
 function resolvePublicExamDate(plan) {
+    var _a;
     if (plan.mode !== "EXAM_PLAN")
         return { date: null, source: "none", official: false };
-    const target = plan.configuration.publicExam?.target;
-    if (target?.dateStatus === "confirmed" && target.examDate)
+    const target = (_a = plan.configuration.publicExam) === null || _a === void 0 ? void 0 : _a.target;
+    if ((target === null || target === void 0 ? void 0 : target.dateStatus) === "confirmed" && target.examDate)
         return { date: target.examDate, source: "confirmed-target", official: true };
-    if (target?.dateStatus === "expected" && target.examDate)
+    if ((target === null || target === void 0 ? void 0 : target.dateStatus) === "expected" && target.examDate)
         return { date: target.examDate, source: "expected-target", official: false };
     // Legacy plan-only dates remain official only when no target date is carrying a newer truth state.
-    if (!target?.examDate && plan.examDate)
+    if (!(target === null || target === void 0 ? void 0 : target.examDate) && plan.examDate)
         return { date: plan.examDate, source: "legacy-plan", official: true };
     return { date: null, source: "none", official: false };
 }

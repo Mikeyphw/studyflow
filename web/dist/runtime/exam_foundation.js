@@ -17,7 +17,7 @@ const VERIFIED_PREFIX = "studyflow:reference-verified-on=";
 const SUPERSEDES_PREFIX = "studyflow:reference-supersedes=";
 exports.REFERENCE_POSSIBLY_STALE_AFTER_DAYS = 90;
 exports.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS = 365;
-const cleanText = (value) => { const text = String(value ?? "").trim(); return text || null; };
+const cleanText = (value) => { const text = String(value !== null && value !== void 0 ? value : "").trim(); return text || null; };
 const dateOnly = (value) => { const text = cleanText(value); return text && /^\d{4}-\d{2}-\d{2}$/.test(text) && Number.isFinite(Date.parse(`${text}T00:00:00Z`)) ? text : null; };
 const dayFromDateLike = (value) => { if (value instanceof Date)
     return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10); const canonical = dateOnly(value); if (canonical)
@@ -36,20 +36,21 @@ function normalizeStudyPhaseDefinitions(input) {
     if (!Array.isArray(input))
         return [];
     return input.map((raw, index) => {
-        const kind = PHASE_KINDS.has(String(raw?.kind)) ? String(raw.kind) : "custom";
-        const startsOn = dateOnly(raw?.startsOn) ?? "1970-01-01";
-        const endsOn = dateOnly(raw?.endsOn) ?? startsOn;
+        var _a, _b, _c, _d;
+        const kind = PHASE_KINDS.has(String(raw === null || raw === void 0 ? void 0 : raw.kind)) ? String(raw.kind) : "custom";
+        const startsOn = (_a = dateOnly(raw === null || raw === void 0 ? void 0 : raw.startsOn)) !== null && _a !== void 0 ? _a : "1970-01-01";
+        const endsOn = (_b = dateOnly(raw === null || raw === void 0 ? void 0 : raw.endsOn)) !== null && _b !== void 0 ? _b : startsOn;
         return {
-            id: cleanText(raw?.id) ?? `phase-${index + 1}`,
+            id: (_c = cleanText(raw === null || raw === void 0 ? void 0 : raw.id)) !== null && _c !== void 0 ? _c : `phase-${index + 1}`,
             kind,
-            label: cleanText(raw?.label) ?? kind.replace(/-/g, " "),
+            label: (_d = cleanText(raw === null || raw === void 0 ? void 0 : raw.label)) !== null && _d !== void 0 ? _d : kind.replace(/-/g, " "),
             startsOn, endsOn,
-            theoryRatioPercent: pct(raw?.theoryRatioPercent),
-            questionRatioPercent: pct(raw?.questionRatioPercent),
-            reviewRatioPercent: pct(raw?.reviewRatioPercent),
-            questionGoal: nonNegativeInt(raw?.questionGoal),
-            mockExamGoal: nonNegativeInt(raw?.mockExamGoal),
-            allocationIsStudyFlowSuggested: Boolean(raw?.allocationIsStudyFlowSuggested),
+            theoryRatioPercent: pct(raw === null || raw === void 0 ? void 0 : raw.theoryRatioPercent),
+            questionRatioPercent: pct(raw === null || raw === void 0 ? void 0 : raw.questionRatioPercent),
+            reviewRatioPercent: pct(raw === null || raw === void 0 ? void 0 : raw.reviewRatioPercent),
+            questionGoal: nonNegativeInt(raw === null || raw === void 0 ? void 0 : raw.questionGoal),
+            mockExamGoal: nonNegativeInt(raw === null || raw === void 0 ? void 0 : raw.mockExamGoal),
+            allocationIsStudyFlowSuggested: Boolean(raw === null || raw === void 0 ? void 0 : raw.allocationIsStudyFlowSuggested),
         };
     });
 }
@@ -79,15 +80,17 @@ function validateStudyPhaseDefinitions(input) {
     return errors;
 }
 function deriveActiveStudyPhase(plan, date = new Date()) {
+    var _a, _b;
     if (plan.mode !== "EXAM_PLAN")
         return null;
     const day = dayFromDateLike(date);
     if (!day)
         return null;
-    return plan.configuration.publicExam?.phaseDefinitions.find(phase => phase.startsOn <= day && day <= phase.endsOn) ?? null;
+    return (_b = (_a = plan.configuration.publicExam) === null || _a === void 0 ? void 0 : _a.phaseDefinitions.find(phase => phase.startsOn <= day && day <= phase.endsOn)) !== null && _b !== void 0 ? _b : null;
 }
 function cloneBbStudyPhaseSuggestions() { return clone(exports.BB_STUDY_PHASE_SUGGESTIONS); }
 function derivePreEditalCockpit(plan, at = new Date()) {
+    var _a, _b, _c;
     if (plan.mode !== "EXAM_PLAN" || !plan.configuration.publicExam)
         return null;
     const cfg = plan.configuration.publicExam, target = cfg.target;
@@ -98,8 +101,8 @@ function derivePreEditalCockpit(plan, at = new Date()) {
     const latest = ordered.length ? ordered[ordered.length - 1] : null;
     const resolved = (0, promise_cleanup_1.resolvePublicExamDate)(plan);
     const resolvedDate = { date: resolved.date, source: resolved.source, isConfirmed: resolved.official };
-    const referenceLabel = latest?.reference ?? latest?.id ?? target.editalRef ?? null;
-    const referenceAgeDays = latest?.publishedAt ? Math.max(0, Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - Date.parse(`${latest.publishedAt}T00:00:00Z`)) / DAY_MS)) : null;
+    const referenceLabel = (_c = (_b = (_a = latest === null || latest === void 0 ? void 0 : latest.reference) !== null && _a !== void 0 ? _a : latest === null || latest === void 0 ? void 0 : latest.id) !== null && _b !== void 0 ? _b : target.editalRef) !== null && _c !== void 0 ? _c : null;
+    const referenceAgeDays = (latest === null || latest === void 0 ? void 0 : latest.publishedAt) ? Math.max(0, Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - Date.parse(`${latest.publishedAt}T00:00:00Z`)) / DAY_MS)) : null;
     const staleReferenceDays = Math.max(1, Math.trunc(cfg.cockpitStaleReferenceDays || exports.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS));
     if (resolvedDate.isConfirmed)
         return { preEdital: false, officialCountdownDays: null, resolvedDate, latestRevision: latest, referenceLabel, referenceAgeDays, issues: [], staleReferenceDays };
@@ -113,7 +116,7 @@ function derivePreEditalCockpit(plan, at = new Date()) {
     return { preEdital: true, officialCountdownDays: null, resolvedDate, latestRevision: latest, referenceLabel, referenceAgeDays, issues, staleReferenceDays };
 }
 function managedReferenceTag(tag) { return tag.startsWith(ORIGIN_PREFIX) || tag.startsWith(VERIFIED_PREFIX) || tag.startsWith(SUPERSEDES_PREFIX); }
-function valueFor(tags, prefix) { return tags.find(tag => tag.startsWith(prefix))?.slice(prefix.length) ?? null; }
+function valueFor(tags, prefix) { var _a, _b; return (_b = (_a = tags.find(tag => tag.startsWith(prefix))) === null || _a === void 0 ? void 0 : _a.slice(prefix.length)) !== null && _b !== void 0 ? _b : null; }
 function decodeReferenceProvenance(materialOrTags) {
     const tags = Array.isArray(materialOrTags) ? materialOrTags : materialOrTags.tags;
     const originRaw = valueFor(tags, ORIGIN_PREFIX);
