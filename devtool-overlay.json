@@ -1,257 +1,302 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_web_wtv04_05_ten_foot_remote_workflows_v1",
+  "name": "studyflow_web_wtv12_13_progress_schedule_v1",
   "target": "studyflow_web",
-  "description": "WTV04-WTV05 TV-browser batch: refines 10-foot presentation and introduces explicit remote-first Plan/Practice/Progress/Settings/Today workflows while retaining material viewing, reviews, error actions, focus controls and analytics.",
-  "commit_message": "WTV04-WTV05: refine TV UI and remote-first workflows",
+  "description": "WTV12-WTV13 TV-browser batch: dedicated evidence-backed Progress analytics and a dedicated read-only Schedule surface with D-pad/phone control parity, truthful no-data semantics and canonical activity routing.",
+  "commit_message": "WTV12-WTV13: add TV progress analytics and read-only schedule",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "WTV04-WTV05: refine TV UI and remote-first workflows"
+    "message": "WTV12-WTV13: add TV progress analytics and read-only schedule"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "WTV04-WTV05: refine TV UI and remote-first workflows"
+      "message": "WTV12-WTV13: add TV progress analytics and read-only schedule"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_web",
     "expected_target_type": "node",
-    "requires_previous_overlay": "studyflow_web_wtv00_03_tv_browser_foundation_v1.zip",
-    "requires_previous_overlay_sha256": "e873611a4216e24ac75069dedb210699095c3debdf09ffe0c2dc76ebc3fbbb78"
+    "requires_previous_overlay": "studyflow_web_wtv10_11_mock_exam_review_notebook_v1.zip",
+    "requires_previous_overlay_sha256": "8b2bd18f06b8eaa99c93a0ea212cee1eaf9c474e731de3f2494d2b35ee517fce"
   },
   "structure": {
     "format": 1,
+    "name": "studyflow_web_wtv12_13_progress_schedule_v1",
+    "target": "studyflow_web",
     "sections": [
       {
-        "id": "wtv04-ten-foot-polish",
-        "purpose": "10-foot hierarchy, TV rail/tab/list/modal readability and focus presentation",
+        "id": "wtv12-progress-analytics",
+        "purpose": "Dedicated evidence-backed TV Progress analytics, weak-subject recommendations and remote navigation without evidence mutation",
         "paths": [
-          "web/styles.css",
-          "web/dist/styles.css"
+          "web/src/tv_progress.ts",
+          "web/runtime/tv_progress.js",
+          "web/dist/runtime/tv_progress.js"
         ]
       },
       {
-        "id": "wtv05-remote-workflows",
-        "purpose": "Remote-first Plan, Practice, Progress, Settings, Today and read-only Library presentation",
+        "id": "wtv13-read-only-schedule",
+        "purpose": "Dedicated #schedule History surface with Today/week presentation, selected-item navigation and canonical activity launch routing without schedule mutation",
+        "paths": [
+          "web/src/tv_schedule.ts",
+          "web/runtime/tv_schedule.js",
+          "web/dist/runtime/tv_schedule.js",
+          "web/src/tv_history.ts",
+          "web/runtime/tv_history.js",
+          "web/dist/runtime/tv_history.js"
+        ]
+      },
+      {
+        "id": "wtv12-13-ui-remote",
+        "purpose": "React routing, TV navigation rail, phone remote shortcuts, 10-foot styling and offline shell integration",
         "paths": [
           "web/src/react/App.tsx",
           "web/runtime/react/App.js",
-          "web/dist/runtime/react/App.js"
+          "web/dist/runtime/react/App.js",
+          "web/scripts/serve_tv.mjs",
+          "web/styles.css",
+          "web/dist/styles.css",
+          "web/service-worker.js"
         ]
       },
       {
-        "id": "wtv05-adapter-contract",
-        "purpose": "Expose explicit remote-first TV input-mode capability",
+        "id": "tests-docs",
+        "purpose": "Cumulative regressions, explicit read-only/truthfulness contracts and roadmap documentation",
         "paths": [
-          "web/src/tv.ts",
-          "web/runtime/tv.js",
-          "web/dist/runtime/tv.js"
-        ]
-      },
-      {
-        "id": "tests-docs-release",
-        "purpose": "Regression coverage, roadmap notes and content-addressed tracked release refresh",
-        "paths": [
-          "web/tests/test_wtv00_03_tv_browser_foundation.py",
-          "web/tests/test_wtv04_05_ten_foot_remote_workflows.py",
+          "web/tests/test_wtv12_13_progress_schedule.py",
           "docs/web/WEB_ROADMAP.md",
-          "docs/web/WTV04_WTV05_TEN_FOOT_REMOTE_WORKFLOWS.md",
-          "web/README.md",
-          "web/dist/service-worker.js",
-          "web/dist/release-manifest.json"
+          "docs/web/WTV12_WTV13_PROGRESS_SCHEDULE.md",
+          "web/README.md"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 15,
+    "count": 20,
     "entries": [
       {
         "action": "modify",
         "path": "docs/web/WEB_ROADMAP.md",
         "mode": "0o600",
-        "sha256": "c7bf93432b7a91c3088df0010386b25564a64d5ef1a0550575615fd7cd275fe7",
-        "size": 6701,
+        "sha256": "96a777b3d009a676ffb59aac0c91a66b22c34c001941a56b35ddbacba6afa01e",
+        "size": 9361,
         "source_mode": "0o600",
-        "source_sha256": "dbe24a49525b0160a75d4882d134f892d089fecdfae380021ca1385d1da711b3",
-        "source_size": 6467
+        "source_sha256": "27af60007142d108eb13ef92d50a19f1e37e2c9e72f0f688fa527266862a0be6",
+        "source_size": 8562
       },
       {
         "action": "add",
-        "path": "docs/web/WTV04_WTV05_TEN_FOOT_REMOTE_WORKFLOWS.md",
+        "path": "docs/web/WTV12_WTV13_PROGRESS_SCHEDULE.md",
         "mode": "0o644",
-        "sha256": "87a4d57076c12a3f143a16dd6e0511b95fbcf3b09a5689a0f188301bf6120f5a",
-        "size": 2530
+        "sha256": "627a4ed380151cc022e1234ca8de1bc1e96c0b0566ae03d5eef01a9f6d3434f0",
+        "size": 2128
       },
       {
         "action": "modify",
         "path": "web/README.md",
         "mode": "0o600",
-        "sha256": "e600f51d4876f485aa5dcb80d8b5122e6e424464e23e5b20c77571fff25a81f4",
-        "size": 12216,
+        "sha256": "11d5b5ea54b7bc702b19f02f9f0e3c252307da7661f33468e8ed2057c32587de",
+        "size": 16139,
         "source_mode": "0o600",
-        "source_sha256": "10475e3da509dcec398d4866c8c9e54a484e9c3c9e99184094a31299da3e44c8",
-        "source_size": 11748
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/release-manifest.json",
-        "mode": "0o644",
-        "sha256": "c040f3b0e79fff871930820caa3057dfdbba9fc8d7cd765628078356645ec3ab",
-        "size": 6444,
-        "source_mode": "0o644",
-        "source_sha256": "ccc309f257f09861bc5bc72ae532789ca3bba6fbeeec6fef61045fc170e0b951",
-        "source_size": 6444
+        "source_sha256": "5ac9d3bcdcafee70b3f6d8094c1a8ac1d69cbf5021f6e094b59cc73dad665e31",
+        "source_size": 15534
       },
       {
         "action": "modify",
         "path": "web/dist/runtime/react/App.js",
         "mode": "0o644",
-        "sha256": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
-        "size": 223266,
-        "source_mode": "0o600",
-        "source_sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
-        "source_size": 201914
+        "sha256": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
+        "size": 301013,
+        "source_mode": "0o644",
+        "source_sha256": "fa7769070ab0fe71d336e19a53136cf061d5fc9418b5b75c6e0280b37b605837",
+        "source_size": 285491
       },
       {
         "action": "modify",
-        "path": "web/dist/runtime/tv.js",
+        "path": "web/dist/runtime/tv_history.js",
         "mode": "0o644",
-        "sha256": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
-        "size": 8579,
+        "sha256": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
+        "size": 2082,
         "source_mode": "0o644",
-        "source_sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
-        "source_size": 8481
+        "source_sha256": "31ffc91eaef4818c96114c546429ed706fc9b9fc3b9c10137fcda8a02f122385",
+        "source_size": 2070
       },
       {
-        "action": "modify",
-        "path": "web/dist/service-worker.js",
+        "action": "add",
+        "path": "web/dist/runtime/tv_progress.js",
         "mode": "0o644",
-        "sha256": "b895fe86f5ce6249d27962826ab39225ba2bc8557f00165c7894d5681564f006",
-        "size": 2333,
-        "source_mode": "0o644",
-        "source_sha256": "1bd053770663a52303382d9ca631b89a4f828416427d4ed109196e1df87ee6ae",
-        "source_size": 2333
+        "sha256": "dbb4d86446f4170f60c75c216eff422d4379ec70cd9fafe0129ddea287792697",
+        "size": 6853
+      },
+      {
+        "action": "add",
+        "path": "web/dist/runtime/tv_schedule.js",
+        "mode": "0o644",
+        "sha256": "7b54fcb6c3c9df0354a118e5430299dc7ff5fc7eef6011cc110b16318223afc5",
+        "size": 4210
       },
       {
         "action": "modify",
         "path": "web/dist/styles.css",
         "mode": "0o600",
-        "sha256": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
-        "size": 32605,
+        "sha256": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
+        "size": 45591,
         "source_mode": "0o600",
-        "source_sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
-        "source_size": 25276
+        "source_sha256": "c56cfebd25d086f90f8bcc27944525caea1795b49a080d7fd774819f65c9edff",
+        "source_size": 41017
       },
       {
         "action": "modify",
         "path": "web/runtime/react/App.js",
         "mode": "0o644",
-        "sha256": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
-        "size": 223266,
-        "source_mode": "0o600",
-        "source_sha256": "ab1095dd76f18426e0a9bf3490496e3b4ffbd6f0caa1c251b7e21efdd18c3024",
-        "source_size": 201914
+        "sha256": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
+        "size": 301013,
+        "source_mode": "0o644",
+        "source_sha256": "fa7769070ab0fe71d336e19a53136cf061d5fc9418b5b75c6e0280b37b605837",
+        "source_size": 285491
       },
       {
         "action": "modify",
-        "path": "web/runtime/tv.js",
+        "path": "web/runtime/tv_history.js",
         "mode": "0o644",
-        "sha256": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
-        "size": 8579,
+        "sha256": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
+        "size": 2082,
         "source_mode": "0o644",
-        "source_sha256": "d25bc4f247300426501d20346c35e659d97bee265445cbba8e0d8aa61378224c",
-        "source_size": 8481
+        "source_sha256": "31ffc91eaef4818c96114c546429ed706fc9b9fc3b9c10137fcda8a02f122385",
+        "source_size": 2070
+      },
+      {
+        "action": "add",
+        "path": "web/runtime/tv_progress.js",
+        "mode": "0o644",
+        "sha256": "dbb4d86446f4170f60c75c216eff422d4379ec70cd9fafe0129ddea287792697",
+        "size": 6853
+      },
+      {
+        "action": "add",
+        "path": "web/runtime/tv_schedule.js",
+        "mode": "0o644",
+        "sha256": "7b54fcb6c3c9df0354a118e5430299dc7ff5fc7eef6011cc110b16318223afc5",
+        "size": 4210
+      },
+      {
+        "action": "modify",
+        "path": "web/scripts/serve_tv.mjs",
+        "mode": "0o644",
+        "sha256": "21f961ce144df22e265a8ecb79ab80559f717c7f0e7e3eed83694e526602be37",
+        "size": 8551,
+        "source_mode": "0o644",
+        "source_sha256": "dd09c887af5fb11eb92bd4f24d9b6e6b2bedc5cb42e51cc50339db49aed9b990",
+        "source_size": 7822
+      },
+      {
+        "action": "modify",
+        "path": "web/service-worker.js",
+        "mode": "0o600",
+        "sha256": "21a51b17162f2eb0fc9ed29217d038728322d342ee2588234012bbcc5891e371",
+        "size": 2631,
+        "source_mode": "0o600",
+        "source_sha256": "c7b7614caebfeea527d9e091212a4cd0340a038c5c0fd6814f22801146a5e65f",
+        "source_size": 2575
       },
       {
         "action": "modify",
         "path": "web/src/react/App.tsx",
         "mode": "0o600",
-        "sha256": "6ce52feca71ac27e08de9dbc3c68e6e28038985dd35b6c9af9f47df5d663bb2a",
-        "size": 151089,
+        "sha256": "fb481f53810367805bc479a43b931cbde9ec536778f8579a4b9a86d3ae0f4f6f",
+        "size": 205601,
         "source_mode": "0o600",
-        "source_sha256": "f4de55ba1038d59f17b055cf7ae7cca9e5e8d6f31e35ccb17fe9c36026271760",
-        "source_size": 136511
+        "source_sha256": "df52c3d33769ce2b83023fd9746a5f9ceccaafd488fa83c7b4524e412eedcb21",
+        "source_size": 195133
       },
       {
         "action": "modify",
-        "path": "web/src/tv.ts",
+        "path": "web/src/tv_history.ts",
         "mode": "0o644",
-        "sha256": "b238561a4af905e2c41c3f2483b5d51bc7d0e3e7d6c226a068a3e8788f581372",
-        "size": 7364,
+        "sha256": "4dd8913de02c6023bd3853e49ea075a92a319ec3043119c6654bf999a12980a1",
+        "size": 2251,
         "source_mode": "0o644",
-        "source_sha256": "a65d1778679877bf640c049806aafb4ab572150e7f8d543532b4f6600e2f81e8",
-        "source_size": 7272
+        "source_sha256": "0d4bec7c8a43bc041360e786db2afe1c429f6d5fa0c934815e853a30d3fab5d8",
+        "source_size": 2229
+      },
+      {
+        "action": "add",
+        "path": "web/src/tv_progress.ts",
+        "mode": "0o644",
+        "sha256": "debd883cf796aa871d446e0a20c6e96faf5c93f963521439d8c52b36cbeb9aea",
+        "size": 6401
+      },
+      {
+        "action": "add",
+        "path": "web/src/tv_schedule.ts",
+        "mode": "0o644",
+        "sha256": "51a22c3998ab29e989704bccad91ffb5dd6d74f0bd300f9b8bfc14d076f09ed2",
+        "size": 3813
       },
       {
         "action": "modify",
         "path": "web/styles.css",
         "mode": "0o600",
-        "sha256": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
-        "size": 32605,
+        "sha256": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
+        "size": 45591,
         "source_mode": "0o600",
-        "source_sha256": "d32c18613efaff88ee289d9b55e46829ae5673b6cdbae41f52305392ecd74c3b",
-        "source_size": 25276
-      },
-      {
-        "action": "modify",
-        "path": "web/tests/test_wtv00_03_tv_browser_foundation.py",
-        "mode": "0o644",
-        "sha256": "f0c33d1edf05e8ea28ec04c983875cdd641c6d53f7be328ba2c77b6b512532ba",
-        "size": 3644,
-        "source_mode": "0o644",
-        "source_sha256": "6ea5060c36de0b4f2f8a8f9ac0ae23207e5a1ea7055ac4607f1d471fad3b5665",
-        "source_size": 3586
+        "source_sha256": "c56cfebd25d086f90f8bcc27944525caea1795b49a080d7fd774819f65c9edff",
+        "source_size": 41017
       },
       {
         "action": "add",
-        "path": "web/tests/test_wtv04_05_ten_foot_remote_workflows.py",
+        "path": "web/tests/test_wtv12_13_progress_schedule.py",
         "mode": "0o644",
-        "sha256": "c34b41fc8664352eef51b9c8679648102adb315b356fb666f1b11fb9ad5a8b49",
-        "size": 2670
+        "sha256": "f6a049c48775cbb69b739b163eb5ba38fdc4e54409751fe0b331e782fe173987",
+        "size": 5948
       }
     ]
   },
   "integrity": {
     "sha256": {
-      "docs/web/WEB_ROADMAP.md": "c7bf93432b7a91c3088df0010386b25564a64d5ef1a0550575615fd7cd275fe7",
-      "docs/web/WTV04_WTV05_TEN_FOOT_REMOTE_WORKFLOWS.md": "87a4d57076c12a3f143a16dd6e0511b95fbcf3b09a5689a0f188301bf6120f5a",
-      "web/README.md": "e600f51d4876f485aa5dcb80d8b5122e6e424464e23e5b20c77571fff25a81f4",
-      "web/dist/release-manifest.json": "c040f3b0e79fff871930820caa3057dfdbba9fc8d7cd765628078356645ec3ab",
-      "web/dist/runtime/react/App.js": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
-      "web/dist/runtime/tv.js": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
-      "web/dist/service-worker.js": "b895fe86f5ce6249d27962826ab39225ba2bc8557f00165c7894d5681564f006",
-      "web/dist/styles.css": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
-      "web/runtime/react/App.js": "f98061e54b22e11066752415b4dbbff3d1da531c874caead4e5953f03f5ea980",
-      "web/runtime/tv.js": "78e9555d505e4c24f69a67f0fedba6fd75966d4682f32c64d2047938380c4102",
-      "web/src/react/App.tsx": "6ce52feca71ac27e08de9dbc3c68e6e28038985dd35b6c9af9f47df5d663bb2a",
-      "web/src/tv.ts": "b238561a4af905e2c41c3f2483b5d51bc7d0e3e7d6c226a068a3e8788f581372",
-      "web/styles.css": "fb2b37d53fc073675e735e1434eba0886efe8cff532f2371bf9caa54fac310ca",
-      "web/tests/test_wtv00_03_tv_browser_foundation.py": "f0c33d1edf05e8ea28ec04c983875cdd641c6d53f7be328ba2c77b6b512532ba",
-      "web/tests/test_wtv04_05_ten_foot_remote_workflows.py": "c34b41fc8664352eef51b9c8679648102adb315b356fb666f1b11fb9ad5a8b49"
+      "docs/web/WEB_ROADMAP.md": "96a777b3d009a676ffb59aac0c91a66b22c34c001941a56b35ddbacba6afa01e",
+      "docs/web/WTV12_WTV13_PROGRESS_SCHEDULE.md": "627a4ed380151cc022e1234ca8de1bc1e96c0b0566ae03d5eef01a9f6d3434f0",
+      "web/README.md": "11d5b5ea54b7bc702b19f02f9f0e3c252307da7661f33468e8ed2057c32587de",
+      "web/dist/runtime/react/App.js": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
+      "web/dist/runtime/tv_history.js": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
+      "web/dist/runtime/tv_progress.js": "dbb4d86446f4170f60c75c216eff422d4379ec70cd9fafe0129ddea287792697",
+      "web/dist/runtime/tv_schedule.js": "7b54fcb6c3c9df0354a118e5430299dc7ff5fc7eef6011cc110b16318223afc5",
+      "web/dist/styles.css": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
+      "web/runtime/react/App.js": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
+      "web/runtime/tv_history.js": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
+      "web/runtime/tv_progress.js": "dbb4d86446f4170f60c75c216eff422d4379ec70cd9fafe0129ddea287792697",
+      "web/runtime/tv_schedule.js": "7b54fcb6c3c9df0354a118e5430299dc7ff5fc7eef6011cc110b16318223afc5",
+      "web/scripts/serve_tv.mjs": "21f961ce144df22e265a8ecb79ab80559f717c7f0e7e3eed83694e526602be37",
+      "web/service-worker.js": "21a51b17162f2eb0fc9ed29217d038728322d342ee2588234012bbcc5891e371",
+      "web/src/react/App.tsx": "fb481f53810367805bc479a43b931cbde9ec536778f8579a4b9a86d3ae0f4f6f",
+      "web/src/tv_history.ts": "4dd8913de02c6023bd3853e49ea075a92a319ec3043119c6654bf999a12980a1",
+      "web/src/tv_progress.ts": "debd883cf796aa871d446e0a20c6e96faf5c93f963521439d8c52b36cbeb9aea",
+      "web/src/tv_schedule.ts": "51a22c3998ab29e989704bccad91ffb5dd6d74f0bd300f9b8bfc14d076f09ed2",
+      "web/styles.css": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
+      "web/tests/test_wtv12_13_progress_schedule.py": "f6a049c48775cbb69b739b163eb5ba38fdc4e54409751fe0b331e782fe173987"
     }
   },
   "validation": {
     "mode": "required",
     "required": true,
     "script": {
-      "description": "Run web lint/runtime parity, all regressions, tracked release integrity, TV server syntax, and source/dist parity.",
+      "description": "Build generated release outputs, run all web regressions with ResourceWarning strictness, lint/runtime parity, release integrity, TV server/relay syntax and source/dist parity.",
       "interpreter": "sh",
       "path": ".devtool-artifact/validation/validate.sh",
-      "sha256": "e5156e0b31626e9dd1dc26eea2de197c2a60d9fe65a33b6c2e9824e1c2e0bb01",
+      "sha256": "ab250d50b8c684f9743476be2551127b3a25e7f904b1fcaa725d8f62148f5913",
       "timeout_seconds": 900,
       "working_directory": "."
     },
     "notes": [
       "Target is explicitly studyflow_web.",
-      "Validator does not require npm install or rebuild dist; tracked dist is release-checked.",
-      "apply.commit is explicitly enabled so Devtool should create the Git commit after successful validation."
+      "WTV10-WTV11 is the required baseline.",
+      "Generated web/dist/service-worker.js and web/dist/release-manifest.json are intentionally omitted from immutable payload verification because npm run build regenerates them.",
+      "web/dist/THIRD_PARTY_NOTICES.txt is also build-generated and is intentionally not an immutable payload entry."
     ]
   }
 }

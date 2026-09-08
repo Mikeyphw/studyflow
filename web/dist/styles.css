@@ -1165,3 +1165,239 @@ html[data-studyflow-tv="true"] * { scroll-margin: 2rem; }
     html[data-studyflow-tv="true"] select:focus-visible,
     html[data-studyflow-tv="true"] [tabindex]:focus-visible { transform: none; }
 }
+
+/* WTV06-WTV07 — browser-history Back semantics and phone-control relay */
+html[data-studyflow-tv="true"] .tv-pairing-banner,
+html[data-studyflow-tv="true"] .tv-cast-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 28px;
+  padding: 24px 30px;
+  margin-bottom: 24px;
+  border: 2px solid var(--border-strong);
+  border-radius: 20px;
+  background: var(--surface-raised);
+}
+html[data-studyflow-tv="true"] .tv-pairing-banner h2,
+html[data-studyflow-tv="true"] .tv-cast-banner h2 { margin: 4px 0 8px; }
+html[data-studyflow-tv="true"] .tv-pairing-code {
+  min-width: 250px;
+  padding: 14px 24px;
+  border-radius: 18px;
+  border: 3px solid var(--accent);
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: 12px;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+html[data-studyflow-tv="true"] .tv-pairing-instruction { grid-column: 1 / -1; margin: 0; }
+html[data-studyflow-tv="true"] .tv-pairing-compact { display: flex; justify-content: flex-end; margin: 0 0 16px; }
+html[data-studyflow-tv="true"] .tv-cast-banner progress { width: 100%; min-height: 18px; margin-top: 10px; }
+
+/* WTV08-WTV09: dedicated 10-foot Study Session and Question Set surfaces. */
+html[data-studyflow-tv="true"] .tv-session-surface,
+html[data-studyflow-tv="true"] .tv-question-set-surface { gap: 1.25rem; }
+html[data-studyflow-tv="true"] .tv-session-hero,
+html[data-studyflow-tv="true"] .tv-question-set-header {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(14rem,24rem);
+  gap: 2rem;
+  align-items: center;
+}
+html[data-studyflow-tv="true"] .tv-session-hero progress,
+html[data-studyflow-tv="true"] .tv-question-set-header progress { grid-column: 1 / -1; width: 100%; min-height: 18px; }
+html[data-studyflow-tv="true"] .tv-session-clock {
+  min-width: 12rem;
+  text-align: center;
+  font-size: 4.6rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+html[data-studyflow-tv="true"] .tv-session-segments { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
+html[data-studyflow-tv="true"] .tv-session-segments li {
+  display: grid;
+  grid-template-columns: 3rem minmax(0,1fr);
+  gap: .85rem;
+  align-items: center;
+  padding: .9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  opacity: .68;
+}
+html[data-studyflow-tv="true"] .tv-session-segments li > span {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-weight: 800;
+}
+html[data-studyflow-tv="true"] .tv-session-segments li.is-current { opacity: 1; border-color: var(--accent); background: var(--surface-raised); }
+html[data-studyflow-tv="true"] .tv-session-segments li.is-done { opacity: .82; }
+html[data-studyflow-tv="true"] .tv-session-segments small { display: block; margin-top: .25rem; color: var(--muted); }
+html[data-studyflow-tv="true"] .tv-session-now { display: flex; flex-direction: column; justify-content: center; min-height: 20rem; }
+html[data-studyflow-tv="true"] .tv-session-now h2 { font-size: 2rem; }
+html[data-studyflow-tv="true"] .tv-session-footer,
+html[data-studyflow-tv="true"] .tv-question-set-footer { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
+html[data-studyflow-tv="true"] .tv-question-set-stage { display: grid; gap: 1.4rem; }
+html[data-studyflow-tv="true"] .tv-question-set-prompt { display: block; font-size: 1.9rem; line-height: 1.35; max-width: 54ch; }
+html[data-studyflow-tv="true"] .tv-choice-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+html[data-studyflow-tv="true"] .tv-choice {
+  min-height: 6.75rem;
+  display: grid;
+  grid-template-columns: 3rem minmax(0,1fr);
+  gap: 1rem;
+  align-items: center;
+  text-align: left;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+html[data-studyflow-tv="true"] .tv-choice > span { font-size: 1.35rem; font-weight: 800; color: var(--accent-strong); }
+html[data-studyflow-tv="true"] .tv-choice > strong { font-size: 1.12rem; line-height: 1.35; }
+html[data-studyflow-tv="true"] .tv-choice.is-selected { border-color: var(--accent); background: var(--surface-raised); }
+html[data-studyflow-tv="true"] .tv-choice:focus-visible { outline: 4px solid var(--focus-ring); outline-offset: 4px; transform: scale(1.025); }
+html[data-studyflow-tv="true"] .tv-question-feedback { padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-raised); }
+html[data-studyflow-tv="true"] .tv-question-feedback > strong { display: block; font-size: 1.3rem; margin-bottom: .5rem; }
+html[data-studyflow-tv="true"] .tv-result-correct,
+html[data-studyflow-tv="true"] .tv-result-wrong { font-weight: 700; }
+
+@media (min-width: 1600px) {
+  html[data-studyflow-tv="true"] .tv-session-now { min-height: 24rem; }
+  html[data-studyflow-tv="true"] .tv-choice { min-height: 7.5rem; }
+  html[data-studyflow-tv="true"] .tv-choice > strong { font-size: 1.2rem; }
+}
+
+/* WTV10-WTV11: dedicated Mock Exam Studio and Review/Error Notebook surfaces. */
+html[data-studyflow-tv="true"] .tv-mock-surface,
+html[data-studyflow-tv="true"] .tv-review-surface { gap: 1.25rem; }
+html[data-studyflow-tv="true"] .tv-mock-header,
+html[data-studyflow-tv="true"] .tv-mock-result-hero,
+html[data-studyflow-tv="true"] .tv-review-header {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(13rem,22rem);
+  gap: 2rem;
+  align-items: center;
+}
+html[data-studyflow-tv="true"] .tv-mock-header progress,
+html[data-studyflow-tv="true"] .tv-review-header progress { grid-column: 1 / -1; width: 100%; min-height: 18px; }
+html[data-studyflow-tv="true"] .tv-mock-clock,
+html[data-studyflow-tv="true"] .tv-mock-score {
+  min-width: 12rem;
+  text-align: center;
+  font-size: 4.4rem;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.04em;
+}
+html[data-studyflow-tv="true"] .tv-mock-ready { min-height: 20rem; display: grid; align-content: center; gap: 1rem; }
+html[data-studyflow-tv="true"] .tv-mock-question,
+html[data-studyflow-tv="true"] .tv-review-stage,
+html[data-studyflow-tv="true"] .tv-error-stage { display: grid; gap: 1.35rem; min-height: 25rem; }
+html[data-studyflow-tv="true"] .tv-mock-question-meta,
+html[data-studyflow-tv="true"] .tv-review-meta { display: flex; align-items: center; flex-wrap: wrap; gap: .8rem; }
+html[data-studyflow-tv="true"] .tv-mock-prompt,
+html[data-studyflow-tv="true"] .tv-review-prompt { display: block; font-size: 1.9rem; line-height: 1.35; max-width: 56ch; }
+html[data-studyflow-tv="true"] .tv-mock-actions { align-items: stretch; }
+html[data-studyflow-tv="true"] .tv-mock-confirm,
+html[data-studyflow-tv="true"] .tv-review-answer {
+  padding: 1.2rem 1.35rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+html[data-studyflow-tv="true"] .tv-review-answer > strong { display: block; font-size: 1.35rem; line-height: 1.4; }
+html[data-studyflow-tv="true"] .tv-mock-footer,
+html[data-studyflow-tv="true"] .tv-review-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+html[data-studyflow-tv="true"] .tv-review-mode { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+html[data-studyflow-tv="true"] .tv-review-mode .tab-link[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+html[data-studyflow-tv="true"] .tv-error-categories { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .75rem; }
+html[data-studyflow-tv="true"] .tv-error-categories .button { min-height: 4.5rem; white-space: normal; }
+html[data-studyflow-tv="true"] .tv-error-categories .is-selected { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+html[data-studyflow-tv="true"] .tv-exam-exit-guard { max-width: 48rem; }
+
+@media (min-width: 1600px) {
+  html[data-studyflow-tv="true"] .tv-mock-question,
+  html[data-studyflow-tv="true"] .tv-review-stage,
+  html[data-studyflow-tv="true"] .tv-error-stage { min-height: 29rem; }
+  html[data-studyflow-tv="true"] .tv-mock-prompt,
+  html[data-studyflow-tv="true"] .tv-review-prompt { font-size: 2.05rem; }
+}
+
+/* WTV12-WTV13: dedicated Progress analytics and read-only Schedule surfaces. */
+html[data-studyflow-tv="true"] .tv-progress-surface,
+html[data-studyflow-tv="true"] .tv-schedule-surface { gap: 1.25rem; }
+html[data-studyflow-tv="true"] .tv-progress-hero,
+html[data-studyflow-tv="true"] .tv-schedule-hero {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(14rem,22rem);
+  gap: 2rem;
+  align-items: center;
+}
+html[data-studyflow-tv="true"] .tv-progress-readiness,
+html[data-studyflow-tv="true"] .tv-schedule-count {
+  min-height: 9rem;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+html[data-studyflow-tv="true"] .tv-progress-readiness strong,
+html[data-studyflow-tv="true"] .tv-schedule-count strong { font-size: 3.5rem; line-height: 1; }
+html[data-studyflow-tv="true"] .tv-progress-readiness small,
+html[data-studyflow-tv="true"] .tv-schedule-count span { margin-top: .55rem; color: var(--muted); }
+html[data-studyflow-tv="true"] .tv-progress-metrics { grid-template-columns: repeat(5,minmax(0,1fr)); }
+html[data-studyflow-tv="true"] .tv-progress-actions { display: grid; grid-template-columns: minmax(14rem,1fr) minmax(0,2fr); gap: 1.5rem; align-items: center; }
+html[data-studyflow-tv="true"] .tv-progress-subject-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+html[data-studyflow-tv="true"] .tv-progress-subject-grid.compact .nested-panel { min-height: 7rem; display: grid; align-content: center; gap: .45rem; }
+html[data-studyflow-tv="true"] .tv-progress-subject { display: grid; gap: 1rem; }
+html[data-studyflow-tv="true"] .tv-progress-subject-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
+html[data-studyflow-tv="true"] .tv-progress-subject-heading > div { display: grid; gap: .35rem; }
+html[data-studyflow-tv="true"] .tv-progress-subject-heading strong { font-size: 1.35rem; }
+html[data-studyflow-tv="true"] .tv-progress-subject-stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .55rem; }
+html[data-studyflow-tv="true"] .tv-progress-subject-stats span { padding: .65rem .75rem; border-radius: var(--radius-sm); background: var(--surface); color: var(--muted); }
+html[data-studyflow-tv="true"] .tv-schedule-mode { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+html[data-studyflow-tv="true"] .tv-schedule-mode .tab-link[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+html[data-studyflow-tv="true"] .tv-schedule-now { display: grid; gap: 1.25rem; min-height: 18rem; align-content: center; }
+html[data-studyflow-tv="true"] .tv-schedule-now-meta { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+html[data-studyflow-tv="true"] .tv-schedule-title { display: block; font-size: 2rem; line-height: 1.3; max-width: 54ch; }
+html[data-studyflow-tv="true"] .tv-schedule-days { display: grid; gap: 1rem; }
+html[data-studyflow-tv="true"] .tv-schedule-day { margin-bottom: 0; }
+html[data-studyflow-tv="true"] .tv-schedule-item-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .85rem; }
+html[data-studyflow-tv="true"] .tv-schedule-item {
+  min-height: 6rem;
+  display: grid;
+  grid-template-columns: 6rem minmax(0,1fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+html[data-studyflow-tv="true"] .tv-schedule-item.is-selected { border-color: var(--accent); background: var(--surface-raised); }
+html[data-studyflow-tv="true"] .tv-schedule-item-time { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent-strong); }
+html[data-studyflow-tv="true"] .tv-schedule-item > span:last-child { display: grid; gap: .35rem; }
+html[data-studyflow-tv="true"] .tv-schedule-item strong { font-size: 1.08rem; }
+html[data-studyflow-tv="true"] .tv-schedule-item small { color: var(--muted); }
+html[data-studyflow-tv="true"] .tv-schedule-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+@media (min-width: 1600px) {
+  html[data-studyflow-tv="true"] .tv-schedule-now { min-height: 21rem; }
+  html[data-studyflow-tv="true"] .tv-schedule-item { min-height: 6.75rem; }
+  html[data-studyflow-tv="true"] .tv-progress-subject-heading strong { font-size: 1.45rem; }
+}

@@ -70,6 +70,16 @@ function installDpadNavigation():()=>void{
  addEventListener("keydown",onKeyDown,true);return()=>removeEventListener("keydown",onKeyDown,true);
 }
 
+function installRemoteBackNavigation():()=>void{
+ const onKeyDown=(event:KeyboardEvent)=>{const code=event.keyCode;const back=event.key==="BrowserBack"||event.key==="GoBack"||code===461||code===10009;if(!back)return;const target=event.target instanceof Element?event.target:null;if(controlOwnsArrow(target))return;event.preventDefault();event.stopPropagation();history.back();};
+ addEventListener("keydown",onKeyDown,true);return()=>removeEventListener("keydown",onKeyDown,true);
+}
+
+function installMediaToggleNavigation():()=>void{
+ const onKeyDown=(event:KeyboardEvent)=>{const code=event.keyCode;const media=event.key==="MediaPlayPause"||event.key==="Play"||event.key==="Pause"||code===179||code===415||code===19;if(!media)return;event.preventDefault();event.stopPropagation();dispatchEvent(new CustomEvent("studyflow:tv-media-toggle"));};
+ addEventListener("keydown",onKeyDown,true);return()=>removeEventListener("keydown",onKeyDown,true);
+}
+
 
 function supportsFlexGap():boolean{
  const probe=document.createElement("div"),a=document.createElement("div"),b=document.createElement("div");probe.style.display="flex";probe.style.flexDirection="column";probe.style.rowGap="1px";probe.style.position="absolute";probe.style.visibility="hidden";a.style.height="1px";b.style.height="1px";probe.append(a,b);document.body.appendChild(probe);const supported=probe.scrollHeight===3;probe.remove();return supported;
@@ -87,6 +97,6 @@ function applyCapabilityFlags():void{
 export function installTvBrowserAdapter():TvBrowserAdapterHandle{
  const resolution=resolveTvBrowserMode();if(typeof document==="undefined")return{resolution,dispose:()=>{}};
  const root=document.documentElement;root.dataset.studyflowTv=resolution.enabled?"true":"false";root.dataset.studyflowTvMode=resolution.source;applyCapabilityFlags();
- const disposeDpad=resolution.enabled?installDpadNavigation():()=>{};
- return{resolution,dispose:()=>{disposeDpad();delete root.dataset.studyflowTv;delete root.dataset.studyflowTvMode;delete root.dataset.studyflowTvSecureContext;delete root.dataset.studyflowTvIndexedDb;delete root.dataset.studyflowTvSubtleCrypto;delete root.dataset.studyflowTvServiceWorker;delete root.dataset.studyflowTvFlexGap;delete root.dataset.studyflowTvInputMode;}};
+ const disposeDpad=resolution.enabled?installDpadNavigation():()=>{};const disposeBack=resolution.enabled?installRemoteBackNavigation():()=>{};const disposeMedia=resolution.enabled?installMediaToggleNavigation():()=>{};
+ return{resolution,dispose:()=>{disposeDpad();disposeBack();disposeMedia();delete root.dataset.studyflowTv;delete root.dataset.studyflowTvMode;delete root.dataset.studyflowTvSecureContext;delete root.dataset.studyflowTvIndexedDb;delete root.dataset.studyflowTvSubtleCrypto;delete root.dataset.studyflowTvServiceWorker;delete root.dataset.studyflowTvFlexGap;delete root.dataset.studyflowTvInputMode;}};
 }

@@ -39,7 +39,7 @@ class Wtv0405TenFootRemoteWorkflowsTest(unittest.TestCase):
             'Writing Workspace',
             'Plan editing',
             'Content authoring & import',
-            'Graded answer entry & question import',
+            'Question authoring & import',
             'Portable backups & imports',
             'Coach exports & schedule mutations',
         ):

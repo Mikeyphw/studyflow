@@ -3,6 +3,7 @@ import {createServer} from "node:http";
 import {networkInterfaces} from "node:os";
 import {extname, join, normalize, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
+import {createTvRelay} from "./tv_relay.mjs";
 
 const root=resolve(fileURLToPath(new URL("../dist/",import.meta.url)));
 const argv=process.argv.slice(2);
@@ -14,11 +15,30 @@ if(!existsSync(join(root,"index.html")))throw new Error("web/dist is missing. Ru
 
 const mime={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",".js":"text/javascript; charset=utf-8",".json":"application/json; charset=utf-8",".webmanifest":"application/manifest+json; charset=utf-8",".png":"image/png",".txt":"text/plain; charset=utf-8"};
 function sendFile(path,res){res.writeHead(200,{"Content-Type":mime[extname(path)]||"application/octet-stream","Cache-Control":"no-cache","X-Content-Type-Options":"nosniff"});createReadStream(path).pipe(res);}
-const server=createServer((req,res)=>{
+function remotePage(){return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StudyFlow TV Remote</title><style>body{font:16px system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;background:#111;color:#f5f5f5}input,select,button{font:inherit;padding:12px;margin:4px;border-radius:8px;border:1px solid #666;background:#222;color:inherit}button{cursor:pointer}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.card{border:1px solid #444;border-radius:12px;padding:16px;margin:12px 0}.ok{color:#9f9}</style></head><body><h1>StudyFlow TV Remote</h1><div class="card"><label>Pairing code <input id="code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"></label><button id="pair">Pair</button><p id="status">Enter the six-digit code shown on TV.</p></div><div class="card"><h2>Open surface</h2><div class="grid" id="surfaces"></div></div><div class="card"><h2>Controls</h2><div class="grid" id="actions"></div></div><script>
+let controllerToken=sessionStorage.getItem('studyflowTvControllerToken')||'';
+let currentSurface='TODAY';
+const status=document.getElementById('status');
+async function request(path,options={}){const headers={'Content-Type':'application/json',...(options.headers||{})};if(controllerToken)headers.Authorization='Bearer '+controllerToken;const res=await fetch(path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error||('HTTP '+res.status));return data}
+function command(surface,action,extra={}){return request('/api/tv/control',{method:'POST',body:JSON.stringify({commandId:'webremote-'+Date.now()+'-'+Math.random().toString(16).slice(2),protocolVersion:1,surface,action,issuedAtEpochMillis:Date.now(),requiresUserPresence:true,...extra})}).then(()=>status.textContent=action+' sent').catch(e=>status.textContent=e.message)}
+document.getElementById('pair').onclick=async()=>{try{const data=await request('/api/tv/pair',{method:'POST',body:JSON.stringify({pairingCode:document.getElementById('code').value.trim()})});controllerToken=data.controllerToken;sessionStorage.setItem('studyflowTvControllerToken',controllerToken);status.textContent='Paired with '+data.deviceName;status.className='ok'}catch(e){status.textContent=e.message}};
+const surfaces={Today:'TODAY',Session:'STUDY_SESSION',Questions:'QUESTION_SET',Reviews:'REVIEW','Mock Exam':'MOCK_EXAM',Progress:'PROGRESS',Schedule:'SCHEDULE',Library:'LIBRARY',Settings:'SETTINGS'};for(const [label,surface] of Object.entries(surfaces)){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{currentSurface=surface;command(surface,'OPEN')};document.getElementById('surfaces').appendChild(b)}
+const actions=['START','PAUSE','RESUME','PREVIOUS','NEXT','SHOW_EXPLANATION','MARK_FOR_REVIEW','SUBMIT','REVIEW_RESULTS','COMPLETE','BACK','STOP_CAST'];for(const action of actions){const b=document.createElement('button');b.textContent=action.replaceAll('_',' ');b.onclick=()=>command(currentSurface,action);document.getElementById('actions').appendChild(b)}
+for(let index=0;index<4;index++){const b=document.createElement('button');b.textContent='Choose '+String.fromCharCode(65+index);b.onclick=()=>command(currentSurface==='MOCK_EXAM'?'MOCK_EXAM':'QUESTION_SET','SELECT_ANSWER',{optionId:'choice-'+index});document.getElementById('actions').appendChild(b)}
+for(const mode of [['Review queue','review-reviews'],['Error notebook','review-errors']]){const b=document.createElement('button');b.textContent=mode[0];b.onclick=()=>command('REVIEW','OPEN',{targetId:mode[1]});document.getElementById('actions').appendChild(b)}
+for(const rating of ['again','hard','good','easy']){const b=document.createElement('button');b.textContent='Review '+rating;b.onclick=()=>command('REVIEW','COMPLETE',{optionId:'rating-'+rating});document.getElementById('actions').appendChild(b)}
+for(const category of ['content-gap','forgotten','concept-confusion','interpretation','distraction','calculation','time-pressure','disputed','other']){const b=document.createElement('button');b.textContent='Error: '+category.replaceAll('-',' ');b.onclick=()=>command('REVIEW','MARK_FOR_REVIEW',{optionId:'category-'+category});document.getElementById('actions').appendChild(b)}
+{const b=document.createElement('button');b.textContent='Resolve current error';b.onclick=()=>command('REVIEW','COMPLETE',{optionId:'resolve-error'});document.getElementById('actions').appendChild(b)}
+for(const item of [['Progress: Today','PROGRESS','progress-today','TODAY'],['Progress: Questions','PROGRESS','progress-questions','QUESTION_SET'],['Progress: Reviews','PROGRESS','progress-reviews','REVIEW'],['Progress: Mock Exam','PROGRESS','progress-mock','MOCK_EXAM'],['Progress: Schedule','PROGRESS','progress-schedule','SCHEDULE'],['Schedule: Today','SCHEDULE','schedule-today','SCHEDULE'],['Schedule: This week','SCHEDULE','schedule-week','SCHEDULE'],['Schedule: Progress','SCHEDULE','schedule-progress','PROGRESS']]){const b=document.createElement('button');b.textContent=item[0];b.onclick=()=>command(item[1],'OPEN',{targetId:item[2]}).then(()=>{currentSurface=item[3]});document.getElementById('actions').appendChild(b)}
+</script></body></html>`;}
+const relay=createTvRelay();
+const server=createServer(async(req,res)=>{
  const requestUrl=new URL(req.url||"/",`http://${req.headers.host||"localhost"}`);
+ if(await relay.handle(req,res,requestUrl))return;
  if(requestUrl.pathname==="/tv"||requestUrl.pathname==="/tv/"){res.writeHead(302,{Location:"/?tv=1","Cache-Control":"no-store"});res.end();return;}
+ if(requestUrl.pathname==="/remote"||requestUrl.pathname==="/remote/"){const html=remotePage();res.writeHead(200,{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","Content-Length":Buffer.byteLength(html)});res.end(html);return;}
  let pathname=decodeURIComponent(requestUrl.pathname);if(pathname==="/")pathname="/index.html";
- const relative=normalize(pathname).replace(/^([/\\])+/,"");const path=resolve(root,relative);
+ const relative=normalize(pathname).replace(/^([/\\])+/,'');const path=resolve(root,relative);
  if(path!==root&&!path.startsWith(root+"/")){res.writeHead(403);res.end("Forbidden");return;}
  if(existsSync(path)&&statSync(path).isFile()){sendFile(path,res);return;}
  if(req.method==="GET"&&req.headers.accept?.includes("text/html")){sendFile(join(root,"index.html"),res);return;}
@@ -29,7 +49,8 @@ server.listen(port,host,()=>{
  const addresses=[];for(const entries of Object.values(networkInterfaces()))for(const info of entries||[])if(info.family==="IPv4"&&!info.internal)addresses.push(info.address);
  console.log("StudyFlow TV-browser server ready");
  console.log(`  Local: http://127.0.0.1:${port}/tv`);
- for(const address of [...new Set(addresses)])console.log(`  TV:    http://${address}:${port}/tv`);
- console.log("Open /tv on the television. ?tv=1 forces TV mode; ?tv=0 disables it.");
- console.log("LAN HTTP is intentionally supported; secure-context-only PWA/encryption capabilities are reported separately by the app.");
+ console.log(`  Remote: http://127.0.0.1:${port}/remote`);
+ for(const address of [...new Set(addresses)]){console.log(`  TV:     http://${address}:${port}/tv`);console.log(`  Phone:  http://${address}:${port}/remote`);}
+ console.log("Open /tv on the television, then /remote on a phone and enter the six-digit pairing code.");
+ console.log("Pairing is in-memory, revocable and expires after 120 seconds before pairing; no StudyFlow database rows are relayed.");
 });

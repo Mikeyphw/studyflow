@@ -52,6 +52,14 @@ const task_workflows_1 = require("../task_workflows");
 const parity_intelligence_1 = require("../parity_intelligence");
 const promise_cleanup_1 = require("../promise_cleanup");
 const retention_viewer_1 = require("../retention_viewer");
+const tv_control_1 = require("../tv_control");
+const tv_history_1 = require("../tv_history");
+const tv_session_1 = require("../tv_session");
+const tv_question_set_1 = require("../tv_question_set");
+const tv_mock_exam_1 = require("../tv_mock_exam");
+const tv_review_notebook_1 = require("../tv_review_notebook");
+const tv_progress_1 = require("../tv_progress");
+const tv_schedule_1 = require("../tv_schedule");
 const title = (v) => v.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
@@ -78,11 +86,49 @@ function Metric({ label, value, detail }) { return React.createElement("article"
     React.createElement("span", null, label),
     React.createElement("strong", null, value),
     React.createElement("small", null, detail)); }
+function useTvReceiverSnapshot(enabled) {
+    const [snapshot, setSnapshot] = React.useState({ state: enabled ? "connecting" : "disabled", pairingCode: null, expiresAtEpochMillis: null, deviceName: "StudyFlow Browser TV", transport: "none", message: enabled ? "Starting TV control receiver." : "TV control receiver disabled." });
+    React.useEffect(() => { const handle = (0, tv_control_1.installTvControlReceiver)(enabled); const sync = () => setSnapshot(handle.getSnapshot()); sync(); const unsubscribe = handle.subscribe(sync); return () => { unsubscribe(); handle.dispose(); }; }, [enabled]);
+    return snapshot;
+}
+function TvPairingBanner({ snapshot }) { if (snapshot.state === "paired")
+    return React.createElement("div", { className: "tv-pairing-compact", role: "status" },
+        React.createElement("span", { className: "status-pill" },
+            "Phone paired \u00B7 ",
+            snapshot.transport.toUpperCase())); return React.createElement("article", { className: "tv-pairing-banner", "aria-live": "polite" },
+    React.createElement("div", null,
+        React.createElement("p", { className: "eyebrow" }, "Phone remote"),
+        React.createElement("h2", null, snapshot.state === "pairing" && snapshot.pairingCode ? `Pairing code ${snapshot.pairingCode}` : "TV control relay"),
+        React.createElement("p", { className: "muted" }, snapshot.message)),
+    snapshot.state === "pairing" && snapshot.pairingCode && React.createElement("div", { className: "tv-pairing-code", "aria-label": `Pairing code ${snapshot.pairingCode}` }, snapshot.pairingCode),
+    React.createElement("p", { className: "tv-pairing-instruction" },
+        "Open ",
+        React.createElement("strong", null, "/remote"),
+        " on a phone connected to this LAN.")); }
+function TvCastBanner({ cast, onStop }) { return React.createElement("article", { className: "tv-cast-banner", role: "status" },
+    React.createElement("div", null,
+        React.createElement("p", { className: "eyebrow" }, "Phone presentation"),
+        React.createElement("h2", null, cast.title),
+        cast.subtitle && React.createElement("p", { className: "muted" }, cast.subtitle),
+        cast.progressPercent != null && React.createElement("progress", { max: "100", value: cast.progressPercent },
+            cast.progressPercent,
+            "%")),
+    React.createElement("button", { className: "button button-quiet", type: "button", onClick: onStop }, "Stop presentation")); }
+function tvSurfaceDestination(surface) { if (surface === "SETTINGS")
+    return { screen: "today", overlay: "settings" }; if (surface === "STUDY_SESSION")
+    return { screen: "session" }; if (surface === "QUESTION_SET")
+    return { screen: "questions" }; if (surface === "REVIEW")
+    return { screen: "review" }; if (surface === "MOCK_EXAM")
+    return { screen: "mock" }; if (surface === "PROGRESS")
+    return { screen: "progress" }; if (surface === "SCHEDULE")
+    return { screen: "schedule" }; if (surface === "LIBRARY")
+    return { screen: "plan", tab: "library" }; return { screen: "today" }; }
 function App({ store, persistence }) {
     var _a, _b, _c;
     const state = useStudyState(store);
+    const tvBrowser = isTvBrowserUi();
     const mainRef = React.useRef(null);
-    const [screen, setScreen] = React.useState("today");
+    const [screen, setScreen] = React.useState(() => tvBrowser ? (0, tv_history_1.screenFromHash)(location.hash) : (["today", "plan", "practice", "progress"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "today"));
     const [planTab, setPlanTab] = React.useState("overview");
     const [practiceTab, setPracticeTab] = React.useState("reviews");
     const [progressTab, setProgressTab] = React.useState("summary");
@@ -94,10 +140,26 @@ function App({ store, persistence }) {
     const [toast, setToast] = React.useState(null);
     const [searchOpen, setSearchOpen] = React.useState(false);
     const [settingsOpen, setSettingsOpen] = React.useState(false);
+    const [tvMaterialId, setTvMaterialId] = React.useState(null);
+    const [tvCast, setTvCast] = React.useState(null);
+    const tvReceiver = useTvReceiverSnapshot(tvBrowser);
     const [, tick] = React.useState(0);
-    React.useEffect(() => { const onHash = () => { const x = location.hash.slice(1); if (["today", "plan", "practice", "progress"].includes(x))
-        setScreen(x); }; onHash(); addEventListener("hashchange", onHash); if (!location.hash)
-        history.replaceState(null, "", "#today"); return () => removeEventListener("hashchange", onHash); }, []);
+    React.useEffect(() => { if (!tvBrowser) {
+        const onHash = () => { const x = location.hash.slice(1); if (["today", "plan", "practice", "progress"].includes(x))
+            setScreen(x); };
+        onHash();
+        addEventListener("hashchange", onHash);
+        if (!location.hash)
+            history.replaceState(null, "", "#today");
+        return () => removeEventListener("hashchange", onHash);
+    } const apply = (entry) => { setScreen(entry.screen); setSearchOpen(entry.overlay === "search"); setSettingsOpen(entry.overlay === "settings"); setTvMaterialId(entry.overlay === "material" ? entry.overlayId : null); }; let entry = (0, tv_history_1.readTvHistoryEntry)(history.state, location.hash); if (!(history.state && typeof history.state === "object" && tv_history_1.TV_HISTORY_STATE_KEY in history.state))
+        (0, tv_history_1.replaceTvHistoryEntry)(entry); apply(entry); const onPop = () => { const next = (0, tv_history_1.readTvHistoryEntry)(history.state, location.hash); if (document.documentElement.dataset.studyflowTvExamActive === "true" && next.screen !== "mock") {
+        const current = { version: 1, screen: "mock", overlay: null, overlayId: null };
+        (0, tv_history_1.pushTvHistoryEntry)(current);
+        apply(current);
+        dispatchEvent(new CustomEvent("studyflow:tv-exam-back"));
+        return;
+    } apply(next); }; addEventListener("popstate", onPop); return () => removeEventListener("popstate", onPop); }, [tvBrowser]);
     React.useEffect(() => { var _a; if (document.documentElement.dataset.studyflowTv !== "true") {
         (_a = mainRef.current) === null || _a === void 0 ? void 0 : _a.focus({ preventScroll: true });
         return;
@@ -116,13 +178,6 @@ function App({ store, persistence }) {
     React.useEffect(() => { if (!toast)
         return; const id = setTimeout(() => setToast(null), 2500); return () => clearTimeout(id); }, [toast]);
     React.useEffect(() => { const handle = (0, product_1.installDocumentLocalization)(state.preferences.locale); return () => handle.dispose(); }, [state.preferences.locale]);
-    React.useEffect(() => { const key = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" || e.key === "/" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
-        e.preventDefault();
-        setSearchOpen(true);
-    } if (e.key === "Escape") {
-        setSearchOpen(false);
-        setSettingsOpen(false);
-    } }; addEventListener("keydown", key); return () => removeEventListener("keydown", key); }, []);
     React.useEffect(() => { const id = setTimeout(() => { document.documentElement.dataset.studyflowInteractive = "ready"; }, 0); return () => { clearTimeout(id); delete document.documentElement.dataset.studyflowInteractive; }; }, []);
     const run = (fn, msg) => { try {
         const r = fn();
@@ -136,34 +191,114 @@ function App({ store, persistence }) {
     } };
     const focus = store.getFocusSnapshot(new Date().toISOString());
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
+    const applyTvEntry = (entry) => { setScreen(entry.screen); setSearchOpen(entry.overlay === "search"); setSettingsOpen(entry.overlay === "settings"); setTvMaterialId(entry.overlay === "material" ? entry.overlayId : null); };
+    const navigateScreen = (next, replace = false) => { if (tvBrowser && screen === "mock" && next !== "mock" && document.documentElement.dataset.studyflowTvExamActive === "true") {
+        dispatchEvent(new CustomEvent("studyflow:tv-exam-back"));
+        return;
+    } if (tvBrowser) {
+        const entry = { version: 1, screen: next, overlay: null, overlayId: null };
+        if (replace)
+            (0, tv_history_1.replaceTvHistoryEntry)(entry);
+        else
+            (0, tv_history_1.pushTvHistoryEntry)(entry);
+        applyTvEntry(entry);
+        return;
+    } location.hash = `#${next}`; };
+    const openTvOverlay = (overlay, overlayId = null) => { if (!tvBrowser) {
+        if (overlay === "search")
+            setSearchOpen(true);
+        if (overlay === "settings")
+            setSettingsOpen(true);
+        return;
+    } const entry = { version: 1, screen, overlay, overlayId }; (0, tv_history_1.pushTvHistoryEntry)(entry); applyTvEntry(entry); };
+    const closeTvOverlay = () => { if (tvBrowser) {
+        const entry = (0, tv_history_1.readTvHistoryEntry)(history.state, location.hash);
+        if (entry.overlay) {
+            history.back();
+            return;
+        }
+    } setSearchOpen(false); setSettingsOpen(false); setTvMaterialId(null); };
+    const navigateTvSurface = (surface, replace = false) => { const destination = tvSurfaceDestination(surface); if (destination.tab) {
+        if (destination.screen === "plan")
+            setPlanTab(destination.tab);
+        if (destination.screen === "practice")
+            setPracticeTab(destination.tab);
+        if (destination.screen === "progress")
+            setProgressTab(destination.tab);
+    } if (destination.overlay) {
+        if (replace) {
+            const entry = { version: 1, screen, overlay: destination.overlay, overlayId: null };
+            (0, tv_history_1.replaceTvHistoryEntry)(entry);
+            applyTvEntry(entry);
+        }
+        else
+            openTvOverlay(destination.overlay);
+        return;
+    } navigateScreen(destination.screen, replace); };
+    React.useEffect(() => { const key = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" || e.key === "/" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        openTvOverlay("search");
+    } if (e.key === "Escape") {
+        if (tvBrowser) {
+            const entry = (0, tv_history_1.readTvHistoryEntry)(history.state, location.hash);
+            if (entry.overlay) {
+                e.preventDefault();
+                history.back();
+            }
+        }
+        else {
+            setSearchOpen(false);
+            setSettingsOpen(false);
+        }
+    } }; addEventListener("keydown", key); return () => removeEventListener("keydown", key); }, [tvBrowser, screen]);
+    React.useEffect(() => { if (!tvBrowser)
+        return; const trigger = (command) => { const nodes = [...document.querySelectorAll("[data-tv-control-action]")]; const exact = nodes.find(node => node.dataset.tvControlAction === command.action && (command.targetId == null || node.dataset.tvControlTarget === command.targetId) && (command.optionId == null || node.dataset.tvControlOption === command.optionId)); const optionRequired = command.surface === "REVIEW" && (command.action === "COMPLETE" || command.action === "MARK_FOR_REVIEW"); const fallback = command.targetId == null && command.optionId == null && !optionRequired ? nodes.find(node => node.dataset.tvControlAction === command.action) : undefined; const node = exact !== null && exact !== void 0 ? exact : fallback; if (node && "click" in node) {
+        node.click();
+        return true;
+    } return false; }; const onControl = (event) => { const command = event.detail; if (command.action === "OPEN") {
+        if (command.targetId && trigger(command))
+            return;
+        navigateTvSurface(command.surface);
+        if (command.targetId)
+            requestAnimationFrame(() => trigger(command));
+        return;
+    } if (command.action === "BACK") {
+        if (document.documentElement.dataset.studyflowTvExamActive === "true") {
+            dispatchEvent(new CustomEvent("studyflow:tv-exam-back"));
+            return;
+        }
+        history.back();
+        return;
+    } if (command.action === "STOP_CAST") {
+        setTvCast(null);
+        return;
+    } if (!trigger(command))
+        setToast(`Phone command ${title(command.action)} is not available on this TV surface.`); }; const onCast = (event) => { const cast = event.detail; setTvCast(cast); navigateTvSurface(cast.surface); }; addEventListener("studyflow:tv-control", onControl); addEventListener("studyflow:tv-cast", onCast); return () => { removeEventListener("studyflow:tv-control", onControl); removeEventListener("studyflow:tv-cast", onCast); }; }, [tvBrowser, screen, planTab, practiceTab, progressTab]);
     const openSearchResult = (item) => { if (item.planId !== state.activePlanId && !run(() => store.switchPlan(item.planId), "Plan switched for search result."))
-        return; if (item.type === "question") {
+        return; let destination = "plan"; if (item.type === "question") {
         setQuestionId(item.id);
         setPracticeContext(null);
         setPracticeTab("questions");
-        location.hash = "#practice";
+        destination = tvBrowser ? "questions" : "practice";
     }
     else if (item.type === "error") {
         setPracticeContext(null);
         setPracticeTab("errors");
-        location.hash = "#practice";
+        destination = tvBrowser ? "review" : "practice";
     }
     else if (item.type === "material") {
         setPlanTab("library");
-        location.hash = "#plan";
     }
     else if (item.type === "subject" || item.type === "topic") {
         setPlanTab("content");
-        location.hash = "#plan";
     }
     else {
         setPlanTab("overview");
-        location.hash = "#plan";
-    } setSearchOpen(false); };
+    } navigateScreen(destination, tvBrowser); };
     const launchActivity = (activityId) => { const route = run(() => (0, task_workflows_1.routeActivityDeepLink)(state, activityId)); if (!route)
         return; setPracticeContext(route); const activity = state.activities.find(item => item.id === activityId); if (route.screen === "practice") {
         setPracticeTab(route.practiceTab);
-        location.hash = "#practice";
+        navigateScreen(tvBrowser ? (route.practiceTab === "questions" ? "questions" : route.practiceTab === "tests" ? "mock" : route.practiceTab === "reviews" ? "review" : "practice") : "practice");
         return;
     } if (route.focusMode === "writing") {
         if (!run(() => store.startWritingSession({ activityId, prompt: activity.title, durationMinutes: activity.durationMinutes }), "Writing Workspace opened."))
@@ -172,7 +307,11 @@ function App({ store, persistence }) {
     else if (route.focusMode === "focus") {
         if (!run(() => store.startFocus({ activityId, durationMinutes: activity.durationMinutes }), "Focus started."))
             return;
-    } location.hash = "#today"; };
+        if (tvBrowser) {
+            navigateScreen("session");
+            return;
+        }
+    } navigateScreen("today"); };
     return React.createElement(React.Fragment, null,
         React.createElement("a", { className: "skip-link", href: "#main-content" }, "Skip to content"),
         React.createElement("header", { className: "app-header" },
@@ -181,29 +320,46 @@ function App({ store, persistence }) {
                 React.createElement("h1", { id: "screen-title" }, title(screen)),
                 React.createElement("p", { className: "muted compact-copy" }, activePlan ? (_c = modes.find(([id]) => id === activePlan.mode)) === null || _c === void 0 ? void 0 : _c[1] : "No active plan")),
             React.createElement("div", { className: "header-actions" },
-                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSearchOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "search")),
-                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSettingsOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "settings")),
+                tvBrowser ? React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => openTvOverlay("search") }, (0, product_1.uiText)(state.preferences.locale, "search")) : React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSearchOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "search")),
+                tvBrowser ? React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => openTvOverlay("settings") }, (0, product_1.uiText)(state.preferences.locale, "settings")) : React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSettingsOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "settings")),
                 React.createElement("span", { className: "status-pill" },
                     "v",
                     release_1.STUDYFLOW_LOCAL_RELEASE.version,
                     " \u00B7 ",
                     persistence.backend),
-                document.documentElement.dataset.studyflowTv === "true" && React.createElement("span", { className: "status-pill tv-status-pill" },
+                tvBrowser && React.createElement("span", { className: "status-pill tv-status-pill" },
                     "TV browser \u00B7 ",
                     document.documentElement.dataset.studyflowTvSecureContext === "true" ? "secure" : "LAN HTTP"))),
         React.createElement("main", { id: "main-content", ref: mainRef, tabIndex: -1, "aria-labelledby": "screen-title", className: "app-main" },
-            screen === "today" && React.createElement(Today, { state: state, store: store, focus: focus, run: run, onLaunch: launchActivity }),
+            tvBrowser && React.createElement(TvPairingBanner, { snapshot: tvReceiver }),
             " ",
-            screen === "plan" && React.createElement(Plan, { state: state, store: store, tab: planTab, setTab: setPlanTab, preview: preview, setPreview: setPreview, persistence: persistence, run: run }),
+            tvBrowser && tvCast && React.createElement(TvCastBanner, { cast: tvCast, onStop: () => setTvCast(null) }),
             " ",
-            screen === "practice" && React.createElement(Practice, { state: state, store: store, tab: practiceTab, setTab: setPracticeTab, questionId: questionId, setQuestionId: setQuestionId, context: practiceContext, run: run }),
+            screen === "today" && React.createElement(Today, { state: state, store: store, focus: focus, run: run, onLaunch: launchActivity, onSessionOpen: () => navigateScreen("session") }),
             " ",
-            screen === "progress" && React.createElement(Progress, { state: state, store: store, tab: progressTab, setTab: setProgressTab, persistence: persistence, portable: portable, setPortable: setPortable, portableStatus: portableStatus, setPortableStatus: setPortableStatus, run: run })),
-        React.createElement("nav", { className: "bottom-nav", "aria-label": "Main navigation" }, ["today", "plan", "practice", "progress"].map(id => React.createElement("a", { key: id, href: `#${id}`, "aria-current": screen === id ? "page" : undefined },
+            screen === "plan" && React.createElement(Plan, { state: state, store: store, tab: planTab, setTab: setPlanTab, preview: preview, setPreview: setPreview, persistence: persistence, run: run, tvMaterialId: tvMaterialId, onTvMaterialOpen: (id) => openTvOverlay("material", id), onTvMaterialClose: closeTvOverlay, onTvScheduleOpen: () => navigateScreen("schedule") }),
+            " ",
+            screen === "practice" && React.createElement(Practice, { state: state, store: store, tab: practiceTab, setTab: setPracticeTab, questionId: questionId, setQuestionId: setQuestionId, context: practiceContext, run: run, onQuestionSetOpen: () => navigateScreen("questions"), onMockOpen: () => navigateScreen("mock"), onReviewOpen: (mode = "reviews") => { setPracticeTab(mode); navigateScreen("review"); } }),
+            " ",
+            screen === "progress" && (tvBrowser ? React.createElement(TvProgressAnalytics, { state: state, onOpenSurface: (surface) => navigateTvSurface(surface) }) : React.createElement(Progress, { state: state, store: store, tab: progressTab, setTab: setProgressTab, persistence: persistence, portable: portable, setPortable: setPortable, portableStatus: portableStatus, setPortableStatus: setPortableStatus, run: run })),
+            " ",
+            tvBrowser && screen === "session" && React.createElement(TvStudySession, { state: state, store: store, focus: focus, run: run, onBack: () => navigateScreen("today") }),
+            " ",
+            tvBrowser && screen === "questions" && React.createElement(TvQuestionSet, { state: state, store: store, questionId: questionId, setQuestionId: setQuestionId, context: practiceContext, run: run, onBack: () => navigateScreen("practice") }),
+            " ",
+            tvBrowser && screen === "mock" && React.createElement(TvMockExamStudio, { state: state, store: store, run: run, onBack: () => navigateScreen("practice") }),
+            " ",
+            tvBrowser && screen === "review" && React.createElement(TvReviewNotebook, { state: state, store: store, run: run, initialMode: practiceTab === "errors" ? "errors" : "reviews", onBack: () => navigateScreen("practice") }),
+            " ",
+            tvBrowser && screen === "schedule" && React.createElement(TvScheduleSurface, { state: state, onLaunch: launchActivity, onOpenSurface: (surface) => navigateTvSurface(surface), onBack: () => navigateScreen("plan") })),
+        React.createElement("nav", { className: "bottom-nav", "aria-label": "Main navigation" }, (tvBrowser ? ["today", "plan", "practice", "progress", "schedule"] : ["today", "plan", "practice", "progress"]).map(id => React.createElement("a", { key: id, href: `#${id}`, "aria-current": screen === id ? "page" : undefined, onClick: (event) => { if (tvBrowser) {
+                event.preventDefault();
+                navigateScreen(id);
+            } } },
             React.createElement("span", null, title(id))))),
-        searchOpen && React.createElement(GlobalSearchDialog, { state: state, onClose: () => setSearchOpen(false), onOpen: openSearchResult }),
+        searchOpen && React.createElement(GlobalSearchDialog, { state: state, onClose: closeTvOverlay, onOpen: openSearchResult }),
         " ",
-        settingsOpen && React.createElement(SettingsDialog, { state: state, store: store, persistence: persistence, onClose: () => setSettingsOpen(false), run: run }),
+        settingsOpen && React.createElement(SettingsDialog, { state: state, store: store, persistence: persistence, onClose: closeTvOverlay, run: run }),
         " ",
         !state.preferences.onboardingCompleted && React.createElement(OnboardingWizard, { state: state, store: store, run: run }),
         React.createElement("div", { id: "toast-region", className: "toast-region", role: "status", "aria-live": "polite", "aria-atomic": "true" }, toast && React.createElement("div", { className: "toast" }, toast)));
@@ -373,7 +529,7 @@ function OnboardingWizard({ state, store, run }) {
                 React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.completeOnboarding({ locale, mode, planName: name, useSample: false, template }), bb ? "BB Agente Comercial reference workspace created." : blueprint ? "Starter plan created from the approved preview." : "Local workspace ready.") }, (0, product_1.uiText)(locale, "start")),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setPreferences({ locale, onboardingCompleted: true }), "Sample workspace kept.") }, (0, product_1.uiText)(locale, "skip")))));
 }
-function Today({ state, store, focus, run, onLaunch }) { var _a, _b, _c, _d; const tv = isTvBrowserUi(); const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState((_a = focus.note) !== null && _a !== void 0 ? _a : ""); const [activityType, setActivityType] = React.useState("THEORY"); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); const activeActivity = focus.activityId ? (_b = state.activities.find(a => a.id === focus.activityId)) !== null && _b !== void 0 ? _b : null : null; const writing = (0, task_workflows_1.writingActivity)(activeActivity); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
+function Today({ state, store, focus, run, onLaunch, onSessionOpen }) { var _a, _b, _c, _d; const tv = isTvBrowserUi(); const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState((_a = focus.note) !== null && _a !== void 0 ? _a : ""); const [activityType, setActivityType] = React.useState("THEORY"); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); const activeActivity = focus.activityId ? (_b = state.activities.find(a => a.id === focus.activityId)) !== null && _b !== void 0 ? _b : null : null; const writing = (0, task_workflows_1.writingActivity)(activeActivity); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
     React.createElement("article", { className: "hero-card" },
         React.createElement("p", { className: "eyebrow" }, "Next up"),
         React.createElement("h2", null, (_c = rec === null || rec === void 0 ? void 0 : rec.activity.title) !== null && _c !== void 0 ? _c : "No queued activity"),
@@ -388,12 +544,14 @@ function Today({ state, store, focus, run, onLaunch }) { var _a, _b, _c, _d; con
             !writing && tv && React.createElement("p", { className: "muted tv-inline-note" }, "Session-note editing is available on phone/computer; focus controls remain available here."),
             writing && React.createElement("p", { className: "muted" }, "This is a WRITING session. Draft, rubric and mandatory completion checklist are owned by the Writing Workspace below; the generic Finish action is intentionally unavailable."),
             React.createElement("div", { className: "button-row" },
-                focus.status !== "running" && !writing && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.startFocus({ note }), "Focus started.") }, focus.status === "paused" ? "Resume" : "Start"),
+                focus.status !== "running" && !writing && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": focus.status === "paused" ? "RESUME" : "START", onClick: () => run(() => store.startFocus({ note }), "Focus started.") }, focus.status === "paused" ? "Resume" : "Start"),
                 focus.status !== "running" && writing && activeActivity && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => { var _a, _b, _c; return store.startWritingSession({ activityId: activeActivity.id, prompt: (_c = (_b = (0, task_workflows_1.decodeWritingSessionRecord)((_a = (0, task_workflows_1.activeWritingSession)(state)) === null || _a === void 0 ? void 0 : _a.note)) === null || _b === void 0 ? void 0 : _b.prompt) !== null && _c !== void 0 ? _c : activeActivity.title, durationMinutes: activeActivity.durationMinutes }); }, "Writing resumed.") }, "Resume Writing"),
-                focus.status === "running" && React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.pauseFocus(), "Focus paused.") }, "Pause"),
+                focus.status === "running" && React.createElement("button", { className: "button", type: "button", "data-tv-control-action": "PAUSE", onClick: () => run(() => store.pauseFocus(), "Focus paused.") }, "Pause"),
                 focus.status !== "idle" && React.createElement(React.Fragment, null,
-                    !writing && React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.completeFocus({ note }), "Focus completed and evidenced.") }, "Complete"),
-                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.cancelFocus({ note }), "Focus cancelled.") }, "Cancel")))),
+                    !writing && React.createElement("button", { className: "button", type: "button", "data-tv-control-action": "COMPLETE", onClick: () => run(() => store.completeFocus({ note }), "Focus completed and evidenced.") }, "Complete"),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.cancelFocus({ note }), "Focus cancelled.") }, "Cancel")),
+                tv && !writing && focus.status !== "idle" && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "OPEN", onClick: onSessionOpen }, "Open Study Session"),
+                tv && !writing && focus.status === "idle" && (rec === null || rec === void 0 ? void 0 : rec.activity) && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "START", "data-tv-control-target": rec.activity.id, onClick: () => onLaunch(rec.activity.id) }, "Start TV session"))),
         tv ? React.createElement(TvContinueElsewhere, { title: "Quick Add", detail: "Creating and naming activities is kept off-TV to avoid long virtual-keyboard entry." }) : React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Quick Add"),
             React.createElement("form", { className: "stack-form", onSubmit: (e) => { e.preventDefault(); if (name.trim()) {
@@ -413,7 +571,7 @@ function Today({ state, store, focus, run, onLaunch }) { var _a, _b, _c, _d; con
                     a.durationMinutes,
                     " min \u00B7 ",
                     title(a.activityType)),
-                React.createElement("button", { type: "button", className: "button button-quiet", onClick: () => onLaunch(a.id) },
+                React.createElement("button", { type: "button", className: "button button-quiet", "data-tv-control-action": "OPEN", "data-tv-control-target": a.id, onClick: () => onLaunch(a.id) },
                     "Open ",
                     title(a.activityType)))),
             !planned.length && React.createElement("li", null, "No planned activities remain today.")))); }
@@ -522,7 +680,7 @@ function TopicTree({ state, store, subjectId, parentTopicId = null, run }) {
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.updateTopic(t.id, { status: t.status === "archived" ? "not-started" : "archived" }), t.status === "archived" ? "Topic restored." : "Topic archived.") }, t.status === "archived" ? "Restore" : "Archive"))),
         React.createElement(TopicTree, { state: state, store: store, subjectId: subjectId, parentTopicId: t.id, run: run }))));
 }
-function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run }) {
+function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run, tvMaterialId, onTvMaterialOpen, onTvMaterialClose, onTvScheduleOpen }) {
     var _a, _b, _c, _d, _e;
     const inv = (0, domain_1.derivePlanInventory)(state);
     const plan = state.plans.find(p => p.id === state.activePlanId);
@@ -564,7 +722,7 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
         e.target.value = "";
     } };
     if (isTvBrowserUi())
-        return React.createElement(TvPlan, { state: state, store: store, tab: tab, setTab: setTab, persistence: persistence, run: run });
+        return React.createElement(TvPlan, { state: state, store: store, tab: tab, setTab: setTab, persistence: persistence, run: run, tvMaterialId: tvMaterialId !== null && tvMaterialId !== void 0 ? tvMaterialId : null, onTvMaterialOpen: onTvMaterialOpen, onTvMaterialClose: onTvMaterialClose, onTvScheduleOpen: onTvScheduleOpen });
     return React.createElement("section", { id: "plan", "data-screen": "plan", className: "screen-section" },
         React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "plan", label: "Plan sections", items: [["overview", "Overview"], ["schedule", "Schedule"], ["content", "Content"], ["library", "Library"]] }),
         tab === "overview" && React.createElement("section", { id: "plan-overview", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
@@ -710,7 +868,7 @@ function TvTopicTree({ state, subjectId, parentId = null }) { const rows = state
     return null; return React.createElement("ul", { className: "tv-topic-tree" }, rows.map(topic => React.createElement("li", { key: topic.id },
     React.createElement("strong", null, topic.name),
     React.createElement(TvTopicTree, { state: state, subjectId: subjectId, parentId: topic.id })))); }
-function TvPlan({ state, store, tab, setTab, persistence, run }) { var _a, _b; const inv = (0, domain_1.derivePlanInventory)(state); const plan = (_a = state.plans.find(p => p.id === state.activePlanId)) !== null && _a !== void 0 ? _a : null; const plans = state.plans.filter(p => p.status !== "archived"); const subjects = state.subjects.filter(s => s.planId === state.activePlanId).slice().sort((a, b) => a.order - b.order); const materials = state.materials.filter(m => m.planId === state.activePlanId); const upcoming = state.activities.filter(a => a.planId === state.activePlanId && a.status !== "completed" && Boolean(a.scheduledFor)).slice().sort((a, b) => { var _a, _b, _c, _d; return `${(_a = a.scheduledFor) !== null && _a !== void 0 ? _a : ""}:${String((_b = a.scheduledStartMinute) !== null && _b !== void 0 ? _b : 0).padStart(4, "0")}`.localeCompare(`${(_c = b.scheduledFor) !== null && _c !== void 0 ? _c : ""}:${String((_d = b.scheduledStartMinute) !== null && _d !== void 0 ? _d : 0).padStart(4, "0")}`); }).slice(0, 24); return React.createElement("section", { id: "plan", "data-screen": "plan", className: "screen-section tv-plan" },
+function TvPlan({ state, store, tab, setTab, persistence, run, tvMaterialId, onTvMaterialOpen, onTvMaterialClose, onTvScheduleOpen }) { var _a, _b; const inv = (0, domain_1.derivePlanInventory)(state); const plan = (_a = state.plans.find(p => p.id === state.activePlanId)) !== null && _a !== void 0 ? _a : null; const plans = state.plans.filter(p => p.status !== "archived"); const subjects = state.subjects.filter(s => s.planId === state.activePlanId).slice().sort((a, b) => a.order - b.order); const materials = state.materials.filter(m => m.planId === state.activePlanId); const upcoming = state.activities.filter(a => a.planId === state.activePlanId && a.status !== "completed" && Boolean(a.scheduledFor)).slice().sort((a, b) => { var _a, _b, _c, _d; return `${(_a = a.scheduledFor) !== null && _a !== void 0 ? _a : ""}:${String((_b = a.scheduledStartMinute) !== null && _b !== void 0 ? _b : 0).padStart(4, "0")}`.localeCompare(`${(_c = b.scheduledFor) !== null && _c !== void 0 ? _c : ""}:${String((_d = b.scheduledStartMinute) !== null && _d !== void 0 ? _d : 0).padStart(4, "0")}`); }).slice(0, 24); return React.createElement("section", { id: "plan", "data-screen": "plan", className: "screen-section tv-plan" },
     React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "plan", label: "Plan sections", items: [["overview", "Overview"], ["schedule", "Schedule"], ["content", "Content"], ["library", "Library"]] }),
     tab === "overview" && React.createElement("section", { id: "plan-overview", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("div", { className: "metric-grid" },
@@ -724,8 +882,11 @@ function TvPlan({ state, store, tab, setTab, persistence, run }) { var _a, _b; c
         React.createElement(TvContinueElsewhere, { title: "Plan editing", detail: "TV mode presents the plan as a readable study dashboard rather than duplicating desktop authoring forms." })),
     tab === "schedule" && React.createElement("section", { id: "plan-schedule", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
         React.createElement("article", { className: "card" },
-            React.createElement("h2", null, "Upcoming schedule"),
-            React.createElement("p", { className: "muted" }, "Read-only TV view. Schedule generation, bulk selection and rescheduling remain on phone/computer."),
+            React.createElement("div", { className: "card-heading-row" },
+                React.createElement("div", null,
+                    React.createElement("h2", null, "Upcoming schedule"),
+                    React.createElement("p", { className: "muted" }, "Read-only TV view. Schedule generation, bulk selection and rescheduling remain on phone/computer.")),
+                onTvScheduleOpen && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": "plan-open-schedule", onClick: onTvScheduleOpen }, "Open TV Schedule")),
             React.createElement("ul", { className: "activity-list tv-schedule-list" },
                 upcoming.map(a => React.createElement("li", { key: a.id },
                     React.createElement("div", null,
@@ -750,7 +911,7 @@ function TvPlan({ state, store, tab, setTab, persistence, run }) { var _a, _b; c
                     React.createElement(TvTopicTree, { state: state, subjectId: subject.id }))),
                 !subjects.length && React.createElement("p", null, "No subjects in this plan."))),
         React.createElement(TvContinueElsewhere, { title: "Content authoring & import", detail: "Adding subjects/topics, large text imports and reconciliation previews require a phone/computer workspace." })),
-    tab === "library" && React.createElement(Library, { materials: materials, store: store, persistence: persistence, run: run, tvReadOnly: true })); }
+    tab === "library" && React.createElement(Library, { materials: materials, store: store, persistence: persistence, run: run, tvReadOnly: true, controlledViewingId: tvMaterialId, onViewingOpen: onTvMaterialOpen, onViewingClose: onTvMaterialClose })); }
 function ScheduleWorkspace({ state, store, preview, setPreview, run }) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const plan = state.plans.find(p => p.id === state.activePlanId);
@@ -1449,8 +1610,18 @@ function MaterialViewer({ material, persistence, onClose }) {
                 React.createElement("a", { className: "button button-primary", href: url, download: material.title }, "Open / download local file")),
             React.createElement("p", { className: "muted" }, "Viewer classification is local and MIME-based. Native Android FileProvider/external-handler mechanics are intentionally not reproduced in the browser.")));
 }
-function Library({ materials, store, persistence, run, tvReadOnly = false }) {
-    const [viewing, setViewing] = React.useState(null);
+function Library({ materials, store, persistence, run, tvReadOnly = false, controlledViewingId, onViewingOpen, onViewingClose }) {
+    var _a;
+    const [localViewing, setLocalViewing] = React.useState(null);
+    const viewing = controlledViewingId === undefined ? localViewing : (_a = materials.find(item => item.id === controlledViewingId)) !== null && _a !== void 0 ? _a : null;
+    const openViewing = (material) => { if (onViewingOpen)
+        onViewingOpen(material.id);
+    else
+        setLocalViewing(material); };
+    const closeViewing = () => { if (onViewingClose)
+        onViewingClose();
+    else
+        setLocalViewing(null); };
     const add = async (e) => { var _a; const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (!file || !persistence.attachments)
         return; if (file.size > 50 * 1024 * 1024)
         throw new Error("Attachment exceeds the 50 MiB local limit"); let meta = null; try {
@@ -1484,12 +1655,12 @@ function Library({ materials, store, persistence, run, tvReadOnly = false }) {
                             m.locator ? ` · ${m.locator}` : ""),
                         !tvReadOnly && React.createElement(MaterialReferenceControls, { material: m, store: store, run: run })),
                     React.createElement("div", { className: "button-row" },
-                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setViewing(m) }, "Open"),
+                        React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": m.id, onClick: () => openViewing(m) }, "Open"),
                         !tvReadOnly && !m.archived && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deleteMaterial(m.id), "Material removed.") }, "Delete"))); }),
                 !materials.length && React.createElement("li", null, "No local materials yet."))),
-        viewing && React.createElement(MaterialViewer, { material: viewing, persistence: persistence, onClose: () => setViewing(null) }));
+        viewing && React.createElement(MaterialViewer, { material: viewing, persistence: persistence, onClose: closeViewing }));
 }
-function Practice({ state, store, tab, setTab, questionId, setQuestionId, context, run }) {
+function Practice({ state, store, tab, setTab, questionId, setQuestionId, context, run, onQuestionSetOpen, onMockOpen, onReviewOpen }) {
     var _a, _b, _c, _d, _e, _f;
     const dueAll = (0, domain_1.selectDueReviews)(state), errors = (0, domain_1.selectOpenErrors)(state), plan = state.plans.find(p => p.id === state.activePlanId);
     const [filter, setFilter] = React.useState({});
@@ -1517,7 +1688,7 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
     const quota = (_d = plan === null || plan === void 0 ? void 0 : plan.configuration.practice.weeklyQuestionQuota) !== null && _d !== void 0 ? _d : null;
     const weekAttempts = state.evidence.filter(e => e.planId === state.activePlanId && e.kind === "question-attempt" && Date.parse(e.observedAt) >= Date.now() - 7 * 86400000).length;
     if (isTvBrowserUi())
-        return React.createElement(TvPractice, { state: state, store: store, tab: tab, setTab: setTab, questionId: questionId, setQuestionId: setQuestionId, context: context, run: run });
+        return React.createElement(TvPractice, { state: state, store: store, tab: tab, setTab: setTab, questionId: questionId, setQuestionId: setQuestionId, context: context, run: run, onQuestionSetOpen: onQuestionSetOpen, onMockOpen: onMockOpen, onReviewOpen: onReviewOpen });
     return React.createElement("section", { id: "practice", "data-screen": "practice", className: "screen-section" },
         (context === null || context === void 0 ? void 0 : context.screen) === "practice" && React.createElement("article", { className: "mode-banner" },
             React.createElement("strong", null,
@@ -1676,73 +1847,103 @@ function Practice({ state, store, tab, setTab, questionId, setQuestionId, contex
                         React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.resolveError(e.id), "Error resolved.") }, "Resolve"))),
                     !errors.length && React.createElement("li", null, "No open errors.")))));
 }
-function TvPractice({ state, store, tab, setTab, questionId, setQuestionId, context, run }) { var _a, _b; const due = (0, domain_1.selectDueReviews)(state).filter(r => (context === null || context === void 0 ? void 0 : context.screen) === "practice" && context.practiceTab === "reviews" ? (context.topicId ? r.topicId === context.topicId : context.subjectId ? r.subjectId === context.subjectId : true) : true).sort((a, b) => a.dueAt.localeCompare(b.dueAt)); const errors = (0, domain_1.selectOpenErrors)(state); const questions = (0, modes_1.filterPracticeQuestions)(state, (context === null || context === void 0 ? void 0 : context.topicId) ? { topicId: context.topicId } : (context === null || context === void 0 ? void 0 : context.subjectId) ? { subjectId: context.subjectId } : {}).slice(0, 40); const current = (_b = (_a = questions.find(q => q.id === questionId)) !== null && _a !== void 0 ? _a : questions[0]) !== null && _b !== void 0 ? _b : null; const [revealed, setRevealed] = React.useState(null); const [drill, setDrill] = React.useState(null); React.useEffect(() => setRevealed(null), [current === null || current === void 0 ? void 0 : current.id]); return React.createElement("section", { id: "practice", "data-screen": "practice", className: "screen-section tv-practice" },
-    (context === null || context === void 0 ? void 0 : context.screen) === "practice" && React.createElement("article", { className: "mode-banner" },
-        React.createElement("strong", null,
-            title(context.activityType),
-            " activity context"),
-        React.createElement("span", { className: "muted" }, "Remote-first presentation keeps the routed subject/topic context.")),
-    React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "practice", label: "Practice sections", items: [["reviews", "Reviews"], ["questions", "Questions"], ["tests", "Tests"], ["errors", "Errors"]] }),
-    tab === "reviews" && React.createElement("section", { id: "practice-reviews", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-        React.createElement("article", { className: "card" },
-            React.createElement("h2", null, "Due reviews"),
-            React.createElement("ul", { className: "activity-list tv-review-list" },
-                due.map(r => { var _a, _b; const card = r.sourceType === "flashcard" && r.sourceId ? state.flashcards.find(f => f.id === r.sourceId) : null; return React.createElement("li", { key: r.id },
-                    React.createElement("div", null,
-                        React.createElement("strong", null, card ? card.front : (_a = r.sourceType) !== null && _a !== void 0 ? _a : "Review"),
-                        React.createElement("span", null, card ? `${card.back} · ${card.type}` : `${r.dueAt} · interval ${(_b = r.intervalDays) !== null && _b !== void 0 ? _b : "—"}d`)),
-                    React.createElement("div", { className: "button-row" },
-                        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.completeReview(r.id, { rating: "again" }), "Review reset to first interval.") }, "Again"),
-                        React.createElement("button", { className: "button", type: "button", onClick: () => run(() => store.completeReview(r.id, { rating: "good" }), "Review advanced.") }, "Good"),
-                        React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.completeReview(r.id, { rating: "easy" }), "Review advanced.") }, "Easy"))); }),
-                !due.length && React.createElement("li", null, "No due reviews."))),
-        React.createElement(TvContinueElsewhere, { title: "Flashcard authoring", detail: "Creating, editing, tagging and deleting cards stays off-TV; due-card review remains fully remote-friendly here." })),
-    tab === "questions" && React.createElement("section", { id: "practice-questions", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-        React.createElement("div", { className: "content-grid two-column" },
-            React.createElement("article", { className: "card" },
-                React.createElement("h2", null, "Question browser"),
-                React.createElement("ul", { className: "activity-list tv-question-list" },
-                    questions.map(q => { var _a, _b, _c; return React.createElement("li", { key: q.id },
-                        React.createElement("button", { className: "button button-quiet", type: "button", "aria-pressed": (current === null || current === void 0 ? void 0 : current.id) === q.id, onClick: () => setQuestionId(q.id) }, q.prompt),
-                        React.createElement("span", null, (_a = q.examBoard) !== null && _a !== void 0 ? _a : "No banca",
-                            " \u00B7 ", (_b = q.year) !== null && _b !== void 0 ? _b : "No year",
-                            " \u00B7 ", (_c = q.difficulty) !== null && _c !== void 0 ? _c : "No difficulty")); }),
-                    !questions.length && React.createElement("li", null, "No matching questions."))),
-            React.createElement("article", { className: "card tv-question-stage" },
-                React.createElement("h2", null, "Question review"),
-                current ? React.createElement(React.Fragment, null,
-                    React.createElement("strong", { className: "tv-question-prompt" }, current.prompt),
-                    React.createElement("p", { className: "muted" }, "Use this surface for remote reading/review. Typed graded answers remain on phone/computer."),
-                    React.createElement("button", { className: "button button-primary", type: "button", onClick: () => setRevealed(revealed === current.id ? null : current.id) }, revealed === current.id ? "Hide answer" : "Reveal answer"),
-                    revealed === current.id && React.createElement("div", { className: "tv-answer-reveal", role: "status" },
-                        React.createElement("span", { className: "eyebrow" }, "Expected answer"),
-                        React.createElement("strong", null, current.answer))) : React.createElement("p", null, "No question selected."))),
-        React.createElement(TvContinueElsewhere, { title: "Graded answer entry & question import", detail: "Manual answers, question-bank authoring, imports, saved-set naming and quota editing are keyboard-oriented workflows." })),
-    tab === "tests" && React.createElement("section", { id: "practice-tests", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-        React.createElement("article", { className: "card" },
-            React.createElement("h2", null, "Weakness drill"),
-            React.createElement("p", { className: "muted" }, "Preview a drill from persisted wrong answers, open errors and due reviews without typing."),
-            React.createElement("button", { className: "button button-primary", type: "button", onClick: () => setDrill((0, modes_1.buildWeaknessDrill)(state, { limit: 10, minQuestions: 2 })) }, "Preview weakness drill"),
-            drill && React.createElement(React.Fragment, null,
-                React.createElement("p", null, drill.ready ? `${drill.questionIds.length} matched questions` : drill.reasons[0]),
-                React.createElement("ul", null, drill.signals.map((x, i) => React.createElement("li", { key: i },
-                    x.reasons.join(", "),
-                    " \u00B7 score ",
-                    x.score))))),
-        React.createElement(TvContinueElsewhere, { title: "Mock Exam Studio", detail: "Full mock configuration and typed answer submission stay on phone/computer. TV keeps preview-oriented review surfaces." })),
-    tab === "errors" && React.createElement("section", { id: "practice-errors", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
-        React.createElement("article", { className: "card" },
-            React.createElement("h2", null, "Error Notebook"),
+function TvPractice({ state, store, tab, setTab, questionId, setQuestionId, context, run, onQuestionSetOpen, onMockOpen, onReviewOpen }) {
+    var _a, _b, _c;
+    const due = (0, domain_1.selectDueReviews)(state).filter(r => (context === null || context === void 0 ? void 0 : context.screen) === "practice" && context.practiceTab === "reviews" ? (context.topicId ? r.topicId === context.topicId : context.subjectId ? r.subjectId === context.subjectId : true) : true).sort((a, b) => a.dueAt.localeCompare(b.dueAt));
+    const errors = (0, domain_1.selectOpenErrors)(state);
+    const questions = (0, modes_1.filterPracticeQuestions)(state, (context === null || context === void 0 ? void 0 : context.topicId) ? { topicId: context.topicId } : (context === null || context === void 0 ? void 0 : context.subjectId) ? { subjectId: context.subjectId } : {}).slice(0, 40);
+    const current = (_b = (_a = questions.find(q => q.id === questionId)) !== null && _a !== void 0 ? _a : questions[0]) !== null && _b !== void 0 ? _b : null;
+    const currentIndex = current ? questions.findIndex(q => q.id === current.id) : -1;
+    const [revealed, setRevealed] = React.useState(null);
+    const [drill, setDrill] = React.useState(null);
+    const activePlan = (_c = state.plans.find(p => p.id === state.activePlanId)) !== null && _c !== void 0 ? _c : null;
+    const mockPreview = (activePlan === null || activePlan === void 0 ? void 0 : activePlan.mode) === "EXAM_PLAN" ? (0, modes_1.previewMockExam)(state) : null;
+    React.useEffect(() => setRevealed(null), [current === null || current === void 0 ? void 0 : current.id]);
+    return React.createElement("section", { id: "practice", "data-screen": "practice", className: "screen-section tv-practice" },
+        (context === null || context === void 0 ? void 0 : context.screen) === "practice" && React.createElement("article", { className: "mode-banner" },
+            React.createElement("strong", null,
+                title(context.activityType),
+                " activity context"),
+            React.createElement("span", { className: "muted" }, "Remote-first presentation keeps the routed subject/topic context.")),
+        React.createElement(Tabs, { value: tab, setValue: setTab, prefix: "practice", label: "Practice sections", items: [["reviews", "Reviews"], ["questions", "Questions"], ["tests", "Tests"], ["errors", "Errors"]] }),
+        tab === "reviews" && React.createElement("section", { id: "practice-reviews", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+            React.createElement("article", { className: "hero-card" },
+                React.createElement("p", { className: "eyebrow" }, "Review queue"),
+                React.createElement("h2", null,
+                    due.length,
+                    " due review",
+                    due.length === 1 ? "" : "s"),
+                React.createElement("p", { className: "muted" }, "Open the dedicated TV Review surface for large prompts, answer/explanation reveal, Again/Hard/Good/Easy grading and Error Notebook follow-up."),
+                React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "START", onClick: () => onReviewOpen("reviews") }, "Start TV reviews")),
             React.createElement("ul", { className: "activity-list" },
-                errors.map(e => React.createElement("li", { key: e.id },
-                    React.createElement("div", null,
-                        React.createElement("strong", null, title(e.category)),
-                        React.createElement("span", null,
-                            "Recurrence ",
-                            e.recurrenceCount)),
-                    React.createElement("select", { "aria-label": `Reclassify error ${e.id}`, value: e.category, onChange: (ev) => run(() => store.reclassifyError(e.id, ev.target.value), "Error reclassified.") }, ["content-gap", "forgotten", "concept-confusion", "interpretation", "distraction", "calculation", "time-pressure", "disputed", "other"].map(c => React.createElement("option", { key: c, value: c }, title(c)))),
-                    React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.resolveError(e.id), "Error resolved.") }, "Resolve"))),
-                !errors.length && React.createElement("li", null, "No open errors."))))); }
+                due.slice(0, 6).map(r => { var _a, _b; return React.createElement("li", { key: r.id },
+                    React.createElement("strong", null, (_a = r.sourceType) !== null && _a !== void 0 ? _a : "Review"),
+                    React.createElement("span", null,
+                        r.dueAt,
+                        " \u00B7 interval ", (_b = r.intervalDays) !== null && _b !== void 0 ? _b : "—",
+                        "d")); }),
+                !due.length && React.createElement("li", null, "No due reviews."))),
+        tab === "questions" && React.createElement("section", { id: "practice-questions", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+            React.createElement("div", { className: "content-grid two-column" },
+                React.createElement("article", { className: "card" },
+                    React.createElement("h2", null, "Question browser"),
+                    React.createElement("ul", { className: "activity-list tv-question-list" },
+                        questions.map(q => { var _a, _b, _c; return React.createElement("li", { key: q.id },
+                            React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": q.id, "aria-pressed": (current === null || current === void 0 ? void 0 : current.id) === q.id, onClick: () => setQuestionId(q.id) }, q.prompt),
+                            React.createElement("span", null, (_a = q.examBoard) !== null && _a !== void 0 ? _a : "No banca",
+                                " \u00B7 ", (_b = q.year) !== null && _b !== void 0 ? _b : "No year",
+                                " \u00B7 ", (_c = q.difficulty) !== null && _c !== void 0 ? _c : "No difficulty")); }),
+                        !questions.length && React.createElement("li", null, "No matching questions."))),
+                React.createElement("article", { className: "card tv-question-stage" },
+                    React.createElement("h2", null, "Question review"),
+                    current ? React.createElement(React.Fragment, null,
+                        React.createElement("strong", { className: "tv-question-prompt" }, current.prompt),
+                        React.createElement("p", { className: "muted" }, "Use this surface for remote reading/review. Choose Start TV question set for answer-choice practice and persisted grading."),
+                        React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "START", "data-tv-control-target": current.id, onClick: onQuestionSetOpen }, "Start TV question set"),
+                        React.createElement("div", { className: "button-row" },
+                            React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: currentIndex <= 0, onClick: () => currentIndex > 0 && setQuestionId(questions[currentIndex - 1].id) }, "Previous"),
+                            React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "SHOW_EXPLANATION", "data-tv-control-target": current.id, onClick: () => setRevealed(revealed === current.id ? null : current.id) }, revealed === current.id ? "Hide answer" : "Reveal answer"),
+                            React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: currentIndex < 0 || currentIndex >= questions.length - 1, onClick: () => currentIndex >= 0 && currentIndex < questions.length - 1 && setQuestionId(questions[currentIndex + 1].id) }, "Next")),
+                        revealed === current.id && React.createElement("div", { className: "tv-answer-reveal", role: "status" },
+                            React.createElement("span", { className: "eyebrow" }, "Expected answer"),
+                            React.createElement("strong", null, current.answer))) : React.createElement("p", null, "No question selected."))),
+            React.createElement(TvContinueElsewhere, { title: "Question authoring & import", detail: "Question-bank authoring, imports, saved-set naming and quota editing are keyboard-oriented workflows." })),
+        tab === "tests" && React.createElement("section", { id: "practice-tests", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+            React.createElement("article", { className: "hero-card" },
+                React.createElement("p", { className: "eyebrow" }, "Mock Exam Studio"),
+                React.createElement("h2", null, mockPreview ? mockPreview.ready ? `${mockPreview.questionIds.length} frozen questions ready` : `Question bank incomplete` : `Available for Concurso plans`),
+                React.createElement("p", { className: "muted" }, "The TV Mock Exam uses the active plan's saved blueprint, freezes its local question selection, runs a timer, supports flags and persists one canonical mock-exam-result on submission."),
+                React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "START", onClick: onMockOpen, disabled: !(mockPreview === null || mockPreview === void 0 ? void 0 : mockPreview.ready) }, "Open TV Mock Exam"),
+                mockPreview && !mockPreview.ready && React.createElement("p", { className: "tv-inline-note" }, mockPreview.deficits.join("; "))),
+            React.createElement("article", { className: "card" },
+                React.createElement("h2", null, "Weakness drill"),
+                React.createElement("p", { className: "muted" }, "Preview a drill from persisted wrong answers, open errors and due reviews without typing."),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setDrill((0, modes_1.buildWeaknessDrill)(state, { limit: 10, minQuestions: 2 })) }, "Preview weakness drill"),
+                drill && React.createElement(React.Fragment, null,
+                    React.createElement("p", null, drill.ready ? `${drill.questionIds.length} matched questions` : drill.reasons[0]),
+                    React.createElement("ul", null, drill.signals.map((x, i) => React.createElement("li", { key: i },
+                        x.reasons.join(", "),
+                        " \u00B7 score ",
+                        x.score))))),
+            React.createElement(TvContinueElsewhere, { title: "Mock blueprint configuration", detail: "Changing banca/source/tag filters, disputed-question policy and passing thresholds stays on phone/computer. TV executes the saved blueprint." })),
+        tab === "errors" && React.createElement("section", { id: "practice-errors", className: "tab-panel", role: "tabpanel", tabIndex: 0 },
+            React.createElement("article", { className: "hero-card" },
+                React.createElement("p", { className: "eyebrow" }, "Error Notebook"),
+                React.createElement("h2", null,
+                    errors.length,
+                    " open error",
+                    errors.length === 1 ? "" : "s"),
+                React.createElement("p", { className: "muted" }, "The dedicated Review surface includes D-pad-first Error Notebook browsing, category changes and resolve actions without text entry."),
+                React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": "review-errors", onClick: () => onReviewOpen("errors") }, "Open TV Error Notebook")),
+            React.createElement("ul", { className: "activity-list" },
+                errors.slice(0, 8).map(e => React.createElement("li", { key: e.id },
+                    React.createElement("strong", null, title(e.category)),
+                    React.createElement("span", null,
+                        "Recurrence ",
+                        e.recurrenceCount,
+                        e.note ? ` · ${e.note}` : ""))),
+                !errors.length && React.createElement("li", null, "No open errors."))));
+}
 function PublicExamMock({ state, store, run }) {
     var _a, _b, _c, _d, _e;
     const plan = state.plans.find(p => p.id === state.activePlanId);
@@ -1806,6 +2007,580 @@ function PublicExamMock({ state, store, run }) {
                     q.tags.length ? ` · ${q.tags.join(", ")}` : ""),
                 React.createElement("input", { "aria-label": `Mock answer ${id}`, value: (_b = answers[id]) !== null && _b !== void 0 ? _b : "", onChange: (e) => setAnswers({ ...answers, [id]: e.target.value }) })); }),
             preview.ready && React.createElement("button", { className: "button button-primary", type: "button", onClick: submit }, "Submit mock")));
+}
+function TvStudySession({ state, store, focus, run, onBack }) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    const active = focus.activityId ? (_a = state.activities.find(a => a.id === focus.activityId)) !== null && _a !== void 0 ? _a : null : null;
+    const recommended = (_c = (_b = (0, domain_1.recommendNextActivity)(state)) === null || _b === void 0 ? void 0 : _b.activity) !== null && _c !== void 0 ? _c : null;
+    const [sessionActivityId, setSessionActivityId] = React.useState((_e = (_d = active === null || active === void 0 ? void 0 : active.id) !== null && _d !== void 0 ? _d : recommended === null || recommended === void 0 ? void 0 : recommended.id) !== null && _e !== void 0 ? _e : null);
+    const activity = sessionActivityId ? (_f = state.activities.find(a => a.id === sessionActivityId)) !== null && _f !== void 0 ? _f : null : active !== null && active !== void 0 ? active : recommended;
+    const [completed, setCompleted] = React.useState(false);
+    const [manualSegment, setManualSegment] = React.useState(null);
+    const duration = focus.status === "idle" ? ((_g = activity === null || activity === void 0 ? void 0 : activity.durationMinutes) !== null && _g !== void 0 ? _g : focus.durationMinutes) : focus.durationMinutes;
+    const segments = (0, tv_session_1.buildTvStudySessionSegments)(duration);
+    const automaticSegment = focus.status === "idle" ? 0 : (0, tv_session_1.tvStudySessionSegmentIndex)(segments, duration, focus.remainingMs);
+    const segmentIndex = Math.min(segments.length - 1, manualSegment !== null && manualSegment !== void 0 ? manualSegment : automaticSegment);
+    const phase = (0, tv_session_1.tvStudySessionPhase)(focus.status, completed);
+    const progress = completed ? 100 : focus.status === "idle" ? 0 : (0, tv_session_1.tvStudySessionProgressPercent)(duration, focus.remainingMs);
+    const writing = (0, task_workflows_1.writingActivity)(activity);
+    React.useEffect(() => { if (focus.activityId && !completed && focus.activityId !== sessionActivityId) {
+        setSessionActivityId(focus.activityId);
+        setManualSegment(null);
+    } }, [focus.activityId, completed, sessionActivityId]);
+    const startOrResume = () => { if (writing || completed)
+        return; const result = run(() => { var _a; return store.startFocus(focus.status === "paused" ? {} : { activityId: (_a = activity === null || activity === void 0 ? void 0 : activity.id) !== null && _a !== void 0 ? _a : null, durationMinutes: duration }); }, focus.status === "paused" ? "Study Session resumed." : "Study Session started."); if (result)
+        setCompleted(false); };
+    const toggle = () => { if (completed || writing)
+        return; if (focus.status === "running")
+        run(() => store.pauseFocus(), "Study Session paused.");
+    else
+        startOrResume(); };
+    React.useEffect(() => { const listener = () => toggle(); addEventListener("studyflow:tv-media-toggle", listener); return () => removeEventListener("studyflow:tv-media-toggle", listener); }, [focus.status, activity === null || activity === void 0 ? void 0 : activity.id, completed, writing]);
+    const complete = () => { const result = run(() => store.completeFocus(), "Study Session completed and evidenced."); if (result)
+        setCompleted(true); };
+    return React.createElement("section", { id: "tv-study-session", "data-screen": "session", className: "screen-section tv-session-surface" },
+        React.createElement("article", { className: "hero-card tv-session-hero" },
+            React.createElement("div", null,
+                React.createElement("p", { className: "eyebrow" },
+                    "Study Session \u00B7 ",
+                    title(phase)),
+                React.createElement("h2", null, (_h = activity === null || activity === void 0 ? void 0 : activity.title) !== null && _h !== void 0 ? _h : "Open a planned activity from Today"),
+                React.createElement("p", { className: "muted" }, activity ? `${title(activity.activityType)} · ${duration} min · ${segments.length} presentation segment${segments.length === 1 ? "" : "s"}` : "No activity is ready for this TV session.")),
+            React.createElement("div", { className: "tv-session-clock", "aria-label": `Study Session time remaining ${clock(focus.remainingMs)}` }, phase === "ready" ? `${duration}:00` : phase === "completed" ? "Done" : clock(focus.remainingMs)),
+            React.createElement("progress", { max: "100", value: progress },
+                progress,
+                "%")),
+        writing ? React.createElement(TvContinueElsewhere, { title: "Writing Workspace", detail: "The active activity is Writing. Drafting, rubric scoring and checklist completion remain on phone/computer." }) : React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "content-grid two-column" },
+                React.createElement("article", { className: "card" },
+                    React.createElement("h2", null, "Session plan"),
+                    React.createElement("ol", { className: "tv-session-segments" }, segments.map((segment, index) => React.createElement("li", { key: segment.id, "aria-current": index === segmentIndex ? "step" : undefined, className: index < segmentIndex ? "is-done" : index === segmentIndex ? "is-current" : "" },
+                        React.createElement("span", null, index + 1),
+                        React.createElement("div", null,
+                            React.createElement("strong", null, segment.label),
+                            React.createElement("small", null,
+                                segment.minutes,
+                                " min")))))),
+                React.createElement("article", { className: "card tv-session-now" },
+                    React.createElement("p", { className: "eyebrow" }, "Current segment"),
+                    React.createElement("h2", null, (_k = (_j = segments[segmentIndex]) === null || _j === void 0 ? void 0 : _j.label) !== null && _k !== void 0 ? _k : "Focused study"),
+                    React.createElement("p", { className: "muted" }, "Remote Play/Pause, the on-screen controls and the paired phone all target the same canonical focus session."),
+                    React.createElement("div", { className: "button-row" },
+                        phase === "ready" && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "START", onClick: startOrResume, disabled: !activity }, "Start"),
+                        phase === "paused" && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "RESUME", onClick: startOrResume }, "Resume"),
+                        phase === "running" && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "PAUSE", onClick: () => run(() => store.pauseFocus(), "Study Session paused.") }, "Pause"),
+                        phase !== "completed" && React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: segmentIndex >= segments.length - 1, onClick: () => setManualSegment(Math.min(segments.length - 1, segmentIndex + 1)) }, "Next segment"),
+                        phase !== "ready" && phase !== "completed" && React.createElement("button", { className: "button", type: "button", "data-tv-control-action": "COMPLETE", onClick: complete }, "Complete"),
+                        phase === "completed" && React.createElement("button", { className: "button button-primary", type: "button", onClick: onBack }, "Return to Today")))),
+            React.createElement("article", { className: "card tv-session-footer" },
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: onBack }, "Back to Today"),
+                React.createElement("span", { className: "muted" }, "Segment changes are presentation-only; StudyFlow evidence remains the canonical Study Session timer and completion record."))));
+}
+function TvQuestionSet({ state, store, questionId, setQuestionId, context, run, onBack }) {
+    var _a, _b, _c, _d, _e, _f, _g;
+    const filter = (context === null || context === void 0 ? void 0 : context.topicId) ? { topicId: context.topicId } : (context === null || context === void 0 ? void 0 : context.subjectId) ? { subjectId: context.subjectId } : {};
+    const questions = (0, modes_1.filterPracticeQuestions)(state, filter).slice(0, tv_question_set_1.TV_QUESTION_SET_LIMIT);
+    const current = (_b = (_a = questions.find(q => q.id === questionId)) !== null && _a !== void 0 ? _a : questions[0]) !== null && _b !== void 0 ? _b : null;
+    const index = current ? questions.findIndex(q => q.id === current.id) : -1;
+    const [selection, setSelection] = React.useState(null);
+    const [revealed, setRevealed] = React.useState(false);
+    const [completed, setCompleted] = React.useState(false);
+    const [attempts, setAttempts] = React.useState({});
+    React.useEffect(() => { if (questions.length && !questions.some(q => q.id === questionId))
+        setQuestionId(questions[0].id); }, [state.revision, context === null || context === void 0 ? void 0 : context.activityId, questionId]);
+    React.useEffect(() => { setSelection(null); setRevealed(false); }, [current === null || current === void 0 ? void 0 : current.id]);
+    const submit = () => { if (!current || selection == null)
+        return; const response = run(() => store.answerQuestion(current.id, selection), "Question attempt recorded from TV."); if (response === null || response === void 0 ? void 0 : response.result) {
+        setAttempts(previous => { var _a; return ({ ...previous, [current.id]: (_a = response.result.correct) !== null && _a !== void 0 ? _a : null }); });
+        setRevealed(true);
+    } };
+    const move = (delta) => { if (!questions.length)
+        return; const next = Math.max(0, Math.min(questions.length - 1, index + delta)); setQuestionId(questions[next].id); };
+    const answered = Object.keys(attempts).length;
+    const correct = Object.values(attempts).filter(v => v === true).length;
+    const progress = completed ? 100 : (0, tv_question_set_1.tvQuestionProgressPercent)(Math.max(0, index), questions.length);
+    if (completed)
+        return React.createElement("section", { id: "tv-question-set", "data-screen": "questions", className: "screen-section tv-question-set-surface" },
+            React.createElement("article", { className: "hero-card" },
+                React.createElement("p", { className: "eyebrow" }, "Question Set complete"),
+                React.createElement("h2", null,
+                    answered,
+                    " answered \u00B7 ",
+                    correct,
+                    " correct"),
+                React.createElement("p", { className: "muted" }, "Every submitted answer was written to the canonical StudyFlow question-attempt evidence stream."),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { className: "button button-primary", type: "button", onClick: onBack }, "Return to Practice"),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => { setAttempts({}); setCompleted(false); if (questions[0])
+                            setQuestionId(questions[0].id); } }, "Restart presentation set"))));
+    return React.createElement("section", { id: "tv-question-set", "data-screen": "questions", className: "screen-section tv-question-set-surface" },
+        React.createElement("article", { className: "hero-card tv-question-set-header" },
+            React.createElement("div", null,
+                React.createElement("p", { className: "eyebrow" },
+                    "Question Set \u00B7 ",
+                    questions.length ? `${index + 1} / ${questions.length}` : "No questions"),
+                React.createElement("h2", null, (_c = current === null || current === void 0 ? void 0 : current.examBoard) !== null && _c !== void 0 ? _c : "Practice questions"),
+                React.createElement("p", { className: "muted" }, current ? `${(_d = current.year) !== null && _d !== void 0 ? _d : "Year not set"} · ${title((_e = current.difficulty) !== null && _e !== void 0 ? _e : "difficulty not set")} · ${current.disputed ? "Disputed" : "Canonical local question"}` : "Open or import questions on phone/computer first.")),
+            React.createElement("progress", { max: "100", value: progress },
+                progress,
+                "%")),
+        current ? React.createElement("article", { className: "card tv-question-set-stage" },
+            React.createElement("strong", { className: "tv-question-set-prompt" }, current.prompt),
+            current.choices.length ? React.createElement("div", { className: "tv-choice-grid", role: "group", "aria-label": "Answer choices" }, current.choices.map((choice, choiceIndex) => React.createElement("button", { key: choiceIndex, type: "button", className: `tv-choice${selection === choice ? " is-selected" : ""}`, "aria-pressed": selection === choice, "data-tv-control-action": "SELECT_ANSWER", "data-tv-control-target": current.id, "data-tv-control-option": (0, tv_question_set_1.tvQuestionChoiceOptionId)(choiceIndex), onClick: () => setSelection(choice) },
+                React.createElement("span", null, (0, tv_question_set_1.tvQuestionChoiceLabel)(choiceIndex)),
+                React.createElement("strong", null, choice)))) : React.createElement(TvContinueElsewhere, { title: "Typed-answer question", detail: "This question has no selectable choices, so graded answer entry stays on phone/computer. You can still reveal its stored answer/explanation and move through the set." }),
+            React.createElement("div", { className: "button-row tv-question-set-actions" },
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: index <= 0, onClick: () => move(-1) }, "Previous"),
+                current.choices.length > 0 && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "SUBMIT", disabled: selection == null, onClick: submit }, "Submit choice"),
+                React.createElement("button", { className: "button", type: "button", "data-tv-control-action": "SHOW_EXPLANATION", "data-tv-control-target": current.id, onClick: () => setRevealed(v => !v) }, revealed ? "Hide explanation" : "Show explanation"),
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: index >= questions.length - 1, onClick: () => move(1) }, "Next"),
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "COMPLETE", onClick: () => setCompleted(true) }, "Complete set")),
+            revealed && React.createElement("div", { className: "tv-question-feedback", role: "status" },
+                React.createElement("p", { className: "eyebrow" }, "Answer & explanation"),
+                React.createElement("strong", null, (_f = current.answer) !== null && _f !== void 0 ? _f : "No canonical answer stored."),
+                React.createElement("p", null, (_g = current.explanation) !== null && _g !== void 0 ? _g : "No explanation stored for this question."),
+                current.id in attempts && React.createElement("p", { className: attempts[current.id] === true ? "tv-result-correct" : attempts[current.id] === false ? "tv-result-wrong" : "muted" }, attempts[current.id] === true ? "Your submitted choice was correct." : attempts[current.id] === false ? "Your submitted choice was incorrect and StudyFlow scheduled the canonical review/error evidence." : "The attempt was recorded but this question is not automatically gradable."))) : React.createElement("article", { className: "card" },
+            React.createElement("h2", null, "No matching questions"),
+            React.createElement("p", { className: "muted" }, "Question authoring/import stays on phone/computer. Return to Practice to choose another context.")),
+        React.createElement("article", { className: "card tv-question-set-footer" },
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: onBack }, "Back to Practice"),
+            React.createElement("span", { className: "muted" }, "Answer selection uses D-pad focus and Enter/OK; paired-phone A\u2013D buttons use the same SELECT_ANSWER protocol action.")));
+}
+function TvMockExamStudio({ state, store, run, onBack }) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const activePlan = (_a = state.plans.find(p => p.id === state.activePlanId)) !== null && _a !== void 0 ? _a : null;
+    const [preview] = React.useState(() => (activePlan === null || activePlan === void 0 ? void 0 : activePlan.mode) === "EXAM_PLAN" ? (0, modes_1.previewMockExam)(state) : null);
+    const [phase, setPhase] = React.useState("ready");
+    const [index, setIndex] = React.useState(0);
+    const [answers, setAnswers] = React.useState({});
+    const [flagged, setFlagged] = React.useState(() => new Set());
+    const [startedAt, setStartedAt] = React.useState(null);
+    const [pausedAt, setPausedAt] = React.useState(null);
+    const [pausedAccumulated, setPausedAccumulated] = React.useState(0);
+    const [result, setResult] = React.useState(null);
+    const [showDetail, setShowDetail] = React.useState(false);
+    const [submitPrompt, setSubmitPrompt] = React.useState(false);
+    const [abandonPrompt, setAbandonPrompt] = React.useState(false);
+    const questions = ((_b = preview === null || preview === void 0 ? void 0 : preview.questionIds) !== null && _b !== void 0 ? _b : []).map(id => state.questions.find(q => q.id === id)).filter(Boolean);
+    const current = (_c = questions[index]) !== null && _c !== void 0 ? _c : null;
+    const duration = (_d = preview === null || preview === void 0 ? void 0 : preview.blueprint.durationMinutes) !== null && _d !== void 0 ? _d : 60;
+    const remaining = (0, tv_mock_exam_1.tvMockRemainingMs)(duration, startedAt, Date.now(), pausedAt, pausedAccumulated);
+    const progress = phase === "results" ? 100 : (0, tv_mock_exam_1.tvMockProgressPercent)(duration, remaining);
+    const answered = (0, tv_mock_exam_1.tvMockAnsweredCount)(answers);
+    const selection = current ? (_e = answers[current.id]) !== null && _e !== void 0 ? _e : null : null;
+    const active = phase === "running" || phase === "paused";
+    React.useEffect(() => { if (active)
+        document.documentElement.dataset.studyflowTvExamActive = "true";
+    else
+        delete document.documentElement.dataset.studyflowTvExamActive; return () => { delete document.documentElement.dataset.studyflowTvExamActive; }; }, [active]);
+    React.useEffect(() => { const listener = () => { if (active)
+        setAbandonPrompt(true); }; addEventListener("studyflow:tv-exam-back", listener); return () => removeEventListener("studyflow:tv-exam-back", listener); }, [active]);
+    React.useEffect(() => { if (!active)
+        return; const listener = (event) => { event.preventDefault(); event.returnValue = ""; }; addEventListener("beforeunload", listener); return () => removeEventListener("beforeunload", listener); }, [active]);
+    const record = () => { if (!preview)
+        return; const evidence = run(() => store.recordMockExam(preview, answers), "Mock exam result recorded from TV."); if (!evidence)
+        return; setResult(evidence.value); setPhase("results"); setSubmitPrompt(false); setShowDetail(false); delete document.documentElement.dataset.studyflowTvExamActive; };
+    React.useEffect(() => { if (phase === "running" && remaining <= 0)
+        record(); }, [phase, remaining]);
+    const start = () => { if (!(preview === null || preview === void 0 ? void 0 : preview.ready))
+        return; setStartedAt(Date.now()); setPausedAt(null); setPausedAccumulated(0); setPhase("running"); };
+    const pause = () => { if (phase !== "running")
+        return; setPausedAt(Date.now()); setPhase("paused"); };
+    const resume = () => { if (phase !== "paused" || pausedAt == null)
+        return; setPausedAccumulated(v => v + Math.max(0, Date.now() - pausedAt)); setPausedAt(null); setPhase("running"); };
+    const move = (delta) => setIndex(v => Math.max(0, Math.min(questions.length - 1, v + delta)));
+    const toggleFlag = () => { if (!current)
+        return; setFlagged(previous => { const next = new Set(previous); if (next.has(current.id))
+        next.delete(current.id);
+    else
+        next.add(current.id); return next; }); };
+    const askBack = () => { if (active) {
+        setAbandonPrompt(true);
+        return;
+    } onBack(); };
+    const abandon = () => { delete document.documentElement.dataset.studyflowTvExamActive; setAbandonPrompt(false); onBack(); };
+    if (!activePlan || activePlan.mode !== "EXAM_PLAN")
+        return React.createElement("section", { id: "tv-mock-exam", "data-screen": "mock", className: "screen-section tv-mock-surface" },
+            React.createElement("article", { className: "hero-card" },
+                React.createElement("p", { className: "eyebrow" }, "Mock Exam Studio"),
+                React.createElement("h2", null, "Concurso plan required"),
+                React.createElement("p", { className: "muted" }, "TV mock execution uses the active EXAM_PLAN mock blueprint."),
+                React.createElement("button", { className: "button button-primary", type: "button", onClick: onBack }, "Return to Practice")));
+    if (!(preview === null || preview === void 0 ? void 0 : preview.ready))
+        return React.createElement("section", { id: "tv-mock-exam", "data-screen": "mock", className: "screen-section tv-mock-surface" },
+            React.createElement("article", { className: "hero-card" },
+                React.createElement("p", { className: "eyebrow" }, "Mock Exam Studio"),
+                React.createElement("h2", null, "Question bank is not ready"),
+                React.createElement("p", { className: "muted" }, (preview === null || preview === void 0 ? void 0 : preview.deficits.join("; ")) || "No frozen mock preview is available."),
+                React.createElement("button", { className: "button button-primary", type: "button", onClick: onBack }, "Return to Practice")));
+    if (phase === "results" && result)
+        return React.createElement("section", { id: "tv-mock-exam", "data-screen": "mock", className: "screen-section tv-mock-surface" },
+            React.createElement("article", { className: "hero-card tv-mock-result-hero" },
+                React.createElement("div", null,
+                    React.createElement("p", { className: "eyebrow" }, "Mock Exam complete"),
+                    React.createElement("h2", null,
+                        result.percent == null ? "No percent" : `${result.percent}%`,
+                        " \u00B7 ",
+                        result.passed == null ? "No passing threshold" : result.passed ? "Passed" : "Below threshold"),
+                    React.createElement("p", { className: "muted" },
+                        result.correct,
+                        " correct \u00B7 ",
+                        result.wrong,
+                        " wrong \u00B7 ",
+                        result.unanswered,
+                        " unanswered \u00B7 ",
+                        flagged.size,
+                        " marked for review")),
+                React.createElement("div", { className: "tv-mock-score" }, result.percent == null ? "—" : `${result.percent}%`)),
+            React.createElement("div", { className: "button-row" },
+                React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "REVIEW_RESULTS", onClick: () => setShowDetail(v => !v) }, showDetail ? "Hide results" : "Review results"),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: onBack }, "Return to Practice")),
+            showDetail && React.createElement("div", { className: "content-grid two-column" },
+                React.createElement("article", { className: "card" },
+                    React.createElement("h2", null, "Section results"),
+                    React.createElement("ul", { className: "activity-list" }, ((_f = result.sections) !== null && _f !== void 0 ? _f : []).map((section) => { var _a, _b; return React.createElement("li", { key: section.sectionId },
+                        React.createElement("strong", null, section.subjectId ? (_b = (_a = state.subjects.find(s => s.id === section.subjectId)) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : section.sectionId : section.sectionId),
+                        React.createElement("span", null,
+                            section.correct,
+                            " correct \u00B7 ",
+                            section.wrong,
+                            " wrong \u00B7 ",
+                            section.unanswered,
+                            " unanswered \u00B7 ",
+                            section.percent,
+                            "%")); }))),
+                React.createElement("article", { className: "card" },
+                    React.createElement("h2", null, "Marked questions"),
+                    React.createElement("ul", { className: "activity-list" },
+                        [...flagged].map(id => { var _a; const q = state.questions.find(x => x.id === id); return React.createElement("li", { key: id },
+                            React.createElement("strong", null, (_a = q === null || q === void 0 ? void 0 : q.prompt) !== null && _a !== void 0 ? _a : id),
+                            React.createElement("span", null, answers[id] ? "Answered" : "Unanswered")); }),
+                        !flagged.size && React.createElement("li", null, "No questions were marked.")))));
+    return React.createElement("section", { id: "tv-mock-exam", "data-screen": "mock", className: "screen-section tv-mock-surface" },
+        React.createElement("article", { className: "hero-card tv-mock-header" },
+            React.createElement("div", null,
+                React.createElement("p", { className: "eyebrow" },
+                    "Mock Exam Studio \u00B7 ",
+                    phase === "ready" ? "Ready" : phase === "paused" ? "Paused" : "Running"),
+                React.createElement("h2", null, (_g = preview.blueprint.examBoard) !== null && _g !== void 0 ? _g : activePlan.name),
+                React.createElement("p", { className: "muted" },
+                    questions.length,
+                    " frozen questions \u00B7 ",
+                    duration,
+                    " min \u00B7 ",
+                    answered,
+                    " answered \u00B7 ",
+                    flagged.size,
+                    " marked")),
+            React.createElement("div", { className: "tv-mock-clock", "aria-label": `Mock time remaining ${clock(remaining)}` }, clock(remaining)),
+            React.createElement("progress", { max: "100", value: progress },
+                progress,
+                "%")),
+        phase === "ready" ? React.createElement("article", { className: "card tv-mock-ready" },
+            React.createElement("h2", null, "Frozen local exam"),
+            React.createElement("p", { className: "muted" }, "Starting locks this in-memory preview for the attempt. Answers are persisted only once, as the canonical mock-exam-result, when you submit or time expires."),
+            React.createElement("div", { className: "metric-grid compact-grid" },
+                React.createElement(Metric, { label: "Questions", value: String(questions.length), detail: "Frozen selection" }),
+                React.createElement(Metric, { label: "Duration", value: `${duration} min`, detail: "Saved blueprint" }),
+                React.createElement(Metric, { label: "Scoring", value: title(preview.blueprint.scoring), detail: preview.blueprint.minimumOverallScorePercent == null ? "No passing threshold" : `${preview.blueprint.minimumOverallScorePercent}% passing threshold` })),
+            React.createElement("div", { className: "button-row" },
+                React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "START", onClick: start }, "Start mock exam"),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: onBack }, "Back to Practice"))) : current ? React.createElement("article", { className: "card tv-mock-question" },
+            React.createElement("div", { className: "tv-mock-question-meta" },
+                React.createElement("span", { className: "status-pill" },
+                    "Question ",
+                    index + 1,
+                    " / ",
+                    questions.length),
+                flagged.has(current.id) && React.createElement("span", { className: "status-pill" }, "Marked for review"),
+                React.createElement("span", { className: "muted" }, (_h = current.examBoard) !== null && _h !== void 0 ? _h : "No banca",
+                    current.points != null ? ` · ${current.points} pt` : "")),
+            React.createElement("strong", { className: "tv-mock-prompt" }, current.prompt),
+            current.choices.length ? React.createElement("div", { className: "tv-choice-grid", role: "group", "aria-label": "Mock exam answer choices" }, current.choices.map((choice, choiceIndex) => React.createElement("button", { key: choiceIndex, type: "button", className: `tv-choice${selection === choice ? " is-selected" : ""}`, "aria-pressed": selection === choice, disabled: phase !== "running", "data-tv-control-action": "SELECT_ANSWER", "data-tv-control-target": current.id, "data-tv-control-option": (0, tv_mock_exam_1.tvMockChoiceOptionId)(choiceIndex), onClick: () => setAnswers(previous => ({ ...previous, [current.id]: choice })) },
+                React.createElement("span", null, (0, tv_question_set_1.tvQuestionChoiceLabel)(choiceIndex)),
+                React.createElement("strong", null, choice)))) : React.createElement(TvContinueElsewhere, { title: "Typed-answer mock question", detail: "This frozen question has no choice buttons. It remains unanswered on TV; typed entry can be used only in the phone/computer Mock Studio." }),
+            React.createElement("div", { className: "button-row tv-mock-actions" },
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: index <= 0, onClick: () => move(-1) }, "Previous"),
+                React.createElement("button", { className: "button", type: "button", "data-tv-control-action": "MARK_FOR_REVIEW", "data-tv-control-target": current.id, onClick: toggleFlag }, flagged.has(current.id) ? "Unmark review" : "Mark for review"),
+                phase === "running" ? React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PAUSE", onClick: pause }, "Pause") : React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "RESUME", onClick: resume }, "Resume"),
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: index >= questions.length - 1, onClick: () => move(1) }, "Next"),
+                !submitPrompt && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "SUBMIT", onClick: () => setSubmitPrompt(true) }, "Submit exam")),
+            submitPrompt && React.createElement("div", { className: "tv-mock-confirm", role: "alert" },
+                React.createElement("strong", null, "Submit this mock now?"),
+                React.createElement("p", { className: "muted" },
+                    answered,
+                    "/",
+                    questions.length,
+                    " questions answered. Unanswered questions remain neutral under the canonical scorer."),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "SUBMIT", onClick: record }, "Confirm submit"),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSubmitPrompt(false) }, "Continue exam")))) : null,
+        React.createElement("article", { className: "card tv-mock-footer" },
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: askBack }, "Back to Practice"),
+            React.createElement("span", { className: "muted" },
+                "Question progress ",
+                (0, tv_mock_exam_1.tvMockQuestionProgressPercent)(index, questions.length),
+                "% \u00B7 browser/remote Back is guarded while the exam is active.")),
+        abandonPrompt && React.createElement("div", { className: "modal-backdrop", role: "presentation" },
+            React.createElement("section", { className: "modal-card tv-exam-exit-guard", role: "dialog", "aria-modal": "true", "aria-labelledby": "tv-exam-exit-title" },
+                React.createElement("h2", { id: "tv-exam-exit-title" }, "Leave active mock exam?"),
+                React.createElement("p", null, "This attempt has not been recorded. Leaving discards the in-memory answers and marks."),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { className: "button button-primary", type: "button", onClick: () => setAbandonPrompt(false) }, "Continue exam"),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: abandon }, "Discard and leave")))));
+}
+function TvReviewNotebook({ state, store, run, initialMode, onBack }) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+    const reviews = (0, domain_1.selectDueReviews)(state).sort((a, b) => a.dueAt.localeCompare(b.dueAt));
+    const errors = (0, domain_1.selectOpenErrors)(state);
+    const [mode, setMode] = React.useState(initialMode);
+    const [index, setIndex] = React.useState(0);
+    const [revealed, setRevealed] = React.useState(false);
+    const [completedCount, setCompletedCount] = React.useState(0);
+    const currentReview = (_b = (_a = reviews[index]) !== null && _a !== void 0 ? _a : reviews[0]) !== null && _b !== void 0 ? _b : null;
+    const currentError = (_d = (_c = errors[index]) !== null && _c !== void 0 ? _c : errors[0]) !== null && _d !== void 0 ? _d : null;
+    const initialTotal = React.useRef(reviews.length);
+    React.useEffect(() => { setIndex(v => mode === "reviews" ? (0, tv_review_notebook_1.tvReviewIndexAfterCompletion)(v, reviews.length) : (0, tv_review_notebook_1.tvReviewIndexAfterCompletion)(v, errors.length)); setRevealed(false); }, [mode, reviews.length, errors.length]);
+    const focusPrimary = () => requestAnimationFrame(() => { var _a; return (_a = document.querySelector('[data-tv-review-primary="true"]')) === null || _a === void 0 ? void 0 : _a.focus(); });
+    const rate = (rating) => { if (!currentReview)
+        return; const done = run(() => store.completeReview(currentReview.id, { rating: rating }), `Review graded ${title(rating)} from TV.`); if (done) {
+        setCompletedCount(v => v + 1);
+        setRevealed(false);
+        focusPrimary();
+    } };
+    const reviewQuestion = (currentReview === null || currentReview === void 0 ? void 0 : currentReview.sourceType) === "question" && currentReview.sourceId ? (_e = state.questions.find(q => q.id === currentReview.sourceId)) !== null && _e !== void 0 ? _e : null : null;
+    const reviewCard = (currentReview === null || currentReview === void 0 ? void 0 : currentReview.sourceType) === "flashcard" && currentReview.sourceId ? (_f = state.flashcards.find(card => card.id === currentReview.sourceId)) !== null && _f !== void 0 ? _f : null : null;
+    const reviewPrompt = (_h = (_g = reviewCard === null || reviewCard === void 0 ? void 0 : reviewCard.front) !== null && _g !== void 0 ? _g : reviewQuestion === null || reviewQuestion === void 0 ? void 0 : reviewQuestion.prompt) !== null && _h !== void 0 ? _h : (currentReview ? `${title((_j = currentReview.sourceType) !== null && _j !== void 0 ? _j : "review")} review` : "No due review");
+    const reviewAnswer = (_l = (_k = reviewCard === null || reviewCard === void 0 ? void 0 : reviewCard.back) !== null && _k !== void 0 ? _k : reviewQuestion === null || reviewQuestion === void 0 ? void 0 : reviewQuestion.answer) !== null && _l !== void 0 ? _l : "Use your study material to recall the answer.";
+    const reviewExplanation = (_m = reviewQuestion === null || reviewQuestion === void 0 ? void 0 : reviewQuestion.explanation) !== null && _m !== void 0 ? _m : ((reviewCard === null || reviewCard === void 0 ? void 0 : reviewCard.type) === "CLOZE" && reviewCard.clozeText ? reviewCard.clozeText : null);
+    const errorQuestion = (currentError === null || currentError === void 0 ? void 0 : currentError.questionId) ? (_o = state.questions.find(q => q.id === currentError.questionId)) !== null && _o !== void 0 ? _o : null : null;
+    const move = (delta, total) => { if (total <= 0)
+        return; setIndex(v => Math.max(0, Math.min(total - 1, v + delta))); setRevealed(false); };
+    const reclassify = (category) => { if (!currentError)
+        return; run(() => store.reclassifyError(currentError.id, category), `Error reclassified as ${title(category)}.`); };
+    const resolve = () => { if (!currentError)
+        return; const done = run(() => store.resolveError(currentError.id), "Error resolved from TV."); if (done)
+        focusPrimary(); };
+    return React.createElement("section", { id: "tv-review-notebook", "data-screen": "review", className: "screen-section tv-review-surface" },
+        React.createElement("article", { className: "hero-card tv-review-header" },
+            React.createElement("div", null,
+                React.createElement("p", { className: "eyebrow" }, "Review & Error Notebook"),
+                React.createElement("h2", null, mode === "reviews" ? `${reviews.length} due reviews` : `${errors.length} open errors`),
+                React.createElement("p", { className: "muted" }, "Remote-first review uses canonical StudyFlow scheduling, grading and Error Notebook records.")),
+            React.createElement("progress", { max: "100", value: (0, tv_review_notebook_1.tvReviewProgressPercent)(completedCount, Math.max(1, initialTotal.current)) },
+                (0, tv_review_notebook_1.tvReviewProgressPercent)(completedCount, Math.max(1, initialTotal.current)),
+                "%")),
+        React.createElement("nav", { className: "subnav tv-review-mode", "aria-label": "Review surface mode" },
+            React.createElement("button", { className: "tab-link", type: "button", "aria-pressed": mode === "reviews", "data-tv-control-action": "OPEN", "data-tv-control-target": "review-reviews", onClick: () => { setMode("reviews"); setIndex(0); } }, "Reviews"),
+            React.createElement("button", { className: "tab-link", type: "button", "aria-pressed": mode === "errors", "data-tv-control-action": "OPEN", "data-tv-control-target": "review-errors", onClick: () => { setMode("errors"); setIndex(0); } }, "Error Notebook")),
+        mode === "reviews" ? React.createElement(React.Fragment, null, currentReview ? React.createElement("article", { className: "card tv-review-stage" },
+            React.createElement("div", { className: "tv-review-meta" },
+                React.createElement("span", { className: "status-pill" },
+                    index + 1,
+                    " / ",
+                    reviews.length),
+                React.createElement("span", { className: "muted" },
+                    "Due ",
+                    currentReview.dueAt,
+                    " \u00B7 interval ", (_p = currentReview.intervalDays) !== null && _p !== void 0 ? _p : "—",
+                    "d")),
+            React.createElement("strong", { className: "tv-review-prompt" }, reviewPrompt),
+            revealed ? React.createElement("div", { className: "tv-review-answer", role: "status" },
+                React.createElement("p", { className: "eyebrow" }, "Answer"),
+                React.createElement("strong", null, reviewAnswer),
+                reviewExplanation && React.createElement("p", null, reviewExplanation)) : React.createElement("button", { className: "button button-primary", type: "button", "data-tv-review-primary": "true", "data-tv-control-action": "SHOW_EXPLANATION", "data-tv-control-target": currentReview.id, onClick: () => setRevealed(true) }, "Show answer"),
+            React.createElement("div", { className: "button-row" },
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: index <= 0, onClick: () => move(-1, reviews.length) }, "Previous"),
+                tv_review_notebook_1.TV_REVIEW_RATINGS.map(rating => React.createElement("button", { key: rating, className: rating === "good" ? "button button-primary" : "button", type: "button", "data-tv-control-action": "COMPLETE", "data-tv-control-target": currentReview.id, "data-tv-control-option": (0, tv_review_notebook_1.tvReviewRatingOptionId)(rating), onClick: () => rate(rating) }, title(rating))),
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: index >= reviews.length - 1, onClick: () => move(1, reviews.length) }, "Next"))) : React.createElement("article", { className: "card" },
+            React.createElement("h2", null, "Review queue complete"),
+            React.createElement("p", { className: "muted" }, "No reviews are due right now. Completed grades have already scheduled their canonical successor reviews."),
+            React.createElement("button", { className: "button button-primary", type: "button", "data-tv-review-primary": "true", onClick: () => { setMode("errors"); setIndex(0); } }, "Open Error Notebook"))) : React.createElement(React.Fragment, null, currentError ? React.createElement("article", { className: "card tv-error-stage" },
+            React.createElement("div", { className: "tv-review-meta" },
+                React.createElement("span", { className: "status-pill" },
+                    "Error ",
+                    index + 1,
+                    " / ",
+                    errors.length),
+                React.createElement("span", { className: "status-pill" },
+                    "Recurrence ",
+                    currentError.recurrenceCount)),
+            React.createElement("strong", { className: "tv-review-prompt" }, (_q = errorQuestion === null || errorQuestion === void 0 ? void 0 : errorQuestion.prompt) !== null && _q !== void 0 ? _q : `${title(currentError.category)} error`),
+            React.createElement("div", { className: "tv-review-answer" },
+                React.createElement("p", { className: "eyebrow" }, "Current classification"),
+                React.createElement("strong", null, title(currentError.category)),
+                currentError.note && React.createElement("p", null, currentError.note),
+                (errorQuestion === null || errorQuestion === void 0 ? void 0 : errorQuestion.answer) && React.createElement("p", null,
+                    React.createElement("strong", null, "Canonical answer:"),
+                    " ",
+                    errorQuestion.answer),
+                (errorQuestion === null || errorQuestion === void 0 ? void 0 : errorQuestion.explanation) && React.createElement("p", null, errorQuestion.explanation)),
+            React.createElement("div", { className: "tv-error-categories", "aria-label": "Error category choices" }, tv_review_notebook_1.TV_ERROR_CATEGORIES.map(category => React.createElement("button", { key: category, className: `button button-quiet${currentError.category === category ? " is-selected" : ""}`, type: "button", "data-tv-control-action": "MARK_FOR_REVIEW", "data-tv-control-target": currentError.id, "data-tv-control-option": (0, tv_review_notebook_1.tvErrorCategoryOptionId)(category), onClick: () => reclassify(category) }, title(category)))),
+            React.createElement("div", { className: "button-row" },
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: index <= 0, onClick: () => move(-1, errors.length) }, "Previous"),
+                React.createElement("button", { className: "button button-primary", type: "button", "data-tv-review-primary": "true", "data-tv-control-action": "COMPLETE", "data-tv-control-target": currentError.id, "data-tv-control-option": "resolve-error", onClick: resolve }, "Resolve error"),
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: index >= errors.length - 1, onClick: () => move(1, errors.length) }, "Next"))) : React.createElement("article", { className: "card" },
+            React.createElement("h2", null, "Error Notebook clear"),
+            React.createElement("p", { className: "muted" }, "No open errors remain in the active plan."),
+            React.createElement("button", { className: "button button-primary", type: "button", "data-tv-review-primary": "true", onClick: () => { setMode("reviews"); setIndex(0); } }, "Return to reviews"))),
+        React.createElement("article", { className: "card tv-review-footer" },
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: onBack }, "Back to Practice"),
+            React.createElement("span", { className: "muted" }, "Typed notes and flashcard authoring stay on phone/computer; grading, category changes and resolution persist directly here.")));
+}
+function TvProgressAnalytics({ state, onOpenSurface }) {
+    const snapshot = (0, tv_progress_1.buildTvProgressSnapshot)(state, new Date());
+    const noData = (value, suffix = "%") => value == null ? "No data" : `${value}${suffix}`;
+    const action = (label, target, surface, primary = false) => React.createElement("button", { className: primary ? "button button-primary" : "button button-quiet", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": target, onClick: () => onOpenSurface(surface) }, label);
+    return React.createElement("section", { id: "tv-progress", "data-screen": "progress", className: "screen-section tv-progress-surface" },
+        React.createElement("article", { className: "hero-card tv-progress-hero" },
+            React.createElement("div", null,
+                React.createElement("p", { className: "eyebrow" }, "Progress & analytics"),
+                React.createElement("h2", null, snapshot.planName),
+                React.createElement("p", { className: "muted" },
+                    "Evidence window ",
+                    snapshot.weekLabel,
+                    ". Unknown metrics stay explicitly unknown.")),
+            React.createElement("div", { className: "tv-progress-readiness" },
+                React.createElement("span", null, "Readiness"),
+                React.createElement("strong", null, noData(snapshot.readinessPercent)),
+                React.createElement("small", null, snapshot.readinessReason))),
+        React.createElement("div", { className: "metric-grid tv-progress-metrics" },
+            React.createElement(Metric, { label: "Study this week", value: `${snapshot.weeklyStudyMinutes} min`, detail: "Completed sessions" }),
+            React.createElement(Metric, { label: "Question volume", value: String(snapshot.weeklyQuestionAttempts), detail: "Attempts in the last 7 days" }),
+            React.createElement(Metric, { label: "Accuracy", value: noData(snapshot.accuracyPercent), detail: "Graded persisted attempts" }),
+            React.createElement(Metric, { label: "Coverage", value: noData(snapshot.coveragePercent), detail: "Topics with canonical evidence" }),
+            React.createElement(Metric, { label: "Review health", value: noData(snapshot.reviewCompletionPercent), detail: "Completed vs due/completed pool" })),
+        React.createElement("article", { className: "card tv-progress-actions" },
+            React.createElement("div", null,
+                React.createElement("p", { className: "eyebrow" }, "Remote actions"),
+                React.createElement("h2", null, "What to do next"),
+                React.createElement("p", { className: "muted" }, "These buttons only navigate to existing StudyFlow TV flows; analytics never mutates evidence.")),
+            React.createElement("div", { className: "button-row" },
+                action("Today", "progress-today", "TODAY"),
+                action("Questions", "progress-questions", "QUESTION_SET", true),
+                action("Reviews", "progress-reviews", "REVIEW"),
+                action("Mock Exam", "progress-mock", "MOCK_EXAM"),
+                action("Schedule", "progress-schedule", "SCHEDULE"))),
+        React.createElement("article", { className: "card" },
+            React.createElement("div", { className: "card-heading-row" },
+                React.createElement("div", null,
+                    React.createElement("p", { className: "eyebrow" }, "Weak subjects"),
+                    React.createElement("h2", null, snapshot.weakSubjects.length ? `${snapshot.weakSubjects.length} attention area${snapshot.weakSubjects.length === 1 ? "" : "s"}` : "No active weakness signal"))),
+            snapshot.weakSubjects.length ? React.createElement("div", { className: "tv-progress-subject-grid" }, snapshot.weakSubjects.map((row, index) => React.createElement("article", { className: "nested-panel tv-progress-subject", key: row.subjectId },
+                React.createElement("div", { className: "tv-progress-subject-heading" },
+                    React.createElement("div", null,
+                        React.createElement("strong", null, row.name),
+                        React.createElement("span", { className: "muted" }, row.reason)),
+                    React.createElement("span", { className: "status-pill" },
+                        "score ",
+                        row.attentionScore)),
+                React.createElement("div", { className: "tv-progress-subject-stats" },
+                    React.createElement("span", null,
+                        row.weeklyStudyMinutes,
+                        " min"),
+                    React.createElement("span", null,
+                        row.weeklyQuestionAttempts,
+                        " questions"),
+                    React.createElement("span", null, row.accuracyPercent == null ? "Accuracy No data" : `${row.accuracyPercent}% accuracy`),
+                    React.createElement("span", null,
+                        row.coveredTopics,
+                        "/",
+                        row.activeTopics,
+                        " topics")),
+                React.createElement("button", { className: index === 0 ? "button button-primary" : "button button-quiet", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": `progress-weak-${index}`, onClick: () => onOpenSurface(row.recommendedSurface) },
+                    "Open ",
+                    title(row.recommendedSurface))))) : React.createElement("p", { className: "muted" }, "Persisted accuracy, coverage, review and Error Notebook evidence does not currently identify a weak subject.")),
+        React.createElement("article", { className: "card" },
+            React.createElement("h2", null, "All subjects"),
+            React.createElement("div", { className: "tv-progress-subject-grid compact" },
+                snapshot.subjects.map(row => React.createElement("article", { className: "nested-panel", key: row.subjectId },
+                    React.createElement("strong", null, row.name),
+                    React.createElement("span", { className: "muted" },
+                        row.weeklyStudyMinutes,
+                        " min \u00B7 ",
+                        row.weeklyQuestionAttempts,
+                        " questions \u00B7 ",
+                        row.accuracyPercent == null ? "accuracy No data" : `${row.accuracyPercent}% accuracy`,
+                        " \u00B7 ",
+                        row.coveredTopics,
+                        "/",
+                        row.activeTopics,
+                        " topics"))),
+                !snapshot.subjects.length && React.createElement("p", null, "No subjects in the active plan."))));
+}
+function TvScheduleSurface({ state, onLaunch, onOpenSurface, onBack }) {
+    var _a, _b;
+    const [view, setView] = React.useState("today");
+    const snapshot = (0, tv_schedule_1.buildTvScheduleSnapshot)(state, view, new Date());
+    const [index, setIndex] = React.useState(snapshot.nextIndex);
+    const current = (_a = snapshot.flatItems[Math.max(0, Math.min(index, snapshot.flatItems.length - 1))]) !== null && _a !== void 0 ? _a : null;
+    React.useEffect(() => { setIndex(snapshot.nextIndex); }, [view, state.activePlanId]);
+    React.useEffect(() => { if (snapshot.flatItems.length === 0) {
+        setIndex(0);
+        return;
+    } setIndex(value => Math.max(0, Math.min(value, snapshot.flatItems.length - 1))); }, [snapshot.flatItems.length]);
+    const focusIndex = (next) => { if (!snapshot.flatItems.length)
+        return; const clamped = Math.max(0, Math.min(next, snapshot.flatItems.length - 1)); setIndex(clamped); requestAnimationFrame(() => { var _a; return (_a = document.querySelector(`[data-tv-schedule-index="${clamped}"]`)) === null || _a === void 0 ? void 0 : _a.focus(); }); };
+    const move = (delta) => focusIndex(index + delta);
+    const launch = () => { if (current === null || current === void 0 ? void 0 : current.launchable)
+        onLaunch(current.activity.id); };
+    return React.createElement("section", { id: "tv-schedule", "data-screen": "schedule", className: "screen-section tv-schedule-surface" },
+        React.createElement("article", { className: "hero-card tv-schedule-hero" },
+            React.createElement("div", null,
+                React.createElement("p", { className: "eyebrow" }, "Read-only schedule"),
+                React.createElement("h2", null, view === "today" ? "Today" : "This week"),
+                React.createElement("p", { className: "muted" },
+                    snapshot.windowLabel,
+                    " \u00B7 canonical scheduled activities only. Editing and rescheduling remain on phone/computer.")),
+            React.createElement("div", { className: "tv-schedule-count" },
+                React.createElement("strong", null, snapshot.visibleCount),
+                React.createElement("span", null, "scheduled items"))),
+        React.createElement("div", { className: "metric-grid" },
+            React.createElement(Metric, { label: "Scheduled", value: `${snapshot.plannedMinutes} min`, detail: "Visible schedule duration" }),
+            React.createElement(Metric, { label: "Planned", value: String(snapshot.plannedCount), detail: "Ready to study" }),
+            React.createElement(Metric, { label: "Completed", value: String(snapshot.completedCount), detail: "Already completed" }),
+            React.createElement(Metric, { label: "Cancelled", value: String(snapshot.cancelledCount), detail: "Retained schedule history" })),
+        React.createElement("nav", { className: "subnav tv-schedule-mode", "aria-label": "Schedule view" },
+            React.createElement("button", { className: "tab-link", type: "button", "aria-pressed": view === "today", "data-tv-control-action": "OPEN", "data-tv-control-target": "schedule-today", onClick: () => setView("today") }, "Today"),
+            React.createElement("button", { className: "tab-link", type: "button", "aria-pressed": view === "week", "data-tv-control-action": "OPEN", "data-tv-control-target": "schedule-week", onClick: () => setView("week") }, "This week")),
+        current ? React.createElement("article", { className: "card tv-schedule-now" },
+            React.createElement("div", { className: "tv-schedule-now-meta" },
+                React.createElement("span", { className: "status-pill" },
+                    index + 1,
+                    " / ",
+                    snapshot.flatItems.length),
+                React.createElement("span", { className: "status-pill" }, title(current.activity.status)),
+                React.createElement("span", { className: "muted" },
+                    current.dateLabel,
+                    " \u00B7 ",
+                    current.timeLabel,
+                    " \u00B7 ",
+                    current.activity.durationMinutes,
+                    " min")),
+            React.createElement("strong", { className: "tv-schedule-title" }, current.activity.title),
+            React.createElement("p", { className: "muted" }, [current.subjectName, current.topicName, title(current.activity.activityType)].filter(Boolean).join(" · ")),
+            React.createElement("div", { className: "button-row" },
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: index <= 0, onClick: () => move(-1) }, "Previous"),
+                current.launchable ? React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "START", "data-tv-control-target": current.activity.id, onClick: launch },
+                    "Open ",
+                    title((_b = current.destination) !== null && _b !== void 0 ? _b : "STUDY_SESSION")) : React.createElement("button", { className: "button", type: "button", disabled: true }, current.activity.activityType === "WRITING" ? "Continue writing on phone/computer" : `${title(current.activity.status)} item`),
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: index >= snapshot.flatItems.length - 1, onClick: () => move(1) }, "Next"))) : React.createElement("article", { className: "card" },
+            React.createElement("h2", null, "No scheduled activity"),
+            React.createElement("p", { className: "muted" }, "Nothing is scheduled in this view. Schedule creation remains on phone/computer.")),
+        React.createElement("div", { className: "tv-schedule-days" }, snapshot.days.map(day => React.createElement("section", { className: "card tv-schedule-day", key: day.date },
+            React.createElement("div", { className: "card-heading-row" },
+                React.createElement("h2", null, day.label),
+                React.createElement("span", { className: "status-pill" }, day.items.length)),
+            React.createElement("div", { className: "tv-schedule-item-grid" }, day.items.map(item => { const itemIndex = snapshot.flatItems.findIndex(candidate => candidate.activity.id === item.activity.id); return React.createElement("button", { key: item.activity.id, type: "button", className: `tv-schedule-item${itemIndex === index ? " is-selected" : ""}`, "data-tv-schedule-index": itemIndex, onClick: () => setIndex(itemIndex) },
+                React.createElement("span", { className: "tv-schedule-item-time" }, item.timeLabel),
+                React.createElement("span", null,
+                    React.createElement("strong", null, item.activity.title),
+                    React.createElement("small", null, [item.subjectName, title(item.activity.activityType), title(item.activity.status)].filter(Boolean).join(" · ")))); }))))),
+        React.createElement("article", { className: "card tv-schedule-footer" },
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: onBack }, "Back to Plan"),
+            React.createElement("div", { className: "button-row" },
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": "schedule-progress", onClick: () => onOpenSurface("PROGRESS") }, "Progress"),
+                React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": "schedule-today-workspace", onClick: () => onOpenSurface("TODAY") }, "Today workspace"))));
 }
 function Progress({ state, store, tab, setTab, persistence, portable, setPortable, portableStatus, setPortableStatus, run }) {
     var _a;

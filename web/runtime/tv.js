@@ -148,6 +148,19 @@ function installDpadNavigation() {
     addEventListener("keydown", onKeyDown, true);
     return () => removeEventListener("keydown", onKeyDown, true);
 }
+function installRemoteBackNavigation() {
+    const onKeyDown = (event) => { const code = event.keyCode; const back = event.key === "BrowserBack" || event.key === "GoBack" || code === 461 || code === 10009; if (!back)
+        return; const target = event.target instanceof Element ? event.target : null; if (controlOwnsArrow(target))
+        return; event.preventDefault(); event.stopPropagation(); history.back(); };
+    addEventListener("keydown", onKeyDown, true);
+    return () => removeEventListener("keydown", onKeyDown, true);
+}
+function installMediaToggleNavigation() {
+    const onKeyDown = (event) => { const code = event.keyCode; const media = event.key === "MediaPlayPause" || event.key === "Play" || event.key === "Pause" || code === 179 || code === 415 || code === 19; if (!media)
+        return; event.preventDefault(); event.stopPropagation(); dispatchEvent(new CustomEvent("studyflow:tv-media-toggle")); };
+    addEventListener("keydown", onKeyDown, true);
+    return () => removeEventListener("keydown", onKeyDown, true);
+}
 function supportsFlexGap() {
     const probe = document.createElement("div"), a = document.createElement("div"), b = document.createElement("div");
     probe.style.display = "flex";
@@ -182,5 +195,7 @@ function installTvBrowserAdapter() {
     root.dataset.studyflowTvMode = resolution.source;
     applyCapabilityFlags();
     const disposeDpad = resolution.enabled ? installDpadNavigation() : () => { };
-    return { resolution, dispose: () => { disposeDpad(); delete root.dataset.studyflowTv; delete root.dataset.studyflowTvMode; delete root.dataset.studyflowTvSecureContext; delete root.dataset.studyflowTvIndexedDb; delete root.dataset.studyflowTvSubtleCrypto; delete root.dataset.studyflowTvServiceWorker; delete root.dataset.studyflowTvFlexGap; delete root.dataset.studyflowTvInputMode; } };
+    const disposeBack = resolution.enabled ? installRemoteBackNavigation() : () => { };
+    const disposeMedia = resolution.enabled ? installMediaToggleNavigation() : () => { };
+    return { resolution, dispose: () => { disposeDpad(); disposeBack(); disposeMedia(); delete root.dataset.studyflowTv; delete root.dataset.studyflowTvMode; delete root.dataset.studyflowTvSecureContext; delete root.dataset.studyflowTvIndexedDb; delete root.dataset.studyflowTvSubtleCrypto; delete root.dataset.studyflowTvServiceWorker; delete root.dataset.studyflowTvFlexGap; delete root.dataset.studyflowTvInputMode; } };
 }

@@ -134,6 +134,9 @@ StudyFlow can be served to a television on the same LAN without creating a secon
 
 ```sh
 npm run serve:tv
+
+# On the TV: http://<LAN-IP>:8000/tv
+# On the phone: http://<LAN-IP>:8000/remote
 ```
 
 The server binds to `0.0.0.0`, prints detected IPv4 LAN URLs, and exposes `/tv` as the simple television entry point. `?tv=1` forces the 10-foot/D-pad adapter; `?tv=0` disables automatic TV user-agent detection. The normal `npm run dev` command remains loopback-only.
@@ -141,3 +144,26 @@ The server binds to `0.0.0.0`, prints detected IPv4 LAN URLs, and exposes `/tv` 
 TV mode uses standard Arrow keys + Enter and page-wide spatial focus. Editable text/select controls retain their native arrow behavior. On plain LAN HTTP, secure-context-only features such as service workers and Web Crypto may be unavailable; the app reports those capabilities separately instead of treating them as required for TV navigation or IndexedDB state.
 
 WTV04/WTV05 make this a remote-first 10-foot surface rather than a desktop UI enlarged for a television. Plan becomes reference-oriented, Library keeps Material Viewer but hides file/provenance mutation, Practice keeps due-review ratings and error actions while question answers become reveal/review, and Progress keeps analytics while backup/import/reset/export workflows show a clear continue-on-phone/computer handoff. Normal web mode retains the full editing UI.
+
+
+### TV browser history and phone remote
+
+WTV06 routes TV screen and overlay state through browser history so a remote Back action closes Search, Settings, or Material Viewer before moving to the previous StudyFlow surface. WTV07 adds a dependency-free in-memory LAN relay that mirrors the shared `core:tvcontrol` protocol-v1 concepts: six-digit pairing codes expire after 120 seconds before pairing, controller tokens are revocable, and only commands/presentation state are relayed. No StudyFlow database rows, attachment bytes, or portable backup payloads cross the relay.
+
+Run `npm run serve:tv`, open `/tv` on the television, then open `/remote` from a phone on the same LAN and enter the code shown on TV. The receiver prefers Server-Sent Events and falls back to long polling for older TV browsers. Pairing state is intentionally process-memory only and disappears when the TV server stops.
+
+### Dedicated TV Study Session and Question Set
+
+WTV08 gives `STUDY_SESSION` its own TV-only history surface. Starting a focus-oriented activity from Today now enters the 10-foot session view with a large canonical timer, deterministic presentation segments, START/PAUSE/RESUME/NEXT/COMPLETE phone bindings, and common TV media Play/Pause handling. Segment movement is presentation-only; canonical focus timing and StudySession evidence still come from the existing StudyFlow store.
+
+WTV09 gives `QUESTION_SET` its own D-pad answer-choice surface. Selectable choices use stable `choice-N` option IDs, SUBMIT calls the canonical `answerQuestion` store action, and wrong answers therefore create the same due-review/Error Notebook evidence as normal browser practice. Questions without selectable choices stay viewable but typed grading is intentionally handed back to phone/computer. The `/remote` page now remembers the currently opened surface and exposes A-D choice shortcuts plus SUBMIT.
+
+### TV Mock Exam Studio and Review + Error Notebook
+
+WTV10 promotes `MOCK_EXAM` from the generic Practice tab to a dedicated History API surface. The TV executes the active Concurso plan's already-saved mock blueprint rather than inventing TV-only configuration: the selection is frozen at start, the countdown can pause/resume, answer choices use the same stable `choice-N` control IDs as question practice, questions can be marked for review, Back is guarded while the attempt is active, and submit records exactly one canonical `mock-exam-result` through `recordMockExam`. The result surface exposes canonical section scoring and the locally marked-question list. Typed-answer questions remain unanswered on TV instead of opening a virtual keyboard.
+
+WTV11 promotes `REVIEW` to a dedicated review/error-notebook surface. Due question and flashcard reviews expose large prompts, optional answer/explanation reveal and Again/Hard/Good/Easy grading through the existing review scheduler. The Error Notebook can be switched without typing, shows the linked question when available, supports all canonical error categories through D-pad buttons, and resolves entries through the existing store. The phone `/remote` keeps protocol v1 and encodes review ratings/error categories as `optionId` values rather than adding incompatible control actions.
+
+### TV browser WTV12–WTV13
+
+TV Progress is now a dedicated evidence-backed analytics surface: weekly completed study time, recent question volume/accuracy, readiness, topic coverage, review health and weak-subject signals stay truthful to persisted StudyFlow evidence and navigate into existing TV study flows without mutating analytics state. Schedule is now a dedicated `#schedule` read-only surface with Today/This week views, D-pad selection, Previous/Next/Start, canonical activity routing and phone-control shortcuts; schedule editing/rescheduling and writing-authoring remain on phone/computer.
