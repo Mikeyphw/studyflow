@@ -665,6 +665,12 @@ tasks.register<Exec>("verifyStudyFlowTvNavigationShell") {
     commandLine("python3", "scripts/verify_tvov05_navigation_shell.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvHomeSurface") {
+    group = "verification"
+    description = "Checks TVOV06 Android TV Home surface, warning cleanup, and paired-phone entry contracts."
+    commandLine("python3", "scripts/verify_tvov06_home_surface.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
     description = "Compatibility alias for the final source/static acceptance contract."

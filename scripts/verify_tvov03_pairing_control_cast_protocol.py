@@ -118,7 +118,7 @@ for token in (
     "StudyFlowTvBuildContract.castTransportDeferred",
 ):
     require(token in build_test, f"TV build contract test missing assertion for {token}")
-require("Pairing and control protocol are ready" in strings, "app-tv placeholder status must acknowledge protocol foundation")
+require("tv_app_pair_phone_action" in strings and "tv_home_section_title" in strings, "app-tv Home must keep paired-phone entry visible after protocol foundation")
 
 require('tasks.register<Exec>("verifyStudyFlowTvPairingControlCastProtocol")' in build, "missing Gradle TVOV03 verifier task")
 studyflow_tv = tv_target_section(devtool)

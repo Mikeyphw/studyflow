@@ -13,6 +13,10 @@ import android.widget.TextView
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteCommand
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteKeyMapper
 import com.mikeyphw.studyflow.tv.focus.applyStudyFlowTvDpadFocus
+import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeAction
+import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeCard
+import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeCardId
+import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeSurface
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvDestination
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvNavigationShell
 
@@ -20,6 +24,7 @@ class StudyFlowTvActivity : Activity() {
     private var selectedDestination: StudyFlowTvDestination = StudyFlowTvNavigationShell.defaultDestination()
     private lateinit var contentTitle: TextView
     private lateinit var contentBody: TextView
+    private lateinit var contentCards: LinearLayout
     private lateinit var navButtons: Map<StudyFlowTvDestination, Button>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,9 +45,15 @@ class StudyFlowTvActivity : Activity() {
 
     private fun createContentView(): LinearLayout {
         val navigationButtons = linkedMapOf<StudyFlowTvDestination, Button>()
-        val primaryAction = tvActionButton(R.string.tv_app_primary_action)
-        val pairPhoneAction = tvActionButton(R.string.tv_app_pair_phone_action)
-        val practiceAction = tvActionButton(R.string.tv_app_practice_action)
+        val primaryAction = tvActionButton(R.string.tv_app_primary_action).apply {
+            setOnClickListener { selectDestination(StudyFlowTvHomeSurface.destinationForAction(StudyFlowTvHomeAction.CONTINUE_STUDYING)) }
+        }
+        val pairPhoneAction = tvActionButton(R.string.tv_app_pair_phone_action).apply {
+            setOnClickListener { selectDestination(StudyFlowTvHomeSurface.destinationForAction(StudyFlowTvHomeAction.PAIR_PHONE)) }
+        }
+        val practiceAction = tvActionButton(R.string.tv_app_practice_action).apply {
+            setOnClickListener { selectDestination(StudyFlowTvHomeSurface.destinationForAction(StudyFlowTvHomeAction.START_PRACTICE)) }
+        }
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -90,6 +101,11 @@ class StudyFlowTvActivity : Activity() {
             gravity = Gravity.START
             setPadding(0, dp(22), 0, 0)
         }
+        contentCards = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.START
+            setPadding(0, dp(26), 0, 0)
+        }
 
         val contentPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -98,6 +114,7 @@ class StudyFlowTvActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
             addView(contentTitle)
             addView(contentBody)
+            addView(contentCards)
             addView(
                 TextView(context).apply {
                     text = getString(R.string.tv_shell_remote_hint)
@@ -157,10 +174,61 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderDestination(destination: StudyFlowTvDestination) {
-        contentTitle.text = getString(destination.titleResId())
-        contentBody.text = getString(destination.bodyResId())
+        if (destination == StudyFlowTvDestination.HOME) {
+            renderHomeDestination()
+        } else {
+            contentCards.removeAllViews()
+            contentCards.visibility = View.GONE
+            contentTitle.text = getString(destination.titleResId())
+            contentBody.text = getString(destination.bodyResId())
+        }
         navButtons.forEach { (itemDestination, button) ->
             button.isSelected = itemDestination == destination
+        }
+    }
+
+    private fun renderHomeDestination() {
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        contentTitle.text = getString(R.string.tv_content_title_home)
+        contentBody.text = getString(R.string.tv_content_body_home)
+        contentCards.addView(
+            TextView(this).apply {
+                text = getString(R.string.tv_home_section_title)
+                setTextColor(Color.rgb(226, 232, 240))
+                textSize = 18f
+                gravity = Gravity.START
+                setPadding(0, 0, 0, dp(12))
+            },
+        )
+        StudyFlowTvHomeSurface.cards.chunked(2).forEach { rowCards ->
+            contentCards.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    rowCards.forEach { card -> addView(tvHomeCard(card)) }
+                },
+            )
+        }
+    }
+
+    private fun tvHomeCard(card: StudyFlowTvHomeCard): Button = Button(this).apply {
+        id = View.generateViewId()
+        text = getString(
+            R.string.tv_home_card_format,
+            getString(card.titleResId()),
+            getString(card.bodyResId()),
+        )
+        textSize = 17f
+        isAllCaps = false
+        gravity = Gravity.START or Gravity.CENTER_VERTICAL
+        setTextColor(Color.WHITE)
+        setPadding(dp(22), dp(16), dp(22), dp(16))
+        applyStudyFlowTvDpadFocus()
+        setOnClickListener { selectDestination(card.destination) }
+        layoutParams = LinearLayout.LayoutParams(dp(260), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            marginEnd = dp(14)
+            bottomMargin = dp(14)
         }
     }
 
@@ -230,6 +298,20 @@ class StudyFlowTvActivity : Activity() {
         StudyFlowTvDestination.PROGRESS -> R.string.tv_content_body_progress
         StudyFlowTvDestination.SCHEDULE -> R.string.tv_content_body_schedule
         StudyFlowTvDestination.SETTINGS -> R.string.tv_content_body_settings
+    }
+
+    private fun StudyFlowTvHomeCard.titleResId(): Int = when (id) {
+        StudyFlowTvHomeCardId.TODAY -> R.string.tv_home_card_today_title
+        StudyFlowTvHomeCardId.PRACTICE -> R.string.tv_home_card_practice_title
+        StudyFlowTvHomeCardId.REVIEWS -> R.string.tv_home_card_reviews_title
+        StudyFlowTvHomeCardId.MOCK_EXAM -> R.string.tv_home_card_mock_exam_title
+    }
+
+    private fun StudyFlowTvHomeCard.bodyResId(): Int = when (id) {
+        StudyFlowTvHomeCardId.TODAY -> R.string.tv_home_card_today_body
+        StudyFlowTvHomeCardId.PRACTICE -> R.string.tv_home_card_practice_body
+        StudyFlowTvHomeCardId.REVIEWS -> R.string.tv_home_card_reviews_body
+        StudyFlowTvHomeCardId.MOCK_EXAM -> R.string.tv_home_card_mock_exam_body
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

@@ -364,3 +364,8 @@ navigation rail backed by a small destination enum and mapped to the shared `:co
 surfaces, so paired-phone control and local TV navigation share the same route contract. The TV
 APK still avoids Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature modules,
 `core:data`, and `core:database`.
+
+
+### Android TV TVOV06
+
+TVOV06 adds the structured native Android TV Home surface. The TV app now has a real default entry point with remote-first cards for Today, Practice, Reviews, and Mock Exam, plus a paired-phone entry path that stays on the shared TV control protocol. TVOV06 also removes the unused TVOV05 string resources reported by lint.

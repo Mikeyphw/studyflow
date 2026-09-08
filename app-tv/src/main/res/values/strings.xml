@@ -2,14 +2,9 @@
 <resources>
     <string name="app_name">StudyFlow TV</string>
     <string name="tv_app_title">StudyFlow TV</string>
-    <string name="tv_app_status">Minimal TV shell installed</string>
-    <string name="tv_app_navigation_status">TV navigation shell installed</string>
-    <string name="tv_app_next_step">Pairing and control protocol are ready; D-pad focus foundation is ready; top-level TV navigation is ready.</string>
     <string name="tv_app_primary_action">Continue</string>
     <string name="tv_app_pair_phone_action">Pair phone</string>
     <string name="tv_app_practice_action">Practice</string>
-    <string name="tv_shell_primary_action">Open</string>
-    <string name="tv_shell_pair_phone_action">Pair phone</string>
     <string name="tv_shell_remote_hint">Use the D-pad to move, OK to open, and Back to return Home.</string>
     <string name="tv_nav_home">Home</string>
     <string name="tv_nav_today">Today</string>
@@ -35,4 +30,14 @@
     <string name="tv_content_body_schedule">Prepare a read-focused TV schedule for today, this week, upcoming reviews, and mock exams.</string>
     <string name="tv_content_title_settings">Settings</string>
     <string name="tv_content_body_settings">Keep only TV-safe settings here. Phone-only storage, import, and debug actions stay outside the TV APK.</string>
+    <string name="tv_home_section_title">Start from the TV</string>
+    <string name="tv_home_card_format">%1$s\n%2$s</string>
+    <string name="tv_home_card_today_title">Today focus</string>
+    <string name="tv_home_card_today_body">Open the next block and keep the weekly plan visible.</string>
+    <string name="tv_home_card_practice_title">Question practice</string>
+    <string name="tv_home_card_practice_body">Start a remote-friendly practice session from the couch.</string>
+    <string name="tv_home_card_reviews_title">Reviews</string>
+    <string name="tv_home_card_reviews_body">Resume spaced reviews and error-notebook work.</string>
+    <string name="tv_home_card_mock_exam_title">Mock exam</string>
+    <string name="tv_home_card_mock_exam_body">Enter the TV mock-exam studio when timed practice is ready.</string>
 </resources>

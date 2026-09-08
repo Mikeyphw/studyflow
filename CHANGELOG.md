@@ -391,3 +391,12 @@ copy.
 - Added Back-to-Home handling for non-Home TV destinations.
 - Added JVM tests and `verifyStudyFlowTvNavigationShell` to the `studyflow_tv` target.
 - Kept the TV app dependency-budgeted: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature modules, `core:data`, or `core:database`.
+
+
+## TVOV06 — Android TV Home surface
+
+- Added a structured Home surface for the separate Android TV app.
+- Added TV Home cards for Today, Practice, Reviews, and Mock Exam.
+- Routed Home primary actions through the shared navigation and TV control protocol.
+- Removed unused TVOV05 TV string resources reported by lint.
+- Added `verifyStudyFlowTvHomeSurface` and focused app-tv unit coverage.

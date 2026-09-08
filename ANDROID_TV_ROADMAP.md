@@ -120,3 +120,22 @@ destinations are now represented by a small enum, rendered as a D-pad-aware navi
 and mapped to the shared `:core:tvcontrol` surface model so paired-phone control and local TV
 navigation do not drift. TVOV05 still avoids Compose Runtime, AndroidX TV UI, MediaRouter,
 Cast SDK, phone feature-module fanout, `core:data`, and `core:database`.
+
+
+## TVOV06 — Home surface
+
+Status: implemented in `studyflow_tvov06_home_surface_warning_cleanup_v1.zip`.
+
+Scope:
+- default TV Home destination backed by a structured source model;
+- remote-first Home cards for Today, Practice, Reviews, and Mock Exam;
+- visible paired-phone entry point routed through the TV control protocol;
+- TVOV05 unused-string lint warning cleanup;
+- no Compose, AndroidX TV UI, Cast SDK, MediaRouter, `core:data`, or `core:database` dependency is introduced.
+
+Validation:
+- `verifyStudyFlowTvHomeSurface`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:assembleDebug`;
+- `:app-tv:lintDebug`.

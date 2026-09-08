@@ -127,7 +127,7 @@ for token in (
     "tv_app_primary_action",
     "tv_app_pair_phone_action",
     "tv_app_practice_action",
-    "D-pad focus foundation is ready",
+    "tv_home_section_title",
 ):
     require(token in strings, f"TV strings missing token: {token}")
 
@@ -151,7 +151,7 @@ for token in (
 ):
     require(token in focus_test, f"focus policy unit test missing token: {token}")
 
-require('versionName = "0.1.0-tv04"' in app_build, "TV app versionName must mark TVOV04")
+require('versionName = "0.1.0-tv06"' in app_build, "TV app versionName must mark the current TVOV06 app module")
 require('tasks.register<Exec>("verifyStudyFlowTvFocusPrimitives")' in build, "missing Gradle TVOV04 focus verifier task")
 studyflow_tv = tv_target_section(devtool)
 for task in (

@@ -24,9 +24,20 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV05"
+    const val currentTvOverlay = "TVOV06"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
     const val navigationDestinationCount = 8
+}
+
+// TVOV06 Home surface contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvHomeBuildContract {
+    const val homeSurfaceIntroduced = true
+    const val homeSurfaceRequiresNoComposeRuntime = true
+    const val homeSurfaceUsesNavigationShell = true
+    const val homeSurfaceExposesPhonePairingEntry = true
+    const val homeCardCount = 4
+    const val homePrimaryActionCount = 3
 }

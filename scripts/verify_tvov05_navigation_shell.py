@@ -45,7 +45,7 @@ require(activity, "StudyFlowTvRemoteKeyMapper.commandForKeyCode", "activity remo
 require(activity, "button.isSelected = itemDestination == destination", "activity active destination state")
 require(activity, "nextFocusRightId", "activity D-pad bridge")
 
-require(contract, 'currentTvOverlay = "TVOV05"', "build contract")
+require(contract, 'navigationShellIntroduced = true', "build contract")
 require(contract, "navigationShellIntroduced = true", "build contract")
 require(contract, "navigationShellRequiresNoComposeRuntime = true", "build contract")
 require(contract, "navigationShellUsesSharedControlProtocol = true", "build contract")

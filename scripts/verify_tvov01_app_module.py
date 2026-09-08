@@ -82,7 +82,7 @@ require('android:screenOrientation="landscape"' not in manifest, "app-tv manifes
 for token in (
     "class StudyFlowTvActivity : Activity()",
     "createContentView",
-    "Minimal TV shell installed",
+    "tv_shell_remote_hint",
 ):
     require(token in activity or token in read("app-tv/src/main/res/values/strings.xml"), f"TV Activity/resources missing token: {token}")
 

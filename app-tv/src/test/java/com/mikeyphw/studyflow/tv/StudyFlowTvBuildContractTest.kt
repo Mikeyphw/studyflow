@@ -22,10 +22,16 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV05", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV06", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
         assertEquals(8, StudyFlowTvBuildContract.navigationDestinationCount)
+        assertTrue(StudyFlowTvHomeBuildContract.homeSurfaceIntroduced)
+        assertTrue(StudyFlowTvHomeBuildContract.homeSurfaceRequiresNoComposeRuntime)
+        assertTrue(StudyFlowTvHomeBuildContract.homeSurfaceUsesNavigationShell)
+        assertTrue(StudyFlowTvHomeBuildContract.homeSurfaceExposesPhonePairingEntry)
+        assertEquals(4, StudyFlowTvHomeBuildContract.homeCardCount)
+        assertEquals(3, StudyFlowTvHomeBuildContract.homePrimaryActionCount)
     }
 }
