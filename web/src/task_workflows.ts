@@ -91,8 +91,8 @@ export function normalizeStudyActivityType(value:unknown,kind:"study"|"questions
 }
 
 export function activityKindForType(type:StudyActivityType):"study"|"questions"|"review" {
-  if(type==="QUESTIONS"||type==="FLASHCARDS"||type==="MOCK_EXAM")return "questions";
-  if(type==="REVIEW")return "review";
+  if(type==="QUESTIONS"||type==="MOCK_EXAM")return "questions";
+  if(type==="FLASHCARDS"||type==="REVIEW")return "review";
   return "study";
 }
 
@@ -102,7 +102,8 @@ export function routeActivityDeepLink(state:StudyState,activityId:string):Practi
   const activityType=normalizeStudyActivityType(activity.activityType,activity.kind);
   const base={activityId:activity.id,activityType,subjectId:activity.subjectId,topicId:activity.topicId};
   if(activityType==="MOCK_EXAM")return {...base,screen:"practice",practiceTab:"tests",focusMode:null,reviewId:null};
-  if(activityType==="QUESTIONS"||activityType==="FLASHCARDS")return {...base,screen:"practice",practiceTab:"questions",focusMode:null,reviewId:null};
+  if(activityType==="QUESTIONS")return {...base,screen:"practice",practiceTab:"questions",focusMode:null,reviewId:null};
+  if(activityType==="FLASHCARDS")return {...base,screen:"practice",practiceTab:"reviews",focusMode:null,reviewId:null};
   if(activityType==="REVIEW"){
     const due=state.reviews.filter(review=>review.planId===activity.planId&&review.status==="due")
       .filter(review=>activity.topicId?review.topicId===activity.topicId:activity.subjectId?review.subjectId===activity.subjectId:true)

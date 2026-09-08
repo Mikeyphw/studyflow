@@ -10,8 +10,8 @@ Language decks now expose all six review directions: recognition, production, fi
 
 The weekly coach is derived only from persisted evidence: study minutes, graded accuracy, coverage, review completion, weakness signals and the configured weekly question quota. Unknown evidence stays unknown. Every coach item includes a reason and an actionable destination when appropriate.
 
-Smart content cleanup is preview-first. It reports normalized duplicate questions, orphan topics, detached reviews, invalid planned activities, and detached materials. Automatic Apply is intentionally limited to safe actions: archive a truly unused topic, dismiss a detached pending review, or cancel a planned activity whose content is no longer active. Duplicate questions and detached materials remain manual-review findings.
+Smart content cleanup is preview-first. PC15 later expands this to the original seven issue classes and makes every cleanup preview action review-only and confirmation-gated; no cleanup preview directly mutates user data.
 
-The HTML exam report is generated entirely locally from structured state/evidence and escapes user content before rendering. The exam runbook requires a confirmed exam date before showing date-based urgency. The seven-day sprint reuses the PC04 adaptive scheduling engine, so locked/completed history and capacity/conflict guarantees remain intact and changes stay preview-first until explicit Apply.
+The HTML exam report is generated entirely locally from structured state/evidence and escapes user content before rendering. The exam runbook requires a confirmed exam date before showing date-based urgency. PC15 supersedes the earlier generic adaptive-schedule sprint: the seven-day sprint now only edits type/duration of existing unlocked planned activities and never creates IDs or moves starts.
 
 State schema remains **v6** and portable v1/v2 compatibility is unchanged.

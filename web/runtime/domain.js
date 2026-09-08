@@ -11,6 +11,7 @@ exports.createActivity = createActivity;
 exports.createStudySession = createStudySession;
 exports.createGoal = createGoal;
 exports.createMaterial = createMaterial;
+exports.createFlashcard = createFlashcard;
 exports.createReview = createReview;
 exports.createQuestion = createQuestion;
 exports.createEvidence = createEvidence;
@@ -45,6 +46,7 @@ exports.buildContentIntegrityReport = buildContentIntegrityReport;
 exports.selectDueReviews = selectDueReviews;
 exports.selectOpenErrors = selectOpenErrors;
 exports.deriveQuestionStats = deriveQuestionStats;
+const parity_intelligence_1 = require("./parity_intelligence");
 const modes_1 = require("./modes");
 const product_1 = require("./product");
 const task_workflows_1 = require("./task_workflows");
@@ -58,6 +60,7 @@ exports.ENTITY_COLLECTIONS = Object.freeze([
     "sessions",
     "goals",
     "materials",
+    "flashcards",
     "reviews",
     "questions",
     "evidence",
@@ -85,6 +88,7 @@ const ID_PREFIXES = Object.freeze({
     session: "session",
     goal: "goal",
     material: "material",
+    flashcard: "flashcard",
     review: "review",
     question: "question",
     evidence: "evidence",
@@ -239,6 +243,7 @@ function createGoal(input = {}) {
         target,
         period: requireOneOf(input.period ?? "weekly", ["daily", "weekly", "monthly", "plan"], "goal.period"),
         active: input.active !== false,
+        completedAt: optionalText(input.completedAt),
     };
 }
 function createMaterial(input = {}) {
@@ -258,6 +263,18 @@ function createMaterial(input = {}) {
         sizeBytes,
         archived: Boolean(input.archived),
         tags: Array.isArray(input.tags) ? [...new Set(input.tags.map((tag) => String(tag ?? "").trim()).filter(Boolean))] : [],
+    };
+}
+function createFlashcard(input = {}) {
+    const type = requireOneOf(input.type ?? "BASIC", ["BASIC", "CLOZE"], "flashcard.type");
+    const front = requireText(input.front, "flashcard.front"), back = requireText(input.back, "flashcard.back");
+    const clozeText = optionalText(input.clozeText);
+    if (type === "CLOZE" && !clozeText)
+        throw new TypeError("Cloze flashcards require cloze text");
+    return {
+        ...entityBase("flashcard", input),
+        planId: requireText(input.planId, "flashcard.planId"), subjectId: optionalId(input.subjectId), topicId: optionalId(input.topicId), type, front, back, clozeText,
+        tags: Array.isArray(input.tags) ? [...new Set(input.tags.map(tag => String(tag ?? "").trim()).filter(Boolean))] : [], suspended: Boolean(input.suspended),
     };
 }
 function createReview(input = {}) {
@@ -297,6 +314,7 @@ function createQuestion(input = {}) {
         source: optionalText(input.source),
         explanation: optionalText(input.explanation),
         disputed: Boolean(input.disputed),
+        tags: [...new Set((Array.isArray(input.tags) ? input.tags : []).map((value) => String(value ?? "").trim()).filter(Boolean))],
         ...(0, modes_1.normalizeQuestionMetadata)(input),
     };
 }
@@ -473,6 +491,7 @@ function migrateStudyState(input, { now = isoNow() } = {}) {
     state.activities = Array.isArray(state.activities) ? state.activities.map((activity) => createActivity(activity)) : [];
     state.errorEntries = Array.isArray(state.errorEntries) ? state.errorEntries : [];
     state.materials = Array.isArray(state.materials) ? state.materials.map((material) => createMaterial({ ...material, attachmentId: material.attachmentId ?? null, sizeBytes: material.sizeBytes ?? null, archived: material.archived ?? false, tags: material.tags ?? [] })) : [];
+    state.flashcards = Array.isArray(state.flashcards) ? state.flashcards.map((flashcard) => createFlashcard(flashcard)) : [];
     state.reviews = Array.isArray(state.reviews) ? state.reviews.map((review) => createReview(review)) : [];
     state.questions = Array.isArray(state.questions) ? state.questions.map((question) => createQuestion(question)) : [];
     const cycles = {};
@@ -507,6 +526,7 @@ function createEmptyStudyState() {
         sessions: [],
         goals: [],
         materials: [],
+        flashcards: [],
         reviews: [],
         questions: [],
         evidence: [],
@@ -584,6 +604,7 @@ function validateEntityContracts(state, errors) {
         sessions: createStudySession,
         goals: createGoal,
         materials: createMaterial,
+        flashcards: createFlashcard,
         reviews: createReview,
         questions: createQuestion,
         evidence: createEvidence,
@@ -662,6 +683,7 @@ function validateStudyState(state) {
     const activityIds = idsFor(state.activities);
     const sessionIds = idsFor(state.sessions);
     const questionIds = idsFor(state.questions);
+    const flashcardIds = idsFor(state.flashcards);
     const reviewIds = idsFor(state.reviews);
     if (state.activePlanId != null && !planIds.has(state.activePlanId)) {
         errors.push(`activePlanId references missing plan: ${state.activePlanId}`);
@@ -745,7 +767,7 @@ function validateStudyState(state) {
     }
     for (const [label, collection] of [
         ["activity", state.activities], ["session", state.sessions], ["goal", state.goals],
-        ["material", state.materials], ["review", state.reviews], ["question", state.questions], ["evidence", state.evidence], ["errorEntry", state.errorEntries],
+        ["material", state.materials], ["flashcard", state.flashcards], ["review", state.reviews], ["question", state.questions], ["evidence", state.evidence], ["errorEntry", state.errorEntries],
     ]) {
         for (const entity of collection) {
             requireReference(errors, entity, "planId", planIds, label);
@@ -775,6 +797,9 @@ function validateStudyState(state) {
         }
         if (review.sourceType === "activity" && review.sourceId != null && !activityIds.has(review.sourceId)) {
             errors.push(`review ${review.id} references missing activity sourceId: ${review.sourceId}`);
+        }
+        if (review.sourceType === "flashcard" && review.sourceId != null && !flashcardIds.has(review.sourceId)) {
+            errors.push(`review ${review.id} references missing flashcard sourceId: ${review.sourceId}`);
         }
         if (review.previousReviewId != null && !reviewIds.has(review.previousReviewId)) {
             errors.push(`review ${review.id} references missing previousReviewId: ${review.previousReviewId}`);
@@ -854,10 +879,22 @@ function selectOverdueReviews(state, at = Date.now(), planId = state.activePlanI
     const atMs = typeof at === "number" ? at : Date.parse(String(at));
     return state.reviews.filter((review) => review.planId === planId && review.status === "due" && Date.parse(review.dueAt) <= atMs);
 }
-function recommendNextActivity(state) {
-    const activities = selectActivitiesForQueue(state, "today");
+function localCivilDay(value = new Date()) {
+    const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+    if (Number.isNaN(date.getTime()))
+        throw new TypeError(`Invalid date: ${value}`);
+    return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function recommendNextActivity(state, at = new Date()) {
+    const today = localCivilDay(at);
+    const pending = state.activities.filter((activity) => activity.planId === state.activePlanId && activity.status === "planned");
+    const todayActivities = pending.filter((activity) => activity.scheduledFor === today || (activity.scheduledFor == null && activity.queue === "today"));
+    const futureDates = pending.filter((activity) => activity.scheduledFor != null && activity.scheduledFor > today).map((activity) => activity.scheduledFor).sort();
+    const earliestFuture = futureDates[0] ?? null;
+    const activities = todayActivities.length ? todayActivities : earliestFuture ? pending.filter((activity) => activity.scheduledFor === earliestFuture) : [];
     if (!activities.length)
         return null;
+    const future = !todayActivities.length;
     const kindScore = { review: 30, questions: 20, study: 10 };
     const priorityScore = { high: 8, normal: 4, low: 0 };
     const scored = activities.map((activity, index) => {
@@ -865,7 +902,7 @@ function recommendNextActivity(state) {
         const subject = activity.subjectId ? state.subjects.find((candidate) => candidate.id === activity.subjectId) : null;
         const weight = Number.isFinite(Number(subject?.weight)) ? Number(subject.weight) : 0;
         const score = (kindScore[activity.kind] ?? 0) + (priorityScore[topic?.priority] ?? 0) + Math.min(10, weight) - index / 100;
-        const signals = ["Queued for today"];
+        const signals = future ? ["Earliest future scheduled work"] : ["Queued for today", "Scheduled for current local day"];
         if (activity.kind === "review")
             signals.push("Review work");
         if (activity.kind === "questions")
@@ -878,10 +915,12 @@ function recommendNextActivity(state) {
             signals.push("Study-cycle item");
         return { activity, score, signals };
     });
-    scored.sort((a, b) => b.score - a.score);
+    scored.sort((a, b) => b.score - a.score || (a.activity.scheduledStartMinute ?? 1440) - (b.activity.scheduledStartMinute ?? 1440) || a.activity.id.localeCompare(b.activity.id));
     const winner = scored[0];
     return {
         activity: winner.activity,
+        temporalScope: future ? "future" : "today",
+        scheduledFor: winner.activity.scheduledFor,
         signals: winner.signals,
         reason: `Recommended from current local plan data: ${winner.signals.join(", ").toLowerCase()}.`,
     };
@@ -934,22 +973,10 @@ function deriveProgressMetrics(state, { at = isoNow(), planId = state.activePlan
     const topicCoverage = topics.length ? coveredTopics / topics.length : null;
     const reviewPool = state.reviews.filter((review) => review.planId === planId && ["due", "completed"].includes(review.status));
     const reviewCompletionRate = reviewPool.length ? reviewPool.filter((review) => review.status === "completed").length / reviewPool.length : null;
-    let readiness = null;
-    let readinessReason = "Insufficient evidence";
-    let confidence = "none";
-    if (accuracy != null && topicCoverage != null && allGraded.length >= 5 && coveredTopics >= 2) {
-        readiness = Math.round((accuracy * 0.7 + topicCoverage * 0.3) * 100);
-        confidence = allGraded.length >= 20 && coveredTopics >= 5 ? "moderate" : "limited";
-        readinessReason = `${allGraded.length} graded attempts · ${coveredTopics} evidenced topics · ${confidence} confidence`;
-    }
-    else {
-        const needs = [];
-        if (allGraded.length < 5)
-            needs.push(`${Math.max(0, 5 - allGraded.length)} more graded attempt${Math.max(0, 5 - allGraded.length) === 1 ? "" : "s"}`);
-        if (coveredTopics < 2)
-            needs.push(`${Math.max(0, 2 - coveredTopics)} more evidenced topic${Math.max(0, 2 - coveredTopics) === 1 ? "" : "s"}`);
-        readinessReason = needs.length ? `Needs ${needs.join(" and ")}` : "Insufficient evidence";
-    }
+    const readinessDetail = (0, parity_intelligence_1.deriveExamReadinessParity)(state, new Date(atMs));
+    const readiness = readinessDetail.value;
+    const readinessReason = readinessDetail.reason;
+    const confidence = readinessDetail.confidence;
     return { weeklyStudyMinutes, gradedAttempts: allGraded.length, accuracy, topicCoverage, coveredTopics, activeTopics: topics.length, reviewCompletionRate, readiness, readinessReason, confidence };
 }
 function goalMetricValue(state, goal, { at = isoNow() } = {}) {
@@ -972,8 +999,8 @@ function deriveGoalProgress(state, goal, options = {}) {
     const progress = actual == null ? null : goal.target > 0 ? Math.max(0, actual / goal.target) : null;
     return { goal, actual, target: goal.target, progress, reached: actual != null && goal.target > 0 && actual >= goal.target };
 }
-function buildEvidenceTimeline(state, { planId = state.activePlanId, limit = 50 } = {}) {
-    return state.evidence.filter((item) => !planId || item.planId === planId).slice().sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt)).slice(0, Math.max(1, Math.min(500, Number(limit) || 50)));
+function buildEvidenceTimeline(state, { planId = state.activePlanId, limit = 50, at = isoNow() } = {}) {
+    return (0, parity_intelligence_1.buildUnifiedEvidenceTimeline)(state, { planId, limit, at: new Date(at) });
 }
 function buildContentIntegrityReport(state) {
     const errors = validateStudyState(state);

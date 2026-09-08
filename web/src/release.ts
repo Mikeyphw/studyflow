@@ -11,6 +11,7 @@ export const STUDYFLOW_LOCAL_RELEASE=Object.freeze({
   stateSchema:STATE_SCHEMA_VERSION,
   indexedDbSchema:STUDYFLOW_DB_VERSION,
   portableFormat:PORTABLE_FORMAT_VERSION,
+  encryptedPortableEnvelope:1,
   channel:"local-first",
   releaseSeal:"parity-closure",
   runtimeArtifact:"self-contained-dist",

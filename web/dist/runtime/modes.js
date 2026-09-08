@@ -14,6 +14,8 @@ exports.buildWeaknessDrill = buildWeaknessDrill;
 exports.derivePublicExamNextActions = derivePublicExamNextActions;
 exports.deriveEditalMatrix = deriveEditalMatrix;
 exports.previewMockExam = previewMockExam;
+exports.buildBbReferenceMockBlueprint = buildBbReferenceMockBlueprint;
+exports.previewBbReferenceMockExam = previewBbReferenceMockExam;
 exports.scoreMockExam = scoreMockExam;
 exports.derivePublicExamDashboard = derivePublicExamDashboard;
 exports.createProgrammingExercise = createProgrammingExercise;
@@ -27,6 +29,7 @@ exports.buildLanguageReviewPrompt = buildLanguageReviewPrompt;
 const schedule_1 = require("./schedule");
 const exam_foundation_1 = require("./exam_foundation");
 const task_workflows_1 = require("./task_workflows");
+const promise_cleanup_1 = require("./promise_cleanup");
 var exam_foundation_2 = require("./exam_foundation");
 Object.defineProperty(exports, "BB_STUDY_PHASE_SUGGESTIONS", { enumerable: true, get: function () { return exam_foundation_2.BB_STUDY_PHASE_SUGGESTIONS; } });
 Object.defineProperty(exports, "PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS", { enumerable: true, get: function () { return exam_foundation_2.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS; } });
@@ -59,7 +62,7 @@ function defaultPlanConfiguration(mode = "GENERAL_SKILL") {
     if (mode === "EXAM_PLAN")
         base.publicExam = {
             target: { organization: null, role: null, board: null, editalRef: null, dateStatus: "unknown", examDate: null, openings: null, estimatedCutoff: null },
-            stages: [], noticeRevisions: [], reviewIntervalsDays: [1, 7, 30], legislation: [], studyPhase: "pre-edital", phaseDefinitions: [], cockpitStaleReferenceDays: exam_foundation_1.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS, bbReferencePreset: null, mockBlueprint: { scoring: "no-penalty", negativePoints: 0, totalQuestions: 20, durationMinutes: 60, sections: [] }
+            stages: [], noticeRevisions: [], reviewIntervalsDays: [1, 7, 30], legislation: [], studyPhase: "pre-edital", phaseDefinitions: [], cockpitStaleReferenceDays: exam_foundation_1.PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS, bbReferencePreset: null, mockBlueprint: { scoring: "no-penalty", negativePoints: 0, totalQuestions: 20, durationMinutes: 60, sections: [], examBoard: null, sourceFilter: null, requiredTags: [], includeDisputed: false, minimumOverallScorePercent: null }
         };
     if (mode === "PROGRAMMING_COURSE")
         base.programming = { language: "TypeScript", level: "beginner", runtime: "browser-only", exercises: [], projects: [] };
@@ -165,7 +168,8 @@ exports.PUBLIC_EXAM_STARTER_TEMPLATES = Object.freeze({
 function normalizeMockBlueprint(input) {
     const x = (input && typeof input === "object" ? input : {});
     const scoring = EXAM_SCORING.includes(x.scoring) ? x.scoring : "no-penalty";
-    return { scoring, negativePoints: Math.max(0, n(x.negativePoints) ?? 0), totalQuestions: Math.max(1, Math.min(500, Math.trunc(n(x.totalQuestions) ?? 20))), durationMinutes: Math.max(5, Math.min(1440, Math.trunc(n(x.durationMinutes) ?? 60))), sections: arr(x.sections).map((s, i) => { const weight = n(s?.weight); return { id: text(s?.id) ?? `section-${i + 1}`, subjectId: text(s?.subjectId), count: Math.max(1, Math.trunc(n(s?.count) ?? 1)), weight: weight != null && weight > 0 ? weight : 1 }; }) };
+    const minimum = n(x.minimumOverallScorePercent);
+    return { scoring, negativePoints: Math.max(0, n(x.negativePoints) ?? 0), totalQuestions: Math.max(1, Math.min(500, Math.trunc(n(x.totalQuestions) ?? 20))), durationMinutes: Math.max(5, Math.min(1440, Math.trunc(n(x.durationMinutes) ?? 60))), sections: arr(x.sections).map((s, i) => { const weight = n(s?.weight); return { id: text(s?.id) ?? `section-${i + 1}`, subjectId: text(s?.subjectId), count: Math.max(1, Math.trunc(n(s?.count) ?? 1)), weight: weight != null && weight > 0 ? weight : 1 }; }), examBoard: text(x.examBoard), sourceFilter: text(x.sourceFilter), requiredTags: uniqueStrings(x.requiredTags), includeDisputed: Boolean(x.includeDisputed), minimumOverallScorePercent: minimum == null ? null : Math.max(0, Math.min(100, minimum)) };
 }
 function normalizeProgrammingExercise(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); const language = text(x.language) ?? "TypeScript"; const files = arr(x.files).map((f, j) => ({ path: text(f?.path) ?? `file-${j + 1}`, language: text(f?.language) ?? language, content: String(f?.content ?? "") })); return { id: text(x.id) ?? `exercise-${index + 1}`, title: text(x.title) ?? `Exercise ${index + 1}`, language, prompt: text(x.prompt) ?? "", starterCode: String(x.starterCode ?? ""), expectedOutput: text(x.expectedOutput), hints: uniqueStrings(x.hints), solutionNotes: text(x.solutionNotes), difficulty: ["easy", "medium", "hard"].includes(String(x.difficulty)) ? x.difficulty : "medium", status: ["todo", "attempted", "completed"].includes(String(x.status)) ? x.status : "todo", files }; }
 function normalizeLanguageExpression(input, index = 0) { const x = (input && typeof input === "object" ? input : {}); return { id: text(x.id) ?? `expression-${index + 1}`, expression: text(x.expression) ?? `Expression ${index + 1}`, meaning: text(x.meaning) ?? "", literalTranslation: text(x.literalTranslation), region: text(x.region), register: text(x.register), pronunciationNote: text(x.pronunciationNote), commonMistakes: uniqueStrings(x.commonMistakes), exampleSentence: text(x.exampleSentence) }; }
@@ -278,12 +282,9 @@ function buildExamNoticePreview(state, source) {
     return { baseRevision: state.revision, generatedAt: new Date().toISOString(), sourceHash: hashText(source), syllabusFingerprint: syllabusFingerprint(state, planId), previousRevisionId: latest?.id ?? null, subjects: parsed.subjects, duplicates: parsed.duplicates, unrecognized: parsed.unrecognized, destructiveChanges: archive.length, diff: { add, archive, reactivate, unchanged } };
 }
 function deriveFinalStretchGuidance(plan, at = new Date()) {
-    const target = plan.configuration.publicExam?.target;
-    const exam = target?.examDate ?? plan.examDate;
-    if (!exam || target?.dateStatus !== "confirmed")
+    const d = (0, promise_cleanup_1.daysUntilOfficialExam)(plan, at);
+    if (d == null)
         return { band: "unknown", daysRemaining: null, allocation: { newContent: 0, reviews: 0, errors: 0, questions: 0, mocks: 0, legislation: 0 } };
-    const days = Math.ceil((Date.parse(`${exam}T23:59:59Z`) - at.getTime()) / 86400000);
-    const d = Math.max(0, days);
     let band = "over-30";
     if (d <= 1)
         band = "eve";
@@ -324,8 +325,25 @@ function derivePublicExamNextActions(state, limit = 5) { const planId = state.ac
     reasonCodes.push("limited-evidence"); return { subjectId: topic.subjectId, topicId: topic.id, score: roundScore(score), reasonCodes, explanation: reasonCodes.length ? reasonCodes.join(", ") : "baseline cycle priority" }; }).sort((a, b) => b.score - a.score || String(a.topicId).localeCompare(String(b.topicId))).slice(0, limit); }
 function deriveEditalMatrix(state) { const planId = state.activePlanId; if (!planId)
     return []; const activeSubjects = state.subjects.filter(s => s.planId === planId && !s.archived); const weights = activeSubjects.map(s => s.weight ?? 1); const maxWeight = Math.max(1, ...weights); return activeSubjects.map(subject => { const topics = state.topics.filter(t => t.subjectId === subject.id && t.status !== "archived"); const masteryValues = topics.map(t => t.status === "mastered" ? 1 : t.status === "reviewing" ? .75 : t.status === "learning" ? .4 : 0); const mastery = topics.length ? masteryValues.reduce((a, b) => a + b, 0) / topics.length : null; const incidence = subject.examIncidence == null ? null : subject.examIncidence / 100; const backlog = state.errorEntries.filter(e => e.subjectId === subject.id && e.status === "open").reduce((n, e) => n + e.recurrenceCount, 0) + state.reviews.filter(r => r.subjectId === subject.id && r.status === "due").length; const relativeWeight = (subject.weight ?? 1) / maxWeight; const priority = roundScore((.35 * relativeWeight + .20 * (incidence ?? .5) + .30 * (1 - (mastery ?? 0)) + .15 * Math.min(1, backlog / 10)) * 100); return { subjectId: subject.id, subjectName: subject.name, relativeWeight, incidence, mastery, backlog, priority }; }).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.subjectName.localeCompare(b.subjectName)); }
+function normalizedMatch(value) { return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase(); }
+function mockQuestionMatches(q, blueprint) {
+    if (!q.answer)
+        return false;
+    if (!blueprint.includeDisputed && q.disputed)
+        return false;
+    if (blueprint.examBoard && normalizedMatch(q.examBoard) !== normalizedMatch(blueprint.examBoard))
+        return false;
+    if (blueprint.sourceFilter && !normalizedMatch(q.source).includes(normalizedMatch(blueprint.sourceFilter)))
+        return false;
+    if (blueprint.requiredTags.length) {
+        const tags = new Set(q.tags.map(normalizedMatch));
+        if (!blueprint.requiredTags.every(tag => tags.has(normalizedMatch(tag))))
+            return false;
+    }
+    return true;
+}
 function previewMockExam(state, blueprintInput = {}) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan || plan.mode !== "EXAM_PLAN")
-    throw new TypeError("Mock preview requires an EXAM_PLAN"); const blueprint = normalizeMockBlueprint({ ...plan.configuration.publicExam?.mockBlueprint, ...blueprintInput }); const bank = state.questions.filter(q => q.planId === plan.id && !q.disputed && Boolean(q.answer)); const selected = []; const deficits = []; if (blueprint.sections.length) {
+    throw new TypeError("Mock preview requires an EXAM_PLAN"); const blueprint = normalizeMockBlueprint({ ...plan.configuration.publicExam?.mockBlueprint, ...blueprintInput }); const bank = state.questions.filter(q => q.planId === plan.id && mockQuestionMatches(q, blueprint)); const selected = []; const deficits = []; if (blueprint.sections.length) {
     for (const s of blueprint.sections) {
         const candidates = bank.filter(q => !selected.includes(q.id) && (!s.subjectId || q.subjectId === s.subjectId)).sort((a, b) => (b.points ?? 1) - (a.points ?? 1) || a.id.localeCompare(b.id));
         if (candidates.length < s.count)
@@ -338,6 +356,15 @@ else {
     if (selected.length < blueprint.totalQuestions)
         deficits.push(`need ${blueprint.totalQuestions}, have ${selected.length}`);
 } return { baseRevision: state.revision, generatedAt: new Date().toISOString(), blueprint, questionIds: selected, deficits, ready: deficits.length === 0 }; }
+function allocateBbCounts(weights) { const raw = weights.map(weight => weight / weights.reduce((a, b) => a + b, 0) * task_workflows_1.BB_OBJECTIVE_QUESTION_COUNT), counts = raw.map(Math.floor); let remaining = task_workflows_1.BB_OBJECTIVE_QUESTION_COUNT - counts.reduce((a, b) => a + b, 0); raw.map((value, index) => ({ index, fraction: value - Math.floor(value) })).sort((a, b) => b.fraction - a.fraction || a.index - b.index).forEach(item => { if (remaining > 0) {
+    counts[item.index]++;
+    remaining--;
+} }); return counts; }
+function buildBbReferenceMockBlueprint(state) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan || plan.mode !== "EXAM_PLAN" || plan.configuration.publicExam?.bbReferencePreset?.id !== task_workflows_1.BB_AGENTE_COMERCIAL_PRE_EDITAL)
+    return null; const aliases = { "Português": ["portugues", "lingua portuguesa", "portuguese"], "Inglês": ["ingles", "lingua inglesa", "english"], "Matemática": ["matematica", "mathematics"], "Atualidades do Mercado Financeiro": ["atualidades do mercado financeiro", "financial market current affairs"], "Matemática Financeira": ["matematica financeira", "financial mathematics"], "Conhecimentos Bancários": ["conhecimentos bancarios", "banking knowledge"], "Tecnologia da Informação": ["tecnologia da informacao", "conhecimentos de informatica", "information technology"], "Vendas e Negociação": ["vendas e negociacao", "sales and negotiation"] }; const subjects = task_workflows_1.BB_SUBJECT_WEIGHTS.map(([name, weight]) => state.subjects.find(subject => subject.planId === plan.id && !subject.archived && aliases[name].includes(normalizedMatch(subject.name)) && Math.abs(Number(subject.weight ?? 0) - weight) < 0.0001)); if (subjects.some(subject => !subject))
+    return null; const counts = allocateBbCounts(task_workflows_1.BB_SUBJECT_WEIGHTS.map(([, weight]) => weight)); return normalizeMockBlueprint({ scoring: "no-penalty", negativePoints: 0, totalQuestions: task_workflows_1.BB_OBJECTIVE_QUESTION_COUNT, durationMinutes: 300, sections: subjects.map((subject, index) => ({ id: `bb-${index + 1}`, subjectId: subject.id, count: counts[index], weight: task_workflows_1.BB_SUBJECT_WEIGHTS[index][1] })), examBoard: "Cesgranrio", sourceFilter: null, requiredTags: [], includeDisputed: false, minimumOverallScorePercent: null }); }
+function previewBbReferenceMockExam(state) { const blueprint = buildBbReferenceMockBlueprint(state); if (!blueprint)
+    return { preview: null, essayMinimumScorePercent: task_workflows_1.BB_ESSAY_MINIMUM_SCORE_PERCENT, allocationPolicy: "derived-from-reference-point-weights", missingQuestionCount: task_workflows_1.BB_OBJECTIVE_QUESTION_COUNT }; const allowed = new Set(["cesgranrio", "fundacao cesgranrio"]); const candidateState = { ...state, questions: state.questions.map(q => allowed.has(normalizedMatch(q.examBoard)) ? { ...q, examBoard: "Cesgranrio" } : q) }; const preview = previewMockExam(candidateState, blueprint); return { preview, essayMinimumScorePercent: task_workflows_1.BB_ESSAY_MINIMUM_SCORE_PERCENT, allocationPolicy: "derived-from-reference-point-weights", missingQuestionCount: preview.deficits.reduce((sum, item) => { const m = item.match(/need (\d+), have (\d+)/); return sum + (m ? Math.max(0, Number(m[1]) - Number(m[2])) : 0); }, 0) }; }
 const roundScore = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 const clampPercent = (value) => Math.max(0, Math.min(100, roundScore(value)));
 function scoreMockExam(preview, answers, state) {
@@ -392,7 +419,10 @@ function scoreMockExam(preview, answers, state) {
         });
         sections.push({ sectionId: group.id, subjectId: group.subjectId, correct: sectionCorrect, wrong: sectionWrong, unanswered: sectionUnanswered, earnedPoints: roundScore(sectionEarned), maximumPoints: roundScore(sectionMaximum), percent: sectionMaximum > 0 ? clampPercent((Math.max(0, sectionEarned) / sectionMaximum) * 100) : 0 });
     }
-    return { scoringPolicy: preview.blueprint.scoring, correct, wrong, unanswered, rawScore: roundScore(rawScore), maximumScore: roundScore(maximumScore), percent: maximumScore > 0 ? clampPercent((Math.max(0, rawScore) / maximumScore) * 100) : null, rounding: "nearest-0.01", sections, questions };
+    const percent = maximumScore > 0 ? clampPercent((Math.max(0, rawScore) / maximumScore) * 100) : null;
+    const minimumOverallScorePercent = preview.blueprint.minimumOverallScorePercent;
+    const passed = minimumOverallScorePercent == null || percent == null ? null : percent >= minimumOverallScorePercent;
+    return { scoringPolicy: preview.blueprint.scoring, correct, wrong, unanswered, rawScore: roundScore(rawScore), maximumScore: roundScore(maximumScore), percent, passed, minimumOverallScorePercent, rounding: "nearest-0.01", sections, questions };
 }
 function derivePublicExamDashboard(state) { const plan = state.plans.find(p => p.id === state.activePlanId); if (!plan || plan.mode !== "EXAM_PLAN")
     return null; const activeTopics = state.topics.filter(t => t.planId === plan.id && t.status !== "archived"); const progressed = activeTopics.filter(t => t.status !== "not-started"); const attempts = state.evidence.filter(e => e.planId === plan.id && e.kind === "question-attempt" && typeof e.value === "object" && e.value && "gradable" in e.value && e.value.gradable === true); const correct = attempts.filter(e => e.value.correct === true).length; const due = state.reviews.filter(r => r.planId === plan.id && r.status === "due").length; const mocks = state.evidence.filter(e => e.planId === plan.id && e.kind === "mock-exam-result").sort((a, b) => b.observedAt.localeCompare(a.observedAt)); const latest = mocks[0]?.value; const cutoff = plan.configuration.publicExam?.target.estimatedCutoff ?? null; const window = (days) => { const since = Date.now() - days * 86400000; const xs = attempts.filter(e => Date.parse(e.observedAt) >= since); return xs.length ? xs.filter(e => e.value.correct === true).length / xs.length : null; }; const matrix = deriveEditalMatrix(state); const known = matrix.filter(r => r.mastery != null); const weightedMastery = known.length ? known.reduce((n, r) => n + (r.mastery ?? 0) * (r.relativeWeight ?? 0), 0) / known.reduce((n, r) => n + (r.relativeWeight ?? 0), 0) : null; return { coverage: activeTopics.length ? progressed.length / activeTopics.length : null, accuracy: attempts.length ? correct / attempts.length : null, accuracy7: window(7), accuracy30: window(30), accuracy90: window(90), weightedMastery, reviewBacklog: due, cutoffGap: cutoff != null && typeof latest?.percent === "number" ? roundScore(latest.percent - cutoff) : null, noticeRevisionCount: plan.configuration.publicExam?.noticeRevisions.length ?? 0, legislationCount: plan.configuration.publicExam?.legislation.length ?? 0, matrix }; }

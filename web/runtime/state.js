@@ -13,6 +13,8 @@ const schedule_js_1 = require("./schedule.js");
 const modes_js_1 = require("./modes.js");
 const exam_foundation_js_1 = require("./exam_foundation.js");
 const task_workflows_js_1 = require("./task_workflows.js");
+const parity_intelligence_js_1 = require("./parity_intelligence.js");
+const refinement_js_1 = require("./refinement.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
 function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms))
     throw new TypeError(`Invalid timestamp: ${value}`); return ms; }
@@ -35,7 +37,7 @@ function persistenceMessage(status, reason = null) {
         return "Local state reset to the StudyFlow sample baseline.";
     return reason ?? "Local state ready.";
 }
-function referenceCollections(state) { return [state.activities, state.sessions, state.materials, state.reviews, state.questions, state.evidence, state.errorEntries]; }
+function referenceCollections(state) { return [state.activities, state.sessions, state.materials, state.flashcards, state.reviews, state.questions, state.evidence, state.errorEntries]; }
 function createStudyStore({ repository, initialStateFactory = domain_js_1.createInitialStudyState, now = () => new Date().toISOString() } = {}) {
     if (!repository || typeof repository.load !== "function" || typeof repository.save !== "function")
         throw new TypeError("createStudyStore requires a repository with load/save methods");
@@ -127,11 +129,46 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         commit({ ...state, activities, sessions: [...state.sessions, session], evidence, focus: (0, domain_js_1.createFocusState)({ durationMinutes: focus.durationMinutes }) }, `focus-${status}`);
         return session;
     }
+    function provisionSampleTemplate(templateId, { locale = "en", planName = null, activate = true, replaceSample = false, preferences = null } = {}) {
+        const blueprint = refinement_js_1.SAMPLE_PLAN_BLUEPRINTS[templateId];
+        if (!blueprint)
+            throw new TypeError("Unknown sample plan template");
+        const at = nowIso();
+        const configuration = (0, modes_js_1.defaultPlanConfiguration)(blueprint.mode);
+        const weekdayToWeb = (weekday) => weekday === 7 ? 0 : weekday;
+        configuration.schedule = { dailyCapacityMinutes: Math.max(60, Math.min(1440, blueprint.preferredSessionMinutes * 4)), strategyType: blueprint.adaptivePlanningEnabled ? "ADAPTIVE" : "FIXED_WEEKLY", availability: blueprint.scheduleRules.map((rule, index) => ({ id: `sample-window-${index + 1}`, weekday: weekdayToWeb(rule.weekday), startMinute: rule.startMinute, endMinute: rule.startMinute + rule.durationMinutes })), fixedBlocks: [], recurringBlocks: [] };
+        const plan = (0, domain_js_1.createPlan)({ name: String(planName ?? blueprint.label[locale] ?? blueprint.label.en).trim(), mode: blueprint.mode, status: "active", configuration, createdAt: at, updatedAt: at });
+        const subjects = [];
+        const subjectByKey = new Map();
+        for (const [order, subjectBlueprint] of blueprint.subjects.entries()) {
+            const subject = (0, domain_js_1.createSubject)({ planId: plan.id, name: subjectBlueprint.name[locale] ?? subjectBlueprint.name.en, weight: subjectBlueprint.weight, examIncidence: null, order, notes: null, archived: false, createdAt: at, updatedAt: at });
+            subjects.push(subject);
+            subjectByKey.set(subjectBlueprint.key, subject);
+        }
+        const topics = [];
+        for (const subjectBlueprint of blueprint.subjects) {
+            const subject = subjectByKey.get(subjectBlueprint.key);
+            for (const [order, topicBlueprint] of subjectBlueprint.topics.entries())
+                topics.push((0, domain_js_1.createTopic)({ planId: plan.id, subjectId: subject.id, parentTopicId: null, name: topicBlueprint.name[locale] ?? topicBlueprint.name.en, order, priority: "normal", status: "not-started", notes: null, createdAt: at, updatedAt: at }));
+        }
+        const today = (0, parity_intelligence_js_1.localDateKey)(at);
+        const dayNumber = (date) => { const [y, m, d] = date.split("-").map(Number); return new Date(y, m - 1, d, 12).getDay(); };
+        const addDays = (date, days) => { const [y, m, d] = date.split("-").map(Number); const x = new Date(y, m - 1, d, 12); x.setDate(x.getDate() + days); return (0, parity_intelligence_js_1.localDateKey)(x); };
+        const activities = blueprint.scheduleRules.map((rule, index) => { const webDay = weekdayToWeb(rule.weekday), offset = (webDay - dayNumber(today) + 7) % 7, date = addDays(today, offset), subject = rule.subjectKey ? subjectByKey.get(rule.subjectKey) ?? null : null; return (0, domain_js_1.createActivity)({ planId: plan.id, subjectId: subject?.id ?? null, topicId: null, title: subject?.name ?? (locale === "pt-BR" ? "Bloco de estudo" : "Study block"), kind: "study", activityType: "THEORY", durationMinutes: rule.durationMinutes, status: "planned", origin: "seed", queue: offset === 0 ? "today" : "future", scheduledFor: date, scheduledStartMinute: rule.startMinute, locked: false, scheduleProvenance: { source: "manual", reason: "Onboarding sample weekly schedule", previewGeneratedAt: at, baseRevision: null }, createdAt: at, updatedAt: at }); });
+        const goals = [(0, domain_js_1.createGoal)({ planId: plan.id, name: locale === "pt-BR" ? "Meta semanal de estudo" : "Weekly study time", metric: "study-hours", target: blueprint.weeklyGoalHours, period: "weekly", active: true, createdAt: at, updatedAt: at })];
+        if (blueprint.mode === "EXAM_PLAN" && topics.length > 0)
+            goals.push((0, domain_js_1.createGoal)({ planId: plan.id, name: locale === "pt-BR" ? "Cobertura de tópicos" : "Topic coverage", metric: "topics-covered", target: topics.length, period: "plan", active: true, createdAt: at, updatedAt: at }));
+        const cycle = (0, domain_js_1.createStudyCycleState)({ subjectIds: subjects.map(x => x.id), cursor: 0 });
+        const base = replaceSample ? { ...state, preferences: preferences ? (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) : state.preferences, activePlanId: null, focus: (0, domain_js_1.createFocusState)(), studyCycle: (0, domain_js_1.createStudyCycleState)(), studyCycles: {}, plans: [], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], flashcards: [], reviews: [], questions: [], evidence: [], errorEntries: [] } : preferences ? { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) } : state;
+        const next = { ...base, plans: [...base.plans, plan], subjects: [...base.subjects, ...subjects], topics: [...base.topics, ...topics], activities: [...base.activities, ...activities], goals: [...base.goals, ...goals], studyCycles: { ...(base.studyCycles ?? {}), [plan.id]: cycle }, activePlanId: activate ? plan.id : base.activePlanId, studyCycle: activate ? cycle : base.studyCycle };
+        commit(next, "sample-plan-provisioned");
+        return plan;
+    }
     function provisionBbPreset({ planName = "BB Agente Comercial — pré-edital", activate = true, replaceSample = false, preferences = null } = {}) {
         const at = nowIso();
         const preset = (0, task_workflows_js_1.createBbAgenteComercialReferencePreset)();
         const configuration = (0, modes_js_1.defaultPlanConfiguration)("EXAM_PLAN");
-        configuration.schedule = { dailyCapacityMinutes: 240, availability: task_workflows_js_1.BB_REFERENCE_RHYTHM.map((block, index) => ({ id: `bb-rhythm-${index + 1}`, weekday: block.weekday, startMinute: block.startMinute, endMinute: block.startMinute + block.durationMinutes })), fixedBlocks: [] };
+        configuration.schedule = { dailyCapacityMinutes: 240, strategyType: "FIXED_WEEKLY", availability: task_workflows_js_1.BB_REFERENCE_RHYTHM.map((block, index) => ({ id: `bb-rhythm-${index + 1}`, weekday: block.weekday, startMinute: block.startMinute, endMinute: block.startMinute + block.durationMinutes })), fixedBlocks: [], recurringBlocks: [] };
         configuration.publicExam = { ...configuration.publicExam, target: { organization: "Banco do Brasil", role: "Escriturário — Agente Comercial", board: "Fundação Cesgranrio", editalRef: preset.referenceNoticeUrl, dateStatus: "unknown", examDate: null, openings: null, estimatedCutoff: null }, stages: [], noticeRevisions: [{ id: "bb-reference-2022-001", acceptedAt: at, sourceHash: "bb-reference-2022-001", added: 0, archived: 0, reactivated: 0, unchanged: 0, previousRevisionId: null, syllabusFingerprint: null, reference: preset.referenceNotice, publishedAt: "2022-12-23" }], reviewIntervalsDays: [1, 7, 30], studyPhase: "pre-edital", phaseDefinitions: (0, exam_foundation_js_1.cloneBbStudyPhaseSuggestions)(), bbReferencePreset: preset };
         const plan = (0, domain_js_1.createPlan)({ name: String(planName).trim() || "BB Agente Comercial — pré-edital", mode: "EXAM_PLAN", status: "active", configuration, createdAt: at, updatedAt: at });
         const stages = (0, task_workflows_js_1.bbReferenceExamStages)(plan.id);
@@ -139,7 +176,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         const subjects = task_workflows_js_1.BB_SUBJECT_WEIGHTS.map(([name, weight], order) => (0, domain_js_1.createSubject)({ planId: plan.id, name, weight, examIncidence: null, order, notes: null, archived: false, createdAt: at, updatedAt: at }));
         const cycle = (0, domain_js_1.createStudyCycleState)({ subjectIds: subjects.map(subject => subject.id), cursor: 0 });
         const goals = (0, task_workflows_js_1.bbReferenceGoals)(plan.id, at);
-        const base = replaceSample ? { ...state, preferences: preferences ? (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) : state.preferences, activePlanId: null, focus: (0, domain_js_1.createFocusState)(), studyCycle: (0, domain_js_1.createStudyCycleState)(), studyCycles: {}, plans: [], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], reviews: [], questions: [], evidence: [], errorEntries: [] } : preferences ? { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) } : state;
+        const base = replaceSample ? { ...state, preferences: preferences ? (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) : state.preferences, activePlanId: null, focus: (0, domain_js_1.createFocusState)(), studyCycle: (0, domain_js_1.createStudyCycleState)(), studyCycles: {}, plans: [], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], flashcards: [], reviews: [], questions: [], evidence: [], errorEntries: [] } : preferences ? { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, ...preferences }) } : state;
         const next = { ...base, plans: [...base.plans, normalizedPlan], subjects: [...base.subjects, ...subjects], goals: [...base.goals, ...goals], studyCycles: { ...(base.studyCycles ?? {}), [plan.id]: cycle }, activePlanId: activate ? plan.id : base.activePlanId, studyCycle: activate ? cycle : base.studyCycle };
         commit(next, "bb-agente-comercial-preset-provisioned");
         return normalizedPlan;
@@ -158,6 +195,10 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 provisionBbPreset({ planName: cfg.planName, replaceSample: true, activate: true, preferences: { locale: cfg.locale, onboardingCompleted: true } });
                 return state;
             }
+            if (refinement_js_1.SAMPLE_PLAN_BLUEPRINTS[cfg.template]) {
+                provisionSampleTemplate(cfg.template, { locale: cfg.locale, planName: cfg.planName, replaceSample: true, activate: true, preferences: { locale: cfg.locale, onboardingCompleted: true } });
+                return state;
+            }
             if (cfg.useSample) {
                 const active = state.plans.find((plan) => plan.id === state.activePlanId) ?? state.plans[0] ?? null;
                 let next = { ...state, preferences: (0, product_js_1.normalizeAppPreferences)({ ...state.preferences, locale: cfg.locale, onboardingCompleted: true }) };
@@ -172,10 +213,11 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const at = nowIso();
             const plan = (0, domain_js_1.createPlan)({ name: cfg.planName, mode: cfg.mode, status: "active", createdAt: at, updatedAt: at });
             const cycle = (0, domain_js_1.createStudyCycleState)();
-            const next = { ...(0, domain_js_1.createInitialStudyState)({ now: at }), preferences: (0, product_js_1.normalizeAppPreferences)({ locale: cfg.locale, onboardingCompleted: true }), activePlanId: plan.id, plans: [plan], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], reviews: [], questions: [], evidence: [], errorEntries: [], studyCycle: cycle, studyCycles: { [plan.id]: cycle }, revision: state.revision };
+            const next = { ...(0, domain_js_1.createInitialStudyState)({ now: at }), preferences: (0, product_js_1.normalizeAppPreferences)({ locale: cfg.locale, onboardingCompleted: true }), activePlanId: plan.id, plans: [plan], subjects: [], topics: [], activities: [], sessions: [], goals: [], materials: [], flashcards: [], reviews: [], questions: [], evidence: [], errorEntries: [], studyCycle: cycle, studyCycles: { [plan.id]: cycle }, revision: state.revision };
             commit(next, "onboarding-completed");
             return state;
         },
+        provisionSamplePlan(template, options = {}) { return provisionSampleTemplate(template, options); },
         provisionBbAgenteComercialPreset(options = {}) { return provisionBbPreset(options); },
         createPlan(input, { activate = true } = {}) {
             const at = nowIso();
@@ -281,7 +323,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError("Switch to another plan before deleting this plan");
             if (current.status !== "archived")
                 throw new TypeError("Archive the plan before deleting it");
-            const owned = [state.subjects, state.topics, state.activities, state.sessions, state.goals, state.materials, state.reviews, state.questions, state.evidence, state.errorEntries].some((collection) => collection.some((entity) => entity.planId === planId));
+            const owned = [state.subjects, state.topics, state.activities, state.sessions, state.goals, state.materials, state.flashcards, state.reviews, state.questions, state.evidence, state.errorEntries].some((collection) => collection.some((entity) => entity.planId === planId));
             if (owned)
                 throw new TypeError("Plan still owns content or history and cannot be deleted; keep it archived instead");
             const cycles = { ...(state.studyCycles ?? {}) };
@@ -632,6 +674,26 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             commit({ ...state, activities: [...state.activities, activity] }, "activity-added");
             return activity;
         },
+        addScheduledActivity(input) {
+            const planId = activePlanId(), at = nowIso(), date = String(input?.scheduledFor ?? "").trim(), minute = Number(input?.scheduledStartMinute);
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
+                throw new TypeError("Scheduled activity requires an explicit local date");
+            if (!Number.isInteger(minute) || minute < 0 || minute > 1439)
+                throw new TypeError("Scheduled activity requires a local start minute between 0 and 1439");
+            const subjectId = input?.subjectId ?? null, topicId = input?.topicId ?? null;
+            const subject = subjectId ? state.subjects.find(s => s.id === subjectId && s.planId === planId && !s.archived) : null;
+            if (subjectId && !subject)
+                throw new TypeError("Scheduled activity subject must belong to the active plan");
+            const topic = topicId ? state.topics.find(t => t.id === topicId && t.planId === planId && t.status !== "archived") : null;
+            if (topicId && !topic)
+                throw new TypeError("Scheduled activity topic must belong to the active plan");
+            if (topic && subjectId && topic.subjectId !== subjectId)
+                throw new TypeError("Scheduled activity topic must belong to the selected subject");
+            const effectiveSubjectId = subjectId ?? topic?.subjectId ?? null, activityType = (0, task_workflows_js_1.normalizeStudyActivityType)(input.activityType, "study"), today = (0, parity_intelligence_js_1.localDateKey)(at);
+            const activity = (0, domain_js_1.createActivity)({ planId, title: input.title, kind: (0, task_workflows_js_1.activityKindForType)(activityType), activityType, durationMinutes: input.durationMinutes, subjectId: effectiveSubjectId, topicId, status: "planned", origin: "manual", queue: date === today ? "today" : "future", scheduledFor: date, scheduledStartMinute: minute, locked: false, scheduleProvenance: { source: "manual", reason: "Manual scheduled activity", previewGeneratedAt: null, baseRevision: state.revision }, createdAt: at, updatedAt: at });
+            commit({ ...state, activities: [...state.activities, activity] }, "scheduled-activity-added");
+            return activity;
+        },
         startFocus({ activityId = null, durationMinutes = null, note = null } = {}) {
             const at = nowIso();
             const current = focusSnapshot(at);
@@ -950,6 +1012,17 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError("No active plan");
             const at = nowIso();
             const schedule = (0, schedule_js_1.normalizeScheduleConfiguration)({ ...current.configuration.schedule, ...input });
+            for (const block of schedule.recurringBlocks) {
+                if (block.subjectId && !state.subjects.some(subject => subject.id === block.subjectId && subject.planId === planId && !subject.archived))
+                    throw new TypeError(`Recurring block ${block.id} references a missing or archived subject`);
+                if (block.topicId) {
+                    const topic = state.topics.find(item => item.id === block.topicId && item.planId === planId && item.status !== "archived");
+                    if (!topic)
+                        throw new TypeError(`Recurring block ${block.id} references a missing or archived topic`);
+                    if (block.subjectId && topic.subjectId !== block.subjectId)
+                        throw new TypeError(`Recurring block ${block.id} topic does not belong to its subject`);
+                }
+            }
             const updated = (0, domain_js_1.createPlan)({ ...current, configuration: { ...current.configuration, schedule }, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, plans: state.plans.map((plan) => plan.id === planId ? updated : plan) }, "schedule-configuration-updated");
             return updated;
@@ -981,7 +1054,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                     if (activities[index].locked)
                         throw new TypeError(`Schedule preview cannot move locked activity: ${operation.activityId}`);
                     const scheduledFor = operation.to;
-                    const today = at.slice(0, 10);
+                    const today = (0, parity_intelligence_js_1.localDateKey)(at);
                     activities[index] = (0, domain_js_1.createActivity)({ ...activities[index], scheduledFor, scheduledStartMinute: operation.toStartMinute ?? null, queue: scheduledFor === today ? "today" : "future", scheduleProvenance: { source: "adaptive", reason: operation.reason ?? null, previewGeneratedAt: preview.generatedAt, baseRevision: preview.baseRevision }, createdAt: activities[index].createdAt, updatedAt: at });
                 }
                 else if (operation.action === "add") {
@@ -999,6 +1072,38 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const material = (0, domain_js_1.createMaterial)({ ...input, planId: input.planId ?? activePlanId(), createdAt: input.createdAt ?? at, updatedAt: input.updatedAt ?? at });
             commit({ ...state, materials: [...state.materials, material] }, "material-added");
             return material;
+        },
+        addFlashcard(input) {
+            const at = nowIso();
+            const card = (0, domain_js_1.createFlashcard)({ ...input, planId: input.planId ?? activePlanId(), suspended: false, createdAt: input.createdAt ?? at, updatedAt: input.updatedAt ?? at });
+            const review = (0, domain_js_1.createReview)({ planId: card.planId, subjectId: card.subjectId, topicId: card.topicId, dueAt: at, status: "due", sourceType: "flashcard", sourceId: card.id, intervalIndex: 0, intervalDays: null, repetitionCount: 0, createdAt: at, updatedAt: at });
+            const evidence = (0, domain_js_1.createEvidence)({ planId: card.planId, subjectId: card.subjectId, topicId: card.topicId, kind: "flashcard-created", observedAt: at, provenance: "user", value: { flashcardId: card.id, type: card.type, tagCount: card.tags.length }, createdAt: at, updatedAt: at });
+            commit({ ...state, flashcards: [...state.flashcards, card], reviews: [...state.reviews, review], evidence: [...state.evidence, evidence] }, "flashcard-created");
+            return card;
+        },
+        setFlashcardSuspended(id, suspended = true) {
+            const current = state.flashcards.find(card => card.id === id && card.planId === activePlanId());
+            if (!current)
+                throw new TypeError("Flashcard not found in the active plan");
+            const at = nowIso();
+            const next = (0, domain_js_1.createFlashcard)({ ...current, suspended: Boolean(suspended), createdAt: current.createdAt, updatedAt: at });
+            let reviews = state.reviews.map(r => r.planId === current.planId && r.sourceType === "flashcard" && r.sourceId === current.id && r.status === "due" && suspended ? (0, domain_js_1.createReview)({ ...r, status: "dismissed", completedAt: at, createdAt: r.createdAt, updatedAt: at }) : r);
+            if (!suspended && !reviews.some(r => r.planId === current.planId && r.sourceType === "flashcard" && r.sourceId === current.id && r.status === "due")) {
+                reviews = [...reviews, (0, domain_js_1.createReview)({ planId: current.planId, subjectId: current.subjectId, topicId: current.topicId, dueAt: at, status: "due", sourceType: "flashcard", sourceId: current.id, intervalIndex: 0, intervalDays: null, repetitionCount: 0, createdAt: at, updatedAt: at })];
+            }
+            const evidence = (0, domain_js_1.createEvidence)({ planId: current.planId, subjectId: current.subjectId, topicId: current.topicId, kind: suspended ? "flashcard-suspended" : "flashcard-resumed", observedAt: at, provenance: "user", value: { flashcardId: current.id }, createdAt: at, updatedAt: at });
+            commit({ ...state, flashcards: state.flashcards.map(card => card.id === id ? next : card), reviews, evidence: [...state.evidence, evidence] }, suspended ? "flashcard-suspended" : "flashcard-resumed");
+            return next;
+        },
+        deleteFlashcard(id) {
+            const current = state.flashcards.find(card => card.id === id && card.planId === activePlanId());
+            if (!current)
+                throw new TypeError("Flashcard not found in the active plan");
+            if (state.reviews.some(r => r.sourceType === "flashcard" && r.sourceId === id && r.status === "completed"))
+                throw new TypeError("Reviewed flashcards are retained for study history; suspend them instead");
+            const reviews = state.reviews.filter(r => !(r.sourceType === "flashcard" && r.sourceId === id));
+            commit({ ...state, flashcards: state.flashcards.filter(card => card.id !== id), reviews }, "flashcard-deleted");
+            return current;
         },
         setMaterialReferenceProvenance(materialId, { origin = "EDITAL_2022", verifiedOn = null } = {}) {
             const current = state.materials.find((material) => material.id === materialId && material.planId === activePlanId());
@@ -1062,6 +1167,15 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const at = nowIso();
             const updated = (0, domain_js_1.createGoal)({ ...current, active: !current.active, createdAt: current.createdAt, updatedAt: at });
             commit({ ...state, goals: state.goals.map((goal) => goal.id === goalId ? updated : goal) }, "goal-toggled");
+            return updated;
+        },
+        completeGoal(goalId) {
+            const current = state.goals.find((goal) => goal.id === goalId && goal.planId === activePlanId());
+            if (!current)
+                throw new TypeError("Goal not found in the active plan");
+            const at = nowIso();
+            const updated = (0, domain_js_1.createGoal)({ ...current, active: false, completedAt: current.completedAt ?? at, createdAt: current.createdAt, updatedAt: at });
+            commit({ ...state, goals: state.goals.map((goal) => goal.id === goalId ? updated : goal) }, "goal-completed");
             return updated;
         },
         deleteGoal(goalId) {
@@ -1154,6 +1268,11 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
                 throw new TypeError("Review not found in the active plan");
             if (review.status !== "due")
                 return review;
+            if (review.sourceType === "flashcard" && review.sourceId) {
+                const card = state.flashcards.find(candidate => candidate.id === review.sourceId && candidate.planId === review.planId);
+                if (!card || card.suspended)
+                    throw new TypeError("Flashcard review is unavailable while the card is missing or suspended");
+            }
             const grade = normalizeReviewGrade(rating);
             const intervals = reviewIntervals(review.planId);
             const currentIndex = Math.max(0, Math.min(intervals.length - 1, Number.isInteger(review.intervalIndex) ? review.intervalIndex : 0));
@@ -1183,21 +1302,17 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             if (!preview || preview.baseRevision !== state.revision)
                 throw new TypeError("Cleanup preview is stale; preview again before applying");
             const canonical = (0, intelligence_js_1.buildContentCleanupPreview)(state);
-            const allowed = new Map(canonical.issues.filter(x => x.applicable).map(x => [x.id, x]));
-            let next = cloneState(state);
+            if (JSON.stringify(canonical.summary) !== JSON.stringify(preview.summary))
+                throw new TypeError("Cleanup preview changed; preview again before applying");
+            throw new TypeError("Smart Content Cleanup is review-only: inspect each preview action and use the canonical content surface for any confirmed change");
+        },
+        applyStudySprintPreview(preview) {
+            (0, intelligence_js_1.validateStudySprintApply)(state, preview, new Date(nowIso()));
             const at = nowIso();
-            for (const requested of preview.issues.filter(x => x.applicable)) {
-                const issue = allowed.get(requested.id);
-                if (!issue)
-                    continue;
-                if (issue.action === "archive-topic")
-                    next.topics = next.topics.map(t => t.id === issue.entityId ? { ...t, status: "archived", updatedAt: at } : t);
-                else if (issue.action === "dismiss-review")
-                    next.reviews = next.reviews.map(r => r.id === issue.entityId ? { ...r, status: "dismissed", updatedAt: at } : r);
-                else if (issue.action === "cancel-activity")
-                    next.activities = next.activities.map(a => a.id === issue.entityId ? { ...a, status: "cancelled", updatedAt: at } : a);
-            }
-            commit(next, "content-cleanup-applied");
+            const changes = new Map(preview.mutations.map(m => [m.activityId, m]));
+            const activities = state.activities.map(activity => { const m = changes.get(activity.id); if (!m)
+                return activity; return (0, domain_js_1.createActivity)({ ...activity, activityType: m.proposedType, kind: (0, task_workflows_js_1.activityKindForType)(m.proposedType), durationMinutes: m.proposedDurationMinutes, scheduledFor: activity.scheduledFor, scheduledStartMinute: activity.scheduledStartMinute, status: activity.status, locked: activity.locked, createdAt: activity.createdAt, updatedAt: at }); });
+            commit({ ...state, activities }, "study-sprint-applied");
             return state;
         },
         replaceState(nextState, reason = "state-replaced") { return commit(nextState, reason); },

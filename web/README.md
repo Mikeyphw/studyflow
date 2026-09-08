@@ -108,3 +108,8 @@ Programming and language plans now include preview-first import templates, full 
 
 Global local search, settings/privacy/storage, onboarding and persisted English/pt-BR shell localization complete the product shell. Structured state is schema v7 with safe v6 migration. `npm run build` now emits a self-contained `dist/` tree whose production runtime uses local `vendor/` files instead of `node_modules`; `npm run release:package` creates the deterministic Local 1.0 ZIP and SHA-256 sidecar. Portable-backup encryption is deliberately not claimed in Local 1.0.
 
+
+
+## PC18 encrypted portable backup and applicable parity seal
+
+StudyFlow Local can export the full portable v2 package inside an authenticated `STUDYFLOWENC` envelope using PBKDF2-HMAC-SHA256 (210,000 iterations) and AES-256-GCM. Passwords are never persisted. PC18 also closes remaining browser-applicable Today/exam-proximity/Mock Studio/BB reference-mock semantics. “Full applicable functional parity” excludes platform-only Android distribution, Keystore/FileProvider, native Termux arbitrary execution and provider/cloud integrations. The web shell remains dark-only.

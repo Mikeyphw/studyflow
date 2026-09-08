@@ -195,7 +195,7 @@ function cloneImportedPlan(current, source, sourcePlanId, attachmentRecords) {
     if (!sourcePlan)
         throw new TypeError("Portable package active plan is missing");
     const map = new Map();
-    const prefix = { plans: "plan", subjects: "subject", topics: "topic", activities: "activity", sessions: "session", goals: "goal", materials: "material", reviews: "review", questions: "question", evidence: "evidence", errorEntries: "error" };
+    const prefix = { plans: "plan", subjects: "subject", topics: "topic", activities: "activity", sessions: "session", goals: "goal", materials: "material", flashcards: "flashcard", reviews: "review", questions: "question", evidence: "evidence", errorEntries: "error" };
     map.set(sourcePlan.id, `plan-import-${randomSuffix()}`);
     for (const name of domain_js_1.ENTITY_COLLECTIONS) {
         for (const item of source[name] ?? []) {

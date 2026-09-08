@@ -4,6 +4,7 @@ import type {
   ExamNoticeRevision, Material, Plan, PublicExamPreEditalSnapshot, StudyPhaseDefinition,
   StudyReferenceFreshness, StudyReferenceOrigin, StudyReferenceProvenance,
 } from "./types";
+import { resolvePublicExamDate } from "./promise_cleanup";
 
 const DAY_MS=86_400_000;
 const PHASE_KINDS=new Set(["foundation","expansion","consolidation","questions-reviews","custom"]);
@@ -75,8 +76,8 @@ export function derivePreEditalCockpit(plan:Plan,at:string|Date=new Date()):Publ
   if(plan.mode!=="EXAM_PLAN"||!plan.configuration.publicExam)return null;
   const cfg=plan.configuration.publicExam,target=cfg.target;const now=at instanceof Date?at:new Date(at);if(Number.isNaN(now.getTime()))throw new TypeError("Invalid cockpit timestamp");
   const ordered=[...cfg.noticeRevisions].sort((a,b)=>a.acceptedAt.localeCompare(b.acceptedAt)||a.id.localeCompare(b.id));const latest=ordered.length?ordered[ordered.length-1]:null;
-  const source=target.dateStatus==="confirmed"&&target.examDate?"confirmed-target":target.dateStatus==="expected"&&target.examDate?"expected-target":plan.examDate?"legacy-plan":"none";
-  const resolvedDate={date:source==="none"?null:(target.examDate??plan.examDate),source,isConfirmed:source==="confirmed-target"} as PublicExamPreEditalSnapshot["resolvedDate"];
+  const resolved=resolvePublicExamDate(plan);
+  const resolvedDate={date:resolved.date,source:resolved.source,isConfirmed:resolved.official} as PublicExamPreEditalSnapshot["resolvedDate"];
   const referenceLabel=latest?.reference??latest?.id??target.editalRef??null;
   const referenceAgeDays=latest?.publishedAt?Math.max(0,Math.floor((Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate())-Date.parse(`${latest.publishedAt}T00:00:00Z`))/DAY_MS)):null;
   const staleReferenceDays=Math.max(1,Math.trunc(cfg.cockpitStaleReferenceDays||PRE_EDITAL_DEFAULT_STALE_REFERENCE_DAYS));

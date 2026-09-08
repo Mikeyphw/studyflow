@@ -11,6 +11,7 @@ exports.STUDYFLOW_LOCAL_RELEASE = Object.freeze({
     stateSchema: domain_1.STATE_SCHEMA_VERSION,
     indexedDbSchema: indexeddb_1.STUDYFLOW_DB_VERSION,
     portableFormat: portable_1.PORTABLE_FORMAT_VERSION,
+    encryptedPortableEnvelope: 1,
     channel: "local-first",
     releaseSeal: "parity-closure",
     runtimeArtifact: "self-contained-dist",

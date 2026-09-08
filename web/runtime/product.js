@@ -41,7 +41,10 @@ function searchStudyState(state, query, { limit = 40, includeArchived = state.pr
             push(result("topic", t.id, t.planId, t.name, `${subjectName(t.subjectId) ?? ""} · ${topicPath(t.id)}`, `${t.name} ${t.notes ?? ""} ${topicPath(t.id)}`, 25));
     for (const qn of state.questions)
         if (plans.has(qn.planId))
-            push(result("question", qn.id, qn.planId, qn.prompt.slice(0, 96), `${subjectName(qn.subjectId) ?? planName(qn.planId)}${qn.source ? ` · ${qn.source}` : ""}`, `${qn.prompt} ${qn.explanation ?? ""} ${qn.source ?? ""} ${qn.organization ?? ""} ${qn.examBoard ?? ""}`, 35));
+            push(result("question", qn.id, qn.planId, qn.prompt.slice(0, 96), `${subjectName(qn.subjectId) ?? planName(qn.planId)}${qn.source ? ` · ${qn.source}` : ""}`, `${qn.prompt} ${qn.explanation ?? ""} ${qn.source ?? ""} ${qn.organization ?? ""} ${qn.examBoard ?? ""} ${(qn.tags ?? []).join(" ")}`, 35));
+    for (const f of state.flashcards)
+        if (plans.has(f.planId))
+            push(result("flashcard", f.id, f.planId, f.front.slice(0, 96), `${subjectName(f.subjectId) ?? planName(f.planId)} · ${f.type}${f.suspended ? " · suspended" : ""}`, `${f.front} ${f.back} ${f.clozeText ?? ""} ${f.tags.join(" ")}`, 32));
     for (const m of state.materials)
         if (plans.has(m.planId))
             push(result("material", m.id, m.planId, m.title, `${subjectName(m.subjectId) ?? planName(m.planId)}${m.mimeType ? ` · ${m.mimeType}` : ""}`, `${m.title} ${m.locator ?? ""} ${m.mimeType ?? ""}`, 25));
@@ -52,7 +55,7 @@ function searchStudyState(state, query, { limit = 40, includeArchived = state.pr
 }
 function validateStarterWorkspace(input) { const name = String(input.planName ?? "").trim(); if (!name)
     throw new TypeError("Plan name is required"); if (name.length > 120)
-    throw new TypeError("Plan name must be 120 characters or fewer"); const template = input.template ?? (input.useSample ? "sample" : "blank"); if (!["sample", "blank", "bb-agente-comercial-pre-edital"].includes(template))
+    throw new TypeError("Plan name must be 120 characters or fewer"); const template = input.template ?? (input.useSample ? "sample" : "blank"); if (!["sample", "blank", "bb-agente-comercial-pre-edital", "public-exam-12-week", "university-semester", "certification-bootcamp", "free-study-habit"].includes(template))
     throw new TypeError("Unsupported onboarding template"); return { ...input, template, planName: name, locale: input.locale === "pt-BR" ? "pt-BR" : "en", useSample: template === "sample" }; }
 exports.UI_TEXT = Object.freeze({
     en: { search: "Search", settings: "Settings", close: "Close", language: "Language", privacy: "Privacy & storage", onboarding: "Welcome to StudyFlow Local", start: "Start workspace", skip: "Keep sample workspace", noResults: "No matching local records.", localOnly: "Your study data stays in this browser unless you explicitly export it.", encryption: "Encrypted portable backups are not included in StudyFlow Local 1.0. Use device/OS encryption for at-rest protection." },

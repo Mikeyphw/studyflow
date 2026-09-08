@@ -18,7 +18,10 @@ class W10ProgressTests(unittest.TestCase):
             const topicIds=state.topics.slice(0,2).map(x=>x.id);
             for(let i=0;i<5;i++) state.evidence.push(createEvidence({planId:state.activePlanId,topicId:topicIds[i%2],questionId:state.questions[0].id,kind:'question-attempt',observedAt:now,provenance:'question',value:{gradable:true,correct:i<4},createdAt:now,updatedAt:now}));
             m=deriveProgressMetrics(state,{at:now});
-            if(m.readiness===null||m.accuracy!==0.8||m.coveredTopics!==2) throw new Error(JSON.stringify(m));
+            if(m.readiness!==null||m.accuracy!==0.8||m.coveredTopics!==2) throw new Error('five attempts must remain insufficient for readiness: '+JSON.stringify(m));
+            for(let i=5;i<30;i++) state.evidence.push(createEvidence({planId:state.activePlanId,topicId:topicIds[i%2],questionId:state.questions[0].id,kind:'question-attempt',observedAt:now,provenance:'question',value:{gradable:true,correct:true},createdAt:now,updatedAt:now}));
+            m=deriveProgressMetrics(state,{at:now});
+            if(m.readiness===null||m.coveredTopics!==2) throw new Error('readiness must become available after the minimum evidence gate: '+JSON.stringify(m));
         ''')
         subprocess.run(['node','--input-type=module','-e',script],cwd=ROOT,check=True)
     def test_goal_progress_and_integrity_are_derived(self):

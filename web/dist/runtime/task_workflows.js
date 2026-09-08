@@ -98,9 +98,9 @@ function normalizeStudyActivityType(value, kind = "study") {
     return kind === "questions" ? "QUESTIONS" : kind === "review" ? "REVIEW" : "THEORY";
 }
 function activityKindForType(type) {
-    if (type === "QUESTIONS" || type === "FLASHCARDS" || type === "MOCK_EXAM")
+    if (type === "QUESTIONS" || type === "MOCK_EXAM")
         return "questions";
-    if (type === "REVIEW")
+    if (type === "FLASHCARDS" || type === "REVIEW")
         return "review";
     return "study";
 }
@@ -112,8 +112,10 @@ function routeActivityDeepLink(state, activityId) {
     const base = { activityId: activity.id, activityType, subjectId: activity.subjectId, topicId: activity.topicId };
     if (activityType === "MOCK_EXAM")
         return { ...base, screen: "practice", practiceTab: "tests", focusMode: null, reviewId: null };
-    if (activityType === "QUESTIONS" || activityType === "FLASHCARDS")
+    if (activityType === "QUESTIONS")
         return { ...base, screen: "practice", practiceTab: "questions", focusMode: null, reviewId: null };
+    if (activityType === "FLASHCARDS")
+        return { ...base, screen: "practice", practiceTab: "reviews", focusMode: null, reviewId: null };
     if (activityType === "REVIEW") {
         const due = state.reviews.filter(review => review.planId === activity.planId && review.status === "due")
             .filter(review => activity.topicId ? review.topicId === activity.topicId : activity.subjectId ? review.subjectId === activity.subjectId : true)

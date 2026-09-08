@@ -1,6 +1,6 @@
 # PC10 / PC11 — Product shell and parity-closure release seal
 
-PC10 closes the remaining product-shell gaps. Global search is local-only and indexes plans, subjects, nested topics, questions, materials and error records without a backend. Search can optionally include archived plans. Settings persist application locale, search scope and existing schedule/review preferences. Privacy and storage surfaces state the local-only boundary, telemetry/account absence and storage health. Encrypted portable backups are explicitly not part of StudyFlow Local 1.0; the UI recommends device/OS encryption instead of implying encryption that does not exist.
+PC10 closes the remaining product-shell gaps. Global search is local-only and indexes plans, subjects, nested topics, questions, materials and error records without a backend. Search can optionally include archived plans. Settings persist application locale, search scope and existing schedule/review preferences. Privacy and storage surfaces state the local-only boundary, telemetry/account absence and storage health. At the original PC10/PC11 seal, encrypted portable backups were not yet part of StudyFlow Local 1.0. PC18 supersedes that portability-security limitation with an Android-compatible authenticated encrypted envelope; the local-only/no-account boundary remains unchanged.
 
 Persistent application preferences advance structured state to schema **v7**. Existing v6 users migrate with onboarding already completed, while genuinely fresh state shows the local onboarding wizard. The wizard can retain sample content or create a blank plan. English and pt-BR are persisted locally, update the document language and localize the rendered product shell without changing domain data.
 
@@ -8,9 +8,9 @@ PC11 replaces the source-tree deployment assumption with a production `dist/` ar
 
 `npm run release:package` creates a deterministic ZIP named `studyflow-local-1.0.0.zip` with normalized 1980 ZIP timestamps plus a SHA-256 sidecar. The release manifest hashes every dist payload. The source development tree may still use npm-installed dependencies during build, but the shipped artifact is self-contained.
 
-Acceptance wording: global search is local-only. Encrypted portable backups are explicitly not part of StudyFlow Local 1.0.
+Acceptance wording: global search is local-only. The historical no-encrypted-backup statement is superseded by PC18; PC10/PC11 remains the source for the local-only product-shell contract.
 
-encrypted portable backups are explicitly not part of StudyFlow Local 1.0.
+historically, encrypted portable backups were not part of StudyFlow Local 1.0; PC18 supersedes this limitation.
 
 ## Runtime URL validation hardening
 

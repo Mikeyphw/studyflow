@@ -8,6 +8,7 @@ const opt = (v) => { const x = clean(v); return x || null; };
 const numeric = (v) => { if (v == null || v === "")
     return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
 const splitChoices = (v) => clean(v).split(/\s*\|\s*/).map(clean).filter(Boolean);
+const splitTags = (v) => Array.from(new Set(clean(v).split(/\s*[,;|]\s*/).map(clean).filter(Boolean)));
 const difficulty = (v) => { const x = clean(v).toLowerCase(); return ["easy", "medium", "hard"].includes(x) ? x : null; };
 const bool = (v) => ["1", "true", "yes", "y", "sim"].includes(clean(v).toLowerCase());
 function csvLine(line, delimiter) { const out = []; let cur = "", quoted = false; for (let i = 0; i < line.length; i++) {
@@ -29,7 +30,7 @@ function csvLine(line, delimiter) { const out = []; let cur = "", quoted = false
 } out.push(cur); return out.map(clean); }
 function fingerprint(prompt, answer) { return `${prompt.toLowerCase().replace(/\s+/g, " ")}|${String(answer ?? "").toLowerCase().trim()}`; }
 function draft(row, x) { const prompt = clean(x.prompt ?? x.question ?? x.front); if (!prompt)
-    return null; const topic = clean(x.topic ?? x.topicPath ?? x.topic_path); const year = numeric(x.year), points = numeric(x.points); return { row, prompt, choices: splitChoices(x.choices ?? x.options), answer: opt(x.answer ?? x.back), explanation: opt(x.explanation), source: opt(x.source), subjectName: opt(x.subject ?? x.subjectName), topicPath: topic ? topic.split(/\s*>\s*/).filter(Boolean) : [], examBoard: opt(x.examBoard ?? x.board ?? x.banca), organization: opt(x.organization), role: opt(x.role ?? x.cargo), examStage: opt(x.examStage ?? x.stage), year: year == null ? null : Math.trunc(year), authorship: opt(x.authorship), externalReference: opt(x.externalReference ?? x.reference), points: points != null && points > 0 ? points : null, difficulty: difficulty(x.difficulty), favorite: bool(x.favorite), disputed: bool(x.disputed) }; }
+    return null; const topic = clean(x.topic ?? x.topicPath ?? x.topic_path); const year = numeric(x.year), points = numeric(x.points); return { row, prompt, choices: splitChoices(x.choices ?? x.options), answer: opt(x.answer ?? x.back), explanation: opt(x.explanation), source: opt(x.source), subjectName: opt(x.subject ?? x.subjectName), topicPath: topic ? topic.split(/\s*>\s*/).filter(Boolean) : [], examBoard: opt(x.examBoard ?? x.board ?? x.banca), organization: opt(x.organization), role: opt(x.role ?? x.cargo), examStage: opt(x.examStage ?? x.stage), year: year == null ? null : Math.trunc(year), authorship: opt(x.authorship), externalReference: opt(x.externalReference ?? x.reference), points: points != null && points > 0 ? points : null, difficulty: difficulty(x.difficulty), favorite: bool(x.favorite), disputed: bool(x.disputed), tags: splitTags(x.tags ?? x.tag) }; }
 function detectQuestionImportFormat(source) { const first = String(source ?? "").split(/\r?\n/).find(x => x.trim()) ?? ""; if (/^#{1,6}\s+/.test(first) || /^Q(?:uestion)?\s*:/i.test(first))
     return "markdown"; return first.includes("\t") ? "tsv" : "csv"; }
 function parseQuestionImport(source, format = detectQuestionImportFormat(source)) {

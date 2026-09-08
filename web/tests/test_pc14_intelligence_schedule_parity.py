@@ -1,0 +1,45 @@
+from __future__ import annotations
+import os, subprocess, textwrap, unittest
+from pathlib import Path
+WEB=Path(__file__).resolve().parents[1]
+
+class PC14IntelligenceScheduleParityTest(unittest.TestCase):
+    def run_node(self,source:str,*,tz:str|None=None)->None:
+        env=os.environ.copy()
+        if tz: env['TZ']=tz
+        result=subprocess.run(['node','--input-type=module','-e',source],cwd=WEB,text=True,capture_output=True,check=False,env=env)
+        self.assertEqual(result.returncode,0,result.stderr or result.stdout)
+
+    def test_readiness_uses_reference_weights_and_minimum_evidence(self):
+        self.run_node(textwrap.dedent(r'''
+            import assert from 'node:assert/strict'; import {createStudyStore} from './runtime/state.js'; import {deriveExamReadinessParity} from './runtime/parity_intelligence.js';
+            let now='2026-09-07T12:00:00-03:00'; const repo={load(){return {status:'empty',state:null}},save(){return {status:'saved'}},clear(){}}; const store=createStudyStore({repository:repo,now:()=>now}); store.createPlan({name:'Exam',mode:'EXAM_PLAN'},{activate:true}); store.updatePublicExamTarget({dateStatus:'confirmed',examDate:'2026-12-07'}); store.addGoal({name:'Weekly hours',metric:'study-hours',target:10,period:'weekly'}); const s=store.addSubject({name:'Banking',weight:100}); const t=store.addTopic({subjectId:s.id,name:'Banking services'}); const q=store.addQuestion({subjectId:s.id,topicId:t.id,prompt:'Q',answer:'A'});
+            for(let i=0;i<30;i++) store.answerQuestion(q.id,i<24?'A':'B');
+            for(let d=4;d<=6;d++){now=`2026-09-${String(d).padStart(2,'0')}T18:00:00-03:00`;const a=store.addActivity({title:`Study ${d}`,kind:'study',activityType:'THEORY',subjectId:s.id,topicId:t.id,durationMinutes:30,scheduledFor:`2026-09-${String(d).padStart(2,'0')}`});store.startFocus({activityId:a.id,durationMinutes:30});now=`2026-09-${String(d).padStart(2,'0')}T18:30:00-03:00`;store.completeFocus();}
+            now='2026-09-07T12:00:00-03:00'; const st=store.getState(); const due=st.reviews.map(r=>({...r,dueAt:'2026-09-06T12:00:00-03:00'})); store.replaceState({...st,reviews:due}); const r=deriveExamReadinessParity(store.getState(),new Date(now)); assert.notEqual(r.value,null); assert.ok(r.value>=0&&r.value<=100); assert.ok(r.band); assert.equal(r.confidence,'low'); assert.ok(r.evidenceDimensionCount>=6); assert.ok(r.evidenceSampleCount>=30); const weights=Object.fromEntries(r.signals.map(x=>[x.id,x.weight])); assert.deepEqual([weights.coverage,weights.reviews,weights.practice,weights.mocks,weights.consistency,weights.schedule,weights['time-left']],[24,18,14,14,10,10,10]); assert.equal(r.signals.find(x=>x.id==='practice').value,80); assert.ok(r.signals.some(x=>x.id==='weak-areas'));
+        '''))
+
+    def test_subject_quota_is_transparent_and_allocates_exactly(self):
+        self.run_node(textwrap.dedent(r'''
+            import assert from 'node:assert/strict'; import {createStudyStore} from './runtime/state.js'; import {derivePublicExamQuestionQuotaPlan} from './runtime/parity_intelligence.js';
+            const now='2026-09-07T12:00:00-03:00',repo={load(){return {status:'empty',state:null}},save(){return {status:'saved'}},clear(){}}; const store=createStudyStore({repository:repo,now:()=>now}); store.createPlan({name:'Exam',mode:'EXAM_PLAN'},{activate:true}); store.setStudyPhaseDefinitions([{id:'p',kind:'foundation',label:'Foundation',startsOn:'2026-09-01',endsOn:'2026-09-30',theoryRatioPercent:50,questionRatioPercent:40,reviewRatioPercent:10,questionGoal:100,mockExamGoal:null,allocationIsStudyFlowSuggested:false}]); const a=store.addSubject({name:'A',weight:70}),b=store.addSubject({name:'B',weight:30}); const qa=store.addQuestion({subjectId:a.id,prompt:'A?',answer:'x'}),qb=store.addQuestion({subjectId:b.id,prompt:'B?',answer:'x'}); for(let i=0;i<10;i++)store.answerQuestion(qa.id,'x'); for(let i=0;i<2;i++)store.answerQuestion(qb.id,'y'); const st=store.getState(); store.replaceState({...st,reviews:st.reviews.map(r=>r.subjectId===b.id?{...r,dueAt:'2026-09-06T10:00:00-03:00'}:r)}); const plan=derivePublicExamQuestionQuotaPlan(store.getState(),new Date(now)); assert.ok(plan); assert.equal(plan.source,'phase'); assert.equal(plan.configured,100); assert.equal(plan.completed,12); assert.equal(plan.remaining,88); assert.equal(plan.subjects.reduce((n,x)=>n+x.weeklyQuestions,0),plan.nextSevenDaysQuestions); assert.ok(Math.abs(plan.subjects.reduce((n,x)=>n+x.priorityShare,0)-1)<1e-9); for(const row of plan.subjects){assert.ok(row.examWeightShare>=0);assert.ok(row.underPracticeShare>=0);assert.ok(row.accuracyDeficitShare>=0);assert.ok(row.recurringErrorShare>=0);assert.ok(row.overdueReviewShare>=0);} const rb=plan.subjects.find(x=>x.subjectId===b.id); assert.ok(rb.recurringErrors>=1); assert.ok(rb.overdueReviews>=1);
+        '''))
+
+    def test_local_calendar_windows_do_not_roll_over_at_utc_midnight(self):
+        self.run_node(textwrap.dedent(r'''
+            import assert from 'node:assert/strict'; import {createStudyStore} from './runtime/state.js'; import {deriveScheduleCalendarSnapshot,localDateKey,scheduleCalendarWindow} from './runtime/parity_intelligence.js';
+            const at=new Date('2026-09-08T01:30:00Z'); assert.equal(localDateKey(at),'2026-09-07'); assert.deepEqual(scheduleCalendarWindow('this-week',at),{startsOn:'2026-09-07',endsOnInclusive:'2026-09-13',bounded:true}); const repo={load(){return {status:'empty',state:null}},save(){return {status:'saved'}},clear(){}}; const store=createStudyStore({repository:repo,now:()=>at.toISOString()}); store.createPlan({name:'Calendar',mode:'GENERAL_SKILL'},{activate:true}); const mk=(title,date,min)=>store.addActivity({title,kind:'study',activityType:'THEORY',durationMinutes:min,scheduledFor:date}); mk('Today','2026-09-07',30);mk('Tomorrow','2026-09-08',40);mk('Next Monday','2026-09-14',50);mk('Unscheduled',null,20); const state=store.getState(); assert.deepEqual(deriveScheduleCalendarSnapshot(state,{view:'today',at}).activities.map(x=>x.title),['Today']); assert.equal(deriveScheduleCalendarSnapshot(state,{view:'this-week',at}).visibleCount,2); assert.equal(deriveScheduleCalendarSnapshot(state,{view:'this-week',at}).plannedMinutes,70); assert.deepEqual(deriveScheduleCalendarSnapshot(state,{view:'next-week',at}).activities.map(x=>x.title),['Next Monday']); assert.equal(deriveScheduleCalendarSnapshot(state,{view:'calendar',at}).visibleCount,4);
+        '''),tz='America/Sao_Paulo')
+
+    def test_unified_timeline_combines_entities_deduplicates_session_activity_and_is_bounded(self):
+        self.run_node(textwrap.dedent(r'''
+            import assert from 'node:assert/strict'; import {createStudyStore} from './runtime/state.js'; import {buildUnifiedEvidenceTimeline} from './runtime/parity_intelligence.js';
+            let now='2026-09-07T10:00:00Z'; const repo={load(){return {status:'empty',state:null}},save(){return {status:'saved'}},clear(){}}; const store=createStudyStore({repository:repo,now:()=>now}); store.createPlan({name:'Timeline',mode:'GENERAL_SKILL'},{activate:true}); const s=store.addSubject({name:'S'}),q=store.addQuestion({subjectId:s.id,prompt:'Question timeline',answer:'a'}); const a=store.addActivity({title:'Session activity',kind:'study',activityType:'THEORY',subjectId:s.id,durationMinutes:25,scheduledFor:'2026-09-07'});store.startFocus({activityId:a.id,durationMinutes:25});now='2026-09-07T10:25:00Z';store.completeFocus(); const goal=store.addGoal({name:'Goal timeline',metric:'study-minutes',target:25,period:'weekly'});now='2026-09-07T10:30:00Z';store.completeGoal(goal.id);store.addMaterial({title:'Pinned-like local note',kind:'note',locator:'Local note'});store.answerQuestion(q.id,'b'); const timeline=buildUnifiedEvidenceTimeline(store.getState(),{limit:50,at:new Date('2026-09-08T00:00:00Z')}); const kinds=new Set(timeline.map(x=>x.kind)); assert.ok(kinds.has('session-completed')); assert.ok(kinds.has('question-added')); assert.ok(kinds.has('goal-completed')); assert.ok(kinds.has('note-updated')); assert.ok(kinds.has('review-due')===false); assert.equal(timeline.filter(x=>x.id===`activity:${a.id}`).length,0,'linked completed activity must not duplicate completed session'); for(let i=1;i<timeline.length;i++)assert.ok(Date.parse(timeline[i-1].occurredAt)>=Date.parse(timeline[i].occurredAt)); assert.equal(buildUnifiedEvidenceTimeline(store.getState(),{limit:2,at:new Date('2026-09-08T00:00:00Z')}).length,2);
+        '''))
+
+    def test_source_ui_and_offline_shell_expose_pc14(self):
+        ui=(WEB/'src/react/App.tsx').read_text(); sw=(WEB/'service-worker.js').read_text(); schedule=(WEB/'src/schedule.ts').read_text()
+        for token in ('Readable calendar schedule','Today','This week','Next week','Unified Evidence Timeline','35% exam weight','Exam readiness model','Mark complete','Schedule placement locked'): self.assertIn(token,ui)
+        self.assertIn('runtime/parity_intelligence.js',sw); self.assertNotIn('toISOString().slice(0,10)',schedule)
+
+if __name__=='__main__': unittest.main()

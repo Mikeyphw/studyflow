@@ -1,6 +1,6 @@
 "use strict";
 
-import type { AppLocale, AppPreferences, GlobalSearchResult, StudyMode, StudyState } from "./types";
+import type { AppLocale, AppPreferences, GlobalSearchResult, SamplePlanTemplateId, StudyMode, StudyState } from "./types";
 
 export const APP_LOCALES = Object.freeze(["en", "pt-BR"] as const);
 export const DEFAULT_APP_PREFERENCES:AppPreferences = Object.freeze({ locale:"en", onboardingCompleted:false, showArchivedInSearch:false });
@@ -22,14 +22,15 @@ export function searchStudyState(state:StudyState,query:string,{limit=40,include
   for(const p of state.plans)if(includeArchived||p.status!=="archived")push(result("plan",p.id,p.id,p.name,`${p.mode} · ${p.status}`,`${p.name} ${p.mode}`,10));
   for(const s of state.subjects)if(plans.has(s.planId)&&(!s.archived||includeArchived))push(result("subject",s.id,s.planId,s.name,planName(s.planId),`${s.name} ${s.notes??""}`,20));
   for(const t of state.topics)if(plans.has(t.planId)&&(t.status!=="archived"||includeArchived))push(result("topic",t.id,t.planId,t.name,`${subjectName(t.subjectId)??""} · ${topicPath(t.id)}`,`${t.name} ${t.notes??""} ${topicPath(t.id)}`,25));
-  for(const qn of state.questions)if(plans.has(qn.planId))push(result("question",qn.id,qn.planId,qn.prompt.slice(0,96),`${subjectName(qn.subjectId)??planName(qn.planId)}${qn.source?` · ${qn.source}`:""}`,`${qn.prompt} ${qn.explanation??""} ${qn.source??""} ${qn.organization??""} ${qn.examBoard??""}`,35));
+  for(const qn of state.questions)if(plans.has(qn.planId))push(result("question",qn.id,qn.planId,qn.prompt.slice(0,96),`${subjectName(qn.subjectId)??planName(qn.planId)}${qn.source?` · ${qn.source}`:""}`,`${qn.prompt} ${qn.explanation??""} ${qn.source??""} ${qn.organization??""} ${qn.examBoard??""} ${(qn.tags??[]).join(" ")}`,35));
+  for(const f of state.flashcards)if(plans.has(f.planId))push(result("flashcard",f.id,f.planId,f.front.slice(0,96),`${subjectName(f.subjectId)??planName(f.planId)} · ${f.type}${f.suspended?" · suspended":""}`,`${f.front} ${f.back} ${f.clozeText??""} ${f.tags.join(" ")}`,32));
   for(const m of state.materials)if(plans.has(m.planId))push(result("material",m.id,m.planId,m.title,`${subjectName(m.subjectId)??planName(m.planId)}${m.mimeType?` · ${m.mimeType}`:""}`,`${m.title} ${m.locator??""} ${m.mimeType??""}`,25));
   for(const e of state.errorEntries)if(plans.has(e.planId))push(result("error",e.id,e.planId,e.note??`Error · ${e.category}`,`${e.category} · ${e.status} · ${subjectName(e.subjectId)??planName(e.planId)}`,`${e.note??""} ${e.category} ${topicPath(e.topicId)}`,30));
   return out.sort((a,b)=>b.score-a.score||a.title.localeCompare(b.title)).slice(0,Math.max(1,Math.min(100,limit)));
 }
 
-export interface StarterWorkspaceInput { locale:AppLocale; mode:StudyMode; planName:string; useSample:boolean; template?:"sample"|"blank"|"bb-agente-comercial-pre-edital"; }
-export function validateStarterWorkspace(input:StarterWorkspaceInput){const name=String(input.planName??"").trim();if(!name)throw new TypeError("Plan name is required");if(name.length>120)throw new TypeError("Plan name must be 120 characters or fewer");const template=input.template??(input.useSample?"sample":"blank");if(!["sample","blank","bb-agente-comercial-pre-edital"].includes(template))throw new TypeError("Unsupported onboarding template");return{...input,template,planName:name,locale:input.locale==="pt-BR"?"pt-BR":"en" as AppLocale,useSample:template==="sample"};}
+export interface StarterWorkspaceInput { locale:AppLocale; mode:StudyMode; planName:string; useSample:boolean; template?:"sample"|"blank"|"bb-agente-comercial-pre-edital"|SamplePlanTemplateId; }
+export function validateStarterWorkspace(input:StarterWorkspaceInput){const name=String(input.planName??"").trim();if(!name)throw new TypeError("Plan name is required");if(name.length>120)throw new TypeError("Plan name must be 120 characters or fewer");const template=input.template??(input.useSample?"sample":"blank");if(!["sample","blank","bb-agente-comercial-pre-edital","public-exam-12-week","university-semester","certification-bootcamp","free-study-habit"].includes(template))throw new TypeError("Unsupported onboarding template");return{...input,template,planName:name,locale:input.locale==="pt-BR"?"pt-BR":"en" as AppLocale,useSample:template==="sample"};}
 
 export const UI_TEXT = Object.freeze({
   en:{search:"Search",settings:"Settings",close:"Close",language:"Language",privacy:"Privacy & storage",onboarding:"Welcome to StudyFlow Local",start:"Start workspace",skip:"Keep sample workspace",noResults:"No matching local records.",localOnly:"Your study data stays in this browser unless you explicitly export it.",encryption:"Encrypted portable backups are not included in StudyFlow Local 1.0. Use device/OS encryption for at-rest protection."},

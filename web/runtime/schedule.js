@@ -7,28 +7,34 @@ exports.addAvailabilityWindow = addAvailabilityWindow;
 exports.addFixedScheduleBlock = addFixedScheduleBlock;
 exports.buildAdaptiveSchedulePreview = buildAdaptiveSchedulePreview;
 const exam_foundation_1 = require("./exam_foundation");
+const promise_cleanup_1 = require("./promise_cleanup");
+const task_workflows_1 = require("./task_workflows");
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-const dayKey = (value) => { const d = value instanceof Date ? value : new Date(value); if (Number.isNaN(d.getTime()))
-    throw new TypeError(`Invalid date: ${value}`); return d.toISOString().slice(0, 10); };
-const plusDays = (value, days) => { const d = new Date(value); d.setUTCDate(d.getUTCDate() + days); return d; };
-const dateWeekday = (date) => new Date(`${date}T12:00:00Z`).getUTCDay();
+const dayKey = (value) => { const d = value instanceof Date ? new Date(value.getTime()) : new Date(value); if (Number.isNaN(d.getTime()))
+    throw new TypeError(`Invalid date: ${value}`); return `${String(d.getFullYear()).padStart(4, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const plusDays = (value, days) => { const d = new Date(value); if (Number.isNaN(d.getTime()))
+    throw new TypeError(`Invalid date: ${value}`); d.setDate(d.getDate() + days); return d; };
+const dateWeekday = (date) => { const [y, m, d] = date.split("-").map(Number); return new Date(y, m - 1, d, 12, 0, 0, 0).getDay(); };
 const cleanText = (v) => String(v ?? "").trim();
 const makeId = (prefix) => `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`}`;
-function defaultScheduleConfiguration() { return { dailyCapacityMinutes: 120, availability: [], fixedBlocks: [] }; }
+function defaultScheduleConfiguration() { return { dailyCapacityMinutes: 120, strategyType: "FIXED_WEEKLY", availability: [], fixedBlocks: [], recurringBlocks: [] }; }
 function normalizeScheduleConfiguration(input) {
     const raw = input && typeof input === "object" && !Array.isArray(input) ? input : {};
     const daily = Number(raw.dailyCapacityMinutes);
     const availability = (Array.isArray(raw.availability) ? raw.availability : []).map((w, i) => ({ id: cleanText(w?.id) || `window-${i + 1}`, weekday: clamp(Math.trunc(Number(w?.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(w?.startMinute) || 0), 0, 1439), endMinute: clamp(Math.trunc(Number(w?.endMinute) || 0), 1, 1440) })).filter((w) => w.endMinute > w.startMinute);
     const fixedBlocks = (Array.isArray(raw.fixedBlocks) ? raw.fixedBlocks : []).map((b, i) => ({ id: cleanText(b?.id) || `fixed-${i + 1}`, title: cleanText(b?.title) || `Fixed block ${i + 1}`, date: /^\d{4}-\d{2}-\d{2}$/.test(cleanText(b?.date)) ? cleanText(b.date) : null, weekday: b?.weekday == null ? null : clamp(Math.trunc(Number(b.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(b?.startMinute) || 0), 0, 1439), durationMinutes: clamp(Math.trunc(Number(b?.durationMinutes) || 30), 5, 1440) }));
-    return { dailyCapacityMinutes: Number.isInteger(daily) && daily >= 30 && daily <= 1440 ? daily : 120, availability, fixedBlocks };
+    const recurringBlocks = (Array.isArray(raw.recurringBlocks) ? raw.recurringBlocks : []).map((b, i) => ({ id: cleanText(b?.id) || `recurring-${i + 1}`, title: cleanText(b?.title) || `Recurring block ${i + 1}`, subjectId: cleanText(b?.subjectId) || null, topicId: cleanText(b?.topicId) || null, weekday: clamp(Math.trunc(Number(b?.weekday) || 0), 0, 6), startMinute: clamp(Math.trunc(Number(b?.startMinute) || 0), 0, 1439), durationMinutes: clamp(Math.trunc(Number(b?.durationMinutes) || 30), 5, 240), activityType: (0, task_workflows_1.normalizeStudyActivityType)(b?.activityType, "study"), enabled: b?.enabled !== false }));
+    return { dailyCapacityMinutes: Number.isInteger(daily) && daily >= 30 && daily <= 1440 ? daily : 120, strategyType: (0, promise_cleanup_1.normalizeStudyStrategyType)(raw.strategyType), availability, fixedBlocks, recurringBlocks };
 }
 function validateScheduleConfiguration(input) { const c = normalizeScheduleConfiguration(input); const e = []; if (c.dailyCapacityMinutes < 30 || c.dailyCapacityMinutes > 1440)
     e.push("daily schedule capacity must be 30 to 1440 minutes"); for (const w of c.availability)
     if (w.endMinute <= w.startMinute)
         e.push(`availability window ${w.id} must end after it starts`); for (const b of c.fixedBlocks)
     if (b.date == null && b.weekday == null)
-        e.push(`fixed block ${b.id} needs a date or weekday`); return e; }
+        e.push(`fixed block ${b.id} needs a date or weekday`); for (const b of c.recurringBlocks)
+    if (b.startMinute + b.durationMinutes > 1440)
+        e.push(`recurring block ${b.id} must end within its local day`); return e; }
 function addAvailabilityWindow(config, input) { return normalizeScheduleConfiguration({ ...config, availability: [...config.availability, { id: input.id ?? makeId("window"), weekday: input.weekday ?? 1, startMinute: input.startMinute ?? 1080, endMinute: input.endMinute ?? 1200 }] }); }
 function addFixedScheduleBlock(config, input) { return normalizeScheduleConfiguration({ ...config, fixedBlocks: [...config.fixedBlocks, { id: input.id ?? makeId("fixed"), title: input.title ?? "Fixed block", date: input.date ?? null, weekday: input.weekday ?? null, startMinute: input.startMinute ?? 1080, durationMinutes: input.durationMinutes ?? 30 }] }); }
 function planConfig(state) { const plan = state.plans.find(p => p.id === state.activePlanId); return normalizeScheduleConfiguration(plan?.configuration.schedule); }
@@ -39,6 +45,15 @@ function intervalForActivity(a) { return a.scheduledStartMinute == null ? null :
 function capacityFor(config, date) { const windows = windowsFor(config, date); const windowCapacity = windows.length ? windows.reduce((s, w) => s + (w.endMinute - w.startMinute), 0) : config.dailyCapacityMinutes; return Math.min(config.dailyCapacityMinutes, windowCapacity); }
 function fixedMinutes(config, date) { const windows = windowsFor(config, date); if (!windows.length)
     return fixedFor(config, date).reduce((s, b) => s + b.durationMinutes, 0); return fixedFor(config, date).reduce((sum, b) => { const b0 = b.startMinute, b1 = b.startMinute + b.durationMinutes; return sum + windows.reduce((inside, w) => inside + Math.max(0, Math.min(b1, w.endMinute) - Math.max(b0, w.startMinute)), 0); }, 0); }
+function fitsAt(config, date, start, duration, activities) { const end = start + duration; if (end > 1440)
+    return false; const windows = windowsFor(config, date); if (windows.length && !windows.some(w => start >= w.startMinute && end <= w.endMinute))
+    return false; for (const b of fixedFor(config, date))
+    if (overlap(start, end, b.startMinute, b.startMinute + b.durationMinutes))
+        return false; for (const a of activities) {
+    const r = intervalForActivity(a);
+    if (r && overlap(start, end, r[0], r[1]))
+        return false;
+} return true; }
 function findStart(config, date, duration, activities) {
     const windows = windowsFor(config, date);
     if (!windows.length)
@@ -71,21 +86,11 @@ function findStart(config, date, duration, activities) {
 function cycleSubjects(state, planId) { const subjects = state.subjects.filter(s => s.planId === planId && !s.archived).sort((a, b) => a.order - b.order); const cycle = state.studyCycles?.[planId] ?? state.studyCycle; const ids = (cycle?.subjectIds ?? []).filter(id => subjects.some(s => s.id === id)); if (!ids.length)
     return subjects; const cursor = Math.max(0, Math.min(ids.length - 1, cycle?.cursor ?? 0)); const rotated = [...ids.slice(cursor), ...ids.slice(0, cursor)]; return rotated.map(id => subjects.find(s => s.id === id)).filter(Boolean); }
 function topicFor(state, subjectId) { return state.topics.filter(t => t.subjectId === subjectId && t.status !== "archived").sort((a, b) => { const p = (x) => x.priority === "high" ? 0 : x.priority === "normal" ? 1 : 2; return p(a) - p(b) || a.order - b.order; })[0] ?? null; }
-function phaseKinds(phase, count) {
-    if (!phase || count <= 0)
-        return Array.from({ length: Math.max(0, count) }, () => "study");
-    const weighted = [{ kind: "study", ratio: phase.theoryRatioPercent }, { kind: "questions", ratio: phase.questionRatioPercent }, { kind: "review", ratio: phase.reviewRatioPercent }];
-    const exact = weighted.map(x => x.ratio * count / 100), counts = exact.map(Math.floor);
-    let remaining = count - counts.reduce((a, b) => a + b, 0);
-    const order = weighted.map((_, i) => i).sort((a, b) => (exact[b] - counts[b]) - (exact[a] - counts[a]) || b - a);
-    for (let i = 0; i < remaining; i++)
-        counts[order[i % order.length]]++;
-    const result = [];
-    for (let i = 0; i < weighted.length; i++)
-        for (let j = 0; j < counts[i]; j++)
-            result.push(weighted[i].kind);
-    return result.length ? result : Array.from({ length: count }, () => "study");
-}
+function phaseKinds(phase, count) { if (!phase || count <= 0)
+    return Array.from({ length: Math.max(0, count) }, () => "study"); const weighted = [{ kind: "study", ratio: phase.theoryRatioPercent }, { kind: "questions", ratio: phase.questionRatioPercent }, { kind: "review", ratio: phase.reviewRatioPercent }]; const exact = weighted.map(x => x.ratio * count / 100), counts = exact.map(Math.floor); let remaining = count - counts.reduce((a, b) => a + b, 0); const order = weighted.map((_, i) => i).sort((a, b) => (exact[b] - counts[b]) - (exact[a] - counts[a]) || b - a); for (let i = 0; i < remaining; i++)
+    counts[order[i % order.length]]++; const result = []; for (let i = 0; i < weighted.length; i++)
+    for (let j = 0; j < counts[i]; j++)
+        result.push(weighted[i].kind); return result.length ? result : Array.from({ length: count }, () => "study"); }
 function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), days = 7, maxBlocks = 14 } = {}) {
     const generatedAt = new Date(at).toISOString();
     const plan = state.plans.find(p => p.id === state.activePlanId);
@@ -130,16 +135,26 @@ function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), da
     const occupiedMinutes = (date) => mutableByDate.get(date).reduce((s, a) => s + a.durationMinutes, 0);
     const available = (date) => Math.max(0, capacityFor(config, date) - fixedMinutes(config, date) - occupiedMinutes(date));
     const candidates = [];
+    for (const block of config.recurringBlocks.filter(b => b.enabled)) {
+        for (const date of dates.filter(d => dateWeekday(d) === block.weekday)) {
+            const reason = `Recurring schedule block:${block.id}`;
+            if (planned.some(a => a.scheduledFor === date && a.scheduleProvenance?.reason === reason))
+                continue;
+            candidates.push({ activity: null, title: block.title, kind: (0, task_workflows_1.activityKindForType)(block.activityType), activityType: block.activityType, durationMinutes: block.durationMinutes, subjectId: block.subjectId, topicId: block.topicId, origin: "schedule", reason, preferredDate: date, preferredStart: block.startMinute, urgency: 500 });
+        }
+    }
     for (const a of planned.filter(a => !a.locked && a.scheduledFor && a.scheduledFor < today).sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor)))
-        candidates.push({ activity: a, title: a.title, kind: a.kind, durationMinutes: a.durationMinutes, subjectId: a.subjectId, topicId: a.topicId, origin: a.origin, reason: "Missed planned activity; moved forward without changing completed history" });
+        candidates.push({ activity: a, title: a.title, kind: a.kind, activityType: a.activityType, durationMinutes: a.durationMinutes, subjectId: a.subjectId, topicId: a.topicId, origin: a.origin, reason: "Missed planned activity; moved forward without changing completed history", urgency: 400 });
     for (const a of planned.filter(a => !a.locked && !a.scheduledFor).sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
-        candidates.push({ activity: a, title: a.title, kind: a.kind, durationMinutes: a.durationMinutes, subjectId: a.subjectId, topicId: a.topicId, origin: a.origin, reason: "Unscheduled planned work fitted into available capacity" });
+        candidates.push({ activity: a, title: a.title, kind: a.kind, activityType: a.activityType, durationMinutes: a.durationMinutes, subjectId: a.subjectId, topicId: a.topicId, origin: a.origin, reason: "Unscheduled planned work fitted into available capacity", urgency: 300 });
     const due = state.reviews.filter(r => r.planId === plan.id && r.status === "due" && r.dueAt <= generatedAt).sort((a, b) => a.dueAt.localeCompare(b.dueAt));
     for (const r of due) {
         if (planned.some(a => a.kind === "review" && a.topicId === r.topicId))
             continue;
-        candidates.push({ activity: null, title: state.topics.find(t => t.id === r.topicId)?.name ?? "Due review", kind: "review", durationMinutes: 20, subjectId: r.subjectId, topicId: r.topicId, origin: "review", reason: "Due review backed by persisted review evidence" });
+        candidates.push({ activity: null, title: state.topics.find(t => t.id === r.topicId)?.name ?? "Due review", kind: "review", activityType: "REVIEW", durationMinutes: 20, subjectId: r.subjectId, topicId: r.topicId, origin: "review", reason: "Due review backed by persisted review evidence", urgency: 200 });
     }
+    const examDays = (0, promise_cleanup_1.daysUntilOfficialExam)(plan, new Date(generatedAt));
+    const examUrgency = examDays == null ? 0 : examDays <= 7 ? 30 : examDays <= 30 ? 20 : examDays <= 90 ? 10 : 0;
     const cycle = cycleSubjects(state, plan.id), activePhase = (0, exam_foundation_1.deriveActiveStudyPhase)(plan, generatedAt), phaseSlots = cycle.length ? (activePhase ? Math.min(limit, Math.max(cycle.length, 4)) : cycle.length) : 0, mix = phaseKinds(activePhase, phaseSlots);
     for (let index = 0; index < phaseSlots; index++) {
         const subject = cycle[index % cycle.length], topic = topicFor(state, subject.id), kind = mix[index] ?? "study";
@@ -148,18 +163,20 @@ function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), da
         const suffix = kind === "questions" ? "questions" : kind === "review" ? "review" : "study";
         const durationMinutes = kind === "study" ? 40 : kind === "questions" ? 30 : 20;
         const phaseReason = activePhase ? `Active phase ${activePhase.label}: ${activePhase.theoryRatioPercent}% theory / ${activePhase.questionRatioPercent}% questions / ${activePhase.reviewRatioPercent}% review${activePhase.allocationIsStudyFlowSuggested ? " (StudyFlow suggestion)" : ""}` : null;
-        candidates.push({ activity: null, title: topic ? `${subject.name}: ${topic.name} · ${suffix}` : `${subject.name} · ${suffix}`, kind, durationMinutes, subjectId: subject.id, topicId: topic?.id ?? null, origin: "cycle", reason: phaseReason ?? (topic?.priority === "high" ? "Study-cycle subject with high-priority topic" : "Study-cycle subject in persisted cursor order") });
+        candidates.push({ activity: null, title: topic ? `${subject.name}: ${topic.name} · ${suffix}` : `${subject.name} · ${suffix}`, kind, activityType: kind === "questions" ? "QUESTIONS" : kind === "review" ? "REVIEW" : "THEORY", durationMinutes, subjectId: subject.id, topicId: topic?.id ?? null, origin: "cycle", reason: (phaseReason ?? (topic?.priority === "high" ? "Study-cycle subject with high-priority topic" : "Study-cycle subject in persisted cursor order")) + (examUrgency ? ` · confirmed exam proximity ${examDays} day(s)` : ""), urgency: 100 + examUrgency + (topic?.priority === "high" ? 5 : 0) });
     }
+    candidates.sort((a, b) => (b.urgency ?? 0) - (a.urgency ?? 0));
     let usedOps = 0;
     for (const c of candidates) {
         if (usedOps >= limit)
             break;
         let placed = false;
-        for (const date of dates) {
+        const candidateDates = c.preferredDate ? [c.preferredDate] : dates;
+        for (const date of candidateDates) {
             if (available(date) < c.durationMinutes)
                 continue;
-            const start = findStart(config, date, c.durationMinutes, mutableByDate.get(date));
-            if (windowsFor(config, date).length && start == null)
+            const start = c.preferredStart != null ? (fitsAt(config, date, c.preferredStart, c.durationMinutes, mutableByDate.get(date)) ? c.preferredStart : null) : findStart(config, date, c.durationMinutes, mutableByDate.get(date));
+            if ((windowsFor(config, date).length || c.preferredStart != null) && start == null)
                 continue;
             if (c.activity) {
                 if (c.activity.scheduledFor === date && c.activity.scheduledStartMinute === start) {
@@ -173,18 +190,20 @@ function buildAdaptiveSchedulePreview(state, { at = new Date().toISOString(), da
                 mutableByDate.get(date).push({ ...c.activity, scheduledFor: date, scheduledStartMinute: start });
             }
             else {
-                operations.push({ action: "add", scheduledFor: date, scheduledStartMinute: start, activity: { title: c.title, kind: c.kind, durationMinutes: c.durationMinutes, subjectId: c.subjectId, topicId: c.topicId, origin: c.origin, queue: date === today ? "today" : "future", locked: false }, reason: c.reason });
-                mutableByDate.get(date).push({ id: `preview-${usedOps}`, planId: plan.id, title: c.title, kind: c.kind, durationMinutes: c.durationMinutes, subjectId: c.subjectId, topicId: c.topicId, origin: c.origin, queue: date === today ? "today" : "future", status: "planned", scheduledFor: date, scheduledStartMinute: start, locked: false, scheduleProvenance: null, createdAt: generatedAt, updatedAt: generatedAt });
+                operations.push({ action: "add", scheduledFor: date, scheduledStartMinute: start, activity: { title: c.title, kind: c.kind, activityType: c.activityType, durationMinutes: c.durationMinutes, subjectId: c.subjectId, topicId: c.topicId, origin: c.origin, queue: date === today ? "today" : "future", locked: false }, reason: c.reason });
+                mutableByDate.get(date).push({ id: `preview-${usedOps}`, planId: plan.id, title: c.title, kind: c.kind, activityType: c.activityType, durationMinutes: c.durationMinutes, subjectId: c.subjectId, topicId: c.topicId, origin: c.origin, queue: date === today ? "today" : "future", status: "planned", scheduledFor: date, scheduledStartMinute: start, locked: false, scheduleProvenance: null, createdAt: generatedAt, updatedAt: generatedAt });
             }
             usedOps++;
             placed = true;
             break;
         }
         if (!placed)
-            unscheduled.push({ activityId: c.activity?.id ?? null, title: c.title, durationMinutes: c.durationMinutes, reason: "No remaining capacity inside the preview horizon" });
+            unscheduled.push({ activityId: c.activity?.id ?? null, title: c.title, durationMinutes: c.durationMinutes, reason: c.preferredDate ? "Recurring block cannot fit its persisted local date/time without conflict" : "No remaining capacity inside the preview horizon" });
     }
     const finalDays = dates.map(date => { const fixed = fixedMinutes(config, date), capacity = capacityFor(config, date), used = mutableByDate.get(date).reduce((s, a) => s + a.durationMinutes, 0); return { date, capacityMinutes: capacity, fixedMinutes: fixed, plannedMinutes: used, remainingMinutes: Math.max(0, capacity - fixed - used), overloaded: used > Math.max(0, capacity - fixed) }; });
     const reasons = [];
+    if (config.recurringBlocks.some(b => b.enabled))
+        reasons.push("Enabled recurring blocks keep their persisted subject/topic and exact local weekly start time.");
     if (conflicts.length)
         reasons.push("Existing schedule conflicts are reported, never silently rewritten.");
     if (unscheduled.length)

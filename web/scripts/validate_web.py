@@ -221,7 +221,7 @@ def validate_parity_modes_coach()->list[str]:
     for token in ('Safety boundary','Six-direction review studio','Preview import','Weekly coach','Preview smart cleanup','Export HTML exam report','Preview 7-day sprint'):_require(e,token in ui,f'PC08/PC09 React workflow missing {token}')
     _require(e,'runtime/mode_import.js' in sw and 'runtime/intelligence.js' in sw,'PC08/PC09 runtimes must be cached by the offline app shell')
     _require(e,'PC08 | Programming + Language content-mode parity closure — delivered' in roadmap,'PC08 roadmap delivery marker missing'); _require(e,'PC09 | Weekly coach/readiness/cleanup/report/runbook/sprint parity — delivered' in roadmap,'PC09 roadmap delivery marker missing')
-    for token in ('does not execute arbitrary shell commands or pasted code','all six review directions','Smart content cleanup is preview-first','requires a confirmed exam date','seven-day sprint reuses the PC04 adaptive scheduling engine'):_require(e,token in doc,f'PC08/PC09 documentation missing {token}')
+    for token in ('does not execute arbitrary shell commands or pasted code','all six review directions','Smart content cleanup is preview-first','requires a confirmed exam date','seven-day sprint now only edits type/duration of existing unlocked planned activities'):_require(e,token in doc,f'PC08/PC09 documentation missing {token}')
     for rel in ('tests/test_pc08_content_modes_parity.py','tests/test_pc09_coach_cleanup_report_sprint.py'):_require(e,(WEB/rel).is_file(),f'PC08/PC09 regression suite missing {rel}')
     return e
 
@@ -241,7 +241,7 @@ def validate_parity_product_release()->list[str]:
     _require(e,'runtime/product.js' in sw,'PC10 product runtime must be available in the source offline shell')
     _require(e,'PC10 | Product shell parity: search/settings/privacy/i18n/onboarding — delivered' in roadmap,'PC10 roadmap delivery marker missing')
     _require(e,'PC11 | Self-contained production artifact + parity-closure release seal — delivered' in roadmap,'PC11 roadmap delivery marker missing')
-    for token in ('global search is local-only','schema **v7**','encrypted portable backups are explicitly not part','dist/vendor','does not reference `node_modules` at runtime','deterministic ZIP'):_require(e,token in doc,f'PC10/PC11 documentation missing {token}')
+    for token in ('global search is local-only','schema **v7**','PC18 supersedes','dist/vendor','does not reference `node_modules` at runtime','deterministic ZIP'):_require(e,token in doc,f'PC10/PC11 documentation missing {token}')
     for rel in ('tests/test_pc10_product_shell.py','tests/test_pc11_release_artifact.py'):_require(e,(WEB/rel).is_file(),f'PC10/PC11 regression suite missing {rel}')
     return e
 
@@ -271,6 +271,87 @@ def validate_parity_task_workflows()->list[str]:
     _require(e,(WEB/'tests/test_pc13_task_workflows.py').is_file(),'PC13 regression suite missing tests/test_pc13_task_workflows.py')
     return e
 
+def validate_parity_intelligence_schedule()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); parity=_text(WEB/'src/parity_intelligence.ts',e); schedule=_text(WEB/'src/schedule.ts',e); state=_text(WEB/'src/state.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC14_INTELLIGENCE_SCHEDULE_PARITY.md',e)
+    for token in ('ReadinessBand','QuestionQuotaSubject','ScheduleCalendarView','EvidenceTimelineEvent','completeGoal'):_require(e,token in types,f'PC14 typed parity contract missing {token}')
+    for token in ('deriveExamReadinessParity','weightedPresent','derivePublicExamQuestionQuotaPlan','.35*weightShares','.20*underShares','.20*accuracyShares','.15*errorShares','.10*reviewShares','allocateExactly','buildUnifiedEvidenceTimeline','scheduleCalendarWindow','deriveScheduleCalendarSnapshot','localDateKey'):_require(e,token in parity,f'PC14 parity intelligence missing {token}')
+    for token in ('getFullYear()','getMonth()+1','getDate()','setDate(','getDay()'):_require(e,token in schedule,f'PC14 scheduler local-date semantics missing {token}')
+    _require(e,'const today = localDateKey(at);' in state,'PC14 applied schedule queue must use local civil date')
+    for token in ('Readable calendar schedule','Today','This week','Next week','Calendar','Unified Evidence Timeline','Exam readiness model','35% exam weight','Mark complete'):_require(e,token in ui,f'PC14 React parity workflow missing {token}')
+    _require(e,'runtime/parity_intelligence.js' in sw,'PC14 parity intelligence runtime must be cached by the offline app shell')
+    _require(e,'PC14 | Multi-signal readiness + subject quota + unified Evidence Timeline + local readable schedule (Phase 48/55 + OV16 + OV17) — delivered' in roadmap,'PC14 roadmap delivery marker missing')
+    for token in ('24% coverage','35% exam weight','largest-remainder','Monday–Sunday','does not fabricate','UTC-midnight'):_require(e,token in doc,f'PC14 documentation missing {token}')
+    _require(e,(WEB/'tests/test_pc14_intelligence_schedule_parity.py').is_file(),'PC14 regression suite missing tests/test_pc14_intelligence_schedule_parity.py')
+    return e
+
+def validate_parity_intelligence_refinement()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); intel=_text(WEB/'src/intelligence.ts',e); refine=_text(WEB/'src/refinement.ts',e); state=_text(WEB/'src/state.ts',e); product=_text(WEB/'src/product.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC15_INTELLIGENCE_REFINEMENT_PARITY.md',e)
+    for token in ('WeeklyCoachSignalKind','ContentCleanupSeverity','ExamReportNextAction','ExamRunbookWindow','StudySprintFocus','SamplePlanTemplateId','SamplePlanBlueprint','applyStudySprintPreview','provisionSamplePlan'):_require(e,token in types,f'PC15 typed refinement contract missing {token}')
+    for token in ('deriveWeeklyCoachRefined','buildContentCleanupRefined','buildExamRunbookRefined','buildStudySprintRefined','validateStudySprintApply','buildExamReportRefined','renderExamReportPdf','SAMPLE_PLAN_BLUEPRINTS'):_require(e,token in refine,f'PC15 refinement engine missing {token}')
+    for token in ('review-backlog','mock-exam-signal','stale-resource','stale-plan','inconsistent-tag','stale-review','broken-schedule-alignment','severityWeight={info:2,review:5,action:10}','freeformNotesIncluded:false','at.getTime()-generated>120_000','slice(0,7)'):_require(e,token in refine,f'PC15 original intelligence rule missing {token}')
+    for token in ('buildContentCleanupPreview','buildExamReportSnapshot','renderExamReportPdf','buildExamRunbook','buildStudySprintPreview','deriveWeeklyCoach'):_require(e,token in intel,f'PC15 public intelligence wrapper missing {token}')
+    for token in ('provisionSampleTemplate','sample-plan-provisioned','applyStudySprintPreview','Smart Content Cleanup is review-only'):_require(e,token in state,f'PC15 store integration missing {token}')
+    for token in ('public-exam-12-week','university-semester','certification-bootcamp','free-study-habit'):_require(e,token in product or token in refine,f'PC15 starter template missing {token}')
+    for token in ('12-week public exam','University semester','Certification bootcamp','Free-study habit','Weekly schedule preview','Preview smart cleanup','Preview 7-day sprint','Export PDF exam report','Preview only. Cleanup actions are non-destructive','cannot create IDs, move starts, change status, touch locked activities, or increase duration'):_require(e,token in ui,f'PC15 React refinement surface missing {token}')
+    _require(e,'runtime/refinement.js' in sw,'PC15 refinement runtime must be cached by the offline app shell')
+    _require(e,'PC15 | Intelligence refinement: coach + cleanup + source-backed report + runbook + safe 7-day sprint + onboarding blueprints (Phases 58–64) — delivered' in roadmap,'PC15 roadmap delivery marker missing')
+    for token in ('current local Monday–Sunday week','2 points per info finding, 5 per review finding, and 10 per action finding','freeformNotesIncluded=false','cannot create or delete IDs','120 seconds','12-week public exam','University semester','Certification bootcamp','Free-study habit','cloud sync queue'):_require(e,token in doc,f'PC15 documentation missing {token}')
+    for rel in ('tests/test_pc09_coach_cleanup_report_sprint.py','tests/test_pc10_product_shell.py','tests/test_pc14_intelligence_schedule_parity.py','tests/test_pc15_intelligence_refinement.py'):_require(e,(WEB/rel).is_file(),f'PC15 focused regression suite missing {rel}')
+    return e
+
+def validate_parity_flashcards_viewer()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); domain=_text(WEB/'src/domain.ts',e); state=_text(WEB/'src/state.ts',e); viewer=_text(WEB/'src/retention_viewer.ts',e); portable=_text(WEB/'src/portable.ts',e); product=_text(WEB/'src/product.ts',e); task=_text(WEB/'src/task_workflows.ts',e); refine=_text(WEB/'src/refinement.ts',e); ui=_text(WEB/'src/react/App.tsx',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC16_FLASHCARDS_MATERIAL_VIEWER_PARITY.md',e)
+    for token in ('FlashcardType','interface Flashcard','MaterialViewerKind','MaterialViewerPlan','flashcards:Flashcard[]','addFlashcard','setFlashcardSuspended','deleteFlashcard'):_require(e,token in types,f'PC16 typed retention/viewer contract missing {token}')
+    for token in ('createFlashcard','Cloze flashcards require cloze text','state.flashcards','flashcardIds','missing flashcard sourceId'):_require(e,token in domain,f'PC16 flashcard domain/migration missing {token}')
+    for token in ('flashcard-created','flashcard-suspended','flashcard-resumed','Reviewed flashcards are retained for study history','sourceType:"flashcard"'):_require(e,token in state,f'PC16 flashcard store integration missing {token}')
+    for token in ('planMaterialViewer','local-text','local-image','local-audio','local-video','local-pdf','local-download','web-page','Only local attachments and explicit HTTP(S) resources can be opened in the web app.'):_require(e,token in viewer,f'PC16 material viewer policy missing {token}')
+    _require(e,'flashcards:"flashcard"' in portable,'PC16 portable remap must include flashcards'); _require(e,'result("flashcard"' in product,'PC16 global search must index flashcards')
+    for token in ('type==="FLASHCARDS"||type==="REVIEW"','activityType==="FLASHCARDS"'):_require(e,token in task or token in ui,f'PC16 flashcard activity routing missing {token}')
+    for token in ('state.flashcards','const fids=new Set','sourceType==="flashcard"'):_require(e,token in refine,f'PC16 cleanup integration missing {token}')
+    for token in ('Material Viewer','Create flashcard','Flashcards activity context','classification is local and MIME-based'):_require(e,token in ui,f'PC16 React workflow missing {token}')
+    _require(e,'runtime/retention_viewer.js' in sw,'PC16 material viewer runtime must be cached by the offline app shell')
+    _require(e,'PC16 | Flashcards + Material Viewer parity — delivered' in roadmap,'PC16 roadmap delivery marker missing')
+    for token in ('BASIC','CLOZE','immediate','Suspending','MIME','FileProvider','ACTION_VIEW','schema number remains 7'):_require(e,token in doc,f'PC16 documentation missing {token}')
+    _require(e,(WEB/'tests/test_pc16_flashcards_material_viewer.py').is_file(),'PC16 regression suite missing tests/test_pc16_flashcards_material_viewer.py')
+    return e
+
+def validate_parity_promise_cleanup()->list[str]:
+    e=[]; types=_text(WEB/'src/types.ts',e); cleanup=_text(WEB/'src/promise_cleanup.ts',e); schedule=_text(WEB/'src/schedule.ts',e); state=_text(WEB/'src/state.ts',e); foundation=_text(WEB/'src/exam_foundation.ts',e); modes=_text(WEB/'src/modes.ts',e); parity=_text(WEB/'src/parity_intelligence.ts',e); refine=_text(WEB/'src/refinement.ts',e); ui=_text(WEB/'src/react/App.tsx',e); styles=_text(WEB/'styles.css',e); sw=_text(WEB/'service-worker.js',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC17_CORRECTNESS_PROMISE_CLEANUP.md',e)
+    for token in ('StudyStrategyType','RecurringScheduleBlock','strategyType:StudyStrategyType','recurringBlocks:RecurringScheduleBlock[]','addScheduledActivity','hiddenPastCount'):_require(e,token in types,f'PC17 typed correctness contract missing {token}')
+    for token in ('STUDY_STRATEGY_TYPES','FIXED_WEEKLY','STUDY_CYCLE','GOAL_BASED','ADAPTIVE','FREE_GUIDED','INTENSIVE_SPRINT','COUNTDOWN','resolvePublicExamDate','officialCountdownDate','daysUntilOfficialExam','publicExamCoverageTopicCount','shouldOfferStudyCycle'):_require(e,token in cleanup,f'PC17 promise-cleanup engine missing {token}')
+    for token in ('recurringBlocks','Recurring schedule block:','persisted local date/time','preferredStart','preferredDate'):_require(e,token in schedule,f'PC17 recurring scheduler contract missing {token}')
+    for token in ('addScheduledActivity(input)','Scheduled activity requires an explicit local date','Scheduled activity topic must belong to the selected subject','schedule-configuration-updated','topics-covered'):_require(e,token in state,f'PC17 store ownership/coverage contract missing {token}')
+    _require(e,'resolvePublicExamDate(plan)' in foundation,'PC17 pre-edital cockpit must consume canonical date resolver')
+    _require(e,'daysUntilOfficialExam(plan,at)' in modes,'PC17 final-stretch guidance must consume canonical date resolver')
+    _require(e,'daysUntilOfficialExam(plan,at)' in parity,'PC17 readiness must consume canonical date resolver')
+    _require(e,'daysUntilOfficialExam(p,at)' in refine,'PC17 refinement/runbook path must consume canonical date resolver')
+    for token in ('StudyCycleTodayCard','STUDY_STRATEGY_TYPES','Manual scheduled activity','Weekly recurring blocks','Search title, subject or topic','Show past activities','Subject evidence','No observed subject evidence yet'):_require(e,token in ui,f'PC17 React promise cleanup missing {token}')
+    for token in ('color-scheme: dark','--bg: #0b0f14','--surface: #121923'):_require(e,token in styles,f'PC17 dark-only shell contract missing {token}')
+    for token in ('color-scheme: light','prefers-color-scheme: light'):_require(e,token not in styles,f'PC17 must not expose a light theme contract: {token}')
+    _require(e,'light mode' not in ui.lower() and 'theme-light' not in ui.lower(),'PC17 must not expose a light-mode UI toggle')
+    _require(e,'runtime/promise_cleanup.js' in sw,'PC17 correctness runtime must be cached by the offline app shell')
+    _require(e,'PC17 | OV18 + OV19 correctness/promise cleanup parity — delivered' in roadmap,'PC17 roadmap delivery marker missing')
+    for token in ('confirmed','expected','legacy plan-only','seven original values','actual number of active topics','does not silently relocate','Show past activities','Android-specific'):_require(e,token in doc,f'PC17 documentation missing {token}')
+    _require(e,(WEB/'tests/test_pc17_correctness_promise_cleanup.py').is_file(),'PC17 regression suite missing tests/test_pc17_correctness_promise_cleanup.py')
+    return e
+
+def validate_parity_final_seal()->list[str]:
+    e=[]; encrypted=_text(WEB/'src/encrypted_portable.ts',e); domain=_text(WEB/'src/domain.ts',e); modes=_text(WEB/'src/modes.ts',e); schedule=_text(WEB/'src/schedule.ts',e); qimport=_text(WEB/'src/question_import.ts',e); types=_text(WEB/'src/types.ts',e); ui=_text(WEB/'src/react/App.tsx',e); styles=_text(WEB/'styles.css',e); sw=_text(WEB/'service-worker.js',e); release=_text(WEB/'src/release.ts',e); roadmap=_text(ROOT/'docs/web/WEB_ROADMAP.md',e); doc=_text(ROOT/'docs/web/PC18_ENCRYPTED_PORTABLE_FULL_APPLICABLE_PARITY_SEAL.md',e)
+    for token in ('STUDYFLOWENC','ENCRYPTED_PORTABLE_VERSION = 1','210_000','PBKDF2','SHA-256','AES-GCM','length:256','additionalData:header','tagLength:ENCRYPTED_PORTABLE_TAG_BITS','ENCRYPTED_PORTABLE_MIN_PASSWORD_LENGTH = 8','EncryptedPortableAuthenticationError'):_require(e,token in encrypted,f'PC18 encrypted portable contract missing {token}')
+    for token in ('temporalScope: future ? "future" : "today"','Earliest future scheduled work','Scheduled for current local day'):_require(e,token in domain,f'PC18 Today temporal contract missing {token}')
+    for token in ('examBoard:string|null','sourceFilter:string|null','requiredTags:string[]','includeDisputed:boolean','minimumOverallScorePercent:number|null','tags:string[]'):_require(e,token in types,f'PC18 mock/question typed contract missing {token}')
+    for token in ('mockQuestionMatches','requiredTags.every','buildBbReferenceMockBlueprint','previewBbReferenceMockExam','BB_OBJECTIVE_QUESTION_COUNT','fundacao cesgranrio','minimumOverallScorePercent:null'):_require(e,token in modes,f'PC18 Mock Studio/BB contract missing {token}')
+    for token in ('confirmed exam proximity','examDays<=7?30','examDays<=30?20','examDays<=90?10'):_require(e,token in schedule,f'PC18 confirmed exam-proximity scheduler signal missing {token}')
+    _require(e,'splitTags' in qimport and 'tags:splitTags' in qimport,'PC18 question import must make tags reachable')
+    for token in ('Manual question tags','Mock tag filter','Export encrypted v2','Decrypt and preview','Password loss is unrecoverable','70 objective questions'):_require(e,token in ui,f'PC18 React workflow missing {token}')
+    _require(e,'runtime/encrypted_portable.js' in sw,'PC18 encrypted portability runtime must be cached by the offline shell')
+    _require(e,'encryptedPortableEnvelope:1' in release,'PC18 release identity must expose encrypted envelope v1')
+    _require(e,'color-scheme: dark' in styles and 'color-scheme: light' not in styles and 'prefers-color-scheme: light' not in styles,'PC18 must preserve the dark-only shell contract')
+    _require(e,'PC18 | Encrypted portable backup + final applicable parity seal — delivered' in roadmap,'PC18 roadmap delivery marker missing')
+    for token in ('full applicable functional parity','STUDYFLOWENC','210,000','AES-256-GCM','expected dates do not trigger','[11, 4, 5, 3, 5, 10, 16, 16]','no invented objective cutoff'):_require(e,token.lower() in doc.lower(),f'PC18 documentation missing {token}')
+    _require(e,(WEB/'tests/test_pc18_encrypted_final_parity.py').is_file(),'PC18 regression suite missing tests/test_pc18_encrypted_final_parity.py')
+    return e
+
 def validate_focus():return validate_state()
 def validate_plan_content():return validate_state()
 def validate_schedule():return validate_state()
@@ -282,7 +363,7 @@ def validate_portable():
     return e
 
 def validate_all()->list[str]:
-    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach,validate_parity_product_release,validate_parity_exam_foundation,validate_parity_task_workflows)
+    groups=(validate_shell,validate_visual,validate_interactions,validate_typescript,validate_domain,validate_state,validate_indexeddb,validate_pwa,validate_react,validate_portable,validate_public_exam,validate_content_modes,validate_hardening,validate_release,validate_parity_correctness,validate_parity_plan_content,validate_parity_schedule_portable,validate_parity_practice_concurso,validate_parity_modes_coach,validate_parity_product_release,validate_parity_exam_foundation,validate_parity_task_workflows,validate_parity_intelligence_schedule,validate_parity_intelligence_refinement,validate_parity_flashcards_viewer,validate_parity_promise_cleanup,validate_parity_final_seal)
     out=[]
     for fn in groups:
         for item in fn():
@@ -290,8 +371,8 @@ def validate_all()->list[str]:
     return out
 
 def main()->int:
-    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--parity-product-release',action='store_true'); parser.add_argument('--parity-exam-foundation',action='store_true'); parser.add_argument('--parity-task-workflows',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
-    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_parity_product_release() if args.parity_product_release else validate_parity_exam_foundation() if args.parity_exam_foundation else validate_parity_task_workflows() if args.parity_task_workflows else validate_all()
+    parser=argparse.ArgumentParser(); parser.add_argument('--contract',action='store_true'); parser.add_argument('--shell',action='store_true'); parser.add_argument('--hardening',action='store_true'); parser.add_argument('--release',action='store_true'); parser.add_argument('--parity-correctness',action='store_true'); parser.add_argument('--parity-plan-content',action='store_true'); parser.add_argument('--parity-schedule-portable',action='store_true'); parser.add_argument('--parity-practice-concurso',action='store_true'); parser.add_argument('--parity-modes-coach',action='store_true'); parser.add_argument('--parity-product-release',action='store_true'); parser.add_argument('--parity-exam-foundation',action='store_true'); parser.add_argument('--parity-task-workflows',action='store_true'); parser.add_argument('--parity-intelligence-schedule',action='store_true'); parser.add_argument('--parity-intelligence-refinement',action='store_true'); parser.add_argument('--parity-flashcards-viewer',action='store_true'); parser.add_argument('--parity-promise-cleanup',action='store_true'); parser.add_argument('--parity-final-seal',action='store_true'); parser.add_argument('--all',action='store_true'); args=parser.parse_args()
+    errors=validate_contract() if args.contract else validate_shell() if args.shell else validate_hardening() if args.hardening else validate_release() if args.release else validate_parity_correctness() if args.parity_correctness else validate_parity_plan_content() if args.parity_plan_content else validate_parity_schedule_portable() if args.parity_schedule_portable else validate_parity_practice_concurso() if args.parity_practice_concurso else validate_parity_modes_coach() if args.parity_modes_coach else validate_parity_product_release() if args.parity_product_release else validate_parity_exam_foundation() if args.parity_exam_foundation else validate_parity_task_workflows() if args.parity_task_workflows else validate_parity_intelligence_schedule() if args.parity_intelligence_schedule else validate_parity_intelligence_refinement() if args.parity_intelligence_refinement else validate_parity_flashcards_viewer() if args.parity_flashcards_viewer else validate_parity_promise_cleanup() if args.parity_promise_cleanup else validate_parity_final_seal() if args.parity_final_seal else validate_all()
     if errors:
         for error in errors: print(f'ERROR: {error}',file=sys.stderr)
         return 1

@@ -1,18 +1,18 @@
 :root {
-    color-scheme: light;
-    --bg: #f6f7fb;
-    --surface: #ffffff;
-    --surface-muted: #f0f2f7;
-    --text: #1d2433;
-    --muted: #667085;
-    --border: #dfe3eb;
-    --accent: #4355d9;
-    --accent-strong: #3344bd;
-    --accent-soft: #eef0ff;
-    --success: #147d64;
-    --warning: #a15c00;
-    --danger: #b42318;
-    --shadow: 0 8px 24px rgba(29, 36, 51, 0.08);
+    color-scheme: dark;
+    --bg: #0b0f14;
+    --surface: #121923;
+    --surface-muted: #18212d;
+    --text: #f3f6fa;
+    --muted: #9aa8b8;
+    --border: #2a3645;
+    --accent: #8ea2ff;
+    --accent-strong: #aebcff;
+    --accent-soft: #202b4a;
+    --success: #58c7a5;
+    --warning: #f2b45d;
+    --danger: #ff8f87;
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
     --radius-sm: 10px;
     --radius: 16px;
     --radius-lg: 22px;
@@ -74,7 +74,7 @@ a:focus-visible,
 summary:focus-visible,
 input:focus-visible,
 select:focus-visible {
-    outline: 3px solid rgba(67, 85, 217, 0.3);
+    outline: 3px solid rgba(142, 162, 255, 0.42);
     outline-offset: 2px;
 }
 
@@ -120,8 +120,8 @@ ul {
     justify-content: space-between;
     gap: var(--space-4);
     padding: calc(var(--space-3) + env(safe-area-inset-top)) var(--space-4) var(--space-3);
-    border-bottom: 1px solid rgba(223, 227, 235, 0.9);
-    background: rgba(246, 247, 251, 0.94);
+    border-bottom: 1px solid rgba(42, 54, 69, 0.92);
+    background: rgba(11, 15, 20, 0.94);
     backdrop-filter: blur(14px);
 }
 
@@ -174,7 +174,7 @@ ul {
 }
 
 .recommendation-card {
-    border-color: #cdd2ff;
+    border-color: #495b8f;
     background: linear-gradient(145deg, var(--surface), var(--accent-soft));
 }
 
@@ -214,9 +214,9 @@ ul {
 
 .signal-list li {
     padding: 0.35rem 0.65rem;
-    border: 1px solid #d7daf8;
+    border: 1px solid #3a4860;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(24, 33, 45, 0.82);
     font-size: 0.78rem;
 }
 
@@ -259,7 +259,7 @@ ul {
 .button-primary {
     border-color: var(--accent);
     background: var(--accent);
-    color: white;
+    color: var(--text);
 }
 
 .button-primary:hover {
@@ -419,7 +419,7 @@ summary {
     display: grid;
     gap: var(--space-1);
     padding: var(--space-5);
-    border: 1px dashed #cbd0dc;
+    border: 1px dashed #465569;
     border-radius: var(--radius-sm);
     background: var(--surface-muted);
 }
@@ -480,8 +480,8 @@ legend {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 -8px 24px rgba(29, 36, 51, 0.08);
+    background: rgba(11, 15, 20, 0.96);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.30);
     backdrop-filter: blur(14px);
 }
 
@@ -508,11 +508,11 @@ legend {
     border-radius: var(--radius-lg);
     background: var(--surface);
     color: var(--text);
-    box-shadow: 0 24px 70px rgba(29, 36, 51, 0.25);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
 }
 
 .dialog::backdrop {
-    background: rgba(18, 24, 38, 0.48);
+    background: rgba(0, 0, 0, 0.68);
     backdrop-filter: blur(3px);
 }
 
@@ -564,8 +564,8 @@ legend {
     max-width: 30rem;
     padding: var(--space-3) var(--space-4);
     border-radius: 999px;
-    background: #1d2433;
-    color: white;
+    background: #202b38;
+    color: var(--text);
     box-shadow: var(--shadow);
     font-size: 0.88rem;
     font-weight: 700;
@@ -788,3 +788,9 @@ legend {
 .check-row{display:flex!important;align-items:center;gap:.55rem}.check-row input{width:auto!important}
 
 .writing-editor { min-height: 18rem; resize: vertical; }
+
+.material-viewer{max-width:min(960px,94vw)}
+.material-text-viewer{max-height:62vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface-2,#151923);padding:1rem;border-radius:.75rem}
+.material-image-viewer,.material-video-viewer{display:block;max-width:100%;max-height:65vh;margin:auto}
+.material-pdf-viewer{width:100%;height:65vh;border:0;border-radius:.75rem;background:white}
+.material-viewer audio{width:100%}
