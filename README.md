@@ -355,3 +355,12 @@ TVOV03 adds the shared phone-to-TV control protocol in `:core:tvcontrol`. The An
 ### Android TV TVOV04
 
 TVOV04 adds native D-pad/focus primitives to the size-first Android TV app. The focus policy is pure Kotlin, maps Android remote key codes to small commands, provides deterministic initial focus and non-wrapping directional movement, and gives the placeholder TV shell a visible focusable action row. The TV APK still avoids Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature-module fanout, `core:data`, and `core:database`.
+
+
+### Android TV TVOV05
+
+TVOV05 adds the structured Android TV navigation shell. `:app-tv` now has a native D-pad-aware
+navigation rail backed by a small destination enum and mapped to the shared `:core:tvcontrol`
+surfaces, so paired-phone control and local TV navigation share the same route contract. The TV
+APK still avoids Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature modules,
+`core:data`, and `core:database`.

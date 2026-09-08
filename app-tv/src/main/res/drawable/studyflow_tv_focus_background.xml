@@ -8,6 +8,14 @@
             <padding android:left="20dp" android:top="12dp" android:right="20dp" android:bottom="12dp" />
         </shape>
     </item>
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="18dp" />
+            <solid android:color="#334155" />
+            <stroke android:width="2dp" android:color="#C7D2FE" />
+            <padding android:left="20dp" android:top="12dp" android:right="20dp" android:bottom="12dp" />
+        </shape>
+    </item>
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
             <corners android:radius="18dp" />

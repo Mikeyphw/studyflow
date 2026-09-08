@@ -59,7 +59,7 @@ TVOV01  Minimal app-tv application module [implemented]
 TVOV02  TV dependency budget and lint-clean app module [implemented]
 TVOV03  Phone-to-TV pairing, protocol, and cast foundation [implemented]
 TVOV04  D-pad and focus primitives [implemented]
-TVOV05  TV navigation shell
+TVOV05  TV navigation shell [implemented]
 TVOV06  TV Home / dashboard
 TVOV07  Today workspace for TV
 TVOV08  Study session experience
@@ -111,3 +111,12 @@ TVOV03 adds the shared phone-to-TV control protocol in `:core:tvcontrol`. The mo
 ## TVOV04 implementation note
 
 TVOV04 adds pure Kotlin/native Android D-pad and focus primitives to `:app-tv` without introducing Compose Runtime, AndroidX TV UI, MediaRouter, Cast SDK, phone feature-module fanout, `core:data`, or `core:database`. It provides deterministic initial focus, non-wrapping directional movement, Android remote key-code mapping, visible focus drawable state, and a tiny focusable action row in the placeholder TV shell. No Compose Runtime in TVOV04; future TV UI overlays can build on these primitives only after their size impact is measured.
+
+
+## TVOV05 implementation note
+
+TVOV05 turns the TV placeholder into a structured native navigation shell. The top-level TV
+destinations are now represented by a small enum, rendered as a D-pad-aware navigation rail,
+and mapped to the shared `:core:tvcontrol` surface model so paired-phone control and local TV
+navigation do not drift. TVOV05 still avoids Compose Runtime, AndroidX TV UI, MediaRouter,
+Cast SDK, phone feature-module fanout, `core:data`, and `core:database`.

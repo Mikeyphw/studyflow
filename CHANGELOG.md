@@ -381,3 +381,13 @@ copy.
 - Added JVM tests for D-pad focus policy and Android remote key-code mapping.
 - Added `verifyStudyFlowTvFocusPrimitives` to the `studyflow_tv` target.
 - Kept the TV app dependency-budgeted: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature modules, `core:data`, or `core:database`.
+
+
+## TVOV05 - Android TV navigation shell
+
+- Added a structured TV destination enum and navigation shell contract.
+- Replaced the placeholder-centered TV screen with a native D-pad-aware navigation rail and content panel.
+- Mapped TV destinations to shared `:core:tvcontrol` surfaces so paired-phone commands and local TV navigation share one model.
+- Added Back-to-Home handling for non-Home TV destinations.
+- Added JVM tests and `verifyStudyFlowTvNavigationShell` to the `studyflow_tv` target.
+- Kept the TV app dependency-budgeted: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature modules, `core:data`, or `core:database`.

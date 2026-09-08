@@ -22,5 +22,10 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
+        assertEquals("TVOV05", StudyFlowTvBuildContract.currentTvOverlay)
+        assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
+        assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
+        assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
+        assertEquals(8, StudyFlowTvBuildContract.navigationDestinationCount)
     }
 }

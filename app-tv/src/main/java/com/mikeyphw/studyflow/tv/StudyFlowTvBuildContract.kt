@@ -24,4 +24,9 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
+    const val currentTvOverlay = "TVOV05"
+    const val navigationShellIntroduced = true
+    const val navigationShellRequiresNoComposeRuntime = true
+    const val navigationShellUsesSharedControlProtocol = true
+    const val navigationDestinationCount = 8
 }

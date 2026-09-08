@@ -658,6 +658,13 @@ tasks.register<Exec>("verifyStudyFlowTvFocusPrimitives") {
     commandLine("python3", "scripts/verify_tvov04_focus_primitives.py")
 }
 
+
+tasks.register<Exec>("verifyStudyFlowTvNavigationShell") {
+    group = "verification"
+    description = "Checks TVOV05 Android TV navigation shell, destination model, and D-pad-aware rail contracts."
+    commandLine("python3", "scripts/verify_tvov05_navigation_shell.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
     description = "Compatibility alias for the final source/static acceptance contract."
