@@ -191,10 +191,12 @@ object StudyFlowTvQuestionPractice {
         state: StudyFlowTvQuestionPracticeState,
         action: StudyFlowTvPracticeAction,
     ): StudyFlowTvQuestionPracticeState = when (action) {
-        StudyFlowTvPracticeAction.SELECT_A -> state.select(StudyFlowTvPracticeChoiceId.A)
-        StudyFlowTvPracticeAction.SELECT_B -> state.select(StudyFlowTvPracticeChoiceId.B)
-        StudyFlowTvPracticeAction.SELECT_C -> state.select(StudyFlowTvPracticeChoiceId.C)
-        StudyFlowTvPracticeAction.SELECT_D -> state.select(StudyFlowTvPracticeChoiceId.D)
+        // TVOV25: answer selection is canonical only after the phone persists and re-projects it.
+        StudyFlowTvPracticeAction.SELECT_A,
+        StudyFlowTvPracticeAction.SELECT_B,
+        StudyFlowTvPracticeAction.SELECT_C,
+        StudyFlowTvPracticeAction.SELECT_D,
+        -> state
         StudyFlowTvPracticeAction.PREVIOUS_QUESTION -> state.copy(
             activeQuestionIndex = (state.activeQuestionIndex - 1).coerceAtLeast(0),
             explanationVisible = false,
@@ -204,7 +206,7 @@ object StudyFlowTvQuestionPractice {
             explanationVisible = false,
         )
         StudyFlowTvPracticeAction.SHOW_EXPLANATION -> state.copy(explanationVisible = state.selectedChoiceId != null)
-        StudyFlowTvPracticeAction.FINISH_SET -> state.copy(completed = true, explanationVisible = true)
+        StudyFlowTvPracticeAction.FINISH_SET -> state
     }
 
     fun focusItems(state: StudyFlowTvQuestionPracticeState): List<StudyFlowTvFocusItem> {
@@ -257,12 +259,6 @@ object StudyFlowTvQuestionPractice {
 
     fun isCurrentAnswerCorrect(state: StudyFlowTvQuestionPracticeState): Boolean? =
         state.selectedChoiceId?.let { it == state.activeQuestion.correctChoiceId }
-
-    private fun StudyFlowTvQuestionPracticeState.select(choiceId: StudyFlowTvPracticeChoiceId): StudyFlowTvQuestionPracticeState =
-        copy(
-            selectedChoices = selectedChoices + (activeQuestion.id to choiceId),
-            explanationVisible = false,
-        )
 
     private fun defaultChoices(
         a: String,

@@ -2,6 +2,15 @@
 
 ## TVOV24 — Android TV real cast/state synchronization
 
+## TVOV25 — Android TV domain truth and persistence convergence
+
+- Added shared canonical TV domain-action request/result mapping and authenticated result acknowledgements.
+- Added phone-owned canonical mutation execution through existing Study Session, Practice, Review, Schedule, and repository APIs with an action-id journal for retry idempotency.
+- Added a bounded TV action outbox so local D-pad mutations are persisted by the paired phone before projected state changes.
+- Removed synthetic TV answer/review/lifecycle/elapsed/mock-scoring mutations, including the fixed 70% mock result.
+- Extended presentation projection with persisted practice answers/current question, source question ids for review evidence, and real elapsed/scoring state.
+- Advanced the TV package to version code 25 / `0.1.0-tv25`; TVOV26 remains the final physical-device seal.
+
 - Connected the phone-owned canonical TVOV21 presentation stream to the authenticated TVOV22 link with explicit Start cast / Stop cast / Resync controls.
 - Added exact presentation-receipt acknowledgement, serialized latest-snapshot delivery, reconnect resync, pending STOP_CAST retry, and TV inbox clearing back to the waiting state.
 - Advanced the TV package to version code 24 / `0.1.0-tv24`; TVOV25 remains the domain-truth/persistence convergence boundary.

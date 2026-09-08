@@ -45,16 +45,19 @@ internal fun StudyFlowTvPhoneControllerScreen(
     discovery: StudyFlowTvReceiverDiscovery,
     client: StudyFlowTvLocalTransportClient,
     presentationSource: StudyFlowTvPresentationSource,
+    domainActionExecutor: StudyFlowTvDomainActionExecutor,
     defaultPlanId: StudyPlanId?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val gateway = remember(discovery, client) { DefaultStudyFlowTvPhoneLinkGateway(discovery, client) }
-    val controller = remember(gateway, presentationSource) {
+    val controller = remember(gateway, presentationSource, domainActionExecutor, defaultPlanId) {
         StudyFlowTvPhoneController(
             gateway = gateway,
             presentationFeed = presentationSource,
+            domainActionExecutor = domainActionExecutor,
+            defaultPlanId = defaultPlanId,
         )
     }
     val state by controller.state.collectAsStateWithLifecycle()
@@ -275,13 +278,6 @@ internal fun StudyFlowTvPhoneControllerScreen(
                 ControllerActionRow(
                     firstLabel = stringResource(R.string.tv_controller_start),
                     onFirst = { controller.send(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.START) },
-                    secondLabel = stringResource(R.string.tv_controller_pause),
-                    onSecond = { controller.send(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.PAUSE) },
-                    enabled = !state.busy,
-                )
-                ControllerActionRow(
-                    firstLabel = stringResource(R.string.tv_controller_resume),
-                    onFirst = { controller.send(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.RESUME) },
                     secondLabel = stringResource(R.string.tv_controller_submit),
                     onSecond = { controller.send(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.SUBMIT) },
                     enabled = !state.busy,

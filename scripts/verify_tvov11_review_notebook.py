@@ -106,7 +106,7 @@ for token in (
 for token in (
     "reviewNotebookOwnsSpacedReviewAndErrorNotebookRoadmapContract",
     "defaultReviewNotebookContainsDueItemsConfidenceAndReasons",
-    "reviewNotebookStateStartsExplainsAddsErrorNotesAdvancesAndCompletes",
+    "reviewEvidenceMutationsWaitForCanonicalProjection",
     "reviewNotebookFocusCommandsCastStateAndDestinationMappingUseSharedProtocols",
 ):
     require(test, token, "review tests")

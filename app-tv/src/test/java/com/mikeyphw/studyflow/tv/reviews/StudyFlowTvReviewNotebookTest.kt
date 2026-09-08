@@ -34,22 +34,21 @@ class StudyFlowTvReviewNotebookTest {
     }
 
     @Test
-    fun reviewNotebookStateStartsExplainsAddsErrorNotesAdvancesAndCompletes() {
+    fun reviewEvidenceMutationsWaitForCanonicalProjection() {
         val ready = StudyFlowTvReviewNotebook.defaultState()
         val reviewing = StudyFlowTvReviewNotebook.applyAction(ready, StudyFlowTvReviewAction.START_REVIEW)
         val explained = StudyFlowTvReviewNotebook.applyAction(reviewing, StudyFlowTvReviewAction.SHOW_EXPLANATION)
         val errorNoted = StudyFlowTvReviewNotebook.applyAction(explained, StudyFlowTvReviewAction.ADD_ERROR_NOTE)
-        val next = StudyFlowTvReviewNotebook.applyAction(errorNoted, StudyFlowTvReviewAction.NEXT_ITEM)
+        val next = StudyFlowTvReviewNotebook.applyAction(explained, StudyFlowTvReviewAction.NEXT_ITEM)
         val known = StudyFlowTvReviewNotebook.applyAction(next, StudyFlowTvReviewAction.MARK_KNOWN)
-        val completed = StudyFlowTvReviewNotebook.applyAction(known, StudyFlowTvReviewAction.COMPLETE_REVIEW)
+        val completed = StudyFlowTvReviewNotebook.applyAction(next, StudyFlowTvReviewAction.COMPLETE_REVIEW)
 
         assertEquals(StudyFlowTvReviewStatus.REVIEWING, reviewing.status)
-        assertEquals(StudyFlowTvReviewStatus.EXPLANATION, explained.status)
         assertTrue(explained.explanationVisible)
-        assertEquals(1, errorNoted.errorNoteIds.size)
+        assertEquals(explained, errorNoted)
         assertEquals(1, next.activeReviewIndex)
-        assertEquals(1, known.knownReviewIds.size)
-        assertEquals(StudyFlowTvReviewStatus.COMPLETED, completed.status)
+        assertEquals(next, known)
+        assertEquals(next, completed)
     }
 
     @Test

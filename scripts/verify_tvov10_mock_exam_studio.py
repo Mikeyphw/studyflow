@@ -111,7 +111,7 @@ for token in (
 for token in (
     "mockExamOwnsTimedSectionsRemoteControlsAndPhoneControl",
     "defaultMockExamContainsSectionsTimeAndQuestions",
-    "mockExamStateStartsPausesFlagsSubmitsAndShowsResults",
+    "canonicalMockLifecycleAndScoringAreNeverFabricatedOnTv",
     "mockExamFocusCommandsAndCastStateUseSharedProtocols",
 ):
     require(test, token, "mock tests")

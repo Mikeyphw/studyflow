@@ -218,6 +218,18 @@ class StudyFlowTvBuildContractTest {
     }
 
     @Test
+    fun domainTruthAndPersistenceConvergenceIsExplicit() {
+        assertTrue(StudyFlowTvDomainPersistenceBuildContract.domainPersistenceConvergenceIntroduced)
+        assertTrue(StudyFlowTvDomainPersistenceBuildContract.phoneOwnsCanonicalMutations)
+        assertTrue(StudyFlowTvDomainPersistenceBuildContract.tvRepositoryMutationForbidden)
+        assertTrue(StudyFlowTvDomainPersistenceBuildContract.canonicalManagersRequired)
+        assertTrue(StudyFlowTvDomainPersistenceBuildContract.idempotentActionJournalRequired)
+        assertTrue(StudyFlowTvDomainPersistenceBuildContract.localTvMutationOutboxRequired)
+        assertTrue(StudyFlowTvDomainPersistenceBuildContract.persistedProjectionRoundTripRequired)
+        assertTrue(StudyFlowTvDomainPersistenceBuildContract.fakeMockScoringForbidden)
+    }
+
+    @Test
     fun packagingAndFinalAcceptanceContractsAreExplicit() {
         assertTrue(StudyFlowTvPackagingBuildContract.packagingHardeningIntroduced)
         assertTrue(StudyFlowTvPackagingBuildContract.leanbackLauncherRequired)
@@ -226,7 +238,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvPackagingBuildContract.cleartextTrafficDisabled)
         assertTrue(StudyFlowTvPackagingBuildContract.tvTargetRejectsPhoneTasks)
         assertTrue(StudyFlowTvPackagingBuildContract.conditionalReleaseSigningSupported)
-        assertEquals(24, StudyFlowTvPackagingBuildContract.packageVersionCode)
+        assertEquals(25, StudyFlowTvPackagingBuildContract.packageVersionCode)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.finalAcceptanceSealIntroduced)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.optimizedReleaseArtifactRequired)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.packageIdentityVerificationRequired)

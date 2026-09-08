@@ -32,6 +32,9 @@ import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvPresentationSource
+import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvDomainActionExecutor
+import com.mikeyphw.studyflow.tvcontrol.SharedPreferencesStudyFlowTvDomainActionJournal
+import com.mikeyphw.studyflow.tvcontrol.DefaultStudyFlowTvCanonicalMutationGateway
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportClient
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvReceiverDiscovery
 import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
@@ -118,6 +121,7 @@ interface AppContainer : DiagnosticRecorderProvider {
     val manageAnnexFileStorage: ManageAnnexFileStorage
     val manageStudyPlanPortability: ManageStudyPlanPortability
     val tvPresentationSource: StudyFlowTvPresentationSource
+    val tvDomainActionExecutor: StudyFlowTvDomainActionExecutor
     val tvReceiverDiscovery: StudyFlowTvReceiverDiscovery
     val tvLinkClient: StudyFlowTvLocalTransportClient
     suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport
@@ -232,6 +236,17 @@ private class DefaultAppContainer(
         reviewRepository = studyReviewRepository,
         analyticsRepository = studyAnalyticsRepository,
         libraryRepository = studyLibraryRepository,
+    )
+    override val tvDomainActionExecutor = StudyFlowTvDomainActionExecutor(
+        gateway = DefaultStudyFlowTvCanonicalMutationGateway(
+            sessionManager = manageStudySession,
+            practiceManager = manageStudyPractice,
+            reviewManager = manageStudyReview,
+            sessionRepository = studySessionRepository,
+            practiceRepository = studyPracticeRepository,
+            scheduleRepository = studyScheduleRepository,
+        ),
+        journal = SharedPreferencesStudyFlowTvDomainActionJournal(application),
     )
     override val tvReceiverDiscovery = StudyFlowTvReceiverDiscovery(application)
     override val tvLinkClient = StudyFlowTvLocalTransportClient(application)

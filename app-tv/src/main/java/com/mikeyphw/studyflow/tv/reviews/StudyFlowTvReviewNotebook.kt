@@ -174,25 +174,15 @@ object StudyFlowTvReviewNotebook {
             activeReviewIndex = (state.activeReviewIndex + 1).coerceAtMost(state.items.lastIndex),
             explanationVisible = false,
         )
-        StudyFlowTvReviewAction.MARK_KNOWN -> advanceAfterMark(
-            state.copy(
-                knownReviewIds = state.knownReviewIds + state.activeReview.id,
-                explanationVisible = false,
-            ),
-        )
-        StudyFlowTvReviewAction.ADD_ERROR_NOTE -> state.copy(
-            status = StudyFlowTvReviewStatus.ERROR_NOTEBOOK,
-            errorNoteIds = state.errorNoteIds + state.activeReview.id,
-            explanationVisible = false,
-        )
+        // TVOV25: review grading/error evidence is canonical only after persisted phone execution.
+        StudyFlowTvReviewAction.MARK_KNOWN,
+        StudyFlowTvReviewAction.ADD_ERROR_NOTE,
+        -> state
         StudyFlowTvReviewAction.SHOW_EXPLANATION -> state.copy(
             status = StudyFlowTvReviewStatus.EXPLANATION,
             explanationVisible = true,
         )
-        StudyFlowTvReviewAction.COMPLETE_REVIEW -> state.copy(
-            status = StudyFlowTvReviewStatus.COMPLETED,
-            explanationVisible = false,
-        )
+        StudyFlowTvReviewAction.COMPLETE_REVIEW -> state
         StudyFlowTvReviewAction.RETURN_TODAY -> state
     }
 
@@ -256,18 +246,6 @@ object StudyFlowTvReviewNotebook {
     fun destinationForAction(action: StudyFlowTvReviewAction): StudyFlowTvDestination = when (action) {
         StudyFlowTvReviewAction.RETURN_TODAY -> StudyFlowTvDestination.TODAY
         else -> StudyFlowTvDestination.REVIEWS
-    }
-
-    private fun advanceAfterMark(state: StudyFlowTvReviewState): StudyFlowTvReviewState {
-        val done = state.knownReviewIds.size + state.errorNoteIds.size >= state.items.size
-        return if (done) {
-            state.copy(status = StudyFlowTvReviewStatus.COMPLETED)
-        } else {
-            state.copy(
-                status = StudyFlowTvReviewStatus.REVIEWING,
-                activeReviewIndex = (state.activeReviewIndex + 1).coerceAtMost(state.items.lastIndex),
-            )
-        }
     }
 
     private fun controlActionFor(action: StudyFlowTvReviewAction): StudyFlowTvControlAction = when (action) {

@@ -152,11 +152,28 @@ object StudyFlowTvPresentationAdapter {
             )
         }
         if (projected.isEmpty()) return waitingPractice()
+        val sourceIndexById = projected.mapIndexed { index, question -> question.sourceId to index }.toMap()
+        val selectedChoices = source.answers.mapNotNull { answer ->
+            val questionIndex = sourceIndexById[answer.questionId] ?: return@mapNotNull null
+            val slot = projected[questionIndex]
+            val sourceQuestion = source.questions.firstOrNull { it.questionId == answer.questionId } ?: return@mapNotNull null
+            val optionIndex = sourceQuestion.choices.indexOfFirst { it.optionId == answer.chosenOptionId }
+            val choice = StudyFlowTvPracticeChoiceId.entries.getOrNull(optionIndex) ?: return@mapNotNull null
+            slot.id to choice
+        }.toMap()
+        val activeIndex = source.currentQuestionId
+            ?.let(sourceIndexById::get)
+            ?: projected.indexOfFirst { it.id !in selectedChoices }.takeIf { it >= 0 }
+            ?: projected.lastIndex
         return StudyFlowTvQuestionPracticeState(
             questionSetId = source.questionSetId,
             title = source.title,
             subject = source.subjectLabel,
             questions = projected,
+            activeQuestionIndex = activeIndex,
+            selectedChoices = selectedChoices,
+            explanationVisible = source.submitted,
+            completed = source.submitted,
         )
     }
 
@@ -182,7 +199,7 @@ object StudyFlowTvPresentationAdapter {
                 "RESULTS" -> StudyFlowTvMockExamStatus.RESULTS
                 else -> StudyFlowTvMockExamStatus.READY
             },
-            elapsedMinutes = if (source.status.uppercase() in setOf("SUBMITTED", "RESULTS")) source.totalMinutes else 0,
+            elapsedMinutes = source.elapsedMinutes,
             correctAnswerCount = source.correctCount,
         )
 

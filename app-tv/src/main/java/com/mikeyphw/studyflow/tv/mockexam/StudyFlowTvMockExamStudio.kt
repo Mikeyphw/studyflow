@@ -157,10 +157,9 @@ object StudyFlowTvMockExamStudio {
             StudyFlowTvMockExamAction.RETURN_HOME,
         )
         StudyFlowTvMockExamStatus.RUNNING -> listOf(
-            StudyFlowTvMockExamAction.PAUSE,
             StudyFlowTvMockExamAction.NEXT_SECTION,
-            StudyFlowTvMockExamAction.MARK_FOR_REVIEW,
             StudyFlowTvMockExamAction.SUBMIT,
+            StudyFlowTvMockExamAction.RETURN_HOME,
         )
         StudyFlowTvMockExamStatus.PAUSED -> listOf(
             StudyFlowTvMockExamAction.RESUME,
@@ -180,18 +179,14 @@ object StudyFlowTvMockExamStudio {
         state: StudyFlowTvMockExamState,
         action: StudyFlowTvMockExamAction,
     ): StudyFlowTvMockExamState = when (action) {
-        StudyFlowTvMockExamAction.START -> state.copy(status = StudyFlowTvMockExamStatus.RUNNING)
-        StudyFlowTvMockExamAction.PAUSE -> state.copy(status = StudyFlowTvMockExamStatus.PAUSED)
-        StudyFlowTvMockExamAction.RESUME -> state.copy(status = StudyFlowTvMockExamStatus.RUNNING)
+        // TVOV25: start/submission are canonical mutations; pause/mark are not faked locally.
+        StudyFlowTvMockExamAction.START,
+        StudyFlowTvMockExamAction.PAUSE,
+        StudyFlowTvMockExamAction.RESUME,
+        StudyFlowTvMockExamAction.MARK_FOR_REVIEW,
+        StudyFlowTvMockExamAction.SUBMIT,
+        -> state
         StudyFlowTvMockExamAction.NEXT_SECTION -> advanceSection(state)
-        StudyFlowTvMockExamAction.MARK_FOR_REVIEW -> state.copy(
-            flaggedSectionIds = state.flaggedSectionIds + state.activeSection.id,
-        )
-        StudyFlowTvMockExamAction.SUBMIT -> state.copy(
-            status = StudyFlowTvMockExamStatus.SUBMITTED,
-            elapsedMinutes = state.totalMinutes,
-            correctAnswerCount = state.totalQuestions * 7 / 10,
-        )
         StudyFlowTvMockExamAction.REVIEW_RESULTS -> state.copy(status = StudyFlowTvMockExamStatus.RESULTS)
         StudyFlowTvMockExamAction.RETURN_HOME -> state
     }
@@ -248,12 +243,7 @@ object StudyFlowTvMockExamStudio {
 
     private fun advanceSection(state: StudyFlowTvMockExamState): StudyFlowTvMockExamState {
         val nextIndex = (state.activeSectionIndex + 1).coerceAtMost(state.sections.lastIndex)
-        val addedMinutes = state.sections[state.activeSectionIndex].minutes
-        return state.copy(
-            status = StudyFlowTvMockExamStatus.RUNNING,
-            activeSectionIndex = nextIndex,
-            elapsedMinutes = (state.elapsedMinutes + addedMinutes).coerceAtMost(state.totalMinutes),
-        )
+        return state.copy(activeSectionIndex = nextIndex)
     }
 
     private fun controlActionFor(action: StudyFlowTvMockExamAction): StudyFlowTvControlAction = when (action) {

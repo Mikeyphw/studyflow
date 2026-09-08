@@ -1210,6 +1210,12 @@ tasks.register<Exec>("verifyStudyFlowTvCastStateSynchronization") {
     commandLine("python3", "scripts/verify_tvov24_cast_state_synchronization.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvDomainPersistenceConvergence") {
+    group = "verification"
+    description = "Checks TVOV25 canonical phone-owned mutations, TV outbox/ack flow, idempotent persistence, and fixture-free projected results."
+    commandLine("python3", "scripts/verify_tvov25_domain_persistence_convergence.py")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."

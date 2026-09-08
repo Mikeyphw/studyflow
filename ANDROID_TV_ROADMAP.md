@@ -79,8 +79,8 @@ TVOV21  Typed presentation snapshots and canonical data projection [implemented]
 TVOV22  Local pairing, discovery, and transport [implemented]
 TVOV23  Android phone TV controller [implemented]
 TVOV24  Real cast/state synchronization [implemented]
-TVOV25  Domain truth and persistence convergence [next]
-TVOV26  End-to-end physical-device final seal [planned]
+TVOV25  Domain truth and persistence convergence [implemented]
+TVOV26  End-to-end physical-device final seal [next]
 ```
 
 ## Stopping gate
@@ -449,7 +449,7 @@ Scope:
 - continuity responses also carry the current presentation receipt so the phone can detect drift and request resync;
 - invalid/expired sessions end live synchronization and require explicit re-pairing;
 - no Cast SDK, MediaRouter, raw database rows, Room entities, or second transport stack;
-- TV package version code 24 / `0.1.0-tv24`; domain-action persistence convergence remains TVOV25.
+- TV package version code 24 / `0.1.0-tv24`; TVOV25 now converges canonical domain persistence on top of this synchronization layer.
 
 Validation:
 - `verifyStudyFlowTvCastStateSynchronization`;
@@ -459,3 +459,28 @@ Validation:
 - cumulative TVOV00-TVOV24 source verifiers;
 - final two-device validation remains TVOV26.
 
+
+
+## TVOV25 — Domain truth and persistence convergence
+
+Status: implemented in `studyflow_tvov25_domain_truth_persistence_convergence_v1.zip`.
+
+Scope:
+- shared transport-neutral domain-action requests in `:core:tvcontrol` map TV commands onto canonical StudyFlow plan/session/test/question/mock/review identifiers;
+- persistent session start/pause/resume/complete, practice answers/finish/review scheduling, mock start/submit, review grades, and question-backed error evidence execute only on the phone/data-owning side through existing StudyFlow managers and repositories;
+- an app-private action-result journal makes normal transport/reconnect retries idempotent by action id;
+- TV-local remote mutations enter a bounded outbox and are pulled by the paired phone over the existing TVOV22 authenticated link; action-result acknowledgements remove only the matching pending mutation;
+- phone-controller mutations execute directly against the same canonical gateway rather than first mutating a TV-local state machine;
+- canonical repository changes re-enter the existing TVOV21 projector and TVOV24 snapshot synchronization path, so persisted state—not optimistic TV state—becomes visible;
+- question snapshots now include persisted answers/current question and review snapshots retain source question ids needed for canonical error evidence; live Study Session and Mock elapsed/scoring values come from real domain evidence;
+- TV state machines no longer fabricate lifecycle completion, answers, review evidence, elapsed-time jumps, or a synthetic 70% mock score; unsupported mock pause/resume controls are not exposed as canonical persistence;
+- `app-tv` still has no Room, `core:data`, `core:database`, or phone repository dependency;
+- TV package version code 25 / `0.1.0-tv25`.
+
+Validation:
+- `verifyStudyFlowTvDomainPersistenceConvergence`;
+- `core:tvcontrol` domain-action mapping tests;
+- app executor idempotency/failure-journal tests;
+- TV domain-action outbox tests plus corrected session/practice/mock/review state tests;
+- cumulative TVOV00-TVOV25 source verifiers;
+- TVOV26 remains the true two-device physical-device final seal.

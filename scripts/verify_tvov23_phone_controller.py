@@ -128,8 +128,8 @@ require_tokens(
 
 build_contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV24"',
-    'packageVersionCode = 24',
+    'currentTvOverlay = "TVOV25"',
+    'packageVersionCode = 25',
     'phoneControllerUiStillDeferredToTvov23 = false',
     'object StudyFlowTvPhoneControllerBuildContract',
     'phoneControllerIntroduced = true',
@@ -141,11 +141,11 @@ require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContractTest.kt",
     'phoneControllerIsProductionWiredFromSettings',
     'assertEquals("TVOV24", StudyFlowTvBuildContract.currentTvOverlay)',
-    'assertEquals(24, StudyFlowTvPackagingBuildContract.packageVersionCode)',
+    'assertEquals(25, StudyFlowTvPackagingBuildContract.packageVersionCode)',
 )
 
 tv_build = read("app-tv/build.gradle.kts")
-require('versionCode = 24' in tv_build and 'versionName = "0.1.0-tv24"' in tv_build, "TV package must retain the current TVOV24 identity")
+require('versionCode = 25' in tv_build and 'versionName = "0.1.0-tv25"' in tv_build, "TV package must retain the current TVOV25 identity")
 for forbidden in (':app:', ':feature:', ':core:data', ':core:database'):
     require(forbidden not in tv_build, f"TV APK dependency boundary regressed: {forbidden}")
 
@@ -169,7 +169,7 @@ require("TVOV23  Android phone TV controller [implemented]" in roadmap, "roadmap
 require("TVOV24  Real cast/state synchronization [implemented]" in roadmap, "roadmap must mark TVOV24 implemented")
 require("TVOV23  Android phone TV controller [implemented]" in rules, "working rules must mark TVOV23 implemented")
 require("TVOV24  Real cast/state synchronization [implemented]" in rules, "working rules must mark TVOV24 implemented")
-require("TVOV00 through TVOV24" in rules, "working rules must record current TV chain")
+require("TVOV00 through TVOV25" in rules, "working rules must record current TV chain")
 for token in ("Settings", "six-digit", "persisted", "all ten", "TVOV24"):
     require(token.lower() in notes.lower(), f"TVOV23 implementation notes missing {token}")
 for token in ("receiver selection", "user-present", "revoke", "Cast SDK", "TVOV24"):

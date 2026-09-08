@@ -147,12 +147,33 @@ data class StudyFlowTvQuestionSetPresentation(
     val title: String,
     val subjectLabel: String,
     val questions: List<StudyFlowTvQuestionPresentation>,
+    val started: Boolean = false,
+    val submitted: Boolean = false,
+    val currentQuestionId: String? = null,
+    val answers: List<StudyFlowTvQuestionAnswerPresentation> = emptyList(),
 ) {
     init {
         require(questionSetId.isNotBlank())
         require(title.isNotBlank())
         require(subjectLabel.isNotBlank())
         require(questions.size <= StudyFlowTvPresentationProtocol.maxTvQuestions)
+        require(currentQuestionId == null || questions.any { it.questionId == currentQuestionId })
+        require(answers.map { it.questionId }.distinct().size == answers.size)
+        require(answers.all { answer -> questions.any { it.questionId == answer.questionId } })
+    }
+}
+
+@Serializable
+data class StudyFlowTvQuestionAnswerPresentation(
+    val questionId: String,
+    val chosenOptionId: String,
+    val correct: Boolean,
+    val answeredAtEpochMillis: Long,
+) {
+    init {
+        require(questionId.isNotBlank())
+        require(chosenOptionId.isNotBlank())
+        require(answeredAtEpochMillis >= 0L)
     }
 }
 
@@ -193,6 +214,7 @@ data class StudyFlowTvMockExamPresentation(
     val title: String,
     val status: String,
     val totalMinutes: Int,
+    val elapsedMinutes: Int,
     val questionCount: Int,
     val answeredCount: Int,
     val correctCount: Int,
@@ -203,6 +225,7 @@ data class StudyFlowTvMockExamPresentation(
         require(title.isNotBlank())
         require(status.isNotBlank())
         require(totalMinutes > 0)
+        require(elapsedMinutes in 0..totalMinutes)
         require(questionCount > 0)
         require(answeredCount in 0..questionCount)
         require(correctCount in 0..answeredCount)
@@ -226,6 +249,7 @@ data class StudyFlowTvReviewPresentation(
 @Serializable
 data class StudyFlowTvReviewItemPresentation(
     val reviewItemId: String,
+    val questionId: String? = null,
     val title: String,
     val subjectLabel: String,
     val prompt: String,

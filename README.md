@@ -442,3 +442,8 @@ TVOV23 adds the real Android phone controller on top of TVOV22 instead of introd
 
 TVOV24 connects the TVOV21 canonical presentation feed to the paired TV over the existing TVOV22 local link. The phone controller now offers explicit Start cast, Resync now, and Stop cast actions; snapshots are serialized toward the latest repository state, the TV acknowledges the exact retained snapshot id/time, and receiver rediscovery triggers resync. STOP_CAST clears the TV inbox to the truthful waiting state and remains pending for retry when requested while the paired TV is temporarily unavailable. No Cast SDK, MediaRouter, raw database payloads, or second transport stack are added. Domain-action persistence convergence remains TVOV25. The TV package is version code 24 / `0.1.0-tv24`.
 
+
+
+### Android TV TVOV25 — domain truth and persistence convergence
+
+TVOV25 makes StudyFlow persistence authoritative for TV interactions. Persistent TV/phone actions are mapped to canonical domain-action requests, executed on the phone through the existing StudyFlow session/practice/review managers and repositories, journaled for idempotent retry, and acknowledged over TVOV22. TV-local actions use a bounded outbox; phone-controller actions use the same executor directly. The resulting repository state is re-projected through TVOV21 and synchronized through TVOV24. The TV no longer fabricates mock scores, elapsed time, answers, review evidence, or lifecycle completion. The TV APK remains free of Room/data repositories and advances to version code 25 / `0.1.0-tv25`. TVOV26 is the remaining real two-device final seal.

@@ -114,7 +114,7 @@ app_build = read("app/build.gradle.kts")
 tv_build = read("app-tv/build.gradle.kts")
 for text, label in ((app_build, "phone"), (tv_build, "TV")):
     require('implementation(project(":core:tvlink"))' in text, f"{label} app must depend on :core:tvlink")
-require('versionCode = 24' in tv_build and 'versionName = "0.1.0-tv24"' in tv_build, "TVOV22 package version not installed")
+require('versionCode = 25' in tv_build and 'versionName = "0.1.0-tv25"' in tv_build, "TVOV22 package version not installed")
 for forbidden in (':core:data', ':core:database', ':feature:', 'androidx.tv', 'play-services-cast', 'androidx.mediarouter'):
     require(forbidden not in tv_build, f"TV dependency boundary regressed: {forbidden}")
 
@@ -161,13 +161,13 @@ require('transportDeferred = false' in projector, "phone projector must mark loc
 
 contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV24"',
+    'currentTvOverlay = "TVOV25"',
     'castTransportDeferred = false',
     'object StudyFlowTvLocalLinkBuildContract',
     'localPairingDiscoveryTransportIntroduced = true',
     'sharedAndroidLinkModule = ":core:tvlink"',
     'phoneControllerUiStillDeferredToTvov23 = false',
-    'packageVersionCode = 24',
+    'packageVersionCode = 25',
 )
 require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContractTest.kt",
@@ -197,7 +197,7 @@ require("TVOV22  Local pairing, discovery, and transport [implemented]" in roadm
 require("TVOV23  Android phone TV controller [implemented]" in roadmap, "roadmap must mark TVOV23 next")
 require("TVOV22  Local pairing, discovery, and transport [implemented]" in rules, "working rules must mark TVOV22 implemented")
 require("TVOV23  Android phone TV controller [implemented]" in rules, "working rules must mark TVOV23 next")
-require("TVOV00 through TVOV24" in rules, "working rules must record TVOV00 through TVOV24")
+require("TVOV00 through TVOV25" in rules, "working rules must record TVOV00 through TVOV25")
 for token in ("NSD", "six-digit", "nonce", "session secret", "TVOV23"):
     require(token.lower() in notes.lower(), f"TVOV22 implementation notes missing {token}")
 for token in ("explicit", "revoked", "Cast SDK", "no raw database rows", "background"):

@@ -106,7 +106,7 @@ for token in (
 for token in (
     "questionPracticeOwnsAnswerSelectionExplanationAndPhoneControl",
     "defaultPracticeSetContainsRenderableQuestionsAndChoices",
-    "practiceStateSelectsRevealsAdvancesAndCompletes",
+    "answerAndFinishWaitForCanonicalProjectionWhileNavigationRemainsLocal",
     "practiceFocusCommandsAndCastStateUseSharedProtocols",
 ):
     require(test, token, "practice tests")

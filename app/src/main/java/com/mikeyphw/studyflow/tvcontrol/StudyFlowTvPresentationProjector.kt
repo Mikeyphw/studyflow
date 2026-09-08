@@ -1,6 +1,8 @@
 package com.mikeyphw.studyflow.tvcontrol
 
+import com.mikeyphw.studyflow.core.domain.PracticeExecutionEngine
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsSnapshot
+import com.mikeyphw.studyflow.core.domain.StudySessionTimer
 import com.mikeyphw.studyflow.core.model.ErrorEntry
 import com.mikeyphw.studyflow.core.model.Flashcard
 import com.mikeyphw.studyflow.core.model.MockExam
@@ -25,6 +27,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationAvailability
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationProtocol
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvProgressPresentation
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvQuestionAnswerPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvQuestionChoicePresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvQuestionPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvQuestionSetPresentation
@@ -97,9 +100,9 @@ object StudyFlowTvPresentationProjector {
                 weeklyProgressPercent = weeklyProgress,
                 mockExamScheduled = pendingActivities.any { it.type == StudyActivityType.MOCK_EXAM },
             ),
-            studySession = projectSession(input.sessions, input.schedule.plannedActivities, subjectNames),
+            studySession = projectSession(input.sessions, input.schedule.plannedActivities, subjectNames, input.generatedAtEpochMillis),
             questionSet = projectQuestionSet(plan, input.tests, input.questions, subjectNames),
-            mockExam = projectMockExam(input.mockExams),
+            mockExam = projectMockExam(input.mockExams, input.generatedAtEpochMillis),
             review = projectReview(
                 plan = plan,
                 reviewItems = input.reviewItems,
@@ -155,12 +158,13 @@ object StudyFlowTvPresentationProjector {
         sessions: List<StudySession>,
         activities: List<PlannedActivity>,
         subjectNames: Map<SubjectId, String>,
+        nowEpochMillis: Long,
     ): StudyFlowTvStudySessionPresentation? {
         val session = sessions.firstOrNull { it.status == StudySessionStatus.RUNNING || it.status == StudySessionStatus.PAUSED }
             ?: sessions.maxByOrNull { it.startedAtEpochMillis }
             ?: return null
         val activity = session.plannedActivityId?.let { id -> activities.firstOrNull { it.id == id } }
-        val elapsedMinutes = ((session.grossDurationSeconds - session.pauseDurationSeconds).coerceAtLeast(0L) / 60L).toInt()
+        val elapsedMinutes = (StudySessionTimer.activeSeconds(session, nowEpochMillis) / 60L).toInt()
         val targetMinutes = session.targetDurationMinutes
             ?: activity?.plannedDurationMinutes
             ?: elapsedMinutes.coerceAtLeast(1)
@@ -182,24 +186,54 @@ object StudyFlowTvPresentationProjector {
         questions: List<Question>,
         subjectNames: Map<SubjectId, String>,
     ): StudyFlowTvQuestionSetPresentation {
-        val openTest = tests.firstOrNull { it.startedAtEpochMillis != null && it.submittedAtEpochMillis == null }
+        val test = tests.firstOrNull { it.startedAtEpochMillis != null && it.submittedAtEpochMillis == null }
             ?: tests.firstOrNull { it.submittedAtEpochMillis == null }
-        val projectedQuestions = questions.asSequence()
+            ?: tests.maxByOrNull { it.submittedAtEpochMillis ?: it.startedAtEpochMillis ?: Long.MIN_VALUE }
+        val execution = test?.let { candidate ->
+            runCatching { PracticeExecutionEngine().stateForTest(candidate, questions) }.getOrNull()
+        }
+        val orderedQuestions = execution?.questions ?: questions
+        val projectedQuestions = orderedQuestions.asSequence()
             .mapNotNull { question -> question.toPresentation(subjectNames) }
             .take(StudyFlowTvPresentationProtocol.maxTvQuestions)
             .toList()
+        val projectedById = projectedQuestions.associateBy { it.questionId }
+        val answers = execution?.answers.orEmpty().mapNotNull { answer ->
+            val domainQuestion = questions.firstOrNull { it.id == answer.questionId } ?: return@mapNotNull null
+            val optionIndex = domainQuestion.options.indexOfFirst { it.trim().equals(answer.chosenAnswer.trim(), ignoreCase = true) }
+            val projectedQuestion = projectedById[answer.questionId.value] ?: return@mapNotNull null
+            val option = projectedQuestion.choices.getOrNull(optionIndex) ?: return@mapNotNull null
+            StudyFlowTvQuestionAnswerPresentation(
+                questionId = answer.questionId.value,
+                chosenOptionId = option.optionId,
+                correct = answer.correct,
+                answeredAtEpochMillis = answer.answeredAtEpochMillis,
+            )
+        }
         return StudyFlowTvQuestionSetPresentation(
-            questionSetId = openTest?.id?.value ?: "questions-${plan.id.value}",
-            title = openTest?.title ?: "Question practice",
+            questionSetId = test?.id?.value ?: "questions-${plan.id.value}",
+            title = test?.title ?: "Question practice",
             subjectLabel = projectedQuestions.map { it.subjectLabel }.distinct().singleOrNull() ?: "Mixed subjects",
             questions = projectedQuestions,
+            started = test?.startedAtEpochMillis != null,
+            submitted = test?.submittedAtEpochMillis != null,
+            currentQuestionId = execution?.currentQuestion?.id?.value?.takeIf(projectedById::containsKey),
+            answers = answers,
         )
     }
 
-    private fun projectMockExam(mockExams: List<MockExam>): StudyFlowTvMockExamPresentation? {
+    private fun projectMockExam(
+        mockExams: List<MockExam>,
+        nowEpochMillis: Long,
+    ): StudyFlowTvMockExamPresentation? {
         val mock = mockExams.firstOrNull { it.startedAtEpochMillis != null && it.submittedAtEpochMillis == null }
-            ?: mockExams.maxByOrNull { it.startedAtEpochMillis ?: Long.MIN_VALUE }
+            ?: mockExams.maxByOrNull { it.submittedAtEpochMillis ?: it.startedAtEpochMillis ?: Long.MIN_VALUE }
             ?: return null
+        val totalMinutes = (mock.timeLimitSeconds / 60L).toInt().coerceAtLeast(1)
+        val elapsedMinutes = mock.startedAtEpochMillis?.let { started ->
+            val end = mock.submittedAtEpochMillis ?: nowEpochMillis
+            ((end - started).coerceAtLeast(0L) / 60_000L).toInt().coerceAtMost(totalMinutes)
+        } ?: 0
         return StudyFlowTvMockExamPresentation(
             mockExamId = mock.id.value,
             title = mock.title,
@@ -208,7 +242,8 @@ object StudyFlowTvPresentationProjector {
                 mock.startedAtEpochMillis != null -> "RUNNING"
                 else -> "READY"
             },
-            totalMinutes = (mock.timeLimitSeconds / 60L).toInt().coerceAtLeast(1),
+            totalMinutes = totalMinutes,
+            elapsedMinutes = elapsedMinutes,
             questionCount = mock.questionCount,
             answeredCount = mock.answeredCount,
             correctCount = mock.correctCount,
@@ -246,6 +281,7 @@ object StudyFlowTvPresentationProjector {
                     ?: "Open this review on the phone for the full source context."
                 StudyFlowTvReviewItemPresentation(
                     reviewItemId = item.id.value,
+                    questionId = item.questionId?.value,
                     title = prompt.take(96),
                     subjectLabel = subjectLabel(item.subjectId, subjectNames),
                     prompt = prompt,

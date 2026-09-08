@@ -107,6 +107,43 @@ class StudyFlowTvWireProtocolTest {
 
 
     @Test
+    fun domainActionResultAndPendingActionRoundTrip() {
+        val action = StudyFlowTvDomainAction(
+            actionId = "domain-1",
+            studyPlanId = "plan-1",
+            kind = StudyFlowTvDomainActionKind.PRACTICE_MARK_REVIEW,
+            contextId = "test-1",
+            targetId = "question-1",
+            reviewGrade = 3,
+            requestedAtEpochMillis = 40_000L,
+            origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+        )
+        val result = StudyFlowTvDomainActionResult(
+            actionId = action.actionId,
+            ok = true,
+            completedAtEpochMillis = 40_100L,
+        )
+        val request = StudyFlowTvWireRequest(
+            requestId = "domain-result",
+            operation = StudyFlowTvWireOperation.DOMAIN_ACTION_RESULT,
+            sessionId = "session-1",
+            sessionSecret = "0123456789abcdef0123456789abcdef",
+            domainActionResult = result,
+            issuedAtEpochMillis = 40_100L,
+        )
+        val response = StudyFlowTvWireResponse(
+            requestId = "domain-pending",
+            ok = true,
+            pendingDomainAction = action,
+            lastDomainActionResult = result,
+            respondedAtEpochMillis = 40_200L,
+        )
+
+        assertEquals(request, StudyFlowTvWireCodec.decodeRequest(StudyFlowTvWireCodec.encodeRequest(request)))
+        assertEquals(response, StudyFlowTvWireCodec.decodeResponse(StudyFlowTvWireCodec.encodeResponse(response)))
+    }
+
+    @Test
     fun presentationReceiptRoundTripsForExactCastAcknowledgement() {
         val response = StudyFlowTvWireResponse(
             requestId = "presentation-ack",

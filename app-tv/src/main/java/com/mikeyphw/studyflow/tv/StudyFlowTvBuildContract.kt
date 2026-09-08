@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV24"
+    const val currentTvOverlay = "TVOV25"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -208,7 +208,7 @@ object StudyFlowTvPackagingBuildContract {
     const val cleartextTrafficDisabled = true
     const val tvTargetRejectsPhoneTasks = true
     const val conditionalReleaseSigningSupported = true
-    const val packageVersionCode = 24
+    const val packageVersionCode = 25
 }
 
 // TVOV20 Real-device acceptance and release seal contract.
@@ -280,4 +280,18 @@ object StudyFlowTvCastSynchronizationBuildContract {
     const val reconnectResyncRequired = true
     const val pendingStopRetriesAfterReconnect = true
     const val tvStopCastClearsPresentationInbox = true
+}
+
+
+// TVOV25 Domain truth and persistence convergence contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvDomainPersistenceBuildContract {
+    const val domainPersistenceConvergenceIntroduced = true
+    const val phoneOwnsCanonicalMutations = true
+    const val tvRepositoryMutationForbidden = true
+    const val canonicalManagersRequired = true
+    const val idempotentActionJournalRequired = true
+    const val localTvMutationOutboxRequired = true
+    const val persistedProjectionRoundTripRequired = true
+    const val fakeMockScoringForbidden = true
 }

@@ -133,15 +133,13 @@ object StudyFlowTvStudySessionExperience {
         state: StudyFlowTvSessionState,
         action: StudyFlowTvSessionAction,
     ): StudyFlowTvSessionState = when (action) {
-        StudyFlowTvSessionAction.START -> state.copy(status = StudyFlowTvSessionStatus.RUNNING)
-        StudyFlowTvSessionAction.PAUSE -> state.copy(status = StudyFlowTvSessionStatus.PAUSED)
-        StudyFlowTvSessionAction.RESUME -> state.copy(status = StudyFlowTvSessionStatus.RUNNING)
+        // TVOV25: canonical lifecycle changes are persisted by the phone and arrive in the next snapshot.
+        StudyFlowTvSessionAction.START,
+        StudyFlowTvSessionAction.PAUSE,
+        StudyFlowTvSessionAction.RESUME,
+        StudyFlowTvSessionAction.COMPLETE,
+        -> state
         StudyFlowTvSessionAction.NEXT_SEGMENT -> advanceSegment(state)
-        StudyFlowTvSessionAction.COMPLETE -> state.copy(
-            status = StudyFlowTvSessionStatus.COMPLETED,
-            activeSegmentIndex = state.segments.lastIndex,
-            elapsedMinutes = state.targetMinutes,
-        )
         StudyFlowTvSessionAction.RETURN_TODAY -> state
     }
 
@@ -191,12 +189,7 @@ object StudyFlowTvStudySessionExperience {
 
     private fun advanceSegment(state: StudyFlowTvSessionState): StudyFlowTvSessionState {
         val nextIndex = (state.activeSegmentIndex + 1).coerceAtMost(state.segments.lastIndex)
-        val addedMinutes = state.segments[state.activeSegmentIndex].minutes
-        return state.copy(
-            status = if (nextIndex == state.segments.lastIndex) StudyFlowTvSessionStatus.RUNNING else state.status,
-            activeSegmentIndex = nextIndex,
-            elapsedMinutes = (state.elapsedMinutes + addedMinutes).coerceAtMost(state.targetMinutes),
-        )
+        return state.copy(activeSegmentIndex = nextIndex)
     }
 
     private fun controlActionFor(action: StudyFlowTvSessionAction): StudyFlowTvControlAction = when (action) {

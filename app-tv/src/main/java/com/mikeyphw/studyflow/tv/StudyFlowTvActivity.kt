@@ -16,6 +16,9 @@ import android.widget.TextView
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlContinuityState
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlSession
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainAction
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionProtocol
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionResult
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlOrigin
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
@@ -31,6 +34,7 @@ import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvAccessibilityNode
 import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvTenFootText
 import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlState
 import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlStateReducer
+import com.mikeyphw.studyflow.tv.domain.StudyFlowTvDomainActionOutbox
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteCommand
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteKeyMapper
 import com.mikeyphw.studyflow.tv.focus.applyStudyFlowTvDpadFocus
@@ -91,6 +95,7 @@ class StudyFlowTvActivity : Activity() {
     // TVOV21: the runtime shell starts from an explicit waiting state. Historical fixture defaults
     // remain unit-test helpers only and are never the Activity's presentation source.
     private val presentationInbox = StudyFlowTvPresentationInbox()
+    private val domainActionOutbox = StudyFlowTvDomainActionOutbox()
     private var controlState: StudyFlowTvControlState = StudyFlowTvPresentationAdapter.waitingState()
     private var localCommandSequence: Long = 0
     private val selectedDestination: StudyFlowTvDestination
@@ -179,6 +184,16 @@ class StudyFlowTvActivity : Activity() {
 
                 override fun currentPresentationReceipt(): StudyFlowTvPresentationReceipt? =
                     presentationInbox.receipt()
+
+                override fun pendingDomainAction(): StudyFlowTvDomainAction? = domainActionOutbox.peek()
+
+                override fun acknowledgeDomainAction(result: StudyFlowTvDomainActionResult): Boolean {
+                    val acknowledged = domainActionOutbox.acknowledge(result)
+                    if (acknowledged && ::continuityStatus.isInitialized) renderContinuityStatus()
+                    return acknowledged
+                }
+
+                override fun lastDomainActionResult(): StudyFlowTvDomainActionResult? = domainActionOutbox.lastResult()
             },
         )
         setContentView(createContentView())
@@ -406,11 +421,22 @@ class StudyFlowTvActivity : Activity() {
     internal fun applyPairedPhoneCommand(
         command: StudyFlowTvControlCommand,
         nowEpochMillis: Long,
-    ): Boolean = applyControlCommand(
-        command = command,
-        origin = StudyFlowTvControlOrigin.PAIRED_PHONE,
-        nowEpochMillis = nowEpochMillis,
-    )
+    ): Boolean {
+        if (StudyFlowTvDomainActionProtocol.requiresPersistence(command)) {
+            val queued = domainActionOutbox.enqueue(
+                command = command,
+                snapshot = presentationInbox.current,
+                origin = StudyFlowTvControlOrigin.PAIRED_PHONE,
+            )
+            if (queued && ::continuityStatus.isInitialized) renderContinuityStatus()
+            return queued
+        }
+        return applyControlCommand(
+            command = command,
+            origin = StudyFlowTvControlOrigin.PAIRED_PHONE,
+            nowEpochMillis = nowEpochMillis,
+        )
+    }
 
     private fun bindTransportSession(session: StudyFlowTvControlSession) {
         controlState = StudyFlowTvControlStateReducer.bindSession(
@@ -494,8 +520,18 @@ class StudyFlowTvActivity : Activity() {
         factory: (commandId: String, issuedAtEpochMillis: Long) -> StudyFlowTvControlCommand,
     ): Boolean {
         val now = System.currentTimeMillis()
+        val command = factory(nextLocalCommandId(), now)
+        if (StudyFlowTvDomainActionProtocol.requiresPersistence(command)) {
+            val queued = domainActionOutbox.enqueue(
+                command = command,
+                snapshot = presentationInbox.current,
+                origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+            )
+            if (queued && ::continuityStatus.isInitialized) renderContinuityStatus()
+            return queued
+        }
         return applyControlCommand(
-            command = factory(nextLocalCommandId(), now),
+            command = command,
             origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
             nowEpochMillis = now,
         )

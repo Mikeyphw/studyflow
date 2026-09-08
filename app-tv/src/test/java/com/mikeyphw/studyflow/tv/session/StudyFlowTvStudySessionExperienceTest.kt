@@ -31,21 +31,18 @@ class StudyFlowTvStudySessionExperienceTest {
     }
 
     @Test
-    fun sessionStateMachineStartsPausesResumesAdvancesAndCompletes() {
+    fun canonicalLifecycleActionsDoNotFabricateTvSessionState() {
         val ready = StudyFlowTvStudySessionExperience.defaultState()
-        val running = StudyFlowTvStudySessionExperience.applyAction(ready, StudyFlowTvSessionAction.START)
-        val paused = StudyFlowTvStudySessionExperience.applyAction(running, StudyFlowTvSessionAction.PAUSE)
-        val resumed = StudyFlowTvStudySessionExperience.applyAction(paused, StudyFlowTvSessionAction.RESUME)
-        val advanced = StudyFlowTvStudySessionExperience.applyAction(resumed, StudyFlowTvSessionAction.NEXT_SEGMENT)
+        val started = StudyFlowTvStudySessionExperience.applyAction(ready, StudyFlowTvSessionAction.START)
+        val paused = StudyFlowTvStudySessionExperience.applyAction(ready, StudyFlowTvSessionAction.PAUSE)
+        val advanced = StudyFlowTvStudySessionExperience.applyAction(ready, StudyFlowTvSessionAction.NEXT_SEGMENT)
         val completed = StudyFlowTvStudySessionExperience.applyAction(advanced, StudyFlowTvSessionAction.COMPLETE)
 
-        assertEquals(StudyFlowTvSessionStatus.RUNNING, running.status)
-        assertEquals(StudyFlowTvSessionStatus.PAUSED, paused.status)
-        assertEquals(StudyFlowTvSessionStatus.RUNNING, resumed.status)
+        assertEquals(ready, started)
+        assertEquals(ready, paused)
         assertEquals(1, advanced.activeSegmentIndex)
-        assertTrue(advanced.elapsedMinutes > ready.elapsedMinutes)
-        assertEquals(StudyFlowTvSessionStatus.COMPLETED, completed.status)
-        assertEquals(100, completed.progressPercent)
+        assertEquals(ready.elapsedMinutes, advanced.elapsedMinutes)
+        assertEquals(advanced, completed)
     }
 
     @Test

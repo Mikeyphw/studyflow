@@ -5,6 +5,10 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlContinuityState
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlProtocol
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlOrigin
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionMapper
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionProtocol
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionResult
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvReceiverEndpoint
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSessionCredential
@@ -22,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +49,7 @@ object StudyFlowTvPhoneControllerContract {
     const val livePresentationSynchronizationImplemented = true
     const val explicitStartStopCastRequired = true
     const val reconnectResyncRequired = true
+    const val domainMutationPollingIndependentOfCast = true
 
     val navigationSurfaces: Set<StudyFlowTvSurface> = StudyFlowTvSurface.entries.toSet()
 
@@ -101,6 +107,7 @@ interface StudyFlowTvPhoneLinkGateway {
     fun sendCommand(endpoint: StudyFlowTvReceiverEndpoint, command: StudyFlowTvControlCommand): StudyFlowTvWireResponse
     fun sendPresentation(endpoint: StudyFlowTvReceiverEndpoint, snapshot: StudyFlowTvPresentationSnapshot): StudyFlowTvWireResponse
     fun fetchContinuity(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse
+    fun acknowledgeDomainAction(endpoint: StudyFlowTvReceiverEndpoint, result: StudyFlowTvDomainActionResult): StudyFlowTvWireResponse
     fun revoke(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse
     fun clearSavedSession()
 }
@@ -127,6 +134,10 @@ class DefaultStudyFlowTvPhoneLinkGateway(
         snapshot: StudyFlowTvPresentationSnapshot,
     ): StudyFlowTvWireResponse = client.sendPresentation(endpoint, snapshot)
     override fun fetchContinuity(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse = client.fetchContinuity(endpoint)
+    override fun acknowledgeDomainAction(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        result: StudyFlowTvDomainActionResult,
+    ): StudyFlowTvWireResponse = client.acknowledgeDomainAction(endpoint, result)
     override fun revoke(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse = client.revoke(endpoint)
     override fun clearSavedSession() = client.clearSavedSession()
 }
@@ -173,12 +184,18 @@ object StudyFlowTvPhoneCommandFactory {
 class StudyFlowTvPhoneController(
     private val gateway: StudyFlowTvPhoneLinkGateway,
     private val presentationFeed: StudyFlowTvPresentationFeed,
+    private val domainActionExecutor: StudyFlowTvDomainActionExecutor,
+    private val defaultPlanId: StudyPlanId? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) : StudyFlowTvReceiverDiscovery.Listener, Closeable {
     private var castCollectionJob: Job? = null
     private var castDeliveryJob: Job? = null
+    private var domainSnapshotJob: Job? = null
+    private var domainPollJob: Job? = null
     private var latestCastSnapshot: StudyFlowTvPresentationSnapshot? = null
+    private var latestDomainSnapshot: StudyFlowTvPresentationSnapshot? = null
+    private var observedDomainPlanId: StudyPlanId? = null
     private var castDeliveryRequested = false
 
     private val mutableState = MutableStateFlow(
@@ -186,7 +203,12 @@ class StudyFlowTvPhoneController(
     )
     val state: StateFlow<StudyFlowTvPhoneControllerState> = mutableState.asStateFlow()
 
+    init {
+        observeDomainSnapshot(defaultPlanId)
+    }
+
     fun startDiscovery() {
+        startDomainActionPoll()
         val started = gateway.startDiscovery(this)
         if (!started && mutableState.value.linkStatus == StudyFlowTvLinkStatus.STOPPED) {
             mutableState.value = mutableState.value.copy(linkStatus = StudyFlowTvLinkStatus.ERROR)
@@ -273,6 +295,25 @@ class StudyFlowTvPhoneController(
             targetId = targetId,
             optionId = optionId,
         )
+        if (StudyFlowTvDomainActionProtocol.requiresPersistence(command)) {
+            val domainAction = StudyFlowTvDomainActionMapper.fromCommand(
+                command = command,
+                snapshot = latestDomainSnapshot,
+                origin = StudyFlowTvControlOrigin.PAIRED_PHONE,
+            )
+            if (domainAction == null) {
+                mutableState.value = mutableState.value.copy(lastMessage = "domain-context-required")
+                return
+            }
+            launchOperation(StudyFlowTvPhoneControllerOperation.COMMAND) {
+                val result = domainActionExecutor.execute(domainAction)
+                mutableState.value = mutableState.value.copy(
+                    lastMessage = if (result.ok) "domain-persisted" else result.reason ?: "domain-action-failed",
+                )
+                if (result.ok) requestCastDelivery()
+            }
+            return
+        }
         launchOperation(StudyFlowTvPhoneControllerOperation.COMMAND) {
             val response = gateway.sendCommand(endpoint, command)
             applyResponse(response, successMessage = "command-applied")
@@ -299,6 +340,7 @@ class StudyFlowTvPhoneController(
             return
         }
 
+        observeDomainSnapshot(planId)
         castCollectionJob?.cancel()
         latestCastSnapshot = null
         mutableState.value = mutableState.value.copy(
@@ -313,6 +355,7 @@ class StudyFlowTvPhoneController(
             ),
             lastMessage = "cast-started",
         )
+        startDomainActionPoll()
         castCollectionJob = scope.launch {
             try {
                 presentationFeed.observe(planId).collect { snapshot ->
@@ -377,7 +420,9 @@ class StudyFlowTvPhoneController(
             return
         }
         launchOperation(StudyFlowTvPhoneControllerOperation.REFRESH) {
-            applyResponse(gateway.fetchContinuity(endpoint), successMessage = "continuity-refreshed")
+            val response = gateway.fetchContinuity(endpoint)
+            applyResponse(response, successMessage = "continuity-refreshed")
+            handlePendingDomainAction(endpoint, response)
         }
     }
 
@@ -389,6 +434,8 @@ class StudyFlowTvPhoneController(
                 gateway.clearSavedSession()
                 castCollectionJob?.cancel()
                 castCollectionJob = null
+                domainPollJob?.cancel()
+                domainPollJob = null
                 latestCastSnapshot = null
                 mutableState.value = mutableState.value.copy(castSync = StudyFlowTvCastSyncState())
             }
@@ -405,6 +452,8 @@ class StudyFlowTvPhoneController(
         gateway.clearSavedSession()
         castCollectionJob?.cancel()
         castCollectionJob = null
+        domainPollJob?.cancel()
+        domainPollJob = null
         latestCastSnapshot = null
         mutableState.value = mutableState.value.copy(
             credential = null,
@@ -412,6 +461,72 @@ class StudyFlowTvPhoneController(
             castSync = StudyFlowTvCastSyncState(),
             lastMessage = "local-session-forgotten",
         )
+    }
+
+    private fun observeDomainSnapshot(planId: StudyPlanId?) {
+        if (planId == null || observedDomainPlanId == planId) return
+        observedDomainPlanId = planId
+        domainSnapshotJob?.cancel()
+        domainSnapshotJob = scope.launch {
+            try {
+                presentationFeed.observe(planId).collect { snapshot ->
+                    latestDomainSnapshot = snapshot
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // The controller remains usable for non-persistent navigation if projection is unavailable.
+                latestDomainSnapshot = null
+            }
+        }
+    }
+
+    private fun startDomainActionPoll() {
+        if (domainPollJob?.isActive == true) return
+        domainPollJob = scope.launch {
+            while (true) {
+                delay(1_000L)
+                val state = mutableState.value
+                if (state.credential == null) continue
+                val endpoint = state.selectedReceiver ?: continue
+                try {
+                    val response = withContext(ioDispatcher) { gateway.fetchContinuity(endpoint) }
+                    if (StudyFlowTvCastSynchronizationPolicy.isSessionFailure(response)) {
+                        invalidateSessionForCast(response.reason ?: "session-invalid")
+                        return@launch
+                    }
+                    if (response.ok) {
+                        mutableState.value = mutableState.value.copy(
+                            continuity = response.continuity ?: mutableState.value.continuity,
+                        )
+                        handlePendingDomainAction(endpoint, response)
+                        reconcilePresentationReceipt(response)
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // Discovery/reconnect will retry; canonical domain action ids are journaled.
+                }
+            }
+        }
+    }
+
+    private suspend fun handlePendingDomainAction(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        response: StudyFlowTvWireResponse,
+    ) {
+        val action = response.pendingDomainAction ?: return
+        val result = withContext(ioDispatcher) { domainActionExecutor.execute(action) }
+        val acknowledgement = withContext(ioDispatcher) { gateway.acknowledgeDomainAction(endpoint, result) }
+        if (StudyFlowTvCastSynchronizationPolicy.isSessionFailure(acknowledgement)) {
+            invalidateSessionForCast(acknowledgement.reason ?: "session-invalid")
+            return
+        }
+        mutableState.value = mutableState.value.copy(
+            continuity = acknowledgement.continuity ?: mutableState.value.continuity,
+            lastMessage = if (result.ok) "tv-domain-action-persisted" else result.reason ?: "domain-action-failed",
+        )
+        if (result.ok) requestCastDelivery()
     }
 
     private fun requestCastDelivery() {
@@ -530,6 +645,8 @@ class StudyFlowTvPhoneController(
         gateway.clearSavedSession()
         castCollectionJob?.cancel()
         castCollectionJob = null
+        domainPollJob?.cancel()
+        domainPollJob = null
         latestCastSnapshot = null
         mutableState.value = mutableState.value.copy(
             credential = null,
@@ -568,6 +685,10 @@ class StudyFlowTvPhoneController(
 
     override fun close() {
         gateway.stopDiscovery()
+        castCollectionJob?.cancel()
+        castDeliveryJob?.cancel()
+        domainSnapshotJob?.cancel()
+        domainPollJob?.cancel()
         scope.cancel()
     }
 

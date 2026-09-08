@@ -32,32 +32,24 @@ class StudyFlowTvMockExamStudioTest {
     }
 
     @Test
-    fun mockExamStateStartsPausesFlagsSubmitsAndShowsResults() {
+    fun canonicalMockLifecycleAndScoringAreNeverFabricatedOnTv() {
         val ready = StudyFlowTvMockExamStudio.defaultState()
-        val running = StudyFlowTvMockExamStudio.applyAction(ready, StudyFlowTvMockExamAction.START)
-        val flagged = StudyFlowTvMockExamStudio.applyAction(running, StudyFlowTvMockExamAction.MARK_FOR_REVIEW)
-        val advanced = StudyFlowTvMockExamStudio.applyAction(flagged, StudyFlowTvMockExamAction.NEXT_SECTION)
-        val paused = StudyFlowTvMockExamStudio.applyAction(advanced, StudyFlowTvMockExamAction.PAUSE)
-        val resumed = StudyFlowTvMockExamStudio.applyAction(paused, StudyFlowTvMockExamAction.RESUME)
-        val submitted = StudyFlowTvMockExamStudio.applyAction(resumed, StudyFlowTvMockExamAction.SUBMIT)
-        val results = StudyFlowTvMockExamStudio.applyAction(submitted, StudyFlowTvMockExamAction.REVIEW_RESULTS)
+        val started = StudyFlowTvMockExamStudio.applyAction(ready, StudyFlowTvMockExamAction.START)
+        val marked = StudyFlowTvMockExamStudio.applyAction(ready, StudyFlowTvMockExamAction.MARK_FOR_REVIEW)
+        val advanced = StudyFlowTvMockExamStudio.applyAction(ready, StudyFlowTvMockExamAction.NEXT_SECTION)
+        val submitted = StudyFlowTvMockExamStudio.applyAction(advanced, StudyFlowTvMockExamAction.SUBMIT)
 
-        assertEquals(StudyFlowTvMockExamStatus.RUNNING, running.status)
-        assertEquals(1, flagged.flaggedSectionIds.size)
+        assertEquals(ready, started)
+        assertEquals(ready, marked)
         assertEquals(1, advanced.activeSectionIndex)
-        assertEquals(StudyFlowTvMockExamStatus.PAUSED, paused.status)
-        assertEquals(StudyFlowTvMockExamStatus.RUNNING, resumed.status)
-        assertEquals(StudyFlowTvMockExamStatus.SUBMITTED, submitted.status)
-        assertEquals(100, submitted.progressPercent)
-        assertEquals(StudyFlowTvMockExamStatus.RESULTS, results.status)
+        assertEquals(0, advanced.elapsedMinutes)
+        assertEquals(advanced, submitted)
+        assertEquals(0, submitted.correctAnswerCount)
     }
 
     @Test
     fun mockExamFocusCommandsAndCastStateUseSharedProtocols() {
-        val running = StudyFlowTvMockExamStudio.applyAction(
-            StudyFlowTvMockExamStudio.defaultState(),
-            StudyFlowTvMockExamAction.START,
-        )
+        val running = StudyFlowTvMockExamStudio.defaultState().copy(status = StudyFlowTvMockExamStatus.RUNNING)
         val focusItems = StudyFlowTvMockExamStudio.focusItems(running)
         val command = StudyFlowTvMockExamStudio.commandForAction(
             action = StudyFlowTvMockExamAction.MARK_FOR_REVIEW,
@@ -78,6 +70,7 @@ class StudyFlowTvMockExamStudioTest {
         assertEquals(StudyFlowTvControlAction.MARK_FOR_REVIEW, command.action)
         assertEquals(StudyFlowTvSurface.MOCK_EXAM, castState.surface)
         assertEquals(running.progressPercent, castState.progressPercent ?: -1)
-        assertTrue(StudyFlowTvMockExamStudio.resultSummary(StudyFlowTvMockExamStudio.applyAction(running, StudyFlowTvMockExamAction.SUBMIT)).contains("correct"))
+        val projectedSubmitted = running.copy(status = StudyFlowTvMockExamStatus.SUBMITTED, correctAnswerCount = 7)
+        assertTrue(StudyFlowTvMockExamStudio.resultSummary(projectedSubmitted).contains("7/"))
     }
 }

@@ -32,18 +32,16 @@ class StudyFlowTvQuestionPracticeTest {
     }
 
     @Test
-    fun practiceStateSelectsRevealsAdvancesAndCompletes() {
+    fun answerAndFinishWaitForCanonicalProjectionWhileNavigationRemainsLocal() {
         val ready = StudyFlowTvQuestionPractice.defaultState()
         val answered = StudyFlowTvQuestionPractice.applyAction(ready, StudyFlowTvPracticeAction.SELECT_B)
-        val explained = StudyFlowTvQuestionPractice.applyAction(answered, StudyFlowTvPracticeAction.SHOW_EXPLANATION)
-        val next = StudyFlowTvQuestionPractice.applyAction(explained, StudyFlowTvPracticeAction.NEXT_QUESTION)
+        val next = StudyFlowTvQuestionPractice.applyAction(ready, StudyFlowTvPracticeAction.NEXT_QUESTION)
         val completed = StudyFlowTvQuestionPractice.applyAction(next, StudyFlowTvPracticeAction.FINISH_SET)
 
-        assertEquals(StudyFlowTvPracticeChoiceId.B, answered.selectedChoiceId)
-        assertEquals(true, StudyFlowTvQuestionPractice.isCurrentAnswerCorrect(answered))
-        assertTrue(explained.explanationVisible)
+        assertEquals(ready, answered)
         assertEquals(1, next.activeQuestionIndex)
-        assertTrue(completed.completed)
+        assertFalse(completed.completed)
+        assertEquals(0, completed.answeredCount)
     }
 
     @Test

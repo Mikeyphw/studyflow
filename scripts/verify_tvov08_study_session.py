@@ -110,7 +110,7 @@ for token in (
 for token in (
     "studySessionOwnsRemoteAndPhoneControlledSessionSurface",
     "defaultSessionContainsACompleteTvRunPlan",
-    "sessionStateMachineStartsPausesResumesAdvancesAndCompletes",
+    "canonicalLifecycleActionsDoNotFabricateTvSessionState",
     "sessionFocusCommandsAndCastStateUseSharedControlProtocol",
 ):
     require(test, token, "TV session unit tests")

@@ -27,6 +27,7 @@ class StudyFlowTvPhoneControllerContractTest {
             ),
         ))
         assertTrue(!StudyFlowTvPhoneControllerContract.presentationCastSynchronizationDeferredToTvov24)
+        assertTrue(StudyFlowTvPhoneControllerContract.domainMutationPollingIndependentOfCast)
     }
 
     @Test

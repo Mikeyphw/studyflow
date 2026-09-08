@@ -41,6 +41,7 @@ enum class StudyFlowTvWireOperation {
     COMMAND,
     PRESENTATION,
     CONTINUITY,
+    DOMAIN_ACTION_RESULT,
     REVOKE,
     PING,
 }
@@ -125,6 +126,7 @@ data class StudyFlowTvWireRequest(
     val phoneDeviceName: String? = null,
     val command: StudyFlowTvControlCommand? = null,
     val presentation: StudyFlowTvPresentationSnapshot? = null,
+    val domainActionResult: StudyFlowTvDomainActionResult? = null,
     val issuedAtEpochMillis: Long,
 ) {
     init {
@@ -145,6 +147,8 @@ data class StudyFlowTvWireResponse(
     val applied: Boolean? = null,
     val continuity: StudyFlowTvControlContinuityState? = null,
     val presentationReceipt: StudyFlowTvPresentationReceipt? = null,
+    val pendingDomainAction: StudyFlowTvDomainAction? = null,
+    val lastDomainActionResult: StudyFlowTvDomainActionResult? = null,
     val respondedAtEpochMillis: Long,
 ) {
     init {

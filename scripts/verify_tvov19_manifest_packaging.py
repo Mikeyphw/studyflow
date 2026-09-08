@@ -15,8 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FAILURES: list[str] = []
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 PACKAGE = "com.mikeyphw.studyflow.tv"
-VERSION_NAME = "0.1.0-tv24"
-VERSION_CODE = "24"
+VERSION_NAME = "0.1.0-tv25"
+VERSION_CODE = "25"
 
 
 def require(condition: bool, message: str) -> None:
@@ -188,8 +188,8 @@ for domain in ("root", "file", "database", "sharedpref", "external"):
 for token in (
     'applicationId = "com.mikeyphw.studyflow.tv"',
     'namespace = "com.mikeyphw.studyflow.tv"',
-    'versionCode = 24',
-    'versionName = "0.1.0-tv24"',
+    'versionCode = 25',
+    'versionName = "0.1.0-tv25"',
     'STUDYFLOW_RELEASE_STORE_FILE',
     'studyFlowTvRelease',
     'TV_RELEASE_SIGNING_CONFIGURED',
@@ -198,11 +198,11 @@ for token in (
 for forbidden in ('project(":core:data")', 'project(":core:database")', 'project(":feature:', 'androidx.tv', 'androidx.compose', 'androidx.mediarouter'):
     require(forbidden not in app_build, f"TVOV19 dependency boundary violated by {forbidden}")
 
-for token in ('const val overlay = "TVOV19"', 'versionCode = 24', 'bannerWidthDp = 160', 'bannerHeightDp = 90', 'fun isAllowedTvTargetTask'):
+for token in ('const val overlay = "TVOV19"', 'versionCode = 25', 'bannerWidthDp = 160', 'bannerHeightDp = 90', 'fun isAllowedTvTargetTask'):
     require(token in policy, f"TVOV19 packaging policy missing token: {token}")
 for token in ('packageIdentityAndTvLauncherContractAreStable', 'devtoolTvTargetRejectsPhoneTasks'):
     require(token in policy_test, f"TVOV19 packaging policy test missing {token}")
-for token in ('packagingHardeningIntroduced = true', 'tvTargetRejectsPhoneTasks = true', 'conditionalReleaseSigningSupported = true', 'packageVersionCode = 24'):
+for token in ('packagingHardeningIntroduced = true', 'tvTargetRejectsPhoneTasks = true', 'conditionalReleaseSigningSupported = true', 'packageVersionCode = 25'):
     require(token in contract, f"TVOV19 build contract missing {token}")
     require(token.split(" = ")[0] in build_test, f"TVOV19 build contract test missing {token}")
 

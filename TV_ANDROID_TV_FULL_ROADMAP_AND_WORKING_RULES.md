@@ -32,8 +32,8 @@ TVOV21  Typed presentation snapshots and canonical data projection [implemented]
 TVOV22  Local pairing, discovery, and transport [implemented]
 TVOV23  Android phone TV controller [implemented]
 TVOV24  Real cast/state synchronization [implemented]
-TVOV25  Domain truth and persistence convergence [next]
-TVOV26  End-to-end physical-device final seal [planned]
+TVOV25  Domain truth and persistence convergence [implemented]
+TVOV26  End-to-end physical-device final seal [next]
 ```
 
 ## Instructions and preferences
@@ -70,4 +70,9 @@ TVOV26  End-to-end physical-device final seal [planned]
 
 ## Current chain status
 
-As of TVOV24, the structured implementation chain covers TVOV00 through TVOV24. TVOV21 replaced runtime demo fixtures with canonical typed presentation snapshots; TVOV22 added explicit local discovery/pairing/authenticated transport; TVOV23 exposed that link through a real phone controller; and TVOV24 now streams the canonical phone-owned presentation feed to the TV with exact receipt acknowledgement, reconnect resync, explicit STOP_CAST, and pending-stop recovery. The original stopping gate is still intentionally open: TVOV25 is next and must converge TV/remote interactions onto the real phone-owned StudyFlow use cases and persistence before TVOV26 can perform the true two-device final seal.
+As of TVOV25, the structured implementation chain covers TVOV00 through TVOV25. TVOV21 replaced runtime demo fixtures with canonical typed presentation snapshots; TVOV22 added explicit local discovery/pairing/authenticated transport; TVOV23 exposed that link through a real phone controller; TVOV24 streams canonical phone-owned presentation state to TV; and TVOV25 routes mutation intents back to the phone-owned StudyFlow managers/repositories with idempotent action-result acknowledgement before the persisted projector state returns to TV. The original stopping gate now has one remaining owner: TVOV26 must prove the complete flow on real phone + TV devices, including reconnect/restart/revoke behavior and optimized Release runtime acceptance.
+
+
+### TVOV25 domain truth and persistence convergence
+
+TVOV25 removes the last deliberate TV-local pseudo-domain behavior. Commands that change StudyFlow evidence are mapped to shared domain-action requests using canonical ids, executed only by the phone/data owner through existing StudyFlow managers and repositories, journaled by action id, and acknowledged over the existing authenticated TVOV22 link. TV-originated actions wait in a bounded outbox; phone-originated actions use the same executor directly. Repository changes are then projected through TVOV21 and synchronized through TVOV24. The TV no longer invents answers, review completion, elapsed time, lifecycle completion, or mock scores. `app-tv` remains a presentation/control receiver with no Room or data repository dependency. TVOV26 is the final physical two-device acceptance seal.

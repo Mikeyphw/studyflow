@@ -11,6 +11,8 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlContinuityState
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlSession
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainAction
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionResult
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingEngine
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingInfo
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingOffer
@@ -77,6 +79,9 @@ interface StudyFlowTvLocalTransportDelegate {
     fun applyPresentationSnapshot(snapshot: StudyFlowTvPresentationSnapshot, nowEpochMillis: Long): StudyFlowTvTransportApplyResult
     fun currentContinuityState(): StudyFlowTvControlContinuityState
     fun currentPresentationReceipt(): StudyFlowTvPresentationReceipt?
+    fun pendingDomainAction(): StudyFlowTvDomainAction?
+    fun acknowledgeDomainAction(result: StudyFlowTvDomainActionResult): Boolean
+    fun lastDomainActionResult(): StudyFlowTvDomainActionResult?
 }
 
 /** Small SharedPreferences credential store. Both application manifests disable backup. */
@@ -336,6 +341,14 @@ class StudyFlowTvLocalTransportClient(context: Context) {
         nowEpochMillis: Long = System.currentTimeMillis(),
     ): StudyFlowTvWireResponse = authenticatedExchange(endpoint, StudyFlowTvWireOperation.CONTINUITY, nowEpochMillis) { this }
 
+    fun acknowledgeDomainAction(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        result: StudyFlowTvDomainActionResult,
+        nowEpochMillis: Long = System.currentTimeMillis(),
+    ): StudyFlowTvWireResponse = authenticatedExchange(endpoint, StudyFlowTvWireOperation.DOMAIN_ACTION_RESULT, nowEpochMillis) {
+        copy(domainActionResult = result)
+    }
+
     fun revoke(
         endpoint: StudyFlowTvReceiverEndpoint,
         nowEpochMillis: Long = System.currentTimeMillis(),
@@ -568,6 +581,7 @@ class StudyFlowTvLocalTransportHost(
             StudyFlowTvWireOperation.COMMAND,
             StudyFlowTvWireOperation.PRESENTATION,
             StudyFlowTvWireOperation.CONTINUITY,
+            StudyFlowTvWireOperation.DOMAIN_ACTION_RESULT,
             StudyFlowTvWireOperation.REVOKE,
             -> authenticatedDispatch(request, nowEpochMillis)
         }
@@ -659,7 +673,26 @@ class StudyFlowTvLocalTransportHost(
                 nowEpochMillis = nowEpochMillis,
                 continuity = safeContinuity(),
                 presentationReceipt = safePresentationReceipt(),
+                pendingDomainAction = safePendingDomainAction(),
+                lastDomainActionResult = safeLastDomainActionResult(),
             )
+            StudyFlowTvWireOperation.DOMAIN_ACTION_RESULT -> {
+                val result = request.domainActionResult
+                    ?: return response(request, false, "domain-action-result-required", nowEpochMillis)
+                val acknowledged = callOnMain { delegate.acknowledgeDomainAction(result) }
+                    ?: return response(request, false, "main-thread-timeout", nowEpochMillis)
+                response(
+                    request = request,
+                    ok = acknowledged,
+                    reason = if (acknowledged) null else "domain-action-not-pending",
+                    nowEpochMillis = nowEpochMillis,
+                    applied = acknowledged,
+                    continuity = safeContinuity(),
+                    presentationReceipt = safePresentationReceipt(),
+                    pendingDomainAction = safePendingDomainAction(),
+                    lastDomainActionResult = safeLastDomainActionResult(),
+                )
+            }
             StudyFlowTvWireOperation.REVOKE -> {
                 val revoked = activeCredential.toControlSession().revoke(nowEpochMillis)
                 credential = null
@@ -686,6 +719,12 @@ class StudyFlowTvLocalTransportHost(
     private fun safePresentationReceipt(): StudyFlowTvPresentationReceipt? =
         callOnMain { delegate.currentPresentationReceipt() }
 
+    private fun safePendingDomainAction(): StudyFlowTvDomainAction? =
+        callOnMain { delegate.pendingDomainAction() }
+
+    private fun safeLastDomainActionResult(): StudyFlowTvDomainActionResult? =
+        callOnMain { delegate.lastDomainActionResult() }
+
     private fun response(
         request: StudyFlowTvWireRequest,
         ok: Boolean,
@@ -694,6 +733,8 @@ class StudyFlowTvLocalTransportHost(
         applied: Boolean? = null,
         continuity: StudyFlowTvControlContinuityState? = null,
         presentationReceipt: StudyFlowTvPresentationReceipt? = null,
+        pendingDomainAction: StudyFlowTvDomainAction? = null,
+        lastDomainActionResult: StudyFlowTvDomainActionResult? = null,
     ): StudyFlowTvWireResponse = StudyFlowTvWireResponse(
         requestId = request.requestId,
         ok = ok,
@@ -701,6 +742,8 @@ class StudyFlowTvLocalTransportHost(
         applied = applied,
         continuity = continuity,
         presentationReceipt = presentationReceipt,
+        pendingDomainAction = pendingDomainAction,
+        lastDomainActionResult = lastDomainActionResult,
         respondedAtEpochMillis = nowEpochMillis,
     )
 

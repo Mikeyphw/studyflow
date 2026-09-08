@@ -1037,6 +1037,7 @@ internal fun StudyFlowNavHost(
                 discovery = container.tvReceiverDiscovery,
                 client = container.tvLinkClient,
                 presentationSource = container.tvPresentationSource,
+                domainActionExecutor = container.tvDomainActionExecutor,
                 defaultPlanId = preferences.defaultStudyPlanId,
                 onBack = navController::popBackStack,
             )

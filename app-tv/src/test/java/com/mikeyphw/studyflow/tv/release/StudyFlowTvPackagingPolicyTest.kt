@@ -11,7 +11,7 @@ class StudyFlowTvPackagingPolicyTest {
         assertEquals("TVOV19", StudyFlowTvPackagingPolicy.overlay)
         assertEquals("com.mikeyphw.studyflow.tv", StudyFlowTvPackagingPolicy.applicationId)
         assertEquals(24, StudyFlowTvPackagingPolicy.versionCode)
-        assertEquals("0.1.0-tv24", StudyFlowTvPackagingPolicy.versionName)
+        assertEquals("0.1.0-tv25", StudyFlowTvPackagingPolicy.versionName)
         assertTrue(StudyFlowTvPackagingPolicy.backupDisabled)
         assertTrue(StudyFlowTvPackagingPolicy.cleartextTrafficDisabled)
         assertEquals(160, StudyFlowTvPackagingPolicy.bannerWidthDp)

@@ -70,8 +70,9 @@ require("TVOV21  Typed presentation snapshots and canonical data projection [imp
 require("TVOV22  Local pairing, discovery, and transport [implemented]" in rules, "TVOV22 pairing/transport roadmap item must be implemented")
 require("TVOV23  Android phone TV controller [implemented]" in rules, "TVOV23 phone controller roadmap item must be implemented")
 require("TVOV24  Real cast/state synchronization [implemented]" in rules, "TVOV24 cast synchronization roadmap item must be implemented")
-require("TVOV25  Domain truth and persistence convergence [next]" in rules, "TVOV25 must be marked next")
-require("TVOV00 through TVOV24" in rules, "working-rules current chain status must record TVOV00 through TVOV24")
+require("TVOV25  Domain truth and persistence convergence [implemented]" in rules, "TVOV25 must be marked implemented")
+require("TVOV26  End-to-end physical-device final seal [next]" in rules, "TVOV26 must be marked next")
+require("TVOV00 through TVOV25" in rules, "working-rules current chain status must record TVOV00 through TVOV25")
 require('tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions")' in root_gradle, "missing Gradle roadmap/instructions verifier task")
 require("verifyStudyFlowTvRoadmapInstructions" in devtool, "studyflow_tv target missing roadmap/instructions verifier")
 if validate:
