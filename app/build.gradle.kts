@@ -80,6 +80,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:navigation"))
     implementation(project(":core:tvcontrol"))
+    implementation(project(":core:tvlink"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:analytics"))
     implementation(project(":feature:library"))

@@ -161,6 +161,13 @@
     <string name="tv_settings_action_about">About</string>
     <string name="tv_settings_about_detail">TV-safe diagnostics: package identity, protocol version, and local presentation state only. Account management, storage, import/export, and database access remain on the phone.</string>
     <string name="tv_control_continuity_status_format">control state · %1$s · revision %2$d · pairing %3$s</string>
-    <string name="tv_presentation_waiting_body">Waiting for current StudyFlow presentation data. The typed projection boundary is ready; paired transport arrives in the next TV overlay.</string>
+    <string name="tv_presentation_waiting_body">Waiting for current StudyFlow presentation data from a paired phone.</string>
     <string name="tv_presentation_empty_body">The active StudyFlow plan has no presentation data for this TV surface yet.</string>
+    <string name="tv_pairing_device_name_format">StudyFlow TV · %1$s</string>
+    <string name="tv_settings_pairing_code_format">Pairing code: %1$s · expires in %2$d seconds</string>
+    <string name="tv_settings_transport_paired">Local phone link ready · %1$s</string>
+    <string name="tv_settings_transport_permission_required">Nearby devices permission is required before this TV can advertise the local StudyFlow link.</string>
+    <string name="tv_settings_transport_ready">Local StudyFlow receiver is discoverable. Choose Manage pairing to show a short-lived code.</string>
+    <string name="tv_settings_transport_unavailable">Local StudyFlow receiver is not available yet.</string>
+    <string name="tv_settings_unknown_phone">paired phone</string>
 </resources>

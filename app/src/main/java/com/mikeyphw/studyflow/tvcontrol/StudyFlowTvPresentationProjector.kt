@@ -68,7 +68,7 @@ object StudyFlowTvPresentationProjector {
     const val projectsCanonicalDomainModels = true
     const val databaseRowsNeverCrossBoundary = true
     const val arbitraryUiTreesNeverCrossBoundary = true
-    const val transportDeferred = true
+    const val transportDeferred = false
 
     fun project(input: StudyFlowTvPresentationProjectionInput): StudyFlowTvPresentationSnapshot {
         val plan = input.plan ?: return StudyFlowTvPresentationSnapshot.waitingForPlan(

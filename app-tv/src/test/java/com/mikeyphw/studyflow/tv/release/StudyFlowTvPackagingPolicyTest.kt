@@ -10,8 +10,8 @@ class StudyFlowTvPackagingPolicyTest {
     fun packageIdentityAndTvLauncherContractAreStable() {
         assertEquals("TVOV19", StudyFlowTvPackagingPolicy.overlay)
         assertEquals("com.mikeyphw.studyflow.tv", StudyFlowTvPackagingPolicy.applicationId)
-        assertEquals(21, StudyFlowTvPackagingPolicy.versionCode)
-        assertEquals("0.1.0-tv21", StudyFlowTvPackagingPolicy.versionName)
+        assertEquals(22, StudyFlowTvPackagingPolicy.versionCode)
+        assertEquals("0.1.0-tv22", StudyFlowTvPackagingPolicy.versionName)
         assertTrue(StudyFlowTvPackagingPolicy.backupDisabled)
         assertTrue(StudyFlowTvPackagingPolicy.cleartextTrafficDisabled)
         assertEquals(160, StudyFlowTvPackagingPolicy.bannerWidthDp)
@@ -23,6 +23,7 @@ class StudyFlowTvPackagingPolicyTest {
         assertTrue(StudyFlowTvPackagingPolicy.isAllowedTvTargetTask("verifyStudyFlowTvManifestPackaging"))
         assertTrue(StudyFlowTvPackagingPolicy.isAllowedTvTargetTask(":app-tv:assembleRelease"))
         assertTrue(StudyFlowTvPackagingPolicy.isAllowedTvTargetTask(":core:tvcontrol:test"))
+        assertTrue(StudyFlowTvPackagingPolicy.isAllowedTvTargetTask(":core:tvlink:testDebugUnitTest"))
         assertFalse(StudyFlowTvPackagingPolicy.isAllowedTvTargetTask(":app:assembleDebug"))
         assertFalse(StudyFlowTvPackagingPolicy.isAllowedTvTargetTask(":feature:practice:test"))
     }

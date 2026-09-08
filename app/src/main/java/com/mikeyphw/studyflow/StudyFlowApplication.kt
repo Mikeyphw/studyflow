@@ -32,6 +32,8 @@ import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvPresentationSource
+import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportClient
+import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvReceiverDiscovery
 import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -116,6 +118,8 @@ interface AppContainer : DiagnosticRecorderProvider {
     val manageAnnexFileStorage: ManageAnnexFileStorage
     val manageStudyPlanPortability: ManageStudyPlanPortability
     val tvPresentationSource: StudyFlowTvPresentationSource
+    val tvReceiverDiscovery: StudyFlowTvReceiverDiscovery
+    val tvLinkClient: StudyFlowTvLocalTransportClient
     suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport
 }
 
@@ -229,6 +233,8 @@ private class DefaultAppContainer(
         analyticsRepository = studyAnalyticsRepository,
         libraryRepository = studyLibraryRepository,
     )
+    override val tvReceiverDiscovery = StudyFlowTvReceiverDiscovery(application)
+    override val tvLinkClient = StudyFlowTvLocalTransportClient(application)
 
     override suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport =
         dataLayer.inspectDatabaseHealth()

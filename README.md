@@ -400,7 +400,7 @@ TVOV13 and TVOV14 add the Android TV read-only Schedule and limited Library/refe
 
 ### Android TV roadmap and working rules
 
-`TV_ANDROID_TV_FULL_ROADMAP_AND_WORKING_RULES.md` carries the full TVOV00-TVOV20 roadmap and the
+`TV_ANDROID_TV_FULL_ROADMAP_AND_WORKING_RULES.md` carries the full TVOV00-TVOV26 roadmap and the
 standing implementation preferences for this track. TV overlays must be structured implementation
 units with source, shell rendering, control/cast integration where relevant, tests, verifiers,
 Devtool `studyflow_tv` wiring, docs, and commit-enabled overlay metadata. Light placeholder overlays
@@ -413,7 +413,7 @@ TVOV15 adds a native TV-safe Settings surface for pairing status/revocation, foc
 preference representation, local-first privacy, and safe About/diagnostics without phone-only
 storage or account dependencies. TVOV16 adds deterministic cross-device control/state continuity:
 local remote and paired-phone intents reduce into the same TV presentation state with active-item,
-playback, pairing-expiry, and monotonic revision fields. Transport remains deferred.
+playback, pairing-expiry, and monotonic revision fields. TVOV16 established reducer continuity before transport; TVOV22 now provides the local wire.
 
 ### Android TV TVOV17/TVOV18
 
@@ -421,9 +421,14 @@ TVOV17 and TVOV18 seal the automated accessibility/10-foot and optimized-Release
 
 ### Android TV TVOV19/TVOV20
 
-TVOV19 and TVOV20 finish the planned TV package/device acceptance sequence. TVOV19 hardens the Leanback manifest, stable `com.mikeyphw.studyflow.tv` package/version identity, banner/icon/backup rules, conditional `STUDYFLOW_RELEASE_*` signing, packaged APK inspection, and strict `studyflow_tv` task isolation so phone `:app` and feature-module work cannot leak into the TV target. TVOV20 adds a final optimized Release gate plus an optional connected-TV acceptance path for Leanback detection, install/upgrade, launch, D-pad smoke, process survival, and installed version verification. No-device validation is a clean skip and is never described as physical-device acceptance. The existing TVOV16 network-transport deferral remains explicit; the final seal does not invent a wire transport that is absent from source.
+TVOV19 and TVOV20 finish the planned TV package/device acceptance sequence. TVOV19 hardens the Leanback manifest, stable `com.mikeyphw.studyflow.tv` package/version identity, banner/icon/backup rules, conditional `STUDYFLOW_RELEASE_*` signing, packaged APK inspection, and strict `studyflow_tv` task isolation so phone `:app` and feature-module work cannot leak into the TV target. TVOV20 adds a final optimized Release gate plus an optional connected-TV acceptance path for Leanback detection, install/upgrade, launch, D-pad smoke, process survival, and installed version verification. No-device validation is a clean skip and is never described as physical-device acceptance. TVOV20 originally retained the TVOV16 transport deferral; TVOV22 now adds the explicit local wire while leaving phone controller UX and live cast synchronization to TVOV23/24.
 
 ### Android TV TVOV21 typed presentation projection
 
-TVOV21 adds a typed presentation schema in `:core:tvcontrol`, a production phone-side projector/source backed by the canonical StudyFlow repositories, and a TV-side adapter/inbox. The TV runtime no longer treats historical demo defaults as user data: until a real typed presentation snapshot arrives it shows an explicit waiting/empty state. Pairing and transport remain deferred to TVOV22.
+TVOV21 adds a typed presentation schema in `:core:tvcontrol`, a production phone-side projector/source backed by the canonical StudyFlow repositories, and a TV-side adapter/inbox. The TV runtime no longer treats historical demo defaults as user data: until a real typed presentation snapshot arrives it shows an explicit waiting/empty state. TVOV21 intentionally left pairing and transport to TVOV22.
 
+
+
+### Android TV TVOV22 local pairing/discovery/transport
+
+TVOV22 closes the wire-transport gap with a small shared `:core:tvlink` Android module. The TV advertises an `_studyflow-tv._tcp.` NSD receiver only while its activity is active, creates a short-lived random six-digit pairing code plus nonce, and accepts a bounded framed local TCP protocol. Successful pairing yields an expiring revocable session credential stored only in private non-backed-up app storage. Authenticated phone commands enter the same TVOV16 reducer and typed snapshots enter the same TVOV21 presentation inbox. The phone app now owns production discovery/client objects, but TVOV23 remains responsible for the actual phone controller UI. No Cast SDK, MediaRouter, Room, TV repository access, or background discovery was added.

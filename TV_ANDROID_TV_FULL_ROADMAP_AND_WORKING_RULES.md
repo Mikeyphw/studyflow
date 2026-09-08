@@ -29,8 +29,8 @@ TVOV18  Size optimization, R8, and resource shrinking [implemented]
 TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [implemented]
 TVOV20  Real-device acceptance and release seal [implemented]
 TVOV21  Typed presentation snapshots and canonical data projection [implemented]
-TVOV22  Local pairing, discovery, and transport [next]
-TVOV23  Android phone TV controller [planned]
+TVOV22  Local pairing, discovery, and transport [implemented]
+TVOV23  Android phone TV controller [next]
 TVOV24  Real cast/state synchronization [planned]
 TVOV25  Domain truth and persistence convergence [planned]
 TVOV26  End-to-end physical-device final seal [planned]
@@ -70,4 +70,4 @@ TVOV26  End-to-end physical-device final seal [planned]
 
 ## Current chain status
 
-As of TVOV21, the structured implementation chain covers TVOV00 through TVOV21. TVOV21 replaces runtime demo fixtures with a typed presentation boundary projected from canonical phone-owned StudyFlow repositories while keeping the TV APK repository-free. The original stopping gate is intentionally still open: TVOV22 is next and must implement local pairing/discovery/transport before the later phone-controller, cast synchronization, domain-truth convergence, and true end-to-end seal overlays can close the audited product gaps.
+As of TVOV22, the structured implementation chain covers TVOV00 through TVOV22. TVOV21 replaced runtime demo fixtures with canonical typed presentation snapshots; TVOV22 now adds explicit local NSD discovery, six-digit/nonce pairing, expiring revocable credentials, and authenticated local TCP delivery into the existing TV reducer/presentation inbox. The original stopping gate is intentionally still open: TVOV23 is next and must expose this production link through a real Android phone controller before cast synchronization, domain-truth convergence, and the true end-to-end seal can close the remaining audited product gaps.

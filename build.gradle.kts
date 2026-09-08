@@ -1176,6 +1176,8 @@ tasks.register<Exec>("verifyStudyFlowTvFinalReleaseSeal") {
         "verifyStudyFlowTvOptimizedReleaseArtifact",
         "verifyStudyFlowTvPackagedArtifacts",
         ":core:tvcontrol:test",
+        ":core:tvlink:testDebugUnitTest",
+        ":core:tvlink:lintDebug",
         ":app-tv:testDebugUnitTest",
         ":app-tv:lintDebug",
         ":app-tv:lintRelease",
@@ -1188,6 +1190,12 @@ tasks.register<Exec>("verifyStudyFlowTvPresentationProjection") {
     group = "verification"
     description = "Checks TVOV21 typed presentation snapshots, canonical phone-side projection, fixture-free TV runtime wiring, and source-ID continuity."
     commandLine("python3", "scripts/verify_tvov21_presentation_projection.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvLocalPairingTransport") {
+    group = "verification"
+    description = "Checks TVOV22 explicit local pairing, Android NSD discovery, framed TCP transport, revocable sessions, and production phone/TV wiring."
+    commandLine("python3", "scripts/verify_tvov22_local_pairing_transport.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {

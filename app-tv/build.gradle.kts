@@ -25,8 +25,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow.tv"
-        versionCode = 21
-        versionName = "0.1.0-tv21"
+        versionCode = 22
+        versionName = "0.1.0-tv22"
         buildConfigField("boolean", "TV_RELEASE_SIGNING_CONFIGURED", tvReleaseSigningConfigured.toString())
     }
 
@@ -77,5 +77,6 @@ android {
 // optimized Release packaging, and real-device acceptance independently verifiable.
 dependencies {
     implementation(project(":core:tvcontrol"))
+    implementation(project(":core:tvlink"))
     testImplementation(libs.junit4)
 }

@@ -56,7 +56,7 @@ for token in (
     "const val pairingCodeLength = 6",
     "const val pairingCodeTtlSeconds = 120",
     "const val requiresRevocablePairing = true",
-    "const val transportsDeferredUntilImplementation = true",
+    "const val transportsDeferredUntilImplementation = false",
     "enum class StudyFlowTvSurface",
     "STUDY_SESSION",
     "QUESTION_SET",
@@ -109,7 +109,7 @@ for forbidden in (
 for token in (
     'const val sharedControlProtocolModule = ":core:tvcontrol"',
     "const val controlProtocolVersion = 1",
-    "const val castTransportDeferred = true",
+    "const val castTransportDeferred = false",
 ):
     require(token in contract, f"TV build contract missing TVOV03 token: {token}")
 for token in (

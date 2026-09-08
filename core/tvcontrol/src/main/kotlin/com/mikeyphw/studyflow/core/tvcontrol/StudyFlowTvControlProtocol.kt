@@ -14,7 +14,7 @@ object StudyFlowTvControlProtocol {
     const val pairingCodeLength = 6
     const val pairingCodeTtlSeconds = 120
     const val requiresRevocablePairing = true
-    const val transportsDeferredUntilImplementation = true
+    const val transportsDeferredUntilImplementation = false
 
     val controllableSurfaces: Set<StudyFlowTvSurface> = StudyFlowTvSurface.entries.toSet()
 

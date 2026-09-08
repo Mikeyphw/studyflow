@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.tv
 
 import android.app.Activity
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.KeyEvent
@@ -13,9 +14,16 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlContinuityState
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlSession
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlOrigin
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
+import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLinkStatus
+import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalNetworkPermission
+import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportDelegate
+import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportHost
+import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvTransportApplyResult
 import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvAccessibilityPolicy
 import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvTextRole
 import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvAccessibilityNode
@@ -119,10 +127,82 @@ class StudyFlowTvActivity : Activity() {
     private lateinit var continuityStatus: TextView
     private lateinit var navButtons: Map<StudyFlowTvDestination, Button>
     private lateinit var globalActionButtons: List<Button>
+    private lateinit var localTransportHost: StudyFlowTvLocalTransportHost
+    private var pendingPairingAfterPermission = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        localTransportHost = StudyFlowTvLocalTransportHost(
+            context = applicationContext,
+            tvDeviceName = getString(R.string.tv_pairing_device_name_format, Build.MODEL),
+            delegate = object : StudyFlowTvLocalTransportDelegate {
+                override fun onTransportStatusChanged(status: StudyFlowTvLinkStatus) {
+                    if (::contentTitle.isInitialized && selectedDestination == StudyFlowTvDestination.SETTINGS) {
+                        renderSettingsDestination()
+                        renderContinuityStatus()
+                    }
+                }
+
+                override fun onPairingSessionChanged(session: StudyFlowTvControlSession) {
+                    bindTransportSession(session)
+                }
+
+                override fun applyRemoteCommand(
+                    command: StudyFlowTvControlCommand,
+                    nowEpochMillis: Long,
+                ): StudyFlowTvTransportApplyResult {
+                    val applied = this@StudyFlowTvActivity.applyPairedPhoneCommand(command, nowEpochMillis)
+                    return StudyFlowTvTransportApplyResult(
+                        applied = applied,
+                        reason = if (applied) null else "command-rejected",
+                        continuity = StudyFlowTvControlStateReducer.continuityState(controlState),
+                    )
+                }
+
+                override fun applyPresentationSnapshot(
+                    snapshot: StudyFlowTvPresentationSnapshot,
+                    nowEpochMillis: Long,
+                ): StudyFlowTvTransportApplyResult {
+                    val applied = this@StudyFlowTvActivity.applyPresentationSnapshot(snapshot)
+                    return StudyFlowTvTransportApplyResult(
+                        applied = applied,
+                        reason = if (applied) null else "presentation-stale-or-duplicate",
+                        continuity = StudyFlowTvControlStateReducer.continuityState(controlState),
+                    )
+                }
+
+                override fun currentContinuityState(): StudyFlowTvControlContinuityState =
+                    StudyFlowTvControlStateReducer.continuityState(controlState)
+            },
+        )
         setContentView(createContentView())
+    }
+
+    override fun onStart() {
+        super.onStart()
+        localTransportHost.start()
+    }
+
+    override fun onStop() {
+        localTransportHost.stop()
+        super.onStop()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != LOCAL_NETWORK_PERMISSION_REQUEST) return
+        val granted = grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val shouldPair = pendingPairingAfterPermission
+        pendingPairingAfterPermission = false
+        if (granted && shouldPair) beginPairingFromTv()
+        if (::contentTitle.isInitialized && selectedDestination == StudyFlowTvDestination.SETTINGS) {
+            renderSettingsDestination()
+            renderContinuityStatus()
+        }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -325,6 +405,63 @@ class StudyFlowTvActivity : Activity() {
         origin = StudyFlowTvControlOrigin.PAIRED_PHONE,
         nowEpochMillis = nowEpochMillis,
     )
+
+    private fun bindTransportSession(session: StudyFlowTvControlSession) {
+        controlState = StudyFlowTvControlStateReducer.bindSession(
+            state = controlState,
+            session = session,
+            nowEpochMillis = System.currentTimeMillis(),
+        )
+        if (::contentTitle.isInitialized) {
+            renderDestination(controlState.destination)
+        }
+    }
+
+    private fun beginPairingFromTv() {
+        if (!StudyFlowTvLocalNetworkPermission.isGranted(this)) {
+            pendingPairingAfterPermission = true
+            requestPermissions(
+                arrayOf(StudyFlowTvLocalNetworkPermission.permission),
+                LOCAL_NETWORK_PERMISSION_REQUEST,
+            )
+            return
+        }
+        if (!localTransportHost.start()) {
+            if (::contentTitle.isInitialized) renderSettingsDestination()
+            return
+        }
+        val now = System.currentTimeMillis()
+        val offer = localTransportHost.beginPairing(now) ?: run {
+            if (::contentTitle.isInitialized) renderSettingsDestination()
+            return
+        }
+        applyControlCommand(
+            command = StudyFlowTvSettingsSurface.commandForAction(
+                action = StudyFlowTvSettingsAction.MANAGE_PAIRING,
+                commandId = nextLocalCommandId(),
+                issuedAtEpochMillis = now,
+            ),
+            origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+            nowEpochMillis = now,
+        )
+        if (!offer.isActive(now)) {
+            renderSettingsDestination()
+        }
+    }
+
+    private fun revokePairingFromTv() {
+        val now = System.currentTimeMillis()
+        applyControlCommand(
+            command = StudyFlowTvSettingsSurface.commandForAction(
+                action = StudyFlowTvSettingsAction.REVOKE_PAIRING,
+                commandId = nextLocalCommandId(),
+                issuedAtEpochMillis = now,
+            ),
+            origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+            nowEpochMillis = now,
+        )
+        localTransportHost.revokeCurrentSession(now)
+    }
 
     private fun applyControlCommand(
         command: StudyFlowTvControlCommand,
@@ -790,6 +927,29 @@ class StudyFlowTvActivity : Activity() {
             if (state.highVisibilityFocus) getString(R.string.tv_settings_focus_high) else getString(R.string.tv_settings_focus_standard),
         )
         contentCards.addView(sectionLabel(R.string.tv_settings_section_title))
+        contentCards.addView(
+            TextView(this).apply {
+                val offer = localTransportHost.currentPairingOffer()
+                text = when {
+                    offer != null -> getString(
+                        R.string.tv_settings_pairing_code_format,
+                        offer.token.pairingCode,
+                        ((offer.token.expiresAtEpochMillis - System.currentTimeMillis()).coerceAtLeast(0L) / 1_000L),
+                    )
+                    state.pairingState == com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingState.PAIRED ->
+                        getString(R.string.tv_settings_transport_paired, state.pairedDeviceName ?: getString(R.string.tv_settings_unknown_phone))
+                    localTransportHost.currentStatus() == StudyFlowTvLinkStatus.PERMISSION_REQUIRED ->
+                        getString(R.string.tv_settings_transport_permission_required)
+                    localTransportHost.currentStatus() == StudyFlowTvLinkStatus.READY ->
+                        getString(R.string.tv_settings_transport_ready)
+                    else -> getString(R.string.tv_settings_transport_unavailable)
+                }
+                setTextColor(Color.WHITE)
+                applyStudyFlowTvTenFootText(if (offer != null) StudyFlowTvTextRole.SECTION else StudyFlowTvTextRole.CONTROL)
+                gravity = Gravity.START
+                setPadding(0, dp(8), 0, dp(18))
+            },
+        )
         StudyFlowTvSettingsSurface.cards(state).chunked(2).forEach { rowCards ->
             contentCards.addView(
                 LinearLayout(this).apply {
@@ -1054,16 +1214,22 @@ class StudyFlowTvActivity : Activity() {
 
     private fun tvSettingsAction(action: StudyFlowTvSettingsAction): Button = tvTextActionButton(action.label()).apply {
         setOnClickListener {
-            val now = System.currentTimeMillis()
-            applyControlCommand(
-                command = StudyFlowTvSettingsSurface.commandForAction(
-                    action = action,
-                    commandId = nextLocalCommandId(),
-                    issuedAtEpochMillis = now,
-                ),
-                origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
-                nowEpochMillis = now,
-            )
+            when (action) {
+                StudyFlowTvSettingsAction.MANAGE_PAIRING -> beginPairingFromTv()
+                StudyFlowTvSettingsAction.REVOKE_PAIRING -> revokePairingFromTv()
+                else -> {
+                    val now = System.currentTimeMillis()
+                    applyControlCommand(
+                        command = StudyFlowTvSettingsSurface.commandForAction(
+                            action = action,
+                            commandId = nextLocalCommandId(),
+                            issuedAtEpochMillis = now,
+                        ),
+                        origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+                        nowEpochMillis = now,
+                    )
+                }
+            }
         }
     }
 
@@ -1341,4 +1507,9 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private companion object {
+        const val LOCAL_NETWORK_PERMISSION_REQUEST = 2201
+    }
+
 }

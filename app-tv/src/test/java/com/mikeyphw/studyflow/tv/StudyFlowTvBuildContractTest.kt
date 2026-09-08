@@ -17,7 +17,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.pairedPhoneControlRequiredByRoadmap)
         assertEquals(":core:tvcontrol", StudyFlowTvBuildContract.sharedControlProtocolModule)
         assertEquals(1, StudyFlowTvBuildContract.controlProtocolVersion)
-        assertTrue(StudyFlowTvBuildContract.castTransportDeferred)
+        assertTrue(!StudyFlowTvBuildContract.castTransportDeferred)
     }
 
     @Test
@@ -130,7 +130,7 @@ class StudyFlowTvBuildContractTest {
         assertEquals(4, StudyFlowTvSettingsBuildContract.settingsActionCount)
         assertTrue(StudyFlowTvControlContinuityBuildContract.controlStateContinuityIntroduced)
         assertTrue(StudyFlowTvControlContinuityBuildContract.localAndPairedPhoneUseSameReducer)
-        assertTrue(StudyFlowTvControlContinuityBuildContract.controlTransportStillDeferred)
+        assertTrue(!StudyFlowTvControlContinuityBuildContract.controlTransportStillDeferred)
         assertTrue(StudyFlowTvControlContinuityBuildContract.monotonicCommandRevisionRequired)
         assertTrue(StudyFlowTvControlContinuityBuildContract.duplicateAndStaleCommandsRejected)
         assertTrue(StudyFlowTvControlContinuityBuildContract.expiredAndRevokedPairingsRejected)
@@ -169,8 +169,23 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvPresentationBuildContract.phoneOwnsCanonicalProjection)
         assertTrue(StudyFlowTvPresentationBuildContract.tvRuntimeFixtureDefaultsDisabled)
         assertTrue(StudyFlowTvPresentationBuildContract.tvHasNoRepositoryOrDatabaseDependency)
-        assertTrue(StudyFlowTvPresentationBuildContract.presentationTransportStillDeferred)
+        assertTrue(!StudyFlowTvPresentationBuildContract.presentationTransportStillDeferred)
         assertEquals(8, StudyFlowTvPresentationBuildContract.projectedSurfaceCount)
+    }
+
+    @Test
+    fun localPairingDiscoveryAndTransportAreProductionWired() {
+        assertTrue(StudyFlowTvLocalLinkBuildContract.localPairingDiscoveryTransportIntroduced)
+        assertEquals(":core:tvlink", StudyFlowTvLocalLinkBuildContract.sharedAndroidLinkModule)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.androidNsdDiscoveryRequired)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.localTcpTransportRequired)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.shortLivedSixDigitPairingRequired)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.pairingNonceRequired)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.expiringSessionSecretRequired)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.persistentSessionCredentialRequired)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.pairedCommandsReachSharedReducer)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.typedPresentationSnapshotsReachTvInbox)
+        assertTrue(StudyFlowTvLocalLinkBuildContract.phoneControllerUiStillDeferredToTvov23)
     }
 
     @Test
@@ -182,7 +197,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvPackagingBuildContract.cleartextTrafficDisabled)
         assertTrue(StudyFlowTvPackagingBuildContract.tvTargetRejectsPhoneTasks)
         assertTrue(StudyFlowTvPackagingBuildContract.conditionalReleaseSigningSupported)
-        assertEquals(21, StudyFlowTvPackagingBuildContract.packageVersionCode)
+        assertEquals(22, StudyFlowTvPackagingBuildContract.packageVersionCode)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.finalAcceptanceSealIntroduced)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.optimizedReleaseArtifactRequired)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.packageIdentityVerificationRequired)

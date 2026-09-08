@@ -57,7 +57,7 @@ for token in (
     'object StudyFlowTvControlStateReducer',
     'const val overlay = "TVOV16"',
     'localAndPairedPhoneUseSameReducer = true',
-    'transportDeferred = true',
+    'transportDeferred = false',
     'monotonicRevisionRequired = true',
     'staleAndDuplicateCommandsRejected = true',
     'expiredAndRevokedPairingsRejected = true',
@@ -102,7 +102,7 @@ for token in (
     'object StudyFlowTvControlContinuityBuildContract',
     'controlStateContinuityIntroduced = true',
     'localAndPairedPhoneUseSameReducer = true',
-    'controlTransportStillDeferred = true',
+    'controlTransportStillDeferred = false',
     'continuitySurfaceCount = 10',
 ):
     require(token in build_contract, f"TVOV16 build contract missing token: {token}")

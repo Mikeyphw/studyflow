@@ -1,3 +1,11 @@
+## TVOV22 — local pairing, discovery, and transport
+
+- Added shared `:core:tvlink` Android NSD discovery plus a bounded local TCP request/response transport.
+- Added explicit 120-second six-digit/nonce pairing with ten-attempt cap and random 24-hour revocable session credentials.
+- Wired authenticated remote commands into the TVOV16 reducer and typed presentations into the TVOV21 inbox.
+- Added production phone discovery/client ownership for the TVOV23 controller without adding phone UI yet.
+- Added local-network permissions, persistent non-backed-up session storage, TV status/code rendering, tests, verifier/Devtool wiring, and TV package version 22 / `0.1.0-tv22`.
+
 ## TVOV19/TVOV20 - Android TV package hardening and release acceptance
 
 ## TVOV21 — typed TV presentation projection

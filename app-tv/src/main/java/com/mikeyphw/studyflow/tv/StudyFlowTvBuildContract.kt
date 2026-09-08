@@ -20,12 +20,12 @@ object StudyFlowTvBuildContract {
     const val pairedPhoneControlRequiredByRoadmap = true
     const val sharedControlProtocolModule = ":core:tvcontrol"
     const val controlProtocolVersion = 1
-    const val castTransportDeferred = true
+    const val castTransportDeferred = false
     const val dpadFocusPrimitivesIntroduced = true
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV21"
+    const val currentTvOverlay = "TVOV22"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -165,7 +165,7 @@ object StudyFlowTvSettingsBuildContract {
 object StudyFlowTvControlContinuityBuildContract {
     const val controlStateContinuityIntroduced = true
     const val localAndPairedPhoneUseSameReducer = true
-    const val controlTransportStillDeferred = true
+    const val controlTransportStillDeferred = false
     const val monotonicCommandRevisionRequired = true
     const val duplicateAndStaleCommandsRejected = true
     const val expiredAndRevokedPairingsRejected = true
@@ -208,7 +208,7 @@ object StudyFlowTvPackagingBuildContract {
     const val cleartextTrafficDisabled = true
     const val tvTargetRejectsPhoneTasks = true
     const val conditionalReleaseSigningSupported = true
-    const val packageVersionCode = 21
+    const val packageVersionCode = 22
 }
 
 // TVOV20 Real-device acceptance and release seal contract.
@@ -231,7 +231,22 @@ object StudyFlowTvPresentationBuildContract {
     const val phoneOwnsCanonicalProjection = true
     const val tvRuntimeFixtureDefaultsDisabled = true
     const val tvHasNoRepositoryOrDatabaseDependency = true
-    const val presentationTransportStillDeferred = true
+    const val presentationTransportStillDeferred = false
     const val projectedSurfaceCount = 8
+}
+// TVOV22 Local pairing, discovery, and transport contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvLocalLinkBuildContract {
+    const val localPairingDiscoveryTransportIntroduced = true
+    const val sharedAndroidLinkModule = ":core:tvlink"
+    const val androidNsdDiscoveryRequired = true
+    const val localTcpTransportRequired = true
+    const val shortLivedSixDigitPairingRequired = true
+    const val pairingNonceRequired = true
+    const val expiringSessionSecretRequired = true
+    const val persistentSessionCredentialRequired = true
+    const val pairedCommandsReachSharedReducer = true
+    const val typedPresentationSnapshotsReachTvInbox = true
+    const val phoneControllerUiStillDeferredToTvov23 = true
 }
 

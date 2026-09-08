@@ -71,7 +71,7 @@ data class StudyFlowTvControlReduction(
 object StudyFlowTvControlStateReducer {
     const val overlay = "TVOV16"
     const val localAndPairedPhoneUseSameReducer = true
-    const val transportDeferred = true
+    const val transportDeferred = false
     const val monotonicRevisionRequired = true
     const val staleAndDuplicateCommandsRejected = true
     const val expiredAndRevokedPairingsRejected = true
@@ -85,6 +85,19 @@ object StudyFlowTvControlStateReducer {
                 pairedDeviceName = session.pairedDeviceName,
             ),
         )
+
+    fun bindSession(
+        state: StudyFlowTvControlState,
+        session: StudyFlowTvControlSession,
+        nowEpochMillis: Long,
+    ): StudyFlowTvControlState = state.copy(
+        session = session,
+        settings = state.settings.copy(
+            pairingState = session.pairingState,
+            pairedDeviceName = session.pairedDeviceName,
+        ),
+        updatedAtEpochMillis = nowEpochMillis,
+    )
 
     fun reduce(
         state: StudyFlowTvControlState,

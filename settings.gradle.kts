@@ -31,6 +31,7 @@ include(
     ":core:portability",
     ":core:testing",
     ":core:tvcontrol",
+    ":core:tvlink",
     ":feature:dashboard",
     ":feature:analytics",
     ":feature:library",

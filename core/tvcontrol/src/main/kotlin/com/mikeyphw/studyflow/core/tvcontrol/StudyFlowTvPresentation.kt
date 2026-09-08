@@ -18,7 +18,7 @@ object StudyFlowTvPresentationProtocol {
     const val maxTvLibraryReferences = 20
     const val rawDatabaseRowsForbidden = true
     const val arbitraryUiTreesForbidden = true
-    const val transportStillDeferred = true
+    const val transportStillDeferred = false
 }
 
 @Serializable

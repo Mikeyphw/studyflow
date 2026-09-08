@@ -440,11 +440,13 @@ build = [
   "verifyStudyFlowTvTargetIsolation",
   "verifyStudyFlowTvFinalAcceptanceContracts",
   "verifyStudyFlowTvPresentationProjection",
+  "verifyStudyFlowTvLocalPairingTransport",
   "verifyStudyFlowTvRoadmapInstructions",
   "verifyStudyFlowTvOptimizedReleaseArtifact",
   "verifyStudyFlowTvPackagedArtifacts",
   "verifyStudyFlowTvFinalReleaseSeal",
   ":core:tvcontrol:compileKotlin",
+  ":core:tvlink:compileDebugKotlin",
   ":app-tv:assembleDebug",
 ]
 test = [
@@ -472,8 +474,10 @@ test = [
   "verifyStudyFlowTvTargetIsolation",
   "verifyStudyFlowTvFinalAcceptanceContracts",
   "verifyStudyFlowTvPresentationProjection",
+  "verifyStudyFlowTvLocalPairingTransport",
   "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:test",
+  ":core:tvlink:testDebugUnitTest",
   ":app-tv:testDebugUnitTest",
 ]
 lint = [
@@ -502,7 +506,9 @@ lint = [
   "verifyStudyFlowTvTargetIsolation",
   "verifyStudyFlowTvFinalAcceptanceContracts",
   "verifyStudyFlowTvPresentationProjection",
+  "verifyStudyFlowTvLocalPairingTransport",
   "verifyStudyFlowTvRoadmapInstructions",
+  ":core:tvlink:lintDebug",
   ":app-tv:lintDebug",
   ":app-tv:lintRelease",
 ]
@@ -539,6 +545,7 @@ preflight = [
   "verifyStudyFlowTvTargetIsolation",
   "verifyStudyFlowTvFinalAcceptanceContracts",
   "verifyStudyFlowTvPresentationProjection",
+  "verifyStudyFlowTvLocalPairingTransport",
   "verifyStudyFlowTvRoadmapInstructions",
 ]
 compile = [
@@ -566,8 +573,10 @@ compile = [
   "verifyStudyFlowTvTargetIsolation",
   "verifyStudyFlowTvFinalAcceptanceContracts",
   "verifyStudyFlowTvPresentationProjection",
+  "verifyStudyFlowTvLocalPairingTransport",
   "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:compileKotlin",
+  ":core:tvlink:compileDebugKotlin",
   ":app-tv:compileDebugKotlin",
 ]
 unit-test = [
@@ -595,8 +604,10 @@ unit-test = [
   "verifyStudyFlowTvTargetIsolation",
   "verifyStudyFlowTvFinalAcceptanceContracts",
   "verifyStudyFlowTvPresentationProjection",
+  "verifyStudyFlowTvLocalPairingTransport",
   "verifyStudyFlowTvRoadmapInstructions",
   ":core:tvcontrol:test",
+  ":core:tvlink:testDebugUnitTest",
   ":app-tv:testDebugUnitTest",
 ]
 package = [
@@ -621,11 +632,13 @@ package = [
   "verifyStudyFlowTvTargetIsolation",
   "verifyStudyFlowTvFinalAcceptanceContracts",
   "verifyStudyFlowTvPresentationProjection",
+  "verifyStudyFlowTvLocalPairingTransport",
   "verifyStudyFlowTvRoadmapInstructions",
   "verifyStudyFlowTvOptimizedReleaseArtifact",
   "verifyStudyFlowTvPackagedArtifacts",
   "verifyStudyFlowTvRealDeviceAcceptance",
   "verifyStudyFlowTvFinalReleaseSeal",
+  ":core:tvlink:testDebugUnitTest",
   ":app-tv:assembleDebug",
 ]
 lint = [
@@ -654,7 +667,9 @@ lint = [
   "verifyStudyFlowTvTargetIsolation",
   "verifyStudyFlowTvFinalAcceptanceContracts",
   "verifyStudyFlowTvPresentationProjection",
+  "verifyStudyFlowTvLocalPairingTransport",
   "verifyStudyFlowTvRoadmapInstructions",
+  ":core:tvlink:lintDebug",
   ":app-tv:lintDebug",
   ":app-tv:lintRelease",
 ]

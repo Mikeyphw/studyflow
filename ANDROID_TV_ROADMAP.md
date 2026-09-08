@@ -76,8 +76,8 @@ TVOV18  Size optimization, R8, and resource shrinking [implemented]
 TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [implemented]
 TVOV20  Real-device acceptance and release seal [implemented]
 TVOV21  Typed presentation snapshots and canonical data projection [implemented]
-TVOV22  Local pairing, discovery, and transport [next]
-TVOV23  Android phone TV controller [planned]
+TVOV22  Local pairing, discovery, and transport [implemented]
+TVOV23  Android phone TV controller [next]
 TVOV24  Real cast/state synchronization [planned]
 TVOV25  Domain truth and persistence convergence [planned]
 TVOV26  End-to-end physical-device final seal [planned]
@@ -274,7 +274,7 @@ Validation:
 
 ## Roadmap and working-rules carry-forward
 
-The TVOV00-TVOV21 implementation chain, corrective roadmap, and the user's overlay preferences are preserved in
+The TVOV00-TVOV22 implementation chain, corrective roadmap, and the user's overlay preferences are preserved in
 `TV_ANDROID_TV_FULL_ROADMAP_AND_WORKING_RULES.md`. Future TV overlays must remain structured
 implementation units, never light placeholder patches, and must keep using the `studyflow_tv` target
 with explicit Devtool overlay commit metadata.
@@ -338,7 +338,7 @@ Validation:
 Status: implemented in `studyflow_tvov19_20_manifest_packaging_real_device_release_seal_v2.zip`.
 
 Scope:
-- stable TV package identity `com.mikeyphw.studyflow.tv`, version code 21 / `0.1.0-tv21`;
+- stable TV package identity `com.mikeyphw.studyflow.tv`, current version code 22 / `0.1.0-tv22`;
 - required Leanback + optional touchscreen launcher contract, Leanback-only exported activity, TV banner/icon resources, productivity app category, and cleartext framework traffic disabled;
 - cloud backup and device-transfer exclusions for all TV-local storage domains;
 - conditional production signing using the complete `STUDYFLOW_RELEASE_*` credential set and fail-fast rejection of partial signing configuration;
@@ -361,7 +361,7 @@ Scope:
 - optional connected-TV acceptance: Leanback feature check, install/upgrade, activity launch, D-pad smoke input, process-survival check, and installed package/version verification;
 - no connected device or unusable ADB is a clean skip and never counts as physical-device acceptance;
 - production signing is verified when signing credentials are present;
-- TVOV16's real wire/network transport remains explicitly deferred, so this package/device seal does not claim a phone-to-TV network transport that is not implemented.
+- TVOV20 originally sealed packaging while wire transport was still deferred; TVOV22 now supplies the explicit local pairing/discovery/transport layer without changing TVOV20's package/device acceptance scope.
 
 Validation:
 - `verifyStudyFlowTvFinalAcceptanceContracts`;
@@ -371,7 +371,7 @@ Validation:
 
 ## TVOV21 — Typed presentation snapshots and canonical data projection
 
-Status: implemented in `studyflow_tvov21_typed_presentation_projection_v1.zip`.
+Status: implemented in `studyflow_tvov21_typed_presentation_projection_v2.zip`.
 
 Scope:
 - serializable typed presentation snapshots in `:core:tvcontrol` for Today, session, questions, mock, review, progress, schedule, and library;
@@ -380,7 +380,7 @@ Scope:
 - the TV Activity starts with a truthful waiting state and no longer uses historical demo fixture defaults as runtime data;
 - `app-tv` remains isolated from Room, `core:data`, `core:database`, phone feature modules, Cast SDK, MediaRouter, and networking;
 - Home `PAIR_PHONE` protocol routing is corrected to the Settings pairing surface;
-- wire pairing/discovery/transport remains explicitly deferred to TVOV22.
+- TVOV21 intentionally left wire pairing/discovery/transport for TVOV22; the following overlay now supplies that boundary.
 
 Validation:
 - `verifyStudyFlowTvPresentationProjection`;
@@ -388,4 +388,27 @@ Validation:
 - `:app-tv:compileDebugKotlin`;
 - `:app-tv:testDebugUnitTest`;
 - cumulative TVOV00-TVOV21 source verifiers and existing package/release gates.
+
+## TVOV22 — Local pairing, discovery, and transport
+
+Status: implemented in `studyflow_tvov22_local_pairing_discovery_transport_v1.zip`.
+
+Scope:
+- shared Android `:core:tvlink` module using framework NSD discovery and a bounded local TCP transport, with no Cast SDK or MediaRouter;
+- explicit 120-second six-digit TV pairing code plus random nonce and a ten-attempt cap; discovery never advertises the pairing code;
+- random 24-hour session id/secret credentials persisted in app-private non-backed-up storage and revocable from either device;
+- authenticated command, typed presentation, continuity, revoke, and ping operations over strict length-prefixed JSON frames;
+- TV receiver host active only while the TV Activity is started; remote commands use the TVOV16 reducer and presentations use the TVOV21 inbox;
+- production phone discovery/client objects are installed in the app container, while the user-facing controller remains TVOV23 work;
+- TV package version code 22 / `0.1.0-tv22`.
+
+Validation:
+- `verifyStudyFlowTvLocalPairingTransport`;
+- `:core:tvcontrol:test`;
+- `:core:tvlink:compileDebugKotlin`;
+- `:core:tvlink:testDebugUnitTest`;
+- `:core:tvlink:lintDebug`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:testDebugUnitTest`;
+- cumulative TVOV00-TVOV22 source verifiers and existing package/release gates.
 

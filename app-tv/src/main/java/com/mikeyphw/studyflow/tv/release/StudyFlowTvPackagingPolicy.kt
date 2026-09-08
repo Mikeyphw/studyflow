@@ -5,8 +5,8 @@ object StudyFlowTvPackagingPolicy {
     const val overlay = "TVOV19"
     const val applicationId = "com.mikeyphw.studyflow.tv"
     const val namespace = "com.mikeyphw.studyflow.tv"
-    const val versionCode = 21
-    const val versionName = "0.1.0-tv21"
+    const val versionCode = 22
+    const val versionName = "0.1.0-tv22"
     const val leanbackFeature = "android.software.leanback"
     const val touchscreenFeature = "android.hardware.touchscreen"
     const val leanbackLauncherCategory = "android.intent.category.LEANBACK_LAUNCHER"
@@ -20,7 +20,8 @@ object StudyFlowTvPackagingPolicy {
     fun isAllowedTvTargetTask(task: String): Boolean =
         task.startsWith("verifyStudyFlowTv") ||
             task.startsWith(":app-tv:") ||
-            task.startsWith(":core:tvcontrol:")
+            task.startsWith(":core:tvcontrol:") ||
+            task.startsWith(":core:tvlink:")
 
     fun hasTvPackageIdentity(applicationId: String, namespace: String): Boolean =
         applicationId == this.applicationId && namespace == this.namespace
