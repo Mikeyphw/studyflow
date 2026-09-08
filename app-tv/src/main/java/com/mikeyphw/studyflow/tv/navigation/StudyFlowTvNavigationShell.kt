@@ -11,7 +11,8 @@ import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusRole
  *
  * This model is intentionally data-first and dependency-budgeted. The TV app, D-pad focus
  * layer, and paired-phone controller share this destination set instead of drifting into
- * separate route names or Boolean route flags.
+ * separate route names or Boolean route flags. TVOV07/TVOV08 add non-rail destinations
+ * that are opened from Today or paired-phone commands while the primary rail remains stable.
  */
 enum class StudyFlowTvDestination(
     val route: String,
@@ -19,6 +20,7 @@ enum class StudyFlowTvDestination(
 ) {
     HOME("home", StudyFlowTvSurface.HOME),
     TODAY("today", StudyFlowTvSurface.TODAY),
+    STUDY_SESSION("session", StudyFlowTvSurface.STUDY_SESSION),
     PRACTICE("practice", StudyFlowTvSurface.QUESTION_SET),
     REVIEWS("reviews", StudyFlowTvSurface.REVIEW),
     MOCK_EXAM("mock-exam", StudyFlowTvSurface.MOCK_EXAM),
@@ -44,6 +46,8 @@ object StudyFlowTvNavigationShell {
     const val remoteAndPhoneControlShareDestinations = true
     const val routePayloadsUseSmallEnums = true
     const val destinationCount = 8
+    const val secondaryDestinationCount = 1
+    const val allDestinationCount = 9
     const val navigationRailColumn = 0
 
     val primaryDestinations: List<StudyFlowTvDestination> = listOf(
@@ -57,13 +61,19 @@ object StudyFlowTvNavigationShell {
         StudyFlowTvDestination.SETTINGS,
     )
 
+    val secondaryDestinations: List<StudyFlowTvDestination> = listOf(
+        StudyFlowTvDestination.STUDY_SESSION,
+    )
+
+    val allDestinations: List<StudyFlowTvDestination> = primaryDestinations + secondaryDestinations
+
     fun defaultDestination(): StudyFlowTvDestination = StudyFlowTvDestination.HOME
 
     fun destinationForRoute(route: String?): StudyFlowTvDestination =
-        primaryDestinations.firstOrNull { it.route == route } ?: defaultDestination()
+        allDestinations.firstOrNull { it.route == route } ?: defaultDestination()
 
     fun destinationForSurface(surface: StudyFlowTvSurface): StudyFlowTvDestination? =
-        primaryDestinations.firstOrNull { it.surface == surface }
+        allDestinations.firstOrNull { it.surface == surface }
 
     fun navigationItems(): List<StudyFlowTvNavigationItem> =
         primaryDestinations.mapIndexed { index, destination ->

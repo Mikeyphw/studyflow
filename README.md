@@ -369,3 +369,12 @@ APK still avoids Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone f
 ### Android TV TVOV06
 
 TVOV06 adds the structured native Android TV Home surface. The TV app now has a real default entry point with remote-first cards for Today, Practice, Reviews, and Mock Exam, plus a paired-phone entry path that stays on the shared TV control protocol. TVOV06 also removes the unused TVOV05 string resources reported by lint.
+
+### Android TV TVOV07
+
+TVOV07 adds the Android TV Today workspace as a structured TV surface. It renders a real Today cockpit with next study block, due reviews, practice queue, weekly progress, and schedule/mock-prep context. Today actions are D-pad focusable and also produce shared paired-phone control commands.
+
+### Android TV TVOV08
+
+TVOV08 adds the Android TV Study session experience. It introduces a dedicated Study Session destination, a ready/running/paused/completed state machine, TV remote and paired-phone start/pause/resume/next/complete actions, Play/Pause remote-key handling, and `StudyFlowTvCastState` output for session casting.
+

@@ -20,6 +20,8 @@ class StudyFlowTvNavigationShellTest {
         assertTrue(StudyFlowTvNavigationShell.remoteAndPhoneControlShareDestinations)
         assertTrue(StudyFlowTvNavigationShell.routePayloadsUseSmallEnums)
         assertEquals(StudyFlowTvNavigationShell.destinationCount, destinations.size)
+        assertEquals(1, StudyFlowTvNavigationShell.secondaryDestinationCount)
+        assertEquals(9, StudyFlowTvNavigationShell.allDestinationCount)
         assertEquals(StudyFlowTvDestination.HOME, StudyFlowTvNavigationShell.defaultDestination())
         assertEquals(destinations.size, destinations.map { it.route }.toSet().size)
         assertEquals(destinations.size, destinations.map { it.surface }.toSet().size)
@@ -41,6 +43,8 @@ class StudyFlowTvNavigationShellTest {
         assertEquals(StudyFlowTvDestination.HOME, StudyFlowTvNavigationShell.destinationForRoute("unknown"))
         assertEquals(StudyFlowTvDestination.PRACTICE, StudyFlowTvNavigationShell.destinationForSurface(StudyFlowTvSurface.QUESTION_SET))
         assertEquals(StudyFlowTvDestination.MOCK_EXAM, StudyFlowTvNavigationShell.destinationForSurface(StudyFlowTvSurface.MOCK_EXAM))
+        assertEquals(StudyFlowTvDestination.STUDY_SESSION, StudyFlowTvNavigationShell.destinationForSurface(StudyFlowTvSurface.STUDY_SESSION))
+        assertEquals(StudyFlowTvDestination.STUDY_SESSION, StudyFlowTvNavigationShell.destinationForRoute("session"))
         assertNull(StudyFlowTvNavigationShell.destinationForSurface(StudyFlowTvSurface.LIBRARY))
     }
 

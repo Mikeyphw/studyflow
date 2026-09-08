@@ -1,3 +1,19 @@
+# TVOV07/TVOV08 Today workspace and Study session
+
+## TVOV07 - Android TV Today workspace
+
+- Added a structured Today workspace model with next block, review queue, practice queue, weekly progress, and schedule/mock-prep context.
+- Rendered Today as a first-class TV surface with D-pad focus cards and paired-phone command routing.
+- Added `verifyStudyFlowTvTodayWorkspace` and unit tests for routing, focus, snapshot, and command contracts.
+
+## TVOV08 - Android TV Study session experience
+
+- Added a dedicated Study Session destination opened from Today and paired-phone control.
+- Added a TV session state machine for ready, running, paused, and completed states.
+- Added start, pause, resume, next, complete, and return-to-Today actions for TV remote and paired-phone control.
+- Added Study Session cast-state emission through the shared TV protocol.
+- Added `verifyStudyFlowTvStudySessionExperience` and unit tests for state transitions, focus, command, and cast contracts.
+
 # TVOV00 Android TV architecture boundary
 
 - Added the Android TV roadmap for a separate, size-constrained TV APK that reuses StudyFlow core logic.

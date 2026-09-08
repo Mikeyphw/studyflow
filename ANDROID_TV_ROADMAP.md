@@ -61,8 +61,8 @@ TVOV03  Phone-to-TV pairing, protocol, and cast foundation [implemented]
 TVOV04  D-pad and focus primitives [implemented]
 TVOV05  TV navigation shell [implemented]
 TVOV06  TV Home / dashboard
-TVOV07  Today workspace for TV
-TVOV08  Study session experience
+TVOV07  Today workspace for TV [implemented]
+TVOV08  Study session experience [implemented]
 TVOV09  Question practice
 TVOV10  Mock Exam Studio
 TVOV11  Review and error notebook
@@ -139,3 +139,39 @@ Validation:
 - `:app-tv:testDebugUnitTest`;
 - `:app-tv:assembleDebug`;
 - `:app-tv:lintDebug`.
+
+## TVOV07 — Today workspace
+
+Status: implemented in `studyflow_tvov07_08_today_session_v1.zip`.
+
+Scope:
+- structured Today snapshot with exam label, date label, next study block, review queue, practice queue, weekly progress, and mock-exam scheduling context;
+- TV-rendered Today cards for next block, due reviews, question practice, and schedule/mock-prep context;
+- D-pad focus items for Today cards;
+- paired-phone commands for every Today action through the shared `:core:tvcontrol` protocol;
+- Today actions route to concrete TV destinations, including the TVOV08 Study Session surface.
+
+Validation:
+- `verifyStudyFlowTvTodayWorkspace`;
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:lintDebug`.
+
+## TVOV08 — Study session experience
+
+Status: implemented in `studyflow_tvov07_08_today_session_v1.zip`.
+
+Scope:
+- structured Study Session destination opened from Today or paired-phone control;
+- TV session state machine for ready, running, paused, and completed states;
+- remote and paired-phone actions for start, pause, resume, next segment, complete, and return to Today;
+- visible session plan segments for warm-up, focus block, checkpoint, and summary;
+- Play/Pause remote-key handling while the Study Session surface is active;
+- cast-state emission for the Study Session surface using the shared protocol rather than mirroring UI or sending database rows.
+
+Validation:
+- `verifyStudyFlowTvStudySessionExperience`;
+- `:app-tv:testDebugUnitTest`;
+- `:app-tv:compileDebugKotlin`;
+- `:app-tv:lintDebug`.
+

@@ -68,7 +68,7 @@ object StudyFlowTvHomeSurface {
     fun defaultDestination(): StudyFlowTvDestination = StudyFlowTvNavigationShell.defaultDestination()
 
     fun destinationForAction(action: StudyFlowTvHomeAction): StudyFlowTvDestination = when (action) {
-        StudyFlowTvHomeAction.CONTINUE_STUDYING -> StudyFlowTvDestination.TODAY
+        StudyFlowTvHomeAction.CONTINUE_STUDYING -> StudyFlowTvDestination.STUDY_SESSION
         StudyFlowTvHomeAction.PAIR_PHONE -> StudyFlowTvDestination.SETTINGS
         StudyFlowTvHomeAction.START_PRACTICE -> StudyFlowTvDestination.PRACTICE
     }

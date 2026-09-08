@@ -56,9 +56,9 @@ class StudyFlowTvHomeSurfaceTest {
             issuedAtEpochMillis = 2_000L,
         )
 
-        assertEquals(StudyFlowTvSurface.TODAY, continueCommand.surface)
+        assertEquals(StudyFlowTvSurface.STUDY_SESSION, continueCommand.surface)
         assertEquals(StudyFlowTvControlAction.OPEN, continueCommand.action)
-        assertEquals("today", continueCommand.targetId)
+        assertEquals("session", continueCommand.targetId)
         assertEquals(StudyFlowTvSurface.HOME, pairCommand.surface)
         assertEquals("pair-phone", pairCommand.targetId)
         assertTrue(pairCommand.requiresUserPresence)

@@ -19,9 +19,19 @@ import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeCardId
 import com.mikeyphw.studyflow.tv.home.StudyFlowTvHomeSurface
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvDestination
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvNavigationShell
+import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionAction
+import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionSegment
+import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionSegmentId
+import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionState
+import com.mikeyphw.studyflow.tv.session.StudyFlowTvSessionStatus
+import com.mikeyphw.studyflow.tv.session.StudyFlowTvStudySessionExperience
+import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlock
+import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlockId
+import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
 
 class StudyFlowTvActivity : Activity() {
     private var selectedDestination: StudyFlowTvDestination = StudyFlowTvNavigationShell.defaultDestination()
+    private var studySessionState: StudyFlowTvSessionState = StudyFlowTvStudySessionExperience.defaultState()
     private lateinit var contentTitle: TextView
     private lateinit var contentBody: TextView
     private lateinit var contentCards: LinearLayout
@@ -37,6 +47,10 @@ class StudyFlowTvActivity : Activity() {
             val command = StudyFlowTvRemoteKeyMapper.commandForKeyCode(event.keyCode)
             if (command == StudyFlowTvRemoteCommand.BACK && selectedDestination != StudyFlowTvDestination.HOME) {
                 selectDestination(StudyFlowTvDestination.HOME)
+                return true
+            }
+            if (command == StudyFlowTvRemoteCommand.PLAY_PAUSE && selectedDestination == StudyFlowTvDestination.STUDY_SESSION) {
+                toggleStudySessionPlayback()
                 return true
             }
         }
@@ -174,17 +188,22 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderDestination(destination: StudyFlowTvDestination) {
-        if (destination == StudyFlowTvDestination.HOME) {
-            renderHomeDestination()
-        } else {
-            contentCards.removeAllViews()
-            contentCards.visibility = View.GONE
-            contentTitle.text = getString(destination.titleResId())
-            contentBody.text = getString(destination.bodyResId())
+        when (destination) {
+            StudyFlowTvDestination.HOME -> renderHomeDestination()
+            StudyFlowTvDestination.TODAY -> renderTodayDestination()
+            StudyFlowTvDestination.STUDY_SESSION -> renderStudySessionDestination()
+            else -> renderStaticDestination(destination)
         }
         navButtons.forEach { (itemDestination, button) ->
             button.isSelected = itemDestination == destination
         }
+    }
+
+    private fun renderStaticDestination(destination: StudyFlowTvDestination) {
+        contentCards.removeAllViews()
+        contentCards.visibility = View.GONE
+        contentTitle.text = getString(destination.titleResId())
+        contentBody.text = getString(destination.bodyResId())
     }
 
     private fun renderHomeDestination() {
@@ -192,15 +211,7 @@ class StudyFlowTvActivity : Activity() {
         contentCards.removeAllViews()
         contentTitle.text = getString(R.string.tv_content_title_home)
         contentBody.text = getString(R.string.tv_content_body_home)
-        contentCards.addView(
-            TextView(this).apply {
-                text = getString(R.string.tv_home_section_title)
-                setTextColor(Color.rgb(226, 232, 240))
-                textSize = 18f
-                gravity = Gravity.START
-                setPadding(0, 0, 0, dp(12))
-            },
-        )
+        contentCards.addView(sectionLabel(R.string.tv_home_section_title))
         StudyFlowTvHomeSurface.cards.chunked(2).forEach { rowCards ->
             contentCards.addView(
                 LinearLayout(this).apply {
@@ -212,24 +223,141 @@ class StudyFlowTvActivity : Activity() {
         }
     }
 
-    private fun tvHomeCard(card: StudyFlowTvHomeCard): Button = Button(this).apply {
-        id = View.generateViewId()
-        text = getString(
-            R.string.tv_home_card_format,
-            getString(card.titleResId()),
-            getString(card.bodyResId()),
+    private fun renderTodayDestination() {
+        val workspace = StudyFlowTvTodayWorkspace.workspaceForSnapshot(StudyFlowTvTodayWorkspace.defaultSnapshot())
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        contentTitle.text = getString(R.string.tv_content_title_today)
+        contentBody.text = getString(
+            R.string.tv_today_status_format,
+            workspace.snapshot.examName,
+            workspace.snapshot.dateLabel,
+            workspace.snapshot.nextBlockMinutes,
+            workspace.snapshot.dueReviewCount,
+            workspace.snapshot.practiceQuestionCount,
+            workspace.snapshot.weeklyProgressPercent,
         )
+        contentCards.addView(sectionLabel(R.string.tv_today_section_title))
+        workspace.blocks.chunked(2).forEach { rowBlocks ->
+            contentCards.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    rowBlocks.forEach { block -> addView(tvTodayBlock(block)) }
+                },
+            )
+        }
+    }
+
+    private fun renderStudySessionDestination() {
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        contentTitle.text = getString(R.string.tv_content_title_study_session)
+        contentBody.text = getString(
+            R.string.tv_session_status_format,
+            studySessionState.title,
+            studySessionState.subject,
+            studySessionState.status.name.lowercase(),
+            studySessionState.progressPercent,
+            studySessionState.elapsedMinutes,
+            studySessionState.targetMinutes,
+        )
+        contentCards.addView(sectionLabel(R.string.tv_session_section_title))
+        studySessionState.segments.chunked(2).forEach { rowSegments ->
+            contentCards.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    rowSegments.forEach { segment -> addView(tvSessionSegment(segment)) }
+                },
+            )
+        }
+        contentCards.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START
+                setPadding(0, dp(12), 0, 0)
+                StudyFlowTvStudySessionExperience.availableActions(studySessionState)
+                    .forEach { action -> addView(tvSessionAction(action)) }
+            },
+        )
+    }
+
+    private fun toggleStudySessionPlayback() {
+        studySessionState = StudyFlowTvStudySessionExperience.applyAction(
+            studySessionState,
+            when (studySessionState.status) {
+                StudyFlowTvSessionStatus.RUNNING -> StudyFlowTvSessionAction.PAUSE
+                StudyFlowTvSessionStatus.PAUSED -> StudyFlowTvSessionAction.RESUME
+                StudyFlowTvSessionStatus.READY,
+                StudyFlowTvSessionStatus.COMPLETED,
+                -> StudyFlowTvSessionAction.START
+            },
+        )
+        renderStudySessionDestination()
+    }
+
+    private fun tvHomeCard(card: StudyFlowTvHomeCard): Button = tvCardButton(
+        title = getString(card.titleResId()),
+        body = getString(card.bodyResId()),
+        onClick = { selectDestination(card.destination) },
+    )
+
+    private fun tvTodayBlock(block: StudyFlowTvTodayBlock): Button = tvCardButton(
+        title = getString(block.titleResId()),
+        body = getString(block.bodyResId()),
+        onClick = { selectDestination(StudyFlowTvTodayWorkspace.destinationForAction(block.action)) },
+    )
+
+    private fun tvSessionSegment(segment: StudyFlowTvSessionSegment): Button = tvCardButton(
+        title = getString(segment.titleResId()),
+        body = getString(R.string.tv_session_segment_body_format, segment.minutes),
+        onClick = {
+            studySessionState = StudyFlowTvStudySessionExperience.applyAction(
+                studySessionState,
+                StudyFlowTvSessionAction.NEXT_SEGMENT,
+            )
+            renderStudySessionDestination()
+        },
+    )
+
+    private fun tvSessionAction(action: StudyFlowTvSessionAction): Button = tvActionButton(action.labelResId()).apply {
+        setOnClickListener {
+            if (action == StudyFlowTvSessionAction.RETURN_TODAY) {
+                selectDestination(StudyFlowTvDestination.TODAY)
+            } else {
+                studySessionState = StudyFlowTvStudySessionExperience.applyAction(studySessionState, action)
+                renderStudySessionDestination()
+            }
+        }
+    }
+
+    private fun tvCardButton(
+        title: String,
+        body: String,
+        onClick: () -> Unit,
+    ): Button = Button(this).apply {
+        id = View.generateViewId()
+        text = getString(R.string.tv_home_card_format, title, body)
         textSize = 17f
         isAllCaps = false
         gravity = Gravity.START or Gravity.CENTER_VERTICAL
         setTextColor(Color.WHITE)
         setPadding(dp(22), dp(16), dp(22), dp(16))
         applyStudyFlowTvDpadFocus()
-        setOnClickListener { selectDestination(card.destination) }
+        setOnClickListener { onClick() }
         layoutParams = LinearLayout.LayoutParams(dp(260), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             marginEnd = dp(14)
             bottomMargin = dp(14)
         }
+    }
+
+    private fun sectionLabel(labelResId: Int): TextView = TextView(this).apply {
+        text = getString(labelResId)
+        setTextColor(Color.rgb(226, 232, 240))
+        textSize = 18f
+        gravity = Gravity.START
+        setPadding(0, 0, 0, dp(12))
     }
 
     private fun tvNavigationButton(destination: StudyFlowTvDestination): Button = Button(this).apply {
@@ -270,6 +398,7 @@ class StudyFlowTvActivity : Activity() {
     private fun StudyFlowTvDestination.labelResId(): Int = when (this) {
         StudyFlowTvDestination.HOME -> R.string.tv_nav_home
         StudyFlowTvDestination.TODAY -> R.string.tv_nav_today
+        StudyFlowTvDestination.STUDY_SESSION -> R.string.tv_nav_study_session
         StudyFlowTvDestination.PRACTICE -> R.string.tv_nav_practice
         StudyFlowTvDestination.REVIEWS -> R.string.tv_nav_reviews
         StudyFlowTvDestination.MOCK_EXAM -> R.string.tv_nav_mock_exam
@@ -281,6 +410,7 @@ class StudyFlowTvActivity : Activity() {
     private fun StudyFlowTvDestination.titleResId(): Int = when (this) {
         StudyFlowTvDestination.HOME -> R.string.tv_content_title_home
         StudyFlowTvDestination.TODAY -> R.string.tv_content_title_today
+        StudyFlowTvDestination.STUDY_SESSION -> R.string.tv_content_title_study_session
         StudyFlowTvDestination.PRACTICE -> R.string.tv_content_title_practice
         StudyFlowTvDestination.REVIEWS -> R.string.tv_content_title_reviews
         StudyFlowTvDestination.MOCK_EXAM -> R.string.tv_content_title_mock_exam
@@ -292,6 +422,7 @@ class StudyFlowTvActivity : Activity() {
     private fun StudyFlowTvDestination.bodyResId(): Int = when (this) {
         StudyFlowTvDestination.HOME -> R.string.tv_content_body_home
         StudyFlowTvDestination.TODAY -> R.string.tv_content_body_today
+        StudyFlowTvDestination.STUDY_SESSION -> R.string.tv_content_body_study_session
         StudyFlowTvDestination.PRACTICE -> R.string.tv_content_body_practice
         StudyFlowTvDestination.REVIEWS -> R.string.tv_content_body_reviews
         StudyFlowTvDestination.MOCK_EXAM -> R.string.tv_content_body_mock_exam
@@ -312,6 +443,36 @@ class StudyFlowTvActivity : Activity() {
         StudyFlowTvHomeCardId.PRACTICE -> R.string.tv_home_card_practice_body
         StudyFlowTvHomeCardId.REVIEWS -> R.string.tv_home_card_reviews_body
         StudyFlowTvHomeCardId.MOCK_EXAM -> R.string.tv_home_card_mock_exam_body
+    }
+
+    private fun StudyFlowTvTodayBlock.titleResId(): Int = when (id) {
+        StudyFlowTvTodayBlockId.NEXT_STUDY_BLOCK -> R.string.tv_today_block_next_title
+        StudyFlowTvTodayBlockId.DUE_REVIEWS -> R.string.tv_today_block_reviews_title
+        StudyFlowTvTodayBlockId.QUESTION_PRACTICE -> R.string.tv_today_block_practice_title
+        StudyFlowTvTodayBlockId.MOCK_EXAM_PREP -> R.string.tv_today_block_mock_title
+    }
+
+    private fun StudyFlowTvTodayBlock.bodyResId(): Int = when (id) {
+        StudyFlowTvTodayBlockId.NEXT_STUDY_BLOCK -> R.string.tv_today_block_next_body
+        StudyFlowTvTodayBlockId.DUE_REVIEWS -> R.string.tv_today_block_reviews_body
+        StudyFlowTvTodayBlockId.QUESTION_PRACTICE -> R.string.tv_today_block_practice_body
+        StudyFlowTvTodayBlockId.MOCK_EXAM_PREP -> R.string.tv_today_block_mock_body
+    }
+
+    private fun StudyFlowTvSessionSegment.titleResId(): Int = when (id) {
+        StudyFlowTvSessionSegmentId.WARM_UP -> R.string.tv_session_segment_warmup_title
+        StudyFlowTvSessionSegmentId.FOCUS_BLOCK -> R.string.tv_session_segment_focus_title
+        StudyFlowTvSessionSegmentId.CHECKPOINT -> R.string.tv_session_segment_checkpoint_title
+        StudyFlowTvSessionSegmentId.SUMMARY -> R.string.tv_session_segment_summary_title
+    }
+
+    private fun StudyFlowTvSessionAction.labelResId(): Int = when (this) {
+        StudyFlowTvSessionAction.START -> R.string.tv_session_action_start
+        StudyFlowTvSessionAction.PAUSE -> R.string.tv_session_action_pause
+        StudyFlowTvSessionAction.RESUME -> R.string.tv_session_action_resume
+        StudyFlowTvSessionAction.NEXT_SEGMENT -> R.string.tv_session_action_next
+        StudyFlowTvSessionAction.COMPLETE -> R.string.tv_session_action_complete
+        StudyFlowTvSessionAction.RETURN_TODAY -> R.string.tv_session_action_return_today
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

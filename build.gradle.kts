@@ -671,6 +671,19 @@ tasks.register<Exec>("verifyStudyFlowTvHomeSurface") {
     commandLine("python3", "scripts/verify_tvov06_home_surface.py")
 }
 
+
+tasks.register<Exec>("verifyStudyFlowTvTodayWorkspace") {
+    group = "verification"
+    description = "Checks TVOV07 Android TV Today workspace, controls, focus items, and shell rendering contracts."
+    commandLine("python3", "scripts/verify_tvov07_today_workspace.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvStudySessionExperience") {
+    group = "verification"
+    description = "Checks TVOV08 Android TV study-session experience, remote/phone controls, and cast-state contracts."
+    commandLine("python3", "scripts/verify_tvov08_study_session.py")
+}
+
 tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
     group = "verification"
     description = "Compatibility alias for the final source/static acceptance contract."

@@ -55,12 +55,12 @@ def main() -> None:
         "private fun renderHomeDestination()",
         "private fun tvHomeCard(card: StudyFlowTvHomeCard): Button",
         "StudyFlowTvHomeSurface.cards.chunked(2)",
-        "setOnClickListener { selectDestination(card.destination) }",
+        "onClick = { selectDestination(card.destination) }",
         "R.string.tv_home_card_format",
     )
     require(
         "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-        "const val currentTvOverlay = \"TVOV06\"",
+        "const val currentTvOverlay = \"TVOV08\"",
         "object StudyFlowTvHomeBuildContract",
         "const val homeSurfaceIntroduced = true",
         "const val homeCardCount = 4",
