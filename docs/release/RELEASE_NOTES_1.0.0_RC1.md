@@ -21,7 +21,7 @@ tracking study work on Android.
 - Online-provider synchronization.
 - Public template marketplace.
 - Automatic syllabus extraction.
-- Desktop or web companion.
+- No Desktop or Web companion shipped as part of this historical Android RC1 milestone.
 
 These are historical RC1 boundaries, not current repository claims. Later CSOV work added optional
 provider lanes; later W/PC, DOV, TVOV, and WTV tracks added Web, Desktop preview, Android TV, and Web TV.

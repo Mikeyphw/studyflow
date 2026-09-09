@@ -26,6 +26,7 @@ include(
     ":core:designsystem",
     ":core:domain",
     ":core:i18n",
+    ":core:link",
     ":core:model",
     ":core:navigation",
     ":core:portability",

@@ -1,0 +1,14 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-hello-002",
+  "workspaceId": "workspace-main",
+  "senderDeviceId": "device-android-001",
+  "type": "response",
+  "name": "link.hello",
+  "sentAtEpochMillis": 1788926400100,
+  "correlationId": "msg-hello-001",
+  "payload": {
+    "accepted": true,
+    "negotiatedProtocol": {"major": 1, "minor": 0}
+  }
+}

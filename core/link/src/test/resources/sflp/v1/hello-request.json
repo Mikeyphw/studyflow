@@ -1,0 +1,16 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-hello-001",
+  "workspaceId": "workspace-main",
+  "senderDeviceId": "device-desktop-001",
+  "type": "request",
+  "name": "link.hello",
+  "sentAtEpochMillis": 1788926400000,
+  "payload": {
+    "deviceId": "device-desktop-001",
+    "displayName": "Study PC",
+    "clientKind": "desktop",
+    "protocolSupport": {"major": 1, "minMinor": 0, "maxMinor": 0},
+    "capabilities": ["workspace.read", "workspace.write", "device.control"]
+  }
+}

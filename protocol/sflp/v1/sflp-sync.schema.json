@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-sync.schema.json",
+  "title": "StudyFlow Link Protocol v1 journal and reconciliation payloads",
+  "type": "object",
+  "$defs": {
+    "wireToken": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "originRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deviceId", "contiguousSequence"],
+      "properties": {
+        "deviceId": {"$ref": "#/$defs/wireToken"},
+        "contiguousSequence": {"type": "integer", "minimum": 0}
+      }
+    },
+    "frontier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origins"],
+      "properties": {
+        "origins": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/originRevision"}
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "operationId",
+        "workspaceId",
+        "originDeviceId",
+        "originSequence",
+        "entityId",
+        "entityRevision",
+        "logicalTimestamp",
+        "operationType",
+        "kind",
+        "occurredAtEpochMillis",
+        "payload"
+      ],
+      "properties": {
+        "operationId": {"$ref": "#/$defs/wireToken"},
+        "workspaceId": {"$ref": "#/$defs/wireToken"},
+        "originDeviceId": {"$ref": "#/$defs/wireToken"},
+        "originSequence": {"type": "integer", "minimum": 1},
+        "entityId": {"$ref": "#/$defs/wireToken"},
+        "entityRevision": {"type": "integer", "minimum": 1},
+        "logicalTimestamp": {"type": "integer", "minimum": 1},
+        "operationType": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+        },
+        "kind": {"enum": ["mutation", "tombstone"]},
+        "occurredAtEpochMillis": {"type": "integer", "minimum": 0},
+        "payload": {"type": "object"}
+      }
+    },
+    "frontierRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["knownFrontier"],
+      "properties": {
+        "knownFrontier": {"$ref": "#/$defs/frontier"}
+      }
+    },
+    "frontierResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currentFrontier"],
+      "properties": {
+        "currentFrontier": {"$ref": "#/$defs/frontier"}
+      }
+    },
+    "pullRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspaceId", "knownFrontier", "maxOperations"],
+      "properties": {
+        "workspaceId": {"$ref": "#/$defs/wireToken"},
+        "knownFrontier": {"$ref": "#/$defs/frontier"},
+        "maxOperations": {"type": "integer", "minimum": 1, "maximum": 1000}
+      }
+    },
+    "operationsBatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "batchId",
+        "workspaceId",
+        "baseFrontier",
+        "operations",
+        "throughFrontier",
+        "hasMore"
+      ],
+      "properties": {
+        "batchId": {"$ref": "#/$defs/wireToken"},
+        "workspaceId": {"$ref": "#/$defs/wireToken"},
+        "baseFrontier": {"$ref": "#/$defs/frontier"},
+        "operations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/operation"},
+          "maxItems": 1000
+        },
+        "throughFrontier": {"$ref": "#/$defs/frontier"},
+        "hasMore": {"type": "boolean"}
+      }
+    }
+  },
+  "oneOf": [
+    {"$ref": "#/$defs/frontierRequest"},
+    {"$ref": "#/$defs/frontierResponse"},
+    {"$ref": "#/$defs/pullRequest"},
+    {"$ref": "#/$defs/operationsBatch"}
+  ]
+}

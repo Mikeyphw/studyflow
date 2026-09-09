@@ -1,5 +1,7 @@
 # PARITY01-PARITY03 cross-platform baseline
 
+> Rebase refresh: validated against the current post-TVOV26 / Web-TV baseline supplied on 2026-09-09. This revision is an idempotent reconciliation delta, not a replay of stale source files.
+
 This overlay starts the StudyFlow cross-platform parity and full-connectivity roadmap.
 
 ## PARITY01 — canonical capability truth

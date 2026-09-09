@@ -48,6 +48,8 @@ require("desktop or web companion." not in scope.lower(), "current scope still c
 require("provider-backed upload, download, and merge flows are staged" not in readme, "README still says implemented sync I/O is staged")
 require("it does not compile `:app-tv` until TVOV01" not in readme, "README still describes pre-TVOV01 target state")
 require("current repository also contains later Web, Desktop, Android TV" in release, "RC1 notes lack historical/current-state disambiguation")
+require("- Desktop or web companion." not in release, "RC1 notes retain the stale bare Desktop/Web exclusion bullet")
+require("No Desktop or Web companion shipped as part of this historical Android RC1 milestone." in release, "RC1 notes do not preserve the historical boundary explicitly")
 require("historical roadmap sequencing" in index, "roadmap index does not distinguish historical sequencing from current truth")
 require("Cross-platform parity baseline" in changelog, "changelog missing PARITY01-PARITY03 baseline entry")
 

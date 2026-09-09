@@ -2,6 +2,258 @@
   "schema_version": 2,
   "items": [
     {
+      "id": "33c14b7765e0",
+      "name": "tvcontrol.jar",
+      "path": "core/tvcontrol/build/libs/tvcontrol.jar",
+      "canonical_path": "core/tvcontrol/build/libs/tvcontrol.jar",
+      "source_path": "core/tvcontrol/build/libs/tvcontrol.jar",
+      "exported_path": "",
+      "type": "jar",
+      "size": 298777,
+      "sha256": "78c1059f076f9c9e725a97599734193cfe3b010e947340760faeeeefad5b0da1",
+      "commit": "e4763bace3cff3e2e7404dccccd0fd1ae93c1e50",
+      "run_id": "c1a8ccf093114d91ba18d1f57a1b5753",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "produced",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-09T10:50:36.112156Z",
+      "registered_at": "2026-09-09T10:50:36.112156Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "c1a8ccf093114d91ba18d1f57a1b5753",
+        "path": "core/tvcontrol/build/libs/tvcontrol.jar",
+        "source_path": "core/tvcontrol/build/libs/tvcontrol.jar",
+        "type": "jar",
+        "size": 298777,
+        "sha256": "78c1059f076f9c9e725a97599734193cfe3b010e947340760faeeeefad5b0da1",
+        "valid": true,
+        "state": "produced",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          }
+        ],
+        "metadata": {
+          "path": "core/tvcontrol/build/libs/tvcontrol.jar",
+          "type": "jar",
+          "variant": "tvcontrol",
+          "module": "core:tvcontrol",
+          "size": 298777,
+          "sha256": "78c1059f076f9c9e725a97599734193cfe3b010e947340760faeeeefad5b0da1",
+          "valid": true,
+          "package_id": "",
+          "version_code": "",
+          "version_name": "",
+          "min_sdk": "",
+          "target_sdk": "",
+          "launchable_activity": "",
+          "signed": null,
+          "abis": [],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            }
+          ]
+        },
+        "module": "core:tvcontrol",
+        "package_id": "",
+        "version_code": "",
+        "version_name": "",
+        "min_sdk": "",
+        "target_sdk": "",
+        "launchable_activity": "",
+        "signed": null,
+        "abis": [],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "c1a8ccf093114d91ba18d1f57a1b5753:78c1059f076f9c9e725a97599734193cfe3b010e947340760faeeeefad5b0da1:33c14b7765e0"
+    },
+    {
+      "id": "ea3b7d1e7b64",
+      "name": "app-debug.apk",
+      "path": "app/build/outputs/apk/debug/app-debug.apk",
+      "canonical_path": "app/build/outputs/apk/debug/app-debug.apk",
+      "source_path": "app/build/outputs/apk/debug/app-debug.apk",
+      "exported_path": "",
+      "type": "apk",
+      "size": 27337658,
+      "sha256": "7f0a78f88a637451bc98e1ebd60d1ea02d7b2d5f6df1b26d0f126cc910b9461a",
+      "commit": "e4763bace3cff3e2e7404dccccd0fd1ae93c1e50",
+      "run_id": "c1a8ccf093114d91ba18d1f57a1b5753",
+      "producer": "android",
+      "command": "android-validation-build",
+      "target": "studyflow_android",
+      "variant": "",
+      "state": "produced",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-09T10:50:36.109487Z",
+      "registered_at": "2026-09-09T10:50:36.109487Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "android-validation-build",
+        "target": "studyflow_android",
+        "variant": "",
+        "run_id": "c1a8ccf093114d91ba18d1f57a1b5753",
+        "path": "app/build/outputs/apk/debug/app-debug.apk",
+        "source_path": "app/build/outputs/apk/debug/app-debug.apk",
+        "type": "apk",
+        "size": 27337658,
+        "sha256": "7f0a78f88a637451bc98e1ebd60d1ea02d7b2d5f6df1b26d0f126cc910b9461a",
+        "valid": true,
+        "state": "produced",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "member:AndroidManifest.xml",
+            "status": "passed",
+            "detail": "present"
+          },
+          {
+            "name": "aapt2_badging",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "signature",
+            "status": "skipped",
+            "detail": "apksigner not found; JAR signature entries present"
+          }
+        ],
+        "metadata": {
+          "path": "app/build/outputs/apk/debug/app-debug.apk",
+          "type": "apk",
+          "variant": "debug",
+          "module": "app",
+          "size": 27337658,
+          "sha256": "7f0a78f88a637451bc98e1ebd60d1ea02d7b2d5f6df1b26d0f126cc910b9461a",
+          "valid": true,
+          "package_id": "com.mikeyphw.studyflow",
+          "version_code": "37",
+          "version_name": "1.0.0-rc1",
+          "min_sdk": "",
+          "target_sdk": "36",
+          "launchable_activity": "com.mikeyphw.studyflow.MainActivity",
+          "signed": null,
+          "abis": [
+            "arm64-v8a",
+            "armeabi-v7a",
+            "x86",
+            "x86_64"
+          ],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "member:AndroidManifest.xml",
+              "status": "passed",
+              "detail": "present"
+            },
+            {
+              "name": "aapt2_badging",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "signature",
+              "status": "skipped",
+              "detail": "apksigner not found; JAR signature entries present"
+            }
+          ]
+        },
+        "module": "app",
+        "package_id": "com.mikeyphw.studyflow",
+        "version_code": "37",
+        "version_name": "1.0.0-rc1",
+        "min_sdk": "",
+        "target_sdk": "36",
+        "launchable_activity": "com.mikeyphw.studyflow.MainActivity",
+        "signed": null,
+        "abis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "gradle_tasks": [
+          "prepareDevtoolValidationArtifacts",
+          ":app:assembleDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "c1a8ccf093114d91ba18d1f57a1b5753:7f0a78f88a637451bc98e1ebd60d1ea02d7b2d5f6df1b26d0f126cc910b9461a:ea3b7d1e7b64"
+    },
+    {
       "id": "ec73a1244df3",
       "name": "study-flow-debug.apk",
       "path": ".devtool/build-artifacts/study-flow-debug.apk",
@@ -1460,6 +1712,6 @@
       }
     }
   ],
-  "updated_at": "2026-09-07T17:40:33.487520Z",
+  "updated_at": "2026-09-09T10:50:36.112723Z",
   "verifications": []
 }

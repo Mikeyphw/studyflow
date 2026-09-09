@@ -1,0 +1,12 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-capabilities-001",
+  "workspaceId": "workspace-main",
+  "senderDeviceId": "device-web-tv-001",
+  "type": "event",
+  "name": "link.capabilities_changed",
+  "sentAtEpochMillis": 1788926400200,
+  "payload": {
+    "capabilities": ["workspace.read", "session.execute", "device.presentation_sink"]
+  }
+}

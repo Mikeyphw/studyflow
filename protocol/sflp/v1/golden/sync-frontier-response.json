@@ -1,0 +1,18 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-sync-frontier-2",
+  "workspaceId": "workspace-main",
+  "senderDeviceId": "android-tablet",
+  "type": "response",
+  "name": "sync.frontier",
+  "sentAtEpochMillis": 1100,
+  "correlationId": "msg-sync-frontier-1",
+  "payload": {
+    "currentFrontier": {
+      "origins": [
+        {"deviceId": "android-tablet", "contiguousSequence": 4},
+        {"deviceId": "web-laptop", "contiguousSequence": 1}
+      ]
+    }
+  }
+}

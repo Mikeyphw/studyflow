@@ -1,0 +1,53 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-sync-ops-1",
+  "workspaceId": "workspace-main",
+  "senderDeviceId": "android-tablet",
+  "type": "response",
+  "name": "sync.operations",
+  "sentAtEpochMillis": 1300,
+  "correlationId": "msg-sync-pull-1",
+  "payload": {
+    "batchId": "batch-1",
+    "workspaceId": "workspace-main",
+    "baseFrontier": {
+      "origins": [
+        {"deviceId": "android-tablet", "contiguousSequence": 2}
+      ]
+    },
+    "operations": [
+      {
+        "operationId": "op-3",
+        "workspaceId": "workspace-main",
+        "originDeviceId": "android-tablet",
+        "originSequence": 3,
+        "entityId": "goal-1",
+        "entityRevision": 3,
+        "logicalTimestamp": 5,
+        "operationType": "goal.progressed",
+        "kind": "mutation",
+        "occurredAtEpochMillis": 1250,
+        "payload": {"progress": 60}
+      },
+      {
+        "operationId": "op-4",
+        "workspaceId": "workspace-main",
+        "originDeviceId": "android-tablet",
+        "originSequence": 4,
+        "entityId": "goal-1",
+        "entityRevision": 4,
+        "logicalTimestamp": 6,
+        "operationType": "goal.progressed",
+        "kind": "mutation",
+        "occurredAtEpochMillis": 1260,
+        "payload": {"progress": 80}
+      }
+    ],
+    "throughFrontier": {
+      "origins": [
+        {"deviceId": "android-tablet", "contiguousSequence": 4}
+      ]
+    },
+    "hasMore": true
+  }
+}

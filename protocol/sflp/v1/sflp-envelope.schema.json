@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-envelope.schema.json",
+  "title": "StudyFlow Link Protocol v1 envelope",
+  "type": "object",
+  "required": [
+    "protocol",
+    "messageId",
+    "workspaceId",
+    "senderDeviceId",
+    "type",
+    "name",
+    "sentAtEpochMillis",
+    "payload"
+  ],
+  "properties": {
+    "protocol": {"$ref": "#/$defs/protocolVersion"},
+    "messageId": {"$ref": "#/$defs/wireToken"},
+    "workspaceId": {"$ref": "#/$defs/wireToken"},
+    "senderDeviceId": {"$ref": "#/$defs/wireToken"},
+    "type": {
+      "type": "string",
+      "enum": ["request", "response", "event", "error"]
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "maxLength": 128
+    },
+    "sentAtEpochMillis": {"type": "integer", "minimum": 0},
+    "correlationId": {"$ref": "#/$defs/wireToken"},
+    "payload": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"type": {"enum": ["response", "error"]}},
+        "required": ["type"]
+      },
+      "then": {"required": ["correlationId"]}
+    },
+    {
+      "if": {
+        "properties": {"type": {"enum": ["request", "event"]}},
+        "required": ["type"]
+      },
+      "then": {"not": {"required": ["correlationId"]}}
+    }
+  ],
+  "$defs": {
+    "protocolVersion": {
+      "type": "object",
+      "required": ["major", "minor"],
+      "properties": {
+        "major": {"type": "integer", "minimum": 1},
+        "minor": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "wireToken": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "maxLength": 128
+    }
+  }
+}

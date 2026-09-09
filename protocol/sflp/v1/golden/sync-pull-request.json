@@ -1,0 +1,18 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-sync-pull-1",
+  "workspaceId": "workspace-main",
+  "senderDeviceId": "desktop-main",
+  "type": "request",
+  "name": "sync.pull",
+  "sentAtEpochMillis": 1200,
+  "payload": {
+    "workspaceId": "workspace-main",
+    "knownFrontier": {
+      "origins": [
+        {"deviceId": "android-tablet", "contiguousSequence": 2}
+      ]
+    },
+    "maxOperations": 2
+  }
+}

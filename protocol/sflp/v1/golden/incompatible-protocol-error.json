@@ -1,0 +1,15 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-error-001",
+  "workspaceId": "workspace-main",
+  "senderDeviceId": "device-android-tv-001",
+  "type": "error",
+  "name": "link.hello",
+  "sentAtEpochMillis": 1788926400300,
+  "correlationId": "msg-hello-future-001",
+  "payload": {
+    "code": "link.incompatible_protocol",
+    "message": "No compatible SFLP major version is available.",
+    "retryable": false
+  }
+}

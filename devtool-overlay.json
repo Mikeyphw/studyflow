@@ -1,335 +1,334 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_parity01_03_cross_platform_baseline_v2",
+  "name": "studyflow_sflp02_03_journal_reconciliation_v1",
   "target": "studyflow_android",
-  "description": "PARITY01-PARITY03 baseline: canonical all-client capability/connectivity truth, stale documentation reconciliation, full SFLP roadmap, and non-semantic OV20 source-quality repair.",
-  "commit_message": "PARITY01-03: establish cross-platform parity baseline",
+  "description": "SFLP02+SFLP03 complete canonical append-only domain operation journal and transport-neutral vector-frontier reconciliation engine with deterministic conflict/replay semantics.",
+  "commit_message": "SFLP02-03: add journal and reconciliation engine",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "PARITY01-03: establish cross-platform parity baseline"
+    "message": "SFLP02-03: add journal and reconciliation engine"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "PARITY01-03: establish cross-platform parity baseline"
+      "message": "SFLP02-03: add journal and reconciliation engine"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
-    "expected_target_type": "android"
+    "expected_target_type": "android",
+    "notes": "Built against the exact post-PARITY01-03 + SFLP01 state produced from studyflow-20260909-005851-916596.tar.gz."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_parity01_03_cross_platform_baseline_v2",
+    "name": "studyflow_sflp02_03_journal_reconciliation_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "parity01-current-truth",
-        "purpose": "Canonical current-state capability/connectivity matrix and implementation record",
+        "id": "sflp02-operation-journal",
+        "purpose": "Canonical append-only domain operations, vector frontiers, revisions, replay, checkpoints, tombstones, and integrity.",
         "paths": [
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowDomainOperation.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournal.kt",
+          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournalTest.kt"
+        ]
+      },
+      {
+        "id": "sflp03-reconciliation",
+        "purpose": "Transport-neutral peer frontier exchange, batched missing-operation transfer, conflict handling, dedupe, and interruption recovery.",
+        "paths": [
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliation.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncProtocol.kt",
+          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliationEngineTest.kt",
+          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncCodecGoldenTest.kt",
+          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncWireTest.kt",
+          "core/link/src/test/resources/sflp/v1/sync-frontier-request.json",
+          "core/link/src/test/resources/sflp/v1/sync-frontier-response.json",
+          "core/link/src/test/resources/sflp/v1/sync-operations-response.json",
+          "core/link/src/test/resources/sflp/v1/sync-pull-request.json",
+          "protocol/sflp/v1/golden/sync-frontier-request.json",
+          "protocol/sflp/v1/golden/sync-frontier-response.json",
+          "protocol/sflp/v1/golden/sync-operations-response.json",
+          "protocol/sflp/v1/golden/sync-pull-request.json",
+          "protocol/sflp/v1/sflp-sync.schema.json"
+        ]
+      },
+      {
+        "id": "sflp02-03-integration-truth",
+        "purpose": "Focused Gradle/Devtool validation plus architecture, roadmap, product-truth, and changelog updates.",
+        "paths": [
+          ".devtool.toml",
+          "CHANGELOG.md",
+          "SFLP02_03_JOURNAL_RECONCILIATION.md",
+          "build.gradle.kts",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLinkProtocol.kt",
+          "docs/architecture/SFLP02_03_JOURNAL_RECONCILIATION.md",
           "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md",
           "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
-          "PARITY01_03_CROSS_PLATFORM_BASELINE.md"
-        ]
-      },
-      {
-        "id": "parity02-doc-reconciliation",
-        "purpose": "Reconcile stale Web/Desktop/TV/optional-sync claims without rewriting historical RC1 scope as current truth",
-        "paths": [
-          "README.md",
-          "docs/product/SCOPE_BOUNDARIES.md",
-          "docs/release/RELEASE_NOTES_1.0.0_RC1.md",
-          "docs/roadmap/FINAL_ROADMAP_INDEX.md",
-          "CHANGELOG.md"
-        ]
-      },
-      {
-        "id": "parity03-ov20-source-quality",
-        "purpose": "Formatting-only repair for current OV20 Kotlin/KTS source-quality failures introduced by later TVOV work",
-        "paths": [
-          "build.gradle.kts",
-          "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneControllerScreen.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPresentationProjector.kt",
-          "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainAction.kt",
-          "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvPresentation.kt",
-          "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt",
-          "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvControlProtocolTest.kt",
-          "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainActionTest.kt",
-          "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocolTest.kt",
-          "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt"
-        ]
-      },
-      {
-        "id": "baseline-validation",
-        "purpose": "Focused PARITY01-PARITY03 verifier plus formatting-safe TVOV24 contract recognition",
-        "paths": [
-          "scripts/verify_parity01_03_cross_platform_baseline.py",
-          "scripts/verify_tvov24_cast_state_synchronization.py"
+          "scripts/verify_sflp02_03_journal_reconciliation.py"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 21,
+    "count": 26,
     "entries": [
+      {
+        "action": "modify",
+        "path": ".devtool.toml",
+        "mode": "0o600",
+        "sha256": "c48352e05d5b2357fcb10e15acbda8404a3f8f88b3b109d57587e4bae9d66d19",
+        "size": 24384,
+        "source_mode": "0o600",
+        "source_sha256": "f28e19c1f1602a30dbc81f95f8c8010f19467e12c5c48852f6b09a4520b47499",
+        "source_size": 24290
+      },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "eef8f7e6878762b2134782e04ea235cfe5dab5328bb407810989baac94962075",
-        "size": 37927,
+        "sha256": "cd11cd54f1d03e6195034e6939a9e7de9cb4a9f33d2942cf214375a5c5692c74",
+        "size": 39467,
         "source_mode": "0o600",
-        "source_sha256": "62ef49ac9316064feb0657683dcb0c385717398cfb8a75c409c462d7f6c13c63",
-        "source_size": 37423
+        "source_sha256": "b291855d1c45746ad47ee7d0654e62f582c3c4ca7ddc16aebb373675dd11d763",
+        "source_size": 38759
       },
       {
         "action": "add",
-        "path": "PARITY01_03_CROSS_PLATFORM_BASELINE.md",
+        "path": "SFLP02_03_JOURNAL_RECONCILIATION.md",
         "mode": "0o644",
-        "sha256": "8dad7a595ec2c3594aada2e7fe0eefb8b1af101e09783a828ca6612a06b59090",
-        "size": 2184
-      },
-      {
-        "action": "modify",
-        "path": "README.md",
-        "mode": "0o600",
-        "sha256": "ad0ba4a7baf82fb244f686212da586323aecff290357e4a985801fbfcdab2f00",
-        "size": 30655,
-        "source_mode": "0o600",
-        "source_sha256": "671f26f311dc283a46758e44f24d039520f3654347f41dab0f5dcae12f836624",
-        "source_size": 30495
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt",
-        "mode": "0o600",
-        "sha256": "4083e41a3c843d02267f4b5e948075d0588829557678e37094395aa9c8b35306",
-        "size": 34916,
-        "source_mode": "0o600",
-        "source_sha256": "c57690307f4a1dbbc667211e1e2e794aae0b1a36a1cb57bab98c386b900002c9",
-        "source_size": 34701
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneControllerScreen.kt",
-        "mode": "0o600",
-        "sha256": "56bcae6c1631bdbc7322963cf7ffe0c29af3f07b9c9836341cc5875f38c41222",
-        "size": 22074,
-        "source_mode": "0o600",
-        "source_sha256": "f329b40c34a9a1dda780bd985b336f0a9dafc5a90975d7ef1f99bfa341468d44",
-        "source_size": 21610
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPresentationProjector.kt",
-        "mode": "0o600",
-        "sha256": "2beb79e2b23aa79305572661cc75f9085818ae78d58c3e99d27b827d0cafd519",
-        "size": 20611,
-        "source_mode": "0o600",
-        "source_sha256": "2c09714d81ff9fe200b1dbbc93a5b6b21a293774f8a6e0787e323c03ef79a4d9",
-        "source_size": 20178
+        "sha256": "b8864192708bc11c085033ec9e9fc2d239c21ccc76c70a24e41726932bb0f09b",
+        "size": 3947
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o600",
-        "sha256": "6d2e3257843f287882d5054cb467c22702a14ef0dce34efae0fa7d2bf6a4d940",
-        "size": 55618,
+        "sha256": "ef8baa85d0bd3944f917f4d36d0d11b8586d492ff11246aeb6c976e866550749",
+        "size": 56497,
         "source_mode": "0o600",
-        "source_sha256": "49ac4fb8997134346fcf8010098a87a2afa96a37c6ffb3d93f138a21f8a75ab7",
-        "source_size": 54748
-      },
-      {
-        "action": "modify",
-        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainAction.kt",
-        "mode": "0o600",
-        "sha256": "22f2ab3d6e4e92c4081338183c020aae290bbcb28ef86694690a0e578c40d4b9",
-        "size": 10410,
-        "source_mode": "0o600",
-        "source_sha256": "74f4e8dea6e6d72bb45e530b6be7eb1d3551d370f90a80cfc4813e1ca1629872",
-        "source_size": 10362
-      },
-      {
-        "action": "modify",
-        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvPresentation.kt",
-        "mode": "0o600",
-        "sha256": "e11848d79dd056f4e40c00a9923f46f026fad7e2b4af05f874519f58101275dd",
-        "size": 12094,
-        "source_mode": "0o600",
-        "source_sha256": "cfc80bc8cb46b90953450eb41ba3c6f104d65e21a6b647ae5b31363edc449cc1",
-        "source_size": 12074
-      },
-      {
-        "action": "modify",
-        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt",
-        "mode": "0o600",
-        "sha256": "387073d117b081327cdd34a81877fe5a50afc292ce23312e6e0bf27021a76c84",
-        "size": 10853,
-        "source_mode": "0o600",
-        "source_sha256": "755bae390bfeb6141b656663ef67065f012b4a2ce58e5d58fd73ca61517240a9",
-        "source_size": 10818
-      },
-      {
-        "action": "modify",
-        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvControlProtocolTest.kt",
-        "mode": "0o600",
-        "sha256": "ca06b79c7a97b260142c98b2a46243826dfdc9c8a1f7bcefcd06fc1fe6d5dd16",
-        "size": 4617,
-        "source_mode": "0o600",
-        "source_sha256": "c75e5091c451caf162ce1924db4eab921e16bb43ea386aa221802b672939c1aa",
-        "source_size": 4582
-      },
-      {
-        "action": "modify",
-        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainActionTest.kt",
-        "mode": "0o600",
-        "sha256": "eaf93d35b16585416148cd12bff73b71f2bdf5cb994d473279c01e8d94a65bfd",
-        "size": 7114,
-        "source_mode": "0o600",
-        "source_sha256": "28244cad003c8feaead76d7aa3085b1a295aa22f7169d365d508c0afa6cc1c60",
-        "source_size": 6952
-      },
-      {
-        "action": "modify",
-        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocolTest.kt",
-        "mode": "0o600",
-        "sha256": "05c7638d154ca4f8cbf2d2bdfa836e51fa5e3483e4da8b84db2f348bc338f41f",
-        "size": 6734,
-        "source_mode": "0o600",
-        "source_sha256": "1d0c6b1a2c7ac5a53910fa6e292a7182181dfc26a1e547f0079f1795f71da58c",
-        "source_size": 6632
-      },
-      {
-        "action": "modify",
-        "path": "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt",
-        "mode": "0o600",
-        "sha256": "51b558c9de6213f5fefca9e7575523605c1ce2a2275eb8ea546c023f5cc62932",
-        "size": 34832,
-        "source_mode": "0o600",
-        "source_sha256": "2740c97d98391d01277dd15834d76242ce7109965a774a2041c12435bc7513a3",
-        "source_size": 34604
+        "source_sha256": "6c9986d528ac3bef2eebbcab2ed9798d9cf6353f2d3d797c8a9c902201f7b671",
+        "source_size": 56036
       },
       {
         "action": "add",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowDomainOperation.kt",
+        "mode": "0o644",
+        "sha256": "4a7a685661208d82286bf52edcc25a5c690ca65acad3db631a0ccfe46ae3116f",
+        "size": 2461
+      },
+      {
+        "action": "modify",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLinkProtocol.kt",
+        "mode": "0o644",
+        "sha256": "6451a788b01cb8bb72e4d89448f69351216cfb896de0e06f2054c3b6e2076d2b",
+        "size": 9801,
+        "source_mode": "0o644",
+        "source_sha256": "46441175db70ec536d3dc377477a532a63dfa8582e9d5af2b5e00f05e8287a81",
+        "source_size": 9725
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournal.kt",
+        "mode": "0o644",
+        "sha256": "0228c0011c91935018d9c530df6d8f5097b6f5b96bba6269e0f85545b52d35bd",
+        "size": 13646
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliation.kt",
+        "mode": "0o644",
+        "sha256": "e7ff934ba78b6a44f89f13a6a88328166e54725fe5a6aba06ccc06d392da581d",
+        "size": 7709
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncProtocol.kt",
+        "mode": "0o644",
+        "sha256": "a273d0623f7d95eaf2b518bac89cb03b4c7ca71566f1bbcb76fe6dd678c17406",
+        "size": 4825
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournalTest.kt",
+        "mode": "0o644",
+        "sha256": "0834cd353049151a820b6c91ca1962617a39b187c94adbaec65e5520b532fb14",
+        "size": 9461
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliationEngineTest.kt",
+        "mode": "0o644",
+        "sha256": "29d29f29728c4b2d33d1d8059133b14e8f21918d2ed89aa45cf76e7deca09116",
+        "size": 7785
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncCodecGoldenTest.kt",
+        "mode": "0o644",
+        "sha256": "d3bddcceb052e56a0ec81789f8d2ac889100c84cb31ba24c5d4fbc75144cd981",
+        "size": 2031
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncWireTest.kt",
+        "mode": "0o644",
+        "sha256": "e73bafac4dbf0372203401844fe4095f3e95fc89266fe83acb845be905c1772a",
+        "size": 3218
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/test/resources/sflp/v1/sync-frontier-request.json",
+        "mode": "0o644",
+        "sha256": "efc19e7a9aa58048e0629782515c6f6b9abf96369c6d4ee65ed53a70082c4aaf",
+        "size": 369
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/test/resources/sflp/v1/sync-frontier-response.json",
+        "mode": "0o644",
+        "sha256": "b28b25abf0bbf4d849b2769d9271313bdd2c553370dff9cc3c56160cd4349b36",
+        "size": 477
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/test/resources/sflp/v1/sync-operations-response.json",
+        "mode": "0o644",
+        "sha256": "a437de5eb417ee2018c46924da212a35ffb73cff8baa887ec7d7ef0e5d8e9730",
+        "size": 1437
+      },
+      {
+        "action": "add",
+        "path": "core/link/src/test/resources/sflp/v1/sync-pull-request.json",
+        "mode": "0o644",
+        "sha256": "d95bfa1cf76f7a121febbad7c1553ab0b2100fd124cf47a50726239d9ba694c1",
+        "size": 422
+      },
+      {
+        "action": "add",
+        "path": "docs/architecture/SFLP02_03_JOURNAL_RECONCILIATION.md",
+        "mode": "0o644",
+        "sha256": "b8864192708bc11c085033ec9e9fc2d239c21ccc76c70a24e41726932bb0f09b",
+        "size": 3947
+      },
+      {
+        "action": "modify",
         "path": "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md",
-        "mode": "0o644",
-        "sha256": "51490f15f166dda612731e5d979d37cf0b915915d3df42480bfe55392cb4cd5f",
-        "size": 5612
+        "mode": "0o600",
+        "sha256": "f1740a53a14f70393afbf1c4a0bc72cbbebcf5edbbdf7437fd85875c61445f2a",
+        "size": 6044,
+        "source_mode": "0o600",
+        "source_sha256": "09b6e9fbb70dd633233d202acc9f2b03d200a32193b65ee91a97a1bef03658b4",
+        "source_size": 5703
       },
       {
         "action": "modify",
-        "path": "docs/product/SCOPE_BOUNDARIES.md",
-        "mode": "0o600",
-        "sha256": "27366b377c5020e5523d9c85073ee71cb2e606c08f188168de232e39b03fefb3",
-        "size": 2461,
-        "source_mode": "0o600",
-        "source_sha256": "e9ae6d27c1879a690429bc4b9e7c35bca7c81a56d4110c60b520033152c30ef1",
-        "source_size": 1779
-      },
-      {
-        "action": "modify",
-        "path": "docs/release/RELEASE_NOTES_1.0.0_RC1.md",
-        "mode": "0o600",
-        "sha256": "c44945754b5fc51f2f97025b616433266957f59a62fffaa3bf29cc2386fbac78",
-        "size": 1396,
-        "source_mode": "0o600",
-        "source_sha256": "837b33086ce21b657c1a01eef8311bb715f6d3cd0d7fa1a7239be0ad2c4b6716",
-        "source_size": 856
-      },
-      {
-        "action": "add",
         "path": "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
-        "mode": "0o644",
-        "sha256": "47d16de2bd89ea2e6a5b9740f3912c3dce5a3e8d1380dcb1ba2eb2c176eb89a7",
-        "size": 6824
-      },
-      {
-        "action": "modify",
-        "path": "docs/roadmap/FINAL_ROADMAP_INDEX.md",
         "mode": "0o600",
-        "sha256": "0025a68f156c483584e9a76ebd126909fb38ec8d1b801981fd8b43f218258f7e",
-        "size": 3088,
+        "sha256": "dd9cda3e8c99f539f23f9ffbddec07d303e13ccf9422f5fb91e26d5a935096eb",
+        "size": 7071,
         "source_mode": "0o600",
-        "source_sha256": "82da72528da1cd9e2e657c6f876563b9168ee0c33e578ac9681425a04ca4bf1d",
-        "source_size": 2824
+        "source_sha256": "1ffe7c818acff86c7cf2ba34afa4a071e4fc15d3e9135f508943a4960efb2d30",
+        "source_size": 6914
       },
       {
         "action": "add",
-        "path": "scripts/verify_parity01_03_cross_platform_baseline.py",
-        "mode": "0o755",
-        "sha256": "0798e5770335e469d06e36151e9f99e1d50c43985dbdc59e466c3d585f6084a1",
-        "size": 3981
+        "path": "protocol/sflp/v1/golden/sync-frontier-request.json",
+        "mode": "0o644",
+        "sha256": "efc19e7a9aa58048e0629782515c6f6b9abf96369c6d4ee65ed53a70082c4aaf",
+        "size": 369
       },
       {
-        "action": "modify",
-        "path": "scripts/verify_tvov24_cast_state_synchronization.py",
-        "mode": "0o600",
-        "sha256": "568df8ce4c77bc298910caac1497ca723a83de5a281572831d57d34f22c101e4",
-        "size": 10368,
-        "source_mode": "0o600",
-        "source_sha256": "d0dda6dc438ad100a7a8ddbd31ff74cab0563d4f2c0c04778849fe8ca0fa88ff",
-        "source_size": 10105
+        "action": "add",
+        "path": "protocol/sflp/v1/golden/sync-frontier-response.json",
+        "mode": "0o644",
+        "sha256": "b28b25abf0bbf4d849b2769d9271313bdd2c553370dff9cc3c56160cd4349b36",
+        "size": 477
+      },
+      {
+        "action": "add",
+        "path": "protocol/sflp/v1/golden/sync-operations-response.json",
+        "mode": "0o644",
+        "sha256": "a437de5eb417ee2018c46924da212a35ffb73cff8baa887ec7d7ef0e5d8e9730",
+        "size": 1437
+      },
+      {
+        "action": "add",
+        "path": "protocol/sflp/v1/golden/sync-pull-request.json",
+        "mode": "0o644",
+        "sha256": "d95bfa1cf76f7a121febbad7c1553ab0b2100fd124cf47a50726239d9ba694c1",
+        "size": 422
+      },
+      {
+        "action": "add",
+        "path": "protocol/sflp/v1/sflp-sync.schema.json",
+        "mode": "0o644",
+        "sha256": "07473871d40a2db0a7393547d713433933bdd82ca7d431776d5f19939ae3c51d",
+        "size": 3767
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_sflp02_03_journal_reconciliation.py",
+        "mode": "0o755",
+        "sha256": "bca7913f77c47502e52589dae8b33c47d36baa32f684e00678f860c4e99c9081",
+        "size": 11794
       }
     ]
   },
   "integrity": {
     "sha256": {
-      "CHANGELOG.md": "eef8f7e6878762b2134782e04ea235cfe5dab5328bb407810989baac94962075",
-      "PARITY01_03_CROSS_PLATFORM_BASELINE.md": "8dad7a595ec2c3594aada2e7fe0eefb8b1af101e09783a828ca6612a06b59090",
-      "README.md": "ad0ba4a7baf82fb244f686212da586323aecff290357e4a985801fbfcdab2f00",
-      "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt": "4083e41a3c843d02267f4b5e948075d0588829557678e37094395aa9c8b35306",
-      "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneControllerScreen.kt": "56bcae6c1631bdbc7322963cf7ffe0c29af3f07b9c9836341cc5875f38c41222",
-      "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPresentationProjector.kt": "2beb79e2b23aa79305572661cc75f9085818ae78d58c3e99d27b827d0cafd519",
-      "build.gradle.kts": "6d2e3257843f287882d5054cb467c22702a14ef0dce34efae0fa7d2bf6a4d940",
-      "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainAction.kt": "22f2ab3d6e4e92c4081338183c020aae290bbcb28ef86694690a0e578c40d4b9",
-      "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvPresentation.kt": "e11848d79dd056f4e40c00a9923f46f026fad7e2b4af05f874519f58101275dd",
-      "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt": "387073d117b081327cdd34a81877fe5a50afc292ce23312e6e0bf27021a76c84",
-      "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvControlProtocolTest.kt": "ca06b79c7a97b260142c98b2a46243826dfdc9c8a1f7bcefcd06fc1fe6d5dd16",
-      "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainActionTest.kt": "eaf93d35b16585416148cd12bff73b71f2bdf5cb994d473279c01e8d94a65bfd",
-      "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocolTest.kt": "05c7638d154ca4f8cbf2d2bdfa836e51fa5e3483e4da8b84db2f348bc338f41f",
-      "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt": "51b558c9de6213f5fefca9e7575523605c1ce2a2275eb8ea546c023f5cc62932",
-      "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md": "51490f15f166dda612731e5d979d37cf0b915915d3df42480bfe55392cb4cd5f",
-      "docs/product/SCOPE_BOUNDARIES.md": "27366b377c5020e5523d9c85073ee71cb2e606c08f188168de232e39b03fefb3",
-      "docs/release/RELEASE_NOTES_1.0.0_RC1.md": "c44945754b5fc51f2f97025b616433266957f59a62fffaa3bf29cc2386fbac78",
-      "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md": "47d16de2bd89ea2e6a5b9740f3912c3dce5a3e8d1380dcb1ba2eb2c176eb89a7",
-      "docs/roadmap/FINAL_ROADMAP_INDEX.md": "0025a68f156c483584e9a76ebd126909fb38ec8d1b801981fd8b43f218258f7e",
-      "scripts/verify_parity01_03_cross_platform_baseline.py": "0798e5770335e469d06e36151e9f99e1d50c43985dbdc59e466c3d585f6084a1",
-      "scripts/verify_tvov24_cast_state_synchronization.py": "568df8ce4c77bc298910caac1497ca723a83de5a281572831d57d34f22c101e4"
+      ".devtool.toml": "c48352e05d5b2357fcb10e15acbda8404a3f8f88b3b109d57587e4bae9d66d19",
+      "CHANGELOG.md": "cd11cd54f1d03e6195034e6939a9e7de9cb4a9f33d2942cf214375a5c5692c74",
+      "SFLP02_03_JOURNAL_RECONCILIATION.md": "b8864192708bc11c085033ec9e9fc2d239c21ccc76c70a24e41726932bb0f09b",
+      "build.gradle.kts": "ef8baa85d0bd3944f917f4d36d0d11b8586d492ff11246aeb6c976e866550749",
+      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowDomainOperation.kt": "4a7a685661208d82286bf52edcc25a5c690ca65acad3db631a0ccfe46ae3116f",
+      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLinkProtocol.kt": "6451a788b01cb8bb72e4d89448f69351216cfb896de0e06f2054c3b6e2076d2b",
+      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournal.kt": "0228c0011c91935018d9c530df6d8f5097b6f5b96bba6269e0f85545b52d35bd",
+      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliation.kt": "e7ff934ba78b6a44f89f13a6a88328166e54725fe5a6aba06ccc06d392da581d",
+      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncProtocol.kt": "a273d0623f7d95eaf2b518bac89cb03b4c7ca71566f1bbcb76fe6dd678c17406",
+      "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournalTest.kt": "0834cd353049151a820b6c91ca1962617a39b187c94adbaec65e5520b532fb14",
+      "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliationEngineTest.kt": "29d29f29728c4b2d33d1d8059133b14e8f21918d2ed89aa45cf76e7deca09116",
+      "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncCodecGoldenTest.kt": "d3bddcceb052e56a0ec81789f8d2ac889100c84cb31ba24c5d4fbc75144cd981",
+      "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncWireTest.kt": "e73bafac4dbf0372203401844fe4095f3e95fc89266fe83acb845be905c1772a",
+      "core/link/src/test/resources/sflp/v1/sync-frontier-request.json": "efc19e7a9aa58048e0629782515c6f6b9abf96369c6d4ee65ed53a70082c4aaf",
+      "core/link/src/test/resources/sflp/v1/sync-frontier-response.json": "b28b25abf0bbf4d849b2769d9271313bdd2c553370dff9cc3c56160cd4349b36",
+      "core/link/src/test/resources/sflp/v1/sync-operations-response.json": "a437de5eb417ee2018c46924da212a35ffb73cff8baa887ec7d7ef0e5d8e9730",
+      "core/link/src/test/resources/sflp/v1/sync-pull-request.json": "d95bfa1cf76f7a121febbad7c1553ab0b2100fd124cf47a50726239d9ba694c1",
+      "docs/architecture/SFLP02_03_JOURNAL_RECONCILIATION.md": "b8864192708bc11c085033ec9e9fc2d239c21ccc76c70a24e41726932bb0f09b",
+      "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md": "f1740a53a14f70393afbf1c4a0bc72cbbebcf5edbbdf7437fd85875c61445f2a",
+      "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md": "dd9cda3e8c99f539f23f9ffbddec07d303e13ccf9422f5fb91e26d5a935096eb",
+      "protocol/sflp/v1/golden/sync-frontier-request.json": "efc19e7a9aa58048e0629782515c6f6b9abf96369c6d4ee65ed53a70082c4aaf",
+      "protocol/sflp/v1/golden/sync-frontier-response.json": "b28b25abf0bbf4d849b2769d9271313bdd2c553370dff9cc3c56160cd4349b36",
+      "protocol/sflp/v1/golden/sync-operations-response.json": "a437de5eb417ee2018c46924da212a35ffb73cff8baa887ec7d7ef0e5d8e9730",
+      "protocol/sflp/v1/golden/sync-pull-request.json": "d95bfa1cf76f7a121febbad7c1553ab0b2100fd124cf47a50726239d9ba694c1",
+      "protocol/sflp/v1/sflp-sync.schema.json": "07473871d40a2db0a7393547d713433933bdd82ca7d431776d5f19939ae3c51d",
+      "scripts/verify_sflp02_03_journal_reconciliation.py": "bca7913f77c47502e52589dae8b33c47d36baa32f684e00678f860c4e99c9081"
     }
   },
   "validation": {
     "mode": "required",
     "required": true,
     "script": {
-      "description": "Run the PARITY01-PARITY03 baseline audit, existing OV20 integration seal, and affected TVOV21-TVOV26 source contracts.",
+      "description": "Validate complete SFLP02/SFLP03 journal/reconciliation source, schema, golden-vector, and documentation contracts.",
       "interpreter": "sh",
       "path": ".devtool-artifact/validation/validate.sh",
-      "sha256": "3c77aa50363b39eb4bbb8ec7863ecf7ff95f0f7149a2c6edd9403cb39fb9fd65",
+      "sha256": "6f0b6007534f83458e00cc9f33d801a05175a95c85840bb53e6bbd986338d1b4",
       "timeout_seconds": 600,
       "working_directory": "."
     },
     "notes": [
-      "Explicit top-level validation_tasks restrict Devtool Gradle validation to the affected OV20 and TVOV21-TVOV26 source-contract gates; normal studyflow_android validation phases must not be substituted.",
-      "Target is studyflow_android because PARITY03 repairs Android/TV Kotlin and root Gradle source-quality failures.",
-      "Validation is intentionally focused on source/product truth; no full Android build is requested by the artifact script.",
-      "Production Kotlin changes in PARITY03 are formatting-only.",
-      "TVOV24 retains the exact typed sendPresentation contract but its verifier now accepts standard multiline Kotlin formatting.",
-      "The capability matrix distinguishes current connectivity from the SFLP full-mesh target and must not claim SFLP is already shipped."
+      "Explicit validation_tasks contains only verifySflp02Sflp03JournalReconciliation.",
+      "That task depends on verifySflp01ProtocolBaseline and :core:link:test; Gradle de-duplicates shared test dependencies.",
+      "The combined delivery remains transport-neutral; live trust/discovery/transport/client adapters remain SFLP04-SFLP12.",
+      "Auto-commit is enabled with a single commit."
     ]
   },
   "validation_tasks": [
-    "verifyOv20FinalIntegration",
-    "verifyStudyFlowTvPresentationProjection",
-    "verifyStudyFlowTvLocalPairingTransport",
-    "verifyStudyFlowTvPhoneController",
-    "verifyStudyFlowTvCastStateSynchronization",
-    "verifyStudyFlowTvDomainPersistenceConvergence",
-    "verifyStudyFlowTvEndToEndPhysicalSealContracts"
+    "verifySflp02Sflp03JournalReconciliation"
   ]
 }
