@@ -79,6 +79,7 @@ import com.mikeyphw.studyflow.core.navigation.SubjectsRoute
 import com.mikeyphw.studyflow.core.navigation.SyncRoute
 import com.mikeyphw.studyflow.core.navigation.SystemHubRoute
 import com.mikeyphw.studyflow.core.navigation.TodayRoute
+import com.mikeyphw.studyflow.core.navigation.TvControllerRoute
 import com.mikeyphw.studyflow.feature.analytics.StudyAnalyticsScreen
 import com.mikeyphw.studyflow.feature.library.StudyLibraryScreen
 import com.mikeyphw.studyflow.feature.practice.PracticeScreen
@@ -110,6 +111,8 @@ internal fun StudyFlowV2Navigation(
     modifier: Modifier = Modifier,
     reminderLaunch: StudyReminderLaunch? = null,
     onReminderLaunchConsumed: () -> Unit = {},
+    tvControllerLaunchRequested: Boolean = false,
+    onTvControllerLaunchConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
@@ -136,6 +139,13 @@ internal fun StudyFlowV2Navigation(
         val staleDefaultId = preferences.defaultStudyPlanId
         if (staleDefaultId != null && canonicalDefaultPlan == null) {
             container.appPreferencesRepository.clearDefaultStudyPlanIf(staleDefaultId)
+        }
+    }
+
+    LaunchedEffect(tvControllerLaunchRequested) {
+        if (tvControllerLaunchRequested) {
+            navController.navigate(TvControllerRoute) { launchSingleTop = true }
+            onTvControllerLaunchConsumed()
         }
     }
 

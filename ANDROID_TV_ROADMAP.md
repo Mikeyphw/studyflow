@@ -80,7 +80,7 @@ TVOV22  Local pairing, discovery, and transport [implemented]
 TVOV23  Android phone TV controller [implemented]
 TVOV24  Real cast/state synchronization [implemented]
 TVOV25  Domain truth and persistence convergence [implemented]
-TVOV26  End-to-end physical-device final seal [next]
+TVOV26  End-to-end physical-device final seal [implemented]
 ```
 
 ## Stopping gate
@@ -484,3 +484,10 @@ Validation:
 - TV domain-action outbox tests plus corrected session/practice/mock/review state tests;
 - cumulative TVOV00-TVOV25 source verifiers;
 - TVOV26 remains the true two-device physical-device final seal.
+
+
+## TVOV26 implementation note
+
+TVOV26 is the final implementation unit and the fail-closed physical acceptance framework. It advances the TV package to version code 26 / `0.1.0-tv26`, adds a deterministic production phone-controller launch action for acceptance and shortcuts, persists only the user's explicit active-cast intent across phone process restart, and introduces a two-device Release acceptance runner. The runner requires one Leanback TV and one non-TV Android phone, exact signed Release APK bytes installed on each device, fresh six-digit pairing, authenticated navigation, exact LIVE cast receipt, a real canonical domain mutation, TV restart/resync, phone restart/resync, STOP_CAST waiting-state restoration, and revoke blocking further paired control. Missing ADB devices, missing signing, missing default-plan data, or any missing observation is BLOCKED; there is no physical-device skip.
+
+The normal source/build contract task proves the implementation exists. `verifyStudyFlowTvPhysicalTwoDeviceAcceptance` creates real physical evidence, and `verifyStudyFlowTvFinalProductSeal` consumes that evidence fail-closed. Until the evidence-backed final task passes, the source tree is implemented but the physical product seal must not be claimed.

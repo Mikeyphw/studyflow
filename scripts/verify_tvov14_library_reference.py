@@ -136,7 +136,7 @@ require(quality, "limited library/reference", "quality contract")
 require(notes, "TVOV14 implements the Android TV limited library/reference material surface", "implementation note")
 require(readme, "TVOV13 and TVOV14 add the Android TV read-only Schedule", "README")
 require(changelog, "TVOV13/TVOV14 - Android TV Schedule", "CHANGELOG")
-require(app_build, 'versionName = "0.1.0-tv25"', "app-tv version")
+require(app_build, 'versionName = "0.1.0-tv26"', "app-tv version")
 
 for forbidden in (
     "androidx.compose",

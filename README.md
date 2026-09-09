@@ -447,3 +447,10 @@ TVOV24 connects the TVOV21 canonical presentation feed to the paired TV over the
 ### Android TV TVOV25 — domain truth and persistence convergence
 
 TVOV25 makes StudyFlow persistence authoritative for TV interactions. Persistent TV/phone actions are mapped to canonical domain-action requests, executed on the phone through the existing StudyFlow session/practice/review managers and repositories, journaled for idempotent retry, and acknowledged over TVOV22. TV-local actions use a bounded outbox; phone-controller actions use the same executor directly. The resulting repository state is re-projected through TVOV21 and synchronized through TVOV24. The TV no longer fabricates mock scores, elapsed time, answers, review evidence, or lifecycle completion. The TV APK remains free of Room/data repositories and advances to version code 25 / `0.1.0-tv25`. TVOV26 is the remaining real two-device final seal.
+
+
+### Android TV TVOV26 final physical seal
+
+TVOV26 completes the Android TV implementation chain. It adds fail-closed two-device acceptance for a real Android phone plus Leanback TV, exact signed Release artifact installation, fresh pairing, authenticated control, LIVE canonical cast acknowledgement, real domain persistence, restart/resync, STOP_CAST, and revoke. Phone cast intent now survives process restart only when the user had explicitly started casting and the same default plan/pairing remains valid. Source validation cannot claim physical acceptance; `verifyStudyFlowTvFinalProductSeal` requires a PASS evidence report from the real-device runner.
+
+Pending STOP_CAST intent is also persisted until acknowledgment so a phone-process restart cannot resurrect a cast the user already stopped.

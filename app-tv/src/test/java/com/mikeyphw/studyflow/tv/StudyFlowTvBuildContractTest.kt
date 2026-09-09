@@ -26,7 +26,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvBuildContract.focusPrimitivesRequireNoComposeRuntime)
         assertEquals(64, StudyFlowTvBuildContract.minimumFocusTargetDp)
         assertTrue(StudyFlowTvBuildContract.deterministicInitialFocusRequired)
-        assertEquals("TVOV24", StudyFlowTvBuildContract.currentTvOverlay)
+        assertEquals("TVOV26", StudyFlowTvBuildContract.currentTvOverlay)
         assertTrue(StudyFlowTvBuildContract.navigationShellIntroduced)
         assertTrue(StudyFlowTvBuildContract.navigationShellRequiresNoComposeRuntime)
         assertTrue(StudyFlowTvBuildContract.navigationShellUsesSharedControlProtocol)
@@ -238,7 +238,7 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvPackagingBuildContract.cleartextTrafficDisabled)
         assertTrue(StudyFlowTvPackagingBuildContract.tvTargetRejectsPhoneTasks)
         assertTrue(StudyFlowTvPackagingBuildContract.conditionalReleaseSigningSupported)
-        assertEquals(25, StudyFlowTvPackagingBuildContract.packageVersionCode)
+        assertEquals(26, StudyFlowTvPackagingBuildContract.packageVersionCode)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.finalAcceptanceSealIntroduced)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.optimizedReleaseArtifactRequired)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.packageIdentityVerificationRequired)
@@ -248,6 +248,23 @@ class StudyFlowTvBuildContractTest {
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.noDeviceMustSkipCleanly)
         assertTrue(StudyFlowTvFinalAcceptanceBuildContract.physicalDeviceAcceptanceMustNotBeClaimedWhenSkipped)
         assertEquals(25, StudyFlowTvFinalAcceptanceBuildContract.releaseTargetMiB)
+    }
+
+    @Test
+    fun endToEndPhysicalSealIsFailClosedAndTwoDevice() {
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.endToEndPhysicalSealIntroduced)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.requiresTwoRealDevices)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.requiresLeanbackTvAndNonTvPhone)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.optimizedReleaseRuntimeRequired)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.exactInstalledArtifactHashRequired)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.freshPairingRequired)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.authenticatedControlRequired)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.liveCastAcknowledgementRequired)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.canonicalDomainMutationRequired)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.tvRestartResyncRequired)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.phoneRestartResyncRequired)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.revokeBlocksFurtherControl)
+        assertTrue(StudyFlowTvEndToEndPhysicalSealBuildContract.noDeviceSkipForbidden)
     }
 
 }

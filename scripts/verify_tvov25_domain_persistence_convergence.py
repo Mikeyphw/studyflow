@@ -219,8 +219,8 @@ require_tokens(
 
 build_contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV25"',
-    "packageVersionCode = 25",
+    'currentTvOverlay = "TVOV26"',
+    "packageVersionCode = 26",
     "object StudyFlowTvDomainPersistenceBuildContract",
     "domainPersistenceConvergenceIntroduced = true",
     "phoneOwnsCanonicalMutations = true",
@@ -230,11 +230,11 @@ build_contract = require_tokens(
 require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContractTest.kt",
     "domainTruthAndPersistenceConvergenceIsExplicit",
-    "assertEquals(25, StudyFlowTvPackagingBuildContract.packageVersionCode)",
+    "assertEquals(26, StudyFlowTvPackagingBuildContract.packageVersionCode)",
 )
 
 tv_build = read("app-tv/build.gradle.kts")
-require('versionCode = 25' in tv_build and 'versionName = "0.1.0-tv25"' in tv_build, "TV package must advance to TVOV25 identity")
+require('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build, "TV package must advance to TVOV25 identity")
 for forbidden in (":app:", ":feature:", ":core:data", ":core:database", "androidx.tv", "play-services-cast", "androidx.mediarouter"):
     require(forbidden not in tv_build, f"TV APK dependency boundary regressed: {forbidden}")
 
@@ -255,10 +255,10 @@ readme = read("README.md")
 notes = read("TVOV25_ANDROID_TV_DOMAIN_TRUTH_PERSISTENCE_CONVERGENCE.md")
 quality = read("docs/quality/TVOV25_DOMAIN_TRUTH_PERSISTENCE_CONTRACTS.md")
 require("TVOV25  Domain truth and persistence convergence [implemented]" in roadmap, "roadmap must mark TVOV25 implemented")
-require("TVOV26  End-to-end physical-device final seal [next]" in roadmap, "roadmap must mark TVOV26 next")
+require("TVOV26  End-to-end physical-device final seal [implemented]" in roadmap, "roadmap must mark TVOV26 implemented")
 require("TVOV25  Domain truth and persistence convergence [implemented]" in rules, "working rules must mark TVOV25 implemented")
-require("TVOV26  End-to-end physical-device final seal [next]" in rules, "working rules must mark TVOV26 next")
-require("TVOV00 through TVOV25" in rules, "working rules must record current TV chain")
+require("TVOV26  End-to-end physical-device final seal [implemented]" in rules, "working rules must mark TVOV26 implemented")
+require("TVOV00 through TVOV26" in rules, "working rules must record current TV chain")
 for token in ("canonical", "idempotent", "outbox", "persist", "TVOV26"):
     require(token.lower() in notes.lower(), f"TVOV25 implementation notes missing {token}")
 for token in ("managers", "action id", "projection", "mock score", "25 MiB"):

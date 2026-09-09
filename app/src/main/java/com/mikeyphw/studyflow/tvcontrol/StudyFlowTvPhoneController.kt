@@ -186,6 +186,7 @@ class StudyFlowTvPhoneController(
     private val presentationFeed: StudyFlowTvPresentationFeed,
     private val domainActionExecutor: StudyFlowTvDomainActionExecutor,
     private val defaultPlanId: StudyPlanId? = null,
+    private val castIntentStore: StudyFlowTvCastIntentStore = NoOpStudyFlowTvCastIntentStore,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) : StudyFlowTvReceiverDiscovery.Listener, Closeable {
@@ -197,6 +198,7 @@ class StudyFlowTvPhoneController(
     private var latestDomainSnapshot: StudyFlowTvPresentationSnapshot? = null
     private var observedDomainPlanId: StudyPlanId? = null
     private var castDeliveryRequested = false
+    private var persistedCastResumeAttempted = false
 
     private val mutableState = MutableStateFlow(
         StudyFlowTvPhoneControllerState(credential = gateway.savedCredential()),
@@ -209,6 +211,7 @@ class StudyFlowTvPhoneController(
 
     fun startDiscovery() {
         startDomainActionPoll()
+        resumePersistedCastIfEligible()
         val started = gateway.startDiscovery(this)
         if (!started && mutableState.value.linkStatus == StudyFlowTvLinkStatus.STOPPED) {
             mutableState.value = mutableState.value.copy(linkStatus = StudyFlowTvLinkStatus.ERROR)
@@ -340,6 +343,7 @@ class StudyFlowTvPhoneController(
             return
         }
 
+        castIntentStore.saveActive(planId)
         observeDomainSnapshot(planId)
         castCollectionJob?.cancel()
         latestCastSnapshot = null
@@ -396,6 +400,12 @@ class StudyFlowTvPhoneController(
     }
 
     fun stopCast() {
+        val castPlanId = mutableState.value.castSync.planId?.takeIf(String::isNotBlank)?.let(::StudyPlanId)
+        if (mutableState.value.credential != null && castPlanId != null) {
+            castIntentStore.saveStopPending(castPlanId)
+        } else {
+            castIntentStore.clear()
+        }
         castCollectionJob?.cancel()
         castCollectionJob = null
         latestCastSnapshot = null
@@ -432,6 +442,7 @@ class StudyFlowTvPhoneController(
             val response = gateway.revoke(endpoint)
             if (response.ok) {
                 gateway.clearSavedSession()
+                castIntentStore.clear()
                 castCollectionJob?.cancel()
                 castCollectionJob = null
                 domainPollJob?.cancel()
@@ -450,6 +461,7 @@ class StudyFlowTvPhoneController(
 
     fun forgetSavedSession() {
         gateway.clearSavedSession()
+        castIntentStore.clear()
         castCollectionJob?.cancel()
         castCollectionJob = null
         domainPollJob?.cancel()
@@ -461,6 +473,35 @@ class StudyFlowTvPhoneController(
             castSync = StudyFlowTvCastSyncState(),
             lastMessage = "local-session-forgotten",
         )
+    }
+
+    private fun resumePersistedCastIfEligible() {
+        if (persistedCastResumeAttempted) return
+        persistedCastResumeAttempted = true
+        val persisted = castIntentStore.load() ?: return
+        val currentPlanId = defaultPlanId
+        if (currentPlanId == null || currentPlanId != persisted.planId || mutableState.value.credential == null) {
+            castIntentStore.clear()
+            return
+        }
+        when (persisted.kind) {
+            StudyFlowTvPersistedCastIntentKind.ACTIVE -> {
+                startCast(currentPlanId)
+                mutableState.value = mutableState.value.copy(lastMessage = "cast-resumed-after-restart")
+            }
+            StudyFlowTvPersistedCastIntentKind.STOP_PENDING -> {
+                mutableState.value = mutableState.value.copy(
+                    castSync = StudyFlowTvCastSyncState(
+                        enabled = false,
+                        status = StudyFlowTvCastSyncStatus.STOPPING,
+                        planId = currentPlanId.value,
+                        remoteStopPending = true,
+                    ),
+                    lastMessage = "cast-stop-resumed-after-restart",
+                )
+                requestCastDelivery()
+            }
+        }
     }
 
     private fun observeDomainSnapshot(planId: StudyPlanId?) {
@@ -624,6 +665,7 @@ class StudyFlowTvPhoneController(
             return
         }
         if (response.ok && response.applied == true && response.presentationReceipt == null) {
+            castIntentStore.clear()
             mutableState.value = mutableState.value.copy(
                 continuity = response.continuity ?: mutableState.value.continuity,
                 castSync = StudyFlowTvCastSyncState(status = StudyFlowTvCastSyncStatus.STOPPED),
@@ -643,6 +685,7 @@ class StudyFlowTvPhoneController(
 
     private fun invalidateSessionForCast(reason: String) {
         gateway.clearSavedSession()
+        castIntentStore.clear()
         castCollectionJob?.cancel()
         castCollectionJob = null
         domainPollJob?.cancel()

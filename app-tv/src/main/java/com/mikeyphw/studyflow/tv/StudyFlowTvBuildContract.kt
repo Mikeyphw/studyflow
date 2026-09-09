@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV25"
+    const val currentTvOverlay = "TVOV26"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -208,7 +208,7 @@ object StudyFlowTvPackagingBuildContract {
     const val cleartextTrafficDisabled = true
     const val tvTargetRejectsPhoneTasks = true
     const val conditionalReleaseSigningSupported = true
-    const val packageVersionCode = 25
+    const val packageVersionCode = 26
 }
 
 // TVOV20 Real-device acceptance and release seal contract.
@@ -294,4 +294,23 @@ object StudyFlowTvDomainPersistenceBuildContract {
     const val localTvMutationOutboxRequired = true
     const val persistedProjectionRoundTripRequired = true
     const val fakeMockScoringForbidden = true
+}
+
+
+// TVOV26 End-to-end physical-device final seal contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvEndToEndPhysicalSealBuildContract {
+    const val endToEndPhysicalSealIntroduced = true
+    const val requiresTwoRealDevices = true
+    const val requiresLeanbackTvAndNonTvPhone = true
+    const val optimizedReleaseRuntimeRequired = true
+    const val exactInstalledArtifactHashRequired = true
+    const val freshPairingRequired = true
+    const val authenticatedControlRequired = true
+    const val liveCastAcknowledgementRequired = true
+    const val canonicalDomainMutationRequired = true
+    const val tvRestartResyncRequired = true
+    const val phoneRestartResyncRequired = true
+    const val revokeBlocksFurtherControl = true
+    const val noDeviceSkipForbidden = true
 }

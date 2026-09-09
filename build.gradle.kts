@@ -1216,6 +1216,41 @@ tasks.register<Exec>("verifyStudyFlowTvDomainPersistenceConvergence") {
     commandLine("python3", "scripts/verify_tvov25_domain_persistence_convergence.py")
 }
 
+
+
+tasks.register<Exec>("verifyStudyFlowTvEndToEndPhysicalSealContracts") {
+    group = "verification"
+    description = "Checks TVOV26 fail-closed two-device Release acceptance, restart-resync, exact-artifact evidence, and final seal wiring without claiming physical execution."
+    commandLine("python3", "scripts/verify_tvov26_end_to_end_physical_seal.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvPhysicalTwoDeviceAcceptance") {
+    group = "verification"
+    description = "Runs the fail-closed TVOV26 physical acceptance on one real Android phone and one real Leanback TV. Missing devices/signing/data are failures, never skips."
+    dependsOn(
+        ":app:assembleRelease",
+        ":app-tv:assembleRelease",
+        "verifyStudyFlowTvEndToEndPhysicalSealContracts",
+        "verifyStudyFlowTvOptimizedReleaseArtifact",
+        "verifyStudyFlowTvPackagedArtifacts",
+    )
+    commandLine("python3", "scripts/run_tvov26_two_device_acceptance.py")
+}
+
+tasks.register<Exec>("verifyStudyFlowTvFinalProductSeal") {
+    group = "verification"
+    description = "Consumes the real TVOV26 two-device evidence fail-closed and seals the complete TVOV00-TVOV26 product track."
+    dependsOn(
+        "verifyStudyFlowTvPhysicalTwoDeviceAcceptance",
+        "verifyStudyFlowTvFinalReleaseSeal",
+        ":core:tvcontrol:test",
+        ":core:tvlink:testDebugUnitTest",
+        ":app-tv:testDebugUnitTest",
+        ":app-tv:lintRelease",
+    )
+    commandLine("python3", "scripts/verify_tvov26_end_to_end_physical_seal.py", "--require-evidence")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."

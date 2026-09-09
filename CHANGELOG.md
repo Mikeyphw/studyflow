@@ -1,3 +1,10 @@
+## TVOV26 — end-to-end physical-device final seal
+
+- Added the missing `core/tvlink/consumer-rules.pro` required by the shared Android-library convention, and added a final-seal audit for every convention-backed Android library module.
+- Added fail-closed real phone + Leanback TV Release acceptance with exact installed artifact hashes, public-UI pairing/control/cast/persistence/restart/revoke checks, and machine-readable evidence.
+- Added deterministic production TV-controller launch action and private explicit-cast-intent persistence so phone process restart can resume the same canonical cast.
+- Advanced the TV package to version code 26 / `0.1.0-tv26`. Source/build completion never substitutes for the required physical evidence-backed final product seal.
+
 
 
 ## TVOV24 — Android TV real cast/state synchronization

@@ -121,7 +121,7 @@ app_tv_build = read("app-tv/build.gradle.kts")
 require('implementation(project(":core:tvcontrol"))' in app_tv_build, "app-tv must keep shared presentation protocol dependency")
 for forbidden in (':core:data', ':core:database', ':feature:', 'androidx.tv', 'play-services-cast'):
     require(forbidden not in app_tv_build, f"app-tv dependency boundary regressed: {forbidden}")
-require('versionCode = 25' in app_tv_build and 'versionName = "0.1.0-tv25"' in app_tv_build, "TVOV21 version not installed")
+require('versionCode = 26' in app_tv_build and 'versionName = "0.1.0-tv26"' in app_tv_build, "TVOV21 version not installed")
 require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapterTest.kt",
     "typedSnapshotKeepsCanonicalSourceIdsWhenAdaptedToTvSlots",
@@ -131,7 +131,7 @@ require_tokens(
 
 require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV25"',
+    'currentTvOverlay = "TVOV26"',
     "object StudyFlowTvPresentationBuildContract",
     "typedPresentationProtocolIntroduced = true",
     "phoneOwnsCanonicalProjection = true",
@@ -165,7 +165,7 @@ require("TVOV21  Typed presentation snapshots and canonical data projection [imp
 require("TVOV22  Local pairing, discovery, and transport [implemented]" in roadmap, "roadmap must mark TVOV22 implemented")
 require("TVOV21  Typed presentation snapshots and canonical data projection [implemented]" in rules, "working rules must mark TVOV21 implemented")
 require("TVOV22  Local pairing, discovery, and transport [implemented]" in rules, "working rules must mark TVOV22 implemented")
-require("TVOV00 through TVOV25" in rules, "working rules must record TVOV00 through TVOV25")
+require("TVOV00 through TVOV26" in rules, "working rules must record TVOV00 through TVOV26")
 require("typed presentation" in readme.lower(), "README missing TVOV21 typed-presentation summary")
 require("canonical" in quality.lower() and "fixture" in quality.lower() and "transport" in quality.lower(), "TVOV21 quality contract incomplete")
 require("demo fixture" in notes.lower() and "TVOV22" in notes, "TVOV21 implementation note incomplete")

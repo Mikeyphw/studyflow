@@ -298,6 +298,8 @@ fun StudyFlowApp(
     modifier: Modifier = Modifier,
     reminderLaunch: StudyReminderLaunch? = null,
     onReminderLaunchConsumed: () -> Unit = {},
+    tvControllerLaunchRequested: Boolean = false,
+    onTvControllerLaunchConsumed: () -> Unit = {},
 ) {
     val initializationState by container.initializationState.collectAsStateWithLifecycle()
     if (initializationState is AppInitializationState.Initializing) {
@@ -384,6 +386,8 @@ fun StudyFlowApp(
             modifier = modifier,
             reminderLaunch = reminderLaunch,
             onReminderLaunchConsumed = onReminderLaunchConsumed,
+            tvControllerLaunchRequested = tvControllerLaunchRequested,
+            onTvControllerLaunchConsumed = onTvControllerLaunchConsumed,
         )
     }
 }
@@ -397,6 +401,8 @@ private fun StudyFlowNavigation(
     modifier: Modifier = Modifier,
     reminderLaunch: StudyReminderLaunch? = null,
     onReminderLaunchConsumed: () -> Unit = {},
+    tvControllerLaunchRequested: Boolean = false,
+    onTvControllerLaunchConsumed: () -> Unit = {},
 ) {
     StudyFlowV2Navigation(
         container = container,
@@ -406,6 +412,8 @@ private fun StudyFlowNavigation(
         modifier = modifier,
         reminderLaunch = reminderLaunch,
         onReminderLaunchConsumed = onReminderLaunchConsumed,
+        tvControllerLaunchRequested = tvControllerLaunchRequested,
+        onTvControllerLaunchConsumed = onTvControllerLaunchConsumed,
     )
 }
 

@@ -16,17 +16,21 @@ data class StudyReminderLaunch(
 
 class MainActivity : AppCompatActivity() {
     private val reminderLaunch = mutableStateOf<StudyReminderLaunch?>(null)
+    private val tvControllerLaunchRequested = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         reminderLaunch.value = StudyReminderLaunchStore.consume()
+        tvControllerLaunchRequested.value = intent?.action == ACTION_OPEN_TV_CONTROLLER
         val container = (application as StudyFlowApplication).container
         setContent {
             StudyFlowApp(
                 container = container,
                 reminderLaunch = reminderLaunch.value,
                 onReminderLaunchConsumed = { reminderLaunch.value = null },
+                tvControllerLaunchRequested = tvControllerLaunchRequested.value,
+                onTvControllerLaunchConsumed = { tvControllerLaunchRequested.value = false },
             )
         }
     }
@@ -34,6 +38,11 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         reminderLaunch.value = StudyReminderLaunchStore.consume()
+        if (intent.action == ACTION_OPEN_TV_CONTROLLER) tvControllerLaunchRequested.value = true
         setIntent(intent)
+    }
+
+    companion object {
+        const val ACTION_OPEN_TV_CONTROLLER = "com.mikeyphw.studyflow.action.TV_CONTROLLER"
     }
 }

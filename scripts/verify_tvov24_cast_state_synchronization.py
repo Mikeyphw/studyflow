@@ -158,8 +158,8 @@ require_tokens(
 
 build_contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV25"',
-    'packageVersionCode = 25',
+    'currentTvOverlay = "TVOV26"',
+    'packageVersionCode = 26',
     'livePresentationSynchronizationDeferredToTvov24 = false',
     'object StudyFlowTvCastSynchronizationBuildContract',
     'realCastStateSynchronizationIntroduced = true',
@@ -173,7 +173,7 @@ require_tokens(
 )
 
 tv_build = read("app-tv/build.gradle.kts")
-require('versionCode = 25' in tv_build and 'versionName = "0.1.0-tv25"' in tv_build, "TV package must retain the current TVOV25 identity")
+require('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build, "TV package must retain the current TVOV25 identity")
 for forbidden in (':app:', ':feature:', ':core:data', ':core:database', 'androidx.tv', 'play-services-cast', 'androidx.mediarouter'):
     require(forbidden not in tv_build, f"TV APK dependency boundary regressed: {forbidden}")
 
@@ -197,7 +197,7 @@ require("TVOV24  Real cast/state synchronization [implemented]" in roadmap, "roa
 require("TVOV25  Domain truth and persistence convergence [implemented]" in roadmap, "roadmap must mark TVOV25 implemented")
 require("TVOV24  Real cast/state synchronization [implemented]" in rules, "working rules must mark TVOV24 implemented")
 require("TVOV25  Domain truth and persistence convergence [implemented]" in rules, "working rules must mark TVOV25 implemented")
-require("TVOV00 through TVOV25" in rules, "working rules must record current TV chain")
+require("TVOV00 through TVOV26" in rules, "working rules must record current TV chain")
 for token in ("explicit", "receipt", "reconnect", "STOP_CAST", "TVOV25"):
     require(token.lower() in notes.lower(), f"TVOV24 implementation notes missing {token}")
 for token in ("canonical", "authenticated", "serialized", "pending", "Cast SDK"):

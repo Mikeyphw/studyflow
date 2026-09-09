@@ -34,7 +34,7 @@ class StudyFlowTvControlStateReducerTest {
         assertEquals(local.state, phone.state)
         val continuity = StudyFlowTvControlStateReducer.continuityState(local.state)
         assertEquals("session", continuity.currentDestination)
-        assertEquals(StudyFlowTvPlaybackState.RUNNING, continuity.playbackState)
+        assertEquals(StudyFlowTvPlaybackState.READY, continuity.playbackState)
         assertEquals(1L, continuity.commandRevision)
         assertEquals("warm_up", continuity.activeItemId)
     }
@@ -78,9 +78,11 @@ class StudyFlowTvControlStateReducerTest {
             state = reduction.state
         }
 
+        val practiceBeforeAnswer = state.questionPractice
         apply(StudyFlowTvSurface.QUESTION_SET, StudyFlowTvControlAction.SELECT_ANSWER, option = "B")
+        assertEquals(practiceBeforeAnswer, state.questionPractice)
         apply(StudyFlowTvSurface.QUESTION_SET, StudyFlowTvControlAction.SHOW_EXPLANATION)
-        assertTrue(state.questionPractice.explanationVisible)
+        assertFalse(state.questionPractice.explanationVisible)
         apply(StudyFlowTvSurface.QUESTION_SET, StudyFlowTvControlAction.NEXT)
         assertEquals(1, state.questionPractice.activeQuestionIndex)
 

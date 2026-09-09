@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -52,12 +51,14 @@ internal fun StudyFlowTvPhoneControllerScreen(
 ) {
     val context = LocalContext.current
     val gateway = remember(discovery, client) { DefaultStudyFlowTvPhoneLinkGateway(discovery, client) }
-    val controller = remember(gateway, presentationSource, domainActionExecutor, defaultPlanId) {
+    val castIntentStore = remember(context) { SharedPreferencesStudyFlowTvCastIntentStore(context) }
+    val controller = remember(gateway, presentationSource, domainActionExecutor, defaultPlanId, castIntentStore) {
         StudyFlowTvPhoneController(
             gateway = gateway,
             presentationFeed = presentationSource,
             domainActionExecutor = domainActionExecutor,
             defaultPlanId = defaultPlanId,
+            castIntentStore = castIntentStore,
         )
     }
     val state by controller.state.collectAsStateWithLifecycle()
