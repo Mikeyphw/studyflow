@@ -7,7 +7,7 @@ exports.tvHistoryState = tvHistoryState;
 exports.tvHistoryUrl = tvHistoryUrl;
 exports.replaceTvHistoryEntry = replaceTvHistoryEntry;
 exports.pushTvHistoryEntry = pushTvHistoryEntry;
-const SCREENS = new Set(["today", "plan", "practice", "progress", "session", "questions", "mock", "review", "schedule"]);
+const SCREENS = new Set(["today", "plan", "practice", "progress", "session", "questions", "mock", "review", "schedule", "library"]);
 const OVERLAYS = new Set(["search", "settings", "material"]);
 exports.TV_HISTORY_STATE_KEY = "studyflowTvHistory";
 function screenFromHash(hash) {

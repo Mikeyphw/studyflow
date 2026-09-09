@@ -68,9 +68,21 @@ class StudyFlowTvDomainActionTest {
     fun persistencePolicyDoesNotCapturePresentationOnlyNavigation() {
         assertTrue(StudyFlowTvDomainActionProtocol.canonicalDataOwnerRequired)
         assertTrue(StudyFlowTvDomainActionProtocol.tvRepositoryMutationForbidden)
-        assertTrue(StudyFlowTvDomainActionProtocol.requiresPersistence(command(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.SUBMIT)))
-        assertTrue(!StudyFlowTvDomainActionProtocol.requiresPersistence(command(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.NEXT)))
-        assertTrue(!StudyFlowTvDomainActionProtocol.requiresPersistence(command(StudyFlowTvSurface.REVIEW, StudyFlowTvControlAction.SHOW_EXPLANATION)))
+        assertTrue(
+            StudyFlowTvDomainActionProtocol.requiresPersistence(
+                command(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.SUBMIT),
+            ),
+        )
+        assertTrue(
+            !StudyFlowTvDomainActionProtocol.requiresPersistence(
+                command(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.NEXT),
+            ),
+        )
+        assertTrue(
+            !StudyFlowTvDomainActionProtocol.requiresPersistence(
+                command(StudyFlowTvSurface.REVIEW, StudyFlowTvControlAction.SHOW_EXPLANATION),
+            ),
+        )
     }
 
     private fun command(

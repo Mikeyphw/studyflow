@@ -83,7 +83,10 @@ class StudyFlowTvControlProtocolTest {
             issuedAtEpochMillis = 5_000L,
         )
 
-        assertEquals(practiceCommand, json.decodeFromString<StudyFlowTvControlCommand>(json.encodeToString(practiceCommand)))
+        assertEquals(
+            practiceCommand,
+            json.decodeFromString<StudyFlowTvControlCommand>(json.encodeToString(practiceCommand)),
+        )
         assertEquals(mockCommand, json.decodeFromString<StudyFlowTvControlCommand>(json.encodeToString(mockCommand)))
         assertTrue(StudyFlowTvControlProtocol.isCastable(StudyFlowTvSurface.QUESTION_SET))
         assertTrue(StudyFlowTvControlProtocol.isCastable(StudyFlowTvSurface.MOCK_EXAM))

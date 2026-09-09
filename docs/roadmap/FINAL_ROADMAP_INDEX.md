@@ -53,6 +53,10 @@ Cloud sync overlay roadmap:
 - CSOV03: provider abstraction.
 - CSOV04-CSOV11: optional onboarding, manual provider transfer, merge/conflict review, background sync, and final seal.
 
-CSOV02-CSOV03 are implemented as source foundations; provider-backed I/O remains intentionally off until CSOV04/CSOV05.
+CSOV02-CSOV03 were the source foundations. Later CSOV04-CSOV15 overlays are now present in the
+repository, including real manual SAF-folder transfer and the optional WebDAV / Nextcloud provider lane.
+Fresh installs still remain sync-off by default.
 
-The final target-machine validation and evidence pass remains required before product sealing.
+For current cross-platform scope, use `docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md`; this index is
+historical roadmap sequencing. The final target-machine validation and evidence pass remains required
+before product sealing.

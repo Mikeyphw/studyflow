@@ -1,302 +1,335 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_web_wtv12_13_progress_schedule_v1",
-  "target": "studyflow_web",
-  "description": "WTV12-WTV13 TV-browser batch: dedicated evidence-backed Progress analytics and a dedicated read-only Schedule surface with D-pad/phone control parity, truthful no-data semantics and canonical activity routing.",
-  "commit_message": "WTV12-WTV13: add TV progress analytics and read-only schedule",
+  "name": "studyflow_parity01_03_cross_platform_baseline_v2",
+  "target": "studyflow_android",
+  "description": "PARITY01-PARITY03 baseline: canonical all-client capability/connectivity truth, stale documentation reconciliation, full SFLP roadmap, and non-semantic OV20 source-quality repair.",
+  "commit_message": "PARITY01-03: establish cross-platform parity baseline",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "WTV12-WTV13: add TV progress analytics and read-only schedule"
+    "message": "PARITY01-03: establish cross-platform parity baseline"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "WTV12-WTV13: add TV progress analytics and read-only schedule"
+      "message": "PARITY01-03: establish cross-platform parity baseline"
     }
   },
   "baseline": {
     "repo": "studyflow",
-    "target": "studyflow_web",
-    "expected_target_type": "node",
-    "requires_previous_overlay": "studyflow_web_wtv10_11_mock_exam_review_notebook_v1.zip",
-    "requires_previous_overlay_sha256": "8b2bd18f06b8eaa99c93a0ea212cee1eaf9c474e731de3f2494d2b35ee517fce"
+    "target": "studyflow_android",
+    "expected_target_type": "android"
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_web_wtv12_13_progress_schedule_v1",
-    "target": "studyflow_web",
+    "name": "studyflow_parity01_03_cross_platform_baseline_v2",
+    "target": "studyflow_android",
     "sections": [
       {
-        "id": "wtv12-progress-analytics",
-        "purpose": "Dedicated evidence-backed TV Progress analytics, weak-subject recommendations and remote navigation without evidence mutation",
+        "id": "parity01-current-truth",
+        "purpose": "Canonical current-state capability/connectivity matrix and implementation record",
         "paths": [
-          "web/src/tv_progress.ts",
-          "web/runtime/tv_progress.js",
-          "web/dist/runtime/tv_progress.js"
+          "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md",
+          "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
+          "PARITY01_03_CROSS_PLATFORM_BASELINE.md"
         ]
       },
       {
-        "id": "wtv13-read-only-schedule",
-        "purpose": "Dedicated #schedule History surface with Today/week presentation, selected-item navigation and canonical activity launch routing without schedule mutation",
+        "id": "parity02-doc-reconciliation",
+        "purpose": "Reconcile stale Web/Desktop/TV/optional-sync claims without rewriting historical RC1 scope as current truth",
         "paths": [
-          "web/src/tv_schedule.ts",
-          "web/runtime/tv_schedule.js",
-          "web/dist/runtime/tv_schedule.js",
-          "web/src/tv_history.ts",
-          "web/runtime/tv_history.js",
-          "web/dist/runtime/tv_history.js"
+          "README.md",
+          "docs/product/SCOPE_BOUNDARIES.md",
+          "docs/release/RELEASE_NOTES_1.0.0_RC1.md",
+          "docs/roadmap/FINAL_ROADMAP_INDEX.md",
+          "CHANGELOG.md"
         ]
       },
       {
-        "id": "wtv12-13-ui-remote",
-        "purpose": "React routing, TV navigation rail, phone remote shortcuts, 10-foot styling and offline shell integration",
+        "id": "parity03-ov20-source-quality",
+        "purpose": "Formatting-only repair for current OV20 Kotlin/KTS source-quality failures introduced by later TVOV work",
         "paths": [
-          "web/src/react/App.tsx",
-          "web/runtime/react/App.js",
-          "web/dist/runtime/react/App.js",
-          "web/scripts/serve_tv.mjs",
-          "web/styles.css",
-          "web/dist/styles.css",
-          "web/service-worker.js"
+          "build.gradle.kts",
+          "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneControllerScreen.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPresentationProjector.kt",
+          "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainAction.kt",
+          "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvPresentation.kt",
+          "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt",
+          "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvControlProtocolTest.kt",
+          "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainActionTest.kt",
+          "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocolTest.kt",
+          "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt"
         ]
       },
       {
-        "id": "tests-docs",
-        "purpose": "Cumulative regressions, explicit read-only/truthfulness contracts and roadmap documentation",
+        "id": "baseline-validation",
+        "purpose": "Focused PARITY01-PARITY03 verifier plus formatting-safe TVOV24 contract recognition",
         "paths": [
-          "web/tests/test_wtv12_13_progress_schedule.py",
-          "docs/web/WEB_ROADMAP.md",
-          "docs/web/WTV12_WTV13_PROGRESS_SCHEDULE.md",
-          "web/README.md"
+          "scripts/verify_parity01_03_cross_platform_baseline.py",
+          "scripts/verify_tvov24_cast_state_synchronization.py"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 20,
+    "count": 21,
     "entries": [
       {
         "action": "modify",
-        "path": "docs/web/WEB_ROADMAP.md",
+        "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "96a777b3d009a676ffb59aac0c91a66b22c34c001941a56b35ddbacba6afa01e",
-        "size": 9361,
+        "sha256": "eef8f7e6878762b2134782e04ea235cfe5dab5328bb407810989baac94962075",
+        "size": 37927,
         "source_mode": "0o600",
-        "source_sha256": "27af60007142d108eb13ef92d50a19f1e37e2c9e72f0f688fa527266862a0be6",
-        "source_size": 8562
+        "source_sha256": "62ef49ac9316064feb0657683dcb0c385717398cfb8a75c409c462d7f6c13c63",
+        "source_size": 37423
       },
       {
         "action": "add",
-        "path": "docs/web/WTV12_WTV13_PROGRESS_SCHEDULE.md",
+        "path": "PARITY01_03_CROSS_PLATFORM_BASELINE.md",
         "mode": "0o644",
-        "sha256": "627a4ed380151cc022e1234ca8de1bc1e96c0b0566ae03d5eef01a9f6d3434f0",
-        "size": 2128
+        "sha256": "8dad7a595ec2c3594aada2e7fe0eefb8b1af101e09783a828ca6612a06b59090",
+        "size": 2184
       },
       {
         "action": "modify",
-        "path": "web/README.md",
+        "path": "README.md",
         "mode": "0o600",
-        "sha256": "11d5b5ea54b7bc702b19f02f9f0e3c252307da7661f33468e8ed2057c32587de",
-        "size": 16139,
+        "sha256": "ad0ba4a7baf82fb244f686212da586323aecff290357e4a985801fbfcdab2f00",
+        "size": 30655,
         "source_mode": "0o600",
-        "source_sha256": "5ac9d3bcdcafee70b3f6d8094c1a8ac1d69cbf5021f6e094b59cc73dad665e31",
-        "source_size": 15534
+        "source_sha256": "671f26f311dc283a46758e44f24d039520f3654347f41dab0f5dcae12f836624",
+        "source_size": 30495
       },
       {
         "action": "modify",
-        "path": "web/dist/runtime/react/App.js",
-        "mode": "0o644",
-        "sha256": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
-        "size": 301013,
-        "source_mode": "0o644",
-        "source_sha256": "fa7769070ab0fe71d336e19a53136cf061d5fc9418b5b75c6e0280b37b605837",
-        "source_size": 285491
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/runtime/tv_history.js",
-        "mode": "0o644",
-        "sha256": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
-        "size": 2082,
-        "source_mode": "0o644",
-        "source_sha256": "31ffc91eaef4818c96114c546429ed706fc9b9fc3b9c10137fcda8a02f122385",
-        "source_size": 2070
-      },
-      {
-        "action": "add",
-        "path": "web/dist/runtime/tv_progress.js",
-        "mode": "0o644",
-        "sha256": "dbb4d86446f4170f60c75c216eff422d4379ec70cd9fafe0129ddea287792697",
-        "size": 6853
-      },
-      {
-        "action": "add",
-        "path": "web/dist/runtime/tv_schedule.js",
-        "mode": "0o644",
-        "sha256": "7b54fcb6c3c9df0354a118e5430299dc7ff5fc7eef6011cc110b16318223afc5",
-        "size": 4210
-      },
-      {
-        "action": "modify",
-        "path": "web/dist/styles.css",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt",
         "mode": "0o600",
-        "sha256": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
-        "size": 45591,
+        "sha256": "4083e41a3c843d02267f4b5e948075d0588829557678e37094395aa9c8b35306",
+        "size": 34916,
         "source_mode": "0o600",
-        "source_sha256": "c56cfebd25d086f90f8bcc27944525caea1795b49a080d7fd774819f65c9edff",
-        "source_size": 41017
+        "source_sha256": "c57690307f4a1dbbc667211e1e2e794aae0b1a36a1cb57bab98c386b900002c9",
+        "source_size": 34701
       },
       {
         "action": "modify",
-        "path": "web/runtime/react/App.js",
-        "mode": "0o644",
-        "sha256": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
-        "size": 301013,
-        "source_mode": "0o644",
-        "source_sha256": "fa7769070ab0fe71d336e19a53136cf061d5fc9418b5b75c6e0280b37b605837",
-        "source_size": 285491
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/tv_history.js",
-        "mode": "0o644",
-        "sha256": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
-        "size": 2082,
-        "source_mode": "0o644",
-        "source_sha256": "31ffc91eaef4818c96114c546429ed706fc9b9fc3b9c10137fcda8a02f122385",
-        "source_size": 2070
-      },
-      {
-        "action": "add",
-        "path": "web/runtime/tv_progress.js",
-        "mode": "0o644",
-        "sha256": "dbb4d86446f4170f60c75c216eff422d4379ec70cd9fafe0129ddea287792697",
-        "size": 6853
-      },
-      {
-        "action": "add",
-        "path": "web/runtime/tv_schedule.js",
-        "mode": "0o644",
-        "sha256": "7b54fcb6c3c9df0354a118e5430299dc7ff5fc7eef6011cc110b16318223afc5",
-        "size": 4210
-      },
-      {
-        "action": "modify",
-        "path": "web/scripts/serve_tv.mjs",
-        "mode": "0o644",
-        "sha256": "21f961ce144df22e265a8ecb79ab80559f717c7f0e7e3eed83694e526602be37",
-        "size": 8551,
-        "source_mode": "0o644",
-        "source_sha256": "dd09c887af5fb11eb92bd4f24d9b6e6b2bedc5cb42e51cc50339db49aed9b990",
-        "source_size": 7822
-      },
-      {
-        "action": "modify",
-        "path": "web/service-worker.js",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneControllerScreen.kt",
         "mode": "0o600",
-        "sha256": "21a51b17162f2eb0fc9ed29217d038728322d342ee2588234012bbcc5891e371",
-        "size": 2631,
+        "sha256": "56bcae6c1631bdbc7322963cf7ffe0c29af3f07b9c9836341cc5875f38c41222",
+        "size": 22074,
         "source_mode": "0o600",
-        "source_sha256": "c7b7614caebfeea527d9e091212a4cd0340a038c5c0fd6814f22801146a5e65f",
-        "source_size": 2575
+        "source_sha256": "f329b40c34a9a1dda780bd985b336f0a9dafc5a90975d7ef1f99bfa341468d44",
+        "source_size": 21610
       },
       {
         "action": "modify",
-        "path": "web/src/react/App.tsx",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPresentationProjector.kt",
         "mode": "0o600",
-        "sha256": "fb481f53810367805bc479a43b931cbde9ec536778f8579a4b9a86d3ae0f4f6f",
-        "size": 205601,
+        "sha256": "2beb79e2b23aa79305572661cc75f9085818ae78d58c3e99d27b827d0cafd519",
+        "size": 20611,
         "source_mode": "0o600",
-        "source_sha256": "df52c3d33769ce2b83023fd9746a5f9ceccaafd488fa83c7b4524e412eedcb21",
-        "source_size": 195133
+        "source_sha256": "2c09714d81ff9fe200b1dbbc93a5b6b21a293774f8a6e0787e323c03ef79a4d9",
+        "source_size": 20178
       },
       {
         "action": "modify",
-        "path": "web/src/tv_history.ts",
-        "mode": "0o644",
-        "sha256": "4dd8913de02c6023bd3853e49ea075a92a319ec3043119c6654bf999a12980a1",
-        "size": 2251,
-        "source_mode": "0o644",
-        "source_sha256": "0d4bec7c8a43bc041360e786db2afe1c429f6d5fa0c934815e853a30d3fab5d8",
-        "source_size": 2229
-      },
-      {
-        "action": "add",
-        "path": "web/src/tv_progress.ts",
-        "mode": "0o644",
-        "sha256": "debd883cf796aa871d446e0a20c6e96faf5c93f963521439d8c52b36cbeb9aea",
-        "size": 6401
-      },
-      {
-        "action": "add",
-        "path": "web/src/tv_schedule.ts",
-        "mode": "0o644",
-        "sha256": "51a22c3998ab29e989704bccad91ffb5dd6d74f0bd300f9b8bfc14d076f09ed2",
-        "size": 3813
-      },
-      {
-        "action": "modify",
-        "path": "web/styles.css",
+        "path": "build.gradle.kts",
         "mode": "0o600",
-        "sha256": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
-        "size": 45591,
+        "sha256": "6d2e3257843f287882d5054cb467c22702a14ef0dce34efae0fa7d2bf6a4d940",
+        "size": 55618,
         "source_mode": "0o600",
-        "source_sha256": "c56cfebd25d086f90f8bcc27944525caea1795b49a080d7fd774819f65c9edff",
-        "source_size": 41017
+        "source_sha256": "49ac4fb8997134346fcf8010098a87a2afa96a37c6ffb3d93f138a21f8a75ab7",
+        "source_size": 54748
+      },
+      {
+        "action": "modify",
+        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainAction.kt",
+        "mode": "0o600",
+        "sha256": "22f2ab3d6e4e92c4081338183c020aae290bbcb28ef86694690a0e578c40d4b9",
+        "size": 10410,
+        "source_mode": "0o600",
+        "source_sha256": "74f4e8dea6e6d72bb45e530b6be7eb1d3551d370f90a80cfc4813e1ca1629872",
+        "source_size": 10362
+      },
+      {
+        "action": "modify",
+        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvPresentation.kt",
+        "mode": "0o600",
+        "sha256": "e11848d79dd056f4e40c00a9923f46f026fad7e2b4af05f874519f58101275dd",
+        "size": 12094,
+        "source_mode": "0o600",
+        "source_sha256": "cfc80bc8cb46b90953450eb41ba3c6f104d65e21a6b647ae5b31363edc449cc1",
+        "source_size": 12074
+      },
+      {
+        "action": "modify",
+        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt",
+        "mode": "0o600",
+        "sha256": "387073d117b081327cdd34a81877fe5a50afc292ce23312e6e0bf27021a76c84",
+        "size": 10853,
+        "source_mode": "0o600",
+        "source_sha256": "755bae390bfeb6141b656663ef67065f012b4a2ce58e5d58fd73ca61517240a9",
+        "source_size": 10818
+      },
+      {
+        "action": "modify",
+        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvControlProtocolTest.kt",
+        "mode": "0o600",
+        "sha256": "ca06b79c7a97b260142c98b2a46243826dfdc9c8a1f7bcefcd06fc1fe6d5dd16",
+        "size": 4617,
+        "source_mode": "0o600",
+        "source_sha256": "c75e5091c451caf162ce1924db4eab921e16bb43ea386aa221802b672939c1aa",
+        "source_size": 4582
+      },
+      {
+        "action": "modify",
+        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainActionTest.kt",
+        "mode": "0o600",
+        "sha256": "eaf93d35b16585416148cd12bff73b71f2bdf5cb994d473279c01e8d94a65bfd",
+        "size": 7114,
+        "source_mode": "0o600",
+        "source_sha256": "28244cad003c8feaead76d7aa3085b1a295aa22f7169d365d508c0afa6cc1c60",
+        "source_size": 6952
+      },
+      {
+        "action": "modify",
+        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocolTest.kt",
+        "mode": "0o600",
+        "sha256": "05c7638d154ca4f8cbf2d2bdfa836e51fa5e3483e4da8b84db2f348bc338f41f",
+        "size": 6734,
+        "source_mode": "0o600",
+        "source_sha256": "1d0c6b1a2c7ac5a53910fa6e292a7182181dfc26a1e547f0079f1795f71da58c",
+        "source_size": 6632
+      },
+      {
+        "action": "modify",
+        "path": "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt",
+        "mode": "0o600",
+        "sha256": "51b558c9de6213f5fefca9e7575523605c1ce2a2275eb8ea546c023f5cc62932",
+        "size": 34832,
+        "source_mode": "0o600",
+        "source_sha256": "2740c97d98391d01277dd15834d76242ce7109965a774a2041c12435bc7513a3",
+        "source_size": 34604
       },
       {
         "action": "add",
-        "path": "web/tests/test_wtv12_13_progress_schedule.py",
+        "path": "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md",
         "mode": "0o644",
-        "sha256": "f6a049c48775cbb69b739b163eb5ba38fdc4e54409751fe0b331e782fe173987",
-        "size": 5948
+        "sha256": "51490f15f166dda612731e5d979d37cf0b915915d3df42480bfe55392cb4cd5f",
+        "size": 5612
+      },
+      {
+        "action": "modify",
+        "path": "docs/product/SCOPE_BOUNDARIES.md",
+        "mode": "0o600",
+        "sha256": "27366b377c5020e5523d9c85073ee71cb2e606c08f188168de232e39b03fefb3",
+        "size": 2461,
+        "source_mode": "0o600",
+        "source_sha256": "e9ae6d27c1879a690429bc4b9e7c35bca7c81a56d4110c60b520033152c30ef1",
+        "source_size": 1779
+      },
+      {
+        "action": "modify",
+        "path": "docs/release/RELEASE_NOTES_1.0.0_RC1.md",
+        "mode": "0o600",
+        "sha256": "c44945754b5fc51f2f97025b616433266957f59a62fffaa3bf29cc2386fbac78",
+        "size": 1396,
+        "source_mode": "0o600",
+        "source_sha256": "837b33086ce21b657c1a01eef8311bb715f6d3cd0d7fa1a7239be0ad2c4b6716",
+        "source_size": 856
+      },
+      {
+        "action": "add",
+        "path": "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
+        "mode": "0o644",
+        "sha256": "47d16de2bd89ea2e6a5b9740f3912c3dce5a3e8d1380dcb1ba2eb2c176eb89a7",
+        "size": 6824
+      },
+      {
+        "action": "modify",
+        "path": "docs/roadmap/FINAL_ROADMAP_INDEX.md",
+        "mode": "0o600",
+        "sha256": "0025a68f156c483584e9a76ebd126909fb38ec8d1b801981fd8b43f218258f7e",
+        "size": 3088,
+        "source_mode": "0o600",
+        "source_sha256": "82da72528da1cd9e2e657c6f876563b9168ee0c33e578ac9681425a04ca4bf1d",
+        "source_size": 2824
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_parity01_03_cross_platform_baseline.py",
+        "mode": "0o755",
+        "sha256": "0798e5770335e469d06e36151e9f99e1d50c43985dbdc59e466c3d585f6084a1",
+        "size": 3981
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_tvov24_cast_state_synchronization.py",
+        "mode": "0o600",
+        "sha256": "568df8ce4c77bc298910caac1497ca723a83de5a281572831d57d34f22c101e4",
+        "size": 10368,
+        "source_mode": "0o600",
+        "source_sha256": "d0dda6dc438ad100a7a8ddbd31ff74cab0563d4f2c0c04778849fe8ca0fa88ff",
+        "source_size": 10105
       }
     ]
   },
   "integrity": {
     "sha256": {
-      "docs/web/WEB_ROADMAP.md": "96a777b3d009a676ffb59aac0c91a66b22c34c001941a56b35ddbacba6afa01e",
-      "docs/web/WTV12_WTV13_PROGRESS_SCHEDULE.md": "627a4ed380151cc022e1234ca8de1bc1e96c0b0566ae03d5eef01a9f6d3434f0",
-      "web/README.md": "11d5b5ea54b7bc702b19f02f9f0e3c252307da7661f33468e8ed2057c32587de",
-      "web/dist/runtime/react/App.js": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
-      "web/dist/runtime/tv_history.js": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
-      "web/dist/runtime/tv_progress.js": "dbb4d86446f4170f60c75c216eff422d4379ec70cd9fafe0129ddea287792697",
-      "web/dist/runtime/tv_schedule.js": "7b54fcb6c3c9df0354a118e5430299dc7ff5fc7eef6011cc110b16318223afc5",
-      "web/dist/styles.css": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
-      "web/runtime/react/App.js": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
-      "web/runtime/tv_history.js": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
-      "web/runtime/tv_progress.js": "dbb4d86446f4170f60c75c216eff422d4379ec70cd9fafe0129ddea287792697",
-      "web/runtime/tv_schedule.js": "7b54fcb6c3c9df0354a118e5430299dc7ff5fc7eef6011cc110b16318223afc5",
-      "web/scripts/serve_tv.mjs": "21f961ce144df22e265a8ecb79ab80559f717c7f0e7e3eed83694e526602be37",
-      "web/service-worker.js": "21a51b17162f2eb0fc9ed29217d038728322d342ee2588234012bbcc5891e371",
-      "web/src/react/App.tsx": "fb481f53810367805bc479a43b931cbde9ec536778f8579a4b9a86d3ae0f4f6f",
-      "web/src/tv_history.ts": "4dd8913de02c6023bd3853e49ea075a92a319ec3043119c6654bf999a12980a1",
-      "web/src/tv_progress.ts": "debd883cf796aa871d446e0a20c6e96faf5c93f963521439d8c52b36cbeb9aea",
-      "web/src/tv_schedule.ts": "51a22c3998ab29e989704bccad91ffb5dd6d74f0bd300f9b8bfc14d076f09ed2",
-      "web/styles.css": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
-      "web/tests/test_wtv12_13_progress_schedule.py": "f6a049c48775cbb69b739b163eb5ba38fdc4e54409751fe0b331e782fe173987"
+      "CHANGELOG.md": "eef8f7e6878762b2134782e04ea235cfe5dab5328bb407810989baac94962075",
+      "PARITY01_03_CROSS_PLATFORM_BASELINE.md": "8dad7a595ec2c3594aada2e7fe0eefb8b1af101e09783a828ca6612a06b59090",
+      "README.md": "ad0ba4a7baf82fb244f686212da586323aecff290357e4a985801fbfcdab2f00",
+      "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt": "4083e41a3c843d02267f4b5e948075d0588829557678e37094395aa9c8b35306",
+      "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneControllerScreen.kt": "56bcae6c1631bdbc7322963cf7ffe0c29af3f07b9c9836341cc5875f38c41222",
+      "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPresentationProjector.kt": "2beb79e2b23aa79305572661cc75f9085818ae78d58c3e99d27b827d0cafd519",
+      "build.gradle.kts": "6d2e3257843f287882d5054cb467c22702a14ef0dce34efae0fa7d2bf6a4d940",
+      "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainAction.kt": "22f2ab3d6e4e92c4081338183c020aae290bbcb28ef86694690a0e578c40d4b9",
+      "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvPresentation.kt": "e11848d79dd056f4e40c00a9923f46f026fad7e2b4af05f874519f58101275dd",
+      "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt": "387073d117b081327cdd34a81877fe5a50afc292ce23312e6e0bf27021a76c84",
+      "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvControlProtocolTest.kt": "ca06b79c7a97b260142c98b2a46243826dfdc9c8a1f7bcefcd06fc1fe6d5dd16",
+      "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainActionTest.kt": "eaf93d35b16585416148cd12bff73b71f2bdf5cb994d473279c01e8d94a65bfd",
+      "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocolTest.kt": "05c7638d154ca4f8cbf2d2bdfa836e51fa5e3483e4da8b84db2f348bc338f41f",
+      "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt": "51b558c9de6213f5fefca9e7575523605c1ce2a2275eb8ea546c023f5cc62932",
+      "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md": "51490f15f166dda612731e5d979d37cf0b915915d3df42480bfe55392cb4cd5f",
+      "docs/product/SCOPE_BOUNDARIES.md": "27366b377c5020e5523d9c85073ee71cb2e606c08f188168de232e39b03fefb3",
+      "docs/release/RELEASE_NOTES_1.0.0_RC1.md": "c44945754b5fc51f2f97025b616433266957f59a62fffaa3bf29cc2386fbac78",
+      "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md": "47d16de2bd89ea2e6a5b9740f3912c3dce5a3e8d1380dcb1ba2eb2c176eb89a7",
+      "docs/roadmap/FINAL_ROADMAP_INDEX.md": "0025a68f156c483584e9a76ebd126909fb38ec8d1b801981fd8b43f218258f7e",
+      "scripts/verify_parity01_03_cross_platform_baseline.py": "0798e5770335e469d06e36151e9f99e1d50c43985dbdc59e466c3d585f6084a1",
+      "scripts/verify_tvov24_cast_state_synchronization.py": "568df8ce4c77bc298910caac1497ca723a83de5a281572831d57d34f22c101e4"
     }
   },
   "validation": {
     "mode": "required",
     "required": true,
     "script": {
-      "description": "Build generated release outputs, run all web regressions with ResourceWarning strictness, lint/runtime parity, release integrity, TV server/relay syntax and source/dist parity.",
+      "description": "Run the PARITY01-PARITY03 baseline audit, existing OV20 integration seal, and affected TVOV21-TVOV26 source contracts.",
       "interpreter": "sh",
       "path": ".devtool-artifact/validation/validate.sh",
-      "sha256": "ab250d50b8c684f9743476be2551127b3a25e7f904b1fcaa725d8f62148f5913",
-      "timeout_seconds": 900,
+      "sha256": "3c77aa50363b39eb4bbb8ec7863ecf7ff95f0f7149a2c6edd9403cb39fb9fd65",
+      "timeout_seconds": 600,
       "working_directory": "."
     },
     "notes": [
-      "Target is explicitly studyflow_web.",
-      "WTV10-WTV11 is the required baseline.",
-      "Generated web/dist/service-worker.js and web/dist/release-manifest.json are intentionally omitted from immutable payload verification because npm run build regenerates them.",
-      "web/dist/THIRD_PARTY_NOTICES.txt is also build-generated and is intentionally not an immutable payload entry."
+      "Explicit top-level validation_tasks restrict Devtool Gradle validation to the affected OV20 and TVOV21-TVOV26 source-contract gates; normal studyflow_android validation phases must not be substituted.",
+      "Target is studyflow_android because PARITY03 repairs Android/TV Kotlin and root Gradle source-quality failures.",
+      "Validation is intentionally focused on source/product truth; no full Android build is requested by the artifact script.",
+      "Production Kotlin changes in PARITY03 are formatting-only.",
+      "TVOV24 retains the exact typed sendPresentation contract but its verifier now accepts standard multiline Kotlin formatting.",
+      "The capability matrix distinguishes current connectivity from the SFLP full-mesh target and must not claim SFLP is already shipped."
     ]
-  }
+  },
+  "validation_tasks": [
+    "verifyOv20FinalIntegration",
+    "verifyStudyFlowTvPresentationProjection",
+    "verifyStudyFlowTvLocalPairingTransport",
+    "verifyStudyFlowTvPhoneController",
+    "verifyStudyFlowTvCastStateSynchronization",
+    "verifyStudyFlowTvDomainPersistenceConvergence",
+    "verifyStudyFlowTvEndToEndPhysicalSealContracts"
+  ]
 }

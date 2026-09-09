@@ -165,7 +165,10 @@ class StudyFlowTvPairingEngine(
     fun createOffer(tvDeviceName: String, nowEpochMillis: Long): StudyFlowTvPairingOffer {
         require(tvDeviceName.isNotBlank())
         require(nowEpochMillis >= 0L)
-        val pairingCode = random.nextInt(1_000_000).toString().padStart(StudyFlowTvControlProtocol.pairingCodeLength, '0')
+        val pairingCode = random.nextInt(1_000_000).toString().padStart(
+            StudyFlowTvControlProtocol.pairingCodeLength,
+            '0',
+        )
         val nonce = randomHex(16)
         val expiresAt = nowEpochMillis + StudyFlowTvControlProtocol.pairingCodeTtlSeconds * 1_000L
         val token = StudyFlowTvPairingToken(

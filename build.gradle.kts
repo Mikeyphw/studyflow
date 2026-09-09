@@ -1069,38 +1069,50 @@ tasks.register<Exec>("verifyCpovRoadmapReconciliation") {
 
 tasks.register<Exec>("verifyStudyFlowTvQuestionPractice") {
     group = "verification"
-    description = "Checks TVOV09 Android TV question-practice source, control, focus, shell, test, and documentation contracts."
+    description =
+        "Checks TVOV09 Android TV question-practice source, control, focus, shell, test, and" +
+        "documentation contracts."
     commandLine("python3", "scripts/verify_tvov09_question_practice.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvMockExamStudio") {
     group = "verification"
-    description = "Checks TVOV10 Android TV Mock Exam Studio source, control, focus, shell, test, and documentation contracts."
+    description =
+        "Checks TVOV10 Android TV Mock Exam Studio source, control, focus, shell, test, and" +
+        "documentation contracts."
     commandLine("python3", "scripts/verify_tvov10_mock_exam_studio.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvReviewNotebook") {
     group = "verification"
-    description = "Checks TVOV11 Android TV Review and error-notebook source, control, focus, shell, test, and documentation contracts."
+    description =
+        "Checks TVOV11 Android TV Review and error-notebook source, control, focus, shell," +
+        "test, and documentation contracts."
     commandLine("python3", "scripts/verify_tvov11_review_notebook.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvProgressAnalytics") {
     group = "verification"
-    description = "Checks TVOV12 Android TV Progress and analytics source, control, focus, shell, test, and documentation contracts."
+    description =
+        "Checks TVOV12 Android TV Progress and analytics source, control, focus, shell, test," +
+        "and documentation contracts."
     commandLine("python3", "scripts/verify_tvov12_progress_analytics.py")
 }
 
 
 tasks.register<Exec>("verifyStudyFlowTvReadOnlySchedule") {
     group = "verification"
-    description = "Checks TVOV13 Android TV read-only Schedule source, control, focus, shell, test, and documentation contracts."
+    description =
+        "Checks TVOV13 Android TV read-only Schedule source, control, focus, shell, test, and" +
+        "documentation contracts."
     commandLine("python3", "scripts/verify_tvov13_read_only_schedule.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvLibraryReference") {
     group = "verification"
-    description = "Checks TVOV14 Android TV limited Library/reference source, control, focus, shell, test, and documentation contracts."
+    description =
+        "Checks TVOV14 Android TV limited Library/reference source, control, focus, shell," +
+        "test, and documentation contracts."
     commandLine("python3", "scripts/verify_tvov14_library_reference.py")
 }
 
@@ -1120,58 +1132,76 @@ tasks.register<Exec>("verifyStudyFlowTvControlStateContinuity") {
 
 tasks.register<Exec>("verifyStudyFlowTvAccessibilityTenFootUi") {
     group = "verification"
-    description = "Checks TVOV17 Android TV accessibility, 10-foot typography/layout, focus visibility, tests, and shell contracts."
+    description =
+        "Checks TVOV17 Android TV accessibility, 10-foot typography/layout, focus visibility," +
+        "tests, and shell contracts."
     commandLine("python3", "scripts/verify_tvov17_accessibility_10foot_ui.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvSizeOptimization") {
     group = "verification"
-    description = "Checks TVOV18 Android TV R8, resource shrinking, release budget policy, tests, and Devtool contracts."
+    description =
+        "Checks TVOV18 Android TV R8, resource shrinking, release budget policy, tests, and" +
+        "Devtool contracts."
     commandLine("python3", "scripts/verify_tvov18_size_optimization.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvOptimizedReleaseArtifact") {
     group = "verification"
-    description = "Builds and verifies the optimized TV Release APK, R8 mapping evidence, ZIP integrity, and 25 MiB target."
+    description =
+        "Builds and verifies the optimized TV Release APK, R8 mapping evidence, ZIP" +
+        "integrity, and 25 MiB target."
     dependsOn(":app-tv:assembleRelease")
     commandLine("python3", "scripts/verify_tvov18_size_optimization.py", "--require-release-artifact")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvManifestPackaging") {
     group = "verification"
-    description = "Checks TVOV19 Leanback manifest, package identity, backup/data-extraction hardening, signing contract, and banner resources."
+    description =
+        "Checks TVOV19 Leanback manifest, package identity, backup/data-extraction hardening," +
+        "signing contract, and banner resources."
     commandLine("python3", "scripts/verify_tvov19_manifest_packaging.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvTargetIsolation") {
     group = "verification"
-    description = "Checks that the studyflow_tv Devtool target contains only TV/shared-control tasks and never phone :app or feature-module work."
+    description =
+        "Checks that the studyflow_tv Devtool target contains only TV/shared-control tasks" +
+        "and never phone :app or feature-module work."
     commandLine("python3", "scripts/verify_tvov19_manifest_packaging.py", "--target-isolation")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvPackagedArtifacts") {
     group = "verification"
-    description = "Builds and inspects Debug/Release TV APK packaging, Leanback identity, ZIP integrity, and optional production signing."
+    description =
+        "Builds and inspects Debug/Release TV APK packaging, Leanback identity, ZIP" +
+        "integrity, and optional production signing."
     dependsOn(":app-tv:assembleDebug", ":app-tv:assembleRelease")
     commandLine("python3", "scripts/verify_tvov19_manifest_packaging.py", "--require-packaged-artifacts")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvFinalAcceptanceContracts") {
     group = "verification"
-    description = "Checks TVOV20 final release/real-device acceptance policy, tests, docs, and validation wiring without requiring a connected device."
+    description =
+        "Checks TVOV20 final release/real-device acceptance policy, tests, docs, and" +
+        "validation wiring without requiring a connected device."
     commandLine("python3", "scripts/verify_tvov20_real_device_release_seal.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvRealDeviceAcceptance") {
     group = "verification"
-    description = "Runs TVOV20 install/upgrade, launch, Leanback-device, and D-pad smoke checks when exactly one usable TV ADB device is connected; otherwise skips cleanly."
+    description =
+        "Runs TVOV20 install/upgrade, launch, Leanback-device, and D-pad smoke checks when" +
+        "exactly one usable TV ADB device is connected; otherwise skips cleanly."
     dependsOn(":app-tv:assembleDebug", "verifyStudyFlowTvManifestPackaging")
     commandLine("python3", "scripts/verify_tvov20_real_device_release_seal.py", "--device-acceptance")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvFinalReleaseSeal") {
     group = "verification"
-    description = "Seals TVOV20 Release criteria from optimized artifact, package hardening, unit tests, lint, and optional production signing evidence."
+    description =
+        "Seals TVOV20 Release criteria from optimized artifact, package hardening, unit" +
+        "tests, lint, and optional production signing evidence."
     dependsOn(
         "verifyStudyFlowTvOptimizedReleaseArtifact",
         "verifyStudyFlowTvPackagedArtifacts",
@@ -1186,33 +1216,52 @@ tasks.register<Exec>("verifyStudyFlowTvFinalReleaseSeal") {
 }
 
 
+tasks.register<Exec>("verifyCrossPlatformParityBaseline") {
+    group = "verification"
+    description =
+        "Checks PARITY01-PARITY03 cross-platform capability truth, documentation reconciliation, " +
+            "and the restored OV20 integration seal."
+    commandLine("python3", "scripts/verify_parity01_03_cross_platform_baseline.py")
+}
+
+
 tasks.register<Exec>("verifyStudyFlowTvPresentationProjection") {
     group = "verification"
-    description = "Checks TVOV21 typed presentation snapshots, canonical phone-side projection, fixture-free TV runtime wiring, and source-ID continuity."
+    description =
+        "Checks TVOV21 typed presentation snapshots, canonical phone-side projection, " +
+            "fixture-free TV runtime wiring, and source-ID continuity."
     commandLine("python3", "scripts/verify_tvov21_presentation_projection.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvLocalPairingTransport") {
     group = "verification"
-    description = "Checks TVOV22 explicit local pairing, Android NSD discovery, framed TCP transport, revocable sessions, and production phone/TV wiring."
+    description =
+        "Checks TVOV22 explicit local pairing, Android NSD discovery, framed TCP transport, " +
+            "revocable sessions, and production phone/TV wiring."
     commandLine("python3", "scripts/verify_tvov22_local_pairing_transport.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvPhoneController") {
     group = "verification"
-    description = "Checks TVOV23 Settings-accessible Android phone TV controller, explicit pairing UI, persisted-session resume, and shared remote-command coverage."
+    description =
+        "Checks TVOV23 Settings-accessible Android phone TV controller, explicit pairing UI, " +
+            "persisted-session resume, and shared remote-command coverage."
     commandLine("python3", "scripts/verify_tvov23_phone_controller.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvCastStateSynchronization") {
     group = "verification"
-    description = "Checks TVOV24 canonical presentation streaming, exact TV receipt acknowledgement, reconnect resync, and explicit STOP_CAST lifecycle."
+    description =
+        "Checks TVOV24 canonical presentation streaming, exact TV receipt acknowledgement, " +
+            "reconnect resync, and explicit STOP_CAST lifecycle."
     commandLine("python3", "scripts/verify_tvov24_cast_state_synchronization.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvDomainPersistenceConvergence") {
     group = "verification"
-    description = "Checks TVOV25 canonical phone-owned mutations, TV outbox/ack flow, idempotent persistence, and fixture-free projected results."
+    description =
+        "Checks TVOV25 canonical phone-owned mutations, TV outbox/ack flow, idempotent persistence, " +
+            "and fixture-free projected results."
     commandLine("python3", "scripts/verify_tvov25_domain_persistence_convergence.py")
 }
 
@@ -1220,13 +1269,17 @@ tasks.register<Exec>("verifyStudyFlowTvDomainPersistenceConvergence") {
 
 tasks.register<Exec>("verifyStudyFlowTvEndToEndPhysicalSealContracts") {
     group = "verification"
-    description = "Checks TVOV26 fail-closed two-device Release acceptance, restart-resync, exact-artifact evidence, and final seal wiring without claiming physical execution."
+    description =
+        "Checks TVOV26 fail-closed two-device Release acceptance, restart-resync, exact-artifact " +
+            "evidence, and final seal wiring without claiming physical execution."
     commandLine("python3", "scripts/verify_tvov26_end_to_end_physical_seal.py")
 }
 
 tasks.register<Exec>("verifyStudyFlowTvPhysicalTwoDeviceAcceptance") {
     group = "verification"
-    description = "Runs the fail-closed TVOV26 physical acceptance on one real Android phone and one real Leanback TV. Missing devices/signing/data are failures, never skips."
+    description =
+        "Runs fail-closed TVOV26 physical acceptance on one real Android phone and one real " +
+            "Leanback TV; missing devices, signing, or data are failures, never skips."
     dependsOn(
         ":app:assembleRelease",
         ":app-tv:assembleRelease",
@@ -1239,7 +1292,9 @@ tasks.register<Exec>("verifyStudyFlowTvPhysicalTwoDeviceAcceptance") {
 
 tasks.register<Exec>("verifyStudyFlowTvFinalProductSeal") {
     group = "verification"
-    description = "Consumes the real TVOV26 two-device evidence fail-closed and seals the complete TVOV00-TVOV26 product track."
+    description =
+        "Consumes real TVOV26 two-device evidence fail-closed and seals the complete " +
+            "TVOV00-TVOV26 product track."
     dependsOn(
         "verifyStudyFlowTvPhysicalTwoDeviceAcceptance",
         "verifyStudyFlowTvFinalReleaseSeal",
@@ -1253,6 +1308,8 @@ tasks.register<Exec>("verifyStudyFlowTvFinalProductSeal") {
 
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
-    description = "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay implementation preferences."
+    description =
+        "Checks the full Android TV roadmap, Devtool target rules, and structured-overlay " +
+            "implementation preferences."
     commandLine("python3", "scripts/verify_tv_roadmap_instructions.py")
 }

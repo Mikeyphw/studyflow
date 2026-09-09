@@ -81,7 +81,10 @@ object StudyFlowTvPresentationProjector {
         val subjectNames = input.syllabus.subjects.associate { it.id to it.name }
         val pendingActivities = input.schedule.plannedActivities
             .filter { it.status == PlannedActivityStatus.PLANNED || it.status == PlannedActivityStatus.IN_PROGRESS }
-            .sortedWith(compareBy<PlannedActivity> { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }.thenBy { it.title })
+            .sortedWith(
+                compareBy<PlannedActivity> { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
+                    .thenBy { it.title },
+            )
         val nextActivity = pendingActivities.firstOrNull()
         val weeklyGoalMinutes = plan.weeklyGoalHours * 60
         val weeklyProgress = percent(input.analytics.studiedMinutesLastSevenDays, weeklyGoalMinutes)
@@ -100,7 +103,12 @@ object StudyFlowTvPresentationProjector {
                 weeklyProgressPercent = weeklyProgress,
                 mockExamScheduled = pendingActivities.any { it.type == StudyActivityType.MOCK_EXAM },
             ),
-            studySession = projectSession(input.sessions, input.schedule.plannedActivities, subjectNames, input.generatedAtEpochMillis),
+            studySession = projectSession(
+                input.sessions,
+                input.schedule.plannedActivities,
+                subjectNames,
+                input.generatedAtEpochMillis,
+            ),
             questionSet = projectQuestionSet(plan, input.tests, input.questions, subjectNames),
             mockExam = projectMockExam(input.mockExams, input.generatedAtEpochMillis),
             review = projectReview(
@@ -136,7 +144,10 @@ object StudyFlowTvPresentationProjector {
                 scheduleId = "schedule-${plan.id.value}",
                 title = "${plan.name} schedule",
                 items = input.schedule.plannedActivities
-                    .sortedWith(compareBy<PlannedActivity> { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }.thenBy { it.title })
+                    .sortedWith(
+                        compareBy<PlannedActivity> { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
+                            .thenBy { it.title },
+                    )
                     .take(StudyFlowTvPresentationProtocol.maxTvScheduleItems)
                     .map { activity -> activity.toSchedulePresentation(subjectNames) },
             ),
@@ -146,7 +157,11 @@ object StudyFlowTvPresentationProjector {
                 references = input.materials
                     .asSequence()
                     .filterNot(StudyMaterial::archived)
-                    .sortedWith(compareByDescending<StudyMaterial> { it.favorite }.thenByDescending { it.primary }.thenBy { it.title })
+                    .sortedWith(
+                        compareByDescending<StudyMaterial> { it.favorite }
+                            .thenByDescending { it.primary }
+                            .thenBy { it.title },
+                    )
                     .take(StudyFlowTvPresentationProtocol.maxTvLibraryReferences)
                     .map { material -> material.toPresentation(subjectNames) }
                     .toList(),
@@ -160,7 +175,9 @@ object StudyFlowTvPresentationProjector {
         subjectNames: Map<SubjectId, String>,
         nowEpochMillis: Long,
     ): StudyFlowTvStudySessionPresentation? {
-        val session = sessions.firstOrNull { it.status == StudySessionStatus.RUNNING || it.status == StudySessionStatus.PAUSED }
+        val session = sessions.firstOrNull { session ->
+            session.status == StudySessionStatus.RUNNING || session.status == StudySessionStatus.PAUSED
+        }
             ?: sessions.maxByOrNull { it.startedAtEpochMillis }
             ?: return null
         val activity = session.plannedActivityId?.let { id -> activities.firstOrNull { it.id == id } }
@@ -200,7 +217,9 @@ object StudyFlowTvPresentationProjector {
         val projectedById = projectedQuestions.associateBy { it.questionId }
         val answers = execution?.answers.orEmpty().mapNotNull { answer ->
             val domainQuestion = questions.firstOrNull { it.id == answer.questionId } ?: return@mapNotNull null
-            val optionIndex = domainQuestion.options.indexOfFirst { it.trim().equals(answer.chosenAnswer.trim(), ignoreCase = true) }
+            val optionIndex = domainQuestion.options.indexOfFirst { option ->
+                option.trim().equals(answer.chosenAnswer.trim(), ignoreCase = true)
+            }
             val projectedQuestion = projectedById[answer.questionId.value] ?: return@mapNotNull null
             val option = projectedQuestion.choices.getOrNull(optionIndex) ?: return@mapNotNull null
             StudyFlowTvQuestionAnswerPresentation(
@@ -312,7 +331,9 @@ object StudyFlowTvPresentationProjector {
             targetSurface = type.targetSurface(),
         )
 
-    private fun PlannedActivity.toSchedulePresentation(subjectNames: Map<SubjectId, String>): StudyFlowTvScheduleItemPresentation =
+    private fun PlannedActivity.toSchedulePresentation(
+        subjectNames: Map<SubjectId, String>,
+    ): StudyFlowTvScheduleItemPresentation =
         StudyFlowTvScheduleItemPresentation(
             activityId = id.value,
             title = title,
@@ -342,7 +363,9 @@ object StudyFlowTvPresentationProjector {
         )
     }
 
-    private fun StudyMaterial.toPresentation(subjectNames: Map<SubjectId, String>): StudyFlowTvLibraryReferencePresentation {
+    private fun StudyMaterial.toPresentation(
+        subjectNames: Map<SubjectId, String>,
+    ): StudyFlowTvLibraryReferencePresentation {
         val source = author?.takeIf(String::isNotBlank) ?: type.name.lowercase().replace('_', ' ')
         val body = description.trim().ifBlank {
             tags.joinToString(", ").ifBlank { "Open on the phone for the complete source." }
@@ -365,7 +388,8 @@ object StudyFlowTvPresentationProjector {
         else -> StudyFlowTvSurface.STUDY_SESSION
     }
 
-    private fun StudyActivityType.displayLabel(): String = name.lowercase().replace('_', ' ').replaceFirstChar(Char::uppercase)
+    private fun StudyActivityType.displayLabel(): String =
+        name.lowercase().replace('_', ' ').replaceFirstChar(Char::uppercase)
 
     private fun subjectLabel(subjectId: SubjectId?, subjectNames: Map<SubjectId, String>): String =
         subjectId?.let(subjectNames::get)?.takeIf(String::isNotBlank) ?: "General"

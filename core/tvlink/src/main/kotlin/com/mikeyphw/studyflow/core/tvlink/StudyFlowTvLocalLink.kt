@@ -75,8 +75,15 @@ data class StudyFlowTvTransportApplyResult(
 interface StudyFlowTvLocalTransportDelegate {
     fun onTransportStatusChanged(status: StudyFlowTvLinkStatus)
     fun onPairingSessionChanged(session: StudyFlowTvControlSession)
-    fun applyRemoteCommand(command: StudyFlowTvControlCommand, nowEpochMillis: Long): StudyFlowTvTransportApplyResult
-    fun applyPresentationSnapshot(snapshot: StudyFlowTvPresentationSnapshot, nowEpochMillis: Long): StudyFlowTvTransportApplyResult
+    fun applyRemoteCommand(
+        command: StudyFlowTvControlCommand,
+        nowEpochMillis: Long,
+    ): StudyFlowTvTransportApplyResult
+
+    fun applyPresentationSnapshot(
+        snapshot: StudyFlowTvPresentationSnapshot,
+        nowEpochMillis: Long,
+    ): StudyFlowTvTransportApplyResult
     fun currentContinuityState(): StudyFlowTvControlContinuityState
     fun currentPresentationReceipt(): StudyFlowTvPresentationReceipt?
     fun pendingDomainAction(): StudyFlowTvDomainAction?
@@ -332,20 +339,32 @@ class StudyFlowTvLocalTransportClient(context: Context) {
         endpoint: StudyFlowTvReceiverEndpoint,
         snapshot: StudyFlowTvPresentationSnapshot,
         nowEpochMillis: Long = System.currentTimeMillis(),
-    ): StudyFlowTvWireResponse = authenticatedExchange(endpoint, StudyFlowTvWireOperation.PRESENTATION, nowEpochMillis) {
+    ): StudyFlowTvWireResponse = authenticatedExchange(
+        endpoint,
+        StudyFlowTvWireOperation.PRESENTATION,
+        nowEpochMillis,
+    ) {
         copy(presentation = snapshot)
     }
 
     fun fetchContinuity(
         endpoint: StudyFlowTvReceiverEndpoint,
         nowEpochMillis: Long = System.currentTimeMillis(),
-    ): StudyFlowTvWireResponse = authenticatedExchange(endpoint, StudyFlowTvWireOperation.CONTINUITY, nowEpochMillis) { this }
+    ): StudyFlowTvWireResponse = authenticatedExchange(
+        endpoint,
+        StudyFlowTvWireOperation.CONTINUITY,
+        nowEpochMillis,
+    ) { this }
 
     fun acknowledgeDomainAction(
         endpoint: StudyFlowTvReceiverEndpoint,
         result: StudyFlowTvDomainActionResult,
         nowEpochMillis: Long = System.currentTimeMillis(),
-    ): StudyFlowTvWireResponse = authenticatedExchange(endpoint, StudyFlowTvWireOperation.DOMAIN_ACTION_RESULT, nowEpochMillis) {
+    ): StudyFlowTvWireResponse = authenticatedExchange(
+        endpoint,
+        StudyFlowTvWireOperation.DOMAIN_ACTION_RESULT,
+        nowEpochMillis,
+    ) {
         copy(domainActionResult = result)
     }
 
@@ -383,7 +402,10 @@ class StudyFlowTvLocalTransportClient(context: Context) {
         return exchange(endpoint, base.transform())
     }
 
-    private fun exchange(endpoint: StudyFlowTvReceiverEndpoint, request: StudyFlowTvWireRequest): StudyFlowTvWireResponse {
+    private fun exchange(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        request: StudyFlowTvWireRequest,
+    ): StudyFlowTvWireResponse {
         if (!StudyFlowTvLocalNetworkPermission.isGranted(appContext)) {
             return StudyFlowTvWireResponse(
                 requestId = request.requestId,
@@ -592,7 +614,8 @@ class StudyFlowTvLocalTransportHost(
             ?: return response(request, false, "pairing-not-active", nowEpochMillis)
         val code = request.pairingCode ?: return response(request, false, "pairing-code-required", nowEpochMillis)
         val nonce = request.sessionNonce ?: return response(request, false, "pairing-nonce-required", nowEpochMillis)
-        val phoneName = request.phoneDeviceName ?: return response(request, false, "phone-name-required", nowEpochMillis)
+        val phoneName = request.phoneDeviceName
+            ?: return response(request, false, "phone-name-required", nowEpochMillis)
         pairingAttemptCount += 1
         if (pairingAttemptCount > StudyFlowTvWireProtocol.maxPairingAttemptsPerOffer) {
             currentOffer = null
@@ -652,7 +675,8 @@ class StudyFlowTvLocalTransportHost(
                 )
             }
             StudyFlowTvWireOperation.PRESENTATION -> {
-                val snapshot = request.presentation ?: return response(request, false, "presentation-required", nowEpochMillis)
+                val snapshot = request.presentation
+                    ?: return response(request, false, "presentation-required", nowEpochMillis)
                 val applied = callOnMain {
                     delegate.applyPresentationSnapshot(snapshot, nowEpochMillis)
                 } ?: return response(request, false, "main-thread-timeout", nowEpochMillis)
@@ -754,8 +778,11 @@ class StudyFlowTvLocalTransportHost(
             setPort(port)
         }
         val listener = object : NsdManager.RegistrationListener {
-            override fun onServiceRegistered(serviceInfo: NsdServiceInfo) = updateStatus(StudyFlowTvLinkStatus.READY)
-            override fun onRegistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) = updateStatus(StudyFlowTvLinkStatus.ERROR)
+            override fun onServiceRegistered(serviceInfo: NsdServiceInfo) =
+                updateStatus(StudyFlowTvLinkStatus.READY)
+
+            override fun onRegistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) =
+                updateStatus(StudyFlowTvLinkStatus.ERROR)
             override fun onServiceUnregistered(serviceInfo: NsdServiceInfo) = Unit
             override fun onUnregistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) = Unit
         }

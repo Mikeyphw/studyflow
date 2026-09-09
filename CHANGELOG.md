@@ -1,3 +1,10 @@
+# Cross-platform parity baseline — PARITY01-PARITY03
+
+- Added the canonical Android/Web/Desktop/Android-TV/Web-TV capability matrix.
+- Added the full parity + SFLP connectivity roadmap, including full-mesh peer connectivity as a release goal.
+- Reconciled stale scope/release/README roadmap statements with shipped Web, Desktop preview, TV and optional-sync tracks.
+- Restored OV20 source-quality validation after later TVOV build/link additions exceeded the existing 120-character Kotlin/KTS policy.
+
 ## TVOV26 — end-to-end physical-device final seal
 
 - Added the missing `core/tvlink/consumer-rules.pro` required by the shared Android-library convention, and added a final-seal audit for every convention-backed Android library module.

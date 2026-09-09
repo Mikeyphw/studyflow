@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -57,7 +58,7 @@ controller = require_tokens(
     "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt",
     'presentationCastSynchronizationDeferredToTvov24 = false',
     'livePresentationSynchronizationImplemented = true',
-    'fun sendPresentation(endpoint: StudyFlowTvReceiverEndpoint, snapshot: StudyFlowTvPresentationSnapshot)',
+    'fun sendPresentation(',
     'client.sendPresentation(endpoint, snapshot)',
     'private val presentationFeed: StudyFlowTvPresentationFeed',
     'fun startCast(planId: StudyPlanId?)',
@@ -72,6 +73,15 @@ controller = require_tokens(
     'StudyFlowTvControlAction.STOP_CAST',
     'private fun reconcilePresentationReceipt(response: StudyFlowTvWireResponse)',
     'receipt.generatedAtEpochMillis == latest.generatedAtEpochMillis',
+)
+require(
+    re.search(
+        r"fun\s+sendPresentation\s*\(\s*endpoint:\s*StudyFlowTvReceiverEndpoint,"
+        r"\s*snapshot:\s*StudyFlowTvPresentationSnapshot,?\s*\):\s*StudyFlowTvWireResponse",
+        controller,
+        re.MULTILINE,
+    ) is not None,
+    "phone controller sendPresentation typed gateway contract missing",
 )
 for forbidden in ('CastContext', 'MediaRouter', 'RoomDatabase', '@Dao', 'ServerSocket('):
     require(forbidden not in controller, f"phone cast synchronization introduced forbidden/duplicate stack: {forbidden}")

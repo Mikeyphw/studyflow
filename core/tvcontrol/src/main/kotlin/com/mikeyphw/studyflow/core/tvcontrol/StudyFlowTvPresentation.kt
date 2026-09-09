@@ -58,7 +58,9 @@ data class StudyFlowTvPresentationSnapshot(
 ) {
     init {
         require(snapshotId.isNotBlank()) { "TV presentation snapshot id must not be blank." }
-        require(protocolVersion == StudyFlowTvPresentationProtocol.version) { "Unsupported TV presentation protocol version." }
+        require(protocolVersion == StudyFlowTvPresentationProtocol.version) {
+            "Unsupported TV presentation protocol version."
+        }
         require(studyPlanId.isNotBlank()) { "TV presentation plan id must not be blank." }
         require(planTitle.isNotBlank()) { "TV presentation plan title must not be blank." }
         require(generatedAtEpochMillis >= 0L) { "TV presentation generation time cannot be negative." }

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-20adb0ac1b84ae7c",
+  "cacheVersion": "studyflow-local-1.0.0-096785680519a6f0",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -127,8 +127,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "cab42806865bdb9fa342b5cd772527cb57f8fc2445c37823d5c819c077e625c9",
-      "bytes": 301013
+      "sha256": "b2d7712bb427a643c7506600305de817351b8b3c7d4b2604f87fd70ec00ccc86",
+      "bytes": 322532
     },
     {
       "path": "runtime/refinement.js",
@@ -177,8 +177,13 @@
     },
     {
       "path": "runtime/tv_history.js",
-      "sha256": "321e2dab743f4dbed02f0c7cf19416a32f8f80c37cbd40156e0910d3b5bcbc97",
-      "bytes": 2082
+      "sha256": "d178f7f5b5078c772eee41be978d7fa622d90dcd87bb147f717211aa0e5ae039",
+      "bytes": 2093
+    },
+    {
+      "path": "runtime/tv_library.js",
+      "sha256": "7cd89691b5e6af97f769cbd6fb6c16c0f4fc0cfc2a30204df85c70d31c5fc07c",
+      "bytes": 2229
     },
     {
       "path": "runtime/tv_mock_exam.js",
@@ -217,13 +222,13 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "181c8d39aad481073f5d53b8724072b4daf3876b5e1cd96e1b82dea90cc8950b",
-      "bytes": 2566
+      "sha256": "385d3aa2f3e9bb49f83ba6c0bed0963bff84e0c4ff1a94b68a2f8be295e08bd5",
+      "bytes": 2593
     },
     {
       "path": "styles.css",
-      "sha256": "c18af7f40a1c741a35a2ce35240c1313f049048527ac5ef763c8feb642a597e1",
-      "bytes": 45591
+      "sha256": "65e3698ebf39a77df8f4f5f54cfe52b519723808db08651425689c1eab2ad5c5",
+      "bytes": 49618
     },
     {
       "path": "vendor/react-dom-client.production.js",

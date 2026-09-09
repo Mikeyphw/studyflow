@@ -60,6 +60,7 @@ const tv_mock_exam_1 = require("../tv_mock_exam");
 const tv_review_notebook_1 = require("../tv_review_notebook");
 const tv_progress_1 = require("../tv_progress");
 const tv_schedule_1 = require("../tv_schedule");
+const tv_library_1 = require("../tv_library");
 const title = (v) => v.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
@@ -122,7 +123,7 @@ function tvSurfaceDestination(surface) { if (surface === "SETTINGS")
     return { screen: "mock" }; if (surface === "PROGRESS")
     return { screen: "progress" }; if (surface === "SCHEDULE")
     return { screen: "schedule" }; if (surface === "LIBRARY")
-    return { screen: "plan", tab: "library" }; return { screen: "today" }; }
+    return { screen: "library" }; return { screen: "today" }; }
 function App({ store, persistence }) {
     var _a, _b, _c;
     const state = useStudyState(store);
@@ -142,6 +143,7 @@ function App({ store, persistence }) {
     const [settingsOpen, setSettingsOpen] = React.useState(false);
     const [tvMaterialId, setTvMaterialId] = React.useState(null);
     const [tvCast, setTvCast] = React.useState(null);
+    const [tvSetupDismissed, setTvSetupDismissed] = React.useState(false);
     const tvReceiver = useTvReceiverSnapshot(tvBrowser);
     const [, tick] = React.useState(0);
     React.useEffect(() => { if (!tvBrowser) {
@@ -252,7 +254,7 @@ function App({ store, persistence }) {
         }
     } }; addEventListener("keydown", key); return () => removeEventListener("keydown", key); }, [tvBrowser, screen]);
     React.useEffect(() => { if (!tvBrowser)
-        return; const trigger = (command) => { const nodes = [...document.querySelectorAll("[data-tv-control-action]")]; const exact = nodes.find(node => node.dataset.tvControlAction === command.action && (command.targetId == null || node.dataset.tvControlTarget === command.targetId) && (command.optionId == null || node.dataset.tvControlOption === command.optionId)); const optionRequired = command.surface === "REVIEW" && (command.action === "COMPLETE" || command.action === "MARK_FOR_REVIEW"); const fallback = command.targetId == null && command.optionId == null && !optionRequired ? nodes.find(node => node.dataset.tvControlAction === command.action) : undefined; const node = exact !== null && exact !== void 0 ? exact : fallback; if (node && "click" in node) {
+        return; const trigger = (command) => { var _a; const scope = (_a = document.querySelector('[role="dialog"][aria-modal="true"]')) !== null && _a !== void 0 ? _a : document; const nodes = [...scope.querySelectorAll("[data-tv-control-action]")]; const exact = nodes.find(node => node.dataset.tvControlAction === command.action && (command.targetId == null || node.dataset.tvControlTarget === command.targetId) && (command.optionId == null || node.dataset.tvControlOption === command.optionId)); const optionRequired = command.surface === "REVIEW" && (command.action === "COMPLETE" || command.action === "MARK_FOR_REVIEW"); const fallback = command.targetId == null && command.optionId == null && !optionRequired ? nodes.find(node => node.dataset.tvControlAction === command.action) : undefined; const node = exact !== null && exact !== void 0 ? exact : fallback; if (node && "click" in node) {
         node.click();
         return true;
     } return false; }; const onControl = (event) => { const command = event.detail; if (command.action === "OPEN") {
@@ -288,6 +290,11 @@ function App({ store, persistence }) {
     }
     else if (item.type === "material") {
         setPlanTab("library");
+        if (tvBrowser) {
+            navigateScreen("library", true);
+            requestAnimationFrame(() => openTvOverlay("material", item.id));
+            return;
+        }
     }
     else if (item.type === "subject" || item.type === "topic") {
         setPlanTab("content");
@@ -301,6 +308,10 @@ function App({ store, persistence }) {
         navigateScreen(tvBrowser ? (route.practiceTab === "questions" ? "questions" : route.practiceTab === "tests" ? "mock" : route.practiceTab === "reviews" ? "review" : "practice") : "practice");
         return;
     } if (route.focusMode === "writing") {
+        if (tvBrowser) {
+            setToast("Writing Workspace continues on a phone or computer.");
+            return;
+        }
         if (!run(() => store.startWritingSession({ activityId, prompt: activity.title, durationMinutes: activity.durationMinutes }), "Writing Workspace opened."))
             return;
     }
@@ -351,8 +362,10 @@ function App({ store, persistence }) {
             " ",
             tvBrowser && screen === "review" && React.createElement(TvReviewNotebook, { state: state, store: store, run: run, initialMode: practiceTab === "errors" ? "errors" : "reviews", onBack: () => navigateScreen("practice") }),
             " ",
-            tvBrowser && screen === "schedule" && React.createElement(TvScheduleSurface, { state: state, onLaunch: launchActivity, onOpenSurface: (surface) => navigateTvSurface(surface), onBack: () => navigateScreen("plan") })),
-        React.createElement("nav", { className: "bottom-nav", "aria-label": "Main navigation" }, (tvBrowser ? ["today", "plan", "practice", "progress", "schedule"] : ["today", "plan", "practice", "progress"]).map(id => React.createElement("a", { key: id, href: `#${id}`, "aria-current": screen === id ? "page" : undefined, onClick: (event) => { if (tvBrowser) {
+            tvBrowser && screen === "schedule" && React.createElement(TvScheduleSurface, { state: state, onLaunch: launchActivity, onOpenSurface: (surface) => navigateTvSurface(surface), onBack: () => navigateScreen("plan") }),
+            " ",
+            tvBrowser && screen === "library" && React.createElement(TvLibrarySurface, { state: state, persistence: persistence, materialId: tvMaterialId, onMaterialOpen: (id) => openTvOverlay("material", id), onMaterialClose: closeTvOverlay, onBack: () => navigateScreen("plan") })),
+        React.createElement("nav", { className: "bottom-nav", "aria-label": "Main navigation" }, (tvBrowser ? ["today", "plan", "practice", "progress", "schedule", "library"] : ["today", "plan", "practice", "progress"]).map(id => React.createElement("a", { key: id, href: `#${id}`, "aria-current": screen === id ? "page" : undefined, onClick: (event) => { if (tvBrowser) {
                 event.preventDefault();
                 navigateScreen(id);
             } } },
@@ -361,7 +374,7 @@ function App({ store, persistence }) {
         " ",
         settingsOpen && React.createElement(SettingsDialog, { state: state, store: store, persistence: persistence, onClose: closeTvOverlay, run: run }),
         " ",
-        !state.preferences.onboardingCompleted && React.createElement(OnboardingWizard, { state: state, store: store, run: run }),
+        !state.preferences.onboardingCompleted && (tvBrowser ? (tvSetupDismissed ? null : React.createElement(TvOnboardingHandoff, { onDismiss: () => setTvSetupDismissed(true) })) : React.createElement(OnboardingWizard, { state: state, store: store, run: run })),
         React.createElement("div", { id: "toast-region", className: "toast-region", role: "status", "aria-live": "polite", "aria-atomic": "true" }, toast && React.createElement("div", { className: "toast" }, toast)));
 }
 function GlobalSearchDialog({ state, onClose, onOpen }) { const [query, setQuery] = React.useState(""); const results = (0, product_1.searchStudyState)(state, query, { limit: 50 }); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
@@ -369,7 +382,7 @@ function GlobalSearchDialog({ state, onClose, onOpen }) { const [query, setQuery
         React.createElement("div", { className: "dialog-title" },
             React.createElement("h2", { id: "global-search-title" }, (0, product_1.uiText)(state.preferences.locale, "search")),
             React.createElement("button", { className: "button button-quiet", type: "button", onClick: onClose }, (0, product_1.uiText)(state.preferences.locale, "close"))),
-        React.createElement("input", { autoFocus: true, "aria-label": "Search local study data", value: query, onChange: (e) => setQuery(e.target.value), placeholder: "Subjects, topics, questions, materials, errors\u2026" }),
+        React.createElement("input", { autoFocus: !isTvBrowserUi(), "aria-label": "Search local study data", value: query, onChange: (e) => setQuery(e.target.value), placeholder: "Subjects, topics, questions, materials, errors\u2026" }),
         React.createElement("p", { className: "muted" },
             "Local-only search \u00B7 Ctrl/\u2318+K or / \u00B7 ",
             state.preferences.showArchivedInSearch ? "archived plans included" : "active plans only"),
@@ -448,8 +461,15 @@ function TvSettingsDialog({ state, store, persistence, onClose, run }) { return 
                         "Persistence: ",
                         persistence.backend),
                     React.createElement("li", null, "TV mode: remote-first presentation"))),
-            React.createElement(StorageHealthCard, { state: state, persistence: persistence }),
+            React.createElement(StorageHealthCard, { state: state, persistence: persistence, allowCleanup: false }),
             React.createElement(TvContinueElsewhere, { title: "Plan and backup settings", detail: "Daily capacity, review intervals, onboarding resets, imports, encrypted backups and destructive state controls are intentionally not edited with a TV remote." })))); }
+function TvOnboardingHandoff({ onDismiss }) { return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
+    React.createElement("section", { className: "modal-card tv-settings-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "tv-setup-title" },
+        React.createElement("p", { className: "eyebrow" }, "TV browser"),
+        React.createElement("h2", { id: "tv-setup-title" }, "Finish initial setup on phone or computer"),
+        React.createElement("p", null, "Creating a plan, choosing a study mode and importing starter content require the authoring workspace and are intentionally not exposed to a TV remote."),
+        React.createElement("p", { className: "muted" }, "If this browser already has local StudyFlow data, you can dismiss this notice and continue with the available read-only and low-input TV workflows."),
+        React.createElement("button", { className: "button button-primary", type: "button", onClick: onDismiss }, "Continue with local data"))); }
 function OnboardingWizard({ state, store, run }) {
     var _a, _b, _c, _d;
     const [locale, setLocale] = React.useState(state.preferences.locale);
@@ -529,6 +549,25 @@ function OnboardingWizard({ state, store, run }) {
                 React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => store.completeOnboarding({ locale, mode, planName: name, useSample: false, template }), bb ? "BB Agente Comercial reference workspace created." : blueprint ? "Starter plan created from the approved preview." : "Local workspace ready.") }, (0, product_1.uiText)(locale, "start")),
                 React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.setPreferences({ locale, onboardingCompleted: true }), "Sample workspace kept.") }, (0, product_1.uiText)(locale, "skip")))));
 }
+function TvGoalQuickActions({ state, store, run }) { const goals = state.goals.filter(g => g.planId === state.activePlanId); if (!goals.length)
+    return React.createElement(TvContinueElsewhere, { title: "Goals", detail: "Goal creation remains on phone/computer. There are no existing goals to manage from the remote." }); return React.createElement("article", { className: "card tv-goal-quick-actions" },
+    React.createElement("div", { className: "card-heading-row" },
+        React.createElement("div", null,
+            React.createElement("p", { className: "eyebrow" }, "Goals"),
+            React.createElement("h2", null, "Low-input goal controls"),
+            React.createElement("p", { className: "muted" }, "Completion and pause/resume stay available on TV; creating or editing goal targets remains on phone/computer."))),
+    React.createElement("div", { className: "tv-goal-grid" }, goals.map(g => { var _a; const progress = (0, domain_1.deriveGoalProgress)(state, g); return React.createElement("article", { className: "nested-panel", key: g.id },
+        React.createElement("strong", null,
+            g.name,
+            g.completedAt ? " · completed" : ""),
+        React.createElement("span", { className: "muted" }, (_a = progress.actual) !== null && _a !== void 0 ? _a : "No data",
+            " / ",
+            g.target,
+            " \u00B7 ",
+            g.active ? "active" : "paused"),
+        React.createElement("div", { className: "button-row" },
+            !g.completedAt && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.completeGoal(g.id), "Goal marked complete and added to the Evidence Timeline.") }, "Mark complete"),
+            React.createElement("button", { className: "button button-quiet", type: "button", disabled: Boolean(g.completedAt), onClick: () => run(() => store.toggleGoal(g.id), g.active ? "Goal paused." : "Goal resumed.") }, g.active ? "Pause" : "Resume"))); }))); }
 function Today({ state, store, focus, run, onLaunch, onSessionOpen }) { var _a, _b, _c, _d; const tv = isTvBrowserUi(); const rec = (0, domain_1.recommendNextActivity)(state); const [name, setName] = React.useState(""); const [note, setNote] = React.useState((_a = focus.note) !== null && _a !== void 0 ? _a : ""); const [activityType, setActivityType] = React.useState("THEORY"); const planned = state.activities.filter(a => a.planId === state.activePlanId && a.queue === "today" && a.status === "planned"); const activeActivity = focus.activityId ? (_b = state.activities.find(a => a.id === focus.activityId)) !== null && _b !== void 0 ? _b : null : null; const writing = (0, task_workflows_1.writingActivity)(activeActivity); return React.createElement("section", { id: "today", "data-screen": "today", className: "screen-section" },
     React.createElement("article", { className: "hero-card" },
         React.createElement("p", { className: "eyebrow" }, "Next up"),
@@ -536,6 +575,7 @@ function Today({ state, store, focus, run, onLaunch, onSessionOpen }) { var _a, 
         React.createElement("p", { className: "muted" }, (_d = rec === null || rec === void 0 ? void 0 : rec.reason) !== null && _d !== void 0 ? _d : "Add an activity or generate a schedule preview.")),
     React.createElement(ModeToday, { state: state }),
     React.createElement(StudyCycleTodayCard, { state: state, store: store, run: run }),
+    tv && React.createElement(TvGoalQuickActions, { state: state, store: store, run: run }),
     React.createElement("div", { className: "content-grid two-column" },
         React.createElement("article", { className: "card" },
             React.createElement("h2", null, "Focus"),
@@ -545,7 +585,7 @@ function Today({ state, store, focus, run, onLaunch, onSessionOpen }) { var _a, 
             writing && React.createElement("p", { className: "muted" }, "This is a WRITING session. Draft, rubric and mandatory completion checklist are owned by the Writing Workspace below; the generic Finish action is intentionally unavailable."),
             React.createElement("div", { className: "button-row" },
                 focus.status !== "running" && !writing && React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": focus.status === "paused" ? "RESUME" : "START", onClick: () => run(() => store.startFocus({ note }), "Focus started.") }, focus.status === "paused" ? "Resume" : "Start"),
-                focus.status !== "running" && writing && activeActivity && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => { var _a, _b, _c; return store.startWritingSession({ activityId: activeActivity.id, prompt: (_c = (_b = (0, task_workflows_1.decodeWritingSessionRecord)((_a = (0, task_workflows_1.activeWritingSession)(state)) === null || _a === void 0 ? void 0 : _a.note)) === null || _b === void 0 ? void 0 : _b.prompt) !== null && _c !== void 0 ? _c : activeActivity.title, durationMinutes: activeActivity.durationMinutes }); }, "Writing resumed.") }, "Resume Writing"),
+                focus.status !== "running" && writing && activeActivity && !tv && React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => { var _a, _b, _c; return store.startWritingSession({ activityId: activeActivity.id, prompt: (_c = (_b = (0, task_workflows_1.decodeWritingSessionRecord)((_a = (0, task_workflows_1.activeWritingSession)(state)) === null || _a === void 0 ? void 0 : _a.note)) === null || _b === void 0 ? void 0 : _b.prompt) !== null && _c !== void 0 ? _c : activeActivity.title, durationMinutes: activeActivity.durationMinutes }); }, "Writing resumed.") }, "Resume Writing"),
                 focus.status === "running" && React.createElement("button", { className: "button", type: "button", "data-tv-control-action": "PAUSE", onClick: () => run(() => store.pauseFocus(), "Focus paused.") }, "Pause"),
                 focus.status !== "idle" && React.createElement(React.Fragment, null,
                     !writing && React.createElement("button", { className: "button", type: "button", "data-tv-control-action": "COMPLETE", onClick: () => run(() => store.completeFocus({ note }), "Focus completed and evidenced.") }, "Complete"),
@@ -1567,7 +1607,101 @@ function ModeWorkspace({ state, store, run }) { const plan = state.plans.find(p 
     return React.createElement(ProgrammingWorkspace, { state: state, store: store, run: run }); if (plan.mode === "LANGUAGE_DECK")
     return React.createElement(LanguageWorkspace, { state: state, store: store, run: run }); if (plan.mode === "READING_STUDY")
     return React.createElement(ReadingWorkspace, { state: state, store: store, run: run }); return React.createElement(GeneralSkillWorkspace, { state: state, store: store, run: run }); }
-function MaterialViewer({ material, persistence, onClose }) {
+function TvMaterialViewer({ material, persistence, onClose }) {
+    var _a;
+    const plan = (0, retention_viewer_1.planMaterialViewer)(material);
+    const [url, setUrl] = React.useState(null);
+    const [text, setText] = React.useState(null);
+    const [error, setError] = React.useState(plan.reason);
+    const [textPage, setTextPage] = React.useState(0);
+    const [pdfPage, setPdfPage] = React.useState(1);
+    const [imageZoom, setImageZoom] = React.useState(100);
+    const mediaRef = React.useRef(null);
+    React.useEffect(() => { setTextPage(0); setPdfPage(1); setImageZoom(100); setUrl(null); setText(null); setError(plan.reason); let revoked = null, cancelled = false; (async () => { var _a; if (!(0, retention_viewer_1.materialViewerNeedsAttachment)(plan) || !plan.attachmentId)
+        return; const record = await ((_a = persistence.attachments) === null || _a === void 0 ? void 0 : _a.get(plan.attachmentId)); if (cancelled)
+        return; if (!record) {
+        setError("Local attachment bytes are missing from IndexedDB.");
+        return;
+    } if (plan.kind === "local-text") {
+        setText(await record.blob.text());
+        return;
+    } const next = URL.createObjectURL(record.blob); revoked = next; setUrl(next); })().catch(err => !cancelled && setError(err instanceof Error ? err.message : String(err))); return () => { cancelled = true; if (revoked)
+        URL.revokeObjectURL(revoked); }; }, [material.id, material.updatedAt]);
+    React.useEffect(() => { if (plan.kind !== "local-audio" && plan.kind !== "local-video")
+        return; const listener = () => { const media = mediaRef.current; if (!media)
+        return; if (media.paused) {
+        const result = media.play();
+        if (result && typeof result.catch === "function")
+            result.catch(() => { });
+    }
+    else
+        media.pause(); }; addEventListener("studyflow:tv-media-toggle", listener); return () => removeEventListener("studyflow:tv-media-toggle", listener); }, [plan.kind, url]);
+    const pages = (0, tv_library_1.paginateTvText)(text !== null && text !== void 0 ? text : "");
+    const currentTextPage = Math.max(0, Math.min(textPage, pages.length - 1));
+    const moveText = (delta) => setTextPage(value => Math.max(0, Math.min(pages.length - 1, value + delta)));
+    const movePdf = (delta) => setPdfPage(value => Math.max(1, value + delta));
+    const zoomImage = (delta) => setImageZoom(value => Math.max(50, Math.min(200, value + delta)));
+    return React.createElement("div", { className: "modal-backdrop tv-material-backdrop", role: "presentation" },
+        React.createElement("section", { className: "modal-card material-viewer tv-material-viewer", role: "dialog", "aria-modal": "true", "aria-labelledby": "material-viewer-title" },
+            React.createElement("div", { className: "dialog-title" },
+                React.createElement("div", null,
+                    React.createElement("p", { className: "eyebrow" }, "TV Library"),
+                    React.createElement("h2", { id: "material-viewer-title" }, material.title),
+                    React.createElement("p", { className: "muted" }, (_a = plan.mimeType) !== null && _a !== void 0 ? _a : "unknown MIME",
+                        " \u00B7 ",
+                        title(plan.kind),
+                        material.archived ? " · archived" : "")),
+                React.createElement("button", { className: "button button-quiet", type: "button", onClick: onClose }, "Close")),
+            error && React.createElement("p", { role: "alert" }, error),
+            plan.kind === "web-page" && plan.uri && React.createElement("article", { className: "card" },
+                React.createElement("h3", null, "External web reference"),
+                React.createElement("p", { className: "muted" }, "Opening a new browser tab can transfer focus differently across TV browsers. Back returns to StudyFlow when the browser supports normal tab/history behavior."),
+                React.createElement("a", { className: "button button-primary", href: plan.uri, target: "_blank", rel: "noopener noreferrer" }, "Open web resource")),
+            plan.kind === "local-text" && text != null && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "tv-material-toolbar" },
+                    React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: currentTextPage <= 0, onClick: () => moveText(-1) }, "Previous page"),
+                    React.createElement("span", { className: "status-pill" },
+                        "Page ",
+                        currentTextPage + 1,
+                        " / ",
+                        pages.length),
+                    React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: currentTextPage >= pages.length - 1, onClick: () => moveText(1) }, "Next page")),
+                React.createElement("pre", { className: "material-text-viewer tv-material-text-page" }, pages[currentTextPage])),
+            plan.kind === "local-image" && url && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "tv-material-toolbar" },
+                    React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: imageZoom <= 50, onClick: () => zoomImage(-25) }, "Zoom out"),
+                    React.createElement("span", { className: "status-pill" },
+                        imageZoom,
+                        "%"),
+                    React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: imageZoom >= 200, onClick: () => zoomImage(25) }, "Zoom in")),
+                React.createElement("div", { className: "tv-material-image-stage" },
+                    React.createElement("img", { className: "material-image-viewer", style: { transform: `scale(${imageZoom / 100})`, transformOrigin: "top center" }, src: url, alt: material.title }))),
+            plan.kind === "local-audio" && url && React.createElement(React.Fragment, null,
+                React.createElement("audio", { ref: (node) => { mediaRef.current = node; }, controls: true, src: url }),
+                React.createElement("p", { className: "muted" }, "The TV Play/Pause media key controls this audio when the browser exposes that key.")),
+            " ",
+            plan.kind === "local-video" && url && React.createElement(React.Fragment, null,
+                React.createElement("video", { ref: (node) => { mediaRef.current = node; }, className: "material-video-viewer", controls: true, src: url }),
+                React.createElement("p", { className: "muted" }, "The TV Play/Pause media key controls this video when the browser exposes that key.")),
+            " ",
+            plan.kind === "local-pdf" && url && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "tv-material-toolbar" },
+                    React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: pdfPage <= 1, onClick: () => movePdf(-1) }, "Previous PDF page"),
+                    React.createElement("span", { className: "status-pill" },
+                        "PDF page ",
+                        pdfPage),
+                    React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", onClick: () => movePdf(1) }, "Next PDF page")),
+                React.createElement("iframe", { className: "material-pdf-viewer tv-material-pdf-viewer", title: material.title, src: (0, tv_library_1.tvPdfPageUrl)(url, pdfPage) }),
+                React.createElement("p", { className: "muted" },
+                    "Page navigation uses the standard PDF ",
+                    React.createElement("code", null, "#page="),
+                    " fragment. Some older TV browsers may ignore it; use Open PDF if the embedded viewer does not move."),
+                React.createElement("a", { className: "button button-quiet", href: url, target: "_blank", rel: "noopener noreferrer" }, "Open PDF")),
+            plan.kind === "local-download" && url && React.createElement("p", null,
+                React.createElement("a", { className: "button button-primary", href: url, download: material.title }, "Open / download local file")),
+            React.createElement("p", { className: "muted" }, "Viewer classification is local and MIME-based. Native Android FileProvider/external-handler mechanics are intentionally not reproduced in the browser.")));
+}
+function BrowserMaterialViewer({ material, persistence, onClose }) {
     var _a;
     const plan = (0, retention_viewer_1.planMaterialViewer)(material);
     const [url, setUrl] = React.useState(null);
@@ -1610,6 +1744,7 @@ function MaterialViewer({ material, persistence, onClose }) {
                 React.createElement("a", { className: "button button-primary", href: url, download: material.title }, "Open / download local file")),
             React.createElement("p", { className: "muted" }, "Viewer classification is local and MIME-based. Native Android FileProvider/external-handler mechanics are intentionally not reproduced in the browser.")));
 }
+function MaterialViewer({ material, persistence, onClose }) { return isTvBrowserUi() ? React.createElement(TvMaterialViewer, { material: material, persistence: persistence, onClose: onClose }) : React.createElement(BrowserMaterialViewer, { material: material, persistence: persistence, onClose: onClose }); }
 function Library({ materials, store, persistence, run, tvReadOnly = false, controlledViewingId, onViewingOpen, onViewingClose }) {
     var _a;
     const [localViewing, setLocalViewing] = React.useState(null);
@@ -2007,6 +2142,70 @@ function PublicExamMock({ state, store, run }) {
                     q.tags.length ? ` · ${q.tags.join(", ")}` : ""),
                 React.createElement("input", { "aria-label": `Mock answer ${id}`, value: (_b = answers[id]) !== null && _b !== void 0 ? _b : "", onChange: (e) => setAnswers({ ...answers, [id]: e.target.value }) })); }),
             preview.ready && React.createElement("button", { className: "button button-primary", type: "button", onClick: submit }, "Submit mock")));
+}
+function TvLibrarySurface({ state, persistence, materialId, onMaterialOpen, onMaterialClose, onBack }) {
+    var _a, _b, _c, _d, _e, _f, _g;
+    const all = state.materials.filter(material => material.planId === state.activePlanId);
+    const [filter, setFilter] = React.useState("all");
+    const visible = (0, tv_library_1.tvLibraryMaterials)(all, filter);
+    const [index, setIndex] = React.useState(0);
+    React.useEffect(() => { setIndex(0); }, [filter, state.activePlanId]);
+    React.useEffect(() => { setIndex(value => (0, tv_library_1.tvLibraryNextIndex)(value, visible.length, 0)); }, [visible.length]);
+    const current = (_a = visible[index]) !== null && _a !== void 0 ? _a : null;
+    const viewerPlan = current ? (0, retention_viewer_1.planMaterialViewer)(current) : null;
+    const subject = (current === null || current === void 0 ? void 0 : current.subjectId) ? (_b = state.subjects.find(item => item.id === current.subjectId)) !== null && _b !== void 0 ? _b : null : null;
+    const topic = (current === null || current === void 0 ? void 0 : current.topicId) ? (_c = state.topics.find(item => item.id === current.topicId)) !== null && _c !== void 0 ? _c : null : null;
+    const move = (delta) => { const next = (0, tv_library_1.tvLibraryNextIndex)(index, visible.length, delta); setIndex(next); requestAnimationFrame(() => { var _a; return (_a = document.querySelector(`[data-tv-library-index="${next}"]`)) === null || _a === void 0 ? void 0 : _a.focus(); }); };
+    const choose = (next) => setIndex((0, tv_library_1.tvLibraryNextIndex)(next, visible.length, 0));
+    const setMode = (next) => setFilter(next);
+    return React.createElement("section", { id: "tv-library", "data-screen": "library", className: "screen-section tv-library-surface" },
+        React.createElement("article", { className: "hero-card tv-library-hero" },
+            React.createElement("div", null,
+                React.createElement("p", { className: "eyebrow" }, "Library & references"),
+                React.createElement("h2", null,
+                    all.length,
+                    " material",
+                    all.length === 1 ? "" : "s",
+                    " in ", (_e = (_d = state.plans.find(plan => plan.id === state.activePlanId)) === null || _d === void 0 ? void 0 : _d.name) !== null && _e !== void 0 ? _e : "active plan"),
+                React.createElement("p", { className: "muted" }, "Local attachments stay in IndexedDB. TV Library is read-only and never uploads, deletes, or edits reference provenance.")),
+            React.createElement("div", { className: "tv-library-count" },
+                React.createElement("strong", null, visible.length),
+                React.createElement("span", null, title(filter)))),
+        React.createElement("nav", { className: "subnav tv-library-filter", "aria-label": "Library filter" },
+            React.createElement("button", { className: "tab-link", type: "button", "aria-pressed": filter === "all", "data-tv-control-action": "OPEN", "data-tv-control-target": "library-all", onClick: () => setMode("all") }, "All"),
+            React.createElement("button", { className: "tab-link", type: "button", "aria-pressed": filter === "local", "data-tv-control-action": "OPEN", "data-tv-control-target": "library-local", onClick: () => setMode("local") }, "Local files"),
+            React.createElement("button", { className: "tab-link", type: "button", "aria-pressed": filter === "reference", "data-tv-control-action": "OPEN", "data-tv-control-target": "library-reference", onClick: () => setMode("reference") }, "Web references")),
+        current ? React.createElement("div", { className: "content-grid two-column tv-library-layout" },
+            React.createElement("article", { className: "card tv-library-list-card" },
+                React.createElement("h2", null, "Browse materials"),
+                React.createElement("div", { className: "tv-library-list", role: "listbox", "aria-label": "Study materials" }, visible.map((material, materialIndex) => { var _a; return React.createElement("button", { key: material.id, type: "button", role: "option", "aria-selected": materialIndex === index, className: `tv-library-item${materialIndex === index ? " is-selected" : ""}`, "data-tv-library-index": materialIndex, "data-tv-control-action": "OPEN", "data-tv-control-target": material.id, onClick: () => choose(materialIndex) },
+                    React.createElement("span", null,
+                        React.createElement("strong", null, material.title),
+                        React.createElement("small", null, (_a = material.mimeType) !== null && _a !== void 0 ? _a : title(material.kind),
+                            material.archived ? " · archived" : "")),
+                    React.createElement("span", { className: "status-pill" }, title((0, retention_viewer_1.planMaterialViewer)(material).kind))); }))),
+            React.createElement("article", { className: "card tv-library-stage" },
+                React.createElement("div", { className: "tv-library-stage-meta" },
+                    React.createElement("span", { className: "status-pill" },
+                        index + 1,
+                        " / ",
+                        visible.length),
+                    React.createElement("span", { className: "status-pill" }, title((_f = viewerPlan === null || viewerPlan === void 0 ? void 0 : viewerPlan.kind) !== null && _f !== void 0 ? _f : current.kind))),
+                React.createElement("h2", null, current.title),
+                React.createElement("p", { className: "muted" }, [subject === null || subject === void 0 ? void 0 : subject.name, topic === null || topic === void 0 ? void 0 : topic.name, (_g = current.mimeType) !== null && _g !== void 0 ? _g : title(current.kind)].filter(Boolean).join(" · ")),
+                current.locator && React.createElement("p", { className: "tv-library-locator" }, current.locator),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "PREVIOUS", disabled: index <= 0, onClick: () => move(-1) }, "Previous"),
+                    React.createElement("button", { className: "button button-primary", type: "button", "data-tv-control-action": "START", "data-tv-control-target": current.id, onClick: () => onMaterialOpen(current.id) }, "Open material"),
+                    React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "NEXT", disabled: index >= visible.length - 1, onClick: () => move(1) }, "Next")),
+                (viewerPlan === null || viewerPlan === void 0 ? void 0 : viewerPlan.reason) && React.createElement("p", { className: "tv-inline-note" }, viewerPlan.reason))) : React.createElement("article", { className: "card" },
+            React.createElement("h2", null, "No materials in this filter"),
+            React.createElement("p", { className: "muted" }, "Switch filters or add/import materials from a phone/computer.")),
+        React.createElement(TvContinueElsewhere, { title: "Library editing", detail: "File upload, delete, reference-provenance editing and large metadata changes remain on phone/computer. TV keeps browsing and Material Viewer controls." }),
+        React.createElement("article", { className: "card tv-library-footer" },
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: onBack }, "Back to Plan"),
+            React.createElement("span", { className: "muted" }, "Use Previous/Next to browse; Start opens the selected material. Back closes the viewer before leaving Library.")),
+        materialId && all.find(material => material.id === materialId) && React.createElement(MaterialViewer, { material: all.find(material => material.id === materialId), persistence: persistence, onClose: onMaterialClose }));
 }
 function TvStudySession({ state, store, focus, run, onBack }) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
@@ -2506,7 +2705,8 @@ function TvProgressAnalytics({ state, onOpenSurface }) {
                         "/",
                         row.activeTopics,
                         " topics"))),
-                !snapshot.subjects.length && React.createElement("p", null, "No subjects in the active plan."))));
+                !snapshot.subjects.length && React.createElement("p", null, "No subjects in the active plan."))),
+        React.createElement(TvContinueElsewhere, { title: "Goals, exports & maintenance", detail: "Goal creation, report downloads, cleanup application, portable backup/import and destructive state maintenance remain on phone/computer. Existing goal completion and pause/resume stay available from Today." }));
 }
 function TvScheduleSurface({ state, onLaunch, onOpenSurface, onBack }) {
     var _a, _b;
@@ -2786,7 +2986,7 @@ function IntelligenceTools({ state, store, run }) {
             sprint.executable && React.createElement("button", { className: "button", type: "button", onClick: () => { if (run(() => store.applyStudySprintPreview(sprint), "Seven-day sprint applied without moving or creating activities."))
                     setSprint(null); } }, "Apply sprint preview")));
 }
-function StorageHealthCard({ state, persistence }) { const [report, setReport] = React.useState(null); const [busy, setBusy] = React.useState(false); const check = async (clean = false) => { setBusy(true); try {
+function StorageHealthCard({ state, persistence, allowCleanup = true }) { const [report, setReport] = React.useState(null); const [busy, setBusy] = React.useState(false); const check = async (clean = false) => { setBusy(true); try {
     setReport(clean ? await (0, hardening_1.purgeOrphanAttachments)(state, persistence) : await (0, hardening_1.auditBrowserStorage)(state, persistence));
 }
 finally {
@@ -2805,7 +3005,7 @@ finally {
         " orphan"),
     React.createElement("div", { className: "button-row" },
         React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(false) }, busy ? "Checking…" : "Check storage"),
-        Boolean(report === null || report === void 0 ? void 0 : report.orphanAttachmentIds.length) && React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(true) }, "Clean orphan files"))); }
+        allowCleanup && Boolean(report === null || report === void 0 ? void 0 : report.orphanAttachmentIds.length) && React.createElement("button", { className: "button button-quiet", type: "button", disabled: busy, onClick: () => void check(true) }, "Clean orphan files"))); }
 function PortablePackageTools({ state, store, persistence, portable, setPortable, portableStatus, setPortableStatus }) {
     var _a, _b, _c;
     const [mode, setMode] = React.useState("replace");

@@ -247,7 +247,10 @@ internal fun StudyFlowTvPhoneControllerScreen(
                 )
                 (0..3).chunked(2).forEach { pair ->
                     ControllerActionRow(
-                        firstLabel = stringResource(R.string.tv_controller_answer_choice, ('A'.code + pair[0]).toChar().toString()),
+                        firstLabel = stringResource(
+                            R.string.tv_controller_answer_choice,
+                            ('A'.code + pair[0]).toChar().toString(),
+                        ),
                         onFirst = {
                             controller.send(
                                 StudyFlowTvSurface.QUESTION_SET,
@@ -255,7 +258,10 @@ internal fun StudyFlowTvPhoneControllerScreen(
                                 optionId = pair[0].toString(),
                             )
                         },
-                        secondLabel = stringResource(R.string.tv_controller_answer_choice, ('A'.code + pair[1]).toChar().toString()),
+                        secondLabel = stringResource(
+                            R.string.tv_controller_answer_choice,
+                            ('A'.code + pair[1]).toChar().toString(),
+                        ),
                         onSecond = {
                             controller.send(
                                 StudyFlowTvSurface.QUESTION_SET,
@@ -268,9 +274,19 @@ internal fun StudyFlowTvPhoneControllerScreen(
                 }
                 ControllerActionRow(
                     firstLabel = stringResource(R.string.tv_controller_explanation),
-                    onFirst = { controller.send(StudyFlowTvSurface.QUESTION_SET, StudyFlowTvControlAction.SHOW_EXPLANATION) },
+                    onFirst = {
+                        controller.send(
+                            StudyFlowTvSurface.QUESTION_SET,
+                            StudyFlowTvControlAction.SHOW_EXPLANATION,
+                        )
+                    },
                     secondLabel = stringResource(R.string.tv_controller_mark_review),
-                    onSecond = { controller.send(StudyFlowTvSurface.QUESTION_SET, StudyFlowTvControlAction.MARK_FOR_REVIEW) },
+                    onSecond = {
+                        controller.send(
+                            StudyFlowTvSurface.QUESTION_SET,
+                            StudyFlowTvControlAction.MARK_FOR_REVIEW,
+                        )
+                    },
                     enabled = !state.busy,
                 )
             }
@@ -291,7 +307,9 @@ internal fun StudyFlowTvPhoneControllerScreen(
                     enabled = !state.busy,
                 )
                 Button(
-                    onClick = { controller.send(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.REVIEW_RESULTS) },
+                    onClick = {
+                        controller.send(StudyFlowTvSurface.MOCK_EXAM, StudyFlowTvControlAction.REVIEW_RESULTS)
+                    },
                     enabled = !state.busy,
                 ) { Text(stringResource(R.string.tv_controller_review_results)) }
             }

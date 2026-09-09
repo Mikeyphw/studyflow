@@ -57,7 +57,7 @@ class Wtv1213ProgressScheduleTest(unittest.TestCase):
         self.assertIn('if(surface==="SCHEDULE")return{screen:"schedule"}', APP)
         self.assertIn('"review"|"schedule"', HISTORY)
         self.assertIn('"review","schedule"', HISTORY)
-        self.assertIn('["today","plan","practice","progress","schedule"]', APP)
+        self.assertIn('["today","plan","practice","progress","schedule","library"]', APP)
 
     def test_progress_surface_is_navigation_only(self):
         start = APP.index('function TvProgressAnalytics(')

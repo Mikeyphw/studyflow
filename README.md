@@ -56,7 +56,7 @@ The preceding release-identity and acceptance framework remains active:
 - Phase 33 completed the former sync surface as an offline-first local checkpoint.
 - CSOV00-CSOV01 migrate the product language to local-first optional cloud sync and add an off-by-default sync settings model.
 - CSOV02 adds the encrypted `.sfbackup` sync bundle format with manifest, checkpoint, database snapshot, attachments, and integrity entries.
-- CSOV03 adds the provider abstraction that future SAF-folder, WebDAV, Google Drive, Dropbox, and OneDrive implementations will use.
+- CSOV03 adds the provider abstraction used by the later optional provider implementations and catalog lanes.
 - Phase 34 replaces passive-but-clickable chips with non-clickable status pills.
 - Phase 35 refreshes README, changelog, validation notes, and artifact hygiene contracts.
 - Phase 36 sets the release-candidate identity, packaging policy, and signing boundary.
@@ -68,7 +68,9 @@ build host must still produce build, install, upgrade, and device-smoke evidence
 
 ## Product boundary
 
-StudyFlow is now **local-first with optional cloud sync**. A fresh install works fully offline, requires no StudyFlow account, and leaves cloud sync off until the user explicitly chooses a provider. Local checkpoint status still summarizes whether backup and restore decisions are ready for the selected Study Plan; provider-backed upload, download, and merge flows are staged after the settings foundation. CSOV02 defines the portable encrypted `.sfbackup` checkpoint bundle future providers will transfer. CSOV03 defines the provider API without enabling any provider by default.
+Current cross-platform capability truth is maintained in `docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md`.
+
+StudyFlow is **local-first with optional sync**. A fresh install works fully offline, requires no StudyFlow account, and leaves sync off until the user explicitly chooses a provider. CSOV05 implements real manual SAF-folder checkpoint transfer; CSOV07-CSOV09 add conservative merge/conflict/background foundations; CSOV10 implements the optional WebDAV / Nextcloud provider lane. Encrypted `.sfbackup` bundles remain the remote-transfer boundary. Google Drive remains an optional provider/catalog shell rather than a claimed equivalent I/O implementation.
 
 A `StudyPlan` is the complete and independent workspace for one study objective. Subjects, nested
 topics, schedules, sessions, questions, mock exams, reviews, notes, videos, annexes, analytics, and
@@ -165,17 +167,19 @@ final-release gate in `scripts/run_final_release_acceptance.sh`.
 
 ## Android TV roadmap
 
-Android TV starts as a size-constrained separate APK track. `studyflow_tv` is present as a
-source-contract Devtool target, but it does not compile `:app-tv` until TVOV01 creates that module:
+Android TV is a size-constrained separate APK track, implemented through TVOV26. `studyflow_tv` is a
+focused Devtool target that compiles/tests/packages `:app-tv` without pulling the Android phone feature
+fanout into the TV APK:
 
 ```bash
 devtool -r /path/to/studyflow --target studyflow_tv validate
 ```
 
-The TV release APK budget is 25 MiB target / 35 MiB hard ceiling. TV is also a paired companion
-surface: the Android mobile app must eventually control every TV destination and cast study sessions,
-questions, reviews, mock exams, progress, and schedule views to the TV app through explicit,
-revocable pairing.
+The TV release APK budget is 25 MiB target / 35 MiB hard ceiling. TVOV22-TVOV26 provide explicit local
+pairing, typed presentation projection, Android phone control, real cast-state synchronization and
+domain persistence convergence. That transport is currently Android-phone/TV-specialized; the SFLP
+cross-platform roadmap generalizes it so Desktop, Web and Web TV can participate without Android being
+a required hub.
 
 Useful focused checks:
 
@@ -337,9 +341,9 @@ The optional cloud sync roadmap is sealed with local-first defaults, encrypted r
 
 ## Android TV
 
-TVOV01 adds a real `:app-tv` module with Compose compiler disabled for `:app-tv` for a small Android TV APK. It currently boots to a minimal TV
-receiver shell and deliberately avoids feature-module fanout, AndroidX TV UI, MediaRouter, and Cast
-SDK dependencies until later size-budgeted overlays add pairing, focus navigation, and cast control.
+TVOV01 introduced the real `:app-tv` module with Compose compiler disabled for a small Android TV APK.
+Later TVOV overlays now provide the full native TV navigation, study, pairing, control, persistence, and
+physical-acceptance track while preserving the original size-first dependency boundary.
 
 
 ### Android TV TVOV02

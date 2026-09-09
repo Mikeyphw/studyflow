@@ -44,3 +44,14 @@ Each removed TV editor is replaced by a visible `Continue this edit on a phone o
 ## Deferred
 
 WTV06 remains responsible for browser-history / remote Back semantics. WTV07 remains responsible for phone-to-browser pairing/control/cast relay.
+
+## WTV14 audit corrections
+
+The final promise-by-promise roadmap audit found four cumulative WTV05 leaks and closes all of them:
+
+- WTV12 correctly replaced the TV Progress tabs with a navigation-only analytics surface, but that made the promised existing-goal completion and pause/resume controls unreachable. WTV14 restores those low-input goal controls on Today. Goal creation still remains on phone/computer, and WTV12 Progress remains read-only.
+- TV Settings reused the normal Storage Health component and could expose its orphan-file cleanup mutation after a health check. WTV14 keeps the health check but suppresses cleanup on TV; cleanup remains available in normal web mode.
+- A Writing activity opened from the Today queue could still start/resume the Writing session even though the Writing Workspace itself was delegated off-TV. WTV14 turns that route into an explicit phone/computer handoff and removes the TV Resume Writing control.
+- The full plan-creation onboarding wizard could still appear when onboarding was incomplete. WTV14 replaces it in TV mode with a non-authoring handoff notice; normal web onboarding is unchanged.
+
+The final seal also stops Search from auto-focusing its text field in TV mode, so opening Search does not immediately summon an on-screen keyboard; the field remains reachable explicitly by D-pad.

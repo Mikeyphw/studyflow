@@ -31,14 +31,26 @@ Included:
 - current README, changelog, and validation report;
 - release-candidate identity, package policy, signing boundary, and real-device acceptance template.
 
+## Current cross-platform scope
+
+Later roadmaps have promoted several capabilities that were staged when Phase 37 shipped:
+
+- Web is a shipped local-first client with full applicable functional parity and a browser-TV mode.
+- Desktop exists as a `0.1.0` preview through DOV07; durable persistence and full workspace execution are
+  still explicit roadmap work.
+- Native Android TV exists through TVOV26 as a separate size-constrained 10-foot client.
+- Optional sync remains off by default, but real manual SAF-folder transfer and optional WebDAV /
+  Nextcloud provider I/O now exist together with conservative merge/conflict-review infrastructure.
+- Google Drive remains a provider/catalog shell rather than a fully claimed equivalent I/O lane.
+
 ## Explicit staged scope
 
-The following capabilities remain **post-1.0** unless a later roadmap explicitly promotes them into the active product scope:
+The following capabilities remain staged unless a later roadmap promotes them:
 
-- optional provider upload/download, remote checkpoint discovery, merge, and conflict review are staged after the off-by-default sync settings foundation;
 - public template marketplace;
 - automatic syllabus extraction;
-- desktop or web companion.
+- full Desktop applicable parity beyond the DOV01-DOV07 preview;
+- universal Android/Desktop/Web/Android-TV/Web-TV peer synchronization and handoff, tracked by SFLP.
 
 ## Release scope still pending
 

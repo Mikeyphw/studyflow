@@ -190,7 +190,9 @@ object StudyFlowTvDomainActionMapper {
         ).takeIf { action ->
             when (action.kind) {
                 StudyFlowTvDomainActionKind.PRACTICE_ANSWER ->
-                    !action.contextId.isNullOrBlank() && !action.targetId.isNullOrBlank() && !action.answerText.isNullOrBlank()
+                    !action.contextId.isNullOrBlank() &&
+                        !action.targetId.isNullOrBlank() &&
+                        !action.answerText.isNullOrBlank()
                 StudyFlowTvDomainActionKind.PRACTICE_MARK_REVIEW ->
                     !action.targetId.isNullOrBlank()
                 StudyFlowTvDomainActionKind.PRACTICE_FINISH,

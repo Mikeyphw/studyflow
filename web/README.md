@@ -167,3 +167,12 @@ WTV11 promotes `REVIEW` to a dedicated review/error-notebook surface. Due questi
 ### TV browser WTV12–WTV13
 
 TV Progress is now a dedicated evidence-backed analytics surface: weekly completed study time, recent question volume/accuracy, readiness, topic coverage, review health and weak-subject signals stay truthful to persisted StudyFlow evidence and navigate into existing TV study flows without mutating analytics state. Schedule is now a dedicated `#schedule` read-only surface with Today/This week views, D-pad selection, Previous/Next/Start, canonical activity routing and phone-control shortcuts; schedule editing/rescheduling and writing-authoring remain on phone/computer.
+
+
+### TV browser WTV14 final Library / audit seal
+
+WTV14 promotes Library to a dedicated `#library` TV surface. The remote can filter All / Local files / Web references, move Previous/Next, and START the selected material. Material Viewer keeps the existing local MIME classification while adding TV text pagination, image zoom, PDF `#page=` navigation with an explicit fallback, and media Play/Pause key support. Search results for materials now land in Library and open a controlled material overlay, so Back closes the viewer first.
+
+The cumulative WTV00-WTV13 promise audit also corrected one regression: WTV05's existing goal completion and pause/resume actions had become unreachable when WTV12 intentionally made TV Progress navigation-only. Those low-input goal actions are now available from Today; goal creation and the Progress analytics surface remain read-only. `docs/web/WTV14_LIBRARY_FINAL_AUDIT_SEAL.md` records the complete audit.
+
+The final cumulative audit also closes earlier remote-first leaks that later overlays exposed: existing goal complete/pause/resume is restored on Today; TV storage health is check-only; Writing start/resume and initial plan-authoring onboarding are delegated to phone/computer; and TV Search no longer auto-focuses the keyboard field.

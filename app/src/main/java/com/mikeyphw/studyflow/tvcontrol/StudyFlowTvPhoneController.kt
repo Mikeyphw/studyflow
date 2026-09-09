@@ -103,11 +103,21 @@ interface StudyFlowTvPhoneLinkGateway {
     fun startDiscovery(listener: StudyFlowTvReceiverDiscovery.Listener): Boolean
     fun stopDiscovery()
     fun pairingInfo(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse
-    fun pair(endpoint: StudyFlowTvReceiverEndpoint, pairingCode: String, phoneDeviceName: String): StudyFlowTvWireResponse
+    fun pair(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        pairingCode: String,
+        phoneDeviceName: String,
+    ): StudyFlowTvWireResponse
     fun sendCommand(endpoint: StudyFlowTvReceiverEndpoint, command: StudyFlowTvControlCommand): StudyFlowTvWireResponse
-    fun sendPresentation(endpoint: StudyFlowTvReceiverEndpoint, snapshot: StudyFlowTvPresentationSnapshot): StudyFlowTvWireResponse
+    fun sendPresentation(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        snapshot: StudyFlowTvPresentationSnapshot,
+    ): StudyFlowTvWireResponse
     fun fetchContinuity(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse
-    fun acknowledgeDomainAction(endpoint: StudyFlowTvReceiverEndpoint, result: StudyFlowTvDomainActionResult): StudyFlowTvWireResponse
+    fun acknowledgeDomainAction(
+        endpoint: StudyFlowTvReceiverEndpoint,
+        result: StudyFlowTvDomainActionResult,
+    ): StudyFlowTvWireResponse
     fun revoke(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse
     fun clearSavedSession()
 }
@@ -116,10 +126,12 @@ class DefaultStudyFlowTvPhoneLinkGateway(
     private val discovery: StudyFlowTvReceiverDiscovery,
     private val client: StudyFlowTvLocalTransportClient,
 ) : StudyFlowTvPhoneLinkGateway {
-    override fun savedCredential(nowEpochMillis: Long): StudyFlowTvSessionCredential? = client.savedCredential(nowEpochMillis)
+    override fun savedCredential(nowEpochMillis: Long): StudyFlowTvSessionCredential? =
+        client.savedCredential(nowEpochMillis)
     override fun startDiscovery(listener: StudyFlowTvReceiverDiscovery.Listener): Boolean = discovery.start(listener)
     override fun stopDiscovery() = discovery.stop()
-    override fun pairingInfo(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse = client.pairingInfo(endpoint)
+    override fun pairingInfo(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse =
+        client.pairingInfo(endpoint)
     override fun pair(
         endpoint: StudyFlowTvReceiverEndpoint,
         pairingCode: String,
@@ -133,7 +145,8 @@ class DefaultStudyFlowTvPhoneLinkGateway(
         endpoint: StudyFlowTvReceiverEndpoint,
         snapshot: StudyFlowTvPresentationSnapshot,
     ): StudyFlowTvWireResponse = client.sendPresentation(endpoint, snapshot)
-    override fun fetchContinuity(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse = client.fetchContinuity(endpoint)
+    override fun fetchContinuity(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse =
+        client.fetchContinuity(endpoint)
     override fun acknowledgeDomainAction(
         endpoint: StudyFlowTvReceiverEndpoint,
         result: StudyFlowTvDomainActionResult,
@@ -264,7 +277,10 @@ class StudyFlowTvPhoneController(
     fun pair(pairingCode: String, phoneDeviceName: String) {
         val endpoint = requireSelectedReceiver() ?: return
         val normalizedCode = pairingCode.trim()
-        if (normalizedCode.length != StudyFlowTvControlProtocol.pairingCodeLength || !normalizedCode.all(Char::isDigit)) {
+        if (
+            normalizedCode.length != StudyFlowTvControlProtocol.pairingCodeLength ||
+            !normalizedCode.all(Char::isDigit)
+        ) {
             mutableState.value = mutableState.value.copy(lastMessage = "pairing-code-invalid")
             return
         }
@@ -637,7 +653,11 @@ class StudyFlowTvPhoneController(
             castSync = mutableState.value.castSync.copy(
                 status = if (acknowledged) StudyFlowTvCastSyncStatus.LIVE else StudyFlowTvCastSyncStatus.ERROR,
                 acknowledgedSnapshotId = response.presentationReceipt?.snapshotId,
-                acknowledgedAtEpochMillis = if (acknowledged) response.respondedAtEpochMillis else mutableState.value.castSync.acknowledgedAtEpochMillis,
+                acknowledgedAtEpochMillis = if (acknowledged) {
+                    response.respondedAtEpochMillis
+                } else {
+                    mutableState.value.castSync.acknowledgedAtEpochMillis
+                },
                 lastError = if (acknowledged) null else response.reason ?: "presentation-not-acknowledged",
             ),
             lastMessage = if (acknowledged) "cast-synchronized" else response.reason ?: "cast-sync-failed",

@@ -1,5 +1,9 @@
 # StudyFlow 1.0.0-rc1 Release Notes
 
+> Historical Android release note: this file records the scope of the original Android RC1 milestone.
+> The current repository also contains later Web, Desktop, Android TV, browser-TV, and optional-sync
+> tracks. See `docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md` for current product truth.
+
 StudyFlow 1.0.0-rc1 is an offline-first release candidate for planning, executing, reviewing, and
 tracking study work on Android.
 
@@ -12,12 +16,15 @@ tracking study work on Android.
 - English and Brazilian Portuguese UI.
 - Developer diagnostics gated to debug builds.
 
-## Not included
+## Not included in the original Android RC1 milestone
 
 - Online-provider synchronization.
 - Public template marketplace.
 - Automatic syllabus extraction.
 - Desktop or web companion.
+
+These are historical RC1 boundaries, not current repository claims. Later CSOV work added optional
+provider lanes; later W/PC, DOV, TVOV, and WTV tracks added Web, Desktop preview, Android TV, and Web TV.
 
 ## Acceptance status
 

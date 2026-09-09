@@ -1,6 +1,6 @@
 "use strict";
 
-export type TvHistoryScreen="today"|"plan"|"practice"|"progress"|"session"|"questions"|"mock"|"review"|"schedule";
+export type TvHistoryScreen="today"|"plan"|"practice"|"progress"|"session"|"questions"|"mock"|"review"|"schedule"|"library";
 export type TvHistoryOverlay="search"|"settings"|"material"|null;
 export interface TvHistoryEntry {
   version:1;
@@ -9,7 +9,7 @@ export interface TvHistoryEntry {
   overlayId:string|null;
 }
 
-const SCREENS=new Set<TvHistoryScreen>(["today","plan","practice","progress","session","questions","mock","review","schedule"]);
+const SCREENS=new Set<TvHistoryScreen>(["today","plan","practice","progress","session","questions","mock","review","schedule","library"]);
 const OVERLAYS=new Set<Exclude<TvHistoryOverlay,null>>(["search","settings","material"]);
 export const TV_HISTORY_STATE_KEY="studyflowTvHistory";
 

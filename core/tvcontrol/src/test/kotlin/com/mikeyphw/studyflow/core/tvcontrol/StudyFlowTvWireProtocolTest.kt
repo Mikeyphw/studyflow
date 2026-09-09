@@ -32,7 +32,14 @@ class StudyFlowTvWireProtocolTest {
         credential!!
         assertTrue(engine.isAuthorized(credential, credential.sessionId, credential.sessionSecret, 12_000L))
         assertFalse(engine.isAuthorized(credential, credential.sessionId, "wrong-secret", 12_000L))
-        assertFalse(engine.isAuthorized(credential, credential.sessionId, credential.sessionSecret, credential.expiresAtEpochMillis))
+        assertFalse(
+            engine.isAuthorized(
+                credential,
+                credential.sessionId,
+                credential.sessionSecret,
+                credential.expiresAtEpochMillis,
+            ),
+        )
         assertEquals(StudyFlowTvPairingState.PAIRED, credential.toControlSession().pairingState)
     }
 

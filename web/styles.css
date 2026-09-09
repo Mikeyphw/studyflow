@@ -1401,3 +1401,67 @@ html[data-studyflow-tv="true"] .tv-schedule-footer { display: flex; align-items:
   html[data-studyflow-tv="true"] .tv-schedule-item { min-height: 6.75rem; }
   html[data-studyflow-tv="true"] .tv-progress-subject-heading strong { font-size: 1.45rem; }
 }
+
+/* WTV14: dedicated TV Library, remote-first Material Viewer and final audit seal. */
+html[data-studyflow-tv="true"] .tv-library-surface { gap: 1.25rem; }
+html[data-studyflow-tv="true"] .tv-library-hero {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(13rem,20rem);
+  gap: 2rem;
+  align-items: center;
+}
+html[data-studyflow-tv="true"] .tv-library-count {
+  min-height: 9rem;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+html[data-studyflow-tv="true"] .tv-library-count strong { font-size: 3.5rem; line-height: 1; }
+html[data-studyflow-tv="true"] .tv-library-count span { margin-top: .55rem; color: var(--muted); }
+html[data-studyflow-tv="true"] .tv-library-filter { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+html[data-studyflow-tv="true"] .tv-library-filter .tab-link[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+html[data-studyflow-tv="true"] .tv-library-layout { align-items: stretch; }
+html[data-studyflow-tv="true"] .tv-library-list-card,
+html[data-studyflow-tv="true"] .tv-library-stage { margin-bottom: 0; }
+html[data-studyflow-tv="true"] .tv-library-list { display: grid; gap: .7rem; max-height: 31rem; overflow: auto; padding: .2rem; }
+html[data-studyflow-tv="true"] .tv-library-item {
+  min-height: 5.5rem;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: .9rem 1rem;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+html[data-studyflow-tv="true"] .tv-library-item > span:first-child { display: grid; gap: .3rem; }
+html[data-studyflow-tv="true"] .tv-library-item small { color: var(--muted); }
+html[data-studyflow-tv="true"] .tv-library-item.is-selected { border-color: var(--accent); background: var(--surface-raised); }
+html[data-studyflow-tv="true"] .tv-library-stage { min-height: 22rem; display: grid; align-content: center; gap: 1.1rem; }
+html[data-studyflow-tv="true"] .tv-library-stage h2 { font-size: 2rem; max-width: 42ch; }
+html[data-studyflow-tv="true"] .tv-library-stage-meta { display: flex; flex-wrap: wrap; gap: .7rem; }
+html[data-studyflow-tv="true"] .tv-library-locator { max-width: 58ch; overflow-wrap: anywhere; color: var(--muted); }
+html[data-studyflow-tv="true"] .tv-library-footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+html[data-studyflow-tv="true"] .tv-goal-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+html[data-studyflow-tv="true"] .tv-goal-grid .nested-panel { display: grid; gap: .75rem; align-content: start; }
+html[data-studyflow-tv="true"] .tv-material-viewer { width: calc(100vw - 17rem); max-width: 82rem; max-height: 92vh; }
+html[data-studyflow-tv="true"] .tv-material-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+html[data-studyflow-tv="true"] .tv-material-text-page { min-height: 24rem; max-height: 58vh; overflow: auto; white-space: pre-wrap; }
+html[data-studyflow-tv="true"] .tv-material-pdf-viewer { min-height: 34rem; height: 68vh; }
+html[data-studyflow-tv="true"] .tv-material-image-stage { max-height: 62vh; overflow: auto; padding: 1rem; text-align: center; }
+html[data-studyflow-tv="true"] .tv-material-image-stage img { max-width: 100%; transition: transform .12s ease-out; }
+html[data-studyflow-tv="true"] .tv-material-viewer audio { width: 100%; min-height: 4rem; }
+html[data-studyflow-tv="true"] .tv-material-viewer video { max-height: 65vh; }
+
+@media (min-width: 1600px) {
+  html[data-studyflow-tv="true"] .tv-library-list { max-height: 38rem; }
+  html[data-studyflow-tv="true"] .tv-library-stage { min-height: 26rem; }
+  html[data-studyflow-tv="true"] .tv-material-text-page { min-height: 30rem; }
+}
