@@ -1,3 +1,14 @@
+# SFLP06 + SFLP07 — multi-peer topology and offline reconnection
+
+- Added a platform-neutral workspace topology with simultaneous peers, health tracking, deterministic direct/learned/
+  relay route selection, source-preserving route traces, hop limits, bounded message dedupe, and loop-safe broadcast.
+- Added a persistent idempotent per-peer outgoing queue with bounded exponential retry scheduling and frontier-based
+  acknowledgements; pending operations are never discarded merely because retries keep failing.
+- Added bidirectional reconnect coordination that catches up stale peers from journal truth even with an empty/lost
+  queue and recovers safely when a remote batch committed but its response was lost.
+- Added language-neutral topology/offline schema + golden vectors and focused JVM/source validation. Client-specific
+  Android/Desktop/Web/TV bindings remain correctly deferred to SFLP08-SFLP12.
+
 # SFLP04 + SFLP05 — device trust and transport abstraction
 
 - Added persistent device-identity/trust ports with stable device IDs, remembered peers, revocation, descriptor

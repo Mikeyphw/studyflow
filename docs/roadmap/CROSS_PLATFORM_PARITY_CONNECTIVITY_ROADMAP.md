@@ -27,10 +27,12 @@ major functional-parity track; TV clients preserve intentionally narrower 10-foo
    six-digit + QR pairing, bounded offers/attempts, revocation, and one-time authenticated reconnect proofs.
 5. **SFLP05 Transport abstraction — COMPLETE** — platform-neutral connection/listener/discovery contracts, real
    length-prefixed LAN TCP, adapter-backed WebSocket/relay schemes, manual endpoint parsing, and NSD/mDNS records.
-6. **SFLP06 Multi-peer workspace topology** — simultaneous peers, health, loop prevention, source
-   tracking and route selection.
-7. **SFLP07 Offline queue/reconnection** — idempotent outgoing queue, stale-peer catch-up and interrupted
-   transfer recovery.
+6. **SFLP06 Multi-peer workspace topology — COMPLETE** — simultaneous peer registry, health-aware direct/
+   learned/relay routes, source-preserving route traces, bounded message dedupe, loop prevention, and deterministic
+   route selection.
+7. **SFLP07 Offline queue/reconnection — COMPLETE** — persistent idempotent per-peer delivery queue, bounded
+   retry backoff, stale-peer catch-up from vector frontiers, bidirectional reconnect convergence, and interrupted
+   transfer recovery from receiver truth.
 8. **SFLP08 Android integration** — Android becomes a generic SFLP peer rather than the TV hub.
 9. **SFLP09 Desktop integration** — discovery, pairing, sync, trust UI and offline queue.
 10. **SFLP10 Web integration** — persistent browser identity, pair/reconnect, IndexedDB-backed peer state.

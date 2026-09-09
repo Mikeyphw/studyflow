@@ -1,0 +1,21 @@
+{
+  "peerDeviceId": "desktop-main",
+  "operation": {
+    "operationId": "op-offline-001",
+    "workspaceId": "workspace-main",
+    "originDeviceId": "android-main",
+    "originSequence": 7,
+    "entityId": "goal-main",
+    "entityRevision": 4,
+    "logicalTimestamp": 12,
+    "operationType": "goal.completed",
+    "kind": "mutation",
+    "occurredAtEpochMillis": 1788951600000,
+    "payload": {}
+  },
+  "queuedAtEpochMillis": 1788951600100,
+  "attemptCount": 2,
+  "lastAttemptAtEpochMillis": 1788951601000,
+  "nextAttemptAtEpochMillis": 1788951603000,
+  "lastFailure": "peer unavailable"
+}

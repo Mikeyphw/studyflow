@@ -1,0 +1,17 @@
+{
+  "trace": {
+    "sourceDeviceId": "android-main",
+    "visitedDeviceIds": ["android-main", "desktop-main"],
+    "hopLimit": 8
+  },
+  "envelope": {
+    "protocol": {"major": 1, "minor": 0},
+    "messageId": "msg-route-001",
+    "workspaceId": "workspace-main",
+    "senderDeviceId": "android-main",
+    "type": "event",
+    "name": "workspace.changed",
+    "sentAtEpochMillis": 1788951600000,
+    "payload": {}
+  }
+}

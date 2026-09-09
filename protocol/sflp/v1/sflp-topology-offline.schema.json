@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-topology-offline.schema.json",
+  "title": "StudyFlow Link Protocol v1 topology and offline delivery contracts",
+  "type": "object",
+  "$defs": {
+    "deviceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "routeTrace": {
+      "type": "object",
+      "required": ["sourceDeviceId", "visitedDeviceIds", "hopLimit"],
+      "properties": {
+        "sourceDeviceId": {"$ref": "#/$defs/deviceId"},
+        "visitedDeviceIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/deviceId"}
+        },
+        "hopLimit": {"type": "integer", "minimum": 1, "maximum": 32}
+      },
+      "additionalProperties": false
+    },
+    "peerHealth": {
+      "type": "object",
+      "required": ["state", "consecutiveFailures"],
+      "properties": {
+        "state": {
+          "enum": ["connecting", "connected", "degraded", "disconnected"]
+        },
+        "lastSuccessAtEpochMillis": {"type": "integer", "minimum": 0},
+        "lastFailureAtEpochMillis": {"type": "integer", "minimum": 0},
+        "roundTripMillis": {"type": "integer", "minimum": 0},
+        "consecutiveFailures": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "peerRoute": {
+      "type": "object",
+      "required": [
+        "targetDeviceId",
+        "nextHopDeviceId",
+        "endpoint",
+        "hopCount",
+        "kind",
+        "health",
+        "updatedAtEpochMillis"
+      ],
+      "properties": {
+        "targetDeviceId": {"$ref": "#/$defs/deviceId"},
+        "nextHopDeviceId": {"$ref": "#/$defs/deviceId"},
+        "endpoint": {"type": "object"},
+        "hopCount": {"type": "integer", "minimum": 1, "maximum": 8},
+        "kind": {"enum": ["direct", "learned", "relay"]},
+        "health": {"$ref": "#/$defs/peerHealth"},
+        "updatedAtEpochMillis": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "routedEnvelope": {
+      "type": "object",
+      "required": ["trace", "envelope"],
+      "properties": {
+        "trace": {"$ref": "#/$defs/routeTrace"},
+        "envelope": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "outgoingQueueEntry": {
+      "type": "object",
+      "required": [
+        "peerDeviceId",
+        "operation",
+        "queuedAtEpochMillis",
+        "attemptCount",
+        "nextAttemptAtEpochMillis"
+      ],
+      "properties": {
+        "peerDeviceId": {"$ref": "#/$defs/deviceId"},
+        "operation": {"type": "object"},
+        "queuedAtEpochMillis": {"type": "integer", "minimum": 0},
+        "attemptCount": {"type": "integer", "minimum": 0},
+        "lastAttemptAtEpochMillis": {"type": "integer", "minimum": 0},
+        "nextAttemptAtEpochMillis": {"type": "integer", "minimum": 0},
+        "lastFailure": {"type": "string", "maxLength": 512}
+      },
+      "additionalProperties": false
+    }
+  }
+}
