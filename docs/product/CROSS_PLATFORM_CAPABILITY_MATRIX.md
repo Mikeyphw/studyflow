@@ -106,3 +106,10 @@ Parity is semantic, not visual or API-level symmetry. The following differences 
 - TV clients retain 10-foot layouts, D-pad focus, reduced authoring, and presentation-first UX.
 
 Applicable domain results must still converge to equivalent StudyFlow state.
+
+
+## SFLP10/SFLP11 status
+
+- Web: generic SFLP peer implemented for browser and Web-TV modes with local persistence, manual/WebSocket endpoints, QR pairing import, offline runtime cache, and frontier-based sync helpers.
+- Android TV: generic `android_tv` SFLP peer implemented with `:core:link` and TV-specific persistent identity/trust/journal/queue stores. The legacy phone/TV control path remains for compatibility but is no longer the SFLP topology model.
+- Android is not a required hub for Web, Desktop, Android TV, or Web-TV SFLP synchronization.

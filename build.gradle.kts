@@ -1272,6 +1272,19 @@ tasks.register<Exec>("verifySflp08Sflp09AndroidDesktopIntegration") {
 }
 
 
+tasks.register<Exec>("verifySflp10Sflp11WebTvGeneralization") {
+    group = "verification"
+    description =
+        "Checks SFLP10/SFLP11 Web/Web-TV peer integration and Android TV generic peer generalization."
+    dependsOn(
+        "verifySflp08Sflp09AndroidDesktopIntegration",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp10_11_web_tv_generalization.py")
+}
+
+
 tasks.register<Exec>("verifyCrossPlatformParityBaseline") {
     group = "verification"
     description =

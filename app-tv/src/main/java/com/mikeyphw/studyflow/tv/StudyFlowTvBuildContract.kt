@@ -314,3 +314,19 @@ object StudyFlowTvEndToEndPhysicalSealBuildContract {
     const val revokeBlocksFurtherControl = true
     const val noDeviceSkipForbidden = true
 }
+
+
+// SFLP11 Android TV generic peer generalization contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvSflpGeneralizationBuildContract {
+    const val androidTvGenericSflpPeerIntroduced = true
+    const val androidTvClientKind = "android_tv"
+    const val sharedGenericLinkModule = ":core:link"
+    const val legacyPhoneTvTransportRemainsCompatibilityAdapter = true
+    const val tvCanPairWithAndroidDesktopWebAndWebTv = true
+    const val tvPresentationSinkCapabilityRequired = true
+    const val tvWorkspaceSyncCapabilityRequired = true
+    const val tvDpadInputCapabilityRequired = true
+    const val tvPlanWriteCapabilityForbidden = true
+    const val androidTvIsNotPhoneHub = true
+}

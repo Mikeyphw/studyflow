@@ -1,0 +1,21 @@
+{
+  "identity": {
+    "deviceId": "device-web-golden",
+    "displayName": "StudyFlow Web",
+    "clientKind": "web",
+    "protocolSupport": {
+      "major": 1,
+      "minMinor": 0,
+      "maxMinor": 0
+    },
+    "capabilities": [
+      "workspace.sync",
+      "plan.write",
+      "device.presentation_source"
+    ]
+  },
+  "trustedPeers": [],
+  "endpoints": {},
+  "pendingQueue": [],
+  "journal": []
+}

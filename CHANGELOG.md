@@ -583,3 +583,10 @@ copy.
 - Added TV Progress/Analytics with weekly progress, accuracy, question-volume, readiness, weak-subject summaries, recommended next actions, D-pad focus, paired-phone commands, cast state, tests, and verifier.
 - Fixed the TV Today status string plural-candidate warning by removing `%d` followed by plural words.
 - Preserved the TV dependency boundary: no Compose Runtime, AndroidX TV UI, Cast SDK, MediaRouter, phone feature-module fanout, `core:data`, or `core:database` in `:app-tv`.
+
+
+### SFLP10/SFLP11 — Web + Android TV generic peers
+
+- Added Web/Web-TV SFLP peer persistence, manual WebSocket endpoints, offline-cache integration, frontiers, queue acknowledgement, QR pairing import, revoke and forget.
+- Added Android TV generic SFLP peer persistence and capability profile over `:core:link` while preserving the TVOV22 phone/TV compatibility adapter.
+- Added contracts and validators for Web runtime parity, Android TV peer generalization, and predecessor SFLP01-SFLP09 continuity.

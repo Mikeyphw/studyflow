@@ -170,4 +170,5 @@
     <string name="tv_settings_transport_ready">Local StudyFlow receiver is discoverable. Choose Manage pairing to show a short-lived code.</string>
     <string name="tv_settings_transport_unavailable">Local StudyFlow receiver is not available yet.</string>
     <string name="tv_settings_unknown_phone">paired phone</string>
+    <string name="tv_settings_sflp_peer_status_format">Generic SFLP peer · endpoints=%1$d · trusted peers=%2$d · Android TV is a peer, not a phone hub.</string>
 </resources>

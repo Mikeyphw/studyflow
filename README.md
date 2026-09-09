@@ -459,3 +459,8 @@ TVOV25 makes StudyFlow persistence authoritative for TV interactions. Persistent
 TVOV26 completes the Android TV implementation chain. It adds fail-closed two-device acceptance for a real Android phone plus Leanback TV, exact signed Release artifact installation, fresh pairing, authenticated control, LIVE canonical cast acknowledgement, real domain persistence, restart/resync, STOP_CAST, and revoke. Phone cast intent now survives process restart only when the user had explicitly started casting and the same default plan/pairing remains valid. Source validation cannot claim physical acceptance; `verifyStudyFlowTvFinalProductSeal` requires a PASS evidence report from the real-device runner.
 
 Pending STOP_CAST intent is also persisted until acknowledgment so a phone-process restart cannot resurrect a cast the user already stopped.
+
+
+## SFLP10/SFLP11 — Web + Android TV generic peers
+
+Web now boots a persistent local SFLP peer and Android TV now joins the same generic identity/trust/topology/sync stack while keeping the legacy TV remote-control adapter for compatibility. Android is not a required hub for SFLP peer sync.

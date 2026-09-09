@@ -60,3 +60,8 @@ The following capabilities remain staged unless a later roadmap promotes them:
 - actual target-machine Gradle validation results;
 - signed APK/AAB artifact generated with external credentials;
 - completed install/upgrade/device acceptance report with real evidence.
+
+
+## SFLP10/SFLP11 boundary
+
+Web and Android TV can now join SFLP as peers, but Web still cannot listen for raw TCP and Android TV still cannot own repository/database writes. Pairing, trust, routing, and journal exchange are shared; platform I/O remains bounded by each surface.

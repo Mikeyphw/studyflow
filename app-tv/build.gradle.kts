@@ -78,5 +78,6 @@ android {
 dependencies {
     implementation(project(":core:tvcontrol"))
     implementation(project(":core:tvlink"))
+    implementation(project(":core:link"))
     testImplementation(libs.junit4)
 }

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-web-peer.schema.json",
+  "title": "StudyFlow SFLP Web Peer Snapshot",
+  "type": "object",
+  "required": [
+    "identity",
+    "trustedPeers",
+    "endpoints",
+    "pendingQueue",
+    "journal"
+  ],
+  "properties": {
+    "identity": {
+      "type": "object",
+      "required": [
+        "deviceId",
+        "displayName",
+        "clientKind",
+        "protocolSupport",
+        "capabilities"
+      ]
+    },
+    "trustedPeers": {
+      "type": "array"
+    },
+    "endpoints": {
+      "type": "object"
+    },
+    "pendingQueue": {
+      "type": "array"
+    },
+    "journal": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": false
+}

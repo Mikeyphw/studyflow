@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-096785680519a6f0",
+  "cacheVersion": "studyflow-local-1.0.0-00dfc15b12db736a",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -77,8 +77,8 @@
     },
     {
       "path": "runtime/main.js",
-      "sha256": "699d42716130c68e05fc022dbb89fdcea9f7e83d4282d172b1dbe1edfc4dad21",
-      "bytes": 2341
+      "sha256": "a09cbd14fb6297f9c6234ce12da6e79895d7e1a176013980217baed3cba7fb60",
+      "bytes": 2498
     },
     {
       "path": "runtime/mode_import.js",
@@ -149,6 +149,11 @@
       "path": "runtime/schedule.js",
       "sha256": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
       "bytes": 23492
+    },
+    {
+      "path": "runtime/sflp_link.js",
+      "sha256": "22c46d86df311a7631dfa926e165837413a149af0da90a1627faabc94c182668",
+      "bytes": 10780
     },
     {
       "path": "runtime/state.js",
@@ -222,8 +227,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "385d3aa2f3e9bb49f83ba6c0bed0963bff84e0c4ff1a94b68a2f8be295e08bd5",
-      "bytes": 2593
+      "sha256": "6d9d4d522f94dafeae95493aa39ff1bc4231fc82c95e0d5f36c62a23b5657d83",
+      "bytes": 2619
     },
     {
       "path": "styles.css",

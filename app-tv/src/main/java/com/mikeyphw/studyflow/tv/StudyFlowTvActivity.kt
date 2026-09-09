@@ -90,6 +90,7 @@ import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlock
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlockId
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodaySnapshot
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
+import com.mikeyphw.studyflow.tv.link.StudyFlowTvSflpPeer
 
 class StudyFlowTvActivity : Activity() {
     // TVOV21: the runtime shell starts from an explicit waiting state. Historical fixture defaults
@@ -134,10 +135,15 @@ class StudyFlowTvActivity : Activity() {
     private lateinit var navButtons: Map<StudyFlowTvDestination, Button>
     private lateinit var globalActionButtons: List<Button>
     private lateinit var localTransportHost: StudyFlowTvLocalTransportHost
+    private lateinit var sflpPeer: StudyFlowTvSflpPeer
     private var pendingPairingAfterPermission = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        sflpPeer = StudyFlowTvSflpPeer(
+            context = applicationContext,
+            displayName = getString(R.string.tv_pairing_device_name_format, Build.MODEL),
+        )
         localTransportHost = StudyFlowTvLocalTransportHost(
             context = applicationContext,
             tvDeviceName = getString(R.string.tv_pairing_device_name_format, Build.MODEL),
@@ -202,10 +208,12 @@ class StudyFlowTvActivity : Activity() {
     override fun onStart() {
         super.onStart()
         localTransportHost.start()
+        runCatching { sflpPeer.start() }
     }
 
     override fun onStop() {
         localTransportHost.stop()
+        if (::sflpPeer.isInitialized) runCatching { sflpPeer.close() }
         super.onStop()
     }
 
@@ -993,7 +1001,18 @@ class StudyFlowTvActivity : Activity() {
                 setTextColor(Color.WHITE)
                 applyStudyFlowTvTenFootText(if (offer != null) StudyFlowTvTextRole.SECTION else StudyFlowTvTextRole.CONTROL)
                 gravity = Gravity.START
-                setPadding(0, dp(8), 0, dp(18))
+                setPadding(0, dp(8), 0, dp(8))
+            },
+        )
+        contentCards.addView(
+            TextView(this).apply {
+                val endpoints = if (::sflpPeer.isInitialized) sflpPeer.localEndpoints().size else 0
+                val peers = if (::sflpPeer.isInitialized) sflpPeer.trustedPeers().size else 0
+                text = getString(R.string.tv_settings_sflp_peer_status_format, endpoints, peers)
+                setTextColor(Color.rgb(226, 232, 240))
+                applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
+                gravity = Gravity.START
+                setPadding(0, dp(0), 0, dp(18))
             },
         )
         StudyFlowTvSettingsSurface.cards(state).chunked(2).forEach { rowCards ->

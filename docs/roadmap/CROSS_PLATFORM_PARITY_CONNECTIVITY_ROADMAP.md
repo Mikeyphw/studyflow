@@ -119,3 +119,6 @@ Keep target validation independent:
 
 A target-specific overlay should not fail solely because an unrelated client has a source-quality problem
 unless that overlay explicitly invokes the repository-wide release gate.
+
+- SFLP10 | Web integration — delivered: Browser and Web-TV modes now boot persistent SFLP peers with local storage, manual/WebSocket endpoints, QR pairing import, offline cached runtime, frontier sync, queue acknowledgement, revoke, and forget.
+- SFLP11 | Android TV generalization — delivered: Android TV now participates as an `android_tv` SFLP peer over `:core:link`; the existing phone/TV adapter remains compatibility-only, and TV stays a presentation/read/sync peer rather than a data-owner hub.
