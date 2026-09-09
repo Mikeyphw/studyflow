@@ -46,6 +46,9 @@ test = [
     "verifyPhase63_64ExamRunbookSprintSeal",
     "verifyPostPhase64FinalValidationRefresh",
     "verifyFormatting",
+    "verifySflp01ProtocolBaseline",
+    "verifySflp02Sflp03JournalReconciliation",
+    "verifySflp04Sflp05IdentityTransport",
     "verifyOv19PromiseAudit",
     "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",
@@ -164,6 +167,7 @@ compile = [
     ":core:diagnostics:compileKotlin",
     ":core:domain:compileKotlin",
     ":core:i18n:compileDebugKotlin",
+    ":core:link:compileKotlin",
     ":core:model:compileKotlin",
     ":core:portability:compileKotlin",
     ":feature:plans:compileDebugKotlin",
@@ -178,6 +182,7 @@ compile = [
     ":core:database:compileDebugUnitTestKotlin",
     ":core:diagnostics:compileTestKotlin",
     ":core:domain:compileTestKotlin",
+    ":core:link:compileTestKotlin",
     ":core:model:compileTestKotlin",
     ":core:portability:compileTestKotlin",
     ":feature:plans:compileDebugUnitTestKotlin",
@@ -198,6 +203,7 @@ unit-test = [
     ":core:data:testDebugUnitTest",
     ":core:database:testDebugUnitTest",
     ":core:diagnostics:test",
+    ":core:link:test",
     ":core:domain:test",
     ":core:model:test",
     ":core:navigation:test",
@@ -303,6 +309,9 @@ build = [
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopWorkflows",
+    "verifySflp01ProtocolBaseline",
+    "verifySflp02Sflp03JournalReconciliation",
+    "verifySflp04Sflp05IdentityTransport",
     ":desktopApp:compileKotlin",
 ]
 test = [
@@ -311,6 +320,7 @@ test = [
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopWorkflows",
     ":core:domain:test",
+    ":core:link:test",
     ":core:model:test",
     ":core:portability:test",
     ":desktopApp:test",
@@ -358,6 +368,7 @@ preflight = [
 ]
 compile = [
     ":core:domain:compileKotlin",
+    ":core:link:compileKotlin",
     ":core:model:compileKotlin",
     ":core:portability:compileKotlin",
     ":desktopApp:compileKotlin",
@@ -365,6 +376,7 @@ compile = [
 ]
 unit-test = [
     ":core:domain:test",
+    ":core:link:test",
     ":core:model:test",
     ":core:portability:test",
     ":desktopApp:test",

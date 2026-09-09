@@ -1,0 +1,13 @@
+{
+  "pairingId": "pair-fixture-001",
+  "sessionNonce": "00112233445566778899aabbccddeeff0011223344556677",
+  "pairingCode": "123456",
+  "peer": {
+    "deviceId": "device-web-001",
+    "displayName": "Study Browser",
+    "clientKind": "web",
+    "protocolSupport": {"major": 1, "minMinor": 0, "maxMinor": 0},
+    "capabilities": ["workspace.read", "workspace.sync"]
+  },
+  "requestedAtEpochMillis": 1788926400100
+}

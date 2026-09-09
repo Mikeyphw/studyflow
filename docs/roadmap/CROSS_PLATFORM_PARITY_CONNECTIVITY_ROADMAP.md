@@ -16,16 +16,17 @@ major functional-parity track; TV clients preserve intentionally narrower 10-foo
 
 ## StudyFlow Link Protocol — SFLP01-SFLP19
 
-1. **SFLP01 Protocol baseline** — protocol version, message envelope, workspace/device/entity/operation
-   identities, capability vocabulary, request/response/events, compatibility rules, golden vectors.
-2. **SFLP02 Domain operation journal** — append-only mutation journal, revisions, replay, dedupe,
-   checkpoints, tombstones.
-3. **SFLP03 Reconciliation engine** — peer revision exchange, missing-operation transfer, deterministic
-   replay, conflict handling, interrupted-sync recovery.
-4. **SFLP04 Device identity and trust** — generalize TV pairing into platform-neutral trusted peers, QR
-   and pairing-code flows, remembered devices and revocation.
-5. **SFLP05 Transport abstraction** — decouple SFLP from Android APIs; support native LAN TCP/WebSocket,
-   NSD/mDNS, browser WebSocket/manual endpoints and future relay transports.
+1. **SFLP01 Protocol baseline — COMPLETE** — protocol version, message envelope, workspace/device/
+   entity/operation identities, capability vocabulary, request/response/events, compatibility rules,
+   language-neutral schema, and golden vectors. No transport or replication is claimed yet.
+2. **SFLP02 Domain operation journal — COMPLETE** — canonical append-only operations, per-origin vector
+   revisions, entity revisions, deterministic replay, idempotent dedupe, snapshot checkpoints, and tombstones.
+3. **SFLP03 Reconciliation engine — COMPLETE** — typed frontier exchange, bounded missing-operation batches,
+   deterministic replay/conflict handlers, duplicate-safe retry, and interrupted-sync recovery from receiver truth.
+4. **SFLP04 Device identity and trust — COMPLETE** — persistent identity/trust ports, generic remembered peers,
+   six-digit + QR pairing, bounded offers/attempts, revocation, and one-time authenticated reconnect proofs.
+5. **SFLP05 Transport abstraction — COMPLETE** — platform-neutral connection/listener/discovery contracts, real
+   length-prefixed LAN TCP, adapter-backed WebSocket/relay schemes, manual endpoint parsing, and NSD/mDNS records.
 6. **SFLP06 Multi-peer workspace topology** — simultaneous peers, health, loop prevention, source
    tracking and route selection.
 7. **SFLP07 Offline queue/reconnection** — idempotent outgoing queue, stale-peer catch-up and interrupted

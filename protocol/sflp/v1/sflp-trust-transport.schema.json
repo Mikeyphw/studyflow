@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-trust-transport.schema.json",
+  "title": "StudyFlow Link Protocol v1 trust and transport contracts",
+  "type": "object",
+  "$defs": {
+    "deviceId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "pairingId": {"type": "string", "pattern": "^pair-.{1,75}$"},
+    "trustSecret": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nonce": {"type": "string", "pattern": "^[0-9a-f]{48}$"},
+    "pairingCode": {"type": "string", "pattern": "^[0-9]{6}$"},
+    "transportScheme": {"enum": ["sflp+tcp", "ws", "wss", "sflp+relay", "loopback"]},
+    "transportEndpoint": {
+      "type": "object",
+      "required": ["scheme", "host", "path"],
+      "properties": {
+        "scheme": {"$ref": "#/$defs/transportScheme"},
+        "host": {"type": "string", "minLength": 1},
+        "port": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "path": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "pairingRequest": {
+      "type": "object",
+      "required": ["pairingId", "sessionNonce", "pairingCode", "peer", "requestedAtEpochMillis"],
+      "properties": {
+        "pairingId": {"$ref": "#/$defs/pairingId"},
+        "sessionNonce": {"$ref": "#/$defs/nonce"},
+        "pairingCode": {"$ref": "#/$defs/pairingCode"},
+        "peer": {"type": "object"},
+        "requestedAtEpochMillis": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "pairingGrant": {
+      "type": "object",
+      "required": ["pairingId", "host", "peerDeviceId", "trustSecret", "pairedAtEpochMillis"],
+      "properties": {
+        "pairingId": {"$ref": "#/$defs/pairingId"},
+        "host": {"type": "object"},
+        "peerDeviceId": {"$ref": "#/$defs/deviceId"},
+        "trustSecret": {"$ref": "#/$defs/trustSecret"},
+        "pairedAtEpochMillis": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "reconnectChallenge": {
+      "type": "object",
+      "required": ["challengerDeviceId", "peerDeviceId", "nonce", "issuedAtEpochMillis", "expiresAtEpochMillis"],
+      "properties": {
+        "challengerDeviceId": {"$ref": "#/$defs/deviceId"},
+        "peerDeviceId": {"$ref": "#/$defs/deviceId"},
+        "nonce": {"$ref": "#/$defs/nonce"},
+        "issuedAtEpochMillis": {"type": "integer", "minimum": 0},
+        "expiresAtEpochMillis": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {"$ref": "#/$defs/pairingRequest"},
+    {"$ref": "#/$defs/pairingGrant"},
+    {"$ref": "#/$defs/reconnectChallenge"},
+    {"$ref": "#/$defs/transportEndpoint"}
+  ]
+}

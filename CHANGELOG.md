@@ -1,3 +1,37 @@
+# SFLP04 + SFLP05 — device trust and transport abstraction
+
+- Added persistent device-identity/trust ports with stable device IDs, remembered peers, revocation, descriptor
+  refresh, six-digit and QR pairing, 120-second offers, ten-attempt lockout, random shared secrets, and one-time
+  HMAC reconnect proofs.
+- Added platform-neutral transport/discovery APIs, canonical endpoint parsing, 1 MiB length-prefixed SFLP frames,
+  a real native LAN TCP implementation, adapter-backed WebSocket/relay transports, manual discovery, and the
+  `_studyflow._tcp.` mDNS/NSD record contract.
+- Added language-neutral trust/transport schema + golden fixtures and focused JVM/source validation. Platform
+  storage/UI/network bindings remain the correctly-scoped SFLP06-SFLP12 integration work.
+
+# SFLP02 + SFLP03 — canonical operation journal and reconciliation
+
+- Added the append-only canonical domain operation journal with origin sequences, entity revisions, logical
+  timestamps, deterministic replay, duplicate integrity checks, vector frontiers, checkpoints, and tombstones.
+- Added transport-neutral reconciliation with typed frontier exchange, bounded missing-operation batches,
+  exact batch continuation/integrity checks, retry-safe dedupe, interruption recovery, and conflict handlers.
+- Added language-neutral sync schema/golden vectors plus focused JVM/source validation while keeping live
+  device trust, discovery, transport, and client adapters explicitly deferred to SFLP04-SFLP12.
+
+# SFLP01 — platform-neutral StudyFlow Link Protocol baseline
+
+- Added pure JVM `:core:link` protocol identities, version negotiation, peer descriptors, capabilities,
+  message envelopes, structured errors, and JSON codec behavior.
+- Added language-neutral SFLP v1 JSON Schema plus request/response/event/error golden vectors for later
+  Kotlin/TypeScript/Desktop/TV interoperability work.
+- Added focused JVM and source-contract validation without claiming discovery, trust, transport, or sync.
+
+# PARITY01-PARITY03 rebase refresh
+
+- Rebased the cross-platform parity baseline onto the current post-TVOV26/Web-TV repository state.
+- Reworded the historical Android RC1 exclusion so it cannot be mistaken for current product scope.
+- Kept the canonical capability matrix, full-mesh SFLP target, and OV20/TVOV source seals intact.
+
 # Cross-platform parity baseline — PARITY01-PARITY03
 
 - Added the canonical Android/Web/Desktop/Android-TV/Web-TV capability matrix.

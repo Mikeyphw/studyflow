@@ -972,6 +972,8 @@ tasks.register("checkAll") {
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
         "verifyFormatting",
+        "verifySflp01ProtocolBaseline",
+        "verifySflp02Sflp03JournalReconciliation",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1213,6 +1215,34 @@ tasks.register<Exec>("verifyStudyFlowTvFinalReleaseSeal") {
         ":app-tv:lintRelease",
     )
     commandLine("python3", "scripts/verify_tvov20_real_device_release_seal.py", "--require-release-artifact")
+}
+
+
+tasks.register<Exec>("verifySflp01ProtocolBaseline") {
+    group = "verification"
+    description =
+        "Checks SFLP01 platform-neutral protocol identities, capabilities, envelope/schema/golden vectors, " +
+            "and the pure JVM core:link contract tests."
+    dependsOn(":core:link:test")
+    commandLine("python3", "scripts/verify_sflp01_protocol_baseline.py")
+}
+
+
+tasks.register<Exec>("verifySflp02Sflp03JournalReconciliation") {
+    group = "verification"
+    description =
+        "Checks SFLP02/SFLP03 journal, vector-frontier reconciliation, conflicts, sync wire vectors, " +
+            "and pure JVM core:link tests."
+    dependsOn("verifySflp01ProtocolBaseline", ":core:link:test")
+    commandLine("python3", "scripts/verify_sflp02_03_journal_reconciliation.py")
+}
+
+tasks.register<Exec>("verifySflp04Sflp05IdentityTransport") {
+    group = "verification"
+    description =
+        "Checks SFLP04/SFLP05 generic identity/trust/pairing/reconnect plus transport/discovery contracts."
+    dependsOn("verifySflp02Sflp03JournalReconciliation", ":core:link:test")
+    commandLine("python3", "scripts/verify_sflp04_05_identity_transport.py")
 }
 
 

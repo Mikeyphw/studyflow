@@ -58,8 +58,12 @@ backed primarily by in-memory repositories; it is not a claim of durable workspa
 
 ## Current connectivity truth
 
-StudyFlow does **not yet** provide a universal cross-client synchronization mesh. Current connectivity
-work is specialized:
+StudyFlow now has the platform-neutral SFLP v1 envelope/capability contract, the SFLP02/SFLP03
+canonical operation journal and reconciliation engine, and the SFLP04/SFLP05 generic identity, trust, pairing,
+reconnect, transport, and discovery foundation. The shared core can persist device identity through platform
+stores, remember/revoke trusted peers, pair by code or QR, prove reconnect possession, frame real LAN TCP,
+represent WebSocket/relay transports through adapters, parse manual endpoints, and translate generic mDNS/NSD
+records. StudyFlow does **not yet** provide a universal cross-client synchronization mesh because client bindings and multi-peer routing begin in SFLP06-SFLP12. Current live connectivity therefore remains specialized:
 
 - Android and native Android TV have the TVOV local pairing/control/presentation path.
 - Web TV has its WTV browser receiver plus browser remote-control path.

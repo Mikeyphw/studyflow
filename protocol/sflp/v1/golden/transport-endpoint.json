@@ -1,0 +1,6 @@
+{
+  "scheme": "wss",
+  "host": "study.example",
+  "port": 443,
+  "path": "/sflp"
+}
