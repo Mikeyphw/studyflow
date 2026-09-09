@@ -122,3 +122,9 @@ unless that overlay explicitly invokes the repository-wide release gate.
 
 - SFLP10 | Web integration — delivered: Browser and Web-TV modes now boot persistent SFLP peers with local storage, manual/WebSocket endpoints, QR pairing import, offline cached runtime, frontier sync, queue acknowledgement, revoke, and forget.
 - SFLP11 | Android TV generalization — delivered: Android TV now participates as an `android_tv` SFLP peer over `:core:link`; the existing phone/TV adapter remains compatibility-only, and TV stays a presentation/read/sync peer rather than a data-owner hub.
+
+
+### SFLP12/SFLP13 delivery status
+
+- SFLP12 | Web TV connectivity — delivered: Web TV advertises as `web_tv`, publishes receiver QR/code payloads, accepts projection snapshots, gates remote input by target device and remains a mesh peer rather than a phone-owned spoke.
+- SFLP13 | Activity handoff — delivered: typed handoff offers, accepts, resume events, expiry, one-time consumption, capability checks and TV write-safety are implemented across shared core, Android, Desktop, Android TV and Web/Web TV.

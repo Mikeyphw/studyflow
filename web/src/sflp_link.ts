@@ -67,4 +67,29 @@ export class StudyFlowWebLinkPeer{
  private localEndpointHints():string[]{return globalThis.location?.origin?.startsWith("http")?[globalThis.location.origin.replace(/^http/,"ws")+"/sflp"]:[];}
 }
 
+
+export type SflpActivityKind="dashboard"|"plan"|"schedule"|"study_session"|"practice_question"|"review_item"|"library_material"|"document_view"|"writing_draft"|"presentation_projection";
+export type SflpActivityContinuityMode="snapshot"|"live_control"|"presentation_sink";
+export interface SflpActivityCursor{positionToken:string;scrollRatio?:number;questionIndex?:number;elapsedMillis?:number;}
+export interface SflpActivitySnapshot{activityId:string;workspaceId:string;kind:SflpActivityKind;entityId?:string;entityRevision?:number;cursor:SflpActivityCursor;continuityMode:SflpActivityContinuityMode;requiredCapabilities:string[];payloadHash:string;payload:Record<string,unknown>;}
+export interface SflpHandoffOffer{handoffId:string;sourceDevice:SflpPeerDescriptor;targetDeviceId?:string;activity:SflpActivitySnapshot;createdAtEpochMillis:number;expiresAtEpochMillis:number;oneTimeNonceHex:string;}
+export interface SflpWebTvReceiverOffer{type:"studyflow.sflp.web_tv.receiver.v1";receiver:SflpPeerDescriptor;workspaceId:string;pairingCode:string;endpointHints:string[];createdAtEpochMillis:number;expiresAtEpochMillis:number;qrPayload:string;}
+export type SflpRemoteInputKind="dpad_up"|"dpad_down"|"dpad_left"|"dpad_right"|"select"|"back"|"text";
+export interface SflpRemoteInputCommand{commandId:string;sourceDeviceId:string;targetDeviceId:string;kind:SflpRemoteInputKind;issuedAtEpochMillis:number;text?:string;}
+
+export class StudyFlowWebTvConnectivityController{
+ constructor(private readonly peer:StudyFlowWebLinkPeer){if(peer.identity.clientKind!=="web_tv")throw new Error("SFLP12 requires a web_tv peer");}
+ createReceiverOffer(workspaceId:string,endpointHints:string[]=this.peer.createPairingOffer().endpointHints):SflpWebTvReceiverOffer{const pairing=this.peer.createPairingOffer(endpointHints);const createdAtEpochMillis=Date.now();const offer={type:"studyflow.sflp.web_tv.receiver.v1" as const,receiver:this.peer.identity,workspaceId,pairingCode:pairing.pairingCode,endpointHints,createdAtEpochMillis,expiresAtEpochMillis:pairing.expiresAtEpochMillis,qrPayload:""};offer.qrPayload=JSON.stringify({...offer,qrPayload:undefined});return offer;}
+ acceptRemoteInput(command:SflpRemoteInputCommand):boolean{return command.targetDeviceId===this.peer.identity.deviceId&&["dpad_up","dpad_down","dpad_left","dpad_right","select","back","text"].includes(command.kind);}
+ acceptProjection(snapshot:SflpActivitySnapshot):boolean{return snapshot.kind==="presentation_projection"&&snapshot.continuityMode==="presentation_sink"&&snapshot.requiredCapabilities.includes("device.presentation_sink")&&snapshot.requiredCapabilities.includes("dpad.input");}
+}
+
+export class StudyFlowWebActivityHandoffController{
+ private readonly consumed=new Set<string>();
+ constructor(private readonly peer:StudyFlowWebLinkPeer){ }
+ createOffer(targetDeviceId:string|undefined,activity:SflpActivitySnapshot,ttlMillis=90000):SflpHandoffOffer{const now=Date.now();if(activity.requiredCapabilities.length===0)throw new Error("Handoff requires capability declarations");return{handoffId:`handoff-${this.peer.identity.deviceId}-${now}`,sourceDevice:this.peer.identity,targetDeviceId,activity,createdAtEpochMillis:now,expiresAtEpochMillis:now+ttlMillis,oneTimeNonceHex:randomHex(16)};}
+ acceptOffer(offer:SflpHandoffOffer):boolean{if(this.consumed.has(offer.handoffId))return false;if(offer.expiresAtEpochMillis<Date.now())return false;if(offer.targetDeviceId&&offer.targetDeviceId!==this.peer.identity.deviceId)return false;const capabilities=new Set(this.peer.identity.capabilities);if(offer.activity.requiredCapabilities.some(capability=>!capabilities.has(capability)))return false;if((this.peer.identity.clientKind==="web_tv"||this.peer.identity.clientKind==="android_tv")&&offer.activity.requiredCapabilities.some(capability=>capability.endsWith(".write")||capability==="writing.edit"||capability==="library.import"))return false;this.consumed.add(offer.handoffId);return true;}
+ resumePayload(offer:SflpHandoffOffer):Record<string,unknown>{return{type:"studyflow.sflp.activity_handoff.v1",handoffId:offer.handoffId,workspaceId:offer.activity.workspaceId,activityId:offer.activity.activityId,cursor:offer.activity.cursor};}
+}
+
 export function installStudyFlowWebSflpPeer(kind:SflpClientKind="web"):StudyFlowWebLinkPeer|null{if(typeof globalThis.localStorage==="undefined")return null;const peer=new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(globalThis.localStorage),kind);(globalThis as unknown as {studyFlowSflpPeer?:StudyFlowWebLinkPeer}).studyFlowSflpPeer=peer;globalThis.dispatchEvent(new CustomEvent("studyflow:sflp-peer-ready",{detail:{deviceId:peer.identity.deviceId,clientKind:peer.identity.clientKind}}));return peer;}

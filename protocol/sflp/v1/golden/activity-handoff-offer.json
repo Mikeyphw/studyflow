@@ -1,0 +1,58 @@
+{
+  "messageId": "message-handoff-offer",
+  "messageType": "request",
+  "name": "activity.handoff_offer",
+  "payload": {
+    "createdAtEpochMillis": 1000,
+    "expiresAtEpochMillis": 91000,
+    "handoffId": "handoff-session-1",
+    "oneTimeNonceHex": "00112233445566778899aabbccddeeff",
+    "snapshot": {
+      "activityId": "activity-session-1",
+      "continuityMode": "live_control",
+      "cursor": {
+        "elapsedMillis": 42000,
+        "positionToken": "question-3",
+        "questionIndex": 3
+      },
+      "entityId": "session-1",
+      "entityRevision": 7,
+      "kind": "study_session",
+      "payload": {
+        "mode": "resume",
+        "screen": "practice"
+      },
+      "payloadHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requiredCapabilities": [
+        "workspace.sync",
+        "session.execute",
+        "session.control"
+      ],
+      "workspaceId": "workspace-handoff"
+    },
+    "sourceDevice": {
+      "capabilities": [
+        "workspace.sync",
+        "session.execute",
+        "session.control",
+        "device.presentation_source"
+      ],
+      "clientKind": "android",
+      "deviceId": "device-android",
+      "displayName": "Android phone",
+      "protocolSupport": {
+        "major": 1,
+        "maxMinor": 0,
+        "minMinor": 0
+      }
+    },
+    "targetDeviceId": "device-desktop"
+  },
+  "protocol": {
+    "major": 1,
+    "minor": 0
+  },
+  "senderDeviceId": "device-android",
+  "sentAtEpochMillis": 1000,
+  "workspaceId": "workspace-handoff"
+}

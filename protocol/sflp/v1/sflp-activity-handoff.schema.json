@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/sflp/v1/activity-handoff.schema.json",
+  "title": "StudyFlow SFLP activity handoff and Web TV receiver messages",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "studyflow.sflp.activity_handoff.v1",
+        "studyflow.sflp.web_tv.receiver.v1"
+      ]
+    },
+    "handoffId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "activityId": {
+      "type": "string"
+    },
+    "pairingCode": {
+      "type": "string",
+      "pattern": "^[0-9]{6}$"
+    },
+    "endpointHints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expiresAtEpochMillis": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": true
+}

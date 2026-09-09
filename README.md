@@ -464,3 +464,10 @@ Pending STOP_CAST intent is also persisted until acknowledgment so a phone-proce
 ## SFLP10/SFLP11 — Web + Android TV generic peers
 
 Web now boots a persistent local SFLP peer and Android TV now joins the same generic identity/trust/topology/sync stack while keeping the legacy TV remote-control adapter for compatibility. Android is not a required hub for SFLP peer sync.
+
+
+### SFLP12/SFLP13 Web TV handoff
+
+StudyFlow Link now supports Web TV receiver connectivity and cross-device activity handoff. Web TV
+uses `studyflow.sflp.web_tv.receiver.v1` receiver offers, while all clients use typed
+`activity.handoff_*` messages for resume/projection without making Android a required hub.

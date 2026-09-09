@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
+exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
 exports.installStudyFlowWebSflpPeer = installStudyFlowWebSflpPeer;
 const STORAGE_KEY = "studyflow.sflp.web.peer.v1";
 const PAIRING_TTL_MILLIS = 120000;
@@ -89,5 +89,52 @@ class StudyFlowWebLinkPeer {
     localEndpointHints() { var _a, _b; return ((_b = (_a = globalThis.location) === null || _a === void 0 ? void 0 : _a.origin) === null || _b === void 0 ? void 0 : _b.startsWith("http")) ? [globalThis.location.origin.replace(/^http/, "ws") + "/sflp"] : []; }
 }
 exports.StudyFlowWebLinkPeer = StudyFlowWebLinkPeer;
+class StudyFlowWebTvConnectivityController {
+    constructor(peer) {
+        this.peer = peer;
+        if (peer.identity.clientKind !== "web_tv")
+            throw new Error("SFLP12 requires a web_tv peer");
+    }
+    createReceiverOffer(workspaceId, endpointHints = this.peer.createPairingOffer().endpointHints) {
+        const pairing = this.peer.createPairingOffer(endpointHints);
+        const createdAtEpochMillis = Date.now();
+        const offer = { type: "studyflow.sflp.web_tv.receiver.v1", receiver: this.peer.identity, workspaceId, pairingCode: pairing.pairingCode, endpointHints, createdAtEpochMillis, expiresAtEpochMillis: pairing.expiresAtEpochMillis, qrPayload: "" };
+        offer.qrPayload = JSON.stringify({ ...offer, qrPayload: undefined });
+        return offer;
+    }
+    acceptRemoteInput(command) { return command.targetDeviceId === this.peer.identity.deviceId && ["dpad_up", "dpad_down", "dpad_left", "dpad_right", "select", "back", "text"].includes(command.kind); }
+    acceptProjection(snapshot) { return snapshot.kind === "presentation_projection" && snapshot.continuityMode === "presentation_sink" && snapshot.requiredCapabilities.includes("device.presentation_sink") && snapshot.requiredCapabilities.includes("dpad.input"); }
+}
+exports.StudyFlowWebTvConnectivityController = StudyFlowWebTvConnectivityController;
+class StudyFlowWebActivityHandoffController {
+    constructor(peer) {
+        this.peer = peer;
+        this.consumed = new Set();
+    }
+    createOffer(targetDeviceId, activity, ttlMillis = 90000) {
+        const now = Date.now();
+        if (activity.requiredCapabilities.length === 0)
+            throw new Error("Handoff requires capability declarations");
+        return { handoffId: `handoff-${this.peer.identity.deviceId}-${now}`, sourceDevice: this.peer.identity, targetDeviceId, activity, createdAtEpochMillis: now, expiresAtEpochMillis: now + ttlMillis, oneTimeNonceHex: randomHex(16) };
+    }
+    acceptOffer(offer) {
+        if (this.consumed.has(offer.handoffId))
+            return false;
+        if (offer.expiresAtEpochMillis < Date.now())
+            return false;
+        if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.identity.deviceId)
+            return false;
+        const capabilities = new Set(this.peer.identity.capabilities);
+        if (offer.activity.requiredCapabilities.some(capability => !capabilities.has(capability)))
+            return false;
+        if ((this.peer.identity.clientKind === "web_tv" || this.peer.identity.clientKind === "android_tv") && offer.activity.requiredCapabilities.some(capability => capability.endsWith(".write") || capability === "writing.edit" || capability === "library.import"))
+            return false;
+        this.consumed.add(offer.handoffId);
+        return true;
+    }
+    resumePayload(offer) { return { type: "studyflow.sflp.activity_handoff.v1", handoffId: offer.handoffId, workspaceId: offer.activity.workspaceId, activityId: offer.activity.activityId, cursor: offer.activity.cursor }; }
+}
+exports.StudyFlowWebActivityHandoffController = StudyFlowWebActivityHandoffController;
+
 function installStudyFlowWebSflpPeer(kind = "web") { if (typeof globalThis.localStorage === "undefined")
     return null; const peer = new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(globalThis.localStorage), kind); globalThis.studyFlowSflpPeer = peer; globalThis.dispatchEvent(new CustomEvent("studyflow:sflp-peer-ready", { detail: { deviceId: peer.identity.deviceId, clientKind: peer.identity.clientKind } })); return peer; }

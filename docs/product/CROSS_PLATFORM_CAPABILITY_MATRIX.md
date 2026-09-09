@@ -113,3 +113,10 @@ Applicable domain results must still converge to equivalent StudyFlow state.
 - Web: generic SFLP peer implemented for browser and Web-TV modes with local persistence, manual/WebSocket endpoints, QR pairing import, offline runtime cache, and frontier-based sync helpers.
 - Android TV: generic `android_tv` SFLP peer implemented with `:core:link` and TV-specific persistent identity/trust/journal/queue stores. The legacy phone/TV control path remains for compatibility but is no longer the SFLP topology model.
 - Android is not a required hub for Web, Desktop, Android TV, or Web-TV SFLP synchronization.
+
+
+### SFLP12/SFLP13 status
+
+- Web TV now supports receiver QR/code connectivity, projection snapshots and remote D-pad/text input as a generic SFLP peer.
+- Android, Desktop, Web, Android TV and Web TV can publish or accept typed activity handoffs when the target capability set is sufficient.
+- TV-class clients reject write-capability handoffs; mutation truth remains in the journal/reconciliation pipeline.

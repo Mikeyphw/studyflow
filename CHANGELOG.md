@@ -61,6 +61,13 @@
 - Reconciled stale scope/release/README roadmap statements with shipped Web, Desktop preview, TV and optional-sync tracks.
 - Restored OV20 source-quality validation after later TVOV build/link additions exceeded the existing 120-character Kotlin/KTS policy.
 
+## SFLP12/SFLP13 - Web TV connectivity and activity handoff
+
+- Added Web TV receiver offers, QR/code payloads, projection snapshot acceptance and remote input gating.
+- Added typed activity handoff snapshots, offers, accepts, resume events, one-time consumption, expiry and capability checks.
+- Added Android, Desktop, Android TV and Web/Web TV handoff bridge/controller coverage without making Android a hub.
+- Added schema, golden vectors, tests and validation wiring for the SFLP12/SFLP13 promise seal.
+
 ## TVOV26 — end-to-end physical-device final seal
 
 - Added the missing `core/tvlink/consumer-rules.pro` required by the shared Android-library convention, and added a final-seal audit for every convention-backed Android library module.

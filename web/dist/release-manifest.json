@@ -152,8 +152,8 @@
     },
     {
       "path": "runtime/sflp_link.js",
-      "sha256": "22c46d86df311a7631dfa926e165837413a149af0da90a1627faabc94c182668",
-      "bytes": 10780
+      "sha256": "49b58e9486a9637fe514041042bd60c95a8aeae69789d2d36ecf443fa9dd4b0b",
+      "bytes": 13986
     },
     {
       "path": "runtime/state.js",

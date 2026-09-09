@@ -976,6 +976,8 @@ tasks.register("checkAll") {
         "verifySflp02Sflp03JournalReconciliation",
         "verifySflp06Sflp07TopologyOfflineQueue",
         "verifySflp08Sflp09AndroidDesktopIntegration",
+        "verifySflp10Sflp11WebTvGeneralization",
+        "verifySflp12Sflp13WebTvHandoff",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1284,6 +1286,21 @@ tasks.register<Exec>("verifySflp10Sflp11WebTvGeneralization") {
     commandLine("python3", "scripts/verify_sflp10_11_web_tv_generalization.py")
 }
 
+
+
+tasks.register<Exec>("verifySflp12Sflp13WebTvHandoff") {
+    group = "verification"
+    description =
+        "Checks SFLP12 Web TV receiver connectivity and SFLP13 cross-device activity handoff."
+    dependsOn(
+        "verifySflp10Sflp11WebTvGeneralization",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp12_13_web_tv_handoff.py")
+}
 
 tasks.register<Exec>("verifyCrossPlatformParityBaseline") {
     group = "verification"

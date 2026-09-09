@@ -1,0 +1,28 @@
+{
+  "createdAtEpochMillis": 1000,
+  "endpointHints": [
+    "wss://studyflow.local/sflp"
+  ],
+  "expiresAtEpochMillis": 121000,
+  "pairingCode": "123456",
+  "receiver": {
+    "capabilities": [
+      "workspace.read",
+      "workspace.sync",
+      "device.presentation_sink",
+      "dpad.input",
+      "audio.output",
+      "video.output"
+    ],
+    "clientKind": "web_tv",
+    "deviceId": "device-webtv-golden",
+    "displayName": "StudyFlow Web TV",
+    "protocolSupport": {
+      "major": 1,
+      "maxMinor": 0,
+      "minMinor": 0
+    }
+  },
+  "type": "studyflow.sflp.web_tv.receiver.v1",
+  "workspaceId": "workspace-tv"
+}
