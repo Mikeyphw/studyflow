@@ -42,6 +42,8 @@ Later roadmaps have promoted several capabilities that were staged when Phase 37
 - Optional sync remains off by default, but real manual SAF-folder transfer and optional WebDAV /
   Nextcloud provider I/O now exist together with conservative merge/conflict-review infrastructure.
 - Google Drive remains a provider/catalog shell rather than a fully claimed equivalent I/O lane.
+- SFLP08/SFLP09 provide first-class direct Android↔Desktop discovery, pairing, trust, persistent peer state,
+  offline queueing and authenticated operation reconciliation; the five-client universal mesh is still staged.
 
 ## Explicit staged scope
 
@@ -50,7 +52,8 @@ The following capabilities remain staged unless a later roadmap promotes them:
 - public template marketplace;
 - automatic syllabus extraction;
 - full Desktop applicable parity beyond the DOV01-DOV07 preview;
-- universal Android/Desktop/Web/Android-TV/Web-TV peer synchronization and handoff, tracked by SFLP.
+- universal five-client Android/Desktop/Web/Android-TV/Web-TV synchronization and handoff beyond the shipped
+  Android↔Desktop SFLP08/SFLP09 link, tracked by SFLP10-SFLP19.
 
 ## Release scope still pending
 

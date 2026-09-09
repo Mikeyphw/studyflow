@@ -77,6 +77,7 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:domain"))
     implementation(project(":core:i18n"))
+    implementation(project(":core:link"))
     implementation(project(":core:model"))
     implementation(project(":core:navigation"))
     implementation(project(":core:tvcontrol"))

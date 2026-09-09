@@ -31,6 +31,7 @@ import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
+import com.mikeyphw.studyflow.link.AndroidStudyFlowLinkPeer
 import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvPresentationSource
 import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvDomainActionExecutor
 import com.mikeyphw.studyflow.tvcontrol.SharedPreferencesStudyFlowTvDomainActionJournal
@@ -124,6 +125,7 @@ interface AppContainer : DiagnosticRecorderProvider {
     val tvDomainActionExecutor: StudyFlowTvDomainActionExecutor
     val tvReceiverDiscovery: StudyFlowTvReceiverDiscovery
     val tvLinkClient: StudyFlowTvLocalTransportClient
+    val linkPeer: AndroidStudyFlowLinkPeer
     suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport
 }
 
@@ -250,6 +252,7 @@ private class DefaultAppContainer(
     )
     override val tvReceiverDiscovery = StudyFlowTvReceiverDiscovery(application)
     override val tvLinkClient = StudyFlowTvLocalTransportClient(application)
+    override val linkPeer = AndroidStudyFlowLinkPeer(application)
 
     override suspend fun inspectDatabaseHealth(): DatabaseHealthLabReport =
         dataLayer.inspectDatabaseHealth()
@@ -305,6 +308,18 @@ private class DefaultAppContainer(
                     dataLayer.initialize()
                 }
                 samplePlanProvisioner.recoverPendingCompletion()
+                try {
+                    diagnosticRecorder.recordStep(
+                        area = DiagnosticArea.SYNC_FOUNDATION,
+                        action = "sflp-peer-start",
+                    ) {
+                        linkPeer.start()
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // SFLP peer availability is recoverable; local StudyFlow remains usable offline.
+                }
                 _initializationState.value = AppInitializationState.Ready
                 startWidgetInvalidationObserver()
             } catch (cancelled: CancellationException) {

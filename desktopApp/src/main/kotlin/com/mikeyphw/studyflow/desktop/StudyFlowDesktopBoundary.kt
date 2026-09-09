@@ -14,6 +14,7 @@ object StudyFlowDesktopBoundary {
     val allowedSharedModules: List<String> = listOf(
         ":core:model",
         ":core:domain",
+        ":core:link",
         ":core:portability",
     )
 
@@ -48,5 +49,5 @@ fun createDesktopShellState(): DesktopShellState = DesktopShellState(
     appName = StudyFlowDesktopBoundary.appName,
     status = "Desktop shell ready",
     allowedSharedModules = StudyFlowDesktopBoundary.allowedSharedModules,
-    boundarySummary = "Using JVM-safe StudyFlow model, domain, and portability modules only.",
+    boundarySummary = "Using JVM-safe StudyFlow model, domain, link, and portability modules only.",
 )

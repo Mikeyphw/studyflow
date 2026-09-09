@@ -58,22 +58,25 @@ backed primarily by in-memory repositories; it is not a claim of durable workspa
 
 ## Current connectivity truth
 
-StudyFlow now has the platform-neutral SFLP v1 envelope/capability contract, the SFLP02/SFLP03
-canonical operation journal and reconciliation engine, the SFLP04/SFLP05 generic identity, trust, pairing,
-reconnect, transport, and discovery foundation, and the SFLP06/SFLP07 multi-peer topology plus durable offline-delivery/reconnect core. The shared
-core can track simultaneous peers, select healthy direct/learned/relay routes, prevent forwarding loops, persist
-per-peer pending operations, and re-derive stale-peer catch-up from vector frontiers after interruption. StudyFlow
-does **not yet** provide a universal cross-client synchronization mesh because Android/Desktop/Web/TV bindings
-are SFLP08-SFLP12 work. The earlier SFLP04/SFLP05 boundary accurately stated that client bindings and multi-peer routing begin in SFLP06-SFLP12; SFLP06/SFLP07 now complete that shared-core portion while client
-bindings still begin at SFLP08. Current live connectivity therefore remains specialized:
+StudyFlow now has the platform-neutral SFLP v1 envelope/capability contract, the SFLP02/SFLP03 canonical operation journal and reconciliation engine, the SFLP04/SFLP05 generic identity, trust, pairing, reconnect, transport, and
+discovery foundation, the SFLP06/SFLP07 multi-peer topology plus durable offline-delivery/reconnect core, and the
+first real product bindings in SFLP08/SFLP09. Android and Desktop now instantiate generic SFLP peers directly: each
+owns stable identity/trust state, persistent journal/queue state, discovery endpoints, pairing, authenticated reconnect,
+and frontier reconciliation. A direct Android↔Desktop link no longer depends on the legacy phone↔TV path.
 
-- Android and native Android TV have the TVOV local pairing/control/presentation path.
-- Web TV has its WTV browser receiver plus browser remote-control path.
-- Desktop has no first-class peer link yet.
-- Normal Web has no universal peer synchronization protocol yet.
-- Android is therefore still implicitly privileged by the native-TV path today.
+The historical SFLP04/SFLP05 boundary said that **client bindings and multi-peer routing begin in SFLP06-SFLP12**;
+SFLP06/SFLP07 completed the shared-core portion while the then-current statement was that universal client bindings
+were **SFLP08-SFLP12 work**. SFLP08 and SFLP09 are now complete, while Web/TV bindings remain SFLP10-SFLP12.
+StudyFlow therefore does **not yet** provide a universal cross-client synchronization mesh across all five clients. Current live connectivity is:
 
-The active SFLP roadmap removes these special-case assumptions.
+- Android ↔ Desktop: first-class SFLP discovery/pairing/trust/reconnect/workspace-operation synchronization.
+- Android ↔ native Android TV: existing specialized TVOV pairing/control/presentation path until SFLP11 generalizes TV.
+- Web TV: existing WTV browser receiver plus browser remote-control path until SFLP12.
+- Normal Web: no universal SFLP peer binding yet; SFLP10 remains.
+- Desktop no longer depends on Android as a connectivity hub and can pair directly with any compatible current/future
+  SFLP peer exposed through the generic transport contracts.
+
+The active SFLP roadmap continues removing the remaining special-case TV/browser assumptions.
 
 ## Target connectivity matrix
 

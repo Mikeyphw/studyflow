@@ -33,8 +33,11 @@ major functional-parity track; TV clients preserve intentionally narrower 10-foo
 7. **SFLP07 Offline queue/reconnection — COMPLETE** — persistent idempotent per-peer delivery queue, bounded
    retry backoff, stale-peer catch-up from vector frontiers, bidirectional reconnect convergence, and interrupted
    transfer recovery from receiver truth.
-8. **SFLP08 Android integration** — Android becomes a generic SFLP peer rather than the TV hub.
-9. **SFLP09 Desktop integration** — discovery, pairing, sync, trust UI and offline queue.
+8. **SFLP08 Android integration — COMPLETE** — Android owns a persistent generic SFLP peer with private identity/
+   trust/journal/queue state, NSD + LAN/manual discovery, QR pairing, authenticated direct sync, and revoke/forget;
+   the Android phone is not a privileged SFLP hub. Android becomes a generic SFLP peer rather than the TV hub.
+9. **SFLP09 Desktop integration — COMPLETE** — Desktop owns the same generic peer runtime with filesystem-persistent
+   identity/trust/journal/queue/endpoints, LAN/manual discovery, direct pairing/sync, reconnect scheduling, and trust UI.
 10. **SFLP10 Web integration** — persistent browser identity, pair/reconnect, IndexedDB-backed peer state.
 11. **SFLP11 Android TV generalization** — accept any compatible SFLP peer, not just Android phone.
 12. **SFLP12 Web TV integration** — Web TV becomes a true SFLP execution/presentation peer.

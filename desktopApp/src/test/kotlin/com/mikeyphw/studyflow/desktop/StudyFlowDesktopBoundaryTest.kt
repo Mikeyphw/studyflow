@@ -9,11 +9,12 @@ class StudyFlowDesktopBoundaryTest {
     @Test
     fun desktopBoundaryAllowsOnlyJvmSafeSharedModules() {
         assertEquals(
-            listOf(":core:model", ":core:domain", ":core:portability"),
+            listOf(":core:model", ":core:domain", ":core:link", ":core:portability"),
             StudyFlowDesktopBoundary.allowedSharedModules,
         )
         assertTrue(StudyFlowDesktopBoundary.isAllowedSharedDependency(":core:model"))
         assertTrue(StudyFlowDesktopBoundary.isAllowedSharedDependency(":core:domain"))
+        assertTrue(StudyFlowDesktopBoundary.isAllowedSharedDependency(":core:link"))
         assertTrue(StudyFlowDesktopBoundary.isAllowedSharedDependency(":core:portability"))
         assertFalse(StudyFlowDesktopBoundary.isAllowedSharedDependency(":core:data"))
     }

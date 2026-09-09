@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-peer-rpc.schema.json",
+  "title": "StudyFlow Link generic peer RPC binding",
+  "type": "object",
+  "required": ["protocol", "messageId", "workspaceId", "senderDeviceId", "type", "name", "sentAtEpochMillis", "payload"],
+  "properties": {
+    "protocol": {
+      "type": "object",
+      "required": ["major", "minor"],
+      "properties": {
+        "major": {"const": 1},
+        "minor": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "messageId": {"type": "string", "minLength": 1},
+    "workspaceId": {"type": "string", "minLength": 1},
+    "senderDeviceId": {"type": "string", "minLength": 1},
+    "type": {"enum": ["request", "response", "event", "error"]},
+    "name": {
+      "enum": [
+        "link.pair",
+        "link.pairing_grant",
+        "link.reconnect_challenge",
+        "link.reconnect_proof",
+        "link.reconnect_accepted",
+        "sync.frontier",
+        "sync.pull",
+        "sync.operations",
+        "sync.apply",
+        "link.error"
+      ]
+    },
+    "sentAtEpochMillis": {"type": "integer", "minimum": 0},
+    "correlationId": {"type": "string", "minLength": 1},
+    "payload": {"type": "object"}
+  },
+  "additionalProperties": false
+}

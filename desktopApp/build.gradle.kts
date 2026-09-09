@@ -13,6 +13,7 @@ kotlin {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:domain"))
+    implementation(project(":core:link"))
     implementation(project(":core:portability"))
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutines.core)

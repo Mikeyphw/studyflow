@@ -1,16 +1,35 @@
 package com.mikeyphw.studyflow.desktop
 
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
+
 /** Creates the desktop-only composition root.
  *
- * This is the first real desktop bootstrap. It wires domain use cases to small
- * JVM in-memory repositories so the Compose app can render real StudyFlow model
- * state before Android Room/DataStore adapters are made portable.
+ * The ordinary factory remains side-effect free for tests and embedders. The
+ * production factory adds the persistent SFLP peer and starts its listeners.
  */
 object StudyFlowDesktopBootstrap {
     fun createAppState(
         platformPorts: DesktopPlatformPorts = NoOpDesktopPlatformPorts,
-    ): DesktopAppState = DesktopAppState(
-        services = createDesktopStudyFlowServices(platformPorts),
-        shellState = createDesktopShellState(),
-    )
+        linkService: DesktopStudyFlowLinkService? = null,
+    ): DesktopAppState {
+        val services = createDesktopStudyFlowServices(
+            platformPorts = platformPorts,
+            linkService = linkService,
+        )
+        services.defaultPlanId?.let { planId ->
+            linkService?.registerWorkspace(StudyFlowWorkspaceId("plan-${planId.value}"))
+        }
+        return DesktopAppState(
+            services = services,
+            shellState = createDesktopShellState(),
+        )
+    }
+
+    fun createProductionAppState(
+        platformPorts: DesktopPlatformPorts = NoOpDesktopPlatformPorts,
+        linkService: DesktopStudyFlowLinkService = DesktopStudyFlowLinkService(),
+    ): DesktopAppState {
+        linkService.start()
+        return createAppState(platformPorts, linkService)
+    }
 }

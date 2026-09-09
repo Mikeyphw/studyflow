@@ -342,6 +342,9 @@ enum class StudyFlowDiscoverySource {
     @SerialName("manual")
     MANUAL,
 
+    @SerialName("lan_beacon")
+    LAN_BEACON,
+
     @SerialName("relay")
     RELAY,
 }

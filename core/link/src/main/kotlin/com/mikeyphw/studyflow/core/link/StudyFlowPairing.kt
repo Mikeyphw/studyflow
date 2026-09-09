@@ -105,6 +105,7 @@ sealed class StudyFlowPairingResult {
     data class Rejected(val reason: StudyFlowPairingRejection) : StudyFlowPairingResult()
 }
 
+@Serializable
 enum class StudyFlowPairingRejection {
     NOT_ACTIVE,
     EXPIRED,

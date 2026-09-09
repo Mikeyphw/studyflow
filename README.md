@@ -177,9 +177,10 @@ devtool -r /path/to/studyflow --target studyflow_tv validate
 
 The TV release APK budget is 25 MiB target / 35 MiB hard ceiling. TVOV22-TVOV26 provide explicit local
 pairing, typed presentation projection, Android phone control, real cast-state synchronization and
-domain persistence convergence. That transport is currently Android-phone/TV-specialized; the SFLP
-cross-platform roadmap generalizes it so Desktop, Web and Web TV can participate without Android being
-a required hub.
+domain persistence convergence. That TV transport remains Android-phone/TV-specialized until SFLP11,
+but SFLP08/SFLP09 now give Android and Desktop a separate first-class generic SFLP peer link with direct
+pairing, trust, persistent offline queues and authenticated reconciliation. Android is therefore no
+longer the required hub for Android↔Desktop connectivity; Web and TV generalization remain later SFLP work.
 
 Useful focused checks:
 

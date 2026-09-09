@@ -1,0 +1,10 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-peer-reconnect-1",
+  "workspaceId": "link-system-v1",
+  "senderDeviceId": "android-main",
+  "type": "request",
+  "name": "link.reconnect_challenge",
+  "sentAtEpochMillis": 1000,
+  "payload": {"peerDeviceId": "android-main"}
+}

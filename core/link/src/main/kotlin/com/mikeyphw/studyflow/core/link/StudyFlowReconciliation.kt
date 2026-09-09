@@ -1,5 +1,8 @@
 package com.mikeyphw.studyflow.core.link
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class StudyFlowOperationConflict(
     val entityId: StudyFlowEntityId,
     val entityRevision: StudyFlowEntityRevision,
@@ -56,6 +59,7 @@ class StudyFlowConflictHandlerRegistry(
     }
 }
 
+@Serializable
 data class StudyFlowResolvedReplay(
     val operations: List<StudyFlowDomainOperation>,
     val conflicts: List<StudyFlowOperationConflict>,
@@ -65,6 +69,7 @@ class StudyFlowSyncContinuationException(message: String) : IllegalStateExceptio
 
 class StudyFlowSyncBatchIntegrityException(message: String) : IllegalStateException(message)
 
+@Serializable
 data class StudyFlowSyncApplyResult(
     val added: Int,
     val duplicates: Int,

@@ -142,6 +142,18 @@ fun DesktopSettingsScreen(
     state: DesktopSettingsScreenState,
     onCycleTheme: () -> Unit,
     onCycleLanguage: () -> Unit,
+    linkState: DesktopStudyFlowLinkState?,
+    linkQrInput: String,
+    linkManualEndpoint: String,
+    linkActionMessage: String,
+    onCreatePairingOffer: () -> Unit,
+    onLinkQrChanged: (String) -> Unit,
+    onPairFromQr: () -> Unit,
+    onManualEndpointChanged: (String) -> Unit,
+    onRememberEndpoint: () -> Unit,
+    onSyncPeers: () -> Unit,
+    onRevokePeer: (String) -> Unit,
+    onForgetPeer: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
@@ -170,6 +182,82 @@ fun DesktopSettingsScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = onCycleTheme) { Text("Cycle theme") }
                 Button(onClick = onCycleLanguage) { Text("Cycle language") }
+            }
+        }
+
+        DesktopSectionCard(title = "StudyFlow Link") {
+            if (linkState == null) {
+                Text("SFLP peer integration is unavailable in this desktop composition root.")
+            } else {
+                Text("Device: ${linkState.localDeviceId}", fontWeight = FontWeight.Bold)
+                Text("Status: ${linkState.status}")
+                Text("Pending offline operations: ${linkState.pendingOutgoingOperations}")
+                linkState.localEndpoints.forEach { endpoint -> Text("• $endpoint") }
+                if (linkActionMessage.isNotBlank()) Text(linkActionMessage)
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(onClick = onCreatePairingOffer) { Text("Create pairing offer") }
+                    Button(onClick = onSyncPeers) { Text("Sync trusted peers") }
+                }
+                linkState.pairingCode?.let { code -> Text("Pairing code: $code", fontWeight = FontWeight.Bold) }
+                linkState.pairingQrPayload?.let { payload ->
+                    Text("QR payload: $payload", maxLines = 3, overflow = TextOverflow.Ellipsis)
+                }
+
+                OutlinedTextField(
+                    value = linkQrInput,
+                    onValueChange = onLinkQrChanged,
+                    label = { Text("Paste StudyFlow pairing QR payload") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Button(onClick = onPairFromQr, enabled = linkQrInput.isNotBlank()) {
+                    Text("Pair from QR payload")
+                }
+
+                OutlinedTextField(
+                    value = linkManualEndpoint,
+                    onValueChange = onManualEndpointChanged,
+                    label = { Text("Manual peer endpoint") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Button(onClick = onRememberEndpoint, enabled = linkManualEndpoint.isNotBlank()) {
+                    Text("Remember endpoint")
+                }
+            }
+        }
+
+        if (linkState != null) {
+            DesktopSectionCard(title = "Trusted StudyFlow peers") {
+                if (linkState.trustedPeers.isEmpty()) {
+                    Text("No trusted peers yet.")
+                } else {
+                    linkState.trustedPeers.forEach { peer ->
+                        Text(
+                            "${peer.displayName} • ${peer.clientKind} • " +
+                                if (peer.trusted) "trusted" else "revoked",
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text("${peer.endpointCount} remembered endpoint(s) • ${peer.deviceId}")
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(onClick = { onRevokePeer(peer.deviceId) }, enabled = peer.trusted) {
+                                Text("Revoke")
+                            }
+                            Button(onClick = { onForgetPeer(peer.deviceId) }) { Text("Forget") }
+                        }
+                    }
+                }
+            }
+
+            DesktopSectionCard(title = "Discovered StudyFlow peers") {
+                if (linkState.discoveredPeers.isEmpty()) {
+                    Text("No active LAN/manual peers discovered.")
+                } else {
+                    linkState.discoveredPeers.forEach { peer ->
+                        Text("${peer.displayName} • ${peer.clientKind} • ${peer.source}", fontWeight = FontWeight.Bold)
+                        peer.endpoints.forEach { endpoint -> Text("• $endpoint") }
+                    }
+                }
             }
         }
 

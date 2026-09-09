@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun StudyFlowDesktopApp(
-    appState: DesktopAppState = remember { StudyFlowDesktopBootstrap.createAppState() },
+    appState: DesktopAppState = remember { StudyFlowDesktopBootstrap.createProductionAppState() },
 ) {
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -56,6 +56,18 @@ fun StudyFlowDesktopApp(
                             state = appState.settingsState(),
                             onCycleTheme = appState::cycleThemeMode,
                             onCycleLanguage = appState::cycleLanguage,
+                            linkState = appState.linkState(),
+                            linkQrInput = appState.linkQrInput,
+                            linkManualEndpoint = appState.linkManualEndpoint,
+                            linkActionMessage = appState.linkActionMessage,
+                            onCreatePairingOffer = appState::createLinkPairingOffer,
+                            onLinkQrChanged = appState::updateLinkQrInput,
+                            onPairFromQr = appState::pairLinkFromQr,
+                            onManualEndpointChanged = appState::updateLinkManualEndpoint,
+                            onRememberEndpoint = appState::rememberLinkEndpoint,
+                            onSyncPeers = appState::syncLinkPeers,
+                            onRevokePeer = appState::revokeLinkPeer,
+                            onForgetPeer = appState::forgetLinkPeer,
                         )
                     }
                 }

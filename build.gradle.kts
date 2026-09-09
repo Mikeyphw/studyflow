@@ -975,6 +975,7 @@ tasks.register("checkAll") {
         "verifySflp01ProtocolBaseline",
         "verifySflp02Sflp03JournalReconciliation",
         "verifySflp06Sflp07TopologyOfflineQueue",
+        "verifySflp08Sflp09AndroidDesktopIntegration",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1253,6 +1254,21 @@ tasks.register<Exec>("verifySflp06Sflp07TopologyOfflineQueue") {
         "Checks SFLP06/SFLP07 multi-peer routing, loop prevention, durable offline queue, and reconnect recovery."
     dependsOn("verifySflp04Sflp05IdentityTransport", ":core:link:test")
     commandLine("python3", "scripts/verify_sflp06_07_topology_offline_queue.py")
+}
+
+
+tasks.register<Exec>("verifySflp08Sflp09AndroidDesktopIntegration") {
+    group = "verification"
+    description =
+        "Checks SFLP08/SFLP09 Android + Desktop generic peer bindings, persistence, discovery, " +
+            "trust UI, and direct sync."
+    dependsOn(
+        "verifySflp06Sflp07TopologyOfflineQueue",
+        ":core:link:test",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp08_09_android_desktop_integration.py")
 }
 
 

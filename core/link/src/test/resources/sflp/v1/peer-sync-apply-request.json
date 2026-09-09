@@ -1,0 +1,17 @@
+{
+  "protocol": {"major": 1, "minor": 0},
+  "messageId": "msg-peer-sync-apply-1",
+  "workspaceId": "workspace-main",
+  "senderDeviceId": "desktop-main",
+  "type": "request",
+  "name": "sync.apply",
+  "sentAtEpochMillis": 2000,
+  "payload": {
+    "batchId": "batch-peer-1",
+    "workspaceId": "workspace-main",
+    "baseFrontier": {"origins": []},
+    "operations": [],
+    "throughFrontier": {"origins": []},
+    "hasMore": false
+  }
+}

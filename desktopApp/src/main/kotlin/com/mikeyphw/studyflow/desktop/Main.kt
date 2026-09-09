@@ -1,16 +1,21 @@
 package com.mikeyphw.studyflow.desktop
 
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 
 fun main() = application {
+    val appState = remember { StudyFlowDesktopBootstrap.createProductionAppState() }
     Window(
-        onCloseRequest = { exitApplication() },
+        onCloseRequest = {
+            appState.close()
+            exitApplication()
+        },
         state = rememberWindowState(width = 1100.dp, height = 720.dp),
         title = StudyFlowDesktopBoundary.appName,
     ) {
-        StudyFlowDesktopApp()
+        StudyFlowDesktopApp(appState)
     }
 }

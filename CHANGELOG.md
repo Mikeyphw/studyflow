@@ -1,3 +1,14 @@
+# SFLP08 + SFLP09 — Android and Desktop generic peer integration
+
+- Bound Android to the generic SFLP peer runtime with private persistent identity/trust/journal/queue/endpoints,
+  recoverable app startup, NSD + LAN/manual discovery, QR pairing, authenticated reconciliation, and revoke/forget.
+- Bound Desktop to the same JVM-safe SFLP runtime with atomic filesystem persistence, direct LAN/manual discovery,
+  background reconnect for registered workspaces, and Settings UI for pairing, peer trust, sync, revoke, and forget.
+- Added real TCP Android-kind ↔ Desktop-kind pairing/reconnect/bidirectional-convergence tests, revoked-peer rejection,
+  platform persistence/source contracts, and language-neutral peer-RPC schema/golden vectors.
+- Kept legacy TVOV phone/TV connectivity as a compatibility lane only; SFLP11 remains responsible for native-TV
+  generalization, and Web/Web-TV remain SFLP10/SFLP12 work.
+
 # SFLP06 + SFLP07 — multi-peer topology and offline reconnection
 
 - Added a platform-neutral workspace topology with simultaneous peers, health tracking, deterministic direct/learned/

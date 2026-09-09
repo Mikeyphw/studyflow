@@ -50,6 +50,7 @@ test = [
     "verifySflp02Sflp03JournalReconciliation",
     "verifySflp04Sflp05IdentityTransport",
     "verifySflp06Sflp07TopologyOfflineQueue",
+    "verifySflp08Sflp09AndroidDesktopIntegration",
     "verifyOv19PromiseAudit",
     "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",
@@ -314,6 +315,7 @@ build = [
     "verifySflp02Sflp03JournalReconciliation",
     "verifySflp04Sflp05IdentityTransport",
     "verifySflp06Sflp07TopologyOfflineQueue",
+    "verifySflp08Sflp09AndroidDesktopIntegration",
     ":desktopApp:compileKotlin",
 ]
 test = [

@@ -29,6 +29,7 @@ class DesktopStudyFlowServices(
     val discoveryRepository: DesktopStudyDiscoveryRepository,
     val preferencesStore: DesktopPreferencesStore,
     val platformPorts: DesktopPlatformPorts,
+    val linkService: DesktopStudyFlowLinkService? = null,
 ) {
     val manageStudyPlan: ManageStudyPlan = ManageStudyPlan(planRepository)
     val manageStudyLibrary: ManageStudyLibrary = ManageStudyLibrary(libraryRepository)
@@ -217,6 +218,7 @@ class DesktopStudyFlowServices(
 
 fun createDesktopStudyFlowServices(
     platformPorts: DesktopPlatformPorts = NoOpDesktopPlatformPorts,
+    linkService: DesktopStudyFlowLinkService? = null,
 ): DesktopStudyFlowServices {
     val sample = DesktopStudyFlowSampleData.create()
     val planRepository = InMemoryStudyPlanRepository(sample.plans)
@@ -262,6 +264,7 @@ fun createDesktopStudyFlowServices(
             AppPreferences(dynamicColorEnabled = false, defaultStudyPlanId = sample.plans.firstOrNull()?.id),
         ),
         platformPorts = platformPorts,
+        linkService = linkService,
     )
 }
 
