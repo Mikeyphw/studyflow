@@ -262,6 +262,8 @@ data class StudyFlowTvReviewItemPresentation(
     val confidencePercent: Int,
     val dueAtEpochMillis: Long,
     val status: String,
+    val errorEntryId: String? = null,
+    val errorCategory: String? = null,
 ) {
     init {
         require(reviewItemId.isNotBlank())
@@ -272,6 +274,7 @@ data class StudyFlowTvReviewItemPresentation(
         require(confidencePercent in 0..100)
         require(dueAtEpochMillis >= 0L)
         require(status.isNotBlank())
+        if (errorEntryId != null) require(!errorCategory.isNullOrBlank())
     }
 }
 

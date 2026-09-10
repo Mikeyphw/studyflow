@@ -198,6 +198,28 @@ class DefaultStudyFlowTvCanonicalMutationGateway(
                 )
             }
 
+            StudyFlowTvDomainActionKind.ERROR_RECLASSIFY ->
+                reviewManager.reclassifyErrorEntry(
+                    planId,
+                    ErrorEntryId(requireTarget(action)),
+                    ErrorCategory.valueOf(requireErrorCategory(action)),
+                )
+
+            StudyFlowTvDomainActionKind.ERROR_RESOLVE ->
+                reviewManager.resolveErrorEntry(planId, ErrorEntryId(requireTarget(action)))
+
+            StudyFlowTvDomainActionKind.ERROR_REOPEN -> {
+                val question = requireNotNull(
+                    practiceRepository.findQuestion(planId, QuestionId(requireContext(action))),
+                ) { "Resolved Error Notebook source question does not exist." }
+                reviewManager.createErrorFromQuestion(
+                    id = ErrorEntryId(UUID.randomUUID().toString()),
+                    question = question,
+                    category = ErrorCategory.valueOf(requireErrorCategory(action)),
+                    chosenAnswer = null,
+                )
+            }
+
             StudyFlowTvDomainActionKind.GOAL_COMPLETE ->
                 progressManager.completeGoal(planId, StudyGoalId(requireTarget(action)))
 
@@ -214,6 +236,9 @@ class DefaultStudyFlowTvCanonicalMutationGateway(
 
     private fun requireTarget(action: StudyFlowTvDomainAction): String =
         requireNotNull(action.targetId?.takeIf(String::isNotBlank)) { "Domain action target is required." }
+
+    private fun requireErrorCategory(action: StudyFlowTvDomainAction): String =
+        requireNotNull(action.errorCategory?.takeIf(String::isNotBlank)) { "Error category is required." }
 }
 
 class StudyFlowTvDomainActionExecutor(

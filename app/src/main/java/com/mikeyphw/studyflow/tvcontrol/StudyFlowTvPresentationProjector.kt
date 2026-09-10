@@ -350,13 +350,42 @@ object StudyFlowTvPresentationProjector {
                     confidencePercent = ((item.easeFactor / 3.0) * 100.0).toInt().coerceIn(0, 100),
                     dueAtEpochMillis = item.dueAtEpochMillis.coerceAtLeast(0L),
                     status = if (item.dueAtEpochMillis <= nowEpochMillis) "DUE" else item.status.name,
+                    errorEntryId = error?.id?.value,
+                    errorCategory = error?.category?.name,
+                )
+            }
+            .toList()
+        val representedErrors = projected.mapNotNull { it.errorEntryId }.toSet()
+        val remainingSlots = (StudyFlowTvPresentationProtocol.maxTvReviewItems - projected.size).coerceAtLeast(0)
+        val standaloneErrors = errors.asSequence()
+            .filter { it.id.value !in representedErrors }
+            .sortedByDescending { it.updatedAtEpochMillis }
+            .take(remainingSlots)
+            .map { error ->
+                val question = error.questionId?.let { questionsById[it] }
+                val prompt = question?.statement
+                    ?: error.explanation.takeIf(String::isNotBlank)
+                    ?: "Error Notebook entry"
+                StudyFlowTvReviewItemPresentation(
+                    reviewItemId = "error:${error.id.value}",
+                    questionId = error.questionId?.value,
+                    title = prompt.take(96),
+                    subjectLabel = subjectLabel(error.subjectId, subjectNames),
+                    prompt = prompt,
+                    explanation = question?.explanation ?: error.explanation,
+                    reason = "error notebook · ${error.category.name.lowercase().replace('_', ' ')}",
+                    confidencePercent = (100 - error.recurrenceCount * 12).coerceIn(20, 85),
+                    dueAtEpochMillis = error.updatedAtEpochMillis.coerceAtLeast(0L),
+                    status = "ERROR_NOTEBOOK",
+                    errorEntryId = error.id.value,
+                    errorCategory = error.category.name,
                 )
             }
             .toList()
         return StudyFlowTvReviewPresentation(
             queueId = "review-${plan.id.value}",
             title = "${plan.name} reviews",
-            items = projected,
+            items = projected + standaloneErrors,
         )
     }
 

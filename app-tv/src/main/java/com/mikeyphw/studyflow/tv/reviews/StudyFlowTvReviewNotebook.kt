@@ -39,6 +39,9 @@ enum class StudyFlowTvReviewAction {
     ADD_ERROR_NOTE,
     SHOW_EXPLANATION,
     COMPLETE_REVIEW,
+    RECLASSIFY_ERROR,
+    RESOLVE_ERROR,
+    REOPEN_ERROR,
     RETURN_TODAY,
 }
 
@@ -50,6 +53,9 @@ data class StudyFlowTvReviewItem(
     val reason: String,
     val confidencePercent: Int,
     val dueNow: Boolean,
+    val errorEntryId: String? = null,
+    val errorCategory: String? = null,
+    val questionId: String? = null,
 ) {
     init {
         require(sourceId.isNotBlank()) { "TV review source id must not be blank." }
@@ -57,6 +63,7 @@ data class StudyFlowTvReviewItem(
         require(subject.isNotBlank()) { "TV review subject must not be blank." }
         require(reason.isNotBlank()) { "TV review reason must not be blank." }
         require(confidencePercent in 0..100) { "TV review confidence must be between 0 and 100." }
+        if (errorEntryId != null) require(!errorCategory.isNullOrBlank())
     }
 }
 
@@ -67,6 +74,7 @@ data class StudyFlowTvReviewState(
     val knownReviewIds: Set<StudyFlowTvReviewId> = emptySet(),
     val errorNoteIds: Set<StudyFlowTvReviewId> = emptySet(),
     val explanationVisible: Boolean = false,
+    val locallyResolvedSourceIds: Set<String> = emptySet(),
 ) {
     init {
         require(items.isNotEmpty()) { "TV review surface requires at least one review item." }
@@ -80,7 +88,7 @@ data class StudyFlowTvReviewState(
 }
 
 object StudyFlowTvReviewNotebook {
-    const val overlay = "TVOV11"
+    const val overlay = "TVOV29"
     const val ownsReviewAndErrorNotebookSurface = true
     const val spacedReviewQueueVisible = true
     const val errorNotebookCanBeOpenedFromReview = true
@@ -89,7 +97,8 @@ object StudyFlowTvReviewNotebook {
     const val emitsCastStateWithoutMirroring = true
     const val usesSharedControlProtocol = true
     const val reviewItemCount = 4
-    const val reviewActionCount = 7
+    const val reviewActionCount = 10
+    const val errorNotebookMutationParity = true
     const val reviewItemRow = 0
     const val actionRow = 2
 
@@ -132,33 +141,42 @@ object StudyFlowTvReviewNotebook {
         ),
     )
 
-    fun availableActions(state: StudyFlowTvReviewState): List<StudyFlowTvReviewAction> = when (state.status) {
-        StudyFlowTvReviewStatus.READY -> listOf(
-            StudyFlowTvReviewAction.START_REVIEW,
-            StudyFlowTvReviewAction.SHOW_EXPLANATION,
-            StudyFlowTvReviewAction.ADD_ERROR_NOTE,
-            StudyFlowTvReviewAction.RETURN_TODAY,
-        )
-        StudyFlowTvReviewStatus.REVIEWING -> listOf(
-            StudyFlowTvReviewAction.MARK_KNOWN,
-            StudyFlowTvReviewAction.ADD_ERROR_NOTE,
-            StudyFlowTvReviewAction.SHOW_EXPLANATION,
-            StudyFlowTvReviewAction.NEXT_ITEM,
-            StudyFlowTvReviewAction.COMPLETE_REVIEW,
-        )
-        StudyFlowTvReviewStatus.EXPLANATION -> listOf(
-            StudyFlowTvReviewAction.MARK_KNOWN,
-            StudyFlowTvReviewAction.ADD_ERROR_NOTE,
-            StudyFlowTvReviewAction.NEXT_ITEM,
-            StudyFlowTvReviewAction.COMPLETE_REVIEW,
-        )
-        StudyFlowTvReviewStatus.ERROR_NOTEBOOK -> listOf(
-            StudyFlowTvReviewAction.MARK_KNOWN,
-            StudyFlowTvReviewAction.SHOW_EXPLANATION,
-            StudyFlowTvReviewAction.NEXT_ITEM,
-            StudyFlowTvReviewAction.COMPLETE_REVIEW,
-        )
-        StudyFlowTvReviewStatus.COMPLETED -> listOf(StudyFlowTvReviewAction.RETURN_TODAY)
+    fun availableActions(state: StudyFlowTvReviewState): List<StudyFlowTvReviewAction> {
+        val base = when (state.status) {
+            StudyFlowTvReviewStatus.READY -> listOf(
+                StudyFlowTvReviewAction.START_REVIEW,
+                StudyFlowTvReviewAction.SHOW_EXPLANATION,
+                StudyFlowTvReviewAction.ADD_ERROR_NOTE,
+                StudyFlowTvReviewAction.RETURN_TODAY,
+            )
+            StudyFlowTvReviewStatus.REVIEWING -> listOf(
+                StudyFlowTvReviewAction.MARK_KNOWN,
+                StudyFlowTvReviewAction.ADD_ERROR_NOTE,
+                StudyFlowTvReviewAction.SHOW_EXPLANATION,
+                StudyFlowTvReviewAction.NEXT_ITEM,
+                StudyFlowTvReviewAction.COMPLETE_REVIEW,
+            )
+            StudyFlowTvReviewStatus.EXPLANATION -> listOf(
+                StudyFlowTvReviewAction.MARK_KNOWN,
+                StudyFlowTvReviewAction.ADD_ERROR_NOTE,
+                StudyFlowTvReviewAction.NEXT_ITEM,
+                StudyFlowTvReviewAction.COMPLETE_REVIEW,
+            )
+            StudyFlowTvReviewStatus.ERROR_NOTEBOOK -> listOf(
+                StudyFlowTvReviewAction.MARK_KNOWN,
+                StudyFlowTvReviewAction.SHOW_EXPLANATION,
+                StudyFlowTvReviewAction.NEXT_ITEM,
+                StudyFlowTvReviewAction.COMPLETE_REVIEW,
+            )
+            StudyFlowTvReviewStatus.COMPLETED -> listOf(StudyFlowTvReviewAction.RETURN_TODAY)
+        }
+        val errorId = state.activeReview.errorEntryId ?: return base
+        val mutation = if (errorId in state.locallyResolvedSourceIds) {
+            listOf(StudyFlowTvReviewAction.REOPEN_ERROR)
+        } else {
+            listOf(StudyFlowTvReviewAction.RECLASSIFY_ERROR, StudyFlowTvReviewAction.RESOLVE_ERROR)
+        }
+        return (mutation + base).distinct()
     }
 
     fun applyAction(
@@ -183,6 +201,14 @@ object StudyFlowTvReviewNotebook {
             explanationVisible = true,
         )
         StudyFlowTvReviewAction.COMPLETE_REVIEW -> state
+        StudyFlowTvReviewAction.RECLASSIFY_ERROR -> state
+        StudyFlowTvReviewAction.RESOLVE_ERROR -> state.copy(
+            locallyResolvedSourceIds = state.locallyResolvedSourceIds + listOfNotNull(state.activeReview.errorEntryId),
+        )
+        StudyFlowTvReviewAction.REOPEN_ERROR -> state.copy(
+            locallyResolvedSourceIds =
+                state.locallyResolvedSourceIds - listOfNotNull(state.activeReview.errorEntryId).toSet(),
+        )
         StudyFlowTvReviewAction.RETURN_TODAY -> state
     }
 
@@ -199,7 +225,11 @@ object StudyFlowTvReviewNotebook {
             StudyFlowTvFocusItem(
                 id = "review-action-${action.name.lowercase()}",
                 role = when (action) {
-                    StudyFlowTvReviewAction.ADD_ERROR_NOTE -> StudyFlowTvFocusRole.DIALOG_ACTION
+                    StudyFlowTvReviewAction.ADD_ERROR_NOTE,
+                    StudyFlowTvReviewAction.RECLASSIFY_ERROR,
+                    StudyFlowTvReviewAction.RESOLVE_ERROR,
+                    StudyFlowTvReviewAction.REOPEN_ERROR,
+                    -> StudyFlowTvFocusRole.DIALOG_ACTION
                     else -> StudyFlowTvFocusRole.PRIMARY_ACTION
                 },
                 row = actionRow,
@@ -220,11 +250,20 @@ object StudyFlowTvReviewNotebook {
                 issuedAtEpochMillis = issuedAtEpochMillis,
             )
         }
+        val active = state.activeReview
+        val isErrorMutation = action in setOf(
+            StudyFlowTvReviewAction.RECLASSIFY_ERROR,
+            StudyFlowTvReviewAction.RESOLVE_ERROR,
+            StudyFlowTvReviewAction.REOPEN_ERROR,
+        )
         return StudyFlowTvControlCommand(
             commandId = commandId,
             surface = StudyFlowTvSurface.REVIEW,
             action = controlActionFor(action),
-            targetId = state.activeReview.sourceId,
+            targetId = if (isErrorMutation) active.errorEntryId else active.sourceId,
+            optionId = if (action == StudyFlowTvReviewAction.RECLASSIFY_ERROR) nextErrorCategory(active.errorCategory)
+                else if (action == StudyFlowTvReviewAction.REOPEN_ERROR) active.errorCategory
+                else null,
             issuedAtEpochMillis = issuedAtEpochMillis,
         )
     }
@@ -248,6 +287,23 @@ object StudyFlowTvReviewNotebook {
         else -> StudyFlowTvDestination.REVIEWS
     }
 
+    private val errorCategories = listOf(
+        "CONTENT_GAP",
+        "FORGOTTEN",
+        "CONCEPT_CONFUSION",
+        "INTERPRETATION",
+        "DISTRACTION",
+        "CALCULATION",
+        "TIME_PRESSURE",
+        "DISPUTED",
+        "OTHER",
+    )
+
+    fun nextErrorCategory(current: String?): String {
+        val index = errorCategories.indexOf(current?.uppercase())
+        return errorCategories[(index + 1).mod(errorCategories.size)]
+    }
+
     private fun controlActionFor(action: StudyFlowTvReviewAction): StudyFlowTvControlAction = when (action) {
         StudyFlowTvReviewAction.START_REVIEW -> StudyFlowTvControlAction.START
         StudyFlowTvReviewAction.NEXT_ITEM -> StudyFlowTvControlAction.NEXT
@@ -255,6 +311,9 @@ object StudyFlowTvReviewNotebook {
         StudyFlowTvReviewAction.ADD_ERROR_NOTE -> StudyFlowTvControlAction.MARK_FOR_REVIEW
         StudyFlowTvReviewAction.SHOW_EXPLANATION -> StudyFlowTvControlAction.SHOW_EXPLANATION
         StudyFlowTvReviewAction.COMPLETE_REVIEW -> StudyFlowTvControlAction.COMPLETE
+        StudyFlowTvReviewAction.RECLASSIFY_ERROR -> StudyFlowTvControlAction.RECLASSIFY
+        StudyFlowTvReviewAction.RESOLVE_ERROR -> StudyFlowTvControlAction.RESOLVE
+        StudyFlowTvReviewAction.REOPEN_ERROR -> StudyFlowTvControlAction.REOPEN
         StudyFlowTvReviewAction.RETURN_TODAY -> StudyFlowTvControlAction.BACK
     }
 }

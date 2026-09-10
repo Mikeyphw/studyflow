@@ -32,6 +32,9 @@ object StudyFlowTvDomainActionProtocol {
         StudyFlowTvSurface.REVIEW -> command.action in setOf(
             StudyFlowTvControlAction.COMPLETE,
             StudyFlowTvControlAction.MARK_FOR_REVIEW,
+            StudyFlowTvControlAction.RECLASSIFY,
+            StudyFlowTvControlAction.RESOLVE,
+            StudyFlowTvControlAction.REOPEN,
         )
         StudyFlowTvSurface.PROGRESS -> command.action in setOf(
             StudyFlowTvControlAction.COMPLETE,
@@ -55,6 +58,9 @@ enum class StudyFlowTvDomainActionKind {
     MOCK_FINISH,
     REVIEW_GRADE,
     REVIEW_ERROR_NOTE,
+    ERROR_RECLASSIFY,
+    ERROR_RESOLVE,
+    ERROR_REOPEN,
     GOAL_COMPLETE,
     GOAL_PAUSE,
     GOAL_RESUME,
@@ -71,6 +77,7 @@ data class StudyFlowTvDomainAction(
     val optionId: String? = null,
     val answerText: String? = null,
     val reviewGrade: Int? = null,
+    val errorCategory: String? = null,
     val requestedAtEpochMillis: Long,
     val origin: StudyFlowTvControlOrigin,
 ) {
@@ -87,6 +94,18 @@ data class StudyFlowTvDomainAction(
         if (kind == StudyFlowTvDomainActionKind.REVIEW_GRADE) {
             require(!targetId.isNullOrBlank()) { "Review grade requires a review item id." }
             require(reviewGrade in 0..5) { "Review grade must be between 0 and 5." }
+        }
+        if (kind in setOf(
+                StudyFlowTvDomainActionKind.ERROR_RECLASSIFY,
+                StudyFlowTvDomainActionKind.ERROR_RESOLVE,
+                StudyFlowTvDomainActionKind.ERROR_REOPEN,
+            )
+        ) {
+            require(!targetId.isNullOrBlank()) { "Error Notebook mutation requires an error entry id." }
+            require(!contextId.isNullOrBlank()) { "Error Notebook mutation requires a source question id." }
+        }
+        if (kind in setOf(StudyFlowTvDomainActionKind.ERROR_RECLASSIFY, StudyFlowTvDomainActionKind.ERROR_REOPEN)) {
+            require(!errorCategory.isNullOrBlank()) { "Error Notebook category is required." }
         }
     }
 }
@@ -137,6 +156,9 @@ object StudyFlowTvDomainActionMapper {
             StudyFlowTvSurface.REVIEW -> when (command.action) {
                 StudyFlowTvControlAction.COMPLETE -> StudyFlowTvDomainActionKind.REVIEW_GRADE
                 StudyFlowTvControlAction.MARK_FOR_REVIEW -> StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE
+                StudyFlowTvControlAction.RECLASSIFY -> StudyFlowTvDomainActionKind.ERROR_RECLASSIFY
+                StudyFlowTvControlAction.RESOLVE -> StudyFlowTvDomainActionKind.ERROR_RESOLVE
+                StudyFlowTvControlAction.REOPEN -> StudyFlowTvDomainActionKind.ERROR_REOPEN
                 else -> return null
             }
             StudyFlowTvSurface.PROGRESS -> when (command.action) {
@@ -159,8 +181,9 @@ object StudyFlowTvDomainActionMapper {
         } else null
         val choice = question?.let { resolveChoice(it, command.optionId) }
         val review = current.review
-        val reviewItem = review?.items?.firstOrNull {
-            it.reviewItemId == (command.targetId ?: review.items.firstOrNull()?.reviewItemId)
+        val reviewItem = review?.items?.firstOrNull { item ->
+            item.reviewItemId == (command.targetId ?: review.items.firstOrNull()?.reviewItemId) ||
+                item.errorEntryId == command.targetId
         }
 
         return StudyFlowTvDomainAction(
@@ -176,6 +199,10 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvDomainActionKind.MOCK_FINISH,
                 -> current.mockExam?.mockExamId
                 StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE -> reviewItem?.questionId
+                StudyFlowTvDomainActionKind.ERROR_RECLASSIFY,
+                StudyFlowTvDomainActionKind.ERROR_RESOLVE,
+                StudyFlowTvDomainActionKind.ERROR_REOPEN,
+                -> reviewItem?.questionId
                 else -> null
             },
             targetId = when (kind) {
@@ -190,6 +217,10 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvDomainActionKind.REVIEW_GRADE,
                 StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE,
                 -> command.targetId ?: reviewItem?.reviewItemId
+                StudyFlowTvDomainActionKind.ERROR_RECLASSIFY,
+                StudyFlowTvDomainActionKind.ERROR_RESOLVE,
+                StudyFlowTvDomainActionKind.ERROR_REOPEN,
+                -> command.targetId ?: reviewItem?.errorEntryId
                 StudyFlowTvDomainActionKind.GOAL_COMPLETE,
                 StudyFlowTvDomainActionKind.GOAL_PAUSE,
                 StudyFlowTvDomainActionKind.GOAL_RESUME,
@@ -201,6 +232,12 @@ object StudyFlowTvDomainActionMapper {
             reviewGrade = when (kind) {
                 StudyFlowTvDomainActionKind.REVIEW_GRADE -> 4
                 StudyFlowTvDomainActionKind.PRACTICE_MARK_REVIEW -> 3
+                else -> null
+            },
+            errorCategory = when (kind) {
+                StudyFlowTvDomainActionKind.ERROR_RECLASSIFY,
+                StudyFlowTvDomainActionKind.ERROR_REOPEN,
+                -> command.optionId ?: reviewItem?.errorCategory
                 else -> null
             },
             requestedAtEpochMillis = command.issuedAtEpochMillis,

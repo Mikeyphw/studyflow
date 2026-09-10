@@ -215,6 +215,9 @@ object StudyFlowTvPresentationAdapter {
                 reason = item.reason,
                 confidencePercent = item.confidencePercent,
                 dueNow = item.status.equals("DUE", ignoreCase = true),
+                errorEntryId = item.errorEntryId,
+                errorCategory = item.errorCategory,
+                questionId = item.questionId,
             )
         }
         if (items.isEmpty()) return waitingReview()

@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV28"
+    const val currentTvOverlay = "TVOV29"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -351,4 +351,12 @@ object StudyFlowTvGoalBuildContract {
     const val evidenceBackedGoalsRemainEvidenceOwned = true
     const val tvRepositoryMutationForbidden = true
     const val canonicalPhoneExecutionRequired = true
+}
+
+@Suppress("ConstPropertyName")
+object StudyFlowTvErrorNotebookMutationBuildContract {
+    const val reclassificationUsesCanonicalPhoneMutation = true
+    const val resolveUsesCanonicalDelete = true
+    const val reopenRematerializesFromCanonicalQuestion = true
+    const val tvDatabaseOwnershipForbidden = true
 }

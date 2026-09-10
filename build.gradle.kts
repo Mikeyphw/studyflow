@@ -1629,6 +1629,12 @@ tasks.register<Exec>("verifyStudyFlowTvGoalProjectionActions") {
     commandLine("python3", "scripts/verify_tvov28_goal_projection_actions.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvErrorNotebookMutationParity") {
+    group = "verification"
+    description = "Checks TVOV29 Error Notebook reclassify/resolve/reopen parity."
+    commandLine("python3", "scripts/verify_tvov29_error_notebook_mutation_parity.py")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description =
