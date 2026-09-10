@@ -100,6 +100,13 @@ import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayBlockId
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodaySnapshot
 import com.mikeyphw.studyflow.tv.today.StudyFlowTvTodayWorkspace
 import com.mikeyphw.studyflow.tv.link.StudyFlowTvSflpPeer
+import com.mikeyphw.studyflow.tv.link.StudyFlowTvControlInputReceiver
+import com.mikeyphw.studyflow.tv.search.StudyFlowTvDelegatedSearchInput
+import com.mikeyphw.studyflow.tv.search.StudyFlowTvSearch
+import com.mikeyphw.studyflow.tv.search.StudyFlowTvSearchState
+import com.mikeyphw.studyflow.core.link.StudyFlowInputDelegationOffer
+import com.mikeyphw.studyflow.core.link.StudyFlowInputEvent
+import com.mikeyphw.studyflow.core.link.StudyFlowPeerClock
 
 class StudyFlowTvActivity : Activity() {
     // TVOV21: the runtime shell starts from an explicit waiting state. Historical fixture defaults
@@ -147,12 +154,17 @@ class StudyFlowTvActivity : Activity() {
     private lateinit var sflpPeer: StudyFlowTvSflpPeer
     private var pendingPairingAfterPermission = false
     private var libraryViewerState: StudyFlowTvMaterialViewerState? = null
+    private var searchState: StudyFlowTvSearchState = StudyFlowTvSearchState()
+    private lateinit var delegatedSearchInput: StudyFlowTvDelegatedSearchInput
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sflpPeer = StudyFlowTvSflpPeer(
             context = applicationContext,
             displayName = getString(R.string.tv_pairing_device_name_format, Build.MODEL),
+        )
+        delegatedSearchInput = StudyFlowTvDelegatedSearchInput(
+            StudyFlowTvControlInputReceiver(sflpPeer.localDescriptor, StudyFlowPeerClock(System::currentTimeMillis)),
         )
         localTransportHost = StudyFlowTvLocalTransportHost(
             context = applicationContext,
@@ -246,6 +258,11 @@ class StudyFlowTvActivity : Activity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
+            if (event.keyCode == KeyEvent.KEYCODE_SEARCH) {
+                openSearchOverlay()
+                return true
+            }
+            if (searchState.visible && handleSearchKey(event.keyCode)) return true
             val command = StudyFlowTvRemoteKeyMapper.commandForKeyCode(event.keyCode)
             if (command == StudyFlowTvRemoteCommand.BACK && selectedDestination != StudyFlowTvDestination.HOME) {
                 selectDestination(StudyFlowTvDestination.HOME)
@@ -261,6 +278,74 @@ class StudyFlowTvActivity : Activity() {
             }
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    fun acceptDelegatedSearchOffer(offer: StudyFlowInputDelegationOffer): Boolean =
+        delegatedSearchInput.accept(offer)
+
+    fun applyDelegatedSearchInput(event: StudyFlowInputEvent): Boolean {
+        if (!searchState.visible) openSearchOverlay()
+        val updated = delegatedSearchInput.apply(searchState, event)
+        val changed = updated != searchState
+        searchState = updated
+        if (::contentTitle.isInitialized) {
+            if (searchState.visible) renderSearchOverlay() else renderDestination(selectedDestination)
+        }
+        return changed
+    }
+
+    private fun openSearchOverlay() {
+        searchState = StudyFlowTvSearch.open(controlState)
+        renderSearchOverlay()
+    }
+
+    private fun handleSearchKey(keyCode: Int): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_DPAD_UP -> {
+            searchState = StudyFlowTvSearch.move(searchState, -1)
+            renderSearchOverlay()
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_DOWN -> {
+            searchState = StudyFlowTvSearch.move(searchState, 1)
+            renderSearchOverlay()
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+            val selected = searchState.selected ?: return true
+            searchState = searchState.copy(visible = false)
+            selectDestination(selected.destination)
+            true
+        }
+        KeyEvent.KEYCODE_BACK -> {
+            searchState = searchState.copy(visible = false)
+            renderDestination(selectedDestination)
+            true
+        }
+        else -> false
+    }
+
+    private fun renderSearchOverlay() {
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        contentTitle.text = getString(R.string.tv_search_title)
+        contentBody.text = getString(
+            R.string.tv_search_status_format,
+            searchState.query.ifBlank { getString(R.string.tv_search_empty_query) },
+            searchState.results.size,
+        )
+        searchState.results.forEachIndexed { index, result ->
+            contentCards.addView(
+                tvCardButton(
+                    title = if (index == searchState.selectedIndex) "▶ ${result.title}" else result.title,
+                    body = result.subtitle,
+                    onClick = {
+                        searchState = searchState.copy(visible = false)
+                        selectDestination(result.destination)
+                    },
+                ),
+            )
+        }
+        if (searchState.results.isEmpty()) contentCards.addView(sectionLabel(R.string.tv_search_no_results))
     }
 
     private fun createContentView(): LinearLayout {

@@ -119,6 +119,7 @@ object StudyFlowClientProfiles {
 
     val AndroidTv: List<StudyFlowLinkCapability> = WebTv + listOf(
         StudyFlowLinkCapabilities.BackupExport,
+        StudyFlowLinkCapabilities.KeyboardInput,
     )
 
     fun capabilitiesFor(kind: StudyFlowLinkClientKind): List<StudyFlowLinkCapability> = when (kind) {

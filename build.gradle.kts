@@ -1635,6 +1635,12 @@ tasks.register<Exec>("verifyStudyFlowTvErrorNotebookMutationParity") {
     commandLine("python3", "scripts/verify_tvov29_error_notebook_mutation_parity.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvDpadSflpSearch") {
+    group = "verification"
+    description = "Checks TVOV30 D-pad search and SFLP delegated text input."
+    commandLine("python3", "scripts/verify_tvov30_dpad_sflp_search.py")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description =

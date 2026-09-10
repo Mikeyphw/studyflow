@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV29"
+    const val currentTvOverlay = "TVOV30"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -359,4 +359,12 @@ object StudyFlowTvErrorNotebookMutationBuildContract {
     const val resolveUsesCanonicalDelete = true
     const val reopenRematerializesFromCanonicalQuestion = true
     const val tvDatabaseOwnershipForbidden = true
+}
+
+@Suppress("ConstPropertyName")
+object StudyFlowTvSearchBuildContract {
+    const val nativeSearchOverlay = true
+    const val dpadResultNavigation = true
+    const val sflpDelegatedTextInput = true
+    const val presentationSafeIndexOnly = true
 }

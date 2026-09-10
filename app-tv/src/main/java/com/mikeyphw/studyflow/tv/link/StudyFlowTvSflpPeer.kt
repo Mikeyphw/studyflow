@@ -53,6 +53,7 @@ class StudyFlowTvSflpPeer(
     private var serverEndpoint: StudyFlowTransportEndpoint? = null
 
     val localDeviceId: StudyFlowDeviceId get() = identity.descriptor.deviceId
+    val localDescriptor get() = identity.descriptor
 
     fun start(): StudyFlowTransportEndpoint {
         serverEndpoint?.let { return it }
