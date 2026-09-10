@@ -105,7 +105,7 @@ def main() -> int:
         require("compose.desktop.currentOs" in desktop_build, "desktopApp must depend on Compose Desktop")
 
         dependencies = project_dependencies(desktop_build)
-        allowed = [":core:model", ":core:domain", ":core:portability"]
+        allowed = [":core:model", ":core:domain", ":core:link", ":core:portability"]
         require(dependencies == allowed, f"desktopApp project dependencies must be exactly {allowed}, got {dependencies}")
         forbidden_prefixes = (
             ":app",
@@ -134,6 +134,7 @@ def main() -> int:
         require("icon placeholder" in icon_placeholder.lower(), "desktop icon placeholder must exist")
         require(":core:model" in boundary_source, "desktop boundary must list :core:model")
         require(":core:domain" in boundary_source, "desktop boundary must list :core:domain")
+        require(":core:link" in boundary_source, "desktop boundary must list :core:link")
         require(":core:portability" in boundary_source, "desktop boundary must list :core:portability")
         require(":feature:" in boundary_source, "desktop boundary must forbid feature modules")
         require(":core:database" in boundary_source, "desktop boundary must forbid Android persistence")

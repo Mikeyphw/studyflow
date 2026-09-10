@@ -254,6 +254,7 @@ class DesktopStudyDiscoveryRepository(
 
 class DesktopPreferencesStore(
     initialPreferences: AppPreferences = AppPreferences(dynamicColorEnabled = false),
+    private val onChanged: (AppPreferences) -> Unit = {},
 ) {
     private val preferences = MutableStateFlow(initialPreferences)
 
@@ -263,15 +264,18 @@ class DesktopPreferencesStore(
 
     fun setTheme(themeMode: ThemeMode) {
         preferences.value = preferences.value.copy(themeMode = themeMode)
+        onChanged(preferences.value)
     }
 
     fun setLanguage(language: AppLanguage) {
         preferences.value = preferences.value.copy(language = language)
+        onChanged(preferences.value)
     }
 
     fun recordSearch(query: String) {
         preferences.value = preferences.value.copy(
             recentSearches = RecentSearchHistory.record(preferences.value.recentSearches, query),
         )
+        onChanged(preferences.value)
     }
 }

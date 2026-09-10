@@ -30,6 +30,7 @@ class DesktopStudyFlowServices(
     val preferencesStore: DesktopPreferencesStore,
     val platformPorts: DesktopPlatformPorts,
     val linkService: DesktopStudyFlowLinkService? = null,
+    val workspacePersistence: DesktopWorkspacePersistence? = null,
 ) {
     val manageStudyPlan: ManageStudyPlan = ManageStudyPlan(planRepository)
     val manageStudyLibrary: ManageStudyLibrary = ManageStudyLibrary(libraryRepository)
@@ -219,9 +220,17 @@ class DesktopStudyFlowServices(
 fun createDesktopStudyFlowServices(
     platformPorts: DesktopPlatformPorts = NoOpDesktopPlatformPorts,
     linkService: DesktopStudyFlowLinkService? = null,
+    workspacePersistence: DesktopWorkspacePersistence? = null,
 ): DesktopStudyFlowServices {
     val sample = DesktopStudyFlowSampleData.create()
-    val planRepository = InMemoryStudyPlanRepository(sample.plans)
+    val persisted = workspacePersistence?.current()
+    val planRepository = InMemoryStudyPlanRepository(
+        initialPlans = persisted?.plans ?: sample.plans,
+        initialSettings = persisted?.planSettings ?: sample.plans.associate { plan ->
+            plan.id to com.mikeyphw.studyflow.core.model.StudyPlanSettings.defaults(plan.id)
+        },
+        onChanged = { plans, settings -> workspacePersistence?.updatePlans(plans, settings) },
+    )
     val libraryRepository = InMemoryStudyLibraryRepository(
         materials = sample.materials,
         videos = sample.videos,
@@ -261,10 +270,15 @@ fun createDesktopStudyFlowServices(
         analyticsRepository = analyticsRepository,
         discoveryRepository = discoveryRepository,
         preferencesStore = DesktopPreferencesStore(
-            AppPreferences(dynamicColorEnabled = false, defaultStudyPlanId = sample.plans.firstOrNull()?.id),
+            initialPreferences = persisted?.preferences ?: AppPreferences(
+                dynamicColorEnabled = false,
+                defaultStudyPlanId = sample.plans.firstOrNull()?.id,
+            ),
+            onChanged = { preferences -> workspacePersistence?.updatePreferences(preferences) },
         ),
         platformPorts = platformPorts,
         linkService = linkService,
+        workspacePersistence = workspacePersistence,
     )
 }
 

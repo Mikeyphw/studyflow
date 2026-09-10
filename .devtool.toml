@@ -28,7 +28,7 @@ no_daemon = false
 daemon_idle_timeout_ms = 900000
 build_cache = true
 structured_events = false
-fail_fast = true
+fail_fast = false
 offline = false
 args = [
   "-Dorg.gradle.parallel=true",
@@ -62,6 +62,8 @@ test = [
     "verifyRel01TargetReleaseValidationRunner",
     "verifyRel02ReleaseEvidenceTriage",
     "verifyRel03Rel04ArtifactInstallRollout",
+    "verifyRel05Rel06ReleaseNotesRollback",
+    "verifyRel07Rel08FinalReleaseOpsSeal",
     "verifyOv19PromiseAudit",
     "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",
@@ -307,7 +309,7 @@ no_daemon = false
 daemon_idle_timeout_ms = 900000
 build_cache = true
 structured_events = false
-fail_fast = true
+fail_fast = false
 offline = false
 args = [
   "-Dorg.gradle.parallel=true",
@@ -322,6 +324,7 @@ build = [
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopWorkflows",
+    "verifyDesktopDov08PersistentWorkspace",
     "verifySflp01ProtocolBaseline",
     "verifySflp02Sflp03JournalReconciliation",
     "verifySflp04Sflp05IdentityTransport",
@@ -334,6 +337,7 @@ test = [
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopWorkflows",
+    "verifyDesktopDov08PersistentWorkspace",
     ":core:domain:test",
     ":core:link:test",
     ":core:model:test",
@@ -380,6 +384,7 @@ preflight = [
     "verifyStudyFlowDesktopBootstrapScreens",
     "verifyStudyFlowDesktopShellContracts",
     "verifyStudyFlowDesktopWorkflows",
+    "verifyDesktopDov08PersistentWorkspace",
 ]
 compile = [
     ":core:domain:compileKotlin",
@@ -431,7 +436,7 @@ no_daemon = false
 daemon_idle_timeout_ms = 900000
 build_cache = true
 structured_events = false
-fail_fast = true
+fail_fast = false
 offline = false
 args = [
   "-Dorg.gradle.parallel=true",

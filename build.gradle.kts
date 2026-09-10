@@ -914,6 +914,13 @@ tasks.register<Exec>("verifyStudyFlowDesktopWorkflows") {
 }
 
 
+tasks.register<Exec>("verifyDesktopDov08PersistentWorkspace") {
+    group = "verification"
+    description = "Checks DOV08 durable Desktop workspace persistence and production bootstrap wiring."
+    commandLine("python3", "scripts/verify_desktop_dov08_persistent_workspace.py")
+}
+
+
 tasks.register<Exec>("verifyCpov05Cpov06PriorityBancaQuestions") {
     group = "verification"
     description = "Checks CPOV05 explainable priority and CPOV06 banca question contracts."
@@ -988,6 +995,8 @@ tasks.register("checkAll") {
         "verifyRel01TargetReleaseValidationRunner",
         "verifyRel02ReleaseEvidenceTriage",
         "verifyRel03Rel04ArtifactInstallRollout",
+        "verifyRel05Rel06ReleaseNotesRollback",
+        "verifyRel07Rel08FinalReleaseOpsSeal",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1516,3 +1525,26 @@ tasks.register<Exec>("verifyRel03Rel04ArtifactInstallRollout") {
     dependsOn("verifyRel02ReleaseEvidenceTriage")
     commandLine("python3", "scripts/verify_rel03_04_artifact_install_rollout.py")
 }
+
+
+tasks.register<Exec>("verifyRel05Rel06ReleaseNotesRollback") {
+    group = "verification"
+    description = "Checks REL05 release-notes export and REL06 rollback package manifest generation."
+    dependsOn("verifyRel03Rel04ArtifactInstallRollout")
+    commandLine("python3", "scripts/verify_rel05_06_release_notes_rollback.py")
+}
+
+
+tasks.register<Exec>("verifyRel07Rel08FinalReleaseOpsSeal") {
+    group = "verification"
+    description = "Checks REL07 release checklist gate and REL08 final release-ops evidence seal."
+    dependsOn("verifyRel05Rel06ReleaseNotesRollback")
+    commandLine("python3", "scripts/verify_rel07_08_final_release_ops_seal.py")
+}
+
+tasks.register<Exec>("verifyRel09KotlinTestClasspathHotfix") {
+    group = "verification"
+    description = "Checks REL09 Kotlin test classpath hotfix wiring for core/link and desktopApp."
+    commandLine("python3", "scripts/verify_rel09_kotlin_test_classpath_hotfix.py")
+}
+

@@ -59,7 +59,7 @@ def ensure_no_forbidden_imports(failures: list[str]) -> None:
 
 def ensure_project_dependencies_are_still_sealed(build_text: str, failures: list[str]) -> None:
     dependencies = re.findall(r'project\("([^"]+)"\)', build_text)
-    allowed = [":core:model", ":core:domain", ":core:portability"]
+    allowed = [":core:model", ":core:domain", ":core:link", ":core:portability"]
     if dependencies != allowed:
         failures.append(f"desktopApp project dependencies must be exactly {allowed}, got {dependencies}")
     forbidden_prefixes = (
