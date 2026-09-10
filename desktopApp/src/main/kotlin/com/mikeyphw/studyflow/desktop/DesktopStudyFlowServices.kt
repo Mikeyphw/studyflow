@@ -59,12 +59,14 @@ class DesktopStudyFlowServices(
         sessionRepository = sessionRepository,
         practiceRepository = practiceRepository,
         reviewRepository = reviewRepository,
+        libraryRepository = libraryRepository,
     )
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
     val practiceExecutionController = DesktopPracticeExecutionController(this)
     val mockExamStudioController = DesktopMockExamStudioController(this)
     val reviewWorkspaceController = DesktopReviewWorkspaceController(this)
+    val libraryWorkspaceController = DesktopLibraryWorkspaceController(this, workspacePersistence?.root)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 
@@ -279,10 +281,23 @@ fun createDesktopStudyFlowServices(
             )
         },
     )
+    val libraryPersistence = workspacePersistence?.let { persistence ->
+        DesktopLibraryPersistence.open(
+            persistence.root,
+            DesktopLibrarySnapshot(sample.materials, sample.videos, sample.annexes),
+        )
+    }
+    val persistedLibrary = libraryPersistence?.current()
     val libraryRepository = InMemoryStudyLibraryRepository(
-        materials = sample.materials,
-        videos = sample.videos,
-        annexes = sample.annexes,
+        materials = persistedLibrary?.materials ?: sample.materials,
+        videos = persistedLibrary?.videos ?: sample.videos,
+        annexes = persistedLibrary?.annexes ?: sample.annexes,
+        onChanged = { materials, videos, annexes ->
+            libraryPersistence?.update(DesktopLibrarySnapshot(materials, videos, annexes))
+        },
+        onImportedFilesRemoved = { materialIds ->
+            workspacePersistence?.let { removeDesktopImportedLibraryFiles(it.root, materialIds) }
+        },
     )
     val scheduleRepository = InMemoryStudyScheduleRepository(
         strategies = persisted?.strategies ?: sample.strategies,

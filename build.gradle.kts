@@ -962,6 +962,13 @@ tasks.register<Exec>("verifyDesktopDov14ReviewsSrsErrorNotebook") {
     commandLine("python3", "scripts/verify_desktop_dov14_reviews_srs_error_notebook.py")
 }
 
+
+tasks.register<Exec>("verifyDesktopDov15LibraryFilesMaterialViewers") {
+    group = "verification"
+    description = "Checks DOV15 persistent Desktop library files and material viewer contracts."
+    commandLine("python3", "scripts/verify_desktop_dov15_library_files_material_viewers.py")
+}
+
 tasks.register("verifyDesktopDov08Dov11Batch") {
     group = "verification"
     description = "Runs the DOV08-DOV11 Desktop persistence, structure, planner, and session batch seal."

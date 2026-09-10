@@ -28,19 +28,19 @@ with this matrix, this matrix owns the current product-state description.
 
 | Capability | Android | Web | Desktop | Android TV | Web TV |
 | --- | --- | --- | --- | --- | --- |
-| Study Plan lifecycle | FULL | FULL | MISSING | HANDOFF | HANDOFF |
-| Subjects and nested topics | FULL | FULL | MISSING | READ_ONLY | READ_ONLY |
-| Schedule authoring | FULL | FULL | LIMITED | READ_ONLY | READ_ONLY |
-| Adaptive rescheduling | FULL | FULL | MISSING | HANDOFF | HANDOFF |
-| Study-session execution | FULL | FULL | MISSING | FULL | FULL |
-| Questions and practice | FULL | FULL | LIMITED | FULL | FULL |
-| Mock Exam Studio | FULL | FULL | MISSING | FULL | FULL |
-| Reviews / SRS | FULL | FULL | MISSING | LIMITED | FULL |
-| Flashcards | FULL | FULL | MISSING | LIMITED | FULL |
-| Error Notebook | FULL | FULL | MISSING | LIMITED | FULL |
+| Study Plan lifecycle | FULL | FULL | FULL | HANDOFF | HANDOFF |
+| Subjects and nested topics | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
+| Schedule authoring | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
+| Adaptive rescheduling | FULL | FULL | FULL | HANDOFF | HANDOFF |
+| Study-session execution | FULL | FULL | FULL | FULL | FULL |
+| Questions and practice | FULL | FULL | FULL | FULL | FULL |
+| Mock Exam Studio | FULL | FULL | FULL | FULL | FULL |
+| Reviews / SRS | FULL | FULL | FULL | LIMITED | FULL |
+| Flashcards | FULL | FULL | FULL | LIMITED | FULL |
+| Error Notebook | FULL | FULL | FULL | LIMITED | FULL |
 | Goals | FULL | FULL | MISSING | READ_ONLY | LIMITED |
 | Progress / analytics | FULL | FULL | LIMITED | READ_ONLY | READ_ONLY |
-| Library catalog | FULL | FULL | LIMITED | LIMITED | FULL |
+| Library catalog | FULL | FULL | FULL | LIMITED | FULL |
 | Full material viewing | FULL | FULL | LIMITED | LIMITED | FULL |
 | Writing Workspace | FULL | FULL | MISSING | HANDOFF | HANDOFF |
 | Global search | FULL | FULL | LIMITED | MISSING | FULL |
@@ -53,8 +53,9 @@ with this matrix, this matrix owns the current product-state description.
 | Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
-`LIMITED` on Desktop means the current DOV01-DOV07 preview exposes display/search/settings surfaces
-backed primarily by in-memory repositories; it is not a claim of durable workspace parity.
+Desktop DOV08-DOV15 now provide durable workspace, Plan/content, planner/session, practice/mock, review, and library
+workflows. Remaining `LIMITED`/`MISSING` rows are intentional roadmap gaps through DOV24 rather than a blanket
+preview/in-memory qualifier.
 
 ## Current connectivity truth
 

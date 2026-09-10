@@ -40,11 +40,7 @@ fun StudyFlowDesktopApp(
                         )
 
                         DesktopRoute.PLAN -> DesktopPlanContentScreen(appState)
-                        DesktopRoute.LIBRARY -> DesktopLibraryScreen(
-                            state = appState.libraryState(),
-                            selectedMaterialId = appState.selectedMaterialId,
-                            onMaterialSelected = appState::selectMaterial,
-                        )
+                        DesktopRoute.LIBRARY -> DesktopLibraryScreen(appState)
 
                         DesktopRoute.PLANNER -> DesktopPlannerScreen(appState)
                         DesktopRoute.PRACTICE -> DesktopPracticeScreen(appState)

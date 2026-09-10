@@ -331,6 +331,7 @@ build = [
     "verifyDesktopDov12QuestionPracticeExecution",
     "verifyDesktopDov13MockExamStudio",
     "verifyDesktopDov14ReviewsSrsErrorNotebook",
+    "verifyDesktopDov15LibraryFilesMaterialViewers",
     "verifySflp01ProtocolBaseline",
     "verifySflp02Sflp03JournalReconciliation",
     "verifySflp04Sflp05IdentityTransport",
@@ -350,6 +351,7 @@ test = [
     "verifyDesktopDov12QuestionPracticeExecution",
     "verifyDesktopDov13MockExamStudio",
     "verifyDesktopDov14ReviewsSrsErrorNotebook",
+    "verifyDesktopDov15LibraryFilesMaterialViewers",
     ":core:domain:test",
     ":core:link:test",
     ":core:model:test",
@@ -403,6 +405,7 @@ preflight = [
     "verifyDesktopDov12QuestionPracticeExecution",
     "verifyDesktopDov13MockExamStudio",
     "verifyDesktopDov14ReviewsSrsErrorNotebook",
+    "verifyDesktopDov15LibraryFilesMaterialViewers",
 ]
 compile = [
     ":core:domain:compileKotlin",

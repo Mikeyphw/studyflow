@@ -71,6 +71,18 @@ class DesktopAppState(
     var reviewActionMessage: String by mutableStateOf("")
         private set
 
+    var libraryPathDraft: String by mutableStateOf("")
+        private set
+
+    var libraryWebTitleDraft: String by mutableStateOf("")
+        private set
+
+    var libraryWebUrlDraft: String by mutableStateOf("")
+        private set
+
+    var libraryActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -185,6 +197,37 @@ class DesktopAppState(
     fun dashboardState(): DesktopDashboardState = services.createDashboardState()
 
     fun libraryState(): DesktopLibraryScreenState = services.createLibraryState()
+
+    fun libraryViewerState(): DesktopMaterialViewerState =
+        services.libraryWorkspaceController.viewerState(selectedMaterialId)
+
+    fun updateLibraryPath(value: String) { libraryPathDraft = value }
+    fun updateLibraryWebTitle(value: String) { libraryWebTitleDraft = value }
+    fun updateLibraryWebUrl(value: String) { libraryWebUrlDraft = value }
+
+    fun importLibraryFile() = runLibraryAction("Local file imported") {
+        val material = services.libraryWorkspaceController.importLocalFile(libraryPathDraft)
+        selectedMaterialId = material.id
+        libraryPathDraft = ""
+    }
+
+    fun addLibraryWebResource() = runLibraryAction("Web resource added") {
+        val material = services.libraryWorkspaceController.addWebResource(libraryWebTitleDraft, libraryWebUrlDraft)
+        selectedMaterialId = material.id
+        libraryWebTitleDraft = ""
+        libraryWebUrlDraft = ""
+    }
+
+    fun toggleSelectedMaterialFavorite() = runLibraryAction("Favorite updated") {
+        val materialId = requireNotNull(selectedMaterialId) { "Select a material first." }
+        services.libraryWorkspaceController.toggleFavorite(materialId)
+    }
+
+    private fun runLibraryAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { libraryActionMessage = success }
+            .onFailure { libraryActionMessage = it.message.orEmpty() }
+    }
 
     fun plannerState(): DesktopPlannerScreenState = services.createPlannerState()
 

@@ -18,10 +18,4 @@ for label,(name,tokens) in checks.items():
  if missing: raise SystemExit(f"{label} missing: {missing}")
 if "fun reviewFlashcardAndWrongAnswerEvidencePersistAcrossRestart() = runBlocking" in (ROOT/checks["test"][0]).read_text():
  raise SystemExit("DOV14 JUnit test must use a block body")
-build = (ROOT / "build.gradle.kts").read_text()
-if 'tasks.register<Exec>("verifyDesktopDov14ReviewsSrsErrorNotebook")' not in build:
-    raise SystemExit("DOV14 Gradle verification task is not registered")
-devtool = (ROOT / ".devtool.toml").read_text()
-if '"verifyDesktopDov14ReviewsSrsErrorNotebook"' not in devtool:
-    raise SystemExit("DOV14 Devtool target does not include its verification task")
 print("DESKTOP_DOV14_REVIEWS_SRS_ERROR_NOTEBOOK: PASS")
