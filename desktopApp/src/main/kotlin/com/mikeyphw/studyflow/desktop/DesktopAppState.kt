@@ -62,6 +62,15 @@ class DesktopAppState(
     var mockExamActionMessage: String by mutableStateOf("")
         private set
 
+    var flashcardFrontDraft: String by mutableStateOf("")
+        private set
+
+    var flashcardBackDraft: String by mutableStateOf("")
+        private set
+
+    var reviewActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -300,6 +309,37 @@ class DesktopAppState(
             .onFailure { mockExamActionMessage = it.message.orEmpty() }
     }
 
+    fun reviewWorkspaceState(): DesktopReviewWorkspaceState = services.reviewWorkspaceController.state()
+
+    fun updateFlashcardFront(value: String) { flashcardFrontDraft = value }
+    fun updateFlashcardBack(value: String) { flashcardBackDraft = value }
+
+    fun createFlashcard() = runReviewAction("Flashcard created") {
+        services.reviewWorkspaceController.createFlashcard(flashcardFrontDraft, flashcardBackDraft)
+        flashcardFrontDraft = ""
+        flashcardBackDraft = ""
+    }
+
+    fun gradeFirstReview() = runReviewAction("Review graded") { services.reviewWorkspaceController.gradeFirstDue(4) }
+    fun skipFirstReview() = runReviewAction("Review skipped") { services.reviewWorkspaceController.skipFirstDue() }
+    fun suspendFirstFlashcard() = runReviewAction("Flashcard suspended") {
+        services.reviewWorkspaceController.suspendFirstFlashcard()
+    }
+    fun reclassifyNotebookError() = runReviewAction("Error reclassified") {
+        services.reviewWorkspaceController.reclassifyFirstError(
+            com.mikeyphw.studyflow.core.model.ErrorCategory.CONCEPT_CONFUSION,
+        )
+    }
+    fun resolveNotebookError() = runReviewAction("Error resolved") {
+        services.reviewWorkspaceController.resolveFirstError()
+    }
+
+    private fun runReviewAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { reviewActionMessage = success }
+            .onFailure { reviewActionMessage = it.message.orEmpty() }
+    }
+
     fun analyticsState(): DesktopAnalyticsScreenState = services.createAnalyticsState()
 
     fun searchState(): DesktopSearchScreenState = services.createSearchState(searchQuery)
@@ -383,6 +423,7 @@ enum class DesktopRoute(val title: String) {
     LIBRARY("Library"),
     PLANNER("Planner"),
     PRACTICE("Practice"),
+    REVIEWS("Reviews"),
     ANALYTICS("Analytics"),
     SEARCH("Search"),
     SETTINGS("Settings"),

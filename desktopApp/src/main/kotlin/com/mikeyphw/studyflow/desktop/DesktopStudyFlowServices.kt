@@ -9,6 +9,7 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
+import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.PracticeAnalytics
 import com.mikeyphw.studyflow.core.domain.StudyLibrarySnapshot
@@ -27,6 +28,7 @@ class DesktopStudyFlowServices(
     val scheduleRepository: InMemoryStudyScheduleRepository,
     val sessionRepository: InMemoryStudySessionRepository,
     val practiceRepository: InMemoryStudyPracticeRepository,
+    val reviewRepository: InMemoryStudyReviewRepository = InMemoryStudyReviewRepository(),
     val analyticsRepository: InMemoryStudyAnalyticsRepository,
     val discoveryRepository: DesktopStudyDiscoveryRepository,
     val preferencesStore: DesktopPreferencesStore,
@@ -40,6 +42,11 @@ class DesktopStudyFlowServices(
     val manageStudySchedule: ManageStudySchedule = ManageStudySchedule(scheduleRepository)
     val manageStudySession: ManageStudySession = ManageStudySession(sessionRepository, planRepository)
     val manageStudyPractice: ManageStudyPractice = ManageStudyPractice(practiceRepository, planRepository)
+    val manageStudyReview: ManageStudyReview = ManageStudyReview(
+        reviewRepository,
+        practiceRepository,
+        studyPlanRepository = planRepository,
+    )
     val manageStudyAnalytics: ManageStudyAnalytics = ManageStudyAnalytics(analyticsRepository)
     val manageStudyDiscovery: ManageStudyDiscovery = ManageStudyDiscovery(discoveryRepository)
     val planContentController = DesktopPlanContentController(
@@ -51,11 +58,13 @@ class DesktopStudyFlowServices(
         scheduleRepository = scheduleRepository,
         sessionRepository = sessionRepository,
         practiceRepository = practiceRepository,
+        reviewRepository = reviewRepository,
     )
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
     val practiceExecutionController = DesktopPracticeExecutionController(this)
     val mockExamStudioController = DesktopMockExamStudioController(this)
+    val reviewWorkspaceController = DesktopReviewWorkspaceController(this)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 
@@ -92,6 +101,7 @@ class DesktopStudyFlowServices(
                 "ManageStudySchedule",
                 "ManageStudySession",
                 "ManageStudyPractice",
+                "ManageStudyReview",
                 "ManageStudyAnalytics",
                 "ManageStudyDiscovery",
             ),
@@ -302,6 +312,17 @@ fun createDesktopStudyFlowServices(
             practicePersistence?.update(DesktopPracticeSnapshot(questions, tests, mockExams))
         },
     )
+    val reviewPersistence = workspacePersistence?.let { DesktopReviewPersistence.open(it.root) }
+    val persistedReview = reviewPersistence?.current()
+    val reviewRepository = InMemoryStudyReviewRepository(
+        reviews = persistedReview?.reviews.orEmpty(),
+        flashcards = persistedReview?.flashcards.orEmpty(),
+        errors = persistedReview?.errors.orEmpty(),
+        onChanged = { reviews, flashcards, errors ->
+            reviewPersistence?.update(DesktopReviewSnapshot(reviews, flashcards, errors))
+        },
+    )
+
     val analyticsRepository = InMemoryStudyAnalyticsRepository(
         plans = planRepository,
         library = libraryRepository,
@@ -316,13 +337,14 @@ fun createDesktopStudyFlowServices(
         practice = practiceRepository,
         analytics = analyticsRepository,
     )
-    return DesktopStudyFlowServices(
+    val services = DesktopStudyFlowServices(
         planRepository = planRepository,
         contentRepository = contentRepository,
         libraryRepository = libraryRepository,
         scheduleRepository = scheduleRepository,
         sessionRepository = sessionRepository,
         practiceRepository = practiceRepository,
+        reviewRepository = reviewRepository,
         analyticsRepository = analyticsRepository,
         discoveryRepository = discoveryRepository,
         preferencesStore = DesktopPreferencesStore(
@@ -336,6 +358,16 @@ fun createDesktopStudyFlowServices(
         linkService = linkService,
         workspacePersistence = workspacePersistence,
     )
+    practiceRepository.attachWrongAnswerSink { wrongAnswers ->
+        wrongAnswers.forEach { capture ->
+            services.manageStudyReview.recordWrongAnswer(
+                capture.question,
+                capture.category,
+                capture.chosenAnswer,
+            )
+        }
+    }
+    return services
 }
 
 fun InMemoryStudyLibraryRepository.currentSnapshot(planId: StudyPlanId): StudyLibrarySnapshot = StudyLibrarySnapshot(
