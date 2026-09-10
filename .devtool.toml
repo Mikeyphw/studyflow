@@ -60,6 +60,7 @@ test = [
     "verifySflp22Sflp23AccountBackupValidation",
     "verifySflp24FinalReleaseSeal",
     "verifyRel01TargetReleaseValidationRunner",
+    "verifyRel02ReleaseEvidenceTriage",
     "verifyOv19PromiseAudit",
     "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",

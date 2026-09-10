@@ -106,3 +106,12 @@ environment, missing adb, missing connected-device evidence, missing restore/res
 manual observations without non-empty evidence stay `BLOCKED` or `PENDING_TARGET_EXECUTION`.
 Only `verifyFinalReleaseVerdict` may produce `releaseReady=true`.
 
+## REL02 evidence report bundle
+
+After REL01 has produced target-machine and target-device evidence, run:
+
+```bash
+python3 scripts/export_release_evidence_report.py --mode all
+```
+
+The exporter writes `release-evidence-summary.json`, `release-failure-triage.json`, `release-evidence-report.md`, and `studyflow-release-evidence-bundle.zip` under `build/reports/studyflow/release-evidence-export`. The bundle is report-only unless `--fail-when-blocked` is passed, and it redacts credential-looking keys before adding JSON reports.

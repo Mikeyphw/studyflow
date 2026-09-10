@@ -986,6 +986,7 @@ tasks.register("checkAll") {
         "verifySflp22Sflp23AccountBackupValidation",
         "verifySflp24FinalReleaseSeal",
         "verifyRel01TargetReleaseValidationRunner",
+        "verifyRel02ReleaseEvidenceTriage",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1500,4 +1501,9 @@ tasks.register<Exec>("verifyRel01TargetReleaseValidationRunner") {
     commandLine("python3", "scripts/verify_rel01_target_release_validation_runner.py")
 }
 
-
+tasks.register<Exec>("verifyRel02ReleaseEvidenceTriage") {
+    group = "verification"
+    description = "Checks the REL02 release evidence exporter and failure triage bundle."
+    dependsOn("verifyRel01TargetReleaseValidationRunner")
+    commandLine("python3", "scripts/verify_rel02_release_evidence_triage.py")
+}

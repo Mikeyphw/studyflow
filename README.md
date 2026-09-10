@@ -516,3 +516,7 @@ without moving plaintext secrets through the mesh. The final release gate is con
 SFLP24 closes the cross-platform SFLP lane with `verifySflp24FinalReleaseSeal`. The task depends on
 SFLP22/SFLP23 plus the core, Android, Android TV, and Desktop test lanes, and the final protocol
 golden vector is shared between `protocol/sflp/v1/golden` and `:core:link` test resources.
+
+## REL02 release evidence exporter
+
+REL02 adds `scripts/export_release_evidence_report.py`, a post-SFLP release evidence exporter and failure triage bundle generator. It consumes the REL01 evidence directory, writes `release-evidence-summary.json`, `release-failure-triage.json`, `release-evidence-report.md`, and `studyflow-release-evidence-bundle.zip`, and remains fail-closed when evidence is `PENDING_TARGET_EXECUTION` or `BLOCKED`.

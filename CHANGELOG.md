@@ -646,3 +646,9 @@ copy.
 - Added the SFLP24 final release seal model, protocol schema, golden vector, and core tests.
 - Added `verifySflp24FinalReleaseSeal` and restored the complete SFLP01-SFLP23 chain into `checkAll`.
 - Updated Devtool test-lane defaults so the final run names the SFLP verifier chain once and in order.
+
+# REL02 - release evidence exporter and triage bundle
+
+- Added the REL02 post-SFLP release evidence exporter.
+- Added redacted summary JSON, markdown report, triage JSON, and zipped evidence bundle generation.
+- Preserved fail-closed release semantics so missing, pending, failed or blocked evidence cannot become release-ready.

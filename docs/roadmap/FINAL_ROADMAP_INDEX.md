@@ -68,3 +68,6 @@ Post-SFLP release operation track:
   and explicit manual device-evidence collection. This is not Phase 65 and does not extend SFLP beyond
   SFLP24.
 
+## REL02 release evidence exporter
+
+REL02 follows REL01 with a final evidence report exporter and failure triage bundle. It does not add product scope; it organizes the evidence required to decide whether the existing release gates are pass, pending, or blocked.

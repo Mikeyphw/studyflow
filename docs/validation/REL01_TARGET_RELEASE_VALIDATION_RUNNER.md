@@ -32,3 +32,7 @@ devtool --yes --copy -r ~/Code/studyflow --target studyflow_android \
 ```
 
 The static verifier is `verifyRel01TargetReleaseValidationRunner`.
+
+## REL02 handoff
+
+REL01 produces or requests the target-machine evidence. REL02 consumes that evidence and exports `REL02_RELEASE_EVIDENCE_EXPORT` outputs: a summary JSON, a triage JSON, a markdown report, and a shareable evidence bundle.

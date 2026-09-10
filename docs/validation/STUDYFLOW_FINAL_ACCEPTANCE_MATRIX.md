@@ -22,3 +22,10 @@ signed-artifact, connected-suite, restore/restart, manual-device, and `verifyFin
 evidence chain. The matrix remains fail-closed: the runner may report `PENDING_TARGET_EXECUTION` or
 `BLOCKED`, but it must not replace target evidence with a synthetic PASS.
 
+## REL02 evidence triage
+
+| Gate | Evidence | Fail-closed behavior |
+| --- | --- | --- |
+| REL02 evidence summary | `release-evidence-summary.json` | Missing reports stay `PENDING_TARGET_EXECUTION` or `BLOCKED`. |
+| REL02 triage | `release-failure-triage.json` | Every missing, pending, failed, or blocked report becomes a prioritized finding. |
+| REL02 bundle | `studyflow-release-evidence-bundle.zip` | JSON evidence is redacted before export. |
