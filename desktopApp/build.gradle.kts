@@ -45,3 +45,11 @@ tasks.register<Exec>("verifyDesktopDov12QuestionPracticeExecution") {
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_desktop_dov12_question_practice_execution.py")
 }
+
+
+tasks.register<Exec>("verifyDesktopDov13MockExamStudio") {
+    group = "verification"
+    description = "Verify Desktop DOV13 persistent Mock Exam Studio"
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_desktop_dov13_mock_exam_studio.py")
+}

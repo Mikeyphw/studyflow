@@ -948,6 +948,13 @@ tasks.register<Exec>("verifyDesktopDov12QuestionPracticeExecution") {
     commandLine("python3", "scripts/verify_desktop_dov12_question_practice_execution.py")
 }
 
+
+tasks.register<Exec>("verifyDesktopDov13MockExamStudio") {
+    group = "verification"
+    description = "Checks DOV13 restart-safe Desktop Mock Exam Studio contracts."
+    commandLine("python3", "scripts/verify_desktop_dov13_mock_exam_studio.py")
+}
+
 tasks.register("verifyDesktopDov08Dov11Batch") {
     group = "verification"
     description = "Runs the DOV08-DOV11 Desktop persistence, structure, planner, and session batch seal."

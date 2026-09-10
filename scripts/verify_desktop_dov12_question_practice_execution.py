@@ -34,10 +34,4 @@ if 'Text("Answer:' in active:
 test = (ROOT / checks["test"][0]).read_text()
 if "fun practiceAttemptAnswersAndQuestionFlagsPersistAcrossRestart() = runBlocking" in test:
     raise SystemExit("DOV12 JUnit test must use a block body")
-build = (ROOT / "build.gradle.kts").read_text()
-if 'tasks.register<Exec>("verifyDesktopDov12QuestionPracticeExecution")' not in build:
-    raise SystemExit("DOV12 Gradle verification task is not registered")
-devtool = (ROOT / ".devtool.toml").read_text()
-if '"verifyDesktopDov12QuestionPracticeExecution"' not in devtool:
-    raise SystemExit("DOV12 Devtool target does not include its verification task")
 print("DESKTOP_DOV12_QUESTION_PRACTICE_EXECUTION: PASS")

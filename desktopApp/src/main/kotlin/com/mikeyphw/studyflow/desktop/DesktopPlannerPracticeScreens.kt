@@ -223,6 +223,51 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
             if (appState.practiceActionMessage.isNotBlank()) Text(appState.practiceActionMessage)
         }
 
+        val mockStudio = appState.mockExamStudioState()
+        DesktopSectionCard(title = "Mock Exam Studio") {
+            Text(
+                "Preview: ${mockStudio.preview.questionCount}/" +
+                    "${mockStudio.preview.requestedQuestionCount} questions • " +
+                    "${mockStudio.preview.timeLimitMinutes} min",
+            )
+            if (mockStudio.activeExam == null) {
+                androidx.compose.material.Button(
+                    onClick = appState::createMockExam,
+                    enabled = mockStudio.canCreate,
+                ) { Text("Create mock exam") }
+            } else {
+                Text(mockStudio.activeExam.title, fontWeight = FontWeight.Bold)
+                Text("${mockStudio.execution?.answeredCount ?: 0}/${mockStudio.activeExam.questionCount} answered")
+                if (mockStudio.canStart) {
+                    androidx.compose.material.Button(onClick = appState::startMockExam) { Text("Start mock") }
+                }
+                val mockQuestion = mockStudio.currentQuestion
+                if (mockQuestion != null && mockStudio.canAnswer) {
+                    Text(mockQuestion.statement, fontWeight = FontWeight.Bold)
+                    mockQuestion.options.forEach { option -> Text("• $option") }
+                    androidx.compose.material.OutlinedTextField(
+                        value = appState.mockExamAnswerDraft,
+                        onValueChange = appState::updateMockExamAnswer,
+                        label = { Text("Mock Exam answer") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    androidx.compose.material.Button(onClick = appState::answerMockExamQuestion) {
+                        Text("Save mock answer")
+                    }
+                    mockQuestion.explanation?.let { Text("Explanation: $it") }
+                }
+                if (mockStudio.canFinish) {
+                    androidx.compose.material.OutlinedButton(onClick = appState::finishMockExam) {
+                        Text("Submit mock exam")
+                    }
+                }
+            }
+            mockStudio.recentExams.firstOrNull()?.let { latest ->
+                Text("Latest: ${latest.title} • ${latest.scorePercent?.let { "${it.toInt()}%" } ?: "in progress"}")
+            }
+            if (appState.mockExamActionMessage.isNotBlank()) Text(appState.mockExamActionMessage)
+        }
+
         DesktopSectionCard(title = "Generated deck") {
             DesktopScrollableList(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.34f)) {
                 items(state.deck) { question ->

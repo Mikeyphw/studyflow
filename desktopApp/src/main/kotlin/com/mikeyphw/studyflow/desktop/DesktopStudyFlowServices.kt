@@ -55,6 +55,7 @@ class DesktopStudyFlowServices(
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
     val practiceExecutionController = DesktopPracticeExecutionController(this)
+    val mockExamStudioController = DesktopMockExamStudioController(this)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 

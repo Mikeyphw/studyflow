@@ -56,6 +56,12 @@ class DesktopAppState(
     var practiceActionMessage: String by mutableStateOf("")
         private set
 
+    var mockExamAnswerDraft: String by mutableStateOf("")
+        private set
+
+    var mockExamActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -269,6 +275,29 @@ class DesktopAppState(
         runCatching { runBlocking { action() } }
             .onSuccess { practiceActionMessage = success }
             .onFailure { practiceActionMessage = it.message.orEmpty() }
+    }
+
+    fun mockExamStudioState(): DesktopMockExamStudioState = services.mockExamStudioController.state()
+
+    fun updateMockExamAnswer(value: String) {
+        mockExamAnswerDraft = value
+    }
+
+    fun createMockExam() = runMockExamAction("Mock Exam created") { services.mockExamStudioController.create() }
+
+    fun startMockExam() = runMockExamAction("Mock Exam started") { services.mockExamStudioController.start() }
+
+    fun answerMockExamQuestion() = runMockExamAction("Mock Exam answer saved") {
+        services.mockExamStudioController.answerCurrent(mockExamAnswerDraft, elapsedSeconds = 0L)
+        mockExamAnswerDraft = ""
+    }
+
+    fun finishMockExam() = runMockExamAction("Mock Exam submitted") { services.mockExamStudioController.finish() }
+
+    private fun runMockExamAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { mockExamActionMessage = success }
+            .onFailure { mockExamActionMessage = it.message.orEmpty() }
     }
 
     fun analyticsState(): DesktopAnalyticsScreenState = services.createAnalyticsState()
