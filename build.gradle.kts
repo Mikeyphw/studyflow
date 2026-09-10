@@ -985,6 +985,7 @@ tasks.register("checkAll") {
         "verifySflp20Sflp21ShareImportConflict",
         "verifySflp22Sflp23AccountBackupValidation",
         "verifySflp24FinalReleaseSeal",
+        "verifyRel01TargetReleaseValidationRunner",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1492,4 +1493,11 @@ tasks.register<Exec>("verifySflp24FinalReleaseSeal") {
     )
     commandLine("python3", "scripts/verify_sflp24_final_release_seal.py")
 }
+
+tasks.register<Exec>("verifyRel01TargetReleaseValidationRunner") {
+    group = "verification"
+    description = "Checks the post-SFLP target-machine release validation runner and evidence plan."
+    commandLine("python3", "scripts/verify_rel01_target_release_validation_runner.py")
+}
+
 

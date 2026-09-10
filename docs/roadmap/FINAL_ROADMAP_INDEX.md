@@ -60,3 +60,11 @@ Fresh installs still remain sync-off by default.
 For current cross-platform scope, use `docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md`; this index is
 historical roadmap sequencing. The final target-machine validation and evidence pass remains required
 before product sealing.
+
+
+Post-SFLP release operation track:
+
+- REL01: target-machine release validation runner for signed APK/AAB, connected Android, restore/restart,
+  and explicit manual device-evidence collection. This is not Phase 65 and does not extend SFLP beyond
+  SFLP24.
+

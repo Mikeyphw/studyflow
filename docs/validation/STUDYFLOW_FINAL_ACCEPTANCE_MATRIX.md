@@ -16,3 +16,9 @@ This matrix maps the completed roadmap to the new source-level final acceptance 
 PENDING TARGET EXECUTION: this file is a source acceptance matrix, not device evidence. Devtool must still run the final automated signed-artifact/connected-device gate and the manual device evidence pass before any release claim.
 
 R2 audit closure: the final verifier explicitly covers adaptive reschedule wiring, reminder degraded-state dimensions, and duplicate resource names.
+
+REL01 adds `scripts/run_target_release_validation.py` as an operational wrapper around the existing
+signed-artifact, connected-suite, restore/restart, manual-device, and `verifyFinalReleaseVerdict`
+evidence chain. The matrix remains fail-closed: the runner may report `PENDING_TARGET_EXECUTION` or
+`BLOCKED`, but it must not replace target evidence with a synthetic PASS.
+

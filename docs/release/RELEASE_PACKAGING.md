@@ -86,3 +86,23 @@ Use `scripts/run_final_release_acceptance.sh` for the authoritative automated ru
 restore/restart journey evidence. Device acceptance derives that same session from generated evidence.
 `verifyFinalReleaseVerdict` rejects mixed sessions, missing gates, unsigned/unverified artifacts,
 incomplete or evidence-free device checks, and APK/AAB bytes that differ from their recorded hashes.
+
+
+## REL01 target-machine runner
+
+After SFLP24 is applied, use the REL01 runner on the target Android build machine to prepare and run
+the existing fail-closed final evidence chain:
+
+```bash
+python3 scripts/run_target_release_validation.py --mode plan
+python3 scripts/run_target_release_validation.py --mode automated
+python3 scripts/run_target_release_validation.py --mode device-template
+python3 scripts/run_target_release_validation.py --mode verdict
+```
+
+The runner writes `target-release-validation-plan.json`, an optional manual device command template,
+and `target-release-validation-summary.json` under `build/reports/studyflow/`. Missing signing
+environment, missing adb, missing connected-device evidence, missing restore/restart evidence, or
+manual observations without non-empty evidence stay `BLOCKED` or `PENDING_TARGET_EXECUTION`.
+Only `verifyFinalReleaseVerdict` may produce `releaseReady=true`.
+

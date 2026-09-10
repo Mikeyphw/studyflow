@@ -1,5 +1,12 @@
 # StudyFlow Android
 
+## Current status: SFLP24 sealed; REL01 target release validation runner added
+
+SFLP24 completed the cross-platform StudyFlow Link Protocol source seal. REL01 adds the target-machine
+release validation runner that turns the existing signed APK/AAB, connected Android, restore/restart,
+and manual device-evidence gates into one fail-closed operational workflow. REL01 is not Phase 65 and
+it does not claim release readiness without real target evidence.
+
 ## Current status: OV20 public-exam promise audit and integrated validation seal implemented
 
 The post-CPOV specialization is complete through OV20: the BB pre-edital preset, Redação workspace,

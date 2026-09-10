@@ -1,3 +1,12 @@
+# REL01 — Target release validation runner
+
+- Added a post-SFLP target-machine release validation runner for the existing signed APK/AAB,
+  connected Android, restore/restart, and manual device-evidence gates.
+- The runner writes plan/summary artifacts with BLOCKED or PENDING status for missing evidence; it
+  never synthesizes a passing release verdict.
+- Added a static verifier, Gradle task, docs, and Devtool test-lane wiring without creating a Phase 65
+  or extending the SFLP protocol past SFLP24.
+
 # SFLP08 + SFLP09 — Android and Desktop generic peer integration
 
 - Bound Android to the generic SFLP peer runtime with private persistent identity/trust/journal/queue/endpoints,

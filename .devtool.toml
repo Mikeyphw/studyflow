@@ -59,6 +59,7 @@ test = [
     "verifySflp20Sflp21ShareImportConflict",
     "verifySflp22Sflp23AccountBackupValidation",
     "verifySflp24FinalReleaseSeal",
+    "verifyRel01TargetReleaseValidationRunner",
     "verifyOv19PromiseAudit",
     "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",
