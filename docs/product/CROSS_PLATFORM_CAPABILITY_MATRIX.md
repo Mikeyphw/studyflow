@@ -42,7 +42,7 @@ with this matrix, this matrix owns the current product-state description.
 | Progress / analytics | FULL | FULL | LIMITED | READ_ONLY | READ_ONLY |
 | Library catalog | FULL | FULL | FULL | LIMITED | FULL |
 | Full material viewing | FULL | FULL | LIMITED | LIMITED | FULL |
-| Writing Workspace | FULL | FULL | MISSING | HANDOFF | HANDOFF |
+| Writing Workspace | FULL | FULL | FULL | HANDOFF | HANDOFF |
 | Global search | FULL | FULL | LIMITED | MISSING | FULL |
 | Concurso Público workflows | FULL | FULL | MISSING | LIMITED | LIMITED |
 | Programming / language content modes | FULL | FULL | MISSING | LIMITED | LIMITED |
@@ -53,8 +53,8 @@ with this matrix, this matrix owns the current product-state description.
 | Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
-Desktop DOV08-DOV15 now provide durable workspace, Plan/content, planner/session, practice/mock, review, and library
-workflows. Remaining `LIMITED`/`MISSING` rows are intentional roadmap gaps through DOV24 rather than a blanket
+Desktop DOV08-DOV16 now provide durable workspace, Plan/content, planner/session, practice/mock, review, library,
+and Writing Workspace workflows. Remaining `LIMITED`/`MISSING` rows are intentional roadmap gaps through DOV24 rather than a blanket
 preview/in-memory qualifier.
 
 ## Current connectivity truth

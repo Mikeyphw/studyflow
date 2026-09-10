@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.mikeyphw.studyflow.core.link.StudyFlowDeviceId
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
+import com.mikeyphw.studyflow.core.domain.WritingCompletionChecklist
+import com.mikeyphw.studyflow.core.domain.WritingRubric
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.SubjectId
@@ -81,6 +83,35 @@ class DesktopAppState(
         private set
 
     var libraryActionMessage: String by mutableStateOf("")
+        private set
+
+    var writingPromptDraft: String by mutableStateOf("")
+        private set
+
+    var writingTextDraft: String by mutableStateOf("")
+        private set
+
+    var writingThemeScore: String by mutableStateOf("0")
+        private set
+    var writingTextTypeScore: String by mutableStateOf("0")
+        private set
+    var writingCohesionScore: String by mutableStateOf("0")
+        private set
+    var writingArgumentationScore: String by mutableStateOf("0")
+        private set
+    var writingLanguageScore: String by mutableStateOf("0")
+        private set
+
+    var writingTaskReviewed: Boolean by mutableStateOf(false)
+        private set
+    var writingStructureReviewed: Boolean by mutableStateOf(false)
+        private set
+    var writingCohesionReviewed: Boolean by mutableStateOf(false)
+        private set
+    var writingLanguageReviewed: Boolean by mutableStateOf(false)
+        private set
+
+    var writingActionMessage: String by mutableStateOf("")
         private set
 
     var linkQrInput: String by mutableStateOf("")
@@ -227,6 +258,78 @@ class DesktopAppState(
         runCatching { runBlocking { action() } }
             .onSuccess { libraryActionMessage = success }
             .onFailure { libraryActionMessage = it.message.orEmpty() }
+    }
+
+    fun writingWorkspaceState(): DesktopWritingWorkspaceState = runBlocking {
+        services.writingWorkspaceController.state().also { state ->
+            state.record?.let { record ->
+                if (writingPromptDraft.isBlank()) writingPromptDraft = record.prompt
+                if (writingTextDraft.isBlank()) writingTextDraft = record.draftText
+            }
+        }
+    }
+
+    fun updateWritingPrompt(value: String) { writingPromptDraft = value }
+    fun updateWritingDraft(value: String) { writingTextDraft = value }
+    fun updateWritingThemeScore(value: String) { writingThemeScore = value.filter(Char::isDigit).take(2) }
+    fun updateWritingTextTypeScore(value: String) { writingTextTypeScore = value.filter(Char::isDigit).take(2) }
+    fun updateWritingCohesionScore(value: String) { writingCohesionScore = value.filter(Char::isDigit).take(2) }
+    fun updateWritingArgumentationScore(value: String) {
+        writingArgumentationScore = value.filter(Char::isDigit).take(2)
+    }
+    fun updateWritingLanguageScore(value: String) { writingLanguageScore = value.filter(Char::isDigit).take(2) }
+    fun toggleWritingTaskReviewed() { writingTaskReviewed = !writingTaskReviewed }
+    fun toggleWritingStructureReviewed() { writingStructureReviewed = !writingStructureReviewed }
+    fun toggleWritingCohesionReviewed() { writingCohesionReviewed = !writingCohesionReviewed }
+    fun toggleWritingLanguageReviewed() { writingLanguageReviewed = !writingLanguageReviewed }
+
+    fun writingRubricTotal(): Int = listOf(
+        writingThemeScore,
+        writingTextTypeScore,
+        writingCohesionScore,
+        writingArgumentationScore,
+        writingLanguageScore,
+    ).sumOf { it.toIntOrNull()?.coerceIn(0, 20) ?: 0 }
+
+    fun startWritingSession() = runWritingAction("Writing Session started") {
+        services.writingWorkspaceController.start(writingPromptDraft)
+    }
+
+    fun saveWritingDraft() = runWritingAction("Writing draft saved") {
+        services.writingWorkspaceController.saveDraft(writingPromptDraft, writingTextDraft)
+    }
+
+    fun completeWritingSession() = runWritingAction("Writing Session completed") {
+        services.writingWorkspaceController.complete(
+            prompt = writingPromptDraft,
+            draftText = writingTextDraft,
+            rubric = WritingRubric(
+                score(writingThemeScore),
+                score(writingTextTypeScore),
+                score(writingCohesionScore),
+                score(writingArgumentationScore),
+                score(writingLanguageScore),
+            ),
+            checklist = WritingCompletionChecklist(
+                taskReviewed = writingTaskReviewed,
+                structureReviewed = writingStructureReviewed,
+                cohesionReviewed = writingCohesionReviewed,
+                languageReviewed = writingLanguageReviewed,
+            ),
+        )
+        writingTextDraft = ""
+        writingTaskReviewed = false
+        writingStructureReviewed = false
+        writingCohesionReviewed = false
+        writingLanguageReviewed = false
+    }
+
+    private fun score(raw: String): Int = raw.toIntOrNull()?.coerceIn(0, 20) ?: 0
+
+    private fun runWritingAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { writingActionMessage = success }
+            .onFailure { writingActionMessage = it.message.orEmpty() }
     }
 
     fun plannerState(): DesktopPlannerScreenState = services.createPlannerState()
@@ -467,6 +570,7 @@ enum class DesktopRoute(val title: String) {
     PLANNER("Planner"),
     PRACTICE("Practice"),
     REVIEWS("Reviews"),
+    WRITING("Writing"),
     ANALYTICS("Analytics"),
     SEARCH("Search"),
     SETTINGS("Settings"),

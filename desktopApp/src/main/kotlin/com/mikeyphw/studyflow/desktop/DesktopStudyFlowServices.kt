@@ -67,6 +67,7 @@ class DesktopStudyFlowServices(
     val mockExamStudioController = DesktopMockExamStudioController(this)
     val reviewWorkspaceController = DesktopReviewWorkspaceController(this)
     val libraryWorkspaceController = DesktopLibraryWorkspaceController(this, workspacePersistence?.root)
+    val writingWorkspaceController = DesktopWritingWorkspaceController(this)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 

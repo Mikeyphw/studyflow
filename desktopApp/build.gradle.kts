@@ -70,6 +70,14 @@ tasks.register<Exec>("verifyDesktopDov15LibraryFilesMaterialViewers") {
     commandLine("python3", "scripts/verify_desktop_dov15_library_files_material_viewers.py")
 }
 
+tasks.register<Exec>("verifyDesktopDov16WritingWorkspace") {
+    group = "verification"
+    description = "Verify Desktop DOV16 Writing Workspace"
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_desktop_dov16_writing_workspace.py")
+}
+
+
 tasks.register("verifyDesktopDov12Dov15Batch") {
     group = "verification"
     description = "Verify Desktop DOV12-DOV15 product batch"
