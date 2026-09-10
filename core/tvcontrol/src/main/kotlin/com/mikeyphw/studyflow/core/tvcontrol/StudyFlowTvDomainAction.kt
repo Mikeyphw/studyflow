@@ -33,6 +33,11 @@ object StudyFlowTvDomainActionProtocol {
             StudyFlowTvControlAction.COMPLETE,
             StudyFlowTvControlAction.MARK_FOR_REVIEW,
         )
+        StudyFlowTvSurface.PROGRESS -> command.action in setOf(
+            StudyFlowTvControlAction.COMPLETE,
+            StudyFlowTvControlAction.PAUSE,
+            StudyFlowTvControlAction.RESUME,
+        )
         else -> false
     }
 }
@@ -50,6 +55,9 @@ enum class StudyFlowTvDomainActionKind {
     MOCK_FINISH,
     REVIEW_GRADE,
     REVIEW_ERROR_NOTE,
+    GOAL_COMPLETE,
+    GOAL_PAUSE,
+    GOAL_RESUME,
 }
 
 @Serializable
@@ -131,6 +139,12 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvControlAction.MARK_FOR_REVIEW -> StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE
                 else -> return null
             }
+            StudyFlowTvSurface.PROGRESS -> when (command.action) {
+                StudyFlowTvControlAction.COMPLETE -> StudyFlowTvDomainActionKind.GOAL_COMPLETE
+                StudyFlowTvControlAction.PAUSE -> StudyFlowTvDomainActionKind.GOAL_PAUSE
+                StudyFlowTvControlAction.RESUME -> StudyFlowTvDomainActionKind.GOAL_RESUME
+                else -> return null
+            }
             else -> return null
         }
 
@@ -176,6 +190,10 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvDomainActionKind.REVIEW_GRADE,
                 StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE,
                 -> command.targetId ?: reviewItem?.reviewItemId
+                StudyFlowTvDomainActionKind.GOAL_COMPLETE,
+                StudyFlowTvDomainActionKind.GOAL_PAUSE,
+                StudyFlowTvDomainActionKind.GOAL_RESUME,
+                -> command.targetId
                 else -> command.targetId
             },
             optionId = choice?.optionId ?: command.optionId,
@@ -204,6 +222,9 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvDomainActionKind.SESSION_RESUME,
                 StudyFlowTvDomainActionKind.SESSION_COMPLETE,
                 StudyFlowTvDomainActionKind.REVIEW_GRADE,
+                StudyFlowTvDomainActionKind.GOAL_COMPLETE,
+                StudyFlowTvDomainActionKind.GOAL_PAUSE,
+                StudyFlowTvDomainActionKind.GOAL_RESUME,
                 -> !action.targetId.isNullOrBlank()
                 StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE ->
                     !action.targetId.isNullOrBlank() && !action.contextId.isNullOrBlank()

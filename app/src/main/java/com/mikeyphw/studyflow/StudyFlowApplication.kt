@@ -238,12 +238,14 @@ private class DefaultAppContainer(
         reviewRepository = studyReviewRepository,
         analyticsRepository = studyAnalyticsRepository,
         libraryRepository = studyLibraryRepository,
+        progressRepository = studyProgressRepository,
     )
     override val tvDomainActionExecutor = StudyFlowTvDomainActionExecutor(
         gateway = DefaultStudyFlowTvCanonicalMutationGateway(
             sessionManager = manageStudySession,
             practiceManager = manageStudyPractice,
             reviewManager = manageStudyReview,
+            progressManager = manageStudyProgress,
             sessionRepository = studySessionRepository,
             practiceRepository = studyPracticeRepository,
             scheduleRepository = studyScheduleRepository,

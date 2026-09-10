@@ -20,6 +20,7 @@ import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeQuestion
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeQuestionId
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPracticeState
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressMetric
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvGoal
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressMetricId
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressSnapshot
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressSubject
@@ -280,6 +281,17 @@ object StudyFlowTvPresentationAdapter {
             weekLabel = "Current StudyFlow evidence",
             metrics = metrics,
             subjects = weakAreas,
+            goals = source.goals.map { goal ->
+                StudyFlowTvGoal(
+                    sourceId = goal.goalId,
+                    title = goal.title,
+                    goalType = goal.goalType,
+                    progressPercent = goal.progressPercent,
+                    completed = goal.completed,
+                    paused = goal.paused,
+                    canComplete = goal.canComplete,
+                )
+            },
         )
     }
 

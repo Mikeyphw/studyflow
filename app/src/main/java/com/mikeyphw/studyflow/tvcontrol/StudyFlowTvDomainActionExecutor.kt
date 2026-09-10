@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow.tvcontrol
 import android.content.Context
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
+import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.StudyPracticeRepository
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
@@ -14,6 +15,7 @@ import com.mikeyphw.studyflow.core.model.QuestionId
 import com.mikeyphw.studyflow.core.model.PlannedActivityId
 import com.mikeyphw.studyflow.core.model.ReviewItemId
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.StudyGoalId
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.model.StudyTestId
@@ -87,6 +89,7 @@ class DefaultStudyFlowTvCanonicalMutationGateway(
     private val sessionManager: ManageStudySession,
     private val practiceManager: ManageStudyPractice,
     private val reviewManager: ManageStudyReview,
+    private val progressManager: ManageStudyProgress,
     private val sessionRepository: StudySessionRepository,
     private val practiceRepository: StudyPracticeRepository,
     private val scheduleRepository: StudyScheduleRepository,
@@ -194,6 +197,15 @@ class DefaultStudyFlowTvCanonicalMutationGateway(
                     chosenAnswer = null,
                 )
             }
+
+            StudyFlowTvDomainActionKind.GOAL_COMPLETE ->
+                progressManager.completeGoal(planId, StudyGoalId(requireTarget(action)))
+
+            StudyFlowTvDomainActionKind.GOAL_PAUSE ->
+                progressManager.archiveGoal(planId, StudyGoalId(requireTarget(action)))
+
+            StudyFlowTvDomainActionKind.GOAL_RESUME ->
+                progressManager.restoreGoal(planId, StudyGoalId(requireTarget(action)))
         }
     }
 

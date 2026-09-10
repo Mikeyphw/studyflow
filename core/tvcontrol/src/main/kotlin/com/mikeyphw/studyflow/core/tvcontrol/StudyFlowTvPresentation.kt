@@ -16,6 +16,7 @@ object StudyFlowTvPresentationProtocol {
     const val maxTvReviewItems = 20
     const val maxTvScheduleItems = 40
     const val maxTvLibraryReferences = 20
+    const val maxTvGoals = 12
     const val maxInlineMaterialTextChars = 14_400
     const val rawDatabaseRowsForbidden = true
     const val arbitraryUiTreesForbidden = true
@@ -286,6 +287,7 @@ data class StudyFlowTvProgressPresentation(
     val contentProgressPercent: Int,
     val consistencyScorePercent: Int,
     val weakAreas: List<StudyFlowTvWeakAreaPresentation>,
+    val goals: List<StudyFlowTvGoalPresentation> = emptyList(),
 ) {
     init {
         require(planTitle.isNotBlank())
@@ -297,6 +299,30 @@ data class StudyFlowTvProgressPresentation(
         require(dueReviewCount >= 0)
         require(contentProgressPercent in 0..100)
         require(consistencyScorePercent in 0..100)
+        require(goals.size <= StudyFlowTvPresentationProtocol.maxTvGoals)
+    }
+}
+
+@Serializable
+data class StudyFlowTvGoalPresentation(
+    val goalId: String,
+    val title: String,
+    val goalType: String,
+    val currentValue: Double,
+    val targetValue: Double,
+    val progressPercent: Int,
+    val completed: Boolean,
+    val paused: Boolean,
+    val canComplete: Boolean,
+) {
+    init {
+        require(goalId.isNotBlank())
+        require(title.isNotBlank())
+        require(goalType.isNotBlank())
+        require(currentValue >= 0.0)
+        require(targetValue > 0.0)
+        require(progressPercent in 0..100)
+        require(!completed || !paused)
     }
 }
 

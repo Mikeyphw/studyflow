@@ -1623,6 +1623,12 @@ tasks.register<Exec>("verifyStudyFlowTvFullNativeMaterialViewer") {
     commandLine("python3", "scripts/verify_tvov27_full_native_material_viewer.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvGoalProjectionActions") {
+    group = "verification"
+    description = "Checks TVOV28 canonical goal projection and complete/pause/resume actions."
+    commandLine("python3", "scripts/verify_tvov28_goal_projection_actions.py")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description =

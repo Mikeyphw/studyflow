@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV27"
+    const val currentTvOverlay = "TVOV28"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -341,4 +341,14 @@ object StudyFlowTvMaterialViewerBuildContract {
     const val mediaPlaybackRequired = true
     const val frameworkRendererOnly = true
     const val fileManagementStillDisabledOnTv = true
+}
+
+// TVOV28 goal projection and phone-owned mutation contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvGoalBuildContract {
+    const val goalProjectionIntroduced = true
+    const val completePauseResumeVisible = true
+    const val evidenceBackedGoalsRemainEvidenceOwned = true
+    const val tvRepositoryMutationForbidden = true
+    const val canonicalPhoneExecutionRequired = true
 }

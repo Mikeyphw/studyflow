@@ -1,6 +1,9 @@
 package com.mikeyphw.studyflow.tvcontrol
 
+import com.mikeyphw.studyflow.core.domain.GoalEvidence
+import com.mikeyphw.studyflow.core.domain.GoalProgressCalculator
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionEngine
+import com.mikeyphw.studyflow.core.domain.StudyGoalProgressEngine
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsSnapshot
 import com.mikeyphw.studyflow.core.domain.StudySessionTimer
 import com.mikeyphw.studyflow.core.model.ErrorEntry
@@ -12,6 +15,8 @@ import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyMaterial
+import com.mikeyphw.studyflow.core.model.StudyGoal
+import com.mikeyphw.studyflow.core.model.GoalType
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySchedule
 import com.mikeyphw.studyflow.core.model.StudySession
@@ -41,6 +46,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvStudySessionPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvTodayPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWeakAreaPresentation
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvGoalPresentation
 
 /** Canonical phone/data-owner input for one presentation projection. */
 data class StudyFlowTvPresentationProjectionInput(
@@ -59,6 +65,7 @@ data class StudyFlowTvPresentationProjectionInput(
     val errorEntries: List<ErrorEntry>,
     val analytics: StudyAnalyticsSnapshot,
     val materials: List<StudyMaterial>,
+    val goals: List<StudyGoal> = emptyList(),
 )
 
 /**
@@ -90,6 +97,37 @@ object StudyFlowTvPresentationProjector {
         val nextActivity = pendingActivities.firstOrNull()
         val weeklyGoalMinutes = plan.weeklyGoalHours * 60
         val weeklyProgress = percent(input.analytics.studiedMinutesLastSevenDays, weeklyGoalMinutes)
+        val goalEvidence = GoalEvidence(
+            sessions = input.sessions,
+            tests = input.tests,
+            mockExams = input.mockExams,
+            topics = input.syllabus.topics,
+        )
+        val projectedGoals = input.goals
+            .asSequence()
+            .map { goal ->
+                StudyGoalProgressEngine.evaluate(goal, goalEvidence, input.generatedAtEpochMillis)
+            }
+            .sortedWith(
+                compareBy<StudyGoal> { it.archived }
+                    .thenBy { it.completedAtEpochMillis != null }
+                    .thenBy { it.title },
+            )
+            .take(StudyFlowTvPresentationProtocol.maxTvGoals)
+            .map { goal ->
+                StudyFlowTvGoalPresentation(
+                    goalId = goal.id.value,
+                    title = goal.title,
+                    goalType = goal.type.name,
+                    currentValue = goal.currentValue,
+                    targetValue = goal.targetValue,
+                    progressPercent = GoalProgressCalculator.goalPercent(goal),
+                    completed = goal.completedAtEpochMillis != null,
+                    paused = goal.archived,
+                    canComplete = goal.type == GoalType.CUSTOM && goal.completedAtEpochMillis == null && !goal.archived,
+                )
+            }
+            .toList()
 
         return StudyFlowTvPresentationSnapshot(
             snapshotId = input.snapshotId,
@@ -141,6 +179,7 @@ object StudyFlowTvPresentationProjector {
                         priority = area.priority,
                     )
                 },
+                goals = projectedGoals,
             ),
             schedule = StudyFlowTvSchedulePresentation(
                 scheduleId = "schedule-${plan.id.value}",

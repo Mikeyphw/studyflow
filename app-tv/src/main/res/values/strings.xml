@@ -131,6 +131,14 @@
     <string name="tv_progress_action_practice">Practice</string>
     <string name="tv_progress_action_reviews">Reviews</string>
     <string name="tv_progress_action_mock">Mock exam</string>
+    <string name="tv_progress_goals_title">Goals</string>
+    <string name="tv_progress_goal_body_format">%1$s · %2$d%% · %3$s</string>
+    <string name="tv_progress_goal_active">active</string>
+    <string name="tv_progress_goal_paused">paused</string>
+    <string name="tv_progress_goal_complete">completed</string>
+    <string name="tv_progress_goal_action_complete">Complete goal</string>
+    <string name="tv_progress_goal_action_pause">Pause goal</string>
+    <string name="tv_progress_goal_action_resume">Resume goal</string>
 
     <string name="tv_schedule_section_title">Read-only schedule</string>
     <string name="tv_schedule_status_format">%1$s · %2$s · items=%3$d · active=%4$s</string>

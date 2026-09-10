@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow.tv.progress
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvCastState
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusItem
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusRole
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvDestination
@@ -65,11 +66,31 @@ data class StudyFlowTvProgressSubject(
     }
 }
 
+
+data class StudyFlowTvGoal(
+    val sourceId: String,
+    val title: String,
+    val goalType: String,
+    val progressPercent: Int,
+    val completed: Boolean,
+    val paused: Boolean,
+    val canComplete: Boolean,
+) {
+    init {
+        require(sourceId.isNotBlank())
+        require(title.isNotBlank())
+        require(progressPercent in 0..100)
+    }
+}
+
+enum class StudyFlowTvGoalAction { COMPLETE, PAUSE, RESUME }
+
 data class StudyFlowTvProgressSnapshot(
     val examName: String,
     val weekLabel: String,
     val metrics: List<StudyFlowTvProgressMetric>,
     val subjects: List<StudyFlowTvProgressSubject>,
+    val goals: List<StudyFlowTvGoal> = emptyList(),
 ) {
     init {
         require(examName.isNotBlank()) { "TV progress exam name must not be blank." }
@@ -84,7 +105,7 @@ data class StudyFlowTvProgressSnapshot(
 }
 
 object StudyFlowTvProgressAnalytics {
-    const val overlay = "TVOV12"
+    const val overlay = "TVOV28"
     const val ownsProgressAnalyticsSurface = true
     const val weeklyProgressAccuracyVolumeReadinessVisible = true
     const val weakSubjectSummaryVisible = true
@@ -98,6 +119,7 @@ object StudyFlowTvProgressAnalytics {
     const val metricRow = 0
     const val subjectRow = 2
     const val actionRow = 4
+    const val goalProjectionAndActions = true
 
     fun defaultSnapshot(): StudyFlowTvProgressSnapshot = StudyFlowTvProgressSnapshot(
         examName = "TRT Técnico Judiciário",
@@ -209,6 +231,32 @@ object StudyFlowTvProgressAnalytics {
     ): StudyFlowTvControlCommand = StudyFlowTvNavigationShell.openCommandFor(
         destination = destinationForAction(action),
         commandId = commandId,
+        issuedAtEpochMillis = issuedAtEpochMillis,
+    )
+
+    fun goalActions(goal: StudyFlowTvGoal): List<StudyFlowTvGoalAction> = when {
+        goal.completed -> emptyList()
+        goal.paused -> listOf(StudyFlowTvGoalAction.RESUME)
+        else -> buildList {
+            if (goal.canComplete) add(StudyFlowTvGoalAction.COMPLETE)
+            add(StudyFlowTvGoalAction.PAUSE)
+        }
+    }
+
+    fun commandForGoalAction(
+        goal: StudyFlowTvGoal,
+        action: StudyFlowTvGoalAction,
+        commandId: String,
+        issuedAtEpochMillis: Long,
+    ): StudyFlowTvControlCommand = StudyFlowTvControlCommand(
+        commandId = commandId,
+        surface = StudyFlowTvSurface.PROGRESS,
+        action = when (action) {
+            StudyFlowTvGoalAction.COMPLETE -> StudyFlowTvControlAction.COMPLETE
+            StudyFlowTvGoalAction.PAUSE -> StudyFlowTvControlAction.PAUSE
+            StudyFlowTvGoalAction.RESUME -> StudyFlowTvControlAction.RESUME
+        },
+        targetId = goal.sourceId,
         issuedAtEpochMillis = issuedAtEpochMillis,
     )
 

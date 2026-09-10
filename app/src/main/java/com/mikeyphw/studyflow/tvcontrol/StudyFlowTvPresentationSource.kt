@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.domain.StudyContentRepository
 import com.mikeyphw.studyflow.core.domain.StudyLibraryRepository
 import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
 import com.mikeyphw.studyflow.core.domain.StudyPracticeRepository
+import com.mikeyphw.studyflow.core.domain.StudyProgressRepository
 import com.mikeyphw.studyflow.core.domain.StudyReviewRepository
 import com.mikeyphw.studyflow.core.domain.StudyScheduleRepository
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
@@ -14,6 +15,7 @@ import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.StudyMaterial
+import com.mikeyphw.studyflow.core.model.StudyGoal
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySchedule
@@ -41,6 +43,7 @@ class StudyFlowTvPresentationSource(
     private val reviewRepository: StudyReviewRepository,
     private val analyticsRepository: StudyAnalyticsRepository,
     private val libraryRepository: StudyLibraryRepository,
+    private val progressRepository: StudyProgressRepository,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : StudyFlowTvPresentationFeed {
     private val sequence = AtomicLong(0L)
@@ -67,7 +70,8 @@ class StudyFlowTvPresentationSource(
         val analyticsAndLibrary = combine(
             analyticsRepository.observeSnapshot(planId),
             libraryRepository.observeMaterials(planId),
-        ) { analytics, materials -> AnalyticsAndLibrary(analytics, materials) }
+            progressRepository.observeGoals(planId),
+        ) { analytics, materials, goals -> AnalyticsAndLibrary(analytics, materials, goals) }
 
         return combine(primary, reviewAndPractice, analyticsAndLibrary) { first, second, third ->
             val now = clock()
@@ -88,6 +92,7 @@ class StudyFlowTvPresentationSource(
                     errorEntries = second.errors,
                     analytics = third.analytics,
                     materials = third.materials,
+                    goals = third.goals,
                 ),
             )
         }
@@ -112,5 +117,6 @@ class StudyFlowTvPresentationSource(
     private data class AnalyticsAndLibrary(
         val analytics: com.mikeyphw.studyflow.core.domain.StudyAnalyticsSnapshot,
         val materials: List<StudyMaterial>,
+        val goals: List<StudyGoal>,
     )
 }

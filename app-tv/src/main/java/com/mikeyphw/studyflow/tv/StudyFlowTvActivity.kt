@@ -62,6 +62,8 @@ import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeChoice
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPractice
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvQuestionPracticeState
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressAction
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvGoal
+import com.mikeyphw.studyflow.tv.progress.StudyFlowTvGoalAction
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressAnalytics
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressMetric
 import com.mikeyphw.studyflow.tv.progress.StudyFlowTvProgressMetricId
@@ -849,6 +851,21 @@ class StudyFlowTvActivity : Activity() {
                 },
             )
         }
+        if (snapshot.goals.isNotEmpty()) {
+            contentCards.addView(sectionLabel(R.string.tv_progress_goals_title))
+            snapshot.goals.forEach { goal ->
+                contentCards.addView(tvGoalCard(goal))
+                val actions = StudyFlowTvProgressAnalytics.goalActions(goal)
+                if (actions.isNotEmpty()) {
+                    contentCards.addView(
+                        LinearLayout(this).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            actions.forEach { action -> addView(tvGoalAction(goal, action)) }
+                        },
+                    )
+                }
+            }
+        }
         contentCards.addView(
             LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -1317,6 +1334,34 @@ class StudyFlowTvActivity : Activity() {
             selectDestination(StudyFlowTvProgressAnalytics.destinationForAction(action))
         }
     }
+
+    private fun tvGoalCard(goal: StudyFlowTvGoal): Button = tvCardButton(
+        title = goal.title,
+        body = getString(
+            R.string.tv_progress_goal_body_format,
+            goal.goalType.lowercase(),
+            goal.progressPercent,
+            if (goal.completed) getString(R.string.tv_progress_goal_complete)
+            else if (goal.paused) getString(R.string.tv_progress_goal_paused)
+            else getString(R.string.tv_progress_goal_active),
+        ),
+        onClick = { renderProgressDestination() },
+    )
+
+    private fun tvGoalAction(goal: StudyFlowTvGoal, action: StudyFlowTvGoalAction): Button =
+        tvTextActionButton(
+            when (action) {
+                StudyFlowTvGoalAction.COMPLETE -> getString(R.string.tv_progress_goal_action_complete)
+                StudyFlowTvGoalAction.PAUSE -> getString(R.string.tv_progress_goal_action_pause)
+                StudyFlowTvGoalAction.RESUME -> getString(R.string.tv_progress_goal_action_resume)
+            },
+        ).apply {
+            setOnClickListener {
+                dispatchLocalCommand { commandId, issuedAt ->
+                    StudyFlowTvProgressAnalytics.commandForGoalAction(goal, action, commandId, issuedAt)
+                }
+            }
+        }
 
     private fun tvScheduleItem(item: StudyFlowTvScheduleItem): Button = tvCardButton(
         title = item.title,

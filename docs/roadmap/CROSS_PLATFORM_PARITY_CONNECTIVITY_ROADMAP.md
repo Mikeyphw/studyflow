@@ -108,7 +108,7 @@ work:
 ## TV convergence — TVOV27-TVOV31
 
 - **TVOV27** full native-TV material viewer: text pages, image zoom, PDF navigation and media playback. **Implemented.**
-- **TVOV28** goal projection plus complete/pause/resume actions.
+- **TVOV28** goal projection plus complete/pause/resume actions. **Implemented.**
 - **TVOV29** Error Notebook reclassification and resolve/reopen parity.
 - **TVOV30** native TV search with D-pad and SFLP delegated text input.
 - **TVOV31** Android-TV/Web-TV semantic parity seal using common fixtures.

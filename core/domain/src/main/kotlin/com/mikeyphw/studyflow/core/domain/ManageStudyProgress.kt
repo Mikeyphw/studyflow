@@ -76,6 +76,20 @@ class ManageStudyProgress(
         return repository.upsertGoal(goal.copy(currentValue = currentValue, completedAtEpochMillis = completedAt))
     }
 
+    suspend fun completeGoal(planId: StudyPlanId, goalId: StudyGoalId): StudyGoal {
+        val goal = requireNotNull(repository.findGoal(planId, goalId)) { "Goal does not exist." }
+        require(goal.type == GoalType.CUSTOM) {
+            "Evidence-backed goals complete from evidence; only CUSTOM goals can be completed manually."
+        }
+        return repository.upsertGoal(
+            goal.copy(
+                currentValue = goal.targetValue,
+                completedAtEpochMillis = goal.completedAtEpochMillis ?: clock(),
+                archived = false,
+            ),
+        )
+    }
+
     suspend fun archiveGoal(planId: StudyPlanId, goalId: StudyGoalId): StudyGoal {
         val goal = requireNotNull(repository.findGoal(planId, goalId)) { "Goal does not exist." }
         return repository.upsertGoal(goal.copy(archived = true))
