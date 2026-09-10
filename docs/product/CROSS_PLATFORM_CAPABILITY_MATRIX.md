@@ -20,7 +20,7 @@ with this matrix, this matrix owns the current product-state description.
 | --- | --- | --- |
 | Android | `1.0.0-rc1` | Full local-first workspace and Android-native reference client |
 | Web | `1.0.0` | Full browser-applicable workspace |
-| Desktop | `0.1.0` | Preview workspace; persistence and broad execution parity remain roadmap work |
+| Desktop | `1.0.0` | Full applicable desktop workspace with JVM-native platform integrations |
 | Android TV | `0.1.0-tv26` | Native 10-foot presentation/execution client |
 | Web TV | Web `1.0.0` TV mode | Browser 10-foot presentation/execution client |
 
@@ -38,26 +38,26 @@ with this matrix, this matrix owns the current product-state description.
 | Reviews / SRS | FULL | FULL | FULL | LIMITED | FULL |
 | Flashcards | FULL | FULL | FULL | LIMITED | FULL |
 | Error Notebook | FULL | FULL | FULL | LIMITED | FULL |
-| Goals | FULL | FULL | MISSING | READ_ONLY | LIMITED |
+| Goals | FULL | FULL | FULL | READ_ONLY | LIMITED |
 | Progress / analytics | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
 | Library catalog | FULL | FULL | FULL | LIMITED | FULL |
-| Full material viewing | FULL | FULL | LIMITED | LIMITED | FULL |
+| Full material viewing | FULL | FULL | FULL | LIMITED | FULL |
 | Writing Workspace | FULL | FULL | FULL | HANDOFF | HANDOFF |
-| Global search | FULL | FULL | LIMITED | MISSING | FULL |
+| Global search | FULL | FULL | FULL | MISSING | FULL |
 | Concurso Público workflows | FULL | FULL | FULL | LIMITED | LIMITED |
 | Programming / language content modes | FULL | FULL | FULL | LIMITED | LIMITED |
 | Import / export / portable backup | FULL | FULL | FULL | HANDOFF | HANDOFF |
-| Optional provider sync | FULL | PLATFORM_SPECIFIC | MISSING | NOT_APPLICABLE | NOT_APPLICABLE |
+| Optional provider sync | FULL | PLATFORM_SPECIFIC | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE |
 | English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | FULL | PLATFORM_SPECIFIC | LIMITED |
 | Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
-Desktop DOV08-DOV20 now provide durable workspace, core study workflows, Writing Workspace, persisted
-programming/language/reading/general content-mode workflows with Desktop-native execution where applicable, plus
-shared-engine readiness, coaching, cleanup, exam reports, runbooks, preview-first study sprints, portable structure
-packages, encrypted full-workspace backup/restore, and explicit workspace migration. Remaining `LIMITED`/`MISSING`
-rows are intentional roadmap gaps through DOV24 rather than a blanket preview/in-memory qualifier.
+Desktop DOV08-DOV24 now provide the full applicable Desktop workspace: durable domain state, authoring and
+execution workflows, Writing Workspace, programming/language modes, Concurso Público, shared-engine analytics,
+Goals, portable structure packages, encrypted full-workspace backup/restore, migration, English/pt-BR localization,
+System/Light/Dark appearance, native file/browser/notification/deep-link integration, full material handoff to system
+viewers, and global search. Android provider adapters remain platform-specific rather than a Desktop parity gap.
 
 ## Current connectivity truth
 
@@ -77,7 +77,7 @@ Current connectivity implementation truth:
   authority rather than silently accepting it.
 
 SFLP24 proves the SFLP protocol/behavior chain, but it is **not** the final five-client product-parity acceptance.
-DOV08-DOV24, TVOV27-TVOV31, WEB20, PRESENCE01, and PARITY04 remain the ordered cross-platform closure work.
+DOV08-DOV24 is complete. TVOV27-TVOV31, WEB20, PRESENCE01, and PARITY04 remain the ordered cross-platform closure work.
 
 ### Protocol connectivity matrix
 

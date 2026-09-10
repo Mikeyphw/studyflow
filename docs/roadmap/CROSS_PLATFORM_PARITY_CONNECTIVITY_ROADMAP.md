@@ -103,6 +103,8 @@ work:
 - **DOV23** desktop-native file picker/filesystem/notifications/deep links.
 - **DOV24** full applicable Desktop parity seal; preview label may be removed only after this gate.
 
+**DOV24 status: complete.** Desktop is no longer classified as a preview client in the current capability matrix.
+
 ## TV convergence — TVOV27-TVOV31
 
 - **TVOV27** full native-TV material viewer: text pages, image zoom, PDF navigation and media playback.

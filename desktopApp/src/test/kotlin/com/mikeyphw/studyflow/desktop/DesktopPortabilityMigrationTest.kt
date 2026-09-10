@@ -30,7 +30,11 @@ class DesktopPortabilityMigrationTest {
             val importedId = imported.portabilityController.importPortableStructure(portable)
             assertEquals(created.id, importedId)
             assertTrue(imported.planRepository.currentPlans().any { it.id == created.id })
-            assertTrue(imported.contentRepository.currentSyllabus(created.id).subjects.any { it.name == "Portable subject" })
+            assertTrue(
+                imported.contentRepository.currentSyllabus(created.id).subjects.any {
+                    it.name == "Portable subject"
+                },
+            )
 
             val backup = outside.resolve("desktop-backup.sfbak")
             source.portabilityController.createEncryptedWorkspaceBackup(backup, "correct horse".toCharArray())
@@ -62,13 +66,22 @@ class DesktopPortabilityMigrationTest {
             val file = root.resolve("workspace-v1.properties")
             val legacy = Properties().apply { Files.newInputStream(file).use(::load) }
             legacy["schema.version"] = "3"
-            legacy.keys.map(Object::toString).filter { it.startsWith("session.") }.forEach(legacy::remove)
+            legacy.keys
+                .map { it.toString() }
+                .filter { it.startsWith("session.") }
+                .forEach { legacy.remove(it) }
             Files.newOutputStream(file).use { legacy.store(it, "DOV20 legacy fixture") }
 
             val migrated = services(root)
-            assertEquals(DesktopWorkspacePersistence.CURRENT_SCHEMA_VERSION, migrated.portabilityController.migrateWorkspaceSchema())
+            assertEquals(
+                DesktopWorkspacePersistence.CURRENT_SCHEMA_VERSION,
+                migrated.portabilityController.migrateWorkspaceSchema(),
+            )
             val rewritten = Properties().apply { Files.newInputStream(file).use(::load) }
-            assertEquals(DesktopWorkspacePersistence.CURRENT_SCHEMA_VERSION.toString(), rewritten.getProperty("schema.version"))
+            assertEquals(
+                DesktopWorkspacePersistence.CURRENT_SCHEMA_VERSION.toString(),
+                rewritten.getProperty("schema.version"),
+            )
         } finally {
             root.toFile().deleteRecursively()
         }

@@ -177,30 +177,30 @@ class DesktopPortabilityController(
         val rootRow = StudyPlanPrivacyPolicy.sanitizeRoot(plan.toPortableRow(), options)
         val tables = listOf(
             PortableTable("study_plans", listOf(rootRow)),
-            PortableTable("study_targets", content.targets.filterPlan(planId).map(StudyTarget::toPortableRow)),
-            PortableTable("exam_stages", content.examStages.filterPlan(planId).map(ExamStage::toPortableRow)),
-            PortableTable("subjects", content.subjects.filterPlan(planId).map(Subject::toPortableRow)),
-            PortableTable("topics", content.topics.filterPlan(planId).map(Topic::toPortableRow)),
+            PortableTable("study_targets", content.targets.filterPlan(planId).map { it.toPortableRow() }),
+            PortableTable("exam_stages", content.examStages.filterPlan(planId).map { it.toPortableRow() }),
+            PortableTable("subjects", content.subjects.filterPlan(planId).map { it.toPortableRow() }),
+            PortableTable("topics", content.topics.filterPlan(planId).map { it.toPortableRow() }),
             PortableTable(
                 "legislation_documents",
-                publicExam.legislationDocuments.filterPlan(planId).map(LegislationDocument::toPortableRow),
+                publicExam.legislationDocuments.filterPlan(planId).map { it.toPortableRow() },
             ),
             PortableTable(
                 "legislation_provisions",
-                publicExam.legislationProvisions.filterPlan(planId).map(LegislationProvision::toPortableRow),
+                publicExam.legislationProvisions.filterPlan(planId).map { it.toPortableRow() },
             ),
-            PortableTable("study_cycles", publicExam.studyCycles.filterPlan(planId).map(StudyCycle::toPortableRow)),
+            PortableTable("study_cycles", publicExam.studyCycles.filterPlan(planId).map { it.toPortableRow() }),
             PortableTable(
                 "study_cycle_items",
-                publicExam.studyCycleItems.filterPlan(planId).map(StudyCycleItem::toPortableRow),
+                publicExam.studyCycleItems.filterPlan(planId).map { it.toPortableRow() },
             ),
             PortableTable(
                 "study_strategies",
-                services.scheduleRepository.currentStrategies().filterPlan(planId).map(StudyStrategy::toPortableRow),
+                services.scheduleRepository.currentStrategies().filterPlan(planId).map { it.toPortableRow() },
             ),
             PortableTable(
                 "schedule_rules",
-                services.scheduleRepository.currentRules(planId).map(ScheduleRule::toPortableRow),
+                services.scheduleRepository.currentRules(planId).map { it.toPortableRow() },
             ),
             PortableTable("study_plan_settings", listOf(settings.toPortableRow())),
             PortableTable(
@@ -239,25 +239,25 @@ class DesktopPortabilityController(
             ?: StudyPlanSettings.defaults(plan.id)
         services.planRepository.create(plan, settings)
         try {
-            tables.rows("study_targets").map(PortableRow::toStudyTarget)
+            tables.rows("study_targets").map { it.toStudyTarget() }
                 .forEach { services.contentRepository.upsertStudyTarget(it) }
-            tables.rows("exam_stages").map(PortableRow::toExamStage)
+            tables.rows("exam_stages").map { it.toExamStage() }
                 .forEach { services.contentRepository.upsertExamStage(it) }
-            tables.rows("subjects").map(PortableRow::toSubject)
+            tables.rows("subjects").map { it.toSubject() }
                 .sortedBy(Subject::position)
                 .forEach { services.contentRepository.upsertSubject(it) }
-            tables.rows("topics").map(PortableRow::toTopic)
+            tables.rows("topics").map { it.toTopic() }
                 .sortedBy(Topic::position)
                 .forEach { services.contentRepository.upsertTopic(it) }
-            tables.rows("study_strategies").map(PortableRow::toStudyStrategy)
+            tables.rows("study_strategies").map { it.toStudyStrategy() }
                 .forEach { services.scheduleRepository.upsertStrategy(it) }
-            tables.rows("schedule_rules").map(PortableRow::toScheduleRule)
+            tables.rows("schedule_rules").map { it.toScheduleRule() }
                 .sortedBy(ScheduleRule::position)
                 .forEach { services.scheduleRepository.upsertScheduleRule(it) }
-            val documents = tables.rows("legislation_documents").map(PortableRow::toLegislationDocument)
-            val provisions = tables.rows("legislation_provisions").map(PortableRow::toLegislationProvision)
-            val cycles = tables.rows("study_cycles").map(PortableRow::toStudyCycle)
-            val cycleItems = tables.rows("study_cycle_items").map(PortableRow::toStudyCycleItem)
+            val documents = tables.rows("legislation_documents").map { it.toLegislationDocument() }
+            val provisions = tables.rows("legislation_provisions").map { it.toLegislationProvision() }
+            val cycles = tables.rows("study_cycles").map { it.toStudyCycle() }
+            val cycleItems = tables.rows("study_cycle_items").map { it.toStudyCycleItem() }
             services.publicExamRepository.importPortableStructure(plan.id, documents, provisions, cycles, cycleItems)
             tables.rows("programming_course_profiles").singleOrNull()?.let { row ->
                 services.contentModeRepository.upsertProgramming(row.toProgrammingProfile())

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
+import androidx.compose.material.OutlinedButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -16,12 +17,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.model.GoalPeriod
+import com.mikeyphw.studyflow.core.model.GoalType
+import com.mikeyphw.studyflow.core.model.StudyGoalId
 
 @Composable
 fun DesktopAnalyticsScreen(
     state: DesktopAnalyticsScreenState,
     progress: DesktopProgressReadinessState? = null,
     actionMessage: String = "",
+    goalTitle: String = "",
+    goalTarget: String = "",
+    goalType: GoalType = GoalType.STUDY_TIME,
+    goalPeriod: GoalPeriod = GoalPeriod.WEEKLY,
+    goalActionMessage: String = "",
+    onGoalTitleChanged: (String) -> Unit = {},
+    onGoalTargetChanged: (String) -> Unit = {},
+    onCycleGoalType: () -> Unit = {},
+    onCycleGoalPeriod: () -> Unit = {},
+    onCreateGoal: () -> Unit = {},
+    onIncrementGoal: (StudyGoalId) -> Unit = {},
+    onArchiveGoal: (StudyGoalId) -> Unit = {},
+    onRestoreGoal: (StudyGoalId) -> Unit = {},
+    onDeleteGoal: (StudyGoalId) -> Unit = {},
     onApplySprint: () -> Unit = {},
     onExportReport: () -> Unit = {},
 ) {
@@ -93,6 +111,59 @@ fun DesktopAnalyticsScreen(
 
         progress?.takeIf { it.available }?.let { advanced ->
             val readiness = advanced.readiness
+
+            DesktopSectionCard(title = desktopText("Goals")) {
+                OutlinedTextField(
+                    value = goalTitle,
+                    onValueChange = onGoalTitleChanged,
+                    label = { Text(desktopText("Goal title")) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = goalTarget,
+                    onValueChange = onGoalTargetChanged,
+                    label = { Text(desktopText("Target value")) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(onClick = onCycleGoalType) {
+                        Text(desktopText("Type") + ": " + goalType.name.replace('_', ' '))
+                    }
+                    Button(onClick = onCycleGoalPeriod) {
+                        Text(desktopText("Period") + ": " + goalPeriod.name.replace('_', ' '))
+                    }
+                    Button(
+                        onClick = onCreateGoal,
+                        enabled = goalTitle.isNotBlank() && goalTarget.toDoubleOrNull() != null,
+                    ) {
+                        Text(desktopText("Create goal"))
+                    }
+                }
+                if (advanced.goals.isEmpty()) {
+                    Text(desktopText("No goals yet."))
+                } else {
+                    advanced.goals.forEach { goal ->
+                        DesktopStateMessage(
+                            title = goal.title,
+                            message = "${goal.type.name.replace('_', ' ')} · " +
+                                "${goal.currentValue}/${goal.targetValue} · ${goal.period.name.lowercase()}",
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (goal.type == GoalType.CUSTOM && !goal.archived) {
+                                Button(onClick = { onIncrementGoal(goal.id) }) { Text(desktopText("+1")) }
+                            }
+                            if (goal.archived) {
+                                Button(onClick = { onRestoreGoal(goal.id) }) { Text(desktopText("Restore")) }
+                            } else {
+                                Button(onClick = { onArchiveGoal(goal.id) }) { Text(desktopText("Archive")) }
+                            }
+                            Button(onClick = { onDeleteGoal(goal.id) }) { Text(desktopText("Delete")) }
+                        }
+                    }
+                }
+                if (goalActionMessage.isNotBlank()) Text(goalActionMessage, fontWeight = FontWeight.Bold)
+            }
+
             DesktopSectionCard(title = desktopText("Exam readiness")) {
                 Text(
                     "Score: ${readiness?.scorePercent?.let { "$it%" } ?: "insufficient evidence"} · " +
@@ -173,7 +244,7 @@ fun DesktopAnalyticsScreen(
                 }
                 Text(
                     desktopText(
-                        "Reports omit freeform study notes and stay inside the Desktop workspace until DOV23.",
+                        "Reports omit freeform study notes and stay inside the Desktop workspace.",
                     ),
                 )
             }

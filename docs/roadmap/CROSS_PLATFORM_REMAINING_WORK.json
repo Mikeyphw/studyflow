@@ -21,13 +21,13 @@
       "order": 1,
       "id": "DOV08-DOV24",
       "kind": "implementation",
-      "status": "in_progress",
+      "status": "complete",
       "prerequisites": [
         "SFLP24"
       ],
       "terminal_milestone": "DOV24",
       "summary": "Complete applicable Desktop persistence, workflows, platform integration, and parity acceptance.",
-      "completed_through": "DOV23"
+      "completed_through": "DOV24"
     },
     {
       "order": 2,

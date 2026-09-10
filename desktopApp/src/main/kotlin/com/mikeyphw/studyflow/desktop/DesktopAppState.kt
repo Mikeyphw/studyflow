@@ -8,6 +8,9 @@ import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.domain.WritingCompletionChecklist
 import com.mikeyphw.studyflow.core.domain.WritingRubric
 import com.mikeyphw.studyflow.core.model.AppLanguage
+import com.mikeyphw.studyflow.core.model.GoalPeriod
+import com.mikeyphw.studyflow.core.model.GoalType
+import com.mikeyphw.studyflow.core.model.StudyGoalId
 import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.SubjectId
@@ -140,6 +143,17 @@ class DesktopAppState(
         private set
 
     var progressActionMessage: String by mutableStateOf("")
+        private set
+
+    var goalTitleDraft: String by mutableStateOf("")
+        private set
+    var goalTargetDraft: String by mutableStateOf("5")
+        private set
+    var goalTypeDraft: GoalType by mutableStateOf(GoalType.STUDY_TIME)
+        private set
+    var goalPeriodDraft: GoalPeriod by mutableStateOf(GoalPeriod.WEEKLY)
+        private set
+    var goalActionMessage: String by mutableStateOf("")
         private set
 
     var portabilityPathDraft: String by mutableStateOf("")
@@ -649,6 +663,48 @@ class DesktopAppState(
     fun analyticsState(): DesktopAnalyticsScreenState = services.createAnalyticsState()
 
     fun progressReadinessState(): DesktopProgressReadinessState = services.progressReadinessController.state()
+
+    fun updateGoalTitleDraft(value: String) { goalTitleDraft = value }
+
+    fun updateGoalTargetDraft(value: String) { goalTargetDraft = value }
+
+    fun cycleGoalType() {
+        val values = GoalType.entries
+        goalTypeDraft = values[(values.indexOf(goalTypeDraft) + 1) % values.size]
+    }
+
+    fun cycleGoalPeriod() {
+        val values = GoalPeriod.entries
+        goalPeriodDraft = values[(values.indexOf(goalPeriodDraft) + 1) % values.size]
+    }
+
+    fun createGoal() = runGoalAction("Goal created") {
+        val target = requireNotNull(goalTargetDraft.toDoubleOrNull()) { "Goal target must be a number." }
+        services.goalWorkspaceController.createGoal(goalTypeDraft, goalPeriodDraft, goalTitleDraft, target)
+        goalTitleDraft = ""
+    }
+
+    fun incrementGoal(goalId: StudyGoalId) = runGoalAction("Goal progress updated") {
+        services.goalWorkspaceController.incrementCustomGoal(goalId, 1.0)
+    }
+
+    fun archiveGoal(goalId: StudyGoalId) = runGoalAction("Goal archived") {
+        services.goalWorkspaceController.archive(goalId)
+    }
+
+    fun restoreGoal(goalId: StudyGoalId) = runGoalAction("Goal restored") {
+        services.goalWorkspaceController.restore(goalId)
+    }
+
+    fun deleteGoal(goalId: StudyGoalId) = runGoalAction("Goal deleted") {
+        services.goalWorkspaceController.delete(goalId)
+    }
+
+    private fun runGoalAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { goalActionMessage = success }
+            .onFailure { goalActionMessage = it.message.orEmpty() }
+    }
 
     fun applyStudySprint() {
         runCatching { runBlocking { services.progressReadinessController.applyCurrentSprint() } }

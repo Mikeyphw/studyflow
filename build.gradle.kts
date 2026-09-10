@@ -1019,6 +1019,26 @@ tasks.register<Exec>("verifyDesktopDov23NativeDesktopIntegration") {
     commandLine("python3", "scripts/verify_desktop_dov23_native_desktop_integration.py")
 }
 
+tasks.register<Exec>("verifyDesktopDov24FullApplicableParitySeal") {
+    group = "verification"
+    description = "Verify Desktop DOV24 full applicable parity acceptance seal"
+    commandLine("python3", "scripts/verify_desktop_dov24_full_applicable_parity_seal.py")
+}
+
+tasks.register("verifyDesktopDov20Dov24Batch") {
+    group = "verification"
+    description = "Run the terminal Desktop DOV20-DOV24 portability, presentation, native, and parity seal."
+    dependsOn(
+        "verifyDesktopDov20PortabilityBackupMigration",
+        "verifyDesktopDov21EnPtBrLocalization",
+        "verifyDesktopDov22SystemLightDarkAppearance",
+        "verifyDesktopDov23NativeDesktopIntegration",
+        "verifyDesktopDov24FullApplicableParitySeal",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:test",
+    )
+}
+
 tasks.register("verifyDesktopDov16Dov19Batch") {
     group = "verification"
     description = "Verify Desktop DOV16-DOV19 writing, modes, public exam, and progress batch"

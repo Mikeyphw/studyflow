@@ -8,11 +8,13 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
+import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.PracticeAnalytics
+import com.mikeyphw.studyflow.core.domain.GoalEvidence
 import com.mikeyphw.studyflow.core.domain.StudyLibrarySnapshot
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
@@ -43,6 +45,7 @@ class DesktopStudyFlowServices(
         practice = practiceRepository,
         review = reviewRepository,
     ),
+    val progressRepository: DesktopStudyProgressRepository = DesktopStudyProgressRepository(),
 ) {
     val manageStudyPlan: ManageStudyPlan = ManageStudyPlan(planRepository)
     val manageStudyContent: ManageStudyContent = ManageStudyContent(contentRepository)
@@ -50,6 +53,7 @@ class DesktopStudyFlowServices(
     val manageStudySchedule: ManageStudySchedule = ManageStudySchedule(scheduleRepository)
     val manageStudySession: ManageStudySession = ManageStudySession(sessionRepository, planRepository)
     val manageStudyPractice: ManageStudyPractice = ManageStudyPractice(practiceRepository, planRepository)
+    val manageStudyProgress: ManageStudyProgress = ManageStudyProgress(progressRepository)
     val manageStudyReview: ManageStudyReview = ManageStudyReview(
         reviewRepository,
         practiceRepository,
@@ -71,6 +75,7 @@ class DesktopStudyFlowServices(
         libraryRepository = libraryRepository,
         contentModeRepository = contentModeRepository,
         publicExamRepository = publicExamRepository,
+        progressRepository = progressRepository,
     )
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
@@ -81,6 +86,7 @@ class DesktopStudyFlowServices(
     val writingWorkspaceController = DesktopWritingWorkspaceController(this)
     val contentModeController = DesktopContentModeController(this, contentModeRepository, workspacePersistence?.root)
     val publicExamController = DesktopPublicExamController(this, publicExamRepository)
+    val goalWorkspaceController = DesktopGoalWorkspaceController(this)
     val progressReadinessController = DesktopProgressReadinessController(this, workspacePersistence?.root)
     val portabilityController = DesktopPortabilityController(this, workspacePersistence?.root)
     val defaultPlanId: StudyPlanId?
@@ -120,6 +126,7 @@ class DesktopStudyFlowServices(
                 "ManageStudySession",
                 "ManageStudyPractice",
                 "ManageStudyReview",
+                "ManageStudyProgress",
                 "ManagePublicExam",
                 "ManageStudyAnalytics",
                 "ManageStudyDiscovery",
@@ -375,12 +382,25 @@ fun createDesktopStudyFlowServices(
         onTerminal = { planId, sessionId, status -> publicExamRepository.onSessionTerminal(planId, sessionId, status) },
     )
 
+    val progressRepository = DesktopStudyProgressRepository(
+        root = workspacePersistence?.root,
+        evidenceProvider = { planId ->
+            GoalEvidence(
+                sessions = sessionRepository.currentSessions(planId),
+                tests = practiceRepository.currentTests(planId),
+                mockExams = practiceRepository.currentMockExams(planId),
+                topics = contentRepository.currentSyllabus(planId).topics,
+            )
+        },
+    )
+
     val analyticsRepository = InMemoryStudyAnalyticsRepository(
         plans = planRepository,
         library = libraryRepository,
         schedule = scheduleRepository,
         sessions = sessionRepository,
         practice = practiceRepository,
+        progress = progressRepository,
     )
     val discoveryRepository = DesktopStudyDiscoveryRepository(
         plans = planRepository,
@@ -411,6 +431,7 @@ fun createDesktopStudyFlowServices(
         workspacePersistence = workspacePersistence,
         contentModeRepository = contentModeRepository,
         publicExamRepository = publicExamRepository,
+        progressRepository = progressRepository,
     )
     practiceRepository.attachWrongAnswerSink { wrongAnswers ->
         wrongAnswers.forEach { capture ->

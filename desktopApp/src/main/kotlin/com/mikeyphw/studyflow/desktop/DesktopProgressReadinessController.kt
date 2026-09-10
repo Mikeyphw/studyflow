@@ -21,6 +21,7 @@ import com.mikeyphw.studyflow.core.domain.StudySprintPreview
 import com.mikeyphw.studyflow.core.model.ExamReadinessScore
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
+import com.mikeyphw.studyflow.core.model.StudyGoal
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -39,6 +40,7 @@ data class DesktopProgressReadinessState(
     val examReport: StudyExamReportSnapshot?,
     val runbook: StudyExamRunbook?,
     val sprintPreview: StudySprintPreview?,
+    val goals: List<StudyGoal>,
     val evidence: List<StudyEvidenceEvent>,
 ) {
     val available: Boolean get() = plan != null
@@ -51,7 +53,7 @@ class DesktopProgressReadinessController(
 ) {
     fun state(): DesktopProgressReadinessState {
         val plan = services.currentDefaultPlanForDesktop()
-            ?: return DesktopProgressReadinessState(null, null, null, null, null, null, null, emptyList())
+            ?: return DesktopProgressReadinessState(null, null, null, null, null, null, null, emptyList(), emptyList())
         val now = clock()
         val planId = plan.id
         val analytics = services.analyticsRepository.currentSnapshot(planId)
@@ -66,6 +68,8 @@ class DesktopProgressReadinessController(
         val syllabus = services.contentRepository.currentSyllabus(planId)
         val target = services.contentRepository.currentState().targets.firstOrNull { it.studyPlanId == planId }
         val library = services.libraryRepository.currentSnapshot(planId)
+        val goals = services.progressRepository.currentGoals(planId)
+        val progressNotes = services.progressRepository.currentNotes(planId)
         val readiness = ExamReadinessEngine.calculate(
             plan = plan,
             analytics = analytics,
@@ -89,8 +93,8 @@ class DesktopProgressReadinessController(
                 questions = questions,
                 tests = tests,
                 mockExams = mockExams,
-                goals = emptyList(),
-                notes = emptyList(),
+                goals = goals,
+                notes = progressNotes,
                 nowEpochMillis = now,
             ),
         )
@@ -117,7 +121,7 @@ class DesktopProgressReadinessController(
                 errorEntries = errors,
                 plannedActivities = schedule.plannedActivities,
                 studySessions = sessions,
-                notes = emptyList(),
+                notes = progressNotes,
                 nowEpochMillis = now,
             ),
         )
@@ -147,6 +151,7 @@ class DesktopProgressReadinessController(
             examReport = report,
             runbook = StudyExamRunbookPlanner.build(plan, analytics, readiness, schedule, mockExams, target),
             sprintPreview = StudySprintPlanner.preview(plan, analytics, readiness, schedule, now),
+            goals = goals,
             evidence = evidence,
         )
     }

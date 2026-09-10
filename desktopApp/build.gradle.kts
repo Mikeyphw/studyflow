@@ -28,8 +28,8 @@ compose.desktop {
 
         nativeDistributions {
             packageName = "StudyFlow"
-            packageVersion = "0.1.0"
-            description = "StudyFlow Compose Multiplatform Desktop preview shell"
+            packageVersion = "1.0.0"
+            description = "StudyFlow Compose Multiplatform Desktop workspace"
         }
     }
 }
@@ -126,6 +126,27 @@ tasks.register<Exec>("verifyDesktopDov23NativeDesktopIntegration") {
     description = "Verify Desktop DOV23 native file, browser, notification, and deep-link integration"
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_desktop_dov23_native_desktop_integration.py")
+}
+
+tasks.register<Exec>("verifyDesktopDov24FullApplicableParitySeal") {
+    group = "verification"
+    description = "Verify Desktop DOV24 full applicable parity acceptance seal"
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_desktop_dov24_full_applicable_parity_seal.py")
+}
+
+tasks.register("verifyDesktopDov20Dov24Batch") {
+    group = "verification"
+    description = "Run the terminal Desktop DOV20-DOV24 product seal."
+    dependsOn(
+        "verifyDesktopDov20PortabilityBackupMigration",
+        "verifyDesktopDov21EnPtBrLocalization",
+        "verifyDesktopDov22SystemLightDarkAppearance",
+        "verifyDesktopDov23NativeDesktopIntegration",
+        "verifyDesktopDov24FullApplicableParitySeal",
+        "compileKotlin",
+        "test",
+    )
 }
 
 tasks.register("verifyDesktopDov16Dov19Batch") {

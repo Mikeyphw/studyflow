@@ -41,6 +41,15 @@ class DesktopTextCatalog private constructor(
             "Search" to "Busca",
             "Settings" to "Configurações",
             "Desktop preview" to "Desktop",
+            "Desktop workspace" to "Workspace Desktop",
+            "Goals" to "Metas",
+            "Goal title" to "Título da meta",
+            "Target value" to "Valor-alvo",
+            "Type" to "Tipo",
+            "Period" to "Período",
+            "Create goal" to "Criar meta",
+            "No goals yet." to "Ainda não há metas.",
+            "+1" to "+1",
             "Boundary sealed" to "Limite de módulos validado",
             "Desktop imports only JVM-safe StudyFlow modules." to
                 "O Desktop importa apenas módulos JVM seguros do StudyFlow.",
@@ -251,8 +260,8 @@ class DesktopTextCatalog private constructor(
                 "O código local usa as permissões do usuário do Desktop; nenhum comando de shell é interpolado.",
             "Shared edital, legislation, cycle and dashboard semantics with durable Desktop state." to
                 "Edital, legislação, ciclo e painel compartilham semântica com estado durável no Desktop.",
-            "Reports omit freeform study notes and stay inside the Desktop workspace until DOV23." to
-                "Relatórios omitem notas livres e ficam no workspace do Desktop até o DOV23.",
+            "Reports omit freeform study notes and stay inside the Desktop workspace." to
+                "Relatórios omitem notas livres e ficam no workspace do Desktop.",
             "SFLP peer integration is unavailable in this desktop composition root." to
                 "A integração SFLP não está disponível nesta composição do Desktop.",
             "These are intentionally not implemented until native desktop adapters are introduced:" to

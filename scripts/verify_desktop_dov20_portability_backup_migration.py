@@ -20,6 +20,27 @@ paths = {
 for key, path in paths.items():
     assert path.is_file(), f"missing {key}: {path}"
 text = {key: path.read_text() for key, path in paths.items()}
+# Kotlin 2.x inference is stricter around Java member callable references in collection pipelines.
+# Keep the migration fixture on explicit lambdas, matching production's compiler-safe mapper style.
+for forbidden in ("Object::toString", "legacy::remove"):
+    assert forbidden not in text["test"], forbidden
+# Kotlin forbids callable references to member extension functions. Keep all portability
+# conversions as direct lambdas so the real compiler accepts the mapper.
+for forbidden in (
+    "::toPortableRow",
+    "PortableRow::toStudyTarget",
+    "PortableRow::toExamStage",
+    "PortableRow::toSubject",
+    "PortableRow::toTopic",
+    "PortableRow::toStudyStrategy",
+    "PortableRow::toScheduleRule",
+    "PortableRow::toLegislationDocument",
+    "PortableRow::toLegislationProvision",
+    "PortableRow::toStudyCycle",
+    "PortableRow::toStudyCycleItem",
+):
+    assert forbidden not in text["controller"], forbidden
+
 for token in (
     "StudyPlanPackageCodec",
     "StudyPlanEncryptedPackageCodec",

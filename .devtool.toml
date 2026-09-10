@@ -340,6 +340,7 @@ build = [
     "verifyDesktopDov21EnPtBrLocalization",
     "verifyDesktopDov22SystemLightDarkAppearance",
     "verifyDesktopDov23NativeDesktopIntegration",
+    "verifyDesktopDov24FullApplicableParitySeal",
     "verifySflp01ProtocolBaseline",
     "verifySflp02Sflp03JournalReconciliation",
     "verifySflp04Sflp05IdentityTransport",
@@ -368,6 +369,7 @@ test = [
     "verifyDesktopDov21EnPtBrLocalization",
     "verifyDesktopDov22SystemLightDarkAppearance",
     "verifyDesktopDov23NativeDesktopIntegration",
+    "verifyDesktopDov24FullApplicableParitySeal",
     ":core:domain:test",
     ":core:link:test",
     ":core:model:test",
@@ -430,6 +432,7 @@ preflight = [
     "verifyDesktopDov21EnPtBrLocalization",
     "verifyDesktopDov22SystemLightDarkAppearance",
     "verifyDesktopDov23NativeDesktopIntegration",
+    "verifyDesktopDov24FullApplicableParitySeal",
 ]
 compile = [
     ":core:domain:compileKotlin",

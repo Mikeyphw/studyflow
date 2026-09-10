@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow.desktop
 import com.mikeyphw.studyflow.core.domain.GlobalSearchContentType
 import com.mikeyphw.studyflow.core.domain.GlobalSearchRanker
 import com.mikeyphw.studyflow.core.domain.GlobalSearchResult
+import com.mikeyphw.studyflow.core.domain.GoalProgressCalculator
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsCalculator
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsSnapshot
@@ -37,6 +38,7 @@ class InMemoryStudyAnalyticsRepository(
     private val schedule: InMemoryStudyScheduleRepository,
     private val sessions: InMemoryStudySessionRepository,
     private val practice: InMemoryStudyPracticeRepository,
+    private val progress: DesktopStudyProgressRepository? = null,
 ) : StudyAnalyticsRepository {
     private val revision = MutableStateFlow(0L)
 
@@ -87,7 +89,11 @@ class InMemoryStudyAnalyticsRepository(
             dueReviewCount = questions.count(Question::favorite),
             overdueReviewCount = activities.count { it.status == PlannedActivityStatus.MISSED },
             retentionEaseAverage = 2.7,
-            goalCompletionPercent = plan?.progressPercent ?: 0,
+            goalCompletionPercent = progress
+                ?.currentGoals(planId)
+                ?.let(GoalProgressCalculator::overallGoalPercent)
+                ?: plan?.progressPercent
+                ?: 0,
             contentProgressPercent = plan?.progressPercent ?: 0,
             libraryProgressPercent = StudyAnalyticsCalculator.percent(libraryCompleted, libraryUnits),
             consistencyScorePercent = StudyAnalyticsCalculator.consistencyScore(

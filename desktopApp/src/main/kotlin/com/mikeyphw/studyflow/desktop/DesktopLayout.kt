@@ -47,7 +47,7 @@ fun DesktopSidebar(
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = desktopText("Desktop preview"),
+            text = desktopText("Desktop workspace"),
             color = MaterialTheme.colors.onSurface.copy(alpha = 0.68f),
         )
         Spacer(modifier = Modifier.height(12.dp))
