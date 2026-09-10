@@ -263,8 +263,14 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvDomainActionKind.GOAL_PAUSE,
                 StudyFlowTvDomainActionKind.GOAL_RESUME,
                 -> !action.targetId.isNullOrBlank()
-                StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE ->
-                    !action.targetId.isNullOrBlank() && !action.contextId.isNullOrBlank()
+                StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE,
+                StudyFlowTvDomainActionKind.ERROR_RESOLVE,
+                -> !action.targetId.isNullOrBlank() && !action.contextId.isNullOrBlank()
+                StudyFlowTvDomainActionKind.ERROR_RECLASSIFY,
+                StudyFlowTvDomainActionKind.ERROR_REOPEN,
+                -> !action.targetId.isNullOrBlank() &&
+                    !action.contextId.isNullOrBlank() &&
+                    !action.errorCategory.isNullOrBlank()
             }
         }
     }

@@ -64,6 +64,36 @@ class StudyFlowTvDomainActionTest {
         ))
     }
 
+
+    @Test
+    fun errorNotebookMutationsMapOnlyWithCanonicalIdsAndRequiredCategory() {
+        val snapshot = readySnapshot()
+        val reclassify = StudyFlowTvDomainActionMapper.fromCommand(
+            command = command(StudyFlowTvSurface.REVIEW, StudyFlowTvControlAction.RECLASSIFY, "error-1", "CONTENT_GAP"),
+            snapshot = snapshot,
+            origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+        )
+        val resolve = StudyFlowTvDomainActionMapper.fromCommand(
+            command = command(StudyFlowTvSurface.REVIEW, StudyFlowTvControlAction.RESOLVE, "error-1"),
+            snapshot = snapshot,
+            origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+        )
+        val reopen = StudyFlowTvDomainActionMapper.fromCommand(
+            command = command(StudyFlowTvSurface.REVIEW, StudyFlowTvControlAction.REOPEN, "error-1"),
+            snapshot = snapshot,
+            origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
+        )
+
+        assertEquals(StudyFlowTvDomainActionKind.ERROR_RECLASSIFY, reclassify?.kind)
+        assertEquals("error-1", reclassify?.targetId)
+        assertEquals("q-1", reclassify?.contextId)
+        assertEquals("CONTENT_GAP", reclassify?.errorCategory)
+        assertEquals(StudyFlowTvDomainActionKind.ERROR_RESOLVE, resolve?.kind)
+        assertEquals("q-1", resolve?.contextId)
+        assertEquals(StudyFlowTvDomainActionKind.ERROR_REOPEN, reopen?.kind)
+        assertEquals("OTHER", reopen?.errorCategory)
+    }
+
     @Test
     fun persistencePolicyDoesNotCapturePresentationOnlyNavigation() {
         assertTrue(StudyFlowTvDomainActionProtocol.canonicalDataOwnerRequired)
@@ -168,6 +198,8 @@ class StudyFlowTvDomainActionTest {
                     confidencePercent = 50,
                     dueAtEpochMillis = 0L,
                     status = "DUE",
+                    errorEntryId = "error-1",
+                    errorCategory = "OTHER",
                 ),
             ),
         ),
