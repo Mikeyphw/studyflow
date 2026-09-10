@@ -165,3 +165,46 @@ class StudyFlowWebPresentationProjectionController {
 }
 exports.StudyFlowWebPresentationProjectionController = StudyFlowWebPresentationProjectionController;
 
+
+
+// SFLP16/SFLP17: control protocol and input delegation helpers.
+export class StudyFlowControlInputRuntime {
+  constructor(peer) {
+    this.peer = peer;
+    this.leases = new Map();
+    this.inputDelegations = new Map();
+    this.lastControlSequence = new Map();
+    this.lastInputSequence = new Map();
+  }
+
+  rememberControlLease(lease) {
+    this.leases.set(lease.sessionId, lease);
+    return lease;
+  }
+
+  applyControlCommand(command) {
+    const lease = this.leases.get(command.sessionId);
+    if (!lease) return { status: 'rejected', reason: 'unknown_lease' };
+    if (command.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' };
+    if (command.leaseToken !== lease.leaseToken) return { status: 'rejected', reason: 'bad_lease_token' };
+    const last = this.lastControlSequence.get(command.sessionId) || 0;
+    if (command.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' };
+    this.lastControlSequence.set(command.sessionId, command.sequence);
+    return { status: 'accepted', acknowledgedSequence: command.sequence };
+  }
+
+  acceptInputDelegation(offer) {
+    if (offer.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' };
+    this.inputDelegations.set(offer.delegationId, offer);
+    return { status: 'accepted', delegationId: offer.delegationId };
+  }
+
+  applyInputEvent(event) {
+    const offer = this.inputDelegations.get(event.delegationId);
+    if (!offer) return { status: 'rejected', reason: 'unknown_delegation' };
+    const last = this.lastInputSequence.get(event.delegationId) || 0;
+    if (event.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' };
+    this.lastInputSequence.set(event.delegationId, event.sequence);
+    return { status: 'accepted', acknowledgedSequence: event.sequence };
+  }
+}

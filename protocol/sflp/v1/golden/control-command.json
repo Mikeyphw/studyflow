@@ -1,0 +1,15 @@
+{
+  "message_name": "control.command",
+  "payload": {
+    "messageId": "msg-control-1",
+    "sessionId": "control-tv-1",
+    "workspaceId": "workspace-main",
+    "sourceDeviceId": "android-phone",
+    "targetDeviceId": "living-tv",
+    "leaseToken": "lease-token-1",
+    "sequence": 1,
+    "kind": "select",
+    "occurredAtEpochMillis": 1000,
+    "payload": {}
+  }
+}

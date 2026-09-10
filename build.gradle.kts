@@ -979,6 +979,7 @@ tasks.register("checkAll") {
         "verifySflp10Sflp11WebTvGeneralization",
         "verifySflp12Sflp13WebTvHandoff",
         "verifySflp14Sflp15LiveSessionProjection",
+        "verifySflp16Sflp17ControlInputDelegation",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1318,6 +1319,22 @@ tasks.register<Exec>("verifySflp14Sflp15LiveSessionProjection") {
     )
     commandLine("python3", "scripts/verify_sflp14_15_live_session_projection.py")
 }
+
+
+
+tasks.register<Exec>("verifySflp16Sflp17ControlInputDelegation") {
+    group = "verification"
+    description = "Checks SFLP16 control protocol and SFLP17 input delegation."
+    dependsOn(
+        "verifySflp14Sflp15LiveSessionProjection",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp16_17_control_input_delegation.py")
+}
+
 
 tasks.register<Exec>("verifyCrossPlatformParityBaseline") {
     group = "verification"

@@ -477,3 +477,10 @@ uses `studyflow.sflp.web_tv.receiver.v1` receiver offers, while all clients use 
 StudyFlow Link now includes live session continuity and universal presentation projection. Sessions carry canonical
 fencing, epochs, ordered events and exactly-once completion through the operation journal. Projection is source/sink
 based across Android, Desktop, Web, Android TV and Web TV with monotonic frames and receiver acknowledgements.
+
+
+## SFLP16 + SFLP17 Control/Input Delegation
+
+- Added leased generic control protocol for peer-to-peer StudyFlow control.
+- Added target-gated input delegation for keyboard, text, D-pad, select/back and touch input.
+- Added Android, Desktop, Android TV and Web bridges plus schema, golden vectors and verifier wiring.

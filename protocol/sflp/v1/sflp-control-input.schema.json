@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-control-input.schema.json",
+  "title": "StudyFlow SFLP16/SFLP17 Control and Input Delegation",
+  "type": "object",
+  "required": ["message_name", "payload"],
+  "properties": {
+    "message_name": {
+      "enum": [
+        "control.lease_grant",
+        "control.command",
+        "control.command_ack",
+        "input.delegation_offer",
+        "input.event",
+        "input.event_ack"
+      ]
+    },
+    "payload": { "type": "object" }
+  },
+  "additionalProperties": false
+}

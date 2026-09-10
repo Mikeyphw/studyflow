@@ -127,3 +127,12 @@ Applicable domain results must still converge to equivalent StudyFlow state.
 Live session continuity is protocol-backed across Android, Desktop, Web, Android TV and Web TV through fenced epochs,
 monotonic events and exactly-once completion. Universal presentation projection is source/sink based; TV-class
 receivers remain read/presentation/control clients and reject write-capability projection offers.
+
+
+### SFLP16/SFLP17 control and input delegation
+
+| Capability | Android | Desktop | Web | Web TV | Android TV |
+| --- | --- | --- | --- | --- | --- |
+| Leased control commands | Source/target | Source | Source/target | Target | Target |
+| Input delegation | Text/touch | Keyboard/text | Keyboard/text/touch | D-pad/select/back | D-pad/select/back |
+| TV write authority | No implicit grant | No implicit grant | No implicit grant | Rejected | Rejected |

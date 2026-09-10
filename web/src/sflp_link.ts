@@ -126,3 +126,71 @@ export class StudyFlowWebPresentationProjectionController{
  createProjectionCommand(projectionId:string,targetDeviceId:string,kind:string):Record<string,unknown>{return{type:"presentation.projection_control",commandId:`projection-command-${Date.now()}`,projectionId,sourceDeviceId:this.peer.identity.deviceId,targetDeviceId,kind,issuedAtEpochMillis:Date.now()};}
 }
 
+
+
+export type StudyFlowControlCommandStatus = 'accepted' | 'rejected' | 'duplicate'
+
+export interface StudyFlowControlCommandEnvelope {
+  messageId: string
+  sessionId: string
+  workspaceId: string
+  sourceDeviceId: string
+  targetDeviceId: string
+  leaseToken: string
+  sequence: number
+  kind: string
+  payload?: Record<string, unknown>
+}
+
+export interface StudyFlowInputDelegationEnvelope {
+  delegationId: string
+  workspaceId: string
+  sourceDeviceId: string
+  targetDeviceId: string
+  acceptedInputCapabilities: string[]
+  oneTimeNonceHex: string
+}
+
+export class StudyFlowControlInputRuntime {
+  private readonly leases = new Map<string, { leaseToken: string; targetDeviceId: string }>()
+  private readonly inputDelegations = new Map<string, StudyFlowInputDelegationEnvelope>()
+  private readonly lastControlSequence = new Map<string, number>()
+  private readonly lastInputSequence = new Map<string, number>()
+
+  constructor(private readonly peer: { deviceId: string }) {}
+
+  rememberControlLease(lease: { sessionId: string; leaseToken: string; targetDeviceId: string }) {
+    this.leases.set(lease.sessionId, lease)
+    return lease
+  }
+
+  applyControlCommand(command: StudyFlowControlCommandEnvelope) {
+    const lease = this.leases.get(command.sessionId)
+    if (!lease) return { status: 'rejected' as StudyFlowControlCommandStatus, reason: 'unknown_lease' }
+    if (command.targetDeviceId !== this.peer.deviceId) {
+      return { status: 'rejected' as StudyFlowControlCommandStatus, reason: 'wrong_target' }
+    }
+    if (command.leaseToken !== lease.leaseToken) {
+      return { status: 'rejected' as StudyFlowControlCommandStatus, reason: 'bad_lease_token' }
+    }
+    const last = this.lastControlSequence.get(command.sessionId) ?? 0
+    if (command.sequence <= last) return { status: 'rejected' as StudyFlowControlCommandStatus, reason: 'stale_sequence' }
+    this.lastControlSequence.set(command.sessionId, command.sequence)
+    return { status: 'accepted' as StudyFlowControlCommandStatus, acknowledgedSequence: command.sequence }
+  }
+
+  acceptInputDelegation(offer: StudyFlowInputDelegationEnvelope) {
+    if (offer.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' }
+    this.inputDelegations.set(offer.delegationId, offer)
+    return { status: 'accepted', delegationId: offer.delegationId }
+  }
+
+  applyInputEvent(event: { delegationId: string; sequence: number; targetDeviceId: string }) {
+    if (!this.inputDelegations.has(event.delegationId)) return { status: 'rejected', reason: 'unknown_delegation' }
+    if (event.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' }
+    const last = this.lastInputSequence.get(event.delegationId) ?? 0
+    if (event.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' }
+    this.lastInputSequence.set(event.delegationId, event.sequence)
+    return { status: 'accepted', acknowledgedSequence: event.sequence }
+  }
+}

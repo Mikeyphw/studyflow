@@ -603,3 +603,10 @@ copy.
 - Added SFLP14 live session snapshots, events, fencing, monotonic replay, duplicate suppression, stale epoch rejection, pause/resume/cursor continuity and exactly-once completion.
 - Added SFLP15 presentation projection offers, monotonic frames, sink acknowledgements, control commands, TV write-capability rejection and universal source/sink semantics.
 - Added Android, Desktop, Android TV and Web bridge/controller coverage plus protocol schema and golden vectors.
+
+
+## SFLP16 + SFLP17 Control/Input Delegation
+
+- Added leased generic control protocol for peer-to-peer StudyFlow control.
+- Added target-gated input delegation for keyboard, text, D-pad, select/back and touch input.
+- Added Android, Desktop, Android TV and Web bridges plus schema, golden vectors and verifier wiring.

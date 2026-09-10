@@ -1,0 +1,15 @@
+{
+  "message_name": "input.event",
+  "payload": {
+    "messageId": "msg-input-1",
+    "delegationId": "input-delegation-1",
+    "workspaceId": "workspace-main",
+    "sourceDeviceId": "desktop-main",
+    "targetDeviceId": "android-phone",
+    "sequence": 1,
+    "kind": "text_commit",
+    "text": "answer",
+    "occurredAtEpochMillis": 1000,
+    "payload": {}
+  }
+}

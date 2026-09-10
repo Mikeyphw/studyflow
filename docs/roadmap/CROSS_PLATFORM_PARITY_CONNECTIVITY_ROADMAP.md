@@ -133,3 +133,8 @@ unless that overlay explicitly invokes the repository-wide release gate.
 ### SFLP14/SFLP15 status
 
 SFLP14 live session continuity — delivered. SFLP15 universal presentation projection — delivered.
+
+
+## SFLP16 + SFLP17 — COMPLETE
+
+SFLP16 control protocol and SFLP17 input delegation are complete. Control is lease-token gated and target-gated, input delegation is capability-gated, and TV-class peers remain presentation/control sinks without repository/database write authority.
