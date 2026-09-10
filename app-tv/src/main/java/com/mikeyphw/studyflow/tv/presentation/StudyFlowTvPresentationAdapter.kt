@@ -328,6 +328,7 @@ object StudyFlowTvPresentationAdapter {
                     else -> StudyFlowTvLibraryReferenceKind.CHECKLIST
                 },
                 relatedDestination = destinationFor(reference.relatedSurface),
+                viewer = reference.viewer,
                 row = index / 2,
                 column = 1 + (index % 2),
             )

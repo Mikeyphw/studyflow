@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import re
 import tomllib
 from pathlib import Path
 
@@ -132,8 +133,7 @@ require_tokens(
 
 build_contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV26"',
-    'packageVersionCode = 26',
+    'const val currentTvOverlay',
     'phoneControllerUiStillDeferredToTvov23 = false',
     'object StudyFlowTvPhoneControllerBuildContract',
     'phoneControllerIntroduced = true',
@@ -141,15 +141,27 @@ build_contract = require_tokens(
     'allTvDestinationsControllable = true',
     'livePresentationSynchronizationDeferredToTvov24 = false',
 )
-require_tokens(
+require(
+    ('packageVersionCode = 26' in build_contract) or ('packageVersionCode = 31' in build_contract),
+    "TVOV23 build contract must retain TVOV26 compatibility or TVOV31 terminal identity",
+)
+build_contract_test = require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContractTest.kt",
     'phoneControllerIsProductionWiredFromSettings',
-    'assertEquals("TVOV26", StudyFlowTvBuildContract.currentTvOverlay)',
-    'assertEquals(26, StudyFlowTvPackagingBuildContract.packageVersionCode)',
+)
+require(
+    ('assertEquals("TVOV26", StudyFlowTvBuildContract.currentTvOverlay)' in build_contract_test)
+    or ('assertEquals("TVOV31", StudyFlowTvBuildContract.currentTvOverlay)' in build_contract_test),
+    "TVOV23 build-contract test must assert a compatible current overlay",
+)
+require(
+    ('assertEquals(26, StudyFlowTvPackagingBuildContract.packageVersionCode)' in build_contract_test)
+    or ('assertEquals(31, StudyFlowTvPackagingBuildContract.packageVersionCode)' in build_contract_test),
+    "TVOV23 build-contract test must assert a compatible package version",
 )
 
 tv_build = read("app-tv/build.gradle.kts")
-require('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build, "TV package must retain the current TVOV25 identity")
+require(('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build) or ('versionCode = 31' in tv_build and 'versionName = "1.0.0-tv31"' in tv_build), "TV package must retain TVOV26 compatibility or TVOV31 terminal identity")
 for forbidden in (':app:', ':feature:', ':core:data', ':core:database'):
     require(forbidden not in tv_build, f"TV APK dependency boundary regressed: {forbidden}")
 
@@ -180,6 +192,8 @@ for token in ("receiver selection", "user-present", "revoke", "Cast SDK", "TVOV2
     require(token.lower() in quality.lower(), f"TVOV23 quality contract missing {token}")
 require("TVOV23" in readme and "phone controller" in readme.lower(), "README missing TVOV23 summary")
 
+
+require(re.search(r'currentTvOverlay = \"TVOV(?:2[6-9]|3[01])\"', build_contract) is not None, "current TV overlay must be TVOV26 or newer through TVOV31")
 if FAILURES:
     print("TVOV23_PHONE_CONTROLLER: FAIL")
     for failure in FAILURES:

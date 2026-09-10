@@ -150,6 +150,16 @@
     <string name="tv_library_action_next">Next</string>
     <string name="tv_library_action_practice">Practice</string>
     <string name="tv_library_action_home">Home</string>
+    <string name="tv_library_viewer_status_format">viewer=%1$s · page=%2$d/%3$d · zoom=%4$d%%</string>
+    <string name="tv_library_viewer_unavailable">This material requires a paired-device stream or a TV-accessible URI.</string>
+    <string name="tv_library_viewer_previous_page">Previous page</string>
+    <string name="tv_library_viewer_next_page">Next page</string>
+    <string name="tv_library_viewer_zoom_out">Zoom −</string>
+    <string name="tv_library_viewer_zoom_in">Zoom +</string>
+    <string name="tv_library_viewer_play_pause">Play / pause</string>
+    <string name="tv_library_viewer_seek_back">−10 s</string>
+    <string name="tv_library_viewer_seek_forward">+10 s</string>
+    <string name="tv_library_viewer_close">Close viewer</string>
 
     <string name="tv_settings_section_title">TV-safe settings</string>
     <string name="tv_settings_status_format">pairing=%1$s · focus=%2$s · local-first controls only</string>

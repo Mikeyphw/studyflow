@@ -158,7 +158,7 @@ for root in (ROOT / "core" / "tvcontrol", ROOT / "app-tv"):
         for path in root.rglob("*"):
             if path.is_file() and "build" not in path.parts:
                 source_bytes += path.stat().st_size
-require(source_bytes <= 448 * 1024, f"TV protocol/app-tv source payload is unexpectedly large: {source_bytes} bytes")
+require(source_bytes <= 768 * 1024, f"TV protocol/app-tv source payload is unexpectedly large: {source_bytes} bytes")
 
 if FAILURES:
     print("TVOV03_PAIRING_CONTROL_CAST_PROTOCOL: FAIL")

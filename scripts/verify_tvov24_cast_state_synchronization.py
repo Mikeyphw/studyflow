@@ -168,8 +168,7 @@ require_tokens(
 
 build_contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV26"',
-    'packageVersionCode = 26',
+    'const val currentTvOverlay',
     'livePresentationSynchronizationDeferredToTvov24 = false',
     'object StudyFlowTvCastSynchronizationBuildContract',
     'realCastStateSynchronizationIntroduced = true',
@@ -177,13 +176,17 @@ build_contract = require_tokens(
     'reconnectResyncRequired = true',
     'tvStopCastClearsPresentationInbox = true',
 )
+require(
+    ('packageVersionCode = 26' in build_contract) or ('packageVersionCode = 31' in build_contract),
+    "TVOV24 build contract must retain TVOV26 compatibility or TVOV31 terminal identity",
+)
 require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContractTest.kt",
     'realCastStateSynchronizationIsProductionWired',
 )
 
 tv_build = read("app-tv/build.gradle.kts")
-require('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build, "TV package must retain the current TVOV25 identity")
+require(('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build) or ('versionCode = 31' in tv_build and 'versionName = "1.0.0-tv31"' in tv_build), "TV package must retain TVOV26 compatibility or TVOV31 terminal identity")
 for forbidden in (':app:', ':feature:', ':core:data', ':core:database', 'androidx.tv', 'play-services-cast', 'androidx.mediarouter'):
     require(forbidden not in tv_build, f"TV APK dependency boundary regressed: {forbidden}")
 
@@ -214,6 +217,8 @@ for token in ("canonical", "authenticated", "serialized", "pending", "Cast SDK")
     require(token.lower() in quality.lower(), f"TVOV24 quality contract missing {token}")
 require("TVOV24" in readme and "cast" in readme.lower(), "README missing TVOV24 summary")
 
+
+require(re.search(r'currentTvOverlay = \"TVOV(?:2[6-9]|3[01])\"', build_contract) is not None, "current TV overlay must be TVOV26 or newer through TVOV31")
 if FAILURES:
     print("TVOV24_CAST_STATE_SYNCHRONIZATION: FAIL")
     for failure in FAILURES:

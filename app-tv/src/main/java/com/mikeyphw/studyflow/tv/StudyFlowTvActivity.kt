@@ -10,9 +10,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.VideoView
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlContinuityState
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlSession
@@ -76,6 +78,11 @@ import com.mikeyphw.studyflow.tv.library.StudyFlowTvLibraryAction
 import com.mikeyphw.studyflow.tv.library.StudyFlowTvLibraryReference
 import com.mikeyphw.studyflow.tv.library.StudyFlowTvLibrarySnapshot
 import com.mikeyphw.studyflow.tv.library.StudyFlowTvLibrarySurface
+import com.mikeyphw.studyflow.tv.library.StudyFlowTvMaterialViewer
+import com.mikeyphw.studyflow.tv.library.StudyFlowTvMaterialViewerAction
+import com.mikeyphw.studyflow.tv.library.StudyFlowTvMaterialViewerState
+import com.mikeyphw.studyflow.tv.library.StudyFlowTvNativeMaterialViewer
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMaterialViewerKind
 import com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleAction
 import com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleItem
 import com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleSnapshot
@@ -137,6 +144,7 @@ class StudyFlowTvActivity : Activity() {
     private lateinit var localTransportHost: StudyFlowTvLocalTransportHost
     private lateinit var sflpPeer: StudyFlowTvSflpPeer
     private var pendingPairingAfterPermission = false
+    private var libraryViewerState: StudyFlowTvMaterialViewerState? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -900,6 +908,10 @@ class StudyFlowTvActivity : Activity() {
 
     private fun renderLibraryDestination() {
         if (!hasPresentationFor(StudyFlowTvDestination.LIBRARY)) return renderPresentationUnavailableDestination()
+        libraryViewerState?.let { state ->
+            renderLibraryMaterialViewer(state)
+            return
+        }
         val snapshot = librarySnapshot
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
@@ -942,6 +954,90 @@ class StudyFlowTvActivity : Activity() {
                 StudyFlowTvLibrarySurface.actions.forEach { action -> addView(tvLibraryAction(action)) }
             },
         )
+    }
+
+    private fun renderLibraryMaterialViewer(state: StudyFlowTvMaterialViewerState) {
+        contentCards.visibility = View.VISIBLE
+        contentCards.removeAllViews()
+        contentTitle.text = state.title
+        contentBody.text = getString(
+            R.string.tv_library_viewer_status_format,
+            state.presentation.kind.name.lowercase(),
+            state.pageIndex + 1,
+            state.pageCount,
+            state.zoomPercent,
+        )
+        when (state.presentation.kind) {
+            StudyFlowTvMaterialViewerKind.TEXT -> contentCards.addView(
+                TextView(this).apply {
+                    text = state.textPages[state.pageIndex]
+                    setTextColor(Color.WHITE)
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.BODY)
+                    setPadding(0, dp(8), 0, dp(12))
+                },
+            )
+            StudyFlowTvMaterialViewerKind.IMAGE -> contentCards.addView(
+                ImageView(this).apply {
+                    state.presentation.sourceUri?.let { uri ->
+                        StudyFlowTvNativeMaterialViewer.bindImage(this, uri, state.zoomPercent)
+                    }
+                },
+            )
+            StudyFlowTvMaterialViewerKind.PDF -> contentCards.addView(
+                ImageView(this).apply {
+                    state.presentation.sourceUri?.let { uri ->
+                        StudyFlowTvNativeMaterialViewer.renderPdfPage(
+                            this@StudyFlowTvActivity,
+                            uri,
+                            state.pageIndex,
+                            state.zoomPercent,
+                        )?.let(::setImageBitmap)
+                    }
+                    adjustViewBounds = true
+                },
+            )
+            StudyFlowTvMaterialViewerKind.MEDIA -> contentCards.addView(
+                VideoView(this).apply { StudyFlowTvNativeMaterialViewer.bindMedia(this, state) },
+            )
+            StudyFlowTvMaterialViewerKind.WEB,
+            StudyFlowTvMaterialViewerKind.UNAVAILABLE,
+            -> contentCards.addView(
+                TextView(this).apply {
+                    text = state.presentation.sourceUri ?: getString(R.string.tv_library_viewer_unavailable)
+                    setTextColor(Color.WHITE)
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.BODY)
+                },
+            )
+        }
+        contentCards.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START
+                StudyFlowTvMaterialViewer.availableActions(state).forEach { action ->
+                    addView(tvTextActionButton(materialViewerActionLabel(action)).apply {
+                        setOnClickListener {
+                            if (action == StudyFlowTvMaterialViewerAction.CLOSE) {
+                                libraryViewerState = null
+                            } else {
+                                libraryViewerState = StudyFlowTvMaterialViewer.reduce(state, action)
+                            }
+                            renderLibraryDestination()
+                        }
+                    })
+                }
+            },
+        )
+    }
+
+    private fun materialViewerActionLabel(action: StudyFlowTvMaterialViewerAction): String = when (action) {
+        StudyFlowTvMaterialViewerAction.PREVIOUS_PAGE -> getString(R.string.tv_library_viewer_previous_page)
+        StudyFlowTvMaterialViewerAction.NEXT_PAGE -> getString(R.string.tv_library_viewer_next_page)
+        StudyFlowTvMaterialViewerAction.ZOOM_OUT -> getString(R.string.tv_library_viewer_zoom_out)
+        StudyFlowTvMaterialViewerAction.ZOOM_IN -> getString(R.string.tv_library_viewer_zoom_in)
+        StudyFlowTvMaterialViewerAction.PLAY_PAUSE -> getString(R.string.tv_library_viewer_play_pause)
+        StudyFlowTvMaterialViewerAction.SEEK_BACK -> getString(R.string.tv_library_viewer_seek_back)
+        StudyFlowTvMaterialViewerAction.SEEK_FORWARD -> getString(R.string.tv_library_viewer_seek_forward)
+        StudyFlowTvMaterialViewerAction.CLOSE -> getString(R.string.tv_library_viewer_close)
     }
 
     private fun hasPresentationFor(destination: StudyFlowTvDestination): Boolean {
@@ -1251,22 +1347,41 @@ class StudyFlowTvActivity : Activity() {
         title = reference.title,
         body = getString(R.string.tv_library_reference_body_format, reference.subject, reference.sourceLabel),
         onClick = {
+            val index = librarySnapshot.references.indexOfFirst { it.sourceId == reference.sourceId }
+            if (index >= 0) librarySnapshot = librarySnapshot.copy(activeReferenceIndex = index)
+            libraryViewerState = StudyFlowTvMaterialViewer.open(reference)
             dispatchLocalCommand { commandId, issuedAt ->
                 StudyFlowTvControlCommand(
                     commandId = commandId,
                     surface = StudyFlowTvSurface.LIBRARY,
                     action = com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction.OPEN,
-                    targetId = reference.id.name.lowercase(),
+                    targetId = reference.sourceId,
                     issuedAtEpochMillis = issuedAt,
                 )
             }
+            if (libraryViewerState != null) renderLibraryDestination()
         },
     )
 
     private fun tvLibraryAction(action: StudyFlowTvLibraryAction): Button = tvActionButton(action.labelResId()).apply {
         setOnClickListener {
-            dispatchLocalCommand { commandId, issuedAt ->
-                StudyFlowTvLibrarySurface.commandForAction(action, librarySnapshot, commandId, issuedAt)
+            when (action) {
+                StudyFlowTvLibraryAction.OPEN_REFERENCE -> {
+                    libraryViewerState = StudyFlowTvMaterialViewer.open(librarySnapshot.activeReference)
+                    renderLibraryDestination()
+                }
+                StudyFlowTvLibraryAction.PREVIOUS_REFERENCE,
+                StudyFlowTvLibraryAction.NEXT_REFERENCE,
+                -> {
+                    librarySnapshot = StudyFlowTvLibrarySurface.applyAction(librarySnapshot, action)
+                    libraryViewerState = null
+                    renderLibraryDestination()
+                }
+                StudyFlowTvLibraryAction.START_RELATED_PRACTICE,
+                StudyFlowTvLibraryAction.RETURN_HOME,
+                -> dispatchLocalCommand { commandId, issuedAt ->
+                    StudyFlowTvLibrarySurface.commandForAction(action, librarySnapshot, commandId, issuedAt)
+                }
             }
         }
     }

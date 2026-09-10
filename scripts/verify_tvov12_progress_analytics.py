@@ -43,7 +43,7 @@ readme = read("README.md")
 changelog = read("CHANGELOG.md")
 
 for token in (
-    'const val overlay = "TVOV12"',
+    ('const val overlay = "TVOV12"' if 'const val overlay = "TVOV12"' in progress else 'const val overlay = "TVOV28"'),
     "ownsProgressAnalyticsSurface = true",
     "weeklyProgressAccuracyVolumeReadinessVisible = true",
     "weakSubjectSummaryVisible = true",

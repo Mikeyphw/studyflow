@@ -41,8 +41,9 @@ quality = read("docs/quality/TVOV18_SIZE_R8_RESOURCE_SHRINKING_CONTRACTS.md")
 notes = read("TVOV18_ANDROID_TV_SIZE_R8_RESOURCE_SHRINKING.md")
 readme = read("README.md")
 
+require('versionName = "0.1.0-tv26"' in app_build or 'versionName = "1.0.0-tv31"' in app_build, "TVOV18-compatible or TVOV31 terminal version missing")
+
 for token in (
-    'versionName = "0.1.0-tv26"',
     "isMinifyEnabled = true",
     "isShrinkResources = true",
     'getDefaultProguardFile("proguard-android-optimize.txt")',

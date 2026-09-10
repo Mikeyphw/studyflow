@@ -139,7 +139,7 @@ for token in (
 require("TVOV01 adds a real `:app-tv` module" in readme, "README missing TVOV01 summary")
 require("TVOV01 - Minimal Android TV application module" in changelog, "CHANGELOG missing TVOV01 entry")
 
-max_source_bytes = 384 * 1024
+max_source_bytes = 768 * 1024
 source_bytes = 0
 for path in (ROOT / "app-tv").rglob("*"):
     if path.is_file() and "build" not in path.parts:

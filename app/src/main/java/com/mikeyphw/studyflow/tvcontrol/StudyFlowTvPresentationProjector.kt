@@ -22,6 +22,8 @@ import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvActivityPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvLibraryPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvLibraryReferencePresentation
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMaterialViewerKind
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMaterialViewerPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMockExamPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationAvailability
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationProtocol
@@ -378,7 +380,58 @@ object StudyFlowTvPresentationProjector {
             excerpt = body.take(320),
             referenceKind = type.name,
             relatedSurface = StudyFlowTvSurface.LIBRARY,
+            viewer = StudyFlowTvMaterialViewerPresentation(
+                kind = when (type) {
+                    com.mikeyphw.studyflow.core.model.StudyMaterialType.NOTE,
+                    com.mikeyphw.studyflow.core.model.StudyMaterialType.BOOK,
+                    -> StudyFlowTvMaterialViewerKind.TEXT
+                    com.mikeyphw.studyflow.core.model.StudyMaterialType.PDF -> StudyFlowTvMaterialViewerKind.PDF
+                    com.mikeyphw.studyflow.core.model.StudyMaterialType.VIDEO -> StudyFlowTvMaterialViewerKind.MEDIA
+                    com.mikeyphw.studyflow.core.model.StudyMaterialType.WEBSITE -> StudyFlowTvMaterialViewerKind.WEB
+                    com.mikeyphw.studyflow.core.model.StudyMaterialType.LOCAL_FILE,
+                    com.mikeyphw.studyflow.core.model.StudyMaterialType.COURSE,
+                    com.mikeyphw.studyflow.core.model.StudyMaterialType.OTHER,
+                    -> sourceUri?.let(::viewerKindForUri) ?: StudyFlowTvMaterialViewerKind.UNAVAILABLE
+                },
+                sourceUri = sourceUri,
+                mimeType = mimeTypeFor(type, sourceUri),
+                inlineText = body.take(StudyFlowTvPresentationProtocol.maxInlineMaterialTextChars)
+                    .takeIf { type == com.mikeyphw.studyflow.core.model.StudyMaterialType.NOTE ||
+                        type == com.mikeyphw.studyflow.core.model.StudyMaterialType.BOOK },
+            ),
         )
+    }
+
+    private fun viewerKindForUri(uri: String): StudyFlowTvMaterialViewerKind {
+        val lower = uri.substringBefore('?').substringBefore('#').lowercase()
+        return when {
+            lower.endsWith(".pdf") -> StudyFlowTvMaterialViewerKind.PDF
+            lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") ||
+                lower.endsWith(".webp") -> StudyFlowTvMaterialViewerKind.IMAGE
+            lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".m4v") ||
+                lower.endsWith(".mp3") || lower.endsWith(".m4a") -> StudyFlowTvMaterialViewerKind.MEDIA
+            uri.startsWith("http://") || uri.startsWith("https://") -> StudyFlowTvMaterialViewerKind.WEB
+            else -> StudyFlowTvMaterialViewerKind.UNAVAILABLE
+        }
+    }
+
+    private fun mimeTypeFor(
+        type: com.mikeyphw.studyflow.core.model.StudyMaterialType,
+        uri: String?,
+    ): String? = when (type) {
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.PDF -> "application/pdf"
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.VIDEO -> "video/*"
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.NOTE,
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.BOOK,
+        -> "text/plain"
+        else -> when (viewerKindForUri(uri.orEmpty())) {
+            StudyFlowTvMaterialViewerKind.PDF -> "application/pdf"
+            StudyFlowTvMaterialViewerKind.IMAGE -> "image/*"
+            StudyFlowTvMaterialViewerKind.MEDIA -> "video/*"
+            StudyFlowTvMaterialViewerKind.WEB -> "text/html"
+            StudyFlowTvMaterialViewerKind.TEXT -> "text/plain"
+            StudyFlowTvMaterialViewerKind.UNAVAILABLE -> null
+        }
     }
 
     private fun StudyActivityType.targetSurface(): StudyFlowTvSurface = when (this) {

@@ -16,6 +16,7 @@ object StudyFlowTvPresentationProtocol {
     const val maxTvReviewItems = 20
     const val maxTvScheduleItems = 40
     const val maxTvLibraryReferences = 20
+    const val maxInlineMaterialTextChars = 14_400
     const val rawDatabaseRowsForbidden = true
     const val arbitraryUiTreesForbidden = true
     const val transportStillDeferred = false
@@ -364,6 +365,36 @@ data class StudyFlowTvLibraryPresentation(
 }
 
 @Serializable
+enum class StudyFlowTvMaterialViewerKind {
+    TEXT,
+    IMAGE,
+    PDF,
+    MEDIA,
+    WEB,
+    UNAVAILABLE,
+}
+
+@Serializable
+data class StudyFlowTvMaterialViewerPresentation(
+    val kind: StudyFlowTvMaterialViewerKind,
+    val sourceUri: String? = null,
+    val mimeType: String? = null,
+    val inlineText: String? = null,
+    val pageCountHint: Int? = null,
+    val durationMillis: Long? = null,
+    val playbackPositionMillis: Long = 0L,
+) {
+    init {
+        require(sourceUri == null || sourceUri.isNotBlank())
+        require(mimeType == null || mimeType.contains('/'))
+        require(inlineText == null || inlineText.length <= StudyFlowTvPresentationProtocol.maxInlineMaterialTextChars)
+        require(pageCountHint == null || pageCountHint > 0)
+        require(durationMillis == null || durationMillis >= 0L)
+        require(playbackPositionMillis >= 0L)
+    }
+}
+
+@Serializable
 data class StudyFlowTvLibraryReferencePresentation(
     val referenceId: String,
     val title: String,
@@ -372,6 +403,7 @@ data class StudyFlowTvLibraryReferencePresentation(
     val excerpt: String,
     val referenceKind: String,
     val relatedSurface: StudyFlowTvSurface,
+    val viewer: StudyFlowTvMaterialViewerPresentation? = null,
 ) {
     init {
         require(referenceId.isNotBlank())

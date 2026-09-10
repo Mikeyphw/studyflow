@@ -532,3 +532,10 @@ REL05 adds `scripts/export_release_notes.py` to turn changelog evidence into `re
 ### REL07 release checklist gate / REL08 final release-ops seal
 
 REL07 adds `scripts/check_release_operator_checklist.py` to aggregate REL01 through REL06 target evidence and operator checklist state into `release-checklist-gate.json`, `release-checklist-gate.md`, and `release-checklist-command-template.sh`. REL08 adds `scripts/build_release_ops_final_seal.py` to emit `release-ops-final-seal.json`, `release-ops-final-seal.md`, and `studyflow-release-ops-final-bundle.zip`. The final seal is evidence only: it does not upload, publish, install, sign, delete, or roll back anything, and it only sets `releaseOpsReady=true` when all prior evidence and the REL07 checklist pass.
+
+### TV control and cast
+
+A paired phone can **control every TV destination** through the shared TV control protocol and **cast study sessions**
+using StudyFlow's typed presentation/cast state rather than screen mirroring.
+
+TVOV01 adds a real `:app-tv` module; later TV overlays retain its separate-package and dependency-budget contract.

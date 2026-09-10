@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import sys
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -184,11 +185,11 @@ for token in (
 ):
     require(token in controller, f"phone restart cast convergence missing token: {token}")
 require("SharedPreferencesStudyFlowTvCastIntentStore(context)" in controller_screen, "controller UI must use private cast-intent store")
-require('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build, "TV package must advance to TVOV26 identity")
-require('const val versionCode = 26' in packaging_policy and 'const val versionName = "0.1.0-tv26"' in packaging_policy, "TV packaging policy must advance to TVOV26 identity")
-require('currentTvOverlay = "TVOV26"' in build_contract, "TV build contract must identify TVOV26 as the current overlay")
+require(('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build) or ('versionCode = 31' in tv_build and 'versionName = "1.0.0-tv31"' in tv_build), "TV package must retain TVOV26 compatibility or TVOV31 terminal identity")
+require((('const val versionCode = 26' in packaging_policy and 'const val versionName = "0.1.0-tv26"' in packaging_policy) or ('const val versionCode = 31' in packaging_policy and 'const val versionName = "1.0.0-tv31"' in packaging_policy)), "TV packaging policy must retain TVOV26 compatibility or advance to TVOV31 terminal identity")
+require(re.search(r'currentTvOverlay = "TVOV(?:2[6-9]|3[01])"', build_contract) is not None, "TV build contract must identify TVOV26 or newer through TVOV31")
 manifest_packaging_verifier = read("scripts/verify_tvov19_manifest_packaging.py")
-require('VERSION_CODE = "26"' in manifest_packaging_verifier, "packaged-artifact verifier must inspect TVOV26 versionCode")
+require(('VERSION_CODE = "26"' in manifest_packaging_verifier) or ('VERSION_CODE = "31"' in manifest_packaging_verifier), "packaged-artifact verifier must inspect the active TV package versionCode")
 require('VERSION_CODE = "25"' not in manifest_packaging_verifier, "packaged-artifact verifier must not retain stale TVOV25 versionCode")
 for token in (
     "assertEquals(StudyFlowTvPlaybackState.READY, continuity.playbackState)",

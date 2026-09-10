@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV26"
+    const val currentTvOverlay = "TVOV27"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -329,4 +329,16 @@ object StudyFlowTvSflpGeneralizationBuildContract {
     const val tvDpadInputCapabilityRequired = true
     const val tvPlanWriteCapabilityForbidden = true
     const val androidTvIsNotPhoneHub = true
+}
+
+// TVOV27 full native material-viewer contract.
+@Suppress("ConstPropertyName")
+object StudyFlowTvMaterialViewerBuildContract {
+    const val fullNativeMaterialViewerIntroduced = true
+    const val textPaginationRequired = true
+    const val imageZoomRequired = true
+    const val pdfNavigationRequired = true
+    const val mediaPlaybackRequired = true
+    const val frameworkRendererOnly = true
+    const val fileManagementStillDisabledOnTv = true
 }

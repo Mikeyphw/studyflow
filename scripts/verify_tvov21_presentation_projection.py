@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -121,7 +122,7 @@ app_tv_build = read("app-tv/build.gradle.kts")
 require('implementation(project(":core:tvcontrol"))' in app_tv_build, "app-tv must keep shared presentation protocol dependency")
 for forbidden in (':core:data', ':core:database', ':feature:', 'androidx.tv', 'play-services-cast'):
     require(forbidden not in app_tv_build, f"app-tv dependency boundary regressed: {forbidden}")
-require('versionCode = 26' in app_tv_build and 'versionName = "0.1.0-tv26"' in app_tv_build, "TVOV21 version not installed")
+require(('versionCode = 26' in app_tv_build and 'versionName = "0.1.0-tv26"' in app_tv_build) or ('versionCode = 31' in app_tv_build and 'versionName = "1.0.0-tv31"' in app_tv_build), "TVOV21-compatible or TVOV31 terminal version not installed")
 require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapterTest.kt",
     "typedSnapshotKeepsCanonicalSourceIdsWhenAdaptedToTvSlots",
@@ -129,9 +130,9 @@ require_tokens(
     "waitingStateIsExplicitAndContainsNoHistoricalExamFixture",
 )
 
-require_tokens(
+contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV26"',
+    'const val currentTvOverlay',
     "object StudyFlowTvPresentationBuildContract",
     "typedPresentationProtocolIntroduced = true",
     "phoneOwnsCanonicalProjection = true",
@@ -170,6 +171,8 @@ require("typed presentation" in readme.lower(), "README missing TVOV21 typed-pre
 require("canonical" in quality.lower() and "fixture" in quality.lower() and "transport" in quality.lower(), "TVOV21 quality contract incomplete")
 require("demo fixture" in notes.lower() and "TVOV22" in notes, "TVOV21 implementation note incomplete")
 
+
+require(re.search(r'currentTvOverlay = \"TVOV(?:2[6-9]|3[01])\"', contract) is not None, "current TV overlay must be TVOV26 or newer through TVOV31")
 if FAILURES:
     print("TVOV21_PRESENTATION_PROJECTION: FAIL")
     for failure in FAILURES:

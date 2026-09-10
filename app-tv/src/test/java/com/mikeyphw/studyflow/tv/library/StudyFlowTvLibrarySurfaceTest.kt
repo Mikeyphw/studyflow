@@ -12,9 +12,10 @@ import org.junit.Test
 class StudyFlowTvLibrarySurfaceTest {
     @Test
     fun libraryOwnsRoadmapLimitedReferenceContract() {
-        assertEquals("TVOV14", StudyFlowTvLibrarySurface.overlay)
+        assertEquals("TVOV27", StudyFlowTvLibrarySurface.overlay)
         assertTrue(StudyFlowTvLibrarySurface.ownsLimitedLibraryReferenceSurface)
         assertTrue(StudyFlowTvLibrarySurface.curatedReferenceCardsVisible)
+        assertTrue(StudyFlowTvLibrarySurface.ownsFullNativeMaterialViewer)
         assertTrue(StudyFlowTvLibrarySurface.shortReadableExcerptsVisible)
         assertTrue(StudyFlowTvLibrarySurface.fileManagementDisabledOnTv)
         assertTrue(StudyFlowTvLibrarySurface.pairedPhoneCanOpenReferencesButNotManageFiles)

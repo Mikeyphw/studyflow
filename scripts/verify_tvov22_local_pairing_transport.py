@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import re
 import tomllib
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -114,7 +115,7 @@ app_build = read("app/build.gradle.kts")
 tv_build = read("app-tv/build.gradle.kts")
 for text, label in ((app_build, "phone"), (tv_build, "TV")):
     require('implementation(project(":core:tvlink"))' in text, f"{label} app must depend on :core:tvlink")
-require('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build, "TVOV22 package version not installed")
+require(('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build) or ('versionCode = 31' in tv_build and 'versionName = "1.0.0-tv31"' in tv_build), "TVOV22-compatible or TVOV31 terminal package version not installed")
 for forbidden in (':core:data', ':core:database', ':feature:', 'androidx.tv', 'play-services-cast', 'androidx.mediarouter'):
     require(forbidden not in tv_build, f"TV dependency boundary regressed: {forbidden}")
 
@@ -161,13 +162,16 @@ require('transportDeferred = false' in projector, "phone projector must mark loc
 
 contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV26"',
+    'const val currentTvOverlay',
     'castTransportDeferred = false',
     'object StudyFlowTvLocalLinkBuildContract',
     'localPairingDiscoveryTransportIntroduced = true',
     'sharedAndroidLinkModule = ":core:tvlink"',
     'phoneControllerUiStillDeferredToTvov23 = false',
-    'packageVersionCode = 26',
+)
+require(
+    ('packageVersionCode = 26' in contract) or ('packageVersionCode = 31' in contract),
+    "TVOV22 build contract must retain TVOV26 compatibility or TVOV31 terminal identity",
 )
 require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContractTest.kt",
@@ -204,6 +208,8 @@ for token in ("explicit", "revoked", "Cast SDK", "no raw database rows", "backgr
     require(token.lower() in quality.lower(), f"TVOV22 quality contract missing {token}")
 require("TVOV22" in readme and "local pairing" in readme.lower(), "README missing TVOV22 summary")
 
+
+require(re.search(r'currentTvOverlay = \"TVOV(?:2[6-9]|3[01])\"', contract) is not None, "current TV overlay must be TVOV26 or newer through TVOV31")
 if FAILURES:
     print("TVOV22_LOCAL_PAIRING_TRANSPORT: FAIL")
     for failure in FAILURES:

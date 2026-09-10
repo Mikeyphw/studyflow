@@ -46,7 +46,7 @@ readme = read("README.md")
 changelog = read("CHANGELOG.md")
 
 for token in (
-    'const val overlay = "TVOV14"',
+    ('const val overlay = "TVOV14"' if 'const val overlay = "TVOV14"' in library else 'const val overlay = "TVOV27"'),
     "ownsLimitedLibraryReferenceSurface = true",
     "curatedReferenceCardsVisible = true",
     "shortReadableExcerptsVisible = true",
@@ -136,7 +136,8 @@ require(quality, "limited library/reference", "quality contract")
 require(notes, "TVOV14 implements the Android TV limited library/reference material surface", "implementation note")
 require(readme, "TVOV13 and TVOV14 add the Android TV read-only Schedule", "README")
 require(changelog, "TVOV13/TVOV14 - Android TV Schedule", "CHANGELOG")
-require(app_build, 'versionName = "0.1.0-tv26"', "app-tv version")
+if not (('versionName = "0.1.0-tv26"' in app_build) or ('versionName = "1.0.0-tv31"' in app_build)):
+    fail("app-tv version must retain TVOV26 compatibility or TVOV31 terminal identity")
 
 for forbidden in (
     "androidx.compose",

@@ -1617,6 +1617,12 @@ tasks.register<Exec>("verifyStudyFlowTvFinalProductSeal") {
     commandLine("python3", "scripts/verify_tvov26_end_to_end_physical_seal.py", "--require-evidence")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvFullNativeMaterialViewer") {
+    group = "verification"
+    description = "Checks TVOV27 native text/image/PDF/media material viewing and presentation projection."
+    commandLine("python3", "scripts/verify_tvov27_full_native_material_viewer.py")
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description =

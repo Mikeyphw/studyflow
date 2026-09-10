@@ -188,24 +188,31 @@ for domain in ("root", "file", "database", "sharedpref", "external"):
 for token in (
     'applicationId = "com.mikeyphw.studyflow.tv"',
     'namespace = "com.mikeyphw.studyflow.tv"',
-    'versionCode = 26',
-    'versionName = "0.1.0-tv26"',
     'STUDYFLOW_RELEASE_STORE_FILE',
     'studyFlowTvRelease',
     'TV_RELEASE_SIGNING_CONFIGURED',
 ):
     require(token in app_build, f"TVOV19 app-tv packaging config missing token: {token}")
+require(('versionCode = 26' in app_build and 'versionName = "0.1.0-tv26"' in app_build) or ('versionCode = 31' in app_build and 'versionName = "1.0.0-tv31"' in app_build), "TVOV19-compatible or TVOV31 terminal package identity missing")
 for forbidden in ('project(":core:data")', 'project(":core:database")', 'project(":feature:', 'androidx.tv', 'androidx.compose', 'androidx.mediarouter'):
     require(forbidden not in app_build, f"TVOV19 dependency boundary violated by {forbidden}")
 
-for token in ('const val overlay = "TVOV19"', 'versionCode = 26', 'bannerWidthDp = 160', 'bannerHeightDp = 90', 'fun isAllowedTvTargetTask'):
+for token in ('const val overlay = "TVOV19"', 'bannerWidthDp = 160', 'bannerHeightDp = 90', 'fun isAllowedTvTargetTask'):
     require(token in policy, f"TVOV19 packaging policy missing token: {token}")
+require(
+    ('const val versionCode = 26' in policy) or ('const val versionCode = 31' in policy),
+    "TVOV19 packaging policy must retain TVOV26 compatibility or TVOV31 terminal identity",
+)
 for token in ('packageIdentityAndTvLauncherContractAreStable', 'devtoolTvTargetRejectsPhoneTasks'):
     require(token in policy_test, f"TVOV19 packaging policy test missing {token}")
-for token in ('packagingHardeningIntroduced = true', 'tvTargetRejectsPhoneTasks = true', 'conditionalReleaseSigningSupported = true', 'packageVersionCode = 26'):
+for token in ('packagingHardeningIntroduced = true', 'tvTargetRejectsPhoneTasks = true', 'conditionalReleaseSigningSupported = true'):
     require(token in contract, f"TVOV19 build contract missing {token}")
     require(token.split(" = ")[0] in build_test, f"TVOV19 build contract test missing {token}")
 
+require(
+    ('packageVersionCode = 26' in contract) or ('packageVersionCode = 31' in contract),
+    "TVOV19 build contract must retain TVOV26 compatibility or TVOV31 terminal identity",
+)
 for token in (
     'tasks.register<Exec>("verifyStudyFlowTvManifestPackaging")',
     'tasks.register<Exec>("verifyStudyFlowTvTargetIsolation")',

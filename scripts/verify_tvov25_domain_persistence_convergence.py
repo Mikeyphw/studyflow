@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import re
 import tomllib
 from pathlib import Path
 
@@ -219,22 +220,29 @@ require_tokens(
 
 build_contract = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContract.kt",
-    'currentTvOverlay = "TVOV26"',
-    "packageVersionCode = 26",
+    'const val currentTvOverlay',
     "object StudyFlowTvDomainPersistenceBuildContract",
     "domainPersistenceConvergenceIntroduced = true",
     "phoneOwnsCanonicalMutations = true",
     "idempotentActionJournalRequired = true",
     "fakeMockScoringForbidden = true",
 )
-require_tokens(
+require(
+    ('packageVersionCode = 26' in build_contract) or ('packageVersionCode = 31' in build_contract),
+    "TVOV25 build contract must retain TVOV26 compatibility or TVOV31 terminal identity",
+)
+build_contract_test = require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvBuildContractTest.kt",
     "domainTruthAndPersistenceConvergenceIsExplicit",
-    "assertEquals(26, StudyFlowTvPackagingBuildContract.packageVersionCode)",
+)
+require(
+    ("assertEquals(26, StudyFlowTvPackagingBuildContract.packageVersionCode)" in build_contract_test)
+    or ("assertEquals(31, StudyFlowTvPackagingBuildContract.packageVersionCode)" in build_contract_test),
+    "TVOV25 build-contract test must assert a compatible package version",
 )
 
 tv_build = read("app-tv/build.gradle.kts")
-require('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build, "TV package must advance to TVOV25 identity")
+require(('versionCode = 26' in tv_build and 'versionName = "0.1.0-tv26"' in tv_build) or ('versionCode = 31' in tv_build and 'versionName = "1.0.0-tv31"' in tv_build), "TV package must retain TVOV26 compatibility or TVOV31 terminal identity")
 for forbidden in (":app:", ":feature:", ":core:data", ":core:database", "androidx.tv", "play-services-cast", "androidx.mediarouter"):
     require(forbidden not in tv_build, f"TV APK dependency boundary regressed: {forbidden}")
 
@@ -265,6 +273,8 @@ for token in ("managers", "action id", "projection", "mock score", "25 MiB"):
     require(token.lower() in quality.lower(), f"TVOV25 quality contract missing {token}")
 require("TVOV25" in readme and "persistence" in readme.lower(), "README missing TVOV25 summary")
 
+
+require(re.search(r'currentTvOverlay = \"TVOV(?:2[6-9]|3[01])\"', build_contract) is not None, "current TV overlay must be TVOV26 or newer through TVOV31")
 if FAILURES:
     print("TVOV25_DOMAIN_PERSISTENCE_CONVERGENCE: FAIL")
     for failure in FAILURES:

@@ -4,6 +4,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvCastState
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlCommand
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMaterialViewerPresentation
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusItem
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusRole
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvDestination
@@ -48,6 +49,7 @@ data class StudyFlowTvLibraryReference(
     val excerpt: String,
     val kind: StudyFlowTvLibraryReferenceKind,
     val relatedDestination: StudyFlowTvDestination,
+    val viewer: StudyFlowTvMaterialViewerPresentation? = null,
     val row: Int,
     val column: Int,
 ) {
@@ -84,8 +86,9 @@ data class StudyFlowTvLibrarySnapshot(
 }
 
 object StudyFlowTvLibrarySurface {
-    const val overlay = "TVOV14"
+    const val overlay = "TVOV27"
     const val ownsLimitedLibraryReferenceSurface = true
+    const val ownsFullNativeMaterialViewer = true
     const val curatedReferenceCardsVisible = true
     const val shortReadableExcerptsVisible = true
     const val fileManagementDisabledOnTv = true

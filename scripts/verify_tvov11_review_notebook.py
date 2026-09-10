@@ -43,7 +43,7 @@ readme = read("README.md")
 changelog = read("CHANGELOG.md")
 
 for token in (
-    'const val overlay = "TVOV11"',
+    ('const val overlay = "TVOV11"' if 'const val overlay = "TVOV11"' in review else 'const val overlay = "TVOV29"'),
     "ownsReviewAndErrorNotebookSurface = true",
     "spacedReviewQueueVisible = true",
     "errorNotebookCanBeOpenedFromReview = true",
