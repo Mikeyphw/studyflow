@@ -167,3 +167,10 @@ write restore authority.
 
 SFLP23 defines the consolidated final validation task chain. Apply this overlay with `--no-validate`
 until the final seal run is requested.
+
+## SFLP24 — FINAL RELEASE SEAL
+
+SFLP24 is implemented as the final validation command for the SFLP connectivity series. The gate
+adds `verifySflp24FinalReleaseSeal`, restores every SFLP verifier into `checkAll`, and records the
+language-neutral `release.validation_final_seal` golden vector. This is the final validation command
+for the SFLP01-SFLP23 chain; run it with validation enabled instead of `--no-validate`.

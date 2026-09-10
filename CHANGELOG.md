@@ -631,3 +631,9 @@ copy.
 - Added backup bundle manifests, restore plans, restore acknowledgements, and TV/Web-TV write-restore rejection.
 - Added SFLP23 final release validation plan/result models and a consolidated SFLP verifier chain.
 - Added Android, Desktop, Android TV, Web, protocol schema, golden vector, and verifier coverage.
+
+## SFLP24 — Final release validation seal
+
+- Added the SFLP24 final release seal model, protocol schema, golden vector, and core tests.
+- Added `verifySflp24FinalReleaseSeal` and restored the complete SFLP01-SFLP23 chain into `checkAll`.
+- Updated Devtool test-lane defaults so the final run names the SFLP verifier chain once and in order.

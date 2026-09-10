@@ -168,3 +168,11 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Backup restore | Yes | Yes | Yes | No | No |
 | Backup preview/verify | Yes | Yes | Yes | Yes | Yes |
 | Final validation plan visibility | Yes | Yes | Yes | Yes | Yes |
+
+## SFLP24 final validation capability rows
+
+| Capability | Android | Desktop | Android TV | Web | Web TV |
+| --- | --- | --- | --- | --- | --- |
+| Final SFLP validation gate | Required | Required | Required | Runtime-audited | Runtime-audited |
+| SFLP01-SFLP23 predecessor chain | Required | Required | Required | Required | Required |
+| TV write authority during final restore checks | Rejected | N/A | Rejected | N/A | Rejected |

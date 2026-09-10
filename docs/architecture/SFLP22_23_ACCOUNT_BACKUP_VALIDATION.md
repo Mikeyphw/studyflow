@@ -24,3 +24,5 @@ single explicit task chain while keeping intermediate overlays on `--no-validate
 
 The final gate is `verifySflp22Sflp23AccountBackupValidation`. Intermediate application should still
 use `--no-validate`; run the consolidated task chain only when you are ready for the final seal.
+
+SFLP24 final release seal now consumes this gate as its predecessor and runs the complete chain.

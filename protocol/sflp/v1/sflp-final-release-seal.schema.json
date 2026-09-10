@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "const": "release.validation_final_seal"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "properties": {
+        "requiredArtifacts": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "requiredTasks": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "sealId": {
+          "type": "string"
+        },
+        "surfaces": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 6,
+          "type": "array"
+        }
+      },
+      "required": [
+        "sealId",
+        "requiredTasks",
+        "requiredArtifacts",
+        "surfaces"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "name",
+    "version",
+    "payload"
+  ],
+  "title": "StudyFlow SFLP24 final release validation seal",
+  "type": "object"
+}

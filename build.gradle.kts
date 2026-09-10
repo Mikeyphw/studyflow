@@ -974,6 +974,7 @@ tasks.register("checkAll") {
         "verifyFormatting",
         "verifySflp01ProtocolBaseline",
         "verifySflp02Sflp03JournalReconciliation",
+        "verifySflp04Sflp05IdentityTransport",
         "verifySflp06Sflp07TopologyOfflineQueue",
         "verifySflp08Sflp09AndroidDesktopIntegration",
         "verifySflp10Sflp11WebTvGeneralization",
@@ -981,6 +982,9 @@ tasks.register("checkAll") {
         "verifySflp14Sflp15LiveSessionProjection",
         "verifySflp16Sflp17ControlInputDelegation",
         "verifySflp18Sflp19NotificationMediaSync",
+        "verifySflp20Sflp21ShareImportConflict",
+        "verifySflp22Sflp23AccountBackupValidation",
+        "verifySflp24FinalReleaseSeal",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1474,5 +1478,18 @@ tasks.register<Exec>("verifySflp22Sflp23AccountBackupValidation") {
         ":app:testReleaseUnitTest",
     )
     commandLine("python3", "scripts/verify_sflp22_23_account_backup_validation.py")
+}
+
+tasks.register<Exec>("verifySflp24FinalReleaseSeal") {
+    group = "verification"
+    description = "Checks the final SFLP01-SFLP23 consolidated release validation seal."
+    dependsOn(
+        "verifySflp22Sflp23AccountBackupValidation",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp24_final_release_seal.py")
 }
 

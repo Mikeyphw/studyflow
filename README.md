@@ -503,3 +503,9 @@ StudyFlow peers can now exchange account-recovery and backup-restore handoff met
 without moving plaintext secrets through the mesh. The final release gate is consolidated as
 `verifySflp22Sflp23AccountBackupValidation`, while intermediate overlays remain intended for
 `--no-validate` application.
+
+### SFLP24 final release validation seal
+
+SFLP24 closes the cross-platform SFLP lane with `verifySflp24FinalReleaseSeal`. The task depends on
+SFLP22/SFLP23 plus the core, Android, Android TV, and Desktop test lanes, and the final protocol
+golden vector is shared between `protocol/sflp/v1/golden` and `:core:link` test resources.

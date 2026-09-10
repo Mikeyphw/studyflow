@@ -58,11 +58,7 @@ test = [
     "verifySflp18Sflp19NotificationMediaSync",
     "verifySflp20Sflp21ShareImportConflict",
     "verifySflp22Sflp23AccountBackupValidation",
-    "verifySflp10Sflp11WebTvGeneralization",
-    "verifySflp12Sflp13WebTvHandoff",
-    "verifySflp14Sflp15LiveSessionProjection",
-    "verifySflp16Sflp17ControlInputDelegation",
-    "verifySflp18Sflp19NotificationMediaSync",
+    "verifySflp24FinalReleaseSeal",
     "verifyOv19PromiseAudit",
     "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",
@@ -817,4 +813,3 @@ gradle_heap_mb = 1024
 memory_guard_mb = 256
 no_daemon = false
 low_priority = false
-
