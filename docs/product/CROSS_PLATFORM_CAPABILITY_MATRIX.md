@@ -146,3 +146,14 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Material stream offer | Source/sink | Source/sink | Source/sink | Presentation sink only | Presentation sink only |
 | Material chunk acknowledgement | Yes | Yes | Yes | Yes, no import | Yes, no import |
 | Library import via media stream | Yes | Yes | Optional | No | No |
+
+## SFLP20/SFLP21 share/import and conflict review capability rows
+
+| Capability | Android | Desktop | Web | Android TV | Web TV |
+| --- | --- | --- | --- | --- | --- |
+| Clipboard preview | Yes | Yes | Yes | Yes | Yes |
+| Clipboard apply | Yes | Yes | Yes | No | No |
+| Share import | Yes | Yes | Yes | No | No |
+| Import preview | Yes | Yes | Yes | Yes | Yes |
+| Conflict review | Open/resolve | Open/resolve | Open/resolve | Review/display only | Review/display only |
+| TV write/import authority | Not applicable | Not applicable | Not applicable | Rejected | Rejected |

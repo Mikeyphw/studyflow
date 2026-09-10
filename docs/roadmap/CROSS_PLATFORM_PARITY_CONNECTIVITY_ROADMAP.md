@@ -147,3 +147,12 @@ read-only material offers, monotonic chunk replay, duplicate suppression, chunk 
 and TV/Web-TV write-authority rejection.
 
 Next: SFLP20 clipboard/share/import bridge and SFLP21 conflict-review UX.
+
+## SFLP20 + SFLP21 — COMPLETE
+
+SFLP20 clipboard/share/import bridge and SFLP21 conflict-review UX are implemented. The mesh now
+supports target-gated `share.import_offer`, `share.import_ack`, `conflict.review_open`,
+`conflict.resolve`, and `conflict.resolution_ack` messages. TV/Web-TV peers remain preview-only for
+imports and cannot receive library import or workspace write authority.
+
+Next: SFLP22 account/backup handoff and SFLP23 release validation consolidation.

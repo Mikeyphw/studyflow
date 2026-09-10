@@ -1,0 +1,15 @@
+{
+  "name": "share.import_offer",
+  "payload": {
+    "importId": "import-note-1",
+    "workspaceId": "workspace-main",
+    "targetDeviceId": "desktop",
+    "intent": "share_import",
+    "payloadKind": "markdown",
+    "title": "Shared markdown note",
+    "mimeType": "text/markdown",
+    "previewText": "# Biology",
+    "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "requiredCapabilities": ["share.receive", "library.import"]
+  }
+}

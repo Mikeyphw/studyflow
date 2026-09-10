@@ -168,7 +168,7 @@ exports.StudyFlowWebPresentationProjectionController = StudyFlowWebPresentationP
 
 
 // SFLP16/SFLP17: control protocol and input delegation helpers.
-export class StudyFlowControlInputRuntime {
+class StudyFlowControlInputRuntime {
   constructor(peer) {
     this.peer = peer;
     this.leases = new Map();
@@ -209,8 +209,10 @@ export class StudyFlowControlInputRuntime {
   }
 }
 
+exports.StudyFlowControlInputRuntime = StudyFlowControlInputRuntime;
+
 // SFLP18/SFLP19: notification/scheduling sync and material streaming handoff.
-export class StudyFlowNotificationMediaRuntime {
+class StudyFlowNotificationMediaRuntime {
   constructor(peer) {
     this.peer = peer
     this.notifications = new Map()
@@ -265,3 +267,72 @@ export class StudyFlowNotificationMediaRuntime {
     return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex }
   }
 }
+
+exports.StudyFlowNotificationMediaRuntime = StudyFlowNotificationMediaRuntime;
+
+
+// SFLP20/SFLP21: clipboard/share/import bridge and conflict-review UX.
+class StudyFlowShareImportConflictRuntime {
+  constructor(peer) {
+    this.peer = peer
+    this.imports = new Map()
+    this.importSequences = new Map()
+    this.conflictReviews = new Map()
+    this.resolutions = new Set()
+  }
+
+  createClipboardOffer(workspaceId, targetDeviceId, text, apply = true) {
+    const now = Date.now()
+    return {
+      importId: `import-${this.peer.deviceId || this.peer.identity?.deviceId}-${now}`,
+      workspaceId,
+      sourceDevice: this.peer.identity || this.peer,
+      targetDeviceId,
+      intent: apply ? 'clipboard_apply' : 'clipboard_preview',
+      payloadKind: 'plain_text',
+      title: 'Clipboard text',
+      mimeType: 'text/plain',
+      previewText: String(text).slice(0, 16384),
+      contentSha256: '0'.repeat(64),
+      requiredCapabilities: apply ? ['clipboard.read', 'clipboard.write'] : ['clipboard.read'],
+      createdAtEpochMillis: now,
+      expiresAtEpochMillis: now + 300000,
+    }
+  }
+
+  applyShareImportDelivery(delivery) {
+    const localId = this.peer.deviceId || this.peer.identity?.deviceId
+    if (delivery.targetDeviceId !== localId) return { status: 'rejected', reason: 'wrong_target' }
+    if (delivery.offer.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
+    if (this.imports.has(delivery.offer.importId)) return { status: 'duplicate', acknowledgedSequence: delivery.sequence }
+    const last = this.importSequences.get(delivery.sourceDeviceId) || 0
+    if (delivery.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' }
+    const kind = this.peer.clientKind || this.peer.identity?.clientKind
+    const writeIntent = delivery.offer.intent === 'clipboard_apply' || delivery.offer.intent === 'share_import'
+    if ((kind === 'android_tv' || kind === 'web_tv') && writeIntent) return { status: 'rejected', reason: 'tv_write_forbidden' }
+    const caps = new Set(this.peer.capabilities || this.peer.identity?.capabilities || [])
+    if ((delivery.offer.requiredCapabilities || []).some(capability => !caps.has(capability))) return { status: 'rejected', reason: 'missing_capability' }
+    this.importSequences.set(delivery.sourceDeviceId, delivery.sequence)
+    this.imports.set(delivery.offer.importId, delivery.offer)
+    return { status: 'accepted', importId: delivery.offer.importId, acknowledgedSequence: delivery.sequence }
+  }
+
+  openConflictReview(review) {
+    const localId = this.peer.deviceId || this.peer.identity?.deviceId
+    if (review.targetDeviceId && review.targetDeviceId !== localId) return false
+    const caps = new Set(this.peer.capabilities || this.peer.identity?.capabilities || [])
+    if ((review.requiredCapabilities || ['conflict.review']).some(capability => !caps.has(capability))) return false
+    this.conflictReviews.set(review.reviewId, review)
+    return true
+  }
+
+  resolveConflict(resolution) {
+    if (this.resolutions.has(resolution.resolutionId)) return { status: 'duplicate', resolutionId: resolution.resolutionId }
+    if (!this.conflictReviews.has(resolution.reviewId)) return { status: 'rejected', reason: 'unknown_review' }
+    if (resolution.decision === 'merge' && !resolution.mergedSummary) return { status: 'rejected', reason: 'missing_merge' }
+    this.resolutions.add(resolution.resolutionId)
+    this.conflictReviews.delete(resolution.reviewId)
+    return { status: 'resolved', resolutionId: resolution.resolutionId, acknowledgedSequence: resolution.sequence }
+  }
+}
+exports.StudyFlowShareImportConflictRuntime = StudyFlowShareImportConflictRuntime;

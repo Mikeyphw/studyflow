@@ -1351,6 +1351,20 @@ tasks.register<Exec>("verifySflp18Sflp19NotificationMediaSync") {
 }
 
 
+tasks.register<Exec>("verifySflp20Sflp21ShareImportConflict") {
+    group = "verification"
+    description = "Checks SFLP20 clipboard/share/import bridge and SFLP21 conflict-review UX."
+    dependsOn(
+        "verifySflp18Sflp19NotificationMediaSync",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp20_21_share_import_conflict.py")
+}
+
+
 tasks.register<Exec>("verifyCrossPlatformParityBaseline") {
     group = "verification"
     description =

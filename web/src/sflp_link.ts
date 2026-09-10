@@ -272,3 +272,53 @@ export class StudyFlowNotificationMediaRuntime {
     return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex }
   }
 }
+
+// SFLP20/SFLP21 clipboard/share/import bridge and conflict-review UX declarations.
+export type StudyFlowShareImportIntent = 'clipboard_preview' | 'clipboard_apply' | 'share_preview' | 'share_import'
+export type StudyFlowConflictResolutionKind = 'keep_local' | 'take_remote' | 'merge' | 'skip'
+
+export interface StudyFlowShareImportOffer {
+  importId: string
+  workspaceId: string
+  sourceDevice: unknown
+  targetDeviceId?: string
+  intent: StudyFlowShareImportIntent
+  payloadKind: 'plain_text' | 'markdown' | 'url' | 'html' | 'json' | 'csv' | 'pdf' | 'image' | 'opaque'
+  title: string
+  mimeType?: string
+  previewText?: string
+  contentSha256: string
+  requiredCapabilities: string[]
+  createdAtEpochMillis: number
+  expiresAtEpochMillis: number
+}
+
+export interface StudyFlowConflictReviewModel {
+  reviewId: string
+  workspaceId: string
+  targetDeviceId?: string
+  requiredCapabilities: string[]
+  candidate: { entityId: string; localRevision: number; remoteRevision: number; fieldKinds: string[] }
+}
+
+export class StudyFlowShareImportConflictRuntime {
+  private imports = new Map<string, StudyFlowShareImportOffer>()
+  private conflictReviews = new Map<string, StudyFlowConflictReviewModel>()
+  constructor(private readonly peer: { deviceId?: string; identity?: { deviceId: string; clientKind: string; capabilities: string[] }; capabilities?: string[]; clientKind?: string }) {}
+  applyShareImportDelivery(delivery: { sourceDeviceId: string; targetDeviceId: string; sequence: number; offer: StudyFlowShareImportOffer }) {
+    const localId = this.peer.deviceId ?? this.peer.identity?.deviceId
+    if (delivery.targetDeviceId !== localId) return { status: 'rejected', reason: 'wrong_target' }
+    if (this.imports.has(delivery.offer.importId)) return { status: 'duplicate' }
+    this.imports.set(delivery.offer.importId, delivery.offer)
+    return { status: 'accepted' }
+  }
+  openConflictReview(review: StudyFlowConflictReviewModel): boolean {
+    this.conflictReviews.set(review.reviewId, review)
+    return true
+  }
+  resolveConflict(reviewId: string, decision: StudyFlowConflictResolutionKind) {
+    if (!this.conflictReviews.has(reviewId)) return { status: 'rejected', reason: 'unknown_review' }
+    this.conflictReviews.delete(reviewId)
+    return { status: 'resolved', decision }
+  }
+}

@@ -617,3 +617,10 @@ copy.
 - Added SFLP19 read-only material streaming handoff with chunk acknowledgements and TV write guards.
 - Added Android, Desktop, Android TV, Web, schema, golden vector, and verifier coverage for notification/media sync.
 - Repaired SFLP16/SFLP17 test constructors to match the canonical peer descriptor API before final validation.
+
+## SFLP20-21 — Clipboard/share/import and conflict review
+
+- Added SFLP20 clipboard/share/import offers, acknowledgements, capability guards, duplicate suppression, and TV preview-only enforcement.
+- Added SFLP21 conflict-review open/resolve/ack primitives with one-time monotonic resolution and canonical domain operations.
+- Added Android, Desktop, Android TV, Web, schema, golden vector, and verifier coverage.
+- Repaired Web runtime exports so appended SFLP runtime classes remain CommonJS-compatible for final validation.

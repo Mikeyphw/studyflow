@@ -150,6 +150,11 @@ object StudyFlowLinkCapabilities {
     val TouchInput = capability("touch.input")
     val KeyboardInput = capability("keyboard.input")
     val DpadInput = capability("dpad.input")
+    val ClipboardRead = capability("clipboard.read")
+    val ClipboardWrite = capability("clipboard.write")
+    val ShareReceive = capability("share.receive")
+    val ImportPreview = capability("import.preview")
+    val ConflictReview = capability("conflict.review")
 
     val V1: List<StudyFlowLinkCapability> = listOf(
         WorkspaceRead,
@@ -188,6 +193,11 @@ object StudyFlowLinkCapabilities {
         TouchInput,
         KeyboardInput,
         DpadInput,
+        ClipboardRead,
+        ClipboardWrite,
+        ShareReceive,
+        ImportPreview,
+        ConflictReview,
     )
 
     private fun capability(value: String) = StudyFlowLinkCapability(value)

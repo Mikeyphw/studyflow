@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-share-import-conflict.schema.json",
+  "title": "StudyFlow SFLP20/SFLP21 Share Import and Conflict Review",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/shareImportOfferEnvelope" },
+    { "$ref": "#/$defs/shareImportAckEnvelope" },
+    { "$ref": "#/$defs/conflictReviewOpenEnvelope" },
+    { "$ref": "#/$defs/conflictResolveEnvelope" },
+    { "$ref": "#/$defs/conflictResolutionAckEnvelope" }
+  ],
+  "$defs": {
+    "wireToken": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "shareImportOfferEnvelope": {
+      "type": "object",
+      "required": ["name", "payload"],
+      "properties": {
+        "name": { "const": "share.import_offer" },
+        "payload": {
+          "type": "object",
+          "required": ["importId", "workspaceId", "intent", "payloadKind", "title", "contentSha256", "requiredCapabilities"],
+          "properties": {
+            "importId": { "$ref": "#/$defs/wireToken" },
+            "workspaceId": { "$ref": "#/$defs/wireToken" },
+            "targetDeviceId": { "$ref": "#/$defs/wireToken" },
+            "intent": { "enum": ["clipboard_preview", "clipboard_apply", "share_preview", "share_import"] },
+            "payloadKind": { "enum": ["plain_text", "markdown", "url", "html", "json", "csv", "pdf", "image", "opaque"] },
+            "title": { "type": "string", "minLength": 1 },
+            "mimeType": { "type": "string" },
+            "previewText": { "type": "string", "maxLength": 16384 },
+            "contentSha256": { "$ref": "#/$defs/sha256" },
+            "requiredCapabilities": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true }
+          }
+        }
+      }
+    },
+    "shareImportAckEnvelope": {
+      "type": "object",
+      "required": ["name", "payload"],
+      "properties": {
+        "name": { "const": "share.import_ack" },
+        "payload": { "type": "object", "required": ["importId", "status", "acknowledgedSequence"] }
+      }
+    },
+    "conflictReviewOpenEnvelope": {
+      "type": "object",
+      "required": ["name", "payload"],
+      "properties": {
+        "name": { "const": "conflict.review_open" },
+        "payload": { "type": "object", "required": ["reviewId", "workspaceId", "candidate", "requiredCapabilities"] }
+      }
+    },
+    "conflictResolveEnvelope": {
+      "type": "object",
+      "required": ["name", "payload"],
+      "properties": {
+        "name": { "const": "conflict.resolve" },
+        "payload": { "type": "object", "required": ["resolutionId", "reviewId", "decision", "sequence"] }
+      }
+    },
+    "conflictResolutionAckEnvelope": {
+      "type": "object",
+      "required": ["name", "payload"],
+      "properties": {
+        "name": { "const": "conflict.resolution_ack" },
+        "payload": { "type": "object", "required": ["resolutionId", "reviewId", "status", "acknowledgedSequence"] }
+      }
+    }
+  }
+}

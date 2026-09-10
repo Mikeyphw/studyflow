@@ -42,6 +42,11 @@ object StudyFlowClientProfiles {
         StudyFlowLinkCapabilities.AudioOutput,
         StudyFlowLinkCapabilities.VideoOutput,
         StudyFlowLinkCapabilities.TouchInput,
+        StudyFlowLinkCapabilities.ClipboardRead,
+        StudyFlowLinkCapabilities.ClipboardWrite,
+        StudyFlowLinkCapabilities.ShareReceive,
+        StudyFlowLinkCapabilities.ImportPreview,
+        StudyFlowLinkCapabilities.ConflictReview,
     )
 
     val Desktop: List<StudyFlowLinkCapability> = AndroidPhone + listOf(
@@ -77,6 +82,11 @@ object StudyFlowClientProfiles {
         StudyFlowLinkCapabilities.TextInputProvide,
         StudyFlowLinkCapabilities.KeyboardInput,
         StudyFlowLinkCapabilities.TouchInput,
+        StudyFlowLinkCapabilities.ClipboardRead,
+        StudyFlowLinkCapabilities.ClipboardWrite,
+        StudyFlowLinkCapabilities.ShareReceive,
+        StudyFlowLinkCapabilities.ImportPreview,
+        StudyFlowLinkCapabilities.ConflictReview,
     )
 
     val WebTv: List<StudyFlowLinkCapability> = listOf(
@@ -98,6 +108,10 @@ object StudyFlowClientProfiles {
         StudyFlowLinkCapabilities.DpadInput,
         StudyFlowLinkCapabilities.AudioOutput,
         StudyFlowLinkCapabilities.VideoOutput,
+        StudyFlowLinkCapabilities.ClipboardRead,
+        StudyFlowLinkCapabilities.ShareReceive,
+        StudyFlowLinkCapabilities.ImportPreview,
+        StudyFlowLinkCapabilities.ConflictReview,
     )
 
     val AndroidTv: List<StudyFlowLinkCapability> = WebTv + listOf(

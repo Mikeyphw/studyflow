@@ -1,0 +1,16 @@
+{
+  "name": "conflict.review_open",
+  "payload": {
+    "reviewId": "conflict-note-1",
+    "workspaceId": "workspace-main",
+    "requiredCapabilities": ["conflict.review"],
+    "candidate": {
+      "entityId": "note-1",
+      "localRevision": 2,
+      "remoteRevision": 3,
+      "fieldKinds": ["content", "tags"],
+      "localSummary": "Local note keeps the older tag.",
+      "remoteSummary": "Remote note has a new tag and newer body."
+    }
+  }
+}

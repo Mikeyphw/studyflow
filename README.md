@@ -490,3 +490,9 @@ based across Android, Desktop, Web, Android TV and Web TV with monotonic frames 
 StudyFlow peers can now exchange targeted notification deliveries, schedule reminder changes, and
 read-only material stream handoffs. TV surfaces remain presentation/read sinks only; material streams
 that require `library.import` or workspace writes are rejected before chunk transfer.
+
+### SFLP20/SFLP21 clipboard/share/import and conflict review
+
+StudyFlow peers can exchange clipboard/share/import offers and conflict-review decisions through SFLP.
+Phones, desktop, and web can apply imports when they advertise write/import capabilities. TV surfaces
+can preview incoming shared content and conflict summaries, but they reject write/import authority.

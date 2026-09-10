@@ -36,6 +36,14 @@ object StudyFlowDomainOperationTypes {
     const val NotificationQuietHoursChanged = "notification.quiet_hours_changed"
     const val MaterialStreamPrepared = "material.stream_prepared"
     const val MaterialChunkReceived = "material.chunk_received"
+    const val ClipboardPreviewed = "clipboard.previewed"
+    const val ClipboardApplied = "clipboard.applied"
+    const val SharePreviewed = "share.previewed"
+    const val ShareImported = "share.imported"
+    const val ConflictKeepLocal = "conflict.keep_local"
+    const val ConflictTakeRemote = "conflict.take_remote"
+    const val ConflictMerged = "conflict.merged"
+    const val ConflictSkipped = "conflict.skipped"
 }
 
 @Serializable
