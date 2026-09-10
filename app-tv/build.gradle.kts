@@ -80,4 +80,5 @@ dependencies {
     implementation(project(":core:tvlink"))
     implementation(project(":core:link"))
     testImplementation(libs.junit4)
+    testImplementation(kotlin("test-junit"))
 }

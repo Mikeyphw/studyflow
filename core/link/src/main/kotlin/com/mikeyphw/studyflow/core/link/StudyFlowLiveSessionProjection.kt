@@ -498,12 +498,12 @@ class StudyFlowPresentationProjectionReceiver(
             return StudyFlowPresentationApplyResult.Rejected("wrong_target")
         }
         if (offer.sourceDevice.deviceId == sink.deviceId) return StudyFlowPresentationApplyResult.Rejected("self_projection")
-        val sinkCapabilities = sink.capabilities.toSet()
-        val missing = offer.requiredCapabilities.filter { it !in sinkCapabilities }
-        if (missing.isNotEmpty()) return StudyFlowPresentationApplyResult.Rejected("missing_capability")
         if (offer.requiredCapabilities.any { it in StudyFlowPresentationProjectionPolicy.writeCapabilities }) {
             return StudyFlowPresentationApplyResult.Rejected("projection_write_capability")
         }
+        val sinkCapabilities = sink.capabilities.toSet()
+        val missing = offer.requiredCapabilities.filter { it !in sinkCapabilities }
+        if (missing.isNotEmpty()) return StudyFlowPresentationApplyResult.Rejected("missing_capability")
         acceptedProjectionIds += offer.projectionId
         StudyFlowPresentationApplyResult.Accepted(activeFrame = null)
     }

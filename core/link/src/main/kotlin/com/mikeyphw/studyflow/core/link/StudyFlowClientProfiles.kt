@@ -39,6 +39,7 @@ object StudyFlowClientProfiles {
         StudyFlowLinkCapabilities.DeviceControl,
         StudyFlowLinkCapabilities.DevicePresentationSource,
         StudyFlowLinkCapabilities.TextInputProvide,
+        StudyFlowLinkCapabilities.KeyboardInput,
         StudyFlowLinkCapabilities.AudioOutput,
         StudyFlowLinkCapabilities.VideoOutput,
         StudyFlowLinkCapabilities.TouchInput,
@@ -49,9 +50,11 @@ object StudyFlowClientProfiles {
         StudyFlowLinkCapabilities.ConflictReview,
     )
 
-    val Desktop: List<StudyFlowLinkCapability> = AndroidPhone + listOf(
-        StudyFlowLinkCapabilities.KeyboardInput,
-    )
+    val Desktop: List<StudyFlowLinkCapability> = (
+        AndroidPhone + listOf(
+            StudyFlowLinkCapabilities.KeyboardInput,
+        )
+    ).distinct()
 
     val Web: List<StudyFlowLinkCapability> = listOf(
         StudyFlowLinkCapabilities.WorkspaceRead,

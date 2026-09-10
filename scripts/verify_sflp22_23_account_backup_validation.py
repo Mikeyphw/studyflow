@@ -100,7 +100,15 @@ if ':app:testReleaseUnitTest' not in required_tasks:
     fail('final release gate missing Android release unit tests')
 
 build = (ROOT / 'build.gradle.kts').read_text(encoding='utf-8')
-if 'verifySflp20Sflp21ShareImportConflict",\n        "verifySflp22Sflp23AccountBackupValidation' in build:
+sflp20_marker = 'tasks.register<Exec>("verifySflp20Sflp21ShareImportConflict") {'
+sflp20_start = build.find(sflp20_marker)
+if sflp20_start < 0:
+    fail('missing verifySflp20Sflp21ShareImportConflict task definition')
+sflp20_end = build.find('\n}', sflp20_start)
+if sflp20_end < 0:
+    fail('could not isolate verifySflp20Sflp21ShareImportConflict task definition')
+sflp20_block = build[sflp20_start:sflp20_end]
+if '"verifySflp22Sflp23AccountBackupValidation"' in sflp20_block:
     fail('detected inverted dependency cycle from SFLP20/SFLP21 back to SFLP22/SFLP23')
 
 runtime = (ROOT / 'web/runtime/sflp_link.js').read_text(encoding='utf-8')
