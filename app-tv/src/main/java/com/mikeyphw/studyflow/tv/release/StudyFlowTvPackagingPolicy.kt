@@ -5,8 +5,8 @@ object StudyFlowTvPackagingPolicy {
     const val overlay = "TVOV19"
     const val applicationId = "com.mikeyphw.studyflow.tv"
     const val namespace = "com.mikeyphw.studyflow.tv"
-    const val versionCode = 26
-    const val versionName = "0.1.0-tv26"
+    const val versionCode = 31
+    const val versionName = "1.0.0-tv31"
     const val leanbackFeature = "android.software.leanback"
     const val touchscreenFeature = "android.hardware.touchscreen"
     const val leanbackLauncherCategory = "android.intent.category.LEANBACK_LAUNCHER"

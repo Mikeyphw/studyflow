@@ -1641,6 +1641,24 @@ tasks.register<Exec>("verifyStudyFlowTvDpadSflpSearch") {
     commandLine("python3", "scripts/verify_tvov30_dpad_sflp_search.py")
 }
 
+tasks.register<Exec>("verifyStudyFlowTvAndroidWebSemanticParity") {
+    group = "verification"
+    description = "Checks TVOV31 Android-TV/Web-TV common semantic fixture parity."
+    commandLine("python3", "scripts/verify_tvov31_android_web_tv_semantic_parity.py")
+}
+
+tasks.register("verifyStudyFlowTvTvov27Tvov31Batch") {
+    group = "verification"
+    description = "Runs the terminal TVOV27-TVOV31 convergence seal."
+    dependsOn(
+        "verifyStudyFlowTvFullNativeMaterialViewer",
+        "verifyStudyFlowTvGoalProjectionActions",
+        "verifyStudyFlowTvErrorNotebookMutationParity",
+        "verifyStudyFlowTvDpadSflpSearch",
+        "verifyStudyFlowTvAndroidWebSemanticParity",
+    )
+}
+
 tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
     group = "verification"
     description =

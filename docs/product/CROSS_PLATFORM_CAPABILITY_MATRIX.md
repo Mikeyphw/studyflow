@@ -77,7 +77,7 @@ Current connectivity implementation truth:
   authority rather than silently accepting it.
 
 SFLP24 proves the SFLP protocol/behavior chain, but it is **not** the final five-client product-parity acceptance.
-DOV08-DOV24 and TVOV27-TVOV30 are complete. TVOV31, WEB20, PRESENCE01, and PARITY04 remain the ordered cross-platform closure work.
+DOV08-DOV24 and TVOV27-TVOV31 are complete. WEB20, PRESENCE01, and PARITY04 remain the ordered cross-platform closure work.
 
 ### Protocol connectivity matrix
 

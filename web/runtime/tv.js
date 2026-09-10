@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.tvParitySearchScore = exports.tvParityErrorResolutionAction = exports.tvParityNextErrorCategory = exports.tvParityGoalActions = exports.tvParityZoom = exports.tvParityPage = exports.TV_PARITY_ERROR_CATEGORIES = exports.TV_PARITY_ZOOM_STEP = exports.TV_PARITY_MAX_ZOOM = exports.TV_PARITY_MIN_ZOOM = void 0;
 exports.resolveTvBrowserMode = resolveTvBrowserMode;
 exports.spatialScore = spatialScore;
 exports.installTvBrowserAdapter = installTvBrowserAdapter;
@@ -199,3 +200,14 @@ function installTvBrowserAdapter() {
     const disposeMedia = resolution.enabled ? installMediaToggleNavigation() : () => { };
     return { resolution, dispose: () => { disposeDpad(); disposeBack(); disposeMedia(); delete root.dataset.studyflowTv; delete root.dataset.studyflowTvMode; delete root.dataset.studyflowTvSecureContext; delete root.dataset.studyflowTvIndexedDb; delete root.dataset.studyflowTvSubtleCrypto; delete root.dataset.studyflowTvServiceWorker; delete root.dataset.studyflowTvFlexGap; delete root.dataset.studyflowTvInputMode; } };
 }
+var tv_semantic_parity_1 = require("./tv_semantic_parity");
+Object.defineProperty(exports, "TV_PARITY_MIN_ZOOM", { enumerable: true, get: function () { return tv_semantic_parity_1.TV_PARITY_MIN_ZOOM; } });
+Object.defineProperty(exports, "TV_PARITY_MAX_ZOOM", { enumerable: true, get: function () { return tv_semantic_parity_1.TV_PARITY_MAX_ZOOM; } });
+Object.defineProperty(exports, "TV_PARITY_ZOOM_STEP", { enumerable: true, get: function () { return tv_semantic_parity_1.TV_PARITY_ZOOM_STEP; } });
+Object.defineProperty(exports, "TV_PARITY_ERROR_CATEGORIES", { enumerable: true, get: function () { return tv_semantic_parity_1.TV_PARITY_ERROR_CATEGORIES; } });
+Object.defineProperty(exports, "tvParityPage", { enumerable: true, get: function () { return tv_semantic_parity_1.tvParityPage; } });
+Object.defineProperty(exports, "tvParityZoom", { enumerable: true, get: function () { return tv_semantic_parity_1.tvParityZoom; } });
+Object.defineProperty(exports, "tvParityGoalActions", { enumerable: true, get: function () { return tv_semantic_parity_1.tvParityGoalActions; } });
+Object.defineProperty(exports, "tvParityNextErrorCategory", { enumerable: true, get: function () { return tv_semantic_parity_1.tvParityNextErrorCategory; } });
+Object.defineProperty(exports, "tvParityErrorResolutionAction", { enumerable: true, get: function () { return tv_semantic_parity_1.tvParityErrorResolutionAction; } });
+Object.defineProperty(exports, "tvParitySearchScore", { enumerable: true, get: function () { return tv_semantic_parity_1.tvParitySearchScore; } });

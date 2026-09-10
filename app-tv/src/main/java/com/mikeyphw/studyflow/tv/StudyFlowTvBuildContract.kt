@@ -25,7 +25,7 @@ object StudyFlowTvBuildContract {
     const val focusPrimitivesRequireNoComposeRuntime = true
     const val minimumFocusTargetDp = 64
     const val deterministicInitialFocusRequired = true
-    const val currentTvOverlay = "TVOV30"
+    const val currentTvOverlay = "TVOV31"
     const val navigationShellIntroduced = true
     const val navigationShellRequiresNoComposeRuntime = true
     const val navigationShellUsesSharedControlProtocol = true
@@ -208,7 +208,7 @@ object StudyFlowTvPackagingBuildContract {
     const val cleartextTrafficDisabled = true
     const val tvTargetRejectsPhoneTasks = true
     const val conditionalReleaseSigningSupported = true
-    const val packageVersionCode = 26
+    const val packageVersionCode = 31
 }
 
 // TVOV20 Real-device acceptance and release seal contract.
@@ -367,4 +367,12 @@ object StudyFlowTvSearchBuildContract {
     const val dpadResultNavigation = true
     const val sflpDelegatedTextInput = true
     const val presentationSafeIndexOnly = true
+}
+
+@Suppress("ConstPropertyName")
+object StudyFlowTvCommonParityBuildContract {
+    const val androidAndWebTvUseCommonFixtures = true
+    const val viewerGoalErrorSearchSemanticsSealed = true
+    const val web20StillSeparate = true
+    const val tvTrackComplete = true
 }

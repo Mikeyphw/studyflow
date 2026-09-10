@@ -1,0 +1,18 @@
+# kind	inputs...	expected
+viewer-page	0	3	-1	0
+viewer-page	1	3	1	2
+viewer-page	2	3	1	2
+viewer-zoom	100	25	125
+viewer-zoom	300	25	300
+viewer-zoom	50	-25	50
+goal-actions	CUSTOM	false	false	true	COMPLETE,PAUSE
+goal-actions	STUDY_TIME	false	false	false	PAUSE
+goal-actions	CUSTOM	false	true	true	RESUME
+goal-actions	CUSTOM	true	false	true	
+error-category	OTHER	CONTENT_GAP
+error-category	CONTENT_GAP	FORGOTTEN
+error-resolve	false	RESOLVE
+error-resolve	true	REOPEN
+search-score	constitution	Constitution	Law	100
+search-score	constitution	Review	Constitution questions	20
+search-score	const	Constitution	Law	70

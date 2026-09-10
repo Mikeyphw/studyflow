@@ -111,7 +111,7 @@ work:
 - **TVOV28** goal projection plus complete/pause/resume actions. **Implemented.**
 - **TVOV29** Error Notebook reclassification and resolve/reopen parity. **Implemented.**
 - **TVOV30** native TV search with D-pad and SFLP delegated text input. **Implemented.**
-- **TVOV31** Android-TV/Web-TV semantic parity seal using common fixtures.
+- **TVOV31** Android-TV/Web-TV semantic parity seal using common fixtures. **Implemented.**
 
 Complex authoring, destructive storage operations, import configuration and password entry remain handoff
 workflows on TV unless a later capability review explicitly promotes them.

@@ -25,8 +25,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mikeyphw.studyflow.tv"
-        versionCode = 26
-        versionName = "0.1.0-tv26"
+        versionCode = 31
+        versionName = "1.0.0-tv31"
         buildConfigField("boolean", "TV_RELEASE_SIGNING_CONFIGURED", tvReleaseSigningConfigured.toString())
     }
 

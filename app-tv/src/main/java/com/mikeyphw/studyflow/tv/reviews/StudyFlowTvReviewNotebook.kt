@@ -88,6 +88,7 @@ data class StudyFlowTvReviewState(
 }
 
 object StudyFlowTvReviewNotebook {
+    const val introducedOverlay = "TVOV11"
     const val overlay = "TVOV29"
     const val ownsReviewAndErrorNotebookSurface = true
     const val spacedReviewQueueVisible = true

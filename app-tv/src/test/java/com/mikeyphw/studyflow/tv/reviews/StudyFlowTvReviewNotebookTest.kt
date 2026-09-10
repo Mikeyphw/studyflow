@@ -12,7 +12,8 @@ import org.junit.Test
 class StudyFlowTvReviewNotebookTest {
     @Test
     fun reviewNotebookOwnsSpacedReviewAndErrorNotebookRoadmapContract() {
-        assertEquals("TVOV11", StudyFlowTvReviewNotebook.overlay)
+        assertEquals("TVOV11", StudyFlowTvReviewNotebook.introducedOverlay)
+        assertEquals("TVOV29", StudyFlowTvReviewNotebook.overlay)
         assertTrue(StudyFlowTvReviewNotebook.ownsReviewAndErrorNotebookSurface)
         assertTrue(StudyFlowTvReviewNotebook.spacedReviewQueueVisible)
         assertTrue(StudyFlowTvReviewNotebook.errorNotebookCanBeOpenedFromReview)

@@ -12,7 +12,8 @@ import org.junit.Test
 class StudyFlowTvProgressAnalyticsTest {
     @Test
     fun progressAnalyticsOwnsRoadmapMetricAndWeakSubjectContract() {
-        assertEquals("TVOV12", StudyFlowTvProgressAnalytics.overlay)
+        assertEquals("TVOV12", StudyFlowTvProgressAnalytics.introducedOverlay)
+        assertEquals("TVOV28", StudyFlowTvProgressAnalytics.overlay)
         assertTrue(StudyFlowTvProgressAnalytics.ownsProgressAnalyticsSurface)
         assertTrue(StudyFlowTvProgressAnalytics.weeklyProgressAccuracyVolumeReadinessVisible)
         assertTrue(StudyFlowTvProgressAnalytics.weakSubjectSummaryVisible)

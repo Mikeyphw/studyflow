@@ -100,3 +100,9 @@ export function installTvBrowserAdapter():TvBrowserAdapterHandle{
  const disposeDpad=resolution.enabled?installDpadNavigation():()=>{};const disposeBack=resolution.enabled?installRemoteBackNavigation():()=>{};const disposeMedia=resolution.enabled?installMediaToggleNavigation():()=>{};
  return{resolution,dispose:()=>{disposeDpad();disposeBack();disposeMedia();delete root.dataset.studyflowTv;delete root.dataset.studyflowTvMode;delete root.dataset.studyflowTvSecureContext;delete root.dataset.studyflowTvIndexedDb;delete root.dataset.studyflowTvSubtleCrypto;delete root.dataset.studyflowTvServiceWorker;delete root.dataset.studyflowTvFlexGap;delete root.dataset.studyflowTvInputMode;}};
 }
+
+export {
+ TV_PARITY_MIN_ZOOM,TV_PARITY_MAX_ZOOM,TV_PARITY_ZOOM_STEP,TV_PARITY_ERROR_CATEGORIES,
+ tvParityPage,tvParityZoom,tvParityGoalActions,tvParityNextErrorCategory,
+ tvParityErrorResolutionAction,tvParitySearchScore,
+} from "./tv_semantic_parity";

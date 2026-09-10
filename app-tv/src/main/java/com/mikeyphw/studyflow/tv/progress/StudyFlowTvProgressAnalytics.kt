@@ -105,6 +105,7 @@ data class StudyFlowTvProgressSnapshot(
 }
 
 object StudyFlowTvProgressAnalytics {
+    const val introducedOverlay = "TVOV12"
     const val overlay = "TVOV28"
     const val ownsProgressAnalyticsSurface = true
     const val weeklyProgressAccuracyVolumeReadinessVisible = true

@@ -15,8 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FAILURES: list[str] = []
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 PACKAGE = "com.mikeyphw.studyflow.tv"
-VERSION_NAME = "0.1.0-tv26"
-VERSION_CODE = "26"
+VERSION_NAME = "1.0.0-tv31"
+VERSION_CODE = "31"
 
 
 def require(condition: bool, message: str) -> None:
