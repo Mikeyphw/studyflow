@@ -8,6 +8,7 @@ checks = {
  "controller": ("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModeController.kt", [
    "ProcessBuilder", "buildLanguageReviewPrompt", "evaluateLanguageReviewAnswer", "setMode",
    "python3", "node", "go", "Programming workspace escaped",
+   'testCommandTemplate = "python3 main.py"',
  ]),
  "screen": ("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModeScreen.kt", [
    "Programming Course", "Language Deck", "Reading Study", "General Skill", "runs with your desktop user permissions",

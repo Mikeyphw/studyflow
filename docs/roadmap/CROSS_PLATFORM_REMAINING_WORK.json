@@ -21,17 +21,22 @@
       "order": 1,
       "id": "DOV08-DOV24",
       "kind": "implementation",
-      "status": "planned",
-      "prerequisites": ["SFLP24"],
+      "status": "in_progress",
+      "prerequisites": [
+        "SFLP24"
+      ],
       "terminal_milestone": "DOV24",
-      "summary": "Complete applicable Desktop persistence, workflows, platform integration, and parity acceptance."
+      "summary": "Complete applicable Desktop persistence, workflows, platform integration, and parity acceptance.",
+      "completed_through": "DOV19"
     },
     {
       "order": 2,
       "id": "TVOV27-TVOV31",
       "kind": "implementation",
       "status": "planned",
-      "prerequisites": ["SFLP24"],
+      "prerequisites": [
+        "SFLP24"
+      ],
       "terminal_milestone": "TVOV31",
       "summary": "Close native Android-TV material, goal, Error Notebook, search/input, and Web-TV semantic parity gaps."
     },
@@ -40,7 +45,9 @@
       "id": "WEB20",
       "kind": "semantic_contract",
       "status": "planned",
-      "prerequisites": ["SFLP24"],
+      "prerequisites": [
+        "SFLP24"
+      ],
       "terminal_milestone": "WEB20",
       "summary": "Run language-neutral golden vectors across Kotlin, TypeScript, and Desktop implementations."
     },
@@ -49,7 +56,9 @@
       "id": "PRESENCE01",
       "kind": "implementation",
       "status": "planned",
-      "prerequisites": ["SFLP24"],
+      "prerequisites": [
+        "SFLP24"
+      ],
       "terminal_milestone": "PRESENCE01",
       "summary": "Add optional peer/activity presence independently of transport health and replication correctness."
     },
@@ -58,7 +67,12 @@
       "id": "PARITY04",
       "kind": "acceptance_seal",
       "status": "planned",
-      "prerequisites": ["DOV24", "TVOV31", "WEB20", "PRESENCE01"],
+      "prerequisites": [
+        "DOV24",
+        "TVOV31",
+        "WEB20",
+        "PRESENCE01"
+      ],
       "terminal_milestone": "PARITY04",
       "summary": "Prove pairwise and simultaneous five-client interoperability, convergence, capability rejection, and exactly-once continuation/completion."
     },
@@ -67,7 +81,10 @@
       "id": "REL-FINAL",
       "kind": "evidence_execution",
       "status": "pending_execution",
-      "prerequisites": ["PARITY04", "REL01-REL08"],
+      "prerequisites": [
+        "PARITY04",
+        "REL01-REL08"
+      ],
       "terminal_milestone": "REL08_EVIDENCE_CLOSED",
       "summary": "Execute existing release tooling against the completed product and retain signed artifact, device, restart/restore, and interoperability evidence."
     }

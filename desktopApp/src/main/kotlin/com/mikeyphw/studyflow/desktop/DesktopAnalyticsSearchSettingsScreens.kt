@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
@@ -15,7 +17,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DesktopAnalyticsScreen(state: DesktopAnalyticsScreenState) {
+fun DesktopAnalyticsScreen(
+    state: DesktopAnalyticsScreenState,
+    progress: DesktopProgressReadinessState? = null,
+    actionMessage: String = "",
+    onApplySprint: () -> Unit = {},
+    onExportReport: () -> Unit = {},
+) {
     if (state.status == DesktopScreenStatus.EMPTY) {
         DesktopStateMessage(
             title = "No analytics yet",
@@ -24,7 +32,10 @@ fun DesktopAnalyticsScreen(state: DesktopAnalyticsScreenState) {
         return
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+    Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
                 label = "Study time",
@@ -77,6 +88,85 @@ fun DesktopAnalyticsScreen(state: DesktopAnalyticsScreenState) {
             state.insights.forEach { insight ->
                 Text("• ${insight.kind.name.replace('_', ' ')} — ${insight.severity.name.lowercase()}")
             }
+        }
+
+        progress?.takeIf { it.available }?.let { advanced ->
+            val readiness = advanced.readiness
+            DesktopSectionCard(title = "Exam readiness") {
+                Text(
+                    "Score: ${readiness?.scorePercent?.let { "$it%" } ?: "insufficient evidence"} · " +
+                        "Band: ${readiness?.band?.name?.replace('_', ' ') ?: "unscored"}",
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "Evidence: ${readiness?.evidenceSampleCount ?: 0} samples across " +
+                        "${readiness?.evidenceDimensionCount ?: 0} dimensions",
+                )
+                readiness?.signals?.take(5)?.forEach { signal ->
+                    Text("• ${signal.kind.name.replace('_', ' ')}: ${signal.scorePercent?.let { "$it%" } ?: "n/a"}")
+                }
+            }
+
+            DesktopSectionCard(title = "Weekly coach") {
+                val review = advanced.weeklyReview
+                Text(
+                    "${review?.studiedMinutes ?: 0} min · ${review?.evidenceCount ?: 0} evidence event(s) · " +
+                        "${review?.actionCount ?: 0} action(s)",
+                )
+                review?.items?.forEach { item ->
+                    Text("• ${item.kind.name.replace('_', ' ')} — ${item.tone.name.lowercase()}")
+                }
+            }
+
+            DesktopSectionCard(title = "Content health") {
+                val cleanup = advanced.cleanupReport
+                Text(
+                    "Health: ${cleanup?.healthScorePercent ?: 100}% · ${cleanup?.issueCount ?: 0} issue(s) · " +
+                        "${cleanup?.actionCount ?: 0} action item(s)",
+                )
+                cleanup?.issues?.take(6)?.forEach { issue ->
+                    Text("• ${issue.kind.name.replace('_', ' ')}: ${issue.count} (${issue.severity.name.lowercase()})")
+                }
+                Text("Cleanup remains preview-only; DOV19 never performs destructive cleanup automatically.")
+            }
+
+            DesktopSectionCard(title = "Exam runbook") {
+                val runbook = advanced.runbook
+                Text(
+                    "${runbook?.state?.name?.replace('_', ' ') ?: "unavailable"} · " +
+                        "${runbook?.daysUntilExam?.let { "$it day(s)" } ?: "no confirmed exam countdown"}",
+                )
+                runbook?.items?.forEach { item ->
+                    Text("• ${item.window.name.replace('_', ' ')} — ${item.action.name.replace('_', ' ')}")
+                }
+            }
+
+            DesktopSectionCard(title = "Seven-day study sprint") {
+                val sprint = advanced.sprintPreview
+                Text(
+                    "Focus: ${sprint?.focus?.name?.replace('_', ' ') ?: "none"} · " +
+                        "${sprint?.candidateCount ?: 0} candidate(s) · ${sprint?.totalMinutes ?: 0} min",
+                )
+                Text("Executable changes: ${sprint?.executableChangeCount ?: 0}")
+                Button(onClick = onApplySprint, enabled = sprint?.executable == true) {
+                    Text("Apply approved sprint preview")
+                }
+            }
+
+            DesktopSectionCard(title = "Exam report") {
+                val report = advanced.examReport
+                Text(
+                    "Evidence: ${report?.evidenceCount ?: 0} · Practice tests: ${report?.practiceTestCount ?: 0} · " +
+                        "Mock exams: ${report?.mockExamCount ?: 0}",
+                )
+                Text(
+                    "Cleanup health: ${report?.cleanupHealthScorePercent ?: 100}% · " +
+                        "Next actions: ${report?.nextActions?.size ?: 0}",
+                )
+                Button(onClick = onExportReport, enabled = report != null) { Text("Export local HTML report") }
+                Text("Reports omit freeform study notes and stay inside the Desktop workspace until DOV23.")
+            }
+            if (actionMessage.isNotBlank()) Text(actionMessage, fontWeight = FontWeight.Bold)
         }
     }
 }

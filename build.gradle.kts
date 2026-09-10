@@ -988,6 +988,25 @@ tasks.register<Exec>("verifyDesktopDov18PublicExamParity") {
     commandLine("python3", "scripts/verify_desktop_dov18_public_exam_parity.py")
 }
 
+tasks.register<Exec>("verifyDesktopDov19ReadinessCoachingReports") {
+    group = "verification"
+    description = "Verify Desktop DOV19 readiness, coaching, cleanup, reports, runbooks, and sprints"
+    commandLine("python3", "scripts/verify_desktop_dov19_readiness_coaching_reports.py")
+}
+
+tasks.register("verifyDesktopDov16Dov19Batch") {
+    group = "verification"
+    description = "Verify Desktop DOV16-DOV19 writing, modes, public exam, and progress batch"
+    dependsOn(
+        "verifyDesktopDov16WritingWorkspace",
+        "verifyDesktopDov17ContentModesExecution",
+        "verifyDesktopDov18PublicExamParity",
+        "verifyDesktopDov19ReadinessCoachingReports",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:test",
+    )
+}
+
 
 tasks.register("verifyDesktopDov08Dov11Batch") {
     group = "verification"

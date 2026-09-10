@@ -467,10 +467,12 @@ class DesktopPublicExamRepository(
         val incomingSubjects = linkedMapOf<String, SubjectId>()
         preview.changes.filter { it.existingTopicId == null }.forEach { change ->
             when (change.kind) {
-                ExamNoticeDiffKind.UNCHANGED -> if (
-                    change.incomingSubjectKey != null && change.existingSubjectId != null
-                ) {
-                    incomingSubjects[change.incomingSubjectKey] = change.existingSubjectId
+                ExamNoticeDiffKind.UNCHANGED -> {
+                    val incomingSubjectKey = change.incomingSubjectKey
+                    val existingSubjectId = change.existingSubjectId
+                    if (incomingSubjectKey != null && existingSubjectId != null) {
+                        incomingSubjects[incomingSubjectKey] = existingSubjectId
+                    }
                 }
                 ExamNoticeDiffKind.CHANGED -> {
                     val existing = requireNotNull(

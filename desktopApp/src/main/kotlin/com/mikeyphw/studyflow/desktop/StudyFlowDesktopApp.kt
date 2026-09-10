@@ -48,7 +48,13 @@ fun StudyFlowDesktopApp(
                         DesktopRoute.WRITING -> DesktopWritingWorkspaceScreen(appState)
                         DesktopRoute.MODES -> DesktopContentModeScreen(appState)
                         DesktopRoute.PUBLIC_EXAM -> DesktopPublicExamScreen(appState)
-                        DesktopRoute.ANALYTICS -> DesktopAnalyticsScreen(appState.analyticsState())
+                        DesktopRoute.ANALYTICS -> DesktopAnalyticsScreen(
+                            state = appState.analyticsState(),
+                            progress = appState.progressReadinessState(),
+                            actionMessage = appState.progressActionMessage,
+                            onApplySprint = appState::applyStudySprint,
+                            onExportReport = appState::exportExamReport,
+                        )
                         DesktopRoute.SEARCH -> DesktopSearchScreen(
                             state = appState.searchState(),
                             onQueryChanged = appState::updateSearchQuery,

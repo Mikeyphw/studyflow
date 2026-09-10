@@ -115,7 +115,7 @@ class DesktopContentModeController(
             difficulty = 1,
             status = CodingExerciseStatus.NOT_STARTED,
             runCommandTemplate = "python3 main.py",
-            testCommandTemplate = null,
+            testCommandTemplate = "python3 main.py",
             files = emptyList(),
             tags = listOf("desktop", "sample"),
             lastResultJson = null,

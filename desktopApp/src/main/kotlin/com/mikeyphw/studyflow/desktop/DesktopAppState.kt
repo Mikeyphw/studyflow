@@ -136,6 +136,9 @@ class DesktopAppState(
     var publicExamActionMessage: String by mutableStateOf("")
         private set
 
+    var progressActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -604,6 +607,20 @@ class DesktopAppState(
     }
 
     fun analyticsState(): DesktopAnalyticsScreenState = services.createAnalyticsState()
+
+    fun progressReadinessState(): DesktopProgressReadinessState = services.progressReadinessController.state()
+
+    fun applyStudySprint() {
+        runCatching { runBlocking { services.progressReadinessController.applyCurrentSprint() } }
+            .onSuccess { count -> progressActionMessage = "Applied $count study sprint change(s)" }
+            .onFailure { error -> progressActionMessage = error.message.orEmpty() }
+    }
+
+    fun exportExamReport() {
+        runCatching { services.progressReadinessController.exportCurrentExamReport() }
+            .onSuccess { path -> progressActionMessage = "Exam report saved to $path" }
+            .onFailure { error -> progressActionMessage = error.message.orEmpty() }
+    }
 
     fun searchState(): DesktopSearchScreenState = services.createSearchState(searchQuery)
 

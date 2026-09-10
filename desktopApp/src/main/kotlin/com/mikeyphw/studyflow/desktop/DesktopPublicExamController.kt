@@ -109,7 +109,7 @@ class DesktopPublicExamController(
             createdAtEpochMillis = previous?.createdAtEpochMillis ?: now,
             updatedAtEpochMillis = now,
         )
-        return services.manageStudyContent.upsertStudyTarget(target)
+        return services.manageStudyContent.saveStudyTarget(target)
     }
 
     suspend fun applyEdital(displayName: String, rawText: String): ExamNoticeRevision {

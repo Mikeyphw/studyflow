@@ -39,7 +39,7 @@ with this matrix, this matrix owns the current product-state description.
 | Flashcards | FULL | FULL | FULL | LIMITED | FULL |
 | Error Notebook | FULL | FULL | FULL | LIMITED | FULL |
 | Goals | FULL | FULL | MISSING | READ_ONLY | LIMITED |
-| Progress / analytics | FULL | FULL | LIMITED | READ_ONLY | READ_ONLY |
+| Progress / analytics | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
 | Library catalog | FULL | FULL | FULL | LIMITED | FULL |
 | Full material viewing | FULL | FULL | LIMITED | LIMITED | FULL |
 | Writing Workspace | FULL | FULL | FULL | HANDOFF | HANDOFF |
@@ -53,8 +53,9 @@ with this matrix, this matrix owns the current product-state description.
 | Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
-Desktop DOV08-DOV18 now provide durable workspace, core study workflows, Writing Workspace, persisted
-programming/language/reading/general content-mode workflows with Desktop-native execution where applicable. Remaining `LIMITED`/`MISSING` rows are intentional roadmap gaps through DOV24 rather than a blanket
+Desktop DOV08-DOV19 now provide durable workspace, core study workflows, Writing Workspace, persisted
+programming/language/reading/general content-mode workflows with Desktop-native execution where applicable, plus
+shared-engine readiness, coaching, cleanup, exam reports, runbooks and preview-first study sprints. Remaining `LIMITED`/`MISSING` rows are intentional roadmap gaps through DOV24 rather than a blanket
 preview/in-memory qualifier.
 
 ## Current connectivity truth

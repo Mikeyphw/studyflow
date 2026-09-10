@@ -35,6 +35,24 @@ assert "DesktopPublicExamPersistence.open" in text["services"]
 assert "publicExamRepository.onSessionTerminal" in text["services"]
 assert "PublicExamDashboardBuilder.build" in text["controller"]
 assert "PublicExamFinalStretchPlanner.plan" in text["controller"]
+
+# Compile-safety guards for Desktop's Compose Material and shared content manager contracts.
+assert "androidx.compose.material3" not in text["screen"]
+for token in (
+    "androidx.compose.material.Button",
+    "androidx.compose.material.Card",
+    "androidx.compose.material.OutlinedTextField",
+    "androidx.compose.material.Text",
+):
+    assert token in text["screen"], f"Desktop public-exam screen must use Compose Material: {token}"
+assert "services.manageStudyContent.saveStudyTarget(target)" in text["controller"]
+assert "services.manageStudyContent.upsertStudyTarget(target)" not in text["controller"]
+for token in (
+    "val incomingSubjectKey = change.incomingSubjectKey",
+    "val existingSubjectId = change.existingSubjectId",
+    "incomingSubjects[incomingSubjectKey] = existingSubjectId",
+):
+    assert token in repo, f"missing cross-module smart-cast-safe revision mapping: {token}"
 assert 'PUBLIC_EXAM("Concurso")' in text["app_state"]
 assert "DesktopRoute.PUBLIC_EXAM -> DesktopPublicExamScreen(appState)" in text["app"]
 assert "Concurso Público workflows | FULL | FULL | FULL" in text["matrix"]
