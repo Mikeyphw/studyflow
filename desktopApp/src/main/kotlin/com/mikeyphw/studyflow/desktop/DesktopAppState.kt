@@ -50,6 +50,12 @@ class DesktopAppState(
     var sessionActionMessage: String by mutableStateOf("")
         private set
 
+    var practiceAnswerDraft: String by mutableStateOf("")
+        private set
+
+    var practiceActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -229,6 +235,41 @@ class DesktopAppState(
     }
 
     fun practiceState(): DesktopPracticeScreenState = services.createPracticeState()
+
+    fun practiceExecutionState(): DesktopPracticeExecutionState = services.practiceExecutionController.state()
+
+    fun updatePracticeAnswer(value: String) {
+        practiceAnswerDraft = value
+    }
+
+    fun createPracticeAttempt() = runPracticeAction("Practice Test created") {
+        services.practiceExecutionController.createAttempt("Desktop practice")
+    }
+
+    fun startPracticeAttempt() = runPracticeAction("Practice Test started") {
+        services.practiceExecutionController.start()
+    }
+
+    fun answerPracticeQuestion() = runPracticeAction("Answer saved") {
+        services.practiceExecutionController.answerCurrent(practiceAnswerDraft, elapsedSeconds = 0L)
+        practiceAnswerDraft = ""
+    }
+
+    fun finishPracticeAttempt() = runPracticeAction("Practice Test submitted") {
+        services.practiceExecutionController.finish()
+    }
+
+    fun togglePracticeFavorite(questionId: com.mikeyphw.studyflow.core.model.QuestionId) =
+        runPracticeAction("Favorite updated") { services.practiceExecutionController.toggleFavorite(questionId) }
+
+    fun togglePracticeDisputed(questionId: com.mikeyphw.studyflow.core.model.QuestionId) =
+        runPracticeAction("Disputed state updated") { services.practiceExecutionController.toggleDisputed(questionId) }
+
+    private fun runPracticeAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { practiceActionMessage = success }
+            .onFailure { practiceActionMessage = it.message.orEmpty() }
+    }
 
     fun analyticsState(): DesktopAnalyticsScreenState = services.createAnalyticsState()
 

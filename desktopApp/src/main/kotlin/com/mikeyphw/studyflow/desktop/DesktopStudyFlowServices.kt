@@ -50,9 +50,11 @@ class DesktopStudyFlowServices(
         manageContent = manageStudyContent,
         scheduleRepository = scheduleRepository,
         sessionRepository = sessionRepository,
+        practiceRepository = practiceRepository,
     )
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
+    val practiceExecutionController = DesktopPracticeExecutionController(this)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 
@@ -220,6 +222,8 @@ class DesktopStudyFlowServices(
         preferencesStore.setLanguage(language)
     }
 
+    fun currentDefaultPlanForDesktop(): StudyPlan? = currentDefaultPlan()
+
     private fun currentDefaultPlan(): StudyPlan? {
         val plans = planRepository.currentPlans()
         return defaultPlanId?.let { planId -> plans.firstOrNull { plan -> plan.id == planId } }
@@ -282,10 +286,20 @@ fun createDesktopStudyFlowServices(
         scheduleRepository = scheduleRepository,
         onChanged = { sessions -> workspacePersistence?.updateSessions(sessions) },
     )
+    val practicePersistence = workspacePersistence?.let { persistence ->
+        DesktopPracticePersistence.open(
+            persistence.root,
+            DesktopPracticeSnapshot(sample.questions, sample.tests, sample.mockExams),
+        )
+    }
+    val persistedPractice = practicePersistence?.current()
     val practiceRepository = InMemoryStudyPracticeRepository(
-        questions = sample.questions,
-        tests = sample.tests,
-        mockExams = sample.mockExams,
+        questions = persistedPractice?.questions ?: sample.questions,
+        tests = persistedPractice?.tests ?: sample.tests,
+        mockExams = persistedPractice?.mockExams ?: sample.mockExams,
+        onChanged = { questions, tests, mockExams ->
+            practicePersistence?.update(DesktopPracticeSnapshot(questions, tests, mockExams))
+        },
     )
     val analyticsRepository = InMemoryStudyAnalyticsRepository(
         plans = planRepository,

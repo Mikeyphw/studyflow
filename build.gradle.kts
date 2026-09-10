@@ -941,6 +941,13 @@ tasks.register<Exec>("verifyDesktopDov11SessionRuntime") {
     commandLine("python3", "scripts/verify_desktop_dov11_session_runtime.py")
 }
 
+
+tasks.register<Exec>("verifyDesktopDov12QuestionPracticeExecution") {
+    group = "verification"
+    description = "Checks DOV12 persistent Desktop question practice execution contracts."
+    commandLine("python3", "scripts/verify_desktop_dov12_question_practice_execution.py")
+}
+
 tasks.register("verifyDesktopDov08Dov11Batch") {
     group = "verification"
     description = "Runs the DOV08-DOV11 Desktop persistence, structure, planner, and session batch seal."

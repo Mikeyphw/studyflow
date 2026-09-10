@@ -37,3 +37,11 @@ compose.desktop {
 tasks.withType<Test>().configureEach {
     useJUnit()
 }
+
+
+tasks.register<Exec>("verifyDesktopDov12QuestionPracticeExecution") {
+    group = "verification"
+    description = "Verify Desktop DOV12 durable question-practice execution"
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_desktop_dov12_question_practice_execution.py")
+}

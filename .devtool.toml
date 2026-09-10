@@ -328,6 +328,7 @@ build = [
     "verifyDesktopDov09PlanContentLifecycle",
     "verifyDesktopDov10PlannerAdaptiveWorkflows",
     "verifyDesktopDov11SessionRuntime",
+    "verifyDesktopDov12QuestionPracticeExecution",
     "verifySflp01ProtocolBaseline",
     "verifySflp02Sflp03JournalReconciliation",
     "verifySflp04Sflp05IdentityTransport",
@@ -344,6 +345,7 @@ test = [
     "verifyDesktopDov09PlanContentLifecycle",
     "verifyDesktopDov10PlannerAdaptiveWorkflows",
     "verifyDesktopDov11SessionRuntime",
+    "verifyDesktopDov12QuestionPracticeExecution",
     ":core:domain:test",
     ":core:link:test",
     ":core:model:test",
@@ -394,6 +396,7 @@ preflight = [
     "verifyDesktopDov09PlanContentLifecycle",
     "verifyDesktopDov10PlannerAdaptiveWorkflows",
     "verifyDesktopDov11SessionRuntime",
+    "verifyDesktopDov12QuestionPracticeExecution",
 ]
 compile = [
     ":core:domain:compileKotlin",

@@ -18,40 +18,44 @@ class InMemoryStudyPracticeRepository(
     questions: List<Question>,
     tests: List<StudyTest>,
     mockExams: List<MockExam>,
+    private val onChanged: (List<Question>, List<StudyTest>, List<MockExam>) -> Unit = { _, _, _ -> },
 ) : StudyPracticeRepository {
     private val questionState = MutableStateFlow(questions)
     private val testState = MutableStateFlow(tests)
     private val mockExamState = MutableStateFlow(mockExams)
+    private var wrongAnswerSink: suspend (List<PracticeWrongAnswerCapture>) -> Unit = {}
 
-    override fun observeQuestions(planId: StudyPlanId): Flow<List<Question>> = questionState.map { questions ->
-        questions.filter { question -> question.studyPlanId == planId }
+    override fun observeQuestions(planId: StudyPlanId): Flow<List<Question>> = questionState.map { values ->
+        values.filter { it.studyPlanId == planId }
     }
 
-    override fun observeTests(planId: StudyPlanId): Flow<List<StudyTest>> = testState.map { tests ->
-        tests.filter { test -> test.studyPlanId == planId }
+    override fun observeTests(planId: StudyPlanId): Flow<List<StudyTest>> = testState.map { values ->
+        values.filter { it.studyPlanId == planId }
     }
 
-    override fun observeMockExams(planId: StudyPlanId): Flow<List<MockExam>> = mockExamState.map { mockExams ->
-        mockExams.filter { mockExam -> mockExam.studyPlanId == planId }
+    override fun observeMockExams(planId: StudyPlanId): Flow<List<MockExam>> = mockExamState.map { values ->
+        values.filter { it.studyPlanId == planId }
     }
 
     override suspend fun findQuestion(planId: StudyPlanId, questionId: QuestionId): Question? =
-        currentQuestions(planId).firstOrNull { question -> question.id == questionId }
+        currentQuestions(planId).firstOrNull { it.id == questionId }
 
     override suspend fun findTest(planId: StudyPlanId, testId: StudyTestId): StudyTest? =
-        currentTests(planId).firstOrNull { test -> test.id == testId }
+        currentTests(planId).firstOrNull { it.id == testId }
 
     override suspend fun findMockExam(planId: StudyPlanId, mockExamId: MockExamId): MockExam? =
-        currentMockExams(planId).firstOrNull { mockExam -> mockExam.id == mockExamId }
+        currentMockExams(planId).firstOrNull { it.id == mockExamId }
 
     override suspend fun upsertQuestion(question: Question): Question {
         questionState.value = questionState.value.filterNot { it.id == question.id } + question
+        persist()
         return question
     }
 
     override suspend fun importQuestionsAtomically(questions: List<Question>): List<Question> {
         val incomingIds = questions.map(Question::id).toSet()
         questionState.value = questionState.value.filterNot { it.id in incomingIds } + questions
+        persist()
         return questions
     }
 
@@ -62,25 +66,26 @@ class InMemoryStudyPracticeRepository(
             PracticeAttemptCodec.referencedQuestionIds(exam.configurationJson).contains(questionId)
         }
         require(!referenced) { "Question is still referenced by retained practice attempts." }
-        questionState.value = questionState.value.filterNot { question ->
-            question.studyPlanId == planId && question.id == questionId
-        }
+        questionState.value = questionState.value.filterNot { it.studyPlanId == planId && it.id == questionId }
+        persist()
     }
 
     override suspend fun upsertTest(test: StudyTest): StudyTest {
         testState.value = testState.value.filterNot { it.id == test.id } + test
+        persist()
         return test
     }
 
     override suspend fun createWeaknessDrillIfAbsent(test: StudyTest, key: String): StudyTest {
-        val existing = currentTests(test.studyPlanId).firstOrNull { existing ->
-            existing.submittedAtEpochMillis == null && existing.configurationJson.contains("weaknessKey=$key")
+        val existing = currentTests(test.studyPlanId).firstOrNull { current ->
+            current.submittedAtEpochMillis == null && current.configurationJson.contains("weaknessKey=$key")
         }
         return existing ?: upsertTest(test.copy(configurationJson = test.configurationJson + "\nweaknessKey=$key"))
     }
 
     override suspend fun upsertMockExam(mockExam: MockExam): MockExam {
         mockExamState.value = mockExamState.value.filterNot { it.id == mockExam.id } + mockExam
+        persist()
         return mockExam
     }
 
@@ -106,7 +111,11 @@ class InMemoryStudyPracticeRepository(
         expectedConfiguration: String,
         next: StudyTest,
         wrongAnswers: List<PracticeWrongAnswerCapture>,
-    ): StudyTest = updateTestAttemptIfOpen(expectedConfiguration, next)
+    ): StudyTest {
+        val submitted = updateTestAttemptIfOpen(expectedConfiguration, next)
+        if (wrongAnswers.isNotEmpty()) wrongAnswerSink(wrongAnswers)
+        return submitted
+    }
 
     override suspend fun startMockExamIfNotStarted(
         planId: StudyPlanId,
@@ -130,17 +139,34 @@ class InMemoryStudyPracticeRepository(
         expectedConfiguration: String,
         next: MockExam,
         wrongAnswers: List<PracticeWrongAnswerCapture>,
-    ): MockExam = updateMockExamAttemptIfOpen(expectedConfiguration, next)
+    ): MockExam {
+        val submitted = updateMockExamAttemptIfOpen(expectedConfiguration, next)
+        if (wrongAnswers.isNotEmpty()) wrongAnswerSink(wrongAnswers)
+        return submitted
+    }
+
+    fun attachWrongAnswerSink(sink: suspend (List<PracticeWrongAnswerCapture>) -> Unit) {
+        wrongAnswerSink = sink
+    }
+
+    fun purgePlan(planId: StudyPlanId) {
+        questionState.value = questionState.value.filterNot { it.studyPlanId == planId }
+        testState.value = testState.value.filterNot { it.studyPlanId == planId }
+        mockExamState.value = mockExamState.value.filterNot { it.studyPlanId == planId }
+        persist()
+    }
 
     fun currentQuestions(planId: StudyPlanId): List<Question> = questionState.value
-        .filter { question -> question.studyPlanId == planId }
+        .filter { it.studyPlanId == planId }
         .sortedByDescending(Question::updatedAtEpochMillis)
 
     fun currentTests(planId: StudyPlanId): List<StudyTest> = testState.value
-        .filter { test -> test.studyPlanId == planId }
-        .sortedByDescending { test -> test.startedAtEpochMillis ?: 0L }
+        .filter { it.studyPlanId == planId }
+        .sortedByDescending { it.startedAtEpochMillis ?: 0L }
 
     fun currentMockExams(planId: StudyPlanId): List<MockExam> = mockExamState.value
-        .filter { mockExam -> mockExam.studyPlanId == planId }
-        .sortedByDescending { mockExam -> mockExam.startedAtEpochMillis ?: 0L }
+        .filter { it.studyPlanId == planId }
+        .sortedByDescending { it.startedAtEpochMillis ?: 0L }
+
+    private fun persist() = onChanged(questionState.value, testState.value, mockExamState.value)
 }

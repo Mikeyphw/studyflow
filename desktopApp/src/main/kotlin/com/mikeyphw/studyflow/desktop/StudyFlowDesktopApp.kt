@@ -47,7 +47,7 @@ fun StudyFlowDesktopApp(
                         )
 
                         DesktopRoute.PLANNER -> DesktopPlannerScreen(appState)
-                        DesktopRoute.PRACTICE -> DesktopPracticeScreen(appState.practiceState())
+                        DesktopRoute.PRACTICE -> DesktopPracticeScreen(appState)
                         DesktopRoute.ANALYTICS -> DesktopAnalyticsScreen(appState.analyticsState())
                         DesktopRoute.SEARCH -> DesktopSearchScreen(
                             state = appState.searchState(),

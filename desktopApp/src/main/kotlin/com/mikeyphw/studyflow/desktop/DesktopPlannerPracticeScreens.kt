@@ -148,11 +148,13 @@ fun DesktopPlannerScreen(appState: DesktopAppState) {
 }
 
 @Composable
-fun DesktopPracticeScreen(state: DesktopPracticeScreenState) {
+fun DesktopPracticeScreen(appState: DesktopAppState) {
+    val state = appState.practiceState()
+    val execution = appState.practiceExecutionState()
     if (state.status == DesktopScreenStatus.EMPTY) {
         DesktopStateMessage(
             title = "No practice data yet",
-            message = "The practice boundary is ready, but no desktop-safe questions are available.",
+            message = "Add or import questions before starting a Desktop Practice Test.",
         )
         return
     }
@@ -179,19 +181,55 @@ fun DesktopPracticeScreen(state: DesktopPracticeScreenState) {
             )
         }
 
-        state.currentQuestion?.let { question ->
-            DesktopSectionCard(title = "Current practice card") {
-                Text(question.statement, fontWeight = FontWeight.Bold)
-                Text("Answer: ${question.answer}")
-                Text(question.explanation, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                DesktopTagRow(question.tags + question.difficultyLabel)
+        DesktopSectionCard(title = "Practice Test execution") {
+            val question = execution.currentQuestion
+            if (execution.attempt == null) {
+                Text("No open Practice Test. Create one from the current question bank.")
+                androidx.compose.material.Button(onClick = appState::createPracticeAttempt) { Text("Create practice") }
+            } else {
+                Text(execution.attempt.title, fontWeight = FontWeight.Bold)
+                Text("${execution.execution?.answeredCount ?: 0}/${execution.attempt.questionCount} answered")
+                if (execution.canStart) {
+                    androidx.compose.material.Button(onClick = appState::startPracticeAttempt) { Text("Start") }
+                }
+                if (question != null && execution.canAnswer) {
+                    Text(question.statement, fontWeight = FontWeight.Bold)
+                    question.options.forEach { option -> Text("• $option") }
+                    androidx.compose.material.OutlinedTextField(
+                        value = appState.practiceAnswerDraft,
+                        onValueChange = appState::updatePracticeAnswer,
+                        label = { Text("Your answer") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material.Button(onClick = appState::answerPracticeQuestion) {
+                            Text("Save answer")
+                        }
+                        androidx.compose.material.OutlinedButton(
+                            onClick = { appState.togglePracticeFavorite(question.id) },
+                        ) { Text(if (question.favorite) "Unfavorite" else "Favorite") }
+                        androidx.compose.material.OutlinedButton(
+                            onClick = { appState.togglePracticeDisputed(question.id) },
+                        ) { Text(if (question.disputed) "Clear disputed" else "Mark disputed") }
+                    }
+                    question.explanation?.let { Text("Explanation: $it") }
+                }
+                if (execution.canFinish) {
+                    androidx.compose.material.OutlinedButton(onClick = appState::finishPracticeAttempt) {
+                        Text("Submit attempt")
+                    }
+                }
             }
+            if (appState.practiceActionMessage.isNotBlank()) Text(appState.practiceActionMessage)
         }
 
         DesktopSectionCard(title = "Generated deck") {
-            DesktopScrollableList(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.42f)) {
+            DesktopScrollableList(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.34f)) {
                 items(state.deck) { question ->
-                    DesktopQuestionCard(question)
+                    DesktopStateMessage(
+                        title = question.statement,
+                        message = "${question.difficultyLabel} • answer hidden during active execution",
+                    )
                 }
             }
         }
