@@ -976,6 +976,13 @@ tasks.register<Exec>("verifyDesktopDov16WritingWorkspace") {
 }
 
 
+tasks.register<Exec>("verifyDesktopDov17ContentModesExecution") {
+    group = "verification"
+    description = "Checks DOV17 persisted Desktop content modes and native execution contracts."
+    commandLine("python3", "scripts/verify_desktop_dov17_content_modes_execution.py")
+}
+
+
 tasks.register("verifyDesktopDov08Dov11Batch") {
     group = "verification"
     description = "Runs the DOV08-DOV11 Desktop persistence, structure, planner, and session batch seal."

@@ -78,6 +78,14 @@ tasks.register<Exec>("verifyDesktopDov16WritingWorkspace") {
 }
 
 
+tasks.register<Exec>("verifyDesktopDov17ContentModesExecution") {
+    group = "verification"
+    description = "Verify Desktop DOV17 content modes and native execution"
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_desktop_dov17_content_modes_execution.py")
+}
+
+
 tasks.register("verifyDesktopDov12Dov15Batch") {
     group = "verification"
     description = "Verify Desktop DOV12-DOV15 product batch"

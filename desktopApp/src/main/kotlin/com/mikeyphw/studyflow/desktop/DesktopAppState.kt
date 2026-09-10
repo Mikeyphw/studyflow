@@ -8,6 +8,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.domain.WritingCompletionChecklist
 import com.mikeyphw.studyflow.core.domain.WritingRubric
 import com.mikeyphw.studyflow.core.model.AppLanguage
+import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
@@ -112,6 +113,12 @@ class DesktopAppState(
         private set
 
     var writingActionMessage: String by mutableStateOf("")
+        private set
+
+    var languageReviewAnswerDraft: String by mutableStateOf("")
+        private set
+
+    var contentModeActionMessage: String by mutableStateOf("")
         private set
 
     var linkQrInput: String by mutableStateOf("")
@@ -258,6 +265,43 @@ class DesktopAppState(
         runCatching { runBlocking { action() } }
             .onSuccess { libraryActionMessage = success }
             .onFailure { libraryActionMessage = it.message.orEmpty() }
+    }
+
+    fun contentModeState(): DesktopContentModeState = services.contentModeController.state()
+
+    fun setContentMode(mode: StudyContentMode) = runContentModeAction("Content mode updated") {
+        services.contentModeController.setMode(mode)
+    }
+
+    fun ensureProgrammingSample() = runContentModeAction("Programming sample created") {
+        services.contentModeController.ensureProgrammingSample()
+    }
+
+    fun runProgrammingExercise() {
+        runCatching { services.contentModeController.runFirstProgrammingExercise() }
+            .onSuccess { contentModeActionMessage = "Programming run finished" }
+            .onFailure { contentModeActionMessage = it.message.orEmpty() }
+    }
+
+    fun updateLanguageReviewAnswer(value: String) { languageReviewAnswerDraft = value }
+
+    fun ensureLanguageSample() = runContentModeAction("Language sample created") {
+        services.contentModeController.ensureLanguageSample()
+    }
+
+    fun submitLanguageReview() {
+        runCatching { services.contentModeController.reviewFirstLanguageExpression(languageReviewAnswerDraft) }
+            .onSuccess {
+                contentModeActionMessage = "Language review recorded"
+                languageReviewAnswerDraft = ""
+            }
+            .onFailure { contentModeActionMessage = it.message.orEmpty() }
+    }
+
+    private fun runContentModeAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { contentModeActionMessage = success }
+            .onFailure { contentModeActionMessage = it.message.orEmpty() }
     }
 
     fun writingWorkspaceState(): DesktopWritingWorkspaceState = runBlocking {
@@ -571,6 +615,7 @@ enum class DesktopRoute(val title: String) {
     PRACTICE("Practice"),
     REVIEWS("Reviews"),
     WRITING("Writing"),
+    MODES("Modes"),
     ANALYTICS("Analytics"),
     SEARCH("Search"),
     SETTINGS("Settings"),

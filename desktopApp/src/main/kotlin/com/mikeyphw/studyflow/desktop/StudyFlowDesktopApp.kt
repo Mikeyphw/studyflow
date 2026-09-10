@@ -46,6 +46,7 @@ fun StudyFlowDesktopApp(
                         DesktopRoute.PRACTICE -> DesktopPracticeScreen(appState)
                         DesktopRoute.REVIEWS -> DesktopReviewScreen(appState)
                         DesktopRoute.WRITING -> DesktopWritingWorkspaceScreen(appState)
+                        DesktopRoute.MODES -> DesktopContentModeScreen(appState)
                         DesktopRoute.ANALYTICS -> DesktopAnalyticsScreen(appState.analyticsState())
                         DesktopRoute.SEARCH -> DesktopSearchScreen(
                             state = appState.searchState(),

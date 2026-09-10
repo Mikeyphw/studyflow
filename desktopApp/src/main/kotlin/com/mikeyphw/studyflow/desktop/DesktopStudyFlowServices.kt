@@ -35,6 +35,7 @@ class DesktopStudyFlowServices(
     val platformPorts: DesktopPlatformPorts,
     val linkService: DesktopStudyFlowLinkService? = null,
     val workspacePersistence: DesktopWorkspacePersistence? = null,
+    val contentModeRepository: DesktopContentModeRepository = DesktopContentModeRepository(),
 ) {
     val manageStudyPlan: ManageStudyPlan = ManageStudyPlan(planRepository)
     val manageStudyContent: ManageStudyContent = ManageStudyContent(contentRepository)
@@ -60,6 +61,7 @@ class DesktopStudyFlowServices(
         practiceRepository = practiceRepository,
         reviewRepository = reviewRepository,
         libraryRepository = libraryRepository,
+        contentModeRepository = contentModeRepository,
     )
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
@@ -68,6 +70,7 @@ class DesktopStudyFlowServices(
     val reviewWorkspaceController = DesktopReviewWorkspaceController(this)
     val libraryWorkspaceController = DesktopLibraryWorkspaceController(this, workspacePersistence?.root)
     val writingWorkspaceController = DesktopWritingWorkspaceController(this)
+    val contentModeController = DesktopContentModeController(this, contentModeRepository, workspacePersistence?.root)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 
@@ -339,6 +342,12 @@ fun createDesktopStudyFlowServices(
         },
     )
 
+    val contentModePersistence = workspacePersistence?.let { DesktopContentModePersistence.open(it.root) }
+    val contentModeRepository = DesktopContentModeRepository(
+        initial = contentModePersistence?.current() ?: DesktopContentModeSnapshot(),
+        onChanged = { snapshot -> contentModePersistence?.update(snapshot) },
+    )
+
     val analyticsRepository = InMemoryStudyAnalyticsRepository(
         plans = planRepository,
         library = libraryRepository,
@@ -373,6 +382,7 @@ fun createDesktopStudyFlowServices(
         platformPorts = platformPorts,
         linkService = linkService,
         workspacePersistence = workspacePersistence,
+        contentModeRepository = contentModeRepository,
     )
     practiceRepository.attachWrongAnswerSink { wrongAnswers ->
         wrongAnswers.forEach { capture ->
