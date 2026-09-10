@@ -44,7 +44,7 @@ with this matrix, this matrix owns the current product-state description.
 | Full material viewing | FULL | FULL | LIMITED | LIMITED | FULL |
 | Writing Workspace | FULL | FULL | FULL | HANDOFF | HANDOFF |
 | Global search | FULL | FULL | LIMITED | MISSING | FULL |
-| Concurso Público workflows | FULL | FULL | MISSING | LIMITED | LIMITED |
+| Concurso Público workflows | FULL | FULL | FULL | LIMITED | LIMITED |
 | Programming / language content modes | FULL | FULL | FULL | LIMITED | LIMITED |
 | Import / export / portable backup | FULL | FULL | MISSING | HANDOFF | HANDOFF |
 | Optional provider sync | FULL | PLATFORM_SPECIFIC | MISSING | NOT_APPLICABLE | NOT_APPLICABLE |
@@ -53,7 +53,7 @@ with this matrix, this matrix owns the current product-state description.
 | Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
-Desktop DOV08-DOV17 now provide durable workspace, core study workflows, Writing Workspace, and persisted
+Desktop DOV08-DOV18 now provide durable workspace, core study workflows, Writing Workspace, persisted
 programming/language/reading/general content-mode workflows with Desktop-native execution where applicable. Remaining `LIMITED`/`MISSING` rows are intentional roadmap gaps through DOV24 rather than a blanket
 preview/in-memory qualifier.
 

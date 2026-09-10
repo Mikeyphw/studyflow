@@ -982,6 +982,12 @@ tasks.register<Exec>("verifyDesktopDov17ContentModesExecution") {
     commandLine("python3", "scripts/verify_desktop_dov17_content_modes_execution.py")
 }
 
+tasks.register<Exec>("verifyDesktopDov18PublicExamParity") {
+    group = "verification"
+    description = "Verify Desktop DOV18 Concurso Publico parity"
+    commandLine("python3", "scripts/verify_desktop_dov18_public_exam_parity.py")
+}
+
 
 tasks.register("verifyDesktopDov08Dov11Batch") {
     group = "verification"

@@ -121,6 +121,21 @@ class DesktopAppState(
     var contentModeActionMessage: String by mutableStateOf("")
         private set
 
+    var publicExamOrganizationDraft: String by mutableStateOf("")
+        private set
+    var publicExamRoleDraft: String by mutableStateOf("")
+        private set
+    var publicExamBoardDraft: String by mutableStateOf("")
+        private set
+    var publicExamDateDraft: String by mutableStateOf("")
+        private set
+    var publicExamEditalDraft: String by mutableStateOf("")
+        private set
+    var publicExamLegislationDraft: String by mutableStateOf("")
+        private set
+    var publicExamActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -302,6 +317,64 @@ class DesktopAppState(
         runCatching { runBlocking { action() } }
             .onSuccess { contentModeActionMessage = success }
             .onFailure { contentModeActionMessage = it.message.orEmpty() }
+    }
+
+    fun publicExamState(): DesktopPublicExamState = runBlocking {
+        services.publicExamController.state().also { state ->
+            state.target?.let { target ->
+                if (publicExamOrganizationDraft.isBlank()) publicExamOrganizationDraft = target.organization
+                if (publicExamRoleDraft.isBlank()) publicExamRoleDraft = target.role
+                if (publicExamBoardDraft.isBlank()) publicExamBoardDraft = target.examBoard
+                if (publicExamDateDraft.isBlank()) publicExamDateDraft = target.confirmedExamDateIso.orEmpty()
+            }
+        }
+    }
+
+    fun updatePublicExamOrganization(value: String) { publicExamOrganizationDraft = value }
+    fun updatePublicExamRole(value: String) { publicExamRoleDraft = value }
+    fun updatePublicExamBoard(value: String) { publicExamBoardDraft = value }
+    fun updatePublicExamDate(value: String) { publicExamDateDraft = value }
+    fun updatePublicExamEdital(value: String) { publicExamEditalDraft = value }
+    fun updatePublicExamLegislation(value: String) { publicExamLegislationDraft = value }
+
+    fun savePublicExamTarget() = runPublicExamAction("Public-exam target saved") {
+        services.publicExamController.saveTarget(
+            publicExamOrganizationDraft,
+            publicExamRoleDraft,
+            publicExamBoardDraft,
+            "",
+            publicExamDateDraft,
+        )
+    }
+
+    fun applyPublicExamEdital() = runPublicExamAction("Edital revision applied") {
+        services.publicExamController.applyEdital("Desktop edital", publicExamEditalDraft)
+    }
+
+    fun importPublicExamLegislation() = runPublicExamAction("Legislation imported") {
+        services.publicExamController.importLegislation("Desktop legislation", publicExamLegislationDraft)
+    }
+
+    fun togglePublicExamProvisionRead() = runPublicExamAction("Legislation read state updated") {
+        services.publicExamController.toggleFirstProvisionRead()
+    }
+
+    fun buildPublicExamCycle() = runPublicExamAction("Study cycle rebuilt") {
+        services.publicExamController.buildCycle()
+    }
+
+    fun startPublicExamCycleItem() = runPublicExamAction("Study cycle session started") {
+        services.publicExamController.startCurrentCycleItem() ?: error("No eligible study-cycle item.")
+    }
+
+    fun skipPublicExamCycleItem() = runPublicExamAction("Study cycle item skipped") {
+        services.publicExamController.skipCycleItem()
+    }
+
+    private fun runPublicExamAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { publicExamActionMessage = success }
+            .onFailure { publicExamActionMessage = it.message.orEmpty() }
     }
 
     fun writingWorkspaceState(): DesktopWritingWorkspaceState = runBlocking {
@@ -616,6 +689,7 @@ enum class DesktopRoute(val title: String) {
     REVIEWS("Reviews"),
     WRITING("Writing"),
     MODES("Modes"),
+    PUBLIC_EXAM("Concurso"),
     ANALYTICS("Analytics"),
     SEARCH("Search"),
     SETTINGS("Settings"),

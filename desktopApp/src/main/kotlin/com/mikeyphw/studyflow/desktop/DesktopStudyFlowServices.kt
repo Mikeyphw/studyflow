@@ -8,6 +8,7 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
+import com.mikeyphw.studyflow.core.domain.ManagePublicExam
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
@@ -36,6 +37,12 @@ class DesktopStudyFlowServices(
     val linkService: DesktopStudyFlowLinkService? = null,
     val workspacePersistence: DesktopWorkspacePersistence? = null,
     val contentModeRepository: DesktopContentModeRepository = DesktopContentModeRepository(),
+    val publicExamRepository: DesktopPublicExamRepository = DesktopPublicExamRepository(
+        plans = planRepository,
+        content = contentRepository,
+        practice = practiceRepository,
+        review = reviewRepository,
+    ),
 ) {
     val manageStudyPlan: ManageStudyPlan = ManageStudyPlan(planRepository)
     val manageStudyContent: ManageStudyContent = ManageStudyContent(contentRepository)
@@ -48,6 +55,7 @@ class DesktopStudyFlowServices(
         practiceRepository,
         studyPlanRepository = planRepository,
     )
+    val managePublicExam: ManagePublicExam = ManagePublicExam(publicExamRepository, manageStudySession)
     val manageStudyAnalytics: ManageStudyAnalytics = ManageStudyAnalytics(analyticsRepository)
     val manageStudyDiscovery: ManageStudyDiscovery = ManageStudyDiscovery(discoveryRepository)
     val planContentController = DesktopPlanContentController(
@@ -62,6 +70,7 @@ class DesktopStudyFlowServices(
         reviewRepository = reviewRepository,
         libraryRepository = libraryRepository,
         contentModeRepository = contentModeRepository,
+        publicExamRepository = publicExamRepository,
     )
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
@@ -71,6 +80,7 @@ class DesktopStudyFlowServices(
     val libraryWorkspaceController = DesktopLibraryWorkspaceController(this, workspacePersistence?.root)
     val writingWorkspaceController = DesktopWritingWorkspaceController(this)
     val contentModeController = DesktopContentModeController(this, contentModeRepository, workspacePersistence?.root)
+    val publicExamController = DesktopPublicExamController(this, publicExamRepository)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 
@@ -108,6 +118,7 @@ class DesktopStudyFlowServices(
                 "ManageStudySession",
                 "ManageStudyPractice",
                 "ManageStudyReview",
+                "ManagePublicExam",
                 "ManageStudyAnalytics",
                 "ManageStudyDiscovery",
             ),
@@ -348,6 +359,20 @@ fun createDesktopStudyFlowServices(
         onChanged = { snapshot -> contentModePersistence?.update(snapshot) },
     )
 
+    val publicExamPersistence = workspacePersistence?.let { DesktopPublicExamPersistence.open(it.root) }
+    val publicExamRepository = DesktopPublicExamRepository(
+        initial = publicExamPersistence?.current() ?: DesktopPublicExamSnapshot(),
+        plans = planRepository,
+        content = contentRepository,
+        practice = practiceRepository,
+        review = reviewRepository,
+        onChanged = { snapshot -> publicExamPersistence?.update(snapshot) },
+    )
+    sessionRepository.configureCycleIntegration(
+        recordBinding = { sessionId, binding -> publicExamRepository.recordSessionBinding(sessionId, binding) },
+        onTerminal = { planId, sessionId, status -> publicExamRepository.onSessionTerminal(planId, sessionId, status) },
+    )
+
     val analyticsRepository = InMemoryStudyAnalyticsRepository(
         plans = planRepository,
         library = libraryRepository,
@@ -383,6 +408,7 @@ fun createDesktopStudyFlowServices(
         linkService = linkService,
         workspacePersistence = workspacePersistence,
         contentModeRepository = contentModeRepository,
+        publicExamRepository = publicExamRepository,
     )
     practiceRepository.attachWrongAnswerSink { wrongAnswers ->
         wrongAnswers.forEach { capture ->

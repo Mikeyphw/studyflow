@@ -20,6 +20,16 @@ class InMemoryStudySessionRepository(
 ) : StudySessionRepository {
     private val sessionState = MutableStateFlow(sessions)
     private val mutationMutex = Mutex()
+    private var cycleBindingRecorder: (suspend (StudySessionId, StudyCycleSessionBinding?) -> Unit)? = null
+    private var cycleTerminalHandler: (suspend (StudyPlanId, StudySessionId, StudySessionStatus) -> Unit)? = null
+
+    fun configureCycleIntegration(
+        recordBinding: suspend (StudySessionId, StudyCycleSessionBinding?) -> Unit,
+        onTerminal: suspend (StudyPlanId, StudySessionId, StudySessionStatus) -> Unit,
+    ) {
+        cycleBindingRecorder = recordBinding
+        cycleTerminalHandler = onTerminal
+    }
 
     override fun observeSessions(planId: StudyPlanId): Flow<List<StudySession>> = sessionState.map { sessions ->
         sessions.filter { session -> session.studyPlanId == planId }
@@ -66,6 +76,7 @@ class InMemoryStudySessionRepository(
         }
         sessionState.value = sessionState.value + session
         persist()
+        if (cycleBinding != null) cycleBindingRecorder?.invoke(session.id, cycleBinding)
         session
     }
 
@@ -90,6 +101,10 @@ class InMemoryStudySessionRepository(
                 )
         }
         replace(session).also { persist() }
+        if (session.status in TerminalStatuses) {
+            cycleTerminalHandler?.invoke(session.studyPlanId, session.id, session.status)
+        }
+        session
     }
 
     suspend fun purgePlan(planId: StudyPlanId) = mutationMutex.withLock {
@@ -114,5 +129,6 @@ class InMemoryStudySessionRepository(
 
     private companion object {
         val ActiveStatuses = setOf(StudySessionStatus.RUNNING, StudySessionStatus.PAUSED)
+        val TerminalStatuses = setOf(StudySessionStatus.COMPLETED, StudySessionStatus.CANCELLED)
     }
 }

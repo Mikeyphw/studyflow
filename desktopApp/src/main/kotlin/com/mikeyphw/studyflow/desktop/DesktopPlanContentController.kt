@@ -33,6 +33,7 @@ class DesktopPlanContentController(
     private val reviewRepository: InMemoryStudyReviewRepository? = null,
     private val libraryRepository: InMemoryStudyLibraryRepository? = null,
     private val contentModeRepository: DesktopContentModeRepository? = null,
+    private val publicExamRepository: DesktopPublicExamRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
@@ -110,6 +111,7 @@ class DesktopPlanContentController(
         reviewRepository?.purgePlan(selected.id)
         libraryRepository?.purgePlan(selected.id)
         contentModeRepository?.purgePlan(selected.id)
+        publicExamRepository?.purgePlan(selected.id)
         scheduleRepository?.purgePlan(selected.id)
         contentRepository.purgePlan(selected.id)
         managePlan.deletePermanently(selected.id)
