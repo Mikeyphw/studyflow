@@ -45,6 +45,7 @@ class StudyFlowDesktopBootstrapScreensTest {
     @Test
     fun emptyRepositoriesRenderEmptyStatesInsteadOfCrashing() {
         val planRepository = InMemoryStudyPlanRepository(emptyList())
+        val contentRepository = DesktopStudyContentRepository(DesktopStudyContentState(), planRepository)
         val libraryRepository = InMemoryStudyLibraryRepository(emptyList(), emptyList(), emptyList())
         val scheduleRepository = InMemoryStudyScheduleRepository(emptyList(), emptyList(), emptyList())
         val sessionRepository = InMemoryStudySessionRepository(emptyList())
@@ -58,6 +59,7 @@ class StudyFlowDesktopBootstrapScreensTest {
         )
         val services = DesktopStudyFlowServices(
             planRepository = planRepository,
+            contentRepository = contentRepository,
             libraryRepository = libraryRepository,
             scheduleRepository = scheduleRepository,
             sessionRepository = sessionRepository,

@@ -276,6 +276,32 @@ class InMemoryStudyScheduleRepository(
         mutations.size
     }
 
+    suspend fun transitionFromSession(
+        planId: StudyPlanId,
+        activityId: PlannedActivityId,
+        expectedStatus: PlannedActivityStatus,
+        newStatus: PlannedActivityStatus,
+        completedAtEpochMillis: Long?,
+    ): PlannedActivity = mutationMutex.withLock {
+        require(
+            newStatus in setOf(
+                PlannedActivityStatus.IN_PROGRESS,
+                PlannedActivityStatus.COMPLETED,
+                PlannedActivityStatus.PLANNED,
+            ),
+        ) {
+            "Study Session may only own IN_PROGRESS, COMPLETED, or PLANNED transitions."
+        }
+        val current = requireNotNull(currentActivities(planId).firstOrNull { it.id == activityId }) {
+            "Planned activity does not belong to this Study Plan."
+        }
+        require(current.status == expectedStatus) { "Planned activity status changed before Study Session transition." }
+        val updated = current.copy(status = newStatus, completedAtEpochMillis = completedAtEpochMillis)
+        activityState.value = activityState.value.map { row -> if (row.id == activityId) updated else row }
+        persist()
+        updated
+    }
+
     suspend fun purgePlan(planId: StudyPlanId) = mutationMutex.withLock {
         strategyState.value = strategyState.value.filterNot { it.studyPlanId == planId }
         ruleState.value = ruleState.value.filterNot { it.studyPlanId == planId }

@@ -24,6 +24,9 @@ import com.mikeyphw.studyflow.core.model.StudyType
 import com.mikeyphw.studyflow.core.model.StudyStrategy
 import com.mikeyphw.studyflow.core.model.StudyStrategyId
 import com.mikeyphw.studyflow.core.model.StudyStrategyType
+import com.mikeyphw.studyflow.core.model.StudySession
+import com.mikeyphw.studyflow.core.model.StudySessionId
+import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.VideoResourceId
 import com.mikeyphw.studyflow.core.model.Subject
@@ -51,6 +54,7 @@ data class DesktopWorkspaceSnapshot(
     val strategies: List<StudyStrategy> = emptyList(),
     val scheduleRules: List<ScheduleRule> = emptyList(),
     val plannedActivities: List<PlannedActivity> = emptyList(),
+    val sessions: List<StudySession> = emptyList(),
 ) {
     companion object {
         fun seed(sample: DesktopStudyFlowSampleData): DesktopWorkspaceSnapshot = DesktopWorkspaceSnapshot(
@@ -65,6 +69,7 @@ data class DesktopWorkspaceSnapshot(
             strategies = sample.strategies,
             scheduleRules = sample.scheduleRules,
             plannedActivities = sample.plannedActivities,
+            sessions = sample.sessions,
         )
     }
 }
@@ -124,6 +129,12 @@ class DesktopWorkspacePersistence private constructor(
     }
 
     @Synchronized
+    fun updateSessions(sessions: List<StudySession>) {
+        snapshot = snapshot.copy(sessions = sessions.toList())
+        persistLocked()
+    }
+
+    @Synchronized
     private fun persistLocked() {
         Files.createDirectories(root)
         val temporary = root.resolve("$WORKSPACE_FILE.tmp")
@@ -178,7 +189,7 @@ fun defaultDesktopWorkspaceRoot(): Path {
 }
 
 private object DesktopWorkspacePropertiesCodec {
-    private const val SCHEMA_VERSION = 3
+    private const val SCHEMA_VERSION = 4
 
     fun write(snapshot: DesktopWorkspaceSnapshot, output: OutputStream) {
         val properties = Properties()
@@ -216,6 +227,8 @@ private object DesktopWorkspacePropertiesCodec {
         snapshot.plannedActivities.forEachIndexed { index, activity ->
             writeActivity(properties, "activity.$index", activity)
         }
+        properties["session.count"] = snapshot.sessions.size.toString()
+        snapshot.sessions.forEachIndexed { index, session -> writeSession(properties, "session.$index", session) }
         properties.store(output, "StudyFlow Desktop workspace schema v$SCHEMA_VERSION")
     }
 
@@ -266,8 +279,11 @@ private object DesktopWorkspacePropertiesCodec {
         val activities = if (version >= 3) {
             List(properties.optionalInt("activity.count") ?: 0) { index -> readActivity(properties, "activity.$index") }
         } else seed.plannedActivities.filter { it.studyPlanId in planIds }
+        val sessions = if (version >= 4) {
+            List(properties.optionalInt("session.count") ?: 0) { index -> readSession(properties, "session.$index") }
+        } else seed.sessions.filter { it.studyPlanId in planIds }
         return DesktopWorkspaceSnapshot(
-            plans, settings, preferences, targets, stages, subjects, topics, strategies, rules, activities,
+            plans, settings, preferences, targets, stages, subjects, topics, strategies, rules, activities, sessions,
         )
     }
 
@@ -327,6 +343,52 @@ private object DesktopWorkspacePropertiesCodec {
         quietHoursStartMinute = properties.optionalInt("$prefix.quietHoursStartMinute"),
         quietHoursEndMinute = properties.optionalInt("$prefix.quietHoursEndMinute"),
         configurationJson = properties.required("$prefix.configurationJson"),
+    )
+
+    private fun writeSession(properties: Properties, prefix: String, session: StudySession) {
+        properties["$prefix.id"] = session.id.value
+        properties["$prefix.planId"] = session.studyPlanId.value
+        session.plannedActivityId?.let { properties["$prefix.activityId"] = it.value }
+        session.subjectId?.let { properties["$prefix.subjectId"] = it.value }
+        session.topicId?.let { properties["$prefix.topicId"] = it.value }
+        session.materialId?.let { properties["$prefix.materialId"] = it.value }
+        session.videoResourceId?.let { properties["$prefix.videoId"] = it.value }
+        properties["$prefix.type"] = session.type.name
+        properties["$prefix.status"] = session.status.name
+        properties["$prefix.startedAt"] = session.startedAtEpochMillis.toString()
+        session.endedAtEpochMillis?.let { properties["$prefix.endedAt"] = it.toString() }
+        properties["$prefix.grossSeconds"] = session.grossDurationSeconds.toString()
+        properties["$prefix.pauseSeconds"] = session.pauseDurationSeconds.toString()
+        properties["$prefix.pages"] = session.pagesCompleted.toString()
+        properties["$prefix.questions"] = session.questionsAnswered.toString()
+        properties["$prefix.correct"] = session.correctAnswers.toString()
+        session.concentrationRating?.let { properties["$prefix.concentration"] = it.toString() }
+        session.difficultyRating?.let { properties["$prefix.difficulty"] = it.toString() }
+        properties["$prefix.notes"] = session.notes
+        session.targetDurationMinutes?.let { properties["$prefix.targetMinutes"] = it.toString() }
+    }
+
+    private fun readSession(properties: Properties, prefix: String): StudySession = StudySession(
+        id = StudySessionId(properties.required("$prefix.id")),
+        studyPlanId = StudyPlanId(properties.required("$prefix.planId")),
+        plannedActivityId = properties.getProperty("$prefix.activityId")?.let(::PlannedActivityId),
+        subjectId = properties.getProperty("$prefix.subjectId")?.let(::SubjectId),
+        topicId = properties.getProperty("$prefix.topicId")?.let(::TopicId),
+        materialId = properties.getProperty("$prefix.materialId")?.let(::StudyMaterialId),
+        videoResourceId = properties.getProperty("$prefix.videoId")?.let(::VideoResourceId),
+        type = StudyActivityType.valueOf(properties.required("$prefix.type")),
+        status = StudySessionStatus.valueOf(properties.required("$prefix.status")),
+        startedAtEpochMillis = properties.requiredLong("$prefix.startedAt"),
+        endedAtEpochMillis = properties.optionalLong("$prefix.endedAt"),
+        grossDurationSeconds = properties.requiredLong("$prefix.grossSeconds"),
+        pauseDurationSeconds = properties.requiredLong("$prefix.pauseSeconds"),
+        pagesCompleted = properties.requiredInt("$prefix.pages"),
+        questionsAnswered = properties.requiredInt("$prefix.questions"),
+        correctAnswers = properties.requiredInt("$prefix.correct"),
+        concentrationRating = properties.optionalInt("$prefix.concentration"),
+        difficultyRating = properties.optionalInt("$prefix.difficulty"),
+        notes = properties.required("$prefix.notes"),
+        targetDurationMinutes = properties.optionalInt("$prefix.targetMinutes"),
     )
 
     private fun writeStrategy(properties: Properties, prefix: String, strategy: StudyStrategy) {

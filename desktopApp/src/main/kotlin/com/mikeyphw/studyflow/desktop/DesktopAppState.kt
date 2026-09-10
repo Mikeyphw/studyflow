@@ -47,6 +47,9 @@ class DesktopAppState(
     var plannerActionMessage: String by mutableStateOf("")
         private set
 
+    var sessionActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -199,6 +202,30 @@ class DesktopAppState(
         runCatching { runBlocking { action() } }
             .onSuccess { plannerActionMessage = success }
             .onFailure { plannerActionMessage = it.message.orEmpty() }
+    }
+
+    fun sessionRuntimeState(): DesktopSessionRuntimeState = runBlocking { services.sessionRuntimeController.state() }
+
+    fun startNextSessionActivity() = runSessionAction("Study Session started") {
+        services.sessionRuntimeController.startNextActivity()
+    }
+
+    fun startQuickSession() = runSessionAction("Quick Study Session started") {
+        services.sessionRuntimeController.startQuickSession()
+    }
+
+    fun pauseSession() = runSessionAction("Study Session paused") { services.sessionRuntimeController.pause() }
+
+    fun resumeSession() = runSessionAction("Study Session resumed") { services.sessionRuntimeController.resume() }
+
+    fun completeSession() = runSessionAction("Study Session completed") { services.sessionRuntimeController.complete() }
+
+    fun cancelSession() = runSessionAction("Study Session cancelled") { services.sessionRuntimeController.cancel() }
+
+    private fun runSessionAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { sessionActionMessage = success }
+            .onFailure { sessionActionMessage = it.message.orEmpty() }
     }
 
     fun practiceState(): DesktopPracticeScreenState = services.createPracticeState()

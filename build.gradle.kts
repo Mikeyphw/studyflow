@@ -935,6 +935,26 @@ tasks.register<Exec>("verifyDesktopDov10PlannerAdaptiveWorkflows") {
 }
 
 
+tasks.register<Exec>("verifyDesktopDov11SessionRuntime") {
+    group = "verification"
+    description = "Checks DOV11 durable Study Session runtime and linked planned-activity transitions."
+    commandLine("python3", "scripts/verify_desktop_dov11_session_runtime.py")
+}
+
+tasks.register("verifyDesktopDov08Dov11Batch") {
+    group = "verification"
+    description = "Runs the DOV08-DOV11 Desktop persistence, structure, planner, and session batch seal."
+    dependsOn(
+        "verifyDesktopDov08PersistentWorkspace",
+        "verifyDesktopDov09PlanContentLifecycle",
+        "verifyDesktopDov10PlannerAdaptiveWorkflows",
+        "verifyDesktopDov11SessionRuntime",
+        ":desktopApp:test",
+        ":desktopApp:compileKotlin",
+    )
+}
+
+
 tasks.register<Exec>("verifyCpov05Cpov06PriorityBancaQuestions") {
     group = "verification"
     description = "Checks CPOV05 explainable priority and CPOV06 banca question contracts."

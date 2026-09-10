@@ -22,6 +22,12 @@ req("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkspaceS
 "version in 1..SCHEMA_VERSION", "updateContent")
 req("desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlanContentLifecycleTest.kt",
     "PersistsAcrossRestart", "deletingSubjectCascades", "archivedPlanRejectsContentMutation")
+
+plan_test = (
+    root / "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlanContentLifecycleTest.kt"
+).read_text()
+if re.search(r"@Test\s*\n\s*fun\s+\w+\([^)]*\)\s*=\s*runBlocking", plan_test):
+    failures.append("DesktopPlanContentLifecycleTest must use block-bodied JUnit tests around runBlocking")
 req(".devtool.toml", '"verifyDesktopDov09PlanContentLifecycle"')
 if failures: raise SystemExit("DOV09 lifecycle violations:\n- " + "\n- ".join(failures))
 print("DESKTOP_DOV09_PLAN_CONTENT_LIFECYCLE: PASS")

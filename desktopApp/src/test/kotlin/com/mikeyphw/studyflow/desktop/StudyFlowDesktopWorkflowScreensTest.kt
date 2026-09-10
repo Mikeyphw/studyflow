@@ -60,6 +60,7 @@ class StudyFlowDesktopWorkflowScreensTest {
     @Test
     fun emptyWorkflowRepositoriesRenderEmptyStates() {
         val planRepository = InMemoryStudyPlanRepository(emptyList())
+        val contentRepository = DesktopStudyContentRepository(DesktopStudyContentState(), planRepository)
         val libraryRepository = InMemoryStudyLibraryRepository(emptyList(), emptyList(), emptyList())
         val scheduleRepository = InMemoryStudyScheduleRepository(emptyList(), emptyList(), emptyList())
         val sessionRepository = InMemoryStudySessionRepository(emptyList())
@@ -80,6 +81,7 @@ class StudyFlowDesktopWorkflowScreensTest {
         )
         val services = DesktopStudyFlowServices(
             planRepository = planRepository,
+            contentRepository = contentRepository,
             libraryRepository = libraryRepository,
             scheduleRepository = scheduleRepository,
             sessionRepository = sessionRepository,

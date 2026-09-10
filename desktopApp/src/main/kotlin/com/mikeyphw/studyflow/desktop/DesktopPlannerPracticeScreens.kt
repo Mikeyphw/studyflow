@@ -88,6 +88,43 @@ fun DesktopPlannerScreen(appState: DesktopAppState) {
             if (appState.plannerActionMessage.isNotBlank()) Text(appState.plannerActionMessage)
         }
 
+        val runtime = appState.sessionRuntimeState()
+        DesktopSectionCard(title = "Study Session runtime") {
+            Text(runtime.activeSession?.notes ?: runtime.nextActivityTitle ?: "No active session")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material.Button(
+                    onClick = appState::startNextSessionActivity,
+                    enabled = runtime.canStart && runtime.nextActivityTitle != null,
+                ) { Text("Start next") }
+                androidx.compose.material.OutlinedButton(
+                    onClick = appState::startQuickSession,
+                    enabled = runtime.canStart,
+                ) { Text("Quick session") }
+                androidx.compose.material.OutlinedButton(onClick = appState::pauseSession, enabled = runtime.canPause) {
+                    Text("Pause")
+                }
+                androidx.compose.material.OutlinedButton(
+                    onClick = appState::resumeSession,
+                    enabled = runtime.canResume,
+                ) {
+                    Text("Resume")
+                }
+                androidx.compose.material.OutlinedButton(
+                    onClick = appState::completeSession,
+                    enabled = runtime.canFinish,
+                ) {
+                    Text("Complete")
+                }
+                androidx.compose.material.OutlinedButton(
+                    onClick = appState::cancelSession,
+                    enabled = runtime.canFinish,
+                ) {
+                    Text("Cancel")
+                }
+            }
+            if (appState.sessionActionMessage.isNotBlank()) Text(appState.sessionActionMessage)
+        }
+
         state.activeSession?.let { session ->
             DesktopSectionCard(title = "Active session") {
                 Text(session.title, fontWeight = FontWeight.Bold)
