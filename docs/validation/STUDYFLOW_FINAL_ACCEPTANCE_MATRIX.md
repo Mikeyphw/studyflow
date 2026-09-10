@@ -29,3 +29,11 @@ evidence chain. The matrix remains fail-closed: the runner may report `PENDING_T
 | REL02 evidence summary | `release-evidence-summary.json` | Missing reports stay `PENDING_TARGET_EXECUTION` or `BLOCKED`. |
 | REL02 triage | `release-failure-triage.json` | Every missing, pending, failed, or blocked report becomes a prioritized finding. |
 | REL02 bundle | `studyflow-release-evidence-bundle.zip` | JSON evidence is redacted before export. |
+
+## REL03/REL04 artifact/install/rollout evidence
+
+| Gate | Evidence | Fail-closed behavior |
+| --- | --- | --- |
+| REL03 artifact identity | `release-artifact-signature-identity.json` | Missing APK/AAB bytes or missing target-host signature tools stay `PENDING_TARGET_EXECUTION` instead of PASS. |
+| REL03 install smoke | `install-smoke-evidence.json` and optional `install-smoke-command-template.sh` | Template generation is not evidence; every manual or adb smoke check needs real observation text. |
+| REL04 channel manifest | `release-channel-manifest.json` and `rollout-readiness.json` | Internal, beta and production channels remain blocked until their required REL01-REL03 evidence is present and passing. |

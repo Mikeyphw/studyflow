@@ -652,3 +652,9 @@ copy.
 - Added the REL02 post-SFLP release evidence exporter.
 - Added redacted summary JSON, markdown report, triage JSON, and zipped evidence bundle generation.
 - Preserved fail-closed release semantics so missing, pending, failed or blocked evidence cannot become release-ready.
+
+# REL03/REL04 artifact identity and rollout manifest
+
+- Added REL03 signed artifact identity collection for Release APK/AAB checksums, structure checks, signature-tool evidence and install smoke evidence.
+- Added REL04 release channel manifest and rollout readiness generation for internal, beta and production channels.
+- Preserved fail-closed release semantics: `PENDING_TARGET_EXECUTION` and `BLOCKED` never synthesize `releaseReady=true`.

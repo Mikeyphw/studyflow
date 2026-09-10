@@ -987,6 +987,7 @@ tasks.register("checkAll") {
         "verifySflp24FinalReleaseSeal",
         "verifyRel01TargetReleaseValidationRunner",
         "verifyRel02ReleaseEvidenceTriage",
+        "verifyRel03Rel04ArtifactInstallRollout",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1506,4 +1507,12 @@ tasks.register<Exec>("verifyRel02ReleaseEvidenceTriage") {
     description = "Checks the REL02 release evidence exporter and failure triage bundle."
     dependsOn("verifyRel01TargetReleaseValidationRunner")
     commandLine("python3", "scripts/verify_rel02_release_evidence_triage.py")
+}
+
+
+tasks.register<Exec>("verifyRel03Rel04ArtifactInstallRollout") {
+    group = "verification"
+    description = "Checks REL03 signed artifact/install-smoke evidence and REL04 rollout manifest gating."
+    dependsOn("verifyRel02ReleaseEvidenceTriage")
+    commandLine("python3", "scripts/verify_rel03_04_artifact_install_rollout.py")
 }

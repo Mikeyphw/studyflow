@@ -61,6 +61,7 @@ test = [
     "verifySflp24FinalReleaseSeal",
     "verifyRel01TargetReleaseValidationRunner",
     "verifyRel02ReleaseEvidenceTriage",
+    "verifyRel03Rel04ArtifactInstallRollout",
     "verifyOv19PromiseAudit",
     "verifyOv20FinalIntegration",
     "verifyFinalSourceAcceptance",

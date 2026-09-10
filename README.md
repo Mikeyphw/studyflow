@@ -520,3 +520,7 @@ golden vector is shared between `protocol/sflp/v1/golden` and `:core:link` test 
 ## REL02 release evidence exporter
 
 REL02 adds `scripts/export_release_evidence_report.py`, a post-SFLP release evidence exporter and failure triage bundle generator. It consumes the REL01 evidence directory, writes `release-evidence-summary.json`, `release-failure-triage.json`, `release-evidence-report.md`, and `studyflow-release-evidence-bundle.zip`, and remains fail-closed when evidence is `PENDING_TARGET_EXECUTION` or `BLOCKED`.
+
+## REL03/REL04 artifact identity and rollout manifest
+
+REL03 signed artifact identity records exact APK/AAB SHA-256, structure checks, target-host signature-tool results, and install-smoke evidence without storing signing secrets. REL04 rollout manifest reads REL01, REL02 and REL03 reports and writes `release-channel-manifest.json` plus `rollout-readiness.json`. Any missing, pending or blocked report keeps the release fail-closed.

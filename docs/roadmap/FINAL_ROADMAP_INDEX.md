@@ -71,3 +71,7 @@ Post-SFLP release operation track:
 ## REL02 release evidence exporter
 
 REL02 follows REL01 with a final evidence report exporter and failure triage bundle. It does not add product scope; it organizes the evidence required to decide whether the existing release gates are pass, pending, or blocked.
+
+## REL03/REL04 artifact identity and rollout manifest
+
+REL03/REL04 is a release-operation overlay after SFLP24 and REL02. It binds exact signed artifacts, install-smoke observations, and channel rollout readiness into report files for final review.

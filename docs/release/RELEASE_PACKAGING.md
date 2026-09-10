@@ -115,3 +115,20 @@ python3 scripts/export_release_evidence_report.py --mode all
 ```
 
 The exporter writes `release-evidence-summary.json`, `release-failure-triage.json`, `release-evidence-report.md`, and `studyflow-release-evidence-bundle.zip` under `build/reports/studyflow/release-evidence-export`. The bundle is report-only unless `--fail-when-blocked` is passed, and it redacts credential-looking keys before adding JSON reports.
+
+## REL03/REL04 artifact identity and rollout manifest
+
+After REL02 export, run REL03 to bind the exact signed APK/AAB bytes and install-smoke observations to release evidence:
+
+```bash
+python3 scripts/collect_release_artifact_identity.py --fail-when-blocked
+python3 scripts/collect_install_smoke_evidence.py --mode adb --fail-when-blocked
+```
+
+Then run REL04 to build the channel manifest and rollout readiness report:
+
+```bash
+python3 scripts/build_release_channel_manifest.py --channel production --fail-when-blocked
+```
+
+The channel manifest redacts credential-looking keys and does not sign, upload or publish artifacts. Production readiness remains `PENDING_TARGET_EXECUTION` or `BLOCKED` until REL01, REL02 and REL03 evidence is complete and passing.
