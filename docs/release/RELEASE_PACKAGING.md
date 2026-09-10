@@ -132,3 +132,11 @@ python3 scripts/build_release_channel_manifest.py --channel production --fail-wh
 ```
 
 The channel manifest redacts credential-looking keys and does not sign, upload or publish artifacts. Production readiness remains `PENDING_TARGET_EXECUTION` or `BLOCKED` until REL01, REL02 and REL03 evidence is complete and passing.
+
+## REL05/REL06 release notes and rollback package
+
+Before a release moves from evidence collection to rollout, run the REL05 exporter to produce `release-notes.json`, `release-notes.md`, and `release-notes-play-store-draft.txt`. Then run the REL06 rollback builder to produce `release-rollback-manifest.json`, `rollback-package-manifest.md`, `rollback-command-template.sh`, and `studyflow-rollback-package-bundle.zip`. The rollback manifest is planning evidence only and keeps `rollbackReady=false` until target-host rollback smoke evidence exists.
+
+## REL07/REL08 final release-ops seal
+
+REL07 checks the release operator checklist against REL01 through REL06 evidence and writes `release-checklist-gate.json`, `release-checklist-gate.md`, and `release-checklist-command-template.sh`. REL08 consumes the checked REL07 gate and emits `release-ops-final-seal.json`, `release-ops-final-seal.md`, and `studyflow-release-ops-final-bundle.zip`. These tools never sign, upload, publish, install, delete, or rollback; they only package evidence and fail closed until target-host evidence is complete.

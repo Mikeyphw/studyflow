@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit4)
+    testImplementation(kotlin("test-junit"))
 }
 
 compose.desktop {

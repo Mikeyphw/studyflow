@@ -658,3 +658,15 @@ copy.
 - Added REL03 signed artifact identity collection for Release APK/AAB checksums, structure checks, signature-tool evidence and install smoke evidence.
 - Added REL04 release channel manifest and rollout readiness generation for internal, beta and production channels.
 - Preserved fail-closed release semantics: `PENDING_TARGET_EXECUTION` and `BLOCKED` never synthesize `releaseReady=true`.
+
+# REL05/REL06
+
+- Added REL05 release notes exporter for markdown, JSON, and store-draft copy generation.
+- Added REL06 rollback package manifest generation with operator command template and evidence bundle.
+- Wired `verifyRel05Rel06ReleaseNotesRollback` after REL03/REL04 without claiming synthetic release readiness or rollback readiness.
+
+# REL07/REL08
+
+- Added REL07 release checklist gate for REL01-REL06 evidence and operator checklist aggregation.
+- Added REL08 final release-ops seal with final evidence bundle export.
+- Wired `verifyRel07Rel08FinalReleaseOpsSeal` after REL05/REL06 for the final release-operation track gate.

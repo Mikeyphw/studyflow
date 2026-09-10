@@ -37,3 +37,17 @@ evidence chain. The matrix remains fail-closed: the runner may report `PENDING_T
 | REL03 artifact identity | `release-artifact-signature-identity.json` | Missing APK/AAB bytes or missing target-host signature tools stay `PENDING_TARGET_EXECUTION` instead of PASS. |
 | REL03 install smoke | `install-smoke-evidence.json` and optional `install-smoke-command-template.sh` | Template generation is not evidence; every manual or adb smoke check needs real observation text. |
 | REL04 channel manifest | `release-channel-manifest.json` and `rollout-readiness.json` | Internal, beta and production channels remain blocked until their required REL01-REL03 evidence is present and passing. |
+
+## REL05/REL06
+
+| Gate | Evidence | Readiness rule |
+| --- | --- | --- |
+| REL05 | `release-notes.json`, `release-notes.md`, `release-notes-play-store-draft.txt` | Provides release copy only; never sets `releaseReady=true`. |
+| REL06 | `release-rollback-manifest.json`, `rollback-package-manifest.md`, `rollback-command-template.sh`, `studyflow-rollback-package-bundle.zip` | Provides rollback planning only; never sets `rollbackReady=true` without target smoke evidence. |
+
+## REL07/REL08
+
+| Gate | Evidence | Readiness rule |
+| --- | --- | --- |
+| REL07 | `release-checklist-gate.json`, `release-checklist-gate.md`, `release-checklist-command-template.sh` | Passes only when REL01-REL06 evidence is present and operator checklist items are complete. |
+| REL08 | `release-ops-final-seal.json`, `release-ops-final-seal.md`, `studyflow-release-ops-final-bundle.zip` | Sets `releaseOpsReady=true` only when REL01-REL07 inputs pass. It performs no publishing or installation side effects. |
