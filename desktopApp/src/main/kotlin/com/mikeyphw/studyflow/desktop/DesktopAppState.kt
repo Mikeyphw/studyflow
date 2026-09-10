@@ -7,6 +7,9 @@ import com.mikeyphw.studyflow.core.link.StudyFlowDeviceId
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
+import com.mikeyphw.studyflow.core.model.SubjectId
+import com.mikeyphw.studyflow.core.model.TopicId
+import kotlinx.coroutines.runBlocking
 import com.mikeyphw.studyflow.core.model.ThemeMode
 
 class DesktopAppState(
@@ -26,6 +29,18 @@ class DesktopAppState(
     var searchQuery: String by mutableStateOf("compose")
         private set
 
+    var planNameDraft: String by mutableStateOf("")
+        private set
+
+    var subjectNameDraft: String by mutableStateOf("")
+        private set
+
+    var topicNameDraft: String by mutableStateOf("")
+        private set
+
+    var structureActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -43,6 +58,76 @@ class DesktopAppState(
 
     fun selectMaterial(materialId: StudyMaterialId) {
         selectedMaterialId = materialId
+    }
+
+    fun planStructureState(): DesktopPlanStructureState = services.planContentController.state()
+
+    fun updatePlanNameDraft(value: String) {
+        planNameDraft = value
+    }
+
+    fun updateSubjectNameDraft(value: String) {
+        subjectNameDraft = value
+    }
+
+    fun updateTopicNameDraft(value: String) {
+        topicNameDraft = value
+    }
+
+    fun selectPlan(planId: com.mikeyphw.studyflow.core.model.StudyPlanId) {
+        runCatching { services.planContentController.selectPlan(planId) }
+            .onSuccess { structureActionMessage = "Study Plan selected" }
+            .onFailure { structureActionMessage = it.message.orEmpty() }
+    }
+
+    fun createPlan() = runStructureAction("Study Plan created") {
+        services.planContentController.createPlan(planNameDraft)
+        planNameDraft = ""
+    }
+
+    fun renameSelectedPlan() = runStructureAction("Study Plan renamed") {
+        services.planContentController.renameSelected(planNameDraft)
+        planNameDraft = ""
+    }
+
+    fun archiveSelectedPlan() = runStructureAction("Study Plan archived") {
+        services.planContentController.archiveSelected()
+    }
+
+    fun restoreSelectedPlan() = runStructureAction("Study Plan restored") {
+        services.planContentController.restoreSelected()
+    }
+
+    fun createSubject() = runStructureAction("Subject created") {
+        services.planContentController.createSubject(subjectNameDraft)
+        subjectNameDraft = ""
+    }
+
+    fun archiveSubject(subjectId: SubjectId) = runStructureAction("Subject archived") {
+        services.planContentController.archiveSubject(subjectId)
+    }
+
+    fun deleteSubject(subjectId: SubjectId) = runStructureAction("Subject deleted") {
+        services.planContentController.deleteSubject(subjectId)
+    }
+
+    fun createTopic(subjectId: SubjectId) = runStructureAction("Topic created") {
+        services.planContentController.createTopic(subjectId, topicNameDraft)
+        topicNameDraft = ""
+    }
+
+    fun archiveTopic(topicId: TopicId) = runStructureAction("Topic archived") {
+        services.planContentController.archiveTopic(topicId)
+    }
+
+    fun deleteTopic(topicId: TopicId) = runStructureAction("Topic deleted") {
+        services.planContentController.deleteTopic(topicId)
+    }
+
+    private fun runStructureAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { structureActionMessage = success }
+            .onFailure { structureActionMessage = it.message.orEmpty() }
     }
 
     fun updateSearchQuery(query: String) {
@@ -154,6 +239,7 @@ class DesktopAppState(
 
 enum class DesktopRoute(val title: String) {
     DASHBOARD("Dashboard"),
+    PLAN("Plan"),
     LIBRARY("Library"),
     PLANNER("Planner"),
     PRACTICE("Practice"),

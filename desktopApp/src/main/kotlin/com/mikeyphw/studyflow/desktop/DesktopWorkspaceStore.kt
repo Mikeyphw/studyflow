@@ -2,13 +2,23 @@ package com.mikeyphw.studyflow.desktop
 
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.model.AppPreferences
+import com.mikeyphw.studyflow.core.model.ContentProgressStatus
+import com.mikeyphw.studyflow.core.model.ExamStage
+import com.mikeyphw.studyflow.core.model.ExamStageId
+import com.mikeyphw.studyflow.core.model.ExamStageType
 import com.mikeyphw.studyflow.core.model.StudyContentMode
+import com.mikeyphw.studyflow.core.model.StudyTarget
+import com.mikeyphw.studyflow.core.model.StudyTargetId
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudyType
+import com.mikeyphw.studyflow.core.model.Subject
+import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.ThemeMode
+import com.mikeyphw.studyflow.core.model.Topic
+import com.mikeyphw.studyflow.core.model.TopicId
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.AtomicMoveNotSupportedException
@@ -22,6 +32,10 @@ data class DesktopWorkspaceSnapshot(
     val plans: List<StudyPlan>,
     val planSettings: Map<StudyPlanId, StudyPlanSettings>,
     val preferences: AppPreferences,
+    val studyTargets: List<StudyTarget> = emptyList(),
+    val examStages: List<ExamStage> = emptyList(),
+    val subjects: List<Subject> = emptyList(),
+    val topics: List<Topic> = emptyList(),
 ) {
     companion object {
         fun seed(sample: DesktopStudyFlowSampleData): DesktopWorkspaceSnapshot = DesktopWorkspaceSnapshot(
@@ -31,6 +45,8 @@ data class DesktopWorkspaceSnapshot(
                 dynamicColorEnabled = false,
                 defaultStudyPlanId = sample.plans.firstOrNull()?.id,
             ),
+            subjects = sample.subjects,
+            topics = sample.topics,
         )
     }
 }
@@ -56,6 +72,22 @@ class DesktopWorkspacePersistence private constructor(
     @Synchronized
     fun updatePreferences(preferences: AppPreferences) {
         snapshot = snapshot.copy(preferences = preferences)
+        persistLocked()
+    }
+
+    @Synchronized
+    fun updateContent(
+        studyTargets: List<StudyTarget>,
+        examStages: List<ExamStage>,
+        subjects: List<Subject>,
+        topics: List<Topic>,
+    ) {
+        snapshot = snapshot.copy(
+            studyTargets = studyTargets.toList(),
+            examStages = examStages.toList(),
+            subjects = subjects.toList(),
+            topics = topics.toList(),
+        )
         persistLocked()
     }
 
@@ -88,7 +120,7 @@ class DesktopWorkspacePersistence private constructor(
             Files.createDirectories(root)
             val file = root.resolve(WORKSPACE_FILE)
             val initial = if (Files.exists(file)) {
-                Files.newInputStream(file).use(DesktopWorkspacePropertiesCodec::read)
+                Files.newInputStream(file).use { input -> DesktopWorkspacePropertiesCodec.read(input, seed) }
             } else {
                 seed
             }
@@ -114,7 +146,7 @@ fun defaultDesktopWorkspaceRoot(): Path {
 }
 
 private object DesktopWorkspacePropertiesCodec {
-    private const val SCHEMA_VERSION = 1
+    private const val SCHEMA_VERSION = 2
 
     fun write(snapshot: DesktopWorkspaceSnapshot, output: OutputStream) {
         val properties = Properties()
@@ -135,13 +167,22 @@ private object DesktopWorkspacePropertiesCodec {
         preferences.recentSearches.forEachIndexed { index, query ->
             properties["preferences.recentSearch.$index"] = query
         }
+
+        properties["target.count"] = snapshot.studyTargets.size.toString()
+        snapshot.studyTargets.forEachIndexed { index, target -> writeTarget(properties, "target.$index", target) }
+        properties["stage.count"] = snapshot.examStages.size.toString()
+        snapshot.examStages.forEachIndexed { index, stage -> writeStage(properties, "stage.$index", stage) }
+        properties["subject.count"] = snapshot.subjects.size.toString()
+        snapshot.subjects.forEachIndexed { index, subject -> writeSubject(properties, "subject.$index", subject) }
+        properties["topic.count"] = snapshot.topics.size.toString()
+        snapshot.topics.forEachIndexed { index, topic -> writeTopic(properties, "topic.$index", topic) }
         properties.store(output, "StudyFlow Desktop workspace schema v$SCHEMA_VERSION")
     }
 
-    fun read(input: InputStream): DesktopWorkspaceSnapshot {
+    fun read(input: InputStream, seed: DesktopWorkspaceSnapshot): DesktopWorkspaceSnapshot {
         val properties = Properties().apply { load(input) }
         val version = properties.requiredInt("schema.version")
-        require(version == SCHEMA_VERSION) { "Unsupported StudyFlow Desktop workspace schema: $version" }
+        require(version in 1..SCHEMA_VERSION) { "Unsupported StudyFlow Desktop workspace schema: $version" }
 
         val plans = List(properties.requiredInt("plan.count")) { index ->
             readPlan(properties, "plan.$index")
@@ -163,7 +204,20 @@ private object DesktopWorkspacePropertiesCodec {
             defaultStudyPlanId = defaultPlan,
             recentSearches = recentSearches,
         )
-        return DesktopWorkspaceSnapshot(plans, settings, preferences)
+        val planIds = plans.mapTo(linkedSetOf(), StudyPlan::id)
+        val targets = if (version >= 2) {
+            List(properties.optionalInt("target.count") ?: 0) { index -> readTarget(properties, "target.$index") }
+        } else seed.studyTargets.filter { it.studyPlanId in planIds }
+        val stages = if (version >= 2) {
+            List(properties.optionalInt("stage.count") ?: 0) { index -> readStage(properties, "stage.$index") }
+        } else seed.examStages.filter { it.studyPlanId in planIds }
+        val subjects = if (version >= 2) {
+            List(properties.optionalInt("subject.count") ?: 0) { index -> readSubject(properties, "subject.$index") }
+        } else seed.subjects.filter { it.studyPlanId in planIds }
+        val topics = if (version >= 2) {
+            List(properties.optionalInt("topic.count") ?: 0) { index -> readTopic(properties, "topic.$index") }
+        } else seed.topics.filter { it.studyPlanId in planIds }
+        return DesktopWorkspaceSnapshot(plans, settings, preferences, targets, stages, subjects, topics)
     }
 
     private fun writePlan(properties: Properties, prefix: String, plan: StudyPlan) {
@@ -222,6 +276,132 @@ private object DesktopWorkspacePropertiesCodec {
         quietHoursStartMinute = properties.optionalInt("$prefix.quietHoursStartMinute"),
         quietHoursEndMinute = properties.optionalInt("$prefix.quietHoursEndMinute"),
         configurationJson = properties.required("$prefix.configurationJson"),
+    )
+
+    private fun writeTarget(properties: Properties, prefix: String, target: StudyTarget) {
+        properties["$prefix.id"] = target.id.value
+        properties["$prefix.planId"] = target.studyPlanId.value
+        properties["$prefix.organization"] = target.organization
+        properties["$prefix.role"] = target.role
+        properties["$prefix.examBoard"] = target.examBoard
+        target.noticeUrl?.let { properties["$prefix.noticeUrl"] = it }
+        target.confirmedExamDateIso?.let { properties["$prefix.confirmedExamDateIso"] = it }
+        target.expectedExamDateIso?.let { properties["$prefix.expectedExamDateIso"] = it }
+        target.openings?.let { properties["$prefix.openings"] = it.toString() }
+        target.estimatedCutoffPercent?.let { properties["$prefix.estimatedCutoffPercent"] = it.toString() }
+        properties["$prefix.createdAt"] = target.createdAtEpochMillis.toString()
+        properties["$prefix.updatedAt"] = target.updatedAtEpochMillis.toString()
+    }
+
+    private fun readTarget(properties: Properties, prefix: String): StudyTarget = StudyTarget(
+        id = StudyTargetId(properties.required("$prefix.id")),
+        studyPlanId = StudyPlanId(properties.required("$prefix.planId")),
+        organization = properties.required("$prefix.organization"),
+        role = properties.required("$prefix.role"),
+        examBoard = properties.required("$prefix.examBoard"),
+        noticeUrl = properties.getProperty("$prefix.noticeUrl"),
+        confirmedExamDateIso = properties.getProperty("$prefix.confirmedExamDateIso"),
+        expectedExamDateIso = properties.getProperty("$prefix.expectedExamDateIso"),
+        openings = properties.optionalInt("$prefix.openings"),
+        estimatedCutoffPercent = properties.optionalInt("$prefix.estimatedCutoffPercent"),
+        createdAtEpochMillis = properties.requiredLong("$prefix.createdAt"),
+        updatedAtEpochMillis = properties.requiredLong("$prefix.updatedAt"),
+    )
+
+    private fun writeStage(properties: Properties, prefix: String, stage: ExamStage) {
+        properties["$prefix.id"] = stage.id.value
+        properties["$prefix.planId"] = stage.studyPlanId.value
+        properties["$prefix.targetId"] = stage.studyTargetId.value
+        properties["$prefix.name"] = stage.name
+        properties["$prefix.type"] = stage.type.name
+        stage.scheduledDateIso?.let { properties["$prefix.scheduledDateIso"] = it }
+        properties["$prefix.weight"] = stage.weight.toString()
+        stage.minimumScorePercent?.let { properties["$prefix.minimumScorePercent"] = it.toString() }
+        properties["$prefix.position"] = stage.position.toString()
+    }
+
+    private fun readStage(properties: Properties, prefix: String): ExamStage = ExamStage(
+        id = ExamStageId(properties.required("$prefix.id")),
+        studyPlanId = StudyPlanId(properties.required("$prefix.planId")),
+        studyTargetId = StudyTargetId(properties.required("$prefix.targetId")),
+        name = properties.required("$prefix.name"),
+        type = ExamStageType.valueOf(properties.required("$prefix.type")),
+        scheduledDateIso = properties.getProperty("$prefix.scheduledDateIso"),
+        weight = properties.required("$prefix.weight").toDouble(),
+        minimumScorePercent = properties.optionalInt("$prefix.minimumScorePercent"),
+        position = properties.requiredInt("$prefix.position"),
+    )
+
+    private fun writeSubject(properties: Properties, prefix: String, subject: Subject) {
+        properties["$prefix.id"] = subject.id.value
+        properties["$prefix.planId"] = subject.studyPlanId.value
+        properties["$prefix.name"] = subject.name
+        properties["$prefix.description"] = subject.description
+        subject.colorArgb?.let { properties["$prefix.colorArgb"] = it.toString() }
+        properties["$prefix.priority"] = subject.priority.toString()
+        properties["$prefix.examWeight"] = subject.examWeight.toString()
+        properties["$prefix.estimatedMinutes"] = subject.estimatedMinutes.toString()
+        properties["$prefix.progressPercent"] = subject.progressPercent.toString()
+        properties["$prefix.accuracyPercent"] = subject.accuracyPercent.toString()
+        properties["$prefix.status"] = subject.status.name
+        properties["$prefix.position"] = subject.position.toString()
+        properties["$prefix.archived"] = subject.archived.toString()
+        subject.examStageId?.let { properties["$prefix.examStageId"] = it.value }
+    }
+
+    private fun readSubject(properties: Properties, prefix: String): Subject = Subject(
+        id = SubjectId(properties.required("$prefix.id")),
+        studyPlanId = StudyPlanId(properties.required("$prefix.planId")),
+        name = properties.required("$prefix.name"),
+        description = properties.required("$prefix.description"),
+        colorArgb = properties.optionalLong("$prefix.colorArgb"),
+        priority = properties.requiredInt("$prefix.priority"),
+        examWeight = properties.required("$prefix.examWeight").toDouble(),
+        estimatedMinutes = properties.requiredInt("$prefix.estimatedMinutes"),
+        progressPercent = properties.requiredInt("$prefix.progressPercent"),
+        accuracyPercent = properties.requiredInt("$prefix.accuracyPercent"),
+        status = ContentProgressStatus.valueOf(properties.required("$prefix.status")),
+        position = properties.requiredInt("$prefix.position"),
+        archived = properties.requiredBoolean("$prefix.archived"),
+        examStageId = properties.getProperty("$prefix.examStageId")?.let(::ExamStageId),
+    )
+
+    private fun writeTopic(properties: Properties, prefix: String, topic: Topic) {
+        properties["$prefix.id"] = topic.id.value
+        properties["$prefix.planId"] = topic.studyPlanId.value
+        properties["$prefix.subjectId"] = topic.subjectId.value
+        topic.parentTopicId?.let { properties["$prefix.parentTopicId"] = it.value }
+        properties["$prefix.name"] = topic.name
+        properties["$prefix.description"] = topic.description
+        properties["$prefix.priority"] = topic.priority.toString()
+        properties["$prefix.difficulty"] = topic.difficulty.toString()
+        topic.examIncidencePercent?.let { properties["$prefix.examIncidencePercent"] = it.toString() }
+        properties["$prefix.estimatedMinutes"] = topic.estimatedMinutes.toString()
+        properties["$prefix.progressPercent"] = topic.progressPercent.toString()
+        properties["$prefix.masteryPercent"] = topic.masteryPercent.toString()
+        properties["$prefix.status"] = topic.status.name
+        properties["$prefix.position"] = topic.position.toString()
+        properties["$prefix.archived"] = topic.archived.toString()
+        topic.examStageId?.let { properties["$prefix.examStageId"] = it.value }
+    }
+
+    private fun readTopic(properties: Properties, prefix: String): Topic = Topic(
+        id = TopicId(properties.required("$prefix.id")),
+        studyPlanId = StudyPlanId(properties.required("$prefix.planId")),
+        subjectId = SubjectId(properties.required("$prefix.subjectId")),
+        parentTopicId = properties.getProperty("$prefix.parentTopicId")?.let(::TopicId),
+        name = properties.required("$prefix.name"),
+        description = properties.required("$prefix.description"),
+        priority = properties.requiredInt("$prefix.priority"),
+        difficulty = properties.requiredInt("$prefix.difficulty"),
+        examIncidencePercent = properties.optionalInt("$prefix.examIncidencePercent"),
+        estimatedMinutes = properties.requiredInt("$prefix.estimatedMinutes"),
+        progressPercent = properties.requiredInt("$prefix.progressPercent"),
+        masteryPercent = properties.requiredInt("$prefix.masteryPercent"),
+        status = ContentProgressStatus.valueOf(properties.required("$prefix.status")),
+        position = properties.requiredInt("$prefix.position"),
+        archived = properties.requiredBoolean("$prefix.archived"),
+        examStageId = properties.getProperty("$prefix.examStageId")?.let(::ExamStageId),
     )
 
     private fun Properties.required(key: String): String = requireNotNull(getProperty(key)) {

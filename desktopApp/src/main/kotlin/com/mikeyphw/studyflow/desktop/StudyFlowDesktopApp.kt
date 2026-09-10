@@ -39,6 +39,7 @@ fun StudyFlowDesktopApp(
                             onOpenLibrary = { appState.selectRoute(DesktopRoute.LIBRARY) },
                         )
 
+                        DesktopRoute.PLAN -> DesktopPlanContentScreen(appState)
                         DesktopRoute.LIBRARY -> DesktopLibraryScreen(
                             state = appState.libraryState(),
                             selectedMaterialId = appState.selectedMaterialId,

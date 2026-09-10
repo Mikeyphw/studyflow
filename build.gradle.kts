@@ -921,6 +921,13 @@ tasks.register<Exec>("verifyDesktopDov08PersistentWorkspace") {
 }
 
 
+tasks.register<Exec>("verifyDesktopDov09PlanContentLifecycle") {
+    group = "verification"
+    description = "Checks DOV09 persistent Study Plan, Subject, and Topic lifecycle contracts."
+    commandLine("python3", "scripts/verify_desktop_dov09_plan_content_lifecycle.py")
+}
+
+
 tasks.register<Exec>("verifyCpov05Cpov06PriorityBancaQuestions") {
     group = "verification"
     description = "Checks CPOV05 explainable priority and CPOV06 banca question contracts."

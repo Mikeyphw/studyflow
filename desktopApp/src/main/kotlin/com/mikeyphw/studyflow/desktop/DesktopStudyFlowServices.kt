@@ -4,6 +4,7 @@ import com.mikeyphw.studyflow.core.domain.AppShellReadinessAuditor
 import com.mikeyphw.studyflow.core.domain.AppShellReadinessInput
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.ManageStudyDiscovery
+import com.mikeyphw.studyflow.core.domain.ManageStudyContent
 import com.mikeyphw.studyflow.core.domain.ManageStudyLibrary
 import com.mikeyphw.studyflow.core.domain.ManageStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageStudyPractice
@@ -21,6 +22,7 @@ import kotlinx.coroutines.runBlocking
 
 class DesktopStudyFlowServices(
     val planRepository: InMemoryStudyPlanRepository,
+    val contentRepository: DesktopStudyContentRepository,
     val libraryRepository: InMemoryStudyLibraryRepository,
     val scheduleRepository: InMemoryStudyScheduleRepository,
     val sessionRepository: InMemoryStudySessionRepository,
@@ -33,13 +35,22 @@ class DesktopStudyFlowServices(
     val workspacePersistence: DesktopWorkspacePersistence? = null,
 ) {
     val manageStudyPlan: ManageStudyPlan = ManageStudyPlan(planRepository)
+    val manageStudyContent: ManageStudyContent = ManageStudyContent(contentRepository)
     val manageStudyLibrary: ManageStudyLibrary = ManageStudyLibrary(libraryRepository)
     val manageStudySchedule: ManageStudySchedule = ManageStudySchedule(scheduleRepository)
     val manageStudySession: ManageStudySession = ManageStudySession(sessionRepository, planRepository)
     val manageStudyPractice: ManageStudyPractice = ManageStudyPractice(practiceRepository, planRepository)
     val manageStudyAnalytics: ManageStudyAnalytics = ManageStudyAnalytics(analyticsRepository)
     val manageStudyDiscovery: ManageStudyDiscovery = ManageStudyDiscovery(discoveryRepository)
-    val defaultPlanId: StudyPlanId? = planRepository.currentPlans().firstOrNull()?.id
+    val planContentController = DesktopPlanContentController(
+        planRepository = planRepository,
+        contentRepository = contentRepository,
+        preferencesStore = preferencesStore,
+        managePlan = manageStudyPlan,
+        manageContent = manageStudyContent,
+    )
+    val defaultPlanId: StudyPlanId?
+        get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 
     fun createDashboardState(): DesktopDashboardState {
         val activePlan = currentDefaultPlan()
@@ -69,6 +80,7 @@ class DesktopStudyFlowServices(
             videoCount = librarySnapshot.videos.size,
             domainManagers = listOf(
                 "ManageStudyPlan",
+                "ManageStudyContent",
                 "ManageStudyLibrary",
                 "ManageStudySchedule",
                 "ManageStudySession",
@@ -231,6 +243,23 @@ fun createDesktopStudyFlowServices(
         },
         onChanged = { plans, settings -> workspacePersistence?.updatePlans(plans, settings) },
     )
+    val contentRepository = DesktopStudyContentRepository(
+        initialState = DesktopStudyContentState(
+            targets = persisted?.studyTargets.orEmpty(),
+            examStages = persisted?.examStages.orEmpty(),
+            subjects = persisted?.subjects ?: sample.subjects,
+            topics = persisted?.topics ?: sample.topics,
+        ),
+        plans = planRepository,
+        onChanged = { content ->
+            workspacePersistence?.updateContent(
+                content.targets,
+                content.examStages,
+                content.subjects,
+                content.topics,
+            )
+        },
+    )
     val libraryRepository = InMemoryStudyLibraryRepository(
         materials = sample.materials,
         videos = sample.videos,
@@ -263,6 +292,7 @@ fun createDesktopStudyFlowServices(
     )
     return DesktopStudyFlowServices(
         planRepository = planRepository,
+        contentRepository = contentRepository,
         libraryRepository = libraryRepository,
         scheduleRepository = scheduleRepository,
         sessionRepository = sessionRepository,

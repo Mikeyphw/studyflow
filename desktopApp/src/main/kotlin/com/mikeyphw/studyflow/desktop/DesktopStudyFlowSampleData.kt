@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow.desktop
 import com.mikeyphw.studyflow.core.model.Annex
 import com.mikeyphw.studyflow.core.model.AnnexId
 import com.mikeyphw.studyflow.core.model.AnnexStorageMode
+import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.PlannedActivity
@@ -30,7 +31,10 @@ import com.mikeyphw.studyflow.core.model.StudyStrategyType
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
 import com.mikeyphw.studyflow.core.model.StudyType
+import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.SubjectId
+import com.mikeyphw.studyflow.core.model.Topic
+import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.TestMode
 import com.mikeyphw.studyflow.core.model.VideoResource
 import com.mikeyphw.studyflow.core.model.VideoResourceId
@@ -38,6 +42,8 @@ import com.mikeyphw.studyflow.core.model.VideoSourceType
 
 data class DesktopStudyFlowSampleData(
     val plans: List<StudyPlan>,
+    val subjects: List<Subject>,
+    val topics: List<Topic>,
     val materials: List<StudyMaterial>,
     val videos: List<VideoResource>,
     val annexes: List<Annex>,
@@ -58,6 +64,8 @@ data class DesktopStudyFlowSampleData(
             val questions = sampleQuestions(planId, subjectId, now)
             return DesktopStudyFlowSampleData(
                 plans = listOf(samplePlan(planId, now)),
+                subjects = sampleSubjects(planId, subjectId),
+                topics = sampleTopics(planId, subjectId),
                 materials = sampleMaterials(planId, subjectId, now),
                 videos = sampleVideos(planId, subjectId, now),
                 annexes = sampleAnnexes(planId, subjectId, now),
@@ -85,6 +93,44 @@ data class DesktopStudyFlowSampleData(
             averageAccuracyPercent = 76,
             createdAtEpochMillis = now - ONE_WEEK_MILLIS,
             updatedAtEpochMillis = now,
+        )
+
+        private fun sampleSubjects(planId: StudyPlanId, subjectId: SubjectId): List<Subject> = listOf(
+            Subject(
+                id = subjectId,
+                studyPlanId = planId,
+                name = "Kotlin",
+                description = "Desktop sample subject",
+                colorArgb = null,
+                priority = 3,
+                examWeight = 1.0,
+                estimatedMinutes = 600,
+                progressPercent = 42,
+                accuracyPercent = 76,
+                status = ContentProgressStatus.STUDYING,
+                position = 0,
+                archived = false,
+            ),
+        )
+
+        private fun sampleTopics(planId: StudyPlanId, subjectId: SubjectId): List<Topic> = listOf(
+            Topic(
+                id = TopicId("desktop-sample-topic"),
+                studyPlanId = planId,
+                subjectId = subjectId,
+                parentTopicId = null,
+                name = "Language foundations",
+                description = "Core syntax and language semantics",
+                priority = 3,
+                difficulty = 2,
+                examIncidencePercent = null,
+                estimatedMinutes = 240,
+                progressPercent = 42,
+                masteryPercent = 55,
+                status = ContentProgressStatus.STUDYING,
+                position = 0,
+                archived = false,
+            ),
         )
 
         private fun sampleMaterials(

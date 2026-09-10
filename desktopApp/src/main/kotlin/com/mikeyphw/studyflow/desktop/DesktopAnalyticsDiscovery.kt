@@ -272,6 +272,11 @@ class DesktopPreferencesStore(
         onChanged(preferences.value)
     }
 
+    fun setDefaultPlan(planId: StudyPlanId?) {
+        preferences.value = preferences.value.copy(defaultStudyPlanId = planId)
+        onChanged(preferences.value)
+    }
+
     fun recordSearch(query: String) {
         preferences.value = preferences.value.copy(
             recentSearches = RecentSearchHistory.record(preferences.value.recentSearches, query),
