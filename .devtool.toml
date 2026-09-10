@@ -338,6 +338,7 @@ build = [
     "verifyDesktopDov19ReadinessCoachingReports",
     "verifyDesktopDov20PortabilityBackupMigration",
     "verifyDesktopDov21EnPtBrLocalization",
+    "verifyDesktopDov22SystemLightDarkAppearance",
     "verifySflp01ProtocolBaseline",
     "verifySflp02Sflp03JournalReconciliation",
     "verifySflp04Sflp05IdentityTransport",
@@ -364,6 +365,7 @@ test = [
     "verifyDesktopDov19ReadinessCoachingReports",
     "verifyDesktopDov20PortabilityBackupMigration",
     "verifyDesktopDov21EnPtBrLocalization",
+    "verifyDesktopDov22SystemLightDarkAppearance",
     ":core:domain:test",
     ":core:link:test",
     ":core:model:test",
@@ -424,6 +426,7 @@ preflight = [
     "verifyDesktopDov19ReadinessCoachingReports",
     "verifyDesktopDov20PortabilityBackupMigration",
     "verifyDesktopDov21EnPtBrLocalization",
+    "verifyDesktopDov22SystemLightDarkAppearance",
 ]
 compile = [
     ":core:domain:compileKotlin",

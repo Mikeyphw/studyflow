@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,7 +37,7 @@ fun DesktopSidebar(
         modifier = Modifier
             .fillMaxHeight()
             .width(232.dp)
-            .background(Color(0xFFF7F8FA))
+            .background(MaterialTheme.colors.surface)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -49,7 +48,7 @@ fun DesktopSidebar(
         )
         Text(
             text = desktopText("Desktop preview"),
-            color = Color.DarkGray,
+            color = MaterialTheme.colors.onSurface.copy(alpha = 0.68f),
         )
         Spacer(modifier = Modifier.height(12.dp))
         DesktopRoute.entries.forEach { route ->
@@ -88,7 +87,7 @@ fun DesktopTopBar(title: String, subtitle: String) {
         )
         Text(
             text = subtitle,
-            color = Color.DarkGray,
+            color = MaterialTheme.colors.onSurface.copy(alpha = 0.68f),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
@@ -103,7 +102,7 @@ fun DesktopMetricCard(label: String, value: String, detail: String, modifier: Mo
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(text = label, color = Color.DarkGray)
+            Text(text = label, color = MaterialTheme.colors.onSurface.copy(alpha = 0.68f))
             Text(text = value, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Text(text = detail, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
@@ -133,12 +132,12 @@ fun DesktopStateMessage(title: String, message: String, modifier: Modifier = Mod
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, Color(0xFFD0D5DD), RoundedCornerShape(12.dp))
+            .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.18f), RoundedCornerShape(12.dp))
             .padding(14.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(text = title, fontWeight = FontWeight.Bold)
-            Text(text = message, color = Color.DarkGray)
+            Text(text = message, color = MaterialTheme.colors.onSurface.copy(alpha = 0.68f))
         }
     }
 }
@@ -151,9 +150,9 @@ fun DesktopTagRow(tags: List<String>) {
                 text = tag,
                 modifier = Modifier
                     .clip(RoundedCornerShape(100.dp))
-                    .background(Color(0xFFE9EEF6))
+                    .background(MaterialTheme.colors.primary.copy(alpha = 0.12f))
                     .padding(horizontal = 10.dp, vertical = 4.dp),
-                color = Color(0xFF344054),
+                color = MaterialTheme.colors.onSurface,
             )
         }
     }

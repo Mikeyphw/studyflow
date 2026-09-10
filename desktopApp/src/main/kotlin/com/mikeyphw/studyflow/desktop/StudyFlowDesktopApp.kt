@@ -1,11 +1,14 @@
 package com.mikeyphw.studyflow.desktop
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.darkColors
+import androidx.compose.material.lightColors
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -19,8 +22,11 @@ fun StudyFlowDesktopApp(
 ) {
     val language = appState.currentLanguage()
     val textCatalog = remember(language) { DesktopTextCatalog.forLanguage(language) }
+    val themeMode = appState.currentThemeMode()
+    val darkTheme = resolveDesktopDarkTheme(themeMode, isSystemInDarkTheme())
+    val colors = if (darkTheme) darkColors() else lightColors()
     CompositionLocalProvider(LocalDesktopTextCatalog provides textCatalog) {
-        MaterialTheme {
+        MaterialTheme(colors = colors) {
             Surface(modifier = Modifier.fillMaxSize()) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     DesktopSidebar(

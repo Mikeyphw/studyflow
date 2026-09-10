@@ -283,7 +283,7 @@ fun DesktopSettingsScreen(
             )
             DesktopMetricCard(
                 label = desktopText("Theme"),
-                value = state.themeMode.name.replace('_', ' '),
+                value = desktopThemeModeLabel(state.themeMode),
                 detail = "Dynamic color: ${state.dynamicColorEnabled}",
                 modifier = Modifier.weight(1f),
             )
