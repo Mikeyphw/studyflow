@@ -20,20 +20,20 @@ fun DesktopPlanContentScreen(appState: DesktopAppState) {
             state.plans.forEach { plan ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     Text("${plan.name} • ${plan.status.name}", modifier = Modifier.weight(1f))
-                    OutlinedButton(onClick = { appState.selectPlan(plan.id) }) { Text("Select") }
+                    OutlinedButton(onClick = { appState.selectPlan(plan.id) }) { Text(desktopText("Select")) }
                 }
             }
             OutlinedTextField(
                 value = appState.planNameDraft,
                 onValueChange = appState::updatePlanNameDraft,
-                label = { Text("Plan name") },
+                label = { Text(desktopText("Plan name")) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = appState::createPlan) { Text("Create") }
-                OutlinedButton(onClick = appState::renameSelectedPlan) { Text("Rename selected") }
-                OutlinedButton(onClick = appState::archiveSelectedPlan) { Text("Archive") }
-                OutlinedButton(onClick = appState::restoreSelectedPlan) { Text("Restore") }
+                Button(onClick = appState::createPlan) { Text(desktopText("Create")) }
+                OutlinedButton(onClick = appState::renameSelectedPlan) { Text(desktopText("Rename selected")) }
+                OutlinedButton(onClick = appState::archiveSelectedPlan) { Text(desktopText("Archive")) }
+                OutlinedButton(onClick = appState::restoreSelectedPlan) { Text(desktopText("Restore")) }
             }
         }
 
@@ -47,15 +47,15 @@ fun DesktopPlanContentScreen(appState: DesktopAppState) {
             OutlinedTextField(
                 value = appState.subjectNameDraft,
                 onValueChange = appState::updateSubjectNameDraft,
-                label = { Text("New subject") },
+                label = { Text(desktopText("New subject")) },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Button(onClick = appState::createSubject) { Text("Add subject") }
+            Button(onClick = appState::createSubject) { Text(desktopText("Add subject")) }
             state.subjects.forEach { subject ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     Text("${subject.name} • ${subject.status.name}", modifier = Modifier.weight(1f))
-                    OutlinedButton(onClick = { appState.archiveSubject(subject.id) }) { Text("Archive") }
-                    OutlinedButton(onClick = { appState.deleteSubject(subject.id) }) { Text("Delete") }
+                    OutlinedButton(onClick = { appState.archiveSubject(subject.id) }) { Text(desktopText("Archive")) }
+                    OutlinedButton(onClick = { appState.deleteSubject(subject.id) }) { Text(desktopText("Delete")) }
                 }
             }
         }
@@ -64,7 +64,7 @@ fun DesktopPlanContentScreen(appState: DesktopAppState) {
             OutlinedTextField(
                 value = appState.topicNameDraft,
                 onValueChange = appState::updateTopicNameDraft,
-                label = { Text("New root topic") },
+                label = { Text(desktopText("New root topic")) },
                 modifier = Modifier.fillMaxWidth(),
             )
             state.subjects.firstOrNull { !it.archived }?.let { subject ->
@@ -73,8 +73,8 @@ fun DesktopPlanContentScreen(appState: DesktopAppState) {
             state.topics.forEach { topic ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     Text("${topic.name} • ${topic.status.name}", modifier = Modifier.weight(1f))
-                    OutlinedButton(onClick = { appState.archiveTopic(topic.id) }) { Text("Archive") }
-                    OutlinedButton(onClick = { appState.deleteTopic(topic.id) }) { Text("Delete") }
+                    OutlinedButton(onClick = { appState.archiveTopic(topic.id) }) { Text(desktopText("Archive")) }
+                    OutlinedButton(onClick = { appState.deleteTopic(topic.id) }) { Text(desktopText("Delete")) }
                 }
             }
         }

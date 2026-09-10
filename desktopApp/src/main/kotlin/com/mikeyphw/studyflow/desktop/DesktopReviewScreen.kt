@@ -32,47 +32,47 @@ fun DesktopReviewScreen(appState: DesktopAppState) {
             )
         }
 
-        DesktopSectionCard(title = "Flashcards and SRS") {
+        DesktopSectionCard(title = desktopText("Flashcards and SRS")) {
             OutlinedTextField(
                 value = appState.flashcardFrontDraft,
                 onValueChange = appState::updateFlashcardFront,
-                label = { Text("Front") },
+                label = { Text(desktopText("Front")) },
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 value = appState.flashcardBackDraft,
                 onValueChange = appState::updateFlashcardBack,
-                label = { Text("Back") },
+                label = { Text(desktopText("Back")) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = appState::createFlashcard) { Text("Create flashcard") }
+                Button(onClick = appState::createFlashcard) { Text(desktopText("Create flashcard")) }
                 OutlinedButton(onClick = appState::gradeFirstReview, enabled = state.due.isNotEmpty()) {
-                    Text("Grade due 4/5")
+                    Text(desktopText("Grade due 4/5"))
                 }
                 OutlinedButton(onClick = appState::skipFirstReview, enabled = state.due.isNotEmpty()) {
-                    Text("Skip due")
+                    Text(desktopText("Skip due"))
                 }
                 OutlinedButton(onClick = appState::suspendFirstFlashcard, enabled = state.flashcards.isNotEmpty()) {
-                    Text("Suspend card")
+                    Text(desktopText("Suspend card"))
                 }
             }
             state.due.firstOrNull()?.let { Text("Due now: ${it.method.name} • repetition ${it.repetitionCount}") }
         }
 
-        DesktopSectionCard(title = "Error Notebook") {
+        DesktopSectionCard(title = desktopText("Error Notebook")) {
             if (state.errors.isEmpty()) {
-                Text("Wrong answers from Practice Tests and Mock Exams appear here automatically.")
+                Text(desktopText("Wrong answers from Practice Tests and Mock Exams appear here automatically."))
             }
             state.errors.forEach { error ->
                 Text("• ${error.category.name} • recurrence ${error.recurrenceCount} • ${error.explanation}")
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = appState::reclassifyNotebookError, enabled = state.errors.isNotEmpty()) {
-                    Text("Reclassify first")
+                    Text(desktopText("Reclassify first"))
                 }
                 OutlinedButton(onClick = appState::resolveNotebookError, enabled = state.errors.isNotEmpty()) {
-                    Text("Resolve first")
+                    Text(desktopText("Resolve first"))
                 }
             }
         }

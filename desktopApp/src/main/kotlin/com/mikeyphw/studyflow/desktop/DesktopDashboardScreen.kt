@@ -21,7 +21,7 @@ fun DesktopDashboardScreen(
 ) {
     if (state.status == DesktopScreenStatus.EMPTY) {
         DesktopStateMessage(
-            title = "No Study Plan yet",
+            title = desktopText("No Study Plan yet"),
             message = "The desktop bootstrap is ready, but no in-memory Study Plan was provided.",
         )
         return
@@ -35,25 +35,25 @@ fun DesktopDashboardScreen(
             Text(state.activePlanDescription)
             DesktopInlineStatus(state.status)
             Button(onClick = onOpenLibrary) {
-                Text("Open library")
+                Text(desktopText("Open library"))
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
-                label = "Plan progress",
+                label = desktopText("Plan progress"),
                 value = "${state.progressPercent}%",
                 detail = "Overall Study Plan completion",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "This week",
+                label = desktopText("This week"),
                 value = "${state.studiedHoursThisWeek}h",
                 detail = "Goal: ${state.weeklyGoalHours}h",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Accuracy",
+                label = desktopText("Accuracy"),
                 value = "${state.averageAccuracyPercent}%",
                 detail = "${state.questionsAnswered} answered questions",
                 modifier = Modifier.weight(1f),
@@ -62,26 +62,26 @@ fun DesktopDashboardScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
-                label = "Library",
+                label = desktopText("Library"),
                 value = "${state.libraryProgressPercent}%",
                 detail = "${state.materialCount} materials, ${state.videoCount} videos",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Favorites",
+                label = desktopText("Favorites"),
                 value = state.favoriteCount.toString(),
                 detail = "Pinned resources for focused desktop work",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Shell readiness",
+                label = desktopText("Shell readiness"),
                 value = "${state.readinessPercent}%",
                 detail = "Domain readiness audit from core:domain",
                 modifier = Modifier.weight(1f),
             )
         }
 
-        DesktopSectionCard(title = "Desktop bootstrap") {
+        DesktopSectionCard(title = desktopText("Desktop bootstrap")) {
             Text("Domain managers wired:", fontWeight = FontWeight.Bold)
             state.domainManagers.forEach { manager -> Text("• $manager") }
             Text("Allowed shared modules:", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))

@@ -20,6 +20,8 @@ class DesktopAppState(
     val services: DesktopStudyFlowServices,
     val shellState: DesktopShellState,
 ) {
+    private var preferencesRevision: Int by mutableStateOf(0)
+
     var selectedRoute: DesktopRoute by mutableStateOf(DesktopRoute.DASHBOARD)
         private set
 
@@ -247,6 +249,7 @@ class DesktopAppState(
             ThemeMode.DARK -> ThemeMode.SYSTEM_DEFAULT
         }
         services.setTheme(next)
+        preferencesRevision += 1
     }
 
     fun cycleLanguage() {
@@ -256,8 +259,18 @@ class DesktopAppState(
             AppLanguage.PORTUGUESE_BRAZIL -> AppLanguage.SYSTEM_DEFAULT
         }
         services.setLanguage(next)
+        preferencesRevision += 1
     }
 
+    fun currentLanguage(): AppLanguage {
+        preferencesRevision
+        return settingsState().language
+    }
+
+    fun currentThemeMode(): ThemeMode {
+        preferencesRevision
+        return settingsState().themeMode
+    }
 
     fun dashboardState(): DesktopDashboardState = services.createDashboardState()
 

@@ -49,28 +49,28 @@ private fun DesktopLibraryContent(appState: DesktopAppState, state: DesktopLibra
             DesktopMetricCard("Annexes", state.summary.annexes.toString(), "Persistent metadata", Modifier.weight(1f))
         }
 
-        DesktopSectionCard(title = "Add resource") {
-            Text("DOV15 accepts a local path; native file picking/open-with arrives in DOV23.")
+        DesktopSectionCard(title = desktopText("Add resource")) {
+            Text(desktopText("DOV15 accepts a local path; native file picking/open-with arrives in DOV23."))
             OutlinedTextField(
                 value = appState.libraryPathDraft,
                 onValueChange = appState::updateLibraryPath,
-                label = { Text("Local file path") },
+                label = { Text(desktopText("Local file path")) },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Button(onClick = appState::importLibraryFile) { Text("Import file") }
+            Button(onClick = appState::importLibraryFile) { Text(desktopText("Import file")) }
             OutlinedTextField(
                 value = appState.libraryWebTitleDraft,
                 onValueChange = appState::updateLibraryWebTitle,
-                label = { Text("Web title") },
+                label = { Text(desktopText("Web title")) },
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 value = appState.libraryWebUrlDraft,
                 onValueChange = appState::updateLibraryWebUrl,
-                label = { Text("HTTP(S) URL") },
+                label = { Text(desktopText("HTTP(S) URL")) },
                 modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedButton(onClick = appState::addLibraryWebResource) { Text("Add web resource") }
+            OutlinedButton(onClick = appState::addLibraryWebResource) { Text(desktopText("Add web resource")) }
             if (appState.libraryActionMessage.isNotBlank()) Text(appState.libraryActionMessage)
         }
 
@@ -79,7 +79,7 @@ private fun DesktopLibraryContent(appState: DesktopAppState, state: DesktopLibra
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-            DesktopSectionCard(title = "Resource list", modifier = Modifier.weight(1f)) {
+            DesktopSectionCard(title = desktopText("Resource list"), modifier = Modifier.weight(1f)) {
                 LazyColumn(modifier = Modifier.height(360.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(state.materials, key = { material -> material.id.value }) { material ->
                         val selected = material.id == appState.selectedMaterialId
@@ -88,11 +88,16 @@ private fun DesktopLibraryContent(appState: DesktopAppState, state: DesktopLibra
                             fontWeight = FontWeight.Bold,
                         )
                         Text("${material.typeLabel} • ${material.progressPercent}% complete")
-                        OutlinedButton(onClick = { appState.selectMaterial(material.id) }) { Text("Show details") }
+                        OutlinedButton(onClick = { appState.selectMaterial(material.id) }) {
+                            Text(desktopText("Show details"))
+                        }
                     }
                 }
             }
-            DesktopSectionCard(title = "Resource detail · Material viewer", modifier = Modifier.weight(1f)) {
+            DesktopSectionCard(
+                title = desktopText("Resource detail · Material viewer"),
+                modifier = Modifier.weight(1f),
+            ) {
                 Column(
                     modifier = Modifier.height(360.dp).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -102,16 +107,18 @@ private fun DesktopLibraryContent(appState: DesktopAppState, state: DesktopLibra
                     Text(viewer.content)
                     if (viewer.detail.isNotBlank()) Text(viewer.detail)
                     if (viewer.material != null) {
-                        OutlinedButton(onClick = appState::toggleSelectedMaterialFavorite) { Text("Toggle favorite") }
+                        OutlinedButton(onClick = appState::toggleSelectedMaterialFavorite) {
+                            Text(desktopText("Toggle favorite"))
+                        }
                     }
                     if (viewer.kind == DesktopMaterialViewerKind.WEB) {
-                        Text("Native browser opening is intentionally deferred to DOV23.")
+                        Text(desktopText("Native browser opening is intentionally deferred to DOV23."))
                     }
                 }
             }
         }
-        DesktopSectionCard(title = "Videos") {
-            if (state.videos.isEmpty()) Text("No videos")
+        DesktopSectionCard(title = desktopText("Videos")) {
+            if (state.videos.isEmpty()) Text(desktopText("No videos"))
             state.videos.forEach { video -> Text("• ${video.title} — ${video.progressLabel}") }
         }
     }

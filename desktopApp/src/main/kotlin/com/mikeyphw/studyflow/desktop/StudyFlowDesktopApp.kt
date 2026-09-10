@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -16,10 +17,13 @@ import androidx.compose.ui.unit.dp
 fun StudyFlowDesktopApp(
     appState: DesktopAppState = remember { StudyFlowDesktopBootstrap.createProductionAppState() },
 ) {
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                DesktopSidebar(
+    val language = appState.currentLanguage()
+    val textCatalog = remember(language) { DesktopTextCatalog.forLanguage(language) }
+    CompositionLocalProvider(LocalDesktopTextCatalog provides textCatalog) {
+        MaterialTheme {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    DesktopSidebar(
                     selectedRoute = appState.selectedRoute,
                     onRouteSelected = appState::selectRoute,
                 )
@@ -30,7 +34,7 @@ fun StudyFlowDesktopApp(
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     DesktopTopBar(
-                        title = appState.selectedRoute.title,
+                        title = desktopText(appState.selectedRoute.title),
                         subtitle = appState.shellState.boundarySummary,
                     )
                     when (appState.selectedRoute) {
@@ -91,4 +95,5 @@ fun StudyFlowDesktopApp(
             }
         }
     }
+}
 }

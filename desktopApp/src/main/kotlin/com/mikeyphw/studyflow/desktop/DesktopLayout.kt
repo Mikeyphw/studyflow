@@ -48,7 +48,7 @@ fun DesktopSidebar(
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "Desktop preview",
+            text = desktopText("Desktop preview"),
             color = Color.DarkGray,
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -59,21 +59,21 @@ fun DesktopSidebar(
                     onClick = { onRouteSelected(route) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(route.title)
+                    Text(desktopText(route.title))
                 }
             } else {
                 OutlinedButton(
                     onClick = { onRouteSelected(route) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(route.title)
+                    Text(desktopText(route.title))
                 }
             }
         }
         Spacer(modifier = Modifier.weight(1f))
         DesktopStateMessage(
-            title = "Boundary sealed",
-            message = "Desktop imports only JVM-safe StudyFlow modules.",
+            title = desktopText("Boundary sealed"),
+            message = desktopText("Desktop imports only JVM-safe StudyFlow modules."),
         )
     }
 }
@@ -166,7 +166,7 @@ class ColumnScopeCompat internal constructor(
 @Composable
 fun DesktopInlineStatus(status: DesktopScreenStatus) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = "Status: ", fontWeight = FontWeight.Bold)
+        Text(text = desktopText("Status: "), fontWeight = FontWeight.Bold)
         Text(status.name.lowercase().replaceFirstChar(Char::uppercase))
     }
 }

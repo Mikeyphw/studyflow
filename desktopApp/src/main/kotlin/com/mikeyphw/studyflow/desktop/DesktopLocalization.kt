@@ -1,0 +1,258 @@
+package com.mikeyphw.studyflow.desktop
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
+import com.mikeyphw.studyflow.core.model.AppLanguage
+import java.util.Locale
+
+class DesktopTextCatalog private constructor(
+    val resolvedLanguage: AppLanguage,
+    private val translations: Map<String, String>,
+) {
+    fun text(english: String): String = translations[english] ?: english
+
+    companion object {
+        fun forLanguage(language: AppLanguage, locale: Locale = Locale.getDefault()): DesktopTextCatalog {
+            val resolved = when (language) {
+                AppLanguage.SYSTEM_DEFAULT -> if (locale.language.equals("pt", ignoreCase = true)) {
+                    AppLanguage.PORTUGUESE_BRAZIL
+                } else {
+                    AppLanguage.ENGLISH
+                }
+                else -> language
+            }
+            return DesktopTextCatalog(
+                resolvedLanguage = resolved,
+                translations = if (resolved == AppLanguage.PORTUGUESE_BRAZIL) PT_BR else emptyMap(),
+            )
+        }
+
+        private val PT_BR = mapOf(
+            "Dashboard" to "Painel",
+            "Plan" to "Plano",
+            "Library" to "Biblioteca",
+            "Planner" to "Planejador",
+            "Practice" to "Prática",
+            "Reviews" to "Revisões",
+            "Writing" to "Redação",
+            "Modes" to "Modos",
+            "Concurso" to "Concurso",
+            "Analytics" to "Análises",
+            "Search" to "Busca",
+            "Settings" to "Configurações",
+            "Desktop preview" to "Desktop",
+            "Boundary sealed" to "Limite de módulos validado",
+            "Desktop imports only JVM-safe StudyFlow modules." to
+                "O Desktop importa apenas módulos JVM seguros do StudyFlow.",
+            "Default plan" to "Plano padrão",
+            "Theme" to "Tema",
+            "Language" to "Idioma",
+            "Desktop settings" to "Configurações do Desktop",
+            "Cycle theme" to "Alternar tema",
+            "Cycle language" to "Alternar idioma",
+            "Portability and encrypted backup" to "Portabilidade e backup criptografado",
+            "Import/export file path" to "Caminho do arquivo de importação/exportação",
+            "Backup password" to "Senha do backup",
+            "Export portable structure" to "Exportar estrutura portátil",
+            "Import portable structure" to "Importar estrutura portátil",
+            "Create encrypted backup" to "Criar backup criptografado",
+            "Restore encrypted backup" to "Restaurar backup criptografado",
+            "Migrate workspace schema" to "Migrar esquema do workspace",
+            "StudyFlow Link" to "Conexão StudyFlow",
+            "Create pairing offer" to "Criar oferta de pareamento",
+            "Sync trusted peers" to "Sincronizar dispositivos confiáveis",
+            "Pair from QR payload" to "Parear pelo QR",
+            "Remember endpoint" to "Salvar endpoint",
+            "Trusted StudyFlow peers" to "Dispositivos StudyFlow confiáveis",
+            "Discovered StudyFlow peers" to "Dispositivos StudyFlow encontrados",
+            "Revoke" to "Revogar",
+            "Forget" to "Esquecer",
+            "Study Plans" to "Planos de estudo",
+            "Plan name" to "Nome do plano",
+            "Create" to "Criar",
+            "Rename selected" to "Renomear selecionado",
+            "Archive" to "Arquivar",
+            "Restore" to "Restaurar",
+            "Add subject" to "Adicionar matéria",
+            "New subject" to "Nova matéria",
+            "Add resource" to "Adicionar recurso",
+            "Add web resource" to "Adicionar recurso web",
+            "Import file" to "Importar arquivo",
+            "Toggle favorite" to "Alternar favorito",
+            "Materials" to "Materiais",
+            "Videos" to "Vídeos",
+            "Resource list" to "Lista de recursos",
+            "Resource detail · Material viewer" to "Detalhes do recurso · Visualizador",
+            "Author schedule" to "Montar cronograma",
+            "Add activity" to "Adicionar atividade",
+            "Generate 7 days" to "Gerar 7 dias",
+            "Apply adaptive preview" to "Aplicar prévia adaptativa",
+            "Rebalance missed" to "Redistribuir atrasadas",
+            "Start next" to "Iniciar próxima",
+            "Quick session" to "Sessão rápida",
+            "Pause" to "Pausar",
+            "Resume" to "Continuar",
+            "Complete" to "Concluir",
+            "Cancel" to "Cancelar",
+            "Practice Test execution" to "Execução de simulado de questões",
+            "Create practice" to "Criar prática",
+            "Save answer" to "Salvar resposta",
+            "Submit attempt" to "Enviar tentativa",
+            "Mock Exam Studio" to "Estúdio de simulado",
+            "Create mock exam" to "Criar simulado",
+            "Start mock" to "Iniciar simulado",
+            "Save mock answer" to "Salvar resposta do simulado",
+            "Submit mock exam" to "Finalizar simulado",
+            "Flashcards and SRS" to "Flashcards e SRS",
+            "Error Notebook" to "Caderno de erros",
+            "Create flashcard" to "Criar flashcard",
+            "Resolve first" to "Resolver primeiro",
+            "Reclassify first" to "Reclassificar primeiro",
+            "Writing Workspace" to "Workspace de redação",
+            "Start writing" to "Iniciar redação",
+            "Save draft" to "Salvar rascunho",
+            "Complete writing" to "Concluir redação",
+            "Content modes" to "Modos de conteúdo",
+            "Programming Course" to "Curso de programação",
+            "Create Python sample" to "Criar exemplo em Python",
+            "Run locally" to "Executar localmente",
+            "Language Deck" to "Baralho de idiomas",
+            "Create idiom sample" to "Criar expressão de exemplo",
+            "Concurso Público" to "Concurso Público",
+            "Save public-exam target" to "Salvar alvo do concurso",
+            "Preview + apply edital revision" to "Pré-visualizar e aplicar revisão do edital",
+            "Import legislation" to "Importar legislação",
+            "Study cycle" to "Ciclo de estudos",
+            "Build from syllabus" to "Montar a partir do conteúdo",
+            "Exam readiness" to "Prontidão para a prova",
+            "Weekly coach" to "Revisão semanal",
+            "Content health" to "Saúde do conteúdo",
+            "Exam runbook" to "Plano operacional da prova",
+            "Seven-day study sprint" to "Sprint de estudo de sete dias",
+            "Apply approved sprint preview" to "Aplicar prévia aprovada do sprint",
+            "Exam report" to "Relatório da prova",
+            "Export local HTML report" to "Exportar relatório HTML local",
+            "Weak areas" to "Pontos fracos",
+            "Insights" to "Insights",
+            "Search StudyFlow" to "Buscar no StudyFlow",
+            "Results" to "Resultados",
+            "Recommendations" to "Recomendações",
+            "Recent searches" to "Buscas recentes",
+            "No recent searches yet." to "Ainda não há buscas recentes.",
+            "No trusted peers yet." to "Ainda não há dispositivos confiáveis.",
+            "No active LAN/manual peers discovered." to "Nenhum dispositivo LAN/manual ativo encontrado.",
+            "No analytics yet" to "Ainda não há análises",
+            "No resources yet" to "Ainda não há recursos",
+            "No planner data yet" to "Ainda não há dados do planejador",
+            "No practice data yet" to "Ainda não há dados de prática",
+            "No Study Plan yet" to "Ainda não há Plano de estudo",
+            "0–100 writing rubric" to "Rubrica de redação de 0–100",
+            "Accuracy" to "Precisão",
+            "Active session" to "Sessão ativa",
+            "Activity title" to "Título da atividade",
+            "Adaptive strategy" to "Estratégia adaptativa",
+            "Add Mon 18:00 block" to "Adicionar bloco seg. 18:00",
+            "Adherence" to "Aderência",
+            "Allowed boundary modules" to "Módulos permitidos no limite",
+            "Answer" to "Resposta",
+            "Attempts" to "Tentativas",
+            "Back" to "Verso",
+            "Check answer" to "Conferir resposta",
+            "Cleanup remains preview-only; DOV19 never performs destructive cleanup automatically." to
+                "A limpeza continua apenas em prévia; o DOV19 nunca executa limpeza destrutiva automaticamente.",
+            "Completion checklist" to "Checklist de conclusão",
+            "Completion is rejected until the draft, rubric and all four checks are present." to
+                "A conclusão é rejeitada até existirem o rascunho, a rubrica e as quatro verificações.",
+            "Concurso dashboard" to "Painel do concurso",
+            "Confirmed exam date (YYYY-MM-DD)" to "Data confirmada da prova (AAAA-MM-DD)",
+            "Consistency" to "Consistência",
+            "Deferred desktop integrations" to "Integrações de Desktop adiadas",
+            "Delete" to "Excluir",
+            "Desktop bootstrap" to "Inicialização do Desktop",
+            "Draft" to "Rascunho",
+            "Drafts are persisted inside the canonical Study Session record." to
+                "Os rascunhos são persistidos no registro canônico da sessão de estudo.",
+            "Edital revisions" to "Revisões do edital",
+            "Exam board / banca" to "Banca examinadora",
+            "Favorites" to "Favoritos",
+            "Front" to "Frente",
+            "Generated deck" to "Baralho gerado",
+            "Grade due 4/5" to "Avaliar pendente como 4/5",
+            "History" to "Histórico",
+            "HTTP(S) URL" to "URL HTTP(S)",
+            "Legislation" to "Legislação",
+            "Local file path" to "Caminho do arquivo local",
+            "Manual peer endpoint" to "Endpoint manual do dispositivo",
+            "Missed" to "Atrasadas",
+            "Mock Exam answer" to "Resposta do simulado",
+            "New root topic" to "Novo tópico raiz",
+            "Next activity" to "Próxima atividade",
+            "No completed Writing Sessions yet." to "Ainda não há sessões de redação concluídas.",
+            "No open Practice Test. Create one from the current question bank." to
+                "Não há prática aberta. Crie uma usando o banco de questões atual.",
+            "No recommendations yet." to "Ainda não há recomendações.",
+            "No sessions have been recorded yet." to "Ainda não há sessões registradas.",
+            "No videos" to "Sem vídeos",
+            "Open library" to "Abrir biblioteca",
+            "Organization" to "Órgão",
+            "Paste Lei Seca / legislation" to "Cole a Lei Seca / legislação",
+            "Paste StudyFlow pairing QR payload" to "Cole o conteúdo QR de pareamento do StudyFlow",
+            "Paste edital syllabus" to "Cole o conteúdo programático do edital",
+            "Plan progress" to "Progresso do plano",
+            "Planned time" to "Tempo planejado",
+            "Practice attempts" to "Tentativas de prática",
+            "Prompt" to "Proposta",
+            "Questions" to "Questões",
+            "Recent sessions" to "Sessões recentes",
+            "Role / cargo" to "Cargo",
+            "Select" to "Selecionar",
+            "Shell readiness" to "Prontidão da interface",
+            "Show details" to "Mostrar detalhes",
+            "Skip" to "Pular",
+            "Skip due" to "Pular pendente",
+            "Start" to "Iniciar",
+            "Start current" to "Iniciar atual",
+            "Study Session runtime" to "Execução da sessão de estudo",
+            "Study time" to "Tempo de estudo",
+            "Suspend card" to "Suspender cartão",
+            "This week" to "Esta semana",
+            "Toggle first read" to "Alternar leitura do primeiro",
+            "Web title" to "Título web",
+            "What does this expression mean?" to "O que esta expressão significa?",
+            "Writing history" to "Histórico de redação",
+            "Your answer" to "Sua resposta",
+            "Settings use core:model AppPreferences and persist in the Desktop workspace." to
+                "As configurações usam core:model AppPreferences e persistem no workspace do Desktop.",
+            "Restore is rollback-protected and requires an application restart before continuing work." to
+                "A restauração tem rollback protegido e exige reiniciar o aplicativo antes de continuar.",
+            "Type at least two characters to search plans, materials, activities, and questions." to
+                "Digite pelo menos dois caracteres para buscar planos, materiais, atividades e questões.",
+            "Wrong answers from Practice Tests and Mock Exams appear here automatically." to
+                "Respostas erradas de práticas e simulados aparecem aqui automaticamente.",
+            "Native browser opening is intentionally deferred to DOV23." to
+                "A abertura no navegador nativo foi intencionalmente adiada para o DOV23.",
+            "DOV15 accepts a local path; native file picking/open-with arrives in DOV23." to
+                "O DOV15 aceita um caminho local; seleção de arquivo e Abrir com nativos chegam no DOV23.",
+            "Mode selection is persisted with the Study Plan and changes the available study workflow." to
+                "A seleção de modo é persistida com o Plano de estudo e altera o fluxo disponível.",
+            "Desktop runner executes fixed argument vectors inside the StudyFlow workspace." to
+                "O executor Desktop usa vetores de argumentos fixos dentro do workspace do StudyFlow.",
+            "Local code runs with your desktop user permissions; no shell command string is interpolated." to
+                "O código local usa as permissões do usuário do Desktop; nenhum comando de shell é interpolado.",
+            "Shared edital, legislation, cycle and dashboard semantics with durable Desktop state." to
+                "Edital, legislação, ciclo e painel compartilham semântica com estado durável no Desktop.",
+            "Reports omit freeform study notes and stay inside the Desktop workspace until DOV23." to
+                "Relatórios omitem notas livres e ficam no workspace do Desktop até o DOV23.",
+            "SFLP peer integration is unavailable in this desktop composition root." to
+                "A integração SFLP não está disponível nesta composição do Desktop.",
+            "These are intentionally not implemented until native desktop adapters are introduced:" to
+                "Estas integrações aguardam intencionalmente os adaptadores nativos do Desktop:",
+            "Status: " to "Status: ",
+        )
+    }
+}
+
+val LocalDesktopTextCatalog = staticCompositionLocalOf { DesktopTextCatalog.forLanguage(AppLanguage.ENGLISH) }
+
+@Composable
+fun desktopText(english: String): String = LocalDesktopTextCatalog.current.text(english)

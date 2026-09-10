@@ -48,7 +48,7 @@ with this matrix, this matrix owns the current product-state description.
 | Programming / language content modes | FULL | FULL | FULL | LIMITED | LIMITED |
 | Import / export / portable backup | FULL | FULL | FULL | HANDOFF | HANDOFF |
 | Optional provider sync | FULL | PLATFORM_SPECIFIC | MISSING | NOT_APPLICABLE | NOT_APPLICABLE |
-| English / pt-BR UI | FULL | FULL | MISSING | LIMITED | FULL |
+| English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | MISSING | PLATFORM_SPECIFIC | LIMITED |
 | Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |

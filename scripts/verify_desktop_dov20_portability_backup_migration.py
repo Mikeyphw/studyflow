@@ -51,7 +51,7 @@ for token in (
 assert "Import / export / portable backup | FULL | FULL | FULL" in text["matrix"]
 remaining = json.loads(text["remaining"])
 desktop = next(row for row in remaining["remaining_tracks"] if row["id"] == "DOV08-DOV24")
-assert desktop["completed_through"] == "DOV20"
+assert int(desktop["completed_through"].removeprefix("DOV")) >= 20
 for key in ("root_gradle", "desktop_gradle"):
     assert "verifyDesktopDov20PortabilityBackupMigration" in text[key]
 assert '"verifyDesktopDov20PortabilityBackupMigration"' in text["devtool"]

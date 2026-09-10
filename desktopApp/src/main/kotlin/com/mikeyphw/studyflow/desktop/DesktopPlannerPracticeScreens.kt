@@ -27,7 +27,7 @@ fun DesktopPlannerScreen(appState: DesktopAppState) {
     val authoring = appState.plannerAuthoringState()
     if (state.status == DesktopScreenStatus.EMPTY) {
         DesktopStateMessage(
-            title = "No planner data yet",
+            title = desktopText("No planner data yet"),
             message = "Add a rule or activity to begin authoring this Study Plan's schedule.",
         )
     }
@@ -35,52 +35,52 @@ fun DesktopPlannerScreen(appState: DesktopAppState) {
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
-                label = "Next activity",
+                label = desktopText("Next activity"),
                 value = state.nextActivityTitle,
                 detail = state.planName,
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Planned time",
+                label = desktopText("Planned time"),
                 value = "${state.totalPlannedMinutes} min",
                 detail = "Across ${state.plannedActivities.size} activities",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Missed",
+                label = desktopText("Missed"),
                 value = state.missedCount.toString(),
                 detail = "${state.completedCount} completed",
                 modifier = Modifier.weight(1f),
             )
         }
 
-        DesktopSectionCard(title = "Author schedule") {
+        DesktopSectionCard(title = desktopText("Author schedule")) {
             androidx.compose.material.OutlinedTextField(
                 value = appState.plannerActivityTitleDraft,
                 onValueChange = appState::updatePlannerActivityTitle,
-                label = { Text("Activity title") },
+                label = { Text(desktopText("Activity title")) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 androidx.compose.material.Button(onClick = appState::ensurePlannerStrategy) {
-                    Text("Adaptive strategy")
+                    Text(desktopText("Adaptive strategy"))
                 }
                 androidx.compose.material.OutlinedButton(onClick = appState::addPlannerRule) {
-                    Text("Add Mon 18:00 block")
+                    Text(desktopText("Add Mon 18:00 block"))
                 }
                 androidx.compose.material.OutlinedButton(onClick = appState::addPlannerActivity) {
-                    Text("Add activity")
+                    Text(desktopText("Add activity"))
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 androidx.compose.material.OutlinedButton(onClick = appState::generatePlannerWeek) {
-                    Text("Generate 7 days")
+                    Text(desktopText("Generate 7 days"))
                 }
                 androidx.compose.material.OutlinedButton(onClick = appState::applyPlannerAdaptivePreview) {
-                    Text("Apply adaptive preview")
+                    Text(desktopText("Apply adaptive preview"))
                 }
                 androidx.compose.material.OutlinedButton(onClick = appState::rebalancePlannerMissed) {
-                    Text("Rebalance missed")
+                    Text(desktopText("Rebalance missed"))
                 }
             }
             Text("Rules: ${authoring.rules.size} • Strategy: ${authoring.strategy?.type?.name ?: "none"}")
@@ -89,57 +89,57 @@ fun DesktopPlannerScreen(appState: DesktopAppState) {
         }
 
         val runtime = appState.sessionRuntimeState()
-        DesktopSectionCard(title = "Study Session runtime") {
+        DesktopSectionCard(title = desktopText("Study Session runtime")) {
             Text(runtime.activeSession?.notes ?: runtime.nextActivityTitle ?: "No active session")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 androidx.compose.material.Button(
                     onClick = appState::startNextSessionActivity,
                     enabled = runtime.canStart && runtime.nextActivityTitle != null,
-                ) { Text("Start next") }
+                ) { Text(desktopText("Start next")) }
                 androidx.compose.material.OutlinedButton(
                     onClick = appState::startQuickSession,
                     enabled = runtime.canStart,
-                ) { Text("Quick session") }
+                ) { Text(desktopText("Quick session")) }
                 androidx.compose.material.OutlinedButton(onClick = appState::pauseSession, enabled = runtime.canPause) {
-                    Text("Pause")
+                    Text(desktopText("Pause"))
                 }
                 androidx.compose.material.OutlinedButton(
                     onClick = appState::resumeSession,
                     enabled = runtime.canResume,
                 ) {
-                    Text("Resume")
+                    Text(desktopText("Resume"))
                 }
                 androidx.compose.material.OutlinedButton(
                     onClick = appState::completeSession,
                     enabled = runtime.canFinish,
                 ) {
-                    Text("Complete")
+                    Text(desktopText("Complete"))
                 }
                 androidx.compose.material.OutlinedButton(
                     onClick = appState::cancelSession,
                     enabled = runtime.canFinish,
                 ) {
-                    Text("Cancel")
+                    Text(desktopText("Cancel"))
                 }
             }
             if (appState.sessionActionMessage.isNotBlank()) Text(appState.sessionActionMessage)
         }
 
         state.activeSession?.let { session ->
-            DesktopSectionCard(title = "Active session") {
+            DesktopSectionCard(title = desktopText("Active session")) {
                 Text(session.title, fontWeight = FontWeight.Bold)
                 Text("${session.statusLabel} • ${session.durationLabel} • ${session.scoreLabel}")
             }
         }
 
-        DesktopSectionCard(title = "Planner") {
+        DesktopSectionCard(title = desktopText("Planner")) {
             DesktopScrollableList(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.42f)) {
                 items(state.plannedActivities) { activity -> DesktopActivityRow(activity) }
             }
         }
 
-        DesktopSectionCard(title = "Recent sessions") {
-            if (state.recentSessions.isEmpty()) Text("No sessions have been recorded yet.")
+        DesktopSectionCard(title = desktopText("Recent sessions")) {
+            if (state.recentSessions.isEmpty()) Text(desktopText("No sessions have been recorded yet."))
             else state.recentSessions.forEach { session ->
                 Text("• ${session.title}: ${session.statusLabel}, ${session.durationLabel}, ${session.scoreLabel}")
             }
@@ -153,7 +153,7 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
     val execution = appState.practiceExecutionState()
     if (state.status == DesktopScreenStatus.EMPTY) {
         DesktopStateMessage(
-            title = "No practice data yet",
+            title = desktopText("No practice data yet"),
             message = "Add or import questions before starting a Desktop Practice Test.",
         )
         return
@@ -162,35 +162,39 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
-                label = "Questions",
+                label = desktopText("Questions"),
                 value = state.summary.questionCount.toString(),
                 detail = "${state.summary.favoriteCount} favorite, ${state.summary.disputedCount} disputed",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Attempts",
+                label = desktopText("Attempts"),
                 value = (state.summary.testCount + state.summary.mockExamCount).toString(),
                 detail = "${state.summary.answeredCount} answered",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Accuracy",
+                label = desktopText("Accuracy"),
                 value = "${state.summary.accuracyPercent}%",
                 detail = "${state.summary.correctCount} correct answers",
                 modifier = Modifier.weight(1f),
             )
         }
 
-        DesktopSectionCard(title = "Practice Test execution") {
+        DesktopSectionCard(title = desktopText("Practice Test execution")) {
             val question = execution.currentQuestion
             if (execution.attempt == null) {
-                Text("No open Practice Test. Create one from the current question bank.")
-                androidx.compose.material.Button(onClick = appState::createPracticeAttempt) { Text("Create practice") }
+                Text(desktopText("No open Practice Test. Create one from the current question bank."))
+                androidx.compose.material.Button(onClick = appState::createPracticeAttempt) {
+                    Text(desktopText("Create practice"))
+                }
             } else {
                 Text(execution.attempt.title, fontWeight = FontWeight.Bold)
                 Text("${execution.execution?.answeredCount ?: 0}/${execution.attempt.questionCount} answered")
                 if (execution.canStart) {
-                    androidx.compose.material.Button(onClick = appState::startPracticeAttempt) { Text("Start") }
+                    androidx.compose.material.Button(onClick = appState::startPracticeAttempt) {
+                        Text(desktopText("Start"))
+                    }
                 }
                 if (question != null && execution.canAnswer) {
                     Text(question.statement, fontWeight = FontWeight.Bold)
@@ -198,12 +202,12 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
                     androidx.compose.material.OutlinedTextField(
                         value = appState.practiceAnswerDraft,
                         onValueChange = appState::updatePracticeAnswer,
-                        label = { Text("Your answer") },
+                        label = { Text(desktopText("Your answer")) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         androidx.compose.material.Button(onClick = appState::answerPracticeQuestion) {
-                            Text("Save answer")
+                            Text(desktopText("Save answer"))
                         }
                         androidx.compose.material.OutlinedButton(
                             onClick = { appState.togglePracticeFavorite(question.id) },
@@ -216,7 +220,7 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
                 }
                 if (execution.canFinish) {
                     androidx.compose.material.OutlinedButton(onClick = appState::finishPracticeAttempt) {
-                        Text("Submit attempt")
+                        Text(desktopText("Submit attempt"))
                     }
                 }
             }
@@ -224,7 +228,7 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
         }
 
         val mockStudio = appState.mockExamStudioState()
-        DesktopSectionCard(title = "Mock Exam Studio") {
+        DesktopSectionCard(title = desktopText("Mock Exam Studio")) {
             Text(
                 "Preview: ${mockStudio.preview.questionCount}/" +
                     "${mockStudio.preview.requestedQuestionCount} questions • " +
@@ -234,12 +238,14 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
                 androidx.compose.material.Button(
                     onClick = appState::createMockExam,
                     enabled = mockStudio.canCreate,
-                ) { Text("Create mock exam") }
+                ) { Text(desktopText("Create mock exam")) }
             } else {
                 Text(mockStudio.activeExam.title, fontWeight = FontWeight.Bold)
                 Text("${mockStudio.execution?.answeredCount ?: 0}/${mockStudio.activeExam.questionCount} answered")
                 if (mockStudio.canStart) {
-                    androidx.compose.material.Button(onClick = appState::startMockExam) { Text("Start mock") }
+                    androidx.compose.material.Button(onClick = appState::startMockExam) {
+                        Text(desktopText("Start mock"))
+                    }
                 }
                 val mockQuestion = mockStudio.currentQuestion
                 if (mockQuestion != null && mockStudio.canAnswer) {
@@ -248,17 +254,17 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
                     androidx.compose.material.OutlinedTextField(
                         value = appState.mockExamAnswerDraft,
                         onValueChange = appState::updateMockExamAnswer,
-                        label = { Text("Mock Exam answer") },
+                        label = { Text(desktopText("Mock Exam answer")) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     androidx.compose.material.Button(onClick = appState::answerMockExamQuestion) {
-                        Text("Save mock answer")
+                        Text(desktopText("Save mock answer"))
                     }
                     mockQuestion.explanation?.let { Text("Explanation: $it") }
                 }
                 if (mockStudio.canFinish) {
                     androidx.compose.material.OutlinedButton(onClick = appState::finishMockExam) {
-                        Text("Submit mock exam")
+                        Text(desktopText("Submit mock exam"))
                     }
                 }
             }
@@ -268,7 +274,7 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
             if (appState.mockExamActionMessage.isNotBlank()) Text(appState.mockExamActionMessage)
         }
 
-        DesktopSectionCard(title = "Generated deck") {
+        DesktopSectionCard(title = desktopText("Generated deck")) {
             DesktopScrollableList(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.34f)) {
                 items(state.deck) { question ->
                     DesktopStateMessage(
@@ -279,7 +285,7 @@ fun DesktopPracticeScreen(appState: DesktopAppState) {
             }
         }
 
-        DesktopSectionCard(title = "Practice attempts") {
+        DesktopSectionCard(title = desktopText("Practice attempts")) {
             state.tests.forEach { attempt ->
                 Text("• ${attempt.title}: ${attempt.modeLabel}, ${attempt.progressLabel}, ${attempt.scoreLabel}")
             }

@@ -107,6 +107,13 @@ tasks.register<Exec>("verifyDesktopDov20PortabilityBackupMigration") {
     commandLine("python3", "scripts/verify_desktop_dov20_portability_backup_migration.py")
 }
 
+tasks.register<Exec>("verifyDesktopDov21EnPtBrLocalization") {
+    group = "verification"
+    description = "Verify Desktop DOV21 English and pt-BR localization"
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_desktop_dov21_en_ptbr_localization.py")
+}
+
 tasks.register("verifyDesktopDov16Dov19Batch") {
     group = "verification"
     description = "Verify Desktop DOV16-DOV19 product batch"

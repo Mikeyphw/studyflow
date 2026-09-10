@@ -27,7 +27,7 @@ fun DesktopAnalyticsScreen(
 ) {
     if (state.status == DesktopScreenStatus.EMPTY) {
         DesktopStateMessage(
-            title = "No analytics yet",
+            title = desktopText("No analytics yet"),
             message = "Analytics are wired, but the desktop repositories do not contain Study Plan data.",
         )
         return
@@ -39,19 +39,19 @@ fun DesktopAnalyticsScreen(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
-                label = "Study time",
+                label = desktopText("Study time"),
                 value = "${state.studiedHoursSevenDays}h",
                 detail = "${state.completedSessions} completed sessions",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Adherence",
+                label = desktopText("Adherence"),
                 value = "${state.scheduleAdherencePercent}%",
                 detail = "Schedule completion",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Practice",
+                label = desktopText("Practice"),
                 value = "${state.questionAccuracyPercent}%",
                 detail = "${state.answeredQuestions} answered questions",
                 modifier = Modifier.weight(1f),
@@ -60,32 +60,32 @@ fun DesktopAnalyticsScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
-                label = "Library",
+                label = desktopText("Library"),
                 value = "${state.libraryProgressPercent}%",
                 detail = "Resource progress",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Consistency",
+                label = desktopText("Consistency"),
                 value = "${state.consistencyScorePercent}%",
                 detail = "Last seven days",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Reviews",
+                label = desktopText("Reviews"),
                 value = state.dueReviewCount.toString(),
                 detail = "${state.overdueReviewCount} overdue",
                 modifier = Modifier.weight(1f),
             )
         }
 
-        DesktopSectionCard(title = "Weak areas") {
+        DesktopSectionCard(title = desktopText("Weak areas")) {
             state.weakAreas.forEach { area ->
                 Text("• ${area.label}: ${area.masteryPercent}% mastery, priority ${area.priority}")
             }
         }
 
-        DesktopSectionCard(title = "Insights") {
+        DesktopSectionCard(title = desktopText("Insights")) {
             state.insights.forEach { insight ->
                 Text("• ${insight.kind.name.replace('_', ' ')} — ${insight.severity.name.lowercase()}")
             }
@@ -93,7 +93,7 @@ fun DesktopAnalyticsScreen(
 
         progress?.takeIf { it.available }?.let { advanced ->
             val readiness = advanced.readiness
-            DesktopSectionCard(title = "Exam readiness") {
+            DesktopSectionCard(title = desktopText("Exam readiness")) {
                 Text(
                     "Score: ${readiness?.scorePercent?.let { "$it%" } ?: "insufficient evidence"} · " +
                         "Band: ${readiness?.band?.name?.replace('_', ' ') ?: "unscored"}",
@@ -108,7 +108,7 @@ fun DesktopAnalyticsScreen(
                 }
             }
 
-            DesktopSectionCard(title = "Weekly coach") {
+            DesktopSectionCard(title = desktopText("Weekly coach")) {
                 val review = advanced.weeklyReview
                 Text(
                     "${review?.studiedMinutes ?: 0} min · ${review?.evidenceCount ?: 0} evidence event(s) · " +
@@ -119,7 +119,7 @@ fun DesktopAnalyticsScreen(
                 }
             }
 
-            DesktopSectionCard(title = "Content health") {
+            DesktopSectionCard(title = desktopText("Content health")) {
                 val cleanup = advanced.cleanupReport
                 Text(
                     "Health: ${cleanup?.healthScorePercent ?: 100}% · ${cleanup?.issueCount ?: 0} issue(s) · " +
@@ -128,10 +128,14 @@ fun DesktopAnalyticsScreen(
                 cleanup?.issues?.take(6)?.forEach { issue ->
                     Text("• ${issue.kind.name.replace('_', ' ')}: ${issue.count} (${issue.severity.name.lowercase()})")
                 }
-                Text("Cleanup remains preview-only; DOV19 never performs destructive cleanup automatically.")
+                Text(
+                    desktopText(
+                        "Cleanup remains preview-only; DOV19 never performs destructive cleanup automatically.",
+                    ),
+                )
             }
 
-            DesktopSectionCard(title = "Exam runbook") {
+            DesktopSectionCard(title = desktopText("Exam runbook")) {
                 val runbook = advanced.runbook
                 Text(
                     "${runbook?.state?.name?.replace('_', ' ') ?: "unavailable"} · " +
@@ -142,7 +146,7 @@ fun DesktopAnalyticsScreen(
                 }
             }
 
-            DesktopSectionCard(title = "Seven-day study sprint") {
+            DesktopSectionCard(title = desktopText("Seven-day study sprint")) {
                 val sprint = advanced.sprintPreview
                 Text(
                     "Focus: ${sprint?.focus?.name?.replace('_', ' ') ?: "none"} · " +
@@ -150,11 +154,11 @@ fun DesktopAnalyticsScreen(
                 )
                 Text("Executable changes: ${sprint?.executableChangeCount ?: 0}")
                 Button(onClick = onApplySprint, enabled = sprint?.executable == true) {
-                    Text("Apply approved sprint preview")
+                    Text(desktopText("Apply approved sprint preview"))
                 }
             }
 
-            DesktopSectionCard(title = "Exam report") {
+            DesktopSectionCard(title = desktopText("Exam report")) {
                 val report = advanced.examReport
                 Text(
                     "Evidence: ${report?.evidenceCount ?: 0} · Practice tests: ${report?.practiceTestCount ?: 0} · " +
@@ -164,8 +168,14 @@ fun DesktopAnalyticsScreen(
                     "Cleanup health: ${report?.cleanupHealthScorePercent ?: 100}% · " +
                         "Next actions: ${report?.nextActions?.size ?: 0}",
                 )
-                Button(onClick = onExportReport, enabled = report != null) { Text("Export local HTML report") }
-                Text("Reports omit freeform study notes and stay inside the Desktop workspace until DOV23.")
+                Button(onClick = onExportReport, enabled = report != null) {
+                    Text(desktopText("Export local HTML report"))
+                }
+                Text(
+                    desktopText(
+                        "Reports omit freeform study notes and stay inside the Desktop workspace until DOV23.",
+                    ),
+                )
             }
             if (actionMessage.isNotBlank()) Text(actionMessage, fontWeight = FontWeight.Bold)
         }
@@ -181,15 +191,19 @@ fun DesktopSearchScreen(
         OutlinedTextField(
             value = state.query,
             onValueChange = onQueryChanged,
-            label = { Text("Search StudyFlow") },
+            label = { Text(desktopText("Search StudyFlow")) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-            DesktopSectionCard(title = "Results", modifier = Modifier.weight(2f)) {
+            DesktopSectionCard(title = desktopText("Results"), modifier = Modifier.weight(2f)) {
                 if (state.results.isEmpty()) {
-                    Text("Type at least two characters to search plans, materials, activities, and questions.")
+                    Text(
+                        desktopText(
+                            "Type at least two characters to search plans, materials, activities, and questions.",
+                        ),
+                    )
                 } else {
                     DesktopScrollableList(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.52f)) {
                         items(state.results.size) { index ->
@@ -202,9 +216,9 @@ fun DesktopSearchScreen(
                     }
                 }
             }
-            DesktopSectionCard(title = "Recommendations", modifier = Modifier.weight(1f)) {
+            DesktopSectionCard(title = desktopText("Recommendations"), modifier = Modifier.weight(1f)) {
                 if (state.recommendations.isEmpty()) {
-                    Text("No recommendations yet.")
+                    Text(desktopText("No recommendations yet."))
                 } else {
                     state.recommendations.forEach { recommendation ->
                         Text(
@@ -218,9 +232,9 @@ fun DesktopSearchScreen(
             }
         }
 
-        DesktopSectionCard(title = "Recent searches") {
+        DesktopSectionCard(title = desktopText("Recent searches")) {
             if (state.recentSearches.isEmpty()) {
-                Text("No recent searches yet.")
+                Text(desktopText("No recent searches yet."))
             } else {
                 Text(state.recentSearches.joinToString(" • "))
             }
@@ -262,34 +276,34 @@ fun DesktopSettingsScreen(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
-                label = "Default plan",
+                label = desktopText("Default plan"),
                 value = state.defaultPlanLabel,
                 detail = "Stored in desktop preview preferences",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Theme",
+                label = desktopText("Theme"),
                 value = state.themeMode.name.replace('_', ' '),
                 detail = "Dynamic color: ${state.dynamicColorEnabled}",
                 modifier = Modifier.weight(1f),
             )
             DesktopMetricCard(
-                label = "Language",
+                label = desktopText("Language"),
                 value = state.language.name.replace('_', ' '),
                 detail = "Desktop-safe AppPreferences",
                 modifier = Modifier.weight(1f),
             )
         }
 
-        DesktopSectionCard(title = "Desktop settings") {
-            Text("Settings use core:model AppPreferences and remain in memory until the filesystem overlay.")
+        DesktopSectionCard(title = desktopText("Desktop settings")) {
+            Text(desktopText("Settings use core:model AppPreferences and persist in the Desktop workspace."))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onCycleTheme) { Text("Cycle theme") }
-                Button(onClick = onCycleLanguage) { Text("Cycle language") }
+                Button(onClick = onCycleTheme) { Text(desktopText("Cycle theme")) }
+                Button(onClick = onCycleLanguage) { Text(desktopText("Cycle language")) }
             }
         }
 
-        DesktopSectionCard(title = "Portability and encrypted backup") {
+        DesktopSectionCard(title = desktopText("Portability and encrypted backup")) {
             Text(
                 "Portable .studyplan export/import uses the shared structure schema. " +
                     "Encrypted workspace backup preserves the complete Desktop workspace.",
@@ -297,24 +311,24 @@ fun DesktopSettingsScreen(
             OutlinedTextField(
                 value = portabilityPath,
                 onValueChange = onPortabilityPathChanged,
-                label = { Text("Import/export file path") },
+                label = { Text(desktopText("Import/export file path")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
             OutlinedTextField(
                 value = portabilityPassword,
                 onValueChange = onPortabilityPasswordChanged,
-                label = { Text("Backup password") },
+                label = { Text(desktopText("Backup password")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = onExportPortable, enabled = portabilityPath.isNotBlank()) {
-                    Text("Export portable structure")
+                    Text(desktopText("Export portable structure"))
                 }
                 Button(onClick = onImportPortable, enabled = portabilityPath.isNotBlank()) {
-                    Text("Import portable structure")
+                    Text(desktopText("Import portable structure"))
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -322,23 +336,27 @@ fun DesktopSettingsScreen(
                     onClick = onCreateEncryptedBackup,
                     enabled = portabilityPath.isNotBlank() && portabilityPassword.length >= 8,
                 ) {
-                    Text("Create encrypted backup")
+                    Text(desktopText("Create encrypted backup"))
                 }
                 Button(
                     onClick = onRestoreEncryptedBackup,
                     enabled = portabilityPath.isNotBlank() && portabilityPassword.length >= 8,
                 ) {
-                    Text("Restore encrypted backup")
+                    Text(desktopText("Restore encrypted backup"))
                 }
-                Button(onClick = onMigrateWorkspace) { Text("Migrate workspace schema") }
+                Button(onClick = onMigrateWorkspace) { Text(desktopText("Migrate workspace schema")) }
             }
-            Text("Restore is rollback-protected and requires an application restart before continuing work.")
+            Text(
+                desktopText(
+                    "Restore is rollback-protected and requires an application restart before continuing work.",
+                ),
+            )
             if (portabilityActionMessage.isNotBlank()) Text(portabilityActionMessage, fontWeight = FontWeight.Bold)
         }
 
-        DesktopSectionCard(title = "StudyFlow Link") {
+        DesktopSectionCard(title = desktopText("StudyFlow Link")) {
             if (linkState == null) {
-                Text("SFLP peer integration is unavailable in this desktop composition root.")
+                Text(desktopText("SFLP peer integration is unavailable in this desktop composition root."))
             } else {
                 Text("Device: ${linkState.localDeviceId}", fontWeight = FontWeight.Bold)
                 Text("Status: ${linkState.status}")
@@ -347,8 +365,8 @@ fun DesktopSettingsScreen(
                 if (linkActionMessage.isNotBlank()) Text(linkActionMessage)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = onCreatePairingOffer) { Text("Create pairing offer") }
-                    Button(onClick = onSyncPeers) { Text("Sync trusted peers") }
+                    Button(onClick = onCreatePairingOffer) { Text(desktopText("Create pairing offer")) }
+                    Button(onClick = onSyncPeers) { Text(desktopText("Sync trusted peers")) }
                 }
                 linkState.pairingCode?.let { code -> Text("Pairing code: $code", fontWeight = FontWeight.Bold) }
                 linkState.pairingQrPayload?.let { payload ->
@@ -358,30 +376,30 @@ fun DesktopSettingsScreen(
                 OutlinedTextField(
                     value = linkQrInput,
                     onValueChange = onLinkQrChanged,
-                    label = { Text("Paste StudyFlow pairing QR payload") },
+                    label = { Text(desktopText("Paste StudyFlow pairing QR payload")) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Button(onClick = onPairFromQr, enabled = linkQrInput.isNotBlank()) {
-                    Text("Pair from QR payload")
+                    Text(desktopText("Pair from QR payload"))
                 }
 
                 OutlinedTextField(
                     value = linkManualEndpoint,
                     onValueChange = onManualEndpointChanged,
-                    label = { Text("Manual peer endpoint") },
+                    label = { Text(desktopText("Manual peer endpoint")) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
                 Button(onClick = onRememberEndpoint, enabled = linkManualEndpoint.isNotBlank()) {
-                    Text("Remember endpoint")
+                    Text(desktopText("Remember endpoint"))
                 }
             }
         }
 
         if (linkState != null) {
-            DesktopSectionCard(title = "Trusted StudyFlow peers") {
+            DesktopSectionCard(title = desktopText("Trusted StudyFlow peers")) {
                 if (linkState.trustedPeers.isEmpty()) {
-                    Text("No trusted peers yet.")
+                    Text(desktopText("No trusted peers yet."))
                 } else {
                     linkState.trustedPeers.forEach { peer ->
                         Text(
@@ -392,17 +410,17 @@ fun DesktopSettingsScreen(
                         Text("${peer.endpointCount} remembered endpoint(s) • ${peer.deviceId}")
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(onClick = { onRevokePeer(peer.deviceId) }, enabled = peer.trusted) {
-                                Text("Revoke")
+                                Text(desktopText("Revoke"))
                             }
-                            Button(onClick = { onForgetPeer(peer.deviceId) }) { Text("Forget") }
+                            Button(onClick = { onForgetPeer(peer.deviceId) }) { Text(desktopText("Forget")) }
                         }
                     }
                 }
             }
 
-            DesktopSectionCard(title = "Discovered StudyFlow peers") {
+            DesktopSectionCard(title = desktopText("Discovered StudyFlow peers")) {
                 if (linkState.discoveredPeers.isEmpty()) {
-                    Text("No active LAN/manual peers discovered.")
+                    Text(desktopText("No active LAN/manual peers discovered."))
                 } else {
                     linkState.discoveredPeers.forEach { peer ->
                         Text("${peer.displayName} • ${peer.clientKind} • ${peer.source}", fontWeight = FontWeight.Bold)
@@ -412,12 +430,12 @@ fun DesktopSettingsScreen(
             }
         }
 
-        DesktopSectionCard(title = "Allowed boundary modules") {
+        DesktopSectionCard(title = desktopText("Allowed boundary modules")) {
             state.boundaryModules.forEach { module -> Text("• $module") }
         }
 
-        DesktopSectionCard(title = "Deferred desktop integrations") {
-            Text("These are intentionally not implemented until native desktop adapters are introduced:")
+        DesktopSectionCard(title = desktopText("Deferred desktop integrations")) {
+            Text(desktopText("These are intentionally not implemented until native desktop adapters are introduced:"))
             state.deferredDesktopIntegrations.forEach { item ->
                 Text("• $item", fontWeight = FontWeight.Bold)
             }

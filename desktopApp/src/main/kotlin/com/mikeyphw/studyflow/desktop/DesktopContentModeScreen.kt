@@ -18,7 +18,7 @@ import com.mikeyphw.studyflow.core.model.StudyContentMode
 fun DesktopContentModeScreen(appState: DesktopAppState) {
     val state = appState.contentModeState()
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        DesktopSectionCard(title = "Content modes") {
+        DesktopSectionCard(title = desktopText("Content modes")) {
             Text("Current mode: ${state.mode.name.replace('_', ' ')}", fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ModeButton("Exam", StudyContentMode.EXAM_PLAN, appState)
@@ -27,21 +27,29 @@ fun DesktopContentModeScreen(appState: DesktopAppState) {
                 ModeButton("Reading", StudyContentMode.READING_STUDY, appState)
                 ModeButton("General", StudyContentMode.GENERAL_SKILL, appState)
             }
-            Text("Mode selection is persisted with the Study Plan and changes the available study workflow.")
+            Text(
+                desktopText(
+                    "Mode selection is persisted with the Study Plan and changes the available study workflow.",
+                ),
+            )
         }
 
         if (state.mode == StudyContentMode.PROGRAMMING_COURSE) {
-            DesktopSectionCard(title = "Programming Course") {
-                Text("Desktop runner executes fixed argument vectors inside the StudyFlow workspace.")
-                Text("Local code runs with your desktop user permissions; no shell command string is interpolated.")
+            DesktopSectionCard(title = desktopText("Programming Course")) {
+                Text(desktopText("Desktop runner executes fixed argument vectors inside the StudyFlow workspace."))
+                Text(
+                    desktopText(
+                        "Local code runs with your desktop user permissions; no shell command string is interpolated.",
+                    ),
+                )
                 if (state.codingExercises.isEmpty()) {
-                    Button(onClick = appState::ensureProgrammingSample) { Text("Create Python sample") }
+                    Button(onClick = appState::ensureProgrammingSample) { Text(desktopText("Create Python sample")) }
                 } else {
                     val exercise = state.codingExercises.first()
                     Text(exercise.title, fontWeight = FontWeight.Bold)
                     Text(exercise.prompt)
                     Text(exercise.starterCode)
-                    OutlinedButton(onClick = appState::runProgrammingExercise) { Text("Run locally") }
+                    OutlinedButton(onClick = appState::runProgrammingExercise) { Text(desktopText("Run locally")) }
                     state.lastProgrammingResult?.let { result ->
                         Text("Runner: ${result.commandLabel}")
                         Text("Exit: ${result.exitCode ?: "n/a"}${if (result.timedOut) " • timed out" else ""}")
@@ -53,20 +61,20 @@ fun DesktopContentModeScreen(appState: DesktopAppState) {
         }
 
         if (state.mode == StudyContentMode.LANGUAGE_DECK) {
-            DesktopSectionCard(title = "Language Deck") {
+            DesktopSectionCard(title = desktopText("Language Deck")) {
                 if (state.languageExpressions.isEmpty()) {
-                    Button(onClick = appState::ensureLanguageSample) { Text("Create idiom sample") }
+                    Button(onClick = appState::ensureLanguageSample) { Text(desktopText("Create idiom sample")) }
                 } else {
                     val expression = state.languageExpressions.first()
                     Text(expression.expression, fontWeight = FontWeight.Bold)
-                    Text("What does this expression mean?")
+                    Text(desktopText("What does this expression mean?"))
                     OutlinedTextField(
                         value = appState.languageReviewAnswerDraft,
                         onValueChange = appState::updateLanguageReviewAnswer,
-                        label = { Text("Answer") },
+                        label = { Text(desktopText("Answer")) },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Button(onClick = appState::submitLanguageReview) { Text("Check answer") }
+                    Button(onClick = appState::submitLanguageReview) { Text(desktopText("Check answer")) }
                     state.languageAttempts.lastOrNull()?.let { attempt ->
                         Text("${attempt.outcome.name.replace('_', ' ')} • ${attempt.scorePercent}%")
                     }
