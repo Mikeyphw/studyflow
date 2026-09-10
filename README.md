@@ -496,3 +496,10 @@ that require `library.import` or workspace writes are rejected before chunk tran
 StudyFlow peers can exchange clipboard/share/import offers and conflict-review decisions through SFLP.
 Phones, desktop, and web can apply imports when they advertise write/import capabilities. TV surfaces
 can preview incoming shared content and conflict summaries, but they reject write/import authority.
+
+### SFLP22/SFLP23 account backup and release validation
+
+StudyFlow peers can now exchange account-recovery and backup-restore handoff metadata through SFLP
+without moving plaintext secrets through the mesh. The final release gate is consolidated as
+`verifySflp22Sflp23AccountBackupValidation`, while intermediate overlays remain intended for
+`--no-validate` application.

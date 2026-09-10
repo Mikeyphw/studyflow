@@ -322,3 +322,72 @@ export class StudyFlowShareImportConflictRuntime {
     return { status: 'resolved', decision }
   }
 }
+
+// SFLP22/SFLP23 account/backup handoff and release validation declarations.
+export type StudyFlowAccountHandoffPurpose = 'device_replacement' | 'desktop_recovery' | 'backup_restore' | 'audit'
+export type StudyFlowBackupRestoreMode = 'dry_run' | 'restore' | 'verify_only'
+export type StudyFlowReleaseValidationStatus = 'planned' | 'passed' | 'failed' | 'skipped'
+
+export interface StudyFlowAccountHandoffOfferEnvelope {
+  handoffId: string
+  workspaceId: string
+  targetDeviceId?: string
+  purpose: StudyFlowAccountHandoffPurpose
+  requiredCapabilities: string[]
+  createdAtEpochMillis: number
+  expiresAtEpochMillis: number
+}
+
+export interface StudyFlowBackupBundleManifestEnvelope {
+  bundleId: string
+  workspaceId: string
+  targetDeviceId?: string
+  totalBytes: number
+  itemCount: number
+  contentSha256: string
+  requiredRestoreCapabilities: string[]
+  createdAtEpochMillis: number
+  expiresAtEpochMillis?: number
+}
+
+export class StudyFlowAccountBackupReleaseRuntime {
+  private readonly handoffs = new Set<string>()
+  private readonly restores = new Set<string>()
+  constructor(private readonly peer: { deviceId?: string; identity?: { deviceId: string; clientKind: string; capabilities: string[] }; capabilities?: string[]; clientKind?: string }) {}
+  localDeviceId(): string | undefined { return this.peer.deviceId ?? this.peer.identity?.deviceId }
+  localCapabilities(): Set<string> { return new Set(this.peer.capabilities ?? this.peer.identity?.capabilities ?? []) }
+  localClientKind(): string | undefined { return this.peer.clientKind ?? this.peer.identity?.clientKind }
+  applyAccountHandoff(delivery: { targetDeviceId: string; sequence: number; offer: StudyFlowAccountHandoffOfferEnvelope }) {
+    if (delivery.targetDeviceId !== this.localDeviceId()) return { status: 'rejected', reason: 'wrong_target' }
+    if (delivery.offer.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
+    if (this.handoffs.has(delivery.offer.handoffId)) return { status: 'duplicate', acknowledgedSequence: delivery.sequence }
+    const caps = this.localCapabilities()
+    if (delivery.offer.requiredCapabilities.some(capability => !caps.has(capability))) return { status: 'rejected', reason: 'missing_capability' }
+    const kind = this.localClientKind()
+    if ((kind === 'android_tv' || kind === 'web_tv') && delivery.offer.purpose !== 'audit') return { status: 'rejected', reason: 'tv_account_handoff_forbidden' }
+    this.handoffs.add(delivery.offer.handoffId)
+    return { status: 'accepted', handoffId: delivery.offer.handoffId, acknowledgedSequence: delivery.sequence }
+  }
+  acceptBackupRestore(plan: { restoreId: string; targetDeviceId: string; mode: StudyFlowBackupRestoreMode; sequence: number; bundle: StudyFlowBackupBundleManifestEnvelope }) {
+    if (plan.targetDeviceId !== this.localDeviceId()) return { status: 'rejected', reason: 'wrong_target' }
+    if (plan.bundle.expiresAtEpochMillis && plan.bundle.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
+    if (this.restores.has(plan.restoreId)) return { status: 'duplicate', acknowledgedSequence: plan.sequence }
+    const kind = this.localClientKind()
+    if ((kind === 'android_tv' || kind === 'web_tv') && plan.mode !== 'verify_only') return { status: 'rejected', reason: 'tv_restore_forbidden' }
+    const caps = this.localCapabilities()
+    if (plan.bundle.requiredRestoreCapabilities.some(capability => !caps.has(capability))) return { status: 'rejected', reason: 'missing_capability' }
+    this.restores.add(plan.restoreId)
+    return { status: 'accepted', restoreId: plan.restoreId, acknowledgedSequence: plan.sequence }
+  }
+  finalReleaseValidationTaskNames(): string[] {
+    return [
+      'verifySflp22Sflp23AccountBackupValidation', 'verifySflp20Sflp21ShareImportConflict',
+      'verifySflp18Sflp19NotificationMediaSync', 'verifySflp16Sflp17ControlInputDelegation',
+      'verifySflp14Sflp15LiveSessionProjection', 'verifySflp12Sflp13WebTvHandoff',
+      'verifySflp10Sflp11WebTvGeneralization', 'verifySflp08Sflp09AndroidDesktopIntegration',
+      'verifySflp06Sflp07TopologyOfflineQueue', 'verifySflp04Sflp05IdentityTransport',
+      'verifySflp02Sflp03JournalReconciliation', 'verifySflp01ProtocolBaseline',
+      ':core:link:test', ':app-tv:testDebugUnitTest', ':desktopApp:test', ':app:testReleaseUnitTest',
+    ]
+  }
+}

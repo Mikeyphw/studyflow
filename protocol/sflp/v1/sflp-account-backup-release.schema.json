@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-account-backup-release.schema.json",
+  "title": "StudyFlow SFLP account backup release messages",
+  "type": "object",
+  "required": [
+    "name",
+    "payload"
+  ],
+  "properties": {
+    "name": {
+      "enum": [
+        "account.handoff_offer",
+        "account.handoff_accept",
+        "account.handoff_reject",
+        "backup.bundle_offer",
+        "backup.restore_plan",
+        "backup.restore_ack",
+        "release.validation_plan",
+        "release.validation_result"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}

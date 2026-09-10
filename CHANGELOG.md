@@ -624,3 +624,10 @@ copy.
 - Added SFLP21 conflict-review open/resolve/ack primitives with one-time monotonic resolution and canonical domain operations.
 - Added Android, Desktop, Android TV, Web, schema, golden vector, and verifier coverage.
 - Repaired Web runtime exports so appended SFLP runtime classes remain CommonJS-compatible for final validation.
+
+## SFLP22-23 — Account backup handoff and release validation consolidation
+
+- Added SFLP22 account handoff offers, acknowledgements, target/capability/TTL guards, and duplicate suppression.
+- Added backup bundle manifests, restore plans, restore acknowledgements, and TV/Web-TV write-restore rejection.
+- Added SFLP23 final release validation plan/result models and a consolidated SFLP verifier chain.
+- Added Android, Desktop, Android TV, Web, protocol schema, golden vector, and verifier coverage.

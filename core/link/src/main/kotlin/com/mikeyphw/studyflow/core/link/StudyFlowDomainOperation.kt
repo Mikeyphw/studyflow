@@ -44,6 +44,10 @@ object StudyFlowDomainOperationTypes {
     const val ConflictTakeRemote = "conflict.take_remote"
     const val ConflictMerged = "conflict.merged"
     const val ConflictSkipped = "conflict.skipped"
+    const val AccountHandoffAccepted = "account.handoff_accepted"
+    const val BackupBundleOffered = "backup.bundle_offered"
+    const val BackupRestorePlanned = "backup.restore_planned"
+    const val ReleaseValidationRecorded = "release.validation_recorded"
 }
 
 @Serializable

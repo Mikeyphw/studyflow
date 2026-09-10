@@ -157,3 +157,14 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Import preview | Yes | Yes | Yes | Yes | Yes |
 | Conflict review | Open/resolve | Open/resolve | Open/resolve | Review/display only | Review/display only |
 | TV write/import authority | Not applicable | Not applicable | Not applicable | Rejected | Rejected |
+
+## SFLP22/SFLP23 account backup and validation capability rows
+
+| Capability | Android | Desktop | Web | Android TV | Web TV |
+| --- | --- | --- | --- | --- | --- |
+| Account handoff ownership | Yes | Yes | Yes | No | No |
+| Account handoff audit | Yes | Yes | Yes | Yes | Yes |
+| Backup export | Yes | Yes | Yes | Yes | No |
+| Backup restore | Yes | Yes | Yes | No | No |
+| Backup preview/verify | Yes | Yes | Yes | Yes | Yes |
+| Final validation plan visibility | Yes | Yes | Yes | Yes | Yes |

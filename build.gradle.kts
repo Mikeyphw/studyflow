@@ -1462,3 +1462,17 @@ tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions") {
             "implementation preferences."
     commandLine("python3", "scripts/verify_tv_roadmap_instructions.py")
 }
+
+tasks.register<Exec>("verifySflp22Sflp23AccountBackupValidation") {
+    group = "verification"
+    description = "Checks SFLP22 account/backup handoff and SFLP23 release validation consolidation."
+    dependsOn(
+        "verifySflp20Sflp21ShareImportConflict",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp22_23_account_backup_validation.py")
+}
+

@@ -156,3 +156,14 @@ supports target-gated `share.import_offer`, `share.import_ack`, `conflict.review
 imports and cannot receive library import or workspace write authority.
 
 Next: SFLP22 account/backup handoff and SFLP23 release validation consolidation.
+
+## SFLP22 + SFLP23 — COMPLETE
+
+SFLP22 account/backup handoff and SFLP23 release validation consolidation are implemented. The mesh
+now supports `account.handoff_offer`, `account.handoff_accept`, `account.handoff_reject`,
+`backup.bundle_offer`, `backup.restore_plan`, `backup.restore_ack`, `release.validation_plan`, and
+`release.validation_result`. TV/Web-TV peers remain audit/preview surfaces and reject ownership or
+write restore authority.
+
+SFLP23 defines the consolidated final validation task chain. Apply this overlay with `--no-validate`
+until the final seal run is requested.

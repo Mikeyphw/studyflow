@@ -336,3 +336,53 @@ class StudyFlowShareImportConflictRuntime {
   }
 }
 exports.StudyFlowShareImportConflictRuntime = StudyFlowShareImportConflictRuntime;
+
+// SFLP22/SFLP23 account/backup handoff and release validation runtime.
+class StudyFlowAccountBackupReleaseRuntime {
+  constructor(peer) {
+    this.peer = peer
+    this.handoffs = new Set()
+    this.restores = new Set()
+  }
+
+  localDeviceId() { return this.peer.deviceId || (this.peer.identity && this.peer.identity.deviceId) }
+  localCapabilities() { return new Set(this.peer.capabilities || (this.peer.identity && this.peer.identity.capabilities) || []) }
+  localClientKind() { return this.peer.clientKind || (this.peer.identity && this.peer.identity.clientKind) }
+
+  applyAccountHandoff(delivery) {
+    if (delivery.targetDeviceId !== this.localDeviceId()) return { status: 'rejected', reason: 'wrong_target' }
+    if (delivery.offer.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
+    if (this.handoffs.has(delivery.offer.handoffId)) return { status: 'duplicate', acknowledgedSequence: delivery.sequence }
+    const caps = this.localCapabilities()
+    if ((delivery.offer.requiredCapabilities || []).some(capability => !caps.has(capability))) return { status: 'rejected', reason: 'missing_capability' }
+    const kind = this.localClientKind()
+    if ((kind === 'android_tv' || kind === 'web_tv') && delivery.offer.purpose !== 'audit') return { status: 'rejected', reason: 'tv_account_handoff_forbidden' }
+    this.handoffs.add(delivery.offer.handoffId)
+    return { status: 'accepted', handoffId: delivery.offer.handoffId, acknowledgedSequence: delivery.sequence }
+  }
+
+  acceptBackupRestore(plan) {
+    if (plan.targetDeviceId !== this.localDeviceId()) return { status: 'rejected', reason: 'wrong_target' }
+    if (plan.bundle.expiresAtEpochMillis && plan.bundle.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
+    if (this.restores.has(plan.restoreId)) return { status: 'duplicate', acknowledgedSequence: plan.sequence }
+    const kind = this.localClientKind()
+    if ((kind === 'android_tv' || kind === 'web_tv') && plan.mode !== 'verify_only') return { status: 'rejected', reason: 'tv_restore_forbidden' }
+    const caps = this.localCapabilities()
+    if ((plan.bundle.requiredRestoreCapabilities || []).some(capability => !caps.has(capability))) return { status: 'rejected', reason: 'missing_capability' }
+    this.restores.add(plan.restoreId)
+    return { status: 'accepted', restoreId: plan.restoreId, acknowledgedSequence: plan.sequence }
+  }
+
+  finalReleaseValidationTaskNames() {
+    return [
+      'verifySflp22Sflp23AccountBackupValidation', 'verifySflp20Sflp21ShareImportConflict',
+      'verifySflp18Sflp19NotificationMediaSync', 'verifySflp16Sflp17ControlInputDelegation',
+      'verifySflp14Sflp15LiveSessionProjection', 'verifySflp12Sflp13WebTvHandoff',
+      'verifySflp10Sflp11WebTvGeneralization', 'verifySflp08Sflp09AndroidDesktopIntegration',
+      'verifySflp06Sflp07TopologyOfflineQueue', 'verifySflp04Sflp05IdentityTransport',
+      'verifySflp02Sflp03JournalReconciliation', 'verifySflp01ProtocolBaseline',
+      ':core:link:test', ':app-tv:testDebugUnitTest', ':desktopApp:test', ':app:testReleaseUnitTest',
+    ]
+  }
+}
+exports.StudyFlowAccountBackupReleaseRuntime = StudyFlowAccountBackupReleaseRuntime;
