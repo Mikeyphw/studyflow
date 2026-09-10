@@ -82,6 +82,7 @@ class DesktopStudyFlowServices(
     val contentModeController = DesktopContentModeController(this, contentModeRepository, workspacePersistence?.root)
     val publicExamController = DesktopPublicExamController(this, publicExamRepository)
     val progressReadinessController = DesktopProgressReadinessController(this, workspacePersistence?.root)
+    val portabilityController = DesktopPortabilityController(this, workspacePersistence?.root)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 

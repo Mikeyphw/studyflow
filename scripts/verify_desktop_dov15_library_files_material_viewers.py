@@ -12,7 +12,7 @@ checks={
  "services":("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowServices.kt",[
   "DesktopLibraryPersistence.open","libraryWorkspaceController","libraryRepository = libraryRepository"]),
  "ui":("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopLibraryScreen.kt",[
-  "Add resource","Import file","Material viewer","Resource detail","DOV23"]),
+  "Add resource","Import file","Material viewer","Resource detail"]),
  "test":("desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopLibraryPersistenceViewerTest.kt",[
   "importedLocalFileAndViewerPersistAcrossRestart","content://studyflow-desktop/","DesktopMaterialViewerKind.TEXT",
   "library-v1.properties","deleteSelectedPermanently"]),
@@ -30,10 +30,14 @@ rows=[
 '| Flashcards | FULL | FULL | FULL | LIMITED | FULL |',
 '| Error Notebook | FULL | FULL | FULL | LIMITED | FULL |',
 '| Library catalog | FULL | FULL | FULL | LIMITED | FULL |',
-'| Full material viewing | FULL | FULL | LIMITED | LIMITED | FULL |',
 ]
 missing=[row for row in rows if row not in cap]
 if missing: raise SystemExit(f"capability matrix missing: {missing}")
+if not any(row in cap for row in (
+    '| Full material viewing | FULL | FULL | LIMITED | LIMITED | FULL |',
+    '| Full material viewing | FULL | FULL | FULL | LIMITED | FULL |',
+)):
+    raise SystemExit("capability matrix lost the DOV15-or-later full-material-viewing state")
 build = (ROOT / "build.gradle.kts").read_text()
 if 'tasks.register<Exec>("verifyDesktopDov15LibraryFilesMaterialViewers")' not in build:
     raise SystemExit("DOV15 Gradle verification task is not registered")

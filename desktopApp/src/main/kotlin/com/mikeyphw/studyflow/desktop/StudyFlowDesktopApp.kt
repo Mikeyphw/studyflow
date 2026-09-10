@@ -75,6 +75,16 @@ fun StudyFlowDesktopApp(
                             onSyncPeers = appState::syncLinkPeers,
                             onRevokePeer = appState::revokeLinkPeer,
                             onForgetPeer = appState::forgetLinkPeer,
+                            portabilityPath = appState.portabilityPathDraft,
+                            portabilityPassword = appState.portabilityPasswordDraft,
+                            portabilityActionMessage = appState.portabilityActionMessage,
+                            onPortabilityPathChanged = appState::updatePortabilityPath,
+                            onPortabilityPasswordChanged = appState::updatePortabilityPassword,
+                            onExportPortable = appState::exportPortableStructure,
+                            onImportPortable = appState::importPortableStructure,
+                            onCreateEncryptedBackup = appState::createEncryptedWorkspaceBackup,
+                            onRestoreEncryptedBackup = appState::restoreEncryptedWorkspaceBackup,
+                            onMigrateWorkspace = appState::migrateDesktopWorkspace,
                         )
                     }
                 }

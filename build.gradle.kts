@@ -994,6 +994,13 @@ tasks.register<Exec>("verifyDesktopDov19ReadinessCoachingReports") {
     commandLine("python3", "scripts/verify_desktop_dov19_readiness_coaching_reports.py")
 }
 
+
+tasks.register<Exec>("verifyDesktopDov20PortabilityBackupMigration") {
+    group = "verification"
+    description = "Verify Desktop DOV20 portable export/import, encrypted backup/restore, and migration"
+    commandLine("python3", "scripts/verify_desktop_dov20_portability_backup_migration.py")
+}
+
 tasks.register("verifyDesktopDov16Dov19Batch") {
     group = "verification"
     description = "Verify Desktop DOV16-DOV19 writing, modes, public exam, and progress batch"

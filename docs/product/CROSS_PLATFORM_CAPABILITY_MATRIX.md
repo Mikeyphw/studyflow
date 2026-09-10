@@ -46,17 +46,18 @@ with this matrix, this matrix owns the current product-state description.
 | Global search | FULL | FULL | LIMITED | MISSING | FULL |
 | Concurso Público workflows | FULL | FULL | FULL | LIMITED | LIMITED |
 | Programming / language content modes | FULL | FULL | FULL | LIMITED | LIMITED |
-| Import / export / portable backup | FULL | FULL | MISSING | HANDOFF | HANDOFF |
+| Import / export / portable backup | FULL | FULL | FULL | HANDOFF | HANDOFF |
 | Optional provider sync | FULL | PLATFORM_SPECIFIC | MISSING | NOT_APPLICABLE | NOT_APPLICABLE |
 | English / pt-BR UI | FULL | FULL | MISSING | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | MISSING | PLATFORM_SPECIFIC | LIMITED |
 | Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
-Desktop DOV08-DOV19 now provide durable workspace, core study workflows, Writing Workspace, persisted
+Desktop DOV08-DOV20 now provide durable workspace, core study workflows, Writing Workspace, persisted
 programming/language/reading/general content-mode workflows with Desktop-native execution where applicable, plus
-shared-engine readiness, coaching, cleanup, exam reports, runbooks and preview-first study sprints. Remaining `LIMITED`/`MISSING` rows are intentional roadmap gaps through DOV24 rather than a blanket
-preview/in-memory qualifier.
+shared-engine readiness, coaching, cleanup, exam reports, runbooks, preview-first study sprints, portable structure
+packages, encrypted full-workspace backup/restore, and explicit workspace migration. Remaining `LIMITED`/`MISSING`
+rows are intentional roadmap gaps through DOV24 rather than a blanket preview/in-memory qualifier.
 
 ## Current connectivity truth
 

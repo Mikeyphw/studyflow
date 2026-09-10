@@ -8,7 +8,7 @@ def req(path,*tokens):
     for token in tokens:
         if token not in text: failures.append(f"{path}: missing {token!r}")
 req("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkspaceStore.kt",
-    "SCHEMA_VERSION = 4", "updateSessions", "writeSession", "readSession")
+    "CURRENT_SCHEMA_VERSION: Int = 4", "updateSessions", "writeSession", "readSession")
 req("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyScheduleRepository.kt",
     "transitionFromSession", "PlannedActivityStatus.IN_PROGRESS")
 req("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudySessionRepository.kt",

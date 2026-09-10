@@ -28,7 +28,14 @@ for label, (name, tokens) in checks.items():
     if missing:
         raise SystemExit(f"{label} missing: {missing}")
 ui = (ROOT / checks["ui"][0]).read_text()
-active = ui[ui.index('DesktopSectionCard(title = "Practice Test execution")'):]
+markers = (
+    'DesktopSectionCard(title = desktopText("Practice Test execution"))',
+    'DesktopSectionCard(title = "Practice Test execution")',
+)
+marker = next((candidate for candidate in markers if candidate in ui), None)
+if marker is None:
+    raise SystemExit("DOV12 Practice Test execution section marker is missing")
+active = ui[ui.index(marker):]
 if 'Text("Answer:' in active:
     raise SystemExit("DOV12 active Practice Test UI leaks the answer key")
 test = (ROOT / checks["test"][0]).read_text()

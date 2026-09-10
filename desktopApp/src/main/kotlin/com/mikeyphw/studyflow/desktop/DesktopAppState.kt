@@ -12,6 +12,7 @@ import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
+import java.nio.file.Path
 import kotlinx.coroutines.runBlocking
 import com.mikeyphw.studyflow.core.model.ThemeMode
 
@@ -139,6 +140,13 @@ class DesktopAppState(
     var progressActionMessage: String by mutableStateOf("")
         private set
 
+    var portabilityPathDraft: String by mutableStateOf("")
+        private set
+    var portabilityPasswordDraft: String by mutableStateOf("")
+        private set
+    var portabilityActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -249,6 +257,7 @@ class DesktopAppState(
         }
         services.setLanguage(next)
     }
+
 
     fun dashboardState(): DesktopDashboardState = services.createDashboardState()
 
@@ -620,6 +629,44 @@ class DesktopAppState(
         runCatching { services.progressReadinessController.exportCurrentExamReport() }
             .onSuccess { path -> progressActionMessage = "Exam report saved to $path" }
             .onFailure { error -> progressActionMessage = error.message.orEmpty() }
+    }
+
+    fun updatePortabilityPath(value: String) { portabilityPathDraft = value }
+
+    fun updatePortabilityPassword(value: String) { portabilityPasswordDraft = value }
+
+    fun exportPortableStructure() = runPortabilityAction("Portable Study Plan exported") {
+        val destination = Path.of(portabilityPathDraft.trim())
+        services.portabilityController.exportPortableStructure(destination)
+    }
+
+    fun importPortableStructure() = runPortabilityAction("Portable Study Plan imported") {
+        services.portabilityController.importPortableStructure(Path.of(portabilityPathDraft.trim()))
+    }
+
+    fun createEncryptedWorkspaceBackup() = runPortabilityAction("Encrypted Desktop backup created") {
+        services.portabilityController.createEncryptedWorkspaceBackup(
+            Path.of(portabilityPathDraft.trim()),
+            portabilityPasswordDraft.toCharArray(),
+        )
+    }
+
+    fun restoreEncryptedWorkspaceBackup() = runPortabilityAction("Workspace restored; restart StudyFlow") {
+        services.portabilityController.restoreEncryptedWorkspaceBackup(
+            Path.of(portabilityPathDraft.trim()),
+            portabilityPasswordDraft.toCharArray(),
+        )
+    }
+
+    fun migrateDesktopWorkspace() = runPortabilityAction("Desktop workspace schema migrated") {
+        services.portabilityController.migrateWorkspaceSchema()
+    }
+
+    private fun runPortabilityAction(success: String, action: () -> Any?) {
+        portabilityActionMessage = runCatching(action).fold(
+            onSuccess = { success },
+            onFailure = { error -> error.message.orEmpty() },
+        )
     }
 
     fun searchState(): DesktopSearchScreenState = services.createSearchState(searchQuery)

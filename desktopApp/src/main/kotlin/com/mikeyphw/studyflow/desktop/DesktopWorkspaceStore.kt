@@ -134,6 +134,12 @@ class DesktopWorkspacePersistence private constructor(
         persistLocked()
     }
 
+    /** Rewrites any supported legacy workspace schema using the current DOV20 schema. */
+    @Synchronized
+    fun rewriteCurrentSchema() {
+        persistLocked()
+    }
+
     @Synchronized
     private fun persistLocked() {
         Files.createDirectories(root)
@@ -154,6 +160,7 @@ class DesktopWorkspacePersistence private constructor(
     }
 
     companion object {
+        const val CURRENT_SCHEMA_VERSION: Int = 4
         private const val WORKSPACE_FILE = "workspace-v1.properties"
 
         fun open(
@@ -189,7 +196,7 @@ fun defaultDesktopWorkspaceRoot(): Path {
 }
 
 private object DesktopWorkspacePropertiesCodec {
-    private const val SCHEMA_VERSION = 4
+    private const val SCHEMA_VERSION = DesktopWorkspacePersistence.CURRENT_SCHEMA_VERSION
 
     fun write(snapshot: DesktopWorkspaceSnapshot, output: OutputStream) {
         val properties = Properties()

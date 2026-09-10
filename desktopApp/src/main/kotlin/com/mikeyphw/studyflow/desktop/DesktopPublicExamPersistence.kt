@@ -124,6 +124,35 @@ class DesktopPublicExamRepository(
 
     fun current(): DesktopPublicExamSnapshot = state.value
 
+    fun importPortableStructure(
+        planId: StudyPlanId,
+        documents: List<LegislationDocument>,
+        provisions: List<LegislationProvision>,
+        cycles: List<StudyCycle>,
+        cycleItems: List<StudyCycleItem>,
+    ) {
+        require(documents.all { it.studyPlanId == planId }) { "Legislation documents belong to another Study Plan." }
+        require(provisions.all { it.studyPlanId == planId }) { "Legislation provisions belong to another Study Plan." }
+        require(cycles.all { it.studyPlanId == planId }) { "Study cycles belong to another Study Plan." }
+        require(cycleItems.all { it.studyPlanId == planId }) { "Study cycle items belong to another Study Plan." }
+        val documentIds = documents.mapTo(linkedSetOf(), LegislationDocument::id)
+        require(provisions.all { it.legislationDocumentId in documentIds }) {
+            "Portable legislation provision references a missing document."
+        }
+        val cycleIds = cycles.mapTo(linkedSetOf(), StudyCycle::id)
+        require(cycleItems.all { it.studyCycleId in cycleIds }) {
+            "Portable study-cycle item references a missing cycle."
+        }
+        mutate { snapshot ->
+            snapshot.copy(
+                legislationDocuments = snapshot.legislationDocuments.filterNot { it.studyPlanId == planId } + documents,
+                legislationProvisions = snapshot.legislationProvisions.filterNot { it.studyPlanId == planId } + provisions,
+                studyCycles = snapshot.studyCycles.filterNot { it.studyPlanId == planId } + cycles,
+                studyCycleItems = snapshot.studyCycleItems.filterNot { it.studyPlanId == planId } + cycleItems,
+            )
+        }
+    }
+
     override fun observeExamNoticeRevisions(planId: StudyPlanId): Flow<List<ExamNoticeRevision>> =
         state.map { snapshot ->
             snapshot.revisions

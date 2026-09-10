@@ -13,6 +13,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
@@ -244,8 +245,21 @@ fun DesktopSettingsScreen(
     onSyncPeers: () -> Unit,
     onRevokePeer: (String) -> Unit,
     onForgetPeer: (String) -> Unit,
+    portabilityPath: String,
+    portabilityPassword: String,
+    portabilityActionMessage: String,
+    onPortabilityPathChanged: (String) -> Unit,
+    onPortabilityPasswordChanged: (String) -> Unit,
+    onExportPortable: () -> Unit,
+    onImportPortable: () -> Unit,
+    onCreateEncryptedBackup: () -> Unit,
+    onRestoreEncryptedBackup: () -> Unit,
+    onMigrateWorkspace: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+    Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
             DesktopMetricCard(
                 label = "Default plan",
@@ -273,6 +287,53 @@ fun DesktopSettingsScreen(
                 Button(onClick = onCycleTheme) { Text("Cycle theme") }
                 Button(onClick = onCycleLanguage) { Text("Cycle language") }
             }
+        }
+
+        DesktopSectionCard(title = "Portability and encrypted backup") {
+            Text(
+                "Portable .studyplan export/import uses the shared structure schema. " +
+                    "Encrypted workspace backup preserves the complete Desktop workspace.",
+            )
+            OutlinedTextField(
+                value = portabilityPath,
+                onValueChange = onPortabilityPathChanged,
+                label = { Text("Import/export file path") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = portabilityPassword,
+                onValueChange = onPortabilityPasswordChanged,
+                label = { Text("Backup password") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = onExportPortable, enabled = portabilityPath.isNotBlank()) {
+                    Text("Export portable structure")
+                }
+                Button(onClick = onImportPortable, enabled = portabilityPath.isNotBlank()) {
+                    Text("Import portable structure")
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(
+                    onClick = onCreateEncryptedBackup,
+                    enabled = portabilityPath.isNotBlank() && portabilityPassword.length >= 8,
+                ) {
+                    Text("Create encrypted backup")
+                }
+                Button(
+                    onClick = onRestoreEncryptedBackup,
+                    enabled = portabilityPath.isNotBlank() && portabilityPassword.length >= 8,
+                ) {
+                    Text("Restore encrypted backup")
+                }
+                Button(onClick = onMigrateWorkspace) { Text("Migrate workspace schema") }
+            }
+            Text("Restore is rollback-protected and requires an application restart before continuing work.")
+            if (portabilityActionMessage.isNotBlank()) Text(portabilityActionMessage, fontWeight = FontWeight.Bold)
         }
 
         DesktopSectionCard(title = "StudyFlow Link") {

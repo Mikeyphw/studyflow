@@ -33,7 +33,7 @@ for token in (
     "StandardCopyOption.ATOMIC_MOVE",
 ):
     assert token in controller, f"missing DOV19 shared-domain contract: {token}"
-assert controller.count("notes = emptyList()") >= 2
+assert "notes = progressNotes" in controller or controller.count("notes = emptyList()") >= 2
 
 # Kotlin compile guards for report rendering. Nested escaped quote literals inside string-template
 # expressions caused DOV19 v1 to fail compileKotlin; keep formatting in a typed helper instead.
@@ -52,8 +52,8 @@ assert "onExportReport = appState::exportExamReport" in text["app"]
 assert "Progress / analytics | FULL | FULL | FULL" in text["matrix"]
 remaining = json.loads(text["remaining"])
 desktop = next(item for item in remaining["remaining_tracks"] if item["id"] == "DOV08-DOV24")
-assert desktop["status"] == "in_progress"
-assert desktop["completed_through"] == "DOV19"
+assert desktop["status"] in {"in_progress", "complete"}
+assert int(desktop["completed_through"].removeprefix("DOV")) >= 19
 for gradle_key in ("root_gradle", "desktop_gradle"):
     assert "verifyDesktopDov19ReadinessCoachingReports" in text[gradle_key]
     assert "verifyDesktopDov16Dov19Batch" in text[gradle_key]

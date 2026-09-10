@@ -4,7 +4,7 @@ import re
 root = Path(__file__).resolve().parents[1]
 failures=[]
 workspace_text=(root / "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkspaceStore.kt").read_text()
-schema_match=re.search(r"SCHEMA_VERSION\s*=\s*(\d+)", workspace_text)
+schema_match = re.search(r"(?:CURRENT_SCHEMA_VERSION|SCHEMA_VERSION)\s*(?::\s*Int)?\s*=\s*(\d+)", workspace_text)
 if not schema_match or int(schema_match.group(1)) < 2:
     failures.append("DesktopWorkspaceStore schema must be >= 2")
 def req(path,*tokens):
