@@ -24,6 +24,7 @@ class InMemoryStudyScheduleRepository(
     strategies: List<StudyStrategy>,
     scheduleRules: List<ScheduleRule>,
     plannedActivities: List<PlannedActivity>,
+    private val onChanged: (List<StudyStrategy>, List<ScheduleRule>, List<PlannedActivity>) -> Unit = { _, _, _ -> },
 ) : StudyScheduleRepository {
     private val strategyState = MutableStateFlow(strategies)
     private val ruleState = MutableStateFlow(scheduleRules)
@@ -41,6 +42,7 @@ class InMemoryStudyScheduleRepository(
 
     override suspend fun upsertStrategy(strategy: StudyStrategy): StudyStrategy = mutationMutex.withLock {
         strategyState.value = strategyState.value.filterNot { it.id == strategy.id } + strategy
+        persist()
         strategy
     }
 
@@ -50,6 +52,7 @@ class InMemoryStudyScheduleRepository(
             .plus(rule)
         planner.validateRules(candidateRules)
         ruleState.value = ruleState.value.filterNot { it.id == rule.id } + rule
+        persist()
         rule
     }
 
@@ -68,6 +71,7 @@ class InMemoryStudyScheduleRepository(
                 activity.status in RuleDeletionStatuses
         }
         ruleState.value = ruleState.value.filterNot { rule -> rule.studyPlanId == planId && rule.id == ruleId }
+        persist()
     }
 
     override suspend fun upsertPlannedActivity(activity: PlannedActivity): PlannedActivity = mutationMutex.withLock {
@@ -79,6 +83,7 @@ class InMemoryStudyScheduleRepository(
             "An in-progress activity is owned by its active Study Session and cannot be edited independently."
         }
         activityState.value = activityState.value.filterNot { it.id == activity.id } + activity
+        persist()
         activity
     }
 
@@ -104,6 +109,7 @@ class InMemoryStudyScheduleRepository(
         activityState.value = activityState.value.map { existing ->
             if (existing.studyPlanId == planId && existing.id == activityId) updated else existing
         }
+        persist()
         updated
     }
 
@@ -118,6 +124,7 @@ class InMemoryStudyScheduleRepository(
             activityState.value = activityState.value.filterNot { activity ->
                 activity.studyPlanId == planId && activity.id == activityId
             }
+            persist()
         }
 
     override suspend fun replaceUnlockedActivities(
@@ -131,6 +138,7 @@ class InMemoryStudyScheduleRepository(
         activityState.value = activityState.value
             .filterNot { activity -> activity in replaceable }
             .let { retained -> upsertAll(retained, activities) }
+        persist()
         replaceable.size
     }
 
@@ -165,6 +173,7 @@ class InMemoryStudyScheduleRepository(
         }
 
         activityState.value = retained.filterNot { it.studyPlanId == planId } + working
+        persist()
         ScheduleGenerationResult(
             generatedActivities = applied,
             removedUnlockedActivities = replaceable.size,
@@ -225,6 +234,7 @@ class InMemoryStudyScheduleRepository(
             mutations.forEach { (_, proposed) -> planner.validateCandidate(proposed, finalActivities, rules) }
 
             activityState.value = activityState.value.filterNot { it.studyPlanId == planId } + finalActivities
+            persist()
             mutations.size
         }
 
@@ -262,7 +272,15 @@ class InMemoryStudyScheduleRepository(
         }
 
         activityState.value = activityState.value.filterNot { it.studyPlanId == planId } + proposedById.values
+        persist()
         mutations.size
+    }
+
+    suspend fun purgePlan(planId: StudyPlanId) = mutationMutex.withLock {
+        strategyState.value = strategyState.value.filterNot { it.studyPlanId == planId }
+        ruleState.value = ruleState.value.filterNot { it.studyPlanId == planId }
+        activityState.value = activityState.value.filterNot { it.studyPlanId == planId }
+        persist()
     }
 
     fun currentSchedule(planId: StudyPlanId): StudySchedule = StudySchedule(
@@ -300,6 +318,12 @@ class InMemoryStudyScheduleRepository(
             status == expected.status &&
             plannedDurationMinutes == expected.plannedDurationMinutes &&
             scheduledStartEpochMillis == expected.scheduledStartEpochMillis
+
+    fun currentStrategies(): List<StudyStrategy> = strategyState.value
+
+    private fun persist() {
+        onChanged(strategyState.value, ruleState.value, activityState.value)
+    }
 
     private companion object {
         val IndependentlyMutableStatuses = setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED)

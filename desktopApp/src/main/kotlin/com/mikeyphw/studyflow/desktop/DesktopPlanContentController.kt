@@ -27,6 +27,7 @@ class DesktopPlanContentController(
     private val preferencesStore: DesktopPreferencesStore,
     private val managePlan: ManageStudyPlan,
     private val manageContent: ManageStudyContent,
+    private val scheduleRepository: InMemoryStudyScheduleRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
@@ -99,6 +100,7 @@ class DesktopPlanContentController(
 
     suspend fun deleteSelectedPermanently() {
         val selected = requireNotNull(state().selectedPlan) { "No Study Plan is selected." }
+        scheduleRepository?.purgePlan(selected.id)
         contentRepository.purgePlan(selected.id)
         managePlan.deletePermanently(selected.id)
         preferencesStore.setDefaultPlan(planRepository.currentPlans().firstOrNull()?.id)

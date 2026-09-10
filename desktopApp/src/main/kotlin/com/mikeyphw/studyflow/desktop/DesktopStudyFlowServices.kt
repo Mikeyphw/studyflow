@@ -48,7 +48,9 @@ class DesktopStudyFlowServices(
         preferencesStore = preferencesStore,
         managePlan = manageStudyPlan,
         manageContent = manageStudyContent,
+        scheduleRepository = scheduleRepository,
     )
+    val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 
@@ -266,9 +268,12 @@ fun createDesktopStudyFlowServices(
         annexes = sample.annexes,
     )
     val scheduleRepository = InMemoryStudyScheduleRepository(
-        strategies = sample.strategies,
-        scheduleRules = sample.scheduleRules,
-        plannedActivities = sample.plannedActivities,
+        strategies = persisted?.strategies ?: sample.strategies,
+        scheduleRules = persisted?.scheduleRules ?: sample.scheduleRules,
+        plannedActivities = persisted?.plannedActivities ?: sample.plannedActivities,
+        onChanged = { strategies, rules, activities ->
+            workspacePersistence?.updateSchedule(strategies, rules, activities)
+        },
     )
     val sessionRepository = InMemoryStudySessionRepository(sample.sessions)
     val practiceRepository = InMemoryStudyPracticeRepository(

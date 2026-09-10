@@ -22,13 +22,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DesktopPlannerScreen(state: DesktopPlannerScreenState) {
+fun DesktopPlannerScreen(appState: DesktopAppState) {
+    val state = appState.plannerState()
+    val authoring = appState.plannerAuthoringState()
     if (state.status == DesktopScreenStatus.EMPTY) {
         DesktopStateMessage(
             title = "No planner data yet",
-            message = "The desktop schedule/session boundary is ready, but no activities are available.",
+            message = "Add a rule or activity to begin authoring this Study Plan's schedule.",
         )
-        return
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -53,6 +54,40 @@ fun DesktopPlannerScreen(state: DesktopPlannerScreenState) {
             )
         }
 
+        DesktopSectionCard(title = "Author schedule") {
+            androidx.compose.material.OutlinedTextField(
+                value = appState.plannerActivityTitleDraft,
+                onValueChange = appState::updatePlannerActivityTitle,
+                label = { Text("Activity title") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material.Button(onClick = appState::ensurePlannerStrategy) {
+                    Text("Adaptive strategy")
+                }
+                androidx.compose.material.OutlinedButton(onClick = appState::addPlannerRule) {
+                    Text("Add Mon 18:00 block")
+                }
+                androidx.compose.material.OutlinedButton(onClick = appState::addPlannerActivity) {
+                    Text("Add activity")
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material.OutlinedButton(onClick = appState::generatePlannerWeek) {
+                    Text("Generate 7 days")
+                }
+                androidx.compose.material.OutlinedButton(onClick = appState::applyPlannerAdaptivePreview) {
+                    Text("Apply adaptive preview")
+                }
+                androidx.compose.material.OutlinedButton(onClick = appState::rebalancePlannerMissed) {
+                    Text("Rebalance missed")
+                }
+            }
+            Text("Rules: ${authoring.rules.size} • Strategy: ${authoring.strategy?.type?.name ?: "none"}")
+            Text(authoring.adaptivePreview?.actionSummary ?: "No adaptive preview available")
+            if (appState.plannerActionMessage.isNotBlank()) Text(appState.plannerActionMessage)
+        }
+
         state.activeSession?.let { session ->
             DesktopSectionCard(title = "Active session") {
                 Text(session.title, fontWeight = FontWeight.Bold)
@@ -61,20 +96,15 @@ fun DesktopPlannerScreen(state: DesktopPlannerScreenState) {
         }
 
         DesktopSectionCard(title = "Planner") {
-            DesktopScrollableList(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.55f)) {
-                items(state.plannedActivities) { activity ->
-                    DesktopActivityRow(activity)
-                }
+            DesktopScrollableList(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.42f)) {
+                items(state.plannedActivities) { activity -> DesktopActivityRow(activity) }
             }
         }
 
         DesktopSectionCard(title = "Recent sessions") {
-            if (state.recentSessions.isEmpty()) {
-                Text("No sessions have been recorded yet.")
-            } else {
-                state.recentSessions.forEach { session ->
-                    Text("• ${session.title}: ${session.statusLabel}, ${session.durationLabel}, ${session.scoreLabel}")
-                }
+            if (state.recentSessions.isEmpty()) Text("No sessions have been recorded yet.")
+            else state.recentSessions.forEach { session ->
+                Text("• ${session.title}: ${session.statusLabel}, ${session.durationLabel}, ${session.scoreLabel}")
             }
         }
     }

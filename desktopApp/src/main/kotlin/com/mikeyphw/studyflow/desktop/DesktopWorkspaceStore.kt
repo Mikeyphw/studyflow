@@ -9,11 +9,23 @@ import com.mikeyphw.studyflow.core.model.ExamStageType
 import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.StudyTargetId
+import com.mikeyphw.studyflow.core.model.PlannedActivity
+import com.mikeyphw.studyflow.core.model.PlannedActivityId
+import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.ScheduleRule
+import com.mikeyphw.studyflow.core.model.ScheduleRuleId
+import com.mikeyphw.studyflow.core.model.ScheduleRuleType
+import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudyType
+import com.mikeyphw.studyflow.core.model.StudyStrategy
+import com.mikeyphw.studyflow.core.model.StudyStrategyId
+import com.mikeyphw.studyflow.core.model.StudyStrategyType
+import com.mikeyphw.studyflow.core.model.StudyMaterialId
+import com.mikeyphw.studyflow.core.model.VideoResourceId
 import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.ThemeMode
@@ -36,6 +48,9 @@ data class DesktopWorkspaceSnapshot(
     val examStages: List<ExamStage> = emptyList(),
     val subjects: List<Subject> = emptyList(),
     val topics: List<Topic> = emptyList(),
+    val strategies: List<StudyStrategy> = emptyList(),
+    val scheduleRules: List<ScheduleRule> = emptyList(),
+    val plannedActivities: List<PlannedActivity> = emptyList(),
 ) {
     companion object {
         fun seed(sample: DesktopStudyFlowSampleData): DesktopWorkspaceSnapshot = DesktopWorkspaceSnapshot(
@@ -47,6 +62,9 @@ data class DesktopWorkspaceSnapshot(
             ),
             subjects = sample.subjects,
             topics = sample.topics,
+            strategies = sample.strategies,
+            scheduleRules = sample.scheduleRules,
+            plannedActivities = sample.plannedActivities,
         )
     }
 }
@@ -87,6 +105,20 @@ class DesktopWorkspacePersistence private constructor(
             examStages = examStages.toList(),
             subjects = subjects.toList(),
             topics = topics.toList(),
+        )
+        persistLocked()
+    }
+
+    @Synchronized
+    fun updateSchedule(
+        strategies: List<StudyStrategy>,
+        scheduleRules: List<ScheduleRule>,
+        plannedActivities: List<PlannedActivity>,
+    ) {
+        snapshot = snapshot.copy(
+            strategies = strategies.toList(),
+            scheduleRules = scheduleRules.toList(),
+            plannedActivities = plannedActivities.toList(),
         )
         persistLocked()
     }
@@ -146,7 +178,7 @@ fun defaultDesktopWorkspaceRoot(): Path {
 }
 
 private object DesktopWorkspacePropertiesCodec {
-    private const val SCHEMA_VERSION = 2
+    private const val SCHEMA_VERSION = 3
 
     fun write(snapshot: DesktopWorkspaceSnapshot, output: OutputStream) {
         val properties = Properties()
@@ -176,6 +208,14 @@ private object DesktopWorkspacePropertiesCodec {
         snapshot.subjects.forEachIndexed { index, subject -> writeSubject(properties, "subject.$index", subject) }
         properties["topic.count"] = snapshot.topics.size.toString()
         snapshot.topics.forEachIndexed { index, topic -> writeTopic(properties, "topic.$index", topic) }
+        properties["strategy.count"] = snapshot.strategies.size.toString()
+        snapshot.strategies.forEachIndexed { index, strategy -> writeStrategy(properties, "strategy.$index", strategy) }
+        properties["rule.count"] = snapshot.scheduleRules.size.toString()
+        snapshot.scheduleRules.forEachIndexed { index, rule -> writeRule(properties, "rule.$index", rule) }
+        properties["activity.count"] = snapshot.plannedActivities.size.toString()
+        snapshot.plannedActivities.forEachIndexed { index, activity ->
+            writeActivity(properties, "activity.$index", activity)
+        }
         properties.store(output, "StudyFlow Desktop workspace schema v$SCHEMA_VERSION")
     }
 
@@ -217,7 +257,18 @@ private object DesktopWorkspacePropertiesCodec {
         val topics = if (version >= 2) {
             List(properties.optionalInt("topic.count") ?: 0) { index -> readTopic(properties, "topic.$index") }
         } else seed.topics.filter { it.studyPlanId in planIds }
-        return DesktopWorkspaceSnapshot(plans, settings, preferences, targets, stages, subjects, topics)
+        val strategies = if (version >= 3) {
+            List(properties.optionalInt("strategy.count") ?: 0) { index -> readStrategy(properties, "strategy.$index") }
+        } else seed.strategies.filter { it.studyPlanId in planIds }
+        val rules = if (version >= 3) {
+            List(properties.optionalInt("rule.count") ?: 0) { index -> readRule(properties, "rule.$index") }
+        } else seed.scheduleRules.filter { it.studyPlanId in planIds }
+        val activities = if (version >= 3) {
+            List(properties.optionalInt("activity.count") ?: 0) { index -> readActivity(properties, "activity.$index") }
+        } else seed.plannedActivities.filter { it.studyPlanId in planIds }
+        return DesktopWorkspaceSnapshot(
+            plans, settings, preferences, targets, stages, subjects, topics, strategies, rules, activities,
+        )
     }
 
     private fun writePlan(properties: Properties, prefix: String, plan: StudyPlan) {
@@ -276,6 +327,92 @@ private object DesktopWorkspacePropertiesCodec {
         quietHoursStartMinute = properties.optionalInt("$prefix.quietHoursStartMinute"),
         quietHoursEndMinute = properties.optionalInt("$prefix.quietHoursEndMinute"),
         configurationJson = properties.required("$prefix.configurationJson"),
+    )
+
+    private fun writeStrategy(properties: Properties, prefix: String, strategy: StudyStrategy) {
+        properties["$prefix.id"] = strategy.id.value
+        properties["$prefix.planId"] = strategy.studyPlanId.value
+        properties["$prefix.type"] = strategy.type.name
+        properties["$prefix.min"] = strategy.minimumSessionMinutes.toString()
+        properties["$prefix.max"] = strategy.maximumSessionMinutes.toString()
+        properties["$prefix.theory"] = strategy.theoryRatioPercent.toString()
+        properties["$prefix.questions"] = strategy.questionRatioPercent.toString()
+        properties["$prefix.review"] = strategy.reviewRatioPercent.toString()
+        properties["$prefix.adaptive"] = strategy.adaptivePlanningEnabled.toString()
+        properties["$prefix.configurationJson"] = strategy.configurationJson
+    }
+
+    private fun readStrategy(properties: Properties, prefix: String): StudyStrategy = StudyStrategy(
+        id = StudyStrategyId(properties.required("$prefix.id")),
+        studyPlanId = StudyPlanId(properties.required("$prefix.planId")),
+        type = StudyStrategyType.valueOf(properties.required("$prefix.type")),
+        minimumSessionMinutes = properties.requiredInt("$prefix.min"),
+        maximumSessionMinutes = properties.requiredInt("$prefix.max"),
+        theoryRatioPercent = properties.requiredInt("$prefix.theory"),
+        questionRatioPercent = properties.requiredInt("$prefix.questions"),
+        reviewRatioPercent = properties.requiredInt("$prefix.review"),
+        adaptivePlanningEnabled = properties.requiredBoolean("$prefix.adaptive"),
+        configurationJson = properties.required("$prefix.configurationJson"),
+    )
+
+    private fun writeRule(properties: Properties, prefix: String, rule: ScheduleRule) {
+        properties["$prefix.id"] = rule.id.value
+        properties["$prefix.planId"] = rule.studyPlanId.value
+        rule.subjectId?.let { properties["$prefix.subjectId"] = it.value }
+        properties["$prefix.type"] = rule.type.name
+        rule.dayOfWeek?.let { properties["$prefix.dayOfWeek"] = it.toString() }
+        rule.startMinuteOfDay?.let { properties["$prefix.startMinuteOfDay"] = it.toString() }
+        properties["$prefix.durationMinutes"] = rule.durationMinutes.toString()
+        rule.recurrenceRule?.let { properties["$prefix.recurrenceRule"] = it }
+        properties["$prefix.locked"] = rule.locked.toString()
+        properties["$prefix.enabled"] = rule.enabled.toString()
+        properties["$prefix.position"] = rule.position.toString()
+    }
+
+    private fun readRule(properties: Properties, prefix: String): ScheduleRule = ScheduleRule(
+        id = ScheduleRuleId(properties.required("$prefix.id")),
+        studyPlanId = StudyPlanId(properties.required("$prefix.planId")),
+        subjectId = properties.getProperty("$prefix.subjectId")?.let(::SubjectId),
+        type = ScheduleRuleType.valueOf(properties.required("$prefix.type")),
+        dayOfWeek = properties.optionalInt("$prefix.dayOfWeek"),
+        startMinuteOfDay = properties.optionalInt("$prefix.startMinuteOfDay"),
+        durationMinutes = properties.requiredInt("$prefix.durationMinutes"),
+        recurrenceRule = properties.getProperty("$prefix.recurrenceRule"),
+        locked = properties.requiredBoolean("$prefix.locked"),
+        enabled = properties.requiredBoolean("$prefix.enabled"),
+        position = properties.requiredInt("$prefix.position"),
+    )
+
+    private fun writeActivity(properties: Properties, prefix: String, activity: PlannedActivity) {
+        properties["$prefix.id"] = activity.id.value
+        properties["$prefix.planId"] = activity.studyPlanId.value
+        activity.subjectId?.let { properties["$prefix.subjectId"] = it.value }
+        activity.topicId?.let { properties["$prefix.topicId"] = it.value }
+        activity.materialId?.let { properties["$prefix.materialId"] = it.value }
+        activity.videoResourceId?.let { properties["$prefix.videoId"] = it.value }
+        properties["$prefix.type"] = activity.type.name
+        properties["$prefix.title"] = activity.title
+        activity.scheduledStartEpochMillis?.let { properties["$prefix.start"] = it.toString() }
+        properties["$prefix.duration"] = activity.plannedDurationMinutes.toString()
+        properties["$prefix.status"] = activity.status.name
+        properties["$prefix.locked"] = activity.locked.toString()
+        activity.completedAtEpochMillis?.let { properties["$prefix.completedAt"] = it.toString() }
+    }
+
+    private fun readActivity(properties: Properties, prefix: String): PlannedActivity = PlannedActivity(
+        id = PlannedActivityId(properties.required("$prefix.id")),
+        studyPlanId = StudyPlanId(properties.required("$prefix.planId")),
+        subjectId = properties.getProperty("$prefix.subjectId")?.let(::SubjectId),
+        topicId = properties.getProperty("$prefix.topicId")?.let(::TopicId),
+        materialId = properties.getProperty("$prefix.materialId")?.let(::StudyMaterialId),
+        videoResourceId = properties.getProperty("$prefix.videoId")?.let(::VideoResourceId),
+        type = StudyActivityType.valueOf(properties.required("$prefix.type")),
+        title = properties.required("$prefix.title"),
+        scheduledStartEpochMillis = properties.optionalLong("$prefix.start"),
+        plannedDurationMinutes = properties.requiredInt("$prefix.duration"),
+        status = PlannedActivityStatus.valueOf(properties.required("$prefix.status")),
+        locked = properties.requiredBoolean("$prefix.locked"),
+        completedAtEpochMillis = properties.optionalLong("$prefix.completedAt"),
     )
 
     private fun writeTarget(properties: Properties, prefix: String, target: StudyTarget) {

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 root = Path(__file__).resolve().parents[1]
 failures=[]
+workspace_text=(root / "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkspaceStore.kt").read_text()
+schema_match=re.search(r"SCHEMA_VERSION\s*=\s*(\d+)", workspace_text)
+if not schema_match or int(schema_match.group(1)) < 2:
+    failures.append("DesktopWorkspaceStore schema must be >= 2")
 def req(path,*tokens):
     text=(root/path).read_text()
     for token in tokens:
@@ -14,7 +19,7 @@ req("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlanConten
 req("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlanContentScreen.kt",
     "Study Plans", "Subjects", "Topics")
 req("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkspaceStore.kt",
-    "SCHEMA_VERSION = 2", "version in 1..SCHEMA_VERSION", "updateContent")
+"version in 1..SCHEMA_VERSION", "updateContent")
 req("desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlanContentLifecycleTest.kt",
     "PersistsAcrossRestart", "deletingSubjectCascades", "archivedPlanRejectsContentMutation")
 req(".devtool.toml", '"verifyDesktopDov09PlanContentLifecycle"')

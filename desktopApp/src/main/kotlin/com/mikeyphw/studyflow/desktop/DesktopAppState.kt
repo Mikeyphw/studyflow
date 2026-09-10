@@ -41,6 +41,12 @@ class DesktopAppState(
     var structureActionMessage: String by mutableStateOf("")
         private set
 
+    var plannerActivityTitleDraft: String by mutableStateOf("")
+        private set
+
+    var plannerActionMessage: String by mutableStateOf("")
+        private set
+
     var linkQrInput: String by mutableStateOf("")
         private set
 
@@ -157,6 +163,43 @@ class DesktopAppState(
     fun libraryState(): DesktopLibraryScreenState = services.createLibraryState()
 
     fun plannerState(): DesktopPlannerScreenState = services.createPlannerState()
+
+    fun plannerAuthoringState(): DesktopPlannerAuthoringState = services.plannerAuthoringController.state()
+
+    fun updatePlannerActivityTitle(value: String) {
+        plannerActivityTitleDraft = value
+    }
+
+    fun ensurePlannerStrategy() = runPlannerAction("Adaptive strategy ready") {
+        services.plannerAuthoringController.ensureAdaptiveStrategy()
+    }
+
+    fun addPlannerRule() = runPlannerAction("Recurring study block added") {
+        services.plannerAuthoringController.addEveningRule()
+    }
+
+    fun addPlannerActivity() = runPlannerAction("Planned activity added") {
+        services.plannerAuthoringController.addManualActivity(plannerActivityTitleDraft)
+        plannerActivityTitleDraft = ""
+    }
+
+    fun generatePlannerWeek() = runPlannerAction("Seven-day plan generated") {
+        services.plannerAuthoringController.generateSevenDays()
+    }
+
+    fun applyPlannerAdaptivePreview() = runPlannerAction("Adaptive preview applied") {
+        services.plannerAuthoringController.applyAdaptivePreview()
+    }
+
+    fun rebalancePlannerMissed() = runPlannerAction("Missed activities rebalanced") {
+        services.plannerAuthoringController.rebalanceMissed()
+    }
+
+    private fun runPlannerAction(success: String, action: suspend () -> Unit) {
+        runCatching { runBlocking { action() } }
+            .onSuccess { plannerActionMessage = success }
+            .onFailure { plannerActionMessage = it.message.orEmpty() }
+    }
 
     fun practiceState(): DesktopPracticeScreenState = services.createPracticeState()
 

@@ -928,6 +928,13 @@ tasks.register<Exec>("verifyDesktopDov09PlanContentLifecycle") {
 }
 
 
+tasks.register<Exec>("verifyDesktopDov10PlannerAdaptiveWorkflows") {
+    group = "verification"
+    description = "Checks DOV10 persistent planner authoring and adaptive schedule workflows."
+    commandLine("python3", "scripts/verify_desktop_dov10_planner_adaptive_workflows.py")
+}
+
+
 tasks.register<Exec>("verifyCpov05Cpov06PriorityBancaQuestions") {
     group = "verification"
     description = "Checks CPOV05 explainable priority and CPOV06 banca question contracts."
