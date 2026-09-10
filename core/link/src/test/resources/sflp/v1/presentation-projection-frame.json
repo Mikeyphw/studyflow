@@ -1,0 +1,25 @@
+{
+  "messageId": "message-projection-frame",
+  "name": "presentation.projection_frame",
+  "payload": {
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "contentRevision": 2,
+    "cursor": {
+      "positionToken": "slide-2"
+    },
+    "frameId": "frame-2",
+    "payload": {},
+    "projectionId": "projection-main",
+    "sequence": 2,
+    "sourceDeviceId": "desktop-projector",
+    "workspaceId": "workspace-projection"
+  },
+  "protocol": {
+    "major": 1,
+    "minor": 0
+  },
+  "senderDeviceId": "desktop-projector",
+  "sentAtEpochMillis": 6100,
+  "type": "event",
+  "workspaceId": "workspace-projection"
+}

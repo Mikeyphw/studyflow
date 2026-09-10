@@ -138,3 +138,30 @@ exports.StudyFlowWebActivityHandoffController = StudyFlowWebActivityHandoffContr
 
 function installStudyFlowWebSflpPeer(kind = "web") { if (typeof globalThis.localStorage === "undefined")
     return null; const peer = new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(globalThis.localStorage), kind); globalThis.studyFlowSflpPeer = peer; globalThis.dispatchEvent(new CustomEvent("studyflow:sflp-peer-ready", { detail: { deviceId: peer.identity.deviceId, clientKind: peer.identity.clientKind } })); return peer; }
+
+const SFLP14_LIVE_CURSOR_WIRE_NAME = "session.live_cursor";
+const SFLP15_PROJECTION_CONTROL_WIRE_NAME = "presentation.projection_control";
+exports.SFLP14_LIVE_CURSOR_WIRE_NAME = SFLP14_LIVE_CURSOR_WIRE_NAME;
+exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = SFLP15_PROJECTION_CONTROL_WIRE_NAME;
+
+class StudyFlowWebLiveSessionContinuityController {
+    constructor(snapshot) { this.snapshot = snapshot; this.applied = new Set(); }
+    current() { return JSON.parse(JSON.stringify(this.snapshot)); }
+    applyEvent(event) { if (this.applied.has(event.eventId)) return "duplicate"; if (event.sessionEpoch < this.snapshot.sessionEpoch) return "stale_epoch"; if (event.sessionEpoch === this.snapshot.sessionEpoch && event.sequence <= this.snapshot.lastSequence) return "stale_sequence"; if (this.snapshot.state === "completed") return "already_completed"; this.snapshot = { ...this.snapshot, state: event.kind === "paused" ? "paused" : event.kind === "completed" ? "completed" : "running", cursor: event.cursor, lastSequence: event.sequence, sessionEpoch: event.sessionEpoch, completionOperationId: event.completionOperationId ?? this.snapshot.completionOperationId }; this.applied.add(event.eventId); return "applied"; }
+    pause(sourceDeviceId) { return this.event(sourceDeviceId, "paused"); }
+    resume(sourceDeviceId) { return this.event(sourceDeviceId, "resumed"); }
+    complete(sourceDeviceId, completionOperationId) { return this.event(sourceDeviceId, "completed", completionOperationId); }
+    event(sourceDeviceId, kind, completionOperationId) { return { eventId: `live-${kind}-${Date.now()}`, sessionId: this.snapshot.sessionId, workspaceId: this.snapshot.workspaceId, sourceDeviceId, sessionEpoch: this.snapshot.sessionEpoch, sequence: this.snapshot.lastSequence + 1, kind, cursor: this.snapshot.cursor, completionOperationId }; }
+}
+exports.StudyFlowWebLiveSessionContinuityController = StudyFlowWebLiveSessionContinuityController;
+
+class StudyFlowWebPresentationProjectionController {
+    constructor(peer) { this.peer = peer; this.accepted = new Set(); this.frames = {}; }
+    createProjectionOffer(workspaceId, title, contentHash, targetDeviceId) { const now = Date.now(); return { projectionId: `projection-${this.peer.identity.deviceId}-${now}`, workspaceId, sourceDevice: this.peer.identity, targetDeviceId, contentKind: "document", title, contentHash, requiredCapabilities: ["workspace.read", "device.presentation_sink", "video.output"], createdAtEpochMillis: now, expiresAtEpochMillis: now + 120000 }; }
+    acceptProjectionOffer(offer) { if (offer.expiresAtEpochMillis < Date.now()) return false; if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.identity.deviceId) return false; const caps = new Set(this.peer.identity.capabilities); if (offer.requiredCapabilities.some(capability => !caps.has(capability))) return false; if (offer.requiredCapabilities.some(capability => capability.endsWith(".write") || capability === "library.import" || capability === "writing.edit")) return false; this.accepted.add(offer.projectionId); return true; }
+    applyProjectionFrame(frame) { if (!this.accepted.has(frame.projectionId)) return false; const current = this.frames[frame.projectionId]; if (current && frame.sequence <= current.sequence) return false; this.frames[frame.projectionId] = frame; return true; }
+    acknowledgeProjectionFrame(projectionId) { const frame = this.frames[projectionId]; if (!frame) return null; return { projectionId, sinkDeviceId: this.peer.identity.deviceId, acknowledgedFrameId: frame.frameId, acknowledgedSequence: frame.sequence, contentHash: frame.contentHash, acknowledgedAtEpochMillis: Date.now() }; }
+    createProjectionCommand(projectionId, targetDeviceId, kind) { return { type: "presentation.projection_control", commandId: `projection-command-${Date.now()}`, projectionId, sourceDeviceId: this.peer.identity.deviceId, targetDeviceId, kind, issuedAtEpochMillis: Date.now() }; }
+}
+exports.StudyFlowWebPresentationProjectionController = StudyFlowWebPresentationProjectionController;
+

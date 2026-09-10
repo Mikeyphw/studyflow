@@ -471,3 +471,9 @@ Web now boots a persistent local SFLP peer and Android TV now joins the same gen
 StudyFlow Link now supports Web TV receiver connectivity and cross-device activity handoff. Web TV
 uses `studyflow.sflp.web_tv.receiver.v1` receiver offers, while all clients use typed
 `activity.handoff_*` messages for resume/projection without making Android a required hub.
+
+### SFLP14/SFLP15 live continuity and projection
+
+StudyFlow Link now includes live session continuity and universal presentation projection. Sessions carry canonical
+fencing, epochs, ordered events and exactly-once completion through the operation journal. Projection is source/sink
+based across Android, Desktop, Web, Android TV and Web TV with monotonic frames and receiver acknowledgements.

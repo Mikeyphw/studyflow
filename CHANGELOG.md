@@ -597,3 +597,9 @@ copy.
 - Added Web/Web-TV SFLP peer persistence, manual WebSocket endpoints, offline-cache integration, frontiers, queue acknowledgement, QR pairing import, revoke and forget.
 - Added Android TV generic SFLP peer persistence and capability profile over `:core:link` while preserving the TVOV22 phone/TV compatibility adapter.
 - Added contracts and validators for Web runtime parity, Android TV peer generalization, and predecessor SFLP01-SFLP09 continuity.
+
+## SFLP14/SFLP15 - Live session continuity and universal presentation projection
+
+- Added SFLP14 live session snapshots, events, fencing, monotonic replay, duplicate suppression, stale epoch rejection, pause/resume/cursor continuity and exactly-once completion.
+- Added SFLP15 presentation projection offers, monotonic frames, sink acknowledgements, control commands, TV write-capability rejection and universal source/sink semantics.
+- Added Android, Desktop, Android TV and Web bridge/controller coverage plus protocol schema and golden vectors.

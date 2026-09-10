@@ -120,3 +120,10 @@ Applicable domain results must still converge to equivalent StudyFlow state.
 - Web TV now supports receiver QR/code connectivity, projection snapshots and remote D-pad/text input as a generic SFLP peer.
 - Android, Desktop, Web, Android TV and Web TV can publish or accept typed activity handoffs when the target capability set is sufficient.
 - TV-class clients reject write-capability handoffs; mutation truth remains in the journal/reconciliation pipeline.
+
+
+## SFLP14/SFLP15 status
+
+Live session continuity is protocol-backed across Android, Desktop, Web, Android TV and Web TV through fenced epochs,
+monotonic events and exactly-once completion. Universal presentation projection is source/sink based; TV-class
+receivers remain read/presentation/control clients and reject write-capability projection offers.

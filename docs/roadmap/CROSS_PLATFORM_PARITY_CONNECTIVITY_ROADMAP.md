@@ -42,9 +42,9 @@ major functional-parity track; TV clients preserve intentionally narrower 10-foo
 11. **SFLP11 Android TV generalization** — accept any compatible SFLP peer, not just Android phone.
 12. **SFLP12 Web TV integration** — Web TV becomes a true SFLP execution/presentation peer.
 13. **SFLP13 Activity handoff** — continue resumable activities on another capable peer.
-14. **SFLP14 Live session continuity** — one canonical session, one active executor, optional observers/
+14. **SFLP14 Live session continuity** — delivered: one canonical session, one active executor, optional observers/
     controllers, duplicate-proof time/completion accounting.
-15. **SFLP15 Universal presentation** — generalize typed TV projection to any presentation source/sink.
+15. **SFLP15 Universal presentation** — delivered: typed TV projection is generalized to any presentation source/sink.
 16. **SFLP16 Universal remote control** — any trusted control-capable peer can control a presentation sink.
 17. **SFLP17 Input delegation** — request keyboard/text input from another trusted peer.
 18. **SFLP18 Presence** — optional live peer/activity status independent of replication correctness.
@@ -128,3 +128,8 @@ unless that overlay explicitly invokes the repository-wide release gate.
 
 - SFLP12 | Web TV connectivity — delivered: Web TV advertises as `web_tv`, publishes receiver QR/code payloads, accepts projection snapshots, gates remote input by target device and remains a mesh peer rather than a phone-owned spoke.
 - SFLP13 | Activity handoff — delivered: typed handoff offers, accepts, resume events, expiry, one-time consumption, capability checks and TV write-safety are implemented across shared core, Android, Desktop, Android TV and Web/Web TV.
+
+
+### SFLP14/SFLP15 status
+
+SFLP14 live session continuity — delivered. SFLP15 universal presentation projection — delivered.

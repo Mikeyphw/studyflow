@@ -93,3 +93,36 @@ export class StudyFlowWebActivityHandoffController{
 }
 
 export function installStudyFlowWebSflpPeer(kind:SflpClientKind="web"):StudyFlowWebLinkPeer|null{if(typeof globalThis.localStorage==="undefined")return null;const peer=new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(globalThis.localStorage),kind);(globalThis as unknown as {studyFlowSflpPeer?:StudyFlowWebLinkPeer}).studyFlowSflpPeer=peer;globalThis.dispatchEvent(new CustomEvent("studyflow:sflp-peer-ready",{detail:{deviceId:peer.identity.deviceId,clientKind:peer.identity.clientKind}}));return peer;}
+
+export interface SflpLiveSessionCursor{activityId:string;positionToken:string;itemIndex?:number;elapsedMillis:number;answeredCount:number;payloadHash?:string;}
+export interface SflpLiveSessionSnapshot{sessionId:string;workspaceId:string;activityId:string;state:"running"|"paused"|"completed";activeExecutorDeviceId:string;fencingToken:string;sessionEpoch:number;lastSequence:number;cursor:SflpLiveSessionCursor;completionOperationId?:string;}
+export interface SflpLiveSessionEvent{eventId:string;sessionId:string;workspaceId:string;sourceDeviceId:string;sessionEpoch:number;sequence:number;kind:"started"|"joined"|"heartbeat"|"cursor"|"paused"|"resumed"|"answer_recorded"|"completed";cursor:SflpLiveSessionCursor;completionOperationId?:string;}
+export interface SflpPresentationProjectionOffer{projectionId:string;workspaceId:string;sourceDevice:SflpPeerDescriptor;targetDeviceId?:string;contentKind:string;entityId?:string;title:string;contentHash:string;requiredCapabilities:string[];createdAtEpochMillis:number;expiresAtEpochMillis:number;}
+export interface SflpPresentationFrame{projectionId:string;frameId:string;workspaceId:string;sourceDeviceId:string;sequence:number;contentRevision:number;contentHash:string;cursor:{positionToken:string};payload?:Record<string,unknown>;}
+export interface SflpPresentationAck{projectionId:string;sinkDeviceId:string;acknowledgedFrameId:string;acknowledgedSequence:number;contentHash:string;acknowledgedAtEpochMillis:number;}
+
+export const SFLP14_LIVE_CURSOR_WIRE_NAME="session.live_cursor";
+export const SFLP15_PROJECTION_CONTROL_WIRE_NAME="presentation.projection_control";
+
+export class StudyFlowWebLiveSessionContinuityController{
+ private applied=new Set<string>();
+ constructor(private snapshot:SflpLiveSessionSnapshot){ }
+ current():SflpLiveSessionSnapshot{return JSON.parse(JSON.stringify(this.snapshot));}
+ applyEvent(event:SflpLiveSessionEvent):"applied"|"duplicate"|"stale_epoch"|"stale_sequence"|"already_completed"{if(this.applied.has(event.eventId))return"duplicate";if(event.sessionEpoch<this.snapshot.sessionEpoch)return"stale_epoch";if(event.sessionEpoch===this.snapshot.sessionEpoch&&event.sequence<=this.snapshot.lastSequence)return"stale_sequence";if(this.snapshot.state==="completed")return"already_completed";this.snapshot={...this.snapshot,state:event.kind==="paused"?"paused":event.kind==="completed"?"completed":"running",cursor:event.cursor,lastSequence:event.sequence,sessionEpoch:event.sessionEpoch,completionOperationId:event.completionOperationId??this.snapshot.completionOperationId};this.applied.add(event.eventId);return"applied";}
+ pause(sourceDeviceId:string):SflpLiveSessionEvent{return this.event(sourceDeviceId,"paused");}
+ resume(sourceDeviceId:string):SflpLiveSessionEvent{return this.event(sourceDeviceId,"resumed");}
+ complete(sourceDeviceId:string,completionOperationId:string):SflpLiveSessionEvent{return this.event(sourceDeviceId,"completed",completionOperationId);}
+ private event(sourceDeviceId:string,kind:SflpLiveSessionEvent["kind"],completionOperationId?:string):SflpLiveSessionEvent{return{eventId:`live-${kind}-${Date.now()}`,sessionId:this.snapshot.sessionId,workspaceId:this.snapshot.workspaceId,sourceDeviceId,sessionEpoch:this.snapshot.sessionEpoch,sequence:this.snapshot.lastSequence+1,kind,cursor:this.snapshot.cursor,completionOperationId};}
+}
+
+export class StudyFlowWebPresentationProjectionController{
+ private accepted=new Set<string>();
+ private frames:Record<string,SflpPresentationFrame>={};
+ constructor(private peer:StudyFlowWebLinkPeer){ }
+ createProjectionOffer(workspaceId:string,title:string,contentHash:string,targetDeviceId?:string):SflpPresentationProjectionOffer{const now=Date.now();return{projectionId:`projection-${this.peer.identity.deviceId}-${now}`,workspaceId,sourceDevice:this.peer.identity,targetDeviceId,contentKind:"document",title,contentHash,requiredCapabilities:["workspace.read","device.presentation_sink","video.output"],createdAtEpochMillis:now,expiresAtEpochMillis:now+120000};}
+ acceptProjectionOffer(offer:SflpPresentationProjectionOffer):boolean{if(offer.expiresAtEpochMillis<Date.now())return false;if(offer.targetDeviceId&&offer.targetDeviceId!==this.peer.identity.deviceId)return false;const caps=new Set(this.peer.identity.capabilities);if(offer.requiredCapabilities.some(capability=>!caps.has(capability)))return false;if(offer.requiredCapabilities.some(capability=>capability.endsWith(".write")||capability==="library.import"||capability==="writing.edit"))return false;this.accepted.add(offer.projectionId);return true;}
+ applyProjectionFrame(frame:SflpPresentationFrame):boolean{if(!this.accepted.has(frame.projectionId))return false;const current=this.frames[frame.projectionId];if(current&&frame.sequence<=current.sequence)return false;this.frames[frame.projectionId]=frame;return true;}
+ acknowledgeProjectionFrame(projectionId:string):SflpPresentationAck|null{const frame=this.frames[projectionId];if(!frame)return null;return{projectionId,sinkDeviceId:this.peer.identity.deviceId,acknowledgedFrameId:frame.frameId,acknowledgedSequence:frame.sequence,contentHash:frame.contentHash,acknowledgedAtEpochMillis:Date.now()};}
+ createProjectionCommand(projectionId:string,targetDeviceId:string,kind:string):Record<string,unknown>{return{type:"presentation.projection_control",commandId:`projection-command-${Date.now()}`,projectionId,sourceDeviceId:this.peer.identity.deviceId,targetDeviceId,kind,issuedAtEpochMillis:Date.now()};}
+}
+

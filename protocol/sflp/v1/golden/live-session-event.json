@@ -1,0 +1,30 @@
+{
+  "messageId": "message-live-cursor",
+  "name": "session.live_cursor",
+  "payload": {
+    "cursor": {
+      "activityId": "activity-live",
+      "answeredCount": 1,
+      "elapsedMillis": 9000,
+      "itemIndex": 2,
+      "positionToken": "question-2"
+    },
+    "eventId": "event-cursor",
+    "kind": "cursor",
+    "occurredAtEpochMillis": 5000,
+    "payload": {},
+    "sequence": 2,
+    "sessionEpoch": 1,
+    "sessionId": "session-live",
+    "sourceDeviceId": "android-live",
+    "workspaceId": "workspace-live"
+  },
+  "protocol": {
+    "major": 1,
+    "minor": 0
+  },
+  "senderDeviceId": "android-live",
+  "sentAtEpochMillis": 5100,
+  "type": "event",
+  "workspaceId": "workspace-live"
+}

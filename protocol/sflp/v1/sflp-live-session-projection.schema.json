@@ -1,0 +1,72 @@
+{
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-live-session-projection.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "messageId": {
+      "type": "string"
+    },
+    "name": {
+      "enum": [
+        "session.live_start",
+        "session.live_join",
+        "session.live_heartbeat",
+        "session.live_cursor",
+        "session.live_pause",
+        "session.live_resume",
+        "session.live_complete",
+        "presentation.projection_offer",
+        "presentation.projection_accept",
+        "presentation.projection_frame",
+        "presentation.projection_ack",
+        "presentation.projection_control",
+        "presentation.projection_end"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "protocol": {
+      "properties": {
+        "major": {
+          "const": 1
+        },
+        "minor": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "major",
+        "minor"
+      ],
+      "type": "object"
+    },
+    "senderDeviceId": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "request",
+        "response",
+        "event",
+        "error"
+      ]
+    },
+    "workspaceId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "protocol",
+    "messageId",
+    "workspaceId",
+    "senderDeviceId",
+    "type",
+    "name",
+    "sentAtEpochMillis",
+    "payload"
+  ],
+  "title": "StudyFlow SFLP14/SFLP15 Live session continuity and presentation projection",
+  "type": "object"
+}

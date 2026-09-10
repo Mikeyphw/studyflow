@@ -978,6 +978,7 @@ tasks.register("checkAll") {
         "verifySflp08Sflp09AndroidDesktopIntegration",
         "verifySflp10Sflp11WebTvGeneralization",
         "verifySflp12Sflp13WebTvHandoff",
+        "verifySflp14Sflp15LiveSessionProjection",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1300,6 +1301,22 @@ tasks.register<Exec>("verifySflp12Sflp13WebTvHandoff") {
         ":app:testReleaseUnitTest",
     )
     commandLine("python3", "scripts/verify_sflp12_13_web_tv_handoff.py")
+}
+
+
+
+tasks.register<Exec>("verifySflp14Sflp15LiveSessionProjection") {
+    group = "verification"
+    description =
+        "Checks SFLP14 live session continuity and SFLP15 universal presentation projection."
+    dependsOn(
+        "verifySflp12Sflp13WebTvHandoff",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp14_15_live_session_projection.py")
 }
 
 tasks.register<Exec>("verifyCrossPlatformParityBaseline") {
