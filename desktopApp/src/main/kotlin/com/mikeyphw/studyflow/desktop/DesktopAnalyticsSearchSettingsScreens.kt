@@ -264,6 +264,8 @@ fun DesktopSettingsScreen(
     portabilityActionMessage: String,
     onPortabilityPathChanged: (String) -> Unit,
     onPortabilityPasswordChanged: (String) -> Unit,
+    onChoosePortabilityImport: () -> Unit,
+    onChoosePortabilityExport: () -> Unit,
     onExportPortable: () -> Unit,
     onImportPortable: () -> Unit,
     onCreateEncryptedBackup: () -> Unit,
@@ -315,6 +317,10 @@ fun DesktopSettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onChoosePortabilityImport) { Text(desktopText("Choose import file")) }
+                OutlinedButton(onClick = onChoosePortabilityExport) { Text(desktopText("Choose export file")) }
+            }
             OutlinedTextField(
                 value = portabilityPassword,
                 onValueChange = onPortabilityPasswordChanged,

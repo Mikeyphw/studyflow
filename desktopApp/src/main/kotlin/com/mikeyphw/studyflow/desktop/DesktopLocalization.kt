@@ -81,6 +81,13 @@ class DesktopTextCatalog private constructor(
             "Add resource" to "Adicionar recurso",
             "Add web resource" to "Adicionar recurso web",
             "Import file" to "Importar arquivo",
+            "Choose file" to "Escolher arquivo",
+            "Choose a local file or enter a path manually." to
+                "Escolha um arquivo local ou informe o caminho manualmente.",
+            "Open in browser" to "Abrir no navegador",
+            "Open with system app" to "Abrir com aplicativo do sistema",
+            "Choose import file" to "Escolher arquivo para importar",
+            "Choose export file" to "Escolher arquivo para exportar",
             "Toggle favorite" to "Alternar favorito",
             "Materials" to "Materiais",
             "Videos" to "Vídeos",

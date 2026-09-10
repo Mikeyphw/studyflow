@@ -33,7 +33,7 @@ for token in ("systemLightAndDarkResolveAgainstSystemState", "selectedThemePersi
 assert "System / Light / Dark appearance | FULL | LIMITED | FULL" in text["matrix"]
 remaining = json.loads(text["remaining"])
 desktop = next(row for row in remaining["remaining_tracks"] if row["id"] == "DOV08-DOV24")
-assert desktop["completed_through"] == "DOV22"
+assert int(desktop["completed_through"].removeprefix("DOV")) >= 22
 for key in ("root_gradle", "desktop_gradle"):
     assert "verifyDesktopDov22SystemLightDarkAppearance" in text[key]
 assert '"verifyDesktopDov22SystemLightDarkAppearance"' in text["devtool"]

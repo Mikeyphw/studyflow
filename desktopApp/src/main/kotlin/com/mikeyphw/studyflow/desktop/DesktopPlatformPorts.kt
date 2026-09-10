@@ -9,6 +9,8 @@ package com.mikeyphw.studyflow.desktop
 interface DesktopPlatformPorts {
     val fileDialog: DesktopFileDialogPort
     val notifications: DesktopNotificationPort
+    val filesystem: DesktopFilesystemPort
+        get() = NoOpDesktopFilesystemPort
 }
 
 interface DesktopFileDialogPort {
@@ -21,6 +23,18 @@ interface DesktopNotificationPort {
     fun showInfo(title: String, message: String)
 }
 
+interface DesktopFilesystemPort {
+    fun openPath(path: String)
+
+    fun openUrl(url: String)
+}
+
+object NoOpDesktopFilesystemPort : DesktopFilesystemPort {
+    override fun openPath(path: String) = Unit
+
+    override fun openUrl(url: String) = Unit
+}
+
 object NoOpDesktopPlatformPorts : DesktopPlatformPorts {
     override val fileDialog: DesktopFileDialogPort = object : DesktopFileDialogPort {
         override fun chooseImportPath(): String? = null
@@ -31,4 +45,6 @@ object NoOpDesktopPlatformPorts : DesktopPlatformPorts {
     override val notifications: DesktopNotificationPort = object : DesktopNotificationPort {
         override fun showInfo(title: String, message: String) = Unit
     }
+
+    override val filesystem: DesktopFilesystemPort = NoOpDesktopFilesystemPort
 }

@@ -283,6 +283,21 @@ class DesktopAppState(
     fun updateLibraryWebTitle(value: String) { libraryWebTitleDraft = value }
     fun updateLibraryWebUrl(value: String) { libraryWebUrlDraft = value }
 
+    fun chooseLibraryImportFile() {
+        services.platformPorts.fileDialog.chooseImportPath()?.let(::updateLibraryPath)
+    }
+
+    fun openSelectedMaterialExternally() = runLibraryAction("Opened with native Desktop handler") {
+        val target = requireNotNull(services.libraryWorkspaceController.externalTarget(selectedMaterialId)) {
+            "Select a file or web material first."
+        }
+        if (target.startsWith("https://") || target.startsWith("http://")) {
+            services.platformPorts.filesystem.openUrl(target)
+        } else {
+            services.platformPorts.filesystem.openPath(target)
+        }
+    }
+
     fun importLibraryFile() = runLibraryAction("Local file imported") {
         val material = services.libraryWorkspaceController.importLocalFile(libraryPathDraft)
         selectedMaterialId = material.id
@@ -303,7 +318,10 @@ class DesktopAppState(
 
     private fun runLibraryAction(success: String, action: suspend () -> Unit) {
         runCatching { runBlocking { action() } }
-            .onSuccess { libraryActionMessage = success }
+            .onSuccess {
+                libraryActionMessage = success
+                services.platformPorts.notifications.showInfo(StudyFlowDesktopBoundary.appName, success)
+            }
             .onFailure { libraryActionMessage = it.message.orEmpty() }
     }
 
@@ -644,6 +662,16 @@ class DesktopAppState(
             .onFailure { error -> progressActionMessage = error.message.orEmpty() }
     }
 
+    fun choosePortabilityImportFile() {
+        services.platformPorts.fileDialog.chooseImportPath()?.let(::updatePortabilityPath)
+    }
+
+    fun choosePortabilityExportFile() {
+        services.platformPorts.fileDialog.chooseExportPath("studyflow-backup.studyplan")?.let(::updatePortabilityPath)
+    }
+
+    fun handleDeepLink(uri: String): Boolean = DesktopDeepLinkRouter.route(uri, this)
+
     fun updatePortabilityPath(value: String) { portabilityPathDraft = value }
 
     fun updatePortabilityPassword(value: String) { portabilityPasswordDraft = value }
@@ -677,7 +705,10 @@ class DesktopAppState(
 
     private fun runPortabilityAction(success: String, action: () -> Any?) {
         portabilityActionMessage = runCatching(action).fold(
-            onSuccess = { success },
+            onSuccess = {
+                services.platformPorts.notifications.showInfo(StudyFlowDesktopBoundary.appName, success)
+                success
+            },
             onFailure = { error -> error.message.orEmpty() },
         )
     }

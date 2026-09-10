@@ -90,6 +90,8 @@ fun StudyFlowDesktopApp(
                             portabilityActionMessage = appState.portabilityActionMessage,
                             onPortabilityPathChanged = appState::updatePortabilityPath,
                             onPortabilityPasswordChanged = appState::updatePortabilityPassword,
+                            onChoosePortabilityImport = appState::choosePortabilityImportFile,
+                            onChoosePortabilityExport = appState::choosePortabilityExportFile,
                             onExportPortable = appState::exportPortableStructure,
                             onImportPortable = appState::importPortableStructure,
                             onCreateEncryptedBackup = appState::createEncryptedWorkspaceBackup,

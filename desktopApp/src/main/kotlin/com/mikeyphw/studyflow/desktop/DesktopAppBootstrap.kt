@@ -30,7 +30,7 @@ object StudyFlowDesktopBootstrap {
     }
 
     fun createProductionAppState(
-        platformPorts: DesktopPlatformPorts = NoOpDesktopPlatformPorts,
+        platformPorts: DesktopPlatformPorts = NativeDesktopPlatformPorts,
         linkService: DesktopStudyFlowLinkService = DesktopStudyFlowLinkService(),
         workspaceRoot: Path = defaultDesktopWorkspaceRoot(),
     ): DesktopAppState {

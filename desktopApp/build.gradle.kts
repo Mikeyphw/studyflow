@@ -121,6 +121,13 @@ tasks.register<Exec>("verifyDesktopDov22SystemLightDarkAppearance") {
     commandLine("python3", "scripts/verify_desktop_dov22_system_light_dark_appearance.py")
 }
 
+tasks.register<Exec>("verifyDesktopDov23NativeDesktopIntegration") {
+    group = "verification"
+    description = "Verify Desktop DOV23 native file, browser, notification, and deep-link integration"
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_desktop_dov23_native_desktop_integration.py")
+}
+
 tasks.register("verifyDesktopDov16Dov19Batch") {
     group = "verification"
     description = "Verify Desktop DOV16-DOV19 product batch"

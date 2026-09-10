@@ -94,6 +94,18 @@ class DesktopLibraryWorkspaceController(
         materialId,
     )
 
+    fun externalTarget(materialId: StudyMaterialId?): String? {
+        val planId = services.defaultPlanId ?: return null
+        val material = materialId?.let { id ->
+            services.libraryRepository.currentMaterials(planId).firstOrNull { it.id == id }
+        } ?: return null
+        val uri = material.sourceUri.orEmpty()
+        if (uri.startsWith(DesktopContentPrefix) && workspaceRoot != null) {
+            return resolveContentUri(workspaceRoot, uri)?.toAbsolutePath()?.normalize()?.toString()
+        }
+        return uri.takeIf { it.startsWith("https://") || it.startsWith("http://") }
+    }
+
     fun viewerState(materialId: StudyMaterialId?): DesktopMaterialViewerState {
         val planId = services.defaultPlanId ?: return DesktopMaterialViewerState.empty()
         val material = materialId?.let { id ->

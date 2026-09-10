@@ -50,14 +50,21 @@ private fun DesktopLibraryContent(appState: DesktopAppState, state: DesktopLibra
         }
 
         DesktopSectionCard(title = desktopText("Add resource")) {
-            Text(desktopText("DOV15 accepts a local path; native file picking/open-with arrives in DOV23."))
+            Text(desktopText("Choose a local file or enter a path manually."))
             OutlinedTextField(
                 value = appState.libraryPathDraft,
                 onValueChange = appState::updateLibraryPath,
                 label = { Text(desktopText("Local file path")) },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Button(onClick = appState::importLibraryFile) { Text(desktopText("Import file")) }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = appState::chooseLibraryImportFile) {
+                    Text(desktopText("Choose file"))
+                }
+                Button(onClick = appState::importLibraryFile, enabled = appState.libraryPathDraft.isNotBlank()) {
+                    Text(desktopText("Import file"))
+                }
+            }
             OutlinedTextField(
                 value = appState.libraryWebTitleDraft,
                 onValueChange = appState::updateLibraryWebTitle,
@@ -111,8 +118,18 @@ private fun DesktopLibraryContent(appState: DesktopAppState, state: DesktopLibra
                             Text(desktopText("Toggle favorite"))
                         }
                     }
-                    if (viewer.kind == DesktopMaterialViewerKind.WEB) {
-                        Text(desktopText("Native browser opening is intentionally deferred to DOV23."))
+                    if (viewer.material != null && viewer.kind != DesktopMaterialViewerKind.INLINE) {
+                        OutlinedButton(onClick = appState::openSelectedMaterialExternally) {
+                            Text(
+                                desktopText(
+                                    if (viewer.kind == DesktopMaterialViewerKind.WEB) {
+                                        "Open in browser"
+                                    } else {
+                                        "Open with system app"
+                                    },
+                                ),
+                            )
+                        }
                     }
                 }
             }
