@@ -58,42 +58,46 @@ backed primarily by in-memory repositories; it is not a claim of durable workspa
 
 ## Current connectivity truth
 
-StudyFlow now has the platform-neutral SFLP v1 envelope/capability contract, the SFLP02/SFLP03 canonical operation journal and reconciliation engine, the SFLP04/SFLP05 generic identity, trust, pairing, reconnect, transport, and
-discovery foundation, the SFLP06/SFLP07 multi-peer topology plus durable offline-delivery/reconnect core, and the
-first real product bindings in SFLP08/SFLP09. Android and Desktop now instantiate generic SFLP peers directly: each
-owns stable identity/trust state, persistent journal/queue state, discovery endpoints, pairing, authenticated reconnect,
-and frontier reconciliation. A direct Android↔Desktop link no longer depends on the legacy phone↔TV path.
+StudyFlow has completed the SFLP01-SFLP24 protocol series. Android, Desktop, normal Web, Android TV, and
+Web TV now all have generic SFLP peer bindings with capability negotiation. The shared core covers identity/trust,
+discovery and transport abstractions, multi-peer topology, durable queue/reconnect, operation reconciliation, activity
+handoff, live-session continuity, presentation/control/input delegation, notification/schedule sync, material streaming,
+share/import/conflict review, account/backup handoff, and the consolidated SFLP24 validation seal.
 
-The historical SFLP04/SFLP05 boundary said that **client bindings and multi-peer routing begin in SFLP06-SFLP12**;
-SFLP06/SFLP07 completed the shared-core portion while the then-current statement was that universal client bindings
-were **SFLP08-SFLP12 work**. SFLP08 and SFLP09 are now complete, while Web/TV bindings remain SFLP10-SFLP12.
-StudyFlow therefore does **not yet** provide a universal cross-client synchronization mesh across all five clients. Current live connectivity is:
+Current connectivity implementation truth:
 
-- Android ↔ Desktop: first-class SFLP discovery/pairing/trust/reconnect/workspace-operation synchronization.
-- Android ↔ native Android TV: existing specialized TVOV pairing/control/presentation path until SFLP11 generalizes TV.
-- Web TV: existing WTV browser receiver plus browser remote-control path until SFLP12.
-- Normal Web: no universal SFLP peer binding yet; SFLP10 remains.
-- Desktop no longer depends on Android as a connectivity hub and can pair directly with any compatible current/future
-  SFLP peer exposed through the generic transport contracts.
+- Android and Desktop own persistent generic peers and can pair/synchronize directly.
+- Browser Web and Web TV own generic SFLP peer state and participate through browser-compatible endpoints.
+- Native Android TV owns an `android_tv` SFLP peer; the specialized phone/TV adapter remains compatibility-only.
+- Android is not a required topology hub for Desktop, Web, Android TV, or Web TV.
+- TV-class clients remain capability-limited presentation/execution peers and reject unsupported write/import/restore
+  authority rather than silently accepting it.
 
-The active SFLP roadmap continues removing the remaining special-case TV/browser assumptions.
+SFLP24 proves the SFLP protocol/behavior chain, but it is **not** the final five-client product-parity acceptance.
+DOV08-DOV24, TVOV27-TVOV31, WEB20, PRESENCE01, and PARITY04 remain the ordered cross-platform closure work.
 
-## Target connectivity matrix
+### Protocol connectivity matrix
 
-When SFLP19 is complete, every pair below must support protocol-compatible discovery/pairing and
-workspace synchronization, subject to advertised capabilities:
+Generic SFLP bindings exist for every client pair below, subject to advertised capabilities and available platform
+transport adapters. **PARITY04 is still required to prove pairwise and simultaneous five-peer behavior end-to-end.**
 
 | From / To | Android | Desktop | Web | Android TV | Web TV |
 | --- | --- | --- | --- | --- | --- |
-| Android | — | FULL | FULL | FULL | FULL |
-| Desktop | FULL | — | FULL | FULL | FULL |
-| Web | FULL | FULL | — | FULL | FULL |
-| Android TV | FULL | FULL | FULL | — | FULL |
-| Web TV | FULL | FULL | FULL | FULL | — |
+| Android | — | SUPPORTED | SUPPORTED | SUPPORTED | SUPPORTED |
+| Desktop | SUPPORTED | — | SUPPORTED | SUPPORTED | SUPPORTED |
+| Web | SUPPORTED | SUPPORTED | — | SUPPORTED | SUPPORTED |
+| Android TV | SUPPORTED | SUPPORTED | SUPPORTED | — | SUPPORTED |
+| Web TV | SUPPORTED | SUPPORTED | SUPPORTED | SUPPORTED | — |
 
-TV clients remain capability-limited clients, not second-class transport endpoints. A TV may reject
-complex authoring operations while still discovering peers, synchronizing applicable state, handing
-off activities, presenting material, receiving remote input, and contributing valid study operations.
+TV clients are capability-limited clients, not second-class transport endpoints. A TV may reject complex authoring
+operations while still discovering peers, synchronizing applicable state, handing off activities, presenting material,
+receiving remote input, and contributing operations that its advertised capability set permits.
+
+### Presence truth
+
+StudyFlow currently has transport peer-health and `lastSeen` bookkeeping, but no canonical optional user/activity
+presence model. Presence therefore remains **MISSING** as **PRESENCE01** and must stay independent of replication
+correctness. The old draft label “SFLP18 Presence” is superseded; shipped SFLP18 is notification/scheduling sync.
 
 ## Intentional parity boundaries
 

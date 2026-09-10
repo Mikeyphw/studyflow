@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "contract": "studyflow.cross_platform.remaining_work",
+  "canonical_roadmap": "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
+  "capability_matrix": "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md",
+  "baseline": {
+    "android_product_phase": "Phase 64",
+    "sflp_terminal": "SFLP24",
+    "sflp_status": "complete",
+    "no_phase_65": true,
+    "no_sflp_25": true
+  },
+  "historical_reconciliation": {
+    "old_sflp18_presence": "PRESENCE01",
+    "old_sflp19_full_mesh_seal": "PARITY04",
+    "shipped_sflp18": "notification_and_scheduling_sync",
+    "shipped_sflp19": "media_and_material_streaming_handoff"
+  },
+  "remaining_tracks": [
+    {
+      "order": 1,
+      "id": "DOV08-DOV24",
+      "kind": "implementation",
+      "status": "planned",
+      "prerequisites": ["SFLP24"],
+      "terminal_milestone": "DOV24",
+      "summary": "Complete applicable Desktop persistence, workflows, platform integration, and parity acceptance."
+    },
+    {
+      "order": 2,
+      "id": "TVOV27-TVOV31",
+      "kind": "implementation",
+      "status": "planned",
+      "prerequisites": ["SFLP24"],
+      "terminal_milestone": "TVOV31",
+      "summary": "Close native Android-TV material, goal, Error Notebook, search/input, and Web-TV semantic parity gaps."
+    },
+    {
+      "order": 3,
+      "id": "WEB20",
+      "kind": "semantic_contract",
+      "status": "planned",
+      "prerequisites": ["SFLP24"],
+      "terminal_milestone": "WEB20",
+      "summary": "Run language-neutral golden vectors across Kotlin, TypeScript, and Desktop implementations."
+    },
+    {
+      "order": 4,
+      "id": "PRESENCE01",
+      "kind": "implementation",
+      "status": "planned",
+      "prerequisites": ["SFLP24"],
+      "terminal_milestone": "PRESENCE01",
+      "summary": "Add optional peer/activity presence independently of transport health and replication correctness."
+    },
+    {
+      "order": 5,
+      "id": "PARITY04",
+      "kind": "acceptance_seal",
+      "status": "planned",
+      "prerequisites": ["DOV24", "TVOV31", "WEB20", "PRESENCE01"],
+      "terminal_milestone": "PARITY04",
+      "summary": "Prove pairwise and simultaneous five-client interoperability, convergence, capability rejection, and exactly-once continuation/completion."
+    },
+    {
+      "order": 6,
+      "id": "REL-FINAL",
+      "kind": "evidence_execution",
+      "status": "pending_execution",
+      "prerequisites": ["PARITY04", "REL01-REL08"],
+      "terminal_milestone": "REL08_EVIDENCE_CLOSED",
+      "summary": "Execute existing release tooling against the completed product and retain signed artifact, device, restart/restore, and interoperability evidence."
+    }
+  ]
+}

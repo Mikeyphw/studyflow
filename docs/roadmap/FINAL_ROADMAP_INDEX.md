@@ -62,6 +62,25 @@ historical roadmap sequencing. The final target-machine validation and evidence 
 before product sealing.
 
 
+## Current post-SFLP cross-platform completion track
+
+The Android numbered product roadmap remains capped at Phase 64. Current cross-platform work is tracked
+separately in `docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md` and the machine-readable
+`docs/roadmap/CROSS_PLATFORM_REMAINING_WORK.json`. The ordered remaining implementation/evidence track is:
+
+1. **DOV08-DOV24** — complete applicable Desktop parity and finish with DOV24.
+2. **TVOV27-TVOV31** — close native-TV gaps and finish with the Android-TV/Web-TV common-fixture seal.
+3. **WEB20** — shared language-neutral semantic golden vectors across Kotlin, TypeScript, and Desktop.
+4. **PRESENCE01** — optional peer/activity presence; distinct from transport health and replication correctness.
+5. **PARITY04** — canonical five-client full-mesh/product-parity acceptance seal.
+6. **REL-FINAL evidence execution** — run the already-implemented REL01-REL08 release machinery against the
+   completed product, retain signed artifact/device/restart/restore/interoperability evidence, and close only when
+   every required observation is pass rather than pending/blocked.
+
+There is no SFLP25 and no Phase 65 implied by this list. SFLP24 remains the terminal SFLP protocol seal;
+PARITY04 owns the old draft's full-mesh acceptance promise.
+
+
 Post-SFLP release operation track:
 
 - REL01: target-machine release validation runner for signed APK/AAB, connected Android, restore/restart,
@@ -75,3 +94,11 @@ REL02 follows REL01 with a final evidence report exporter and failure triage bun
 ## REL03/REL04 artifact identity and rollout manifest
 
 REL03/REL04 is a release-operation overlay after SFLP24 and REL02. It binds exact signed artifacts, install-smoke observations, and channel rollout readiness into report files for final review.
+
+## REL05/REL06
+
+REL05 exports public/internal release notes from changelog evidence. REL06 builds the rollback package manifest and command template from REL01-REL05 evidence. This continues the release-operation track after REL03/REL04 and before final release-ops consolidation.
+
+## REL07/REL08
+
+REL07 closes the release operator checklist gate for REL01 through REL06 evidence. REL08 creates the final release-ops evidence seal and bundle. This is the final release-operation track gate after SFLP24 and REL01-REL06.

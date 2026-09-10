@@ -14,46 +14,74 @@ major functional-parity track; TV clients preserve intentionally narrower 10-foo
   and optional sync tracks.
 - **PARITY03** — restore the existing OV20 source-quality/integration seal without weakening validators.
 
-## StudyFlow Link Protocol — SFLP01-SFLP19
+## StudyFlow Link Protocol — SFLP01-SFLP24 — COMPLETE
 
 1. **SFLP01 Protocol baseline — COMPLETE** — protocol version, message envelope, workspace/device/
    entity/operation identities, capability vocabulary, request/response/events, compatibility rules,
-   language-neutral schema, and golden vectors. No transport or replication is claimed yet.
-2. **SFLP02 Domain operation journal — COMPLETE** — canonical append-only operations, per-origin vector
-   revisions, entity revisions, deterministic replay, idempotent dedupe, snapshot checkpoints, and tombstones.
-3. **SFLP03 Reconciliation engine — COMPLETE** — typed frontier exchange, bounded missing-operation batches,
-   deterministic replay/conflict handlers, duplicate-safe retry, and interrupted-sync recovery from receiver truth.
-4. **SFLP04 Device identity and trust — COMPLETE** — persistent identity/trust ports, generic remembered peers,
-   six-digit + QR pairing, bounded offers/attempts, revocation, and one-time authenticated reconnect proofs.
-5. **SFLP05 Transport abstraction — COMPLETE** — platform-neutral connection/listener/discovery contracts, real
-   length-prefixed LAN TCP, adapter-backed WebSocket/relay schemes, manual endpoint parsing, and NSD/mDNS records.
-6. **SFLP06 Multi-peer workspace topology — COMPLETE** — simultaneous peer registry, health-aware direct/
-   learned/relay routes, source-preserving route traces, bounded message dedupe, loop prevention, and deterministic
-   route selection.
-7. **SFLP07 Offline queue/reconnection — COMPLETE** — persistent idempotent per-peer delivery queue, bounded
-   retry backoff, stale-peer catch-up from vector frontiers, bidirectional reconnect convergence, and interrupted
-   transfer recovery from receiver truth.
-8. **SFLP08 Android integration — COMPLETE** — Android owns a persistent generic SFLP peer with private identity/
-   trust/journal/queue state, NSD + LAN/manual discovery, QR pairing, authenticated direct sync, and revoke/forget;
-   the Android phone is not a privileged SFLP hub. Android becomes a generic SFLP peer rather than the TV hub.
-9. **SFLP09 Desktop integration — COMPLETE** — Desktop owns the same generic peer runtime with filesystem-persistent
-   identity/trust/journal/queue/endpoints, LAN/manual discovery, direct pairing/sync, reconnect scheduling, and trust UI.
-10. **SFLP10 Web integration** — persistent browser identity, pair/reconnect, IndexedDB-backed peer state.
-11. **SFLP11 Android TV generalization** — accept any compatible SFLP peer, not just Android phone.
-12. **SFLP12 Web TV integration** — Web TV becomes a true SFLP execution/presentation peer.
-13. **SFLP13 Activity handoff** — continue resumable activities on another capable peer.
-14. **SFLP14 Live session continuity** — delivered: one canonical session, one active executor, optional observers/
-    controllers, duplicate-proof time/completion accounting.
-15. **SFLP15 Universal presentation** — delivered: typed TV projection is generalized to any presentation source/sink.
-16. **SFLP16 Universal remote control** — any trusted control-capable peer can control a presentation sink.
-17. **SFLP17 Input delegation** — request keyboard/text input from another trusted peer.
-18. **SFLP18 Presence** — optional live peer/activity status independent of replication correctness.
-19. **SFLP19 Full-mesh interoperability seal** — pairwise Android/Desktop/Web/Android-TV/Web-TV tests for
-    pairing, reconnect, sync, offline edits, dedupe, handoff, presentation, control and version refusal.
+   language-neutral schema, and golden vectors.
+2. **SFLP02 Domain operation journal — COMPLETE** — canonical append-only operations, vector/entity
+   revisions, deterministic replay, idempotent dedupe, checkpoints, and tombstones.
+3. **SFLP03 Reconciliation engine — COMPLETE** — frontier exchange, bounded missing-operation batches,
+   deterministic replay/conflict handling, duplicate-safe retry, and interrupted-sync recovery.
+4. **SFLP04 Device identity and trust — COMPLETE** — persistent identity/trust, remembered peers,
+   bounded six-digit/QR pairing, revocation, and authenticated reconnect proofs.
+5. **SFLP05 Transport abstraction — COMPLETE** — platform-neutral connection/listener/discovery contracts,
+   LAN TCP, WebSocket/relay adapters, endpoint parsing, and NSD/mDNS records.
+6. **SFLP06 Multi-peer workspace topology — COMPLETE** — simultaneous peer registry, direct/learned/relay
+   routes, bounded dedupe, loop prevention, and deterministic route selection.
+7. **SFLP07 Offline queue/reconnection — COMPLETE** — persistent per-peer delivery queues, bounded retry,
+   frontier catch-up, reconnect convergence, and interrupted-transfer recovery.
+8. **SFLP08 Android integration — COMPLETE** — persistent generic Android peer, discovery, pairing, direct
+   sync, reconnect, revoke, and forget without privileged hub semantics.
+9. **SFLP09 Desktop integration — COMPLETE** — filesystem-persistent generic Desktop peer with discovery,
+   direct pairing/sync, reconnect scheduling, and trust UI.
+10. **SFLP10 Web integration — COMPLETE** — persistent browser identity, pairing/reconnect, IndexedDB-backed
+    peer state, browser endpoints, frontier sync, and offline runtime cache.
+11. **SFLP11 Android TV generalization — COMPLETE** — Android TV is a generic `android_tv` SFLP peer; the
+    older phone/TV path is compatibility-only rather than the topology model.
+12. **SFLP12 Web TV integration — COMPLETE** — Web TV is a generic execution/presentation SFLP peer with
+    receiver pairing, projection, and target-gated control/input handling.
+13. **SFLP13 Activity handoff — COMPLETE** — typed resumable handoff with expiry, one-time consumption,
+    capability checks, and TV write-safety.
+14. **SFLP14 Live session continuity — COMPLETE** — one canonical session, fenced epochs, monotonic events,
+    optional observers/controllers, and exactly-once completion accounting.
+15. **SFLP15 Universal presentation — COMPLETE** — typed source/sink projection generalized across capable
+    clients while TV-class sinks reject write-capability projection offers.
+16. **SFLP16 Universal remote control — COMPLETE** — lease-token and target-gated control across trusted
+    capable peers without implicit repository/database write authority.
+17. **SFLP17 Input delegation — COMPLETE** — capability-gated text/keyboard/input delegation across trusted
+    peers, including TV presentation sinks.
+18. **SFLP18 Notification and scheduling sync — COMPLETE** — targeted notification delivery plus schedule
+    reminder synchronization with TV-class read-only enforcement.
+19. **SFLP19 Media/material streaming handoff — COMPLETE** — material offers, chunk replay/dedupe/acknowledgement,
+    and presentation-sink authority boundaries.
+20. **SFLP20 Clipboard/share/import bridge — COMPLETE** — target-gated clipboard preview/apply and share/import
+    offers with TV preview-only/write-rejection behavior.
+21. **SFLP21 Conflict-review UX — COMPLETE** — conflict review/open/resolve/ack flows with capability-aware
+    write authority.
+22. **SFLP22 Account/backup handoff — COMPLETE** — account ownership handoff plus backup offer/preview/restore
+    planning and acknowledgement with TV audit/preview boundaries.
+23. **SFLP23 Release validation consolidation — COMPLETE** — consolidated ordered SFLP validation chain and
+    release validation plan/result semantics.
+24. **SFLP24 Final release seal — COMPLETE** — terminal SFLP01-SFLP23 validation gate and final-seal vector.
 
 SFLP uses capability negotiation instead of hardcoded phone/TV roles. Representative capabilities include
 `workspace.read`, `workspace.write`, `session.execute`, `session.present`, `device.control`,
 `device.presentation_sink`, `text_input.provide`, `library.read`, `goal.complete`, and `question.answer`.
+
+### Historical promise reconciliation
+
+An older roadmap draft assigned **Presence** to SFLP18 and a **full-mesh interoperability seal** to SFLP19.
+Those labels no longer describe the shipped SFLP18/SFLP19 implementation: SFLP18 is notification/scheduling
+sync and SFLP19 is media/material streaming handoff. ROADMAP01 resolves that drift without renumbering shipped
+work:
+
+- optional peer/activity Presence remains a real unimplemented promise and moves to **PRESENCE01**; existing
+  route health and `lastSeen` bookkeeping are transport-health signals, not user/activity presence semantics;
+- the former SFLP19 full-mesh acceptance promise is owned by **PARITY04**, which is the canonical five-client
+  interoperability seal after the remaining Desktop/TV/semantic work is complete;
+- **SFLP24 remains the terminal SFLP milestone**. ROADMAP01 does not create SFLP25 or reinterpret validated
+  SFLP18-SFLP24 behavior.
 
 ## Desktop parity — DOV08-DOV24
 
@@ -92,9 +120,20 @@ workflows on TV unless a later capability review explicitly promotes them.
 for readiness, schedule allocation/rescheduling, question/mock scoring, review/SRS progression, study-time
 accounting, goal progress, error state, portable serialization and SFLP conflict resolution.
 
+## Presence — PRESENCE01
+
+**PRESENCE01** remains planned. It adds optional live peer/activity presence independently of replication
+correctness and transport health: explicit online/away/offline/stale semantics, bounded expiry, reconnect behavior,
+multiple simultaneous client instances, current resumable activity hints, capability-aware visibility, and loop-free
+propagation. Presence must never become a prerequisite for durable sync correctness.
+
+Transport `StudyFlowPeerHealth`, route availability, and peer `lastSeen` timestamps do **not** satisfy this milestone.
+
 ## Final acceptance — PARITY04
 
-The final cross-platform seal requires all of the following:
+PARITY04 is the canonical successor to the old draft's SFLP19 full-mesh promise. It starts only after
+**DOV24**, **TVOV31**, **WEB20**, and **PRESENCE01** are complete. The final cross-platform seal requires all
+of the following:
 
 - create/edit data on one full client and observe the same state on all connected applicable peers;
 - start on one client, continue on another, present to either TV implementation and finish exactly once;
@@ -103,6 +142,12 @@ The final cross-platform seal requires all of the following:
 - connect all five clients simultaneously without operation loops;
 - reject unsupported operations through capability negotiation rather than silent no-op behavior;
 - preserve platform-specific UX while producing equivalent domain results.
+
+## Machine-checkable remaining-work contract
+
+`docs/roadmap/CROSS_PLATFORM_REMAINING_WORK.json` is the machine-readable companion to this roadmap.
+ROADMAP01 validation fails if the ordered remaining tracks, prerequisite edges, terminal milestones, Presence
+resolution, or final release-evidence dependency drift from this canonical roadmap.
 
 ## Validation architecture
 
@@ -146,7 +191,6 @@ The mesh now supports targeted reminder/review/session notifications, schedule r
 read-only material offers, monotonic chunk replay, duplicate suppression, chunk acknowledgements,
 and TV/Web-TV write-authority rejection.
 
-Next: SFLP20 clipboard/share/import bridge and SFLP21 conflict-review UX.
 
 ## SFLP20 + SFLP21 — COMPLETE
 
@@ -155,7 +199,6 @@ supports target-gated `share.import_offer`, `share.import_ack`, `conflict.review
 `conflict.resolve`, and `conflict.resolution_ack` messages. TV/Web-TV peers remain preview-only for
 imports and cannot receive library import or workspace write authority.
 
-Next: SFLP22 account/backup handoff and SFLP23 release validation consolidation.
 
 ## SFLP22 + SFLP23 — COMPLETE
 
