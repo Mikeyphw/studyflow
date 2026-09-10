@@ -62,7 +62,7 @@ object StudyFlowTvSearch {
                 StudyFlowTvDestination.SCHEDULE, item.sourceId))
         }
         state.library.references.forEach { item ->
-            add(StudyFlowTvSearchDocument("library:${item.sourceId}", item.title, "${item.subject} · ${item.source}",
+            add(StudyFlowTvSearchDocument("library:${item.sourceId}", item.title, "${item.subject} · ${item.sourceLabel}",
                 StudyFlowTvDestination.LIBRARY, item.sourceId))
         }
     }.distinctBy { it.id }

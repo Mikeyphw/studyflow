@@ -111,6 +111,9 @@
     <string name="tv_reviews_action_next">Next item</string>
     <string name="tv_reviews_action_known">Known</string>
     <string name="tv_reviews_action_error_note">Error note</string>
+    <string name="tv_reviews_action_reclassify_error">Reclassify error</string>
+    <string name="tv_reviews_action_resolve_error">Resolve error</string>
+    <string name="tv_reviews_action_reopen_error">Reopen error</string>
     <string name="tv_reviews_action_explain">Explain</string>
     <string name="tv_reviews_action_complete">Complete</string>
     <string name="tv_reviews_action_today">Today</string>

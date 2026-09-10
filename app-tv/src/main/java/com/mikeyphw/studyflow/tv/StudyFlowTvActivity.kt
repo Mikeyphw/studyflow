@@ -1774,6 +1774,9 @@ class StudyFlowTvActivity : Activity() {
         StudyFlowTvReviewAction.NEXT_ITEM -> R.string.tv_reviews_action_next
         StudyFlowTvReviewAction.MARK_KNOWN -> R.string.tv_reviews_action_known
         StudyFlowTvReviewAction.ADD_ERROR_NOTE -> R.string.tv_reviews_action_error_note
+        StudyFlowTvReviewAction.RECLASSIFY_ERROR -> R.string.tv_reviews_action_reclassify_error
+        StudyFlowTvReviewAction.RESOLVE_ERROR -> R.string.tv_reviews_action_resolve_error
+        StudyFlowTvReviewAction.REOPEN_ERROR -> R.string.tv_reviews_action_reopen_error
         StudyFlowTvReviewAction.SHOW_EXPLANATION -> R.string.tv_reviews_action_explain
         StudyFlowTvReviewAction.COMPLETE_REVIEW -> R.string.tv_reviews_action_complete
         StudyFlowTvReviewAction.RETURN_TODAY -> R.string.tv_reviews_action_today

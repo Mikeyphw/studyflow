@@ -11,6 +11,8 @@ for x in ("StudyFlowTvControlInputReceiver","StudyFlowInputDelegationOffer","Stu
 for x in ("KEYCODE_SEARCH","KEYCODE_DPAD_UP","KEYCODE_DPAD_DOWN","renderSearchOverlay"):q(x in a,"native D-pad search missing "+x)
 q("StudyFlowLinkCapabilities.KeyboardInput" in p,"Android TV keyboard input acceptance missing")
 q("repositorySearchForbidden = true" in s,"TV search must remain presentation-safe")
+q('"${item.subject} · ${item.sourceLabel}"' in s,"TV library search subtitle must use typed sourceLabel")
+q('${item.source}' not in s,"TV search references removed/nonexistent library source property")
 b=t("build.gradle.kts");d=t(".devtool.toml")
 q('tasks.register<Exec>("verifyStudyFlowTvDpadSflpSearch")' in b,"Gradle task missing")
 q("verifyStudyFlowTvDpadSflpSearch" in d,"Devtool task missing")
