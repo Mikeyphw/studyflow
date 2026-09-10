@@ -136,3 +136,13 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Leased control commands | Source/target | Source | Source/target | Target | Target |
 | Input delegation | Text/touch | Keyboard/text | Keyboard/text/touch | D-pad/select/back | D-pad/select/back |
 | TV write authority | No implicit grant | No implicit grant | No implicit grant | Rejected | Rejected |
+
+## SFLP18/SFLP19 notification and material streaming capability rows
+
+| Capability | Android | Desktop | Web | Android TV | Web TV |
+| --- | --- | --- | --- | --- | --- |
+| Targeted notification delivery | Send/receive | Send/receive | Send/receive | Receive/read-only | Receive/read-only |
+| Schedule reminder sync | Read/write | Read/write | Read/write | Read-only | Read-only |
+| Material stream offer | Source/sink | Source/sink | Source/sink | Presentation sink only | Presentation sink only |
+| Material chunk acknowledgement | Yes | Yes | Yes | Yes, no import | Yes, no import |
+| Library import via media stream | Yes | Yes | Optional | No | No |

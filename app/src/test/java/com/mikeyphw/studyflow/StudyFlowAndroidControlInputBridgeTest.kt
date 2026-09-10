@@ -9,7 +9,6 @@ import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkPeerDescriptor
 import com.mikeyphw.studyflow.core.link.StudyFlowMessageId
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerClock
-import com.mikeyphw.studyflow.core.link.StudyFlowPublicKey
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.link.AndroidStudyFlowControlInputBridge
 import kotlin.test.Test
@@ -43,5 +42,5 @@ class StudyFlowAndroidControlInputBridgeTest {
         id: String,
         kind: StudyFlowLinkClientKind,
         capabilities: List<com.mikeyphw.studyflow.core.link.StudyFlowLinkCapability>,
-    ) = StudyFlowLinkPeerDescriptor(StudyFlowDeviceId(id), kind, id, capabilities, StudyFlowPublicKey("key-$id"))
+    ) = StudyFlowLinkPeerDescriptor(StudyFlowDeviceId(id), id, kind, capabilities = capabilities)
 }

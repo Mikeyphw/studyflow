@@ -1,0 +1,20 @@
+{
+  "type": "notification.deliver",
+  "payload": {
+    "messageId": "notification-message-1",
+    "sourceDeviceId": "phone",
+    "targetDeviceId": "desktop",
+    "sequence": 1,
+    "notification": {
+      "notificationId": "notification-review-1",
+      "kind": "review_due",
+      "title": "Review due",
+      "body": "Portuguese vocabulary review is ready.",
+      "route": {
+        "workspaceId": "workspace-main",
+        "targetDeviceId": "desktop",
+        "requiredCapabilities": ["workspace.sync"]
+      }
+    }
+  }
+}

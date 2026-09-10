@@ -29,6 +29,13 @@ object StudyFlowDomainOperationTypes {
     const val MaterialAdded = "material.added"
     const val TopicPriorityChanged = "topic.priority_changed"
     const val ScheduleActivityMoved = "schedule.activity_moved"
+    const val ScheduleReminderUpserted = "schedule.reminder_upserted"
+    const val ScheduleReminderCancelled = "schedule.reminder_cancelled"
+    const val NotificationDelivered = "notification.delivered"
+    const val NotificationPolicyChanged = "notification.policy_changed"
+    const val NotificationQuietHoursChanged = "notification.quiet_hours_changed"
+    const val MaterialStreamPrepared = "material.stream_prepared"
+    const val MaterialChunkReceived = "material.chunk_received"
 }
 
 @Serializable

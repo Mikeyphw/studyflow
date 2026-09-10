@@ -1,0 +1,17 @@
+{
+  "type": "material.stream_offer",
+  "payload": {
+    "streamId": "stream-material-1",
+    "workspaceId": "workspace-main",
+    "materialId": "material-1",
+    "sourceDeviceId": "desktop",
+    "targetDeviceId": "tv",
+    "materialKind": "pdf",
+    "title": "Biology notes",
+    "mimeType": "application/pdf",
+    "totalBytes": 6,
+    "chunkSize": 3,
+    "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "requiredCapabilities": ["library.read", "document.present"]
+  }
+}

@@ -484,3 +484,9 @@ based across Android, Desktop, Web, Android TV and Web TV with monotonic frames 
 - Added leased generic control protocol for peer-to-peer StudyFlow control.
 - Added target-gated input delegation for keyboard, text, D-pad, select/back and touch input.
 - Added Android, Desktop, Android TV and Web bridges plus schema, golden vectors and verifier wiring.
+
+### SFLP18/SFLP19 notification, schedule, and material handoff
+
+StudyFlow peers can now exchange targeted notification deliveries, schedule reminder changes, and
+read-only material stream handoffs. TV surfaces remain presentation/read sinks only; material streams
+that require `library.import` or workspace writes are rejected before chunk transfer.

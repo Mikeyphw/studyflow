@@ -208,3 +208,60 @@ export class StudyFlowControlInputRuntime {
     return { status: 'accepted', acknowledgedSequence: event.sequence };
   }
 }
+
+// SFLP18/SFLP19: notification/scheduling sync and material streaming handoff.
+export class StudyFlowNotificationMediaRuntime {
+  constructor(peer) {
+    this.peer = peer
+    this.notifications = new Map()
+    this.lastNotificationSequence = new Map()
+    this.materialStreams = new Map()
+    this.materialChunks = new Map()
+  }
+
+  applyNotificationDelivery(delivery) {
+    if (delivery.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' }
+    if (delivery.notification.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
+    if (this.notifications.has(delivery.notification.notificationId)) return { status: 'duplicate', acknowledgedSequence: delivery.sequence }
+    const last = this.lastNotificationSequence.get(delivery.sourceDeviceId) || 0
+    if (delivery.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' }
+    this.lastNotificationSequence.set(delivery.sourceDeviceId, delivery.sequence)
+    this.notifications.set(delivery.notification.notificationId, delivery.notification)
+    return { status: 'accepted', acknowledgedSequence: delivery.sequence }
+  }
+
+  scheduleChangeOperation(change) {
+    return {
+      operationId: `op-${change.changeId}`,
+      workspaceId: change.workspaceId,
+      originDeviceId: change.sourceDeviceId,
+      originSequence: change.sequence,
+      entityId: change.scheduleEntityId,
+      operationType: change.changeKind === 'reminder_cancelled' ? 'schedule.reminder_cancelled' : 'schedule.reminder_upserted',
+      payload: { notificationScheduleSync: 'sflp18', changeKind: change.changeKind },
+    }
+  }
+
+  acceptMaterialStream(offer) {
+    if (offer.expiresAtEpochMillis < Date.now()) return false
+    if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.deviceId) return false
+    const capabilities = new Set(this.peer.capabilities || [])
+    if ((offer.requiredCapabilities || []).some(capability => capability.endsWith('.write') || capability === 'library.import')) return false
+    if ((offer.requiredCapabilities || []).some(capability => !capabilities.has(capability))) return false
+    this.materialStreams.set(offer.streamId, offer)
+    this.materialChunks.set(offer.streamId, new Set())
+    return true
+  }
+
+  applyMaterialChunk(chunk) {
+    const offer = this.materialStreams.get(chunk.streamId)
+    if (!offer) return { status: 'rejected', reason: 'unknown_stream' }
+    if (chunk.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' }
+    if (chunk.byteOffset !== chunk.chunkIndex * offer.chunkSize) return { status: 'rejected', reason: 'unexpected_offset' }
+    const chunks = this.materialChunks.get(chunk.streamId) || new Set()
+    if (chunks.has(chunk.chunkIndex)) return { status: 'duplicate', acknowledgedChunkIndex: chunk.chunkIndex }
+    chunks.add(chunk.chunkIndex)
+    this.materialChunks.set(chunk.streamId, chunks)
+    return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex }
+  }
+}

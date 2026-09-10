@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/sflp/v1/sflp-notification-media.schema.json",
+  "title": "StudyFlow SFLP18/SFLP19 notification, scheduling, and material streaming messages",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": {
+      "enum": [
+        "notification.deliver",
+        "notification.delivery_ack",
+        "schedule.notification_change",
+        "material.stream_offer",
+        "material.chunk",
+        "material.chunk_ack"
+      ]
+    },
+    "payload": { "type": "object" }
+  },
+  "additionalProperties": false
+}

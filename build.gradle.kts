@@ -980,6 +980,7 @@ tasks.register("checkAll") {
         "verifySflp12Sflp13WebTvHandoff",
         "verifySflp14Sflp15LiveSessionProjection",
         "verifySflp16Sflp17ControlInputDelegation",
+        "verifySflp18Sflp19NotificationMediaSync",
         ":core:diagnostics:test",
         ":core:data:testDebugUnitTest",
         ":core:database:testDebugUnitTest",
@@ -1333,6 +1334,20 @@ tasks.register<Exec>("verifySflp16Sflp17ControlInputDelegation") {
         ":app:testReleaseUnitTest",
     )
     commandLine("python3", "scripts/verify_sflp16_17_control_input_delegation.py")
+}
+
+
+tasks.register<Exec>("verifySflp18Sflp19NotificationMediaSync") {
+    group = "verification"
+    description = "Checks SFLP18 notification/schedule sync and SFLP19 material streaming handoff."
+    dependsOn(
+        "verifySflp16Sflp17ControlInputDelegation",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("python3", "scripts/verify_sflp18_19_notification_media_sync.py")
 }
 
 

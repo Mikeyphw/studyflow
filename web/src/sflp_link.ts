@@ -194,3 +194,81 @@ export class StudyFlowControlInputRuntime {
     return { status: 'accepted', acknowledgedSequence: event.sequence }
   }
 }
+
+export type StudyFlowNotificationDeliveryStatus = 'accepted' | 'rejected' | 'duplicate' | 'expired'
+
+export interface StudyFlowNotificationDeliveryEnvelope {
+  messageId: string
+  sourceDeviceId: string
+  targetDeviceId: string
+  sequence: number
+  notification: {
+    notificationId: string
+    kind: string
+    title: string
+    body: string
+    expiresAtEpochMillis: number
+  }
+}
+
+export interface StudyFlowMaterialStreamOfferEnvelope {
+  streamId: string
+  workspaceId: string
+  materialId: string
+  sourceDeviceId: string
+  targetDeviceId?: string
+  title: string
+  mimeType: string
+  totalBytes: number
+  chunkSize: number
+  contentSha256: string
+  requiredCapabilities: string[]
+  expiresAtEpochMillis: number
+}
+
+export class StudyFlowNotificationMediaRuntime {
+  private readonly notifications = new Map<string, StudyFlowNotificationDeliveryEnvelope['notification']>()
+  private readonly lastNotificationSequence = new Map<string, number>()
+  private readonly materialStreams = new Map<string, StudyFlowMaterialStreamOfferEnvelope>()
+  private readonly materialChunks = new Map<string, Set<number>>()
+
+  constructor(private readonly peer: { deviceId: string; capabilities: string[] }) {}
+
+  applyNotificationDelivery(delivery: StudyFlowNotificationDeliveryEnvelope) {
+    if (delivery.targetDeviceId !== this.peer.deviceId) return { status: 'rejected' as StudyFlowNotificationDeliveryStatus, reason: 'wrong_target' }
+    if (delivery.notification.expiresAtEpochMillis < Date.now()) return { status: 'expired' as StudyFlowNotificationDeliveryStatus, reason: 'expired' }
+    if (this.notifications.has(delivery.notification.notificationId)) return { status: 'duplicate' as StudyFlowNotificationDeliveryStatus, acknowledgedSequence: delivery.sequence }
+    const last = this.lastNotificationSequence.get(delivery.sourceDeviceId) ?? 0
+    if (delivery.sequence <= last) return { status: 'rejected' as StudyFlowNotificationDeliveryStatus, reason: 'stale_sequence' }
+    this.lastNotificationSequence.set(delivery.sourceDeviceId, delivery.sequence)
+    this.notifications.set(delivery.notification.notificationId, delivery.notification)
+    return { status: 'accepted' as StudyFlowNotificationDeliveryStatus, acknowledgedSequence: delivery.sequence }
+  }
+
+  scheduleChangeOperation(change: { changeId: string; workspaceId: string; sourceDeviceId: string; sequence: number; scheduleEntityId: string; changeKind: string }) {
+    return { operationId: `op-${change.changeId}`, workspaceId: change.workspaceId, originDeviceId: change.sourceDeviceId, originSequence: change.sequence, entityId: change.scheduleEntityId, operationType: change.changeKind === 'reminder_cancelled' ? 'schedule.reminder_cancelled' : 'schedule.reminder_upserted', payload: { notificationScheduleSync: 'sflp18', changeKind: change.changeKind } }
+  }
+
+  acceptMaterialStream(offer: StudyFlowMaterialStreamOfferEnvelope): boolean {
+    if (offer.expiresAtEpochMillis < Date.now()) return false
+    if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.deviceId) return false
+    const capabilities = new Set(this.peer.capabilities)
+    if (offer.requiredCapabilities.some(capability => capability.endsWith('.write') || capability === 'library.import')) return false
+    if (offer.requiredCapabilities.some(capability => !capabilities.has(capability))) return false
+    this.materialStreams.set(offer.streamId, offer)
+    this.materialChunks.set(offer.streamId, new Set())
+    return true
+  }
+
+  applyMaterialChunk(chunk: { streamId: string; targetDeviceId: string; chunkIndex: number; byteOffset: number; finalChunk?: boolean }) {
+    const offer = this.materialStreams.get(chunk.streamId)
+    if (!offer) return { status: 'rejected', reason: 'unknown_stream' }
+    if (chunk.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' }
+    if (chunk.byteOffset !== chunk.chunkIndex * offer.chunkSize) return { status: 'rejected', reason: 'unexpected_offset' }
+    const chunks = this.materialChunks.get(chunk.streamId) ?? new Set<number>()
+    if (chunks.has(chunk.chunkIndex)) return { status: 'duplicate', acknowledgedChunkIndex: chunk.chunkIndex }
+    chunks.add(chunk.chunkIndex)
+    this.materialChunks.set(chunk.streamId, chunks)
+    return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex }
+  }
+}

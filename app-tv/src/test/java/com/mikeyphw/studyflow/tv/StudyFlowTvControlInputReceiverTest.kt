@@ -13,7 +13,6 @@ import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkPeerDescriptor
 import com.mikeyphw.studyflow.core.link.StudyFlowMessageId
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerClock
-import com.mikeyphw.studyflow.core.link.StudyFlowPublicKey
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.tv.link.StudyFlowTvControlInputReceiver
 import kotlin.test.Test
@@ -53,5 +52,5 @@ class StudyFlowTvControlInputReceiverTest {
     }
 
     private fun descriptor(id: String, kind: StudyFlowLinkClientKind, capabilities: List<StudyFlowLinkCapability>) =
-        StudyFlowLinkPeerDescriptor(StudyFlowDeviceId(id), kind, id, capabilities, StudyFlowPublicKey("key-$id"))
+        StudyFlowLinkPeerDescriptor(StudyFlowDeviceId(id), id, kind, capabilities = capabilities)
 }

@@ -113,9 +113,8 @@ class StudyFlowControlInputDelegationTest {
         capabilities: List<StudyFlowLinkCapability>,
     ) = StudyFlowLinkPeerDescriptor(
         deviceId = StudyFlowDeviceId(id),
-        clientKind = kind,
         displayName = id,
+        clientKind = kind,
         capabilities = capabilities,
-        publicKey = StudyFlowPublicKey("public-key-$id"),
     )
 }

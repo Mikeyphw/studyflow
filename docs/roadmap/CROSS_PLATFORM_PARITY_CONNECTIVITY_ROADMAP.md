@@ -138,3 +138,12 @@ SFLP14 live session continuity — delivered. SFLP15 universal presentation proj
 ## SFLP16 + SFLP17 — COMPLETE
 
 SFLP16 control protocol and SFLP17 input delegation are complete. Control is lease-token gated and target-gated, input delegation is capability-gated, and TV-class peers remain presentation/control sinks without repository/database write authority.
+
+## SFLP18 + SFLP19 — COMPLETE
+
+SFLP18 notification/scheduling sync and SFLP19 media/material streaming handoff are implemented.
+The mesh now supports targeted reminder/review/session notifications, schedule reminder changes,
+read-only material offers, monotonic chunk replay, duplicate suppression, chunk acknowledgements,
+and TV/Web-TV write-authority rejection.
+
+Next: SFLP20 clipboard/share/import bridge and SFLP21 conflict-review UX.

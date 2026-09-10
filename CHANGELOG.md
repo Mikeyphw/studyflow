@@ -610,3 +610,10 @@ copy.
 - Added leased generic control protocol for peer-to-peer StudyFlow control.
 - Added target-gated input delegation for keyboard, text, D-pad, select/back and touch input.
 - Added Android, Desktop, Android TV and Web bridges plus schema, golden vectors and verifier wiring.
+
+## SFLP18-19 — Notification/media sync
+
+- Added SFLP18 peer-neutral notification delivery, delivery acknowledgement, and schedule reminder sync.
+- Added SFLP19 read-only material streaming handoff with chunk acknowledgements and TV write guards.
+- Added Android, Desktop, Android TV, Web, schema, golden vector, and verifier coverage for notification/media sync.
+- Repaired SFLP16/SFLP17 test constructors to match the canonical peer descriptor API before final validation.
