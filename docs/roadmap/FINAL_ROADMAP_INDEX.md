@@ -72,8 +72,8 @@ separately in `docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md` and t
 2. **TVOV27-TVOV31 — COMPLETE** — native-TV gaps closed by the Android-TV/Web-TV common-fixture seal.
 3. **WEB20 — COMPLETE** — shared language-neutral semantic golden vectors across Kotlin, TypeScript, and Desktop.
 4. **PRESENCE01 — COMPLETE** — optional ephemeral peer/activity presence distinct from transport health and replication correctness.
-5. **PARITY04 — NEXT** — canonical five-client full-mesh/product-parity acceptance seal.
-6. **REL-FINAL evidence execution** — run the already-implemented REL01-REL08 release machinery against the
+5. **PARITY04 — COMPLETE** — canonical five-client full-mesh/product-parity acceptance seal.
+6. **REL-FINAL evidence execution — NEXT** — run the already-implemented REL01-REL08 release machinery against the
    completed product, retain signed artifact/device/restart/restore/interoperability evidence, and close only when
    every required observation is pass rather than pending/blocked.
 

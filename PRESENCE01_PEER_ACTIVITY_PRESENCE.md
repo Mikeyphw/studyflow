@@ -20,7 +20,7 @@ Android and Android TV expose presence through their native SFLP peer wrappers. 
 
 `verifyPresence01PeerActivityPresence` checks the schema, runtime wiring, all five clients, ephemeral boundary, roadmap closure, and focused tests. `verifyPresence01TerminalSeal` adds core/link integration tests, Desktop/Android/TV compile + unit tests, and the complete Web lint/test/release surface.
 
-After PRESENCE01, the next canonical batch is **PARITY04**.
+After PRESENCE01, **PARITY04 is complete**; REL-FINAL evidence execution is next.
 
 ## Terminal reliability hardening
 

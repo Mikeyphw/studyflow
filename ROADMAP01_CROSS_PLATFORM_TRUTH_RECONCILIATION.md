@@ -17,4 +17,4 @@ ROADMAP01 reconciles the post-REL13 cross-platform roadmap without changing runt
 
 ## Historical scope
 
-ROADMAP01 itself did not implement Desktop parity, TVOV27+, WEB20 semantics, Presence, PARITY04 behavior, or release evidence. Later batches now fulfill DOV08-DOV24, TVOV27-TVOV31, WEB20, and PRESENCE01 while preserving this reconciliation contract; PARITY04 and release evidence remain downstream.
+ROADMAP01 itself did not implement Desktop parity, TVOV27+, WEB20 semantics, Presence, PARITY04 behavior, or release evidence. Later batches now fulfill DOV08-DOV24, TVOV27-TVOV31, WEB20, PRESENCE01, and PARITY04 while preserving this reconciliation contract; REL-FINAL release-evidence execution is the only downstream canonical track.

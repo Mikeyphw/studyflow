@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "milestone": "PARITY04",
+  "title": "StudyFlow five-client full-mesh/product-parity acceptance",
+  "web20Fixture": "protocol/semantic/v1/golden-vectors.json",
+  "clients": [
+    {
+      "id": "android",
+      "deviceId": "parity-android",
+      "clientKind": "android",
+      "role": "full",
+      "mustHave": [
+        "workspace.write",
+        "workspace.sync",
+        "session.execute",
+        "device.presentation_source",
+        "backup.import"
+      ],
+      "mustNotHave": [
+        "device.presentation_sink"
+      ]
+    },
+    {
+      "id": "desktop",
+      "deviceId": "parity-desktop",
+      "clientKind": "desktop",
+      "role": "full",
+      "mustHave": [
+        "workspace.write",
+        "workspace.sync",
+        "session.execute",
+        "device.presentation_source",
+        "backup.import"
+      ],
+      "mustNotHave": [
+        "device.presentation_sink"
+      ]
+    },
+    {
+      "id": "web",
+      "deviceId": "parity-web",
+      "clientKind": "web",
+      "role": "full",
+      "mustHave": [
+        "workspace.write",
+        "workspace.sync",
+        "session.execute",
+        "device.presentation_source",
+        "backup.import"
+      ],
+      "mustNotHave": [
+        "device.presentation_sink"
+      ]
+    },
+    {
+      "id": "android_tv",
+      "deviceId": "parity-android-tv",
+      "clientKind": "android_tv",
+      "role": "tv",
+      "mustHave": [
+        "workspace.sync",
+        "session.present",
+        "device.presentation_sink",
+        "dpad.input"
+      ],
+      "mustNotHave": [
+        "workspace.write",
+        "writing.edit",
+        "backup.import"
+      ]
+    },
+    {
+      "id": "web_tv",
+      "deviceId": "parity-web-tv",
+      "clientKind": "web_tv",
+      "role": "tv",
+      "mustHave": [
+        "workspace.sync",
+        "session.present",
+        "device.presentation_sink",
+        "dpad.input"
+      ],
+      "mustNotHave": [
+        "workspace.write",
+        "writing.edit",
+        "backup.import"
+      ]
+    }
+  ],
+  "directPairs": [
+    [
+      "android",
+      "desktop"
+    ],
+    [
+      "android",
+      "web"
+    ],
+    [
+      "android",
+      "android_tv"
+    ],
+    [
+      "android",
+      "web_tv"
+    ],
+    [
+      "desktop",
+      "web"
+    ],
+    [
+      "desktop",
+      "android_tv"
+    ],
+    [
+      "desktop",
+      "web_tv"
+    ],
+    [
+      "web",
+      "android_tv"
+    ],
+    [
+      "web",
+      "web_tv"
+    ],
+    [
+      "android_tv",
+      "web_tv"
+    ]
+  ],
+  "scenarios": [
+    {
+      "id": "full-mesh-convergence",
+      "kind": "full_mesh_convergence",
+      "writers": [
+        "android",
+        "desktop",
+        "web"
+      ],
+      "expectedJournalOperations": 3,
+      "expectedPeersPerClient": 4
+    },
+    {
+      "id": "offline-concurrent-conflict",
+      "kind": "offline_conflict",
+      "writers": [
+        "android",
+        "desktop",
+        "web"
+      ],
+      "entityId": "shared-goal",
+      "expectedWinnerDeviceId": "parity-web"
+    },
+    {
+      "id": "activity-continuation",
+      "kind": "activity_continuation",
+      "source": "desktop",
+      "target": "web",
+      "requiredCapability": "session.execute",
+      "consumeExactlyOnce": true
+    },
+    {
+      "id": "tv-presentation-both-sinks",
+      "kind": "tv_presentation",
+      "source": "web",
+      "targets": [
+        "android_tv",
+        "web_tv"
+      ],
+      "requiredCapabilities": [
+        "workspace.read",
+        "device.presentation_sink",
+        "video.output"
+      ]
+    },
+    {
+      "id": "completion-exactly-once",
+      "kind": "exactly_once_completion",
+      "source": "web",
+      "operationId": "parity-session-complete",
+      "operationType": "session.completed",
+      "expectedCopiesPerClient": 1
+    },
+    {
+      "id": "direct-desktop-android-tv",
+      "kind": "direct_pair",
+      "source": "desktop",
+      "target": "android_tv",
+      "androidIntermediary": false
+    },
+    {
+      "id": "direct-web-web-tv",
+      "kind": "direct_pair",
+      "source": "web",
+      "target": "web_tv",
+      "androidIntermediary": false
+    },
+    {
+      "id": "tv-write-rejection",
+      "kind": "capability_rejection",
+      "targets": [
+        "android_tv",
+        "web_tv"
+      ],
+      "requiredCapability": "writing.edit",
+      "expectedReason": "missing_capability_or_tv_write_capability"
+    },
+    {
+      "id": "loop-free-route-trace",
+      "kind": "loop_free",
+      "maxHops": 8,
+      "expectedDuplicateDelivery": false
+    },
+    {
+      "id": "presence-coexistence",
+      "kind": "presence",
+      "expectedVisibleClients": 5,
+      "ephemeral": true
+    },
+    {
+      "id": "portable-interoperability",
+      "kind": "portable",
+      "web20VectorId": "portable-1"
+    },
+    {
+      "id": "semantic-equivalence",
+      "kind": "semantic_equivalence",
+      "web20VectorCount": 40
+    }
+  ]
+}

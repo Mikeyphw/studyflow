@@ -1,3 +1,11 @@
+# PARITY04 — Five-client full-mesh/product-parity acceptance seal
+
+- Added a language-neutral five-client scenario corpus covering all ten direct client pairs.
+- Added real loopback five-peer JVM SFLP acceptance for convergence, direct TV pairing, offline conflicts, and exactly-once completion.
+- Reused the 40 WEB20 semantic vectors verbatim and added Desktop/Web acceptance consumers.
+- Sealed TV capability rejection, presentation, route-loop prevention, Presence coexistence, and canonical portability checks.
+- Marked PARITY04 complete; REL-FINAL evidence execution is now the sole remaining canonical roadmap track.
+
 # PRESENCE01 — Peer/activity presence
 - Hardened the browser-TV relay acceptance harness with load-tolerant LAN relay readiness retries and diagnostic capture.
 

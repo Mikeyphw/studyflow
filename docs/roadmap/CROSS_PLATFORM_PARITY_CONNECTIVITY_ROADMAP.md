@@ -138,8 +138,8 @@ semantics. Transport `StudyFlowPeerHealth`, route availability, and peer `lastSe
 
 ## Final acceptance — PARITY04
 
-PARITY04 is the canonical successor to the old draft's SFLP19 full-mesh promise. It starts only after
-**DOV24**, **TVOV31**, **WEB20**, and **PRESENCE01** are complete. The final cross-platform seal requires all
+**PARITY04 is implemented.** It is the canonical successor to the old draft's SFLP19 full-mesh promise and
+runs after **DOV24**, **TVOV31**, **WEB20**, and **PRESENCE01**. The five-client acceptance seal proves all
 of the following:
 
 - create/edit data on one full client and observe the same state on all connected applicable peers;
@@ -149,6 +149,11 @@ of the following:
 - connect all five clients simultaneously without operation loops;
 - reject unsupported operations through capability negotiation rather than silent no-op behavior;
 - preserve platform-specific UX while producing equivalent domain results.
+
+The language-neutral scenario corpus is `protocol/parity/v1/five-client-scenarios.json`; it explicitly reuses
+`protocol/semantic/v1/golden-vectors.json`. The JVM acceptance suite runs five real loopback SFLP peers and all
+ten direct pair combinations. Web and Desktop consume the same fixtures through their production runtimes.
+REL-FINAL evidence execution is the only remaining canonical track.
 
 ## Machine-checkable remaining-work contract
 

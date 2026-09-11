@@ -67,7 +67,11 @@ def main() -> None:
     require_contains(roadmap, "SFLP18 Notification and scheduling sync — COMPLETE", "connectivity roadmap")
     require_contains(roadmap, "SFLP19 Media/material streaming handoff — COMPLETE", "connectivity roadmap")
     require_contains(roadmap, "## Presence — PRESENCE01", "connectivity roadmap")
-    require_contains(roadmap, "PARITY04 is the canonical successor", "connectivity roadmap")
+    require(
+        "PARITY04 is the canonical successor" in roadmap
+        or "**PARITY04 is implemented.** It is the canonical successor" in roadmap,
+        "connectivity roadmap must preserve or complete the PARITY04 successor transition",
+    )
     require_contains(roadmap, "CROSS_PLATFORM_REMAINING_WORK.json", "connectivity roadmap")
     require_absent(roadmap, "**SFLP18 Presence**", "connectivity roadmap")
     require_absent(roadmap, "**SFLP19 Full-mesh interoperability seal**", "connectivity roadmap")
@@ -82,7 +86,10 @@ def main() -> None:
     ):
         require_absent(matrix, stale, "capability matrix")
     require_contains(matrix, "StudyFlow has completed the SFLP01-SFLP24 protocol series", "capability matrix")
-    require_contains(matrix, "PARITY04 is still required", "capability matrix")
+    require(
+        "PARITY04 is still required" in matrix or "PARITY04 is **SUPPORTED / SEALED**" in matrix,
+        "capability matrix must describe PARITY04 as planned or sealed",
+    )
     require_contains(matrix, "### Presence truth", "capability matrix")
     require_contains(matrix, "PRESENCE01", "capability matrix")
 

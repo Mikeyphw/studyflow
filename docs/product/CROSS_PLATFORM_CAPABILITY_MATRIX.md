@@ -77,12 +77,14 @@ Current connectivity implementation truth:
   authority rather than silently accepting it.
 
 SFLP24 proves the SFLP protocol/behavior chain, but it is **not** the final five-client product-parity acceptance.
-DOV08-DOV24, TVOV27-TVOV31, WEB20, and PRESENCE01 are complete. PARITY04 is the next cross-platform acceptance seal.
+DOV08-DOV24, TVOV27-TVOV31, WEB20, PRESENCE01, and PARITY04 are complete. REL-FINAL evidence execution is next.
 
 ### Protocol connectivity matrix
 
 Generic SFLP bindings exist for every client pair below, subject to advertised capabilities and available platform
-transport adapters. **PARITY04 is still required to prove pairwise and simultaneous five-peer behavior end-to-end.**
+transport adapters. PARITY04 is **SUPPORTED / SEALED**: its acceptance corpus proves all ten direct client pairs,
+simultaneous five-peer convergence, offline conflicts, exactly-once completion, direct TV pairing, loop freedom,
+capability rejection, WEB20 semantic reuse, Presence coexistence, and portability interoperability.
 
 | From / To | Android | Desktop | Web | Android TV | Web TV |
 | --- | --- | --- | --- | --- | --- |

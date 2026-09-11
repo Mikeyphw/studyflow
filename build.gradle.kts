@@ -1863,3 +1863,42 @@ tasks.register("verifyPresence01TerminalSeal") {
         ":app-tv:assembleDebug",
     )
 }
+
+tasks.register<Exec>("verifyParity04FiveClientFullMesh") {
+    group = "verification"
+    description = "Checks PARITY04 five-client full-mesh, convergence, exactly-once, capability, semantic, and portability contracts."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_parity04_five_client_full_mesh.py")
+}
+
+tasks.register<Exec>("verifyParity04WebAcceptance") {
+    group = "verification"
+    description = "Runs the Web/Web-TV PARITY04 acceptance corpus against production runtimes."
+    workingDir = file("web")
+    commandLine("node", "tests/parity04_runner.mjs")
+}
+
+tasks.register("verifyParity04TerminalSeal") {
+    group = "verification"
+    description = "Terminal five-client PARITY04 acceptance seal across shared core, Desktop, Web, Android, and Android TV."
+    dependsOn(
+        "verifyParity04FiveClientFullMesh",
+        "verifyParity04WebAcceptance",
+        "verifyWeb20SharedSemanticGoldenVectors",
+        "verifyPresence01PeerActivityPresence",
+        "verifyPresence01WebRegression",
+        "verifyPresence01WebRelease",
+        ":core:domain:test",
+        ":core:link:test",
+        ":core:portability:test",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:test",
+        ":app:compileDebugKotlin",
+        ":app:testReleaseUnitTest",
+        ":app:assembleDebug",
+        ":app-tv:compileDebugKotlin",
+        ":app-tv:testDebugUnitTest",
+        ":app-tv:assembleDebug",
+    )
+}
+

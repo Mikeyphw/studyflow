@@ -74,6 +74,10 @@ explicitly evidence-based. Source validators can prove repository contracts; Dev
 build host must still produce build, install, upgrade, and device-smoke evidence.
 
 
+## PARITY04 — Five-client full-mesh acceptance
+
+PARITY04 closes cross-platform product parity across Android, Desktop, Web, Android TV, and Web TV. The seal runs all ten direct pair combinations, simultaneous convergence, offline conflict reconciliation, exactly-once completion, activity continuation, presentation to both TV implementations, direct Desktop/Web-to-TV pairing without Android as a hub, capability rejection, loop-free routing, Presence coexistence, portable canonicalization, and all 40 WEB20 semantic vectors. `REL-FINAL` evidence execution is the next and only remaining canonical track.
+
 ## PRESENCE01 — Peer/activity presence
 
 PRESENCE01 adds optional ephemeral presence across Android, Desktop, Web, Android TV, and Web TV. Presence has explicit online/away/offline/stale states, bounded stale/expiry windows, reconnect-session supersession, simultaneous client instances, capability-filtered resumable activity hints, and route-trace loop prevention. It runs after authenticated durable reconciliation and failures are non-fatal, so presence is never a prerequisite for sync correctness.

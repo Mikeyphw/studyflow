@@ -89,7 +89,10 @@ remaining = json.loads(text("docs/roadmap/CROSS_PLATFORM_REMAINING_WORK.json"))
 tracks = {item.get("id"): item for item in remaining.get("remaining_tracks", [])}
 need(tracks.get("PRESENCE01", {}).get("status") == "complete", "PRESENCE01 must be complete")
 need(tracks.get("PRESENCE01", {}).get("completed_through") == "PRESENCE01", "PRESENCE01 completed_through missing")
-need(tracks.get("PARITY04", {}).get("status") == "planned", "PARITY04 must remain planned/next")
+need(
+    tracks.get("PARITY04", {}).get("status") in {"planned", "complete"},
+    "PARITY04 must remain planned or be complete",
+)
 need(tracks.get("PARITY04", {}).get("prerequisites") == ["DOV24", "TVOV31", "WEB20", "PRESENCE01"], "PARITY04 prerequisite drift")
 need(tracks.get("REL-FINAL", {}).get("status") == "pending_execution", "REL-FINAL must remain pending execution")
 
@@ -98,7 +101,11 @@ need("**PRESENCE01 is implemented.**" in roadmap, "roadmap does not mark PRESENC
 need("Presence exchange runs only after authenticated reconnect and durable reconciliation" in roadmap, "roadmap missing non-fatal ordering")
 matrix = text("docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md")
 need("PRESENCE01 is **SUPPORTED**" in matrix, "capability matrix does not mark Presence supported")
-need("PARITY04 is the next cross-platform acceptance seal" in matrix, "capability matrix does not advance to PARITY04")
+need(
+    "PARITY04 is the next cross-platform acceptance seal" in matrix
+    or "PARITY04 is **SUPPORTED / SEALED**" in matrix,
+    "capability matrix must preserve the PARITY04 transition",
+)
 
 if errors:
     print("PRESENCE01_PEER_ACTIVITY_PRESENCE: FAIL")
