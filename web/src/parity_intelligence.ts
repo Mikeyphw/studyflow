@@ -23,7 +23,8 @@ function daysBetween(start:string,end:string):number{return localDayNumber(end)-
 function mondayFor(value:string):string{const d=localDate(value),offset=(d.getDay()+6)%7;d.setDate(d.getDate()-offset);return localDateKey(d);}
 function activePlan(state:StudyState){return state.plans.find(p=>p.id===state.activePlanId)??null;}
 function valueObject(e:any):Record<string,any>{return e&&typeof e.value==="object"&&e.value&&!Array.isArray(e.value)?e.value as Record<string,any>:{};}
-function bandFor(score:number):ReadinessExplanation["band"]{return score>=80?"on-track":score>=65?"watch":score>=45?"at-risk":"critical";}
+export function readinessBandForScore(score:number):ReadinessExplanation["band"]{return score>=80?"on-track":score>=65?"watch":score>=45?"at-risk":"critical";}
+const bandFor=readinessBandForScore;
 function signal(id:string,label:string,value:number|null,reason:string,weight:number,evidenceCount:number):ReadinessSignal{return{id,label,value,status:value==null?"unknown":value>=80?"good":"risk",reason,weight,severity:value==null?null:bandFor(value),evidenceCount};}
 function weightedPresent(items:Array<[number|null,number]>):number|null{const present=items.filter(([v,w])=>v!=null&&w>0) as Array<[number,number]>;const total=present.reduce((n,[,w])=>n+w,0);return total?clamp(Math.round(present.reduce((n,[v,w])=>n+clamp(v)*w,0)/total)):null;}
 

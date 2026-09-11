@@ -909,3 +909,77 @@ gradle_heap_mb = 1024
 memory_guard_mb = 256
 no_daemon = false
 low_priority = false
+
+
+[targets.studyflow_parity]
+type = "gradle"
+root = "."
+execution_environment = "native-termux"
+chroot_name = "androidos"
+
+[targets.studyflow_parity.gradle]
+version = "9.7.1"
+provider = "auto"
+max_workers = 1
+parallel = false
+no_daemon = false
+daemon_idle_timeout_ms = 900000
+build_cache = true
+structured_events = false
+fail_fast = false
+offline = false
+args = [
+  "-Dorg.gradle.parallel=true",
+  "-Dorg.gradle.vfs.watch=false",
+  "-Pkotlin.incremental=true",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+]
+
+[targets.studyflow_parity.tasks]
+build = ["verifyWeb20TerminalSeal"]
+test = [
+  "verifyWeb20SharedSemanticGoldenVectors",
+  "verifyWeb20RoadmapTruth",
+  "verifyWeb20WebRegression",
+  "verifyWeb20WebRelease",
+  ":core:domain:test",
+  ":core:link:test",
+  ":core:portability:test",
+  ":desktopApp:test",
+]
+lint = ["verifyFormatting"]
+clean = ["clean"]
+
+[targets.studyflow_parity.validation]
+android_safe = false
+max_workers = 1
+cpu_limit = 2
+parallel = false
+split_gradle = true
+no_daemon = false
+stop_daemon_after_phase = false
+low_priority = false
+gradle_heap_mb = 1152
+gradle_metaspace_mb = 512
+memory_guard_mb = 256
+
+[targets.studyflow_parity.validation.phases]
+preflight = ["verifyWeb20SharedSemanticGoldenVectors", "verifyWeb20RoadmapTruth"]
+compile = [
+  ":core:domain:compileKotlin",
+  ":core:domain:compileTestKotlin",
+  ":core:link:compileKotlin",
+  ":core:portability:compileKotlin",
+  ":desktopApp:compileKotlin",
+  ":desktopApp:compileTestKotlin",
+]
+unit-test = [
+  ":core:domain:test",
+  ":core:link:test",
+  ":core:portability:test",
+  ":desktopApp:test",
+  "verifyWeb20WebRegression",
+  "verifyWeb20WebRelease",
+]
+package = ["verifyWeb20TerminalSeal"]
+lint = ["verifyFormatting"]

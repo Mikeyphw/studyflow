@@ -2,6 +2,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MAX_PORTABLE_V2_BYTES = exports.MAX_PORTABLE_V1_BYTES = exports.PORTABLE_FORMAT_VERSION = exports.LEGACY_PORTABLE_FORMAT_VERSION = exports.PORTABLE_FORMAT = void 0;
+exports.stableStringify = stableStringify;
 exports.createPortablePackage = createPortablePackage;
 exports.createPortablePackageV2 = createPortablePackageV2;
 exports.serializePortablePackage = serializePortablePackage;

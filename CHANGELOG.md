@@ -1,3 +1,10 @@
+# WEB20 — Shared semantic golden vectors
+
+- Added 40 language-neutral semantic vectors consumed by Kotlin/core, TypeScript/Web, and Desktop.
+- Covered readiness, scheduling/rescheduling, scoring, SRS, pause-aware study time, goal progress, Error Notebook state, canonical portable serialization, and deterministic SFLP conflict resolution.
+- Added a production-backed Desktop semantic adapter, canonical JSON helper, cross-runtime verifier, and roadmap ledger closure.
+- Made WEB20 the canonical semantic fixture set that PARITY04 must reuse; PRESENCE01 remains next.
+
 # REL01 — Target release validation runner
 
 - Added a post-SFLP target-machine release validation runner for the existing signed APK/AAB,

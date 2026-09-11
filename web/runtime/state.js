@@ -15,6 +15,7 @@ const exam_foundation_js_1 = require("./exam_foundation.js");
 const task_workflows_js_1 = require("./task_workflows.js");
 const parity_intelligence_js_1 = require("./parity_intelligence.js");
 const refinement_js_1 = require("./refinement.js");
+const review_semantics_js_1 = require("./review_semantics.js");
 function cloneState(state) { return JSON.parse(JSON.stringify(state)); }
 function isoMs(value) { const ms = Date.parse(value); if (!Number.isFinite(ms))
     throw new TypeError(`Invalid timestamp: ${value}`); return ms; }
@@ -1300,7 +1301,7 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             return { result, attempt, review, errorEntry };
         },
         completeReview(reviewId, { rating = null } = {}) {
-            var _a, _b;
+            var _a, _b, _c, _d, _e, _f;
             const at = nowIso();
             const review = state.reviews.find((candidate) => candidate.id === reviewId && candidate.planId === activePlanId());
             if (!review)
@@ -1315,16 +1316,18 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
             const grade = normalizeReviewGrade(rating);
             const intervals = reviewIntervals(review.planId);
             const currentIndex = Math.max(0, Math.min(intervals.length - 1, Number.isInteger(review.intervalIndex) ? review.intervalIndex : 0));
-            const nextIndex = grade < 3 ? 0 : Math.min(currentIndex + 1, intervals.length - 1);
-            const nextInterval = intervals[nextIndex];
-            const completed = (0, domain_js_1.createReview)({ ...review, status: "completed", completedAt: at, updatedAt: at });
-            const duplicate = review.sourceId == null ? null : (_a = state.reviews.find((candidate) => candidate.id !== review.id && candidate.status === "due" && candidate.planId === review.planId && candidate.sourceType === review.sourceType && candidate.sourceId === review.sourceId)) !== null && _a !== void 0 ? _a : null;
-            const successor = duplicate !== null && duplicate !== void 0 ? duplicate : (0, domain_js_1.createReview)({ planId: review.planId, subjectId: review.subjectId, topicId: review.topicId, dueAt: new Date(Date.parse(at) + nextInterval * 86400000).toISOString(), status: "due", sourceType: review.sourceType, sourceId: review.sourceId, intervalIndex: nextIndex, intervalDays: nextInterval, repetitionCount: ((_b = review.repetitionCount) !== null && _b !== void 0 ? _b : 0) + 1, previousReviewId: review.id, createdAt: at, updatedAt: at });
+            const plan = (_a = state.plans.find((candidate) => candidate.id === review.planId)) !== null && _a !== void 0 ? _a : null;
+            const progressionInput = { intervalDays: (_b = review.intervalDays) !== null && _b !== void 0 ? _b : 0, repetitionCount: (_c = review.repetitionCount) !== null && _c !== void 0 ? _c : 0, easeFactor: (_d = review.easeFactor) !== null && _d !== void 0 ? _d : 2.5, grade, reviewedAtEpochMillis: Date.parse(at) };
+            const progression = (plan === null || plan === void 0 ? void 0 : plan.mode) === "EXAM_PLAN" ? (0, review_semantics_js_1.schedulePublicExamReview)(progressionInput, intervals) : (0, review_semantics_js_1.scheduleSpacedRepetition)(progressionInput);
+            const nextIndex = (plan === null || plan === void 0 ? void 0 : plan.mode) === "EXAM_PLAN" ? (grade < 3 ? 0 : Math.min(progression.repetitionCount, intervals.length - 1)) : Math.min(currentIndex + 1, intervals.length - 1);
+            const completed = (0, domain_js_1.createReview)({ ...review, status: "completed", completedAt: at, easeFactor: progression.easeFactor, updatedAt: at });
+            const duplicate = review.sourceId == null ? null : (_e = state.reviews.find((candidate) => candidate.id !== review.id && candidate.status === "due" && candidate.planId === review.planId && candidate.sourceType === review.sourceType && candidate.sourceId === review.sourceId)) !== null && _e !== void 0 ? _e : null;
+            const successor = duplicate !== null && duplicate !== void 0 ? duplicate : (0, domain_js_1.createReview)({ planId: review.planId, subjectId: review.subjectId, topicId: review.topicId, dueAt: new Date(progression.dueAtEpochMillis).toISOString(), status: "due", sourceType: review.sourceType, sourceId: review.sourceId, intervalIndex: nextIndex, intervalDays: progression.intervalDays, repetitionCount: progression.repetitionCount, easeFactor: progression.easeFactor, previousReviewId: review.id, createdAt: at, updatedAt: at });
             let reviews = state.reviews.map((candidate) => candidate.id === review.id ? completed : candidate);
             if (!duplicate)
                 reviews = [...reviews, successor];
             const errorEntries = state.errorEntries.map((entry) => entry.status === "open" && entry.reviewId === review.id ? (0, domain_js_1.createErrorEntry)({ ...entry, reviewId: successor.id, updatedAt: at }) : entry);
-            const evidence = (0, domain_js_1.createEvidence)({ planId: activePlanId(), subjectId: review.subjectId, topicId: review.topicId, kind: "review-completed", observedAt: at, provenance: "user", value: { reviewId: review.id, rating, grade, intervalIndex: currentIndex, intervalDays: review.intervalDays, policyIntervalsDays: intervals, nextReviewId: successor.id, nextIntervalIndex: nextIndex, nextIntervalDays: nextInterval, nextDueAt: successor.dueAt }, createdAt: at, updatedAt: at });
+            const evidence = (0, domain_js_1.createEvidence)({ planId: activePlanId(), subjectId: review.subjectId, topicId: review.topicId, kind: "review-completed", observedAt: at, provenance: "user", value: { reviewId: review.id, rating, grade, intervalIndex: currentIndex, intervalDays: review.intervalDays, easeFactor: (_f = review.easeFactor) !== null && _f !== void 0 ? _f : 2.5, policyIntervalsDays: (plan === null || plan === void 0 ? void 0 : plan.mode) === "EXAM_PLAN" ? intervals : null, nextReviewId: successor.id, nextIntervalIndex: nextIndex, nextIntervalDays: progression.intervalDays, nextEaseFactor: progression.easeFactor, nextDueAt: successor.dueAt }, createdAt: at, updatedAt: at });
             commit({ ...state, reviews, errorEntries, evidence: [...state.evidence, evidence] }, "review-completed");
             return completed;
         },

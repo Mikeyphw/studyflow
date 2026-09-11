@@ -286,26 +286,30 @@ function createFlashcard(input = {}) {
     };
 }
 function createReview(input = {}) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const intervalDays = input.intervalDays == null ? null : requirePositiveInteger(input.intervalDays, "review.intervalDays", { min: 1, max: 365 });
     const intervalIndex = Number((_a = input.intervalIndex) !== null && _a !== void 0 ? _a : 0);
     const repetitionCount = Number((_b = input.repetitionCount) !== null && _b !== void 0 ? _b : 0);
+    const easeFactor = Number((_c = input.easeFactor) !== null && _c !== void 0 ? _c : 2.5);
     if (!Number.isInteger(intervalIndex) || intervalIndex < 0 || intervalIndex > 7)
         throw new TypeError("review.intervalIndex must be an integer from 0 to 7");
     if (!Number.isInteger(repetitionCount) || repetitionCount < 0 || repetitionCount > 9999)
         throw new TypeError("review.repetitionCount must be an integer from 0 to 9999");
+    if (!Number.isFinite(easeFactor) || easeFactor <= 0)
+        throw new TypeError("review.easeFactor must be a positive finite number");
     return {
         ...entityBase("review", input),
         planId: requireText(input.planId, "review.planId"),
         subjectId: optionalId(input.subjectId),
         topicId: optionalId(input.topicId),
         dueAt: requireText(input.dueAt, "review.dueAt"),
-        status: requireOneOf((_c = input.status) !== null && _c !== void 0 ? _c : "due", ["due", "completed", "dismissed"], "review.status"),
+        status: requireOneOf((_d = input.status) !== null && _d !== void 0 ? _d : "due", ["due", "completed", "dismissed"], "review.status"),
         sourceType: optionalText(input.sourceType),
         sourceId: optionalId(input.sourceId),
         intervalIndex,
         intervalDays,
         repetitionCount,
+        easeFactor,
         previousReviewId: optionalId(input.previousReviewId),
         completedAt: optionalText(input.completedAt),
     };

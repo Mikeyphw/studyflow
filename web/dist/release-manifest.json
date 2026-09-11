@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-00dfc15b12db736a",
+  "cacheVersion": "studyflow-local-1.0.0-db59cdf19653cd3d",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -47,8 +47,8 @@
     },
     {
       "path": "runtime/domain.js",
-      "sha256": "38c0053e403c5a2d090728fdde1ddd2199d37eef349971ffaca052df9bf8c713",
-      "bytes": 61493
+      "sha256": "056fb297d6efbfd853a13a8146167ef20298b6a90da74122683aa85409ed1d9f",
+      "bytes": 61750
     },
     {
       "path": "runtime/encrypted_portable.js",
@@ -97,13 +97,13 @@
     },
     {
       "path": "runtime/parity_intelligence.js",
-      "sha256": "368b5d99f32eb36e35d54725a265b4f0b133a2864db229b86543f76b268efcd7",
-      "bytes": 24192
+      "sha256": "93da1fa0370dcdc5f95b878f3bb238671f274642928808e93a2069478aa0ecff",
+      "bytes": 24300
     },
     {
       "path": "runtime/portable.js",
-      "sha256": "52cdf309d39c88713210883ff39b1967a85cdf193d24e908127b8649e3f5d4db",
-      "bytes": 22084
+      "sha256": "c2e49b3e31edda225ed5c3d55401ca0b92e39857557aa8b040e9aff0da1cd837",
+      "bytes": 22127
     },
     {
       "path": "runtime/product.js",
@@ -146,19 +146,29 @@
       "bytes": 2493
     },
     {
+      "path": "runtime/review_semantics.js",
+      "sha256": "ebc282cba78223666ff956ac07161551dd1ae5d137ea155551035f3bebacc194",
+      "bytes": 2678
+    },
+    {
       "path": "runtime/schedule.js",
       "sha256": "cd5193f0f08246ea7358db71c7aadd8eeac3b0c6d15ddda16586a5578747e318",
       "bytes": 23492
     },
     {
+      "path": "runtime/semantic_golden.js",
+      "sha256": "a35ede736798dfaa48c4a73c3b81c3023a08ecc58dec7aa374c274a6889312b0",
+      "bytes": 4736
+    },
+    {
       "path": "runtime/sflp_link.js",
-      "sha256": "49b58e9486a9637fe514041042bd60c95a8aeae69789d2d36ecf443fa9dd4b0b",
-      "bytes": 13986
+      "sha256": "b40a58ba690a76b3092e4b2259d309c4b102d6fbf68c624c5b22d798e11caa0c",
+      "bytes": 28770
     },
     {
       "path": "runtime/state.js",
-      "sha256": "baa661efbd2e0e7dfbc5649078a0f29bde4a3ae4157395f4db665380af570e63",
-      "bytes": 128434
+      "sha256": "984e11cda51205bb5c88fbf469ae70ba820e0875ecf2b1f1c0b9eb60bff43eb5",
+      "bytes": 129551
     },
     {
       "path": "runtime/storage.js",
@@ -172,8 +182,8 @@
     },
     {
       "path": "runtime/tv.js",
-      "sha256": "2b3f188a4f4cb3ad254439b4450353f0df05bc807766fd3dc647562d89d8fdcb",
-      "bytes": 9829
+      "sha256": "38d8ed136e6957bf195b2151dd19469a04a363fdf8f8d9ded60310b0b7a5cabe",
+      "bytes": 11698
     },
     {
       "path": "runtime/tv_control.js",
@@ -216,6 +226,11 @@
       "bytes": 4210
     },
     {
+      "path": "runtime/tv_semantic_parity.js",
+      "sha256": "14187b4efb572cd3dedd426d1a2af7b2e574bc9f7d89c44880278649c45cac46",
+      "bytes": 2168
+    },
+    {
       "path": "runtime/tv_session.js",
       "sha256": "de06ff33d51d64b4946779027f91c43579327a6e8cc23fca494299fdf436ca7c",
       "bytes": 2080
@@ -227,8 +242,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "6d9d4d522f94dafeae95493aa39ff1bc4231fc82c95e0d5f36c62a23b5657d83",
-      "bytes": 2619
+      "sha256": "ee5d29709728dbd9cd8e5f6d55d50fcd29e18478e888b3ba4c0430912d92daaa",
+      "bytes": 2719
     },
     {
       "path": "styles.css",

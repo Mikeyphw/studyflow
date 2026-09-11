@@ -254,8 +254,10 @@ export function createReview(input = {}) {
     const intervalDays = input.intervalDays == null ? null : requirePositiveInteger(input.intervalDays, "review.intervalDays", { min: 1, max: 365 });
     const intervalIndex = Number(input.intervalIndex ?? 0);
     const repetitionCount = Number(input.repetitionCount ?? 0);
+    const easeFactor = Number(input.easeFactor ?? 2.5);
     if (!Number.isInteger(intervalIndex) || intervalIndex < 0 || intervalIndex > 7) throw new TypeError("review.intervalIndex must be an integer from 0 to 7");
     if (!Number.isInteger(repetitionCount) || repetitionCount < 0 || repetitionCount > 9999) throw new TypeError("review.repetitionCount must be an integer from 0 to 9999");
+    if (!Number.isFinite(easeFactor) || easeFactor <= 0) throw new TypeError("review.easeFactor must be a positive finite number");
     return {
         ...entityBase("review", input),
         planId: requireText(input.planId, "review.planId"),
@@ -268,6 +270,7 @@ export function createReview(input = {}) {
         intervalIndex,
         intervalDays,
         repetitionCount,
+        easeFactor,
         previousReviewId: optionalId(input.previousReviewId),
         completedAt: optionalText(input.completedAt),
     };

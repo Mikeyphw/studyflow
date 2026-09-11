@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
+exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
 exports.installStudyFlowWebSflpPeer = installStudyFlowWebSflpPeer;
 const STORAGE_KEY = "studyflow.sflp.web.peer.v1";
 const PAIRING_TTL_MILLIS = 120000;
@@ -95,13 +95,7 @@ class StudyFlowWebTvConnectivityController {
         if (peer.identity.clientKind !== "web_tv")
             throw new Error("SFLP12 requires a web_tv peer");
     }
-    createReceiverOffer(workspaceId, endpointHints = this.peer.createPairingOffer().endpointHints) {
-        const pairing = this.peer.createPairingOffer(endpointHints);
-        const createdAtEpochMillis = Date.now();
-        const offer = { type: "studyflow.sflp.web_tv.receiver.v1", receiver: this.peer.identity, workspaceId, pairingCode: pairing.pairingCode, endpointHints, createdAtEpochMillis, expiresAtEpochMillis: pairing.expiresAtEpochMillis, qrPayload: "" };
-        offer.qrPayload = JSON.stringify({ ...offer, qrPayload: undefined });
-        return offer;
-    }
+    createReceiverOffer(workspaceId, endpointHints = this.peer.createPairingOffer().endpointHints) { const pairing = this.peer.createPairingOffer(endpointHints); const createdAtEpochMillis = Date.now(); const offer = { type: "studyflow.sflp.web_tv.receiver.v1", receiver: this.peer.identity, workspaceId, pairingCode: pairing.pairingCode, endpointHints, createdAtEpochMillis, expiresAtEpochMillis: pairing.expiresAtEpochMillis, qrPayload: "" }; offer.qrPayload = JSON.stringify({ ...offer, qrPayload: undefined }); return offer; }
     acceptRemoteInput(command) { return command.targetDeviceId === this.peer.identity.deviceId && ["dpad_up", "dpad_down", "dpad_left", "dpad_right", "select", "back", "text"].includes(command.kind); }
     acceptProjection(snapshot) { return snapshot.kind === "presentation_projection" && snapshot.continuityMode === "presentation_sink" && snapshot.requiredCapabilities.includes("device.presentation_sink") && snapshot.requiredCapabilities.includes("dpad.input"); }
 }
@@ -111,278 +105,244 @@ class StudyFlowWebActivityHandoffController {
         this.peer = peer;
         this.consumed = new Set();
     }
-    createOffer(targetDeviceId, activity, ttlMillis = 90000) {
-        const now = Date.now();
-        if (activity.requiredCapabilities.length === 0)
-            throw new Error("Handoff requires capability declarations");
-        return { handoffId: `handoff-${this.peer.identity.deviceId}-${now}`, sourceDevice: this.peer.identity, targetDeviceId, activity, createdAtEpochMillis: now, expiresAtEpochMillis: now + ttlMillis, oneTimeNonceHex: randomHex(16) };
-    }
-    acceptOffer(offer) {
-        if (this.consumed.has(offer.handoffId))
-            return false;
-        if (offer.expiresAtEpochMillis < Date.now())
-            return false;
-        if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.identity.deviceId)
-            return false;
-        const capabilities = new Set(this.peer.identity.capabilities);
-        if (offer.activity.requiredCapabilities.some(capability => !capabilities.has(capability)))
-            return false;
-        if ((this.peer.identity.clientKind === "web_tv" || this.peer.identity.clientKind === "android_tv") && offer.activity.requiredCapabilities.some(capability => capability.endsWith(".write") || capability === "writing.edit" || capability === "library.import"))
-            return false;
-        this.consumed.add(offer.handoffId);
-        return true;
-    }
+    createOffer(targetDeviceId, activity, ttlMillis = 90000) { const now = Date.now(); if (activity.requiredCapabilities.length === 0)
+        throw new Error("Handoff requires capability declarations"); return { handoffId: `handoff-${this.peer.identity.deviceId}-${now}`, sourceDevice: this.peer.identity, targetDeviceId, activity, createdAtEpochMillis: now, expiresAtEpochMillis: now + ttlMillis, oneTimeNonceHex: randomHex(16) }; }
+    acceptOffer(offer) { if (this.consumed.has(offer.handoffId))
+        return false; if (offer.expiresAtEpochMillis < Date.now())
+        return false; if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.identity.deviceId)
+        return false; const capabilities = new Set(this.peer.identity.capabilities); if (offer.activity.requiredCapabilities.some(capability => !capabilities.has(capability)))
+        return false; if ((this.peer.identity.clientKind === "web_tv" || this.peer.identity.clientKind === "android_tv") && offer.activity.requiredCapabilities.some(capability => capability.endsWith(".write") || capability === "writing.edit" || capability === "library.import"))
+        return false; this.consumed.add(offer.handoffId); return true; }
     resumePayload(offer) { return { type: "studyflow.sflp.activity_handoff.v1", handoffId: offer.handoffId, workspaceId: offer.activity.workspaceId, activityId: offer.activity.activityId, cursor: offer.activity.cursor }; }
 }
 exports.StudyFlowWebActivityHandoffController = StudyFlowWebActivityHandoffController;
-
 function installStudyFlowWebSflpPeer(kind = "web") { if (typeof globalThis.localStorage === "undefined")
     return null; const peer = new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(globalThis.localStorage), kind); globalThis.studyFlowSflpPeer = peer; globalThis.dispatchEvent(new CustomEvent("studyflow:sflp-peer-ready", { detail: { deviceId: peer.identity.deviceId, clientKind: peer.identity.clientKind } })); return peer; }
-
-const SFLP14_LIVE_CURSOR_WIRE_NAME = "session.live_cursor";
-const SFLP15_PROJECTION_CONTROL_WIRE_NAME = "presentation.projection_control";
-exports.SFLP14_LIVE_CURSOR_WIRE_NAME = SFLP14_LIVE_CURSOR_WIRE_NAME;
-exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = SFLP15_PROJECTION_CONTROL_WIRE_NAME;
-
+exports.SFLP14_LIVE_CURSOR_WIRE_NAME = "session.live_cursor";
+exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = "presentation.projection_control";
 class StudyFlowWebLiveSessionContinuityController {
-    constructor(snapshot) { this.snapshot = snapshot; this.applied = new Set(); }
+    constructor(snapshot) {
+        this.snapshot = snapshot;
+        this.applied = new Set();
+    }
     current() { return JSON.parse(JSON.stringify(this.snapshot)); }
-    applyEvent(event) { if (this.applied.has(event.eventId)) return "duplicate"; if (event.sessionEpoch < this.snapshot.sessionEpoch) return "stale_epoch"; if (event.sessionEpoch === this.snapshot.sessionEpoch && event.sequence <= this.snapshot.lastSequence) return "stale_sequence"; if (this.snapshot.state === "completed") return "already_completed"; this.snapshot = { ...this.snapshot, state: event.kind === "paused" ? "paused" : event.kind === "completed" ? "completed" : "running", cursor: event.cursor, lastSequence: event.sequence, sessionEpoch: event.sessionEpoch, completionOperationId: event.completionOperationId ?? this.snapshot.completionOperationId }; this.applied.add(event.eventId); return "applied"; }
+    applyEvent(event) { var _a; if (this.applied.has(event.eventId))
+        return "duplicate"; if (event.sessionEpoch < this.snapshot.sessionEpoch)
+        return "stale_epoch"; if (event.sessionEpoch === this.snapshot.sessionEpoch && event.sequence <= this.snapshot.lastSequence)
+        return "stale_sequence"; if (this.snapshot.state === "completed")
+        return "already_completed"; this.snapshot = { ...this.snapshot, state: event.kind === "paused" ? "paused" : event.kind === "completed" ? "completed" : "running", cursor: event.cursor, lastSequence: event.sequence, sessionEpoch: event.sessionEpoch, completionOperationId: (_a = event.completionOperationId) !== null && _a !== void 0 ? _a : this.snapshot.completionOperationId }; this.applied.add(event.eventId); return "applied"; }
     pause(sourceDeviceId) { return this.event(sourceDeviceId, "paused"); }
     resume(sourceDeviceId) { return this.event(sourceDeviceId, "resumed"); }
     complete(sourceDeviceId, completionOperationId) { return this.event(sourceDeviceId, "completed", completionOperationId); }
     event(sourceDeviceId, kind, completionOperationId) { return { eventId: `live-${kind}-${Date.now()}`, sessionId: this.snapshot.sessionId, workspaceId: this.snapshot.workspaceId, sourceDeviceId, sessionEpoch: this.snapshot.sessionEpoch, sequence: this.snapshot.lastSequence + 1, kind, cursor: this.snapshot.cursor, completionOperationId }; }
 }
 exports.StudyFlowWebLiveSessionContinuityController = StudyFlowWebLiveSessionContinuityController;
-
 class StudyFlowWebPresentationProjectionController {
-    constructor(peer) { this.peer = peer; this.accepted = new Set(); this.frames = {}; }
+    constructor(peer) {
+        this.peer = peer;
+        this.accepted = new Set();
+        this.frames = {};
+    }
     createProjectionOffer(workspaceId, title, contentHash, targetDeviceId) { const now = Date.now(); return { projectionId: `projection-${this.peer.identity.deviceId}-${now}`, workspaceId, sourceDevice: this.peer.identity, targetDeviceId, contentKind: "document", title, contentHash, requiredCapabilities: ["workspace.read", "device.presentation_sink", "video.output"], createdAtEpochMillis: now, expiresAtEpochMillis: now + 120000 }; }
-    acceptProjectionOffer(offer) { if (offer.expiresAtEpochMillis < Date.now()) return false; if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.identity.deviceId) return false; const caps = new Set(this.peer.identity.capabilities); if (offer.requiredCapabilities.some(capability => !caps.has(capability))) return false; if (offer.requiredCapabilities.some(capability => capability.endsWith(".write") || capability === "library.import" || capability === "writing.edit")) return false; this.accepted.add(offer.projectionId); return true; }
-    applyProjectionFrame(frame) { if (!this.accepted.has(frame.projectionId)) return false; const current = this.frames[frame.projectionId]; if (current && frame.sequence <= current.sequence) return false; this.frames[frame.projectionId] = frame; return true; }
-    acknowledgeProjectionFrame(projectionId) { const frame = this.frames[projectionId]; if (!frame) return null; return { projectionId, sinkDeviceId: this.peer.identity.deviceId, acknowledgedFrameId: frame.frameId, acknowledgedSequence: frame.sequence, contentHash: frame.contentHash, acknowledgedAtEpochMillis: Date.now() }; }
+    acceptProjectionOffer(offer) { if (offer.expiresAtEpochMillis < Date.now())
+        return false; if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.identity.deviceId)
+        return false; const caps = new Set(this.peer.identity.capabilities); if (offer.requiredCapabilities.some(capability => !caps.has(capability)))
+        return false; if (offer.requiredCapabilities.some(capability => capability.endsWith(".write") || capability === "library.import" || capability === "writing.edit"))
+        return false; this.accepted.add(offer.projectionId); return true; }
+    applyProjectionFrame(frame) { if (!this.accepted.has(frame.projectionId))
+        return false; const current = this.frames[frame.projectionId]; if (current && frame.sequence <= current.sequence)
+        return false; this.frames[frame.projectionId] = frame; return true; }
+    acknowledgeProjectionFrame(projectionId) { const frame = this.frames[projectionId]; if (!frame)
+        return null; return { projectionId, sinkDeviceId: this.peer.identity.deviceId, acknowledgedFrameId: frame.frameId, acknowledgedSequence: frame.sequence, contentHash: frame.contentHash, acknowledgedAtEpochMillis: Date.now() }; }
     createProjectionCommand(projectionId, targetDeviceId, kind) { return { type: "presentation.projection_control", commandId: `projection-command-${Date.now()}`, projectionId, sourceDeviceId: this.peer.identity.deviceId, targetDeviceId, kind, issuedAtEpochMillis: Date.now() }; }
 }
 exports.StudyFlowWebPresentationProjectionController = StudyFlowWebPresentationProjectionController;
-
-
-
-// SFLP16/SFLP17: control protocol and input delegation helpers.
 class StudyFlowControlInputRuntime {
-  constructor(peer) {
-    this.peer = peer;
-    this.leases = new Map();
-    this.inputDelegations = new Map();
-    this.lastControlSequence = new Map();
-    this.lastInputSequence = new Map();
-  }
-
-  rememberControlLease(lease) {
-    this.leases.set(lease.sessionId, lease);
-    return lease;
-  }
-
-  applyControlCommand(command) {
-    const lease = this.leases.get(command.sessionId);
-    if (!lease) return { status: 'rejected', reason: 'unknown_lease' };
-    if (command.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' };
-    if (command.leaseToken !== lease.leaseToken) return { status: 'rejected', reason: 'bad_lease_token' };
-    const last = this.lastControlSequence.get(command.sessionId) || 0;
-    if (command.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' };
-    this.lastControlSequence.set(command.sessionId, command.sequence);
-    return { status: 'accepted', acknowledgedSequence: command.sequence };
-  }
-
-  acceptInputDelegation(offer) {
-    if (offer.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' };
-    this.inputDelegations.set(offer.delegationId, offer);
-    return { status: 'accepted', delegationId: offer.delegationId };
-  }
-
-  applyInputEvent(event) {
-    const offer = this.inputDelegations.get(event.delegationId);
-    if (!offer) return { status: 'rejected', reason: 'unknown_delegation' };
-    const last = this.lastInputSequence.get(event.delegationId) || 0;
-    if (event.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' };
-    this.lastInputSequence.set(event.delegationId, event.sequence);
-    return { status: 'accepted', acknowledgedSequence: event.sequence };
-  }
+    constructor(peer) {
+        this.peer = peer;
+        this.leases = new Map();
+        this.inputDelegations = new Map();
+        this.lastControlSequence = new Map();
+        this.lastInputSequence = new Map();
+    }
+    rememberControlLease(lease) {
+        this.leases.set(lease.sessionId, lease);
+        return lease;
+    }
+    applyControlCommand(command) {
+        var _a;
+        const lease = this.leases.get(command.sessionId);
+        if (!lease)
+            return { status: 'rejected', reason: 'unknown_lease' };
+        if (command.targetDeviceId !== this.peer.deviceId) {
+            return { status: 'rejected', reason: 'wrong_target' };
+        }
+        if (command.leaseToken !== lease.leaseToken) {
+            return { status: 'rejected', reason: 'bad_lease_token' };
+        }
+        const last = (_a = this.lastControlSequence.get(command.sessionId)) !== null && _a !== void 0 ? _a : 0;
+        if (command.sequence <= last)
+            return { status: 'rejected', reason: 'stale_sequence' };
+        this.lastControlSequence.set(command.sessionId, command.sequence);
+        return { status: 'accepted', acknowledgedSequence: command.sequence };
+    }
+    acceptInputDelegation(offer) {
+        if (offer.targetDeviceId !== this.peer.deviceId)
+            return { status: 'rejected', reason: 'wrong_target' };
+        this.inputDelegations.set(offer.delegationId, offer);
+        return { status: 'accepted', delegationId: offer.delegationId };
+    }
+    applyInputEvent(event) {
+        var _a;
+        if (!this.inputDelegations.has(event.delegationId))
+            return { status: 'rejected', reason: 'unknown_delegation' };
+        if (event.targetDeviceId !== this.peer.deviceId)
+            return { status: 'rejected', reason: 'wrong_target' };
+        const last = (_a = this.lastInputSequence.get(event.delegationId)) !== null && _a !== void 0 ? _a : 0;
+        if (event.sequence <= last)
+            return { status: 'rejected', reason: 'stale_sequence' };
+        this.lastInputSequence.set(event.delegationId, event.sequence);
+        return { status: 'accepted', acknowledgedSequence: event.sequence };
+    }
 }
-
 exports.StudyFlowControlInputRuntime = StudyFlowControlInputRuntime;
-
-// SFLP18/SFLP19: notification/scheduling sync and material streaming handoff.
 class StudyFlowNotificationMediaRuntime {
-  constructor(peer) {
-    this.peer = peer
-    this.notifications = new Map()
-    this.lastNotificationSequence = new Map()
-    this.materialStreams = new Map()
-    this.materialChunks = new Map()
-  }
-
-  applyNotificationDelivery(delivery) {
-    if (delivery.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' }
-    if (delivery.notification.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
-    if (this.notifications.has(delivery.notification.notificationId)) return { status: 'duplicate', acknowledgedSequence: delivery.sequence }
-    const last = this.lastNotificationSequence.get(delivery.sourceDeviceId) || 0
-    if (delivery.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' }
-    this.lastNotificationSequence.set(delivery.sourceDeviceId, delivery.sequence)
-    this.notifications.set(delivery.notification.notificationId, delivery.notification)
-    return { status: 'accepted', acknowledgedSequence: delivery.sequence }
-  }
-
-  scheduleChangeOperation(change) {
-    return {
-      operationId: `op-${change.changeId}`,
-      workspaceId: change.workspaceId,
-      originDeviceId: change.sourceDeviceId,
-      originSequence: change.sequence,
-      entityId: change.scheduleEntityId,
-      operationType: change.changeKind === 'reminder_cancelled' ? 'schedule.reminder_cancelled' : 'schedule.reminder_upserted',
-      payload: { notificationScheduleSync: 'sflp18', changeKind: change.changeKind },
+    constructor(peer) {
+        this.peer = peer;
+        this.notifications = new Map();
+        this.lastNotificationSequence = new Map();
+        this.materialStreams = new Map();
+        this.materialChunks = new Map();
     }
-  }
-
-  acceptMaterialStream(offer) {
-    if (offer.expiresAtEpochMillis < Date.now()) return false
-    if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.deviceId) return false
-    const capabilities = new Set(this.peer.capabilities || [])
-    if ((offer.requiredCapabilities || []).some(capability => capability.endsWith('.write') || capability === 'library.import')) return false
-    if ((offer.requiredCapabilities || []).some(capability => !capabilities.has(capability))) return false
-    this.materialStreams.set(offer.streamId, offer)
-    this.materialChunks.set(offer.streamId, new Set())
-    return true
-  }
-
-  applyMaterialChunk(chunk) {
-    const offer = this.materialStreams.get(chunk.streamId)
-    if (!offer) return { status: 'rejected', reason: 'unknown_stream' }
-    if (chunk.targetDeviceId !== this.peer.deviceId) return { status: 'rejected', reason: 'wrong_target' }
-    if (chunk.byteOffset !== chunk.chunkIndex * offer.chunkSize) return { status: 'rejected', reason: 'unexpected_offset' }
-    const chunks = this.materialChunks.get(chunk.streamId) || new Set()
-    if (chunks.has(chunk.chunkIndex)) return { status: 'duplicate', acknowledgedChunkIndex: chunk.chunkIndex }
-    chunks.add(chunk.chunkIndex)
-    this.materialChunks.set(chunk.streamId, chunks)
-    return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex }
-  }
+    applyNotificationDelivery(delivery) {
+        var _a;
+        if (delivery.targetDeviceId !== this.peer.deviceId)
+            return { status: 'rejected', reason: 'wrong_target' };
+        if (delivery.notification.expiresAtEpochMillis < Date.now())
+            return { status: 'expired', reason: 'expired' };
+        if (this.notifications.has(delivery.notification.notificationId))
+            return { status: 'duplicate', acknowledgedSequence: delivery.sequence };
+        const last = (_a = this.lastNotificationSequence.get(delivery.sourceDeviceId)) !== null && _a !== void 0 ? _a : 0;
+        if (delivery.sequence <= last)
+            return { status: 'rejected', reason: 'stale_sequence' };
+        this.lastNotificationSequence.set(delivery.sourceDeviceId, delivery.sequence);
+        this.notifications.set(delivery.notification.notificationId, delivery.notification);
+        return { status: 'accepted', acknowledgedSequence: delivery.sequence };
+    }
+    scheduleChangeOperation(change) {
+        return { operationId: `op-${change.changeId}`, workspaceId: change.workspaceId, originDeviceId: change.sourceDeviceId, originSequence: change.sequence, entityId: change.scheduleEntityId, operationType: change.changeKind === 'reminder_cancelled' ? 'schedule.reminder_cancelled' : 'schedule.reminder_upserted', payload: { notificationScheduleSync: 'sflp18', changeKind: change.changeKind } };
+    }
+    acceptMaterialStream(offer) {
+        if (offer.expiresAtEpochMillis < Date.now())
+            return false;
+        if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.deviceId)
+            return false;
+        const capabilities = new Set(this.peer.capabilities);
+        if (offer.requiredCapabilities.some(capability => capability.endsWith('.write') || capability === 'library.import'))
+            return false;
+        if (offer.requiredCapabilities.some(capability => !capabilities.has(capability)))
+            return false;
+        this.materialStreams.set(offer.streamId, offer);
+        this.materialChunks.set(offer.streamId, new Set());
+        return true;
+    }
+    applyMaterialChunk(chunk) {
+        var _a;
+        const offer = this.materialStreams.get(chunk.streamId);
+        if (!offer)
+            return { status: 'rejected', reason: 'unknown_stream' };
+        if (chunk.targetDeviceId !== this.peer.deviceId)
+            return { status: 'rejected', reason: 'wrong_target' };
+        if (chunk.byteOffset !== chunk.chunkIndex * offer.chunkSize)
+            return { status: 'rejected', reason: 'unexpected_offset' };
+        const chunks = (_a = this.materialChunks.get(chunk.streamId)) !== null && _a !== void 0 ? _a : new Set();
+        if (chunks.has(chunk.chunkIndex))
+            return { status: 'duplicate', acknowledgedChunkIndex: chunk.chunkIndex };
+        chunks.add(chunk.chunkIndex);
+        this.materialChunks.set(chunk.streamId, chunks);
+        return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex };
+    }
 }
-
 exports.StudyFlowNotificationMediaRuntime = StudyFlowNotificationMediaRuntime;
-
-
-// SFLP20/SFLP21: clipboard/share/import bridge and conflict-review UX.
 class StudyFlowShareImportConflictRuntime {
-  constructor(peer) {
-    this.peer = peer
-    this.imports = new Map()
-    this.importSequences = new Map()
-    this.conflictReviews = new Map()
-    this.resolutions = new Set()
-  }
-
-  createClipboardOffer(workspaceId, targetDeviceId, text, apply = true) {
-    const now = Date.now()
-    return {
-      importId: `import-${this.peer.deviceId || this.peer.identity?.deviceId}-${now}`,
-      workspaceId,
-      sourceDevice: this.peer.identity || this.peer,
-      targetDeviceId,
-      intent: apply ? 'clipboard_apply' : 'clipboard_preview',
-      payloadKind: 'plain_text',
-      title: 'Clipboard text',
-      mimeType: 'text/plain',
-      previewText: String(text).slice(0, 16384),
-      contentSha256: '0'.repeat(64),
-      requiredCapabilities: apply ? ['clipboard.read', 'clipboard.write'] : ['clipboard.read'],
-      createdAtEpochMillis: now,
-      expiresAtEpochMillis: now + 300000,
+    constructor(peer) {
+        this.peer = peer;
+        this.imports = new Map();
+        this.conflictReviews = new Map();
     }
-  }
-
-  applyShareImportDelivery(delivery) {
-    const localId = this.peer.deviceId || this.peer.identity?.deviceId
-    if (delivery.targetDeviceId !== localId) return { status: 'rejected', reason: 'wrong_target' }
-    if (delivery.offer.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
-    if (this.imports.has(delivery.offer.importId)) return { status: 'duplicate', acknowledgedSequence: delivery.sequence }
-    const last = this.importSequences.get(delivery.sourceDeviceId) || 0
-    if (delivery.sequence <= last) return { status: 'rejected', reason: 'stale_sequence' }
-    const kind = this.peer.clientKind || this.peer.identity?.clientKind
-    const writeIntent = delivery.offer.intent === 'clipboard_apply' || delivery.offer.intent === 'share_import'
-    if ((kind === 'android_tv' || kind === 'web_tv') && writeIntent) return { status: 'rejected', reason: 'tv_write_forbidden' }
-    const caps = new Set(this.peer.capabilities || this.peer.identity?.capabilities || [])
-    if ((delivery.offer.requiredCapabilities || []).some(capability => !caps.has(capability))) return { status: 'rejected', reason: 'missing_capability' }
-    this.importSequences.set(delivery.sourceDeviceId, delivery.sequence)
-    this.imports.set(delivery.offer.importId, delivery.offer)
-    return { status: 'accepted', importId: delivery.offer.importId, acknowledgedSequence: delivery.sequence }
-  }
-
-  openConflictReview(review) {
-    const localId = this.peer.deviceId || this.peer.identity?.deviceId
-    if (review.targetDeviceId && review.targetDeviceId !== localId) return false
-    const caps = new Set(this.peer.capabilities || this.peer.identity?.capabilities || [])
-    if ((review.requiredCapabilities || ['conflict.review']).some(capability => !caps.has(capability))) return false
-    this.conflictReviews.set(review.reviewId, review)
-    return true
-  }
-
-  resolveConflict(resolution) {
-    if (this.resolutions.has(resolution.resolutionId)) return { status: 'duplicate', resolutionId: resolution.resolutionId }
-    if (!this.conflictReviews.has(resolution.reviewId)) return { status: 'rejected', reason: 'unknown_review' }
-    if (resolution.decision === 'merge' && !resolution.mergedSummary) return { status: 'rejected', reason: 'missing_merge' }
-    this.resolutions.add(resolution.resolutionId)
-    this.conflictReviews.delete(resolution.reviewId)
-    return { status: 'resolved', resolutionId: resolution.resolutionId, acknowledgedSequence: resolution.sequence }
-  }
+    applyShareImportDelivery(delivery) {
+        var _a, _b;
+        const localId = (_a = this.peer.deviceId) !== null && _a !== void 0 ? _a : (_b = this.peer.identity) === null || _b === void 0 ? void 0 : _b.deviceId;
+        if (delivery.targetDeviceId !== localId)
+            return { status: 'rejected', reason: 'wrong_target' };
+        if (this.imports.has(delivery.offer.importId))
+            return { status: 'duplicate' };
+        this.imports.set(delivery.offer.importId, delivery.offer);
+        return { status: 'accepted' };
+    }
+    openConflictReview(review) {
+        this.conflictReviews.set(review.reviewId, review);
+        return true;
+    }
+    resolveConflict(reviewId, decision) {
+        if (!this.conflictReviews.has(reviewId))
+            return { status: 'rejected', reason: 'unknown_review' };
+        this.conflictReviews.delete(reviewId);
+        return { status: 'resolved', decision };
+    }
 }
 exports.StudyFlowShareImportConflictRuntime = StudyFlowShareImportConflictRuntime;
-
-// SFLP22/SFLP23 account/backup handoff and release validation runtime.
 class StudyFlowAccountBackupReleaseRuntime {
-  constructor(peer) {
-    this.peer = peer
-    this.handoffs = new Set()
-    this.restores = new Set()
-  }
-
-  localDeviceId() { return this.peer.deviceId || (this.peer.identity && this.peer.identity.deviceId) }
-  localCapabilities() { return new Set(this.peer.capabilities || (this.peer.identity && this.peer.identity.capabilities) || []) }
-  localClientKind() { return this.peer.clientKind || (this.peer.identity && this.peer.identity.clientKind) }
-
-  applyAccountHandoff(delivery) {
-    if (delivery.targetDeviceId !== this.localDeviceId()) return { status: 'rejected', reason: 'wrong_target' }
-    if (delivery.offer.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
-    if (this.handoffs.has(delivery.offer.handoffId)) return { status: 'duplicate', acknowledgedSequence: delivery.sequence }
-    const caps = this.localCapabilities()
-    if ((delivery.offer.requiredCapabilities || []).some(capability => !caps.has(capability))) return { status: 'rejected', reason: 'missing_capability' }
-    const kind = this.localClientKind()
-    if ((kind === 'android_tv' || kind === 'web_tv') && delivery.offer.purpose !== 'audit') return { status: 'rejected', reason: 'tv_account_handoff_forbidden' }
-    this.handoffs.add(delivery.offer.handoffId)
-    return { status: 'accepted', handoffId: delivery.offer.handoffId, acknowledgedSequence: delivery.sequence }
-  }
-
-  acceptBackupRestore(plan) {
-    if (plan.targetDeviceId !== this.localDeviceId()) return { status: 'rejected', reason: 'wrong_target' }
-    if (plan.bundle.expiresAtEpochMillis && plan.bundle.expiresAtEpochMillis < Date.now()) return { status: 'expired', reason: 'expired' }
-    if (this.restores.has(plan.restoreId)) return { status: 'duplicate', acknowledgedSequence: plan.sequence }
-    const kind = this.localClientKind()
-    if ((kind === 'android_tv' || kind === 'web_tv') && plan.mode !== 'verify_only') return { status: 'rejected', reason: 'tv_restore_forbidden' }
-    const caps = this.localCapabilities()
-    if ((plan.bundle.requiredRestoreCapabilities || []).some(capability => !caps.has(capability))) return { status: 'rejected', reason: 'missing_capability' }
-    this.restores.add(plan.restoreId)
-    return { status: 'accepted', restoreId: plan.restoreId, acknowledgedSequence: plan.sequence }
-  }
-
-  finalReleaseValidationTaskNames() {
-    return [
-      'verifySflp22Sflp23AccountBackupValidation', 'verifySflp20Sflp21ShareImportConflict',
-      'verifySflp18Sflp19NotificationMediaSync', 'verifySflp16Sflp17ControlInputDelegation',
-      'verifySflp14Sflp15LiveSessionProjection', 'verifySflp12Sflp13WebTvHandoff',
-      'verifySflp10Sflp11WebTvGeneralization', 'verifySflp08Sflp09AndroidDesktopIntegration',
-      'verifySflp06Sflp07TopologyOfflineQueue', 'verifySflp04Sflp05IdentityTransport',
-      'verifySflp02Sflp03JournalReconciliation', 'verifySflp01ProtocolBaseline',
-      ':core:link:test', ':app-tv:testDebugUnitTest', ':desktopApp:test', ':app:testReleaseUnitTest',
-    ]
-  }
+    constructor(peer) {
+        this.peer = peer;
+        this.handoffs = new Set();
+        this.restores = new Set();
+    }
+    localDeviceId() { var _a, _b; return (_a = this.peer.deviceId) !== null && _a !== void 0 ? _a : (_b = this.peer.identity) === null || _b === void 0 ? void 0 : _b.deviceId; }
+    localCapabilities() { var _a, _b, _c; return new Set((_c = (_a = this.peer.capabilities) !== null && _a !== void 0 ? _a : (_b = this.peer.identity) === null || _b === void 0 ? void 0 : _b.capabilities) !== null && _c !== void 0 ? _c : []); }
+    localClientKind() { var _a, _b; return (_a = this.peer.clientKind) !== null && _a !== void 0 ? _a : (_b = this.peer.identity) === null || _b === void 0 ? void 0 : _b.clientKind; }
+    applyAccountHandoff(delivery) {
+        if (delivery.targetDeviceId !== this.localDeviceId())
+            return { status: 'rejected', reason: 'wrong_target' };
+        if (delivery.offer.expiresAtEpochMillis < Date.now())
+            return { status: 'expired', reason: 'expired' };
+        if (this.handoffs.has(delivery.offer.handoffId))
+            return { status: 'duplicate', acknowledgedSequence: delivery.sequence };
+        const caps = this.localCapabilities();
+        if (delivery.offer.requiredCapabilities.some(capability => !caps.has(capability)))
+            return { status: 'rejected', reason: 'missing_capability' };
+        const kind = this.localClientKind();
+        if ((kind === 'android_tv' || kind === 'web_tv') && delivery.offer.purpose !== 'audit')
+            return { status: 'rejected', reason: 'tv_account_handoff_forbidden' };
+        this.handoffs.add(delivery.offer.handoffId);
+        return { status: 'accepted', handoffId: delivery.offer.handoffId, acknowledgedSequence: delivery.sequence };
+    }
+    acceptBackupRestore(plan) {
+        if (plan.targetDeviceId !== this.localDeviceId())
+            return { status: 'rejected', reason: 'wrong_target' };
+        if (plan.bundle.expiresAtEpochMillis && plan.bundle.expiresAtEpochMillis < Date.now())
+            return { status: 'expired', reason: 'expired' };
+        if (this.restores.has(plan.restoreId))
+            return { status: 'duplicate', acknowledgedSequence: plan.sequence };
+        const kind = this.localClientKind();
+        if ((kind === 'android_tv' || kind === 'web_tv') && plan.mode !== 'verify_only')
+            return { status: 'rejected', reason: 'tv_restore_forbidden' };
+        const caps = this.localCapabilities();
+        if (plan.bundle.requiredRestoreCapabilities.some(capability => !caps.has(capability)))
+            return { status: 'rejected', reason: 'missing_capability' };
+        this.restores.add(plan.restoreId);
+        return { status: 'accepted', restoreId: plan.restoreId, acknowledgedSequence: plan.sequence };
+    }
+    finalReleaseValidationTaskNames() {
+        return [
+            'verifySflp22Sflp23AccountBackupValidation', 'verifySflp20Sflp21ShareImportConflict',
+            'verifySflp18Sflp19NotificationMediaSync', 'verifySflp16Sflp17ControlInputDelegation',
+            'verifySflp14Sflp15LiveSessionProjection', 'verifySflp12Sflp13WebTvHandoff',
+            'verifySflp10Sflp11WebTvGeneralization', 'verifySflp08Sflp09AndroidDesktopIntegration',
+            'verifySflp06Sflp07TopologyOfflineQueue', 'verifySflp04Sflp05IdentityTransport',
+            'verifySflp02Sflp03JournalReconciliation', 'verifySflp01ProtocolBaseline',
+            ':core:link:test', ':app-tv:testDebugUnitTest', ':desktopApp:test', ':app:testReleaseUnitTest',
+        ];
+    }
 }
 exports.StudyFlowAccountBackupReleaseRuntime = StudyFlowAccountBackupReleaseRuntime;

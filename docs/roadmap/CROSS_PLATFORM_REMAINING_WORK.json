@@ -27,29 +27,31 @@
       ],
       "terminal_milestone": "DOV24",
       "summary": "Complete applicable Desktop persistence, workflows, platform integration, and parity acceptance.",
-      "completed_through": "TVOV31"
+      "completed_through": "DOV24"
     },
     {
       "order": 2,
       "id": "TVOV27-TVOV31",
       "kind": "implementation",
-      "status": "planned",
+      "status": "complete",
       "prerequisites": [
         "SFLP24"
       ],
       "terminal_milestone": "TVOV31",
-      "summary": "Close native Android-TV material, goal, Error Notebook, search/input, and Web-TV semantic parity gaps."
+      "summary": "Close native Android-TV material, goal, Error Notebook, search/input, and Web-TV semantic parity gaps.",
+      "completed_through": "TVOV31"
     },
     {
       "order": 3,
       "id": "WEB20",
       "kind": "semantic_contract",
-      "status": "planned",
+      "status": "complete",
       "prerequisites": [
         "SFLP24"
       ],
       "terminal_milestone": "WEB20",
-      "summary": "Run language-neutral golden vectors across Kotlin, TypeScript, and Desktop implementations."
+      "summary": "Run language-neutral golden vectors across Kotlin, TypeScript, and Desktop implementations.",
+      "completed_through": "WEB20"
     },
     {
       "order": 4,

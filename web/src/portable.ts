@@ -16,7 +16,7 @@ function byId(items:any[]) { return new Map((items ?? []).map((item) => [item.id
 function same(a:any,b:any) { return JSON.stringify(a) === JSON.stringify(b); }
 function byteLength(text:string){return new TextEncoder().encode(text).length;}
 function stableValue(value:any):any{if(Array.isArray(value))return value.map(stableValue);if(value&&typeof value==="object"){const out:Record<string,any>={};for(const key of Object.keys(value).sort())out[key]=stableValue(value[key]);return out;}return value;}
-function stableStringify(value:any){return JSON.stringify(stableValue(value));}
+export function stableStringify(value:any){return JSON.stringify(stableValue(value));}
 function randomSuffix(){return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;}
 function bytesToBase64(bytes:Uint8Array){let binary="";const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(binary);}
 function base64ToBytes(base64:string){let binary:string;try{binary=atob(base64);}catch{throw new TypeError("Portable attachment payload is not valid base64");}const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes;}

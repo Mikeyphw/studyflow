@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.localDateKey = localDateKey;
+exports.readinessBandForScore = readinessBandForScore;
 exports.deriveExamReadinessParity = deriveExamReadinessParity;
 exports.derivePublicExamQuestionQuotaPlan = derivePublicExamQuestionQuotaPlan;
 exports.deriveGenericQuestionQuotaPlan = deriveGenericQuestionQuotaPlan;
@@ -28,7 +29,8 @@ function daysBetween(start, end) { return localDayNumber(end) - localDayNumber(s
 function mondayFor(value) { const d = localDate(value), offset = (d.getDay() + 6) % 7; d.setDate(d.getDate() - offset); return localDateKey(d); }
 function activePlan(state) { var _a; return (_a = state.plans.find(p => p.id === state.activePlanId)) !== null && _a !== void 0 ? _a : null; }
 function valueObject(e) { return e && typeof e.value === "object" && e.value && !Array.isArray(e.value) ? e.value : {}; }
-function bandFor(score) { return score >= 80 ? "on-track" : score >= 65 ? "watch" : score >= 45 ? "at-risk" : "critical"; }
+function readinessBandForScore(score) { return score >= 80 ? "on-track" : score >= 65 ? "watch" : score >= 45 ? "at-risk" : "critical"; }
+const bandFor = readinessBandForScore;
 function signal(id, label, value, reason, weight, evidenceCount) { return { id, label, value, status: value == null ? "unknown" : value >= 80 ? "good" : "risk", reason, weight, severity: value == null ? null : bandFor(value), evidenceCount }; }
 function weightedPresent(items) { const present = items.filter(([v, w]) => v != null && w > 0); const total = present.reduce((n, [, w]) => n + w, 0); return total ? clamp(Math.round(present.reduce((n, [v, w]) => n + clamp(v) * w, 0) / total)) : null; }
 function deriveExamReadinessParity(state, at = new Date()) {

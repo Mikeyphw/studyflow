@@ -1736,3 +1736,61 @@ tasks.register<Exec>("verifyRel09KotlinTestClasspathHotfix") {
     commandLine("python3", "scripts/verify_rel09_kotlin_test_classpath_hotfix.py")
 }
 
+
+
+tasks.register<Exec>("verifyWeb20SharedSemanticGoldenVectors") {
+    group = "verification"
+    description = "Run the WEB20 language-neutral semantic golden-vector contract."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_web20_shared_semantic_golden_vectors.py")
+}
+
+tasks.register<Exec>("verifyWeb20RoadmapTruth") {
+    group = "verification"
+    description = "Verify WEB20 closes only the canonical roadmap/ledger track and leaves Presence/Parity ordering intact."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_roadmap01_cross_platform_truth_reconciliation.py")
+}
+
+tasks.register<Exec>("verifyWeb20WebLint") {
+    group = "verification"
+    description = "Type-check Web semantics and verify committed runtime parity."
+    workingDir = file("web")
+    commandLine("npm", "run", "lint")
+}
+
+tasks.register<Exec>("verifyWeb20WebTests") {
+    group = "verification"
+    description = "Run the complete Web regression suite after WEB20 semantic convergence."
+    workingDir = file("web")
+    commandLine("npm", "test")
+}
+
+tasks.register("verifyWeb20WebRegression") {
+    group = "verification"
+    description = "Run WEB20 Web type/runtime and regression checks."
+    dependsOn("verifyWeb20WebLint", "verifyWeb20WebTests")
+}
+
+tasks.register<Exec>("verifyWeb20WebRelease") {
+    group = "verification"
+    description = "Check the committed self-contained Web release after semantic convergence."
+    workingDir = file("web")
+    commandLine("npm", "run", "release:check")
+}
+
+tasks.register("verifyWeb20TerminalSeal") {
+    group = "verification"
+    description = "Terminal WEB20 seal across Kotlin/core, Desktop, and TypeScript/Web."
+    dependsOn(
+        "verifyWeb20SharedSemanticGoldenVectors",
+        "verifyWeb20RoadmapTruth",
+        "verifyWeb20WebRegression",
+        "verifyWeb20WebRelease",
+        ":core:domain:test",
+        ":core:link:test",
+        ":core:portability:test",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:test",
+    )
+}

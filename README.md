@@ -539,3 +539,7 @@ A paired phone can **control every TV destination** through the shared TV contro
 using StudyFlow's typed presentation/cast state rather than screen mirroring.
 
 TVOV01 adds a real `:app-tv` module; later TV overlays retain its separate-package and dependency-budget contract.
+
+## WEB20 shared semantic golden vectors
+
+WEB20 adds 40 language-neutral golden vectors in `protocol/semantic/v1/golden-vectors.json` and executes them through Kotlin/core, TypeScript/Web, and Desktop production semantics. The contract covers readiness, schedule generation/rescheduling, scoring, review/SRS, study time, goals, Error Notebook state, canonical portable JSON, and deterministic SFLP conflict resolution. PARITY04 reuses this exact fixture.

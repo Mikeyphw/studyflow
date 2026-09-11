@@ -1,0 +1,594 @@
+{
+  "schemaVersion": 1,
+  "milestone": "WEB20",
+  "description": "Language-neutral semantic golden vectors reused by PARITY04.",
+  "vectors": [
+    {
+      "id": "readiness-80",
+      "kind": "readiness_band",
+      "input": {
+        "score": 80
+      },
+      "expected": {
+        "band": "on-track"
+      }
+    },
+    {
+      "id": "readiness-79",
+      "kind": "readiness_band",
+      "input": {
+        "score": 79
+      },
+      "expected": {
+        "band": "watch"
+      }
+    },
+    {
+      "id": "readiness-45",
+      "kind": "readiness_band",
+      "input": {
+        "score": 45
+      },
+      "expected": {
+        "band": "at-risk"
+      }
+    },
+    {
+      "id": "readiness-44",
+      "kind": "readiness_band",
+      "input": {
+        "score": 44
+      },
+      "expected": {
+        "band": "critical"
+      }
+    },
+    {
+      "id": "schedule-generate-weekly",
+      "kind": "schedule_generation",
+      "input": {
+        "startEpochMillis": 1788739200000,
+        "days": 7,
+        "dayOfWeek": 1,
+        "startMinuteOfDay": 600,
+        "durationMinutes": 60,
+        "dayOff": false
+      },
+      "expected": {
+        "count": 1,
+        "firstStartEpochMillis": 1788775200000
+      }
+    },
+    {
+      "id": "schedule-generate-day-off",
+      "kind": "schedule_generation",
+      "input": {
+        "startEpochMillis": 1788739200000,
+        "days": 7,
+        "dayOfWeek": 1,
+        "startMinuteOfDay": 600,
+        "durationMinutes": 60,
+        "dayOff": true
+      },
+      "expected": {
+        "count": 0,
+        "firstStartEpochMillis": null
+      }
+    },
+    {
+      "id": "schedule-rebalance-skip",
+      "kind": "schedule_rebalance",
+      "input": {
+        "handling": "SKIP",
+        "nowEpochMillis": 1788750000000,
+        "startEpochMillis": 1788739200000,
+        "durationMinutes": 60
+      },
+      "expected": {
+        "changed": 1,
+        "status": "SKIPPED",
+        "scheduledStartEpochMillis": 1788739200000
+      }
+    },
+    {
+      "id": "schedule-rebalance-postpone",
+      "kind": "schedule_rebalance",
+      "input": {
+        "handling": "POSTPONE",
+        "nowEpochMillis": 1788750000000,
+        "startEpochMillis": 1788739200000,
+        "durationMinutes": 60
+      },
+      "expected": {
+        "changed": 1,
+        "status": "PLANNED",
+        "scheduledStartEpochMillis": 1788750300000
+      }
+    },
+    {
+      "id": "question-score-1",
+      "kind": "question_score",
+      "input": {
+        "total": 4,
+        "correct": 3,
+        "incorrect": 1,
+        "negativeMarking": 0.0,
+        "minimumScorePercent": null
+      },
+      "expected": {
+        "scorePercent": 75,
+        "passed": null
+      }
+    },
+    {
+      "id": "question-score-2",
+      "kind": "question_score",
+      "input": {
+        "total": 4,
+        "correct": 3,
+        "incorrect": 1,
+        "negativeMarking": 0.25,
+        "minimumScorePercent": null
+      },
+      "expected": {
+        "scorePercent": 69,
+        "passed": null
+      }
+    },
+    {
+      "id": "question-score-3",
+      "kind": "question_score",
+      "input": {
+        "total": 2,
+        "correct": 0,
+        "incorrect": 2,
+        "negativeMarking": 0.5,
+        "minimumScorePercent": null
+      },
+      "expected": {
+        "scorePercent": 0,
+        "passed": null
+      }
+    },
+    {
+      "id": "question-score-4",
+      "kind": "question_score",
+      "input": {
+        "total": 3,
+        "correct": 2,
+        "incorrect": 0,
+        "negativeMarking": 0.0,
+        "minimumScorePercent": 70
+      },
+      "expected": {
+        "scorePercent": 67,
+        "passed": false
+      }
+    },
+    {
+      "id": "mock-score-1",
+      "kind": "mock_score",
+      "input": {
+        "total": 10,
+        "correct": 8,
+        "incorrect": 2,
+        "negativeMarking": 0.0,
+        "minimumScorePercent": 70
+      },
+      "expected": {
+        "scorePercent": 80,
+        "passed": true
+      }
+    },
+    {
+      "id": "mock-score-2",
+      "kind": "mock_score",
+      "input": {
+        "total": 10,
+        "correct": 8,
+        "incorrect": 2,
+        "negativeMarking": 0.5,
+        "minimumScorePercent": 70
+      },
+      "expected": {
+        "scorePercent": 70,
+        "passed": true
+      }
+    },
+    {
+      "id": "mock-score-3",
+      "kind": "mock_score",
+      "input": {
+        "total": 10,
+        "correct": 7,
+        "incorrect": 3,
+        "negativeMarking": 0.5,
+        "minimumScorePercent": 70
+      },
+      "expected": {
+        "scorePercent": 55,
+        "passed": false
+      }
+    },
+    {
+      "id": "mock-score-4",
+      "kind": "mock_score",
+      "input": {
+        "total": 5,
+        "correct": 5,
+        "incorrect": 0,
+        "negativeMarking": 0.25,
+        "minimumScorePercent": 90
+      },
+      "expected": {
+        "scorePercent": 100,
+        "passed": true
+      }
+    },
+    {
+      "id": "srs-1",
+      "kind": "srs",
+      "input": {
+        "intervalDays": 10,
+        "repetitionCount": 3,
+        "easeFactor": 2.5,
+        "grade": 2,
+        "reviewedAtEpochMillis": 1788739200000
+      },
+      "expected": {
+        "intervalDays": 1,
+        "repetitionCount": 0,
+        "easeFactor": 2.18,
+        "dueAtEpochMillis": 1788825600000
+      }
+    },
+    {
+      "id": "srs-2",
+      "kind": "srs",
+      "input": {
+        "intervalDays": 0,
+        "repetitionCount": 0,
+        "easeFactor": 2.5,
+        "grade": 5,
+        "reviewedAtEpochMillis": 1788739200000
+      },
+      "expected": {
+        "intervalDays": 1,
+        "repetitionCount": 1,
+        "easeFactor": 2.6,
+        "dueAtEpochMillis": 1788825600000
+      }
+    },
+    {
+      "id": "srs-3",
+      "kind": "srs",
+      "input": {
+        "intervalDays": 1,
+        "repetitionCount": 1,
+        "easeFactor": 2.5,
+        "grade": 4,
+        "reviewedAtEpochMillis": 1788739200000
+      },
+      "expected": {
+        "intervalDays": 3,
+        "repetitionCount": 2,
+        "easeFactor": 2.5,
+        "dueAtEpochMillis": 1788998400000
+      }
+    },
+    {
+      "id": "srs-4",
+      "kind": "srs",
+      "input": {
+        "intervalDays": 3,
+        "repetitionCount": 2,
+        "easeFactor": 2.5,
+        "grade": 5,
+        "reviewedAtEpochMillis": 1788739200000
+      },
+      "expected": {
+        "intervalDays": 8,
+        "repetitionCount": 3,
+        "easeFactor": 2.6,
+        "dueAtEpochMillis": 1789430400000
+      }
+    },
+    {
+      "id": "study-time-1",
+      "kind": "study_time",
+      "input": {
+        "grossDurationSeconds": 3600,
+        "pauseDurationSeconds": 0
+      },
+      "expected": {
+        "netMinutes": 60.0
+      }
+    },
+    {
+      "id": "study-time-2",
+      "kind": "study_time",
+      "input": {
+        "grossDurationSeconds": 3600,
+        "pauseDurationSeconds": 600
+      },
+      "expected": {
+        "netMinutes": 50.0
+      }
+    },
+    {
+      "id": "study-time-3",
+      "kind": "study_time",
+      "input": {
+        "grossDurationSeconds": 1800,
+        "pauseDurationSeconds": 1800
+      },
+      "expected": {
+        "netMinutes": 0.0
+      }
+    },
+    {
+      "id": "study-time-4",
+      "kind": "study_time",
+      "input": {
+        "grossDurationSeconds": 3661,
+        "pauseDurationSeconds": 61
+      },
+      "expected": {
+        "netMinutes": 60.0
+      }
+    },
+    {
+      "id": "goal-1",
+      "kind": "goal_progress",
+      "input": {
+        "currentValue": 0,
+        "targetValue": 100
+      },
+      "expected": {
+        "percent": 0
+      }
+    },
+    {
+      "id": "goal-2",
+      "kind": "goal_progress",
+      "input": {
+        "currentValue": 50,
+        "targetValue": 100
+      },
+      "expected": {
+        "percent": 50
+      }
+    },
+    {
+      "id": "goal-3",
+      "kind": "goal_progress",
+      "input": {
+        "currentValue": 100,
+        "targetValue": 100
+      },
+      "expected": {
+        "percent": 100
+      }
+    },
+    {
+      "id": "goal-4",
+      "kind": "goal_progress",
+      "input": {
+        "currentValue": 150,
+        "targetValue": 100
+      },
+      "expected": {
+        "percent": 100
+      }
+    },
+    {
+      "id": "error-1",
+      "kind": "error_state",
+      "input": {
+        "category": "CONCEPT_CONFUSION",
+        "recurrenceCount": 3
+      },
+      "expected": {
+        "priority": "HIGH",
+        "suggestion": "REVIEW_THEORY"
+      }
+    },
+    {
+      "id": "error-2",
+      "kind": "error_state",
+      "input": {
+        "category": "OTHER",
+        "recurrenceCount": 5
+      },
+      "expected": {
+        "priority": "CRITICAL",
+        "suggestion": "REVIEW_EXPLANATION"
+      }
+    },
+    {
+      "id": "error-3",
+      "kind": "error_state",
+      "input": {
+        "category": "CALCULATION",
+        "recurrenceCount": 1
+      },
+      "expected": {
+        "priority": "LOW",
+        "suggestion": "PRACTICE_SIMILAR_QUESTIONS"
+      }
+    },
+    {
+      "id": "error-4",
+      "kind": "error_state",
+      "input": {
+        "category": "TIME_PRESSURE",
+        "recurrenceCount": 3
+      },
+      "expected": {
+        "priority": "MEDIUM",
+        "suggestion": "TIMED_DRILL"
+      }
+    },
+    {
+      "id": "portable-1",
+      "kind": "portable_serialization",
+      "input": {
+        "value": {
+          "b": 2,
+          "a": 1
+        }
+      },
+      "expected": {
+        "canonical": "{\"a\":1,\"b\":2}"
+      }
+    },
+    {
+      "id": "portable-2",
+      "kind": "portable_serialization",
+      "input": {
+        "value": {
+          "z": [
+            {
+              "b": 2,
+              "a": 1
+            },
+            3
+          ],
+          "a": true
+        }
+      },
+      "expected": {
+        "canonical": "{\"a\":true,\"z\":[{\"a\":1,\"b\":2},3]}"
+      }
+    },
+    {
+      "id": "portable-3",
+      "kind": "portable_serialization",
+      "input": {
+        "value": {
+          "nested": {
+            "y": null,
+            "x": "v"
+          },
+          "n": 1.5
+        }
+      },
+      "expected": {
+        "canonical": "{\"n\":1.5,\"nested\":{\"x\":\"v\",\"y\":null}}"
+      }
+    },
+    {
+      "id": "portable-4",
+      "kind": "portable_serialization",
+      "input": {
+        "value": {
+          "arr": [
+            3,
+            2,
+            1
+          ],
+          "obj": {
+            "c": 3,
+            "a": 1,
+            "b": 2
+          }
+        }
+      },
+      "expected": {
+        "canonical": "{\"arr\":[3,2,1],\"obj\":{\"a\":1,\"b\":2,\"c\":3}}"
+      }
+    },
+    {
+      "id": "conflict-1",
+      "kind": "sflp_conflict",
+      "input": {
+        "operations": [
+          {
+            "id": "op-a",
+            "logicalTimestamp": 10,
+            "deviceId": "alpha",
+            "originSequence": 1
+          },
+          {
+            "id": "op-b",
+            "logicalTimestamp": 11,
+            "deviceId": "alpha",
+            "originSequence": 1
+          }
+        ]
+      },
+      "expected": {
+        "winnerOperationId": "op-b"
+      }
+    },
+    {
+      "id": "conflict-2",
+      "kind": "sflp_conflict",
+      "input": {
+        "operations": [
+          {
+            "id": "op-a",
+            "logicalTimestamp": 10,
+            "deviceId": "alpha",
+            "originSequence": 1
+          },
+          {
+            "id": "op-b",
+            "logicalTimestamp": 10,
+            "deviceId": "beta",
+            "originSequence": 1
+          }
+        ]
+      },
+      "expected": {
+        "winnerOperationId": "op-b"
+      }
+    },
+    {
+      "id": "conflict-3",
+      "kind": "sflp_conflict",
+      "input": {
+        "operations": [
+          {
+            "id": "op-a",
+            "logicalTimestamp": 10,
+            "deviceId": "alpha",
+            "originSequence": 1
+          },
+          {
+            "id": "op-b",
+            "logicalTimestamp": 10,
+            "deviceId": "alpha",
+            "originSequence": 2
+          }
+        ]
+      },
+      "expected": {
+        "winnerOperationId": "op-b"
+      }
+    },
+    {
+      "id": "conflict-4",
+      "kind": "sflp_conflict",
+      "input": {
+        "operations": [
+          {
+            "id": "op-a",
+            "logicalTimestamp": 10,
+            "deviceId": "alpha",
+            "originSequence": 1
+          },
+          {
+            "id": "op-z",
+            "logicalTimestamp": 10,
+            "deviceId": "alpha",
+            "originSequence": 1
+          }
+        ]
+      },
+      "expected": {
+        "winnerOperationId": "op-z"
+      }
+    }
+  ]
+}

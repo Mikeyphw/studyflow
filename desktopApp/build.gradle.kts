@@ -20,6 +20,7 @@ dependencies {
 
     testImplementation(libs.junit4)
     testImplementation(kotlin("test-junit"))
+    testImplementation(libs.kotlinx.serialization.json)
 }
 
 compose.desktop {

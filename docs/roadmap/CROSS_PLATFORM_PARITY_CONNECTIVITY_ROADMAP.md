@@ -120,7 +120,9 @@ workflows on TV unless a later capability review explicitly promotes them.
 
 **WEB20** introduces language-neutral golden vectors consumed by Kotlin/TypeScript/Desktop implementations
 for readiness, schedule allocation/rescheduling, question/mock scoring, review/SRS progression, study-time
-accounting, goal progress, error state, portable serialization and SFLP conflict resolution.
+accounting, goal progress, error state, portable serialization and SFLP conflict resolution. **Implemented.**
+
+The canonical fixture is `protocol/semantic/v1/golden-vectors.json`; **PARITY04 must reuse these vectors** rather than fork a second semantic suite.
 
 ## Presence — PRESENCE01
 
