@@ -235,6 +235,10 @@
       "verify_tvov31_android_web_tv_semantic_parity.py",
       "verify_ui_ux_v2.py",
       "verify_web20_shared_semantic_golden_vectors.py"
+    ],
+    "post_rel_final_verifiers": [
+      "verify_tv_devtool_android_runner.py",
+      "verify_rel_final_devtool_release_runner.py"
     ]
   },
   "roadmap_sources": [

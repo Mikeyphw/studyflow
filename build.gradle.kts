@@ -1929,6 +1929,14 @@ tasks.register<Exec>("runRelFinalExhaustiveRoadmapAudit") {
     )
 }
 
+tasks.register<Exec>("verifyRelFinalDevtoolReleaseRunner") {
+    group = "verification"
+    description =
+        "Checks that TV and REL-FINAL Android builds route through Devtool's Termux-safe Android runner."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_rel_final_devtool_release_runner.py")
+}
+
 tasks.register<Exec>("prepareRelFinalEvidencePlan") {
     group = "verification"
     description = "Prepares REL-FINAL target-host/device command templates without claiming release readiness."
@@ -1969,6 +1977,7 @@ tasks.register("verifyRelFinalTerminalSeal") {
     description = "Terminal product/static seal before the separate real REL-FINAL evidence execution campaign."
     dependsOn(
         "verifyRelFinalRoadmapPromiseAudit",
+        "verifyRelFinalDevtoolReleaseRunner",
         "prepareRelFinalEvidencePlan",
         "verifyParity04TerminalSeal",
         "verifySflp24FinalReleaseSeal",

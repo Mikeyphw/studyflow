@@ -835,6 +835,50 @@ lint = [
   ":app-tv:lintRelease",
 ]
 
+[targets.studyflow_release]
+type = "android"
+root = "."
+execution_environment = "native-termux"
+chroot_name = "androidos"
+
+[targets.studyflow_release.android]
+variant = "release"
+aapt2_provider = "termux"
+instrumentation = "when-device-present"
+prefer_native_termux = true
+ndk_version = "29.0.14206865"
+
+[targets.studyflow_release.gradle]
+version = "9.7.1"
+provider = "auto"
+max_workers = 4
+parallel = true
+no_daemon = false
+daemon_idle_timeout_ms = 900000
+build_cache = true
+structured_events = false
+fail_fast = true
+offline = false
+args = [
+  "-Dorg.gradle.parallel=true",
+  "-Dorg.gradle.vfs.watch=false",
+  "-Pkotlin.incremental=true",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  "--no-configuration-cache",
+  "-x",
+  "verifyFormatting",
+]
+
+[targets.studyflow_release.tasks]
+build = ["verifyRelFinalDevtoolReleaseRunner", "verifyFinalReleaseAutomatedGate"]
+test = ["verifyRelFinalDevtoolReleaseRunner"]
+lint = [":app:lintRelease"]
+clean = ["clean"]
+
+[targets.studyflow_release.artifacts]
+required = false
+external_verification = "auto"
+
 [targets.studyflow_android.validation.phase_profiles.preflight]
 max_workers = 1
 cpu_limit = 1

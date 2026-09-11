@@ -567,3 +567,9 @@ WEB20 adds 40 language-neutral golden vectors in `protocol/semantic/v1/golden-ve
 
 REL-FINAL inventories and re-runs every pre-existing roadmap/product verifier, records the imported connectivity/release promise ledger, and orchestrates the existing REL01-REL08 evidence tooling. Static audit success never synthesizes release readiness: signed artifact, connected-device, restart/restore, device-observation, and operator-checklist evidence remain mandatory.
 The exhaustive legacy-verifier pass is isolated in artifact validation before Gradle starts; the Gradle terminal seal intentionally avoids rerunning recursive historical aggregate verifiers under parallel compilation load.
+
+## REL-FINAL Devtool release runner
+
+The Android release evidence campaign uses the dedicated `studyflow_release` Devtool Android target. The target runs `verifyFinalReleaseAutomatedGate` through Devtool's Termux-safe Android builder with Termux AAPT2, NDK 29, configuration cache disabled, and the unrelated repository-wide `verifyFormatting` backlog excluded from this evidence lane. The release shell script never invokes raw Gradle.
+
+`studyflow_tv` remains an Android Devtool target, so normal TV builds continue using the same Termux-safe AAPT2/toolchain routing as the mobile app.

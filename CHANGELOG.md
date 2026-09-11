@@ -1,5 +1,13 @@
 # Changelog
 
+## REL-FINAL Devtool Android release-runner hotfix
+
+- Added a dedicated `studyflow_release` Android Devtool target for the real signed release evidence campaign.
+- Routed final release acceptance through Devtool instead of raw Gradle so Termux AAPT2/NDK handling matches normal Android builds.
+- Disabled Gradle configuration cache for the custom release-evidence graph and excluded only the unrelated repository-wide `verifyFormatting` backlog from this lane.
+- Made REL-FINAL execute fail immediately as `BLOCKED` when the automated Devtool gate fails.
+- Preserved the already-applied TV Android-runner hotfix and registered both post-REL-FINAL regression verifiers without changing the historical 213-verifier audit boundary.
+
 ## TV Devtool Android runner hotfix
 
 - Route `studyflow_tv` through Devtool's Android runner instead of the generic raw-Gradle runner.

@@ -125,6 +125,7 @@ def plan(args: argparse.Namespace) -> int:
             "python3 scripts/record_final_device_acceptance.py --pass-check CHECK --evidence CHECK=OBSERVED",
             "python3 scripts/run_target_release_validation.py --mode verdict",
         ],
+        "devtoolReleaseTarget": "studyflow_release",
         "gradleFinalGates": [
             "verifyFinalReleaseAutomatedGate",
             "verifyFinalReleaseArtifact",
@@ -199,7 +200,7 @@ def device_template(args: argparse.Namespace) -> int:
     for index, check in enumerate(REQUIRED_DEVICE_CHECKS):
         suffix = " \\" if index != len(REQUIRED_DEVICE_CHECKS) - 1 else ""
         lines.append(f"  --pass-check {check} --evidence '{check}=OBSERVED_{check}'{suffix}")
-    lines.append("./gradlew --no-daemon verifyFinalReleaseVerdict")
+    lines.append(f"python3 scripts/run_target_release_validation.py --mode verdict --report-dir {report_dir}")
     template.parent.mkdir(parents=True, exist_ok=True)
     template.write_text("\n".join(lines) + "\n", encoding="utf-8")
     template.chmod(0o755)

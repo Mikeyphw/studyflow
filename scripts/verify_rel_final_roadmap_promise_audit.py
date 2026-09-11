@@ -42,6 +42,11 @@ def main() -> None:
     require(inventory.get("legacy_total") == 213, "legacy verifier inventory must remain 213")
     require(inventory.get("static_required_pass") == 211, "211 static verifier passes are required")
     require(set(inventory.get("external_evidence_gates", [])) == EXPECTED_EXTERNAL, "external gate set drifted")
+    post_rel_final = set(inventory.get("post_rel_final_verifiers", []))
+    require(
+        post_rel_final == {"verify_tv_devtool_android_runner.py", "verify_rel_final_devtool_release_runner.py"},
+        "post-REL-FINAL verifier set drifted",
+    )
     policy = audit.get("audit_execution_policy", {})
     require(
         policy.get("exhaustive_static_audit") == "artifact_validation_before_gradle",
@@ -65,6 +70,8 @@ def main() -> None:
     require('lint = ["verifyFinalSourceAcceptance"]' in parity_target, "REL-FINAL lint gate must use final source acceptance")
     actual = {path.name for path in (ROOT / "scripts").glob("verify_*.py")}
     actual.discard(Path(__file__).name)
+    require(post_rel_final <= actual, "post-REL-FINAL verifier file is missing")
+    actual -= post_rel_final
     require(actual == expected_legacy, "legacy verifier inventory changed without updating REL-FINAL audit")
 
     families = {item.get("id"): item for item in audit.get("roadmap_families", [])}

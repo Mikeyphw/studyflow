@@ -39,12 +39,20 @@ def is_final_ready(report_dir: Path) -> tuple[bool, dict[str, Any]]:
     return ready, {"verdict": verdict, "releaseOps": ops}
 
 
-def write_status(report_dir: Path, mode: str, commands: list[dict[str, Any]]) -> bool:
+def write_status(
+    report_dir: Path,
+    mode: str,
+    commands: list[dict[str, Any]],
+    *,
+    blocked: bool = False,
+    blocked_reason: str = "",
+) -> bool:
     ready, evidence = is_final_ready(report_dir)
+    status = "PASS" if ready else ("BLOCKED" if blocked else "PENDING_TARGET_EXECUTION")
     value = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": "studyflow.rel_final.release_campaign_status",
-        "status": "PASS" if ready else "PENDING_TARGET_EXECUTION",
+        "status": status,
         "releaseReady": ready,
         "releaseOpsReady": ready,
         "generatedAtUtc": utc_now(),
@@ -52,11 +60,12 @@ def write_status(report_dir: Path, mode: str, commands: list[dict[str, Any]]) ->
         "commands": commands,
         "finalEvidence": evidence,
         "reportDir": str(report_dir),
+        "blockedReason": blocked_reason if blocked else "",
     }
     out = report_dir / "rel-final-release-campaign-status.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(f"REL_FINAL_RELEASE_CAMPAIGN: {'PASS' if ready else 'PENDING_TARGET_EXECUTION'}")
+    print(f"REL_FINAL_RELEASE_CAMPAIGN: {status}")
     print(f"Status: {out}")
     return ready
 
@@ -98,8 +107,28 @@ def main() -> int:
         return 0
 
     if args.mode == "execute":
+        automated_command = [
+            py,
+            "scripts/run_target_release_validation.py",
+            "--mode",
+            "automated",
+            "--report-dir",
+            report_arg,
+        ]
+        automated_code = run(automated_command)
+        automated_result = [{"command": automated_command, "exitCode": automated_code}]
+        if automated_code != 0:
+            write_status(
+                report_dir,
+                args.mode,
+                automated_result,
+                blocked=True,
+                blocked_reason="automated Devtool release gate failed",
+            )
+            print("REL-FINAL is BLOCKED because the automated Devtool release gate failed.")
+            return automated_code
+
         steps = [
-            [py, "scripts/run_target_release_validation.py", "--mode", "automated", "--report-dir", report_arg],
             [py, "scripts/run_target_release_validation.py", "--mode", "device-template", "--report-dir", report_arg],
             [py, "scripts/collect_release_artifact_identity.py", "--report-dir", report_arg],
             [py, "scripts/collect_install_smoke_evidence.py", "--mode", "adb", "--report-dir", report_arg],
@@ -111,7 +140,7 @@ def main() -> int:
             [py, "scripts/build_release_ops_final_seal.py", "--channel", args.channel, "--report-dir", report_arg],
             [py, "scripts/run_target_release_validation.py", "--mode", "verdict", "--report-dir", report_arg],
         ]
-        results = execute_steps(steps)
+        results = automated_result + execute_steps(steps)
         ready = write_status(report_dir, args.mode, results)
         if not ready:
             print("REL-FINAL remains pending. Complete the generated device/operator evidence templates, then use --mode finalize.")
