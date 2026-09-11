@@ -21,7 +21,7 @@ with this matrix, this matrix owns the current product-state description.
 | Android | `1.0.0-rc1` | Full local-first workspace and Android-native reference client |
 | Web | `1.0.0` | Full browser-applicable workspace |
 | Desktop | `1.0.0` | Full applicable desktop workspace with JVM-native platform integrations |
-| Android TV | `0.1.0-tv26` | Native 10-foot presentation/execution client |
+| Android TV | `1.0.0-tv31` | Native 10-foot presentation/execution client |
 | Web TV | Web `1.0.0` TV mode | Browser 10-foot presentation/execution client |
 
 ## Functional capability matrix
@@ -38,12 +38,12 @@ with this matrix, this matrix owns the current product-state description.
 | Reviews / SRS | FULL | FULL | FULL | LIMITED | FULL |
 | Flashcards | FULL | FULL | FULL | LIMITED | FULL |
 | Error Notebook | FULL | FULL | FULL | LIMITED | FULL |
-| Goals | FULL | FULL | FULL | READ_ONLY | LIMITED |
+| Goals | FULL | FULL | FULL | LIMITED | LIMITED |
 | Progress / analytics | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
 | Library catalog | FULL | FULL | FULL | LIMITED | FULL |
-| Full material viewing | FULL | FULL | FULL | LIMITED | FULL |
+| Full material viewing | FULL | FULL | FULL | FULL | FULL |
 | Writing Workspace | FULL | FULL | FULL | HANDOFF | HANDOFF |
-| Global search | FULL | FULL | FULL | MISSING | FULL |
+| Global search | FULL | FULL | FULL | LIMITED | FULL |
 | Concurso Público workflows | FULL | FULL | FULL | LIMITED | LIMITED |
 | Programming / language content modes | FULL | FULL | FULL | LIMITED | LIMITED |
 | Import / export / portable backup | FULL | FULL | FULL | HANDOFF | HANDOFF |
@@ -53,11 +53,46 @@ with this matrix, this matrix owns the current product-state description.
 | Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
-Desktop DOV08-DOV24 now provide the full applicable Desktop workspace: durable domain state, authoring and
+DOV08-DOV24 is complete. Desktop DOV08-DOV24 now provide the full applicable Desktop workspace: durable domain state, authoring and
 execution workflows, Writing Workspace, programming/language modes, Concurso Público, shared-engine analytics,
 Goals, portable structure packages, encrypted full-workspace backup/restore, migration, English/pt-BR localization,
 System/Light/Dark appearance, native file/browser/notification/deep-link integration, full material handoff to system
 viewers, and global search. Android provider adapters remain platform-specific rather than a Desktop parity gap.
+
+## Historical protocol provenance
+
+SFLP01 introduced the **platform-neutral SFLP v1 envelope/capability contract**. At that milestone, the
+protocol model deliberately did **not yet** provide a universal cross-client synchronization mesh. SFLP02/SFLP03
+then added the **canonical operation journal and reconciliation engine**. **SFLP04/SFLP05 generic identity, trust, pairing** followed as the next historical layer. Later SFLP04-SFLP24, PRESENCE01, and
+PARITY04 promoted those foundations into the current sealed five-client mesh; this historical boundary is retained
+only so early milestone verifiers prove what was true at their own delivery point.
+
+
+### Historical SFLP delivery provenance
+
+- **SFLP04/SFLP05 generic identity, trust, pairing** established the transport-neutral peer identity and trust layer;
+  **client bindings and multi-peer routing begin in SFLP06-SFLP12**.
+- **SFLP06/SFLP07 multi-peer topology plus durable offline-delivery/reconnect core** established routing and queued
+  convergence; **SFLP08-SFLP12 work** then bound that generic core into product clients.
+- **Android ↔ Desktop: first-class SFLP** was the SFLP08/SFLP09 boundary. At that milestone StudyFlow does **not yet** provide a universal cross-client synchronization mesh. **SFLP08 and SFLP09 are now complete**;
+  at that historical point the product still **does not yet** provide a universal cross-client synchronization mesh.
+- **SFLP10/SFLP11 status**: Web and Android TV became generic peers, and **Android is not a required hub**.
+- **SFLP12/SFLP13 status**: Web TV connectivity and typed activity handoff shipped; **TV-class clients reject
+  write-capability handoffs**.
+- **SFLP14/SFLP15 status**: live session continuity and universal presentation projection shipped. **TV-class**
+  receivers **reject write-capability projection offers** while accepting supported presentation/execution flows.
+
+### Target connectivity matrix (historical target, achieved by PARITY04)
+
+| Client | Android | Desktop | Web | Android TV | Web TV |
+| --- | --- | --- | --- | --- | --- |
+| Android | — | FULL | FULL | FULL | FULL |
+| Desktop | FULL | — | FULL | FULL | FULL |
+| Web | FULL | FULL | — | FULL | FULL |
+| Android TV | FULL | FULL | FULL | — | FULL |
+| Web TV | FULL | FULL | FULL | FULL | — |
+
+This target is now current protocol connectivity truth; the table is retained as PARITY01-PARITY03 provenance.
 
 ## Current connectivity truth
 

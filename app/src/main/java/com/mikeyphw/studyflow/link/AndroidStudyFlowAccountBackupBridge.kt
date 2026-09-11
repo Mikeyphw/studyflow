@@ -37,7 +37,9 @@ class AndroidStudyFlowAccountBackupBridge(
         targetDeviceId = target.deviceId,
         purpose = StudyFlowAccountHandoffPurpose.DEVICE_REPLACEMENT,
         manifestSha256 = StudyFlowAccountBackupDefaults.sha256Hex(manifestText),
-        requiredCapabilities = StudyFlowAccountBackupDefaults.handoffCapabilitiesFor(StudyFlowAccountHandoffPurpose.DEVICE_REPLACEMENT),
+        requiredCapabilities = StudyFlowAccountBackupDefaults.handoffCapabilitiesFor(
+            StudyFlowAccountHandoffPurpose.DEVICE_REPLACEMENT,
+        ),
         createdAtEpochMillis = clock.nowEpochMillis(),
     )
 
@@ -58,9 +60,15 @@ class AndroidStudyFlowAccountBackupBridge(
         createdAtEpochMillis = clock.nowEpochMillis(),
     )
 
-    fun receiveAccountHandoff(delivery: StudyFlowAccountHandoffDelivery): StudyFlowAccountHandoffAck = handoffs.apply(delivery)
+    fun receiveAccountHandoff(
+        delivery: StudyFlowAccountHandoffDelivery,
+    ): StudyFlowAccountHandoffAck = handoffs.apply(delivery)
 
-    fun receiveRestorePlan(plan: StudyFlowBackupRestorePlan): StudyFlowBackupRestoreAck = restores.apply(plan)
+    fun receiveRestorePlan(
+        plan: StudyFlowBackupRestorePlan,
+    ): StudyFlowBackupRestoreAck = restores.apply(plan)
 
-    fun finalReleaseValidationPlan() = StudyFlowSflp23ReleaseGate.defaultFinalPlan(createdAtEpochMillis = clock.nowEpochMillis())
+    fun finalReleaseValidationPlan() = StudyFlowSflp23ReleaseGate.defaultFinalPlan(
+        createdAtEpochMillis = clock.nowEpochMillis(),
+    )
 }

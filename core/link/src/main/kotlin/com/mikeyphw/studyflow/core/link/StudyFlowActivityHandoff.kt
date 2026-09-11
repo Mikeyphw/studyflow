@@ -182,7 +182,10 @@ object StudyFlowHandoffPolicy {
         val targetCapabilities = target.capabilities.toSet()
         val missing = offer.snapshot.requiredCapabilities.filter { it !in targetCapabilities }
         if (missing.isNotEmpty()) return StudyFlowHandoffDecision.Rejected("missing_capability")
-        if (target.clientKind == StudyFlowLinkClientKind.ANDROID_TV || target.clientKind == StudyFlowLinkClientKind.WEB_TV) {
+        if (
+            target.clientKind == StudyFlowLinkClientKind.ANDROID_TV ||
+            target.clientKind == StudyFlowLinkClientKind.WEB_TV
+        ) {
             val writeCapabilities = setOf(
                 StudyFlowLinkCapabilities.WorkspaceWrite,
                 StudyFlowLinkCapabilities.PlanWrite,

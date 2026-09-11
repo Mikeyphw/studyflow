@@ -52,7 +52,7 @@ def main() -> None:
     )
     require_contains(
         "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/ProgrammingCourseModelTest.kt",
-        "programming course mode enables code and exercise modeling",
+        "programming course mode enables code exercise and termux runtime capabilities",
         "termux command templates reject shell chaining",
     )
     require_contains(

@@ -1,0 +1,685 @@
+{
+  "schema_version": 1,
+  "contract": "studyflow.rel_final.promise_audit",
+  "source_boundary": {
+    "uploaded_snapshot": "studyflow-20260910-235743-839805.tar.gz",
+    "expected_repository_commit": "45af7fd",
+    "description": "Authoritative post-PARITY04 source boundary supplied for REL-FINAL."
+  },
+  "status": "STATIC_AUDIT_COMPLETE_EVIDENCE_PENDING",
+  "claims": {
+    "product_implementation_complete": true,
+    "roadmap_static_contracts_complete": true,
+    "release_evidence_complete": false,
+    "release_ready": false,
+    "release_ops_ready": false
+  },
+  "verifier_inventory": {
+    "legacy_total": 213,
+    "static_required_pass": 211,
+    "external_evidence_gates": [
+      "verify_final_release_artifact.py",
+      "verify_final_release_verdict.py"
+    ],
+    "legacy_scripts": [
+      "verify_android_focus_shell_r2.py",
+      "verify_bh01_08_bug_hunt_audit.py",
+      "verify_bh02_sync_bundle_hardening.py",
+      "verify_bh03_installation_device_identity.py",
+      "verify_bh04_reminder_delivered_history.py",
+      "verify_bh05_durable_sync_ledger_history.py",
+      "verify_bh06_webdav_concurrent_index.py",
+      "verify_bh07_desktop_schedule_repository_parity.py",
+      "verify_bh08_late_reminder_reconciliation.py",
+      "verify_cloud_optional_sync_settings.py",
+      "verify_code_blocks_syntax.py",
+      "verify_coding_exercise_termux_execution.py",
+      "verify_content_mode_foundation.py",
+      "verify_content_modes_final_integration.py",
+      "verify_cpov00_toolchain.py",
+      "verify_cpov01_public_exam_profile.py",
+      "verify_cpov02_edital_import.py",
+      "verify_cpov03_04_public_exam_progress.py",
+      "verify_cpov05_06_priority_banca_questions.py",
+      "verify_cpov07_08_banca_error_notebook.py",
+      "verify_cpov09_10_legislation_dashboard.py",
+      "verify_cpov11_12_final_stretch_onboarding.py",
+      "verify_cpov13_public_exam_release_seal.py",
+      "verify_cpov_roadmap_reconciliation.py",
+      "verify_csov02_sync_bundle.py",
+      "verify_csov03_provider_abstraction.py",
+      "verify_csov04_optional_sync_onboarding.py",
+      "verify_csov05_manual_folder_sync.py",
+      "verify_csov06_sync_ledger.py",
+      "verify_csov07_merge_engine.py",
+      "verify_csov08_conflict_review.py",
+      "verify_csov09_background_sync_modes.py",
+      "verify_csov10_real_providers.py",
+      "verify_csov11_final_sync_seal.py",
+      "verify_csov12_provider_setup_security.py",
+      "verify_csov13_sync_runbook.py",
+      "verify_csov14_optional_sync_delivery_audit.py",
+      "verify_csov15_optional_instrumentation_validation.py",
+      "verify_debug_workbench_d1_r2.py",
+      "verify_debug_workbench_d2.py",
+      "verify_debug_workbench_d2_d3_corrective_seal.py",
+      "verify_debug_workbench_d3.py",
+      "verify_debug_workbench_d4.py",
+      "verify_debug_workbench_d5.py",
+      "verify_debug_workbench_d6.py",
+      "verify_debug_workbench_d7.py",
+      "verify_debug_workbench_d8.py",
+      "verify_desktop_dov08_persistent_workspace.py",
+      "verify_desktop_dov09_plan_content_lifecycle.py",
+      "verify_desktop_dov10_planner_adaptive_workflows.py",
+      "verify_desktop_dov11_session_runtime.py",
+      "verify_desktop_dov12_question_practice_execution.py",
+      "verify_desktop_dov13_mock_exam_studio.py",
+      "verify_desktop_dov14_reviews_srs_error_notebook.py",
+      "verify_desktop_dov15_library_files_material_viewers.py",
+      "verify_desktop_dov16_writing_workspace.py",
+      "verify_desktop_dov17_content_modes_execution.py",
+      "verify_desktop_dov18_public_exam_parity.py",
+      "verify_desktop_dov19_readiness_coaching_reports.py",
+      "verify_desktop_dov20_portability_backup_migration.py",
+      "verify_desktop_dov21_en_ptbr_localization.py",
+      "verify_desktop_dov22_system_light_dark_appearance.py",
+      "verify_desktop_dov23_native_desktop_integration.py",
+      "verify_desktop_dov24_full_applicable_parity_seal.py",
+      "verify_final_app_acceptance.py",
+      "verify_final_release_artifact.py",
+      "verify_final_release_verdict.py",
+      "verify_final_release_verdict_contract.py",
+      "verify_full_app_final_user_readiness.py",
+      "verify_import_templates.py",
+      "verify_language_deck_idiom_model.py",
+      "verify_language_review_modes.py",
+      "verify_mode_aware_analytics.py",
+      "verify_ov01_today_priority.py",
+      "verify_ov02_evidence_readiness.py",
+      "verify_ov03_responsive_layout.py",
+      "verify_ov04_navigation_progress.py",
+      "verify_ov05_metric_truthfulness.py",
+      "verify_ov06_schedule_intelligence.py",
+      "verify_ov07_portable_studyplan_resources.py",
+      "verify_ov08_import_diff_rollback.py",
+      "verify_ov09_pre_edital_cockpit.py",
+      "verify_ov10_bb_agente_comercial_preset.py",
+      "verify_ov11_writing_workspace.py",
+      "verify_ov12_bb_mock_exam.py",
+      "verify_ov13_activity_deep_links.py",
+      "verify_ov14_study_phases.py",
+      "verify_ov15_reference_freshness.py",
+      "verify_ov16_question_quota.py",
+      "verify_ov17_readable_schedule.py",
+      "verify_ov18_public_exam_release_seal.py",
+      "verify_ov19_promise_audit.py",
+      "verify_ov20_final_integration.py",
+      "verify_ov20_lint_warning_cleanup.py",
+      "verify_ov20_saf_api23_lint_hotfix.py",
+      "verify_parity01_03_cross_platform_baseline.py",
+      "verify_parity04_five_client_full_mesh.py",
+      "verify_phase_0.py",
+      "verify_phase_1.py",
+      "verify_phase_10.py",
+      "verify_phase_11.py",
+      "verify_phase_12.py",
+      "verify_phase_13.py",
+      "verify_phase_14.py",
+      "verify_phase_15.py",
+      "verify_phase_16.py",
+      "verify_phase_17.py",
+      "verify_phase_18.py",
+      "verify_phase_19.py",
+      "verify_phase_2.py",
+      "verify_phase_20.py",
+      "verify_phase_21.py",
+      "verify_phase_22.py",
+      "verify_phase_23.py",
+      "verify_phase_24.py",
+      "verify_phase_25.py",
+      "verify_phase_26.py",
+      "verify_phase_27.py",
+      "verify_phase_28.py",
+      "verify_phase_29.py",
+      "verify_phase_3.py",
+      "verify_phase_30.py",
+      "verify_phase_31.py",
+      "verify_phase_32.py",
+      "verify_phase_33.py",
+      "verify_phase_34.py",
+      "verify_phase_35.py",
+      "verify_phase_36.py",
+      "verify_phase_37.py",
+      "verify_phase_4.py",
+      "verify_phase_48_49.py",
+      "verify_phase_5.py",
+      "verify_phase_50_51.py",
+      "verify_phase_52_53.py",
+      "verify_phase_54_55.py",
+      "verify_phase_56_57.py",
+      "verify_phase_58_59.py",
+      "verify_phase_6.py",
+      "verify_phase_60_61.py",
+      "verify_phase_62.py",
+      "verify_phase_63_64.py",
+      "verify_phase_7.py",
+      "verify_phase_8.py",
+      "verify_phase_9.py",
+      "verify_post_phase_64_final_validation.py",
+      "verify_presence01_peer_activity_presence.py",
+      "verify_programming_course_model.py",
+      "verify_programming_course_ui.py",
+      "verify_rel01_target_release_validation_runner.py",
+      "verify_rel02_release_evidence_triage.py",
+      "verify_rel03_04_artifact_install_rollout.py",
+      "verify_rel05_06_release_notes_rollback.py",
+      "verify_rel07_08_final_release_ops_seal.py",
+      "verify_rel09_kotlin_test_classpath_hotfix.py",
+      "verify_rel13_sflp24_behavior_semantics_hotfix.py",
+      "verify_remediation_ov_13.py",
+      "verify_remediation_phase_1_2.py",
+      "verify_roadmap01_cross_platform_truth_reconciliation.py",
+      "verify_sflp01_protocol_baseline.py",
+      "verify_sflp02_03_journal_reconciliation.py",
+      "verify_sflp04_05_identity_transport.py",
+      "verify_sflp06_07_topology_offline_queue.py",
+      "verify_sflp08_09_android_desktop_integration.py",
+      "verify_sflp10_11_web_tv_generalization.py",
+      "verify_sflp12_13_web_tv_handoff.py",
+      "verify_sflp14_15_live_session_projection.py",
+      "verify_sflp16_17_control_input_delegation.py",
+      "verify_sflp18_19_notification_media_sync.py",
+      "verify_sflp20_21_share_import_conflict.py",
+      "verify_sflp22_23_account_backup_validation.py",
+      "verify_sflp24_final_release_seal.py",
+      "verify_studyflow_desktop_bootstrap_screens.py",
+      "verify_studyflow_desktop_foundation.py",
+      "verify_studyflow_desktop_shell_contracts.py",
+      "verify_studyflow_desktop_workflows.py",
+      "verify_termux_runtime_foundation.py",
+      "verify_tv_control_cast_contract.py",
+      "verify_tv_roadmap_instructions.py",
+      "verify_tv_size_budget.py",
+      "verify_tvov00_architecture.py",
+      "verify_tvov01_app_module.py",
+      "verify_tvov02_dependency_budget.py",
+      "verify_tvov03_pairing_control_cast_protocol.py",
+      "verify_tvov04_focus_primitives.py",
+      "verify_tvov05_navigation_shell.py",
+      "verify_tvov06_home_surface.py",
+      "verify_tvov07_today_workspace.py",
+      "verify_tvov08_study_session.py",
+      "verify_tvov09_question_practice.py",
+      "verify_tvov10_mock_exam_studio.py",
+      "verify_tvov11_review_notebook.py",
+      "verify_tvov12_progress_analytics.py",
+      "verify_tvov13_read_only_schedule.py",
+      "verify_tvov14_library_reference.py",
+      "verify_tvov15_settings.py",
+      "verify_tvov16_control_state_continuity.py",
+      "verify_tvov17_accessibility_10foot_ui.py",
+      "verify_tvov18_size_optimization.py",
+      "verify_tvov19_manifest_packaging.py",
+      "verify_tvov20_real_device_release_seal.py",
+      "verify_tvov21_presentation_projection.py",
+      "verify_tvov22_local_pairing_transport.py",
+      "verify_tvov23_phone_controller.py",
+      "verify_tvov24_cast_state_synchronization.py",
+      "verify_tvov25_domain_persistence_convergence.py",
+      "verify_tvov26_end_to_end_physical_seal.py",
+      "verify_tvov27_full_native_material_viewer.py",
+      "verify_tvov28_goal_projection_actions.py",
+      "verify_tvov29_error_notebook_mutation_parity.py",
+      "verify_tvov30_dpad_sflp_search.py",
+      "verify_tvov31_android_web_tv_semantic_parity.py",
+      "verify_ui_ux_v2.py",
+      "verify_web20_shared_semantic_golden_vectors.py"
+    ]
+  },
+  "roadmap_sources": [
+    "docs/roadmap/IMPLEMENTATION_ROADMAP.md",
+    "docs/roadmap/POST_MVP_GAP_CLOSURE_ROADMAP.md",
+    "docs/roadmap/FINAL_ROADMAP_INDEX.md",
+    "docs/roadmap/CPOV_PUBLIC_EXAM_COMPLETION_MATRIX.md",
+    "docs/roadmap/OV01_OV20_PUBLIC_EXAM_COMPLETION_MATRIX.md",
+    "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
+    "docs/roadmap/CROSS_PLATFORM_REMAINING_WORK.json",
+    "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md",
+    "docs/product/SCOPE_BOUNDARIES.md"
+  ],
+  "roadmap_families": [
+    {
+      "id": "PHASE00-64",
+      "status": "delivered",
+      "evidence": [
+        "docs/roadmap/FINAL_ROADMAP_INDEX.md",
+        "scripts/verify_phase_0.py",
+        "scripts/verify_phase_63_64.py",
+        "scripts/verify_post_phase_64_final_validation.py"
+      ]
+    },
+    {
+      "id": "OV01-20",
+      "status": "delivered",
+      "evidence": [
+        "scripts/verify_ov01_today_priority.py",
+        "scripts/verify_ov20_final_integration.py",
+        "scripts/verify_ov19_promise_audit.py"
+      ]
+    },
+    {
+      "id": "CPOV00-13",
+      "status": "delivered",
+      "evidence": [
+        "docs/roadmap/CPOV_PUBLIC_EXAM_COMPLETION_MATRIX.md",
+        "scripts/verify_cpov13_public_exam_release_seal.py",
+        "scripts/verify_cpov_roadmap_reconciliation.py"
+      ]
+    },
+    {
+      "id": "CMOV01-11",
+      "status": "delivered",
+      "evidence": [
+        "CMOV11_CONTENT_MODES_FINAL_INTEGRATION_SEAL.md",
+        "scripts/verify_content_modes_final_integration.py"
+      ]
+    },
+    {
+      "id": "CSOV00-15",
+      "status": "delivered",
+      "evidence": [
+        "docs/roadmap/FINAL_ROADMAP_INDEX.md",
+        "scripts/verify_csov11_final_sync_seal.py",
+        "scripts/verify_csov15_optional_instrumentation_validation.py"
+      ]
+    },
+    {
+      "id": "PARITY01-03",
+      "status": "delivered",
+      "evidence": [
+        "PARITY01_03_CROSS_PLATFORM_BASELINE.md",
+        "scripts/verify_parity01_03_cross_platform_baseline.py"
+      ]
+    },
+    {
+      "id": "SFLP01-24",
+      "status": "delivered",
+      "evidence": [
+        "SFLP24_FINAL_RELEASE_SEAL.md",
+        "scripts/verify_sflp24_final_release_seal.py"
+      ]
+    },
+    {
+      "id": "DOV01-24",
+      "status": "delivered",
+      "evidence": [
+        "DESKTOP_DOV24_FULL_APPLICABLE_PARITY_SEAL.md",
+        "scripts/verify_desktop_dov24_full_applicable_parity_seal.py"
+      ]
+    },
+    {
+      "id": "TVOV00-31",
+      "status": "delivered",
+      "evidence": [
+        "TVOV31_ANDROID_WEB_TV_COMMON_SEMANTIC_PARITY_SEAL.md",
+        "scripts/verify_tvov31_android_web_tv_semantic_parity.py"
+      ]
+    },
+    {
+      "id": "WEB20",
+      "status": "delivered",
+      "evidence": [
+        "WEB20_SHARED_SEMANTIC_GOLDEN_VECTORS.md",
+        "scripts/verify_web20_shared_semantic_golden_vectors.py"
+      ]
+    },
+    {
+      "id": "PRESENCE01",
+      "status": "delivered",
+      "evidence": [
+        "PRESENCE01_PEER_ACTIVITY_PRESENCE.md",
+        "scripts/verify_presence01_peer_activity_presence.py"
+      ]
+    },
+    {
+      "id": "PARITY04",
+      "status": "delivered",
+      "evidence": [
+        "PARITY04_FIVE_CLIENT_FULL_MESH_ACCEPTANCE_SEAL.md",
+        "scripts/verify_parity04_five_client_full_mesh.py"
+      ]
+    },
+    {
+      "id": "REL01-08",
+      "status": "tooling_delivered_evidence_pending",
+      "evidence": [
+        "REL01_TARGET_RELEASE_VALIDATION_RUNNER.md",
+        "REL02_RELEASE_EVIDENCE_TRIAGE.md",
+        "REL03_04_ARTIFACT_INSTALL_ROLLOUT.md",
+        "REL05_06_RELEASE_NOTES_ROLLBACK.md",
+        "REL07_08_FINAL_RELEASE_OPS_SEAL.md"
+      ]
+    }
+  ],
+  "handoff_connectivity_promise_ledger": {
+    "principles": [
+      "no skipped/weakened tests",
+      "platform-neutral link core",
+      "target-gated delivery",
+      "TV/read-only rejects writes unless capable",
+      "evidence-based fail-closed release readiness",
+      "no mandatory cloud"
+    ],
+    "phases": [
+      {
+        "title": "Product direction",
+        "promises": [],
+        "audit_status": "CURRENT_DIRECTION_PRESERVED"
+      },
+      {
+        "title": "PARITY01-03 cross-platform baseline",
+        "promises": [
+          "Platform-neutral core usable by Android, desktop, web, and TV surfaces.",
+          "Domain semantics independent from Android UI/runtime dependencies.",
+          "Existing Android functionality preserved.",
+          "Verifiers/docs prove parity work."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP01 protocol baseline",
+        "promises": [
+          "Canonical StudyFlow link/protocol envelopes.",
+          "Stable message/schema names.",
+          "Source/target/sink identity metadata.",
+          "Capability declarations and compatibility checks.",
+          "No Android-only assumptions in protocol core."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP02-SFLP03 journal reconciliation",
+        "promises": [
+          "Cross-surface state changes represented as journal operations.",
+          "Deterministic replay and ordering.",
+          "Duplicate and conflict handling.",
+          "Conflicts visible, not silently overwritten.",
+          "Offline journal compatible with later sync/handoff."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP04-SFLP05 identity and transport",
+        "promises": [
+          "Local/device identity and endpoint metadata.",
+          "Identity, transport, and payload separated.",
+          "Local/direct transport supported without mandatory cloud.",
+          "Target-gated delivery."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP06-SFLP07 topology and offline queue",
+        "promises": [
+          "Peer/surface topology and capability model.",
+          "Offline queue for deferred messages.",
+          "Monotonic order where required.",
+          "Reject stale, duplicate, and wrong-target messages."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP08-SFLP09 Android/Desktop integration",
+        "promises": [
+          "Thin Android bridge with canonical semantics.",
+          "Desktop can create/inspect/route operations without Android runtime.",
+          "No Android dependencies in desktop domain/controller tests."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP10-SFLP11 Web/TV generalization",
+        "promises": [
+          "Web and TV-class sink support.",
+          "TV/browser-TV read-only by default.",
+          "Write operations require explicit capability.",
+          "Capability negotiation for TV/web surfaces."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP12-SFLP13 Web/TV handoff",
+        "promises": [
+          "Web-TV handoff model and docs.",
+          "Deep parity checks opt-in via `STUDYFLOW_PARITY_DEEP=1`.",
+          "No verifier recursion/self-triggering validation loops.",
+          "Read-only handoff where write capabilities are absent."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP14-SFLP15 live session and projection",
+        "promises": [
+          "Live session snapshots and replay.",
+          "Epoch/fencing rejects stale session changes.",
+          "Duplicate suppression.",
+          "Pause/resume/cursor/completion monotonicity.",
+          "Projection offers, frames, and acknowledgements.",
+          "Frame ack uses stable content identity/hash."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP16-SFLP17 control input delegation",
+        "promises": [
+          "Leased generic control protocol.",
+          "Keyboard/control/input delegation across Android, desktop, TV, and web.",
+          "Lease IDs enforced.",
+          "Commands are monotonic and duplicate-safe.",
+          "Wrong-lease and write-bearing commands rejected for TV/read-only sinks.",
+          "Stable message names."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP18-SFLP19 notification and material/media sync",
+        "promises": [
+          "Notification/schedule reminder synchronization.",
+          "Material/media streaming handoff.",
+          "Target-gated notification delivery.",
+          "Monotonic, duplicate-safe delivery.",
+          "TV/read-only sinks reject material offers requiring writes.",
+          "Chunk acknowledgement for material streams."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP20-SFLP21 clipboard/share/import and conflict review",
+        "promises": [
+          "Clipboard/share/import bridge.",
+          "Import payloads converted to canonical domain operations.",
+          "Target-gated duplicate-safe import delivery.",
+          "Conflict review opens once, resolves once, and emits canonical operation.",
+          "No silent overwrite of conflicts."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP22-SFLP23 account handoff and backup validation",
+        "promises": [
+          "Account/device handoff model.",
+          "Backup bundle and restore plan model.",
+          "TTL bounds and duplicate safety.",
+          "Desktop restore planning allowed where supported.",
+          "TV/write restore rejected where unsupported.",
+          "TV/Web-TV audit-preview guards.",
+          "Final validation plan fails closed without evidence."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "SFLP24 final release seal",
+        "promises": [
+          "Final release golden/schema/seal model.",
+          "`verifySflp24FinalReleaseSeal` covers SFLP01-SFLP24.",
+          "Evidence-based, fail-closed readiness.",
+          "No synthetic release readiness claims.",
+          "Must compile/run core/link, desktop, app, and app-TV SFLP tests."
+        ],
+        "audit_status": "DELIVERED_STATIC_CONTRACT"
+      },
+      {
+        "title": "REL01 target release validation runner",
+        "promises": [
+          "Target-machine validation plan mode.",
+          "Automated release evidence mode.",
+          "Manual device-evidence command-template mode.",
+          "Final verdict mode.",
+          "Fail closed with `PENDING_TARGET_EXECUTION` / `BLOCKED`.",
+          "No synthetic `releaseReady=true`."
+        ],
+        "audit_status": "TOOLING_DELIVERED_EVIDENCE_PENDING"
+      },
+      {
+        "title": "REL02 evidence report and failure triage",
+        "promises": [
+          "`release-evidence-summary.json`.",
+          "`release-failure-triage.json`.",
+          "`release-evidence-report.md`.",
+          "`studyflow-release-evidence-bundle.zip`.",
+          "Missing/pending/failed/blocked classification.",
+          "Credential-looking key redaction."
+        ],
+        "audit_status": "TOOLING_DELIVERED_EVIDENCE_PENDING"
+      },
+      {
+        "title": "REL03 signed artifact identity and install smoke",
+        "promises": [
+          "Release APK/AAB identity: path, size, SHA-256, modified time.",
+          "Signature verification evidence using available tools.",
+          "Package identity evidence using available Android tools.",
+          "`release-artifact-signature-identity.json`.",
+          "Single-device adb install smoke evidence.",
+          "`install-smoke-evidence.json` and command templates.",
+          "No signing/publishing/deleting side effects."
+        ],
+        "audit_status": "TOOLING_DELIVERED_EVIDENCE_PENDING"
+      },
+      {
+        "title": "REL04 channel manifest and rollout readiness",
+        "promises": [
+          "`release-channel-manifest.json`.",
+          "`rollout-readiness.json`.",
+          "Internal/beta/production channel policies.",
+          "REL01-REL03 evidence aggregation.",
+          "No publishing/readiness claims without evidence."
+        ],
+        "audit_status": "TOOLING_DELIVERED_EVIDENCE_PENDING"
+      },
+      {
+        "title": "REL05 release notes/changelog exporter",
+        "promises": [
+          "`release-notes.json`.",
+          "`release-notes.md`.",
+          "`release-notes-play-store-draft.txt`.",
+          "Public/internal changelog classification.",
+          "Credential redaction."
+        ],
+        "audit_status": "TOOLING_DELIVERED_EVIDENCE_PENDING"
+      },
+      {
+        "title": "REL06 rollback package manifest",
+        "promises": [
+          "`release-rollback-manifest.json`.",
+          "`rollback-package-manifest.md`.",
+          "`rollback-command-template.sh`.",
+          "`studyflow-rollback-package-bundle.zip`.",
+          "No automatic rollback/downgrade/delete.",
+          "No synthetic `rollbackReady=true`."
+        ],
+        "audit_status": "TOOLING_DELIVERED_EVIDENCE_PENDING"
+      },
+      {
+        "title": "REL07 release checklist gate",
+        "promises": [
+          "`release-checklist-gate.json`.",
+          "`release-checklist-gate.md`.",
+          "`release-checklist-command-template.sh`.",
+          "REL01-REL06 evidence aggregation.",
+          "Operator checklist completion required.",
+          "Fail closed when pending/blocked."
+        ],
+        "audit_status": "TOOLING_DELIVERED_EVIDENCE_PENDING"
+      },
+      {
+        "title": "REL08 final release-ops seal",
+        "promises": [
+          "`release-ops-final-seal.json`.",
+          "`release-ops-final-seal.md`.",
+          "`studyflow-release-ops-final-bundle.zip`.",
+          "`releaseOpsReady=true` only when REL01-REL07 evidence fully passes.",
+          "No signing/uploading/publishing/installing/deleting/rollback side effects."
+        ],
+        "audit_status": "TOOLING_DELIVERED_EVIDENCE_PENDING"
+      },
+      {
+        "title": "REL09-REL12 hotfix attempts",
+        "promises": [
+          "REL09: core/link and desktopApp `kotlin.test` classpath.",
+          "REL10: app and app-TV `kotlin.test` classpath.",
+          "REL11/REL12: attempted behavior fixes, but REL12 still failed real SFLP24 behavior tests."
+        ],
+        "audit_status": "HISTORICAL_SUPERSEDED"
+      },
+      {
+        "title": "REL13 required next work",
+        "promises": [
+          "Fresh rebase on uploaded snapshot.",
+          "Atomic classpath + behavior fix.",
+          "Preserve every promise above.",
+          "Validate `verifySflp24FinalReleaseSeal`."
+        ],
+        "audit_status": "DELIVERED_AND_SUPERSEDED_BY_LATER_SEALS"
+      }
+    ]
+  },
+  "gaps_fixed_in_rel_final": [
+    "Added missing pt-BR translations for PRESENCE01 Desktop presence strings.",
+    "Reconciled Android TV current version/capability truth through TVOV31.",
+    "Reconciled stale Phase/SFLP/Desktop historical scope text without erasing milestone provenance.",
+    "Updated historical SFLP verifiers to accept legitimately completed later milestones.",
+    "Updated DOV15 verifier to accept TVOV27 full material-viewing convergence.",
+    "Updated stale schema-version and renamed programming-model test assertions.",
+    "Kept roadmap-specific source-quality seals green without expanding REL-FINAL into unrelated historical formatting debt."
+  ],
+  "evidence_execution": {
+    "status": "PENDING_TARGET_EXECUTION",
+    "required_final_reports": [
+      "release-host-gates.json",
+      "release-artifact-identity.json",
+      "connected-test-gates.json",
+      "full-journey.json",
+      "device-acceptance.json",
+      "final-release-verdict.json",
+      "release-evidence-export/release-evidence-summary.json",
+      "release-artifact-signature-identity.json",
+      "install-smoke-evidence.json",
+      "rollout-readiness.json",
+      "release-notes.json",
+      "release-rollback-manifest.json",
+      "release-checklist-gate.json",
+      "release-ops-final-seal.json"
+    ],
+    "closure_rule": "REL-FINAL closes only when final-release-verdict releaseReady and REL08 releaseOpsReady are both true from one real evidence campaign.",
+    "no_synthetic_evidence": true
+  },
+  "audit_execution_policy": {
+    "exhaustive_static_audit": "artifact_validation_before_gradle",
+    "reason": "Legacy aggregate verifiers recursively execute child verifiers; running the exhaustive corpus concurrently with Gradle compilation can create resource-contended false negatives.",
+    "gradle_terminal_scope": "compile_test_package_and_current_product_seals",
+    "standalone_task": "runRelFinalExhaustiveRoadmapAudit",
+    "repository_wide_verifyFormatting": "not_a_rel_final_roadmap_promise",
+    "formatting_note": "The repository-wide formatting task includes historical Android TV/Desktop line-length debt and is not promoted into the REL-FINAL release gate. Existing roadmap-specific source-quality seals remain required."
+  }
+}

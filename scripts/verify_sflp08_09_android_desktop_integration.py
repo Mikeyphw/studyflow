@@ -242,15 +242,15 @@ def validate_desktop_binding() -> None:
     settings = require_text(
         "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAnalyticsSearchSettingsScreens.kt",
         [
-            'DesktopSectionCard(title = "StudyFlow Link")',
-            'Text("Create pairing offer")',
-            'Text("Sync trusted peers")',
-            'Text("Pair from QR payload")',
-            'Text("Remember endpoint")',
-            'DesktopSectionCard(title = "Trusted StudyFlow peers")',
-            'Text("Revoke")',
-            'Text("Forget")',
-            'DesktopSectionCard(title = "Discovered StudyFlow peers")',
+            'DesktopSectionCard(title = desktopText("StudyFlow Link"))',
+            'Text(desktopText("Create pairing offer"))',
+            'Text(desktopText("Sync trusted peers"))',
+            'Text(desktopText("Pair from QR payload"))',
+            'Text(desktopText("Remember endpoint"))',
+            'DesktopSectionCard(title = desktopText("Trusted StudyFlow peers"))',
+            'Text(desktopText("Revoke"))',
+            'Text(desktopText("Forget"))',
+            'DesktopSectionCard(title = desktopText("Discovered StudyFlow peers"))',
         ],
     )
     _ = settings

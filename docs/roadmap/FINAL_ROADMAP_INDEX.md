@@ -73,9 +73,10 @@ separately in `docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md` and t
 3. **WEB20 — COMPLETE** — shared language-neutral semantic golden vectors across Kotlin, TypeScript, and Desktop.
 4. **PRESENCE01 — COMPLETE** — optional ephemeral peer/activity presence distinct from transport health and replication correctness.
 5. **PARITY04 — COMPLETE** — canonical five-client full-mesh/product-parity acceptance seal.
-6. **REL-FINAL evidence execution — NEXT** — run the already-implemented REL01-REL08 release machinery against the
-   completed product, retain signed artifact/device/restart/restore/interoperability evidence, and close only when
-   every required observation is pass rather than pending/blocked.
+6. **REL-FINAL — STATIC AUDIT COMPLETE / EVIDENCE PENDING** — the 213-verifier promise audit has 211 static/product
+   contracts green and keeps the two real-evidence gates fail-closed. Execute REL01-REL08 against the completed
+   product, retain signed artifact/device/restart/restore/interoperability evidence, and close only when every
+   required observation is pass rather than pending/blocked.
 
 There is no SFLP25 and no Phase 65 implied by this list. SFLP24 remains the terminal SFLP protocol seal;
 PARITY04 owns the old draft's full-mesh acceptance promise.

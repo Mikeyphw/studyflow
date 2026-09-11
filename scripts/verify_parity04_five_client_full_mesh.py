@@ -56,7 +56,11 @@ matrix=txt('docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md')
 need('PARITY04 is **SUPPORTED / SEALED**' in matrix,'capability matrix must mark PARITY04 sealed')
 index=txt('docs/roadmap/FINAL_ROADMAP_INDEX.md')
 need('**PARITY04 — COMPLETE**' in index,'final roadmap index must mark PARITY04 complete')
-need('**REL-FINAL evidence execution — NEXT**' in index,'final roadmap index must advance REL-FINAL')
+need(
+    '**REL-FINAL evidence execution — NEXT**' in index
+    or '**REL-FINAL — STATIC AUDIT COMPLETE / EVIDENCE PENDING**' in index,
+    'final roadmap index must advance REL-FINAL',
+)
 
 if not errors:
     p=subprocess.run(['node','tests/parity04_runner.mjs'],cwd=ROOT/'web',text=True,capture_output=True)

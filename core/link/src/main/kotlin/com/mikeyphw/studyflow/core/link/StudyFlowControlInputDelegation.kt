@@ -299,7 +299,9 @@ class StudyFlowControlCommandReducer(
         if (lease.isExpired(clock.nowEpochMillis())) return StudyFlowControlApplyResult.Rejected("lease_expired")
         if (command.workspaceId != lease.workspaceId) return StudyFlowControlApplyResult.Rejected("workspace_mismatch")
         if (command.targetDeviceId != targetDevice.deviceId) return StudyFlowControlApplyResult.Rejected("wrong_target")
-        if (command.sourceDeviceId != lease.controller.deviceId) return StudyFlowControlApplyResult.Rejected("wrong_controller")
+        if (command.sourceDeviceId != lease.controller.deviceId) {
+            return StudyFlowControlApplyResult.Rejected("wrong_controller")
+        }
         if (command.leaseToken != lease.leaseToken) return StudyFlowControlApplyResult.Rejected("bad_lease_token")
         if (command.kind !in lease.allowedCommands) return StudyFlowControlApplyResult.Rejected("command_not_allowed")
         val last = lastSequenceBySession[command.sessionId] ?: 0L
@@ -331,7 +333,9 @@ class StudyFlowInputDelegationReducer(
     fun accept(offer: StudyFlowInputDelegationOffer): StudyFlowInputDelegationResult {
         if (offer.delegationId in consumedOffers) return StudyFlowInputDelegationResult.Duplicate
         if (offer.isExpired(clock.nowEpochMillis())) return StudyFlowInputDelegationResult.Rejected("expired")
-        if (offer.targetDeviceId != targetDevice.deviceId) return StudyFlowInputDelegationResult.Rejected("wrong_target")
+        if (offer.targetDeviceId != targetDevice.deviceId) {
+            return StudyFlowInputDelegationResult.Rejected("wrong_target")
+        }
         if (!targetDevice.capabilities.containsAll(offer.acceptedInputCapabilities)) {
             return StudyFlowInputDelegationResult.Rejected("missing_input_capability")
         }
@@ -344,10 +348,16 @@ class StudyFlowInputDelegationReducer(
         if (event.messageId in appliedMessages) return StudyFlowInputDelegationResult.Duplicate
         val offer = acceptedDelegations[event.delegationId]
             ?: return StudyFlowInputDelegationResult.Rejected("unknown_delegation")
-        if (offer.isExpired(clock.nowEpochMillis())) return StudyFlowInputDelegationResult.Rejected("delegation_expired")
+        if (offer.isExpired(clock.nowEpochMillis())) {
+            return StudyFlowInputDelegationResult.Rejected("delegation_expired")
+        }
         if (event.workspaceId != offer.workspaceId) return StudyFlowInputDelegationResult.Rejected("workspace_mismatch")
-        if (event.sourceDeviceId != offer.sourceDevice.deviceId) return StudyFlowInputDelegationResult.Rejected("wrong_source")
-        if (event.targetDeviceId != targetDevice.deviceId) return StudyFlowInputDelegationResult.Rejected("wrong_target")
+        if (event.sourceDeviceId != offer.sourceDevice.deviceId) {
+            return StudyFlowInputDelegationResult.Rejected("wrong_source")
+        }
+        if (event.targetDeviceId != targetDevice.deviceId) {
+            return StudyFlowInputDelegationResult.Rejected("wrong_target")
+        }
         val last = lastSequenceByDelegation[event.delegationId] ?: 0L
         if (event.sequence <= last) return StudyFlowInputDelegationResult.Rejected("stale_sequence")
         appliedMessages += event.messageId

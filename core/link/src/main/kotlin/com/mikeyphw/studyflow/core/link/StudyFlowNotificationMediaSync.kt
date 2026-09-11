@@ -14,13 +14,21 @@ private val notificationMediaSha256HexPattern = Regex("[a-f0-9]{64}")
 @Serializable
 @JvmInline
 value class StudyFlowNotificationId(val value: String) {
-    init { require(notificationMediaWireTokenPattern.matches(value)) { "Notification ID must be a bounded wire token" } }
+    init {
+        require(notificationMediaWireTokenPattern.matches(value)) {
+            "Notification ID must be a bounded wire token"
+        }
+    }
 }
 
 @Serializable
 @JvmInline
 value class StudyFlowScheduleSyncId(val value: String) {
-    init { require(notificationMediaWireTokenPattern.matches(value)) { "Schedule sync ID must be a bounded wire token" } }
+    init {
+        require(notificationMediaWireTokenPattern.matches(value)) {
+            "Schedule sync ID must be a bounded wire token"
+        }
+    }
 }
 
 @Serializable
@@ -32,7 +40,11 @@ value class StudyFlowMaterialId(val value: String) {
 @Serializable
 @JvmInline
 value class StudyFlowMaterialStreamId(val value: String) {
-    init { require(notificationMediaWireTokenPattern.matches(value)) { "Material stream ID must be a bounded wire token" } }
+    init {
+        require(notificationMediaWireTokenPattern.matches(value)) {
+            "Material stream ID must be a bounded wire token"
+        }
+    }
 }
 
 @Serializable
@@ -97,7 +109,10 @@ data class StudyFlowNotificationRoute(
 
     fun accepts(target: StudyFlowLinkPeerDescriptor): Boolean {
         if (targetDeviceId != null && target.deviceId != targetDeviceId) return false
-        if (!allowTvSurfaces && target.clientKind in listOf(StudyFlowLinkClientKind.ANDROID_TV, StudyFlowLinkClientKind.WEB_TV)) {
+        if (
+            !allowTvSurfaces &&
+            target.clientKind in listOf(StudyFlowLinkClientKind.ANDROID_TV, StudyFlowLinkClientKind.WEB_TV)
+        ) {
             return false
         }
         return requiredCapabilities.all { it in target.capabilities }
@@ -180,8 +195,12 @@ data class StudyFlowScheduleReminderChange(
     init {
         require(sequence >= 1L) { "Schedule sync sequence must be positive" }
         require(reminderAtEpochMillis == null || reminderAtEpochMillis >= 0L) { "Reminder time must not be negative" }
-        require(quietHoursStartMinute == null || quietHoursStartMinute in 0..1439) { "Quiet-hour start minute out of range" }
-        require(quietHoursEndMinute == null || quietHoursEndMinute in 0..1439) { "Quiet-hour end minute out of range" }
+        require(quietHoursStartMinute == null || quietHoursStartMinute in 0..1439) {
+            "Quiet-hour start minute out of range"
+        }
+        require(quietHoursEndMinute == null || quietHoursEndMinute in 0..1439) {
+            "Quiet-hour end minute out of range"
+        }
         require(occurredAtEpochMillis >= 0L) { "Schedule sync time must not be negative" }
     }
 
@@ -197,11 +216,15 @@ data class StudyFlowScheduleReminderChange(
         entityRevision = entityRevision,
         logicalTimestamp = logicalTimestamp,
         operationType = when (changeKind) {
-            StudyFlowScheduleSyncChangeKind.REMINDER_UPSERTED -> StudyFlowDomainOperationTypes.ScheduleReminderUpserted
-            StudyFlowScheduleSyncChangeKind.REMINDER_CANCELLED -> StudyFlowDomainOperationTypes.ScheduleReminderCancelled
+            StudyFlowScheduleSyncChangeKind.REMINDER_UPSERTED ->
+                StudyFlowDomainOperationTypes.ScheduleReminderUpserted
+            StudyFlowScheduleSyncChangeKind.REMINDER_CANCELLED ->
+                StudyFlowDomainOperationTypes.ScheduleReminderCancelled
             StudyFlowScheduleSyncChangeKind.ACTIVITY_MOVED -> StudyFlowDomainOperationTypes.ScheduleActivityMoved
-            StudyFlowScheduleSyncChangeKind.QUIET_HOURS_CHANGED -> StudyFlowDomainOperationTypes.NotificationQuietHoursChanged
-            StudyFlowScheduleSyncChangeKind.NOTIFICATION_POLICY_CHANGED -> StudyFlowDomainOperationTypes.NotificationPolicyChanged
+            StudyFlowScheduleSyncChangeKind.QUIET_HOURS_CHANGED ->
+                StudyFlowDomainOperationTypes.NotificationQuietHoursChanged
+            StudyFlowScheduleSyncChangeKind.NOTIFICATION_POLICY_CHANGED ->
+                StudyFlowDomainOperationTypes.NotificationPolicyChanged
         },
         occurredAtEpochMillis = occurredAtEpochMillis,
         payload = JsonObject(
@@ -320,12 +343,22 @@ class StudyFlowNotificationScheduleReducer(
     private val lastSequenceBySource = linkedMapOf<StudyFlowDeviceId, Long>()
 
     fun apply(delivery: StudyFlowNotificationDelivery): StudyFlowNotificationDeliveryAck = synchronized(this) {
-        if (delivery.targetDeviceId != localDevice.deviceId) return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "wrong_target")
-        if (!delivery.notification.route.accepts(localDevice)) return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "missing_capability")
-        if (delivery.notification.isExpired(clock.nowEpochMillis())) return ack(delivery, StudyFlowNotificationDeliveryStatus.EXPIRED, "expired")
-        if (delivery.notification.notificationId in delivered) return ack(delivery, StudyFlowNotificationDeliveryStatus.DUPLICATE, null)
+        if (delivery.targetDeviceId != localDevice.deviceId) {
+            return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "wrong_target")
+        }
+        if (!delivery.notification.route.accepts(localDevice)) {
+            return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "missing_capability")
+        }
+        if (delivery.notification.isExpired(clock.nowEpochMillis())) {
+            return ack(delivery, StudyFlowNotificationDeliveryStatus.EXPIRED, "expired")
+        }
+        if (delivery.notification.notificationId in delivered) {
+            return ack(delivery, StudyFlowNotificationDeliveryStatus.DUPLICATE, null)
+        }
         val last = lastSequenceBySource[delivery.sourceDeviceId] ?: 0L
-        if (delivery.sequence <= last) return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "stale_sequence")
+        if (delivery.sequence <= last) {
+            return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "stale_sequence")
+        }
         lastSequenceBySource[delivery.sourceDeviceId] = delivery.sequence
         delivered += delivery.notification.notificationId
         return ack(delivery, StudyFlowNotificationDeliveryStatus.ACCEPTED, null)
@@ -363,15 +396,26 @@ class StudyFlowMaterialStreamReducer(
     fun apply(chunk: StudyFlowMaterialChunk): StudyFlowMaterialChunkAck = synchronized(this) {
         val offer = acceptedOffers[chunk.streamId]
             ?: return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "unknown_stream")
-        if (chunk.targetDeviceId != localDevice.deviceId) return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "wrong_target")
-        if (chunk.sourceDeviceId != offer.sourceDevice.deviceId) return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "wrong_source")
+        if (chunk.targetDeviceId != localDevice.deviceId) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "wrong_target")
+        }
+        if (chunk.sourceDeviceId != offer.sourceDevice.deviceId) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "wrong_source")
+        }
         if (chunk.byteOffset != chunk.chunkIndex.toLong() * offer.chunkSize.toLong()) {
             return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "unexpected_offset")
         }
         val chunks = receivedChunks.getOrPut(chunk.streamId) { linkedSetOf() }
-        if (chunk.chunkIndex in chunks) return ack(chunk, StudyFlowMaterialChunkStatus.DUPLICATE, null)
+        if (chunk.chunkIndex in chunks) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.DUPLICATE, null)
+        }
         chunks += chunk.chunkIndex
-        return ack(chunk, if (chunk.finalChunk) StudyFlowMaterialChunkStatus.COMPLETE else StudyFlowMaterialChunkStatus.ACCEPTED, null)
+        val status = if (chunk.finalChunk) {
+            StudyFlowMaterialChunkStatus.COMPLETE
+        } else {
+            StudyFlowMaterialChunkStatus.ACCEPTED
+        }
+        return ack(chunk, status, null)
     }
 
     private fun ack(

@@ -29,7 +29,12 @@ class StudyFlowAndroidNotificationMediaBridgeTest {
             title = "Review due",
             body = "Your review queue is ready.",
         )
-        val delivery = bridge.deliverNotification(StudyFlowMessageId("notification-message-1"), desktop, 1, notification)
+        val delivery = bridge.deliverNotification(
+            StudyFlowMessageId("notification-message-1"),
+            desktop,
+            1,
+            notification,
+        )
         assertEquals(phone.deviceId, delivery.sourceDeviceId)
         assertEquals(desktop.deviceId, delivery.targetDeviceId)
         assertEquals(desktop.deviceId, notification.route.targetDeviceId)
@@ -49,7 +54,12 @@ class StudyFlowAndroidNotificationMediaBridgeTest {
             title = "Review due",
             body = "Your review queue is ready.",
         )
-        val delivery = sender.deliverNotification(StudyFlowMessageId("notification-message-2"), desktop, 1, notification)
+        val delivery = sender.deliverNotification(
+            StudyFlowMessageId("notification-message-2"),
+            desktop,
+            1,
+            notification,
+        )
         assertEquals(StudyFlowNotificationDeliveryStatus.ACCEPTED, receiver.receiveNotification(delivery).status)
     }
 

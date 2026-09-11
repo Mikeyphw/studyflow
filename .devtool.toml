@@ -936,8 +936,10 @@ args = [
 ]
 
 [targets.studyflow_parity.tasks]
-build = ["verifyParity04TerminalSeal"]
+build = ["verifyRelFinalTerminalSeal"]
 test = [
+  "verifyRelFinalRoadmapPromiseAudit",
+  "prepareRelFinalEvidencePlan",
   "verifyParity04FiveClientFullMesh",
   "verifyParity04WebAcceptance",
   "verifyPresence01PeerActivityPresence",
@@ -952,7 +954,7 @@ test = [
   ":app:testReleaseUnitTest",
   ":app-tv:testDebugUnitTest",
 ]
-lint = ["verifyFormatting"]
+lint = ["verifyFinalSourceAcceptance"]
 clean = ["clean"]
 [targets.studyflow_parity.validation]
 android_safe = false
@@ -969,6 +971,7 @@ memory_guard_mb = 256
 
 [targets.studyflow_parity.validation.phases]
 preflight = [
+  "verifyRelFinalRoadmapPromiseAudit",
   "verifyParity04FiveClientFullMesh",
   "verifyPresence01PeerActivityPresence",
   "verifyWeb20SharedSemanticGoldenVectors",
@@ -998,6 +1001,6 @@ unit-test = [
 package = [
   ":app:assembleDebug",
   ":app-tv:assembleDebug",
-  "verifyParity04TerminalSeal",
+  "verifyRelFinalTerminalSeal",
 ]
-lint = ["verifyFormatting"]
+lint = ["verifyFinalSourceAcceptance"]

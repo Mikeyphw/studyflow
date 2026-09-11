@@ -214,7 +214,9 @@ class StudyFlowLiveSessionReducer(initialSnapshot: StudyFlowLiveSessionSnapshot)
 
     fun apply(event: StudyFlowLiveSessionEvent): StudyFlowLiveSessionApplyResult = synchronized(this) {
         if (event.eventId in appliedEvents) return StudyFlowLiveSessionApplyResult.Duplicate
-        if (event.workspaceId != current.workspaceId) return StudyFlowLiveSessionApplyResult.Rejected("workspace_mismatch")
+        if (event.workspaceId != current.workspaceId) {
+            return StudyFlowLiveSessionApplyResult.Rejected("workspace_mismatch")
+        }
         if (event.sessionId != current.sessionId) return StudyFlowLiveSessionApplyResult.Rejected("session_mismatch")
         if (event.sessionEpoch < current.sessionEpoch) return StudyFlowLiveSessionApplyResult.Rejected("stale_epoch")
         if (event.sessionEpoch == current.sessionEpoch && event.sequence <= current.lastSequence) {
@@ -497,7 +499,9 @@ class StudyFlowPresentationProjectionReceiver(
         if (offer.targetDeviceId != null && offer.targetDeviceId != sink.deviceId) {
             return StudyFlowPresentationApplyResult.Rejected("wrong_target")
         }
-        if (offer.sourceDevice.deviceId == sink.deviceId) return StudyFlowPresentationApplyResult.Rejected("self_projection")
+        if (offer.sourceDevice.deviceId == sink.deviceId) {
+            return StudyFlowPresentationApplyResult.Rejected("self_projection")
+        }
         if (offer.requiredCapabilities.any { it in StudyFlowPresentationProjectionPolicy.writeCapabilities }) {
             return StudyFlowPresentationApplyResult.Rejected("projection_write_capability")
         }

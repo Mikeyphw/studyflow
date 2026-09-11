@@ -26,7 +26,11 @@ value class StudyFlowConflictReviewId(val value: String) {
 @Serializable
 @JvmInline
 value class StudyFlowConflictResolutionId(val value: String) {
-    init { require(shareImportWireTokenPattern.matches(value)) { "Conflict resolution ID must be a bounded wire token" } }
+    init {
+        require(shareImportWireTokenPattern.matches(value)) {
+            "Conflict resolution ID must be a bounded wire token"
+        }
+    }
 }
 
 @Serializable
@@ -107,22 +111,30 @@ data class StudyFlowShareImportOffer(
         require(previewText == null || previewText.length <= 16_384) { "Share/import preview must be bounded" }
         require(shareImportSha256Pattern.matches(contentSha256)) { "Share/import content hash must be SHA-256 hex" }
         require(requiredCapabilities.isNotEmpty()) { "Share/import route must require at least one capability" }
-        require(requiredCapabilities.distinct().size == requiredCapabilities.size) { "Share/import capabilities must be unique" }
+        require(requiredCapabilities.distinct().size == requiredCapabilities.size) {
+            "Share/import capabilities must be unique"
+        }
         require(createdAtEpochMillis >= 0L) { "Share/import creation time must not be negative" }
         require(expiresAtEpochMillis > createdAtEpochMillis) { "Share/import offer must expire after creation" }
     }
 
     val isWriteIntent: Boolean
-        get() = intent == StudyFlowShareImportIntent.CLIPBOARD_APPLY || intent == StudyFlowShareImportIntent.SHARE_IMPORT
+        get() = intent == StudyFlowShareImportIntent.CLIPBOARD_APPLY ||
+            intent == StudyFlowShareImportIntent.SHARE_IMPORT
 
     fun isExpired(nowEpochMillis: Long): Boolean = nowEpochMillis > expiresAtEpochMillis
 
     fun accepts(target: StudyFlowLinkPeerDescriptor, nowEpochMillis: Long): Boolean {
         if (isExpired(nowEpochMillis)) return false
         if (targetDeviceId != null && targetDeviceId != target.deviceId) return false
-        val tvClass = target.clientKind == StudyFlowLinkClientKind.ANDROID_TV || target.clientKind == StudyFlowLinkClientKind.WEB_TV
+        val tvClass = target.clientKind == StudyFlowLinkClientKind.ANDROID_TV ||
+            target.clientKind == StudyFlowLinkClientKind.WEB_TV
         if (tvClass && isWriteIntent) return false
-        if (tvClass && requiredCapabilities.any { it == StudyFlowLinkCapabilities.LibraryImport || it.value.endsWith(".write") }) {
+        if (
+            tvClass && requiredCapabilities.any {
+                it == StudyFlowLinkCapabilities.LibraryImport || it.value.endsWith(".write")
+            }
+        ) {
             return false
         }
         return requiredCapabilities.all { it in target.capabilities }
@@ -172,10 +184,18 @@ class StudyFlowShareImportReducer(
     private val sourceFrontier = mutableMapOf<StudyFlowDeviceId, Long>()
 
     fun apply(delivery: StudyFlowShareImportDelivery): StudyFlowShareImportAck {
-        if (delivery.targetDeviceId != localDevice.deviceId) return delivery.ack(StudyFlowShareImportStatus.REJECTED, "wrong_target")
-        if (delivery.offer.isExpired(clock.nowEpochMillis())) return delivery.ack(StudyFlowShareImportStatus.EXPIRED, "expired")
-        if (!delivery.offer.accepts(localDevice, clock.nowEpochMillis())) return delivery.ack(StudyFlowShareImportStatus.REJECTED, "missing_capability")
-        if (delivery.offer.importId in acceptedImports) return delivery.ack(StudyFlowShareImportStatus.DUPLICATE, "duplicate")
+        if (delivery.targetDeviceId != localDevice.deviceId) {
+            return delivery.ack(StudyFlowShareImportStatus.REJECTED, "wrong_target")
+        }
+        if (delivery.offer.isExpired(clock.nowEpochMillis())) {
+            return delivery.ack(StudyFlowShareImportStatus.EXPIRED, "expired")
+        }
+        if (!delivery.offer.accepts(localDevice, clock.nowEpochMillis())) {
+            return delivery.ack(StudyFlowShareImportStatus.REJECTED, "missing_capability")
+        }
+        if (delivery.offer.importId in acceptedImports) {
+            return delivery.ack(StudyFlowShareImportStatus.DUPLICATE, "duplicate")
+        }
         val last = sourceFrontier[delivery.sourceDeviceId] ?: 0L
         if (delivery.sequence <= last) return delivery.ack(StudyFlowShareImportStatus.REJECTED, "stale_sequence")
         sourceFrontier[delivery.sourceDeviceId] = delivery.sequence
@@ -259,7 +279,9 @@ data class StudyFlowConflictReview(
 ) {
     init {
         require(requiredCapabilities.isNotEmpty()) { "Conflict review must require a capability" }
-        require(requiredCapabilities.distinct().size == requiredCapabilities.size) { "Conflict capabilities must be unique" }
+        require(requiredCapabilities.distinct().size == requiredCapabilities.size) {
+            "Conflict capabilities must be unique"
+        }
         require(createdAtEpochMillis >= 0L) { "Conflict review creation time must not be negative" }
         require(expiresAtEpochMillis > createdAtEpochMillis) { "Conflict review must expire after creation" }
     }
@@ -397,9 +419,18 @@ object StudyFlowShareImportDefaults {
 
     fun textCapabilitiesFor(intent: StudyFlowShareImportIntent): List<StudyFlowLinkCapability> = when (intent) {
         StudyFlowShareImportIntent.CLIPBOARD_PREVIEW -> listOf(StudyFlowLinkCapabilities.ClipboardRead)
-        StudyFlowShareImportIntent.CLIPBOARD_APPLY -> listOf(StudyFlowLinkCapabilities.ClipboardRead, StudyFlowLinkCapabilities.ClipboardWrite)
-        StudyFlowShareImportIntent.SHARE_PREVIEW -> listOf(StudyFlowLinkCapabilities.ShareReceive, StudyFlowLinkCapabilities.ImportPreview)
-        StudyFlowShareImportIntent.SHARE_IMPORT -> listOf(StudyFlowLinkCapabilities.ShareReceive, StudyFlowLinkCapabilities.LibraryImport)
+        StudyFlowShareImportIntent.CLIPBOARD_APPLY -> listOf(
+            StudyFlowLinkCapabilities.ClipboardRead,
+            StudyFlowLinkCapabilities.ClipboardWrite,
+        )
+        StudyFlowShareImportIntent.SHARE_PREVIEW -> listOf(
+            StudyFlowLinkCapabilities.ShareReceive,
+            StudyFlowLinkCapabilities.ImportPreview,
+        )
+        StudyFlowShareImportIntent.SHARE_IMPORT -> listOf(
+            StudyFlowLinkCapabilities.ShareReceive,
+            StudyFlowLinkCapabilities.LibraryImport,
+        )
     }
 }
 

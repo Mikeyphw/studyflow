@@ -552,3 +552,8 @@ TVOV01 adds a real `:app-tv` module; later TV overlays retain its separate-packa
 ## WEB20 shared semantic golden vectors
 
 WEB20 adds 40 language-neutral golden vectors in `protocol/semantic/v1/golden-vectors.json` and executes them through Kotlin/core, TypeScript/Web, and Desktop production semantics. The contract covers readiness, schedule generation/rescheduling, scoring, review/SRS, study time, goals, Error Notebook state, canonical portable JSON, and deterministic SFLP conflict resolution. PARITY04 reuses this exact fixture.
+
+## REL-FINAL roadmap audit and release evidence campaign
+
+REL-FINAL inventories and re-runs every pre-existing roadmap/product verifier, records the imported connectivity/release promise ledger, and orchestrates the existing REL01-REL08 evidence tooling. Static audit success never synthesizes release readiness: signed artifact, connected-device, restart/restore, device-observation, and operator-checklist evidence remain mandatory.
+The exhaustive legacy-verifier pass is isolated in artifact validation before Gradle starts; the Gradle terminal seal intentionally avoids rerunning recursive historical aggregate verifiers under parallel compilation load.

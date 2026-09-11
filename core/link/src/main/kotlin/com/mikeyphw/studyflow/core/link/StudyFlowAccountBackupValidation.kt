@@ -32,7 +32,11 @@ value class StudyFlowBackupRestoreId(val value: String) {
 @Serializable
 @JvmInline
 value class StudyFlowReleaseValidationRunId(val value: String) {
-    init { require(accountBackupWireTokenPattern.matches(value)) { "Release validation run ID must be a bounded wire token" } }
+    init {
+        require(accountBackupWireTokenPattern.matches(value)) {
+            "Release validation run ID must be a bounded wire token"
+        }
+    }
 }
 
 @Serializable
@@ -121,7 +125,9 @@ data class StudyFlowAccountHandoffOffer(
 ) {
     init {
         require(requiredCapabilities.isNotEmpty()) { "Account handoff requires capabilities" }
-        require(requiredCapabilities.distinct().size == requiredCapabilities.size) { "Account handoff capabilities must be unique" }
+        require(requiredCapabilities.distinct().size == requiredCapabilities.size) {
+            "Account handoff capabilities must be unique"
+        }
         require(manifestSha256 == null || accountBackupSha256Pattern.matches(manifestSha256)) {
             "Account handoff manifest hash must be SHA-256 hex"
         }
@@ -135,7 +141,8 @@ data class StudyFlowAccountHandoffOffer(
         if (isExpired(nowEpochMillis)) return false
         if (targetDeviceId != null && targetDeviceId != target.deviceId) return false
         if (requiredCapabilities.any { it !in target.capabilities }) return false
-        val tvClass = target.clientKind == StudyFlowLinkClientKind.ANDROID_TV || target.clientKind == StudyFlowLinkClientKind.WEB_TV
+        val tvClass = target.clientKind == StudyFlowLinkClientKind.ANDROID_TV ||
+            target.clientKind == StudyFlowLinkClientKind.WEB_TV
         if (tvClass && purpose != StudyFlowAccountHandoffPurpose.AUDIT) return false
         return true
     }
@@ -209,10 +216,18 @@ class StudyFlowAccountHandoffReducer(
     private val sourceFrontier = mutableMapOf<StudyFlowDeviceId, Long>()
 
     fun apply(delivery: StudyFlowAccountHandoffDelivery): StudyFlowAccountHandoffAck {
-        if (delivery.targetDeviceId != localDevice.deviceId) return delivery.ack(StudyFlowAccountHandoffStatus.REJECTED, "wrong_target")
-        if (delivery.offer.isExpired(clock.nowEpochMillis())) return delivery.ack(StudyFlowAccountHandoffStatus.EXPIRED, "expired")
-        if (!delivery.offer.accepts(localDevice, clock.nowEpochMillis())) return delivery.ack(StudyFlowAccountHandoffStatus.REJECTED, "missing_capability")
-        if (delivery.offer.handoffId in acceptedHandoffs) return delivery.ack(StudyFlowAccountHandoffStatus.DUPLICATE, "duplicate")
+        if (delivery.targetDeviceId != localDevice.deviceId) {
+            return delivery.ack(StudyFlowAccountHandoffStatus.REJECTED, "wrong_target")
+        }
+        if (delivery.offer.isExpired(clock.nowEpochMillis())) {
+            return delivery.ack(StudyFlowAccountHandoffStatus.EXPIRED, "expired")
+        }
+        if (!delivery.offer.accepts(localDevice, clock.nowEpochMillis())) {
+            return delivery.ack(StudyFlowAccountHandoffStatus.REJECTED, "missing_capability")
+        }
+        if (delivery.offer.handoffId in acceptedHandoffs) {
+            return delivery.ack(StudyFlowAccountHandoffStatus.DUPLICATE, "duplicate")
+        }
         val last = sourceFrontier[delivery.sourceDeviceId] ?: 0L
         if (delivery.sequence <= last) return delivery.ack(StudyFlowAccountHandoffStatus.REJECTED, "stale_sequence")
         sourceFrontier[delivery.sourceDeviceId] = delivery.sequence
@@ -255,7 +270,9 @@ data class StudyFlowBackupBundleManifest(
         require(accountBackupSha256Pattern.matches(contentSha256)) { "Backup bundle hash must be SHA-256 hex" }
         require(encryptionMode.isNotBlank()) { "Backup bundle encryption mode must be explicit" }
         require(createdAtEpochMillis >= 0L) { "Backup bundle creation time must not be negative" }
-        require(expiresAtEpochMillis == null || expiresAtEpochMillis > createdAtEpochMillis) { "Backup bundle expiry must be after creation" }
+        require(expiresAtEpochMillis == null || expiresAtEpochMillis > createdAtEpochMillis) {
+            "Backup bundle expiry must be after creation"
+        }
         require(requiredRestoreCapabilities.distinct().size == requiredRestoreCapabilities.size) {
             "Backup restore capabilities must be unique"
         }
@@ -263,9 +280,14 @@ data class StudyFlowBackupBundleManifest(
 
     fun isExpired(nowEpochMillis: Long): Boolean = expiresAtEpochMillis != null && nowEpochMillis > expiresAtEpochMillis
 
-    fun canBeRestoredBy(target: StudyFlowLinkPeerDescriptor, mode: StudyFlowBackupRestoreMode, nowEpochMillis: Long): Boolean {
+    fun canBeRestoredBy(
+        target: StudyFlowLinkPeerDescriptor,
+        mode: StudyFlowBackupRestoreMode,
+        nowEpochMillis: Long,
+    ): Boolean {
         if (isExpired(nowEpochMillis)) return false
-        val tvClass = target.clientKind == StudyFlowLinkClientKind.ANDROID_TV || target.clientKind == StudyFlowLinkClientKind.WEB_TV
+        val tvClass = target.clientKind == StudyFlowLinkClientKind.ANDROID_TV ||
+            target.clientKind == StudyFlowLinkClientKind.WEB_TV
         if (tvClass && mode != StudyFlowBackupRestoreMode.VERIFY_ONLY) return false
         return requiredRestoreCapabilities.all { it in target.capabilities }
     }
@@ -359,8 +381,12 @@ class StudyFlowBackupRestoreReducer(
     private var lastSequence = 0L
 
     fun apply(plan: StudyFlowBackupRestorePlan): StudyFlowBackupRestoreAck {
-        if (!plan.accepts(localDevice, clock.nowEpochMillis())) return plan.ack(StudyFlowBackupRestoreStatus.REJECTED, "not_accepted")
-        if (plan.bundle.isExpired(clock.nowEpochMillis())) return plan.ack(StudyFlowBackupRestoreStatus.EXPIRED, "expired")
+        if (!plan.accepts(localDevice, clock.nowEpochMillis())) {
+            return plan.ack(StudyFlowBackupRestoreStatus.REJECTED, "not_accepted")
+        }
+        if (plan.bundle.isExpired(clock.nowEpochMillis())) {
+            return plan.ack(StudyFlowBackupRestoreStatus.EXPIRED, "expired")
+        }
         if (plan.restoreId in restored) return plan.ack(StudyFlowBackupRestoreStatus.DUPLICATE, "duplicate")
         if (plan.sequence <= lastSequence) return plan.ack(StudyFlowBackupRestoreStatus.REJECTED, "stale_sequence")
         lastSequence = plan.sequence
@@ -517,7 +543,9 @@ object StudyFlowAccountBackupDefaults {
         .digest(value.toByteArray(Charsets.UTF_8))
         .joinToString("") { byte -> "%02x".format(byte) }
 
-    fun handoffCapabilitiesFor(purpose: StudyFlowAccountHandoffPurpose): List<StudyFlowLinkCapability> = when (purpose) {
+    fun handoffCapabilitiesFor(
+        purpose: StudyFlowAccountHandoffPurpose,
+    ): List<StudyFlowLinkCapability> = when (purpose) {
         StudyFlowAccountHandoffPurpose.AUDIT -> listOf(StudyFlowLinkCapabilities.WorkspaceSync)
         StudyFlowAccountHandoffPurpose.DEVICE_REPLACEMENT,
         StudyFlowAccountHandoffPurpose.DESKTOP_RECOVERY,

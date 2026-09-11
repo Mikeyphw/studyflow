@@ -23,7 +23,9 @@ class StudyFlowShareImportConflictReviewTest {
             mimeType = "text/markdown",
             previewText = "# Biology",
             contentSha256 = StudyFlowShareImportDefaults.sha256Hex("# Biology"),
-            requiredCapabilities = StudyFlowShareImportDefaults.textCapabilitiesFor(StudyFlowShareImportIntent.SHARE_IMPORT),
+            requiredCapabilities = StudyFlowShareImportDefaults.textCapabilitiesFor(
+                StudyFlowShareImportIntent.SHARE_IMPORT,
+            ),
             createdAtEpochMillis = 1_000L,
         )
         val reducer = StudyFlowShareImportReducer(desktop, StudyFlowPeerClock { 2_000L })
@@ -36,7 +38,10 @@ class StudyFlowShareImportConflictReviewTest {
             sentAtEpochMillis = 1_100L,
         )
         assertEquals(StudyFlowShareImportStatus.ACCEPTED, reducer.apply(delivery).status)
-        assertEquals(StudyFlowShareImportStatus.DUPLICATE, reducer.apply(delivery.copy(messageId = StudyFlowMessageId("share-message-2"))).status)
+        assertEquals(
+            StudyFlowShareImportStatus.DUPLICATE,
+            reducer.apply(delivery.copy(messageId = StudyFlowMessageId("share-message-2"))).status,
+        )
         val op = offer.toDomainOperation(StudyFlowEntityId("material-1"), StudyFlowEntityRevision(1), 1, 1, 1_200L)
         assertEquals(StudyFlowDomainOperationTypes.ShareImported, op.operationType)
     }
@@ -85,8 +90,16 @@ class StudyFlowShareImportConflictReviewTest {
             resolvedAtEpochMillis = 2_000L,
         )
         assertEquals(StudyFlowConflictReviewStatus.RESOLVED, reducer.resolve(resolution).status)
-        assertEquals(StudyFlowConflictReviewStatus.REJECTED, reducer.resolve(resolution.copy(resolutionId = StudyFlowConflictResolutionId("resolution-note-2"))).status)
-        assertEquals(StudyFlowDomainOperationTypes.ConflictMerged, resolution.toDomainOperation(candidate, StudyFlowEntityRevision(4), 9L).operationType)
+        assertEquals(
+            StudyFlowConflictReviewStatus.REJECTED,
+            reducer.resolve(
+                resolution.copy(resolutionId = StudyFlowConflictResolutionId("resolution-note-2")),
+            ).status,
+        )
+        assertEquals(
+            StudyFlowDomainOperationTypes.ConflictMerged,
+            resolution.toDomainOperation(candidate, StudyFlowEntityRevision(4), 9L).operationType,
+        )
     }
 
     private fun textOffer(

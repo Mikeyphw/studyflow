@@ -1747,7 +1747,8 @@ tasks.register<Exec>("verifyWeb20SharedSemanticGoldenVectors") {
 
 tasks.register<Exec>("verifyWeb20RoadmapTruth") {
     group = "verification"
-    description = "Verify WEB20 closes only the canonical roadmap/ledger track and leaves Presence/Parity ordering intact."
+    description =
+        "Verify WEB20 closes only the canonical roadmap/ledger track and leaves Presence/Parity ordering intact."
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_roadmap01_cross_platform_truth_reconciliation.py")
 }
@@ -1826,7 +1827,8 @@ tasks.register<Exec>("verifyPresence01LanRelayStability") {
         "python3",
         "-m",
         "unittest",
-        "tests.test_wtv06_07_history_control_relay.Wtv0607HistoryControlRelayTest.test_lan_relay_pair_command_cast_revoke",
+        "tests.test_wtv06_07_history_control_relay." +
+            "Wtv0607HistoryControlRelayTest.test_lan_relay_pair_command_cast_revoke",
     )
 }
 
@@ -1866,7 +1868,9 @@ tasks.register("verifyPresence01TerminalSeal") {
 
 tasks.register<Exec>("verifyParity04FiveClientFullMesh") {
     group = "verification"
-    description = "Checks PARITY04 five-client full-mesh, convergence, exactly-once, capability, semantic, and portability contracts."
+    description =
+        "Checks PARITY04 five-client full-mesh, convergence, exactly-once, capability, semantic, " +
+            "and portability contracts."
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_parity04_five_client_full_mesh.py")
 }
@@ -1880,7 +1884,8 @@ tasks.register<Exec>("verifyParity04WebAcceptance") {
 
 tasks.register("verifyParity04TerminalSeal") {
     group = "verification"
-    description = "Terminal five-client PARITY04 acceptance seal across shared core, Desktop, Web, Android, and Android TV."
+    description =
+        "Terminal five-client PARITY04 acceptance seal across shared core, Desktop, Web, Android, and Android TV."
     dependsOn(
         "verifyParity04FiveClientFullMesh",
         "verifyParity04WebAcceptance",
@@ -1899,6 +1904,76 @@ tasks.register("verifyParity04TerminalSeal") {
         ":app-tv:compileDebugKotlin",
         ":app-tv:testDebugUnitTest",
         ":app-tv:assembleDebug",
+    )
+}
+
+tasks.register<Exec>("verifyRelFinalRoadmapPromiseAudit") {
+    group = "verification"
+    description = "Checks the permanent REL-FINAL 213-verifier promise ledger and repaired product truth."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_rel_final_roadmap_promise_audit.py")
+}
+
+tasks.register<Exec>("runRelFinalExhaustiveRoadmapAudit") {
+    group = "verification"
+    description =
+        "Standalone REL-FINAL exhaustive roadmap audit; run outside concurrent Gradle compilation."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3",
+        "scripts/run_rel_final_roadmap_audit.py",
+        "--timeout-seconds",
+        "180",
+        "--workers",
+        "4",
+    )
+}
+
+tasks.register<Exec>("prepareRelFinalEvidencePlan") {
+    group = "verification"
+    description = "Prepares REL-FINAL target-host/device command templates without claiming release readiness."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/run_rel_final_release_campaign.py", "--mode", "plan")
+}
+
+tasks.register<Exec>("runRelFinalReleaseCampaign") {
+    group = "verification"
+    description = "Executes the real REL-FINAL target-host evidence campaign; fails until all evidence closes."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3",
+        "scripts/run_rel_final_release_campaign.py",
+        "--mode",
+        "execute",
+        "--channel",
+        "production",
+    )
+}
+
+tasks.register<Exec>("finalizeRelFinalReleaseCampaign") {
+    group = "verification"
+    description = "Rebuilds REL05-REL08 outputs and final verdict after real device/operator evidence is recorded."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3",
+        "scripts/run_rel_final_release_campaign.py",
+        "--mode",
+        "finalize",
+        "--channel",
+        "production",
+    )
+}
+
+tasks.register("verifyRelFinalTerminalSeal") {
+    group = "verification"
+    description = "Terminal product/static seal before the separate real REL-FINAL evidence execution campaign."
+    dependsOn(
+        "verifyRelFinalRoadmapPromiseAudit",
+        "prepareRelFinalEvidencePlan",
+        "verifyParity04TerminalSeal",
+        "verifySflp24FinalReleaseSeal",
+        "verifyRel07Rel08FinalReleaseOpsSeal",
+        "verifyFinalSourceAcceptance",
     )
 }
 

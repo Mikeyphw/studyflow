@@ -71,6 +71,11 @@ class DesktopTextCatalog private constructor(
             "Restore encrypted backup" to "Restaurar backup criptografado",
             "Migrate workspace schema" to "Migrar esquema do workspace",
             "StudyFlow Link" to "Conexão StudyFlow",
+            "Live StudyFlow presence" to "Presença ao vivo do StudyFlow",
+            "No live peer presence is currently visible." to
+                "Nenhuma presença de dispositivo pareado está visível no momento.",
+            "Presence is ephemeral and optional; sync correctness never depends on it." to
+                "A presença é temporária e opcional; a sincronização correta nunca depende dela.",
             "Create pairing offer" to "Criar oferta de pareamento",
             "Sync trusted peers" to "Sincronizar dispositivos confiáveis",
             "Pair from QR payload" to "Parear pelo QR",

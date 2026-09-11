@@ -34,7 +34,10 @@ class StudyFlowPresentationProjectionTest {
         val frame2 = frame("frame-2", sequence = 2, cursor = StudyFlowActivityCursor("slide-2"))
 
         assertTrue(receiver.applyFrame(frame1) is StudyFlowPresentationApplyResult.Accepted)
-        assertEquals("stale_frame", (receiver.applyFrame(frame("frame-old", 1)) as StudyFlowPresentationApplyResult.Rejected).reason)
+        assertEquals(
+            "stale_frame",
+            (receiver.applyFrame(frame("frame-old", 1)) as StudyFlowPresentationApplyResult.Rejected).reason,
+        )
         assertTrue(receiver.applyFrame(frame2) is StudyFlowPresentationApplyResult.Accepted)
 
         val ack = receiver.acknowledge(StudyFlowProjectionId("projection-main"))

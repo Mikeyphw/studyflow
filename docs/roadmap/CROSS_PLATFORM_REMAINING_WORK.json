@@ -90,7 +90,17 @@
         "REL01-REL08"
       ],
       "terminal_milestone": "REL08_EVIDENCE_CLOSED",
-      "summary": "Execute existing release tooling against the completed product and retain signed artifact, device, restart/restore, and interoperability evidence."
+      "summary": "Execute existing release tooling against the completed product and retain signed artifact, device, restart/restore, and interoperability evidence.",
+      "audit_status": "static_product_audit_complete",
+      "audited_legacy_verifiers": 213,
+      "static_verifiers_passed": 211,
+      "external_evidence_gates_pending": [
+        "verify_final_release_artifact.py",
+        "verify_final_release_verdict.py"
+      ],
+      "promise_audit": "docs/roadmap/REL_FINAL_PROMISE_AUDIT.json",
+      "campaign": "scripts/run_rel_final_release_campaign.py",
+      "closure_rule": "final-release-verdict releaseReady and release-ops-final-seal releaseOpsReady must both be true from real target evidence"
     }
   ]
 }

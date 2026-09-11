@@ -49,8 +49,16 @@ class StudyFlowFiveClientParity04AcceptanceTest {
             }
 
             // These direct edges are the explicit no-Android-intermediary acceptance cases.
-            assertNotNull(nodes.getValue("desktop").bestEndpoint(nodes.getValue("android_tv").localIdentity.descriptor.deviceId))
-            assertNotNull(nodes.getValue("web").bestEndpoint(nodes.getValue("web_tv").localIdentity.descriptor.deviceId))
+            assertNotNull(
+                nodes.getValue("desktop").bestEndpoint(
+                    nodes.getValue("android_tv").localIdentity.descriptor.deviceId,
+                ),
+            )
+            assertNotNull(
+                nodes.getValue("web").bestEndpoint(
+                    nodes.getValue("web_tv").localIdentity.descriptor.deviceId,
+                ),
+            )
         } finally {
             nodes.values.forEach(StudyFlowPeerRuntime::close)
         }
@@ -131,7 +139,13 @@ class StudyFlowFiveClientParity04AcceptanceTest {
             oneTimeNonceHex = "00112233445566778899aabbccddeeff",
         )
         assertTrue(StudyFlowHandoffPolicy.evaluate(writeOffer, androidTv, now) is StudyFlowHandoffDecision.Rejected)
-        assertTrue(StudyFlowHandoffPolicy.evaluate(writeOffer.copy(targetDeviceId = webTv.deviceId), webTv, now) is StudyFlowHandoffDecision.Rejected)
+        assertTrue(
+            StudyFlowHandoffPolicy.evaluate(
+                writeOffer.copy(targetDeviceId = webTv.deviceId),
+                webTv,
+                now,
+            ) is StudyFlowHandoffDecision.Rejected,
+        )
 
         listOf(androidTv, webTv).forEach { sink ->
             val projection = StudyFlowPresentationProjectionOffer(
@@ -199,7 +213,11 @@ class StudyFlowFiveClientParity04AcceptanceTest {
             assertFalse(StudyFlowLinkCapabilities.WritingEdit in capabilities)
             assertFalse(StudyFlowLinkCapabilities.BackupImport in capabilities)
         }
-        listOf(StudyFlowLinkClientKind.ANDROID, StudyFlowLinkClientKind.DESKTOP, StudyFlowLinkClientKind.WEB).forEach { kind ->
+        listOf(
+            StudyFlowLinkClientKind.ANDROID,
+            StudyFlowLinkClientKind.DESKTOP,
+            StudyFlowLinkClientKind.WEB,
+        ).forEach { kind ->
             val capabilities = StudyFlowClientProfiles.capabilitiesFor(kind).toSet()
             assertTrue(StudyFlowLinkCapabilities.WorkspaceWrite in capabilities)
             assertTrue(StudyFlowLinkCapabilities.DevicePresentationSource in capabilities)

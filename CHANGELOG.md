@@ -693,3 +693,9 @@ copy.
 - Added REL07 release checklist gate for REL01-REL06 evidence and operator checklist aggregation.
 - Added REL08 final release-ops seal with final evidence bundle export.
 - Wired `verifyRel07Rel08FinalReleaseOpsSeal` after REL05/REL06 for the final release-operation track gate.
+
+## REL-FINAL — roadmap promise audit and evidence campaign
+
+- Audited every pre-existing roadmap/product verifier and folded current-truth, localization, historical-provenance, stale-verifier, and source-hygiene gaps into the terminal release batch.
+- Added a machine-readable 213-verifier promise ledger and exhaustive 211-static-verifier audit runner.
+- Added a safe REL01-REL08 campaign orchestrator that remains pending until real signed artifact, connected-device, restart/restore, device-observation, and operator-checklist evidence closes both final readiness gates.

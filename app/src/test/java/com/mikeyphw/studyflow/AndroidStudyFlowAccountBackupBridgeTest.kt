@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow
 import com.mikeyphw.studyflow.core.link.StudyFlowAccountHandoffId
 import com.mikeyphw.studyflow.core.link.StudyFlowClientProfiles
 import com.mikeyphw.studyflow.core.link.StudyFlowDeviceId
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkCapability
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkPeerDescriptor
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerClock
@@ -26,6 +27,9 @@ class AndroidStudyFlowAccountBackupBridgeTest {
         assertTrue(offer.accepts(target, nowEpochMillis = 1_001L))
     }
 
-    private fun descriptor(id: String, kind: StudyFlowLinkClientKind, capabilities: List<com.mikeyphw.studyflow.core.link.StudyFlowLinkCapability>) =
-        StudyFlowLinkPeerDescriptor(StudyFlowDeviceId(id), id, kind, capabilities = capabilities)
+    private fun descriptor(
+        id: String,
+        kind: StudyFlowLinkClientKind,
+        capabilities: List<StudyFlowLinkCapability>,
+    ) = StudyFlowLinkPeerDescriptor(StudyFlowDeviceId(id), id, kind, capabilities = capabilities)
 }

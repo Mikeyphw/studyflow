@@ -41,17 +41,25 @@ class StudyFlowLiveSessionContinuityTest {
     fun pauseResumeAndCursorUseMonotonicFencing() {
         val reducer = StudyFlowLiveSessionReducer(snapshot())
         val cursor = StudyFlowLiveSessionCursor(activityId, "question-2", itemIndex = 2, elapsedMillis = 9_000L)
-        val cursorResult = reducer.apply(event("event-cursor", android.deviceId, 2, StudyFlowLiveSessionEventKind.CURSOR, cursor))
+        val cursorResult = reducer.apply(
+            event("event-cursor", android.deviceId, 2, StudyFlowLiveSessionEventKind.CURSOR, cursor),
+        )
         assertTrue(cursorResult is StudyFlowLiveSessionApplyResult.Applied)
         assertEquals("question-2", reducer.snapshot().cursor.positionToken)
 
-        assertTrue(reducer.apply(event("event-pause", desktop.deviceId, 3, StudyFlowLiveSessionEventKind.PAUSED)) is StudyFlowLiveSessionApplyResult.Applied)
+        assertTrue(
+            reducer.apply(event("event-pause", desktop.deviceId, 3, StudyFlowLiveSessionEventKind.PAUSED)) is
+                StudyFlowLiveSessionApplyResult.Applied,
+        )
         assertEquals(StudyFlowLiveSessionState.PAUSED, reducer.snapshot().state)
 
         val stale = reducer.apply(event("event-old", android.deviceId, 2, StudyFlowLiveSessionEventKind.RESUMED))
         assertEquals("stale_sequence", (stale as StudyFlowLiveSessionApplyResult.Rejected).reason)
 
-        assertTrue(reducer.apply(event("event-resume", desktop.deviceId, 4, StudyFlowLiveSessionEventKind.RESUMED)) is StudyFlowLiveSessionApplyResult.Applied)
+        assertTrue(
+            reducer.apply(event("event-resume", desktop.deviceId, 4, StudyFlowLiveSessionEventKind.RESUMED)) is
+                StudyFlowLiveSessionApplyResult.Applied,
+        )
         assertEquals(StudyFlowLiveSessionState.RUNNING, reducer.snapshot().state)
     }
 

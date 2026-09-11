@@ -36,6 +36,7 @@ if missing: raise SystemExit(f"capability matrix missing: {missing}")
 if not any(row in cap for row in (
     '| Full material viewing | FULL | FULL | LIMITED | LIMITED | FULL |',
     '| Full material viewing | FULL | FULL | FULL | LIMITED | FULL |',
+    '| Full material viewing | FULL | FULL | FULL | FULL | FULL |',
 )):
     raise SystemExit("capability matrix lost the DOV15-or-later full-material-viewing state")
 build = (ROOT / "build.gradle.kts").read_text()

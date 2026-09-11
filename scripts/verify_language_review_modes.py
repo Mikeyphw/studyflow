@@ -45,7 +45,9 @@ require("LanguageReviewAttemptId", ids, "language review attempt identifier miss
 require("LanguageReviewAttemptEntity", entities, "language review attempt entity missing")
 require("language_review_attempts", migrations, "language review attempts migration missing")
 require("Migration8To9", migrations, "CMOV-08 database migration missing")
-require("SCHEMA_VERSION = 9", database, "database schema version must advance to 9")
+schema_match = __import__("re").search(r"SCHEMA_VERSION\s*=\s*(\d+)", database)
+if schema_match is None or int(schema_match.group(1)) < 9:
+    raise SystemExit("database schema version must be at least 9")
 require("upsertLanguageReviewAttempt", dao, "language review attempt DAO upsert missing")
 require("observeLanguageReviewAttempts", dao, "language review attempt DAO query missing")
 require("sentence creation stays manual", test, "manual sentence review regression test missing")

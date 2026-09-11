@@ -7,7 +7,11 @@ import kotlin.test.assertTrue
 
 class StudyFlowControlInputDelegationTest {
     private val workspace = StudyFlowWorkspaceId("workspace-main")
-    private val phone = descriptor("android-phone", StudyFlowLinkClientKind.ANDROID, StudyFlowClientProfiles.AndroidPhone)
+    private val phone = descriptor(
+        "android-phone",
+        StudyFlowLinkClientKind.ANDROID,
+        StudyFlowClientProfiles.AndroidPhone,
+    )
     private val tv = descriptor("living-tv", StudyFlowLinkClientKind.ANDROID_TV, StudyFlowClientProfiles.AndroidTv)
     private val desktop = descriptor("desktop-main", StudyFlowLinkClientKind.DESKTOP, StudyFlowClientProfiles.Desktop)
     private val clock = StudyFlowPeerClock { 1_000L }
@@ -78,7 +82,10 @@ class StudyFlowControlInputDelegationTest {
             workspaceId = workspace,
             source = desktop,
             target = phone,
-            requestedInput = listOf(StudyFlowLinkCapabilities.KeyboardInput, StudyFlowLinkCapabilities.TextInputProvide),
+            requestedInput = listOf(
+                StudyFlowLinkCapabilities.KeyboardInput,
+                StudyFlowLinkCapabilities.TextInputProvide,
+            ),
             nonceHex = "0123456789abcdef0123456789abcdef",
             nowEpochMillis = 1_000L,
         )
@@ -96,7 +103,10 @@ class StudyFlowControlInputDelegationTest {
             occurredAtEpochMillis = 1_000L,
         )
         assertIs<StudyFlowInputDelegationResult.Accepted>(reducer.apply(input))
-        assertEquals(StudyFlowInputDelegationResult.Rejected("stale_sequence"), reducer.apply(input.copy(messageId = StudyFlowMessageId("msg-input-2"))))
+        assertEquals(
+            StudyFlowInputDelegationResult.Rejected("stale_sequence"),
+            reducer.apply(input.copy(messageId = StudyFlowMessageId("msg-input-2"))),
+        )
     }
 
     @Test

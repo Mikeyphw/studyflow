@@ -16,6 +16,11 @@ major functional-parity track; TV clients preserve intentionally narrower 10-foo
 
 ## StudyFlow Link Protocol — SFLP01-SFLP24 — COMPLETE
 
+**Historical SFLP01 boundary:** No transport or replication is claimed yet at the SFLP01 milestone itself;
+transport, reconciliation, topology, and client integration were intentionally delivered by the later SFLP milestones.
+The PARITY baseline target was that **Android becomes a generic SFLP peer rather than the TV hub**. PARITY04 now
+proves that target across all five clients, so this sentence is historical provenance rather than a current limitation.
+
 1. **SFLP01 Protocol baseline — COMPLETE** — protocol version, message envelope, workspace/device/
    entity/operation identities, capability vocabulary, request/response/events, compatibility rules,
    language-neutral schema, and golden vectors.
@@ -229,3 +234,16 @@ SFLP24 is implemented as the final validation command for the SFLP connectivity 
 adds `verifySflp24FinalReleaseSeal`, restores every SFLP verifier into `checkAll`, and records the
 language-neutral `release.validation_final_seal` golden vector. This is the final validation command
 for the SFLP01-SFLP23 chain; run it with validation enabled instead of `--no-validate`.
+
+## REL-FINAL — roadmap promise audit and release evidence execution
+
+**REL-FINAL static/product audit is complete; real release evidence remains pending target execution.**
+The terminal audit inventories all 213 pre-REL-FINAL verifier scripts: 211 source/product contracts must pass,
+while `verify_final_release_artifact.py` and `verify_final_release_verdict.py` remain deliberately external,
+fail-closed evidence gates. The permanent ledger is `docs/roadmap/REL_FINAL_PROMISE_AUDIT.json`.
+
+REL-FINAL reuses REL01-REL08 rather than creating a new release framework. `scripts/run_rel_final_release_campaign.py`
+prepares or executes the target-host campaign for signed APK/AAB identity, connected tests, exact-artifact
+restore/restart, device observations, rollout evidence, release notes, rollback planning, operator checklist, and the
+REL08 final evidence bundle. Static audit success never sets release readiness. REL-FINAL closes only when the
+exact-artifact final verdict and the REL08 release-ops seal both report ready from real evidence.

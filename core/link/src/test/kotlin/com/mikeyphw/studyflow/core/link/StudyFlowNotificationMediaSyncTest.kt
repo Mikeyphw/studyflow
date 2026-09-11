@@ -31,7 +31,10 @@ class StudyFlowNotificationMediaSyncTest {
             sentAtEpochMillis = 1_001L,
         )
         assertEquals(StudyFlowNotificationDeliveryStatus.ACCEPTED, reducer.apply(delivery).status)
-        assertEquals(StudyFlowNotificationDeliveryStatus.DUPLICATE, reducer.apply(delivery.copy(messageId = StudyFlowMessageId("notification-message-2"))).status)
+        assertEquals(
+            StudyFlowNotificationDeliveryStatus.DUPLICATE,
+            reducer.apply(delivery.copy(messageId = StudyFlowMessageId("notification-message-2"))).status,
+        )
     }
 
     @Test
@@ -69,7 +72,10 @@ class StudyFlowNotificationMediaSyncTest {
             totalBytes = 6L,
             chunkSize = 3,
             contentSha256 = "0".repeat(64),
-            requiredCapabilities = listOf(StudyFlowLinkCapabilities.LibraryRead, StudyFlowLinkCapabilities.DocumentPresent),
+            requiredCapabilities = listOf(
+                StudyFlowLinkCapabilities.LibraryRead,
+                StudyFlowLinkCapabilities.DocumentPresent,
+            ),
             createdAtEpochMillis = 1_000L,
         )
         assertTrue(reducer.accept(offer))
@@ -85,7 +91,10 @@ class StudyFlowNotificationMediaSyncTest {
             sentAtEpochMillis = 1_100L,
         )
         assertEquals(StudyFlowMaterialChunkStatus.ACCEPTED, reducer.apply(chunk).status)
-        assertEquals(StudyFlowMaterialChunkStatus.DUPLICATE, reducer.apply(chunk.copy(messageId = StudyFlowMessageId("chunk-message-2"))).status)
+        assertEquals(
+            StudyFlowMaterialChunkStatus.DUPLICATE,
+            reducer.apply(chunk.copy(messageId = StudyFlowMessageId("chunk-message-2"))).status,
+        )
     }
 
     @Test

@@ -19,7 +19,9 @@ class StudyFlowAccountBackupValidationTest {
             targetDeviceId = desktop.deviceId,
             purpose = StudyFlowAccountHandoffPurpose.DEVICE_REPLACEMENT,
             manifestSha256 = StudyFlowAccountBackupDefaults.sha256Hex("manifest"),
-            requiredCapabilities = StudyFlowAccountBackupDefaults.handoffCapabilitiesFor(StudyFlowAccountHandoffPurpose.DEVICE_REPLACEMENT),
+            requiredCapabilities = StudyFlowAccountBackupDefaults.handoffCapabilitiesFor(
+                StudyFlowAccountHandoffPurpose.DEVICE_REPLACEMENT,
+            ),
             createdAtEpochMillis = 1_000L,
         )
         val reducer = StudyFlowAccountHandoffReducer(desktop, StudyFlowPeerClock { 2_000L })
@@ -33,8 +35,17 @@ class StudyFlowAccountBackupValidationTest {
         )
         assertTrue(offer.accepts(desktop, nowEpochMillis = 2_000L))
         assertEquals(StudyFlowAccountHandoffStatus.ACCEPTED, reducer.apply(delivery).status)
-        assertEquals(StudyFlowAccountHandoffStatus.DUPLICATE, reducer.apply(delivery.copy(messageId = StudyFlowMessageId("message-2"))).status)
-        val op = offer.toDomainOperation(StudyFlowEntityId("account-handoff"), StudyFlowEntityRevision(1), 1L, 1L, 2_000L)
+        assertEquals(
+            StudyFlowAccountHandoffStatus.DUPLICATE,
+            reducer.apply(delivery.copy(messageId = StudyFlowMessageId("message-2"))).status,
+        )
+        val op = offer.toDomainOperation(
+            StudyFlowEntityId("account-handoff"),
+            StudyFlowEntityRevision(1),
+            1L,
+            1L,
+            2_000L,
+        )
         assertEquals(StudyFlowDomainOperationTypes.AccountHandoffAccepted, op.operationType)
     }
 
