@@ -12,10 +12,6 @@ val tvReleaseSigningConfigured = tvReleaseSigningInputs.all { value -> !value.is
 val tvReleaseSigningPartiallyConfigured = tvReleaseSigningInputs.any { value -> !value.isNullOrBlank() } &&
     !tvReleaseSigningConfigured
 
-require(!tvReleaseSigningPartiallyConfigured) {
-    "StudyFlow TV release signing is only accepted when all STUDYFLOW_RELEASE_* variables are configured."
-}
-
 plugins {
     id("studyflow.android.application")
 }
@@ -81,4 +77,25 @@ dependencies {
     implementation(project(":core:link"))
     testImplementation(libs.junit4)
     testImplementation(kotlin("test-junit"))
+}
+
+// Release signing is a packaging-time requirement, not a configuration-time requirement.
+// This keeps ordinary debug/source verification usable when a shell has only some release
+// variables exported, while still preventing unsigned or partially configured TV releases.
+tasks.configureEach {
+    val releasePackagingTask =
+        name == "assembleRelease" ||
+            name == "bundleRelease" ||
+            name.startsWith("packageRelease")
+    if (releasePackagingTask) {
+        doFirst {
+            require(tvReleaseSigningConfigured) {
+                if (tvReleaseSigningPartiallyConfigured) {
+                    "StudyFlow TV release signing is only accepted when all STUDYFLOW_RELEASE_* variables are configured."
+                } else {
+                    "StudyFlow TV release packaging requires all STUDYFLOW_RELEASE_* variables."
+                }
+            }
+        }
+    }
 }
