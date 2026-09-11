@@ -1,3 +1,11 @@
+# Changelog
+
+## TV Devtool Android runner hotfix
+
+- Route `studyflow_tv` through Devtool's Android runner instead of the generic raw-Gradle runner.
+- Pin the TV target to debug, Termux AAPT2, native-Termux preference, and NDK 29.
+- Add a regression verifier that preserves TV-only build tasks and Android-runner routing.
+
 # PARITY04 — Five-client full-mesh/product-parity acceptance seal
 
 - Added a language-neutral five-client scenario corpus covering all ten direct client pairs.

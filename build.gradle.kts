@@ -1977,3 +1977,10 @@ tasks.register("verifyRelFinalTerminalSeal") {
     )
 }
 
+
+tasks.register<Exec>("verifyStudyFlowTvDevtoolAndroidRunner") {
+    group = "verification"
+    description = "Checks that the StudyFlow TV Devtool target uses the Android runner and TV-only debug tasks."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_tv_devtool_android_runner.py")
+}

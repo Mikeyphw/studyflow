@@ -147,9 +147,19 @@ scripts/                Source-contract validation entry points
 
 ## Build with Devtool
 
+Mobile debug APK:
+
 ```bash
 devtool -r /path/to/studyflow --target studyflow_android build
 ```
+
+Android TV debug APK:
+
+```bash
+devtool -r /path/to/studyflow --target studyflow_tv build
+```
+
+Both Android targets use Devtool's Android build wrapper on native Termux; the TV target must not be downgraded to the generic Gradle runner.
 
 Apply and validate overlays with explicit target selection:
 

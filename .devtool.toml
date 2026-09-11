@@ -470,10 +470,17 @@ low_priority = false
 
 
 [targets.studyflow_tv]
-type = "gradle"
+type = "android"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+
+[targets.studyflow_tv.android]
+variant = "debug"
+aapt2_provider = "termux"
+instrumentation = "when-device-present"
+prefer_native_termux = true
+ndk_version = "29.0.14206865"
 
 [targets.studyflow_tv.gradle]
 version = "9.7.1"
@@ -495,6 +502,7 @@ args = [
 
 [targets.studyflow_tv.tasks]
 build = [
+  "verifyStudyFlowTvDevtoolAndroidRunner",
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
@@ -636,6 +644,7 @@ memory_guard_mb = 256
 
 [targets.studyflow_tv.validation.phases]
 preflight = [
+  "verifyStudyFlowTvDevtoolAndroidRunner",
   "verifyStudyFlowTvArchitecture",
   "verifyStudyFlowTvSizeBudget",
   "verifyStudyFlowTvControlCast",
