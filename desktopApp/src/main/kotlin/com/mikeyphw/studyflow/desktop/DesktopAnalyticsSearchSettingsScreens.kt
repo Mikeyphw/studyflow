@@ -495,6 +495,27 @@ fun DesktopSettingsScreen(
                 }
             }
 
+            DesktopSectionCard(title = desktopText("Live StudyFlow presence")) {
+                Text(desktopText("Presence is ephemeral and optional; sync correctness never depends on it."))
+                if (linkState.presence.isEmpty()) {
+                    Text(desktopText("No live peer presence is currently visible."))
+                } else {
+                    linkState.presence.forEach { presence ->
+                        Text(
+                            "${presence.displayName} • ${presence.clientKind} • ${presence.status.lowercase()}",
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text("${presence.instanceId} • ${presence.deviceId}")
+                        if (presence.activityKind != null) {
+                            Text(
+                                "Resumable activity: ${presence.activityKind.lowercase()}" +
+                                    (presence.activityId?.let { " • $it" } ?: ""),
+                            )
+                        }
+                    }
+                }
+            }
+
             DesktopSectionCard(title = desktopText("Discovered StudyFlow peers")) {
                 if (linkState.discoveredPeers.isEmpty()) {
                     Text(desktopText("No active LAN/manual peers discovered."))

@@ -12,6 +12,10 @@ import com.mikeyphw.studyflow.core.link.StudyFlowManualDiscovery
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingPublicOffer
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingQrCodec
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerRuntime
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceActivityHint
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceAvailability
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceRecord
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceView
 import com.mikeyphw.studyflow.core.link.StudyFlowReconnectResult
 import com.mikeyphw.studyflow.core.link.StudyFlowTransportEndpoint
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
@@ -90,6 +94,7 @@ class DesktopStudyFlowLinkService(
     fun registerWorkspace(workspaceId: StudyFlowWorkspaceId) {
         synchronized(activeWorkspaces) { activeWorkspaces += workspaceId }
         runtime.workspace(workspaceId)
+        runtime.updatePresence(workspaceId, StudyFlowPresenceAvailability.ONLINE)
     }
 
     fun createPairingOffer(): StudyFlowPairingPublicOffer {
@@ -150,6 +155,21 @@ class DesktopStudyFlowLinkService(
         }
     }
 
+    fun updatePresence(
+        workspaceId: StudyFlowWorkspaceId,
+        availability: StudyFlowPresenceAvailability,
+        activityHint: StudyFlowPresenceActivityHint? = null,
+        visibilityCapabilities: List<StudyFlowLinkCapability> = emptyList(),
+    ): StudyFlowPresenceRecord = runtime.updatePresence(
+        workspaceId = workspaceId,
+        availability = availability,
+        activityHint = activityHint,
+        visibilityCapabilities = visibilityCapabilities,
+    )
+
+    fun presenceViews(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPresenceView> =
+        runtime.presenceViews(workspaceId)
+
     fun revoke(peerDeviceId: StudyFlowDeviceId) {
         runtime.revoke(peerDeviceId)
         lastStatus = "Peer revoked"
@@ -189,6 +209,17 @@ class DesktopStudyFlowLinkService(
             pairingCode = pairingCode(),
             pairingQrPayload = currentOffer?.qrPayload,
             pendingOutgoingOperations = pending,
+            presence = workspaceId?.let(::presenceViews).orEmpty().map { view ->
+                DesktopStudyFlowPresence(
+                    deviceId = view.sourceDevice.deviceId.value,
+                    instanceId = view.instanceId.value,
+                    displayName = view.sourceDevice.displayName,
+                    clientKind = view.sourceDevice.clientKind.name,
+                    status = view.status.name,
+                    activityKind = view.activityHint?.kind?.name,
+                    activityId = view.activityHint?.activityId?.value,
+                )
+            },
             status = lastStatus,
         )
     }
@@ -266,7 +297,18 @@ data class DesktopStudyFlowLinkState(
     val pairingCode: String?,
     val pairingQrPayload: String?,
     val pendingOutgoingOperations: Int,
+    val presence: List<DesktopStudyFlowPresence>,
     val status: String,
+)
+
+data class DesktopStudyFlowPresence(
+    val deviceId: String,
+    val instanceId: String,
+    val displayName: String,
+    val clientKind: String,
+    val status: String,
+    val activityKind: String?,
+    val activityId: String?,
 )
 
 data class DesktopStudyFlowDiscoveredPeer(

@@ -936,16 +936,17 @@ args = [
 ]
 
 [targets.studyflow_parity.tasks]
-build = ["verifyWeb20TerminalSeal"]
+build = ["verifyPresence01TerminalSeal"]
 test = [
+  "verifyPresence01PeerActivityPresence",
   "verifyWeb20SharedSemanticGoldenVectors",
   "verifyWeb20RoadmapTruth",
-  "verifyWeb20WebRegression",
-  "verifyWeb20WebRelease",
-  ":core:domain:test",
+  "verifyPresence01WebRegression",
+  "verifyPresence01WebRelease",
   ":core:link:test",
-  ":core:portability:test",
   ":desktopApp:test",
+  ":app:testReleaseUnitTest",
+  ":app-tv:testDebugUnitTest",
 ]
 lint = ["verifyFormatting"]
 clean = ["clean"]
@@ -964,22 +965,30 @@ gradle_metaspace_mb = 512
 memory_guard_mb = 256
 
 [targets.studyflow_parity.validation.phases]
-preflight = ["verifyWeb20SharedSemanticGoldenVectors", "verifyWeb20RoadmapTruth"]
+preflight = [
+  "verifyPresence01PeerActivityPresence",
+  "verifyWeb20SharedSemanticGoldenVectors",
+  "verifyWeb20RoadmapTruth",
+]
 compile = [
-  ":core:domain:compileKotlin",
-  ":core:domain:compileTestKotlin",
   ":core:link:compileKotlin",
-  ":core:portability:compileKotlin",
+  ":core:link:compileTestKotlin",
   ":desktopApp:compileKotlin",
   ":desktopApp:compileTestKotlin",
+  ":app:compileDebugKotlin",
+  ":app-tv:compileDebugKotlin",
 ]
 unit-test = [
-  ":core:domain:test",
   ":core:link:test",
-  ":core:portability:test",
   ":desktopApp:test",
-  "verifyWeb20WebRegression",
-  "verifyWeb20WebRelease",
+  ":app:testReleaseUnitTest",
+  ":app-tv:testDebugUnitTest",
+  "verifyPresence01WebRegression",
+  "verifyPresence01WebRelease",
 ]
-package = ["verifyWeb20TerminalSeal"]
+package = [
+  ":app:assembleDebug",
+  ":app-tv:assembleDebug",
+  "verifyPresence01TerminalSeal",
+]
 lint = ["verifyFormatting"]

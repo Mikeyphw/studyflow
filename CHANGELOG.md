@@ -1,3 +1,11 @@
+# PRESENCE01 — Peer/activity presence
+- Hardened the browser-TV relay acceptance harness with load-tolerant LAN relay readiness retries and diagnostic capture.
+
+- Added ephemeral online/away/offline/stale presence with bounded expiry and reconnect session supersession.
+- Added simultaneous-instance, resumable activity hint, capability visibility, authenticated exchange, and loop-safe gossip semantics.
+- Wired Android, Desktop, Web, Android TV, and Web TV without making presence durable or a sync prerequisite.
+- Closed PRESENCE01 in the canonical roadmap; PARITY04 is now the next cross-platform acceptance batch.
+
 # WEB20 — Shared semantic golden vectors
 
 - Added 40 language-neutral semantic vectors consumed by Kotlin/core, TypeScript/Web, and Desktop.

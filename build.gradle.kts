@@ -1794,3 +1794,72 @@ tasks.register("verifyWeb20TerminalSeal") {
         ":desktopApp:test",
     )
 }
+
+tasks.register<Exec>("verifyPresence01PeerActivityPresence") {
+    group = "verification"
+    description =
+        "Checks PRESENCE01 ephemeral multi-client peer/activity presence, capability visibility, " +
+            "expiry, reconnect, and loop safety."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_presence01_peer_activity_presence.py")
+}
+
+tasks.register<Exec>("verifyPresence01WebLint") {
+    group = "verification"
+    description = "Type-check Web/Web-TV presence and verify committed runtime parity."
+    workingDir = file("web")
+    commandLine("npm", "run", "lint")
+}
+
+tasks.register<Exec>("verifyPresence01WebTests") {
+    group = "verification"
+    description = "Run the complete Web regression suite with PRESENCE01."
+    workingDir = file("web")
+    commandLine("npm", "test")
+}
+
+tasks.register<Exec>("verifyPresence01LanRelayStability") {
+    group = "verification"
+    description = "Exercise the browser-TV LAN relay with load-tolerant startup/readiness handling."
+    workingDir = file("web")
+    commandLine(
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_wtv06_07_history_control_relay.Wtv0607HistoryControlRelayTest.test_lan_relay_pair_command_cast_revoke",
+    )
+}
+
+tasks.register("verifyPresence01WebRegression") {
+    group = "verification"
+    description = "Run PRESENCE01 Web/Web-TV type/runtime and regression checks."
+    dependsOn("verifyPresence01WebLint", "verifyPresence01WebTests", "verifyPresence01LanRelayStability")
+}
+
+tasks.register<Exec>("verifyPresence01WebRelease") {
+    group = "verification"
+    description = "Check the self-contained Web release contains the PRESENCE01 runtime."
+    workingDir = file("web")
+    commandLine("npm", "run", "release:check")
+}
+
+tasks.register("verifyPresence01TerminalSeal") {
+    group = "verification"
+    description = "Terminal PRESENCE01 seal across shared link runtime and all five StudyFlow client surfaces."
+    dependsOn(
+        "verifyPresence01PeerActivityPresence",
+        "verifyWeb20SharedSemanticGoldenVectors",
+        "verifyWeb20RoadmapTruth",
+        "verifyPresence01WebRegression",
+        "verifyPresence01WebRelease",
+        ":core:link:test",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:test",
+        ":app:compileDebugKotlin",
+        ":app:testReleaseUnitTest",
+        ":app:assembleDebug",
+        ":app-tv:compileDebugKotlin",
+        ":app-tv:testDebugUnitTest",
+        ":app-tv:assembleDebug",
+    )
+}

@@ -72,6 +72,8 @@ class StudyFlowPeerServer(
     private val trustManager: StudyFlowTrustManager,
     private val pairingAuthority: StudyFlowPairingAuthority,
     private val workspaces: StudyFlowWorkspaceRuntimeProvider,
+    private val presenceRegistry: StudyFlowPresenceRegistry,
+    private val presencePublisher: StudyFlowLocalPresencePublisher,
     private val clock: StudyFlowPeerClock,
     private val messageIds: StudyFlowSyncMessageIdFactory,
     private val listeningTransport: StudyFlowListeningTransport = StudyFlowTcpTransport(),
@@ -117,6 +119,7 @@ class StudyFlowPeerServer(
                     StudyFlowSyncMessageNames.Pull,
                     StudyFlowPeerRpcMessageNames.SyncApply,
                     -> handleSync(link, request, authenticatedPeer)
+                    StudyFlowPresenceMessageNames.Exchange -> handlePresence(link, request, authenticatedPeer)
                     else -> sendError(link, request, "unsupported_request", "Unsupported SFLP request", false)
                 }
             }
@@ -272,6 +275,55 @@ class StudyFlowPeerServer(
         }
     }
 
+    private fun handlePresence(
+        link: StudyFlowLinkConnection,
+        request: StudyFlowLinkEnvelope,
+        authenticatedPeer: StudyFlowDeviceId?,
+    ) {
+        if (authenticatedPeer == null || authenticatedPeer != request.senderDeviceId) {
+            sendError(link, request, "authentication_required", "Trusted reconnect is required", false)
+            return
+        }
+        val trusted = trustManager.trustedPeers()
+        val authenticatedRecord = trusted.firstOrNull { it.peer.deviceId == authenticatedPeer }
+        if (authenticatedRecord == null) {
+            sendError(link, request, "peer_revoked", "Peer trust was revoked", false)
+            return
+        }
+        val exchange = runCatching {
+            StudyFlowLinkCodec.decodePayload(StudyFlowPresenceExchangeRequest.serializer(), request.payload)
+        }.getOrElse {
+            sendError(link, request, "invalid_presence_exchange", "Invalid presence exchange", false)
+            return
+        }
+        val trustedSourceIds = trusted.mapTo(linkedSetOf()) { it.peer.deviceId }
+        exchange.records.asSequence()
+            .filter { it.workspaceId == request.workspaceId }
+            .forEach { record ->
+                presenceRegistry.ingest(
+                    record = record,
+                    authenticatedPeerDeviceId = authenticatedPeer,
+                    trustedSourceDeviceIds = trustedSourceIds,
+                    nowEpochMillis = clock.nowEpochMillis(),
+                )
+            }
+        presencePublisher.ensureOnline(request.workspaceId)
+        val response = StudyFlowPresenceExchangeResponse(
+            presenceRegistry.recordsForPeer(
+                workspaceId = request.workspaceId,
+                peer = authenticatedRecord.peer,
+                nowEpochMillis = clock.nowEpochMillis(),
+            ),
+        )
+        link.send(
+            response(
+                request = request,
+                name = StudyFlowPresenceMessageNames.Exchange,
+                payload = StudyFlowLinkCodec.encodePayload(StudyFlowPresenceExchangeResponse.serializer(), response),
+            ),
+        )
+    }
+
     private fun response(
         request: StudyFlowLinkEnvelope,
         name: String,
@@ -410,6 +462,20 @@ class StudyFlowRemoteSyncPeerSession(
         return StudyFlowLinkCodec.decodePayload(StudyFlowSyncApplyResult.serializer(), response.payload)
     }
 
+    fun exchangePresence(requestPayload: StudyFlowPresenceExchangeRequest): StudyFlowPresenceExchangeResponse {
+        val request = StudyFlowLinkEnvelope(
+            messageId = messageIds.next("presence-exchange"),
+            workspaceId = workspaceId,
+            senderDeviceId = localIdentity.descriptor.deviceId,
+            messageType = StudyFlowLinkMessageType.REQUEST,
+            name = StudyFlowPresenceMessageNames.Exchange,
+            sentAtEpochMillis = clock.nowEpochMillis(),
+            payload = StudyFlowLinkCodec.encodePayload(StudyFlowPresenceExchangeRequest.serializer(), requestPayload),
+        )
+        val response = exchange(request, StudyFlowPresenceMessageNames.Exchange)
+        return StudyFlowLinkCodec.decodePayload(StudyFlowPresenceExchangeResponse.serializer(), response.payload)
+    }
+
     private fun exchange(
         request: StudyFlowLinkEnvelope,
         expectedName: String,
@@ -517,6 +583,12 @@ class StudyFlowPeerRuntime(
         clock = clock,
         messageIds = messageIds,
     )
+    val presenceRegistry = StudyFlowPresenceRegistry(localIdentity.descriptor.deviceId)
+    val presencePublisher = StudyFlowLocalPresencePublisher(
+        localDevice = localIdentity.descriptor,
+        registry = presenceRegistry,
+        clock = clock,
+    )
     private val workspaceRuntimes = ConcurrentHashMap<StudyFlowWorkspaceId, StudyFlowWorkspaceRuntime>()
     private val workspaceTopologies = ConcurrentHashMap<StudyFlowWorkspaceId, StudyFlowWorkspaceTopology>()
     private var server: StudyFlowPeerServer? = null
@@ -546,6 +618,8 @@ class StudyFlowPeerRuntime(
             trustManager = trustManager,
             pairingAuthority = pairingAuthority,
             workspaces = this,
+            presenceRegistry = presenceRegistry,
+            presencePublisher = presencePublisher,
             clock = clock,
             messageIds = messageIds,
         )
@@ -612,7 +686,9 @@ class StudyFlowPeerRuntime(
                 clock = clock,
                 messageIds = messageIds,
             ).use { remote ->
-                workspace(workspaceId).reconnect.reconcile(remote, clock.nowEpochMillis())
+                val result = workspace(workspaceId).reconnect.reconcile(remote, clock.nowEpochMillis())
+                runCatching { exchangePresenceWith(remote, peerDeviceId, workspaceId) }
+                result
             }.also {
                 val elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000L
                 topology.updateNextHopHealth(
@@ -637,6 +713,49 @@ class StudyFlowPeerRuntime(
             )
             throw error
         }
+    }
+
+    fun updatePresence(
+        workspaceId: StudyFlowWorkspaceId,
+        availability: StudyFlowPresenceAvailability,
+        activityHint: StudyFlowPresenceActivityHint? = null,
+        visibilityCapabilities: List<StudyFlowLinkCapability> = emptyList(),
+    ): StudyFlowPresenceRecord = presencePublisher.announce(
+        workspaceId = workspaceId,
+        availability = availability,
+        activityHint = activityHint,
+        visibilityCapabilities = visibilityCapabilities,
+    )
+
+    fun presenceViews(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPresenceView> =
+        presenceRegistry.viewsFor(
+            workspaceId = workspaceId,
+            viewer = localIdentity.descriptor,
+            nowEpochMillis = clock.nowEpochMillis(),
+        )
+
+    private fun exchangePresenceWith(
+        remote: StudyFlowRemoteSyncPeerSession,
+        peerDeviceId: StudyFlowDeviceId,
+        workspaceId: StudyFlowWorkspaceId,
+    ) {
+        presencePublisher.ensureOnline(workspaceId)
+        val peer = trustManager.trustedPeers().firstOrNull { it.peer.deviceId == peerDeviceId } ?: return
+        val request = StudyFlowPresenceExchangeRequest(
+            presenceRegistry.recordsForPeer(workspaceId, peer.peer, clock.nowEpochMillis()),
+        )
+        val response = remote.exchangePresence(request)
+        val trustedSourceIds = trustManager.trustedPeers().mapTo(linkedSetOf()) { it.peer.deviceId }
+        response.records.asSequence()
+            .filter { it.workspaceId == workspaceId }
+            .forEach { record ->
+                presenceRegistry.ingest(
+                    record = record,
+                    authenticatedPeerDeviceId = peerDeviceId,
+                    trustedSourceDeviceIds = trustedSourceIds,
+                nowEpochMillis = clock.nowEpochMillis(),
+                )
+            }
     }
 
     fun appendLocalMutation(
@@ -716,6 +835,7 @@ class StudyFlowPeerRuntime(
         endpointStore.remove(peerDeviceId)
         workspaceRuntimes.values.forEach { it.outgoingQueue.clearPeer(peerDeviceId) }
         workspaceTopologies.values.forEach { it.removePeer(peerDeviceId) }
+        presenceRegistry.removePeer(peerDeviceId)
         return revoked
     }
 
@@ -723,6 +843,7 @@ class StudyFlowPeerRuntime(
         endpointStore.remove(peerDeviceId)
         workspaceRuntimes.values.forEach { it.outgoingQueue.clearPeer(peerDeviceId) }
         workspaceTopologies.values.forEach { it.removePeer(peerDeviceId) }
+        presenceRegistry.removePeer(peerDeviceId)
         return trustManager.forget(peerDeviceId)
     }
 

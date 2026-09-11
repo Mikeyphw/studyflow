@@ -77,7 +77,7 @@ Current connectivity implementation truth:
   authority rather than silently accepting it.
 
 SFLP24 proves the SFLP protocol/behavior chain, but it is **not** the final five-client product-parity acceptance.
-DOV08-DOV24, TVOV27-TVOV31, and WEB20 are complete. PRESENCE01 and PARITY04 remain the ordered cross-platform closure work.
+DOV08-DOV24, TVOV27-TVOV31, WEB20, and PRESENCE01 are complete. PARITY04 is the next cross-platform acceptance seal.
 
 ### Protocol connectivity matrix
 
@@ -98,9 +98,12 @@ receiving remote input, and contributing operations that its advertised capabili
 
 ### Presence truth
 
-StudyFlow currently has transport peer-health and `lastSeen` bookkeeping, but no canonical optional user/activity
-presence model. Presence therefore remains **MISSING** as **PRESENCE01** and must stay independent of replication
-correctness. The old draft label “SFLP18 Presence” is superseded; shipped SFLP18 is notification/scheduling sync.
+PRESENCE01 is **SUPPORTED** across Android, Desktop, Web, Android TV, and Web TV with explicit
+`online`/`away`/`offline`/`stale` semantics, bounded expiry, reconnect-session supersession, simultaneous client
+instances, resumable activity hints, capability-aware visibility, and route-trace loop prevention. Presence state is
+ephemeral and best-effort; it is not persisted as canonical workspace truth and cannot gate durable reconciliation.
+Transport peer-health and `lastSeen` remain separate signals. The old draft label “SFLP18 Presence” is superseded;
+shipped SFLP18 is notification/scheduling sync.
 
 ## Intentional parity boundaries
 

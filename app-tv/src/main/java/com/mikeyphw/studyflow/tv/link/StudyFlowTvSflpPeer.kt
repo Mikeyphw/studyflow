@@ -10,6 +10,11 @@ import com.mikeyphw.studyflow.core.link.StudyFlowDiscoveredPeer
 import com.mikeyphw.studyflow.core.link.StudyFlowLanBeaconDiscovery
 import com.mikeyphw.studyflow.core.link.StudyFlowLanEndpointResolver
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkCapability
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceActivityHint
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceAvailability
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceRecord
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceView
 import com.mikeyphw.studyflow.core.link.StudyFlowManualDiscovery
 import com.mikeyphw.studyflow.core.link.StudyFlowManualEndpointParser
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingPublicOffer
@@ -119,6 +124,21 @@ class StudyFlowTvSflpPeer(
             runtime.reconcileWith(workspaceId, peerDeviceId, endpoint)
         }
     }
+
+    fun updatePresence(
+        workspaceId: StudyFlowWorkspaceId,
+        availability: StudyFlowPresenceAvailability,
+        activityHint: StudyFlowPresenceActivityHint? = null,
+        visibilityCapabilities: List<StudyFlowLinkCapability> = emptyList(),
+    ): StudyFlowPresenceRecord = runtime.updatePresence(
+        workspaceId = workspaceId,
+        availability = availability,
+        activityHint = activityHint,
+        visibilityCapabilities = visibilityCapabilities,
+    )
+
+    fun presenceViews(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPresenceView> =
+        runtime.presenceViews(workspaceId)
 
     fun revoke(peerDeviceId: StudyFlowDeviceId): StudyFlowTrustedPeerRecord? = runtime.revoke(peerDeviceId)
 

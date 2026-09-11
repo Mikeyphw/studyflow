@@ -1,5 +1,7 @@
 "use strict";
 
+import { StudyFlowWebPresenceRuntime, type StudyFlowPresenceActivityHint, type StudyFlowPresenceAvailability, type StudyFlowPresenceExchange, type StudyFlowPresenceIngestResult, type StudyFlowPresenceView } from "./presence.js";
+
 export type SflpClientKind="android"|"desktop"|"web"|"android_tv"|"web_tv";
 export type SflpRouteKind="websocket"|"manual"|"relay";
 export type SflpTrustState="trusted"|"revoked";
@@ -48,7 +50,8 @@ export class StudyFlowWebLinkPeer{
  private snapshot:SflpWebPeerSnapshot;
  private readonly discovery=new StudyFlowWebManualDiscovery();
  readonly transport=new StudyFlowWebSocketTransportAdapter();
- constructor(private readonly persistence:StudyFlowWebPeerPersistence=new StudyFlowWebPeerPersistence(),kind:SflpClientKind="web"){this.snapshot=this.persistence.load(kind);this.persistence.save(this.snapshot);}
+ readonly presence:StudyFlowWebPresenceRuntime;
+ constructor(private readonly persistence:StudyFlowWebPeerPersistence=new StudyFlowWebPeerPersistence(),kind:SflpClientKind="web"){this.snapshot=this.persistence.load(kind);this.persistence.save(this.snapshot);this.presence=new StudyFlowWebPresenceRuntime(this.identity);}
  get identity():SflpPeerDescriptor{return this.snapshot.identity;}
  get trustedPeers():SflpTrustedPeerRecord[]{return [...this.snapshot.trustedPeers];}
  get pendingOutgoingOperations():SflpQueueEntry[]{return [...this.snapshot.pendingQueue];}
@@ -61,8 +64,12 @@ export class StudyFlowWebLinkPeer{
  frontier(workspaceId:string):Record<string,number>{const out:Record<string,number>={};for(const op of this.snapshot.journal.filter(item=>item.workspaceId===workspaceId)){out[op.originDeviceId]=Math.max(out[op.originDeviceId]??0,op.originSequence);}return out;}
  operationsAfter(workspaceId:string,frontier:Record<string,number>,limit=100):SflpJournalOperation[]{return this.snapshot.journal.filter(op=>op.workspaceId===workspaceId&&op.originSequence>(frontier[op.originDeviceId]??0)).sort((a,b)=>a.originDeviceId.localeCompare(b.originDeviceId)||a.originSequence-b.originSequence).slice(0,limit);}
  acknowledge(peerDeviceId:string,workspaceId:string,frontier:Record<string,number>):void{this.snapshot.pendingQueue=this.snapshot.pendingQueue.filter(entry=>{if(entry.peerDeviceId!==peerDeviceId||entry.workspaceId!==workspaceId)return true;const op=this.snapshot.journal.find(item=>item.operationId===entry.operationId);return !op||op.originSequence>(frontier[op.originDeviceId]??0);});this.persistence.save(this.snapshot);}
- revoke(peerDeviceId:string):SflpTrustedPeerRecord|null{const now=Date.now();let revoked:SflpTrustedPeerRecord|null=null;this.snapshot.trustedPeers=this.snapshot.trustedPeers.map(record=>{if(record.peer.deviceId!==peerDeviceId)return record;revoked={...record,state:"revoked",trustSecret:null,updatedAtEpochMillis:now,revokedAtEpochMillis:now};return revoked;});this.persistence.save(this.snapshot);return revoked;}
- forget(peerDeviceId:string):boolean{const before=this.snapshot.trustedPeers.length;this.snapshot.trustedPeers=this.snapshot.trustedPeers.filter(item=>item.peer.deviceId!==peerDeviceId);delete this.snapshot.endpoints[peerDeviceId];this.snapshot.pendingQueue=this.snapshot.pendingQueue.filter(item=>item.peerDeviceId!==peerDeviceId);this.persistence.save(this.snapshot);return before!==this.snapshot.trustedPeers.length;}
+ updatePresence(workspaceId:string,availability:StudyFlowPresenceAvailability,activityHint?:StudyFlowPresenceActivityHint,visibilityCapabilities:string[]=[]){return this.presence.announce(workspaceId,availability,activityHint,visibilityCapabilities);}
+ presenceViews(workspaceId:string):StudyFlowPresenceView[]{return this.presence.views(workspaceId,this.identity);}
+ presenceExchangeFor(peerDeviceId:string,workspaceId:string):StudyFlowPresenceExchange{const peer=this.snapshot.trustedPeers.find(item=>item.state==="trusted"&&item.peer.deviceId===peerDeviceId)?.peer;if(!peer)throw new Error("Presence target is not trusted");return this.presence.exchangeForPeer(workspaceId,peer);}
+ acceptPresenceExchange(peerDeviceId:string,workspaceId:string,exchange:StudyFlowPresenceExchange):StudyFlowPresenceIngestResult[]{const trusted=new Set(this.snapshot.trustedPeers.filter(item=>item.state==="trusted").map(item=>item.peer.deviceId));if(!trusted.has(peerDeviceId))throw new Error("Presence sender is not trusted");return this.presence.acceptExchange(workspaceId,peerDeviceId,exchange,trusted);}
+ revoke(peerDeviceId:string):SflpTrustedPeerRecord|null{this.presence.forgetPeer(peerDeviceId);const now=Date.now();let revoked:SflpTrustedPeerRecord|null=null;this.snapshot.trustedPeers=this.snapshot.trustedPeers.map(record=>{if(record.peer.deviceId!==peerDeviceId)return record;revoked={...record,state:"revoked",trustSecret:null,updatedAtEpochMillis:now,revokedAtEpochMillis:now};return revoked;});this.persistence.save(this.snapshot);return revoked;}
+ forget(peerDeviceId:string):boolean{this.presence.forgetPeer(peerDeviceId);const before=this.snapshot.trustedPeers.length;this.snapshot.trustedPeers=this.snapshot.trustedPeers.filter(item=>item.peer.deviceId!==peerDeviceId);delete this.snapshot.endpoints[peerDeviceId];this.snapshot.pendingQueue=this.snapshot.pendingQueue.filter(item=>item.peerDeviceId!==peerDeviceId);this.persistence.save(this.snapshot);return before!==this.snapshot.trustedPeers.length;}
  snapshotForDebug():SflpWebPeerSnapshot{return JSON.parse(JSON.stringify(this.snapshot)) as SflpWebPeerSnapshot;}
  private localEndpointHints():string[]{return globalThis.location?.origin?.startsWith("http")?[globalThis.location.origin.replace(/^http/,"ws")+"/sflp"]:[];}
 }

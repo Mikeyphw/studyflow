@@ -98,26 +98,60 @@ class Wtv0607HistoryControlRelayTest(unittest.TestCase):
         self.assertIn('typeof EventSource==="undefined"', (WEB / "src/tv_control.ts").read_text())
         self.assertIn('/api/tv/poll?', (WEB / "src/tv_control.ts").read_text())
 
-    def test_lan_relay_pair_command_cast_revoke(self):
-        with socket.socket() as sock:
-            sock.bind(("127.0.0.1", 0))
-            port = sock.getsockname()[1]
-        proc = subprocess.Popen(
-            ["node", "scripts/serve_tv.mjs", "--host", "127.0.0.1", "--port", str(port)],
-            cwd=WEB,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        base = f"http://127.0.0.1:{port}"
-        try:
-            registration = None
-            for _ in range(40):
-                try:
-                    _, registration = request_json(base + "/api/tv/receiver", "POST", {"deviceName": "Test TV"})
+    def _start_relay_receiver(self):
+        failures = []
+        for attempt in range(1, 5):
+            with socket.socket() as sock:
+                sock.bind(("127.0.0.1", 0))
+                port = sock.getsockname()[1]
+            proc = subprocess.Popen(
+                ["node", "scripts/serve_tv.mjs", "--host", "127.0.0.1", "--port", str(port)],
+                cwd=WEB,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            base = f"http://127.0.0.1:{port}"
+            deadline = time.monotonic() + 12.0
+            last_error = None
+            while time.monotonic() < deadline:
+                if proc.poll() is not None:
+                    stdout, stderr = proc.communicate(timeout=1)
+                    failures.append(
+                        f"attempt {attempt}: server exited {proc.returncode}; "
+                        f"stdout={stdout.strip()!r}; stderr={stderr.strip()!r}"
+                    )
                     break
-                except Exception:
-                    time.sleep(0.05)
+                try:
+                    _, registration = request_json(
+                        base + "/api/tv/receiver",
+                        "POST",
+                        {"deviceName": "Test TV"},
+                        timeout=1,
+                    )
+                    return proc, base, registration
+                except Exception as exc:
+                    last_error = exc
+                    time.sleep(0.1)
+            else:
+                failures.append(f"attempt {attempt}: readiness timeout; last_error={last_error!r}")
+            if proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait(timeout=2)
+                stdout, stderr = proc.communicate(timeout=1)
+                if stdout.strip() or stderr.strip():
+                    failures.append(
+                        f"attempt {attempt}: after termination stdout={stdout.strip()!r}; stderr={stderr.strip()!r}"
+                    )
+        self.fail("TV relay did not become ready after retries: " + " | ".join(failures))
+
+    def test_lan_relay_pair_command_cast_revoke(self):
+        proc, base, registration = self._start_relay_receiver()
+        try:
             self.assertIsNotNone(registration)
             self.assertRegex(registration["pairingCode"], r"^\d{6}$")
             self.assertGreater(registration["expiresAtEpochMillis"], registration["issuedAtEpochMillis"])

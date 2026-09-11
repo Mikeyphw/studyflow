@@ -15,6 +15,10 @@ import com.mikeyphw.studyflow.core.link.StudyFlowManualDiscovery
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingPublicOffer
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingQrCodec
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerRuntime
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceActivityHint
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceAvailability
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceRecord
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceView
 import com.mikeyphw.studyflow.core.link.StudyFlowReconnectResult
 import com.mikeyphw.studyflow.core.link.StudyFlowTransportEndpoint
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
@@ -116,6 +120,21 @@ class AndroidStudyFlowLinkPeer(
             runtime.reconcileWith(workspaceId, peerDeviceId, endpoint)
         }
     }
+
+    fun updatePresence(
+        workspaceId: StudyFlowWorkspaceId,
+        availability: StudyFlowPresenceAvailability,
+        activityHint: StudyFlowPresenceActivityHint? = null,
+        visibilityCapabilities: List<StudyFlowLinkCapability> = emptyList(),
+    ): StudyFlowPresenceRecord = runtime.updatePresence(
+        workspaceId = workspaceId,
+        availability = availability,
+        activityHint = activityHint,
+        visibilityCapabilities = visibilityCapabilities,
+    )
+
+    fun presenceViews(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPresenceView> =
+        runtime.presenceViews(workspaceId)
 
     fun revoke(peerDeviceId: StudyFlowDeviceId): StudyFlowTrustedPeerRecord? = runtime.revoke(peerDeviceId)
 

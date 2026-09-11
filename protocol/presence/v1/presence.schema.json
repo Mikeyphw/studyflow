@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyflow.local/protocol/presence/v1/presence.schema.json",
+  "title": "StudyFlow PRESENCE01 peer/activity presence",
+  "type": "object",
+  "required": ["workspaceId", "sourceDevice", "instanceId", "sessionId", "sessionStartedAtEpochMillis", "sequence", "availability", "observedAtEpochMillis", "visibilityCapabilities", "trace"],
+  "properties": {
+    "workspaceId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "sourceDevice": {"type": "object"},
+    "instanceId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "sessionId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "sessionStartedAtEpochMillis": {"type": "integer", "minimum": 0},
+    "sequence": {"type": "integer", "minimum": 1},
+    "availability": {"enum": ["online", "away", "offline"]},
+    "observedAtEpochMillis": {"type": "integer", "minimum": 0},
+    "activityHint": {
+      "type": ["object", "null"],
+      "properties": {
+        "activityId": {"type": "string"},
+        "kind": {"enum": ["dashboard", "plan", "schedule", "study_session", "practice_question", "review_item", "library_material", "document_view", "writing_draft", "presentation_projection"]},
+        "entityId": {"type": ["string", "null"]},
+        "positionToken": {"type": "string", "minLength": 1},
+        "continuityMode": {"enum": ["snapshot", "live_control", "presentation_sink"]},
+        "requiredCapabilities": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}
+      },
+      "required": ["activityId", "kind", "positionToken", "continuityMode", "requiredCapabilities"]
+    },
+    "visibilityCapabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "trace": {
+      "type": "object",
+      "required": ["sourceDeviceId", "visitedDeviceIds", "hopLimit"],
+      "properties": {
+        "sourceDeviceId": {"type": "string"},
+        "visitedDeviceIds": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+        "hopLimit": {"type": "integer", "minimum": 1, "maximum": 32}
+      }
+    }
+  }
+}

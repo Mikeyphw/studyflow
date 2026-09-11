@@ -76,8 +76,8 @@ Those labels no longer describe the shipped SFLP18/SFLP19 implementation: SFLP18
 sync and SFLP19 is media/material streaming handoff. ROADMAP01 resolves that drift without renumbering shipped
 work:
 
-- optional peer/activity Presence remains a real unimplemented promise and moves to **PRESENCE01**; existing
-  route health and `lastSeen` bookkeeping are transport-health signals, not user/activity presence semantics;
+- optional peer/activity Presence is implemented by **PRESENCE01**; existing route health and `lastSeen`
+  bookkeeping remain transport-health signals and are not used as user/activity presence semantics;
 - the former SFLP19 full-mesh acceptance promise is owned by **PARITY04**, which is the canonical five-client
   interoperability seal after the remaining Desktop/TV/semantic work is complete;
 - **SFLP24 remains the terminal SFLP milestone**. ROADMAP01 does not create SFLP25 or reinterpret validated
@@ -126,12 +126,15 @@ The canonical fixture is `protocol/semantic/v1/golden-vectors.json`; **PARITY04 
 
 ## Presence — PRESENCE01
 
-**PRESENCE01** remains planned. It adds optional live peer/activity presence independently of replication
-correctness and transport health: explicit online/away/offline/stale semantics, bounded expiry, reconnect behavior,
-multiple simultaneous client instances, current resumable activity hints, capability-aware visibility, and loop-free
-propagation. Presence must never become a prerequisite for durable sync correctness.
+**PRESENCE01 is implemented.** It adds optional live peer/activity presence independently of replication
+correctness and transport health: explicit online/away/offline/stale semantics, bounded expiry, reconnect session
+supersession, multiple simultaneous client instances, current resumable activity hints, capability-aware visibility,
+and loop-free propagation. Presence exchange runs only after authenticated reconnect and durable reconciliation and
+is deliberately best-effort/non-fatal, so durable sync correctness never depends on presence.
 
-Transport `StudyFlowPeerHealth`, route availability, and peer `lastSeen` timestamps do **not** satisfy this milestone.
+The canonical JVM runtime is `StudyFlowPresenceRegistry`/`StudyFlowLocalPresencePublisher`; Web/Web TV use the
+ephemeral `StudyFlowWebPresenceRuntime`. Android, Desktop, Web, Android TV, and Web TV expose the same presence
+semantics. Transport `StudyFlowPeerHealth`, route availability, and peer `lastSeen` timestamps remain distinct.
 
 ## Final acceptance — PARITY04
 

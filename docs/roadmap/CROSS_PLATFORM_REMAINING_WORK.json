@@ -57,12 +57,13 @@
       "order": 4,
       "id": "PRESENCE01",
       "kind": "implementation",
-      "status": "planned",
+      "status": "complete",
       "prerequisites": [
         "SFLP24"
       ],
       "terminal_milestone": "PRESENCE01",
-      "summary": "Add optional peer/activity presence independently of transport health and replication correctness."
+      "summary": "Add optional peer/activity presence independently of transport health and replication correctness.",
+      "completed_through": "PRESENCE01"
     },
     {
       "order": 5,

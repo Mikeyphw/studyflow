@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
 exports.installStudyFlowWebSflpPeer = installStudyFlowWebSflpPeer;
+const presence_js_1 = require("./presence.js");
 const STORAGE_KEY = "studyflow.sflp.web.peer.v1";
 const PAIRING_TTL_MILLIS = 120000;
 const TRUST_SECRET_HEX_LENGTH = 64;
@@ -56,6 +57,7 @@ class StudyFlowWebLinkPeer {
         this.transport = new StudyFlowWebSocketTransportAdapter();
         this.snapshot = this.persistence.load(kind);
         this.persistence.save(this.snapshot);
+        this.presence = new presence_js_1.StudyFlowWebPresenceRuntime(this.identity);
     }
     get identity() { return this.snapshot.identity; }
     get trustedPeers() { return [...this.snapshot.trustedPeers]; }
@@ -82,9 +84,15 @@ class StudyFlowWebLinkPeer {
     operationsAfter(workspaceId, frontier, limit = 100) { return this.snapshot.journal.filter(op => { var _a; return op.workspaceId === workspaceId && op.originSequence > ((_a = frontier[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0); }).sort((a, b) => a.originDeviceId.localeCompare(b.originDeviceId) || a.originSequence - b.originSequence).slice(0, limit); }
     acknowledge(peerDeviceId, workspaceId, frontier) { this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(entry => { var _a; if (entry.peerDeviceId !== peerDeviceId || entry.workspaceId !== workspaceId)
         return true; const op = this.snapshot.journal.find(item => item.operationId === entry.operationId); return !op || op.originSequence > ((_a = frontier[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0); }); this.persistence.save(this.snapshot); }
-    revoke(peerDeviceId) { const now = Date.now(); let revoked = null; this.snapshot.trustedPeers = this.snapshot.trustedPeers.map(record => { if (record.peer.deviceId !== peerDeviceId)
+    updatePresence(workspaceId, availability, activityHint, visibilityCapabilities = []) { return this.presence.announce(workspaceId, availability, activityHint, visibilityCapabilities); }
+    presenceViews(workspaceId) { return this.presence.views(workspaceId, this.identity); }
+    presenceExchangeFor(peerDeviceId, workspaceId) { var _a; const peer = (_a = this.snapshot.trustedPeers.find(item => item.state === "trusted" && item.peer.deviceId === peerDeviceId)) === null || _a === void 0 ? void 0 : _a.peer; if (!peer)
+        throw new Error("Presence target is not trusted"); return this.presence.exchangeForPeer(workspaceId, peer); }
+    acceptPresenceExchange(peerDeviceId, workspaceId, exchange) { const trusted = new Set(this.snapshot.trustedPeers.filter(item => item.state === "trusted").map(item => item.peer.deviceId)); if (!trusted.has(peerDeviceId))
+        throw new Error("Presence sender is not trusted"); return this.presence.acceptExchange(workspaceId, peerDeviceId, exchange, trusted); }
+    revoke(peerDeviceId) { this.presence.forgetPeer(peerDeviceId); const now = Date.now(); let revoked = null; this.snapshot.trustedPeers = this.snapshot.trustedPeers.map(record => { if (record.peer.deviceId !== peerDeviceId)
         return record; revoked = { ...record, state: "revoked", trustSecret: null, updatedAtEpochMillis: now, revokedAtEpochMillis: now }; return revoked; }); this.persistence.save(this.snapshot); return revoked; }
-    forget(peerDeviceId) { const before = this.snapshot.trustedPeers.length; this.snapshot.trustedPeers = this.snapshot.trustedPeers.filter(item => item.peer.deviceId !== peerDeviceId); delete this.snapshot.endpoints[peerDeviceId]; this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(item => item.peerDeviceId !== peerDeviceId); this.persistence.save(this.snapshot); return before !== this.snapshot.trustedPeers.length; }
+    forget(peerDeviceId) { this.presence.forgetPeer(peerDeviceId); const before = this.snapshot.trustedPeers.length; this.snapshot.trustedPeers = this.snapshot.trustedPeers.filter(item => item.peer.deviceId !== peerDeviceId); delete this.snapshot.endpoints[peerDeviceId]; this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(item => item.peerDeviceId !== peerDeviceId); this.persistence.save(this.snapshot); return before !== this.snapshot.trustedPeers.length; }
     snapshotForDebug() { return JSON.parse(JSON.stringify(this.snapshot)); }
     localEndpointHints() { var _a, _b; return ((_b = (_a = globalThis.location) === null || _a === void 0 ? void 0 : _a.origin) === null || _b === void 0 ? void 0 : _b.startsWith("http")) ? [globalThis.location.origin.replace(/^http/, "ws") + "/sflp"] : []; }
 }

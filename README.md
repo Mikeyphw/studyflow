@@ -73,6 +73,11 @@ The app now uses a release-candidate version name, `1.0.0-rc1`, while keeping ta
 explicitly evidence-based. Source validators can prove repository contracts; Devtool or an Android
 build host must still produce build, install, upgrade, and device-smoke evidence.
 
+
+## PRESENCE01 — Peer/activity presence
+
+PRESENCE01 adds optional ephemeral presence across Android, Desktop, Web, Android TV, and Web TV. Presence has explicit online/away/offline/stale states, bounded stale/expiry windows, reconnect-session supersession, simultaneous client instances, capability-filtered resumable activity hints, and route-trace loop prevention. It runs after authenticated durable reconciliation and failures are non-fatal, so presence is never a prerequisite for sync correctness.
+
 ## Product boundary
 
 Current cross-platform capability truth is maintained in `docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md`.
