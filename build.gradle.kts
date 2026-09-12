@@ -2199,3 +2199,35 @@ tasks.register("verifyAtt08CompactCompanionAttention") {
         ":desktopApp:test",
     )
 }
+
+// ATT09 — Calendar / Schedule Export Attention Integration
+tasks.register<Exec>("verifyAtt09CalendarAttentionContracts") {
+    group = "verification"
+    description = "Checks ATT09 calendar export attention contracts, platform bridges, Web runtime parity and docs."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att09_calendar_schedule_export_attention.py")
+}
+
+tasks.register<Exec>("verifyAtt09WebCalendarAttentionTests") {
+    group = "verification"
+    description = "Run the Web ATT09 calendar attention export regression tests."
+    workingDir = file("web")
+    commandLine("python3", "-m", "unittest", "tests/test_att09_calendar_attention.py")
+}
+
+tasks.register("verifyAtt09CalendarScheduleExportAttention") {
+    group = "verification"
+    description = "Focused ATT09 gate for calendar/schedule export attention integration."
+    dependsOn(
+        "verifyAtt09CalendarAttentionContracts",
+        "verifyAtt09WebCalendarAttentionTests",
+        "verifyAtt08CompactCompanionAttention",
+        "verifyAtt07CrossDeviceDeliveryRouter",
+        "verifyAtt06TvAttentionExperience",
+        "verifyAtt05WebPwaAttentionRuntime",
+        ":core:link:test",
+        ":app:testReleaseUnitTest",
+        ":desktopApp:test",
+        ":app-tv:testDebugUnitTest",
+    )
+}

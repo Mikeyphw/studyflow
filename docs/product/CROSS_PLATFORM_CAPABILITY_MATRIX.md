@@ -249,3 +249,12 @@ Desktop now owns a production reminder runtime backed by the shared ATT01 ledger
 ## ATT07 cross-device delivery router truth
 
 ATT07 adds a shared owner/mirror/suppression router for Attention occurrences. Android, Desktop, and Web/PWA can own durable notification routes when their runtime capabilities are present. Android TV and Web TV can own only foreground-banner routes, and closed-TV delivery falls back to a designated phone, Desktop, or Web/PWA notifier. The ATT01 ledger remains the final dedupe source, so acknowledged or handled occurrences suppress redelivery across all clients.
+
+## ATT09 calendar / schedule export attention
+
+| Capability | Android | Desktop | Web/PWA | Android TV | Web TV |
+| --- | --- | --- | --- | --- | --- |
+| User-initiated ICS export | Supported | Supported | Supported | Preview / continue elsewhere | Preview / continue elsewhere |
+| Calendar privacy modes | Full/private/busy | Full/private/busy | Full/private/busy | Preview only | Preview only |
+| StudyFlow attention ownership | ATT07 routed | ATT07 routed | ATT07 routed | Foreground-only preview | Foreground-only preview |
+| Silent external calendar mutation | Not supported | Not supported | Not supported | Not supported | Not supported |

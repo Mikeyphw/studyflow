@@ -768,3 +768,9 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Added phone-owned wearable/compact companion attention projections across Android, Desktop, TV and Web.
 - Added shared compact companion routing, privacy, suppression and action models on top of ATT07.
 - Added Web compact companion runtime/dist parity, tests, docs and `verifyAtt08CompactCompanionAttention`.
+
+## ATT09 — Calendar / Schedule Export Attention Integration
+
+- Added shared calendar attention export contracts with ICS rendering, `VALARM` reminder lead times, privacy modes, and ATT01-compatible attention occurrence projection.
+- Added Android, Desktop and Android TV bridges that keep calendar export user-initiated and preserve ATT06/ATT07 delivery truth.
+- Added Web/PWA calendar export runtime, Progress → Tools export/copy UI, runtime/dist parity, service-worker cache coverage and Web regression tests.

@@ -606,3 +606,7 @@ Normal Web/PWA clients now expose a Notification Center and participate in the A
 ### ATT08 — Compact Companion Attention
 
 ATT08 adds wearable, lock-screen, quick-tile, Desktop mini, Web compact and TV remote-overlay attention surfaces as parent-owned projections of ATT07 delivery routes. Compact surfaces never become independent reminder owners; they suppress replay through the ATT01 ledger and hide sensitive text by default.
+
+### ATT09 calendar attention export
+
+StudyFlow can now export planned schedule blocks, reviews, mock exams and exam dates as a portable `.ics` calendar while also projecting matching StudyFlow attention occurrences. The calendar module is deliberately user-initiated: external calendars receive an exported file/feed, while ATT07 remains responsible for delivery ownership and dedupe across Android, Desktop, Web and TV.

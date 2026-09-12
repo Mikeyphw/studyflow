@@ -62,6 +62,7 @@ const tv_progress_1 = require("../tv_progress");
 const tv_schedule_1 = require("../tv_schedule");
 const tv_library_1 = require("../tv_library");
 const compact_attention_1 = require("../compact_attention");
+const calendar_attention_1 = require("../calendar_attention");
 const title = (v) => v.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
@@ -3037,6 +3038,8 @@ function Progress({ state, store, tab, setTab, persistence, portable, setPortabl
                 tv ? React.createElement(TvContinueElsewhere, { title: "Coach exports & schedule mutations", detail: "Report downloads, smart cleanup and sprint application stay on phone/computer; analytics above remain fully visible here." }) : React.createElement(IntelligenceTools, { state: state, store: store, run: run }),
                 " ",
                 React.createElement(ReleaseCard, { state: state, persistence: persistence }),
+                !tv && React.createElement(CalendarExportTools, { state: state, run: run }),
+                " ",
                 !tv && React.createElement(PwaTools, null))));
 }
 function IntelligenceTools({ state, store, run }) {
@@ -3254,6 +3257,28 @@ function ReleaseCard({ state, persistence }) { const readiness = (0, release_1.e
         release_1.STUDYFLOW_LOCAL_RELEASE.portableFormat,
         " \u00B7 local-first"),
     React.createElement("ul", null, readiness.reasons.map((reason) => React.createElement("li", { key: reason }, reason)))); }
+function CalendarExportTools({ state, run }) { const [privacy, setPrivacy] = React.useState("full_details"); const [includeCompleted, setIncludeCompleted] = React.useState(false); const feed = React.useMemo(() => (0, calendar_attention_1.buildStudyFlowCalendarExport)(state, { privacyMode: privacy, includeCompleted }), [state, privacy, includeCompleted]); return React.createElement("article", { className: "card" },
+    React.createElement("h2", null, "Calendar export"),
+    React.createElement("p", { className: "muted" }, "ATT09 exports an ICS calendar and matching attention reminders. Export is user-initiated; StudyFlow does not silently mutate Google, Outlook, Apple, or system calendars."),
+    React.createElement("p", { className: "muted" },
+        (0, calendar_attention_1.calendarAttentionSummary)(feed),
+        " \u00B7 ",
+        feed.diagnostics.completedSuppressedCount,
+        " completed hidden \u00B7 ",
+        feed.diagnostics.outsideWindowSuppressedCount,
+        " outside window"),
+    React.createElement("label", null,
+        "Privacy",
+        React.createElement("select", { "aria-label": "Calendar export privacy", value: privacy, onChange: (e) => setPrivacy(e.target.value) },
+            React.createElement("option", { value: "full_details" }, "Full details"),
+            React.createElement("option", { value: "private_title" }, "Private title"),
+            React.createElement("option", { value: "busy_only" }, "Busy only"))),
+    React.createElement("label", { className: "check-row" },
+        React.createElement("input", { "aria-label": "Include completed calendar activities", type: "checkbox", checked: includeCompleted, onChange: (e) => setIncludeCompleted(e.target.checked) }),
+        "Include completed/cancelled blocks"),
+    React.createElement("div", { className: "button-row" },
+        React.createElement("button", { className: "button button-primary", type: "button", onClick: () => run(() => (0, calendar_attention_1.downloadStudyFlowCalendarIcs)(feed), "Calendar ICS exported.") }, "Export .ics"),
+        React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => { var _a; return (_a = navigator.clipboard) === null || _a === void 0 ? void 0 : _a.writeText(feed.icsText); }, "Calendar ICS copied.") }, "Copy ICS"))); }
 function PwaTools() { const status = React.useRef(null), install = React.useRef(null); React.useEffect(() => { const handle = (0, pwa_1.registerStudyFlowPwa)({ statusElement: status.current, installButton: install.current }); return () => handle.dispose(); }, []); return React.createElement("article", { className: "card" },
     React.createElement("h2", null, "Install & offline"),
     React.createElement("p", { id: "pwa-status", ref: status, className: "muted", role: "status", "aria-live": "polite", "aria-atomic": "true" }, "Checking PWA support\u2026"),
