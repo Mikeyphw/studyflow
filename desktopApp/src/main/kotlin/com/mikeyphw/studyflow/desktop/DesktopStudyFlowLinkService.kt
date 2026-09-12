@@ -170,6 +170,8 @@ class DesktopStudyFlowLinkService(
     fun presenceViews(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPresenceView> =
         runtime.presenceViews(workspaceId)
 
+    fun trustedPeers(): List<StudyFlowTrustedPeerRecord> = runtime.trustManager.trustedPeers()
+
     fun revoke(peerDeviceId: StudyFlowDeviceId) {
         runtime.revoke(peerDeviceId)
         lastStatus = "Peer revoked"

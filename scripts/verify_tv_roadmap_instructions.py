@@ -74,7 +74,10 @@ require("TVOV25  Domain truth and persistence convergence [implemented]" in rule
 require("TVOV26  End-to-end physical-device final seal [implemented]" in rules, "TVOV26 must be marked implemented")
 require("TVOV00 through TVOV26" in rules, "working-rules current chain status must record TVOV00 through TVOV26")
 require('tasks.register<Exec>("verifyStudyFlowTvRoadmapInstructions")' in root_gradle, "missing Gradle roadmap/instructions verifier task")
-require("verifyStudyFlowTvRoadmapInstructions" in devtool, "studyflow_tv target missing roadmap/instructions verifier")
+require("verifyStudyFlowTvAllContracts" in devtool, "studyflow_tv target missing aggregate TV contract gate")
+tv_aggregate = root_gradle.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvRoadmapInstructions" in tv_aggregate, "aggregate TV gate missing roadmap/instructions verifier")
 if validate:
     require("verify_tv_roadmap_instructions.py" in validate, "artifact validator missing roadmap/instructions script")
 

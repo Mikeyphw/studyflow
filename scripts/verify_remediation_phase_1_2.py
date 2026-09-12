@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import re
 import sys
+import tomllib
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +59,10 @@ if version_match and version_match.group(1) == "9.7.1":
 build = text("build.gradle.kts")
 validate = text("scripts/validate_repo.sh")
 devtool = text(".devtool.toml")
+devtool_config = tomllib.loads(devtool)
+android_target = devtool_config.get("targets", {}).get("studyflow_android", {})
+android_tasks = android_target.get("tasks", {})
+android_phases = android_target.get("validation", {}).get("phases", {})
 for token in (":app:compileReleaseKotlin", ":app:lintRelease"):
     require(token in build, f"checkAll is missing release gate {token}")
 require("verifyFinalReleaseAutomatedGate" in validate, "validate_repo.sh does not run the final automated Release gate")
@@ -68,12 +73,22 @@ require(
     "final automated Release gate does not own the signed host gate and Release assembly",
 )
 require("ANDROID VALIDATION: SKIPPED" not in validate, "validate_repo.sh still permits a false-green Android skip")
+ordinary_build = android_tasks.get("build", [])
+ordinary_package = android_phases.get("package", [])
 require(
-    'build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]' in devtool,
-    "ordinary Devtool build must emit only the Debug APK after stale Release-output cleanup",
+    "prepareDevtoolValidationArtifacts" in ordinary_build and ":app:assembleDebug" in ordinary_build,
+    "ordinary Devtool build must prepare validation artifacts and emit the Debug APK",
 )
 require(
-    'package = [\n  "prepareDevtoolValidationArtifacts",\n  ":app:assembleDebug",\n]' in devtool,
+    not any("Release" in task or "release" in task for task in ordinary_build),
+    "ordinary Devtool build must not emit or validate Release artifacts",
+)
+require(
+    "prepareDevtoolValidationArtifacts" in ordinary_package and ":app:assembleDebug" in ordinary_package,
+    "ordinary Devtool package phase must prepare validation artifacts and emit the Debug APK",
+)
+require(
+    not any("Release" in task or "release" in task for task in ordinary_package),
     "ordinary Devtool package phase must not emit an unsigned Release artifact",
 )
 require(

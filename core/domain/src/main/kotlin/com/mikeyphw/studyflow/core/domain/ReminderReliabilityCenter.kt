@@ -94,7 +94,12 @@ object ReminderReliabilityCenter {
             if (!input.notificationPermissionGranted) {
                 add(ReminderReliabilityIssue(ReminderReliabilityIssueKind.NOTIFICATION_PERMISSION, blocking = true))
             } else if (!input.appNotificationsEnabled) {
-                add(ReminderReliabilityIssue(ReminderReliabilityIssueKind.SYSTEM_NOTIFICATIONS_DISABLED, blocking = true))
+                add(
+                    ReminderReliabilityIssue(
+                        ReminderReliabilityIssueKind.SYSTEM_NOTIFICATIONS_DISABLED,
+                        blocking = true,
+                    ),
+                )
             }
             if (input.blockedNotificationChannelCount > 0) {
                 add(
@@ -127,7 +132,12 @@ object ReminderReliabilityCenter {
         }
         val status = when {
             issues.any(ReminderReliabilityIssue::blocking) -> ReminderReliabilityStatus.BLOCKED
-            issues.any { it.kind in setOf(ReminderReliabilityIssueKind.MISSED_ACTIVITY_BACKLOG, ReminderReliabilityIssueKind.REVIEW_BACKLOG) } -> {
+            issues.any { issue ->
+                issue.kind in setOf(
+                    ReminderReliabilityIssueKind.MISSED_ACTIVITY_BACKLOG,
+                    ReminderReliabilityIssueKind.REVIEW_BACKLOG,
+                )
+            } -> {
                 ReminderReliabilityStatus.ACTION_NEEDED
             }
             issues.any { it.kind !in setOf(ReminderReliabilityIssueKind.NO_SCHEDULED_CANDIDATES) } -> {

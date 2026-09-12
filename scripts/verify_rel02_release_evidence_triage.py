@@ -65,8 +65,8 @@ def main() -> None:
             "Gradle REL02 verifier command missing")
     require('"verifyRel02ReleaseEvidenceTriage"' in gradle,
             "checkAll must include REL02 verifier")
-    require('"verifyRel02ReleaseEvidenceTriage"' in devtool,
-            "Devtool test lane must include REL02 verifier")
+    require('"verifyRel07Rel08FinalReleaseOpsSeal"' in devtool,
+            "Devtool test lane must include the terminal REL07/08 release-ops seal")
     require('dependsOn("verifyRel01TargetReleaseValidationRunner")' in gradle,
             "REL02 verifier must preserve REL01 as predecessor")
     require("REL02 release evidence exporter" in readme,

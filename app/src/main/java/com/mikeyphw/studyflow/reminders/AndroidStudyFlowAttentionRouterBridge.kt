@@ -10,29 +10,23 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliverySurface
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceAvailability
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceCapability
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionRoutingContext
-import com.mikeyphw.studyflow.core.link.StudyFlowClientProfiles
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionTopologyProjector
 import com.mikeyphw.studyflow.core.link.StudyFlowDeviceId
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkPeerDescriptor
-
-private const val AndroidAttentionDeviceId = "android-local"
+import com.mikeyphw.studyflow.core.link.StudyFlowPresenceView
+import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 
 object AndroidStudyFlowAttentionRouterBridge {
-    val localDeviceId: StudyFlowDeviceId = StudyFlowDeviceId(AndroidAttentionDeviceId)
-
     fun localCapability(
         context: Context,
         coordinator: StudyReminderDeliveryCoordinator,
+        peer: StudyFlowLinkPeerDescriptor,
         nowEpochMillis: Long,
     ): StudyFlowAttentionDeviceCapability {
         val capability = coordinator.platformCapability()
         return StudyFlowAttentionDeviceCapability(
-            peer = StudyFlowLinkPeerDescriptor(
-                deviceId = localDeviceId,
-                displayName = context.applicationInfo.loadLabel(context.packageManager).toString(),
-                clientKind = StudyFlowLinkClientKind.ANDROID,
-                capabilities = StudyFlowClientProfiles.capabilitiesFor(StudyFlowLinkClientKind.ANDROID),
-            ),
+            peer = peer,
             availability = StudyFlowAttentionDeviceAvailability.ONLINE,
             deliverySurfaces = listOf(
                 StudyFlowAttentionDeliverySurface.ANDROID_ALARM,
@@ -46,19 +40,42 @@ object AndroidStudyFlowAttentionRouterBridge {
         )
     }
 
-    fun defaultRoutingContext(nowEpochMillis: Long): StudyFlowAttentionRoutingContext =
-        StudyFlowAttentionRoutingContext(
-            localDeviceId = localDeviceId,
-            primaryDeviceId = localDeviceId,
-            designatedNotifierDeviceIds = listOf(localDeviceId),
-            staleAfterMillis = 10 * 60_000L,
-            allowTvForegroundOwners = true,
+    fun topologyCapabilities(
+        context: Context,
+        coordinator: StudyReminderDeliveryCoordinator,
+        localPeer: StudyFlowLinkPeerDescriptor,
+        trustedPeers: List<StudyFlowTrustedPeerRecord>,
+        presenceViews: List<StudyFlowPresenceView>,
+        nowEpochMillis: Long,
+    ): List<StudyFlowAttentionDeviceCapability> {
+        val local = localCapability(context, coordinator, localPeer, nowEpochMillis)
+        return StudyFlowAttentionTopologyProjector.project(
+            localPeer = localPeer,
+            localSurfaces = local.deliverySurfaces,
+            localAvailability = local.availability,
+            localNotificationPermissionGranted = local.notificationPermissionGranted,
+            trustedPeers = trustedPeers,
+            presenceViews = presenceViews,
+            nowEpochMillis = nowEpochMillis,
+            localPrimaryUserDevice = true,
+            localDesignatedNotifier = true,
         )
+    }
 
+    fun routingContext(
+        localDeviceId: StudyFlowDeviceId,
+        devices: List<StudyFlowAttentionDeviceCapability>,
+    ): StudyFlowAttentionRoutingContext = StudyFlowAttentionTopologyProjector.routingContext(
+        localDeviceId = localDeviceId,
+        devices = devices,
+        staleAfterMillis = 10 * 60_000L,
+        allowTvForegroundOwners = true,
+    )
 
     fun routeWithPolicy(
         occurrence: StudyFlowAttentionOccurrence,
         devices: List<StudyFlowAttentionDeviceCapability>,
+        localDeviceId: StudyFlowDeviceId,
         focusPolicy: StudyFlowAttentionFocusPolicy,
         nowEpochMillis: Long,
         ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
@@ -67,13 +84,12 @@ object AndroidStudyFlowAttentionRouterBridge {
         devices = devices,
         nowEpochMillis = nowEpochMillis,
         focusPolicy = focusPolicy,
-        context = defaultRoutingContext(nowEpochMillis),
+        context = routingContext(localDeviceId, devices),
         ledgerEntry = ledgerEntry,
         localClientKind = StudyFlowLinkClientKind.ANDROID,
     )
 
-    /** ATT12: delivery call sites must enforce ATT07 ownership, not merely record it. */
-    fun isLocalTarget(route: StudyFlowAttentionDeliveryRoute): Boolean =
+    fun isLocalTarget(route: StudyFlowAttentionDeliveryRoute, localDeviceId: StudyFlowDeviceId): Boolean =
         route.deliverable && localDeviceId in route.targetDeviceIds
 
     fun router(): StudyFlowAttentionDeliveryRouter = StudyFlowAttentionDeliveryRouter()

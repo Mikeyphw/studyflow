@@ -47,8 +47,14 @@ require("25 MiB target" in quality, "TV quality doc must state the target budget
 require("35 MiB hard ceiling" in quality, "TV quality doc must state the hard ceiling")
 require(TARGET_MIB < HARD_CEILING_MIB, "TV target budget must be lower than hard ceiling")
 
+require(
+    "verifyStudyFlowTvAllContracts" in section(devtool, "targets.studyflow_tv.tasks"),
+    "studyflow_tv tasks missing aggregate TV contract gate",
+)
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
 for task_name in ("verifyStudyFlowTvArchitecture", "verifyStudyFlowTvSizeBudget"):
-    require(task_name in section(devtool, "targets.studyflow_tv.tasks"), f"studyflow_tv tasks missing {task_name}")
+    require(task_name in tv_aggregate, f"aggregate TV gate missing {task_name}")
 
 phases = section(devtool, "targets.studyflow_tv.validation.phases")
 require(":app:" not in phases, "studyflow_tv must not build the phone app")

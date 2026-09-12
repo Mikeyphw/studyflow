@@ -1,3 +1,29 @@
+## StudyFlow Gradle / Devtool task-graph optimization v4
+
+- Fixed the real Termux ATT v3 compile break by updating Android TV Attention runtime tests for the required `localPeer` constructor argument.
+- Migrated `.devtool.toml` to the current Devtool runner/platform/workspace schema, added workspace groups/safe scheduling, and normalized the 4-worker/2048 MiB/768 MiB Termux Gradle policy.
+- Coalesced Android/Desktop/TV/parity validation with `split_gradle = false`, explicitly disabled redundant compile/resource/dependency phases, and replaced repeated source-verifier placements with aggregate contract gates.
+- Reduced durable phase placements from 123→37 for Android, 47→9 for Desktop, 196→6 for routine TV, and 26→2 for parity; `studyflow_tv_release` separately owns Release lint/artifact/device work.
+- Consolidated Attention/SFLP/Web terminal validation, removed duplicate TypeScript compilation and duplicate Desktop verifier `Exec` implementations, and enabled app-level dependency lint through `checkDependencies = true`.
+- Isolated repository-wide formatting in `studyflow_quality`; Phase 15 now verifies ownership of the canonical formatting task rather than re-running an independent whole-repo formatting mirror.
+- Updated historical TV/Desktop/Web/config contracts to validate aggregate/transitive coverage and the canonical Devtool schema instead of forcing obsolete duplicated task topology.
+
+## Attention post-seal roadmap parity recheck
+
+- Independently re-audited ATT01-ATT12 against the literal handoff and five-client capability matrix instead of trusting the first post-seal seal.
+- Corrected the Web/Web-TV SFLP notification capability claim: browser Attention has trusted/presence routing plus targeted ingest, but no direct native `notification.deliver` peer-RPC sender is wired in this repository.
+- Clarified that `StudyFlowAttentionHandoffRequest` is the ATT07 canonical request model while generic SFLP owns actual state-transfer transport.
+- Made Web-TV ATT10 profile/outcome and ATT11 reliability projections visibly user-facing in the foreground banner.
+- Closed the two pre-existing SFLP20/21 Web runtime regressions and restored TV read-only enforcement; the complete Web suite is now 290/290 passing.
+- Added the complete Web regression suite to `verifyAttentionRoadmapPostsealCompletion` and added an explicit roadmap-parity audit report.
+
+## Attention post-seal roadmap completion
+
+- Closed the production-reachability gaps missed by the original ATT12 seal: canonical SFLP peer topology, authenticated remote notification delivery, live Android/Desktop/Android-TV ingress, and bounded-mirror continuation.
+- Wired ATT08 compact companion projections into Android Quick Settings/OS companion notification behavior, Desktop tray state, Android TV foreground overlays, and retained Web compact parity.
+- Wired ATT09 into real Android `.ics` FileProvider sharing, Desktop file export, truthful Android-TV schedule preview, and existing Web download/copy surfaces.
+- Preserved ATT10 `COMPACT_ONLY` semantics, made remote delivery sequences monotonic, unified legacy Android workspace migration with canonical SFLP plan workspaces, surfaced TV ATT10/ATT11 evidence, and hardened ATT12/post-seal verification against the exact false-green patterns found by the three-pass audit.
+
 ## ATT12 v6 — SFLP08/09 source-quality closure
 
 - Wrapped the ATT10/ATT11 Desktop Attention settings additions to restore the SFLP08/09 120-character Kotlin source contract without changing behavior.
@@ -824,3 +850,11 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Added shared calendar attention export contracts with ICS rendering, `VALARM` reminder lead times, privacy modes, and ATT01-compatible attention occurrence projection.
 - Added Android, Desktop and Android TV bridges that keep calendar export user-initiated and preserve ATT06/ATT07 delivery truth.
 - Added Web/PWA calendar export runtime, Progress → Tools export/copy UI, runtime/dist parity, service-worker cache coverage and Web regression tests.
+
+## StudyFlow Gradle / Devtool task-graph optimization v4
+
+- Fixed the ATT roadmap v3 Android TV unit-test compile regression by passing the required local SFLP peer into `StudyFlowTvAttentionRuntimeTest`.
+- Coalesced routine Gradle validation, removed redundant compile/resource/dependency phases, consolidated Attention/Web terminal gates, and replaced repeated TV phase verifiers with one aggregate contract gate.
+- Added a dedicated `studyflow_tv_release` Devtool target so expensive optimized/package/release checks no longer run in the routine TV target.
+- Migrated `.devtool.toml` to canonical workspace/runner/platform/device-policy configuration and added safe workspace groups/scheduling.
+- Added `verifyStudyFlowGradleTaskGraphOptimizationV4` to prevent task-graph duplication and validation-truth regressions.

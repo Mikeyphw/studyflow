@@ -43,7 +43,7 @@ require("docs/product/DESKTOP_ATTENTION_RUNTIME.md", "AWT", "action buttons", "p
 require("docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md", "FULL (ATT04")
 require("build.gradle.kts", "verifyAtt04DesktopAttentionRuntime")
 require("desktopApp/build.gradle.kts", "verifyAtt04DesktopAttentionRuntime")
-require(".devtool.toml", '"verifyAtt04DesktopAttentionRuntime"')
+require(".devtool.toml", '"verifyAttentionRoadmapPostsealCompletion"')
 
 if errors:
     print("ATT04 Desktop Attention Runtime verification FAILED")

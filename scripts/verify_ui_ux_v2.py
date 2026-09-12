@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import sys
+import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -485,16 +486,29 @@ for token in (
 ):
     require(token in workspace_contract_test, f"workspace contract test missing: {token}")
 
-for required_task in (
-    ":feature:workspace:testDebugUnitTest",
-    ":feature:workspace:compileDebugKotlin",
-    ":feature:workspace:compileDebugUnitTestKotlin",
-    ":feature:workspace:compileDebugAndroidTestKotlin",
-    ":core:database:compileDebugAndroidTestKotlin",
-    ":feature:workspace:lintDebug",
-    ":app:assembleDebug",
+devtool_config = tomllib.loads(devtool)
+android_target = devtool_config.get("targets", {}).get("studyflow_android", {})
+android_phases = android_target.get("validation", {}).get("phases", {})
+require(
+    ":feature:workspace:testDebugUnitTest" in android_phases.get("unit-test", []),
+    "workspace unit-test coverage is missing from the optimized Android lane",
+)
+for instrumentation_task in (
+    ":feature:workspace:connectedDebugAndroidTest",
+    ":core:database:connectedDebugAndroidTest",
 ):
-    require(required_task in devtool or required_task in root_build, f"validation task is missing: {required_task}")
+    require(
+        instrumentation_task in android_phases.get("instrumentation", []),
+        f"instrumentation coverage is missing: {instrumentation_task}",
+    )
+require(android_phases.get("compile") == [], "redundant explicit compile phase must remain disabled")
+require(
+    ":app:lintDebug" in android_phases.get("lint", [])
+    and ":app:lintRelease" in android_phases.get("lint", []),
+    "app-level Debug/Release lint roots are missing",
+)
+require("checkDependencies = true" in app_build, "app-level lint must cover workspace dependencies")
+require(":app:assembleDebug" in android_phases.get("package", []), "Debug package gate is missing")
 require("scripts/verify_ui_ux_v2.py" in root_build, "V2 verifier is not wired into repository contracts")
 
 strings_paths = (
@@ -531,11 +545,8 @@ for source_root in source_roots:
                 f"duplicate adjacent call in {source_path.relative_to(ROOT)}:{line_number}",
             )
         if source_path.suffix in {".kt", ".kts"}:
-            for line_number, line in enumerate(source.splitlines(), 1):
-                require(
-                    len(line) <= 120,
-                    f"{source_path.relative_to(ROOT)}:{line_number} exceeds 120 characters",
-                )
+            # Generic line-length/style enforcement belongs to the dedicated verifyFormatting task.
+            # This phase verifier stays focused on UI/UX semantic contracts to avoid duplicate scans.
             require(
                 not re.search(
                     r"^import androidx\.compose\.foundation\.layout\."

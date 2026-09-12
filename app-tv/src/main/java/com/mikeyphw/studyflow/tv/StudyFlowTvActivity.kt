@@ -33,6 +33,7 @@ import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvTransportApplyResult
 import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvAccessibilityPolicy
 import com.mikeyphw.studyflow.tv.attention.StudyFlowTvAttentionAction
 import com.mikeyphw.studyflow.tv.attention.StudyFlowTvAttentionRuntime
+import com.mikeyphw.studyflow.tv.attention.StudyFlowTvCalendarAttentionBridge
 import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvTextRole
 import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvAccessibilityNode
 import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvTenFootText
@@ -109,6 +110,14 @@ import com.mikeyphw.studyflow.tv.search.StudyFlowTvSearchState
 import com.mikeyphw.studyflow.core.link.StudyFlowInputDelegationOffer
 import com.mikeyphw.studyflow.core.link.StudyFlowInputEvent
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerClock
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionWorkspace
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionCategory
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPriority
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
+import com.mikeyphw.studyflow.core.link.StudyFlowCalendarAttentionExporter
+import com.mikeyphw.studyflow.core.link.StudyFlowCalendarEventKind
+import com.mikeyphw.studyflow.core.link.StudyFlowCalendarScheduleItem
+import com.mikeyphw.studyflow.core.link.StudyFlowEntityId
 
 class StudyFlowTvActivity : Activity() {
     // TVOV21: the runtime shell starts from an explicit waiting state. Historical fixture defaults
@@ -174,6 +183,15 @@ class StudyFlowTvActivity : Activity() {
             tvIdentity = sflpPeer.localDescriptor,
             clock = StudyFlowPeerClock(System::currentTimeMillis),
         )
+        sflpPeer.setNotificationDeliveryHandler { delivery ->
+            val result = tvAttentionRuntime.ingest(delivery)
+            runOnUiThread {
+                if (::contentCards.isInitialized && result.foregroundBannerShown) {
+                    renderDestination(controlState.destination)
+                }
+            }
+            result.ack
+        }
         localTransportHost = StudyFlowTvLocalTransportHost(
             context = applicationContext,
             tvDeviceName = getString(R.string.tv_pairing_device_name_format, Build.MODEL),
@@ -1224,9 +1242,29 @@ class StudyFlowTvActivity : Activity() {
         )
         if (state.attentionStatusVisible && ::tvAttentionRuntime.isInitialized) {
             val diagnostics = tvAttentionRuntime.diagnostics()
+            val reliability = tvAttentionRuntime.reliabilityProjection()
+            val focus = tvAttentionRuntime.focusProjection()
+            val calendar = tvCalendarAttentionPreview()
             contentCards.addView(
                 TextView(this).apply {
-                    text = "TV attention · ${diagnostics.closedAppDeliveryTruth} · ${diagnostics.capabilitySummary}"
+                    text = buildString {
+                        append(
+                            "TV attention · ${diagnostics.closedAppDeliveryTruth} · " +
+                                diagnostics.capabilitySummary,
+                        )
+                        focus?.let { projection ->
+                            append("\nATT10 read-only · ${projection.profile.lowercase()} · ")
+                            append(projection.outcome.lowercase().replace('_', ' '))
+                        }
+                        reliability.platforms.firstOrNull()?.let { platform ->
+                            append("\nATT11 reliability · ${platform.status.name.lowercase().replace('_', ' ')}")
+                            append(" · owner ${platform.ownerRouteCount} · mirrors ${platform.mirrorRouteCount}")
+                        }
+                        append(
+                            "\nATT09 calendar preview · ${calendar.eventCount} events · " +
+                                "${calendar.attentionCount} reminders · export continues on phone/desktop/Web",
+                        )
+                    }
                     setTextColor(Color.rgb(226, 232, 240))
                     applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
                     gravity = Gravity.START
@@ -1266,9 +1304,48 @@ class StudyFlowTvActivity : Activity() {
         )
     }
 
+    private fun tvCalendarAttentionPreview() = StudyFlowTvCalendarAttentionBridge().preview(
+        StudyFlowCalendarAttentionExporter().export(
+            items = scheduleSnapshot.items.mapNotNull { item ->
+                val startEpochMillis = item.scheduledStartEpochMillis ?: return@mapNotNull null
+                val kind = when (item.kind) {
+                    com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleItemKind.REVIEW_WINDOW ->
+                        StudyFlowCalendarEventKind.REVIEW
+                    com.mikeyphw.studyflow.tv.schedule.StudyFlowTvScheduleItemKind.MOCK_EXAM ->
+                        StudyFlowCalendarEventKind.MOCK_EXAM
+                    else -> StudyFlowCalendarEventKind.STUDY_BLOCK
+                }
+                StudyFlowCalendarScheduleItem(
+                    itemId = StudyFlowEntityId(
+                        StudyFlowAttentionOccurrenceId.deterministic("tv-calendar-item", item.sourceId).value,
+                    ),
+                    workspaceId = StudyFlowAttentionWorkspace.forPlanId(scheduleSnapshot.scheduleId),
+                    title = item.title,
+                    body = item.timeLabel,
+                    kind = kind,
+                    startEpochMillis = startEpochMillis,
+                    durationMinutes = item.plannedDurationMinutes ?: 30,
+                    attentionCategory = if (kind == StudyFlowCalendarEventKind.REVIEW) {
+                        StudyFlowAttentionCategory.DUE_REVIEW
+                    } else {
+                        StudyFlowAttentionCategory.PLANNED_STUDY
+                    },
+                    attentionPriority = if (kind == StudyFlowCalendarEventKind.MOCK_EXAM) {
+                        StudyFlowAttentionPriority.HIGH
+                    } else {
+                        StudyFlowAttentionPriority.NORMAL
+                    },
+                    routeHash = "#tv/schedule/${item.sourceId}",
+                )
+            },
+            nowEpochMillis = System.currentTimeMillis(),
+        ),
+    )
+
     private fun renderTvAttentionBannerIfNeeded() {
         if (!::tvAttentionRuntime.isInitialized) return
         val banner = tvAttentionRuntime.snapshot().activeBanner ?: return
+        val compact = tvAttentionRuntime.compactProjection()?.cards?.firstOrNull()
         contentCards.addView(
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -1276,7 +1353,16 @@ class StudyFlowTvActivity : Activity() {
                 setPadding(0, 0, 0, dp(12))
                 addView(
                     TextView(this@StudyFlowTvActivity).apply {
-                        text = "${banner.title} · ${banner.category.name.lowercase()}\n${banner.body}\nTV attention is foreground-only; closed-TV delivery falls back to a designated notifier."
+                        text = buildString {
+                            append("${banner.title} · ${banner.category.name.lowercase()}\n${banner.body}")
+                            compact?.let { projection ->
+                append("\nCompact remote overlay · ")
+                append(projection.actions.joinToString { action -> action.label })
+            }
+                            append(
+                "\nTV attention is foreground-only; closed-TV delivery falls back to a designated notifier.",
+            )
+                        }
                         setTextColor(Color.WHITE)
                         applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
                         gravity = Gravity.START

@@ -85,7 +85,10 @@ data class StudyFlowAttentionDeviceCapability(
         if (availability == StudyFlowAttentionDeviceAvailability.OFFLINE) return null
         if (isMuted(nowEpochMillis)) return null
         if (isStale(nowEpochMillis, context.staleAfterMillis)) return null
-        if (StudyFlowAttentionDeliverySurface.ANDROID_ALARM in deliverySurfaces) {
+        if (
+            StudyFlowAttentionDeliverySurface.ANDROID_ALARM in deliverySurfaces &&
+            notificationPermissionGranted
+        ) {
             return StudyFlowAttentionDeliverySurface.ANDROID_ALARM
         }
         if (
@@ -260,6 +263,24 @@ data class StudyFlowAttentionDeliveryRoute(
 
     val deliverable: Boolean get() = owner != null
     val targetDeviceIds: List<StudyFlowDeviceId> get() = listOfNotNull(owner?.deviceId) + mirrors.map { it.deviceId }
+
+    fun targetFor(deviceId: StudyFlowDeviceId): StudyFlowAttentionDeliveryTarget? =
+        owner?.takeIf { it.deviceId == deviceId } ?: mirrors.firstOrNull { it.deviceId == deviceId }
+
+    fun withTargetSurface(
+        deviceId: StudyFlowDeviceId,
+        surface: StudyFlowAttentionDeliverySurface,
+    ): StudyFlowAttentionDeliveryRoute {
+        require(targetFor(deviceId) != null) { "Attention route target is not selected" }
+        return copy(
+            owner = owner?.let { target ->
+                if (target.deviceId == deviceId) target.copy(surface = surface) else target
+            },
+            mirrors = mirrors.map { target ->
+                if (target.deviceId == deviceId) target.copy(surface = surface) else target
+            },
+        )
+    }
 }
 
 @Serializable
@@ -466,7 +487,8 @@ class StudyFlowAttentionDeliveryRouter {
         }
 
         val policyDevices = when (decision.outcome) {
-            StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE -> devices.filter { it.clientKind == StudyFlowLinkClientKind.ANDROID }
+            StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE ->
+                devices.filter { it.clientKind == StudyFlowLinkClientKind.ANDROID }
             StudyFlowAttentionPolicyOutcome.COMPACT_ONLY -> devices.filter {
                 StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE in it.deliverySurfaces
             }
@@ -484,7 +506,11 @@ class StudyFlowAttentionDeliveryRouter {
             context = policyContext,
             ledgerEntry = ledgerEntry,
         )
-        val owner = if (decision.compactOnly) routed.owner?.copy(surface = StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE) else routed.owner
+        val owner = if (decision.compactOnly) {
+            routed.owner?.copy(surface = StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE)
+        } else {
+            routed.owner
+        }
         val compactMirrors = if (decision.compactOnly) {
             routed.mirrors.map { it.copy(surface = StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE) }
         } else routed.mirrors

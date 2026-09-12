@@ -76,6 +76,8 @@ class StudyFlowPeerServer(
     private val presencePublisher: StudyFlowLocalPresencePublisher,
     private val clock: StudyFlowPeerClock,
     private val messageIds: StudyFlowSyncMessageIdFactory,
+    private val notificationDeliveryHandler:
+        (StudyFlowNotificationDelivery) -> StudyFlowNotificationDeliveryAck? = { null },
     private val listeningTransport: StudyFlowListeningTransport = StudyFlowTcpTransport(),
     private val executor: ExecutorService = Executors.newCachedThreadPool { runnable ->
         Thread(runnable, "studyflow-sflp-peer").apply { isDaemon = true }
@@ -120,6 +122,8 @@ class StudyFlowPeerServer(
                     StudyFlowPeerRpcMessageNames.SyncApply,
                     -> handleSync(link, request, authenticatedPeer)
                     StudyFlowPresenceMessageNames.Exchange -> handlePresence(link, request, authenticatedPeer)
+                    StudyFlowNotificationMediaMessageNames.NotificationDeliver ->
+                        handleNotificationDelivery(link, request, authenticatedPeer)
                     else -> sendError(link, request, "unsupported_request", "Unsupported SFLP request", false)
                 }
             }
@@ -324,6 +328,65 @@ class StudyFlowPeerServer(
         )
     }
 
+    private fun handleNotificationDelivery(
+        link: StudyFlowLinkConnection,
+        request: StudyFlowLinkEnvelope,
+        authenticatedPeer: StudyFlowDeviceId?,
+    ) {
+        if (authenticatedPeer == null || authenticatedPeer != request.senderDeviceId) {
+            sendError(link, request, "authentication_required", "Trusted reconnect is required", false)
+            return
+        }
+        if (trustManager.trustedPeers().none { it.peer.deviceId == authenticatedPeer }) {
+            sendError(link, request, "peer_revoked", "Peer trust was revoked", false)
+            return
+        }
+        val delivery = runCatching {
+            StudyFlowLinkCodec.decodePayload(StudyFlowNotificationDelivery.serializer(), request.payload)
+        }.getOrElse {
+            sendError(link, request, "invalid_notification_delivery", "Invalid notification delivery", false)
+            return
+        }
+        if (delivery.sourceDeviceId != authenticatedPeer || delivery.sourceDeviceId != request.senderDeviceId) {
+            sendError(
+                link,
+                request,
+                "identity_mismatch",
+                "Notification source does not match authenticated peer",
+                false,
+            )
+            return
+        }
+        if (delivery.targetDeviceId != localIdentity.descriptor.deviceId) {
+            sendError(link, request, "wrong_target", "Notification targets another device", false)
+            return
+        }
+        if (delivery.notification.route.workspaceId != request.workspaceId) {
+            sendError(link, request, "workspace_mismatch", "Notification route workspace mismatch", false)
+            return
+        }
+        if (!delivery.notification.route.accepts(localIdentity.descriptor)) {
+            sendError(link, request, "route_rejected", "Notification route does not accept this target", false)
+            return
+        }
+        val ack = notificationDeliveryHandler(delivery) ?: StudyFlowNotificationDeliveryAck(
+            messageId = StudyFlowMessageId("ack-${delivery.messageId.value}"),
+            notificationId = delivery.notification.notificationId,
+            targetDeviceId = localIdentity.descriptor.deviceId,
+            acknowledgedSequence = delivery.sequence,
+            status = StudyFlowNotificationDeliveryStatus.REJECTED,
+            reason = "notification_handler_unavailable",
+            acknowledgedAtEpochMillis = clock.nowEpochMillis(),
+        )
+        link.send(
+            response(
+                request = request,
+                name = StudyFlowNotificationMediaMessageNames.NotificationAck,
+                payload = StudyFlowLinkCodec.encodePayload(StudyFlowNotificationDeliveryAck.serializer(), ack),
+            ),
+        )
+    }
+
     private fun response(
         request: StudyFlowLinkEnvelope,
         name: String,
@@ -476,6 +539,27 @@ class StudyFlowRemoteSyncPeerSession(
         return StudyFlowLinkCodec.decodePayload(StudyFlowPresenceExchangeResponse.serializer(), response.payload)
     }
 
+    fun deliverNotification(delivery: StudyFlowNotificationDelivery): StudyFlowNotificationDeliveryAck {
+        require(delivery.sourceDeviceId == localIdentity.descriptor.deviceId) {
+            "Notification delivery source must be the local peer"
+        }
+        require(delivery.targetDeviceId == deviceId) { "Notification delivery targets another peer" }
+        require(delivery.notification.route.workspaceId == workspaceId) {
+            "Notification delivery belongs to another workspace"
+        }
+        val request = StudyFlowLinkEnvelope(
+            messageId = messageIds.next("notification-deliver"),
+            workspaceId = workspaceId,
+            senderDeviceId = localIdentity.descriptor.deviceId,
+            messageType = StudyFlowLinkMessageType.REQUEST,
+            name = StudyFlowNotificationMediaMessageNames.NotificationDeliver,
+            sentAtEpochMillis = clock.nowEpochMillis(),
+            payload = StudyFlowLinkCodec.encodePayload(StudyFlowNotificationDelivery.serializer(), delivery),
+        )
+        val response = exchange(request, StudyFlowNotificationMediaMessageNames.NotificationAck)
+        return StudyFlowLinkCodec.decodePayload(StudyFlowNotificationDeliveryAck.serializer(), response.payload)
+    }
+
     private fun exchange(
         request: StudyFlowLinkEnvelope,
         expectedName: String,
@@ -591,6 +675,9 @@ class StudyFlowPeerRuntime(
     )
     private val workspaceRuntimes = ConcurrentHashMap<StudyFlowWorkspaceId, StudyFlowWorkspaceRuntime>()
     private val workspaceTopologies = ConcurrentHashMap<StudyFlowWorkspaceId, StudyFlowWorkspaceTopology>()
+    @Volatile
+    private var notificationDeliveryHandler:
+        ((StudyFlowNotificationDelivery) -> StudyFlowNotificationDeliveryAck)? = null
     private var server: StudyFlowPeerServer? = null
 
     override fun workspace(workspaceId: StudyFlowWorkspaceId): StudyFlowWorkspaceRuntime {
@@ -622,10 +709,42 @@ class StudyFlowPeerRuntime(
             presencePublisher = presencePublisher,
             clock = clock,
             messageIds = messageIds,
+            notificationDeliveryHandler = { delivery -> notificationDeliveryHandler?.invoke(delivery) },
         )
         val bound = created.start(StudyFlowTransportEndpoint(StudyFlowTransportScheme.TCP, bindHost, port))
         server = created
         return bound
+    }
+
+    fun setNotificationDeliveryHandler(
+        handler: ((StudyFlowNotificationDelivery) -> StudyFlowNotificationDeliveryAck)?,
+    ) {
+        notificationDeliveryHandler = handler
+    }
+
+    fun deliverNotification(
+        workspaceId: StudyFlowWorkspaceId,
+        peerDeviceId: StudyFlowDeviceId,
+        delivery: StudyFlowNotificationDelivery,
+        endpoint: StudyFlowTransportEndpoint? = null,
+    ): StudyFlowNotificationDeliveryAck {
+        require(delivery.sourceDeviceId == localIdentity.descriptor.deviceId) {
+            "Notification delivery source must be local"
+        }
+        require(delivery.targetDeviceId == peerDeviceId) { "Notification delivery target mismatch" }
+        val selectedEndpoint = endpoint
+            ?: topology(workspaceId).bestRouteTo(peerDeviceId)?.endpoint
+            ?: requireNotNull(bestEndpoint(peerDeviceId)) { "No remembered endpoint for ${peerDeviceId.value}" }
+        return StudyFlowRemoteSyncPeerSession(
+            deviceId = peerDeviceId,
+            workspaceId = workspaceId,
+            localIdentity = localIdentity,
+            trustManager = trustManager,
+            endpoint = selectedEndpoint,
+            transportRegistry = transportRegistry,
+            clock = clock,
+            messageIds = messageIds,
+        ).use { it.deliverNotification(delivery) }
     }
 
     fun createPairingOffer(endpointHints: List<String>): StudyFlowPairingPublicOffer =

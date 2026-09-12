@@ -60,7 +60,7 @@ REQUIRED = {
     "README.md": ["ATT11 — Notification Reliability Evidence / Delivery Audit", "actual Web Push subscription"],
     "CHANGELOG.md": ["ATT11 — Notification Reliability Evidence / Delivery Audit", "verifyAtt11NotificationReliabilityEvidenceAudit"],
     "build.gradle.kts": ["verifyAtt11NotificationReliabilityEvidenceAudit", "verifyAtt11WebReliabilityTests"],
-    ".devtool.toml": ["verifyAtt11NotificationReliabilityEvidenceAudit"],
+    ".devtool.toml": ["verifyAttentionRoadmapPostsealCompletion"],
 }
 
 def require(path: str, *needles: str) -> str:

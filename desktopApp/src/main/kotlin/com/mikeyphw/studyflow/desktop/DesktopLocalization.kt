@@ -72,6 +72,13 @@ class DesktopTextCatalog private constructor(
             "Show tray dashboard" to "Mostrar painel da bandeja",
             "Reconcile reminders now" to "Reconciliar lembretes agora",
             "Send test notification" to "Enviar notificação de teste",
+            "ATT09 calendar attention export" to "Exportação de atenção do calendário ATT09",
+            "ATT10 focus policy" to "Política de foco ATT10",
+            "ATT11 delivery reliability and audit" to "Confiabilidade e auditoria de entrega ATT11",
+            "Copy audit CSV" to "Copiar auditoria CSV",
+            "Copy audit JSON" to "Copiar auditoria JSON",
+            "Cycle focus profile" to "Alternar perfil de foco",
+            "Export calendar (.ics)" to "Exportar calendário (.ics)",
             "Desktop reminders run while StudyFlow is running. Launch-on-login is not enabled automatically." to
                 "Os lembretes do Desktop funcionam enquanto o StudyFlow está aberto. A inicialização automática não é ativada sem sua escolha.",
             "Desktop reminders are available while StudyFlow is running." to

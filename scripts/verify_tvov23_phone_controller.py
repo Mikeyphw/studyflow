@@ -168,7 +168,11 @@ for forbidden in (':app:', ':feature:', ':core:data', ':core:database'):
 root_gradle = read("build.gradle.kts")
 devtool = read(".devtool.toml")
 require('tasks.register<Exec>("verifyStudyFlowTvPhoneController")' in root_gradle, "missing TVOV23 Gradle verifier task")
-require(devtool.count('"verifyStudyFlowTvPhoneController"') >= 8, "studyflow_tv must wire TVOV23 source verifier across tasks/phases")
+require('"verifyStudyFlowTvAllContracts"' in devtool, "studyflow_tv must run the aggregate TV contract gate")
+tv_aggregate = root_gradle.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvPhoneController" in tv_aggregate, "aggregate TV gate must own TVOV23 verifier")
+require('"verifyStudyFlowTvAllContracts"' in devtool, "studyflow_tv must run the aggregate TV contract gate")
 with (ROOT / ".devtool.toml").open("rb") as fh:
     config = tomllib.load(fh)
 tv_target = config.get("targets", {}).get("studyflow_tv", {})

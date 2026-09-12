@@ -331,7 +331,10 @@ class StudyFlowWebAttentionRuntime {
         const pushSubscription = this.pushRegistry.savedSubscription();
         const capabilities = this.environment.capabilities();
         const localDevice = this.localAttentionDevice(now, capabilities, pushSubscription);
-        const reliability = (0, attention_reliability_1.analyzeWebAttentionReliability)(ledger, [localDevice], now);
+        const reliabilityTopology = entries.length > 0
+            ? (0, attention_router_1.attentionTopologyFromWebPeer)(this.peer, entries[0].occurrence.workspaceId, now, localDevice)
+            : { devices: [localDevice], context: { localDeviceId: localDevice.deviceId, staleAfterMillis: 60000, allowTvForegroundOwners: true } };
+        const reliability = (0, attention_reliability_1.analyzeWebAttentionReliability)(ledger, reliabilityTopology.devices, now);
         return {
             permission: this.environment.notificationPermission(),
             preferences: this.preferences,
@@ -516,7 +519,8 @@ class StudyFlowWebAttentionRuntime {
             .filter(entry => !entry.occurrence.expiresAtEpochMillis || entry.occurrence.expiresAtEpochMillis >= now)
             .sort((a, b) => a.occurrence.scheduledAtEpochMillis - b.occurrence.scheduledAtEpochMillis);
         for (const entry of due) {
-            const route = (0, attention_router_1.routeStudyFlowAttentionDeliveryWithPolicy)(entry.occurrence, [localDevice], now, this.preferences.focusPolicy, { localDeviceId: this.peer.identity.deviceId, primaryDeviceId: this.peer.identity.deviceId, designatedNotifierDeviceIds: localDevice.designatedNotifier ? [this.peer.identity.deviceId] : [] }, entry);
+            const topology = (0, attention_router_1.attentionTopologyFromWebPeer)(this.peer, entry.occurrence.workspaceId, now, localDevice);
+            const route = (0, attention_router_1.routeStudyFlowAttentionDeliveryWithPolicy)(entry.occurrence, topology.devices, now, this.preferences.focusPolicy, topology.context, entry);
             this.recordRouteDecision(route);
             // ATT12: preserve ATT07 explicit-target safety at the production delivery edge.
             // A local browser may hold the occurrence in its replicated ledger, but only a
@@ -545,7 +549,7 @@ class StudyFlowWebAttentionRuntime {
         this.emit();
     }
     planOccurrences(state, now) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         const output = [];
         const activePlan = (_a = state.plans.find(value => value.id === state.activePlanId)) !== null && _a !== void 0 ? _a : null;
         const horizon = now + 7 * DAY_MS;
@@ -581,8 +585,8 @@ class StudyFlowWebAttentionRuntime {
                 const scheduled = Math.max(now, endsAt - this.preferences.sessionLeadMinutes * MINUTE_MS);
                 output.push({
                     occurrenceId: stableWebAttentionOccurrenceId(["web", "session-ending", (_c = (_b = state.focus.activityId) !== null && _b !== void 0 ? _b : state.focus.startedAt) !== null && _c !== void 0 ? _c : "focus", String(endsAt)]),
-                    workspaceId: (_d = activePlan === null || activePlan === void 0 ? void 0 : activePlan.id) !== null && _d !== void 0 ? _d : "workspace-main",
-                    scheduleEntityId: (_e = state.focus.activityId) !== null && _e !== void 0 ? _e : undefined,
+                    workspaceId: (activePlan === null || activePlan === void 0 ? void 0 : activePlan.id) ? `plan-${activePlan.id}` : "workspace-main",
+                    scheduleEntityId: (_d = state.focus.activityId) !== null && _d !== void 0 ? _d : undefined,
                     category: "session_ending",
                     priority: "normal",
                     scheduledAtEpochMillis: scheduled,
@@ -602,8 +606,8 @@ class StudyFlowWebAttentionRuntime {
                 const planned = state.activities.filter(value => value.status === "planned" && value.scheduledFor === dateKey).length;
                 const reviews = state.reviews.filter(value => value.status === "due" && new Date(value.dueAt).getTime() <= now + DAY_MS).length;
                 output.push({
-                    occurrenceId: stableWebAttentionOccurrenceId(["web", "daily-summary", (_f = activePlan === null || activePlan === void 0 ? void 0 : activePlan.id) !== null && _f !== void 0 ? _f : "workspace-main", dateKey]),
-                    workspaceId: (_g = activePlan === null || activePlan === void 0 ? void 0 : activePlan.id) !== null && _g !== void 0 ? _g : "workspace-main",
+                    occurrenceId: stableWebAttentionOccurrenceId(["web", "daily-summary", (_e = activePlan === null || activePlan === void 0 ? void 0 : activePlan.id) !== null && _e !== void 0 ? _e : "workspace-main", dateKey]),
+                    workspaceId: (activePlan === null || activePlan === void 0 ? void 0 : activePlan.id) ? `plan-${activePlan.id}` : "workspace-main",
                     category: "daily_summary",
                     priority: "low",
                     scheduledAtEpochMillis: scheduled,
@@ -617,17 +621,17 @@ class StudyFlowWebAttentionRuntime {
             }
         }
         if (this.preferences.categories.exam_countdown && activePlan) {
-            const examDate = (_j = (_h = activePlan.configuration.publicExam) === null || _h === void 0 ? void 0 : _h.target.examDate) !== null && _j !== void 0 ? _j : activePlan.examDate;
+            const examDate = (_g = (_f = activePlan.configuration.publicExam) === null || _f === void 0 ? void 0 : _f.target.examDate) !== null && _g !== void 0 ? _g : activePlan.examDate;
             if (examDate && /^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
                 const examStart = localDateAtMinute(examDate, 9 * 60);
                 const todayStart = localDateAtMinute(localDateKeyAt(now), 0);
                 if (examStart != null && todayStart != null) {
                     const days = Math.ceil((examStart - todayStart) / DAY_MS);
                     if ([30, 14, 7, 3, 1, 0].includes(days)) {
-                        const scheduled = (_k = localDateAtMinute(localDateKeyAt(now), 9 * 60)) !== null && _k !== void 0 ? _k : now;
+                        const scheduled = (_h = localDateAtMinute(localDateKeyAt(now), 9 * 60)) !== null && _h !== void 0 ? _h : now;
                         output.push({
                             occurrenceId: stableWebAttentionOccurrenceId(["web", "exam-countdown", activePlan.id, localDateKeyAt(now)]),
-                            workspaceId: activePlan.id,
+                            workspaceId: `plan-${activePlan.id}`,
                             category: "exam_countdown",
                             priority: days <= 1 ? "high" : "normal",
                             scheduledAtEpochMillis: scheduled,
@@ -647,7 +651,7 @@ class StudyFlowWebAttentionRuntime {
     activityOccurrence(activity, category, scheduledAt, expiresAt) {
         return {
             occurrenceId: stableWebAttentionOccurrenceId(["web", category, activity.id, String(scheduledAt)]),
-            workspaceId: activity.planId,
+            workspaceId: `plan-${activity.planId}`,
             scheduleEntityId: activity.id,
             category,
             priority: category === "missed_activity" ? "high" : "normal",
@@ -665,7 +669,7 @@ class StudyFlowWebAttentionRuntime {
     reviewOccurrence(review, scheduledAt, expiresAt) {
         return {
             occurrenceId: stableWebAttentionOccurrenceId(["web", "due-review", review.id, String(scheduledAt)]),
-            workspaceId: review.planId,
+            workspaceId: `plan-${review.planId}`,
             scheduleEntityId: review.id,
             category: "due_review",
             priority: scheduledAt < this.environment.now() - DAY_MS ? "high" : "normal",
@@ -690,7 +694,7 @@ class StudyFlowWebAttentionRuntime {
                     continue;
                 const occurrence = {
                     occurrenceId: stableWebAttentionOccurrenceId(["web", "session-completed", session.id]),
-                    workspaceId: session.planId,
+                    workspaceId: `plan-${session.planId}`,
                     scheduleEntityId: (_a = session.activityId) !== null && _a !== void 0 ? _a : undefined,
                     category: "session_completed",
                     priority: "normal",

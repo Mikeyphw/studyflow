@@ -6,6 +6,9 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPriority
+import com.mikeyphw.studyflow.core.link.StudyFlowDeviceId
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkPeerDescriptor
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,6 +33,17 @@ class StudyFlowTvAttentionFocusPolicyTest {
         assertEquals("ROUTE_TO_PHONE", projection.outcome)
         assertTrue(projection.controlsReadOnly)
         assertTrue(projection.remoteControlRequired)
-        assertTrue(StudyFlowTvAttentionDeliveryRouterBridge.localForegroundCapability(2_000L).notificationPermissionGranted.not())
+        val tv = StudyFlowLinkPeerDescriptor(
+            StudyFlowDeviceId("tv-test"),
+            "TV",
+            StudyFlowLinkClientKind.ANDROID_TV,
+            capabilities = emptyList(),
+        )
+        assertTrue(
+            StudyFlowTvAttentionDeliveryRouterBridge
+                .localForegroundCapability(tv, 2_000L)
+                .notificationPermissionGranted
+                .not(),
+        )
     }
 }

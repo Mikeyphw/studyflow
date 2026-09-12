@@ -23,7 +23,7 @@ def main() -> None:
     targets = config.get("targets", {})
 
     tv = targets.get("studyflow_tv", {})
-    require(tv.get("type") == "android", "studyflow_tv must use the Android Devtool runner")
+    require(tv.get("runner") == "android", "studyflow_tv must use the Android Devtool runner")
     tv_android = tv.get("android", {})
     require(tv_android.get("variant") == "debug", "studyflow_tv must remain a debug Android target")
     require(tv_android.get("aapt2_provider") == "termux", "studyflow_tv must use Termux AAPT2")
@@ -31,14 +31,19 @@ def main() -> None:
     tv_build = tv.get("tasks", {}).get("build", [])
     require(":app-tv:assembleDebug" in tv_build, "studyflow_tv must build the TV debug APK")
     require(":app:assembleDebug" not in tv_build, "studyflow_tv must not build the mobile APK")
-    require("verifyStudyFlowTvDevtoolAndroidRunner" in tv_build,
-            "studyflow_tv must preserve its standalone Android-runner regression guard")
+    require("verifyStudyFlowTvAllContracts" in tv_build,
+            "studyflow_tv build must preserve the aggregate TV contract gate")
     tv_preflight = tv.get("validation", {}).get("phases", {}).get("preflight", [])
-    require("verifyStudyFlowTvDevtoolAndroidRunner" in tv_preflight,
-            "studyflow_tv validation preflight must preserve its runner regression guard")
+    require("verifyStudyFlowTvAllContracts" in tv_preflight,
+            "studyflow_tv validation preflight must use the aggregate TV contract gate")
+    build = read("build.gradle.kts")
+    tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+    tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+    require("verifyStudyFlowTvDevtoolAndroidRunner" in tv_aggregate,
+            "aggregate TV contract gate must preserve the Android-runner regression guard")
 
     release = targets.get("studyflow_release", {})
-    require(release.get("type") == "android", "studyflow_release must use the Android Devtool runner")
+    require(release.get("runner") == "android", "studyflow_release must use the Android Devtool runner")
     release_android = release.get("android", {})
     require(release_android.get("variant") == "release", "studyflow_release must use the release variant")
     require(release_android.get("aapt2_provider") == "termux", "studyflow_release must use Termux AAPT2")

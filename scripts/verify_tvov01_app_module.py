@@ -102,20 +102,26 @@ for token in (
     require(token in contract, f"TV build contract missing token: {token}")
 require("minimalTvModuleStartsWithSeparatePackageAndStrictSizeBudget" in test, "TV build contract unit test is missing")
 
-studyflow_tv = devtool[devtool.find("[targets.studyflow_tv]") :]
+tv_start = devtool.find("[targets.studyflow_tv]")
+tv_end = devtool.find("\n[targets.studyflow_tv_release]", tv_start)
+studyflow_tv = devtool[tv_start:] if tv_end < 0 else devtool[tv_start:tv_end]
 next_android_profile = studyflow_tv.find("[targets.studyflow_android.validation.phase_profiles.preflight]")
 if next_android_profile >= 0:
     studyflow_tv = studyflow_tv[:next_android_profile]
 for task in (
-    ":app-tv:compileDebugKotlin",
     ":app-tv:testDebugUnitTest",
     ":app-tv:assembleDebug",
     ":app-tv:lintDebug",
 ):
     require(task in studyflow_tv, f"studyflow_tv target must include {task}")
+require('compile = []' in studyflow_tv, "studyflow_tv must let test/package roots own compilation once")
+require('split_gradle = false' in studyflow_tv, "studyflow_tv must coalesce Gradle validation")
 require(":app:" not in studyflow_tv, "studyflow_tv target must not run phone app tasks")
 require('tasks.register<Exec>("verifyStudyFlowTvAppModule")' in build, "Gradle TVOV01 verifier task is missing")
-require("verifyStudyFlowTvAppModule" in studyflow_tv, "studyflow_tv target must run TVOV01 verifier")
+require("verifyStudyFlowTvAllContracts" in studyflow_tv, "studyflow_tv target must run the aggregate TV contract gate")
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvAppModule" in tv_aggregate, "aggregate TV contract gate must include TVOV01 verifier")
 require('"app-tv"' in build, "root quality source roots must include app-tv")
 
 for token in (

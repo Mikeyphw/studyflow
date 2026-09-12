@@ -22,6 +22,7 @@ import {
 } from "./pwa";
 import {
   attentionDeviceFromWebPeer,
+  attentionTopologyFromWebPeer,
   routeStudyFlowAttentionDeliveryWithPolicy,
   studyFlowAttentionRouteTargetsDevice,
   type StudyFlowAttentionDeliveryRoute,
@@ -431,7 +432,10 @@ export class StudyFlowWebAttentionRuntime {
     const pushSubscription = this.pushRegistry.savedSubscription();
     const capabilities = this.environment.capabilities();
     const localDevice = this.localAttentionDevice(now, capabilities, pushSubscription);
-    const reliability = analyzeWebAttentionReliability(ledger, [localDevice], now);
+    const reliabilityTopology = entries.length > 0
+      ? attentionTopologyFromWebPeer(this.peer, entries[0].occurrence.workspaceId, now, localDevice)
+      : { devices: [localDevice], context: { localDeviceId: localDevice.deviceId, staleAfterMillis: 60_000, allowTvForegroundOwners: true } };
+    const reliability = analyzeWebAttentionReliability(ledger, reliabilityTopology.devices, now);
     return {
       permission: this.environment.notificationPermission(),
       preferences: this.preferences,
@@ -628,12 +632,13 @@ export class StudyFlowWebAttentionRuntime {
       .filter(entry => !entry.occurrence.expiresAtEpochMillis || entry.occurrence.expiresAtEpochMillis >= now)
       .sort((a, b) => a.occurrence.scheduledAtEpochMillis - b.occurrence.scheduledAtEpochMillis);
     for (const entry of due) {
+      const topology = attentionTopologyFromWebPeer(this.peer, entry.occurrence.workspaceId, now, localDevice);
       const route = routeStudyFlowAttentionDeliveryWithPolicy(
         entry.occurrence,
-        [localDevice],
+        topology.devices,
         now,
         this.preferences.focusPolicy,
-        { localDeviceId: this.peer.identity.deviceId, primaryDeviceId: this.peer.identity.deviceId, designatedNotifierDeviceIds: localDevice.designatedNotifier ? [this.peer.identity.deviceId] : [] },
+        topology.context,
         entry,
       );
       this.recordRouteDecision(route);
@@ -695,7 +700,7 @@ export class StudyFlowWebAttentionRuntime {
         const scheduled = Math.max(now, endsAt - this.preferences.sessionLeadMinutes * MINUTE_MS);
         output.push({
           occurrenceId: stableWebAttentionOccurrenceId(["web", "session-ending", state.focus.activityId ?? state.focus.startedAt ?? "focus", String(endsAt)]),
-          workspaceId: activePlan?.id ?? "workspace-main",
+          workspaceId: activePlan?.id ? `plan-${activePlan.id}` : "workspace-main",
           scheduleEntityId: state.focus.activityId ?? undefined,
           category: "session_ending",
           priority: "normal",
@@ -717,7 +722,7 @@ export class StudyFlowWebAttentionRuntime {
         const reviews = state.reviews.filter(value => value.status === "due" && new Date(value.dueAt).getTime() <= now + DAY_MS).length;
         output.push({
           occurrenceId: stableWebAttentionOccurrenceId(["web", "daily-summary", activePlan?.id ?? "workspace-main", dateKey]),
-          workspaceId: activePlan?.id ?? "workspace-main",
+          workspaceId: activePlan?.id ? `plan-${activePlan.id}` : "workspace-main",
           category: "daily_summary",
           priority: "low",
           scheduledAtEpochMillis: scheduled,
@@ -741,7 +746,7 @@ export class StudyFlowWebAttentionRuntime {
             const scheduled = localDateAtMinute(localDateKeyAt(now), 9 * 60) ?? now;
             output.push({
               occurrenceId: stableWebAttentionOccurrenceId(["web", "exam-countdown", activePlan.id, localDateKeyAt(now)]),
-              workspaceId: activePlan.id,
+              workspaceId: `plan-${activePlan.id}`,
               category: "exam_countdown",
               priority: days <= 1 ? "high" : "normal",
               scheduledAtEpochMillis: scheduled,
@@ -762,7 +767,7 @@ export class StudyFlowWebAttentionRuntime {
   private activityOccurrence(activity: Activity, category: "planned_study" | "missed_activity", scheduledAt: number, expiresAt: number): StudyFlowAttentionOccurrence {
     return {
       occurrenceId: stableWebAttentionOccurrenceId(["web", category, activity.id, String(scheduledAt)]),
-      workspaceId: activity.planId,
+      workspaceId: `plan-${activity.planId}`,
       scheduleEntityId: activity.id,
       category,
       priority: category === "missed_activity" ? "high" : "normal",
@@ -781,7 +786,7 @@ export class StudyFlowWebAttentionRuntime {
   private reviewOccurrence(review: Review, scheduledAt: number, expiresAt: number): StudyFlowAttentionOccurrence {
     return {
       occurrenceId: stableWebAttentionOccurrenceId(["web", "due-review", review.id, String(scheduledAt)]),
-      workspaceId: review.planId,
+      workspaceId: `plan-${review.planId}`,
       scheduleEntityId: review.id,
       category: "due_review",
       priority: scheduledAt < this.environment.now() - DAY_MS ? "high" : "normal",
@@ -804,7 +809,7 @@ export class StudyFlowWebAttentionRuntime {
         if (!Number.isFinite(endedAt) || endedAt < now - 15 * MINUTE_MS) continue;
         const occurrence: StudyFlowAttentionOccurrence = {
           occurrenceId: stableWebAttentionOccurrenceId(["web", "session-completed", session.id]),
-          workspaceId: session.planId,
+          workspaceId: `plan-${session.planId}`,
           scheduleEntityId: session.activityId ?? undefined,
           category: "session_completed",
           priority: "normal",

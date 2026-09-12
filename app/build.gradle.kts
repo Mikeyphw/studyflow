@@ -63,6 +63,7 @@ android {
     testBuildType = "release"
 
     lint {
+        checkDependencies = true
         disable += setOf(
             "AndroidGradlePluginVersion",
             "GradleDependency",

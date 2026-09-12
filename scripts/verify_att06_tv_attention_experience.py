@@ -43,7 +43,7 @@ require("ATT06_TV_ATTENTION_EXPERIENCE.md", "verifyAtt06TvAttentionExperience", 
 require("docs/product/TV_ATTENTION_EXPERIENCE.md", "foreground-first", "ATT07")
 require("docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md", "Android TV ATT06 foreground banners", "Web TV ATT06 foreground banners")
 require("build.gradle.kts", "verifyAtt06TvAttentionContracts", "verifyAtt06TvAttentionExperience")
-require(".devtool.toml", '"verifyAtt06TvAttentionExperience"')
+require(".devtool.toml", '"verifyAttentionRoadmapPostsealCompletion"')
 
 if errors:
     print("ATT06 TV Attention Experience verification FAILED")

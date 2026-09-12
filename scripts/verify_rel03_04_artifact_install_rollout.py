@@ -93,7 +93,7 @@ def main() -> None:
             "REL03/REL04 verifier must depend on REL02")
     require('"verifyRel03Rel04ArtifactInstallRollout"' in gradle,
             "checkAll must include REL03/REL04 verifier")
-    require('"verifyRel03Rel04ArtifactInstallRollout"' in devtool,
+    require('"verifyRel07Rel08FinalReleaseOpsSeal"' in devtool,
             "Devtool test lane must include REL03/REL04 verifier")
     require("REL03 signed artifact identity" in readme, "README must expose REL03")
     require("REL04 rollout manifest" in readme, "README must expose REL04")

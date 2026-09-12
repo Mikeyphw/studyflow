@@ -76,26 +76,16 @@ for path in ROOT.rglob("*.kt"):
         for pattern in (".getString(R.", ".resources.getString(R.", ".getQuantityString(R."):
             if pattern in source:
                 failures.append(f"{path.relative_to(ROOT)} uses resource lookup pattern {pattern}")
-# Formatting gate mirror.
-for base in ("app", "core", "feature", "build-logic"):
-    root = ROOT / base
-    if not root.exists():
-        continue
-    for source_file in root.rglob("*"):
-        if not source_file.is_file() or source_file.suffix not in {".kt", ".kts", ".xml"}:
-            continue
-        if any(part in {"build", ".gradle", ".idea"} for part in source_file.parts):
-            continue
-        text = source_file.read_text(encoding="utf-8")
-        if not text.endswith("\n"):
-            failures.append(f"{source_file.relative_to(ROOT)}: missing final newline")
-        for line_number, line in enumerate(text.splitlines(), start=1):
-            if "	" in line:
-                failures.append(f"{source_file.relative_to(ROOT)}:{line_number}: tab character")
-            if line != line.rstrip():
-                failures.append(f"{source_file.relative_to(ROOT)}:{line_number}: trailing whitespace")
-            if source_file.suffix in {".kt", ".kts"} and len(line) > 120:
-                failures.append(f"{source_file.relative_to(ROOT)}:{line_number}: {len(line)} characters")
+# Formatting has one canonical owner. Phase 15 verifies that the gate remains
+# registered and isolated to the explicit quality target instead of re-scanning
+# the repository in Python and duplicating Gradle work on every preflight.
+root_build = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+devtool = (ROOT / ".devtool.toml").read_text(encoding="utf-8")
+if 'tasks.register("verifyFormatting")' not in root_build:
+    failures.append("root build is missing the canonical verifyFormatting task")
+if '[targets.studyflow_quality]' not in devtool or 'lint = ["verifyFormatting"]' not in devtool:
+    failures.append("studyflow_quality must own the canonical formatting gate")
+
 # validate_repo must contain every phase verifier.
 validate = (ROOT / "scripts/validate_repo.sh").read_text(encoding="utf-8")
 for phase in range(0, 16):

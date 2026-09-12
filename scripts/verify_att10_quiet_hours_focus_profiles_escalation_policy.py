@@ -78,7 +78,7 @@ REQUIRED = {
     "README.md": ["ATT10 — Quiet Hours / Focus Profiles / Escalation Policy", "ATT01 ledger", "ATT07"],
     "CHANGELOG.md": ["ATT10 — Quiet Hours / Focus Profiles / Escalation Policy", "verifyAtt10QuietHoursFocusProfilesEscalationPolicy"],
     "build.gradle.kts": ["verifyAtt10QuietHoursFocusProfilesEscalationPolicy", "verifyAtt10WebFocusPolicyTests"],
-    ".devtool.toml": ["verifyAtt10QuietHoursFocusProfilesEscalationPolicy"],
+    ".devtool.toml": ["verifyAttentionRoadmapPostsealCompletion"],
 }
 
 

@@ -25,7 +25,7 @@ def tv_target_section(devtool: str) -> str:
     require(start >= 0, "missing studyflow_tv target")
     if start < 0:
         return ""
-    end = devtool.find("[targets.studyflow_android.validation.phase_profiles.preflight]", start)
+    end = devtool.find("[targets.studyflow_tv_release]", start)
     return devtool[start:] if end < 0 else devtool[start:end]
 
 settings = read("settings.gradle.kts")
@@ -123,14 +123,16 @@ require("tv_app_pair_phone_action" in strings and "tv_home_section_title" in str
 require('tasks.register<Exec>("verifyStudyFlowTvPairingControlCastProtocol")' in build, "missing Gradle TVOV03 verifier task")
 studyflow_tv = tv_target_section(devtool)
 for task in (
-    "verifyStudyFlowTvPairingControlCastProtocol",
-    ":core:tvcontrol:compileKotlin",
+    "verifyStudyFlowTvAllContracts",
     ":core:tvcontrol:test",
-    ":app-tv:compileDebugKotlin",
     ":app-tv:testDebugUnitTest",
     ":app-tv:lintDebug",
 ):
     require(task in studyflow_tv, f"studyflow_tv target must include {task}")
+require('compile = []' in studyflow_tv, "studyflow_tv must let test/package roots own compilation once")
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvPairingControlCastProtocol" in tv_aggregate, "aggregate TV gate must include TVOV03")
 require(":app:" not in studyflow_tv, "studyflow_tv target must not run phone app tasks")
 
 for token in (

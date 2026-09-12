@@ -184,22 +184,27 @@ require_tokens(
     '"verifyRepositoryContracts"',
 )
 devtool = text(".devtool.toml")
-for token in [
-    'instrumentation = "when-device-present"',
-    '"verifyCpov13PublicExamReleaseSeal"',
-    '":app:compileDebugKotlin"',
-    '":app:compileReleaseKotlin"',
-    '":app:processDebugResources"',
-    '":app:processReleaseResources"',
-    '":app:assembleDebug"',
-    '":desktopApp:compileKotlin"',
-    '":core:database:connectedDebugAndroidTest"',
-    '":feature:workspace:connectedDebugAndroidTest"',
-    '":app:connectedReleaseAndroidTest"',
-]:
-    require(token in devtool, f"Devtool final validation is missing {token}")
+import tomllib
+devtool_config = tomllib.loads(devtool)
+android_target = devtool_config["targets"]["studyflow_android"]
+android_tasks = android_target["tasks"]
+android_phases = android_target["validation"]["phases"]
+require(android_target.get("runner") == "android", "Devtool Android target must use the canonical runner")
+require(android_target.get("android", {}).get("instrumentation", {}).get("policy") == "when-device-present", "Devtool instrumentation policy drifted")
+require(android_target.get("validation", {}).get("split_gradle") is False, "Devtool Android validation must coalesce Gradle")
+for phase in ("dependencies", "compile", "resources"):
+    require(android_phases.get(phase) == [], f"redundant Devtool phase must stay disabled: {phase}")
+require(":app:assembleDebug" in android_tasks.get("build", []), "ordinary Devtool validation must assemble Debug")
+require(":desktopApp:test" not in android_tasks.get("build", []), "ordinary Android build must not run Desktop tests")
+require(":core:database:connectedDebugAndroidTest" in android_phases.get("instrumentation", []), "database instrumentation gate missing")
+require(":feature:workspace:connectedDebugAndroidTest" in android_phases.get("instrumentation", []), "workspace instrumentation gate missing")
+require(":app:connectedReleaseAndroidTest" in android_phases.get("instrumentation", []), "release instrumentation gate missing")
+require(android_tasks.get("lint") == [":app:lintDebug", ":app:lintRelease"], "Android lint must be app-level Debug/Release")
+quality_target = devtool_config["targets"].get("studyflow_quality", {})
+require(quality_target.get("tasks", {}).get("lint") == ["verifyFormatting"], "repository-wide formatting must stay available through studyflow_quality")
+require("checkDependencies = true" in text("app/build.gradle.kts"), "app lint must include dependency modules")
 require(
-    'build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]' in devtool,
+    ":app:assembleRelease" not in android_tasks.get("build", []),
     "ordinary Devtool validation must keep signed Release packaging outside its artifact scan",
 )
 for token in (
@@ -208,31 +213,6 @@ for token in (
     '":app:bundleRelease"',
 ):
     require(token in build, f"credentialed final Release gate is missing {token}")
-android_modules = [
-    "core:data",
-    "core:database",
-    "core:designsystem",
-    "core:i18n",
-    "feature:analytics",
-    "feature:dashboard",
-    "feature:library",
-    "feature:plans",
-    "feature:practice",
-    "feature:privacy",
-    "feature:progress",
-    "feature:reminders",
-    "feature:reviews",
-    "feature:schedule",
-    "feature:search",
-    "feature:sessions",
-    "feature:settings",
-    "feature:subjects",
-    "feature:workspace",
-    "app",
-]
-for module in android_modules:
-    require(f'":{module}:lintDebug"' in devtool, f"Debug lint missing for {module}")
-    require(f'":{module}:lintRelease"' in devtool, f"Release lint missing for {module}")
 
 # Existing signed/manual final verdict must stay fail closed rather than being weakened by CPOV13.
 require_tokens(
@@ -246,7 +226,7 @@ require_tokens(
     "scripts/run_final_release_acceptance.sh",
     "exactly one adb device required",
     "The product is still NOT sealed",
-    "verifyFinalReleaseVerdict",
+    "run_target_release_validation.py --mode verdict",
 )
 
 if FAILURES:

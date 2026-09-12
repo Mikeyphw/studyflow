@@ -109,6 +109,7 @@ fun StudyRemindersScreen(
     onNotificationPermissionResult: (Boolean) -> Unit = {},
     onCopyAttentionAuditJson: () -> Unit = {},
     onCopyAttentionAuditCsv: () -> Unit = {},
+    onShareCalendarIcs: () -> Unit = {},
 ) {
     val currentSchedule by schedule.observeSchedule(plan.id).collectAsStateWithLifecycle(
         initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
@@ -168,7 +169,8 @@ fun StudyRemindersScreen(
     val parsedSnooze = snoozeMinutes.toIntOrNull()?.takeIf { it in 5..240 }
     val parsedSessionLead = sessionLeadMinutes.toIntOrNull()?.takeIf { it in 1..30 }
     val parsedExamDays = examCountdownDays.toIntOrNull()?.takeIf { it in 1..60 }
-    val settingsValid = (!quietHoursEnabled || (startMinute != null && endMinute != null && startMinute != endMinute)) &&
+    val settingsValid =
+        (!quietHoursEnabled || (startMinute != null && endMinute != null && startMinute != endMinute)) &&
         parsedLead != null && parsedSummaryMinute != null && parsedMissedDelay != null &&
         parsedSnooze != null && parsedSessionLead != null && parsedExamDays != null
 
@@ -189,7 +191,14 @@ fun StudyRemindersScreen(
         quietHoursStartMinute = if (quietHoursEnabled) startMinute else null,
         quietHoursEndMinute = if (quietHoursEnabled) endMinute else null,
     )
-    val now = remember(currentSchedule, queue, activeSessions, previewSettings, previewPolicy, notificationDeliveryAllowed) {
+    val now = remember(
+        currentSchedule,
+        queue,
+        activeSessions,
+        previewSettings,
+        previewPolicy,
+        notificationDeliveryAllowed,
+    ) {
         System.currentTimeMillis()
     }
     val reminderPlan = remember(currentSchedule, queue, activeSessions, previewSettings, previewPolicy, now) {
@@ -228,8 +237,11 @@ fun StudyRemindersScreen(
                 activeCandidateCount = reminderPlan.activeCandidateCount,
                 dueReviewCount = reminderPlan.widgetSummary.dueReviewCount,
                 missedActivityCount = reminderPlan.widgetSummary.missedActivityCount,
-                plannedActivityCandidateCount = reminderPlan.notificationCandidates.count { it.type == ReminderNotificationType.PLANNED_ACTIVITY },
-                nextCandidateAtEpochMillis = reminderPlan.notificationCandidates.minOfOrNull(ReminderNotificationCandidate::fireAtEpochMillis),
+                plannedActivityCandidateCount = reminderPlan.notificationCandidates.count { candidate ->
+                    candidate.type == ReminderNotificationType.PLANNED_ACTIVITY
+                },
+                nextCandidateAtEpochMillis = reminderPlan.notificationCandidates
+                    .minOfOrNull(ReminderNotificationCandidate::fireAtEpochMillis),
                 lastReconciledAtEpochMillis = runtimeEvidence.lastReconciledAtEpochMillis,
                 lastDeliveredAtEpochMillis = runtimeEvidence.lastDeliveredAtEpochMillis,
                 lastDeliveredOccurrenceId = runtimeEvidence.lastDeliveredOccurrenceId,
@@ -246,7 +258,10 @@ fun StudyRemindersScreen(
                 title = { Text(stringResource(R.string.reminders_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.go_back))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.go_back),
+                        )
                     }
                 },
             )
@@ -377,7 +392,9 @@ fun StudyRemindersScreen(
                         onClick = {
                             val next = current.copy(mode = current.mode.nextAtt10Mode())
                             draftFocusPolicy = draftFocusPolicy.copy(
-                                categoryPolicies = draftFocusPolicy.categoryPolicies.map { if (it.category == category) next else it },
+                                categoryPolicies = draftFocusPolicy.categoryPolicies.map { policy ->
+                                    if (policy.category == category) next else policy
+                                },
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -612,6 +629,16 @@ fun StudyRemindersScreen(
                 }
             }
 
+            StudyFlowSectionCard(title = stringResource(R.string.att09_calendar_export_title)) {
+                Text(
+                    text = stringResource(R.string.att09_calendar_export_description),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(onClick = onShareCalendarIcs) {
+                    Text(stringResource(R.string.att09_share_calendar_ics))
+                }
+            }
+
             StudyFlowSectionCard(title = stringResource(R.string.notification_preview_title)) {
                 if (reminderPlan.notificationCandidates.isEmpty()) {
                     Text(
@@ -830,7 +857,8 @@ private fun ReminderNotificationType.labelRes(): Int = when (this) {
 }
 
 private fun Context.hasPostNotificationsPermission(): Boolean =
-    Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(this, PostNotificationsPermission) == PackageManager.PERMISSION_GRANTED
+    Build.VERSION.SDK_INT < 33 ||
+        ContextCompat.checkSelfPermission(this, PostNotificationsPermission) == PackageManager.PERMISSION_GRANTED
 
 internal fun parseMinuteOfDay(value: String): Int? {
     val match = Regex("^(\\d{2}):(\\d{2})$").matchEntire(value.trim()) ?: return null

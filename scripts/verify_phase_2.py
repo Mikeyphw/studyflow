@@ -269,10 +269,12 @@ try:
     phases = target.get("validation", {}).get("phases", {})
     compile_tasks = phases.get("compile", [])
     unit_tasks = phases.get("unit-test", [])
-    if ":core:database:compileDebugKotlin" not in compile_tasks:
-        failures.append("Devtool compile phase does not include :core:database")
+    if compile_tasks != []:
+        failures.append("Devtool compile phase must be disabled so unit-test/package roots own compilation once")
+    if target.get("validation", {}).get("split_gradle") is not False:
+        failures.append("Devtool Android validation must coalesce Gradle invocations")
     if ":core:database:testDebugUnitTest" not in unit_tasks:
-        failures.append("Devtool unit-test phase does not include :core:database")
+        failures.append("Devtool unit-test phase does not cover :core:database")
 except (OSError, tomllib.TOMLDecodeError) as error:
     failures.append(f"unable to validate .devtool.toml: {error}")
 

@@ -52,9 +52,9 @@ class Att12AttentionReleaseSealTests(unittest.TestCase):
         desktop_bridge = (REPO / "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAttentionDeliveryRouterBridge.kt").read_text(encoding="utf-8")
         desktop_runtime = (REPO / "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAttentionRuntime.kt").read_text(encoding="utf-8")
         self.assertIn("route.deliverable && localDeviceId in route.targetDeviceIds", android_bridge)
-        self.assertIn("AndroidStudyFlowAttentionRouterBridge.isLocalTarget(route)", android_delivery)
+        self.assertIn("AndroidStudyFlowAttentionRouterBridge.isLocalTarget(route, localPeer.deviceId)", android_delivery)
         self.assertIn("route.deliverable && localDeviceId in route.targetDeviceIds", desktop_bridge)
-        self.assertIn("DesktopAttentionDeliveryRouterBridge.isLocalTarget(route)", desktop_runtime)
+        self.assertIn("DesktopAttentionDeliveryRouterBridge.isLocalTarget(route, localPeer.deviceId)", desktop_runtime)
 
     def test_capability_matrix_contains_final_truth_without_stale_att_claims(self):
         matrix = (REPO / "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md").read_text(encoding="utf-8")

@@ -132,6 +132,11 @@
     <string name="reminder_break_completed_title">Pausa concluída</string>
     <string name="reminder_break_completed_body">Pronto para continuar estudando?</string>
 
+    <!-- ATT09 Calendar / Schedule Export Attention -->
+    <string name="att09_calendar_export_title">Exportação de atenção do calendário</string>
+    <string name="att09_calendar_export_description">O ATT09 exporta a agenda canônica do StudyFlow como um arquivo ICS iniciado pelo usuário, com lembretes VALARM; ele nunca cria uma conta de calendário oculta.</string>
+    <string name="att09_share_calendar_ics">Compartilhar calendário (.ics)</string>
+
     <!-- ATT10 Quiet Hours / Focus Profiles / Escalation Policy -->
     <string name="att10_focus_policy_title">Perfil de foco e escalonamento</string>
     <string name="att10_focus_policy_description">O ATT10 aplica horário silencioso e política por categoria sem apagar lembretes. Toque em uma categoria para alternar o comportamento.</string>

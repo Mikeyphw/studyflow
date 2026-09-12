@@ -184,7 +184,7 @@ build = require(
     '"verifyAtt01WebAttentionRuntime"',
     '"verifyAtt01UnifiedAttentionFoundation"',
 )
-config = require(".devtool.toml", "verifyAtt01UnifiedAttentionFoundation")
+config = require(".devtool.toml", "verifyAttentionRoadmapPostsealCompletion")
 
 if errors:
     print("ATT01 unified attention foundation verification FAILED", file=sys.stderr)

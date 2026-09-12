@@ -200,7 +200,10 @@ fun DesktopAnalyticsScreen(
                         "${cleanup?.actionCount ?: 0} action item(s)",
                 )
                 cleanup?.issues?.take(6)?.forEach { issue ->
-                    Text("• ${issue.kind.name.replace('_', ' ')}: ${issue.count} (${issue.severity.name.lowercase()})")
+                    Text(
+                        "• ${issue.kind.name.replace('_', ' ')}: ${issue.count} " +
+                            "(${issue.severity.name.lowercase()})",
+                    )
                 }
                 Text(
                     desktopText(
@@ -330,6 +333,7 @@ fun DesktopSettingsScreen(
     onToggleReminderCategory: (DesktopReminderCategoryPreference) -> Unit,
     onCycleAttentionFocusProfile: () -> Unit,
     onToggleAttentionQuietHours: () -> Unit,
+    onExportAttentionCalendar: () -> Unit,
     linkState: DesktopStudyFlowLinkState?,
     linkQrInput: String,
     linkManualEndpoint: String,
@@ -465,7 +469,8 @@ fun DesktopSettingsScreen(
             Text(
                 "Delivered ${reliability.analytics.deliveredCount} • " +
                     "deferred ${reliability.analytics.deferredCount} • " +
-                    "missed ${reliability.analytics.missedCount} • snoozed ${reliability.analytics.snoozedCount} • " +
+                    "missed ${reliability.analytics.missedCount} • " +
+                    "snoozed ${reliability.analytics.snoozedCount} • " +
                     "dismissed ${reliability.analytics.dismissedCount} • done ${reliability.analytics.doneCount}",
             )
             reliability.platforms.firstOrNull()?.let { platform ->
@@ -507,6 +512,15 @@ fun DesktopSettingsScreen(
                         "export never creates a parallel reminder store.",
                 ),
             )
+            Text(desktopText("ATT09 calendar attention export"), fontWeight = FontWeight.Bold)
+            Text(
+                desktopText(
+                    "Export the canonical StudyFlow schedule as a user-initiated ICS file with VALARM reminders.",
+                ),
+            )
+            OutlinedButton(onClick = onExportAttentionCalendar, enabled = attention.available) {
+                Text(desktopText("Export calendar (.ics)"))
+            }
             Text(desktopText("Reminder categories"), fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
@@ -700,7 +714,10 @@ fun DesktopSettingsScreen(
                     Text(desktopText("No active LAN/manual peers discovered."))
                 } else {
                     linkState.discoveredPeers.forEach { peer ->
-                        Text("${peer.displayName} • ${peer.clientKind} • ${peer.source}", fontWeight = FontWeight.Bold)
+                        Text(
+                            "${peer.displayName} • ${peer.clientKind} • ${peer.source}",
+                            fontWeight = FontWeight.Bold,
+                        )
                         peer.endpoints.forEach { endpoint -> Text("• $endpoint") }
                     }
                 }

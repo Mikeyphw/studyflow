@@ -16,8 +16,9 @@ existing SFLP peer descriptor instead of modifying the protocol-v1 capability go
   tray/system notifications outrank foreground-only surfaces when no client is actively focused.
 - **Explicit target safety.** `targetDeviceIds` prevents accidental broadcast and suppresses
   non-target devices even when they are otherwise capable.
-- **Handoff command.** `StudyFlowAttentionHandoffRequest` is the canonical move-to-device
-  request for TV, Web, Desktop, and Android surfaces.
+- **Handoff request contract.** `StudyFlowAttentionHandoffRequest` is the canonical move-to-device
+  request model for TV, Web, Desktop, and Android surfaces. ATT07 does not define a second
+  transport; dispatch/state transfer remains owned by the generic SFLP handoff/transport layer.
 
 ## Delivered surface wiring
 

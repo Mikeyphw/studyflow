@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
@@ -171,6 +172,7 @@ import com.mikeyphw.studyflow.feature.settings.SyncFoundationScreen
 import com.mikeyphw.studyflow.feature.subjects.StudyContentScreen
 import java.util.UUID
 import java.util.concurrent.CancellationException
+import java.io.File
 import kotlinx.coroutines.launch
 
 private val MediumNavigationWidth = 600.dp
@@ -768,7 +770,10 @@ internal fun StudyFlowNavHost(
                             reminderPolicy = updatedPolicy
                             coroutineScope.launch {
                                 container.manageStudyPlan.updateSettings(updatedSettings)
-                                container.reminderDeliveryCoordinator.updatePolicy(updatedSettings.studyPlanId, updatedPolicy)
+                                container.reminderDeliveryCoordinator.updatePolicy(
+                                    updatedSettings.studyPlanId,
+                                    updatedPolicy,
+                                )
                                 reliabilityRefresh += 1
                             }
                         },
@@ -781,14 +786,20 @@ internal fun StudyFlowNavHost(
                         },
                         onRefreshReliability = {
                             coroutineScope.launch {
-                                container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id, "reliability-refresh")
+                                container.reminderDeliveryCoordinator.reconcilePlan(
+                                    currentPlan.id,
+                                    "reliability-refresh",
+                                )
                                 reliabilityRefresh += 1
                             }
                         },
                         onNotificationPermissionResult = { granted ->
                             if (granted) {
                                 coroutineScope.launch {
-                                    container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id, "notification-permission-granted")
+                                    container.reminderDeliveryCoordinator.reconcilePlan(
+                                        currentPlan.id,
+                                        "notification-permission-granted",
+                                    )
                                     reliabilityRefresh += 1
                                 }
                             }
@@ -806,6 +817,33 @@ internal fun StudyFlowNavHost(
                                 "StudyFlow ATT11 notification audit CSV",
                                 StudyFlowAttentionReliabilityExport.toCsv(attentionReliabilityEvidence),
                             )
+                        },
+                        onShareCalendarIcs = {
+                            coroutineScope.launch {
+                                val feed = container.reminderDeliveryCoordinator.buildCalendarExport(planId)
+                                val exportDir = File(context.cacheDir, "calendar-exports").apply { mkdirs() }
+                                val calendarFile = File(
+                                    exportDir,
+                                    "studyflow-${planId.value.replace(Regex("[^A-Za-z0-9._-]"), "-")}.ics",
+                                ).apply { writeText(feed.icsText, Charsets.UTF_8) }
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${BuildConfig.APPLICATION_ID}.fileprovider",
+                                    calendarFile,
+                                )
+                                val share = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/calendar"
+                                    putExtra(Intent.EXTRA_SUBJECT, feed.preferences.calendarName)
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    clipData = ClipData.newUri(
+                                        context.contentResolver,
+                                        feed.preferences.calendarName,
+                                        uri,
+                                    )
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(Intent.createChooser(share, "Share StudyFlow calendar"))
+                            }
                         },
                         onBack = navController::popBackStack,
                     )

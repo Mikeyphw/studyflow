@@ -43,8 +43,8 @@ if re.search(r"\b(android|room|compose)\b", module_build, re.IGNORECASE):
 require("app/build.gradle.kts", 'implementation(project(":core:diagnostics"))')
 require(
     ".devtool.toml",
-    '":core:diagnostics:compileKotlin"',
-    '":core:diagnostics:compileTestKotlin"',
+    '":core:diagnostics:test"',
+    '":core:diagnostics:test"',
     '":core:diagnostics:test"',
 )
 require(

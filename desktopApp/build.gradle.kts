@@ -50,129 +50,95 @@ tasks.withType<Test>().configureEach {
 }
 
 
-tasks.register<Exec>("verifyDesktopDov12QuestionPracticeExecution") {
+tasks.register("verifyDesktopDov12QuestionPracticeExecution") {
     group = "verification"
-    description = "Verify Desktop DOV12 durable question-practice execution"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov12_question_practice_execution.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov12QuestionPracticeExecution task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov12QuestionPracticeExecution"))
 }
 
-
-tasks.register<Exec>("verifyDesktopDov13MockExamStudio") {
+tasks.register("verifyDesktopDov13MockExamStudio") {
     group = "verification"
-    description = "Verify Desktop DOV13 persistent Mock Exam Studio"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov13_mock_exam_studio.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov13MockExamStudio task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov13MockExamStudio"))
 }
 
-
-tasks.register<Exec>("verifyDesktopDov14ReviewsSrsErrorNotebook") {
+tasks.register("verifyDesktopDov14ReviewsSrsErrorNotebook") {
     group = "verification"
-    description = "Verify Desktop DOV14 persistent Reviews, SRS and Error Notebook"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov14_reviews_srs_error_notebook.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov14ReviewsSrsErrorNotebook task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov14ReviewsSrsErrorNotebook"))
 }
 
-
-tasks.register<Exec>("verifyDesktopDov15LibraryFilesMaterialViewers") {
+tasks.register("verifyDesktopDov15LibraryFilesMaterialViewers") {
     group = "verification"
-    description = "Verify Desktop DOV15 durable Library/files/material viewers"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov15_library_files_material_viewers.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov15LibraryFilesMaterialViewers task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov15LibraryFilesMaterialViewers"))
 }
 
-tasks.register<Exec>("verifyDesktopDov16WritingWorkspace") {
+tasks.register("verifyDesktopDov16WritingWorkspace") {
     group = "verification"
-    description = "Verify Desktop DOV16 Writing Workspace"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov16_writing_workspace.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov16WritingWorkspace task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov16WritingWorkspace"))
 }
 
-
-tasks.register<Exec>("verifyDesktopDov17ContentModesExecution") {
+tasks.register("verifyDesktopDov17ContentModesExecution") {
     group = "verification"
-    description = "Verify Desktop DOV17 content modes and native execution"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov17_content_modes_execution.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov17ContentModesExecution task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov17ContentModesExecution"))
 }
 
-tasks.register<Exec>("verifyDesktopDov18PublicExamParity") {
+tasks.register("verifyDesktopDov18PublicExamParity") {
     group = "verification"
-    description = "Verify Desktop DOV18 Concurso Publico parity"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov18_public_exam_parity.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov18PublicExamParity task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov18PublicExamParity"))
 }
 
-tasks.register<Exec>("verifyDesktopDov19ReadinessCoachingReports") {
+tasks.register("verifyDesktopDov19ReadinessCoachingReports") {
     group = "verification"
-    description = "Verify Desktop DOV19 readiness, coaching, cleanup, reports, runbooks, and sprints"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov19_readiness_coaching_reports.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov19ReadinessCoachingReports task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov19ReadinessCoachingReports"))
 }
 
-
-tasks.register<Exec>("verifyDesktopDov20PortabilityBackupMigration") {
+tasks.register("verifyDesktopDov20PortabilityBackupMigration") {
     group = "verification"
-    description = "Verify Desktop DOV20 portable export/import, encrypted backup/restore, and migration"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov20_portability_backup_migration.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov20PortabilityBackupMigration task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov20PortabilityBackupMigration"))
 }
 
-tasks.register<Exec>("verifyDesktopDov21EnPtBrLocalization") {
+tasks.register("verifyDesktopDov21EnPtBrLocalization") {
     group = "verification"
-    description = "Verify Desktop DOV21 English and pt-BR localization"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov21_en_ptbr_localization.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov21EnPtBrLocalization task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov21EnPtBrLocalization"))
 }
 
-tasks.register<Exec>("verifyDesktopDov22SystemLightDarkAppearance") {
+tasks.register("verifyDesktopDov22SystemLightDarkAppearance") {
     group = "verification"
-    description = "Verify Desktop DOV22 System, Light, and Dark appearance"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov22_system_light_dark_appearance.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov22SystemLightDarkAppearance task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov22SystemLightDarkAppearance"))
 }
 
-tasks.register<Exec>("verifyDesktopDov23NativeDesktopIntegration") {
+tasks.register("verifyDesktopDov23NativeDesktopIntegration") {
     group = "verification"
-    description = "Verify Desktop DOV23 native file, browser, notification, and deep-link integration"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov23_native_desktop_integration.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov23NativeDesktopIntegration task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov23NativeDesktopIntegration"))
 }
 
-tasks.register<Exec>("verifyDesktopDov24FullApplicableParitySeal") {
+tasks.register("verifyDesktopDov24FullApplicableParitySeal") {
     group = "verification"
-    description = "Verify Desktop DOV24 full applicable parity acceptance seal"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_desktop_dov24_full_applicable_parity_seal.py")
+    description = "Compatibility alias for the canonical root verifyDesktopDov24FullApplicableParitySeal task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov24FullApplicableParitySeal"))
 }
 
 tasks.register("verifyDesktopDov20Dov24Batch") {
     group = "verification"
-    description = "Run the terminal Desktop DOV20-DOV24 product seal."
-    dependsOn(
-        "verifyDesktopDov20PortabilityBackupMigration",
-        "verifyDesktopDov21EnPtBrLocalization",
-        "verifyDesktopDov22SystemLightDarkAppearance",
-        "verifyDesktopDov23NativeDesktopIntegration",
-        "verifyDesktopDov24FullApplicableParitySeal",
-        "compileKotlin",
-        "test",
-    )
+    description = "Compatibility alias for the canonical root verifyDesktopDov20Dov24Batch task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov20Dov24Batch"))
 }
 
 tasks.register("verifyDesktopDov16Dov19Batch") {
     group = "verification"
-    description = "Verify Desktop DOV16-DOV19 product batch"
-    dependsOn(
-        "verifyDesktopDov16WritingWorkspace",
-        "verifyDesktopDov17ContentModesExecution",
-        "verifyDesktopDov18PublicExamParity",
-        "verifyDesktopDov19ReadinessCoachingReports",
-        "compileKotlin",
-        "test",
-    )
+    description = "Compatibility alias for the canonical root verifyDesktopDov16Dov19Batch task."
+    dependsOn(rootProject.tasks.named("verifyDesktopDov16Dov19Batch"))
 }
-
 
 tasks.register("verifyDesktopDov12Dov15Batch") {
     group = "verification"
@@ -188,15 +154,15 @@ tasks.register("verifyDesktopDov12Dov15Batch") {
 }
 
 
-tasks.register<Exec>("verifyAtt04DesktopAttentionContracts") {
+tasks.register("verifyAtt04DesktopAttentionContracts") {
     group = "verification"
-    description = "Verify ATT04 Desktop native attention and tray product contracts"
-    workingDir = rootProject.projectDir
-    commandLine("python3", "scripts/verify_att04_desktop_attention_runtime.py")
+    description = "Compatibility alias for the canonical root verifyAtt04DesktopAttentionContracts task."
+    dependsOn(rootProject.tasks.named("verifyAtt04DesktopAttentionContracts"))
 }
 
 tasks.register("verifyAtt04DesktopAttentionRuntime") {
     group = "verification"
-    description = "Compile, test, and verify the ATT04 Desktop attention runtime"
-    dependsOn("verifyAtt04DesktopAttentionContracts", "compileKotlin", "test")
+    description = "Compatibility alias for the canonical root verifyAtt04DesktopAttentionRuntime task."
+    dependsOn(rootProject.tasks.named("verifyAtt04DesktopAttentionRuntime"))
 }
+

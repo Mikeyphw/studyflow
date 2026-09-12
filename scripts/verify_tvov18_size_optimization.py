@@ -102,8 +102,17 @@ for forbidden in (
 require('tasks.register<Exec>("verifyStudyFlowTvSizeOptimization")' in root_gradle, "missing TVOV18 source verifier task")
 require('tasks.register<Exec>("verifyStudyFlowTvOptimizedReleaseArtifact")' in root_gradle, "missing TVOV18 optimized artifact verifier task")
 require('dependsOn(":app-tv:assembleRelease")' in root_gradle, "optimized artifact verifier must build Release")
-for token in ("verifyStudyFlowTvSizeOptimization", "verifyStudyFlowTvOptimizedReleaseArtifact", ":app-tv:lintRelease"):
-    require(token in devtool, f"studyflow_tv target missing TVOV18 validation token: {token}")
+require("verifyStudyFlowTvAllContracts" in devtool, "studyflow_tv target missing aggregate TV contract gate")
+tv_aggregate = root_gradle.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvSizeOptimization" in tv_aggregate, "aggregate TV gate missing TVOV18 source verifier")
+require("verifyStudyFlowTvFinalReleaseSeal" in devtool, "TV release target missing final release seal")
+release_seal = root_gradle.split('tasks.register<Exec>("verifyStudyFlowTvFinalReleaseSeal")', 1)[1]
+release_seal = release_seal.split("tasks.register", 1)[0]
+require("verifyStudyFlowTvOptimizedReleaseArtifact" in release_seal, "TV final release seal must own optimized artifact verifier")
+require('[targets.studyflow_tv_release]' in devtool, "TV release target must exist")
+release_block = devtool.split('[targets.studyflow_tv_release]', 1)[1].split('[targets.studyflow_release]', 1)[0]
+require(':app-tv:lintRelease' in release_block, "TV release target must retain Release lint")
 require("TVOV18  Size optimization, R8, and resource shrinking [implemented]" in roadmap, "roadmap must mark TVOV18 implemented")
 require("TVOV18  Size optimization, R8, and resource shrinking [implemented]" in rules, "working rules must mark TVOV18 implemented")
 require("## TVOV18" in roadmap, "roadmap missing TVOV18 implementation note")

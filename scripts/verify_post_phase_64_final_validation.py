@@ -93,7 +93,7 @@ require(
 
 for token in ("verifyPostPhase64FinalValidationRefresh", "verifyFinalReleaseAutomatedGate"):
     require(token in build, f"Gradle final validation wiring missing {token}")
-require("verifyPostPhase64FinalValidationRefresh" in devtool, "Devtool source test defaults omit final refresh")
+require("verifyStudyFlowAndroidPreflightContracts" in devtool, "Devtool source defaults must retain the aggregate Android preflight gate")
 
 if errors:
     print("POST_PHASE_64_FINAL_VALIDATION_REFRESH: FAILED")

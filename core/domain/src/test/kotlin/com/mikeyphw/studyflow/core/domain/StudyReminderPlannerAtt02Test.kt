@@ -74,11 +74,19 @@ class StudyReminderPlannerAtt02Test {
             activeSessions = listOf(session(startedAt = now, targetMinutes = 45)),
         )
         val timerTypes = result.notificationCandidates
-            .filter { it.type in setOf(ReminderNotificationType.SESSION_ENDING, ReminderNotificationType.SESSION_COMPLETED) }
+            .filter {
+                it.type in setOf(
+                    ReminderNotificationType.SESSION_ENDING,
+                    ReminderNotificationType.SESSION_COMPLETED,
+                )
+            }
             .map { it.type }
             .toSet()
 
-        assertEquals(setOf(ReminderNotificationType.SESSION_ENDING, ReminderNotificationType.SESSION_COMPLETED), timerTypes)
+        assertEquals(
+            setOf(ReminderNotificationType.SESSION_ENDING, ReminderNotificationType.SESSION_COMPLETED),
+            timerTypes,
+        )
     }
 
     @Test
@@ -90,7 +98,11 @@ class StudyReminderPlannerAtt02Test {
         )
 
         assertFalse(result.notificationCandidates.any { it.type == ReminderNotificationType.SESSION_ENDING })
-        assertNotNull(result.notificationCandidates.firstOrNull { it.type == ReminderNotificationType.SESSION_COMPLETED })
+        assertNotNull(
+            result.notificationCandidates.firstOrNull {
+                it.type == ReminderNotificationType.SESSION_COMPLETED
+            },
+        )
     }
 
     @Test

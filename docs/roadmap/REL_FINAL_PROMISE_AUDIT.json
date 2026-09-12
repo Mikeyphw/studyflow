@@ -237,8 +237,22 @@
       "verify_web20_shared_semantic_golden_vectors.py"
     ],
     "post_rel_final_verifiers": [
+      "verify_att01_unified_attention_foundation.py",
+      "verify_att02_android_attention_system.py",
+      "verify_att03_android_widget_suite.py",
+      "verify_att04_desktop_attention_runtime.py",
+      "verify_att05_web_pwa_attention_runtime.py",
+      "verify_att06_tv_attention_experience.py",
+      "verify_att07_cross_device_delivery_router.py",
+      "verify_att08_compact_companion_attention.py",
+      "verify_att09_calendar_schedule_export_attention.py",
+      "verify_att10_quiet_hours_focus_profiles_escalation_policy.py",
+      "verify_att11_notification_reliability_evidence_audit.py",
+      "verify_att12_attention_release_final_seal.py",
+      "verify_attention_roadmap_postseal_completion.py",
       "verify_tv_devtool_android_runner.py",
-      "verify_rel_final_devtool_release_runner.py"
+      "verify_rel_final_devtool_release_runner.py",
+      "verify_studyflow_gradle_task_graph_optimization_v4.py"
     ]
   },
   "roadmap_sources": [

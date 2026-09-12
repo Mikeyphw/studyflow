@@ -156,9 +156,9 @@ def validate_wiring_truth() -> None:
             'commandLine("python3", "scripts/verify_sflp06_07_topology_offline_queue.py")',
         ],
     )
-    config = require_text(".devtool.toml", ["verifySflp06Sflp07TopologyOfflineQueue"])
-    if config.count("verifySflp06Sflp07TopologyOfflineQueue") < 2:
-        fail("SFLP06/SFLP07 verifier must be wired into Android and Desktop shared-link validation lanes")
+    config = require_text(".devtool.toml", ["verifySflp24FinalReleaseSeal"])
+    if config.count("verifySflp24FinalReleaseSeal") < 2:
+        fail("terminal SFLP seal must be wired into normal and resumable validation lanes")
     require_text(
         "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
         [

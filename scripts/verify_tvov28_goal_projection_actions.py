@@ -17,7 +17,9 @@ q("progressRepository.observeGoals" in source,"presentation source must observe 
 q("tvGoalAction" in ui and "tv_progress_goals_title" in ui,"TV Progress UI missing goal actions")
 b=t("build.gradle.kts");d=t(".devtool.toml")
 q('tasks.register<Exec>("verifyStudyFlowTvGoalProjectionActions")' in b,"Gradle task missing")
-q("verifyStudyFlowTvGoalProjectionActions" in d,"Devtool task missing")
+q("verifyStudyFlowTvAllContracts" in d, "Devtool target missing aggregate TV contract gate")
+tv_aggregate = b.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1].split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+q("verifyStudyFlowTvGoalProjectionActions" in tv_aggregate, "aggregate TV contract gate missing verifyStudyFlowTvGoalProjectionActions")
 if F:
  print("TVOV28_GOAL_PROJECTION_ACTIONS: FAIL");[print("-",x) for x in F];raise SystemExit(1)
 print("TVOV28_GOAL_PROJECTION_ACTIONS: PASS")

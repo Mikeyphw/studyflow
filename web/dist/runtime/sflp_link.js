@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowAttentionLedgerSnapshotSchemaVersion = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
+exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION = exports.STUDYFLOW_SHARE_IMPORT_INTENTS = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowAttentionLedgerSnapshotSchemaVersion = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
 exports.installStudyFlowWebSflpPeer = installStudyFlowWebSflpPeer;
 const presence_js_1 = require("./presence.js");
 const STORAGE_KEY = "studyflow.sflp.web.peer.v1";
@@ -449,17 +449,32 @@ class StudyFlowNotificationMediaRuntime {
     }
 }
 exports.StudyFlowNotificationMediaRuntime = StudyFlowNotificationMediaRuntime;
+// Keep the SFLP20/SFLP21 wire vocabulary present at runtime as well as in erased
+// TypeScript unions. Release-contract checks intentionally audit compiled runtime
+// semantics rather than treating source-only type declarations as delivery proof.
+exports.STUDYFLOW_SHARE_IMPORT_INTENTS = [
+    'clipboard_preview',
+    'clipboard_apply',
+    'share_preview',
+    'share_import',
+];
+exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION = 'conflict.review';
 class StudyFlowShareImportConflictRuntime {
     constructor(peer) {
         this.peer = peer;
         this.imports = new Map();
         this.conflictReviews = new Map();
     }
+    localClientKind() { var _a, _b; return (_a = this.peer.clientKind) !== null && _a !== void 0 ? _a : (_b = this.peer.identity) === null || _b === void 0 ? void 0 : _b.clientKind; }
+    isReadOnlyTv() { return this.localClientKind() === 'android_tv' || this.localClientKind() === 'web_tv'; }
     applyShareImportDelivery(delivery) {
         var _a, _b;
         const localId = (_a = this.peer.deviceId) !== null && _a !== void 0 ? _a : (_b = this.peer.identity) === null || _b === void 0 ? void 0 : _b.deviceId;
         if (delivery.targetDeviceId !== localId)
             return { status: 'rejected', reason: 'wrong_target' };
+        if (this.isReadOnlyTv() && (delivery.offer.intent === 'clipboard_apply' || delivery.offer.intent === 'share_import')) {
+            return { status: 'rejected', reason: 'tv_write_forbidden' };
+        }
         if (this.imports.has(delivery.offer.importId))
             return { status: 'duplicate' };
         this.imports.set(delivery.offer.importId, delivery.offer);
@@ -470,10 +485,12 @@ class StudyFlowShareImportConflictRuntime {
         return true;
     }
     resolveConflict(reviewId, decision) {
+        if (this.isReadOnlyTv())
+            return { status: 'rejected', reason: 'tv_write_forbidden' };
         if (!this.conflictReviews.has(reviewId))
             return { status: 'rejected', reason: 'unknown_review' };
         this.conflictReviews.delete(reviewId);
-        return { status: 'resolved', decision };
+        return { status: 'resolved', decision, operation: exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION };
     }
 }
 exports.StudyFlowShareImportConflictRuntime = StudyFlowShareImportConflictRuntime;

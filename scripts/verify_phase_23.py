@@ -117,14 +117,25 @@ require(
     "fresh per-export scope",
     "not persisted or device-bound",
 )
-require(
-    ".devtool.toml",
-    '":core:portability:compileKotlin"',
-    '":core:portability:compileTestKotlin"',
-    '":core:portability:test"',
-    '":feature:privacy:compileDebugKotlin"',
-    '":feature:privacy:lintDebug"',
-)
+try:
+    import tomllib
+    devtool = tomllib.loads((ROOT / ".devtool.toml").read_text(encoding="utf-8"))
+    target = devtool.get("targets", {}).get("studyflow_android", {})
+    phases = target.get("validation", {}).get("phases", {})
+    if phases.get("compile") != []:
+        failures.append("Phase 23 expects the redundant Devtool compile phase to stay disabled")
+    unit_tasks = phases.get("unit-test", [])
+    for task in (":core:portability:test", ":feature:privacy:testDebugUnitTest"):
+        if task not in unit_tasks:
+            failures.append(f"Devtool unit-test phase does not cover {task}")
+    lint_tasks = phases.get("lint", [])
+    if ":app:lintDebug" not in lint_tasks or ":app:lintRelease" not in lint_tasks:
+        failures.append("Devtool app-level lint roots are incomplete")
+    app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
+    if "checkDependencies = true" not in app_build:
+        failures.append("app lint must cover dependent feature modules through checkDependencies")
+except (OSError, tomllib.TOMLDecodeError) as error:
+    failures.append(f"unable to validate optimized Devtool topology: {error}")
 
 
 plans_source = (

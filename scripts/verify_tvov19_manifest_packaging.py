@@ -219,8 +219,20 @@ for token in (
     'tasks.register<Exec>("verifyStudyFlowTvPackagedArtifacts")',
 ):
     require(token in root_gradle, f"TVOV19 Gradle wiring missing {token}")
-for token in ("verifyStudyFlowTvManifestPackaging", "verifyStudyFlowTvTargetIsolation", "verifyStudyFlowTvPackagedArtifacts"):
-    require(token in devtool_text, f"studyflow_tv target missing TVOV19 token: {token}")
+with (ROOT / ".devtool.toml").open("rb") as handle:
+    devtool_config = tomllib.load(handle)
+tv_target = devtool_config.get("targets", {}).get("studyflow_tv", {})
+tv_release_target = devtool_config.get("targets", {}).get("studyflow_tv_release", {})
+require(
+    "verifyStudyFlowTvAllContracts" in repr(tv_target.get("tasks", {}))
+    and "verifyStudyFlowTvAllContracts" in repr(tv_target.get("validation", {}).get("phases", {})),
+    "routine TV target must own TVOV19 source contracts through the aggregate gate",
+)
+require(
+    "verifyStudyFlowTvFinalReleaseSeal" in repr(tv_release_target.get("tasks", {}))
+    and "verifyStudyFlowTvFinalReleaseSeal" in repr(tv_release_target.get("validation", {}).get("phases", {})),
+    "TV release target must own packaged-artifact verification through the final release seal",
+)
 
 check_target_isolation()
 require("TVOV19  Android TV manifest, packaging, and Devtool TV target hardening [implemented]" in roadmap, "roadmap must mark TVOV19 implemented")

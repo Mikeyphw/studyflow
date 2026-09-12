@@ -19,7 +19,9 @@ for token in ("renderLibraryMaterialViewer", "StudyFlowTvMaterialViewer.open", "
     req(token in activity, f"Activity viewer integration missing {token}")
 req("viewer = StudyFlowTvMaterialViewerPresentation" in projector, "phone projector must emit viewer descriptors")
 req('tasks.register<Exec>("verifyStudyFlowTvFullNativeMaterialViewer")' in build, "Gradle task missing")
-req("verifyStudyFlowTvFullNativeMaterialViewer" in dev, "Devtool target missing TVOV27 task")
+req("verifyStudyFlowTvAllContracts" in dev, "Devtool target missing aggregate TV contract gate")
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1].split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+req("verifyStudyFlowTvFullNativeMaterialViewer" in tv_aggregate, "aggregate TV contract gate missing verifyStudyFlowTvFullNativeMaterialViewer")
 req("TVOV27" in text("TVOV27_ANDROID_TV_FULL_NATIVE_MATERIAL_VIEWER.md"), "TVOV27 implementation note missing")
 if FAIL:
     print("TVOV27_FULL_NATIVE_MATERIAL_VIEWER: FAIL")

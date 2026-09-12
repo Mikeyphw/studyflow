@@ -65,7 +65,8 @@ for forbidden in [
         fail(f"app-tv dependency budget regressed with {forbidden}")
 
 require(root_gradle, "verifyStudyFlowTvNavigationShell", "root Gradle task")
-require(devtool, "verifyStudyFlowTvNavigationShell", "studyflow_tv Devtool target")
+require(devtool, "verifyStudyFlowTvAllContracts", "studyflow_tv aggregate contract gate")
+require(root_gradle.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1].split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0], "verifyStudyFlowTvNavigationShell", "aggregate TV contract ownership")
 require(roadmap, "TVOV05  TV navigation shell [implemented]", "roadmap status")
 require(note, "TVOV05", "implementation note")
 require(quality, "navigation shell", "quality contract")

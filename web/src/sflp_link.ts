@@ -582,6 +582,17 @@ export class StudyFlowNotificationMediaRuntime {
 export type StudyFlowShareImportIntent = 'clipboard_preview' | 'clipboard_apply' | 'share_preview' | 'share_import'
 export type StudyFlowConflictResolutionKind = 'keep_local' | 'take_remote' | 'merge' | 'skip'
 
+// Keep the SFLP20/SFLP21 wire vocabulary present at runtime as well as in erased
+// TypeScript unions. Release-contract checks intentionally audit compiled runtime
+// semantics rather than treating source-only type declarations as delivery proof.
+export const STUDYFLOW_SHARE_IMPORT_INTENTS: readonly StudyFlowShareImportIntent[] = [
+  'clipboard_preview',
+  'clipboard_apply',
+  'share_preview',
+  'share_import',
+] as const
+export const STUDYFLOW_CONFLICT_REVIEW_OPERATION = 'conflict.review' as const
+
 export interface StudyFlowShareImportOffer {
   importId: string
   workspaceId: string
@@ -610,9 +621,14 @@ export class StudyFlowShareImportConflictRuntime {
   private imports = new Map<string, StudyFlowShareImportOffer>()
   private conflictReviews = new Map<string, StudyFlowConflictReviewModel>()
   constructor(private readonly peer: { deviceId?: string; identity?: { deviceId: string; clientKind: string; capabilities: string[] }; capabilities?: string[]; clientKind?: string }) {}
+  private localClientKind(): string | undefined { return this.peer.clientKind ?? this.peer.identity?.clientKind }
+  private isReadOnlyTv(): boolean { return this.localClientKind() === 'android_tv' || this.localClientKind() === 'web_tv' }
   applyShareImportDelivery(delivery: { sourceDeviceId: string; targetDeviceId: string; sequence: number; offer: StudyFlowShareImportOffer }) {
     const localId = this.peer.deviceId ?? this.peer.identity?.deviceId
     if (delivery.targetDeviceId !== localId) return { status: 'rejected', reason: 'wrong_target' }
+    if (this.isReadOnlyTv() && (delivery.offer.intent === 'clipboard_apply' || delivery.offer.intent === 'share_import')) {
+      return { status: 'rejected', reason: 'tv_write_forbidden' }
+    }
     if (this.imports.has(delivery.offer.importId)) return { status: 'duplicate' }
     this.imports.set(delivery.offer.importId, delivery.offer)
     return { status: 'accepted' }
@@ -622,9 +638,10 @@ export class StudyFlowShareImportConflictRuntime {
     return true
   }
   resolveConflict(reviewId: string, decision: StudyFlowConflictResolutionKind) {
+    if (this.isReadOnlyTv()) return { status: 'rejected', reason: 'tv_write_forbidden' }
     if (!this.conflictReviews.has(reviewId)) return { status: 'rejected', reason: 'unknown_review' }
     this.conflictReviews.delete(reviewId)
-    return { status: 'resolved', decision }
+    return { status: 'resolved', decision, operation: STUDYFLOW_CONFLICT_REVIEW_OPERATION }
   }
 }
 

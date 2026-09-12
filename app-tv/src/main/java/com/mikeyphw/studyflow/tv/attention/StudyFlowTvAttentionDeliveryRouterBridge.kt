@@ -14,49 +14,40 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliverySurface
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceAvailability
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceCapability
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionRoutingContext
-import com.mikeyphw.studyflow.core.link.StudyFlowClientProfiles
-import com.mikeyphw.studyflow.core.link.StudyFlowDeviceId
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkPeerDescriptor
 
-private const val AndroidTvAttentionDeviceId = "android-tv-local"
-
 object StudyFlowTvAttentionDeliveryRouterBridge {
-    val localDeviceId: StudyFlowDeviceId = StudyFlowDeviceId(AndroidTvAttentionDeviceId)
+    fun localForegroundCapability(
+        localPeer: StudyFlowLinkPeerDescriptor,
+        nowEpochMillis: Long,
+    ): StudyFlowAttentionDeviceCapability = StudyFlowAttentionDeviceCapability(
+        peer = localPeer,
+        availability = StudyFlowAttentionDeviceAvailability.FOREGROUND,
+        deliverySurfaces = listOf(
+            StudyFlowAttentionDeliverySurface.FOREGROUND_BANNER,
+            StudyFlowAttentionDeliverySurface.LEDGER_ONLY,
+        ),
+        foregroundActive = true,
+        notificationPermissionGranted = false,
+        lastSeenAtEpochMillis = nowEpochMillis,
+    )
 
-    fun localForegroundCapability(nowEpochMillis: Long): StudyFlowAttentionDeviceCapability =
-        StudyFlowAttentionDeviceCapability(
-            peer = StudyFlowLinkPeerDescriptor(
-                deviceId = localDeviceId,
-                displayName = "StudyFlow TV",
-                clientKind = StudyFlowLinkClientKind.ANDROID_TV,
-                capabilities = StudyFlowClientProfiles.capabilitiesFor(StudyFlowLinkClientKind.ANDROID_TV),
-            ),
-            availability = StudyFlowAttentionDeviceAvailability.FOREGROUND,
-            deliverySurfaces = listOf(
-                StudyFlowAttentionDeliverySurface.FOREGROUND_BANNER,
-                StudyFlowAttentionDeliverySurface.LEDGER_ONLY,
-            ),
-            foregroundActive = true,
-            notificationPermissionGranted = false,
-            lastSeenAtEpochMillis = nowEpochMillis,
-        )
-
-    fun foregroundRoutingContext(nowEpochMillis: Long): StudyFlowAttentionRoutingContext =
+    fun foregroundRoutingContext(localPeer: StudyFlowLinkPeerDescriptor): StudyFlowAttentionRoutingContext =
         StudyFlowAttentionRoutingContext(
-            localDeviceId = localDeviceId,
-            foregroundDeviceId = localDeviceId,
+            localDeviceId = localPeer.deviceId,
+            foregroundDeviceId = localPeer.deviceId,
             staleAfterMillis = 60_000L,
             allowTvForegroundOwners = true,
         )
 
-
     fun reliabilityProjection(
         ledger: StudyFlowAttentionLedgerSnapshot,
+        localPeer: StudyFlowLinkPeerDescriptor,
         nowEpochMillis: Long,
     ): StudyFlowAttentionReliabilityEvidenceSnapshot = StudyFlowAttentionReliabilityAnalyzer.analyze(
         ledger = ledger,
-        devices = listOf(localForegroundCapability(nowEpochMillis)),
+        devices = listOf(localForegroundCapability(localPeer, nowEpochMillis)),
         nowEpochMillis = nowEpochMillis,
     )
 
@@ -83,9 +74,23 @@ object StudyFlowTvAttentionDeliveryRouterBridge {
         )
     }
 
+    fun routeTargetedDelivery(
+        occurrence: StudyFlowAttentionOccurrence,
+        localPeer: StudyFlowLinkPeerDescriptor,
+        nowEpochMillis: Long,
+        ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
+    ): StudyFlowAttentionDeliveryRoute = router().route(
+        occurrence = occurrence.copy(targetDeviceIds = listOf(localPeer.deviceId)),
+        devices = listOf(localForegroundCapability(localPeer, nowEpochMillis)),
+        nowEpochMillis = nowEpochMillis,
+        context = foregroundRoutingContext(localPeer),
+        ledgerEntry = ledgerEntry,
+    )
+
     fun routeWithPolicy(
         occurrence: StudyFlowAttentionOccurrence,
         devices: List<StudyFlowAttentionDeviceCapability>,
+        localPeer: StudyFlowLinkPeerDescriptor,
         policy: StudyFlowAttentionFocusPolicy,
         nowEpochMillis: Long,
         ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
@@ -94,7 +99,7 @@ object StudyFlowTvAttentionDeliveryRouterBridge {
         devices = devices,
         nowEpochMillis = nowEpochMillis,
         focusPolicy = policy,
-        context = foregroundRoutingContext(nowEpochMillis),
+        context = foregroundRoutingContext(localPeer),
         ledgerEntry = ledgerEntry,
         localClientKind = StudyFlowLinkClientKind.ANDROID_TV,
     )
@@ -110,4 +115,3 @@ data class StudyFlowTvAttentionFocusProjection(
     val remoteControlRequired: Boolean,
     val explanation: String,
 )
-

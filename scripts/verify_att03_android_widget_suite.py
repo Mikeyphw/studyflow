@@ -53,7 +53,7 @@ require("app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetAtt03Sou
 require("ATT03_ANDROID_WIDGET_SUITE_2_0.md", "five widget modes", "notification permission", "Migration")
 require("docs/product/ANDROID_WIDGET_SUITE.md", "Today", "Next", "Reviews", "Session", "Compact")
 require("build.gradle.kts", "verifyAtt03AndroidWidgetContracts", "verifyAtt03AndroidWidgetSuite")
-require(".devtool.toml", '"verifyAtt03AndroidWidgetSuite"')
+require(".devtool.toml", '"verifyAttentionRoadmapPostsealCompletion"')
 
 for xml in [manifest, info, "app/src/main/res/layout/widget_configure.xml", "app/src/main/res/layout/widget_today.xml", "app/src/main/res/layout/widget_today_preview.xml", "app/src/main/res/values/strings.xml", "app/src/main/res/values-pt-rBR/strings.xml"]:
     try:

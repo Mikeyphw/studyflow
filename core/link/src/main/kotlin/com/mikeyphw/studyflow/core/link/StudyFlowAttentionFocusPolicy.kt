@@ -183,7 +183,10 @@ object StudyFlowAttentionFocusPolicyEngine {
         val quiet = policy.quietWindow?.takeIf { it.enabled }
         val inQuiet = quiet?.contains(nowEpochMillis, occurrence.timezoneId) == true
         val quietBypass = categoryPolicy.bypassQuietHours ||
-            (policy.allowTimeSensitiveQuietBypass && occurrence.priority == StudyFlowAttentionPriority.TIME_SENSITIVE) ||
+            (
+                policy.allowTimeSensitiveQuietBypass &&
+                    occurrence.priority == StudyFlowAttentionPriority.TIME_SENSITIVE
+            ) ||
             (policy.allowHighPriorityQuietBypass && occurrence.priority == StudyFlowAttentionPriority.HIGH)
 
         if (inQuiet && !quietBypass) {
@@ -196,7 +199,8 @@ object StudyFlowAttentionFocusPolicyEngine {
                     StudyFlowAttentionEscalationMode.SILENT -> StudyFlowAttentionPolicyOutcome.SILENT_DELIVERY
                     StudyFlowAttentionEscalationMode.COMPACT_ONLY -> StudyFlowAttentionPolicyOutcome.COMPACT_ONLY
                     StudyFlowAttentionEscalationMode.ROUTE_TO_PHONE -> StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE
-                    StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION -> StudyFlowAttentionPolicyOutcome.REQUIRE_USER_ACTION
+                    StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION ->
+                        StudyFlowAttentionPolicyOutcome.REQUIRE_USER_ACTION
                     else -> StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END
                 }
             }
@@ -207,7 +211,13 @@ object StudyFlowAttentionFocusPolicyEngine {
                 occurrence, policy, nowEpochMillis, quietOutcome,
                 deferredUntil = deferredUntil,
                 quietHoursActive = true,
-                explanation = "Quiet hours are active in ${activeQuiet.timezoneId ?: occurrence.timezoneId ?: "UTC"}; ATT10 applied ${quietOutcome.name.lowercase()}.",
+                explanation = buildString {
+                    append("Quiet hours are active in ")
+                    append(activeQuiet.timezoneId ?: occurrence.timezoneId ?: "UTC")
+                    append("; ATT10 applied ")
+                    append(quietOutcome.name.lowercase())
+                    append('.')
+                },
             )
         }
 
@@ -219,21 +229,35 @@ object StudyFlowAttentionFocusPolicyEngine {
                 StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE
             policy.profile == StudyFlowAttentionFocusProfile.TRAVEL_OFFLINE ->
                 StudyFlowAttentionPolicyOutcome.COMPACT_ONLY
-            policy.profile == StudyFlowAttentionFocusProfile.EXAM_MODE && occurrence.category == StudyFlowAttentionCategory.EXAM_COUNTDOWN ->
+            policy.profile == StudyFlowAttentionFocusProfile.EXAM_MODE &&
+                occurrence.category == StudyFlowAttentionCategory.EXAM_COUNTDOWN ->
                 StudyFlowAttentionPolicyOutcome.REQUIRE_USER_ACTION
-            categoryPolicy.mode == StudyFlowAttentionEscalationMode.SILENT -> StudyFlowAttentionPolicyOutcome.SILENT_DELIVERY
-            categoryPolicy.mode == StudyFlowAttentionEscalationMode.COMPACT_ONLY -> StudyFlowAttentionPolicyOutcome.COMPACT_ONLY
-            categoryPolicy.mode == StudyFlowAttentionEscalationMode.ROUTE_TO_PHONE -> StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE
+            categoryPolicy.mode == StudyFlowAttentionEscalationMode.SILENT ->
+                StudyFlowAttentionPolicyOutcome.SILENT_DELIVERY
+            categoryPolicy.mode == StudyFlowAttentionEscalationMode.COMPACT_ONLY ->
+                StudyFlowAttentionPolicyOutcome.COMPACT_ONLY
+            categoryPolicy.mode == StudyFlowAttentionEscalationMode.ROUTE_TO_PHONE ->
+                StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE
             categoryPolicy.mode == StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED &&
-                nowEpochMillis >= occurrence.originalScheduledAtEpochMillis + categoryPolicy.mirrorAfterMinutes * 60_000L ->
+                nowEpochMillis >=
+                occurrence.originalScheduledAtEpochMillis + categoryPolicy.mirrorAfterMinutes * 60_000L ->
                 StudyFlowAttentionPolicyOutcome.ESCALATE_MIRROR
-            categoryPolicy.mode == StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION -> StudyFlowAttentionPolicyOutcome.REQUIRE_USER_ACTION
+            categoryPolicy.mode == StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION ->
+                StudyFlowAttentionPolicyOutcome.REQUIRE_USER_ACTION
             categoryPolicy.mode == StudyFlowAttentionEscalationMode.DEFER -> StudyFlowAttentionPolicyOutcome.DELIVER_NOW
             else -> StudyFlowAttentionPolicyOutcome.DELIVER_NOW
         }
         return decision(
             occurrence, policy, nowEpochMillis, outcome,
-            explanation = "ATT10 ${policy.profile.name.lowercase()} profile evaluated ${occurrence.category.name.lowercase()} as ${outcome.name.lowercase()}.",
+            explanation = buildString {
+                append("ATT10 ")
+                append(policy.profile.name.lowercase())
+                append(" profile evaluated ")
+                append(occurrence.category.name.lowercase())
+                append(" as ")
+                append(outcome.name.lowercase())
+                append('.')
+            },
         )
     }
 
@@ -246,7 +270,11 @@ object StudyFlowAttentionFocusPolicyEngine {
             StudyFlowAttentionFocusProfile.EXAM_MODE -> when (category) {
                 StudyFlowAttentionCategory.EXAM_COUNTDOWN, StudyFlowAttentionCategory.DUE_REVIEW,
                 StudyFlowAttentionCategory.PLANNED_STUDY -> base.copy(
-                    mode = if (category == StudyFlowAttentionCategory.EXAM_COUNTDOWN) StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION else StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED,
+                    mode = if (category == StudyFlowAttentionCategory.EXAM_COUNTDOWN) {
+                        StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION
+                    } else {
+                        StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED
+                    },
                     bypassQuietHours = category == StudyFlowAttentionCategory.EXAM_COUNTDOWN,
                 )
                 else -> base
@@ -257,8 +285,10 @@ object StudyFlowAttentionFocusPolicyEngine {
                     StudyFlowAttentionCategory.PLAN_WARNING,
                 )) base.copy(mode = StudyFlowAttentionEscalationMode.SILENT) else base
             StudyFlowAttentionFocusProfile.SLEEP_MODE -> base.copy(mode = StudyFlowAttentionEscalationMode.DEFER)
-            StudyFlowAttentionFocusProfile.TRAVEL_OFFLINE -> base.copy(mode = StudyFlowAttentionEscalationMode.COMPACT_ONLY)
-            StudyFlowAttentionFocusProfile.MINIMAL_TV -> base.copy(mode = StudyFlowAttentionEscalationMode.ROUTE_TO_PHONE)
+            StudyFlowAttentionFocusProfile.TRAVEL_OFFLINE ->
+                base.copy(mode = StudyFlowAttentionEscalationMode.COMPACT_ONLY)
+            StudyFlowAttentionFocusProfile.MINIMAL_TV ->
+                base.copy(mode = StudyFlowAttentionEscalationMode.ROUTE_TO_PHONE)
             StudyFlowAttentionFocusProfile.BALANCED -> base
         }
     }
@@ -281,23 +311,63 @@ object StudyFlowAttentionFocusPolicyEngine {
         deliverSilently = outcome == StudyFlowAttentionPolicyOutcome.SILENT_DELIVERY,
         compactOnly = outcome == StudyFlowAttentionPolicyOutcome.COMPACT_ONLY,
         preferPhone = outcome == StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE,
-        requestedMirrorCount = if (outcome == StudyFlowAttentionPolicyOutcome.ESCALATE_MIRROR) policy.maxEscalationMirrors else 0,
+        requestedMirrorCount = if (outcome == StudyFlowAttentionPolicyOutcome.ESCALATE_MIRROR) {
+            policy.maxEscalationMirrors
+        } else {
+            0
+        },
         requiresUserAction = outcome == StudyFlowAttentionPolicyOutcome.REQUIRE_USER_ACTION,
         explanation = explanation,
     )
 }
 
 fun defaultAttentionEscalationPolicies(): List<StudyFlowAttentionCategoryEscalationPolicy> = listOf(
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.PLANNED_STUDY, StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED, mirrorAfterMinutes = 15),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.DUE_REVIEW, StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED, mirrorAfterMinutes = 30),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.MISSED_ACTIVITY, StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED, mirrorAfterMinutes = 20),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.EXAM_COUNTDOWN, StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION, bypassQuietHours = true),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.DAILY_SUMMARY, StudyFlowAttentionEscalationMode.SILENT),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.SESSION_ENDING, StudyFlowAttentionEscalationMode.NORMAL, bypassQuietHours = true),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.SESSION_COMPLETED, StudyFlowAttentionEscalationMode.NORMAL, bypassQuietHours = true),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.SCHEDULE_CHANGE, StudyFlowAttentionEscalationMode.SILENT),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.PLAN_WARNING, StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION),
-    StudyFlowAttentionCategoryEscalationPolicy(StudyFlowAttentionCategory.SYNC_ATTENTION, StudyFlowAttentionEscalationMode.COMPACT_ONLY),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.PLANNED_STUDY,
+        StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED,
+        mirrorAfterMinutes = 15,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.DUE_REVIEW,
+        StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED,
+        mirrorAfterMinutes = 30,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.MISSED_ACTIVITY,
+        StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED,
+        mirrorAfterMinutes = 20,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.EXAM_COUNTDOWN,
+        StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION,
+        bypassQuietHours = true,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.DAILY_SUMMARY,
+        StudyFlowAttentionEscalationMode.SILENT,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.SESSION_ENDING,
+        StudyFlowAttentionEscalationMode.NORMAL,
+        bypassQuietHours = true,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.SESSION_COMPLETED,
+        StudyFlowAttentionEscalationMode.NORMAL,
+        bypassQuietHours = true,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.SCHEDULE_CHANGE,
+        StudyFlowAttentionEscalationMode.SILENT,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.PLAN_WARNING,
+        StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION,
+    ),
+    StudyFlowAttentionCategoryEscalationPolicy(
+        StudyFlowAttentionCategory.SYNC_ATTENTION,
+        StudyFlowAttentionEscalationMode.COMPACT_ONLY,
+    ),
 )
 
 internal fun StudyFlowAttentionDeliveryState.att10SuppressesRedelivery(): Boolean = when (this) {

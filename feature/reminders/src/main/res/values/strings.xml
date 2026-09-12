@@ -128,6 +128,11 @@
     <string name="reminder_break_completed_title">Break complete</string>
     <string name="reminder_break_completed_body">Ready to continue studying?</string>
 
+    <!-- ATT09 Calendar / Schedule Export Attention -->
+    <string name="att09_calendar_export_title">Calendar attention export</string>
+    <string name="att09_calendar_export_description">ATT09 exports the canonical StudyFlow schedule as a user-initiated ICS file with VALARM reminders; it never creates a hidden calendar account.</string>
+    <string name="att09_share_calendar_ics">Share calendar (.ics)</string>
+
     <!-- ATT10 Quiet Hours / Focus Profiles / Escalation Policy -->
     <string name="att10_focus_policy_title">Focus profile and escalation</string>
     <string name="att10_focus_policy_description">ATT10 applies quiet hours and per-category delivery policy without deleting reminders. Tap a category to cycle its escalation behavior.</string>

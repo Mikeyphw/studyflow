@@ -96,6 +96,7 @@ fun StudyFlowDesktopApp(
                             onToggleReminderCategory = appState::toggleDesktopReminderCategory,
                             onCycleAttentionFocusProfile = appState::cycleDesktopAttentionFocusProfile,
                             onToggleAttentionQuietHours = appState::toggleDesktopAttentionQuietHours,
+                            onExportAttentionCalendar = appState::exportDesktopAttentionCalendar,
                             linkState = appState.linkState(),
                             linkQrInput = appState.linkQrInput,
                             linkManualEndpoint = appState.linkManualEndpoint,

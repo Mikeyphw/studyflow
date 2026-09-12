@@ -312,9 +312,9 @@ def validate_wiring_truth() -> None:
             'commandLine("python3", "scripts/verify_sflp08_09_android_desktop_integration.py")',
         ],
     )
-    config = require_text(".devtool.toml", ["verifySflp08Sflp09AndroidDesktopIntegration"])
-    if config.count('"verifySflp08Sflp09AndroidDesktopIntegration"') < 2:
-        fail("SFLP08/SFLP09 verifier must remain visible in Android and Desktop validation lanes")
+    config = require_text(".devtool.toml", ["verifySflp24FinalReleaseSeal"])
+    if config.count('"verifySflp24FinalReleaseSeal"') < 2:
+        fail("terminal SFLP seal must remain visible in normal and resumable validation lanes")
     require_text(
         "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
         [

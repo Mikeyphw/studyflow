@@ -16,8 +16,8 @@ def validate_contract()->list[str]:
     try:data=tomllib.loads((ROOT/'.devtool.toml').read_text(encoding='utf-8'))
     except Exception as exc:return [f'.devtool.toml invalid: {exc}']
     target=data.get('targets',{}).get('studyflow_web',{})
-    _require(e,target.get('type')=='node','studyflow_web must remain a Node target'); _require(e,target.get('root')=='web','studyflow_web root must remain web'); _require(e,target.get('execution_environment')=='native-termux','studyflow_web must remain native-termux'); _require(e,'tasks' not in target,'web target must not define custom task overrides')
-    v=target.get('validation',{}); _require(e,v.get('max_workers')==1,'web validation max_workers must remain 1'); _require(e,v.get('cpu_limit')==1,'web validation cpu_limit must remain 1'); _require(e,v.get('parallel') is False,'web validation parallel must remain false')
+    _require(e,target.get('runner')=='node','studyflow_web must use the canonical Node runner'); _require(e,target.get('platform')=='web','studyflow_web platform must remain web'); _require(e,target.get('root')=='web','studyflow_web root must remain web'); _require(e,target.get('execution_environment')=='native-termux','studyflow_web must remain native-termux'); _require(e,'tasks' not in target,'web target must not define custom task overrides')
+    v=target.get('validation',{}); _require(e,v.get('max_workers')==2,'web validation max_workers must remain 2'); _require(e,v.get('cpu_limit')==2,'web validation cpu_limit must remain 2'); _require(e,v.get('parallel') is True,'web validation parallel must remain enabled')
     try:pkg=json.loads((WEB/'package.json').read_text()); lock=json.loads((WEB/'package-lock.json').read_text())
     except Exception as exc:return e+[f'package metadata invalid: {exc}']
     _require(e,pkg.get('private') is True,'web package must remain private')

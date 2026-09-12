@@ -73,12 +73,15 @@ for token in (
 require("paired phone-to-TV control/cast contract" in changelog, "CHANGELOG missing control/cast entry")
 require('tasks.register<Exec>("verifyStudyFlowTvControlCast")' in build, "missing Gradle control/cast verifier task")
 require(
-    "verifyStudyFlowTvControlCast" in toml_section(devtool, "targets.studyflow_tv.tasks"),
-    "studyflow_tv tasks missing control/cast verifier",
+    "verifyStudyFlowTvAllContracts" in toml_section(devtool, "targets.studyflow_tv.tasks"),
+    "studyflow_tv tasks missing aggregate TV contract gate",
 )
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvControlCast" in tv_aggregate, "aggregate TV gate missing control/cast verifier")
 require(
-    "verifyStudyFlowTvControlCast" in toml_section(devtool, "targets.studyflow_tv.validation.phases"),
-    "studyflow_tv phases missing control/cast verifier",
+    "verifyStudyFlowTvAllContracts" in toml_section(devtool, "targets.studyflow_tv.validation.phases"),
+    "studyflow_tv phases must run the aggregate TV contract gate",
 )
 
 for forbidden in (

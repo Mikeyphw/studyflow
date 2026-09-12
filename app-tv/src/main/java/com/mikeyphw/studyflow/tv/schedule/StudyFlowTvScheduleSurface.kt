@@ -51,6 +51,8 @@ data class StudyFlowTvScheduleItem(
     val destination: StudyFlowTvDestination,
     val row: Int,
     val column: Int,
+    val scheduledStartEpochMillis: Long? = null,
+    val plannedDurationMinutes: Int? = null,
 ) {
     init {
         require(sourceId.isNotBlank()) { "TV schedule source id must not be blank." }
@@ -58,6 +60,12 @@ data class StudyFlowTvScheduleItem(
         require(timeLabel.isNotBlank()) { "TV schedule item time label must not be blank." }
         require(row >= 0) { "TV schedule item row must be non-negative." }
         require(column >= 0) { "TV schedule item column must be non-negative." }
+        require(scheduledStartEpochMillis == null || scheduledStartEpochMillis >= 0L) {
+            "TV schedule start must not be negative."
+        }
+        require(plannedDurationMinutes == null || plannedDurationMinutes > 0) {
+            "TV schedule duration must be positive."
+        }
         require(destination != StudyFlowTvDestination.SETTINGS) { "TV schedule must not route to settings as study work." }
     }
 }

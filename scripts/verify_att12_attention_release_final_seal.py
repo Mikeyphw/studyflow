@@ -7,6 +7,7 @@ ATT12 exists because a route/model can be correct while an actual platform call 
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +24,10 @@ def require(path: str, *tokens: str) -> str:
     for token in tokens:
         assert token in data, f"{path}: missing {token!r}"
     return data
+
+
+def fail(message: str) -> None:
+    raise AssertionError(message)
 
 
 def reject(path: str, *tokens: str) -> str:
@@ -151,7 +156,7 @@ require(
 )
 require(
     "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
-    "AndroidStudyFlowAttentionRouterBridge.isLocalTarget(route)",
+    "AndroidStudyFlowAttentionRouterBridge.isLocalTarget(route, localPeer.deviceId)",
 )
 require(
     "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAttentionDeliveryRouterBridge.kt",
@@ -160,7 +165,7 @@ require(
 )
 require(
     "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAttentionRuntime.kt",
-    "DesktopAttentionDeliveryRouterBridge.isLocalTarget(route)",
+    "DesktopAttentionDeliveryRouterBridge.isLocalTarget(route, localPeer.deviceId)",
 )
 require(
     "web/src/attention_router.ts",
@@ -172,6 +177,24 @@ require(
     "studyFlowAttentionRouteTargetsDevice(route, this.peer.identity.deviceId)",
     "explicitTargets.includes(this.peer.identity.deviceId)",
 )
+require(
+    "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowAttentionTopologyProjection.kt",
+    "StudyFlowAttentionWorkspace",
+    "StudyFlowAttentionTopologyProjector",
+    "trustedPeers",
+    "presenceViews",
+)
+require(
+    "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt",
+    "StudyFlowNotificationMediaMessageNames.NotificationDeliver",
+    "notificationDeliveryHandler",
+    "fun deliverNotification",
+)
+require(
+    "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvActivity.kt",
+    "setNotificationDeliveryHandler",
+    "tvAttentionRuntime.ingest(delivery)",
+)
 
 # ATT08 — compact surfaces remain parent-owned, privacy-safe projections.
 require(
@@ -182,6 +205,10 @@ require(
 )
 require("ATT08_COMPACT_COMPANION_ATTENTION.md", "phone-owned", "Sensitive-text hiding", "mirrors attached to a capable parent device")
 require("web/src/react/App.tsx", "Compact companion surface")
+require("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt", "AndroidCompactCompanionAttentionBridge.projectPhoneOwnedCompanions")
+require("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAttentionRuntime.kt", "DesktopCompactCompanionAttentionBridge.projectMiniDashboard")
+require("app-tv/src/main/java/com/mikeyphw/studyflow/tv/attention/StudyFlowTvAttentionRuntime.kt", "StudyFlowTvCompactCompanionBridge.projectForegroundOverlay")
+require("app/src/main/AndroidManifest.xml", "StudyFlowAttentionTileService", "android.service.quicksettings.action.QS_TILE")
 
 # ATT09 — portable calendar attention export, privacy and TV preview-only truth.
 require(
@@ -192,6 +219,10 @@ require(
 )
 require("ATT09_CALENDAR_SCHEDULE_EXPORT_ATTENTION.md", "user-initiated", "busy-only")
 require("web/src/react/App.tsx", "Calendar export")
+require("app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt", "AndroidStudyFlowCalendarAttentionBridge().buildExport")
+require("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt", "buildCalendarExport", "text/calendar")
+require("desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAttentionRuntime.kt", "DesktopCalendarAttentionExportBridge", "Files.writeString")
+require("app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvActivity.kt", "StudyFlowTvCalendarAttentionBridge().preview", "ATT09 calendar preview")
 
 # ATT10 — focus-policy profiles/outcomes + canonical policy audit.
 require(
@@ -203,6 +234,7 @@ require(
     "REQUIRE_USER_ACTION",
 )
 require("ATT10_QUIET_HOURS_FOCUS_PROFILES_ESCALATION_POLICY.md", "timezone", "ATT01", "ATT07")
+require("app-tv/src/main/java/com/mikeyphw/studyflow/tv/attention/StudyFlowTvAttentionRuntime.kt", "fun focusProjection()", "StudyFlowTvAttentionDeliveryRouterBridge.focusProjection")
 
 # ATT11 — deterministic reliability evidence/export on the ATT01 ledger.
 require(
@@ -213,6 +245,8 @@ require(
     "deferredCount",
 )
 require("ATT11_NOTIFICATION_RELIABILITY_EVIDENCE_AUDIT.md", "JSON", "CSV", "ATT01")
+require("app-tv/src/main/java/com/mikeyphw/studyflow/tv/attention/StudyFlowTvAttentionRuntime.kt", "fun reliabilityProjection()", "StudyFlowTvAttentionDeliveryRouterBridge.reliabilityProjection")
+require("web/src/attention.ts", "reliabilityTopology", "analyzeWebAttentionReliability(ledger, reliabilityTopology.devices")
 
 # ATT12 docs / reconciliation artifacts.
 require("ATT12_ATTENTION_RELEASE_FINAL_SEAL.md", "Reconciliation fixes", "verifyAtt12AttentionReleaseFinalSeal")
@@ -228,7 +262,7 @@ matrix = require(
     "Native reminder/background delivery",
     "ATT06 TV foreground-attention truth",
     "ATT12 final Attention release-seal truth",
-    "ATT12 additionally seals the production delivery edges",
+    "The post-seal completion gate verifies production reachability",
 )
 for stale in (
     "FULL (ATT05 foreground + optional Push foundation)",
@@ -237,11 +271,17 @@ for stale in (
 ):
     assert stale not in matrix, f"Capability matrix retained stale ATT claim: {stale}"
 
-# Devtool primary Android test lane must contain ATT01..ATT12 exactly once and in roadmap order.
+# Devtool primary Android lane uses the terminal Attention seal instead of rerunning focused ATT gates.
+# Focused ATT01-ATT12 tasks remain registered in Gradle for diagnosis, while default validation stays deduplicated.
 devtool = text(".devtool.toml")
-match = re.search(r"\[targets\.studyflow_android\.tasks\]\s*build\s*=.*?test\s*=\s*\[(.*?)\]\s*lint\s*=", devtool, re.S)
-assert match, "Could not isolate studyflow_android Devtool test list"
-test_lane = match.group(1)
+config = tomllib.loads(devtool)
+android_target = config["targets"]["studyflow_android"]
+assert android_target.get("runner") == "android", "studyflow_android must use the canonical Android runner"
+assert config.get("workspace", {}).get("default_target") == "studyflow_android", "workspace default must be Android"
+test_lane = android_target.get("tasks", {}).get("test", [])
+unit_lane = android_target.get("validation", {}).get("phases", {}).get("unit-test", [])
+assert test_lane.count("verifyAttentionRoadmapPostsealCompletion") == 1, "Default Devtool test lane must contain the terminal Attention seal exactly once"
+assert unit_lane.count("verifyAttentionRoadmapPostsealCompletion") == 1, "Resumable unit-test lane must contain the terminal Attention seal exactly once"
 attention_tasks = [
     "verifyAtt01UnifiedAttentionFoundation",
     "verifyAtt02AndroidAttentionSystem",
@@ -256,11 +296,8 @@ attention_tasks = [
     "verifyAtt11NotificationReliabilityEvidenceAudit",
     "verifyAtt12AttentionReleaseFinalSeal",
 ]
-positions = []
 for task in attention_tasks:
-    assert test_lane.count(f'"{task}"') == 1, f"Primary Devtool lane must contain {task} exactly once"
-    positions.append(test_lane.index(f'"{task}"'))
-assert positions == sorted(positions), "Primary Devtool Attention tasks are not in ATT01→ATT12 order"
+    assert task not in test_lane, f"Focused Attention task must not duplicate the default lane: {task}"
 
 # Gradle final seal and every predecessor task must exist.
 gradle = text("build.gradle.kts")
@@ -272,7 +309,7 @@ for task in (
     "verifyAtt12WebRuntimeParity",
     "verifyAtt12WebReleaseValidation",
     "verifyAtt12WebReleaseIntegrity",
-    "verifySflp18Sflp19NotificationMediaSync",
+    "verifySflp18Sflp19NotificationMediaContracts",
     "verifyWeb20SharedSemanticGoldenVectors",
 ):
     assert f'"{task}"' in gradle, f"ATT12 final seal wiring missing {task}"

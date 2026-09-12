@@ -188,7 +188,7 @@ def validate_wiring_and_truth() -> None:
     )
     config = require_text(
         ".devtool.toml",
-        ["verifySflp04Sflp05IdentityTransport"],
+        ["verifySflp24FinalReleaseSeal"],
     )
     roadmap = require_text(
         "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",

@@ -181,9 +181,14 @@ require_tokens(
 root_gradle = read("build.gradle.kts")
 devtool_text = read(".devtool.toml")
 require('tasks.register<Exec>("verifyStudyFlowTvLocalPairingTransport")' in root_gradle, "missing TVOV22 Gradle verifier task")
-require(devtool_text.count('"verifyStudyFlowTvLocalPairingTransport"') >= 8, "studyflow_tv must wire TVOV22 verifier across tasks/phases")
-for task in (":core:tvlink:compileDebugKotlin", ":core:tvlink:testDebugUnitTest", ":core:tvlink:lintDebug"):
-    require(task in devtool_text, f"studyflow_tv Devtool target missing {task}")
+require('"verifyStudyFlowTvAllContracts"' in devtool_text, "studyflow_tv must run the aggregate TV contract gate")
+tv_aggregate = root_gradle.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvLocalPairingTransport" in tv_aggregate, "aggregate TV gate must include TVOV22")
+require(":core:tvlink:testDebugUnitTest" in devtool_text, "studyflow_tv must test :core:tvlink")
+require(":app-tv:lintDebug" in devtool_text, "studyflow_tv must run app-level TV lint")
+app_tv_build = read("app-tv/build.gradle.kts")
+require("checkDependencies = true" in app_tv_build, "app-tv lint must cover :core:tvlink transitively")
 
 with (ROOT / ".devtool.toml").open("rb") as fh:
     config = tomllib.load(fh)

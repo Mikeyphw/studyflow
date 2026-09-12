@@ -40,31 +40,37 @@ quality = read("docs/quality/TVOV00_ARCHITECTURE_CONTRACTS.md")
 app_tv_exists = (ROOT / "app-tv").is_dir()
 
 require("[targets.studyflow_tv]" in devtool, "studyflow_tv Devtool target is missing")
-require('type = "gradle"' in find_section(devtool, "targets.studyflow_tv"), "studyflow_tv must be Gradle-backed")
+require('runner = "android"' in find_section(devtool, "targets.studyflow_tv"), "studyflow_tv must use the Android runner")
 require('root = "."' in find_section(devtool, "targets.studyflow_tv"), "studyflow_tv must validate from repo root")
 require("[targets.studyflow_tv.gradle]" in devtool, "studyflow_tv Gradle settings are missing")
 require('version = "9.7.1"' in find_section(devtool, "targets.studyflow_tv.gradle"), "studyflow_tv must use Gradle 9.7.1")
 require("[targets.studyflow_tv.tasks]" in devtool, "studyflow_tv task set is missing")
 require("[targets.studyflow_tv.validation.phases]" in devtool, "studyflow_tv validation phases are missing")
 
+require(
+    "verifyStudyFlowTvAllContracts" in find_section(devtool, "targets.studyflow_tv.tasks"),
+    "studyflow_tv tasks missing aggregate TV contract gate",
+)
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
 for task_name in (
     "verifyStudyFlowTvArchitecture",
     "verifyStudyFlowTvSizeBudget",
     "verifyStudyFlowTvControlCast",
 ):
-    require(task_name in find_section(devtool, "targets.studyflow_tv.tasks"), f"studyflow_tv tasks missing {task_name}")
-    require(task_name in find_section(devtool, "targets.studyflow_tv.validation.phases"), f"studyflow_tv phases missing {task_name}")
+    require(task_name in tv_aggregate, f"aggregate TV gate missing {task_name}")
     require(f'tasks.register<Exec>("{task_name}")' in build, f"missing Gradle task registration: {task_name}")
+require("verifyStudyFlowTvAllContracts" in find_section(devtool, "targets.studyflow_tv.validation.phases"), "TV validation preflight must use the aggregate contract gate")
 
-studyflow_tv_text = devtool[devtool.find("[targets.studyflow_tv]") :]
-next_android_profile = studyflow_tv_text.find("[targets.studyflow_android.validation.phase_profiles.preflight]")
-if next_android_profile >= 0:
-    studyflow_tv_text = studyflow_tv_text[:next_android_profile]
+tv_start = devtool.find("[targets.studyflow_tv]")
+tv_end = devtool.find("\n[targets.studyflow_tv_release]", tv_start)
+studyflow_tv_text = devtool[tv_start:] if tv_end < 0 else devtool[tv_start:tv_end]
 require(":app:" not in studyflow_tv_text, "studyflow_tv must not run phone app tasks")
 if app_tv_exists:
     require('":app-tv"' in settings, "settings must include :app-tv once the TV module exists")
-    for task in (":app-tv:compileDebugKotlin", ":app-tv:testDebugUnitTest", ":app-tv:assembleDebug", ":app-tv:lintDebug"):
+    for task in (":app-tv:testDebugUnitTest", ":app-tv:assembleDebug", ":app-tv:lintDebug"):
         require(task in studyflow_tv_text, f"studyflow_tv must run real TV module task {task}")
+    require(":app-tv:compileDebugKotlin" not in find_section(devtool, "targets.studyflow_tv.validation.phases"), "TV compile phase must stay implicit through test/package tasks")
 else:
     require(":app-tv" not in studyflow_tv_text, "studyflow_tv must not reference :app-tv before TVOV01 creates it")
     require('":app-tv"' not in settings, "TVOV00 must not create :app-tv yet")

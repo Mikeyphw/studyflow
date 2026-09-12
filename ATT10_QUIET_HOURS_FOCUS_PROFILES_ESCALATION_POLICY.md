@@ -25,6 +25,7 @@ ATT10 adds a shared, auditable attention-delivery policy layer on top of the ATT
 5. `COMPACT_ONLY` can only choose devices that actually advertise a compact `WIDGET_OR_BADGE` surface.
 6. TV-class clients never become background alarm owners. Minimal/TV policy prefers a phone, while TV can still show a foreground banner when an existing route legitimately targets it.
 7. Web does not claim closed-browser delivery. Optional Web Push remains the only browser background-delivery foundation and is advertised truthfully by capability state.
+8. Native SFLP notification delivery transports the selected ATT07 route, so `COMPACT_ONLY` and silent outcomes retain their surface semantics on the remote owner/mirror.
 
 ## Profile intent
 
@@ -47,11 +48,11 @@ High-priority and time-sensitive reminders may be configured to bypass quiet hou
 
 ### Android
 
-The Reminders surface exposes focus profile, bypass switches, quiet-window controls, and per-category escalation modes. `StudyReminderDeliveryCoordinator` evaluates ATT10 before posting a notification. Deferred reminders are rescheduled, silent notifications use the platform silent path, and compact-only delivery refreshes canonical/widget state without fabricating a system notification.
+The Reminders surface exposes focus profile, bypass switches, quiet-window controls, and per-category escalation modes. `StudyReminderDeliveryCoordinator` evaluates ATT10 before posting a notification. Deferred reminders are rescheduled, silent notifications use the platform silent path, and compact-only delivery refreshes canonical/widget state without fabricating a system notification. If notification permission is unavailable, ATT07 no longer selects the native alarm/notification surfaces as deliverable and can fall back to the real compact widget/tile surface instead of dropping the occurrence.
 
 ### Desktop
 
-Desktop stores focus configuration next to its existing reminder preferences. The runtime evaluates each due ATT01 entry before native delivery. Profile and quiet-hours controls are shown in Desktop Settings, together with the latest policy outcome. Desktop continues to state that reminders are available only while StudyFlow is running.
+Desktop stores focus configuration next to its existing reminder preferences. The runtime evaluates each due ATT01 entry before native delivery. Its tray mini dashboard advertises `WIDGET_OR_BADGE`, so Travel/offline and other `COMPACT_ONLY` policies can truthfully select Desktop even when native notification popups are unavailable. Remote compact routes update the mini dashboard without fabricating a native popup. Profile and quiet-hours controls are shown in Desktop Settings, together with the latest policy outcome. Desktop continues to state that reminders are available only while StudyFlow is running.
 
 ### Web / PWA
 
@@ -59,7 +60,7 @@ The Notification Center exposes the focus profile, quiet window, timezone, and p
 
 ### Android TV / Web TV
 
-TV receives a read-only policy projection. It can surface the current profile/outcome and use remote-safe actions, but it does not gain new permissions or a fake background scheduler. Native Android TV and Web TV continue to report foreground-only attention delivery with designated-notifier/phone fallback.
+TV receives a read-only policy projection. Native Android TV intentionally evaluates the local `Minimal/TV` safety profile; it does not claim synchronization of another device's editable focus configuration. Web TV projects and visibly surfaces the browser Attention runtime profile/outcome. Both use remote-safe actions, gain no new permissions or fake background scheduler, and continue to report foreground-only delivery with designated-notifier/phone fallback.
 
 ## Verification
 

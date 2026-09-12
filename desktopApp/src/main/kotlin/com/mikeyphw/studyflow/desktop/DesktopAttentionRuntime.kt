@@ -10,6 +10,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionAction
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionActionKind
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionCategory
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryState
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliverySurface
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedger
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
@@ -19,8 +20,19 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyOutcome
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityAnalyzer
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityEvidenceSnapshot
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionWorkspace
+import com.mikeyphw.studyflow.core.link.StudyFlowCalendarEventKind
+import com.mikeyphw.studyflow.core.link.StudyFlowCalendarScheduleItem
+import com.mikeyphw.studyflow.core.link.StudyFlowNotificationDeliveryStatus
+import com.mikeyphw.studyflow.core.link.StudyFlowPeerClock
+import com.mikeyphw.studyflow.core.link.StudyFlowNotificationScheduleReducer
+import com.mikeyphw.studyflow.core.link.StudyFlowNotificationDeliveryAck
+import com.mikeyphw.studyflow.core.link.StudyFlowNotificationDelivery
+import com.mikeyphw.studyflow.core.link.StudyFlowMessageId
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionNotificationDeliveryFactory
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowEntityId
+import com.mikeyphw.studyflow.core.link.StudyFlowCompactAttentionCard
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlanId
@@ -28,6 +40,8 @@ import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -85,11 +99,13 @@ class DesktopAttentionRuntime(
     @Volatile private var lastDeliveredTitle: String? = null
     @Volatile private var recoveryCount: Int = 0
     @Volatile private var lastPolicyOutcome: StudyFlowAttentionPolicyOutcome? = null
+    @Volatile private var lastCompactCard: StudyFlowCompactAttentionCard? = null
     @Volatile private var appState: DesktopAppState? = null
 
     fun bind(appState: DesktopAppState) {
         this.appState = appState
         services.platformPorts.notifications.setActionHandler(::handleSurfaceAction)
+        services.linkService?.runtime?.setNotificationDeliveryHandler(::receiveRemoteNotification)
     }
 
     @Synchronized
@@ -174,16 +190,25 @@ class DesktopAttentionRuntime(
         val policy = if (plan != null && settings != null) preferences.policy(plan.id, settings) else StudyReminderPolicy()
         val focusPolicy = if (plan != null) preferences.focusPolicy(plan.id, settings) else com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy()
         val now = clock()
-        val localCapability = DesktopAttentionDeliveryRouterBridge.localCapability(
+        val linkService = services.linkService
+        val localPeer = linkService?.runtime?.localIdentity?.descriptor
+            ?: DesktopAttentionDeliveryRouterBridge.standalonePeer()
+        val workspaceId = plan?.id?.let { StudyFlowAttentionWorkspace.forPlanId(it.value) }
+        val reliabilityDevices = DesktopAttentionDeliveryRouterBridge.topologyCapabilities(
+            localPeer = localPeer,
             nativeNotificationsAvailable = global.nativeNotificationsEnabled && caps.nativeNotificationsSupported,
             trayAvailable = global.trayDashboardEnabled && caps.traySupported,
+            trustedPeers = linkService?.trustedPeers()?.filter { trusted ->
+                linkService.runtime.bestEndpoint(trusted.peer.deviceId) != null
+            }.orEmpty(),
+            presenceViews = workspaceId?.let { linkService?.presenceViews(it) }.orEmpty(),
             nowEpochMillis = now,
         )
         val reliabilityEvidence = StudyFlowAttentionReliabilityAnalyzer.analyze(
             ledger = ledger,
-            devices = listOf(localCapability),
+            devices = reliabilityDevices,
             nowEpochMillis = now,
-            workspaceId = plan?.id?.let { StudyFlowWorkspaceId(it.value) },
+            workspaceId = workspaceId,
         )
         return DesktopAttentionRuntimeSnapshot(
             running = started,
@@ -234,6 +259,55 @@ class DesktopAttentionRuntime(
         it.copy(nativeNotificationsEnabled = !it.nativeNotificationsEnabled)
     }.also { reconcileNow() }
     fun toggleTrayDashboard() = preferences.updateGlobal { it.copy(trayDashboardEnabled = !it.trayDashboardEnabled) }.also { reconcileNow() }
+
+    /** ATT09 user-initiated Desktop ICS export from the canonical schedule repository. */
+    fun exportCalendar(): Path? {
+        val plan = services.currentDefaultPlanForDesktop() ?: return null
+        val workspaceId = StudyFlowAttentionWorkspace.forPlanId(plan.id.value)
+        val items = services.scheduleRepository.currentActivities(plan.id).mapNotNull { activity ->
+            val start = activity.scheduledStartEpochMillis ?: return@mapNotNull null
+            val kind = when (activity.type.name) {
+                "REVIEW", "FLASHCARDS" -> StudyFlowCalendarEventKind.REVIEW
+                "MOCK_EXAM" -> StudyFlowCalendarEventKind.MOCK_EXAM
+                else -> StudyFlowCalendarEventKind.STUDY_BLOCK
+            }
+            StudyFlowCalendarScheduleItem(
+                itemId = StudyFlowEntityId(
+                    StudyFlowAttentionOccurrenceId.deterministic("calendar-item", activity.id.value).value,
+                ),
+                workspaceId = workspaceId,
+                title = activity.title,
+                body = "StudyFlow ${activity.type.name.lowercase().replace('_', ' ')}",
+                kind = kind,
+                startEpochMillis = start,
+                durationMinutes = activity.plannedDurationMinutes,
+                timezoneId = ZoneId.systemDefault().id,
+                completed = activity.status in setOf(
+                    PlannedActivityStatus.COMPLETED,
+                    PlannedActivityStatus.SKIPPED,
+                    PlannedActivityStatus.CANCELLED,
+                ),
+                routeHash = "#schedule/${activity.id.value}",
+                attentionCategory = when (kind) {
+                    StudyFlowCalendarEventKind.REVIEW -> StudyFlowAttentionCategory.DUE_REVIEW
+                    StudyFlowCalendarEventKind.MOCK_EXAM,
+                    StudyFlowCalendarEventKind.EXAM_DATE -> StudyFlowAttentionCategory.EXAM_COUNTDOWN
+                    else -> StudyFlowAttentionCategory.PLANNED_STUDY
+                },
+                attentionPriority = if (kind == StudyFlowCalendarEventKind.MOCK_EXAM) {
+                    StudyFlowAttentionPriority.HIGH
+                } else {
+                    StudyFlowAttentionPriority.NORMAL
+                },
+            )
+        }
+        val bridge = DesktopCalendarAttentionExportBridge()
+        val feed = bridge.buildExport(items, System.currentTimeMillis())
+        val destination = services.platformPorts.fileDialog
+            .chooseExportPath(bridge.suggestedFilename(feed))
+            ?: return null
+        return Path.of(destination).also { Files.writeString(it, feed.icsText) }
+    }
     fun togglePaused() = preferences.updateGlobal { it.copy(paused = !it.paused) }.also { reconcileNow() }
 
     fun cycleFocusProfile() {
@@ -309,9 +383,18 @@ class DesktopAttentionRuntime(
 
     private fun deliverDueEntries(now: Long, global: DesktopAttentionGlobalPreferences, planId: StudyPlanId) {
         val capabilities = services.platformPorts.notifications.capabilities()
-        val localCapability = DesktopAttentionDeliveryRouterBridge.localCapability(
+        val linkService = services.linkService
+        val localPeer = linkService?.runtime?.localIdentity?.descriptor
+            ?: DesktopAttentionDeliveryRouterBridge.standalonePeer()
+        val workspaceId = StudyFlowAttentionWorkspace.forPlanId(planId.value)
+        val routingDevices = DesktopAttentionDeliveryRouterBridge.topologyCapabilities(
+            localPeer = localPeer,
             nativeNotificationsAvailable = global.nativeNotificationsEnabled && capabilities.nativeNotificationsSupported,
             trayAvailable = global.trayDashboardEnabled && capabilities.traySupported,
+            trustedPeers = linkService?.trustedPeers()?.filter { trusted ->
+                linkService.runtime.bestEndpoint(trusted.peer.deviceId) != null
+            }.orEmpty(),
+            presenceViews = linkService?.presenceViews(workspaceId).orEmpty(),
             nowEpochMillis = now,
         )
         attentionLedger.snapshot().entries
@@ -325,18 +408,77 @@ class DesktopAttentionRuntime(
                     return@forEach
                 }
                 val focusPolicy = preferences.focusPolicy(planId, services.planRepository.currentSettings()[planId])
-                val route = DesktopAttentionDeliveryRouterBridge.routeWithPolicy(
+                var eligibleDevices = routingDevices
+                var route = DesktopAttentionDeliveryRouterBridge.routeWithPolicy(
                     occurrence = occurrence,
-                    devices = listOf(localCapability),
+                    devices = eligibleDevices,
+                    localDeviceId = localPeer.deviceId,
                     focusPolicy = focusPolicy,
                     nowEpochMillis = now,
                     ledgerEntry = entry,
                 )
-                runCatching { attentionLedger.recordRouteDecision(route) }
+                val title = occurrence.payload["title"]?.toString()?.trim('"') ?: occurrence.category.desktopTitle()
+                val body = occurrence.payload["body"]?.toString()?.trim('"') ?: occurrence.category.desktopBody()
+                var remoteOwnerDelivered: Boolean
+                while (true) {
+                    runCatching { attentionLedger.recordRouteDecision(route) }
+                    remoteOwnerDelivered = dispatchRemoteRouteTargets(
+                        linkService = linkService,
+                        route = route,
+                        occurrence = occurrence,
+                        localDeviceId = localPeer.deviceId,
+                        title = title,
+                        body = body,
+                        nowEpochMillis = now,
+                    )
+                    val failedRemoteOwner = route.owner?.deviceId
+                        ?.takeIf { it != localPeer.deviceId && !remoteOwnerDelivered }
+                        ?: break
+                    eligibleDevices = eligibleDevices.filterNot { it.peer.deviceId == failedRemoteOwner }
+                    if (eligibleDevices.isEmpty()) break
+                    route = DesktopAttentionDeliveryRouterBridge.routeWithPolicy(
+                        occurrence = occurrence,
+                        devices = eligibleDevices,
+                        localDeviceId = localPeer.deviceId,
+                        focusPolicy = focusPolicy,
+                        nowEpochMillis = now,
+                        ledgerEntry = entry,
+                    )
+                }
+                lastCompactCard = DesktopCompactCompanionAttentionBridge.projectMiniDashboard(
+                    occurrence = occurrence,
+                    route = route,
+                    parentDeviceId = localPeer.deviceId,
+                    nowEpochMillis = now,
+                    ledgerEntry = entry,
+                ).cards.firstOrNull()
+                if (
+                    route.owner?.deviceId != localPeer.deviceId &&
+                    remoteOwnerDelivered &&
+                    localPeer.deviceId !in route.targetDeviceIds
+                ) {
+                    runCatching {
+                        attentionLedger.transition(
+                            occurrence.occurrenceId,
+                            StudyFlowAttentionDeliveryState.DELIVERY_PENDING,
+                            now,
+                        )
+                    }
+                    runCatching {
+                        attentionLedger.transition(
+                            occurrence.occurrenceId,
+                            StudyFlowAttentionDeliveryState.DELIVERED,
+                            now,
+                        )
+                    }
+                    lastDeliveredAt = now
+                    lastDeliveredTitle = title
+                    return@forEach
+                }
                 // ATT12: ATT07 explicit target ownership is authoritative. A Desktop
                 // process that merely has a local ledger copy must not notify when the
                 // route selected another device. Leave the entry scheduled for its owner.
-                if (!DesktopAttentionDeliveryRouterBridge.isLocalTarget(route)) return@forEach
+                if (!DesktopAttentionDeliveryRouterBridge.isLocalTarget(route, localPeer.deviceId)) return@forEach
                 val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
                     occurrence = occurrence,
                     policy = focusPolicy,
@@ -384,8 +526,6 @@ class DesktopAttentionRuntime(
                     return@forEach
                 }
                 runCatching { attentionLedger.transition(occurrence.occurrenceId, StudyFlowAttentionDeliveryState.DELIVERY_PENDING, now) }
-                val title = occurrence.payload["title"]?.toString()?.trim('"') ?: occurrence.category.desktopTitle()
-                val body = occurrence.payload["body"]?.toString()?.trim('"') ?: occurrence.category.desktopBody()
                 services.platformPorts.notifications.show(
                     DesktopNotification(
                         id = occurrence.occurrenceId.value,
@@ -398,6 +538,113 @@ class DesktopAttentionRuntime(
                 lastDeliveredAt = now
                 lastDeliveredTitle = title
             }
+    }
+
+    private fun receiveRemoteNotification(delivery: StudyFlowNotificationDelivery): StudyFlowNotificationDeliveryAck {
+        val linkService = services.linkService
+            ?: return rejectedRemoteNotification(delivery, "link_service_unavailable")
+        val global = preferences.global()
+        val capabilities = services.platformPorts.notifications.capabilities()
+        val localPeer = linkService.runtime.localIdentity.descriptor
+        val transportedRoute = delivery.notification.attentionRoute
+        val selectedSurface = transportedRoute?.targetFor(localPeer.deviceId)?.surface
+        val compactDelivery = transportedRoute?.compactOnly == true ||
+            selectedSurface == StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE
+        if (compactDelivery && (!global.trayDashboardEnabled || !capabilities.traySupported)) {
+            return rejectedRemoteNotification(delivery, "compact_surface_unavailable")
+        }
+        if (
+            !compactDelivery &&
+            transportedRoute?.deliverSilently != true &&
+            (!global.nativeNotificationsEnabled || !capabilities.nativeNotificationsSupported)
+        ) {
+            return rejectedRemoteNotification(delivery, "native_notifications_unavailable")
+        }
+        val reducer = StudyFlowNotificationScheduleReducer(
+            localDevice = localPeer,
+            clock = StudyFlowPeerClock(clock),
+            attentionLedger = attentionLedger,
+        )
+        val ack = reducer.apply(delivery)
+        if (ack.status != StudyFlowNotificationDeliveryStatus.ACCEPTED) return ack
+
+        val occurrence = delivery.notification.canonicalAttentionOccurrence(delivery.sourceDeviceId)
+        val compactOrSilentRoute = transportedRoute?.takeIf { compactDelivery || it.deliverSilently }
+        if (compactOrSilentRoute != null) {
+            lastCompactCard = DesktopCompactCompanionAttentionBridge.projectMiniDashboard(
+                occurrence = occurrence,
+                route = compactOrSilentRoute,
+                parentDeviceId = localPeer.deviceId,
+                nowEpochMillis = clock(),
+                // SFLP admission already performed duplicate suppression and moved the
+                // local ledger to DELIVERED; render this just-accepted compact packet once.
+                ledgerEntry = null,
+            ).cards.firstOrNull()
+            lastDeliveredAt = clock()
+            lastDeliveredTitle = delivery.notification.title
+            updateTray(lastDeliveredAt ?: clock())
+            return ack
+        }
+
+        services.platformPorts.notifications.show(
+            DesktopNotification(
+                id = occurrence.occurrenceId.value,
+                title = delivery.notification.title,
+                message = delivery.notification.body,
+                defaultAction = occurrence.defaultSurfaceAction(),
+            ),
+        )
+        lastDeliveredAt = clock()
+        lastDeliveredTitle = delivery.notification.title
+        updateTray(lastDeliveredAt ?: clock())
+        return ack
+    }
+
+    private fun rejectedRemoteNotification(
+        delivery: StudyFlowNotificationDelivery,
+        reason: String,
+    ): StudyFlowNotificationDeliveryAck = StudyFlowNotificationDeliveryAck(
+        messageId = StudyFlowMessageId("ack-${delivery.messageId.value}"),
+        notificationId = delivery.notification.notificationId,
+        targetDeviceId = delivery.targetDeviceId,
+        acknowledgedSequence = delivery.sequence,
+        status = StudyFlowNotificationDeliveryStatus.REJECTED,
+        reason = reason,
+        acknowledgedAtEpochMillis = clock(),
+    )
+
+    private fun dispatchRemoteRouteTargets(
+        linkService: DesktopStudyFlowLinkService?,
+        route: com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRoute,
+        occurrence: StudyFlowAttentionOccurrence,
+        localDeviceId: com.mikeyphw.studyflow.core.link.StudyFlowDeviceId,
+        title: String,
+        body: String,
+        nowEpochMillis: Long,
+    ): Boolean {
+        if (linkService == null) return route.owner?.deviceId == localDeviceId
+        var ownerDelivered = route.owner?.deviceId == localDeviceId
+        route.targetDeviceIds.filter { it != localDeviceId }.forEach { targetDeviceId ->
+            val endpoint = linkService.runtime.bestEndpoint(targetDeviceId) ?: return@forEach
+            val delivery = StudyFlowAttentionNotificationDeliveryFactory.create(
+                occurrence = occurrence,
+                sourceDeviceId = localDeviceId,
+                targetDeviceId = targetDeviceId,
+                title = title,
+                body = body,
+                nowEpochMillis = nowEpochMillis,
+                deliveryRoute = route,
+            )
+            val ack = runCatching {
+                linkService.runtime.deliverNotification(occurrence.workspaceId, targetDeviceId, delivery, endpoint)
+            }.getOrNull()
+            val accepted = ack?.status in setOf(
+                StudyFlowNotificationDeliveryStatus.ACCEPTED,
+                StudyFlowNotificationDeliveryStatus.DUPLICATE,
+            )
+            if (route.owner?.deviceId == targetDeviceId) ownerDelivered = accepted
+        }
+        return ownerDelivered
     }
 
     private fun updateTray(now: Long) {
@@ -422,7 +669,14 @@ class DesktopAttentionRuntime(
         services.platformPorts.notifications.updateTray(
             DesktopTrayDashboard(
                 headline = plan?.name ?: "StudyFlow",
-                nextStudy = next?.let { "Next: ${it.title}${it.scheduledStartEpochMillis?.let(::formatDesktopTime)?.let { t -> " · $t" }.orEmpty()}" }
+                nextStudy = lastCompactCard?.let { "Attention: ${it.title} · ${it.body}" }
+                    ?: next?.let { item ->
+                        val time = item.scheduledStartEpochMillis
+                            ?.let(::formatDesktopTime)
+                            ?.let { " · $it" }
+                            .orEmpty()
+                        "Next: ${item.title}$time"
+                    }
                     ?: "No upcoming study block",
                 dueReviews = "$dueReviews review${if (dueReviews == 1) "" else "s"} due",
                 activeSession = activeSession?.let { "${it.status.name.lowercase().replaceFirstChar(Char::uppercase)} session" },
@@ -494,6 +748,7 @@ class DesktopAttentionRuntime(
 
     override fun close() {
         started = false
+        services.linkService?.runtime?.setNotificationDeliveryHandler(null)
         scheduler.shutdownNow()
         services.platformPorts.notifications.close()
     }
@@ -515,7 +770,7 @@ private fun ReminderNotificationCandidate.toDesktopAttentionOccurrence(planId: S
     val (title, body) = desktopReminderCopy()
     return StudyFlowAttentionOccurrence(
         occurrenceId = StudyFlowAttentionOccurrenceId.fromLegacy(occurrenceId),
-        workspaceId = StudyFlowWorkspaceId(StudyFlowAttentionOccurrenceId.deterministic("desktop-plan", planId.value).value),
+        workspaceId = StudyFlowAttentionWorkspace.forPlanId(planId.value),
         scheduleEntityId = content.targetId?.let(::StudyFlowEntityId),
         category = when (type) {
             ReminderNotificationType.DUE_REVIEWS -> StudyFlowAttentionCategory.DUE_REVIEW

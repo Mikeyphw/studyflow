@@ -90,7 +90,7 @@ require("ATT05_WEB_PWA_NOTIFICATION_RUNTIME.md", "foreground-only", "Notificatio
 require("docs/product/WEB_PWA_ATTENTION_RUNTIME.md", "foreground-only", "ATT01", "Progressive enhancement")
 require("docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md", "FULL (ATT05", "Notification Center")
 require("build.gradle.kts", "verifyAtt05WebAttentionContracts", "verifyAtt05WebPwaAttentionRuntime")
-require(".devtool.toml", '"verifyAtt05WebPwaAttentionRuntime"')
+require(".devtool.toml", '"verifyAttentionRoadmapPostsealCompletion"')
 
 if errors:
     print("ATT05 Web/PWA Attention Runtime verification FAILED")

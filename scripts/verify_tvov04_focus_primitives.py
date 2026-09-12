@@ -26,7 +26,7 @@ def tv_target_section(devtool: str) -> str:
     require(start >= 0, "missing studyflow_tv target")
     if start < 0:
         return ""
-    end = devtool.find("[targets.studyflow_android.validation.phase_profiles.preflight]", start)
+    end = devtool.find("[targets.studyflow_tv_release]", start)
     return devtool[start:] if end < 0 else devtool[start:end]
 
 focus_contract = read("app-tv/src/main/java/com/mikeyphw/studyflow/tv/focus/StudyFlowTvFocusContract.kt")
@@ -155,12 +155,15 @@ require('versionName = "0.1.0-tv26"' in app_build or 'versionName = "1.0.0-tv31"
 require('tasks.register<Exec>("verifyStudyFlowTvFocusPrimitives")' in build, "missing Gradle TVOV04 focus verifier task")
 studyflow_tv = tv_target_section(devtool)
 for task in (
-    "verifyStudyFlowTvFocusPrimitives",
-    ":app-tv:compileDebugKotlin",
+    "verifyStudyFlowTvAllContracts",
     ":app-tv:testDebugUnitTest",
     ":app-tv:lintDebug",
 ):
     require(task in studyflow_tv, f"studyflow_tv target must include {task}")
+require('compile = []' in studyflow_tv, "studyflow_tv must let test/package roots own compilation once")
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvFocusPrimitives" in tv_aggregate, "aggregate TV gate must include TVOV04")
 require(":app:" not in studyflow_tv, "studyflow_tv target must not run phone app tasks")
 
 for token in (

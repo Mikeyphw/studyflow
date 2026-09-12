@@ -88,7 +88,10 @@ class StudyFlowAttentionReliabilityEvidenceTest {
 
         val snapshot = StudyFlowAttentionReliabilityAnalyzer.analyze(
             ledger.snapshot(),
-            listOf(phone.asAttentionDeviceCapability(primaryUserDevice = true), peer("desktop", StudyFlowLinkClientKind.DESKTOP).asAttentionDeviceCapability()),
+            listOf(
+                phone.asAttentionDeviceCapability(primaryUserDevice = true),
+                peer("desktop", StudyFlowLinkClientKind.DESKTOP).asAttentionDeviceCapability(),
+            ),
             40 * 60_000L,
             workspace,
         )

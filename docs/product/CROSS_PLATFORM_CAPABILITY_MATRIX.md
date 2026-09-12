@@ -151,7 +151,7 @@ shipped SFLP18 is notification/scheduling sync.
 
 ### ATT10 quiet-hours/focus-policy truth
 
-ATT10 adds a shared interruption-policy layer without changing the ATT01 source of truth. Android, Desktop, and normal Web expose policy controls. Android TV and Web TV only project policy state and remote-safe behavior; neither gains background alarm ownership. Web remains foreground-only unless optional Push capability is genuinely configured. ATT10 escalation is bounded by ATT07 mirror limits and can never widen into an unbounded broadcast.
+ATT10 adds a shared interruption-policy layer without changing the ATT01 source of truth. Android, Desktop, and normal Web expose policy controls. Android TV and Web TV only project policy state and remote-safe behavior; neither gains background alarm ownership. Native Android TV evaluates its local `Minimal/TV` safety profile by design rather than pretending to mirror a phone setting that is not synchronized; Web TV projects the browser Attention runtime profile/outcome and now renders that read-only state in the foreground banner. Web remains foreground-only unless optional Push capability is genuinely configured. ATT10 escalation is bounded by ATT07 mirror limits and can never widen into an unbounded broadcast.
 
 
 ### ATT11 reliability-evidence truth
@@ -208,11 +208,11 @@ receivers remain read/presentation/control clients and reject write-capability p
 
 | Capability | Android | Desktop | Web | Android TV | Web TV |
 | --- | --- | --- | --- | --- | --- |
-| SFLP notification envelope acceptance | Send/receive | Send/receive | Send/receive | Receive/read-only | Receive/read-only |
+| SFLP notification envelope acceptance | Send/receive | Send/receive | Ingest/runtime hook; direct browser peer-RPC send is not wired | Receive/read-only | Ingest/foreground-only; direct browser peer-RPC send is not wired |
 | Android ATT02 reminder delivery | Full native delivery/actions (ATT02) | Full native/tray delivery while running (ATT04) | Protocol only | Protocol only | Protocol only |
 | Durable ATT01 attention ledger | FULL | FULL | FULL | FULL | FULL (Web runtime) |
-| Cross-device attention delivery router | FULL (ATT07 owner/source) | FULL (ATT07 Web/PWA routing) | FULL (ATT07 while running) | FULL foreground-only (ATT07) | FULL foreground-only (ATT07) |
-| Compact companion attention | FULL (phone-owned wearable/lock-screen/quick-tile projections) | FULL (Desktop mini projection) | FULL (compact Web projection) | FULL (foreground remote overlay) | FULL (foreground compact projection) |
+| Cross-device attention delivery router | FULL (ATT07 owner/source + authenticated SFLP notification transport) | FULL (Desktop process-owned routing + authenticated SFLP notification transport) | FULL routing/ownership decision using trusted/presence topology; no direct browser notification-RPC sender | FULL foreground-only (ATT07) | FULL foreground-only projection; browser transport remains ingress/local-runtime only |
+| Compact companion attention | FULL (phone-owned wearable/lock-screen/quick-tile projections; permission-safe compact fallback) | FULL (Desktop mini projection advertised as `WIDGET_OR_BADGE`) | FULL (compact Web projection) | FULL (foreground remote overlay) | FULL (foreground compact projection) |
 
 Historical verifier provenance: **ATT08 compact companion** delivery is phone-/parent-owned mirroring; compact surfaces never become independent notification owners.
 | Schedule reminder sync | Read/write | Read/write | Read/write | Read-only | Read-only |
@@ -271,7 +271,7 @@ Desktop now owns a production reminder runtime backed by the shared ATT01 ledger
 
 ## ATT07 cross-device delivery router truth
 
-ATT07 adds a shared owner/mirror/suppression router for Attention occurrences. Android, Desktop, and Web/PWA can own durable notification routes when their runtime capabilities are present. Android TV and Web TV can own only foreground-banner routes, and closed-TV delivery falls back to a designated phone, Desktop, or Web/PWA notifier. The ATT01 ledger remains the final dedupe source, so acknowledged or handled occurrences suppress redelivery across all clients. ATT12 additionally seals the production delivery edges: Android, Desktop and Web now refuse to surface an occurrence unless the computed ATT07 route explicitly selects the local device as owner or bounded mirror, so `targetDeviceIds` cannot degrade into accidental local broadcast.
+ATT07 adds a shared owner/mirror/suppression router for Attention occurrences. Android, Desktop, and Web/PWA can own durable notification routes when their runtime capabilities are present. Android TV and Web TV can own only foreground-banner routes, and closed-TV delivery falls back to a designated phone, Desktop, or Web/PWA notifier. The ATT01 ledger remains the final dedupe source, so acknowledged or handled occurrences suppress redelivery across all clients. The post-seal completion additionally closes the candidate side of that contract: Android and Desktop project actual trusted SFLP peers/presence into route candidates and can carry selected remote notification deliveries over authenticated SFLP peer RPC; Web evaluates the same trusted/presence topology and ingests targeted notification envelopes into its ATT01 runtime, but this repository does not wire the browser WebSocket adapter to a native `notification.deliver` peer-RPC sender. Android, Desktop and Web still refuse to surface an occurrence unless the computed route selects the local device as owner or bounded mirror. The ATT07 handoff object is a canonical request contract; actual cross-device activity/state transfer remains the responsibility of the generic SFLP handoff/transport layers rather than an Attention-only transport.
 
 ## ATT12 final Attention release-seal truth
 
@@ -285,3 +285,7 @@ ATT12 reconciles the handoff roadmap against the post-ATT11 repository, repairs 
 | Calendar privacy modes | Full/private/busy | Full/private/busy | Full/private/busy | Preview only | Preview only |
 | StudyFlow attention ownership | ATT07 routed | ATT07 routed | ATT07 routed | Foreground-only preview | Foreground-only preview |
 | Silent external calendar mutation | Not supported | Not supported | Not supported | Not supported | Not supported |
+
+## Attention roadmap post-seal completion truth
+
+The post-seal completion gate verifies production reachability rather than bridge existence alone. Native Android/Desktop notification envelopes now carry the selected ATT07 route, preserving compact/silent surface semantics across authenticated peer delivery; Desktop advertises its real mini surface as `WIDGET_OR_BADGE`, and Android does not prefer alarm/notification surfaces when notification permission is unavailable. Android TV has live SFLP notification ingress; ATT07 consumes canonical SFLP identity plus trusted/presence topology; ATT08 Android/Desktop/TV bridges have real product consumers; ATT09 Android/Desktop/TV/Web flows are user-reachable; and native-TV plus Web-TV ATT10/ATT11 read-only projections are surfaced. The matrix deliberately distinguishes browser ingest/routing from native peer-RPC send capability and distinguishes the canonical ATT07 handoff request model from transport dispatch. Platform limitations remain truthful and unchanged.

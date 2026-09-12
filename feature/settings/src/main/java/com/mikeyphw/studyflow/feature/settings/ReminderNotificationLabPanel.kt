@@ -87,12 +87,42 @@ fun ReminderNotificationLabPanel(
         if (report.status != DebugLabStatus.NOT_RUN) {
             item {
                 StudyFlowSectionCard(title = stringResource(R.string.debug_reminder_lab_attention_title)) {
-                    Text(stringResource(R.string.debug_reminder_lab_attention_entries, report.attentionLedgerEntryCount))
-                    Text(stringResource(R.string.debug_reminder_lab_attention_active, report.attentionLedgerActiveCount))
-                    Text(stringResource(R.string.debug_reminder_lab_attention_terminal, report.attentionLedgerTerminalCount))
-                    Text(stringResource(R.string.debug_reminder_lab_attention_sources, report.attentionLedgerSourceSequenceCount))
-                    Text(stringResource(R.string.debug_reminder_lab_attention_legacy_aliases, report.attentionLedgerLegacyAliasCount))
-                    Text(booleanFact(R.string.debug_reminder_lab_attention_recovered, report.attentionLedgerRecoveredFromInvalidState))
+                    Text(
+                        stringResource(
+                            R.string.debug_reminder_lab_attention_entries,
+                            report.attentionLedgerEntryCount,
+                        ),
+                    )
+                    Text(
+                        stringResource(
+                            R.string.debug_reminder_lab_attention_active,
+                            report.attentionLedgerActiveCount,
+                        ),
+                    )
+                    Text(
+                        stringResource(
+                            R.string.debug_reminder_lab_attention_terminal,
+                            report.attentionLedgerTerminalCount,
+                        ),
+                    )
+                    Text(
+                        stringResource(
+                            R.string.debug_reminder_lab_attention_sources,
+                            report.attentionLedgerSourceSequenceCount,
+                        ),
+                    )
+                    Text(
+                        stringResource(
+                            R.string.debug_reminder_lab_attention_legacy_aliases,
+                            report.attentionLedgerLegacyAliasCount,
+                        ),
+                    )
+                    Text(
+                        booleanFact(
+                            R.string.debug_reminder_lab_attention_recovered,
+                            report.attentionLedgerRecoveredFromInvalidState,
+                        ),
+                    )
                 }
             }
             item {
@@ -103,17 +133,32 @@ fun ReminderNotificationLabPanel(
                     Text(booleanFact(R.string.debug_reminder_lab_channel_blocked, report.channelBlocked))
                     Text(stringResource(R.string.debug_reminder_lab_channel_count, report.channelCount))
                     Text(stringResource(R.string.debug_reminder_lab_blocked_channel_count, report.blockedChannelCount))
-                    Text(booleanFact(R.string.debug_reminder_lab_exact_alarm_capability, report.exactAlarmCapabilityAvailable))
+                    Text(
+                        booleanFact(
+                            R.string.debug_reminder_lab_exact_alarm_capability,
+                            report.exactAlarmCapabilityAvailable,
+                        ),
+                    )
                     Text(booleanFact(R.string.debug_reminder_lab_reminders_enabled, report.remindersEnabled))
                     Text(booleanFact(R.string.debug_reminder_lab_quiet_hours, report.quietHoursActive))
                     report.channelImportance?.let { importance ->
                         Text(stringResource(R.string.debug_reminder_lab_importance, importance))
                     }
                     report.lastReconciledAtEpochMillis?.let { at ->
-                        Text(stringResource(R.string.debug_reminder_lab_last_reconciled, DateFormat.getDateTimeInstance().format(Date(at))))
+                        Text(
+                            stringResource(
+                                R.string.debug_reminder_lab_last_reconciled,
+                                DateFormat.getDateTimeInstance().format(Date(at)),
+                            ),
+                        )
                     }
                     report.lastDeliveredAtEpochMillis?.let { at ->
-                        Text(stringResource(R.string.debug_reminder_lab_last_delivered, DateFormat.getDateTimeInstance().format(Date(at))))
+                        Text(
+                            stringResource(
+                                R.string.debug_reminder_lab_last_delivered,
+                                DateFormat.getDateTimeInstance().format(Date(at)),
+                            ),
+                        )
                     }
                     report.lastRecoveryReason?.let { reason ->
                         Text(stringResource(R.string.debug_reminder_lab_last_recovery_reason, reason))

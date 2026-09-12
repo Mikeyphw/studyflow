@@ -29,6 +29,7 @@ class StudyFlowTvAttentionRuntimeTest {
         val runtime = StudyFlowTvAttentionRuntime(
             receiver = StudyFlowTvNotificationMediaReceiver(tv, StudyFlowPeerClock { 2_000L }, ledger),
             attentionLedger = ledger,
+            localPeer = tv,
             clock = StudyFlowPeerClock { 3_000L },
         )
         val result = runtime.ingest(delivery(phone, tv, allowTv = true))
@@ -46,6 +47,7 @@ class StudyFlowTvAttentionRuntimeTest {
         val runtime = StudyFlowTvAttentionRuntime(
             receiver = StudyFlowTvNotificationMediaReceiver(tv, StudyFlowPeerClock { 2_000L }, ledger),
             attentionLedger = ledger,
+            localPeer = tv,
             clock = StudyFlowPeerClock { 3_000L },
         )
         val result = runtime.ingest(delivery(phone, tv, allowTv = false))

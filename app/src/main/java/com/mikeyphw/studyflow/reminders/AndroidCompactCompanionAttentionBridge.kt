@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.reminders
 
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRoute
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedgerEntry
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowCompactAttentionProjection
 import com.mikeyphw.studyflow.core.link.StudyFlowCompactCompanionAvailability
@@ -10,65 +11,40 @@ import com.mikeyphw.studyflow.core.link.StudyFlowCompactCompanionProfile
 import com.mikeyphw.studyflow.core.link.StudyFlowCompactCompanionProjector
 import com.mikeyphw.studyflow.core.link.StudyFlowDeviceId
 
-/**
- * ATT08 Android bridge for phone-owned wearable/compact companions.
- *
- * The phone remains the ATT07 owner. Watches, lock-screen chips and quick settings tiles receive
- * bounded companion cards only when their parent phone is part of the route. This avoids pretending
- * a companion can wake independently when the phone did not own/mirror the delivery.
- */
+/** ATT08 Android production bridge: phone-owned Wear bridge, lock screen and Quick Settings tile. */
 object AndroidCompactCompanionAttentionBridge {
     fun defaultPhoneCompanions(
-        parentDeviceId: StudyFlowDeviceId = AndroidStudyFlowAttentionRouterBridge.localDeviceId,
+        parentDeviceId: StudyFlowDeviceId,
         nowEpochMillis: Long,
     ): List<StudyFlowCompactCompanionProfile> = listOf(
         StudyFlowCompactCompanionProfile(
-            companionId = StudyFlowCompactCompanionId("android-wearable-primary"),
-            displayName = "Wearable glance",
-            parentDeviceId = parentDeviceId,
-            formFactor = StudyFlowCompactCompanionFormFactor.WEARABLE,
-            availability = StudyFlowCompactCompanionAvailability.CONNECTED,
-            maxActions = 3,
-            canHandoff = true,
-            canVibrate = true,
-            canShowSensitiveText = false,
-            lastSeenAtEpochMillis = nowEpochMillis,
+            StudyFlowCompactCompanionId("android-wearable-primary"), "Wearable glance", parentDeviceId,
+            StudyFlowCompactCompanionFormFactor.WEARABLE, StudyFlowCompactCompanionAvailability.CONNECTED,
+            3, true, true, false, nowEpochMillis,
         ),
         StudyFlowCompactCompanionProfile(
-            companionId = StudyFlowCompactCompanionId("android-lock-screen-chip"),
-            displayName = "Lock-screen chip",
-            parentDeviceId = parentDeviceId,
-            formFactor = StudyFlowCompactCompanionFormFactor.LOCK_SCREEN,
-            availability = StudyFlowCompactCompanionAvailability.CONNECTED,
-            maxActions = 2,
-            canHandoff = true,
-            canVibrate = false,
-            canShowSensitiveText = false,
-            lastSeenAtEpochMillis = nowEpochMillis,
+            StudyFlowCompactCompanionId("android-lock-screen-chip"), "Lock-screen chip", parentDeviceId,
+            StudyFlowCompactCompanionFormFactor.LOCK_SCREEN, StudyFlowCompactCompanionAvailability.CONNECTED,
+            2, true, false, false, nowEpochMillis,
         ),
         StudyFlowCompactCompanionProfile(
-            companionId = StudyFlowCompactCompanionId("android-quick-tile"),
-            displayName = "Quick settings tile",
-            parentDeviceId = parentDeviceId,
-            formFactor = StudyFlowCompactCompanionFormFactor.QUICK_TILE,
-            availability = StudyFlowCompactCompanionAvailability.CONNECTED,
-            maxActions = 1,
-            canHandoff = true,
-            canVibrate = false,
-            canShowSensitiveText = false,
-            lastSeenAtEpochMillis = nowEpochMillis,
+            StudyFlowCompactCompanionId("android-quick-tile"), "Quick settings tile", parentDeviceId,
+            StudyFlowCompactCompanionFormFactor.QUICK_TILE, StudyFlowCompactCompanionAvailability.CONNECTED,
+            1, true, false, false, nowEpochMillis,
         ),
     )
 
     fun projectPhoneOwnedCompanions(
         occurrence: StudyFlowAttentionOccurrence,
         route: StudyFlowAttentionDeliveryRoute,
+        parentDeviceId: StudyFlowDeviceId,
         nowEpochMillis: Long,
-        companions: List<StudyFlowCompactCompanionProfile> = defaultPhoneCompanions(nowEpochMillis = nowEpochMillis),
+        ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
     ): StudyFlowCompactAttentionProjection = StudyFlowCompactCompanionProjector().project(
         occurrence = occurrence,
         route = route,
-        companions = companions,
+        companions = defaultPhoneCompanions(parentDeviceId, nowEpochMillis),
         nowEpochMillis = nowEpochMillis,
+        ledgerEntry = ledgerEntry,
     )
 }

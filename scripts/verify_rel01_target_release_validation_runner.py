@@ -57,8 +57,8 @@ def main() -> None:
             "Gradle REL01 verifier task missing")
     require('commandLine("python3", "scripts/verify_rel01_target_release_validation_runner.py")' in gradle,
             "Gradle REL01 verifier command missing")
-    require('"verifyRel01TargetReleaseValidationRunner"' in devtool,
-            "Devtool test lane must include REL01 verifier")
+    require('"verifyRel07Rel08FinalReleaseOpsSeal"' in devtool,
+            "Devtool test lane must include the terminal REL07/08 release-ops seal")
     require('"verifyRel01TargetReleaseValidationRunner"' in gradle,
             "checkAll must include REL01 verifier")
     require("REL01 target release validation runner" in readme,

@@ -43,10 +43,25 @@ def main() -> None:
     require(inventory.get("static_required_pass") == 211, "211 static verifier passes are required")
     require(set(inventory.get("external_evidence_gates", [])) == EXPECTED_EXTERNAL, "external gate set drifted")
     post_rel_final = set(inventory.get("post_rel_final_verifiers", []))
-    require(
-        post_rel_final == {"verify_tv_devtool_android_runner.py", "verify_rel_final_devtool_release_runner.py"},
-        "post-REL-FINAL verifier set drifted",
-    )
+    expected_post_rel_final = {
+        "verify_att01_unified_attention_foundation.py",
+        "verify_att02_android_attention_system.py",
+        "verify_att03_android_widget_suite.py",
+        "verify_att04_desktop_attention_runtime.py",
+        "verify_att05_web_pwa_attention_runtime.py",
+        "verify_att06_tv_attention_experience.py",
+        "verify_att07_cross_device_delivery_router.py",
+        "verify_att08_compact_companion_attention.py",
+        "verify_att09_calendar_schedule_export_attention.py",
+        "verify_att10_quiet_hours_focus_profiles_escalation_policy.py",
+        "verify_att11_notification_reliability_evidence_audit.py",
+        "verify_att12_attention_release_final_seal.py",
+        "verify_attention_roadmap_postseal_completion.py",
+        "verify_tv_devtool_android_runner.py",
+        "verify_rel_final_devtool_release_runner.py",
+        "verify_studyflow_gradle_task_graph_optimization_v4.py",
+    }
+    require(post_rel_final == expected_post_rel_final, "post-REL-FINAL verifier set drifted")
     policy = audit.get("audit_execution_policy", {})
     require(
         policy.get("exhaustive_static_audit") == "artifact_validation_before_gradle",

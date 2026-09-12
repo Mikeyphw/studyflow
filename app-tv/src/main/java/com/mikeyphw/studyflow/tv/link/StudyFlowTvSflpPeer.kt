@@ -19,6 +19,8 @@ import com.mikeyphw.studyflow.core.link.StudyFlowManualDiscovery
 import com.mikeyphw.studyflow.core.link.StudyFlowManualEndpointParser
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingPublicOffer
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingQrCodec
+import com.mikeyphw.studyflow.core.link.StudyFlowNotificationDelivery
+import com.mikeyphw.studyflow.core.link.StudyFlowNotificationDeliveryAck
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerRuntime
 import com.mikeyphw.studyflow.core.link.StudyFlowReconnectResult
 import com.mikeyphw.studyflow.core.link.StudyFlowTransportEndpoint
@@ -139,6 +141,10 @@ class StudyFlowTvSflpPeer(
 
     fun presenceViews(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPresenceView> =
         runtime.presenceViews(workspaceId)
+
+    fun setNotificationDeliveryHandler(
+        handler: ((StudyFlowNotificationDelivery) -> StudyFlowNotificationDeliveryAck)?,
+    ) = runtime.setNotificationDeliveryHandler(handler)
 
     fun revoke(peerDeviceId: StudyFlowDeviceId): StudyFlowTrustedPeerRecord? = runtime.revoke(peerDeviceId)
 

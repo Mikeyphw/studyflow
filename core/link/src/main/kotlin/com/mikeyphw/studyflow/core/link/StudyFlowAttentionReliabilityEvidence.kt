@@ -57,7 +57,9 @@ data class StudyFlowAttentionRouteAudit(
         require(candidateCount >= 0) { "Route-audit candidate count must not be negative" }
         require(eligibleCount >= 0) { "Route-audit eligible count must not be negative" }
         require(mirrors.distinctBy { it.deviceId }.size == mirrors.size) { "Route-audit mirrors must be unique" }
-        require(owner == null || mirrors.none { it.deviceId == owner.deviceId }) { "Route-audit owner cannot also be a mirror" }
+        require(owner == null || mirrors.none { it.deviceId == owner.deviceId }) {
+            "Route-audit owner cannot also be a mirror"
+        }
         require(explanation.isNotBlank()) { "Route-audit explanation must not be blank" }
     }
 
@@ -230,16 +232,28 @@ object StudyFlowAttentionReliabilityAnalyzer {
             activeCount = entries.count { it.state in activeStates },
             deliveredCount = entries.count { it.state in deliveredStates },
             missedCount = entries.count { it.state == StudyFlowAttentionDeliveryState.MISSED },
-            deferredCount = entries.count { it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END },
+            deferredCount = entries.count {
+                it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END
+            },
             snoozedCount = entries.count { it.state == StudyFlowAttentionDeliveryState.SNOOZED },
             dismissedCount = entries.count { it.state == StudyFlowAttentionDeliveryState.DISMISSED },
             doneCount = entries.count { it.state == StudyFlowAttentionDeliveryState.COMPLETED },
             silentCount = entries.count { it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.SILENT_DELIVERY },
-            compactOnlyCount = entries.count { it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.COMPACT_ONLY },
-            routedToPhoneCount = entries.count { it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE },
-            escalatedMirrorCount = entries.count { it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.ESCALATE_MIRROR },
-            duplicateSuppressedCount = entries.count { it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.SUPPRESS_DUPLICATE },
-            userActionRequiredCount = entries.count { it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.REQUIRE_USER_ACTION },
+            compactOnlyCount = entries.count {
+                it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.COMPACT_ONLY
+            },
+            routedToPhoneCount = entries.count {
+                it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE
+            },
+            escalatedMirrorCount = entries.count {
+                it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.ESCALATE_MIRROR
+            },
+            duplicateSuppressedCount = entries.count {
+                it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.SUPPRESS_DUPLICATE
+            },
+            userActionRequiredCount = entries.count {
+                it.policyAudit?.outcome == StudyFlowAttentionPolicyOutcome.REQUIRE_USER_ACTION
+            },
             deliveryAttemptCount = entries.sumOf(StudyFlowAttentionLedgerEntry::deliveryAttempts),
             auditedRouteCount = entries.count { it.routeAudit != null },
             averageDeliveryDelayMillis = deliveryDelays.takeIf { it.isNotEmpty() }?.average()?.toLong(),
@@ -298,39 +312,55 @@ object StudyFlowAttentionReliabilityAnalyzer {
     ): StudyFlowAttentionPlatformReliabilityDiagnostic {
         val ownerCount = audits.count { it.owner?.deviceId == device.deviceId }
         val mirrorCount = audits.count { audit -> audit.mirrors.any { it.deviceId == device.deviceId } }
-        val targeted = entries.count { it.targetDeviceId == device.deviceId || device.deviceId in it.occurrence.targetDeviceIds }
+        val targeted = entries.count {
+            it.targetDeviceId == device.deviceId || device.deviceId in it.occurrence.targetDeviceIds
+        }
         val surfaces = device.deliverySurfaces
         val stale = device.isStale(nowEpochMillis, staleAfterMillis)
-        val tv = device.clientKind == StudyFlowLinkClientKind.ANDROID_TV || device.clientKind == StudyFlowLinkClientKind.WEB_TV
+        val tv =
+            device.clientKind == StudyFlowLinkClientKind.ANDROID_TV ||
+                device.clientKind == StudyFlowLinkClientKind.WEB_TV
         val background = when (device.clientKind) {
             StudyFlowLinkClientKind.ANDROID -> device.notificationPermissionGranted && (
                 StudyFlowAttentionDeliverySurface.ANDROID_ALARM in surfaces ||
                     StudyFlowAttentionDeliverySurface.SYSTEM_NOTIFICATION in surfaces
                 )
-            StudyFlowLinkClientKind.WEB -> device.notificationPermissionGranted && StudyFlowAttentionDeliverySurface.WEB_PUSH in surfaces
+            StudyFlowLinkClientKind.WEB ->
+                device.notificationPermissionGranted &&
+                    StudyFlowAttentionDeliverySurface.WEB_PUSH in surfaces
             StudyFlowLinkClientKind.DESKTOP,
             StudyFlowLinkClientKind.ANDROID_TV,
             StudyFlowLinkClientKind.WEB_TV -> false
         }
         val status = when {
-            device.availability == StudyFlowAttentionDeviceAvailability.OFFLINE || stale -> StudyFlowAttentionPlatformReliabilityStatus.OFFLINE
+            device.availability == StudyFlowAttentionDeviceAvailability.OFFLINE || stale ->
+                StudyFlowAttentionPlatformReliabilityStatus.OFFLINE
             tv -> StudyFlowAttentionPlatformReliabilityStatus.FOREGROUND_ONLY
             background -> StudyFlowAttentionPlatformReliabilityStatus.READY
-            device.clientKind == StudyFlowLinkClientKind.WEB -> StudyFlowAttentionPlatformReliabilityStatus.FOREGROUND_ONLY
-            StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE in surfaces || StudyFlowAttentionDeliverySurface.DESKTOP_TRAY in surfaces -> StudyFlowAttentionPlatformReliabilityStatus.DEGRADED
+            device.clientKind == StudyFlowLinkClientKind.WEB ->
+                StudyFlowAttentionPlatformReliabilityStatus.FOREGROUND_ONLY
+            StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE in surfaces ||
+                StudyFlowAttentionDeliverySurface.DESKTOP_TRAY in surfaces ->
+                StudyFlowAttentionPlatformReliabilityStatus.DEGRADED
             !device.notificationPermissionGranted -> StudyFlowAttentionPlatformReliabilityStatus.BLOCKED
             else -> StudyFlowAttentionPlatformReliabilityStatus.DEGRADED
         }
         val explanation = when (status) {
-            StudyFlowAttentionPlatformReliabilityStatus.READY -> "A durable supported delivery surface is currently available."
+            StudyFlowAttentionPlatformReliabilityStatus.READY ->
+                "A durable supported delivery surface is currently available."
             StudyFlowAttentionPlatformReliabilityStatus.FOREGROUND_ONLY -> if (tv) {
                 "TV attention is foreground-only; closed-TV delivery requires a capable phone, desktop, or Web owner."
             } else {
                 "Browser attention is foreground-only unless an actual Web Push subscription is available."
             }
-            StudyFlowAttentionPlatformReliabilityStatus.BLOCKED -> "The platform cannot currently surface a normal notification; ATT01 ledger evidence is still retained."
-            StudyFlowAttentionPlatformReliabilityStatus.OFFLINE -> "The device is offline or stale and is not a reliable current delivery owner."
-            StudyFlowAttentionPlatformReliabilityStatus.DEGRADED -> "Attention can still be represented, but delivery depends on an in-app, tray, badge, or other limited surface."
+            StudyFlowAttentionPlatformReliabilityStatus.BLOCKED ->
+                "The platform cannot currently surface a normal notification; " +
+                    "ATT01 ledger evidence is still retained."
+            StudyFlowAttentionPlatformReliabilityStatus.OFFLINE ->
+                "The device is offline or stale and is not a reliable current delivery owner."
+            StudyFlowAttentionPlatformReliabilityStatus.DEGRADED ->
+                "Attention can still be represented, but delivery depends on an in-app, tray, badge, " +
+                    "or other limited surface."
         }
         return StudyFlowAttentionPlatformReliabilityDiagnostic(
             deviceId = device.deviceId,
@@ -351,10 +381,16 @@ object StudyFlowAttentionReliabilityAnalyzer {
 
 object StudyFlowAttentionReliabilityExport {
     fun toJson(snapshot: StudyFlowAttentionReliabilityEvidenceSnapshot): String =
-        StudyFlowAttentionWireJson.encodeToString(StudyFlowAttentionReliabilityEvidenceSnapshot.serializer(), snapshot)
+        StudyFlowAttentionWireJson.encodeToString(
+            StudyFlowAttentionReliabilityEvidenceSnapshot.serializer(),
+            snapshot,
+        )
 
     fun toCsv(snapshot: StudyFlowAttentionReliabilityEvidenceSnapshot): String = buildString {
-        appendLine("occurrence_id,workspace_id,category,state,policy_outcome,route_reason,owner_device,mirror_devices,scheduled_at,updated_at,delivered_at,delivery_attempts")
+        appendLine(
+            "occurrence_id,workspace_id,category,state,policy_outcome,route_reason,owner_device," +
+                "mirror_devices,scheduled_at,updated_at,delivered_at,delivery_attempts",
+        )
         snapshot.evidence.forEach { record ->
             appendLine(
                 listOf(

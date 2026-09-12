@@ -4,6 +4,7 @@ import json
 import re
 import sqlite3
 import sys
+import tomllib
 
 from phase_version import phase_version_at_least
 
@@ -321,13 +322,22 @@ require(
     "Validation boundary",
 )
 require("docs/quality/PHASE_22_ACCEPTANCE.md", "eight promised content types")
-require(
-    ".devtool.toml",
-    '":feature:search:compileDebugKotlin"',
-    '":feature:search:compileDebugUnitTestKotlin"',
-    '":feature:search:testDebugUnitTest"',
-    '":feature:search:lintDebug"',
-)
+try:
+    devtool = tomllib.loads((ROOT / ".devtool.toml").read_text(encoding="utf-8"))
+    target = devtool.get("targets", {}).get("studyflow_android", {})
+    phases = target.get("validation", {}).get("phases", {})
+    if phases.get("compile") != []:
+        failures.append("Phase 22 expects the redundant Devtool compile phase to stay disabled")
+    if ":feature:search:testDebugUnitTest" not in phases.get("unit-test", []):
+        failures.append("Devtool unit-test phase does not cover :feature:search")
+    lint_tasks = phases.get("lint", [])
+    if ":app:lintDebug" not in lint_tasks or ":app:lintRelease" not in lint_tasks:
+        failures.append("Devtool app-level lint roots are incomplete")
+    app_build = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
+    if "checkDependencies = true" not in app_build:
+        failures.append("app lint must cover dependent feature modules through checkDependencies")
+except (OSError, tomllib.TOMLDecodeError) as error:
+    failures.append(f"unable to validate optimized Devtool topology: {error}")
 
 verify_discovery_sql()
 

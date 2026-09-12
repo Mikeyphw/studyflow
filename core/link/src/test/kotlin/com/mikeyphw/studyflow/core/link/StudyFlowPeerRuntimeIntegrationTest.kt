@@ -57,6 +57,58 @@ class StudyFlowPeerRuntimeIntegrationTest {
     }
 
     @Test
+    fun authenticatedPeerCarriesAttentionNotificationToTargetHandler() {
+        var now = 15_000L
+        val clock = StudyFlowPeerClock { now++ }
+        val phone = runtime("device-notify-phone", "Phone", StudyFlowLinkClientKind.ANDROID, clock)
+        val tv = runtime("device-notify-tv", "TV", StudyFlowLinkClientKind.ANDROID_TV, clock)
+        val tvEndpoint = tv.startServer("127.0.0.1", 0)
+        val workspace = StudyFlowWorkspaceId("plan-notification")
+        var received: StudyFlowNotificationDelivery? = null
+        tv.setNotificationDeliveryHandler { delivery ->
+            received = delivery
+            StudyFlowNotificationDeliveryAck(
+                messageId = StudyFlowMessageId("ack-notification-test"),
+                notificationId = delivery.notification.notificationId,
+                targetDeviceId = tv.localIdentity.descriptor.deviceId,
+                acknowledgedSequence = delivery.sequence,
+                status = StudyFlowNotificationDeliveryStatus.ACCEPTED,
+                acknowledgedAtEpochMillis = clock.nowEpochMillis(),
+            )
+        }
+
+        try {
+            val offer = tv.createPairingOffer(listOf(tvEndpoint.canonicalUri()))
+            phone.pairingClient.pairFromQr(offer.qrPayload)
+            phone.rememberEndpoints(tv.localIdentity.descriptor.deviceId, listOf(tvEndpoint))
+            val occurrence = StudyFlowAttentionOccurrence(
+                occurrenceId = StudyFlowAttentionOccurrenceId("att-rpc-notification"),
+                workspaceId = workspace,
+                category = StudyFlowAttentionCategory.PLANNED_STUDY,
+                priority = StudyFlowAttentionPriority.NORMAL,
+                scheduledAtEpochMillis = now,
+                originalScheduledAtEpochMillis = now,
+            )
+            val delivery = StudyFlowAttentionNotificationDeliveryFactory.create(
+                occurrence = occurrence,
+                sourceDeviceId = phone.localIdentity.descriptor.deviceId,
+                targetDeviceId = tv.localIdentity.descriptor.deviceId,
+                title = "Study now",
+                body = "Remote ATT07 delivery",
+                nowEpochMillis = clock.nowEpochMillis(),
+            )
+
+            val ack = phone.deliverNotification(workspace, tv.localIdentity.descriptor.deviceId, delivery, tvEndpoint)
+            assertEquals(StudyFlowNotificationDeliveryStatus.ACCEPTED, ack.status)
+            assertEquals(delivery.messageId, requireNotNull(received).messageId)
+            assertEquals(tv.localIdentity.descriptor.deviceId, requireNotNull(received).targetDeviceId)
+        } finally {
+            phone.close()
+            tv.close()
+        }
+    }
+
+    @Test
     fun revokedPeerCannotOpenAuthenticatedSyncSession() {
         var now = 20_000L
         val clock = StudyFlowPeerClock { now++ }

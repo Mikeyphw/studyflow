@@ -95,8 +95,12 @@ def main() -> None:
     )
     require(
         ".devtool.toml",
-        "verifyStudyFlowTvHomeSurface",
+        "verifyStudyFlowTvAllContracts",
     )
+    aggregate = read("build.gradle.kts").split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+    aggregate = aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+    if "verifyStudyFlowTvHomeSurface" not in aggregate:
+        fail("aggregate TV contract gate missing verifyStudyFlowTvHomeSurface")
     require(
         "ANDROID_TV_ROADMAP.md",
         "## TVOV06 — Home surface",

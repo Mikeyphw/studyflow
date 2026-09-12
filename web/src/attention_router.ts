@@ -122,7 +122,7 @@ const HANDLED_STATES = new Set<StudyFlowAttentionDeliveryState>([
 export function defaultAttentionSurfacesForClient(kind: StudyFlowAttentionDeviceCapability["clientKind"]): StudyFlowAttentionDeliverySurface[] {
   switch (kind) {
     case "android": return ["android_alarm", "system_notification", "widget_or_badge"];
-    case "desktop": return ["system_notification", "desktop_tray"];
+    case "desktop": return ["system_notification", "desktop_tray", "widget_or_badge"];
     case "web": return ["web_push", "system_notification", "widget_or_badge"];
     case "android_tv":
     case "web_tv": return ["foreground_banner", "ledger_only"];
@@ -146,6 +146,70 @@ export function attentionDeviceFromWebPeer(
     batteryConstrained: input.batteryConstrained,
     lastSeenAtEpochMillis: input.lastSeenAtEpochMillis,
     mutedUntilEpochMillis: input.mutedUntilEpochMillis,
+  };
+}
+
+export interface StudyFlowWebAttentionTopology {
+  devices: StudyFlowAttentionDeviceCapability[];
+  context: StudyFlowAttentionRoutingContext;
+}
+
+/** ATT07 production topology: canonical SFLP identity + trusted peer/presence candidates. */
+export function attentionTopologyFromWebPeer(
+  peer: StudyFlowWebLinkPeer,
+  workspaceId: string,
+  nowEpochMillis: number,
+  localDevice: StudyFlowAttentionDeviceCapability,
+): StudyFlowWebAttentionTopology {
+  const presence = peer.presenceViews(workspaceId);
+  const newest = new Map<string, typeof presence[number]>();
+  for (const view of presence) {
+    const previous = newest.get(view.sourceDevice.deviceId);
+    if (!previous || previous.observedAtEpochMillis < view.observedAtEpochMillis) newest.set(view.sourceDevice.deviceId, view);
+  }
+  const devices: StudyFlowAttentionDeviceCapability[] = [localDevice];
+  for (const record of peer.trustedPeers.filter(value => value.state === "trusted")) {
+    if (record.peer.deviceId === peer.identity.deviceId) continue;
+    const view = newest.get(record.peer.deviceId);
+    const foregroundOnly = record.peer.clientKind === "web" || record.peer.clientKind === "android_tv" || record.peer.clientKind === "web_tv";
+    const foreground = foregroundOnly && view?.status === "online";
+    const availability: StudyFlowAttentionDeviceAvailability = view
+      ? view.status === "online" ? (foreground ? "foreground" : "online") : view.status === "away" ? "away" : "offline"
+      : (record.peer.clientKind === "android" || record.peer.clientKind === "desktop") ? "online" : "offline";
+    const deliverySurfaces: StudyFlowAttentionDeliverySurface[] = record.peer.clientKind === "android"
+      ? ["android_alarm", "system_notification", "widget_or_badge"]
+      : record.peer.clientKind === "desktop"
+        ? ["system_notification", "desktop_tray", "widget_or_badge"]
+        : foreground
+          ? ["foreground_banner", ...(record.peer.clientKind === "web" ? ["widget_or_badge" as const] : ["ledger_only" as const])]
+          : ["ledger_only"];
+    devices.push({
+      deviceId: record.peer.deviceId,
+      displayName: record.peer.displayName,
+      clientKind: record.peer.clientKind,
+      availability,
+      deliverySurfaces,
+      foregroundActive: foreground,
+      notificationPermissionGranted: record.peer.clientKind === "android" || record.peer.clientKind === "desktop",
+      primaryUserDevice: record.peer.clientKind === "android",
+      designatedNotifier: record.peer.clientKind === "android" || record.peer.clientKind === "desktop",
+      lastSeenAtEpochMillis: view?.observedAtEpochMillis ?? record.lastSeenAtEpochMillis ?? record.updatedAtEpochMillis,
+    });
+  }
+  const foregroundDeviceId = devices
+    .filter(device => device.foregroundActive)
+    .sort((a, b) => (b.lastSeenAtEpochMillis ?? 0) - (a.lastSeenAtEpochMillis ?? 0))[0]?.deviceId;
+  const primaryDeviceId = devices.find(device => device.primaryUserDevice)?.deviceId ?? peer.identity.deviceId;
+  return {
+    devices,
+    context: {
+      localDeviceId: peer.identity.deviceId,
+      primaryDeviceId,
+      foregroundDeviceId,
+      designatedNotifierDeviceIds: devices.filter(device => device.designatedNotifier).map(device => device.deviceId),
+      staleAfterMillis: 180_000,
+      allowTvForegroundOwners: true,
+    },
   };
 }
 

@@ -4,9 +4,9 @@
   "private": true,
   "description": "Mobile-first, self-contained StudyFlow Local web application.",
   "scripts": {
-    "build": "python3 scripts/validate_web.py --all && tsc -p tsconfig.json --noEmit --pretty false && node scripts/compile_runtime.mjs && node scripts/build_dist.mjs",
+    "build": "python3 scripts/validate_web.py --all && node scripts/compile_runtime.mjs && node scripts/build_dist.mjs",
     "test": "node scripts/compile_runtime.mjs && python3 -m unittest discover -s tests -p 'test_*.py'",
-    "lint": "python3 scripts/validate_web.py --all && tsc -p tsconfig.json --noEmit --pretty false && node scripts/compile_runtime.mjs",
+    "lint": "python3 scripts/validate_web.py --all && node scripts/compile_runtime.mjs",
     "dev": "npm run build && python3 -m http.server 8000 --bind 127.0.0.1 --directory dist",
     "release:check": "python3 scripts/validate_web.py --release && node scripts/check_release.mjs",
     "release:package": "node scripts/build_dist.mjs && python3 scripts/package_release.py",

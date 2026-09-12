@@ -85,15 +85,17 @@ build = read("build.gradle.kts")
 require('tasks.register<Exec>("verifyStudyFlowTvDependencyBudget")' in build, "missing Gradle TVOV02 dependency-budget verifier task")
 
 devtool = read(".devtool.toml")
-studyflow_tv = devtool[devtool.find("[targets.studyflow_tv]") :]
+tv_start = devtool.find("[targets.studyflow_tv]")
+tv_end = devtool.find("\n[targets.studyflow_tv_release]", tv_start)
+studyflow_tv = devtool[tv_start:] if tv_end < 0 else devtool[tv_start:tv_end]
 next_android_profile = studyflow_tv.find("[targets.studyflow_android.validation.phase_profiles.preflight]")
 if next_android_profile >= 0:
     studyflow_tv = studyflow_tv[:next_android_profile]
-for task in (
-    "verifyStudyFlowTvDependencyBudget",
-    ":app-tv:lintDebug",
-):
-    require(task in studyflow_tv, f"studyflow_tv target must include {task}")
+require("verifyStudyFlowTvAllContracts" in studyflow_tv, "studyflow_tv target must include aggregate TV contract gate")
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvDependencyBudget" in tv_aggregate, "aggregate TV gate must include dependency-budget verifier")
+require(":app-tv:lintDebug" in studyflow_tv, "studyflow_tv target must retain app-level Debug lint")
 require(":app:" not in studyflow_tv, "studyflow_tv target must not run phone app tasks")
 
 roadmap = read("ANDROID_TV_ROADMAP.md")

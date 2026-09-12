@@ -234,8 +234,8 @@ require(
     "checkAll does not retain the SFLP02/SFLP03 verifier",
 )
 require(
-    devtool.count('"verifySflp02Sflp03JournalReconciliation"') >= 2,
-    "Devtool Android/Desktop shared validation does not retain SFLP02/SFLP03",
+    devtool.count('"verifySflp24FinalReleaseSeal"') >= 2,
+    "Devtool normal/resumable validation must retain the terminal SFLP seal",
 )
 
 line_length_paths = (

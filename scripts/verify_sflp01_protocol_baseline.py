@@ -163,8 +163,9 @@ require(
 )
 require('dependsOn(":core:link:test")' in root_gradle, "SFLP01 Gradle verifier must depend on :core:link:test")
 require('"verifySflp01ProtocolBaseline"' in root_gradle, "checkAll does not retain the SFLP01 verifier")
-require(":core:link:compileKotlin" in devtool, "Devtool does not compile core:link in shared validation")
+require('"verifySflp24FinalReleaseSeal"' in devtool, "Devtool must retain the terminal SFLP seal")
 require(":core:link:test" in devtool, "Devtool does not retain core:link tests")
+require(":core:link:compileKotlin" not in devtool, "Devtool should rely on test task dependencies instead of an explicit compile phase")
 
 # Preserve the already-established parity baseline while SFLP starts layering on top of it.
 parity = subprocess.run(

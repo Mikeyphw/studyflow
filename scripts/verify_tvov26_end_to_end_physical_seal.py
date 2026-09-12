@@ -203,9 +203,16 @@ for token in (
     'tasks.register<Exec>("verifyStudyFlowTvFinalProductSeal")',
 ):
     require(token in root_gradle, f"TVOV26 Gradle wiring missing {token}")
+require("verifyStudyFlowTvAllContracts" in devtool, "studyflow_tv Devtool target missing aggregate TV contract gate")
+tv_aggregate = root_gradle.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
 for token in ("verifyStudyFlowTvEndToEndPhysicalSealContracts", "verifyStudyFlowTvRoadmapInstructions"):
-    require(token in devtool, f"studyflow_tv Devtool target missing TVOV26 contract task: {token}")
-require("verifyStudyFlowTvPhysicalTwoDeviceAcceptance" not in devtool, "routine Devtool target must not pretend physical evidence exists")
+    require(token in tv_aggregate, f"aggregate TV gate missing TVOV26 contract task: {token}")
+require("[targets.studyflow_tv_release]" in devtool, "TV release target missing")
+routine_start = devtool.index("[targets.studyflow_tv]")
+routine_end = devtool.index("[targets.studyflow_tv_release]", routine_start)
+routine_tv = devtool[routine_start:routine_end]
+require("verifyStudyFlowTvPhysicalTwoDeviceAcceptance" not in routine_tv, "routine TV target must not pretend physical evidence exists")
 require("TVOV26  End-to-end physical-device final seal [implemented]" in roadmap, "roadmap must mark TVOV26 implementation complete")
 require("TVOV26  End-to-end physical-device final seal [implemented]" in rules, "working rules must mark TVOV26 implementation complete")
 require("TVOV00 through TVOV26" in rules, "working rules must record complete TV chain")

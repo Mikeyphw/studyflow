@@ -83,7 +83,9 @@ for forbidden in ('project(":core:data")', 'project(":core:database")', 'project
     require(forbidden not in app_build, f"TVOV15 must preserve app-tv dependency boundary; found {forbidden}")
 
 require('tasks.register<Exec>("verifyStudyFlowTvSettings")' in build, "missing Gradle TVOV15 verifier task")
-require("verifyStudyFlowTvSettings" in devtool, "studyflow_tv target must run TVOV15 verifier")
+require("verifyStudyFlowTvAllContracts" in devtool, "studyflow_tv target must run aggregate TV contracts")
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1].split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvSettings" in tv_aggregate, "aggregate TV contracts must own TVOV15 verifier")
 for token in (
     "TVOV15  Minimal TV settings [implemented]",
     "TVOV15 — Minimal TV settings",

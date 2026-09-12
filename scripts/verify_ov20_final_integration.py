@@ -65,14 +65,14 @@ require(
     and build_gradle.count('"verifyOv20FinalIntegration"') >= 1,
     "checkAll must retain OV19/OV20 verifier dependencies",
 )
-require(devtool.count('"verifyOv19PromiseAudit"') >= 2, "Devtool must retain OV19 in default/preflight validation")
-require(devtool.count('"verifyOv20FinalIntegration"') >= 2, "Devtool must retain OV20 in default/preflight validation")
+require('"verifyStudyFlowAndroidPreflightContracts"' in devtool, "Devtool must retain the aggregate Android preflight gate")
+require('"verifyStudyFlowAndroidPreflightContracts"' in devtool, "Devtool must retain the aggregate Android preflight gate")
 require(
-    'build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]' in devtool,
-    "ordinary Devtool build must not create unsigned Release outputs",
+    '":app:assembleDebug"' in devtool and '":app:assembleRelease"' not in devtool.split("[targets.studyflow_android.tasks]", 1)[1].split("[targets.studyflow_android.artifacts]", 1)[0],
+    "ordinary Devtool Android build must remain Debug-only",
 )
 require(
-    'package = [\n  "prepareDevtoolValidationArtifacts",\n  ":app:assembleDebug",\n]' in devtool,
+    'package = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]' in devtool,
     "ordinary Devtool package phase must be Debug-only",
 )
 for token in (

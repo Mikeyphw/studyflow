@@ -202,8 +202,8 @@ for token in ("Phase 63 adds", "Phase 64 adds"):
     require(token in readme, f"README Phase 63/64 summary missing: {token}")
 require("# Phase 63-64 Exam Runbook and Study Sprint" in changelog, "changelog Phase 63/64 entry missing")
 require(
-    devtool.count('"verifyPhase63_64ExamRunbookSprintSeal"') >= 2,
-    "Devtool phase metadata must retain the Phase 63/64 seal for deferred campaign validation",
+    '"verifyStudyFlowAndroidPreflightContracts"' in devtool,
+    "Devtool must retain the aggregate Android preflight gate that owns Phase 63/64",
 )
 
 for source_path in (

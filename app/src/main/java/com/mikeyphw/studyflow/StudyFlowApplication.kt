@@ -41,6 +41,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionCategory
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedger
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionWorkspace
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportClient
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvReceiverDiscovery
@@ -201,6 +202,7 @@ private class DefaultAppContainer(
         studyPracticeRepository = studyPracticeRepository,
         studySessionRepository = studySessionRepository,
         attentionLedger = attentionLedger,
+        linkPeerProvider = { linkPeer },
     )
     override val createStudyPlan = CreateStudyPlan(studyPlanRepository)
     override val samplePlanProvisioner = SamplePlanProvisioner(
@@ -284,6 +286,7 @@ private class DefaultAppContainer(
         ) {
             reminderDeliveryCoordinator.createNotificationChannels()
         }
+        linkPeer.runtime.setNotificationDeliveryHandler(reminderDeliveryCoordinator::receiveRemoteNotification)
         retryInitialization()
     }
 
@@ -352,9 +355,7 @@ private class DefaultAppContainer(
         val occurrenceStore = StudyReminderOccurrenceStore(application)
         val now = System.currentTimeMillis()
         manageStudyPlan.plans.first().forEach { plan ->
-            val workspaceId = StudyFlowWorkspaceId(
-                StudyFlowAttentionOccurrenceId.deterministic("local-plan", plan.id.value).value,
-            )
+            val workspaceId = StudyFlowAttentionWorkspace.forPlanId(plan.id.value)
             occurrenceStore.scheduled(plan.id).forEach { scheduled ->
                 attentionLedger.upsertScheduled(
                     occurrence = StudyFlowAttentionOccurrence(

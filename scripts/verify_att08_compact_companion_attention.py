@@ -69,7 +69,7 @@ require("docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md", "Compact companion a
 require("README.md", "ATT08 — Compact Companion Attention")
 require("CHANGELOG.md", "ATT08 — Compact Companion Attention")
 require("build.gradle.kts", "verifyAtt08CompactCompanionAttention")
-require(".devtool.toml", '"verifyAtt08CompactCompanionAttention"')
+require(".devtool.toml", '"verifyAttentionRoadmapPostsealCompletion"')
 
 if errors:
     print("ATT08 Compact Companion Attention verification FAILED")

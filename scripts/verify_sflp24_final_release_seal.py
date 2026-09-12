@@ -92,11 +92,18 @@ if 'verifySflp24FinalReleaseSeal",\n        "verifySflp22Sflp23AccountBackupVali
     fail('detected inverted dependency cycle from SFLP22/SFLP23 back to SFLP24')
 
 toml = (ROOT / '.devtool.toml').read_text(encoding='utf-8')
-for task in SFLP_TASKS:
-    if f'"{task}"' not in toml:
-        fail(f'.devtool.toml test lane missing {task}')
-if toml.count('"verifySflp24FinalReleaseSeal"') != 1:
-    fail('.devtool.toml must name verifySflp24FinalReleaseSeal exactly once')
+import tomllib
+config = tomllib.loads(toml)
+android = config['targets']['studyflow_android']
+test_lane = android.get('tasks', {}).get('test', [])
+unit_lane = android.get('validation', {}).get('phases', {}).get('unit-test', [])
+if test_lane.count('verifySflp24FinalReleaseSeal') != 1:
+    fail('.devtool.toml default Android test lane must name verifySflp24FinalReleaseSeal exactly once')
+if unit_lane.count('verifySflp24FinalReleaseSeal') != 1:
+    fail('.devtool.toml resumable unit-test lane must name verifySflp24FinalReleaseSeal exactly once')
+for task in SFLP_TASKS[:-1]:
+    if task in unit_lane:
+        fail(f'resumable lane redundantly schedules focused SFLP predecessor: {task}')
 
 golden = json.loads((ROOT / 'protocol/sflp/v1/golden/final-release-validation-plan.json').read_text(encoding='utf-8'))
 resource = json.loads((ROOT / 'core/link/src/test/resources/sflp/v1/final-release-validation-plan.json').read_text(encoding='utf-8'))

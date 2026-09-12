@@ -50,7 +50,9 @@ require(
     "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAttentionDeliveryRouterBridge.kt",
     "DESKTOP_TRAY",
     "nativeNotificationsAvailable",
-    "foregroundActive = true",
+    "StudyFlowAttentionTopologyProjector.project",
+    "trustedPeers",
+    "presenceViews",
 )
 require(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/attention/StudyFlowTvAttentionDeliveryRouterBridge.kt",
@@ -71,7 +73,30 @@ require("web/runtime/attention_router.js", "exports.routeStudyFlowAttentionDeliv
 require("web/dist/runtime/attention_router.js", "exports.createStudyFlowAttentionHandoffRequest")
 require("web/tests/test_att07_attention_router.py", "Att07AttentionRouterTests")
 require("web/tests/att07_router_runner.mjs", "ATT07 Web attention router tests passed")
-require("web/src/attention.ts", "routeSummary", "routeStudyFlowAttentionDelivery")
+require("web/src/attention.ts", "routeSummary", "routeStudyFlowAttentionDelivery", "attentionTopologyFromWebPeer")
+require(
+    "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowAttentionTopologyProjection.kt",
+    "StudyFlowAttentionTopologyProjector",
+    "trustedPeers",
+    "presenceViews",
+    "FOREGROUND_BANNER",
+)
+require(
+    "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt",
+    "NotificationDeliver",
+    "notificationDeliveryHandler",
+    "fun deliverNotification",
+)
+require(
+    "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
+    "dispatchRemoteRouteTargets",
+    "runtime.deliverNotification",
+)
+require(
+    "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAttentionRuntime.kt",
+    "dispatchRemoteRouteTargets",
+    "runtime.deliverNotification",
+)
 require("web/src/react/App.tsx", "Delivery router", "routeSummary.ownedCount")
 require("ATT07_CROSS_DEVICE_DELIVERY_ROUTER.md", "verifyAtt07CrossDeviceDeliveryRouter", "foreground-truthful")
 require("docs/product/ATTENTION_DELIVERY_ROUTER.md", "one owner", "TV closed-app alarms are not")
@@ -79,7 +104,7 @@ require("docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md", "Cross-device attent
 require("README.md", "ATT07 — Cross-Device Delivery Router")
 require("CHANGELOG.md", "ATT07 — Cross-Device Delivery Router")
 require("build.gradle.kts", "verifyAtt07CrossDeviceDeliveryRouter")
-require(".devtool.toml", '"verifyAtt07CrossDeviceDeliveryRouter"')
+require(".devtool.toml", '"verifyAttentionRoadmapPostsealCompletion"')
 
 if errors:
     print("ATT07 Cross-Device Delivery Router verification FAILED")

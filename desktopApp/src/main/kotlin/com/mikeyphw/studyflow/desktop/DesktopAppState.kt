@@ -822,6 +822,13 @@ class DesktopAppState(
         attentionRevision += 1
     }
 
+    fun exportDesktopAttentionCalendar() {
+        val exported = runCatching { services.attentionRuntime?.exportCalendar() }.getOrNull()
+        val message = exported?.let { "StudyFlow calendar exported to $it" }
+            ?: "Calendar export cancelled or unavailable"
+        services.platformPorts.notifications.showInfo(StudyFlowDesktopBoundary.appName, message)
+    }
+
     fun updateLinkQrInput(value: String) {
         linkQrInput = value
     }

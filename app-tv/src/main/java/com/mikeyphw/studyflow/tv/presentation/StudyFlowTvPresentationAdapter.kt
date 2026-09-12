@@ -316,6 +316,8 @@ object StudyFlowTvPresentationAdapter {
                 destination = destinationFor(item.targetSurface),
                 row = index / 2,
                 column = 1 + (index % 2),
+                scheduledStartEpochMillis = item.scheduledStartEpochMillis,
+                plannedDurationMinutes = item.plannedDurationMinutes,
             )
         }
         if (items.isEmpty()) return waitingSchedule()

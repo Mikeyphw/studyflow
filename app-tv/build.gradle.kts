@@ -61,6 +61,7 @@ android {
     }
 
     lint {
+        checkDependencies = true
         disable += setOf(
             "AndroidGradlePluginVersion",
             "GradleDependency",

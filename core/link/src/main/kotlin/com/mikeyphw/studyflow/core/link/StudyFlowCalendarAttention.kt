@@ -180,7 +180,12 @@ class StudyFlowCalendarAttentionExporter {
         val exported = items.asSequence()
             .onEach {
                 if (it.completed && !preferences.includeCompleted) completedSuppressed += 1
-                else if (it.kind == StudyFlowCalendarEventKind.REVIEW && !preferences.includeReviews) reviewSuppressed += 1
+                else if (
+                    it.kind == StudyFlowCalendarEventKind.REVIEW &&
+                    !preferences.includeReviews
+                ) {
+                    reviewSuppressed += 1
+                }
                 else if (it.startEpochMillis !in windowStart..windowEnd) outsideSuppressed += 1
             }
             .filterNot { it.completed && !preferences.includeCompleted }
@@ -203,7 +208,9 @@ class StudyFlowCalendarAttentionExporter {
                 reviewSuppressedCount = reviewSuppressed,
                 attentionOccurrenceCount = exported.count { it.attentionOccurrence != null },
                 privacyMode = preferences.privacyMode,
-                explanation = "ATT09 exports schedule events and matching attention occurrences without becoming a background delivery owner.",
+                explanation =
+                    "ATT09 exports schedule events and matching attention occurrences without " +
+                        "becoming a background delivery owner.",
             ),
             icsText = ics,
         )
@@ -226,7 +233,9 @@ class StudyFlowCalendarAttentionExporter {
                 "Open in StudyFlow: $routeHash",
                 "Source: ATT09 Calendar / Schedule Export Attention Integration.",
             ).joinToString("\n")
-            StudyFlowCalendarPrivacyMode.PRIVATE_TITLE -> "Study details are hidden by your ATT09 calendar privacy setting. Open StudyFlow for the full plan."
+            StudyFlowCalendarPrivacyMode.PRIVATE_TITLE ->
+                "Study details are hidden by your ATT09 calendar privacy setting. " +
+                    "Open StudyFlow for the full plan."
             StudyFlowCalendarPrivacyMode.BUSY_ONLY -> "Busy time exported by StudyFlow. Details hidden."
         }
         val end = if (allDay) startEpochMillis else startEpochMillis + durationMinutes.minutesToMillis()
@@ -236,7 +245,11 @@ class StudyFlowCalendarAttentionExporter {
             null
         }
         return StudyFlowCalendarAttentionEvent(
-            exportId = StudyFlowCalendarExportId.deterministic(workspaceId.value, itemId.value, startEpochMillis.toString()),
+            exportId = StudyFlowCalendarExportId.deterministic(
+                workspaceId.value,
+                itemId.value,
+                startEpochMillis.toString(),
+            ),
             item = this,
             summary = safeSummary,
             description = safeDescription,
@@ -253,7 +266,12 @@ class StudyFlowCalendarAttentionExporter {
     ): StudyFlowAttentionOccurrence {
         val dueAt = max(0L, startEpochMillis - reminderLeadMinutes.minutesToMillis())
         return StudyFlowAttentionOccurrence(
-            occurrenceId = StudyFlowAttentionOccurrenceId.deterministic("calendar", workspaceId.value, itemId.value, startEpochMillis.toString()),
+            occurrenceId = StudyFlowAttentionOccurrenceId.deterministic(
+                "calendar",
+                workspaceId.value,
+                itemId.value,
+                startEpochMillis.toString(),
+            ),
             workspaceId = workspaceId,
             scheduleEntityId = itemId,
             category = attentionCategory,

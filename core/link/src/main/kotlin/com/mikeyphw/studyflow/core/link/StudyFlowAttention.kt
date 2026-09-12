@@ -488,7 +488,9 @@ class StudyFlowAttentionLedger(
             deliveredCount = snapshot.entries.count { it.state.deliveredOrHandled() },
             sourceSequenceCount = snapshot.lastSequenceBySource.size,
             legacyDeliveredAliasCount = snapshot.legacyDeliveredOccurrenceIds.size,
-            lastUpdatedAtEpochMillis = snapshot.entries.maxOfOrNull(StudyFlowAttentionLedgerEntry::updatedAtEpochMillis),
+            lastUpdatedAtEpochMillis = snapshot.entries.maxOfOrNull(
+                StudyFlowAttentionLedgerEntry::updatedAtEpochMillis,
+            ),
             loadRecoveredFromInvalidState = recoveredFromInvalidState,
         )
     }
@@ -528,7 +530,11 @@ class StudyFlowAttentionLedger(
         val newest = value.entries.sortedByDescending(StudyFlowAttentionLedgerEntry::updatedAtEpochMillis)
         val active = newest.filterNot { it.state.isTerminal() }
         val terminal = newest.filter { it.state.isTerminal() }
-        return value.copy(entries = (active + terminal).take(maxEntries).sortedBy(StudyFlowAttentionLedgerEntry::updatedAtEpochMillis))
+        return value.copy(
+            entries = (active + terminal)
+                .take(maxEntries)
+                .sortedBy(StudyFlowAttentionLedgerEntry::updatedAtEpochMillis),
+        )
     }
 
     private fun persist() {

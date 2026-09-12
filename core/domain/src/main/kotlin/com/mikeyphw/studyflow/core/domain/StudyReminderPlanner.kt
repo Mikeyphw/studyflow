@@ -117,9 +117,16 @@ object StudyReminderPlanner {
             }
             if (policy.sessionTimerEnabled) {
                 input.activeSessions
-                    .filter { session -> session.studyPlanId == input.plan.id && session.status == StudySessionStatus.RUNNING }
+                    .filter { session ->
+                        session.studyPlanId == input.plan.id && session.status == StudySessionStatus.RUNNING
+                    }
                     .forEach { session ->
-                        sessionTimerCandidates(session, policy, input.settings, input.nowEpochMillis).forEach { sessionCandidate ->
+                        sessionTimerCandidates(
+                            session = session,
+                            policy = policy,
+                            settings = input.settings,
+                            nowEpochMillis = input.nowEpochMillis,
+                        ).forEach { sessionCandidate ->
                             if (sessionCandidate.occurrenceId !in input.deliveredOccurrenceIds) add(sessionCandidate)
                         }
                     }
@@ -248,14 +255,21 @@ object StudyReminderPlanner {
         nowEpochMillis: Long,
     ): List<ReminderNotificationCandidate> {
         val targetMinutes = session.targetDurationMinutes ?: return emptyList()
-        val targetAt = session.startedAtEpochMillis + targetMinutes * MinuteMillis + session.pauseDurationSeconds * 1_000L
-        val endingAt = (targetAt - policy.sessionEndingLeadMinutes * MinuteMillis).coerceAtLeast(session.startedAtEpochMillis)
+        val targetAt =
+            session.startedAtEpochMillis +
+                targetMinutes * MinuteMillis +
+                session.pauseDurationSeconds * 1_000L
+        val endingAt =
+            (targetAt - policy.sessionEndingLeadMinutes * MinuteMillis)
+                .coerceAtLeast(session.startedAtEpochMillis)
         return buildList {
             if (endingAt > nowEpochMillis && targetAt > nowEpochMillis) {
                 add(
                     candidate(
                         type = ReminderNotificationType.SESSION_ENDING,
-                        occurrenceId = "session-ending:${session.id.value}:$targetAt:${policy.sessionEndingLeadMinutes}",
+                        occurrenceId =
+                            "session-ending:${session.id.value}:$targetAt:" +
+                                "${policy.sessionEndingLeadMinutes}",
                         content = ReminderNotificationContent(
                             kind = ReminderNotificationContentKind.SESSION_ENDING,
                             userLabel = session.notes.takeIf(String::isNotBlank),

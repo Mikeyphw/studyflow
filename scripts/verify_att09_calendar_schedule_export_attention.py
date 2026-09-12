@@ -29,7 +29,7 @@ REQUIRED = {
     "docs/product/CALENDAR_ATTENTION_EXPORT.md": ["Privacy modes", "Non-goals"],
     "ATT09_CALENDAR_SCHEDULE_EXPORT_ATTENTION.md": ["verifyAtt09CalendarScheduleExportAttention", "user-initiated"],
     "build.gradle.kts": ["verifyAtt09CalendarScheduleExportAttention", "verifyAtt09WebCalendarAttentionTests"],
-    ".devtool.toml": ["verifyAtt09CalendarScheduleExportAttention"],
+    ".devtool.toml": ["verifyAttentionRoadmapPostsealCompletion"],
 }
 
 def require(path: str, *needles: str) -> str:

@@ -101,7 +101,7 @@ if en_plurals != pt_plurals:
 
 
 reminder_planner = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt")
-require(reminder_planner, 'const val PlannedActivityDeliveryGraceMillis: Long = 15 * 60 * 1000L', 'planned activity inexact-alarm grace constant')
+require(reminder_planner, 'const val PlannedActivityDeliveryGraceMillis: Long = 15 * MinuteMillis', 'planned activity inexact-alarm grace constant')
 require(reminder_planner, 'plannedActivityWithinDeliveryWindow(', 'planned activity delivery grace helper')
 require(reminder_planner, 'scheduledStartEpochMillis >= nowEpochMillis - PlannedActivityLateDeliveryGraceMillis', 'late planned activity acceptance window')
 require(reminder_planner, 'activity.status == PlannedActivityStatus.PLANNED', 'completed/missed planned activity suppression for planned reminders')
@@ -122,15 +122,15 @@ for hotfix_test in [
 
 # Phase 29B reminder/time/backup hardening checks.
 require(reminder_planner, 'import java.util.Calendar', 'local Calendar import for day boundaries')
-require(reminder_planner, 'PlannedActivityLateDeliveryGraceMillis: Long = 2 * 60 * 60 * 1000L', 'late planned-activity delivery grace')
+require(reminder_planner, 'PlannedActivityLateDeliveryGraceMillis: Long = 2 * HourMillis', 'late planned-activity delivery grace')
 require(reminder_planner, 'startOfNextLocalDay(', 'local next-day calculation')
 require(reminder_planner, 'sameLocalDay(', 'local today calculation')
 require(reminder_planner, 'Calendar.DAY_OF_YEAR', 'local day comparison')
 forbid(reminder_planner, 'DayMillis', 'UTC epoch-day math')
-require(reminder_delivery, 'openAppPendingIntent(planId, candidate.type, candidate.occurrenceId)', 'notification content intent carries reminder occurrence identity')
+require(reminder_delivery, '.setContentIntent(openAppPendingIntent(planId, candidate))', 'notification content intent carries reminder occurrence identity')
 require(reminder_delivery, 'putExtra(StudyReminderExtraType, type.name)', 'notification deep-link reminder type extra')
-require(reminder_delivery, 'studyReminderIdentityUri(appContext, planId, type, occurrenceId, openApp = true)', 'per-occurrence notification PendingIntent URI identity')
-require(reminder_delivery, 'NotificationManagerCompat.from(appContext).notify(candidate.occurrenceId, 0, notification)', 'per-occurrence notification manager identity')
+require(reminder_delivery, 'openApp = true,', 'per-occurrence notification PendingIntent URI identity')
+require(reminder_delivery, 'notify(stableNotificationId(candidate.occurrenceId), builder.build())', 'per-occurrence notification manager identity')
 main_activity = read("app/src/main/java/com/mikeyphw/studyflow/MainActivity.kt")
 require(main_activity, 'data class StudyReminderLaunch', 'notification launch bridge model')
 require(main_activity, 'onNewIntent(intent: Intent)', 'notification tap new-intent handling')

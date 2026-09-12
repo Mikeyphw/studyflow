@@ -37,18 +37,18 @@ def main() -> int:
         desktop_readme = read("desktopApp/README.md")
         gitignore = read(".gitignore")
 
-        require('default_target = "studyflow_desktop"' in devtool,
-                ".devtool.toml must select studyflow_desktop as the default target")
+        require('default_target = "studyflow_android"' in devtool,
+                ".devtool.toml workspace default must select the primary Android target")
         require('[targets.studyflow_android]' in devtool,
                 ".devtool.toml must preserve the Android target")
         require('[targets.studyflow_desktop]' in devtool,
                 ".devtool.toml must declare the desktop target")
-        require(re.search(r'\[targets\.studyflow_desktop\]\s*\ntype = "gradle"', devtool),
-                "studyflow_desktop must use the JVM/Gradle Devtool runner")
+        require(re.search(r'\[targets\.studyflow_desktop\]\s*\nrunner = "gradle"', devtool),
+                "studyflow_desktop must use the canonical JVM/Gradle Devtool runner")
         require('android_safe = false' in devtool,
                 "desktop validation must not be marked Android-safe")
-        require('verifyStudyFlowDesktopFoundation' in devtool,
-                "desktop target must expose the foundation verifier")
+        require('verifyStudyFlowDesktopAllContracts' in devtool,
+                "desktop target must expose the aggregate Desktop contract verifier")
 
         require('":desktopApp"' in settings,
                 "settings.gradle.kts must include :desktopApp")
@@ -65,6 +65,10 @@ def main() -> int:
                 "desktopApp must be part of quality source roots")
         require('tasks.register<Exec>("verifyStudyFlowDesktopFoundation")' in build,
                 "root build must register verifyStudyFlowDesktopFoundation")
+        aggregate_start = build.index('tasks.register("verifyStudyFlowDesktopAllContracts")')
+        aggregate = build[aggregate_start:aggregate_start + 5000]
+        require('"verifyStudyFlowDesktopFoundation"' in aggregate,
+                "Desktop aggregate gate must transitively own the foundation verifier")
         require("Do not place Android-only APIs" in desktop_readme,
                 "desktopApp README must document the no Android-only API boundary")
         require("*.msi" in gitignore and "*.deb" in gitignore,

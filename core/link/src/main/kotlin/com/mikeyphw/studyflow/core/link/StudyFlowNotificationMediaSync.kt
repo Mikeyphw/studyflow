@@ -131,6 +131,7 @@ data class StudyFlowNotificationPayload(
     val createdAtEpochMillis: Long,
     val expiresAtEpochMillis: Long = createdAtEpochMillis + DefaultNotificationTtlMillis,
     val attentionOccurrence: StudyFlowAttentionOccurrence? = null,
+    val attentionRoute: StudyFlowAttentionDeliveryRoute? = null,
     val payload: JsonObject = JsonObject(emptyMap()),
 ) {
     init {
@@ -141,6 +142,19 @@ data class StudyFlowNotificationPayload(
         require(expiresAtEpochMillis > createdAtEpochMillis) { "Notification expiry must be after creation" }
         require(attentionOccurrence == null || attentionOccurrence.workspaceId == route.workspaceId) {
             "Notification attention occurrence must use the routed workspace"
+        }
+        require(attentionRoute == null || attentionRoute.workspaceId == route.workspaceId) {
+            "Notification attention route must use the routed workspace"
+        }
+        require(attentionRoute == null || attentionOccurrence == null ||
+            attentionRoute.occurrenceId == attentionOccurrence.occurrenceId
+        ) {
+            "Notification attention route must match the attention occurrence"
+        }
+        require(attentionRoute == null || route.targetDeviceId == null ||
+            route.targetDeviceId in attentionRoute.targetDeviceIds
+        ) {
+            "Notification target must be selected by the ATT07 route"
         }
         require(
             attentionOccurrence?.scheduleEntityId == null ||

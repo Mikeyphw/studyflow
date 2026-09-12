@@ -85,8 +85,8 @@ def main() -> None:
             "REL05/06 verifier must depend on REL03/04")
     require('"verifyRel05Rel06ReleaseNotesRollback"' in gradle,
             "checkAll must include REL05/06 verifier")
-    require('"verifyRel05Rel06ReleaseNotesRollback"' in devtool,
-            "Devtool test lane must include REL05/06 verifier")
+    require('"verifyRel07Rel08FinalReleaseOpsSeal"' in devtool,
+            "Devtool test lane must include the terminal REL07/08 release-ops seal")
     require("REL05 release notes exporter" in readme, "README must expose REL05")
     require("REL06 rollback package manifest" in readme, "README must expose REL06")
     require("# REL05/REL06" in changelog, "CHANGELOG must include REL05/REL06 entry")

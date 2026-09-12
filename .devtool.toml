@@ -1,13 +1,31 @@
+# StudyFlow Devtool configuration — task-graph optimized v4.
+# Canonical runner/platform keys and [workspace].default_target follow the current Devtool schema.
 [project]
-kind = "android"
+runner = "android"
+platform = "android"
 
-default_target = "studyflow_desktop"
+[workspace]
+default_target = "studyflow_android"
+
+[workspace.groups]
+clients = ["studyflow_android", "studyflow_desktop", "studyflow_web", "studyflow_tv"]
+mobile = ["studyflow_android", "studyflow_tv"]
+release = ["studyflow_release", "studyflow_tv_release", "studyflow_parity"]
+quality = ["studyflow_quality"]
+everything = ["@clients", "@release"]
+
+[workspace.scheduler]
+parallel = true
+max_parallel_nodes = 2
+max_gradle_nodes = 1
+
 [execution]
 environment = "auto"
 chroot_name = "androidos"
 
 [targets.studyflow_android]
-type = "android"
+runner = "android"
+platform = "android"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
@@ -15,15 +33,25 @@ chroot_name = "androidos"
 [targets.studyflow_android.android]
 variant = "debug"
 aapt2_provider = "termux"
-instrumentation = "when-device-present"
 prefer_native_termux = true
 ndk_version = "29.0.14206865"
+
+[targets.studyflow_android.android.adb]
+provider = "auto"
+device_policy = "first-physical"
+
+[targets.studyflow_android.android.instrumentation]
+policy = "when-device-present"
+keep_installed = false
+cleanup_app = false
+capture_logcat_on_failure = true
+capture_screenshot_on_failure = true
 
 [targets.studyflow_android.gradle]
 version = "9.7.1"
 provider = "auto"
-max_workers = 1
-parallel = false
+max_workers = 4
+parallel = true
 no_daemon = false
 daemon_idle_timeout_ms = 900000
 build_cache = true
@@ -31,92 +59,46 @@ structured_events = false
 fail_fast = false
 offline = false
 args = [
-  "-Dorg.gradle.parallel=true",
   "-Dorg.gradle.vfs.watch=false",
   "-Pkotlin.incremental=true",
   "-Pkotlin.compiler.execution.strategy=in-process",
 ]
 
 [targets.studyflow_android.tasks]
-build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]
+build = ["verifyStudyFlowAndroidPreflightContracts", "prepareDevtoolValidationArtifacts", ":app:assembleDebug"]
 test = [
-    "verifyRepositoryContracts",
-    "verifyAndroidFocusShellFinalSeal",
-    "verifyRemediationOv13",
-    "verifyPhase63_64ExamRunbookSprintSeal",
-    "verifyPostPhase64FinalValidationRefresh",
-    "verifyFormatting",
-    "verifySflp01ProtocolBaseline",
-    "verifySflp02Sflp03JournalReconciliation",
-    "verifySflp04Sflp05IdentityTransport",
-    "verifySflp06Sflp07TopologyOfflineQueue",
-    "verifySflp08Sflp09AndroidDesktopIntegration",
-    "verifySflp10Sflp11WebTvGeneralization",
-    "verifySflp12Sflp13WebTvHandoff",
-    "verifySflp14Sflp15LiveSessionProjection",
-    "verifySflp16Sflp17ControlInputDelegation",
-    "verifySflp18Sflp19NotificationMediaSync",
-    "verifyAtt01UnifiedAttentionFoundation",
-    "verifyAtt02AndroidAttentionSystem",
-    "verifyAtt03AndroidWidgetSuite",
-    "verifyAtt04DesktopAttentionRuntime",
-    "verifyAtt05WebPwaAttentionRuntime",
-    "verifyAtt06TvAttentionExperience",
-    "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-    "verifyAtt09CalendarScheduleExportAttention",
-    "verifyAtt10QuietHoursFocusProfilesEscalationPolicy",
-    "verifyAtt11NotificationReliabilityEvidenceAudit",
-    "verifyAtt12AttentionReleaseFinalSeal",
-    "verifySflp20Sflp21ShareImportConflict",
-    "verifySflp22Sflp23AccountBackupValidation",
-    "verifySflp24FinalReleaseSeal",
-    "verifyRel01TargetReleaseValidationRunner",
-    "verifyRel02ReleaseEvidenceTriage",
-    "verifyRel03Rel04ArtifactInstallRollout",
-    "verifyRel05Rel06ReleaseNotesRollback",
-    "verifyRel07Rel08FinalReleaseOpsSeal",
-    "verifyOv19PromiseAudit",
-    "verifyOv20FinalIntegration",
-    "verifyFinalSourceAcceptance",
-    ":core:data:testDebugUnitTest",
-    ":core:database:testDebugUnitTest",
-    ":core:diagnostics:test",
-    ":core:domain:test",
-    ":core:model:test",
-    ":core:navigation:test",
-    ":core:portability:test",
-    ":core:testing:test",
-    ":feature:analytics:testDebugUnitTest",
-    ":feature:dashboard:testDebugUnitTest",
-    ":feature:library:testDebugUnitTest",
-    ":feature:plans:testDebugUnitTest",
-    ":feature:practice:testDebugUnitTest",
-    ":feature:privacy:testDebugUnitTest",
-    ":feature:progress:testDebugUnitTest",
-    ":feature:reminders:testDebugUnitTest",
-    ":feature:reviews:testDebugUnitTest",
-    ":feature:schedule:testDebugUnitTest",
-    ":feature:search:testDebugUnitTest",
-    ":feature:sessions:testDebugUnitTest",
-    ":feature:settings:testDebugUnitTest",
-    ":feature:subjects:testDebugUnitTest",
-    ":feature:workspace:testDebugUnitTest",
-    ":app:testReleaseUnitTest",
+  "verifyStudyFlowAndroidPreflightContracts",
+  "verifySflp24FinalReleaseSeal",
+  "verifyAttentionRoadmapPostsealCompletion",
+  "verifyRel07Rel08FinalReleaseOpsSeal",
+  "verifyFinalSourceAcceptance",
+  ":core:data:testDebugUnitTest",
+  ":core:database:testDebugUnitTest",
+  ":core:diagnostics:test",
+  ":core:link:test",
+  ":core:domain:test",
+  ":core:model:test",
+  ":core:navigation:test",
+  ":core:portability:test",
+  ":core:testing:test",
+  ":feature:analytics:testDebugUnitTest",
+  ":feature:dashboard:testDebugUnitTest",
+  ":feature:library:testDebugUnitTest",
+  ":feature:plans:testDebugUnitTest",
+  ":feature:practice:testDebugUnitTest",
+  ":feature:privacy:testDebugUnitTest",
+  ":feature:progress:testDebugUnitTest",
+  ":feature:reminders:testDebugUnitTest",
+  ":feature:reviews:testDebugUnitTest",
+  ":feature:schedule:testDebugUnitTest",
+  ":feature:search:testDebugUnitTest",
+  ":feature:sessions:testDebugUnitTest",
+  ":feature:settings:testDebugUnitTest",
+  ":feature:subjects:testDebugUnitTest",
+  ":feature:workspace:testDebugUnitTest",
+  ":app:testReleaseUnitTest",
 ]
-lint = [
-    ":core:data:lintDebug",
-    ":core:database:lintDebug",
-    ":core:i18n:lintDebug",
-    ":feature:plans:lintDebug",
-    ":feature:privacy:lintDebug",
-    ":feature:reminders:lintDebug",
-    ":feature:search:lintDebug",
-    ":feature:settings:lintDebug",
-    ":feature:workspace:lintDebug",
-    ":app:lintDebug",
-    ":app:lintRelease",
-]
+lint = [":app:lintDebug", ":app:lintRelease"]
 clean = ["clean"]
 
 [targets.studyflow_android.artifacts]
@@ -124,199 +106,78 @@ required = true
 external_verification = "auto"
 
 [targets.studyflow_android.validation]
-android_safe = true
-max_workers = 1
-cpu_limit = 2
-parallel = false
-split_gradle = true
+android_safe = false
+max_workers = 4
+cpu_limit = 4
+parallel = true
+split_gradle = false
 no_daemon = false
 stop_daemon_after_phase = false
 low_priority = false
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
-gradle_packaging_heap_mb = 1024
-gradle_packaging_metaspace_mb = 512
-gradle_lint_metaspace_mb = 512
-memory_guard_mb = 256
-affected_module_lint = true
-
-[targets.studyflow_android.validation.phase_profiles.resources]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-[targets.studyflow_android.validation.phase_profiles.package]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1024
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-[targets.studyflow_android.validation.phase_profiles.lint]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1024
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
+gradle_heap_mb = 2048
+gradle_metaspace_mb = 768
+gradle_packaging_heap_mb = 2048
+gradle_packaging_metaspace_mb = 768
+gradle_lint_metaspace_mb = 768
+memory_guard_mb = 0
+affected_module_lint = false
 
 [targets.studyflow_android.validation.phases]
-preflight = [
-    "verifyCpov00Toolchain",
-    "verifyCpov01PublicExamProfile",
-    "verifyCpov02EditalImport",
-    "verifyCpov03Cpov04PublicExamProgress",
-    "verifyCpov05Cpov06PriorityBancaQuestions",
-    "verifyCpov07Cpov08BancaErrorNotebook",
-    "verifyCpov09Cpov10LegislationDashboard",
-    "verifyCpov11Cpov12FinalStretchOnboarding",
-    "verifyCpov13PublicExamReleaseSeal",
-    "verifyCpovRoadmapReconciliation",
-    "verifyRepositoryContracts",
-    "verifyAndroidFocusShellFinalSeal",
-    "verifyRemediationOv13",
-    "verifyPhase63_64ExamRunbookSprintSeal",
-    "verifyPostPhase64FinalValidationRefresh",
-    "verifyOv19PromiseAudit",
-    "verifyOv20FinalIntegration",
-    "verifyFinalSourceAcceptance",
-]
-compile = [
-    ":core:data:compileDebugKotlin",
-    ":core:database:compileDebugKotlin",
-    ":core:diagnostics:compileKotlin",
-    ":core:domain:compileKotlin",
-    ":core:i18n:compileDebugKotlin",
-    ":core:link:compileKotlin",
-    ":core:model:compileKotlin",
-    ":core:portability:compileKotlin",
-    ":feature:plans:compileDebugKotlin",
-    ":feature:privacy:compileDebugKotlin",
-    ":feature:reminders:compileDebugKotlin",
-    ":feature:search:compileDebugKotlin",
-    ":feature:settings:compileDebugKotlin",
-    ":feature:workspace:compileDebugKotlin",
-    ":app:compileDebugKotlin",
-    ":app:compileReleaseKotlin",
-    ":core:data:compileDebugUnitTestKotlin",
-    ":core:database:compileDebugUnitTestKotlin",
-    ":core:diagnostics:compileTestKotlin",
-    ":core:domain:compileTestKotlin",
-    ":core:link:compileTestKotlin",
-    ":core:model:compileTestKotlin",
-    ":core:portability:compileTestKotlin",
-    ":feature:plans:compileDebugUnitTestKotlin",
-    ":feature:privacy:compileDebugUnitTestKotlin",
-    ":feature:reminders:compileDebugUnitTestKotlin",
-    ":feature:search:compileDebugUnitTestKotlin",
-    ":feature:workspace:compileDebugUnitTestKotlin",
-    ":app:compileReleaseUnitTestKotlin",
-    ":core:database:compileDebugAndroidTestKotlin",
-    ":feature:workspace:compileDebugAndroidTestKotlin",
-    ":app:compileReleaseAndroidTestKotlin",
-]
-resources = [
-  ":app:processDebugResources",
-  ":app:processReleaseResources",
-]
+preflight = ["verifyStudyFlowAndroidPreflightContracts"]
+dependencies = []
+compile = []
+resources = []
 unit-test = [
-    ":core:data:testDebugUnitTest",
-    ":core:database:testDebugUnitTest",
-    ":core:diagnostics:test",
-    ":core:link:test",
-    ":core:domain:test",
-    ":core:model:test",
-    ":core:navigation:test",
-    ":core:portability:test",
-    ":core:testing:test",
-    ":feature:analytics:testDebugUnitTest",
-    ":feature:dashboard:testDebugUnitTest",
-    ":feature:library:testDebugUnitTest",
-    ":feature:plans:testDebugUnitTest",
-    ":feature:practice:testDebugUnitTest",
-    ":feature:privacy:testDebugUnitTest",
-    ":feature:progress:testDebugUnitTest",
-    ":feature:reminders:testDebugUnitTest",
-    ":feature:reviews:testDebugUnitTest",
-    ":feature:schedule:testDebugUnitTest",
-    ":feature:search:testDebugUnitTest",
-    ":feature:sessions:testDebugUnitTest",
-    ":feature:settings:testDebugUnitTest",
-    ":feature:subjects:testDebugUnitTest",
-    ":feature:workspace:testDebugUnitTest",
-    ":app:testReleaseUnitTest",
+  "verifySflp24FinalReleaseSeal",
+  "verifyAttentionRoadmapPostsealCompletion",
+  "verifyRel07Rel08FinalReleaseOpsSeal",
+  "verifyFinalSourceAcceptance",
+  ":core:data:testDebugUnitTest",
+  ":core:database:testDebugUnitTest",
+  ":core:diagnostics:test",
+  ":core:link:test",
+  ":core:domain:test",
+  ":core:model:test",
+  ":core:navigation:test",
+  ":core:portability:test",
+  ":core:testing:test",
+  ":feature:analytics:testDebugUnitTest",
+  ":feature:dashboard:testDebugUnitTest",
+  ":feature:library:testDebugUnitTest",
+  ":feature:plans:testDebugUnitTest",
+  ":feature:practice:testDebugUnitTest",
+  ":feature:privacy:testDebugUnitTest",
+  ":feature:progress:testDebugUnitTest",
+  ":feature:reminders:testDebugUnitTest",
+  ":feature:reviews:testDebugUnitTest",
+  ":feature:schedule:testDebugUnitTest",
+  ":feature:search:testDebugUnitTest",
+  ":feature:sessions:testDebugUnitTest",
+  ":feature:settings:testDebugUnitTest",
+  ":feature:subjects:testDebugUnitTest",
+  ":feature:workspace:testDebugUnitTest",
+  ":app:testReleaseUnitTest",
 ]
-package = [
-  "prepareDevtoolValidationArtifacts",
-  ":app:assembleDebug",
-]
-
+package = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]
 instrumentation = [
   ":core:database:connectedDebugAndroidTest",
   ":feature:workspace:connectedDebugAndroidTest",
   ":app:connectedReleaseAndroidTest",
 ]
-lint = [
-  "verifyFormatting",
-  ":core:data:lintDebug",
-  ":core:data:lintRelease",
-  ":core:database:lintDebug",
-  ":core:database:lintRelease",
-  ":core:designsystem:lintDebug",
-  ":core:designsystem:lintRelease",
-  ":core:i18n:lintDebug",
-  ":core:i18n:lintRelease",
-  ":feature:analytics:lintDebug",
-  ":feature:analytics:lintRelease",
-  ":feature:dashboard:lintDebug",
-  ":feature:dashboard:lintRelease",
-  ":feature:library:lintDebug",
-  ":feature:library:lintRelease",
-  ":feature:plans:lintDebug",
-  ":feature:plans:lintRelease",
-  ":feature:practice:lintDebug",
-  ":feature:practice:lintRelease",
-  ":feature:privacy:lintDebug",
-  ":feature:privacy:lintRelease",
-  ":feature:progress:lintDebug",
-  ":feature:progress:lintRelease",
-  ":feature:reminders:lintDebug",
-  ":feature:reminders:lintRelease",
-  ":feature:reviews:lintDebug",
-  ":feature:reviews:lintRelease",
-  ":feature:schedule:lintDebug",
-  ":feature:schedule:lintRelease",
-  ":feature:search:lintDebug",
-  ":feature:search:lintRelease",
-  ":feature:sessions:lintDebug",
-  ":feature:sessions:lintRelease",
-  ":feature:settings:lintDebug",
-  ":feature:settings:lintRelease",
-  ":feature:subjects:lintDebug",
-  ":feature:subjects:lintRelease",
-  ":feature:workspace:lintDebug",
-  ":feature:workspace:lintRelease",
-  ":app:lintDebug",
-  ":app:lintRelease",
-]
+lint = [":app:lintDebug", ":app:lintRelease"]
+
 [targets.studyflow_desktop]
-type = "gradle"
+runner = "gradle"
+platform = "desktop"
 root = "."
-execution_environment = "auto"
+execution_environment = "native-termux"
 chroot_name = "androidos"
 
 [targets.studyflow_desktop.gradle]
 version = "9.7.1"
 provider = "auto"
-max_workers = 1
-parallel = false
+max_workers = 4
+parallel = true
 no_daemon = false
 daemon_idle_timeout_ms = 900000
 build_cache = true
@@ -324,168 +185,73 @@ structured_events = false
 fail_fast = false
 offline = false
 args = [
-  "-Dorg.gradle.parallel=true",
   "-Dorg.gradle.vfs.watch=false",
   "-Pkotlin.incremental=true",
   "-Pkotlin.compiler.execution.strategy=in-process",
 ]
 
 [targets.studyflow_desktop.tasks]
-build = [
-    "verifyStudyFlowDesktopFoundation",
-    "verifyStudyFlowDesktopBootstrapScreens",
-    "verifyStudyFlowDesktopShellContracts",
-    "verifyStudyFlowDesktopWorkflows",
-    "verifyDesktopDov08PersistentWorkspace",
-    "verifyDesktopDov09PlanContentLifecycle",
-    "verifyDesktopDov10PlannerAdaptiveWorkflows",
-    "verifyDesktopDov11SessionRuntime",
-    "verifyDesktopDov12QuestionPracticeExecution",
-    "verifyDesktopDov13MockExamStudio",
-    "verifyDesktopDov14ReviewsSrsErrorNotebook",
-    "verifyDesktopDov15LibraryFilesMaterialViewers",
-    "verifyDesktopDov16WritingWorkspace",
-    "verifyDesktopDov17ContentModesExecution",
-    "verifyDesktopDov18PublicExamParity",
-    "verifyDesktopDov19ReadinessCoachingReports",
-    "verifyDesktopDov20PortabilityBackupMigration",
-    "verifyDesktopDov21EnPtBrLocalization",
-    "verifyDesktopDov22SystemLightDarkAppearance",
-    "verifyDesktopDov23NativeDesktopIntegration",
-    "verifyDesktopDov24FullApplicableParitySeal",
-    "verifyAtt04DesktopAttentionRuntime",
-    "verifySflp01ProtocolBaseline",
-    "verifySflp02Sflp03JournalReconciliation",
-    "verifySflp04Sflp05IdentityTransport",
-    "verifySflp06Sflp07TopologyOfflineQueue",
-    "verifySflp08Sflp09AndroidDesktopIntegration",
-    ":desktopApp:compileKotlin",
-]
+build = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", ":desktopApp:compileKotlin"]
 test = [
-    "verifyStudyFlowDesktopFoundation",
-    "verifyStudyFlowDesktopBootstrapScreens",
-    "verifyStudyFlowDesktopShellContracts",
-    "verifyStudyFlowDesktopWorkflows",
-    "verifyDesktopDov08PersistentWorkspace",
-    "verifyDesktopDov09PlanContentLifecycle",
-    "verifyDesktopDov10PlannerAdaptiveWorkflows",
-    "verifyDesktopDov11SessionRuntime",
-    "verifyDesktopDov12QuestionPracticeExecution",
-    "verifyDesktopDov13MockExamStudio",
-    "verifyDesktopDov14ReviewsSrsErrorNotebook",
-    "verifyDesktopDov15LibraryFilesMaterialViewers",
-    "verifyDesktopDov16WritingWorkspace",
-    "verifyDesktopDov17ContentModesExecution",
-    "verifyDesktopDov18PublicExamParity",
-    "verifyDesktopDov19ReadinessCoachingReports",
-    "verifyDesktopDov20PortabilityBackupMigration",
-    "verifyDesktopDov21EnPtBrLocalization",
-    "verifyDesktopDov22SystemLightDarkAppearance",
-    "verifyDesktopDov23NativeDesktopIntegration",
-    "verifyDesktopDov24FullApplicableParitySeal",
-    "verifyAtt04DesktopAttentionRuntime",
-    ":core:domain:test",
-    ":core:link:test",
-    ":core:model:test",
-    ":core:portability:test",
-    ":desktopApp:test",
+  "verifyCpovAllContracts",
+  "verifyStudyFlowDesktopAllContracts",
+  "verifySflp08Sflp09AndroidDesktopIntegration",
+  ":core:domain:test",
+  ":core:link:test",
+  ":core:model:test",
+  ":core:portability:test",
+  ":desktopApp:test",
 ]
-lint = [
-    "verifyFormatting",
-    "verifyStudyFlowDesktopFoundation",
-    "verifyStudyFlowDesktopBootstrapScreens",
-    "verifyStudyFlowDesktopShellContracts",
-    "verifyStudyFlowDesktopWorkflows",
-]
+lint = []
 clean = ["clean"]
 
 [targets.studyflow_desktop.validation]
 android_safe = false
-max_workers = 1
-cpu_limit = 2
-parallel = false
-split_gradle = true
+max_workers = 4
+cpu_limit = 4
+parallel = true
+split_gradle = false
 no_daemon = false
 stop_daemon_after_phase = false
 low_priority = false
-gradle_heap_mb = 1152
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
+gradle_heap_mb = 2048
+gradle_metaspace_mb = 768
+memory_guard_mb = 0
 
 [targets.studyflow_desktop.validation.phases]
-preflight = [
-    "verifyCpov00Toolchain",
-    "verifyCpov01PublicExamProfile",
-    "verifyCpov02EditalImport",
-    "verifyCpov03Cpov04PublicExamProgress",
-    "verifyCpov05Cpov06PriorityBancaQuestions",
-    "verifyCpov07Cpov08BancaErrorNotebook",
-    "verifyCpov09Cpov10LegislationDashboard",
-    "verifyCpov11Cpov12FinalStretchOnboarding",
-    "verifyCpov13PublicExamReleaseSeal",
-    "verifyCpovRoadmapReconciliation",
-    "verifyOv19PromiseAudit",
-    "verifyOv20FinalIntegration",
-    "verifyStudyFlowDesktopFoundation",
-    "verifyStudyFlowDesktopBootstrapScreens",
-    "verifyStudyFlowDesktopShellContracts",
-    "verifyStudyFlowDesktopWorkflows",
-    "verifyDesktopDov08PersistentWorkspace",
-    "verifyDesktopDov09PlanContentLifecycle",
-    "verifyDesktopDov10PlannerAdaptiveWorkflows",
-    "verifyDesktopDov11SessionRuntime",
-    "verifyDesktopDov12QuestionPracticeExecution",
-    "verifyDesktopDov13MockExamStudio",
-    "verifyDesktopDov14ReviewsSrsErrorNotebook",
-    "verifyDesktopDov15LibraryFilesMaterialViewers",
-    "verifyDesktopDov16WritingWorkspace",
-    "verifyDesktopDov17ContentModesExecution",
-    "verifyDesktopDov18PublicExamParity",
-    "verifyDesktopDov19ReadinessCoachingReports",
-    "verifyDesktopDov20PortabilityBackupMigration",
-    "verifyDesktopDov21EnPtBrLocalization",
-    "verifyDesktopDov22SystemLightDarkAppearance",
-    "verifyDesktopDov23NativeDesktopIntegration",
-    "verifyDesktopDov24FullApplicableParitySeal",
-    "verifyAtt04DesktopAttentionRuntime",
-]
-compile = [
-    ":core:domain:compileKotlin",
-    ":core:link:compileKotlin",
-    ":core:model:compileKotlin",
-    ":core:portability:compileKotlin",
-    ":desktopApp:compileKotlin",
-    ":desktopApp:compileTestKotlin",
-]
+preflight = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", "verifyOv19PromiseAudit"]
+dependencies = []
+compile = []
+resources = []
 unit-test = [
-    ":core:domain:test",
-    ":core:link:test",
-    ":core:model:test",
-    ":core:portability:test",
-    ":desktopApp:test",
+  "verifySflp08Sflp09AndroidDesktopIntegration",
+  ":core:domain:test",
+  ":core:link:test",
+  ":core:model:test",
+  ":core:portability:test",
+  ":desktopApp:test",
 ]
-package = [
-  ":desktopApp:compileKotlin",
-]
-lint = [
-  "verifyFormatting",
-]
-
+package = []
+lint = []
 
 [targets.studyflow_web]
-type = "node"
+runner = "node"
+platform = "web"
 root = "web"
 execution_environment = "native-termux"
+inputs = ["src/**", "tests/**", "scripts/**", "package.json", "tsconfig.json", "sw.js"]
+outputs = ["dist/**"]
 
 [targets.studyflow_web.validation]
-max_workers = 1
-cpu_limit = 1
-parallel = false
+max_workers = 2
+cpu_limit = 2
+parallel = true
 low_priority = false
-
+memory_guard_mb = 0
 
 [targets.studyflow_tv]
-type = "android"
+runner = "android"
+platform = "tv"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
@@ -493,15 +259,25 @@ chroot_name = "androidos"
 [targets.studyflow_tv.android]
 variant = "debug"
 aapt2_provider = "termux"
-instrumentation = "when-device-present"
 prefer_native_termux = true
 ndk_version = "29.0.14206865"
+
+[targets.studyflow_tv.android.adb]
+provider = "auto"
+device_policy = "first-physical"
+
+[targets.studyflow_tv.android.instrumentation]
+policy = "when-device-present"
+keep_installed = false
+cleanup_app = false
+capture_logcat_on_failure = true
+capture_screenshot_on_failure = true
 
 [targets.studyflow_tv.gradle]
 version = "9.7.1"
 provider = "auto"
-max_workers = 1
-parallel = false
+max_workers = 4
+parallel = true
 no_daemon = false
 daemon_idle_timeout_ms = 900000
 build_cache = true
@@ -509,373 +285,136 @@ structured_events = false
 fail_fast = false
 offline = false
 args = [
-  "-Dorg.gradle.parallel=true",
   "-Dorg.gradle.vfs.watch=false",
   "-Pkotlin.incremental=true",
   "-Pkotlin.compiler.execution.strategy=in-process",
 ]
 
 [targets.studyflow_tv.tasks]
-build = [
-  "verifyStudyFlowTvDevtoolAndroidRunner",
-  "verifyStudyFlowTvArchitecture",
-  "verifyStudyFlowTvSizeBudget",
-  "verifyStudyFlowTvControlCast",
-  "verifyStudyFlowTvAppModule",
-  "verifyStudyFlowTvDependencyBudget",
-  "verifyStudyFlowTvPairingControlCastProtocol",
-  "verifyStudyFlowTvFocusPrimitives",
-  "verifyStudyFlowTvNavigationShell",
-  "verifyStudyFlowTvHomeSurface",
-  "verifyStudyFlowTvTodayWorkspace",
-  "verifyStudyFlowTvStudySessionExperience",
-  "verifyStudyFlowTvQuestionPractice",
-  "verifyStudyFlowTvMockExamStudio",
-  "verifyStudyFlowTvReviewNotebook",
-  "verifyStudyFlowTvProgressAnalytics",
-  "verifyStudyFlowTvReadOnlySchedule",
-  "verifyStudyFlowTvLibraryReference",
-  "verifyStudyFlowTvSettings",
-  "verifyStudyFlowTvControlStateContinuity",
-  "verifyStudyFlowTvAccessibilityTenFootUi",
-  "verifyStudyFlowTvSizeOptimization",
-  "verifyStudyFlowTvManifestPackaging",
-  "verifyStudyFlowTvTargetIsolation",
-  "verifyStudyFlowTvFinalAcceptanceContracts",
-  "verifyStudyFlowTvPresentationProjection",
-  "verifyStudyFlowTvLocalPairingTransport",
-  "verifyStudyFlowTvPhoneController",
-  "verifyStudyFlowTvCastStateSynchronization",
-  "verifyStudyFlowTvDomainPersistenceConvergence",
-  "verifyStudyFlowTvEndToEndPhysicalSealContracts",
-  "verifyStudyFlowTvFullNativeMaterialViewer",
-  "verifyStudyFlowTvGoalProjectionActions",
-  "verifyStudyFlowTvErrorNotebookMutationParity",
-  "verifyStudyFlowTvDpadSflpSearch",
-  "verifyStudyFlowTvAndroidWebSemanticParity",
-  "verifyAtt06TvAttentionExperience",
-  "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-  "verifyStudyFlowTvRoadmapInstructions",
-  "verifyStudyFlowTvOptimizedReleaseArtifact",
-  "verifyStudyFlowTvPackagedArtifacts",
-  "verifyStudyFlowTvFinalReleaseSeal",
-  ":core:tvcontrol:compileKotlin",
-  ":core:tvlink:compileDebugKotlin",
-  ":app-tv:assembleDebug",
-]
+build = ["verifyStudyFlowTvAllContracts", ":app-tv:assembleDebug"]
 test = [
-  "verifyStudyFlowTvArchitecture",
-  "verifyStudyFlowTvControlCast",
-  "verifyStudyFlowTvAppModule",
-  "verifyStudyFlowTvDependencyBudget",
-  "verifyStudyFlowTvPairingControlCastProtocol",
-  "verifyStudyFlowTvFocusPrimitives",
-  "verifyStudyFlowTvNavigationShell",
-  "verifyStudyFlowTvHomeSurface",
-  "verifyStudyFlowTvTodayWorkspace",
-  "verifyStudyFlowTvStudySessionExperience",
-  "verifyStudyFlowTvQuestionPractice",
-  "verifyStudyFlowTvMockExamStudio",
-  "verifyStudyFlowTvReviewNotebook",
-  "verifyStudyFlowTvProgressAnalytics",
-  "verifyStudyFlowTvReadOnlySchedule",
-  "verifyStudyFlowTvLibraryReference",
-  "verifyStudyFlowTvSettings",
-  "verifyStudyFlowTvControlStateContinuity",
-  "verifyStudyFlowTvAccessibilityTenFootUi",
-  "verifyStudyFlowTvSizeOptimization",
-  "verifyStudyFlowTvManifestPackaging",
-  "verifyStudyFlowTvTargetIsolation",
-  "verifyStudyFlowTvFinalAcceptanceContracts",
-  "verifyStudyFlowTvPresentationProjection",
-  "verifyStudyFlowTvLocalPairingTransport",
-  "verifyStudyFlowTvPhoneController",
-  "verifyStudyFlowTvCastStateSynchronization",
-  "verifyStudyFlowTvDomainPersistenceConvergence",
-  "verifyStudyFlowTvEndToEndPhysicalSealContracts",
-  "verifyStudyFlowTvFullNativeMaterialViewer",
-  "verifyStudyFlowTvGoalProjectionActions",
-  "verifyStudyFlowTvErrorNotebookMutationParity",
-  "verifyStudyFlowTvDpadSflpSearch",
-  "verifyStudyFlowTvAndroidWebSemanticParity",
-  "verifyAtt06TvAttentionExperience",
-  "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-  "verifyStudyFlowTvRoadmapInstructions",
+  "verifyStudyFlowTvAllContracts",
   ":core:tvcontrol:test",
   ":core:tvlink:testDebugUnitTest",
   ":app-tv:testDebugUnitTest",
 ]
-lint = [
-  "verifyStudyFlowTvArchitecture",
-  "verifyStudyFlowTvSizeBudget",
-  "verifyStudyFlowTvControlCast",
-  "verifyStudyFlowTvAppModule",
-  "verifyStudyFlowTvDependencyBudget",
-  "verifyStudyFlowTvPairingControlCastProtocol",
-  "verifyStudyFlowTvFocusPrimitives",
-  "verifyStudyFlowTvNavigationShell",
-  "verifyStudyFlowTvHomeSurface",
-  "verifyStudyFlowTvTodayWorkspace",
-  "verifyStudyFlowTvStudySessionExperience",
-  "verifyStudyFlowTvQuestionPractice",
-  "verifyStudyFlowTvMockExamStudio",
-  "verifyStudyFlowTvReviewNotebook",
-  "verifyStudyFlowTvProgressAnalytics",
-  "verifyStudyFlowTvReadOnlySchedule",
-  "verifyStudyFlowTvLibraryReference",
-  "verifyStudyFlowTvSettings",
-  "verifyStudyFlowTvControlStateContinuity",
-  "verifyStudyFlowTvAccessibilityTenFootUi",
-  "verifyStudyFlowTvSizeOptimization",
-  "verifyStudyFlowTvManifestPackaging",
-  "verifyStudyFlowTvTargetIsolation",
-  "verifyStudyFlowTvFinalAcceptanceContracts",
-  "verifyStudyFlowTvPresentationProjection",
-  "verifyStudyFlowTvLocalPairingTransport",
-  "verifyStudyFlowTvPhoneController",
-  "verifyStudyFlowTvCastStateSynchronization",
-  "verifyStudyFlowTvDomainPersistenceConvergence",
-  "verifyStudyFlowTvEndToEndPhysicalSealContracts",
-  "verifyStudyFlowTvFullNativeMaterialViewer",
-  "verifyStudyFlowTvGoalProjectionActions",
-  "verifyStudyFlowTvErrorNotebookMutationParity",
-  "verifyStudyFlowTvDpadSflpSearch",
-  "verifyStudyFlowTvAndroidWebSemanticParity",
-  "verifyAtt06TvAttentionExperience",
-  "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-  "verifyStudyFlowTvRoadmapInstructions",
-  ":core:tvlink:lintDebug",
-  ":app-tv:lintDebug",
-  ":app-tv:lintRelease",
-]
+lint = [":app-tv:lintDebug"]
 clean = ["clean"]
+
+[targets.studyflow_tv.artifacts]
+required = true
+external_verification = "auto"
 
 [targets.studyflow_tv.validation]
 android_safe = false
-max_workers = 1
-cpu_limit = 1
-parallel = false
-split_gradle = true
+max_workers = 4
+cpu_limit = 4
+parallel = true
+split_gradle = false
 no_daemon = false
 stop_daemon_after_phase = false
 low_priority = false
-gradle_heap_mb = 768
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
+gradle_heap_mb = 2048
+gradle_metaspace_mb = 768
+gradle_packaging_heap_mb = 2048
+gradle_packaging_metaspace_mb = 768
+gradle_lint_metaspace_mb = 768
+memory_guard_mb = 0
+affected_module_lint = false
 
 [targets.studyflow_tv.validation.phases]
-preflight = [
-  "verifyStudyFlowTvDevtoolAndroidRunner",
-  "verifyStudyFlowTvArchitecture",
-  "verifyStudyFlowTvSizeBudget",
-  "verifyStudyFlowTvControlCast",
-  "verifyStudyFlowTvAppModule",
-  "verifyStudyFlowTvDependencyBudget",
-  "verifyStudyFlowTvPairingControlCastProtocol",
-  "verifyStudyFlowTvReadOnlySchedule",
-  "verifyStudyFlowTvLibraryReference",
-  "verifyStudyFlowTvSettings",
-  "verifyStudyFlowTvControlStateContinuity",
-  "verifyStudyFlowTvAccessibilityTenFootUi",
-  "verifyStudyFlowTvSizeOptimization",
-  "verifyStudyFlowTvManifestPackaging",
-  "verifyStudyFlowTvTargetIsolation",
-  "verifyStudyFlowTvFinalAcceptanceContracts",
-  "verifyStudyFlowTvPresentationProjection",
-  "verifyStudyFlowTvLocalPairingTransport",
-  "verifyStudyFlowTvPhoneController",
-  "verifyStudyFlowTvCastStateSynchronization",
-  "verifyStudyFlowTvDomainPersistenceConvergence",
-  "verifyStudyFlowTvEndToEndPhysicalSealContracts",
-  "verifyStudyFlowTvFullNativeMaterialViewer",
-  "verifyStudyFlowTvGoalProjectionActions",
-  "verifyStudyFlowTvErrorNotebookMutationParity",
-  "verifyStudyFlowTvDpadSflpSearch",
-  "verifyStudyFlowTvAndroidWebSemanticParity",
-  "verifyAtt06TvAttentionExperience",
-  "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-  "verifyStudyFlowTvRoadmapInstructions",
-]
-compile = [
-  "verifyStudyFlowTvArchitecture",
-  "verifyStudyFlowTvControlCast",
-  "verifyStudyFlowTvAppModule",
-  "verifyStudyFlowTvDependencyBudget",
-  "verifyStudyFlowTvPairingControlCastProtocol",
-  "verifyStudyFlowTvFocusPrimitives",
-  "verifyStudyFlowTvNavigationShell",
-  "verifyStudyFlowTvHomeSurface",
-  "verifyStudyFlowTvTodayWorkspace",
-  "verifyStudyFlowTvStudySessionExperience",
-  "verifyStudyFlowTvQuestionPractice",
-  "verifyStudyFlowTvMockExamStudio",
-  "verifyStudyFlowTvReviewNotebook",
-  "verifyStudyFlowTvProgressAnalytics",
-  "verifyStudyFlowTvReadOnlySchedule",
-  "verifyStudyFlowTvLibraryReference",
-  "verifyStudyFlowTvSettings",
-  "verifyStudyFlowTvControlStateContinuity",
-  "verifyStudyFlowTvAccessibilityTenFootUi",
-  "verifyStudyFlowTvSizeOptimization",
-  "verifyStudyFlowTvManifestPackaging",
-  "verifyStudyFlowTvTargetIsolation",
-  "verifyStudyFlowTvFinalAcceptanceContracts",
-  "verifyStudyFlowTvPresentationProjection",
-  "verifyStudyFlowTvLocalPairingTransport",
-  "verifyStudyFlowTvPhoneController",
-  "verifyStudyFlowTvCastStateSynchronization",
-  "verifyStudyFlowTvDomainPersistenceConvergence",
-  "verifyStudyFlowTvEndToEndPhysicalSealContracts",
-  "verifyStudyFlowTvFullNativeMaterialViewer",
-  "verifyStudyFlowTvGoalProjectionActions",
-  "verifyStudyFlowTvErrorNotebookMutationParity",
-  "verifyStudyFlowTvDpadSflpSearch",
-  "verifyStudyFlowTvAndroidWebSemanticParity",
-  "verifyAtt06TvAttentionExperience",
-  "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-  "verifyStudyFlowTvRoadmapInstructions",
-  ":core:tvcontrol:compileKotlin",
-  ":core:tvlink:compileDebugKotlin",
-  ":app-tv:compileDebugKotlin",
-]
-unit-test = [
-  "verifyStudyFlowTvArchitecture",
-  "verifyStudyFlowTvControlCast",
-  "verifyStudyFlowTvAppModule",
-  "verifyStudyFlowTvDependencyBudget",
-  "verifyStudyFlowTvPairingControlCastProtocol",
-  "verifyStudyFlowTvFocusPrimitives",
-  "verifyStudyFlowTvNavigationShell",
-  "verifyStudyFlowTvHomeSurface",
-  "verifyStudyFlowTvTodayWorkspace",
-  "verifyStudyFlowTvStudySessionExperience",
-  "verifyStudyFlowTvQuestionPractice",
-  "verifyStudyFlowTvMockExamStudio",
-  "verifyStudyFlowTvReviewNotebook",
-  "verifyStudyFlowTvProgressAnalytics",
-  "verifyStudyFlowTvReadOnlySchedule",
-  "verifyStudyFlowTvLibraryReference",
-  "verifyStudyFlowTvSettings",
-  "verifyStudyFlowTvControlStateContinuity",
-  "verifyStudyFlowTvAccessibilityTenFootUi",
-  "verifyStudyFlowTvSizeOptimization",
-  "verifyStudyFlowTvManifestPackaging",
-  "verifyStudyFlowTvTargetIsolation",
-  "verifyStudyFlowTvFinalAcceptanceContracts",
-  "verifyStudyFlowTvPresentationProjection",
-  "verifyStudyFlowTvLocalPairingTransport",
-  "verifyStudyFlowTvPhoneController",
-  "verifyStudyFlowTvCastStateSynchronization",
-  "verifyStudyFlowTvDomainPersistenceConvergence",
-  "verifyStudyFlowTvEndToEndPhysicalSealContracts",
-  "verifyStudyFlowTvFullNativeMaterialViewer",
-  "verifyStudyFlowTvGoalProjectionActions",
-  "verifyStudyFlowTvErrorNotebookMutationParity",
-  "verifyStudyFlowTvDpadSflpSearch",
-  "verifyStudyFlowTvAndroidWebSemanticParity",
-  "verifyAtt06TvAttentionExperience",
-  "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-  "verifyStudyFlowTvRoadmapInstructions",
-  ":core:tvcontrol:test",
-  ":core:tvlink:testDebugUnitTest",
-  ":app-tv:testDebugUnitTest",
-]
-package = [
-  "verifyStudyFlowTvSizeBudget",
-  "verifyStudyFlowTvControlCast",
-  "verifyStudyFlowTvAppModule",
-  "verifyStudyFlowTvDependencyBudget",
-  "verifyStudyFlowTvPairingControlCastProtocol",
-  "verifyStudyFlowTvTodayWorkspace",
-  "verifyStudyFlowTvStudySessionExperience",
-  "verifyStudyFlowTvQuestionPractice",
-  "verifyStudyFlowTvMockExamStudio",
-  "verifyStudyFlowTvReviewNotebook",
-  "verifyStudyFlowTvProgressAnalytics",
-  "verifyStudyFlowTvReadOnlySchedule",
-  "verifyStudyFlowTvLibraryReference",
-  "verifyStudyFlowTvSettings",
-  "verifyStudyFlowTvControlStateContinuity",
-  "verifyStudyFlowTvAccessibilityTenFootUi",
-  "verifyStudyFlowTvSizeOptimization",
-  "verifyStudyFlowTvManifestPackaging",
-  "verifyStudyFlowTvTargetIsolation",
-  "verifyStudyFlowTvFinalAcceptanceContracts",
-  "verifyStudyFlowTvPresentationProjection",
-  "verifyStudyFlowTvLocalPairingTransport",
-  "verifyStudyFlowTvPhoneController",
-  "verifyStudyFlowTvCastStateSynchronization",
-  "verifyStudyFlowTvDomainPersistenceConvergence",
-  "verifyStudyFlowTvEndToEndPhysicalSealContracts",
-  "verifyStudyFlowTvFullNativeMaterialViewer",
-  "verifyStudyFlowTvGoalProjectionActions",
-  "verifyStudyFlowTvErrorNotebookMutationParity",
-  "verifyStudyFlowTvDpadSflpSearch",
-  "verifyStudyFlowTvAndroidWebSemanticParity",
-  "verifyAtt06TvAttentionExperience",
-  "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-  "verifyStudyFlowTvRoadmapInstructions",
-  "verifyStudyFlowTvOptimizedReleaseArtifact",
-  "verifyStudyFlowTvPackagedArtifacts",
-  "verifyStudyFlowTvRealDeviceAcceptance",
-  "verifyStudyFlowTvFinalReleaseSeal",
-  ":core:tvlink:testDebugUnitTest",
-  ":app-tv:assembleDebug",
-]
-lint = [
-  "verifyStudyFlowTvArchitecture",
-  "verifyStudyFlowTvSizeBudget",
-  "verifyStudyFlowTvControlCast",
-  "verifyStudyFlowTvAppModule",
-  "verifyStudyFlowTvDependencyBudget",
-  "verifyStudyFlowTvPairingControlCastProtocol",
-  "verifyStudyFlowTvFocusPrimitives",
-  "verifyStudyFlowTvNavigationShell",
-  "verifyStudyFlowTvHomeSurface",
-  "verifyStudyFlowTvTodayWorkspace",
-  "verifyStudyFlowTvStudySessionExperience",
-  "verifyStudyFlowTvQuestionPractice",
-  "verifyStudyFlowTvMockExamStudio",
-  "verifyStudyFlowTvReviewNotebook",
-  "verifyStudyFlowTvProgressAnalytics",
-  "verifyStudyFlowTvReadOnlySchedule",
-  "verifyStudyFlowTvLibraryReference",
-  "verifyStudyFlowTvSettings",
-  "verifyStudyFlowTvControlStateContinuity",
-  "verifyStudyFlowTvAccessibilityTenFootUi",
-  "verifyStudyFlowTvSizeOptimization",
-  "verifyStudyFlowTvManifestPackaging",
-  "verifyStudyFlowTvTargetIsolation",
-  "verifyStudyFlowTvFinalAcceptanceContracts",
-  "verifyStudyFlowTvPresentationProjection",
-  "verifyStudyFlowTvLocalPairingTransport",
-  "verifyStudyFlowTvPhoneController",
-  "verifyStudyFlowTvCastStateSynchronization",
-  "verifyStudyFlowTvDomainPersistenceConvergence",
-  "verifyStudyFlowTvEndToEndPhysicalSealContracts",
-  "verifyStudyFlowTvFullNativeMaterialViewer",
-  "verifyStudyFlowTvGoalProjectionActions",
-  "verifyStudyFlowTvErrorNotebookMutationParity",
-  "verifyStudyFlowTvDpadSflpSearch",
-  "verifyStudyFlowTvAndroidWebSemanticParity",
-  "verifyAtt06TvAttentionExperience",
-  "verifyAtt07CrossDeviceDeliveryRouter",
-    "verifyAtt08CompactCompanionAttention",
-  "verifyStudyFlowTvRoadmapInstructions",
-  ":core:tvlink:lintDebug",
-  ":app-tv:lintDebug",
-  ":app-tv:lintRelease",
+preflight = ["verifyStudyFlowTvAllContracts"]
+dependencies = []
+compile = []
+resources = []
+unit-test = [":core:tvcontrol:test", ":core:tvlink:testDebugUnitTest", ":app-tv:testDebugUnitTest"]
+package = [":app-tv:assembleDebug"]
+instrumentation = []
+lint = [":app-tv:lintDebug"]
+
+# Release-only Android TV work is isolated from routine studyflow_tv validation.
+[targets.studyflow_tv_release]
+runner = "android"
+platform = "tv"
+root = "."
+execution_environment = "native-termux"
+chroot_name = "androidos"
+
+[targets.studyflow_tv_release.android]
+variant = "release"
+aapt2_provider = "termux"
+prefer_native_termux = true
+ndk_version = "29.0.14206865"
+
+[targets.studyflow_tv_release.android.adb]
+provider = "auto"
+device_policy = "first-physical"
+
+[targets.studyflow_tv_release.android.instrumentation]
+policy = "when-device-present"
+keep_installed = false
+cleanup_app = false
+capture_logcat_on_failure = true
+capture_screenshot_on_failure = true
+
+[targets.studyflow_tv_release.gradle]
+version = "9.7.1"
+provider = "auto"
+max_workers = 4
+parallel = true
+no_daemon = false
+daemon_idle_timeout_ms = 900000
+build_cache = true
+structured_events = false
+fail_fast = true
+offline = false
+args = [
+  "-Dorg.gradle.vfs.watch=false",
+  "-Pkotlin.incremental=true",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  "--no-configuration-cache",
 ]
 
+[targets.studyflow_tv_release.tasks]
+build = ["verifyStudyFlowTvAllContracts", "verifyStudyFlowTvFinalReleaseSeal"]
+test = ["verifyStudyFlowTvFinalAcceptanceContracts", ":app-tv:testDebugUnitTest"]
+lint = [":app-tv:lintRelease"]
+clean = ["clean"]
+
+[targets.studyflow_tv_release.artifacts]
+required = true
+external_verification = "auto"
+
+[targets.studyflow_tv_release.validation]
+android_safe = false
+max_workers = 4
+cpu_limit = 4
+parallel = true
+split_gradle = false
+no_daemon = false
+stop_daemon_after_phase = false
+low_priority = false
+gradle_heap_mb = 2048
+gradle_metaspace_mb = 768
+gradle_packaging_heap_mb = 2048
+gradle_packaging_metaspace_mb = 768
+gradle_lint_metaspace_mb = 768
+memory_guard_mb = 0
+affected_module_lint = false
+
+[targets.studyflow_tv_release.validation.phases]
+preflight = ["verifyStudyFlowTvAllContracts", "verifyStudyFlowTvFinalAcceptanceContracts"]
+dependencies = []
+compile = []
+resources = []
+unit-test = [":core:tvcontrol:test", ":core:tvlink:testDebugUnitTest", ":app-tv:testDebugUnitTest"]
+package = ["verifyStudyFlowTvFinalReleaseSeal"]
+instrumentation = ["verifyStudyFlowTvRealDeviceAcceptance"]
+lint = [":app-tv:lintRelease"]
+
 [targets.studyflow_release]
-type = "android"
+runner = "android"
+platform = "android"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
@@ -883,9 +422,19 @@ chroot_name = "androidos"
 [targets.studyflow_release.android]
 variant = "release"
 aapt2_provider = "termux"
-instrumentation = "when-device-present"
 prefer_native_termux = true
 ndk_version = "29.0.14206865"
+
+[targets.studyflow_release.android.adb]
+provider = "auto"
+device_policy = "first-physical"
+
+[targets.studyflow_release.android.instrumentation]
+policy = "when-device-present"
+keep_installed = false
+cleanup_app = false
+capture_logcat_on_failure = true
+capture_screenshot_on_failure = true
 
 [targets.studyflow_release.gradle]
 version = "9.7.1"
@@ -899,7 +448,6 @@ structured_events = false
 fail_fast = true
 offline = false
 args = [
-  "-Dorg.gradle.parallel=true",
   "-Dorg.gradle.vfs.watch=false",
   "-Pkotlin.incremental=true",
   "-Pkotlin.compiler.execution.strategy=in-process",
@@ -918,102 +466,19 @@ clean = ["clean"]
 required = false
 external_verification = "auto"
 
-[targets.studyflow_android.validation.phase_profiles.preflight]
-max_workers = 1
-cpu_limit = 1
-gradle_heap_mb = 768
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_android.validation.phase_profiles.compile]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_android.validation.phase_profiles.unit-test]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_android.validation.phase_profiles.instrumentation]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1024
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_desktop.validation.phase_profiles.preflight]
-max_workers = 1
-cpu_limit = 1
-gradle_heap_mb = 768
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_desktop.validation.phase_profiles.compile]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1152
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_desktop.validation.phase_profiles.unit-test]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1152
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_desktop.validation.phase_profiles.package]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1152
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_desktop.validation.phase_profiles.lint]
-max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1024
-memory_guard_mb = 256
-no_daemon = false
-low_priority = false
-
-
-[targets.studyflow_parity]
-type = "gradle"
+# Repository-wide style/source quality is intentionally isolated from routine client validation.
+[targets.studyflow_quality]
+runner = "gradle"
+platform = "shared"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
 
-[targets.studyflow_parity.gradle]
+[targets.studyflow_quality.gradle]
 version = "9.7.1"
 provider = "auto"
-max_workers = 1
-parallel = false
+max_workers = 4
+parallel = true
 no_daemon = false
 daemon_idle_timeout_ms = 900000
 build_cache = true
@@ -1021,7 +486,58 @@ structured_events = false
 fail_fast = false
 offline = false
 args = [
-  "-Dorg.gradle.parallel=true",
+  "-Dorg.gradle.vfs.watch=false",
+  "-Pkotlin.incremental=true",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+]
+
+[targets.studyflow_quality.tasks]
+build = ["verifyStudyFlowGradleTaskGraphOptimizationV4", "verifyFinalSourceAcceptance"]
+test = ["verifyFinalSourceAcceptance"]
+lint = ["verifyFormatting"]
+clean = ["clean"]
+
+[targets.studyflow_quality.validation]
+android_safe = false
+max_workers = 4
+cpu_limit = 4
+parallel = true
+split_gradle = false
+no_daemon = false
+stop_daemon_after_phase = false
+low_priority = false
+gradle_heap_mb = 2048
+gradle_metaspace_mb = 768
+memory_guard_mb = 0
+
+[targets.studyflow_quality.validation.phases]
+preflight = ["verifyStudyFlowGradleTaskGraphOptimizationV4"]
+dependencies = []
+compile = []
+resources = []
+unit-test = ["verifyFinalSourceAcceptance"]
+package = []
+lint = ["verifyFormatting"]
+
+[targets.studyflow_parity]
+runner = "gradle"
+platform = "shared"
+root = "."
+execution_environment = "native-termux"
+chroot_name = "androidos"
+
+[targets.studyflow_parity.gradle]
+version = "9.7.1"
+provider = "auto"
+max_workers = 4
+parallel = true
+no_daemon = false
+daemon_idle_timeout_ms = 900000
+build_cache = true
+structured_events = false
+fail_fast = false
+offline = false
+args = [
   "-Dorg.gradle.vfs.watch=false",
   "-Pkotlin.incremental=true",
   "-Pkotlin.compiler.execution.strategy=in-process",
@@ -1029,70 +545,28 @@ args = [
 
 [targets.studyflow_parity.tasks]
 build = ["verifyRelFinalTerminalSeal"]
-test = [
-  "verifyRelFinalRoadmapPromiseAudit",
-  "prepareRelFinalEvidencePlan",
-  "verifyParity04FiveClientFullMesh",
-  "verifyParity04WebAcceptance",
-  "verifyPresence01PeerActivityPresence",
-  "verifyWeb20SharedSemanticGoldenVectors",
-  "verifyWeb20RoadmapTruth",
-  "verifyPresence01WebRegression",
-  "verifyPresence01WebRelease",
-  ":core:domain:test",
-  ":core:link:test",
-  ":core:portability:test",
-  ":desktopApp:test",
-  ":app:testReleaseUnitTest",
-  ":app-tv:testDebugUnitTest",
-]
+test = ["verifyRelFinalTerminalSeal"]
 lint = ["verifyFinalSourceAcceptance"]
 clean = ["clean"]
+
 [targets.studyflow_parity.validation]
 android_safe = false
-max_workers = 1
-cpu_limit = 2
-parallel = false
-split_gradle = true
+max_workers = 4
+cpu_limit = 4
+parallel = true
+split_gradle = false
 no_daemon = false
 stop_daemon_after_phase = false
 low_priority = false
-gradle_heap_mb = 1152
-gradle_metaspace_mb = 512
-memory_guard_mb = 256
+gradle_heap_mb = 2048
+gradle_metaspace_mb = 768
+memory_guard_mb = 0
 
 [targets.studyflow_parity.validation.phases]
-preflight = [
-  "verifyRelFinalRoadmapPromiseAudit",
-  "verifyParity04FiveClientFullMesh",
-  "verifyPresence01PeerActivityPresence",
-  "verifyWeb20SharedSemanticGoldenVectors",
-  "verifyWeb20RoadmapTruth",
-]
-compile = [
-  ":core:domain:compileTestKotlin",
-  ":core:link:compileKotlin",
-  ":core:link:compileTestKotlin",
-  ":core:portability:compileTestKotlin",
-  ":desktopApp:compileKotlin",
-  ":desktopApp:compileTestKotlin",
-  ":app:compileDebugKotlin",
-  ":app-tv:compileDebugKotlin",
-]
-unit-test = [
-  ":core:domain:test",
-  ":core:link:test",
-  ":core:portability:test",
-  ":desktopApp:test",
-  ":app:testReleaseUnitTest",
-  ":app-tv:testDebugUnitTest",
-  "verifyParity04WebAcceptance",
-  "verifyPresence01WebRegression",
-  "verifyPresence01WebRelease",
-]
-package = [
-  ":app:assembleDebug",
-  ":app-tv:assembleDebug",
-  "verifyRelFinalTerminalSeal",
-]
-lint = ["verifyFinalSourceAcceptance"]
+preflight = ["verifyRelFinalRoadmapPromiseAudit"]
+dependencies = []
+compile = []
+resources = []
+unit-test = ["verifyRelFinalTerminalSeal"]
+package = []
+lint = []

@@ -21,7 +21,9 @@ for action, resource in (("RECLASSIFY_ERROR", "tv_reviews_action_reclassify_erro
  q(f'name="{resource}"' in s,"TV string resource missing "+resource)
 b=t("build.gradle.kts"); c=t(".devtool.toml")
 q('tasks.register<Exec>("verifyStudyFlowTvErrorNotebookMutationParity")' in b,"Gradle task missing")
-q("verifyStudyFlowTvErrorNotebookMutationParity" in c,"Devtool task missing")
+q("verifyStudyFlowTvAllContracts" in c, "Devtool target missing aggregate TV contract gate")
+tv_aggregate = b.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1].split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+q("verifyStudyFlowTvErrorNotebookMutationParity" in tv_aggregate, "aggregate TV contract gate missing verifyStudyFlowTvErrorNotebookMutationParity")
 if F:
  print("TVOV29_ERROR_NOTEBOOK_MUTATION_PARITY: FAIL");[print("-",x) for x in F];raise SystemExit(1)
 print("TVOV29_ERROR_NOTEBOOK_MUTATION_PARITY: PASS")

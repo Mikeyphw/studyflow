@@ -238,8 +238,6 @@ tasks.register<Exec>("verifyRepositoryContracts") {
         "-lc",
         """
         set -euo pipefail
-        find . -path '*/build/reports/lint*' -type f -delete
-        find . -path '*/build/reports/lint*' -type d -empty -delete || true
         for phase in {0..37}; do
             python3 "scripts/verify_phase_${'$'}{phase}.py"
         done
@@ -684,10 +682,10 @@ tasks.register<Exec>("verifyStudyFlowTvStudySessionExperience") {
     commandLine("python3", "scripts/verify_tvov08_study_session.py")
 }
 
-tasks.register<Exec>("verifyFinalAppAcceptanceSeal") {
+tasks.register("verifyFinalAppAcceptanceSeal") {
     group = "verification"
-    description = "Compatibility alias for the final source/static acceptance contract."
-    commandLine("python3", "scripts/verify_final_app_acceptance.py")
+    description = "Compatibility alias for the canonical final source/static acceptance contract."
+    dependsOn("verifyFinalSourceAcceptance")
 }
 
 tasks.register<Exec>("verifyRemediationOv13") {
@@ -1077,6 +1075,116 @@ tasks.register<Exec>("verifyCpov07Cpov08BancaErrorNotebook") {
     group = "verification"
     description = "Checks CPOV07 banca blueprint scoring and CPOV08 error-notebook review-policy contracts."
     commandLine("python3", "scripts/verify_cpov07_08_banca_error_notebook.py")
+}
+
+tasks.register("verifyCpovAllContracts") {
+    group = "verification"
+    description = "Runs every CPOV00-CPOV13 contract and the roadmap reconciliation once."
+    dependsOn(
+        "verifyCpov00Toolchain",
+        "verifyCpov01PublicExamProfile",
+        "verifyCpov02EditalImport",
+        "verifyCpov03Cpov04PublicExamProgress",
+        "verifyCpov05Cpov06PriorityBancaQuestions",
+        "verifyCpov07Cpov08BancaErrorNotebook",
+        "verifyCpov09Cpov10LegislationDashboard",
+        "verifyCpov11Cpov12FinalStretchOnboarding",
+        "verifyCpov13PublicExamReleaseSeal",
+        "verifyCpovRoadmapReconciliation",
+    )
+}
+
+tasks.register("verifyStudyFlowDesktopAllContracts") {
+    group = "verification"
+    description = "Runs all Desktop DOV/ATT04 static product contracts once."
+    dependsOn(
+        "verifyStudyFlowDesktopFoundation",
+        "verifyStudyFlowDesktopBootstrapScreens",
+        "verifyStudyFlowDesktopShellContracts",
+        "verifyStudyFlowDesktopWorkflows",
+        "verifyDesktopDov08PersistentWorkspace",
+        "verifyDesktopDov09PlanContentLifecycle",
+        "verifyDesktopDov10PlannerAdaptiveWorkflows",
+        "verifyDesktopDov11SessionRuntime",
+        "verifyDesktopDov12QuestionPracticeExecution",
+        "verifyDesktopDov13MockExamStudio",
+        "verifyDesktopDov14ReviewsSrsErrorNotebook",
+        "verifyDesktopDov15LibraryFilesMaterialViewers",
+        "verifyDesktopDov16WritingWorkspace",
+        "verifyDesktopDov17ContentModesExecution",
+        "verifyDesktopDov18PublicExamParity",
+        "verifyDesktopDov19ReadinessCoachingReports",
+        "verifyDesktopDov20PortabilityBackupMigration",
+        "verifyDesktopDov21EnPtBrLocalization",
+        "verifyDesktopDov22SystemLightDarkAppearance",
+        "verifyDesktopDov23NativeDesktopIntegration",
+        "verifyDesktopDov24FullApplicableParitySeal",
+        "verifyAtt04DesktopAttentionContracts",
+    )
+}
+
+tasks.register("verifyStudyFlowTvAllContracts") {
+    group = "verification"
+    description = "Runs every TVOV source/product contract plus TV Attention contracts once."
+    dependsOn(
+        "verifyStudyFlowTvDevtoolAndroidRunner",
+        "verifyStudyFlowTvArchitecture",
+        "verifyStudyFlowTvSizeBudget",
+        "verifyStudyFlowTvControlCast",
+        "verifyStudyFlowTvAppModule",
+        "verifyStudyFlowTvDependencyBudget",
+        "verifyStudyFlowTvPairingControlCastProtocol",
+        "verifyStudyFlowTvFocusPrimitives",
+        "verifyStudyFlowTvNavigationShell",
+        "verifyStudyFlowTvHomeSurface",
+        "verifyStudyFlowTvTodayWorkspace",
+        "verifyStudyFlowTvStudySessionExperience",
+        "verifyStudyFlowTvQuestionPractice",
+        "verifyStudyFlowTvMockExamStudio",
+        "verifyStudyFlowTvReviewNotebook",
+        "verifyStudyFlowTvProgressAnalytics",
+        "verifyStudyFlowTvReadOnlySchedule",
+        "verifyStudyFlowTvLibraryReference",
+        "verifyStudyFlowTvSettings",
+        "verifyStudyFlowTvControlStateContinuity",
+        "verifyStudyFlowTvAccessibilityTenFootUi",
+        "verifyStudyFlowTvSizeOptimization",
+        "verifyStudyFlowTvManifestPackaging",
+        "verifyStudyFlowTvTargetIsolation",
+        "verifyStudyFlowTvFinalAcceptanceContracts",
+        "verifyStudyFlowTvPresentationProjection",
+        "verifyStudyFlowTvLocalPairingTransport",
+        "verifyStudyFlowTvPhoneController",
+        "verifyStudyFlowTvCastStateSynchronization",
+        "verifyStudyFlowTvDomainPersistenceConvergence",
+        "verifyStudyFlowTvEndToEndPhysicalSealContracts",
+        "verifyStudyFlowTvFullNativeMaterialViewer",
+        "verifyStudyFlowTvGoalProjectionActions",
+        "verifyStudyFlowTvErrorNotebookMutationParity",
+        "verifyStudyFlowTvDpadSflpSearch",
+        "verifyStudyFlowTvAndroidWebSemanticParity",
+        "verifyStudyFlowTvRoadmapInstructions",
+        "verifyAtt06TvAttentionContracts",
+        "verifyAtt07CrossDeviceDeliveryContracts",
+        "verifyAtt08CompactCompanionAttentionContracts",
+    )
+}
+
+tasks.register("verifyStudyFlowAndroidPreflightContracts") {
+    group = "verification"
+    description = "Optimized Android preflight: historical, CPOV and terminal static source contracts once."
+    dependsOn(
+        "verifyRepositoryContracts",
+        "verifyCpovAllContracts",
+        "verifyOv19PromiseAudit",
+    )
+}
+
+tasks.register<Exec>("verifyStudyFlowGradleTaskGraphOptimizationV4") {
+    group = "verification"
+    description = "Statically checks v4 Gradle/Devtool task-graph deduplication and config invariants."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_studyflow_gradle_task_graph_optimization_v4.py")
 }
 
 tasks.register("checkAll") {
@@ -1499,17 +1607,23 @@ tasks.register<Exec>("verifySflp16Sflp17ControlInputDelegation") {
 }
 
 
-tasks.register<Exec>("verifySflp18Sflp19NotificationMediaSync") {
+tasks.register<Exec>("verifySflp18Sflp19NotificationMediaContracts") {
     group = "verification"
-    description = "Checks SFLP18 notification/schedule sync and SFLP19 material streaming handoff."
+    description = "Checks only the SFLP18/19 notification/media source contracts for focused consumers."
+    commandLine("python3", "scripts/verify_sflp18_19_notification_media_sync.py")
+}
+
+tasks.register("verifySflp18Sflp19NotificationMediaSync") {
+    group = "verification"
+    description = "Full historical SFLP18/19 seal with predecessor and native runtime coverage."
     dependsOn(
         "verifySflp16Sflp17ControlInputDelegation",
+        "verifySflp18Sflp19NotificationMediaContracts",
         ":core:link:test",
         ":app-tv:testDebugUnitTest",
         ":desktopApp:test",
         ":app:testReleaseUnitTest",
     )
-    commandLine("python3", "scripts/verify_sflp18_19_notification_media_sync.py")
 }
 
 
@@ -1753,18 +1867,16 @@ tasks.register<Exec>("verifyWeb20RoadmapTruth") {
     commandLine("python3", "scripts/verify_roadmap01_cross_platform_truth_reconciliation.py")
 }
 
-tasks.register<Exec>("verifyWeb20WebLint") {
+tasks.register("verifyWeb20WebLint") {
     group = "verification"
-    description = "Type-check Web semantics and verify committed runtime parity."
-    workingDir = file("web")
-    commandLine("npm", "run", "lint")
+    description = "Compatibility alias for the shared Web runtime/release-validation gate."
+    dependsOn("verifyAttentionWebRuntimeParity", "verifyStudyFlowWebReleaseValidation")
 }
 
-tasks.register<Exec>("verifyWeb20WebTests") {
+tasks.register("verifyWeb20WebTests") {
     group = "verification"
-    description = "Run the complete Web regression suite after WEB20 semantic convergence."
-    workingDir = file("web")
-    commandLine("npm", "test")
+    description = "Compatibility alias for the shared complete Web regression gate."
+    dependsOn("verifyStudyFlowWebFullRegression")
 }
 
 tasks.register("verifyWeb20WebRegression") {
@@ -1773,11 +1885,10 @@ tasks.register("verifyWeb20WebRegression") {
     dependsOn("verifyWeb20WebLint", "verifyWeb20WebTests")
 }
 
-tasks.register<Exec>("verifyWeb20WebRelease") {
+tasks.register("verifyWeb20WebRelease") {
     group = "verification"
-    description = "Check the committed self-contained Web release after semantic convergence."
-    workingDir = file("web")
-    commandLine("npm", "run", "release:check")
+    description = "Compatibility alias for the shared Web release-integrity gate."
+    dependsOn("verifyStudyFlowWebReleaseIntegrity")
 }
 
 tasks.register("verifyWeb20TerminalSeal") {
@@ -1805,18 +1916,16 @@ tasks.register<Exec>("verifyPresence01PeerActivityPresence") {
     commandLine("python3", "scripts/verify_presence01_peer_activity_presence.py")
 }
 
-tasks.register<Exec>("verifyPresence01WebLint") {
+tasks.register("verifyPresence01WebLint") {
     group = "verification"
-    description = "Type-check Web/Web-TV presence and verify committed runtime parity."
-    workingDir = file("web")
-    commandLine("npm", "run", "lint")
+    description = "Compatibility alias for the shared Web runtime/release-validation gate."
+    dependsOn("verifyAttentionWebRuntimeParity", "verifyStudyFlowWebReleaseValidation")
 }
 
-tasks.register<Exec>("verifyPresence01WebTests") {
+tasks.register("verifyPresence01WebTests") {
     group = "verification"
-    description = "Run the complete Web regression suite with PRESENCE01."
-    workingDir = file("web")
-    commandLine("npm", "test")
+    description = "Compatibility alias for the shared complete Web regression gate."
+    dependsOn("verifyStudyFlowWebFullRegression")
 }
 
 tasks.register<Exec>("verifyPresence01LanRelayStability") {
@@ -1838,11 +1947,10 @@ tasks.register("verifyPresence01WebRegression") {
     dependsOn("verifyPresence01WebLint", "verifyPresence01WebTests", "verifyPresence01LanRelayStability")
 }
 
-tasks.register<Exec>("verifyPresence01WebRelease") {
+tasks.register("verifyPresence01WebRelease") {
     group = "verification"
-    description = "Check the self-contained Web release contains the PRESENCE01 runtime."
-    workingDir = file("web")
-    commandLine("npm", "run", "release:check")
+    description = "Compatibility alias for the shared Web release-integrity gate."
+    dependsOn("verifyStudyFlowWebReleaseIntegrity")
 }
 
 tasks.register("verifyPresence01TerminalSeal") {
@@ -2038,6 +2146,43 @@ tasks.register<Exec>("verifyAttentionWebRuntimeParity") {
         ":app:testReleaseUnitTest",
         ":app-tv:testDebugUnitTest",
         ":desktopApp:test",
+    )
+}
+
+// Shared Web validation gates.  Historical WEB20/PRESENCE/ATT aliases delegate here so
+// one Gradle invocation cannot spawn the same TypeScript/tests/release checks repeatedly.
+tasks.register<Exec>("verifyStudyFlowWebFullRegression") {
+    group = "verification"
+    description = "Runs all Web pytest regressions once after the shared TypeScript runtime-parity gate."
+    dependsOn("verifyAttentionWebRuntimeParity")
+    workingDir(rootProject.file("web"))
+    environment("STUDYFLOW_EXTERNAL_RUNTIME_PARITY", "1")
+    commandLine("python3", "-m", "pytest", "tests", "-q")
+}
+
+tasks.register<Exec>("verifyStudyFlowWebReleaseValidation") {
+    group = "verification"
+    description = "Runs release-mode Web validation once for all terminal seals."
+    dependsOn("verifyAttentionWebRuntimeParity")
+    workingDir(rootProject.file("web"))
+    commandLine("python3", "scripts/validate_web.py", "--release")
+}
+
+tasks.register<Exec>("verifyStudyFlowWebReleaseIntegrity") {
+    group = "verification"
+    description = "Checks committed Web release/cache/runtime integrity once for all terminal seals."
+    dependsOn("verifyAttentionWebRuntimeParity")
+    workingDir(rootProject.file("web"))
+    commandLine("node", "scripts/check_release.mjs")
+}
+
+tasks.register("verifyStudyFlowWebReleaseGate") {
+    group = "verification"
+    description = "Shared full Web regression, release validation and release-integrity aggregate."
+    dependsOn(
+        "verifyStudyFlowWebFullRegression",
+        "verifyStudyFlowWebReleaseValidation",
+        "verifyStudyFlowWebReleaseIntegrity",
     )
 }
 
@@ -2387,69 +2532,90 @@ tasks.register<Exec>("verifyAtt12AttentionReleaseContracts") {
     commandLine("python3", "scripts/verify_att12_attention_release_final_seal.py")
 }
 
-tasks.register<Exec>("verifyAtt12WebAttentionReleaseTests") {
+tasks.register("verifyAtt12WebAttentionReleaseTests") {
     group = "verification"
-    description = "Runs ATT12 production-wiring tests plus the complete focused Web Attention regression set."
-    workingDir = file("web")
-    commandLine(
-        "python3", "-m", "unittest",
-        "tests/test_att12_attention_release_seal.py",
-        "tests/test_att11_attention_reliability.py",
-        "tests/test_att10_focus_policy.py",
-        "tests/test_att09_calendar_attention.py",
-        "tests/test_att08_compact_attention.py",
-        "tests/test_att07_attention_router.py",
-        "tests/test_att06_web_tv_attention.py",
-        "tests/test_att05_web_attention_runtime.py",
-        "tests/test_att01_attention_runtime.py",
-    )
+    description = "Compatibility alias for the complete shared Web regression gate."
+    dependsOn("verifyStudyFlowWebFullRegression")
 }
 
 tasks.register("verifyAtt12WebRuntimeParity") {
     group = "verification"
-    description = "Reuses the single shared TypeScript runtime-parity gate for the ATT12 release seal."
+    description = "Compatibility alias for the single shared TypeScript runtime-parity gate."
     dependsOn("verifyAttentionWebRuntimeParity")
 }
 
-tasks.register<Exec>("verifyAtt12WebReleaseValidation") {
+tasks.register("verifyAtt12WebReleaseValidation") {
     group = "verification"
-    description = "Runs release-mode Web validation for the ATT12 final Attention seal."
-    workingDir = file("web")
-    commandLine("python3", "scripts/validate_web.py", "--release")
+    description = "Compatibility alias for shared Web release validation."
+    dependsOn("verifyStudyFlowWebReleaseValidation")
 }
 
-tasks.register<Exec>("verifyAtt12WebReleaseIntegrity") {
+tasks.register("verifyAtt12WebReleaseIntegrity") {
     group = "verification"
-    description = "Checks the committed Web release manifest/cache/runtime integrity for ATT12."
-    workingDir = file("web")
-    commandLine("node", "scripts/check_release.mjs")
+    description = "Compatibility alias for shared Web release integrity."
+    dependsOn("verifyStudyFlowWebReleaseIntegrity")
 }
 
-tasks.named("verifyAtt12WebAttentionReleaseTests") {
-    mustRunAfter("verifyAttentionWebRuntimeParity")
-}
-tasks.named("verifyAtt12WebReleaseValidation") {
-    mustRunAfter("verifyAttentionWebRuntimeParity")
-}
-tasks.named("verifyAtt12WebReleaseIntegrity") {
-    mustRunAfter("verifyAttentionWebRuntimeParity")
+
+tasks.register("verifyAttentionAllContracts") {
+    group = "verification"
+    description = "Runs ATT01-ATT12 source/product contract verifiers without recursively repeating focused test lanes."
+    dependsOn(
+        "verifyAtt01AttentionContracts",
+        "verifyAtt02AndroidAttentionContracts",
+        "verifyAtt03AndroidWidgetContracts",
+        "verifyAtt04DesktopAttentionContracts",
+        "verifyAtt05WebAttentionContracts",
+        "verifyAtt06TvAttentionContracts",
+        "verifyAtt07CrossDeviceDeliveryContracts",
+        "verifyAtt08CompactCompanionAttentionContracts",
+        "verifyAtt09CalendarAttentionContracts",
+        "verifyAtt10QuietHoursFocusPolicyContracts",
+        "verifyAtt11NotificationReliabilityContracts",
+        "verifyAtt12AttentionReleaseContracts",
+    )
 }
 
 tasks.register("verifyAtt12AttentionReleaseFinalSeal") {
     group = "verification"
-    description = "Final ATT01–ATT12 Attention roadmap reconciliation and cross-platform release seal."
+    description = "Optimized ATT01-ATT12 final seal: contracts once, Web once, native suites once."
     dependsOn(
-        "verifyAtt12AttentionReleaseContracts",
-        "verifyAtt12WebAttentionReleaseTests",
-        "verifyAtt12WebRuntimeParity",
-        "verifyAtt12WebReleaseValidation",
-        "verifyAtt12WebReleaseIntegrity",
-        "verifyAtt11NotificationReliabilityEvidenceAudit",
-        "verifySflp18Sflp19NotificationMediaSync",
+        "verifyAttentionAllContracts",
+        "verifyStudyFlowWebReleaseGate",
+        "verifySflp18Sflp19NotificationMediaContracts",
         "verifyWeb20SharedSemanticGoldenVectors",
         ":core:link:test",
+        ":core:diagnostics:test",
+        ":core:domain:test",
+        ":feature:reminders:testDebugUnitTest",
+        ":feature:settings:testDebugUnitTest",
         ":app:testReleaseUnitTest",
         ":desktopApp:test",
         ":app-tv:testDebugUnitTest",
     )
 }
+
+// Post-ATT12 Attention roadmap completion gate — production reachability, not token existence.
+tasks.register<Exec>("verifyAttentionRoadmapPostsealContracts") {
+    group = "verification"
+    description = "Rejects the production-reachability gaps found by the post-ATT12 Attention roadmap audit."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_attention_roadmap_postseal_completion.py")
+}
+
+tasks.register("verifyAttentionRoadmapFullWebRegression") {
+    group = "verification"
+    description = "Compatibility alias for the complete shared Web regression gate."
+    dependsOn("verifyStudyFlowWebFullRegression")
+}
+
+tasks.register("verifyAttentionRoadmapPostsealCompletion") {
+    group = "verification"
+    description = "Terminal optimized ATT01-ATT12 roadmap gate with production reachability and task-graph checks."
+    dependsOn(
+        "verifyAtt12AttentionReleaseFinalSeal",
+        "verifyAttentionRoadmapPostsealContracts",
+        "verifyStudyFlowGradleTaskGraphOptimizationV4",
+    )
+}
+

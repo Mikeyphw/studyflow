@@ -113,7 +113,9 @@ for forbidden in (
     require(forbidden not in policy + view_helper + activity, f"TVOV17 dependency boundary violated by {forbidden}")
 
 require('tasks.register<Exec>("verifyStudyFlowTvAccessibilityTenFootUi")' in root_gradle, "missing TVOV17 Gradle verifier task")
-require("verifyStudyFlowTvAccessibilityTenFootUi" in devtool, "studyflow_tv target missing TVOV17 verifier")
+require("verifyStudyFlowTvAllContracts" in devtool, "studyflow_tv target must run aggregate TV contracts")
+tv_aggregate = root_gradle.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1].split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvAccessibilityTenFootUi" in tv_aggregate, "aggregate TV contracts must own TVOV17 verifier")
 require("TVOV17  Accessibility and 10-foot UI seal [implemented]" in roadmap, "roadmap must mark TVOV17 implemented")
 require("TVOV17  Accessibility and 10-foot UI seal [implemented]" in rules, "working rules must mark TVOV17 implemented")
 require("## TVOV17" in roadmap, "roadmap missing TVOV17 implementation note")

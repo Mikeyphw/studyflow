@@ -98,8 +98,11 @@ for token in (
     require(token in text("app/build.gradle.kts"), f"release identity missing: {token}")
 require(":app:assembleRelease" in build, "credentialed Release APK assembly gate is missing")
 require(":app:bundleRelease" in build, "credentialed Release AAB bundle gate is missing")
-require('build = ["prepareDevtoolValidationArtifacts", ":app:assembleDebug"]' in devtool,
-        "ordinary Devtool build must not produce an unsigned Release APK/AAB")
+import tomllib
+devtool_config = tomllib.loads(devtool)
+android_build_tasks = devtool_config["targets"]["studyflow_android"]["tasks"]["build"]
+require(":app:assembleDebug" in android_build_tasks and ":app:assembleRelease" not in android_build_tasks,
+        "ordinary Devtool Android build must remain Debug-only")
 require("android.intent.action.MAIN" in manifest, "launcher MAIN intent is missing")
 require("android.intent.category.LAUNCHER" in manifest, "launcher category is missing")
 require("startDestination = TodayRoute()" in app, "V2 Today route must remain the release startup destination")

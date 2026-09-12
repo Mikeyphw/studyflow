@@ -113,7 +113,9 @@ for forbidden in ("java.net.Socket", "ServerSocket", "WebSocket", "CastContext",
     require(forbidden not in reducer + continuity, f"TVOV16 reducer/schema must remain transport-free; found {forbidden}")
 
 require('tasks.register<Exec>("verifyStudyFlowTvControlStateContinuity")' in build, "missing Gradle TVOV16 verifier task")
-require("verifyStudyFlowTvControlStateContinuity" in devtool, "studyflow_tv target must run TVOV16 verifier")
+require("verifyStudyFlowTvAllContracts" in devtool, "studyflow_tv target must run aggregate TV contracts")
+tv_aggregate = build.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1].split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvControlStateContinuity" in tv_aggregate, "aggregate TV contracts must own TVOV16 verifier")
 require("TVOV16  Cross-device control/state continuity [implemented]" in roadmap, "roadmap must mark TVOV16 implemented")
 require("TVOV16" in notes and "transport" in notes and "deferred" in notes, "TVOV16 implementation note is incomplete")
 require("TVOV16" in quality and "monotonic" in quality, "TVOV16 quality contract is incomplete")

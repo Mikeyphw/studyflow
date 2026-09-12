@@ -161,7 +161,11 @@ readme = read("README.md")
 quality = read("docs/quality/TVOV21_TYPED_PRESENTATION_PROJECTION_CONTRACTS.md")
 notes = read("TVOV21_ANDROID_TV_TYPED_PRESENTATION_PROJECTION.md")
 require('tasks.register<Exec>("verifyStudyFlowTvPresentationProjection")' in root_gradle, "missing TVOV21 Gradle verifier task")
-require(devtool.count('"verifyStudyFlowTvPresentationProjection"') >= 8, "studyflow_tv must wire TVOV21 across all validation phases")
+require('"verifyStudyFlowTvAllContracts"' in devtool, "studyflow_tv must run the aggregate TV contract gate")
+tv_aggregate = root_gradle.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1]
+tv_aggregate = tv_aggregate.split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+require("verifyStudyFlowTvPresentationProjection" in tv_aggregate, "aggregate TV gate must own TVOV21 verifier")
+require('"verifyStudyFlowTvAllContracts"' in devtool, "studyflow_tv must run the aggregate TV contract gate")
 require("TVOV21  Typed presentation snapshots and canonical data projection [implemented]" in roadmap, "roadmap must mark TVOV21 implemented")
 require("TVOV22  Local pairing, discovery, and transport [implemented]" in roadmap, "roadmap must mark TVOV22 implemented")
 require("TVOV21  Typed presentation snapshots and canonical data projection [implemented]" in rules, "working rules must mark TVOV21 implemented")

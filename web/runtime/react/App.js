@@ -128,16 +128,29 @@ function tvSurfaceDestination(surface) { if (surface === "SETTINGS")
     return { screen: "schedule" }; if (surface === "LIBRARY")
     return { screen: "library" }; return { screen: "today" }; }
 function WebTvAttentionBanner({ runtime, snapshot, run }) {
+    var _a;
     const projection = (0, tv_attention_1.projectWebAttentionToTv)(snapshot);
     const banner = projection.activeBanner;
     if (!banner)
         return null;
     const actionLabel = (action) => action === "move_to_phone" ? "Move to phone" : action === "continue" ? "Continue" : title(action);
+    const latestOutcome = (_a = projection.focusOutcomes[0]) !== null && _a !== void 0 ? _a : "no policy decision yet";
     return React.createElement("article", { className: "tv-pairing-banner tv-attention-banner", role: "status", "aria-live": "polite", "data-att12-tv-attention": "foreground-only" },
         React.createElement("div", null,
             React.createElement("p", { className: "eyebrow" }, "Attention \u00B7 foreground only"),
             React.createElement("h2", null, banner.title),
             React.createElement("p", { className: "muted" }, banner.body),
+            React.createElement("p", { className: "muted", "data-att10-tv-policy": "read-only" },
+                "ATT10 read-only \u00B7 ",
+                title(projection.focusProfile),
+                " \u00B7 ",
+                title(latestOutcome)),
+            React.createElement("p", { className: "muted", "data-att11-tv-reliability": "read-only" },
+                "ATT11 reliability \u00B7 ",
+                title(projection.reliabilityStatus),
+                " \u00B7 ",
+                projection.auditedRouteCount,
+                " audited routes"),
             React.createElement("p", { className: "tv-continue-hint" }, "Closed-browser delivery is not guaranteed on TV. A designated phone, Desktop or normal Web notifier handles fallback.")),
         React.createElement("div", { className: "button-row" }, banner.actions.map(action => React.createElement("button", { key: action, className: "button button-quiet", type: "button", "data-tv-control-action": action === "continue" ? "OPEN" : action === "open" ? "OPEN" : undefined, onClick: () => run(() => { void runtime.applyAction(banner.occurrenceId, action === "continue" ? "open" : action); }, action === "move_to_phone" ? "Reminder acknowledged for phone continuation." : `Attention ${actionLabel(action)}.`) }, actionLabel(action)))));
 }

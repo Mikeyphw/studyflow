@@ -65,3 +65,9 @@ The Web runtime-parity gate still prefers a real TypeScript 5.8.3 compile. To ma
 ## Sandbox limitation
 
 The artifact-generation sandbox can run Python/Node/TypeScript verification and source/runtime/release checks, but it cannot download an uncached Gradle 9.7.1 distribution. The Termux Devtool command above is therefore the authoritative Gradle/Android/Desktop/TV compilation and unit-test execution for the final seal.
+
+## Optimized terminal validation (v4)
+
+For normal full validation, prefer the single terminal task `verifyAttentionRoadmapPostsealCompletion`.
+The historical ATT01–ATT12 tasks remain available as focused diagnostic gates, but scheduling all of them together is intentionally avoided because their focused Web/native suites overlap. The v4 terminal task runs all ATT01–ATT12 contract verifiers once, one complete Web regression/release gate, the required SFLP/native suites, and the Gradle/Devtool task-graph optimization contract.
+

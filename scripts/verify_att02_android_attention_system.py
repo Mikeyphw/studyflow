@@ -62,7 +62,8 @@ coordinator = require(
     "StudyReminderNotificationAction.START_BREAK",
     "runtimeEvidence(): ReminderPlatformRuntimeEvidence",
     "deleteNotificationChannel(StudyReminderLegacyChannelId)",
-    "markAttentionCancelled = false",
+    "POST_NOTIFICATIONS only gates native notification surfaces",
+    "localSurface == StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE",
     "StudyReminderExtraContentKind",
     "StudyReminderExtraScheduledAt",
     "StudyReminderExtraFireAt",
@@ -223,7 +224,7 @@ build = require(
     '"verifyAtt02AndroidAttentionContracts"',
     '"verifyAtt02AndroidAttentionSystem"',
 )
-config = require(".devtool.toml", "verifyAtt02AndroidAttentionSystem")
+config = require(".devtool.toml", "verifyAttentionRoadmapPostsealCompletion")
 
 # Reject obvious incomplete implementation markers in ATT02-owned production files.
 owned = [

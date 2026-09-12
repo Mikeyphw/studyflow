@@ -52,7 +52,13 @@ class StudyFlowAttentionFocusPolicyTest {
     fun examCountdownRequiresActionAndCanBypassQuietHours() {
         val now = 10_000L
         val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
-            occurrence = occurrence("exam", StudyFlowAttentionCategory.EXAM_COUNTDOWN, now, "UTC", StudyFlowAttentionPriority.HIGH),
+            occurrence = occurrence(
+                "exam",
+                StudyFlowAttentionCategory.EXAM_COUNTDOWN,
+                now,
+                "UTC",
+                StudyFlowAttentionPriority.HIGH,
+            ),
             policy = StudyFlowAttentionFocusPolicy(
                 profile = StudyFlowAttentionFocusProfile.EXAM_MODE,
                 quietWindow = StudyFlowAttentionQuietWindow(true, 0, 60, "UTC"),

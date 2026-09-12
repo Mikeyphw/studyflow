@@ -31,7 +31,9 @@ if not F:
 b=t("build.gradle.kts");d=t(".devtool.toml")
 q('tasks.register<Exec>("verifyStudyFlowTvAndroidWebSemanticParity")' in b,"Gradle TVOV31 task missing")
 q('tasks.register("verifyStudyFlowTvTvov27Tvov31Batch")' in b,"TVOV27-31 aggregate task missing")
-q("verifyStudyFlowTvAndroidWebSemanticParity" in d,"Devtool TVOV31 task missing")
+q("verifyStudyFlowTvAllContracts" in d, "Devtool target missing aggregate TV contract gate")
+tv_aggregate = b.split('tasks.register("verifyStudyFlowTvAllContracts")', 1)[1].split('tasks.register("verifyStudyFlowAndroidPreflightContracts")', 1)[0]
+q("verifyStudyFlowTvAndroidWebSemanticParity" in tv_aggregate, "aggregate TV contract gate missing verifyStudyFlowTvAndroidWebSemanticParity")
 if F:
  print("TVOV31_ANDROID_WEB_TV_SEMANTIC_PARITY: FAIL");[print("-",x) for x in F];sys.exit(1)
 print("TVOV31_ANDROID_WEB_TV_SEMANTIC_PARITY: PASS")

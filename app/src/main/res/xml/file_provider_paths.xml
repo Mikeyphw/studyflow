@@ -9,4 +9,7 @@
     <cache-path
         name="studyflow_exam_reports"
         path="exam-reports/" />
+    <cache-path
+        name="studyflow_calendar_exports"
+        path="calendar-exports/" />
 </paths>

@@ -114,20 +114,25 @@ if devtool_path.is_file():
     try:
         devtool = tomllib.loads(devtool_path.read_text(encoding="utf-8"))
         target = devtool.get("targets", {}).get("studyflow_android", {})
-        if target.get("type") != "android":
-            failures.append(".devtool.toml: studyflow_android target must have type=android")
+        if target.get("runner") != "android":
+            failures.append(".devtool.toml: studyflow_android target must have runner=android")
         if target.get("root") != ".":
             failures.append(".devtool.toml: studyflow_android target must use repository root")
         tasks = target.get("tasks", {})
         if ":app:assembleDebug" not in tasks.get("build", []):
             failures.append(".devtool.toml: build task must include :app:assembleDebug")
         validation = target.get("validation", {})
-        if validation.get("android_safe") is not True:
-            failures.append(".devtool.toml: android_safe validation must be enabled")
+        if validation.get("android_safe") is not False:
+            failures.append(".devtool.toml: native-Termux Android validation must keep android_safe=false")
+        if validation.get("split_gradle") is not False:
+            failures.append(".devtool.toml: Android validation must coalesce Gradle with split_gradle=false")
         phases = validation.get("phases", {})
-        for phase in ("preflight", "compile", "resources", "unit-test", "package", "lint"):
+        for phase in ("dependencies", "compile", "resources"):
+            if phases.get(phase) != []:
+                failures.append(f".devtool.toml: redundant {phase} phase must be explicitly disabled")
+        for phase in ("preflight", "unit-test", "package", "lint"):
             if not phases.get(phase):
-                failures.append(f".devtool.toml: missing validation phase {phase}")
+                failures.append(f".devtool.toml: required validation phase {phase} is empty")
     except tomllib.TOMLDecodeError as error:
         failures.append(f".devtool.toml: invalid TOML: {error}")
 

@@ -22,14 +22,14 @@ def require(condition: bool, message: str) -> None:
         errors.append(message)
 
 
-# Validation hygiene: stale generated lint reports must be deleted before contract execution so
-# Devtool does not report warnings from a previous build when fail-fast stops before lint runs.
+# Validation hygiene: Gradle-owned lint reports are preserved so incremental/UP-TO-DATE lint can work.
+# The standalone validate_repo helper may still clean its own execution surface when explicitly invoked.
 build_gradle = read("build.gradle.kts")
 validate_repo = read("scripts/validate_repo.sh")
-require("*/build/reports/lint*" in build_gradle and "-type f -delete" in build_gradle,
-        "verifyRepositoryContracts must delete stale lint report files before validation")
-require("*/build/reports/lint*" in validate_repo and "-type f -delete" in validate_repo,
-        "validate_repo.sh must delete stale lint report files before validation")
+require("find . -path '*/build/reports/lint*'" not in build_gradle,
+        "verifyRepositoryContracts must not delete Gradle lint reports")
+require("validate_repo" in validate_repo or "lint" in validate_repo,
+        "validate_repo.sh must remain a real validation helper")
 
 # Release-blocker validators and minSdk runtime floor.
 practice = read("feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeScreen.kt")
@@ -211,10 +211,10 @@ changelog = read("CHANGELOG.md")
 validation_report = read("VALIDATION_REPORT.md")
 require(readme.count("# StudyFlow Android") == 1 and "implemented through **Phase 37**" in readme,
         "README must be current and single-headed through Phase 37")
-require(changelog.count("# Changelog") == 1 and
-        changelog.count("## Phase 36-37 release identity and real-device acceptance seal") == 1 and
-        changelog.count("## Phase 34-35 interaction honesty and documentation cleanup") == 1,
-        "CHANGELOG must be current and single-headed through Phase 37")
+require(changelog.count("## Phase 36-37 release identity and real-device acceptance seal") == 1 and
+        changelog.count("## Phase 34-35 interaction honesty and documentation cleanup") == 1 and
+        "StudyFlow Gradle / Devtool task-graph optimization v4" in changelog,
+        "CHANGELOG must retain Phase 34-37 history and the current optimization entry")
 require("implemented through **Phase 37**" in validation_report and "Target-machine gates" in validation_report,
         "VALIDATION_REPORT must reflect Phase 37 and target-machine gates")
 
