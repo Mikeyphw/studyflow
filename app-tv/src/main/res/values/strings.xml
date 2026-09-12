@@ -179,8 +179,9 @@
     <string name="tv_settings_action_manage_pairing">Manage pairing</string>
     <string name="tv_settings_action_revoke_pairing">Revoke phone</string>
     <string name="tv_settings_action_toggle_focus">Toggle focus visibility</string>
+    <string name="tv_settings_action_attention">Attention status</string>
     <string name="tv_settings_action_about">About</string>
-    <string name="tv_settings_about_detail">TV-safe diagnostics: package identity, protocol version, and local presentation state only. Account management, storage, import/export, and database access remain on the phone.</string>
+    <string name="tv_settings_about_detail">TV-safe diagnostics: package identity, protocol version, local presentation state, and foreground attention capability only. Account management, storage, import/export, database access, and closed-app reminder routing remain on the phone.</string>
     <string name="tv_control_continuity_status_format">control state · %1$s · revision %2$d · pairing %3$s</string>
     <string name="tv_presentation_waiting_body">Waiting for current StudyFlow presentation data from a paired phone.</string>
     <string name="tv_presentation_empty_body">The active StudyFlow plan has no presentation data for this TV surface yet.</string>

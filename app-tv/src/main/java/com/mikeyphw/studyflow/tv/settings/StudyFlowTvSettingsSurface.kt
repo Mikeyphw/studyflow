@@ -11,6 +11,7 @@ import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusRole
 enum class StudyFlowTvSettingsCardId {
     PAIRING,
     FOCUS_VISIBILITY,
+    ATTENTION,
     PRIVACY,
     ABOUT,
 }
@@ -19,6 +20,7 @@ enum class StudyFlowTvSettingsAction {
     MANAGE_PAIRING,
     REVOKE_PAIRING,
     TOGGLE_HIGH_VISIBILITY_FOCUS,
+    OPEN_ATTENTION_STATUS,
     OPEN_ABOUT,
 }
 
@@ -42,6 +44,7 @@ data class StudyFlowTvSettingsState(
     val pairedDeviceName: String? = null,
     val highVisibilityFocus: Boolean = false,
     val aboutVisible: Boolean = false,
+    val attentionStatusVisible: Boolean = false,
 ) {
     init {
         require(pairingState != StudyFlowTvPairingState.PAIRED || !pairedDeviceName.isNullOrBlank()) {
@@ -61,9 +64,12 @@ object StudyFlowTvSettingsSurface {
     const val focusAccessibilityPreferenceRepresented = true
     const val localFirstPrivacyReminderVisible = true
     const val tvSafeAboutVisible = true
+    const val foregroundAttentionBannersVisible = true
+    const val backgroundDeliveryIsNotClaimedOnTv = true
+    const val designatedNotifierFallbackVisible = true
     const val usesSharedControlProtocol = true
-    const val cardCount = 4
-    const val actionCount = 4
+    const val cardCount = 5
+    const val actionCount = 5
     const val cardColumnStart = 1
     const val actionRow = 3
 
@@ -89,18 +95,25 @@ object StudyFlowTvSettingsSurface {
             column = cardColumnStart + 1,
         ),
         StudyFlowTvSettingsCard(
+            id = StudyFlowTvSettingsCardId.ATTENTION,
+            title = "TV attention",
+            body = "Foreground banners are available while this TV app is open. Closed-TV reminders fall back to your designated phone, desktop, or Web notifier.",
+            row = 1,
+            column = cardColumnStart,
+        ),
+        StudyFlowTvSettingsCard(
             id = StudyFlowTvSettingsCardId.PRIVACY,
             title = "Local-first privacy",
             body = "TV control receives StudyFlow intents and presentation state, never database rows or arbitrary screen mirroring.",
             row = 1,
-            column = cardColumnStart,
+            column = cardColumnStart + 1,
         ),
         StudyFlowTvSettingsCard(
             id = StudyFlowTvSettingsCardId.ABOUT,
             title = "About and diagnostics",
             body = "StudyFlow TV · control protocol v${StudyFlowTvControlProtocol.version} · TV-safe diagnostics only.",
-            row = 1,
-            column = cardColumnStart + 1,
+            row = 2,
+            column = cardColumnStart,
         ),
     )
 
@@ -110,6 +123,7 @@ object StudyFlowTvSettingsSurface {
             add(StudyFlowTvSettingsAction.REVOKE_PAIRING)
         }
         add(StudyFlowTvSettingsAction.TOGGLE_HIGH_VISIBILITY_FOCUS)
+        add(StudyFlowTvSettingsAction.OPEN_ATTENTION_STATUS)
         add(StudyFlowTvSettingsAction.OPEN_ABOUT)
     }
 
@@ -124,17 +138,27 @@ object StudyFlowTvSettingsSurface {
                 StudyFlowTvPairingState.PAIRING_CODE_VISIBLE
             },
             aboutVisible = false,
+            attentionStatusVisible = false,
         )
         StudyFlowTvSettingsAction.REVOKE_PAIRING -> state.copy(
             pairingState = StudyFlowTvPairingState.REVOKED,
             pairedDeviceName = null,
             aboutVisible = false,
+            attentionStatusVisible = false,
         )
         StudyFlowTvSettingsAction.TOGGLE_HIGH_VISIBILITY_FOCUS -> state.copy(
             highVisibilityFocus = !state.highVisibilityFocus,
             aboutVisible = false,
+            attentionStatusVisible = false,
         )
-        StudyFlowTvSettingsAction.OPEN_ABOUT -> state.copy(aboutVisible = true)
+        StudyFlowTvSettingsAction.OPEN_ATTENTION_STATUS -> state.copy(
+            attentionStatusVisible = true,
+            aboutVisible = false,
+        )
+        StudyFlowTvSettingsAction.OPEN_ABOUT -> state.copy(
+            aboutVisible = true,
+            attentionStatusVisible = false,
+        )
     }
 
     fun focusItems(state: StudyFlowTvSettingsState): List<StudyFlowTvFocusItem> =
@@ -169,6 +193,7 @@ object StudyFlowTvSettingsSurface {
             StudyFlowTvSettingsAction.MANAGE_PAIRING -> "manage-pairing"
             StudyFlowTvSettingsAction.REVOKE_PAIRING -> "revoke-pairing"
             StudyFlowTvSettingsAction.TOGGLE_HIGH_VISIBILITY_FOCUS -> "focus-visibility"
+            StudyFlowTvSettingsAction.OPEN_ATTENTION_STATUS -> "attention-status"
             StudyFlowTvSettingsAction.OPEN_ABOUT -> "about"
         },
         issuedAtEpochMillis = issuedAtEpochMillis,

@@ -31,6 +31,8 @@ import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportDelegate
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportHost
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvTransportApplyResult
 import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvAccessibilityPolicy
+import com.mikeyphw.studyflow.tv.attention.StudyFlowTvAttentionAction
+import com.mikeyphw.studyflow.tv.attention.StudyFlowTvAttentionRuntime
 import com.mikeyphw.studyflow.tv.accessibility.StudyFlowTvTextRole
 import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvAccessibilityNode
 import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvTenFootText
@@ -156,6 +158,7 @@ class StudyFlowTvActivity : Activity() {
     private var libraryViewerState: StudyFlowTvMaterialViewerState? = null
     private var searchState: StudyFlowTvSearchState = StudyFlowTvSearchState()
     private lateinit var delegatedSearchInput: StudyFlowTvDelegatedSearchInput
+    private lateinit var tvAttentionRuntime: StudyFlowTvAttentionRuntime
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -165,6 +168,11 @@ class StudyFlowTvActivity : Activity() {
         )
         delegatedSearchInput = StudyFlowTvDelegatedSearchInput(
             StudyFlowTvControlInputReceiver(sflpPeer.localDescriptor, StudyFlowPeerClock(System::currentTimeMillis)),
+        )
+        tvAttentionRuntime = StudyFlowTvAttentionRuntime.persistent(
+            context = applicationContext,
+            tvIdentity = sflpPeer.localDescriptor,
+            clock = StudyFlowPeerClock(System::currentTimeMillis),
         )
         localTransportHost = StudyFlowTvLocalTransportHost(
             context = applicationContext,
@@ -1178,6 +1186,7 @@ class StudyFlowTvActivity : Activity() {
             state.pairingState.name.lowercase(),
             if (state.highVisibilityFocus) getString(R.string.tv_settings_focus_high) else getString(R.string.tv_settings_focus_standard),
         )
+        renderTvAttentionBannerIfNeeded()
         contentCards.addView(sectionLabel(R.string.tv_settings_section_title))
         contentCards.addView(
             TextView(this).apply {
@@ -1213,6 +1222,18 @@ class StudyFlowTvActivity : Activity() {
                 setPadding(0, dp(0), 0, dp(18))
             },
         )
+        if (state.attentionStatusVisible && ::tvAttentionRuntime.isInitialized) {
+            val diagnostics = tvAttentionRuntime.diagnostics()
+            contentCards.addView(
+                TextView(this).apply {
+                    text = "TV attention · ${diagnostics.closedAppDeliveryTruth} · ${diagnostics.capabilitySummary}"
+                    setTextColor(Color.rgb(226, 232, 240))
+                    applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
+                    gravity = Gravity.START
+                    setPadding(0, dp(0), 0, dp(18))
+                },
+            )
+        }
         StudyFlowTvSettingsSurface.cards(state).chunked(2).forEach { rowCards ->
             contentCards.addView(
                 LinearLayout(this).apply {
@@ -1242,6 +1263,27 @@ class StudyFlowTvActivity : Activity() {
                     addView(tvSettingsAction(action))
                 }
             },
+        )
+    }
+
+    private fun renderTvAttentionBannerIfNeeded() {
+        if (!::tvAttentionRuntime.isInitialized) return
+        val banner = tvAttentionRuntime.snapshot().activeBanner ?: return
+        contentCards.addView(
+            tvCardButton(
+                title = "${banner.title} · ${banner.category.name.lowercase()}",
+                body = "${banner.body}
+TV attention is foreground-only; closed-TV delivery falls back to a designated notifier.",
+                onClick = {
+                    val result = tvAttentionRuntime.applyAction(
+                        action = StudyFlowTvAttentionAction.OPEN,
+                        commandId = nextLocalCommandId(),
+                    )
+                    result.command?.let { command ->
+                        applyControlCommand(command, StudyFlowTvControlOrigin.LOCAL_REMOTE, System.currentTimeMillis())
+                    } ?: renderDestination(controlState.destination)
+                },
+            ),
         )
     }
 
@@ -1563,6 +1605,7 @@ class StudyFlowTvActivity : Activity() {
         StudyFlowTvSettingsAction.MANAGE_PAIRING -> getString(R.string.tv_settings_action_manage_pairing)
         StudyFlowTvSettingsAction.REVOKE_PAIRING -> getString(R.string.tv_settings_action_revoke_pairing)
         StudyFlowTvSettingsAction.TOGGLE_HIGH_VISIBILITY_FOCUS -> getString(R.string.tv_settings_action_toggle_focus)
+        StudyFlowTvSettingsAction.OPEN_ATTENTION_STATUS -> getString(R.string.tv_settings_action_attention)
         StudyFlowTvSettingsAction.OPEN_ABOUT -> getString(R.string.tv_settings_action_about)
     }
 

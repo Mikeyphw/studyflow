@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-bf421e85ff66a176",
+  "cacheVersion": "studyflow-local-1.0.0-b54f26993f4c5b97",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -192,8 +192,13 @@
     },
     {
       "path": "runtime/tv.js",
-      "sha256": "38d8ed136e6957bf195b2151dd19469a04a363fdf8f8d9ded60310b0b7a5cabe",
-      "bytes": 11698
+      "sha256": "825460df767c2537ea135ea9c86c9a4ff43e9afcc3da66badfb950376238641a",
+      "bytes": 13189
+    },
+    {
+      "path": "runtime/tv_attention.js",
+      "sha256": "6670432760e1efcd453f548d1799abafb32ffc9993cf5ee752d43f363acf79f8",
+      "bytes": 5450
     },
     {
       "path": "runtime/tv_control.js",
@@ -252,8 +257,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "ef805e382017f41e42456da120e22cbd9533a5eef9355bdd53fa25d51a2683f4",
-      "bytes": 9047
+      "sha256": "fb9cdaf7d6951580dd5a0317c526f55a08b2d61a991914aa97327941c480e85f",
+      "bytes": 9076
     },
     {
       "path": "styles.css",

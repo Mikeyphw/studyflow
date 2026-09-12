@@ -1,3 +1,6 @@
+
+### ATT06 — TV attention experience
+- Added Android TV foreground attention runtime, D-pad banners, Web TV attention projection, capability truth, diagnostics, docs and focused validation.
 ## ATT04 — Desktop Native Attention + Tray Product
 
 - Added the production Desktop reminder scheduler with startup/restart recovery and 30-second reconciliation while StudyFlow is running.

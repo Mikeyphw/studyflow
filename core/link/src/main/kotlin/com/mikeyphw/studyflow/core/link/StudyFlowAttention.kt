@@ -410,6 +410,35 @@ class StudyFlowAttentionLedger(
     }
 
     @Synchronized
+    fun transitionByOccurrenceId(
+        occurrenceId: String,
+        state: StudyFlowAttentionDeliveryState,
+        nowEpochMillis: Long,
+    ): StudyFlowAttentionLedgerEntry? {
+        val current = snapshot.entries.firstOrNull { it.occurrence.occurrenceId.value == occurrenceId } ?: return null
+        require(current.state.canTransitionTo(state)) {
+            "Invalid attention transition ${current.state} -> $state"
+        }
+        val updated = current.copy(
+            state = state,
+            updatedAtEpochMillis = nowEpochMillis,
+            acknowledgedAtEpochMillis = if (
+                state == StudyFlowAttentionDeliveryState.ACKNOWLEDGED ||
+                state == StudyFlowAttentionDeliveryState.STARTED ||
+                state == StudyFlowAttentionDeliveryState.COMPLETED ||
+                state == StudyFlowAttentionDeliveryState.SNOOZED ||
+                state == StudyFlowAttentionDeliveryState.DISMISSED
+            ) {
+                nowEpochMillis
+            } else {
+                current.acknowledgedAtEpochMillis
+            },
+        )
+        replaceEntry(updated)
+        return updated
+    }
+
+    @Synchronized
     fun diagnostics(): StudyFlowAttentionDiagnosticsSnapshot {
         val terminal = snapshot.entries.count { it.state.isTerminal() }
         return StudyFlowAttentionDiagnosticsSnapshot(

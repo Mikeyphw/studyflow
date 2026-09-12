@@ -240,3 +240,6 @@ Android owns the configurable Today/Next/Reviews/Session/Compact home-screen wid
 ## ATT04 Desktop attention capability truth
 
 Desktop now owns a production reminder runtime backed by the shared ATT01 ledger and ATT02 planner. It performs startup/restart recovery, persistent dedupe, native AWT tray notification delivery when supported, and a tray mini-dashboard. Delivery is intentionally scoped to periods when the StudyFlow Desktop process is running; ATT04 does not claim launch-on-login or OS-daemon delivery.
+
+| Android TV ATT06 foreground banners | FULL (ATT06 foreground-only, D-pad safe, ledger-backed) | N/A | N/A | FULL (ATT06) | N/A | Closed-app delivery falls back to designated notifier. |
+| Web TV ATT06 foreground banners | FULL (ATT06 Web TV projection) | N/A | FULL (ATT06 foreground-only) | N/A | FULL (ATT06) | Browser background delivery remains capability-dependent; TV mode is honest foreground-only. |

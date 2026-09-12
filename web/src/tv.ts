@@ -92,13 +92,15 @@ function applyCapabilityFlags():void{
  root.dataset.studyflowTvServiceWorker=typeof globalThis.navigator?.serviceWorker!=="undefined"?"true":"false";
  root.dataset.studyflowTvFlexGap=supportsFlexGap()?"true":"false";
  root.dataset.studyflowTvInputMode="remote-first";
+ root.dataset.studyflowTvAttention="foreground-only";
+ root.dataset.studyflowTvAttentionFallback="designated-notifier";
 }
 
 export function installTvBrowserAdapter():TvBrowserAdapterHandle{
  const resolution=resolveTvBrowserMode();if(typeof document==="undefined")return{resolution,dispose:()=>{}};
  const root=document.documentElement;root.dataset.studyflowTv=resolution.enabled?"true":"false";root.dataset.studyflowTvMode=resolution.source;applyCapabilityFlags();
  const disposeDpad=resolution.enabled?installDpadNavigation():()=>{};const disposeBack=resolution.enabled?installRemoteBackNavigation():()=>{};const disposeMedia=resolution.enabled?installMediaToggleNavigation():()=>{};
- return{resolution,dispose:()=>{disposeDpad();disposeBack();disposeMedia();delete root.dataset.studyflowTv;delete root.dataset.studyflowTvMode;delete root.dataset.studyflowTvSecureContext;delete root.dataset.studyflowTvIndexedDb;delete root.dataset.studyflowTvSubtleCrypto;delete root.dataset.studyflowTvServiceWorker;delete root.dataset.studyflowTvFlexGap;delete root.dataset.studyflowTvInputMode;}};
+ return{resolution,dispose:()=>{disposeDpad();disposeBack();disposeMedia();delete root.dataset.studyflowTv;delete root.dataset.studyflowTvMode;delete root.dataset.studyflowTvSecureContext;delete root.dataset.studyflowTvIndexedDb;delete root.dataset.studyflowTvSubtleCrypto;delete root.dataset.studyflowTvServiceWorker;delete root.dataset.studyflowTvFlexGap;delete root.dataset.studyflowTvInputMode;delete root.dataset.studyflowTvAttention;delete root.dataset.studyflowTvAttentionFallback;}};
 }
 
 export {
@@ -106,3 +108,12 @@ export {
  tvParityPage,tvParityZoom,tvParityGoalActions,tvParityNextErrorCategory,
  tvParityErrorResolutionAction,tvParitySearchScore,
 } from "./tv_semantic_parity";
+
+export {
+  StudyFlowWebTvAttentionRuntime,
+  installStudyFlowWebTvAttentionBridge,
+  projectWebAttentionToTv,
+  webTvAttentionCapabilities,
+  webTvAttentionRouteForCategory,
+  webTvAttentionActionsForCategory,
+} from "./tv_attention";

@@ -256,6 +256,7 @@ object StudyFlowTvControlStateReducer {
         val action = when (targetId) {
             "manage-pairing" -> StudyFlowTvSettingsAction.MANAGE_PAIRING
             "focus-visibility" -> StudyFlowTvSettingsAction.TOGGLE_HIGH_VISIBILITY_FOCUS
+            "attention-status" -> StudyFlowTvSettingsAction.OPEN_ATTENTION_STATUS
             "about" -> StudyFlowTvSettingsAction.OPEN_ABOUT
             else -> null
         }

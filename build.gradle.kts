@@ -2120,3 +2120,32 @@ tasks.register("verifyAtt05WebPwaAttentionRuntime") {
     )
 }
 
+
+
+// ATT06 — Android TV + Web TV Attention Experience
+tasks.register<Exec>("verifyAtt06TvAttentionContracts") {
+    group = "verification"
+    description = "Checks ATT06 Android TV/Web TV foreground attention, capability truth, docs and source contracts."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att06_tv_attention_experience.py")
+}
+
+tasks.register<Exec>("verifyAtt06WebTvAttentionTests") {
+    group = "verification"
+    description = "Run the Web TV ATT06 foreground-attention regression tests."
+    workingDir = file("web")
+    commandLine("python3", "-m", "unittest", "tests/test_att06_web_tv_attention.py")
+}
+
+tasks.register("verifyAtt06TvAttentionExperience") {
+    group = "verification"
+    description = "Focused ATT06 production gate for the complete Android TV + Web TV attention experience slice."
+    dependsOn(
+        "verifyAtt06TvAttentionContracts",
+        "verifyAtt06WebTvAttentionTests",
+        "verifyAtt05WebPwaAttentionRuntime",
+        "verifyAtt04DesktopAttentionRuntime",
+        "verifyStudyFlowTvAndroidWebSemanticParity",
+        ":app-tv:testDebugUnitTest",
+    )
+}
