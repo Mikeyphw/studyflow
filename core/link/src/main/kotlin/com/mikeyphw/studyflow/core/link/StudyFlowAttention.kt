@@ -176,6 +176,7 @@ data class StudyFlowAttentionLedgerEntry(
     val sequence: Long? = null,
     val deliveryAttempts: Int = 0,
     val policyAudit: StudyFlowAttentionPolicyAudit? = null,
+    val routeAudit: StudyFlowAttentionRouteAudit? = null,
 ) {
     init {
         require(updatedAtEpochMillis >= 0L) { "Attention ledger timestamp must not be negative" }
@@ -290,6 +291,7 @@ class StudyFlowAttentionLedger(
             sequence = current?.sequence,
             deliveryAttempts = current?.deliveryAttempts ?: 0,
             policyAudit = current?.policyAudit,
+            routeAudit = current?.routeAudit,
         )
         replaceEntry(updated)
         return updated
@@ -325,6 +327,7 @@ class StudyFlowAttentionLedger(
             sequence = sequence,
             deliveryAttempts = (current?.deliveryAttempts ?: 0) + 1,
             policyAudit = current?.policyAudit,
+            routeAudit = current?.routeAudit,
         )
         snapshot = compact(
             snapshot.copy(
@@ -352,6 +355,20 @@ class StudyFlowAttentionLedger(
                 deferredUntilEpochMillis = decision.deferredUntilEpochMillis,
                 explanation = decision.explanation,
             ),
+        )
+        replaceEntry(updated)
+        return updated
+    }
+
+    @Synchronized
+    fun recordRouteDecision(route: StudyFlowAttentionDeliveryRoute): StudyFlowAttentionLedgerEntry {
+        val current = requireNotNull(entry(route.occurrenceId)) {
+            "Unknown attention occurrence: ${route.occurrenceId.value}"
+        }
+        val updated = current.copy(
+            updatedAtEpochMillis = maxOf(current.updatedAtEpochMillis, route.decidedAtEpochMillis),
+            targetDeviceId = route.owner?.deviceId ?: current.targetDeviceId,
+            routeAudit = StudyFlowAttentionRouteAudit.from(route),
         )
         replaceEntry(updated)
         return updated

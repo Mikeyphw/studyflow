@@ -7,6 +7,9 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicyEngine
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedgerEntry
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyDecision
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedgerSnapshot
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityAnalyzer
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityEvidenceSnapshot
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliverySurface
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceAvailability
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceCapability
@@ -47,6 +50,15 @@ object StudyFlowTvAttentionDeliveryRouterBridge {
             allowTvForegroundOwners = true,
         )
 
+
+    fun reliabilityProjection(
+        ledger: StudyFlowAttentionLedgerSnapshot,
+        nowEpochMillis: Long,
+    ): StudyFlowAttentionReliabilityEvidenceSnapshot = StudyFlowAttentionReliabilityAnalyzer.analyze(
+        ledger = ledger,
+        devices = listOf(localForegroundCapability(nowEpochMillis)),
+        nowEpochMillis = nowEpochMillis,
+    )
 
     fun focusProjection(
         occurrence: StudyFlowAttentionOccurrence,

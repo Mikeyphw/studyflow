@@ -67,6 +67,8 @@ object StudyFlowTvSettingsSurface {
     const val foregroundAttentionBannersVisible = true
     const val backgroundDeliveryIsNotClaimedOnTv = true
     const val designatedNotifierFallbackVisible = true
+    const val att11ReliabilityAuditReadOnly = true
+    const val att11ExportDelegatesToCompanion = true
     const val usesSharedControlProtocol = true
     const val cardCount = 5
     const val actionCount = 5
@@ -97,7 +99,7 @@ object StudyFlowTvSettingsSurface {
         StudyFlowTvSettingsCard(
             id = StudyFlowTvSettingsCardId.ATTENTION,
             title = "TV attention",
-            body = "Foreground banners are available while this TV app is open. Closed-TV reminders fall back to your designated phone, desktop, or Web notifier.",
+            body = "Foreground banners are available while this TV app is open. ATT11 delivery audit is read-only here; closed-TV reminders and JSON/CSV export stay with a capable phone, desktop, or Web notifier.",
             row = 1,
             column = cardColumnStart,
         ),

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-8748622a15619126",
+  "cacheVersion": "studyflow-local-1.0.0-84cc8bfa7cc28db4",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -42,13 +42,18 @@
     },
     {
       "path": "runtime/attention.js",
-      "sha256": "45a462d7b9a223bb9ed930f6c78a4a614312ffaeb78533c141839b2f063baf6e",
-      "bytes": 47335
+      "sha256": "2b8ff0c4224614b66e9127bc0a2dffcc105a5dc4db556a420a9f2ce41e2537b9",
+      "bytes": 49424
     },
     {
       "path": "runtime/attention_focus_policy.js",
       "sha256": "6dc0956fe8279898ea9c820ebb0ce3dac29b9de62f77fe8b0859c27142d776c9",
       "bytes": 11793
+    },
+    {
+      "path": "runtime/attention_reliability.js",
+      "sha256": "1e6d5e7b918f5e40e7d679659a6bcdb76d69181a7a7ebc7506265797cb933954",
+      "bytes": 9657
     },
     {
       "path": "runtime/attention_router.js",
@@ -157,8 +162,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "09bd632c575716ba5fd12fe4bc8a564c82c0ea9d6ae619a02ae50ed7b5f281e8",
-      "bytes": 343050
+      "sha256": "8888c5deb4ef2cf7ed4d6fd70c9643aa13702b48083f986ff60573344d02aeb9",
+      "bytes": 346327
     },
     {
       "path": "runtime/refinement.js",
@@ -192,8 +197,8 @@
     },
     {
       "path": "runtime/sflp_link.js",
-      "sha256": "b34d7f7064d5da14b983e45464ac17a7702531ed83a8646e69c16e13f5a8ab22",
-      "bytes": 38618
+      "sha256": "6059a4193ed0c4af68c5f8377b423382c250728f9d10336ac26961eba53fb307",
+      "bytes": 38814
     },
     {
       "path": "runtime/state.js",
@@ -217,8 +222,8 @@
     },
     {
       "path": "runtime/tv_attention.js",
-      "sha256": "73c7840cac4367bc6e52ebc16f60cbf9fd7c30878549d60bb7ed1113743ea269",
-      "bytes": 6224
+      "sha256": "a7a1235969d9dc6d5106aa998efdcf4d37286d004111b896fbbc8b84bc001044",
+      "bytes": 7109
     },
     {
       "path": "runtime/tv_control.js",
@@ -277,8 +282,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "45a8b80bdec78cdf11d01200ef690d1a240c29ddc5e7bb30633ec70a72d14655",
-      "bytes": 9184
+      "sha256": "951e78e0ec8b591d9bd58bbe82cb89be5dc30cd38324f6740d947a25e62dc3f3",
+      "bytes": 9222
     },
     {
       "path": "styles.css",

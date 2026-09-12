@@ -11,6 +11,9 @@ import com.mikeyphw.studyflow.core.domain.WeakStudyArea
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyOutcome
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityEvidenceSnapshot
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedgerSnapshot
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityAnalyzer
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityId
@@ -259,6 +262,7 @@ data class DesktopAttentionSettingsState(
     val quietHoursEnabled: Boolean,
     val quietHoursLabel: String,
     val lastPolicyOutcome: StudyFlowAttentionPolicyOutcome?,
+    val reliabilityEvidence: StudyFlowAttentionReliabilityEvidenceSnapshot,
     val capabilityMessage: String,
 ) {
     companion object {
@@ -286,6 +290,7 @@ data class DesktopAttentionSettingsState(
             quietHoursEnabled = runtime.quietHoursEnabled,
             quietHoursLabel = runtime.quietHoursLabel,
             lastPolicyOutcome = runtime.lastPolicyOutcome,
+            reliabilityEvidence = runtime.reliabilityEvidence,
             capabilityMessage = runtime.capabilityMessage,
         )
 
@@ -313,6 +318,11 @@ data class DesktopAttentionSettingsState(
             quietHoursEnabled = false,
             quietHoursLabel = "Unavailable",
             lastPolicyOutcome = null,
+            reliabilityEvidence = StudyFlowAttentionReliabilityAnalyzer.analyze(
+                ledger = StudyFlowAttentionLedgerSnapshot(),
+                devices = emptyList(),
+                nowEpochMillis = 0L,
+            ),
             capabilityMessage = "Desktop Attention is unavailable in this composition root.",
         )
     }

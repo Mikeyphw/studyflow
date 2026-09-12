@@ -306,6 +306,8 @@ class StudyFlowNotificationMediaRuntime {
             targetDeviceId: delivery.targetDeviceId,
             sequence: delivery.sequence,
             deliveryAttempts: ((_c = existing === null || existing === void 0 ? void 0 : existing.deliveryAttempts) !== null && _c !== void 0 ? _c : 0) + 1,
+            policyAudit: existing === null || existing === void 0 ? void 0 : existing.policyAudit,
+            routeAudit: existing === null || existing === void 0 ? void 0 : existing.routeAudit,
         };
         this.attentionLedger = {
             ...this.attentionLedger,

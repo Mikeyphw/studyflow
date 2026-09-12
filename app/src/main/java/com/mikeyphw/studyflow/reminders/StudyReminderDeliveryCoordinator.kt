@@ -40,6 +40,8 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedger
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPriority
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityAnalyzer
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityEvidenceSnapshot
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicyEngine
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyOutcome
@@ -195,6 +197,17 @@ class StudyReminderDeliveryCoordinator(
         )
     }
 
+    fun attentionReliabilityEvidence(planId: StudyPlanId): StudyFlowAttentionReliabilityEvidenceSnapshot {
+        val now = clock()
+        val local = AndroidStudyFlowAttentionRouterBridge.localCapability(appContext, this, now)
+        return StudyFlowAttentionReliabilityAnalyzer.analyze(
+            ledger = attentionLedger.snapshot(),
+            devices = listOf(local),
+            nowEpochMillis = now,
+            workspaceId = StudyFlowWorkspaceId(planId.value),
+        )
+    }
+
     fun platformCapability(): StudyReminderPlatformCapability = StudyReminderPlatformCapability(
         notificationsAllowed = notificationsAllowed(),
         exactAlarmCapabilityAvailable = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms(),
@@ -244,11 +257,21 @@ class StudyReminderDeliveryCoordinator(
 
         val occurrence = candidate.toAttentionOccurrence(planId)
         val now = clock()
+        val focusPolicy = focusPolicyStore.load(planId)
+        val ledgerEntry = attentionLedger.entry(occurrence.occurrenceId)
+        val route = AndroidStudyFlowAttentionRouterBridge.routeWithPolicy(
+            occurrence = occurrence,
+            devices = listOf(AndroidStudyFlowAttentionRouterBridge.localCapability(appContext, this, now)),
+            focusPolicy = focusPolicy,
+            nowEpochMillis = now,
+            ledgerEntry = ledgerEntry,
+        )
+        runCatching { attentionLedger.recordRouteDecision(route) }
         val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
             occurrence = occurrence,
-            policy = focusPolicyStore.load(planId),
+            policy = focusPolicy,
             nowEpochMillis = now,
-            ledgerEntry = attentionLedger.entry(occurrence.occurrenceId),
+            ledgerEntry = ledgerEntry,
             localClientKind = com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind.ANDROID,
         )
         runCatching { attentionLedger.recordPolicyDecision(decision) }

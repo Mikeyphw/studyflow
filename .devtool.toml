@@ -66,6 +66,7 @@ test = [
     "verifyAtt08CompactCompanionAttention",
     "verifyAtt09CalendarScheduleExportAttention",
     "verifyAtt10QuietHoursFocusProfilesEscalationPolicy",
+    "verifyAtt11NotificationReliabilityEvidenceAudit",
     "verifyAtt09CalendarScheduleExportAttention",
     "verifyAtt08CompactCompanionAttention",
     "verifyAtt09CalendarScheduleExportAttention",

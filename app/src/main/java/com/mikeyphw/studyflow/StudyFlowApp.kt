@@ -86,6 +86,7 @@ import com.mikeyphw.studyflow.core.domain.destination
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.domain.asStudyFlowOptionalLoadState
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityExport
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.ContentProgressStatus
 import com.mikeyphw.studyflow.core.model.ExamStage
@@ -750,12 +751,16 @@ internal fun StudyFlowNavHost(
                     val runtimeEvidence = remember(planId, reliabilityRefresh) {
                         container.reminderDeliveryCoordinator.runtimeEvidence()
                     }
+                    val attentionReliabilityEvidence = remember(planId, reliabilityRefresh) {
+                        container.reminderDeliveryCoordinator.attentionReliabilityEvidence(planId)
+                    }
                     StudyRemindersScreen(
                         plan = currentPlan,
                         settings = settings,
                         reminderPolicy = reminderPolicy,
                         attentionFocusPolicy = attentionFocusPolicy,
                         runtimeEvidence = runtimeEvidence,
+                        attentionReliabilityEvidence = attentionReliabilityEvidence,
                         schedule = container.manageStudySchedule,
                         review = container.manageStudyReview,
                         sessions = container.manageStudySession,
@@ -787,6 +792,20 @@ internal fun StudyFlowNavHost(
                                     reliabilityRefresh += 1
                                 }
                             }
+                        },
+                        onCopyAttentionAuditJson = {
+                            copyDebugText(
+                                context,
+                                "StudyFlow ATT11 notification audit JSON",
+                                StudyFlowAttentionReliabilityExport.toJson(attentionReliabilityEvidence),
+                            )
+                        },
+                        onCopyAttentionAuditCsv = {
+                            copyDebugText(
+                                context,
+                                "StudyFlow ATT11 notification audit CSV",
+                                StudyFlowAttentionReliabilityExport.toCsv(attentionReliabilityEvidence),
+                            )
                         },
                         onBack = navController::popBackStack,
                     )

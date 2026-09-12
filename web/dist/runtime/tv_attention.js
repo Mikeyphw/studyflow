@@ -57,7 +57,7 @@ function bannerFromWebAttentionEntry(entry) {
     };
 }
 function projectWebAttentionToTv(snapshot) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
     const recentBanners = snapshot.entries
         .filter(entry => ACTIVE_STATES.has(entry.state))
         .slice(0, 8)
@@ -71,7 +71,10 @@ function projectWebAttentionToTv(snapshot) {
         focusProfile: (_d = (_c = (_b = snapshot.preferences) === null || _b === void 0 ? void 0 : _b.focusPolicy) === null || _c === void 0 ? void 0 : _c.profile) !== null && _d !== void 0 ? _d : "balanced",
         focusOutcomes: snapshot.entries.map(entry => { var _a; return (_a = entry.policyAudit) === null || _a === void 0 ? void 0 : _a.outcome; }).filter((value) => !!value).slice(0, 8),
         focusControlsReadOnly: true,
-        source: "att10-web-runtime",
+        reliabilityReadOnly: true,
+        reliabilityStatus: (_h = (_g = (_f = (_e = snapshot.reliability) === null || _e === void 0 ? void 0 : _e.platforms) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.status) !== null && _h !== void 0 ? _h : "foreground_only",
+        auditedRouteCount: (_l = (_k = (_j = snapshot.reliability) === null || _j === void 0 ? void 0 : _j.analytics) === null || _k === void 0 ? void 0 : _k.auditedRouteCount) !== null && _l !== void 0 ? _l : 0,
+        source: "att11-web-runtime",
     };
 }
 class StudyFlowWebTvAttentionRuntime {
@@ -100,6 +103,8 @@ function installStudyFlowWebTvAttentionBridge(runtime) {
         root.dataset.studyflowTvAttentionBadge = String(snapshot.badgeCount);
         root.dataset.studyflowTvAttentionFocusProfile = snapshot.focusProfile;
         root.dataset.studyflowTvAttentionFocusControls = snapshot.focusControlsReadOnly ? "remote-safe-read-only" : "local";
+        root.dataset.studyflowTvAttentionReliability = snapshot.reliabilityReadOnly ? snapshot.reliabilityStatus : "local";
+        root.dataset.studyflowTvAttentionAuditedRoutes = String(snapshot.auditedRouteCount);
         (_a = globalThis.dispatchEvent) === null || _a === void 0 ? void 0 : _a.call(globalThis, new CustomEvent("studyflow:tv-attention-snapshot", { detail: snapshot }));
     };
     const onAttention = () => render();
@@ -115,5 +120,7 @@ function installStudyFlowWebTvAttentionBridge(runtime) {
         delete root.dataset.studyflowTvAttentionBadge;
         delete root.dataset.studyflowTvAttentionFocusProfile;
         delete root.dataset.studyflowTvAttentionFocusControls;
+        delete root.dataset.studyflowTvAttentionReliability;
+        delete root.dataset.studyflowTvAttentionAuditedRoutes;
     };
 }

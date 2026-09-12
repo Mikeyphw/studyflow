@@ -1,3 +1,7 @@
+## ATT11 — Notification Reliability Evidence / Delivery Audit
+
+StudyFlow now derives notification reliability analytics and cross-device delivery audit evidence directly from the canonical ATT01 ledger. ATT07 owner/mirror decisions and ATT10 policy outcomes are inspectable across Android, Desktop, Web/PWA, and truthful read-only TV projections, with user-initiated JSON/CSV export on full clients. Web is counted as background-reliable only when an actual Web Push subscription exists. See `ATT11_NOTIFICATION_RELIABILITY_EVIDENCE_AUDIT.md` and `docs/product/NOTIFICATION_RELIABILITY_EVIDENCE_AUDIT.md`.
+
 ## ATT10 — Quiet Hours / Focus Profiles / Escalation Policy
 
 StudyFlow now evaluates every Attention occurrence through one shared focus-policy model before ATT07 chooses delivery ownership. Timezone-safe quiet hours (including overnight windows), six focus profiles, per-category escalation, bounded mirrors, and explicit defer/silent/compact/phone/user-action outcomes are audited in the ATT01 ledger across Android, Desktop, Web/PWA and TV projections. Android and Desktop/Web settings can edit policy; Android TV and Web TV remain truthful read-only/remote-safe foreground projections. See `ATT10_QUIET_HOURS_FOCUS_PROFILES_ESCALATION_POLICY.md` and `docs/product/QUIET_HOURS_FOCUS_ESCALATION.md`.

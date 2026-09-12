@@ -53,6 +53,8 @@ with this matrix, this matrix owns the current product-state description.
 | Native reminder/background delivery | FULL (ATT02) | FULL (ATT05 foreground + optional Push foundation) | FULL (ATT04, while app is running) | MISSING | MISSING |
 | ATT10 quiet hours / focus profiles / escalation | FULL | FULL | FULL | READ_ONLY (foreground projection; phone fallback) | READ_ONLY (foreground projection; phone fallback) |
 | ATT10 policy audit in canonical ATT01 ledger | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
+| ATT11 reliability evidence + cross-device delivery audit | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
+| ATT11 JSON/CSV audit export | FULL | FULL | FULL | HANDOFF | HANDOFF |
 | Home/widget-style glance surface | FULL (ATT03 five-mode suite) | FULL (ATT05 in-app Notification Center + badge) | FULL (ATT04 tray mini-dashboard) | MISSING | MISSING |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
@@ -148,6 +150,11 @@ shipped SFLP18 is notification/scheduling sync.
 ### ATT10 quiet-hours/focus-policy truth
 
 ATT10 adds a shared interruption-policy layer without changing the ATT01 source of truth. Android, Desktop, and normal Web expose policy controls. Android TV and Web TV only project policy state and remote-safe behavior; neither gains background alarm ownership. Web remains foreground-only unless optional Push capability is genuinely configured. ATT10 escalation is bounded by ATT07 mirror limits and can never widen into an unbounded broadcast.
+
+
+### ATT11 reliability-evidence truth
+
+ATT11 is a deterministic projection of ATT01 ledger state plus optional ATT10 policy audit and ATT07 route audit metadata. Android, Desktop, and normal Web expose analytics and user-initiated JSON/CSV export. Android TV and Web TV remain read-only foreground projections and hand export to a capable companion. Web is only marked background-reliable when an actual Web Push subscription is present; browser API capability by itself remains foreground-only.
 
 ### ATT05 Web/PWA attention truth
 

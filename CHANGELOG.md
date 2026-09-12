@@ -1,3 +1,10 @@
+## ATT11 — Notification Reliability Evidence / Delivery Audit
+
+- Added deterministic ATT01-ledger reliability analytics, per-category evidence, platform diagnostics, route-audit metadata, and JSON/CSV exports.
+- Persisted ATT07/ATT10 owner/mirror decisions on the canonical ledger across Android, Desktop and Web without adding a second reminder truth store.
+- Added Android/Desktop/Web audit surfaces and truthful read-only Android TV/Web TV projections; Web background reliability now requires a real Push subscription rather than API capability alone.
+- Added Kotlin/Web regression tests, docs/capability-matrix coverage, generated Web runtime/dist parity, and the focused `verifyAtt11NotificationReliabilityEvidenceAudit` gate.
+
 ## ATT10 — Quiet Hours / Focus Profiles / Escalation Policy
 
 - Added the shared ATT10 focus-policy engine with timezone-safe/overnight quiet hours, balanced/exam/work/sleep/travel-offline/minimal-TV profiles, category escalation modes, explicit delivery outcomes, and ATT01 policy-audit metadata.

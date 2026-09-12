@@ -13,10 +13,13 @@ import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityExport
 import com.mikeyphw.studyflow.core.model.GoalPeriod
 import com.mikeyphw.studyflow.core.model.GoalType
 import com.mikeyphw.studyflow.core.model.StudyGoalId
@@ -387,6 +390,7 @@ fun DesktopSettingsScreen(
 
         DesktopSectionCard(title = desktopText("Desktop reminders and tray")) {
             val attention = state.attention
+            val clipboard = LocalClipboardManager.current
             Text(desktopText(attention.capabilityMessage))
             Text(
                 "Runtime: ${if (attention.running) "running" else "stopped"} • " +
@@ -438,6 +442,35 @@ fun DesktopSettingsScreen(
                 }
             }
             Text(desktopText("ATT10 decisions are audited in the ATT01 ledger; desktop never creates a second reminder truth store."))
+            val reliability = attention.reliabilityEvidence
+            Text(desktopText("ATT11 delivery reliability and audit"), fontWeight = FontWeight.Bold)
+            Text(
+                "Delivered ${reliability.analytics.deliveredCount} • deferred ${reliability.analytics.deferredCount} • " +
+                    "missed ${reliability.analytics.missedCount} • snoozed ${reliability.analytics.snoozedCount} • " +
+                    "dismissed ${reliability.analytics.dismissedCount} • done ${reliability.analytics.doneCount}",
+            )
+            reliability.platforms.firstOrNull()?.let { platform ->
+                Text(
+                    "Desktop reliability: ${platform.status.name.lowercase().replace('_', ' ')} • " +
+                        "owner ${platform.ownerRouteCount} • mirrors ${platform.mirrorRouteCount}",
+                )
+                Text(desktopText(platform.explanation))
+            }
+            reliability.routeAudits.takeLast(4).forEach { audit ->
+                Text(
+                    "${audit.occurrenceId.value}: ${audit.reason.name.lowercase().replace('_', ' ')} • " +
+                        "owner ${audit.owner?.deviceId?.value ?: "none"} • mirrors ${audit.mirrors.size}",
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { clipboard.setText(AnnotatedString(StudyFlowAttentionReliabilityExport.toJson(reliability))) }) {
+                    Text(desktopText("Copy audit JSON"))
+                }
+                OutlinedButton(onClick = { clipboard.setText(AnnotatedString(StudyFlowAttentionReliabilityExport.toCsv(reliability))) }) {
+                    Text(desktopText("Copy audit CSV"))
+                }
+            }
+            Text(desktopText("ATT11 analytics are deterministic projections of the ATT01 ledger; export never creates a parallel reminder store."))
             Text(desktopText("Reminder categories"), fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.PLANNED) }, enabled = attention.available) {

@@ -136,4 +136,13 @@
     <string name="att10_time_sensitive_bypass">Time-sensitive quiet-hours bypass</string>
     <string name="att10_time_sensitive_bypass_description">Keep session timers and other time-sensitive attention deliverable during quiet hours.</string>
     <string name="att10_category_escalation_title">Category escalation</string>
+
+    <string name="att11_delivery_audit_title">ATT11 delivery reliability &amp; audit</string>
+    <string name="att11_delivery_audit_description">Analytics are derived from the canonical ATT01 ledger. Export contains delivery state, ATT10 policy evidence, and bounded ATT07 route audit metadata; it does not create another reminder store.</string>
+    <string name="att11_delivery_metrics">Total %1$d · delivered %2$d · deferred %3$d · missed %4$d · snoozed %5$d · dismissed %6$d · done %7$d</string>
+    <string name="att11_platform_reliability">%1$s · %2$s · owner routes %3$d · mirrors %4$d</string>
+    <string name="att11_no_route_audit">No ATT07 route decision has been recorded for this plan yet.</string>
+    <string name="att11_route_audit_line">%1$s · owner %2$s · %3$d mirror(s)</string>
+    <string name="att11_copy_json">Copy audit JSON</string>
+    <string name="att11_copy_csv">Copy audit CSV</string>
 </resources>

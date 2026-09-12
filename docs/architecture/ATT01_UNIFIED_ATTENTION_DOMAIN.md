@@ -18,3 +18,7 @@ attention fields. Legacy peers can ignore the new fields; ATT01-aware peers can 
 ATT01 also makes a strict distinction between SFLP message acceptance and user-facing delivery. A client may
 synchronize and durably acknowledge an attention occurrence without yet owning a native background reminder
 surface. ATT02-ATT06 deliver those platform experiences.
+
+## ATT11 reliability/audit extension
+
+ATT11 keeps ATT01 as the canonical store and adds optional route-audit metadata to each ledger entry. The audit records the most recent ATT07 owner/mirror decision, counts and explanation alongside the existing optional ATT10 policy audit. Reliability analytics and exports are derived views over this ledger; they do not introduce a second persistence model or advance lifecycle state.

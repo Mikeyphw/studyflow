@@ -9,6 +9,7 @@ exports.installStudyFlowWebAttentionBridge = installStudyFlowWebAttentionBridge;
 const sflp_link_1 = require("./sflp_link");
 const pwa_1 = require("./pwa");
 const attention_router_1 = require("./attention_router");
+const attention_reliability_1 = require("./attention_reliability");
 const attention_focus_policy_1 = require("./attention_focus_policy");
 const WEB_ATTENTION_PREFERENCES_KEY = "studyflow.attention.web.preferences.v1";
 const WEB_PUSH_SUBSCRIPTION_KEY = "studyflow.attention.web.push.v1";
@@ -329,6 +330,8 @@ class StudyFlowWebAttentionRuntime {
         const badgeCount = entries.filter(entry => ["delivered", "acknowledged", "missed"].includes(entry.state) && !TERMINAL_STATES.has(entry.state)).length;
         const pushSubscription = this.pushRegistry.savedSubscription();
         const capabilities = this.environment.capabilities();
+        const localDevice = this.localAttentionDevice(now, capabilities, pushSubscription);
+        const reliability = (0, attention_reliability_1.analyzeWebAttentionReliability)(ledger, [localDevice], now);
         return {
             permission: this.environment.notificationPermission(),
             preferences: this.preferences,
@@ -341,23 +344,26 @@ class StudyFlowWebAttentionRuntime {
             badgeCount,
             lastScanAtEpochMillis: this.lastScanAtEpochMillis,
             running: this.running,
-            routeSummary: this.routeSummary(entries, now, capabilities, pushSubscription),
+            routeSummary: this.routeSummary(entries, now, localDevice),
+            reliability,
         };
     }
-    routeSummary(entries, now, capabilities, pushSubscription) {
-        const local = (0, attention_router_1.attentionDeviceFromWebPeer)(this.peer, {
+    localAttentionDevice(now, capabilities, pushSubscription) {
+        return (0, attention_router_1.attentionDeviceFromWebPeer)(this.peer, {
             availability: this.running ? "foreground" : "online",
             foregroundActive: this.running,
             notificationPermissionGranted: this.environment.notificationPermission() === "granted",
             designatedNotifier: this.preferences.systemNotificationsEnabled || !!pushSubscription,
             primaryUserDevice: true,
             deliverySurfaces: [
-                ...(pushSubscription || capabilities.push ? ["web_push"] : []),
+                ...(pushSubscription ? ["web_push"] : []),
                 ...(capabilities.notifications ? ["system_notification"] : []),
                 "widget_or_badge",
             ],
             lastSeenAtEpochMillis: now,
         });
+    }
+    routeSummary(entries, now, local) {
         const activeEntries = entries.filter(entry => ACTIVE_DELIVERY_STATES.has(entry.state));
         const routes = activeEntries.map(entry => (0, attention_router_1.routeStudyFlowAttentionDeliveryWithPolicy)(entry.occurrence, [local], now, this.preferences.focusPolicy, {
             localDeviceId: this.peer.identity.deviceId,
@@ -373,6 +379,8 @@ class StudyFlowWebAttentionRuntime {
             routes,
         };
     }
+    exportReliabilityJson() { return (0, attention_reliability_1.exportWebAttentionReliabilityJson)(this.snapshot().reliability); }
+    exportReliabilityCsv() { return (0, attention_reliability_1.exportWebAttentionReliabilityCsv)(this.snapshot().reliability); }
     async requestBrowserNotifications() {
         const permission = await this.environment.requestNotificationPermission();
         if (permission === "granted")
@@ -486,11 +494,15 @@ class StudyFlowWebAttentionRuntime {
         this.captureCompletedSessions(state, now);
         this.expireOldEntries(now);
         const ledger = this.readLedger();
+        const capabilities = this.environment.capabilities();
+        const localDevice = this.localAttentionDevice(now, capabilities, this.pushRegistry.savedSubscription());
         const due = ledger.entries
             .filter(entry => ACTIVE_DELIVERY_STATES.has(entry.state) && entry.occurrence.scheduledAtEpochMillis <= now)
             .filter(entry => !entry.occurrence.expiresAtEpochMillis || entry.occurrence.expiresAtEpochMillis >= now)
             .sort((a, b) => a.occurrence.scheduledAtEpochMillis - b.occurrence.scheduledAtEpochMillis);
         for (const entry of due) {
+            const route = (0, attention_router_1.routeStudyFlowAttentionDeliveryWithPolicy)(entry.occurrence, [localDevice], now, this.preferences.focusPolicy, { localDeviceId: this.peer.identity.deviceId, primaryDeviceId: this.peer.identity.deviceId, designatedNotifierDeviceIds: localDevice.designatedNotifier ? [this.peer.identity.deviceId] : [] }, entry);
+            this.recordRouteDecision(route);
             const decision = (0, attention_focus_policy_1.evaluateWebAttentionFocusPolicy)(entry.occurrence, this.preferences.focusPolicy, now, entry, "web");
             this.recordPolicyDecision(decision);
             if (decision.outcome === "suppress_duplicate" || decision.outcome === "route_to_phone")
@@ -737,8 +749,23 @@ class StudyFlowWebAttentionRuntime {
             sequence: existing === null || existing === void 0 ? void 0 : existing.sequence,
             deliveryAttempts: (_b = existing === null || existing === void 0 ? void 0 : existing.deliveryAttempts) !== null && _b !== void 0 ? _b : 0,
             policyAudit: existing === null || existing === void 0 ? void 0 : existing.policyAudit,
+            routeAudit: existing === null || existing === void 0 ? void 0 : existing.routeAudit,
         };
         this.writeLedger({ ...ledger, entries: [...ledger.entries.filter(value => value.occurrence.occurrenceId !== occurrence.occurrenceId), entry].slice(-WEB_ATTENTION_HISTORY_LIMIT) });
+    }
+    recordRouteDecision(route) {
+        var _a, _b;
+        const ledger = this.readLedger();
+        const existing = ledger.entries.find(value => value.occurrence.occurrenceId === route.occurrenceId);
+        if (!existing)
+            return;
+        const entry = {
+            ...existing,
+            updatedAtEpochMillis: Math.max(existing.updatedAtEpochMillis, route.decidedAtEpochMillis),
+            targetDeviceId: (_b = (_a = route.owner) === null || _a === void 0 ? void 0 : _a.deviceId) !== null && _b !== void 0 ? _b : existing.targetDeviceId,
+            routeAudit: (0, attention_reliability_1.routeAuditFromDeliveryRoute)(route),
+        };
+        this.writeLedger({ ...ledger, entries: [...ledger.entries.filter(value => value.occurrence.occurrenceId !== route.occurrenceId), entry].slice(-WEB_ATTENTION_HISTORY_LIMIT) });
     }
     recordPolicyDecision(decision) {
         const ledger = this.readLedger();

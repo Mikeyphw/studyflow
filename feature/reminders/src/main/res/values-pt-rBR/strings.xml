@@ -140,4 +140,13 @@
     <string name="att10_time_sensitive_bypass">Ignorar horário silencioso para itens urgentes</string>
     <string name="att10_time_sensitive_bypass_description">Mantém temporizadores de sessão e outros alertas urgentes disponíveis durante o horário silencioso.</string>
     <string name="att10_category_escalation_title">Escalonamento por categoria</string>
+
+    <string name="att11_delivery_audit_title">ATT11 confiabilidade e auditoria de entrega</string>
+    <string name="att11_delivery_audit_description">As análises são derivadas do ledger canônico ATT01. A exportação contém estado de entrega, evidência da política ATT10 e metadados limitados de rota ATT07; ela não cria outro armazenamento de lembretes.</string>
+    <string name="att11_delivery_metrics">Total %1$d · entregues %2$d · adiados %3$d · perdidos %4$d · adiados pelo usuário %5$d · dispensados %6$d · concluídos %7$d</string>
+    <string name="att11_platform_reliability">%1$s · %2$s · rotas como dono %3$d · espelhos %4$d</string>
+    <string name="att11_no_route_audit">Nenhuma decisão de rota ATT07 foi registrada para este plano ainda.</string>
+    <string name="att11_route_audit_line">%1$s · dono %2$s · %3$d espelho(s)</string>
+    <string name="att11_copy_json">Copiar auditoria JSON</string>
+    <string name="att11_copy_csv">Copiar auditoria CSV</string>
 </resources>

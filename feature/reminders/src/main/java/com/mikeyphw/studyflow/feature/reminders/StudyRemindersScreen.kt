@@ -76,6 +76,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionEscalationMode
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionQuietWindow
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityEvidenceSnapshot
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudySchedule
@@ -89,13 +90,14 @@ private const val PostNotificationsPermission = "android.permission.POST_NOTIFIC
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-// ATT10 quiet hours / focus profiles / escalation policy projection.
+// ATT10 focus policy plus ATT11 notification reliability evidence and delivery-audit projection.
 fun StudyRemindersScreen(
     plan: StudyPlan,
     settings: StudyPlanSettings,
     reminderPolicy: StudyReminderPolicy,
     attentionFocusPolicy: StudyFlowAttentionFocusPolicy,
     runtimeEvidence: ReminderPlatformRuntimeEvidence,
+    attentionReliabilityEvidence: StudyFlowAttentionReliabilityEvidenceSnapshot,
     schedule: ManageStudySchedule,
     review: ManageStudyReview,
     sessions: ManageStudySession,
@@ -105,6 +107,8 @@ fun StudyRemindersScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onNotificationPermissionResult: (Boolean) -> Unit = {},
+    onCopyAttentionAuditJson: () -> Unit = {},
+    onCopyAttentionAuditCsv: () -> Unit = {},
 ) {
     val currentSchedule by schedule.observeSchedule(plan.id).collectAsStateWithLifecycle(
         initialValue = StudySchedule(plan.id, null, emptyList(), emptyList()),
@@ -543,6 +547,68 @@ fun StudyRemindersScreen(
                 }
                 OutlinedButton(onClick = { context.openAppDetailsSettings() }) {
                     Text(stringResource(R.string.open_app_settings))
+                }
+            }
+
+            StudyFlowSectionCard(title = stringResource(R.string.att11_delivery_audit_title)) {
+                val analytics = attentionReliabilityEvidence.analytics
+                Text(
+                    text = stringResource(R.string.att11_delivery_audit_description),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    stringResource(
+                        R.string.att11_delivery_metrics,
+                        analytics.totalCount,
+                        analytics.deliveredCount,
+                        analytics.deferredCount,
+                        analytics.missedCount,
+                        analytics.snoozedCount,
+                        analytics.dismissedCount,
+                        analytics.doneCount,
+                    ),
+                )
+                attentionReliabilityEvidence.platforms.firstOrNull()?.let { platform ->
+                    Text(
+                        stringResource(
+                            R.string.att11_platform_reliability,
+                            platform.clientKind.name.replace('_', ' '),
+                            platform.status.name.replace('_', ' '),
+                            platform.ownerRouteCount,
+                            platform.mirrorRouteCount,
+                        ),
+                    )
+                    Text(
+                        platform.explanation,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                if (attentionReliabilityEvidence.routeAudits.isEmpty()) {
+                    Text(
+                        stringResource(R.string.att11_no_route_audit),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    attentionReliabilityEvidence.routeAudits.take(5).forEach { audit ->
+                        Text(
+                            stringResource(
+                                R.string.att11_route_audit_line,
+                                audit.reason.name.replace('_', ' '),
+                                audit.owner?.deviceId?.value ?: "ledger-only",
+                                audit.mirrors.size,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(onClick = onCopyAttentionAuditJson) {
+                        Text(stringResource(R.string.att11_copy_json))
+                    }
+                    OutlinedButton(onClick = onCopyAttentionAuditCsv) {
+                        Text(stringResource(R.string.att11_copy_csv))
+                    }
                 }
             }
 

@@ -52,6 +52,8 @@ class DesktopAttentionRuntimeTest {
         assertTrue(snapshot.running)
         assertTrue(snapshot.recoveryCount >= 1)
         assertNotNull(notifications.lastTray)
+        assertTrue(snapshot.reliabilityEvidence.platforms.isNotEmpty())
+        assertEquals("desktop", snapshot.reliabilityEvidence.platforms.single().clientKind.name.lowercase())
         appState.close()
     }
     @Test

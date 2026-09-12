@@ -37,7 +37,10 @@ export interface StudyFlowWebTvAttentionSnapshot {
   focusProfile: string;
   focusOutcomes: string[];
   focusControlsReadOnly: true;
-  source: "att10-web-runtime";
+  reliabilityReadOnly: true;
+  reliabilityStatus: string;
+  auditedRouteCount: number;
+  source: "att11-web-runtime";
 }
 
 const TV_ACTION_LIMIT = 3;
@@ -107,7 +110,10 @@ export function projectWebAttentionToTv(snapshot: StudyFlowWebAttentionSnapshot)
     focusProfile: snapshot.preferences?.focusPolicy?.profile ?? "balanced",
     focusOutcomes: snapshot.entries.map(entry => entry.policyAudit?.outcome).filter((value): value is string => !!value).slice(0, 8),
     focusControlsReadOnly: true,
-    source: "att10-web-runtime",
+    reliabilityReadOnly: true,
+    reliabilityStatus: snapshot.reliability?.platforms?.[0]?.status ?? "foreground_only",
+    auditedRouteCount: snapshot.reliability?.analytics?.auditedRouteCount ?? 0,
+    source: "att11-web-runtime",
   };
 }
 
@@ -134,6 +140,8 @@ export function installStudyFlowWebTvAttentionBridge(runtime: StudyFlowWebTvAtte
     root.dataset.studyflowTvAttentionBadge = String(snapshot.badgeCount);
     root.dataset.studyflowTvAttentionFocusProfile = snapshot.focusProfile;
     root.dataset.studyflowTvAttentionFocusControls = snapshot.focusControlsReadOnly ? "remote-safe-read-only" : "local";
+    root.dataset.studyflowTvAttentionReliability = snapshot.reliabilityReadOnly ? snapshot.reliabilityStatus : "local";
+    root.dataset.studyflowTvAttentionAuditedRoutes = String(snapshot.auditedRouteCount);
     globalThis.dispatchEvent?.(new CustomEvent("studyflow:tv-attention-snapshot", { detail: snapshot }));
   };
   const onAttention = () => render();
@@ -148,5 +156,7 @@ export function installStudyFlowWebTvAttentionBridge(runtime: StudyFlowWebTvAtte
     delete root.dataset.studyflowTvAttentionBadge;
     delete root.dataset.studyflowTvAttentionFocusProfile;
     delete root.dataset.studyflowTvAttentionFocusControls;
+    delete root.dataset.studyflowTvAttentionReliability;
+    delete root.dataset.studyflowTvAttentionAuditedRoutes;
   };
 }

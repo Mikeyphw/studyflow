@@ -281,6 +281,18 @@ export interface StudyFlowAttentionLedgerEntry {
     deferredUntilEpochMillis?: number
     explanation: string
   }
+  routeAudit?: {
+    occurrenceId: string
+    reason: string
+    decidedAtEpochMillis: number
+    owner: { deviceId: string; clientKind: string; surface: string; role: string } | null
+    mirrors: Array<{ deviceId: string; clientKind: string; surface: string; role: string }>
+    candidateCount: number
+    eligibleCount: number
+    suppressedDeviceIds: string[]
+    policyOutcome?: string
+    explanation: string
+  }
 }
 
 export const StudyFlowAttentionLedgerSnapshotSchemaVersion = 1 as const
@@ -428,6 +440,8 @@ export class StudyFlowNotificationMediaRuntime {
       targetDeviceId: delivery.targetDeviceId,
       sequence: delivery.sequence,
       deliveryAttempts: (existing?.deliveryAttempts ?? 0) + 1,
+      policyAudit: existing?.policyAudit,
+      routeAudit: existing?.routeAudit,
     }
     this.attentionLedger = {
       ...this.attentionLedger,

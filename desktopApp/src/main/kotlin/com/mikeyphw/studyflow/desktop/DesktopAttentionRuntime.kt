@@ -17,6 +17,8 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPriority
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicyEngine
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyOutcome
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityAnalyzer
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionReliabilityEvidenceSnapshot
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowEntityId
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
@@ -64,6 +66,7 @@ data class DesktopAttentionRuntimeSnapshot(
     val quietHoursEnabled: Boolean,
     val quietHoursLabel: String,
     val lastPolicyOutcome: StudyFlowAttentionPolicyOutcome?,
+    val reliabilityEvidence: StudyFlowAttentionReliabilityEvidenceSnapshot,
     val capabilityMessage: String,
 )
 
@@ -170,6 +173,18 @@ class DesktopAttentionRuntime(
         val settings = plan?.id?.let { services.planRepository.currentSettings()[it] }
         val policy = if (plan != null && settings != null) preferences.policy(plan.id, settings) else StudyReminderPolicy()
         val focusPolicy = if (plan != null) preferences.focusPolicy(plan.id, settings) else com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy()
+        val now = clock()
+        val localCapability = DesktopAttentionDeliveryRouterBridge.localCapability(
+            nativeNotificationsAvailable = global.nativeNotificationsEnabled && caps.nativeNotificationsSupported,
+            trayAvailable = global.trayDashboardEnabled && caps.traySupported,
+            nowEpochMillis = now,
+        )
+        val reliabilityEvidence = StudyFlowAttentionReliabilityAnalyzer.analyze(
+            ledger = ledger,
+            devices = listOf(localCapability),
+            nowEpochMillis = now,
+            workspaceId = plan?.id?.let { StudyFlowWorkspaceId(it.value) },
+        )
         return DesktopAttentionRuntimeSnapshot(
             running = started,
             nativeNotificationsSupported = caps.nativeNotificationsSupported,
@@ -203,6 +218,7 @@ class DesktopAttentionRuntime(
                 )
             } ?: "Off",
             lastPolicyOutcome = lastPolicyOutcome,
+            reliabilityEvidence = reliabilityEvidence,
             capabilityMessage = when {
                 !caps.traySupported && !caps.nativeNotificationsSupported ->
                     "Native notification/tray APIs are unavailable; in-app state remains authoritative."
@@ -292,6 +308,12 @@ class DesktopAttentionRuntime(
     }
 
     private fun deliverDueEntries(now: Long, global: DesktopAttentionGlobalPreferences, planId: StudyPlanId) {
+        val capabilities = services.platformPorts.notifications.capabilities()
+        val localCapability = DesktopAttentionDeliveryRouterBridge.localCapability(
+            nativeNotificationsAvailable = global.nativeNotificationsEnabled && capabilities.nativeNotificationsSupported,
+            trayAvailable = global.trayDashboardEnabled && capabilities.traySupported,
+            nowEpochMillis = now,
+        )
         attentionLedger.snapshot().entries
             .filter { it.state == StudyFlowAttentionDeliveryState.SCHEDULED }
             .filter { it.occurrence.scheduledAtEpochMillis <= now }
@@ -303,6 +325,14 @@ class DesktopAttentionRuntime(
                     return@forEach
                 }
                 val focusPolicy = preferences.focusPolicy(planId, services.planRepository.currentSettings()[planId])
+                val route = DesktopAttentionDeliveryRouterBridge.routeWithPolicy(
+                    occurrence = occurrence,
+                    devices = listOf(localCapability),
+                    focusPolicy = focusPolicy,
+                    nowEpochMillis = now,
+                    ledgerEntry = entry,
+                )
+                runCatching { attentionLedger.recordRouteDecision(route) }
                 val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
                     occurrence = occurrence,
                     policy = focusPolicy,
@@ -346,7 +376,7 @@ class DesktopAttentionRuntime(
                     }
                     else -> Unit
                 }
-                if (!global.nativeNotificationsEnabled || !services.platformPorts.notifications.capabilities().nativeNotificationsSupported) {
+                if (!global.nativeNotificationsEnabled || !capabilities.nativeNotificationsSupported) {
                     return@forEach
                 }
                 runCatching { attentionLedger.transition(occurrence.occurrenceId, StudyFlowAttentionDeliveryState.DELIVERY_PENDING, now) }

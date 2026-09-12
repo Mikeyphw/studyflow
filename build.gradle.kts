@@ -2266,3 +2266,41 @@ tasks.register("verifyAtt10QuietHoursFocusProfilesEscalationPolicy") {
     )
 }
 
+
+
+// ATT11 — Notification Reliability Evidence / Delivery Audit
+tasks.register<Exec>("verifyAtt11NotificationReliabilityContracts") {
+    group = "verification"
+    description = "Checks ATT11 canonical ledger evidence, route audit, platform truth, exports and docs."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att11_notification_reliability_evidence_audit.py")
+}
+
+tasks.register<Exec>("verifyAtt11WebReliabilityTests") {
+    group = "verification"
+    description = "Runs ATT11 Web reliability/export plus ATT01/05/06/07/10 attention regressions."
+    workingDir = file("web")
+    commandLine(
+        "python3", "-m", "unittest",
+        "tests/test_att11_attention_reliability.py",
+        "tests/test_att10_focus_policy.py",
+        "tests/test_att07_attention_router.py",
+        "tests/test_att06_web_tv_attention.py",
+        "tests/test_att05_web_attention_runtime.py",
+        "tests/test_att01_attention_runtime.py",
+    )
+}
+
+tasks.register("verifyAtt11NotificationReliabilityEvidenceAudit") {
+    group = "verification"
+    description = "Focused ATT11 gate for reliability evidence, delivery analytics, cross-device route audit and export."
+    dependsOn(
+        "verifyAtt11NotificationReliabilityContracts",
+        "verifyAtt11WebReliabilityTests",
+        "verifyAtt10QuietHoursFocusProfilesEscalationPolicy",
+        ":core:link:test",
+        ":app:testReleaseUnitTest",
+        ":desktopApp:test",
+        ":app-tv:testDebugUnitTest",
+    )
+}
