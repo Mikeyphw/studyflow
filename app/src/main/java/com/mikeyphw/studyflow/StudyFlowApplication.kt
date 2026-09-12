@@ -292,24 +292,25 @@ private class DefaultAppContainer(
         if (widgetInvalidationJob?.isActive == true) return
         widgetInvalidationJob = applicationScope.launch {
             combine(appPreferencesRepository.preferences, manageStudyPlan.plans) { preferences, plans ->
-                Triple(
-                    preferences.defaultStudyPlanId,
-                    preferences.language,
-                    plans.firstOrNull { it.id == preferences.defaultStudyPlanId },
-                )
+                Triple(preferences.language, preferences.defaultStudyPlanId, plans)
             }
                 .distinctUntilChanged()
-                .flatMapLatest { (defaultPlanId, _, canonicalPlan) ->
-                    if (defaultPlanId == null || canonicalPlan == null) {
-                        flowOf(Unit)
-                    } else {
-                        combine(
-                            manageStudySchedule.observeSchedule(defaultPlanId),
-                            manageStudyReview.observeQueue(defaultPlanId),
-                            manageStudySession.observeSessions(defaultPlanId),
-                            manageStudyPlan.observeSettings(defaultPlanId),
-                        ) { _, _, _, _ -> Unit }
+                .flatMapLatest { (_, _, plans) ->
+                    val activePlans = plans.filter { plan ->
+                        plan.status !in setOf(
+                            com.mikeyphw.studyflow.core.model.StudyPlanStatus.ARCHIVED,
+                            com.mikeyphw.studyflow.core.model.StudyPlanStatus.TRASHED,
+                        )
                     }
+                    val domainFlows = activePlans.flatMap { plan ->
+                        listOf(
+                            manageStudySchedule.observeSchedule(plan.id).map { Unit },
+                            manageStudyReview.observeQueue(plan.id).map { Unit },
+                            manageStudySession.observeSessions(plan.id).map { Unit },
+                            manageStudyPlan.observeSettings(plan.id).map { Unit },
+                        )
+                    }
+                    if (domainFlows.isEmpty()) flowOf(Unit) else merge(*domainFlows.toTypedArray())
                 }
                 .collect { StudyFlowWidgetUpdateCoordinator.refreshAll(application) }
         }

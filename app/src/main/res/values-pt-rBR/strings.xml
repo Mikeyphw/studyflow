@@ -138,4 +138,57 @@
 
     <string name="reminder_notification_break_complete_title">Pausa concluída</string>
     <string name="reminder_notification_break_complete_body">Pronto para continuar estudando?</string>
+
+    <!-- ATT03 Android Widget Suite 2.0 -->
+    <string name="widget_name">Widgets do StudyFlow</string>
+    <string name="widget_description">Widget configurável do StudyFlow para hoje, próximo estudo, revisões ou sessão ativa.</string>
+    <string name="widget_plan_unavailable_title">O widget precisa de atenção</string>
+    <string name="widget_plan_unavailable_body">O plano escolhido para este widget não está mais disponível. Toque para escolher outro plano.</string>
+    <string name="widget_tap_to_configure">Toque para configurar</string>
+    <string name="widget_today_counts">Revisões: %1$d · Blocos hoje: %2$d</string>
+    <string name="widget_next_title">Próximo · %1$s</string>
+    <string name="widget_next_time">Agendado para %1$s</string>
+    <string name="widget_next_none_hint">Abra o StudyFlow para planejar o próximo bloco de estudo.</string>
+    <string name="widget_next_activity_at">Próximo: %1$s · %2$s</string>
+    <string name="widget_reviews_title">Revisões · %1$s</string>
+    <string name="widget_reviews_upcoming">Próximas revisões: %1$d</string>
+    <plurals name="widget_reviews_due"><item quantity="one">%d revisão pendente</item><item quantity="other">%d revisões pendentes</item></plurals>
+    <string name="widget_session_title">Sessão · %1$s</string>
+    <string name="widget_session_empty">Nenhuma sessão ativa</string>
+    <string name="widget_session_active">Sessão de estudo ativa</string>
+    <string name="widget_session_progress">%1$s decorridos · meta %2$s</string>
+    <string name="widget_compact_session">Estudando: %1$s</string>
+    <string name="widget_compact_next">Próximo: %1$s %2$s</string>
+    <string name="widget_compact_clear">Nada urgente · abra o StudyFlow</string>
+    <string name="widget_action_start">Iniciar</string>
+    <string name="widget_action_open">Abrir</string>
+    <string name="widget_action_review_now">Revisar agora</string>
+    <string name="widget_action_pause">Pausar</string>
+    <string name="widget_action_resume">Retomar</string>
+    <string name="widget_config_title">Configurar widget do StudyFlow</string>
+    <string name="widget_config_description">Escolha o que este widget acompanha. Cada widget pode usar um plano e modo diferentes.</string>
+    <string name="widget_config_mode_label">Modo do widget</string>
+    <string name="widget_config_plan_label">Plano de estudo</string>
+    <string name="widget_config_default_plan">Seguir o plano padrão do app</string>
+    <string name="widget_config_no_plans">Ainda não há planos ativos. O widget poderá seguir o plano padrão quando você criar um.</string>
+    <string name="widget_config_show_reviews">Mostrar quantidade de revisões quando for útil</string>
+    <string name="widget_config_save">Salvar widget</string>
+    <string name="widget_mode_today">Hoje</string>
+    <string name="widget_mode_next">Próximo estudo</string>
+    <string name="widget_mode_reviews">Revisões</string>
+    <string name="widget_mode_session">Sessão ativa</string>
+    <string name="widget_mode_compact">Compacto</string>
+    <string name="widget_preview_title">StudyFlow · Hoje</string>
+    <string name="widget_preview_body">Revisões: 12 · Blocos hoje: 3</string>
+    <string name="widget_preview_footer">Próximo: Matemática · 19:30</string>
+
+
+    <string name="widget_data_unavailable_title">Dados do StudyFlow indisponíveis</string>
+    <string name="widget_data_unavailable_body">O widget ainda não conseguiu carregar os dados de estudo. Ele tentará novamente automaticamente.</string>
+    <string name="widget_config_load_failed">Os dados do StudyFlow não puderam ser carregados. Você pode salvar o widget agora; ele tentará novamente quando o app se recuperar.</string>
+
+    <string name="widget_config_retry">Tentar carregar o StudyFlow novamente</string>
+
+    <string name="widget_accessibility_summary">Widget %1$s do StudyFlow para %2$s</string>
+
 </resources>

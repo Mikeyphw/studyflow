@@ -135,4 +135,57 @@
 
     <string name="reminder_notification_break_complete_title">Break complete</string>
     <string name="reminder_notification_break_complete_body">Ready to continue studying?</string>
+
+    <!-- ATT03 Android Widget Suite 2.0 -->
+    <string name="widget_name">StudyFlow widgets</string>
+    <string name="widget_description">Configurable StudyFlow widget for today, next study, reviews, or an active session.</string>
+    <string name="widget_plan_unavailable_title">Widget needs attention</string>
+    <string name="widget_plan_unavailable_body">The plan selected for this widget is no longer available. Tap to choose another plan.</string>
+    <string name="widget_tap_to_configure">Tap to configure</string>
+    <string name="widget_today_counts">Reviews due: %1$d · Blocks today: %2$d</string>
+    <string name="widget_next_title">Next · %1$s</string>
+    <string name="widget_next_time">Scheduled for %1$s</string>
+    <string name="widget_next_none_hint">Open StudyFlow to plan the next study block.</string>
+    <string name="widget_next_activity_at">Next: %1$s · %2$s</string>
+    <string name="widget_reviews_title">Reviews · %1$s</string>
+    <string name="widget_reviews_upcoming">Upcoming reviews: %1$d</string>
+    <plurals name="widget_reviews_due"><item quantity="one">%d review due</item><item quantity="other">%d reviews due</item></plurals>
+    <string name="widget_session_title">Session · %1$s</string>
+    <string name="widget_session_empty">No active session</string>
+    <string name="widget_session_active">Active study session</string>
+    <string name="widget_session_progress">%1$s elapsed · target %2$s</string>
+    <string name="widget_compact_session">Studying: %1$s</string>
+    <string name="widget_compact_next">Next: %1$s %2$s</string>
+    <string name="widget_compact_clear">Nothing urgent · open StudyFlow</string>
+    <string name="widget_action_start">Start</string>
+    <string name="widget_action_open">Open</string>
+    <string name="widget_action_review_now">Review now</string>
+    <string name="widget_action_pause">Pause</string>
+    <string name="widget_action_resume">Resume</string>
+    <string name="widget_config_title">Configure StudyFlow widget</string>
+    <string name="widget_config_description">Choose what this widget tracks. Each widget can follow a different study plan and mode.</string>
+    <string name="widget_config_mode_label">Widget mode</string>
+    <string name="widget_config_plan_label">Study plan</string>
+    <string name="widget_config_default_plan">Follow app default plan</string>
+    <string name="widget_config_no_plans">No active plans yet. The widget can follow the default plan once you create one.</string>
+    <string name="widget_config_show_reviews">Show review count when useful</string>
+    <string name="widget_config_save">Save widget</string>
+    <string name="widget_mode_today">Today</string>
+    <string name="widget_mode_next">Next study</string>
+    <string name="widget_mode_reviews">Reviews</string>
+    <string name="widget_mode_session">Active session</string>
+    <string name="widget_mode_compact">Compact</string>
+    <string name="widget_preview_title">StudyFlow · Today</string>
+    <string name="widget_preview_body">Reviews due: 12 · Blocks today: 3</string>
+    <string name="widget_preview_footer">Next: Mathematics · 19:30</string>
+
+
+    <string name="widget_data_unavailable_title">StudyFlow data unavailable</string>
+    <string name="widget_data_unavailable_body">The widget could not load study data yet. It will retry automatically.</string>
+    <string name="widget_config_load_failed">StudyFlow data could not be loaded. You can save the widget now; it will retry automatically when the app recovers.</string>
+
+    <string name="widget_config_retry">Retry loading StudyFlow</string>
+
+    <string name="widget_accessibility_summary">StudyFlow %1$s widget for %2$s</string>
+
 </resources>

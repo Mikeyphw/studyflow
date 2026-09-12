@@ -1,5 +1,10 @@
 # StudyFlow Android
 
+## ATT03 — Android Widget Suite 2.0
+
+Android now has a configurable five-mode StudyFlow widget suite: Today, Next, Reviews, Session, and Compact. Each instance can follow the default plan or pin its own active plan; active-session controls and Start-next are real domain actions. Widget freshness is independently scheduled from notification permission using a dedicated inexact AlarmManager path, with boot/time/timezone/date/package recovery and Debug Workbench evidence. See `ATT03_ANDROID_WIDGET_SUITE_2_0.md` and `docs/product/ANDROID_WIDGET_SUITE.md`.
+
+
 ## Current status: SFLP24 sealed; REL01 target release validation runner added
 
 SFLP24 completed the cross-platform StudyFlow Link Protocol source seal. REL01 adds the target-machine

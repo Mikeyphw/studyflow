@@ -1,5 +1,14 @@
 # Changelog
 
+## ATT03 — Android Widget Suite 2.0
+
+- Upgraded the existing Android widget in place to five configurable modes: Today, Next, Reviews, Session, and Compact.
+- Added per-widget plan/mode persistence, Android reconfiguration, ID-restore migration, plan-unavailable recovery, responsive compact rendering and launcher preview metadata.
+- Added real Start-next and Pause/Resume widget mutations plus precise review/schedule/session deep links.
+- Added a notification-permission-independent inexact freshness alarm covering session minute ticks, planned blocks, review boundaries, session targets and day rollover, including system time/boot/package recovery.
+- Expanded widget Debug Workbench evidence and added unit/instrumentation/source-contract tests plus the focused `verifyAtt03AndroidWidgetSuite` gate.
+
+
 ## ATT02 — Android Attention System 2.0
 
 - Added independent Android reminder categories and configurable timing with an 08:00 daily-summary default.
@@ -348,6 +357,15 @@
 - Added repository verification for the known post-V2 traps: route loops, missing workspace wiring, android:tint, bad resource escapes, deprecated TrendingUp icon usage, duplicate strings, and forbidden Kotlin extension references.
 
 # Changelog
+
+## ATT03 — Android Widget Suite 2.0
+
+- Upgraded the existing Android widget in place to five configurable modes: Today, Next, Reviews, Session, and Compact.
+- Added per-widget plan/mode persistence, Android reconfiguration, ID-restore migration, plan-unavailable recovery, responsive compact rendering and launcher preview metadata.
+- Added real Start-next and Pause/Resume widget mutations plus precise review/schedule/session deep links.
+- Added a notification-permission-independent inexact freshness alarm covering session minute ticks, planned blocks, review boundaries, session targets and day rollover, including system time/boot/package recovery.
+- Expanded widget Debug Workbench evidence and added unit/instrumentation/source-contract tests plus the focused `verifyAtt03AndroidWidgetSuite` gate.
+
 
 
 

@@ -2047,3 +2047,20 @@ tasks.register("verifyAtt02AndroidAttentionSystem") {
         ":app:testReleaseUnitTest",
     )
 }
+
+// ATT03 — Android Widget Suite 2.0
+tasks.register<Exec>("verifyAtt03AndroidWidgetContracts") {
+    group = "verification"
+    description = "Checks ATT03 widget modes, per-instance configuration, freshness scheduling, actions, diagnostics, migration, tests and documentation contracts."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att03_android_widget_suite.py")
+}
+
+tasks.register("verifyAtt03AndroidWidgetSuite") {
+    group = "verification"
+    description = "Focused ATT03 production gate for the complete Android Widget Suite 2.0 slice."
+    dependsOn(
+        "verifyAtt03AndroidWidgetContracts",
+        ":app:testReleaseUnitTest",
+    )
+}

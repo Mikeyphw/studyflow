@@ -86,9 +86,12 @@ class StudyReminderBootReceiver : BroadcastReceiver() {
         val result = goAsync()
         ReminderReceiverScope.launch {
             try {
-                context.requireStudyFlowAppContainer().reminderDeliveryCoordinator.reconcileAll(
-                    reason = "system:${intent.action}",
-                )
+                runCatching {
+                    context.requireStudyFlowAppContainer().reminderDeliveryCoordinator.reconcileAll(
+                        reason = "system:${intent.action}",
+                    )
+                }
+                StudyFlowWidgetUpdateCoordinator.refreshAll(context.applicationContext)
             } finally {
                 result.finish()
             }

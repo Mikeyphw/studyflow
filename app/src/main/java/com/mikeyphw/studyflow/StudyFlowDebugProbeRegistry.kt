@@ -40,6 +40,8 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 import com.mikeyphw.studyflow.reminders.StudyReminderChannelId
 import com.mikeyphw.studyflow.widget.StudyFlowTodayWidgetProvider
+import com.mikeyphw.studyflow.widget.StudyFlowWidgetConfigurationStore
+import com.mikeyphw.studyflow.widget.StudyFlowWidgetFreshnessScheduler
 import java.io.File
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.CoroutineContext
@@ -273,7 +275,7 @@ private class AndroidStudyFlowDebugProbeOperations(
         } else {
             intArrayOf()
         }
-        DebugProbePlatformPolicy.widget(
+        val base = DebugProbePlatformPolicy.widget(
             id = id,
             snapshot = WidgetHealthSnapshot(
                 deviceSupportsWidgets = supported,
@@ -281,6 +283,13 @@ private class AndroidStudyFlowDebugProbeOperations(
                 providerEnabled = providerEnabled,
                 providerMetadataPresent = metadataPresent,
                 boundInstanceCount = ids.size,
+            ),
+        )
+        base.copy(
+            safeFacts = base.safeFacts + mapOf(
+                "configured_instances" to StudyFlowWidgetConfigurationStore(appContext).configuredCount(ids).toString(),
+                "next_refresh_epoch_millis" to (StudyFlowWidgetFreshnessScheduler.nextScheduledRefresh(appContext)?.toString() ?: "none"),
+                "freshness_independent" to "true",
             ),
         )
     }
@@ -403,8 +412,11 @@ private class AndroidStudyFlowDebugProbeOperations(
             message = if (observed) DebugProbeMessage.NONE else DebugProbeMessage.NO_WIDGET_INSTANCES,
             safeFacts = mapOf(
                 "count" to refresh.boundInstanceCount.toString(),
+                "configured_count" to refresh.configuredInstanceCount.toString(),
                 "behavior_verified" to observed.toString(),
                 "status" to refresh.state,
+                "modes" to refresh.modeCounts.entries.sortedBy { it.key.name }.joinToString(",") { "${it.key.name}:${it.value}" },
+                "next_refresh_epoch_millis" to (refresh.nextRefreshEpochMillis?.toString() ?: "none"),
             ),
         )
     }

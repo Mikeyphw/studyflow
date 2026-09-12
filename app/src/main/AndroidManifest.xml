@@ -52,6 +52,14 @@
             android:exported="false" />
 
         <receiver
+            android:name=".widget.StudyFlowWidgetActionReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".widget.StudyFlowWidgetRefreshReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".reminders.StudyReminderBootReceiver"
             android:exported="false">
             <intent-filter>
@@ -69,7 +77,8 @@
 
         <receiver
             android:name=".widget.StudyFlowTodayWidgetProvider"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -77,6 +86,16 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/studyflow_today_widget_info" />
         </receiver>
+
+        <activity
+            android:name=".widget.StudyFlowWidgetConfigureActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@style/Theme.StudyFlow">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".reminders.StudyReminderLaunchActivity"

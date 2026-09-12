@@ -51,7 +51,7 @@ with this matrix, this matrix owns the current product-state description.
 | English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | FULL | PLATFORM_SPECIFIC | LIMITED |
 | Native reminder/background delivery | FULL (ATT02) | MISSING | LIMITED | MISSING | MISSING |
-| Home/widget-style glance surface | FULL | MISSING | LIMITED | MISSING | MISSING |
+| Home/widget-style glance surface | FULL (ATT03 five-mode suite) | MISSING | LIMITED | MISSING | MISSING |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
 DOV08-DOV24 is complete. Desktop DOV08-DOV24 now provide the full applicable Desktop workspace: durable domain state, authoring and
@@ -226,3 +226,8 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Final SFLP validation gate | Required | Required | Required | Runtime-audited | Runtime-audited |
 | SFLP01-SFLP23 predecessor chain | Required | Required | Required | Required | Required |
 | TV write authority during final restore checks | Rejected | N/A | Rejected | N/A | Rejected |
+
+
+## ATT03 widget suite capability truth
+
+Android owns the configurable Today/Next/Reviews/Session/Compact home-screen widget suite. Its freshness scheduler is independent from notification permission and uses domain-boundary inexact alarms plus live repository invalidation. Desktop/Web/TV equivalents remain later roadmap work and are not claimed by ATT03.

@@ -3,18 +3,18 @@ package com.mikeyphw.studyflow.reminders
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
-import android.os.Build
-import androidx.core.content.ContextCompat
+import com.mikeyphw.studyflow.AppInitializationState
 import com.mikeyphw.studyflow.requireStudyFlowAppContainer
-import com.mikeyphw.studyflow.core.domain.StudyReminderInput
-import com.mikeyphw.studyflow.core.domain.StudyReminderPlanner
-import com.mikeyphw.studyflow.core.domain.TodayWidgetSummary
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.widget.StudyFlowTodayWidgetProvider
+import com.mikeyphw.studyflow.widget.StudyFlowWidgetConfiguration
+import com.mikeyphw.studyflow.widget.StudyFlowWidgetConfigurationStore
+import com.mikeyphw.studyflow.widget.StudyFlowWidgetFreshnessScheduler
+import com.mikeyphw.studyflow.widget.StudyFlowWidgetMode
+import com.mikeyphw.studyflow.widget.StudyFlowWidgetSnapshotProjector
 import com.mikeyphw.studyflow.widget.TodayWidgetRenderState
-import java.util.Calendar
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CompletableDeferred
@@ -34,6 +34,9 @@ private val WidgetRefreshWaiters = mutableListOf<WidgetRefreshWaiter>()
 data class WidgetRefreshResult(
     val boundInstanceCount: Int,
     val state: String,
+    val configuredInstanceCount: Int = 0,
+    val modeCounts: Map<StudyFlowWidgetMode, Int> = emptyMap(),
+    val nextRefreshEpochMillis: Long? = null,
 )
 
 private data class WidgetRefreshWaiter(
@@ -56,10 +59,7 @@ object StudyFlowWidgetUpdateCoordinator {
         val requestedGeneration = WidgetRefreshRequestedGeneration.incrementAndGet()
         if (waiter != null) {
             synchronized(WidgetRefreshWaiterLock) {
-                WidgetRefreshWaiters += WidgetRefreshWaiter(
-                    generation = requestedGeneration,
-                    deferred = waiter,
-                )
+                WidgetRefreshWaiters += WidgetRefreshWaiter(requestedGeneration, waiter)
             }
         }
         WidgetRefreshDirty.set(true)
@@ -71,18 +71,9 @@ object StudyFlowWidgetUpdateCoordinator {
         try {
             do {
                 WidgetRefreshDirty.set(false)
-                val refreshGeneration = WidgetRefreshRequestedGeneration.get()
-                val state = buildState(context)
-                val count = updateAllWidgets(context, state)
-                val result = WidgetRefreshResult(
-                    boundInstanceCount = count,
-                    state = when (state) {
-                        TodayWidgetRenderState.Loading -> "loading"
-                        TodayWidgetRenderState.NoPlan -> "no_plan"
-                        is TodayWidgetRenderState.Ready -> "ready"
-                    },
-                )
-                completeRefreshGeneration(refreshGeneration, result)
+                val generation = WidgetRefreshRequestedGeneration.get()
+                val result = refreshGeneration(context)
+                completeRefreshGeneration(generation, result)
             } while (WidgetRefreshDirty.get())
         } catch (failure: Exception) {
             failRefreshWaiters(failure)
@@ -90,6 +81,85 @@ object StudyFlowWidgetUpdateCoordinator {
             WidgetRefreshRunning.set(false)
             if (WidgetRefreshDirty.get()) requestRefresh(context, waiter = null)
         }
+    }
+
+    private suspend fun refreshGeneration(context: Context): WidgetRefreshResult {
+        val manager = AppWidgetManager.getInstance(context)
+        val component = ComponentName(context, StudyFlowTodayWidgetProvider::class.java)
+        val ids = manager.getAppWidgetIds(component)
+        if (ids.isEmpty()) {
+            StudyFlowWidgetFreshnessScheduler.cancel(context)
+            return WidgetRefreshResult(0, "no_instances")
+        }
+        val container = context.requireStudyFlowAppContainer()
+        val initialization = container.initializationState.value
+        if (initialization !is AppInitializationState.Ready) {
+            val store = StudyFlowWidgetConfigurationStore(context)
+            val loading = initialization is AppInitializationState.Initializing
+            ids.forEach { appWidgetId ->
+                val configuration = store.load(appWidgetId)
+                StudyFlowTodayWidgetProvider.updateWidget(
+                    context,
+                    manager,
+                    appWidgetId,
+                    if (loading) TodayWidgetRenderState.Loading(configuration)
+                    else TodayWidgetRenderState.DataUnavailable(configuration),
+                )
+            }
+            val retryAt = System.currentTimeMillis() + if (loading) 60_000L else 15 * 60 * 1_000L
+            StudyFlowWidgetFreshnessScheduler.schedule(context, retryAt)
+            return WidgetRefreshResult(
+                boundInstanceCount = ids.size,
+                configuredInstanceCount = store.configuredCount(ids),
+                state = if (loading) "loading" else "data_unavailable",
+                nextRefreshEpochMillis = retryAt,
+            )
+        }
+        val preferences = container.appPreferencesRepository.preferences.first()
+        val plans = container.manageStudyPlan.plans.first()
+        val configStore = StudyFlowWidgetConfigurationStore(context)
+        val stateNames = mutableSetOf<String>()
+        val modeCounts = mutableMapOf<StudyFlowWidgetMode, Int>()
+        var nextRefreshAt: Long? = null
+
+        ids.forEach { appWidgetId ->
+            val configuration = configStore.load(appWidgetId)
+            modeCounts[configuration.mode] = (modeCounts[configuration.mode] ?: 0) + 1
+            val selectedPlanId = configuration.studyPlanId?.let(::StudyPlanId) ?: preferences.defaultStudyPlanId
+            val state = when {
+                selectedPlanId == null -> TodayWidgetRenderState.NoPlan(configuration)
+                else -> {
+                    val plan = resolveConfiguredWidgetPlan(plans, selectedPlanId)
+                    if (plan == null) {
+                        TodayWidgetRenderState.PlanUnavailable(configuration)
+                    } else {
+                        val activeSession = container.manageStudySession.observeActiveSessions().first()
+                            .firstOrNull { it.studyPlanId == plan.id }
+                        val now = System.currentTimeMillis()
+                        val snapshot = StudyFlowWidgetSnapshotProjector.project(
+                            plan = plan,
+                            schedule = container.manageStudySchedule.observeSchedule(plan.id).first(),
+                            reviewQueue = container.manageStudyReview.observeQueue(plan.id).first(),
+                            activeSession = activeSession,
+                            liveActiveSeconds = activeSession?.let(container.manageStudySession::liveActiveSeconds),
+                            nowEpochMillis = now,
+                        )
+                        nextRefreshAt = listOfNotNull(nextRefreshAt, snapshot.nextRefreshEpochMillis).minOrNull()
+                        TodayWidgetRenderState.Ready(configuration, snapshot)
+                    }
+                }
+            }
+            stateNames += state.debugName
+            StudyFlowTodayWidgetProvider.updateWidget(context, manager, appWidgetId, state)
+        }
+        StudyFlowWidgetFreshnessScheduler.schedule(context, nextRefreshAt)
+        return WidgetRefreshResult(
+            boundInstanceCount = ids.size,
+            configuredInstanceCount = configStore.configuredCount(ids),
+            state = stateNames.sorted().joinToString("+").ifBlank { "unknown" },
+            modeCounts = modeCounts.toMap(),
+            nextRefreshEpochMillis = nextRefreshAt,
+        )
     }
 
     private fun completeRefreshGeneration(generation: Long, result: WidgetRefreshResult) {
@@ -107,54 +177,11 @@ object StudyFlowWidgetUpdateCoordinator {
         }
         failed.forEach { it.deferred.completeExceptionally(failure) }
     }
-
-    private fun updateAllWidgets(context: Context, state: TodayWidgetRenderState): Int {
-        val manager = AppWidgetManager.getInstance(context)
-        val component = ComponentName(context, StudyFlowTodayWidgetProvider::class.java)
-        val ids = manager.getAppWidgetIds(component)
-        ids.forEach { id ->
-            StudyFlowTodayWidgetProvider.updateWidget(context, manager, id, state)
-        }
-        return ids.size
-    }
-
-    private suspend fun buildState(context: Context): TodayWidgetRenderState {
-        val summary = buildSummary(context) ?: return TodayWidgetRenderState.NoPlan
-        return TodayWidgetRenderState.Ready(summary)
-    }
-
-    private suspend fun buildSummary(context: Context): TodayWidgetSummary? {
-        val container = context.requireStudyFlowAppContainer()
-        val defaultPlanId = container.appPreferencesRepository.preferences.first().defaultStudyPlanId ?: return null
-        val plan = resolveCanonicalWidgetPlan(container.manageStudyPlan.plans.first(), defaultPlanId) ?: return null
-        val settings = container.manageStudyPlan.observeSettings(plan.id).first() ?: return null
-        val calendar = Calendar.getInstance()
-        val minuteOfDay = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
-        return StudyReminderPlanner.buildPlan(
-            StudyReminderInput(
-                plan = plan,
-                settings = settings,
-                schedule = container.manageStudySchedule.observeSchedule(plan.id).first(),
-                reviewQueue = container.manageStudyReview.observeQueue(plan.id).first(),
-                nowEpochMillis = System.currentTimeMillis(),
-                minuteOfDay = minuteOfDay,
-                apiLevel = Build.VERSION.SDK_INT,
-                notificationPermissionGranted = notificationsPermissionGranted(context),
-            ),
-        ).widgetSummary
-    }
-
-    private fun notificationsPermissionGranted(context: Context): Boolean = Build.VERSION.SDK_INT < 33 ||
-        ContextCompat.checkSelfPermission(
-            context,
-            android.Manifest.permission.POST_NOTIFICATIONS,
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 }
 
-internal fun resolveCanonicalWidgetPlan(
-    plans: List<StudyPlan>,
-    defaultPlanId: StudyPlanId,
-): StudyPlan? = plans.firstOrNull { candidate ->
-    candidate.id == defaultPlanId &&
-        candidate.status !in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)
+internal fun resolveCanonicalWidgetPlan(plans: List<StudyPlan>, defaultPlanId: StudyPlanId): StudyPlan? =
+    resolveConfiguredWidgetPlan(plans, defaultPlanId)
+
+internal fun resolveConfiguredWidgetPlan(plans: List<StudyPlan>, planId: StudyPlanId): StudyPlan? = plans.firstOrNull { candidate ->
+    candidate.id == planId && candidate.status !in setOf(StudyPlanStatus.ARCHIVED, StudyPlanStatus.TRASHED)
 }
