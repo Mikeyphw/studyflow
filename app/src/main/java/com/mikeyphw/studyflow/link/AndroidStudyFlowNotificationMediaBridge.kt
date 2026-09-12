@@ -1,6 +1,9 @@
 package com.mikeyphw.studyflow.link
 
+import android.content.Context
 import com.mikeyphw.studyflow.core.link.StudyFlowActivityId
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDiagnosticsSnapshot
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedger
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkPeerDescriptor
 import com.mikeyphw.studyflow.core.link.StudyFlowMaterialChunk
 import com.mikeyphw.studyflow.core.link.StudyFlowMaterialChunkAck
@@ -21,8 +24,9 @@ import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 class AndroidStudyFlowNotificationMediaBridge(
     private val localDevice: StudyFlowLinkPeerDescriptor,
     private val clock: StudyFlowPeerClock,
+    private val attentionLedger: StudyFlowAttentionLedger = StudyFlowAttentionLedger(),
 ) {
-    private val notifications = StudyFlowNotificationScheduleReducer(localDevice, clock)
+    private val notifications = StudyFlowNotificationScheduleReducer(localDevice, clock, attentionLedger)
     private val materialStreams = StudyFlowMaterialStreamReducer(localDevice, clock)
 
     fun dueReviewNotification(
@@ -59,9 +63,23 @@ class AndroidStudyFlowNotificationMediaBridge(
     fun receiveNotification(delivery: StudyFlowNotificationDelivery): StudyFlowNotificationDeliveryAck =
         notifications.apply(delivery)
 
+    fun attentionDiagnostics(): StudyFlowAttentionDiagnosticsSnapshot = attentionLedger.diagnostics()
+
     fun acceptMaterialStream(offer: StudyFlowMaterialStreamOffer): Boolean = materialStreams.accept(offer)
 
     fun receiveMaterialChunk(chunk: StudyFlowMaterialChunk): StudyFlowMaterialChunkAck = materialStreams.apply(chunk)
 
     fun streamIdFor(materialId: String): StudyFlowMaterialStreamId = StudyFlowMaterialStreamId("stream-$materialId")
+
+    companion object {
+        fun persistent(
+            context: Context,
+            localDevice: StudyFlowLinkPeerDescriptor,
+            clock: StudyFlowPeerClock,
+        ): AndroidStudyFlowNotificationMediaBridge = AndroidStudyFlowNotificationMediaBridge(
+            localDevice = localDevice,
+            clock = clock,
+            attentionLedger = StudyFlowAttentionLedger(AndroidStudyFlowAttentionLedgerStorage(context)),
+        )
+    }
 }

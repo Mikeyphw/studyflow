@@ -1,0 +1,51 @@
+{
+  "type": "schedule.notification_change",
+  "payload": {
+    "changeId": "schedule-change-attention-1",
+    "workspaceId": "workspace-main",
+    "sourceDeviceId": "phone",
+    "sequence": 8,
+    "scheduleEntityId": "activity-physics-1",
+    "changeKind": "reminder_upserted",
+    "reminderAtEpochMillis": 5000,
+    "quietHoursStartMinute": 1320,
+    "quietHoursEndMinute": 420,
+    "occurredAtEpochMillis": 4000,
+    "attentionOccurrence": {
+      "occurrenceId": "planned:activity-physics-1:5000",
+      "workspaceId": "workspace-main",
+      "scheduleEntityId": "activity-physics-1",
+      "category": "planned_study",
+      "priority": "high",
+      "scheduledAtEpochMillis": 5000,
+      "originalScheduledAtEpochMillis": 4500,
+      "expiresAtEpochMillis": 10000,
+      "timezoneId": "America/Sao_Paulo",
+      "quietHours": {
+        "startMinute": 1320,
+        "endMinute": 420
+      },
+      "deliveryPolicy": "active_then_primary",
+      "actions": [
+        {
+          "kind": "start_now",
+          "payload": {}
+        },
+        {
+          "kind": "snooze",
+          "payload": {
+            "minutes": 10
+          }
+        }
+      ],
+      "sourceDeviceId": "phone",
+      "targetDeviceIds": ["desktop"],
+      "payload": {
+        "planId": "plan-main"
+      }
+    },
+    "payload": {
+      "legacyKey": "legacy-value"
+    }
+  }
+}

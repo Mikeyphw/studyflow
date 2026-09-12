@@ -56,6 +56,7 @@ test = [
     "verifySflp14Sflp15LiveSessionProjection",
     "verifySflp16Sflp17ControlInputDelegation",
     "verifySflp18Sflp19NotificationMediaSync",
+    "verifyAtt01UnifiedAttentionFoundation",
     "verifySflp20Sflp21ShareImportConflict",
     "verifySflp22Sflp23AccountBackupValidation",
     "verifySflp24FinalReleaseSeal",

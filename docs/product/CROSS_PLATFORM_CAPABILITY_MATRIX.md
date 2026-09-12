@@ -50,7 +50,8 @@ with this matrix, this matrix owns the current product-state description.
 | Optional provider sync | FULL | PLATFORM_SPECIFIC | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE |
 | English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | FULL | PLATFORM_SPECIFIC | LIMITED |
-| Android reminders / widgets | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
+| Native reminder/background delivery | FULL | MISSING | LIMITED | MISSING | MISSING |
+| Home/widget-style glance surface | FULL | MISSING | LIMITED | MISSING | MISSING |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
 DOV08-DOV24 is complete. Desktop DOV08-DOV24 now provide the full applicable Desktop workspace: durable domain state, authoring and
@@ -188,7 +189,8 @@ receivers remain read/presentation/control clients and reject write-capability p
 
 | Capability | Android | Desktop | Web | Android TV | Web TV |
 | --- | --- | --- | --- | --- | --- |
-| Targeted notification delivery | Send/receive | Send/receive | Send/receive | Receive/read-only | Receive/read-only |
+| SFLP notification envelope acceptance | Send/receive | Send/receive | Send/receive | Receive/read-only | Receive/read-only |
+| Durable ATT01 attention ledger | FULL | FULL | FULL | FULL | FULL (Web runtime) |
 | Schedule reminder sync | Read/write | Read/write | Read/write | Read-only | Read-only |
 | Material stream offer | Source/sink | Source/sink | Source/sink | Presentation sink only | Presentation sink only |
 | Material chunk acknowledgement | Yes | Yes | Yes | Yes, no import | Yes, no import |

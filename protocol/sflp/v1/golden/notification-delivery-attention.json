@@ -1,0 +1,45 @@
+{
+  "type": "notification.deliver",
+  "payload": {
+    "messageId": "notification-message-attention-1",
+    "sourceDeviceId": "phone",
+    "targetDeviceId": "desktop",
+    "sequence": 9,
+    "notification": {
+      "notificationId": "notification-review-attention-1",
+      "kind": "review_due",
+      "title": "Review due",
+      "body": "Portuguese vocabulary review is ready.",
+      "route": {
+        "workspaceId": "workspace-main",
+        "targetDeviceId": "desktop",
+        "requiredCapabilities": ["workspace.sync"]
+      },
+      "scheduleActivityId": "activity-review-1",
+      "dueAtEpochMillis": 5000,
+      "createdAtEpochMillis": 4000,
+      "expiresAtEpochMillis": 10000,
+      "attentionOccurrence": {
+        "occurrenceId": "due:5000:review-1:1",
+        "workspaceId": "workspace-main",
+        "scheduleEntityId": "activity-review-1",
+        "category": "due_review",
+        "priority": "normal",
+        "scheduledAtEpochMillis": 5000,
+        "originalScheduledAtEpochMillis": 5000,
+        "deliveryPolicy": "active_then_primary",
+        "actions": [
+          {
+            "kind": "review_now",
+            "payload": {}
+          }
+        ],
+        "sourceDeviceId": "phone",
+        "targetDeviceIds": ["desktop"],
+        "payload": {}
+      },
+      "payload": {}
+    },
+    "sentAtEpochMillis": 4100
+  }
+}

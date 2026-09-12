@@ -130,6 +130,7 @@ data class StudyFlowNotificationPayload(
     val dueAtEpochMillis: Long? = null,
     val createdAtEpochMillis: Long,
     val expiresAtEpochMillis: Long = createdAtEpochMillis + DefaultNotificationTtlMillis,
+    val attentionOccurrence: StudyFlowAttentionOccurrence? = null,
     val payload: JsonObject = JsonObject(emptyMap()),
 ) {
     init {
@@ -138,9 +139,42 @@ data class StudyFlowNotificationPayload(
         require(createdAtEpochMillis >= 0L) { "Notification creation time must not be negative" }
         require(dueAtEpochMillis == null || dueAtEpochMillis >= 0L) { "Notification due time must not be negative" }
         require(expiresAtEpochMillis > createdAtEpochMillis) { "Notification expiry must be after creation" }
+        require(attentionOccurrence == null || attentionOccurrence.workspaceId == route.workspaceId) {
+            "Notification attention occurrence must use the routed workspace"
+        }
+        require(
+            attentionOccurrence?.scheduleEntityId == null ||
+                scheduleActivityId == null ||
+                attentionOccurrence.scheduleEntityId.value == scheduleActivityId.value,
+        ) {
+            "Notification attention occurrence must match the scheduled activity"
+        }
     }
 
     fun isExpired(nowEpochMillis: Long): Boolean = nowEpochMillis > expiresAtEpochMillis
+
+    fun canonicalAttentionOccurrence(sourceDeviceId: StudyFlowDeviceId): StudyFlowAttentionOccurrence =
+        attentionOccurrence ?: StudyFlowAttentionOccurrence(
+            occurrenceId = StudyFlowAttentionOccurrenceId.deterministic(
+                "notification",
+                notificationId.value,
+            ),
+            workspaceId = route.workspaceId,
+            scheduleEntityId = scheduleActivityId?.let { StudyFlowEntityId(it.value) },
+            category = when (kind) {
+                StudyFlowNotificationKind.STUDY_DUE -> StudyFlowAttentionCategory.PLANNED_STUDY
+                StudyFlowNotificationKind.REVIEW_DUE -> StudyFlowAttentionCategory.DUE_REVIEW
+                StudyFlowNotificationKind.SESSION_RESUME -> StudyFlowAttentionCategory.SESSION_ENDING
+                StudyFlowNotificationKind.SYNC_ATTENTION -> StudyFlowAttentionCategory.SYNC_ATTENTION
+                StudyFlowNotificationKind.HANDOFF_READY -> StudyFlowAttentionCategory.SYNC_ATTENTION
+                StudyFlowNotificationKind.MATERIAL_READY -> StudyFlowAttentionCategory.SYNC_ATTENTION
+            },
+            scheduledAtEpochMillis = dueAtEpochMillis ?: createdAtEpochMillis,
+            expiresAtEpochMillis = expiresAtEpochMillis,
+            sourceDeviceId = sourceDeviceId,
+            targetDeviceIds = listOfNotNull(route.targetDeviceId),
+            payload = payload,
+        )
 }
 
 @Serializable
@@ -190,6 +224,7 @@ data class StudyFlowScheduleReminderChange(
     val quietHoursStartMinute: Int? = null,
     val quietHoursEndMinute: Int? = null,
     val occurredAtEpochMillis: Long,
+    val attentionOccurrence: StudyFlowAttentionOccurrence? = null,
     val payload: JsonObject = JsonObject(emptyMap()),
 ) {
     init {
@@ -202,6 +237,39 @@ data class StudyFlowScheduleReminderChange(
             "Quiet-hour end minute out of range"
         }
         require(occurredAtEpochMillis >= 0L) { "Schedule sync time must not be negative" }
+        require(attentionOccurrence == null || attentionOccurrence.workspaceId == workspaceId) {
+            "Schedule attention occurrence must use the changed workspace"
+        }
+        require(
+            attentionOccurrence?.scheduleEntityId == null ||
+                attentionOccurrence.scheduleEntityId == scheduleEntityId,
+        ) {
+            "Schedule attention occurrence must match the changed entity"
+        }
+    }
+
+    fun canonicalAttentionOccurrence(): StudyFlowAttentionOccurrence? {
+        attentionOccurrence?.let { return it }
+        val reminderAt = reminderAtEpochMillis ?: return null
+        val quietHours = if (quietHoursStartMinute != null && quietHoursEndMinute != null) {
+            StudyFlowAttentionQuietHours(quietHoursStartMinute, quietHoursEndMinute)
+        } else {
+            null
+        }
+        return StudyFlowAttentionOccurrence(
+            occurrenceId = StudyFlowAttentionOccurrenceId.deterministic(
+                "schedule",
+                scheduleEntityId.value,
+                reminderAt.toString(),
+            ),
+            workspaceId = workspaceId,
+            scheduleEntityId = scheduleEntityId,
+            category = StudyFlowAttentionCategory.PLANNED_STUDY,
+            scheduledAtEpochMillis = reminderAt,
+            quietHours = quietHours,
+            sourceDeviceId = sourceDeviceId,
+            payload = payload,
+        )
     }
 
     fun toDomainOperation(
@@ -232,9 +300,23 @@ data class StudyFlowScheduleReminderChange(
                 "scheduleSyncId" to JsonPrimitive(changeId.value),
                 "changeKind" to JsonPrimitive(changeKind.name.lowercase()),
                 "notificationScheduleSync" to JsonPrimitive("sflp18"),
+                "attentionSchema" to JsonPrimitive("v1"),
+                "attentionScheduleChange" to StudyFlowAttentionWireJson.encodeToJsonElement(
+                    StudyFlowScheduleReminderChange.serializer(),
+                    this,
+                ),
             ),
         ),
     )
+
+    companion object {
+        fun fromDomainOperation(operation: StudyFlowDomainOperation): StudyFlowScheduleReminderChange? {
+            val encoded = operation.payload["attentionScheduleChange"] ?: return null
+            return runCatching {
+                StudyFlowAttentionWireJson.decodeFromJsonElement(StudyFlowScheduleReminderChange.serializer(), encoded)
+            }.getOrNull()
+        }
+    }
 }
 
 @Serializable
@@ -338,10 +420,8 @@ object StudyFlowNotificationMediaMessageNames {
 class StudyFlowNotificationScheduleReducer(
     private val localDevice: StudyFlowLinkPeerDescriptor,
     private val clock: StudyFlowPeerClock,
+    private val attentionLedger: StudyFlowAttentionLedger = StudyFlowAttentionLedger(),
 ) {
-    private val delivered = linkedSetOf<StudyFlowNotificationId>()
-    private val lastSequenceBySource = linkedMapOf<StudyFlowDeviceId, Long>()
-
     fun apply(delivery: StudyFlowNotificationDelivery): StudyFlowNotificationDeliveryAck = synchronized(this) {
         if (delivery.targetDeviceId != localDevice.deviceId) {
             return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "wrong_target")
@@ -349,20 +429,30 @@ class StudyFlowNotificationScheduleReducer(
         if (!delivery.notification.route.accepts(localDevice)) {
             return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "missing_capability")
         }
-        if (delivery.notification.isExpired(clock.nowEpochMillis())) {
+        val now = clock.nowEpochMillis()
+        if (delivery.notification.isExpired(now)) {
             return ack(delivery, StudyFlowNotificationDeliveryStatus.EXPIRED, "expired")
         }
-        if (delivery.notification.notificationId in delivered) {
-            return ack(delivery, StudyFlowNotificationDeliveryStatus.DUPLICATE, null)
+        val occurrence = delivery.notification.canonicalAttentionOccurrence(delivery.sourceDeviceId)
+        return when (
+            attentionLedger.admitInboundDelivery(
+                occurrence = occurrence,
+                sourceDeviceId = delivery.sourceDeviceId,
+                targetDeviceId = delivery.targetDeviceId,
+                sequence = delivery.sequence,
+                deliveredAtEpochMillis = now,
+            )
+        ) {
+            StudyFlowAttentionLedgerAdmission.ACCEPTED ->
+                ack(delivery, StudyFlowNotificationDeliveryStatus.ACCEPTED, null)
+            StudyFlowAttentionLedgerAdmission.DUPLICATE ->
+                ack(delivery, StudyFlowNotificationDeliveryStatus.DUPLICATE, null)
+            StudyFlowAttentionLedgerAdmission.STALE_SEQUENCE ->
+                ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "stale_sequence")
         }
-        val last = lastSequenceBySource[delivery.sourceDeviceId] ?: 0L
-        if (delivery.sequence <= last) {
-            return ack(delivery, StudyFlowNotificationDeliveryStatus.REJECTED, "stale_sequence")
-        }
-        lastSequenceBySource[delivery.sourceDeviceId] = delivery.sequence
-        delivered += delivery.notification.notificationId
-        return ack(delivery, StudyFlowNotificationDeliveryStatus.ACCEPTED, null)
     }
+
+    fun attentionDiagnostics(): StudyFlowAttentionDiagnosticsSnapshot = attentionLedger.diagnostics()
 
     private fun ack(
         delivery: StudyFlowNotificationDelivery,

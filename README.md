@@ -511,6 +511,14 @@ based across Android, Desktop, Web, Android TV and Web TV with monotonic frames 
 - Added target-gated input delegation for keyboard, text, D-pad, select/back and touch input.
 - Added Android, Desktop, Android TV and Web bridges plus schema, golden vectors and verifier wiring.
 
+### ATT01 unified attention foundation
+
+StudyFlow now has a shared durable attention domain and ledger for reminder identity, lifecycle, dedupe, source
+sequence tracking, quiet-hour/timing metadata, actions, and delivery policy. SFLP18 schedule operations retain the
+legacy compatibility marker while carrying a lossless `attentionScheduleChange`. Android migrates existing reminder
+bookkeeping into the ledger; Desktop, Web, and Android TV have persistence adapters. This foundation does not
+claim that every client already exposes a native reminder surface; ATT02-ATT06 provide those product experiences.
+
 ### SFLP18/SFLP19 notification, schedule, and material handoff
 
 StudyFlow peers can now exchange targeted notification deliveries, schedule reminder changes, and

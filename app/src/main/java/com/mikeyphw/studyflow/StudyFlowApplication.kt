@@ -31,14 +31,21 @@ import com.mikeyphw.studyflow.core.i18n.AppPreferencesRepository
 import com.mikeyphw.studyflow.core.i18n.DataStoreAppPreferencesRepository
 import com.mikeyphw.studyflow.core.model.AppLanguage
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
+import com.mikeyphw.studyflow.link.AndroidStudyFlowAttentionLedgerStorage
 import com.mikeyphw.studyflow.link.AndroidStudyFlowLinkPeer
 import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvPresentationSource
 import com.mikeyphw.studyflow.tvcontrol.StudyFlowTvDomainActionExecutor
 import com.mikeyphw.studyflow.tvcontrol.SharedPreferencesStudyFlowTvDomainActionJournal
 import com.mikeyphw.studyflow.tvcontrol.DefaultStudyFlowTvCanonicalMutationGateway
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionCategory
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedger
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportClient
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvReceiverDiscovery
 import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
+import com.mikeyphw.studyflow.reminders.StudyReminderOccurrenceStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -47,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -102,6 +110,7 @@ interface AppContainer : DiagnosticRecorderProvider {
     suspend fun updateAppLanguage(language: AppLanguage)
     fun refreshLocalizedSurfaces()
     val reminderDeliveryCoordinator: StudyReminderDeliveryCoordinator
+    val attentionLedger: StudyFlowAttentionLedger
     val createStudyPlan: CreateStudyPlan
     val samplePlanProvisioner: SamplePlanProvisioner
     val manageStudyPlan: ManageStudyPlan
@@ -183,6 +192,9 @@ private class DefaultAppContainer(
         studyScheduleRepository = studyScheduleRepository,
         studyReviewRepository = studyReviewRepository,
         studyPracticeRepository = studyPracticeRepository,
+    )
+    override val attentionLedger = StudyFlowAttentionLedger(
+        AndroidStudyFlowAttentionLedgerStorage(application),
     )
     override val createStudyPlan = CreateStudyPlan(studyPlanRepository)
     override val samplePlanProvisioner = SamplePlanProvisioner(
@@ -297,6 +309,42 @@ private class DefaultAppContainer(
         }
     }
 
+
+    private suspend fun migrateLegacyReminderStateToAttentionLedger() {
+        val occurrenceStore = StudyReminderOccurrenceStore(application)
+        val now = System.currentTimeMillis()
+        manageStudyPlan.plans.first().forEach { plan ->
+            val workspaceId = StudyFlowWorkspaceId(
+                StudyFlowAttentionOccurrenceId.deterministic("local-plan", plan.id.value).value,
+            )
+            occurrenceStore.scheduled(plan.id).forEach { scheduled ->
+                attentionLedger.upsertScheduled(
+                    occurrence = StudyFlowAttentionOccurrence(
+                        occurrenceId = StudyFlowAttentionOccurrenceId.fromLegacy(scheduled.occurrenceId),
+                        workspaceId = workspaceId,
+                        category = when (scheduled.type) {
+                            com.mikeyphw.studyflow.core.domain.ReminderNotificationType.DUE_REVIEWS ->
+                                StudyFlowAttentionCategory.DUE_REVIEW
+                            com.mikeyphw.studyflow.core.domain.ReminderNotificationType.PLANNED_ACTIVITY ->
+                                StudyFlowAttentionCategory.PLANNED_STUDY
+                            com.mikeyphw.studyflow.core.domain.ReminderNotificationType.MISSED_ACTIVITY ->
+                                StudyFlowAttentionCategory.MISSED_ACTIVITY
+                            com.mikeyphw.studyflow.core.domain.ReminderNotificationType.DAILY_SUMMARY ->
+                                StudyFlowAttentionCategory.DAILY_SUMMARY
+                        },
+                        scheduledAtEpochMillis = scheduled.fireAtEpochMillis,
+                        originalScheduledAtEpochMillis = scheduled.scheduledAtEpochMillis,
+                        sourceDeviceId = linkPeer.localDeviceId,
+                    ),
+                    atEpochMillis = now,
+                )
+            }
+            attentionLedger.migrateLegacyDeliveredAliases(
+                occurrenceStore.deliveredOccurrenceIds(plan.id),
+            )
+        }
+    }
+
     override fun retryInitialization() {
         if (_initializationState.value is AppInitializationState.Ready) return
         if (initializationJob?.isActive == true) return
@@ -308,6 +356,12 @@ private class DefaultAppContainer(
                     action = "data-layer-initialize",
                 ) {
                     dataLayer.initialize()
+                }
+                diagnosticRecorder.recordSuspendStep(
+                    area = DiagnosticArea.REMINDERS,
+                    action = "attention-ledger-legacy-migration",
+                ) {
+                    migrateLegacyReminderStateToAttentionLedger()
                 }
                 samplePlanProvisioner.recoverPendingCompletion()
                 try {

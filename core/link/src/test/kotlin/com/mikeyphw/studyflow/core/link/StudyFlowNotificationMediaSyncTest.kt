@@ -4,6 +4,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 class StudyFlowNotificationMediaSyncTest {
     private val workspace = StudyFlowWorkspaceId("workspace-main")
@@ -40,6 +42,22 @@ class StudyFlowNotificationMediaSyncTest {
     @Test
     fun scheduleReminderChangeBecomesCanonicalDomainOperation() {
         val phone = descriptor("phone", StudyFlowLinkClientKind.ANDROID, StudyFlowClientProfiles.AndroidPhone)
+        val occurrence = StudyFlowAttentionOccurrence(
+            occurrenceId = StudyFlowAttentionOccurrenceId("planned:schedule-item-1:5000"),
+            workspaceId = workspace,
+            scheduleEntityId = StudyFlowEntityId("schedule-item-1"),
+            category = StudyFlowAttentionCategory.PLANNED_STUDY,
+            priority = StudyFlowAttentionPriority.HIGH,
+            scheduledAtEpochMillis = 5_000L,
+            originalScheduledAtEpochMillis = 4_500L,
+            expiresAtEpochMillis = 10_000L,
+            timezoneId = "America/Sao_Paulo",
+            quietHours = StudyFlowAttentionQuietHours(22 * 60, 7 * 60),
+            deliveryPolicy = StudyFlowAttentionDeliveryPolicy.ACTIVE_THEN_PRIMARY,
+            actions = listOf(StudyFlowAttentionAction(StudyFlowAttentionActionKind.START_NOW)),
+            sourceDeviceId = phone.deviceId,
+            payload = JsonObject(mapOf("planId" to JsonPrimitive("plan-main"))),
+        )
         val change = StudyFlowScheduleReminderChange(
             changeId = StudyFlowScheduleSyncId("schedule-change-1"),
             workspaceId = workspace,
@@ -48,11 +66,19 @@ class StudyFlowNotificationMediaSyncTest {
             scheduleEntityId = StudyFlowEntityId("schedule-item-1"),
             changeKind = StudyFlowScheduleSyncChangeKind.REMINDER_UPSERTED,
             reminderAtEpochMillis = 5_000L,
+            quietHoursStartMinute = 22 * 60,
+            quietHoursEndMinute = 7 * 60,
             occurredAtEpochMillis = 4_000L,
+            attentionOccurrence = occurrence,
+            payload = JsonObject(mapOf("legacyKey" to JsonPrimitive("legacy-value"))),
         )
         val op = change.toDomainOperation(StudyFlowEntityRevision(2), logicalTimestamp = 9)
         assertEquals(StudyFlowDomainOperationTypes.ScheduleReminderUpserted, op.operationType)
         assertEquals(7, op.originSequence)
+        assertEquals("sflp18", op.payload["notificationScheduleSync"]?.toString()?.trim('"'))
+        assertEquals("v1", op.payload["attentionSchema"]?.toString()?.trim('"'))
+        assertEquals(change, StudyFlowScheduleReminderChange.fromDomainOperation(op))
+        assertEquals(occurrence, change.canonicalAttentionOccurrence())
     }
 
     @Test

@@ -83,11 +83,22 @@ data class ReminderNotificationLabReport(
     val platformStatus: DebugLabStatus = DebugLabStatus.NOT_RUN,
     val schedulingStatus: DebugLabStatus = DebugLabStatus.NOT_RUN,
     val productionPipelineVerified: Boolean = false,
+    val attentionLedgerEntryCount: Int = 0,
+    val attentionLedgerActiveCount: Int = 0,
+    val attentionLedgerTerminalCount: Int = 0,
+    val attentionLedgerSourceSequenceCount: Int = 0,
+    val attentionLedgerLegacyAliasCount: Int = 0,
+    val attentionLedgerRecoveredFromInvalidState: Boolean = false,
     val candidates: List<ReminderCandidateDiagnostic> = emptyList(),
 ) {
     init {
         require(inspectedAtEpochMillis >= 0L)
         require(apiLevel >= 0)
+        require(attentionLedgerEntryCount >= 0)
+        require(attentionLedgerActiveCount >= 0)
+        require(attentionLedgerTerminalCount >= 0)
+        require(attentionLedgerSourceSequenceCount >= 0)
+        require(attentionLedgerLegacyAliasCount >= 0)
         require(candidates.distinctBy(ReminderCandidateDiagnostic::kind).size == candidates.size)
     }
 

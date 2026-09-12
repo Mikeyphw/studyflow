@@ -14,3 +14,7 @@ def test_web_runtime_has_notification_schedule_and_material_streaming_contracts(
         assert "applyMaterialChunk" in text
         assert "library.import" in text
         assert "unexpected_offset" in text
+        assert "sflp18" in text
+        assert "attentionScheduleChange" in text
+        assert "StudyFlowAttentionLedgerSnapshot" in text
+        assert "legacyDeliveredOccurrenceIds" in text

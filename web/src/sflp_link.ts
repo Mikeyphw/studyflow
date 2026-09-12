@@ -203,6 +203,112 @@ export class StudyFlowControlInputRuntime {
 }
 
 export type StudyFlowNotificationDeliveryStatus = 'accepted' | 'rejected' | 'duplicate' | 'expired'
+export type StudyFlowAttentionCategory =
+  | 'planned_study'
+  | 'due_review'
+  | 'missed_activity'
+  | 'daily_summary'
+  | 'session_ending'
+  | 'session_completed'
+  | 'exam_countdown'
+  | 'schedule_change'
+  | 'plan_warning'
+  | 'sync_attention'
+export type StudyFlowAttentionPriority = 'low' | 'normal' | 'high' | 'time_sensitive'
+export type StudyFlowAttentionActionKind =
+  | 'open'
+  | 'start_now'
+  | 'review_now'
+  | 'snooze'
+  | 'reschedule'
+  | 'mark_done'
+  | 'dismiss'
+  | 'continue'
+  | 'move_to_device'
+export type StudyFlowAttentionDeliveryPolicy =
+  | 'local_only'
+  | 'primary_device'
+  | 'active_then_primary'
+  | 'phone_and_desktop'
+  | 'all_capable'
+export type StudyFlowAttentionDeliveryState =
+  | 'planned'
+  | 'scheduled'
+  | 'delivery_pending'
+  | 'delivered'
+  | 'acknowledged'
+  | 'started'
+  | 'completed'
+  | 'snoozed'
+  | 'rescheduled'
+  | 'dismissed'
+  | 'missed'
+  | 'expired'
+  | 'cancelled'
+
+export interface StudyFlowAttentionOccurrence {
+  occurrenceId: string
+  workspaceId: string
+  scheduleEntityId?: string
+  category: StudyFlowAttentionCategory
+  priority?: StudyFlowAttentionPriority
+  scheduledAtEpochMillis: number
+  originalScheduledAtEpochMillis?: number
+  expiresAtEpochMillis?: number
+  timezoneId?: string
+  quietHours?: { startMinute: number; endMinute: number }
+  deliveryPolicy?: StudyFlowAttentionDeliveryPolicy
+  actions?: Array<{ kind: StudyFlowAttentionActionKind; payload?: Record<string, unknown> }>
+  sourceDeviceId?: string
+  targetDeviceIds?: string[]
+  payload?: Record<string, unknown>
+}
+
+export interface StudyFlowAttentionLedgerEntry {
+  occurrence: StudyFlowAttentionOccurrence
+  state: StudyFlowAttentionDeliveryState
+  updatedAtEpochMillis: number
+  deliveredAtEpochMillis?: number
+  acknowledgedAtEpochMillis?: number
+  sourceDeviceId?: string
+  targetDeviceId?: string
+  sequence?: number
+  deliveryAttempts: number
+}
+
+export interface StudyFlowAttentionLedgerSnapshot {
+  schemaVersion: number
+  entries: StudyFlowAttentionLedgerEntry[]
+  lastSequenceBySource: Record<string, number>
+  legacyDeliveredOccurrenceIds: string[]
+}
+
+export interface StudyFlowAttentionLedgerStorage {
+  readEncodedSnapshot(): string | null
+  writeEncodedSnapshot(encoded: string): void
+}
+
+export class StudyFlowMemoryAttentionLedgerStorage implements StudyFlowAttentionLedgerStorage {
+  private encoded: string | null
+  constructor(initialEncodedSnapshot: string | null = null) { this.encoded = initialEncodedSnapshot }
+  readEncodedSnapshot(): string | null { return this.encoded }
+  writeEncodedSnapshot(encoded: string): void { this.encoded = encoded }
+}
+
+export class StudyFlowBrowserAttentionLedgerStorage implements StudyFlowAttentionLedgerStorage {
+  private readonly fallback = new StudyFlowMemoryAttentionLedgerStorage()
+  constructor(private readonly key: string) {}
+  readEncodedSnapshot(): string | null {
+    try { return globalThis.localStorage?.getItem(this.key) ?? this.fallback.readEncodedSnapshot() }
+    catch { return this.fallback.readEncodedSnapshot() }
+  }
+  writeEncodedSnapshot(encoded: string): void {
+    try {
+      if (globalThis.localStorage) globalThis.localStorage.setItem(this.key, encoded)
+      else this.fallback.writeEncodedSnapshot(encoded)
+    } catch { this.fallback.writeEncodedSnapshot(encoded) }
+  }
+}
 
 export interface StudyFlowNotificationDeliveryEnvelope {
   messageId: string
@@ -214,8 +320,29 @@ export interface StudyFlowNotificationDeliveryEnvelope {
     kind: string
     title: string
     body: string
+    route?: { workspaceId: string; targetDeviceId?: string }
+    scheduleActivityId?: string
+    dueAtEpochMillis?: number
+    createdAtEpochMillis?: number
     expiresAtEpochMillis: number
+    attentionOccurrence?: StudyFlowAttentionOccurrence
+    payload?: Record<string, unknown>
   }
+}
+
+export interface StudyFlowScheduleReminderChangeEnvelope {
+  changeId: string
+  workspaceId: string
+  sourceDeviceId: string
+  sequence: number
+  scheduleEntityId: string
+  changeKind: string
+  reminderAtEpochMillis?: number
+  quietHoursStartMinute?: number
+  quietHoursEndMinute?: number
+  occurredAtEpochMillis?: number
+  attentionOccurrence?: StudyFlowAttentionOccurrence
+  payload?: Record<string, unknown>
 }
 
 export interface StudyFlowMaterialStreamOfferEnvelope {
@@ -233,27 +360,137 @@ export interface StudyFlowMaterialStreamOfferEnvelope {
   expiresAtEpochMillis: number
 }
 
+function emptyAttentionLedger(): StudyFlowAttentionLedgerSnapshot {
+  return { schemaVersion: 1, entries: [], lastSequenceBySource: {}, legacyDeliveredOccurrenceIds: [] }
+}
+
+function validAttentionLedger(value: unknown): value is StudyFlowAttentionLedgerSnapshot {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Partial<StudyFlowAttentionLedgerSnapshot>
+  return candidate.schemaVersion === 1 && Array.isArray(candidate.entries) &&
+    !!candidate.lastSequenceBySource && typeof candidate.lastSequenceBySource === 'object' &&
+    Array.isArray(candidate.legacyDeliveredOccurrenceIds ?? [])
+}
+
+function stableAttentionOccurrenceId(parts: string[]): string {
+  const readable = parts.join(':').replace(/[^A-Za-z0-9._:-]/g, '-')
+  if (readable.length > 0 && readable.length <= 128) return readable
+  let hash = 2166136261
+  for (const char of parts.join('\u001f')) {
+    hash ^= char.charCodeAt(0)
+    hash = Math.imul(hash, 16777619)
+  }
+  return `attn-${(hash >>> 0).toString(16).padStart(8, '0')}`
+}
+
 export class StudyFlowNotificationMediaRuntime {
-  private readonly notifications = new Map<string, StudyFlowNotificationDeliveryEnvelope['notification']>()
-  private readonly lastNotificationSequence = new Map<string, number>()
+  private attentionLedger: StudyFlowAttentionLedgerSnapshot
   private readonly materialStreams = new Map<string, StudyFlowMaterialStreamOfferEnvelope>()
   private readonly materialChunks = new Map<string, Set<number>>()
 
-  constructor(private readonly peer: { deviceId: string; capabilities: string[] }) {}
+  constructor(
+    private readonly peer: { deviceId: string; capabilities: string[] },
+    private readonly attentionStorage: StudyFlowAttentionLedgerStorage =
+      new StudyFlowBrowserAttentionLedgerStorage(`studyflow.attention.v1.${peer.deviceId}`),
+  ) {
+    this.attentionLedger = this.loadAttentionLedger()
+  }
 
   applyNotificationDelivery(delivery: StudyFlowNotificationDeliveryEnvelope) {
     if (delivery.targetDeviceId !== this.peer.deviceId) return { status: 'rejected' as StudyFlowNotificationDeliveryStatus, reason: 'wrong_target' }
     if (delivery.notification.expiresAtEpochMillis < Date.now()) return { status: 'expired' as StudyFlowNotificationDeliveryStatus, reason: 'expired' }
-    if (this.notifications.has(delivery.notification.notificationId)) return { status: 'duplicate' as StudyFlowNotificationDeliveryStatus, acknowledgedSequence: delivery.sequence }
-    const last = this.lastNotificationSequence.get(delivery.sourceDeviceId) ?? 0
+    const occurrence = delivery.notification.attentionOccurrence ?? this.legacyNotificationOccurrence(delivery)
+    const existing = this.attentionLedger.entries.find(entry => entry.occurrence.occurrenceId === occurrence.occurrenceId)
+    if (existing && !['planned', 'scheduled', 'delivery_pending'].includes(existing.state)) {
+      return { status: 'duplicate' as StudyFlowNotificationDeliveryStatus, acknowledgedSequence: delivery.sequence }
+    }
+    if (this.attentionLedger.legacyDeliveredOccurrenceIds.includes(occurrence.occurrenceId)) {
+      return { status: 'duplicate' as StudyFlowNotificationDeliveryStatus, acknowledgedSequence: delivery.sequence }
+    }
+    const last = this.attentionLedger.lastSequenceBySource[delivery.sourceDeviceId] ?? 0
     if (delivery.sequence <= last) return { status: 'rejected' as StudyFlowNotificationDeliveryStatus, reason: 'stale_sequence' }
-    this.lastNotificationSequence.set(delivery.sourceDeviceId, delivery.sequence)
-    this.notifications.set(delivery.notification.notificationId, delivery.notification)
+    const now = Date.now()
+    const entry: StudyFlowAttentionLedgerEntry = {
+      occurrence,
+      state: 'delivered',
+      updatedAtEpochMillis: now,
+      deliveredAtEpochMillis: now,
+      sourceDeviceId: delivery.sourceDeviceId,
+      targetDeviceId: delivery.targetDeviceId,
+      sequence: delivery.sequence,
+      deliveryAttempts: (existing?.deliveryAttempts ?? 0) + 1,
+    }
+    this.attentionLedger = {
+      ...this.attentionLedger,
+      entries: [...this.attentionLedger.entries.filter(value => value.occurrence.occurrenceId !== occurrence.occurrenceId), entry].slice(-512),
+      lastSequenceBySource: { ...this.attentionLedger.lastSequenceBySource, [delivery.sourceDeviceId]: delivery.sequence },
+    }
+    this.persistAttentionLedger()
     return { status: 'accepted' as StudyFlowNotificationDeliveryStatus, acknowledgedSequence: delivery.sequence }
   }
 
-  scheduleChangeOperation(change: { changeId: string; workspaceId: string; sourceDeviceId: string; sequence: number; scheduleEntityId: string; changeKind: string }) {
-    return { operationId: `op-${change.changeId}`, workspaceId: change.workspaceId, originDeviceId: change.sourceDeviceId, originSequence: change.sequence, entityId: change.scheduleEntityId, operationType: change.changeKind === 'reminder_cancelled' ? 'schedule.reminder_cancelled' : 'schedule.reminder_upserted', payload: { notificationScheduleSync: 'sflp18', changeKind: change.changeKind } }
+  scheduleChangeOperation(change: StudyFlowScheduleReminderChangeEnvelope) {
+    const operationType = change.changeKind === 'reminder_cancelled'
+      ? 'schedule.reminder_cancelled'
+      : change.changeKind === 'activity_moved'
+        ? 'schedule.activity_moved'
+        : change.changeKind === 'quiet_hours_changed'
+          ? 'notification.quiet_hours_changed'
+          : change.changeKind === 'notification_policy_changed'
+            ? 'notification.policy_changed'
+            : 'schedule.reminder_upserted'
+    return {
+      operationId: `op-${change.changeId}`,
+      workspaceId: change.workspaceId,
+      originDeviceId: change.sourceDeviceId,
+      originSequence: change.sequence,
+      entityId: change.scheduleEntityId,
+      operationType,
+      payload: {
+        notificationScheduleSync: 'sflp18',
+        attentionSchema: 'v1',
+        changeKind: change.changeKind,
+        scheduleSyncId: change.changeId,
+        attentionScheduleChange: { ...change },
+      },
+    }
+  }
+
+  canonicalScheduleOccurrence(change: StudyFlowScheduleReminderChangeEnvelope): StudyFlowAttentionOccurrence | null {
+    if (change.attentionOccurrence) return change.attentionOccurrence
+    if (change.reminderAtEpochMillis === undefined) return null
+    return {
+      occurrenceId: stableAttentionOccurrenceId(['schedule', change.scheduleEntityId, String(change.reminderAtEpochMillis)]),
+      workspaceId: change.workspaceId,
+      scheduleEntityId: change.scheduleEntityId,
+      category: 'planned_study',
+      priority: 'normal',
+      scheduledAtEpochMillis: change.reminderAtEpochMillis,
+      originalScheduledAtEpochMillis: change.reminderAtEpochMillis,
+      quietHours: change.quietHoursStartMinute !== undefined && change.quietHoursEndMinute !== undefined
+        ? { startMinute: change.quietHoursStartMinute, endMinute: change.quietHoursEndMinute }
+        : undefined,
+      deliveryPolicy: 'active_then_primary',
+      sourceDeviceId: change.sourceDeviceId,
+      payload: change.payload,
+    }
+  }
+
+  attentionDiagnostics() {
+    const terminal = new Set<StudyFlowAttentionDeliveryState>(['completed', 'dismissed', 'expired', 'cancelled'])
+    const terminalCount = this.attentionLedger.entries.filter(entry => terminal.has(entry.state)).length
+    return {
+      schemaVersion: this.attentionLedger.schemaVersion,
+      entryCount: this.attentionLedger.entries.length,
+      activeCount: this.attentionLedger.entries.length - terminalCount,
+      terminalCount,
+      sourceSequenceCount: Object.keys(this.attentionLedger.lastSequenceBySource).length,
+      legacyDeliveredAliasCount: this.attentionLedger.legacyDeliveredOccurrenceIds.length,
+      lastUpdatedAtEpochMillis: this.attentionLedger.entries.reduce<number | null>(
+        (latest, entry) => latest === null ? entry.updatedAtEpochMillis : Math.max(latest, entry.updatedAtEpochMillis),
+        null,
+      ),
+    }
   }
 
   acceptMaterialStream(offer: StudyFlowMaterialStreamOfferEnvelope): boolean {
@@ -277,6 +514,44 @@ export class StudyFlowNotificationMediaRuntime {
     chunks.add(chunk.chunkIndex)
     this.materialChunks.set(chunk.streamId, chunks)
     return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex }
+  }
+
+  private legacyNotificationOccurrence(delivery: StudyFlowNotificationDeliveryEnvelope): StudyFlowAttentionOccurrence {
+    const workspaceId = delivery.notification.route?.workspaceId ?? 'workspace-main'
+    const category: StudyFlowAttentionCategory = delivery.notification.kind === 'review_due'
+      ? 'due_review'
+      : delivery.notification.kind === 'study_due'
+        ? 'planned_study'
+        : delivery.notification.kind === 'session_resume'
+          ? 'session_ending'
+          : 'sync_attention'
+    return {
+      occurrenceId: stableAttentionOccurrenceId(['notification', delivery.notification.notificationId]),
+      workspaceId,
+      scheduleEntityId: delivery.notification.scheduleActivityId,
+      category,
+      priority: 'normal',
+      scheduledAtEpochMillis: delivery.notification.dueAtEpochMillis ?? delivery.notification.createdAtEpochMillis ?? Date.now(),
+      originalScheduledAtEpochMillis: delivery.notification.dueAtEpochMillis ?? delivery.notification.createdAtEpochMillis ?? Date.now(),
+      expiresAtEpochMillis: delivery.notification.expiresAtEpochMillis,
+      deliveryPolicy: 'active_then_primary',
+      sourceDeviceId: delivery.sourceDeviceId,
+      targetDeviceIds: [delivery.targetDeviceId],
+      payload: delivery.notification.payload,
+    }
+  }
+
+  private loadAttentionLedger(): StudyFlowAttentionLedgerSnapshot {
+    const encoded = this.attentionStorage.readEncodedSnapshot()
+    if (!encoded) return emptyAttentionLedger()
+    try {
+      const decoded: unknown = JSON.parse(encoded)
+      return validAttentionLedger(decoded) ? decoded : emptyAttentionLedger()
+    } catch { return emptyAttentionLedger() }
+  }
+
+  private persistAttentionLedger(): void {
+    this.attentionStorage.writeEncodedSnapshot(JSON.stringify(this.attentionLedger))
   }
 }
 

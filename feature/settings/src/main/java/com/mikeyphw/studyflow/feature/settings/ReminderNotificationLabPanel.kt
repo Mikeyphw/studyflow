@@ -86,6 +86,16 @@ fun ReminderNotificationLabPanel(
         }
         if (report.status != DebugLabStatus.NOT_RUN) {
             item {
+                StudyFlowSectionCard(title = stringResource(R.string.debug_reminder_lab_attention_title)) {
+                    Text(stringResource(R.string.debug_reminder_lab_attention_entries, report.attentionLedgerEntryCount))
+                    Text(stringResource(R.string.debug_reminder_lab_attention_active, report.attentionLedgerActiveCount))
+                    Text(stringResource(R.string.debug_reminder_lab_attention_terminal, report.attentionLedgerTerminalCount))
+                    Text(stringResource(R.string.debug_reminder_lab_attention_sources, report.attentionLedgerSourceSequenceCount))
+                    Text(stringResource(R.string.debug_reminder_lab_attention_legacy_aliases, report.attentionLedgerLegacyAliasCount))
+                    Text(booleanFact(R.string.debug_reminder_lab_attention_recovered, report.attentionLedgerRecoveredFromInvalidState))
+                }
+            }
+            item {
                 StudyFlowSectionCard(title = stringResource(R.string.debug_reminder_lab_platform_title)) {
                     Text(booleanFact(R.string.debug_reminder_lab_permission, report.notificationPermissionGranted))
                     Text(booleanFact(R.string.debug_reminder_lab_notifications_enabled, report.notificationsEnabled))

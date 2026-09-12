@@ -194,12 +194,19 @@ private class AndroidReminderLabInspectOperation(
 
     override suspend fun inspect(planId: StudyPlanId?): ReminderNotificationLabReport {
         val now = clock()
+        val attentionDiagnostics = container.attentionLedger.diagnostics()
         if (planId == null) {
             return ReminderNotificationLabReport(
                 status = DebugLabStatus.BLOCKED,
                 message = ReminderLabMessage.MISSING_DEFAULT_PLAN,
                 inspectedAtEpochMillis = now,
                 apiLevel = Build.VERSION.SDK_INT,
+                attentionLedgerEntryCount = attentionDiagnostics.entryCount,
+                attentionLedgerActiveCount = attentionDiagnostics.activeCount,
+                attentionLedgerTerminalCount = attentionDiagnostics.terminalCount,
+                attentionLedgerSourceSequenceCount = attentionDiagnostics.sourceSequenceCount,
+                attentionLedgerLegacyAliasCount = attentionDiagnostics.legacyDeliveredAliasCount,
+                attentionLedgerRecoveredFromInvalidState = attentionDiagnostics.loadRecoveredFromInvalidState,
             )
         }
         val plan = container.manageStudyPlan.observePlan(planId).first()
@@ -208,6 +215,12 @@ private class AndroidReminderLabInspectOperation(
                 message = ReminderLabMessage.PLAN_UNAVAILABLE,
                 inspectedAtEpochMillis = now,
                 apiLevel = Build.VERSION.SDK_INT,
+                attentionLedgerEntryCount = attentionDiagnostics.entryCount,
+                attentionLedgerActiveCount = attentionDiagnostics.activeCount,
+                attentionLedgerTerminalCount = attentionDiagnostics.terminalCount,
+                attentionLedgerSourceSequenceCount = attentionDiagnostics.sourceSequenceCount,
+                attentionLedgerLegacyAliasCount = attentionDiagnostics.legacyDeliveredAliasCount,
+                attentionLedgerRecoveredFromInvalidState = attentionDiagnostics.loadRecoveredFromInvalidState,
             )
         if (plan.status != StudyPlanStatus.ACTIVE) {
             return ReminderNotificationLabReport(
@@ -215,6 +228,12 @@ private class AndroidReminderLabInspectOperation(
                 message = ReminderLabMessage.PLAN_NOT_ACTIVE,
                 inspectedAtEpochMillis = now,
                 apiLevel = Build.VERSION.SDK_INT,
+                attentionLedgerEntryCount = attentionDiagnostics.entryCount,
+                attentionLedgerActiveCount = attentionDiagnostics.activeCount,
+                attentionLedgerTerminalCount = attentionDiagnostics.terminalCount,
+                attentionLedgerSourceSequenceCount = attentionDiagnostics.sourceSequenceCount,
+                attentionLedgerLegacyAliasCount = attentionDiagnostics.legacyDeliveredAliasCount,
+                attentionLedgerRecoveredFromInvalidState = attentionDiagnostics.loadRecoveredFromInvalidState,
             )
         }
         val settings = requireNotNull(container.manageStudyPlan.observeSettings(planId)
@@ -311,6 +330,12 @@ private class AndroidReminderLabInspectOperation(
             message = message,
             inspectedAtEpochMillis = now,
             apiLevel = Build.VERSION.SDK_INT,
+            attentionLedgerEntryCount = attentionDiagnostics.entryCount,
+            attentionLedgerActiveCount = attentionDiagnostics.activeCount,
+            attentionLedgerTerminalCount = attentionDiagnostics.terminalCount,
+            attentionLedgerSourceSequenceCount = attentionDiagnostics.sourceSequenceCount,
+            attentionLedgerLegacyAliasCount = attentionDiagnostics.legacyDeliveredAliasCount,
+            attentionLedgerRecoveredFromInvalidState = attentionDiagnostics.loadRecoveredFromInvalidState,
             notificationsEnabled = appNotificationsEnabled,
             notificationPermissionGranted = permissionGranted,
             channelPresent = channel != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O,

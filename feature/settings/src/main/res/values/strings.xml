@@ -467,4 +467,11 @@
     <string name="tv_controller_settings_title">TV controller</string>
     <string name="tv_controller_settings_message">Find and pair a nearby StudyFlow TV, then use this phone as its remote control.</string>
     <string name="open_tv_controller">Open TV controller</string>
+    <string name="debug_reminder_lab_attention_title">Attention ledger</string>
+    <string name="debug_reminder_lab_attention_entries">Ledger entries: %1$d</string>
+    <string name="debug_reminder_lab_attention_active">Active occurrences: %1$d</string>
+    <string name="debug_reminder_lab_attention_terminal">Terminal occurrences: %1$d</string>
+    <string name="debug_reminder_lab_attention_sources">Tracked source sequences: %1$d</string>
+    <string name="debug_reminder_lab_attention_legacy_aliases">Legacy delivered aliases: %1$d</string>
+    <string name="debug_reminder_lab_attention_recovered">Recovered invalid attention state</string>
 </resources>

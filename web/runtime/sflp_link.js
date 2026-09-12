@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
+exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
 exports.installStudyFlowWebSflpPeer = installStudyFlowWebSflpPeer;
 const presence_js_1 = require("./presence.js");
 const STORAGE_KEY = "studyflow.sflp.web.peer.v1";
@@ -214,31 +214,165 @@ class StudyFlowControlInputRuntime {
     }
 }
 exports.StudyFlowControlInputRuntime = StudyFlowControlInputRuntime;
+class StudyFlowMemoryAttentionLedgerStorage {
+    constructor(initialEncodedSnapshot = null) { this.encoded = initialEncodedSnapshot; }
+    readEncodedSnapshot() { return this.encoded; }
+    writeEncodedSnapshot(encoded) { this.encoded = encoded; }
+}
+exports.StudyFlowMemoryAttentionLedgerStorage = StudyFlowMemoryAttentionLedgerStorage;
+class StudyFlowBrowserAttentionLedgerStorage {
+    constructor(key) {
+        this.key = key;
+        this.fallback = new StudyFlowMemoryAttentionLedgerStorage();
+    }
+    readEncodedSnapshot() {
+        var _a, _b;
+        try {
+            return (_b = (_a = globalThis.localStorage) === null || _a === void 0 ? void 0 : _a.getItem(this.key)) !== null && _b !== void 0 ? _b : this.fallback.readEncodedSnapshot();
+        }
+        catch {
+            return this.fallback.readEncodedSnapshot();
+        }
+    }
+    writeEncodedSnapshot(encoded) {
+        try {
+            if (globalThis.localStorage)
+                globalThis.localStorage.setItem(this.key, encoded);
+            else
+                this.fallback.writeEncodedSnapshot(encoded);
+        }
+        catch {
+            this.fallback.writeEncodedSnapshot(encoded);
+        }
+    }
+}
+exports.StudyFlowBrowserAttentionLedgerStorage = StudyFlowBrowserAttentionLedgerStorage;
+function emptyAttentionLedger() {
+    return { schemaVersion: 1, entries: [], lastSequenceBySource: {}, legacyDeliveredOccurrenceIds: [] };
+}
+function validAttentionLedger(value) {
+    var _a;
+    if (!value || typeof value !== 'object')
+        return false;
+    const candidate = value;
+    return candidate.schemaVersion === 1 && Array.isArray(candidate.entries) &&
+        !!candidate.lastSequenceBySource && typeof candidate.lastSequenceBySource === 'object' &&
+        Array.isArray((_a = candidate.legacyDeliveredOccurrenceIds) !== null && _a !== void 0 ? _a : []);
+}
+function stableAttentionOccurrenceId(parts) {
+    const readable = parts.join(':').replace(/[^A-Za-z0-9._:-]/g, '-');
+    if (readable.length > 0 && readable.length <= 128)
+        return readable;
+    let hash = 2166136261;
+    for (const char of parts.join('\u001f')) {
+        hash ^= char.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    return `attn-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
 class StudyFlowNotificationMediaRuntime {
-    constructor(peer) {
+    constructor(peer, attentionStorage = new StudyFlowBrowserAttentionLedgerStorage(`studyflow.attention.v1.${peer.deviceId}`)) {
         this.peer = peer;
-        this.notifications = new Map();
-        this.lastNotificationSequence = new Map();
+        this.attentionStorage = attentionStorage;
         this.materialStreams = new Map();
         this.materialChunks = new Map();
+        this.attentionLedger = this.loadAttentionLedger();
     }
     applyNotificationDelivery(delivery) {
-        var _a;
+        var _a, _b, _c;
         if (delivery.targetDeviceId !== this.peer.deviceId)
             return { status: 'rejected', reason: 'wrong_target' };
         if (delivery.notification.expiresAtEpochMillis < Date.now())
             return { status: 'expired', reason: 'expired' };
-        if (this.notifications.has(delivery.notification.notificationId))
+        const occurrence = (_a = delivery.notification.attentionOccurrence) !== null && _a !== void 0 ? _a : this.legacyNotificationOccurrence(delivery);
+        const existing = this.attentionLedger.entries.find(entry => entry.occurrence.occurrenceId === occurrence.occurrenceId);
+        if (existing && !['planned', 'scheduled', 'delivery_pending'].includes(existing.state)) {
             return { status: 'duplicate', acknowledgedSequence: delivery.sequence };
-        const last = (_a = this.lastNotificationSequence.get(delivery.sourceDeviceId)) !== null && _a !== void 0 ? _a : 0;
+        }
+        if (this.attentionLedger.legacyDeliveredOccurrenceIds.includes(occurrence.occurrenceId)) {
+            return { status: 'duplicate', acknowledgedSequence: delivery.sequence };
+        }
+        const last = (_b = this.attentionLedger.lastSequenceBySource[delivery.sourceDeviceId]) !== null && _b !== void 0 ? _b : 0;
         if (delivery.sequence <= last)
             return { status: 'rejected', reason: 'stale_sequence' };
-        this.lastNotificationSequence.set(delivery.sourceDeviceId, delivery.sequence);
-        this.notifications.set(delivery.notification.notificationId, delivery.notification);
+        const now = Date.now();
+        const entry = {
+            occurrence,
+            state: 'delivered',
+            updatedAtEpochMillis: now,
+            deliveredAtEpochMillis: now,
+            sourceDeviceId: delivery.sourceDeviceId,
+            targetDeviceId: delivery.targetDeviceId,
+            sequence: delivery.sequence,
+            deliveryAttempts: ((_c = existing === null || existing === void 0 ? void 0 : existing.deliveryAttempts) !== null && _c !== void 0 ? _c : 0) + 1,
+        };
+        this.attentionLedger = {
+            ...this.attentionLedger,
+            entries: [...this.attentionLedger.entries.filter(value => value.occurrence.occurrenceId !== occurrence.occurrenceId), entry].slice(-512),
+            lastSequenceBySource: { ...this.attentionLedger.lastSequenceBySource, [delivery.sourceDeviceId]: delivery.sequence },
+        };
+        this.persistAttentionLedger();
         return { status: 'accepted', acknowledgedSequence: delivery.sequence };
     }
     scheduleChangeOperation(change) {
-        return { operationId: `op-${change.changeId}`, workspaceId: change.workspaceId, originDeviceId: change.sourceDeviceId, originSequence: change.sequence, entityId: change.scheduleEntityId, operationType: change.changeKind === 'reminder_cancelled' ? 'schedule.reminder_cancelled' : 'schedule.reminder_upserted', payload: { notificationScheduleSync: 'sflp18', changeKind: change.changeKind } };
+        const operationType = change.changeKind === 'reminder_cancelled'
+            ? 'schedule.reminder_cancelled'
+            : change.changeKind === 'activity_moved'
+                ? 'schedule.activity_moved'
+                : change.changeKind === 'quiet_hours_changed'
+                    ? 'notification.quiet_hours_changed'
+                    : change.changeKind === 'notification_policy_changed'
+                        ? 'notification.policy_changed'
+                        : 'schedule.reminder_upserted';
+        return {
+            operationId: `op-${change.changeId}`,
+            workspaceId: change.workspaceId,
+            originDeviceId: change.sourceDeviceId,
+            originSequence: change.sequence,
+            entityId: change.scheduleEntityId,
+            operationType,
+            payload: {
+                notificationScheduleSync: 'sflp18',
+                attentionSchema: 'v1',
+                changeKind: change.changeKind,
+                scheduleSyncId: change.changeId,
+                attentionScheduleChange: { ...change },
+            },
+        };
+    }
+    canonicalScheduleOccurrence(change) {
+        if (change.attentionOccurrence)
+            return change.attentionOccurrence;
+        if (change.reminderAtEpochMillis === undefined)
+            return null;
+        return {
+            occurrenceId: stableAttentionOccurrenceId(['schedule', change.scheduleEntityId, String(change.reminderAtEpochMillis)]),
+            workspaceId: change.workspaceId,
+            scheduleEntityId: change.scheduleEntityId,
+            category: 'planned_study',
+            priority: 'normal',
+            scheduledAtEpochMillis: change.reminderAtEpochMillis,
+            originalScheduledAtEpochMillis: change.reminderAtEpochMillis,
+            quietHours: change.quietHoursStartMinute !== undefined && change.quietHoursEndMinute !== undefined
+                ? { startMinute: change.quietHoursStartMinute, endMinute: change.quietHoursEndMinute }
+                : undefined,
+            deliveryPolicy: 'active_then_primary',
+            sourceDeviceId: change.sourceDeviceId,
+            payload: change.payload,
+        };
+    }
+    attentionDiagnostics() {
+        const terminal = new Set(['completed', 'dismissed', 'expired', 'cancelled']);
+        const terminalCount = this.attentionLedger.entries.filter(entry => terminal.has(entry.state)).length;
+        return {
+            schemaVersion: this.attentionLedger.schemaVersion,
+            entryCount: this.attentionLedger.entries.length,
+            activeCount: this.attentionLedger.entries.length - terminalCount,
+            terminalCount,
+            sourceSequenceCount: Object.keys(this.attentionLedger.lastSequenceBySource).length,
+            legacyDeliveredAliasCount: this.attentionLedger.legacyDeliveredOccurrenceIds.length,
+            lastUpdatedAtEpochMillis: this.attentionLedger.entries.reduce((latest, entry) => latest === null ? entry.updatedAtEpochMillis : Math.max(latest, entry.updatedAtEpochMillis), null),
+        };
     }
     acceptMaterialStream(offer) {
         if (offer.expiresAtEpochMillis < Date.now())
@@ -269,6 +403,46 @@ class StudyFlowNotificationMediaRuntime {
         chunks.add(chunk.chunkIndex);
         this.materialChunks.set(chunk.streamId, chunks);
         return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex };
+    }
+    legacyNotificationOccurrence(delivery) {
+        var _a, _b, _c, _d, _e, _f;
+        const workspaceId = (_b = (_a = delivery.notification.route) === null || _a === void 0 ? void 0 : _a.workspaceId) !== null && _b !== void 0 ? _b : 'workspace-main';
+        const category = delivery.notification.kind === 'review_due'
+            ? 'due_review'
+            : delivery.notification.kind === 'study_due'
+                ? 'planned_study'
+                : delivery.notification.kind === 'session_resume'
+                    ? 'session_ending'
+                    : 'sync_attention';
+        return {
+            occurrenceId: stableAttentionOccurrenceId(['notification', delivery.notification.notificationId]),
+            workspaceId,
+            scheduleEntityId: delivery.notification.scheduleActivityId,
+            category,
+            priority: 'normal',
+            scheduledAtEpochMillis: (_d = (_c = delivery.notification.dueAtEpochMillis) !== null && _c !== void 0 ? _c : delivery.notification.createdAtEpochMillis) !== null && _d !== void 0 ? _d : Date.now(),
+            originalScheduledAtEpochMillis: (_f = (_e = delivery.notification.dueAtEpochMillis) !== null && _e !== void 0 ? _e : delivery.notification.createdAtEpochMillis) !== null && _f !== void 0 ? _f : Date.now(),
+            expiresAtEpochMillis: delivery.notification.expiresAtEpochMillis,
+            deliveryPolicy: 'active_then_primary',
+            sourceDeviceId: delivery.sourceDeviceId,
+            targetDeviceIds: [delivery.targetDeviceId],
+            payload: delivery.notification.payload,
+        };
+    }
+    loadAttentionLedger() {
+        const encoded = this.attentionStorage.readEncodedSnapshot();
+        if (!encoded)
+            return emptyAttentionLedger();
+        try {
+            const decoded = JSON.parse(encoded);
+            return validAttentionLedger(decoded) ? decoded : emptyAttentionLedger();
+        }
+        catch {
+            return emptyAttentionLedger();
+        }
+    }
+    persistAttentionLedger() {
+        this.attentionStorage.writeEncodedSnapshot(JSON.stringify(this.attentionLedger));
     }
 }
 exports.StudyFlowNotificationMediaRuntime = StudyFlowNotificationMediaRuntime;

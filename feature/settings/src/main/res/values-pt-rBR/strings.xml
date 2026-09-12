@@ -472,4 +472,11 @@
     <string name="tv_controller_settings_title">Controle da TV</string>
     <string name="tv_controller_settings_message">Encontre e pareie uma StudyFlow TV próxima e use este celular como controle remoto.</string>
     <string name="open_tv_controller">Abrir controle da TV</string>
+    <string name="debug_reminder_lab_attention_title">Registro de atenção</string>
+    <string name="debug_reminder_lab_attention_entries">Entradas no registro: %1$d</string>
+    <string name="debug_reminder_lab_attention_active">Ocorrências ativas: %1$d</string>
+    <string name="debug_reminder_lab_attention_terminal">Ocorrências finalizadas: %1$d</string>
+    <string name="debug_reminder_lab_attention_sources">Sequências de origem rastreadas: %1$d</string>
+    <string name="debug_reminder_lab_attention_legacy_aliases">Aliases legados entregues: %1$d</string>
+    <string name="debug_reminder_lab_attention_recovered">Estado de atenção inválido recuperado</string>
 </resources>

@@ -1993,3 +1993,37 @@ tasks.register<Exec>("verifyStudyFlowTvDevtoolAndroidRunner") {
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_tv_devtool_android_runner.py")
 }
+
+// ATT01 — Unified Attention Domain + SFLP Correctness Foundation
+tasks.register<Exec>("verifyAtt01AttentionContracts") {
+    group = "verification"
+    description = "Checks ATT01 attention-domain, SFLP compatibility, persistence, migration, diagnostics, and documentation contracts."
+    commandLine("python3", "scripts/verify_att01_unified_attention_foundation.py")
+}
+
+tasks.register<Exec>("verifyAtt01WebAttentionRuntime") {
+    group = "verification"
+    description = "Checks ATT01 Web attention TypeScript parity and durable runtime behavior."
+    workingDir(rootProject.file("web"))
+    commandLine(
+        "bash",
+        "-lc",
+        "npx tsc -p tsconfig.json --noEmit --pretty false && " +
+            "node scripts/compile_runtime.mjs && " +
+            "python3 -m unittest tests.test_att01_attention_runtime tests.test_sflp18_19_notification_media",
+    )
+}
+
+tasks.register("verifyAtt01UnifiedAttentionFoundation") {
+    group = "verification"
+    description = "Focused ATT01 production gate across shared, Android, Desktop, Web, and Android TV attention foundations."
+    dependsOn(
+        "verifyAtt01AttentionContracts",
+        "verifyAtt01WebAttentionRuntime",
+        ":core:link:test",
+        ":core:diagnostics:test",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+        ":app-tv:testDebugUnitTest",
+    )
+}
