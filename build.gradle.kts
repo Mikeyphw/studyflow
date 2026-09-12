@@ -2027,3 +2027,23 @@ tasks.register("verifyAtt01UnifiedAttentionFoundation") {
         ":app-tv:testDebugUnitTest",
     )
 }
+
+// ATT02 — Android Attention System 2.0
+tasks.register<Exec>("verifyAtt02AndroidAttentionContracts") {
+    group = "verification"
+    description = "Checks ATT02 Android policy, scheduling, channels, actions, recovery, reliability, diagnostics, tests and documentation contracts."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att02_android_attention_system.py")
+}
+
+tasks.register("verifyAtt02AndroidAttentionSystem") {
+    group = "verification"
+    description = "Focused ATT02 production gate for the complete Android attention system slice."
+    dependsOn(
+        "verifyAtt02AndroidAttentionContracts",
+        ":core:domain:test",
+        ":feature:reminders:testDebugUnitTest",
+        ":feature:settings:testDebugUnitTest",
+        ":app:testReleaseUnitTest",
+    )
+}

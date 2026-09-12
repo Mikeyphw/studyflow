@@ -46,7 +46,15 @@ class StudyReminderPlannerPhase25Test {
         )
 
         assertTrue(result.quietHoursActive)
-        assertEquals(ReminderNotificationType.entries.toSet(), result.notificationCandidates.map { it.type }.toSet())
+        assertEquals(
+            setOf(
+                ReminderNotificationType.DUE_REVIEWS,
+                ReminderNotificationType.PLANNED_ACTIVITY,
+                ReminderNotificationType.MISSED_ACTIVITY,
+                ReminderNotificationType.DAILY_SUMMARY,
+            ),
+            result.notificationCandidates.map { it.type }.toSet(),
+        )
         assertTrue(result.notificationCandidates.any { it.delayedByQuietHours })
         assertTrue(result.notificationCandidates.all { it.fireAtEpochMillis >= it.scheduledAtEpochMillis })
         assertEquals(result.notificationCandidates.size, result.activeCandidateCount)

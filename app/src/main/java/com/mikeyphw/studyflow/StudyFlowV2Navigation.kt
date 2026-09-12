@@ -162,15 +162,26 @@ internal fun StudyFlowV2Navigation(
             onReminderLaunchConsumed()
             return@LaunchedEffect
         }
-        when (launch.type) {
-            ReminderNotificationType.DUE_REVIEWS -> navController.navigate(
-                PracticeWorkspaceRoute(plan.id.value, PracticeWorkspaceTab.REVIEWS),
-            )
-            ReminderNotificationType.PLANNED_ACTIVITY,
-            ReminderNotificationType.MISSED_ACTIVITY -> navController.navigate(
-                PlanWorkspaceRoute(plan.id.value, PlanWorkspaceTab.SCHEDULE),
-            )
-            ReminderNotificationType.DAILY_SUMMARY -> navController.navigate(TodayRoute(plan.id.value))
+        if (launch.sessionId != null) {
+            navController.navigate(FocusSessionRoute(plan.id.value, launch.sessionId))
+        } else {
+            when (launch.type) {
+                ReminderNotificationType.DUE_REVIEWS -> navController.navigate(
+                    PracticeWorkspaceRoute(plan.id.value, PracticeWorkspaceTab.REVIEWS),
+                )
+                ReminderNotificationType.PLANNED_ACTIVITY,
+                ReminderNotificationType.MISSED_ACTIVITY -> navController.navigate(
+                    PlanWorkspaceRoute(
+                        planId = plan.id.value,
+                        tab = PlanWorkspaceTab.SCHEDULE,
+                        targetId = launch.targetId,
+                    ),
+                )
+                ReminderNotificationType.DAILY_SUMMARY -> navController.navigate(TodayRoute(plan.id.value))
+                ReminderNotificationType.SESSION_ENDING,
+                ReminderNotificationType.SESSION_COMPLETED -> navController.navigate(SessionsRoute(plan.id.value))
+                ReminderNotificationType.EXAM_COUNTDOWN -> navController.navigate(ProgressWorkspaceRoute(plan.id.value))
+            }
         }
         onReminderLaunchConsumed()
     }

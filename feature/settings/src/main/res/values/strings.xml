@@ -286,6 +286,9 @@
     <string name="debug_reminder_candidate_planned_activity">Planned activity</string>
     <string name="debug_reminder_candidate_missed_activity">Missed activity</string>
     <string name="debug_reminder_candidate_daily_summary">Daily summary</string>
+    <string name="debug_reminder_candidate_session_ending">Session ending</string>
+    <string name="debug_reminder_candidate_session_completed">Session completed</string>
+    <string name="debug_reminder_candidate_exam_countdown">Exam countdown</string>
     <string name="debug_database_lab_title">Database health lab</string>
     <string name="debug_database_lab_message">Runs read-only SQLite integrity and schema evidence against StudyFlow’s app-private database.</string>
     <string name="debug_database_lab_inspect">Inspect database</string>
@@ -474,4 +477,10 @@
     <string name="debug_reminder_lab_attention_sources">Tracked source sequences: %1$d</string>
     <string name="debug_reminder_lab_attention_legacy_aliases">Legacy delivered aliases: %1$d</string>
     <string name="debug_reminder_lab_attention_recovered">Recovered invalid attention state</string>
+    <string name="debug_reminder_lab_channel_count">Reminder channels: %1$d</string>
+    <string name="debug_reminder_lab_blocked_channel_count">Blocked reminder channels: %1$d</string>
+    <string name="debug_reminder_lab_exact_alarm_capability">Exact-alarm capability available</string>
+    <string name="debug_reminder_lab_last_reconciled">Last reconciled: %1$s</string>
+    <string name="debug_reminder_lab_last_delivered">Last delivered: %1$s</string>
+    <string name="debug_reminder_lab_last_recovery_reason">Last recovery trigger: %1$s</string>
 </resources>

@@ -48,6 +48,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".reminders.StudyReminderActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".reminders.StudyReminderBootReceiver"
             android:exported="false">
             <intent-filter>

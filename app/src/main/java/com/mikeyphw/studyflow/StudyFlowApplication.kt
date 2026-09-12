@@ -54,6 +54,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -147,6 +150,7 @@ private class DefaultAppContainer(
     override val initializationState: StateFlow<AppInitializationState> = _initializationState.asStateFlow()
     private var initializationJob: Job? = null
     private var widgetInvalidationJob: Job? = null
+    private var reminderInvalidationJob: Job? = null
     private val dataLayer = createStudyFlowDataLayer(
         context = application,
         applicationVersion = BuildConfig.VERSION_NAME,
@@ -186,15 +190,17 @@ private class DefaultAppContainer(
         }
     }
 
+    override val attentionLedger = StudyFlowAttentionLedger(
+        AndroidStudyFlowAttentionLedgerStorage(application),
+    )
     override val reminderDeliveryCoordinator = StudyReminderDeliveryCoordinator(
         context = application,
         studyPlanRepository = studyPlanRepository,
         studyScheduleRepository = studyScheduleRepository,
         studyReviewRepository = studyReviewRepository,
         studyPracticeRepository = studyPracticeRepository,
-    )
-    override val attentionLedger = StudyFlowAttentionLedger(
-        AndroidStudyFlowAttentionLedgerStorage(application),
+        studySessionRepository = studySessionRepository,
+        attentionLedger = attentionLedger,
     )
     override val createStudyPlan = CreateStudyPlan(studyPlanRepository)
     override val samplePlanProvisioner = SamplePlanProvisioner(
@@ -310,6 +316,37 @@ private class DefaultAppContainer(
     }
 
 
+    @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
+    private fun startReminderInvalidationObserver() {
+        if (reminderInvalidationJob?.isActive == true) return
+        reminderInvalidationJob = applicationScope.launch {
+            manageStudyPlan.plans
+                .distinctUntilChanged()
+                .flatMapLatest { plans ->
+                    val activePlans = plans.filter { plan ->
+                        plan.status !in setOf(
+                            com.mikeyphw.studyflow.core.model.StudyPlanStatus.ARCHIVED,
+                            com.mikeyphw.studyflow.core.model.StudyPlanStatus.TRASHED,
+                            com.mikeyphw.studyflow.core.model.StudyPlanStatus.COMPLETED,
+                        )
+                    }
+                    val flows = activePlans.flatMap { plan ->
+                        listOf(
+                            manageStudySchedule.observeSchedule(plan.id).map { Unit },
+                            manageStudyReview.observeQueue(plan.id).map { Unit },
+                            manageStudySession.observeSessions(plan.id).map { Unit },
+                            manageStudyPlan.observeSettings(plan.id).map { Unit },
+                        )
+                    }
+                    if (flows.isEmpty()) flowOf(Unit) else merge(*flows.toTypedArray())
+                }
+                .debounce(500)
+                .collect {
+                    runCatching { reminderDeliveryCoordinator.reconcileAll("domain-change") }
+                }
+        }
+    }
+
     private suspend fun migrateLegacyReminderStateToAttentionLedger() {
         val occurrenceStore = StudyReminderOccurrenceStore(application)
         val now = System.currentTimeMillis()
@@ -331,6 +368,12 @@ private class DefaultAppContainer(
                                 StudyFlowAttentionCategory.MISSED_ACTIVITY
                             com.mikeyphw.studyflow.core.domain.ReminderNotificationType.DAILY_SUMMARY ->
                                 StudyFlowAttentionCategory.DAILY_SUMMARY
+                            com.mikeyphw.studyflow.core.domain.ReminderNotificationType.SESSION_ENDING ->
+                                StudyFlowAttentionCategory.SESSION_ENDING
+                            com.mikeyphw.studyflow.core.domain.ReminderNotificationType.SESSION_COMPLETED ->
+                                StudyFlowAttentionCategory.SESSION_COMPLETED
+                            com.mikeyphw.studyflow.core.domain.ReminderNotificationType.EXAM_COUNTDOWN ->
+                                StudyFlowAttentionCategory.EXAM_COUNTDOWN
                         },
                         scheduledAtEpochMillis = scheduled.fireAtEpochMillis,
                         originalScheduledAtEpochMillis = scheduled.scheduledAtEpochMillis,
@@ -378,6 +421,7 @@ private class DefaultAppContainer(
                 }
                 _initializationState.value = AppInitializationState.Ready
                 startWidgetInvalidationObserver()
+                startReminderInvalidationObserver()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {

@@ -11,14 +11,7 @@ import com.mikeyphw.studyflow.StudyReminderLaunch
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 
-/**
- * Non-exported trampoline used by reminder/widget PendingIntents.
- *
- * The exported launcher never accepts routing extras. Android delivers the immutable PendingIntent
- * to this component, which validates the internal payload and hands it to the process-local store
- * before foregrounding [MainActivity].
- */
-// This is an internal PendingIntent trampoline, not an app launch/splash screen.
+/** Internal immutable-PendingIntent trampoline for precise StudyFlow reminder routing. */
 @SuppressLint("CustomSplashScreen")
 class StudyReminderLaunchActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,9 +33,7 @@ internal object StudyReminderLaunchStore {
     private val lock = Any()
     private var pending: StudyReminderLaunch? = null
 
-    fun publish(launch: StudyReminderLaunch) = synchronized(lock) {
-        pending = launch
-    }
+    fun publish(launch: StudyReminderLaunch) = synchronized(lock) { pending = launch }
 
     fun consume(): StudyReminderLaunch? = synchronized(lock) {
         val launch = pending
@@ -56,11 +47,15 @@ internal fun studyReminderOpenIntent(
     planId: StudyPlanId,
     type: ReminderNotificationType,
     identity: Uri,
+    targetId: String? = null,
+    sessionId: String? = null,
 ): Intent = Intent(context.applicationContext, StudyReminderLaunchActivity::class.java).apply {
     data = identity
     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     putExtra(StudyReminderExtraPlanId, planId.value)
     putExtra(StudyReminderExtraType, type.name)
+    putExtra(StudyReminderExtraTargetId, targetId)
+    putExtra(StudyReminderExtraSessionId, sessionId)
 }
 
 private fun Intent.toStudyReminderLaunch(): StudyReminderLaunch? {
@@ -68,5 +63,10 @@ private fun Intent.toStudyReminderLaunch(): StudyReminderLaunch? {
     val type = getStringExtra(StudyReminderExtraType)
         ?.let { raw -> enumValues<ReminderNotificationType>().firstOrNull { it.name == raw } }
         ?: return null
-    return StudyReminderLaunch(planId = planId, type = type)
+    return StudyReminderLaunch(
+        planId = planId,
+        type = type,
+        targetId = getStringExtra(StudyReminderExtraTargetId)?.takeIf(String::isNotBlank),
+        sessionId = getStringExtra(StudyReminderExtraSessionId)?.takeIf(String::isNotBlank),
+    )
 }

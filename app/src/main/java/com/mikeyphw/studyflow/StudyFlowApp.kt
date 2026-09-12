@@ -135,6 +135,7 @@ import com.mikeyphw.studyflow.core.navigation.TodayRoute
 import com.mikeyphw.studyflow.core.navigation.TvControllerRoute
 import com.mikeyphw.studyflow.core.domain.RuntimeSmokeWorkbench
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
+import com.mikeyphw.studyflow.core.domain.StudyReminderPolicy
 import com.mikeyphw.studyflow.core.model.RuntimeSmokeProbeKind
 import com.mikeyphw.studyflow.feature.analytics.StudyAnalyticsScreen
 import com.mikeyphw.studyflow.feature.dashboard.DashboardScreen
@@ -735,21 +736,44 @@ internal fun StudyFlowNavHost(
             val planId = remember(route.planId) { StudyPlanId(route.planId) }
             LoadedPlanDestination(container = container, planId = planId) { currentPlan ->
                 LoadedPlanSettingsDestination(container = container, planId = planId) { settings ->
+                    var reminderPolicy by remember(planId, settings.reviewNotificationsEnabled) {
+                        mutableStateOf(StudyReminderPolicy.fromLegacy(settings))
+                    }
+                    var reliabilityRefresh by remember(planId) { mutableIntStateOf(0) }
+                    LaunchedEffect(planId, settings.reviewNotificationsEnabled) {
+                        reminderPolicy = container.reminderDeliveryCoordinator.policyFor(planId)
+                        reliabilityRefresh += 1
+                    }
+                    val runtimeEvidence = remember(planId, reliabilityRefresh) {
+                        container.reminderDeliveryCoordinator.runtimeEvidence()
+                    }
                     StudyRemindersScreen(
                         plan = currentPlan,
                         settings = settings,
+                        reminderPolicy = reminderPolicy,
+                        runtimeEvidence = runtimeEvidence,
                         schedule = container.manageStudySchedule,
                         review = container.manageStudyReview,
-                        onSettingsChanged = { updatedSettings ->
+                        sessions = container.manageStudySession,
+                        onReminderSettingsChanged = { updatedSettings, updatedPolicy ->
+                            reminderPolicy = updatedPolicy
                             coroutineScope.launch {
                                 container.manageStudyPlan.updateSettings(updatedSettings)
-                                container.reminderDeliveryCoordinator.reconcilePlan(updatedSettings.studyPlanId)
+                                container.reminderDeliveryCoordinator.updatePolicy(updatedSettings.studyPlanId, updatedPolicy)
+                                reliabilityRefresh += 1
+                            }
+                        },
+                        onRefreshReliability = {
+                            coroutineScope.launch {
+                                container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id, "reliability-refresh")
+                                reliabilityRefresh += 1
                             }
                         },
                         onNotificationPermissionResult = { granted ->
                             if (granted) {
                                 coroutineScope.launch {
-                                    container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id)
+                                    container.reminderDeliveryCoordinator.reconcilePlan(currentPlan.id, "notification-permission-granted")
+                                    reliabilityRefresh += 1
                                 }
                             }
                         },

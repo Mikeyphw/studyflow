@@ -113,6 +113,9 @@ class StudyFlowTodayWidgetProvider : AppWidgetProvider() {
                 ReminderNotificationType.PLANNED_ACTIVITY -> R.string.widget_action_next_block
                 ReminderNotificationType.MISSED_ACTIVITY -> R.string.widget_action_recover
                 ReminderNotificationType.DAILY_SUMMARY -> R.string.widget_action_today
+                ReminderNotificationType.SESSION_ENDING,
+                ReminderNotificationType.SESSION_COMPLETED -> R.string.widget_action_session
+                ReminderNotificationType.EXAM_COUNTDOWN -> R.string.widget_action_progress
             },
         )
 

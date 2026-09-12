@@ -101,10 +101,22 @@ fun ReminderNotificationLabPanel(
                     Text(booleanFact(R.string.debug_reminder_lab_notifications_enabled, report.notificationsEnabled))
                     Text(booleanFact(R.string.debug_reminder_lab_channel_present, report.channelPresent))
                     Text(booleanFact(R.string.debug_reminder_lab_channel_blocked, report.channelBlocked))
+                    Text(stringResource(R.string.debug_reminder_lab_channel_count, report.channelCount))
+                    Text(stringResource(R.string.debug_reminder_lab_blocked_channel_count, report.blockedChannelCount))
+                    Text(booleanFact(R.string.debug_reminder_lab_exact_alarm_capability, report.exactAlarmCapabilityAvailable))
                     Text(booleanFact(R.string.debug_reminder_lab_reminders_enabled, report.remindersEnabled))
                     Text(booleanFact(R.string.debug_reminder_lab_quiet_hours, report.quietHoursActive))
                     report.channelImportance?.let { importance ->
                         Text(stringResource(R.string.debug_reminder_lab_importance, importance))
+                    }
+                    report.lastReconciledAtEpochMillis?.let { at ->
+                        Text(stringResource(R.string.debug_reminder_lab_last_reconciled, DateFormat.getDateTimeInstance().format(Date(at))))
+                    }
+                    report.lastDeliveredAtEpochMillis?.let { at ->
+                        Text(stringResource(R.string.debug_reminder_lab_last_delivered, DateFormat.getDateTimeInstance().format(Date(at))))
+                    }
+                    report.lastRecoveryReason?.let { reason ->
+                        Text(stringResource(R.string.debug_reminder_lab_last_recovery_reason, reason))
                     }
                 }
             }
@@ -211,5 +223,8 @@ private fun ReminderCandidateKind.label(): String = stringResource(
         ReminderCandidateKind.PLANNED_ACTIVITY -> R.string.debug_reminder_candidate_planned_activity
         ReminderCandidateKind.MISSED_ACTIVITY -> R.string.debug_reminder_candidate_missed_activity
         ReminderCandidateKind.DAILY_SUMMARY -> R.string.debug_reminder_candidate_daily_summary
+        ReminderCandidateKind.SESSION_ENDING -> R.string.debug_reminder_candidate_session_ending
+        ReminderCandidateKind.SESSION_COMPLETED -> R.string.debug_reminder_candidate_session_completed
+        ReminderCandidateKind.EXAM_COUNTDOWN -> R.string.debug_reminder_candidate_exam_countdown
     },
 )

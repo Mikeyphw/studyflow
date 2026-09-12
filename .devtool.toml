@@ -57,6 +57,7 @@ test = [
     "verifySflp16Sflp17ControlInputDelegation",
     "verifySflp18Sflp19NotificationMediaSync",
     "verifyAtt01UnifiedAttentionFoundation",
+    "verifyAtt02AndroidAttentionSystem",
     "verifySflp20Sflp21ShareImportConflict",
     "verifySflp22Sflp23AccountBackupValidation",
     "verifySflp24FinalReleaseSeal",

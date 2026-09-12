@@ -41,6 +41,9 @@ enum class ReminderCandidateKind {
     PLANNED_ACTIVITY,
     MISSED_ACTIVITY,
     DAILY_SUMMARY,
+    SESSION_ENDING,
+    SESSION_COMPLETED,
+    EXAM_COUNTDOWN,
 }
 
 data class ReminderCandidateDiagnostic(
@@ -76,6 +79,13 @@ data class ReminderNotificationLabReport(
     val channelPresent: Boolean = false,
     val channelBlocked: Boolean = false,
     val channelImportance: Int? = null,
+    val channelCount: Int = 0,
+    val blockedChannelCount: Int = 0,
+    val exactAlarmCapabilityAvailable: Boolean = false,
+    val lastReconciledAtEpochMillis: Long? = null,
+    val lastDeliveredAtEpochMillis: Long? = null,
+    val lastDeliveredOccurrenceId: String? = null,
+    val lastRecoveryReason: String? = null,
     val remindersEnabled: Boolean = false,
     val quietHoursActive: Boolean = false,
     val exactAlarmUsed: Boolean = false,
@@ -99,6 +109,10 @@ data class ReminderNotificationLabReport(
         require(attentionLedgerTerminalCount >= 0)
         require(attentionLedgerSourceSequenceCount >= 0)
         require(attentionLedgerLegacyAliasCount >= 0)
+        require(channelCount >= 0)
+        require(blockedChannelCount in 0..channelCount)
+        require(lastReconciledAtEpochMillis == null || lastReconciledAtEpochMillis >= 0L)
+        require(lastDeliveredAtEpochMillis == null || lastDeliveredAtEpochMillis >= 0L)
         require(candidates.distinctBy(ReminderCandidateDiagnostic::kind).size == candidates.size)
     }
 

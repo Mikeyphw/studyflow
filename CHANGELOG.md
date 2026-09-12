@@ -1,5 +1,14 @@
 # Changelog
 
+## ATT02 — Android Attention System 2.0
+
+- Added independent Android reminder categories and configurable timing with an 08:00 daily-summary default.
+- Added study/review/session/summary channels, actionable notifications, session/exam reminders, exact-target deep links and break completion.
+- Added versioned per-plan policy migration, richer scheduled-occurrence persistence, ATT01 ledger lifecycle integration and permission-safe recovery.
+- Added app-resume and live domain reconciliation plus expanded Reliability Center / Debug Workbench evidence.
+- Hardened the ATT01 Web notification/media runtime regression contract so the durable attention-ledger schema marker survives TypeScript runtime generation.
+
+
 ## REL-FINAL Devtool Android release-runner hotfix
 
 - Added a dedicated `studyflow_release` Android Devtool target for the real signed release evidence campaign.

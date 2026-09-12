@@ -50,7 +50,7 @@ with this matrix, this matrix owns the current product-state description.
 | Optional provider sync | FULL | PLATFORM_SPECIFIC | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE |
 | English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | FULL | PLATFORM_SPECIFIC | LIMITED |
-| Native reminder/background delivery | FULL | MISSING | LIMITED | MISSING | MISSING |
+| Native reminder/background delivery | FULL (ATT02) | MISSING | LIMITED | MISSING | MISSING |
 | Home/widget-style glance surface | FULL | MISSING | LIMITED | MISSING | MISSING |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
@@ -190,6 +190,7 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Capability | Android | Desktop | Web | Android TV | Web TV |
 | --- | --- | --- | --- | --- | --- |
 | SFLP notification envelope acceptance | Send/receive | Send/receive | Send/receive | Receive/read-only | Receive/read-only |
+| Android ATT02 reminder delivery | Full native delivery/actions | Protocol only | Protocol only | Protocol only | Protocol only |
 | Durable ATT01 attention ledger | FULL | FULL | FULL | FULL | FULL (Web runtime) |
 | Schedule reminder sync | Read/write | Read/write | Read/write | Read-only | Read-only |
 | Material stream offer | Source/sink | Source/sink | Source/sink | Presentation sink only | Presentation sink only |

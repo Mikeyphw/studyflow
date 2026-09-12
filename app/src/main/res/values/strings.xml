@@ -102,4 +102,37 @@
     <string name="tv_controller_surface_schedule">Schedule</string>
     <string name="tv_controller_surface_library">Library</string>
     <string name="tv_controller_surface_settings">TV settings</string>
+
+    <!-- ATT02 Android Attention System 2.0 -->
+    <string name="notification_channel_study_schedule_name">Study schedule</string>
+    <string name="notification_channel_study_schedule_description">Upcoming and missed study-block reminders.</string>
+    <string name="notification_channel_reviews_name">Reviews</string>
+    <string name="notification_channel_reviews_description">Due review and practice reminders.</string>
+    <string name="notification_channel_session_timers_name">Session timers</string>
+    <string name="notification_channel_session_timers_description">Time-sensitive study-session ending and completion alerts.</string>
+    <string name="notification_channel_summaries_name">Summaries</string>
+    <string name="notification_channel_summaries_description">Daily summaries and exam countdowns.</string>
+    <string name="reminder_notification_session_ending_title">Session ending soon</string>
+    <string name="reminder_notification_session_ending_body">%1$s is approaching its target duration.</string>
+    <string name="reminder_notification_session_complete_title">Session target reached</string>
+    <string name="reminder_notification_session_complete_body">Your planned session time is complete. Finish, continue, or take a break.</string>
+    <plurals name="reminder_notification_exam_countdown_body">
+        <item quantity="one">Exam in %1$d day.</item>
+        <item quantity="other">Exam in %1$d days.</item>
+    </plurals>
+    <string name="reminder_action_review_now">Review now</string>
+    <string name="reminder_action_start_now">Start now</string>
+    <string name="reminder_action_snooze">Snooze</string>
+    <string name="reminder_action_reschedule">Reschedule</string>
+    <string name="reminder_action_mark_done">Mark done</string>
+    <string name="reminder_action_open_today">Open today</string>
+    <string name="reminder_action_continue">Continue</string>
+    <string name="reminder_action_finish_session">Finish</string>
+    <string name="reminder_action_start_break">Start break</string>
+    <string name="reminder_action_open_progress">Open progress</string>
+    <string name="widget_action_session">Session</string>
+    <string name="widget_action_progress">Progress</string>
+
+    <string name="reminder_notification_break_complete_title">Break complete</string>
+    <string name="reminder_notification_break_complete_body">Ready to continue studying?</string>
 </resources>

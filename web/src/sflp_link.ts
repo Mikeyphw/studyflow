@@ -276,6 +276,8 @@ export interface StudyFlowAttentionLedgerEntry {
   deliveryAttempts: number
 }
 
+export const StudyFlowAttentionLedgerSnapshotSchemaVersion = 1 as const
+
 export interface StudyFlowAttentionLedgerSnapshot {
   schemaVersion: number
   entries: StudyFlowAttentionLedgerEntry[]

@@ -6,12 +6,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.reminders.StudyReminderLaunchStore
 
 data class StudyReminderLaunch(
     val planId: String,
     val type: ReminderNotificationType,
+    val targetId: String? = null,
+    val sessionId: String? = null,
 )
 
 class MainActivity : AppCompatActivity() {
@@ -40,6 +44,14 @@ class MainActivity : AppCompatActivity() {
         reminderLaunch.value = StudyReminderLaunchStore.consume()
         if (intent.action == ACTION_OPEN_TV_CONTROLLER) tvControllerLaunchRequested.value = true
         setIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val app = application as? StudyFlowApplication ?: return
+        lifecycleScope.launch {
+            runCatching { app.container.reminderDeliveryCoordinator.reconcileAll("activity-resume") }
+        }
     }
 
     companion object {

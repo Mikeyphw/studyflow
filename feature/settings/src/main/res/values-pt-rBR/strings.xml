@@ -271,6 +271,9 @@
     <string name="debug_reminder_candidate_planned_activity">Atividade planejada</string>
     <string name="debug_reminder_candidate_missed_activity">Atividade perdida</string>
     <string name="debug_reminder_candidate_daily_summary">Resumo diário</string>
+    <string name="debug_reminder_candidate_session_ending">Sessão terminando</string>
+    <string name="debug_reminder_candidate_session_completed">Sessão concluída</string>
+    <string name="debug_reminder_candidate_exam_countdown">Contagem regressiva da prova</string>
     <string name="debug_database_lab_title">Laboratório de integridade do banco</string>
     <string name="debug_database_lab_message">Executa verificações SQLite somente leitura e evidências de esquema no banco privado do StudyFlow.</string>
     <string name="debug_database_lab_inspect">Inspecionar banco</string>
@@ -479,4 +482,10 @@
     <string name="debug_reminder_lab_attention_sources">Sequências de origem rastreadas: %1$d</string>
     <string name="debug_reminder_lab_attention_legacy_aliases">Aliases legados entregues: %1$d</string>
     <string name="debug_reminder_lab_attention_recovered">Estado de atenção inválido recuperado</string>
+    <string name="debug_reminder_lab_channel_count">Canais de lembrete: %1$d</string>
+    <string name="debug_reminder_lab_blocked_channel_count">Canais de lembrete bloqueados: %1$d</string>
+    <string name="debug_reminder_lab_exact_alarm_capability">Capacidade de alarme exato disponível</string>
+    <string name="debug_reminder_lab_last_reconciled">Última reconciliação: %1$s</string>
+    <string name="debug_reminder_lab_last_delivered">Última entrega: %1$s</string>
+    <string name="debug_reminder_lab_last_recovery_reason">Último gatilho de recuperação: %1$s</string>
 </resources>

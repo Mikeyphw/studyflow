@@ -23,7 +23,11 @@ import com.mikeyphw.studyflow.core.domain.StudyReminderInput
 import com.mikeyphw.studyflow.core.domain.StudyReminderPlanner
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
-import com.mikeyphw.studyflow.reminders.StudyReminderChannelId
+import com.mikeyphw.studyflow.reminders.StudyReminderScheduleChannelId
+import com.mikeyphw.studyflow.reminders.StudyReminderReviewsChannelId
+import com.mikeyphw.studyflow.reminders.StudyReminderSessionChannelId
+import com.mikeyphw.studyflow.reminders.StudyReminderSummaryChannelId
+import com.mikeyphw.studyflow.reminders.stableNotificationId
 import com.mikeyphw.studyflow.reminders.StudyReminderOccurrenceStore
 import com.mikeyphw.studyflow.reminders.studyReminderPendingIntentIdentityExists
 import java.util.Calendar
@@ -242,13 +246,21 @@ private class AndroidReminderLabInspectOperation(
         val reviewQueue = container.manageStudyReview.observeQueue(planId).first()
         val permissionGranted = notificationPermissionGranted(appContext)
         val appNotificationsEnabled = NotificationManagerCompat.from(appContext).areNotificationsEnabled()
-        val channel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            appContext.getSystemService(NotificationManager::class.java)
-                .getNotificationChannel(StudyReminderChannelId)
+        val channels = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = appContext.getSystemService(NotificationManager::class.java)
+            listOf(
+                manager.getNotificationChannel(StudyReminderScheduleChannelId),
+                manager.getNotificationChannel(StudyReminderReviewsChannelId),
+                manager.getNotificationChannel(StudyReminderSessionChannelId),
+                manager.getNotificationChannel(StudyReminderSummaryChannelId),
+            )
         } else {
-            null
+            emptyList()
         }
-        val channelImportance = notificationChannelImportance(channel)
+        val channelImportance = channels.mapNotNull(::notificationChannelImportance).minOrNull()
+        val blockedChannelCount = channels.count { notificationChannelImportance(it) == NotificationImportanceNone }
+        val runtimeStatus = container.reminderDeliveryCoordinator.runtimeStatus()
+        val platformCapability = container.reminderDeliveryCoordinator.platformCapability()
         val planResult = StudyReminderPlanner.buildPlan(
             StudyReminderInput(
                 plan = plan,
@@ -259,6 +271,8 @@ private class AndroidReminderLabInspectOperation(
                 minuteOfDay = currentMinuteOfDay(),
                 apiLevel = Build.VERSION.SDK_INT,
                 notificationPermissionGranted = permissionGranted,
+                policy = container.reminderDeliveryCoordinator.policyFor(planId),
+                activeSessions = container.manageStudySession.observeActiveSessions().first(),
             ),
         )
         val occurrenceStore = StudyReminderOccurrenceStore(appContext)
@@ -297,8 +311,8 @@ private class AndroidReminderLabInspectOperation(
         val platformStatus = when {
             !permissionGranted -> DebugLabStatus.WARNING
             !appNotificationsEnabled -> DebugLabStatus.WARNING
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channel == null -> DebugLabStatus.WARNING
-            channelImportance == NotificationImportanceNone -> DebugLabStatus.WARNING
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channels.any { it == null } -> DebugLabStatus.WARNING
+            blockedChannelCount > 0 -> DebugLabStatus.WARNING
             else -> DebugLabStatus.PASSED
         }
         val schedulingAligned = desiredIds == recordedIds && candidates.all { candidate ->
@@ -312,8 +326,8 @@ private class AndroidReminderLabInspectOperation(
         val message = when {
             !permissionGranted -> ReminderLabMessage.NOTIFICATION_PERMISSION_DENIED
             !appNotificationsEnabled -> ReminderLabMessage.NOTIFICATIONS_BLOCKED
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channel == null -> ReminderLabMessage.CHANNEL_MISSING
-            channelImportance == NotificationImportanceNone -> ReminderLabMessage.CHANNEL_BLOCKED
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channels.any { it == null } -> ReminderLabMessage.CHANNEL_MISSING
+            blockedChannelCount > 0 -> ReminderLabMessage.CHANNEL_BLOCKED
             candidates.isEmpty() -> ReminderLabMessage.NO_CANDIDATES
             else -> ReminderLabMessage.NONE
         }
@@ -338,9 +352,16 @@ private class AndroidReminderLabInspectOperation(
             attentionLedgerRecoveredFromInvalidState = attentionDiagnostics.loadRecoveredFromInvalidState,
             notificationsEnabled = appNotificationsEnabled,
             notificationPermissionGranted = permissionGranted,
-            channelPresent = channel != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O,
-            channelBlocked = channelImportance == NotificationImportanceNone,
+            channelPresent = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || channels.all { it != null },
+            channelBlocked = blockedChannelCount > 0,
             channelImportance = channelImportance,
+            channelCount = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) 4 else channels.count { it != null },
+            blockedChannelCount = blockedChannelCount,
+            exactAlarmCapabilityAvailable = platformCapability.exactAlarmCapabilityAvailable,
+            lastReconciledAtEpochMillis = runtimeStatus.lastReconciledAtEpochMillis,
+            lastDeliveredAtEpochMillis = runtimeStatus.lastDeliveredAtEpochMillis,
+            lastDeliveredOccurrenceId = runtimeStatus.lastDeliveredOccurrenceId,
+            lastRecoveryReason = runtimeStatus.lastRecoveryReason,
             remindersEnabled = true,
             quietHoursActive = planResult.quietHoursActive,
             exactAlarmUsed = false,
@@ -358,6 +379,9 @@ private fun ReminderNotificationType.toDiagnosticKind(): ReminderCandidateKind =
     ReminderNotificationType.PLANNED_ACTIVITY -> ReminderCandidateKind.PLANNED_ACTIVITY
     ReminderNotificationType.MISSED_ACTIVITY -> ReminderCandidateKind.MISSED_ACTIVITY
     ReminderNotificationType.DAILY_SUMMARY -> ReminderCandidateKind.DAILY_SUMMARY
+    ReminderNotificationType.SESSION_ENDING -> ReminderCandidateKind.SESSION_ENDING
+    ReminderNotificationType.SESSION_COMPLETED -> ReminderCandidateKind.SESSION_COMPLETED
+    ReminderNotificationType.EXAM_COUNTDOWN -> ReminderCandidateKind.EXAM_COUNTDOWN
 }
 
 private fun currentMinuteOfDay(): Int = Calendar.getInstance().run {
@@ -389,7 +413,7 @@ private suspend fun runProductionPipelineNotificationCanary(
     container.reminderDeliveryCoordinator.createNotificationChannels()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val channel = context.getSystemService(NotificationManager::class.java)
-            .getNotificationChannel(StudyReminderChannelId)
+            .getNotificationChannel(StudyReminderSummaryChannelId)
         if (channel == null || notificationChannelImportance(channel) == NotificationImportanceNone) return false
     }
 
@@ -423,7 +447,7 @@ private suspend fun runProductionPipelineNotificationCanary(
     } finally {
         occurrenceStore.removeScheduled(planId, occurrenceId)
         occurrenceStore.removeDelivered(planId, occurrenceId)
-        NotificationManagerCompat.from(context).cancel(occurrenceId, 0)
+        NotificationManagerCompat.from(context).cancel(stableNotificationId(occurrenceId))
     }
 }
 

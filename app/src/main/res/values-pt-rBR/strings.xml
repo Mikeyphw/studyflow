@@ -104,4 +104,38 @@
     <string name="tv_controller_surface_schedule">Agenda</string>
     <string name="tv_controller_surface_library">Biblioteca</string>
     <string name="tv_controller_surface_settings">Configurações da TV</string>
+
+    <!-- ATT02 Android Attention System 2.0 -->
+    <string name="notification_channel_study_schedule_name">Agenda de estudos</string>
+    <string name="notification_channel_study_schedule_description">Lembretes de blocos de estudo próximos e perdidos.</string>
+    <string name="notification_channel_reviews_name">Revisões</string>
+    <string name="notification_channel_reviews_description">Lembretes de revisões e práticas pendentes.</string>
+    <string name="notification_channel_session_timers_name">Temporizadores de sessão</string>
+    <string name="notification_channel_session_timers_description">Alertas de término e conclusão de sessões de estudo.</string>
+    <string name="notification_channel_summaries_name">Resumos</string>
+    <string name="notification_channel_summaries_description">Resumos diários e contagem regressiva para provas.</string>
+    <string name="reminder_notification_session_ending_title">Sessão terminando em breve</string>
+    <string name="reminder_notification_session_ending_body">%1$s está se aproximando da duração planejada.</string>
+    <string name="reminder_notification_session_complete_title">Tempo planejado concluído</string>
+    <string name="reminder_notification_session_complete_body">O tempo planejado da sessão terminou. Finalize, continue ou faça uma pausa.</string>
+    <plurals name="reminder_notification_exam_countdown_body">
+        <item quantity="one">Prova em %1$d dia.</item>
+        <item quantity="many">Prova em %1$d dias.</item>
+        <item quantity="other">Prova em %1$d dias.</item>
+    </plurals>
+    <string name="reminder_action_review_now">Revisar agora</string>
+    <string name="reminder_action_start_now">Iniciar agora</string>
+    <string name="reminder_action_snooze">Adiar</string>
+    <string name="reminder_action_reschedule">Reagendar</string>
+    <string name="reminder_action_mark_done">Marcar concluído</string>
+    <string name="reminder_action_open_today">Abrir hoje</string>
+    <string name="reminder_action_continue">Continuar</string>
+    <string name="reminder_action_finish_session">Finalizar</string>
+    <string name="reminder_action_start_break">Iniciar pausa</string>
+    <string name="reminder_action_open_progress">Abrir progresso</string>
+    <string name="widget_action_session">Sessão</string>
+    <string name="widget_action_progress">Progresso</string>
+
+    <string name="reminder_notification_break_complete_title">Pausa concluída</string>
+    <string name="reminder_notification_break_complete_body">Pronto para continuar estudando?</string>
 </resources>

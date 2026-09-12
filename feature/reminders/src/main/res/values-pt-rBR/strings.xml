@@ -71,4 +71,64 @@
     </plurals>
     <string name="reminder_daily_summary_body">Seu resumo diário de estudos está disponível.</string>
     <string name="delayed_by_quiet_hours">Adiado até o fim do horário silencioso</string>
+
+    <!-- ATT02 Android Attention System 2.0 -->
+    <string name="open_notification_settings">Abrir configurações de notificações</string>
+    <string name="reminder_categories_title">Categorias de lembretes</string>
+    <string name="planned_study_reminders">Blocos de estudo planejados</string>
+    <string name="planned_study_reminders_description">Avisar antes do início de um bloco de estudo agendado.</string>
+    <string name="missed_activity_reminders">Atividades perdidas</string>
+    <string name="missed_activity_reminders_description">Oferecer recuperação quando um bloco planejado for perdido.</string>
+    <string name="daily_summary_reminders">Resumo diário</string>
+    <string name="daily_summary_reminders_description">Enviar um resumo no horário escolhido em vez de à meia-noite.</string>
+    <string name="session_timer_reminders">Temporizadores de sessão</string>
+    <string name="session_timer_reminders_description">Avisar pouco antes e quando uma sessão cronometrada atingir a duração planejada.</string>
+    <string name="exam_countdown_reminders">Contagem regressiva da prova</string>
+    <string name="exam_countdown_reminders_description">Ativar uma contagem diária nos últimos dias antes da prova do plano.</string>
+    <string name="reminder_timing_title">Horários e adiamento</string>
+    <string name="planned_study_lead_minutes">Antecedência do bloco (minutos)</string>
+    <string name="planned_study_lead_minutes_hint">0–120 minutos antes do início agendado.</string>
+    <string name="daily_summary_time">Horário do resumo diário</string>
+    <string name="daily_summary_time_hint">Formato de 24 horas, por exemplo 08:00.</string>
+    <string name="missed_activity_delay_minutes">Atraso para atividade perdida (minutos)</string>
+    <string name="missed_activity_delay_minutes_hint">5–720 minutos depois que o StudyFlow detectar o bloco perdido.</string>
+    <string name="default_snooze_minutes">Adiamento padrão (minutos)</string>
+    <string name="default_snooze_minutes_hint">5–240 minutos.</string>
+    <string name="session_ending_lead_minutes">Aviso de fim da sessão (minutos)</string>
+    <string name="session_ending_lead_minutes_hint">1–30 minutos antes da duração planejada.</string>
+    <string name="exam_countdown_days">Horizonte da contagem da prova (dias)</string>
+    <string name="exam_countdown_days_hint">1–60 dias antes da prova.</string>
+    <string name="reminder_next_candidate">Próximo lembrete: %1$s</string>
+    <string name="reminder_channels_status">Canais de notificação prontos: %1$d de %2$d</string>
+    <string name="reminder_exact_alarm_required">A política atual exige capacidade de alarme exato.</string>
+    <string name="reminder_exact_alarm_not_required">O StudyFlow usa janelas de alarme inexatas; permissão de alarme exato não é necessária.</string>
+    <string name="reminder_last_reconciled">Última reconciliação: %1$s</string>
+    <string name="reminder_last_delivered">Última entrega: %1$s</string>
+    <string name="reminder_last_recovery_reason">Último gatilho de recuperação: %1$s</string>
+    <string name="refresh_reliability">Atualizar</string>
+    <string name="open_battery_settings">Configurações de bateria</string>
+    <string name="open_app_settings">Configurações do app</string>
+    <string name="no_notification_candidates">Nenhum lembrete está agendado nesta prévia agora.</string>
+    <string name="reminder_candidate_time">Entrega: %1$s</string>
+    <string name="candidate_session_ending">Fim da sessão</string>
+    <string name="candidate_session_completed">Sessão concluída</string>
+    <string name="candidate_exam_countdown">Contagem da prova</string>
+    <string name="reminder_session_ending_title">Sessão terminando em breve</string>
+    <string name="reminder_session_ending_body">%1$s está se aproximando da duração planejada.</string>
+    <string name="reminder_session_completed_title">Duração planejada atingida</string>
+    <string name="reminder_session_completed_body">Finalize, continue ou inicie uma pausa.</string>
+    <plurals name="reminder_exam_countdown_body">
+        <item quantity="one">Prova em %1$d dia.</item>
+        <item quantity="many">Prova em %1$d dias.</item>
+        <item quantity="other">Prova em %1$d dias.</item>
+    </plurals>
+    <string name="reminder_issue_system_notifications">Notificações do sistema</string>
+    <string name="reminder_issue_system_notifications_message">A entrega de notificações do StudyFlow está desativada nas configurações do Android.</string>
+    <string name="reminder_issue_channel">Canal de notificação</string>
+    <string name="reminder_issue_channel_message">Uma ou mais categorias de lembrete do StudyFlow estão desativadas no nível de canal do Android.</string>
+    <string name="reminder_issue_reconciliation_stale">Reconciliação de lembretes</string>
+    <string name="reminder_issue_reconciliation_stale_message">O agendador não reconcilia há algum tempo; abra o StudyFlow ou atualize a confiabilidade.</string>
+
+    <string name="reminder_break_completed_title">Pausa concluída</string>
+    <string name="reminder_break_completed_body">Pronto para continuar estudando?</string>
 </resources>

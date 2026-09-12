@@ -82,6 +82,10 @@ PARITY04 closes cross-platform product parity across Android, Desktop, Web, Andr
 
 PRESENCE01 adds optional ephemeral presence across Android, Desktop, Web, Android TV, and Web TV. Presence has explicit online/away/offline/stale states, bounded stale/expiry windows, reconnect-session supersession, simultaneous client instances, capability-filtered resumable activity hints, and route-trace loop prevention. It runs after authenticated durable reconciliation and failures are non-fatal, so presence is never a prerequisite for sync correctness.
 
+## ATT02 Android Attention System 2.0
+
+Android now implements the ATT02 reference attention client on top of ATT01: six independent reminder categories, explicit timing and quiet-hour policy, four Android notification channels, actionable notifications, session/exam reminders, reboot/time/time-zone/package/app-resume recovery, live domain invalidation, exact-target deep links, a reliability center, and durable Attention-ledger integration. See `ATT02_ANDROID_ATTENTION_SYSTEM_2_0.md` and `docs/product/ANDROID_ATTENTION_SYSTEM.md`. ATT03 owns the expanded Android widget suite.
+
 ## Product boundary
 
 Current cross-platform capability truth is maintained in `docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md`.

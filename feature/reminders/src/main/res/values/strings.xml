@@ -68,4 +68,63 @@
     </plurals>
     <string name="reminder_daily_summary_body">Your daily study summary is available.</string>
     <string name="delayed_by_quiet_hours">Delayed until quiet hours end</string>
+
+    <!-- ATT02 Android Attention System 2.0 -->
+    <string name="open_notification_settings">Open notification settings</string>
+    <string name="reminder_categories_title">Reminder categories</string>
+    <string name="planned_study_reminders">Planned study blocks</string>
+    <string name="planned_study_reminders_description">Alert before a scheduled study block begins.</string>
+    <string name="missed_activity_reminders">Missed activities</string>
+    <string name="missed_activity_reminders_description">Offer recovery after a planned block is missed.</string>
+    <string name="daily_summary_reminders">Daily summary</string>
+    <string name="daily_summary_reminders_description">Send one summary at the time you choose instead of at midnight.</string>
+    <string name="session_timer_reminders">Session timers</string>
+    <string name="session_timer_reminders_description">Alert shortly before and when a timed study session reaches its target.</string>
+    <string name="exam_countdown_reminders">Exam countdown</string>
+    <string name="exam_countdown_reminders_description">Opt in to a daily countdown during the final days before the plan exam.</string>
+    <string name="reminder_timing_title">Timing and snooze</string>
+    <string name="planned_study_lead_minutes">Study-block lead time (minutes)</string>
+    <string name="planned_study_lead_minutes_hint">0–120 minutes before the scheduled start.</string>
+    <string name="daily_summary_time">Daily summary time</string>
+    <string name="daily_summary_time_hint">24-hour time, for example 08:00.</string>
+    <string name="missed_activity_delay_minutes">Missed-activity delay (minutes)</string>
+    <string name="missed_activity_delay_minutes_hint">5–720 minutes after StudyFlow detects the missed block.</string>
+    <string name="default_snooze_minutes">Default snooze (minutes)</string>
+    <string name="default_snooze_minutes_hint">5–240 minutes.</string>
+    <string name="session_ending_lead_minutes">Session ending warning (minutes)</string>
+    <string name="session_ending_lead_minutes_hint">1–30 minutes before the target duration.</string>
+    <string name="exam_countdown_days">Exam countdown horizon (days)</string>
+    <string name="exam_countdown_days_hint">1–60 days before the exam.</string>
+    <string name="reminder_next_candidate">Next candidate: %1$s</string>
+    <string name="reminder_channels_status">Notification channels ready: %1$d of %2$d</string>
+    <string name="reminder_exact_alarm_required">Exact-alarm capability is required by the current policy.</string>
+    <string name="reminder_exact_alarm_not_required">StudyFlow uses inexact alarm windows; exact-alarm permission is not required.</string>
+    <string name="reminder_last_reconciled">Last reconciled: %1$s</string>
+    <string name="reminder_last_delivered">Last delivered: %1$s</string>
+    <string name="reminder_last_recovery_reason">Last recovery trigger: %1$s</string>
+    <string name="refresh_reliability">Refresh</string>
+    <string name="open_battery_settings">Battery settings</string>
+    <string name="open_app_settings">App settings</string>
+    <string name="no_notification_candidates">No reminder is currently scheduled by this preview.</string>
+    <string name="reminder_candidate_time">Delivery: %1$s</string>
+    <string name="candidate_session_ending">Session ending</string>
+    <string name="candidate_session_completed">Session complete</string>
+    <string name="candidate_exam_countdown">Exam countdown</string>
+    <string name="reminder_session_ending_title">Session ending soon</string>
+    <string name="reminder_session_ending_body">%1$s is approaching its target duration.</string>
+    <string name="reminder_session_completed_title">Session target reached</string>
+    <string name="reminder_session_completed_body">Finish, continue, or start a break.</string>
+    <plurals name="reminder_exam_countdown_body">
+        <item quantity="one">Exam in %1$d day.</item>
+        <item quantity="other">Exam in %1$d days.</item>
+    </plurals>
+    <string name="reminder_issue_system_notifications">System notifications</string>
+    <string name="reminder_issue_system_notifications_message">StudyFlow notification delivery is disabled in Android system settings.</string>
+    <string name="reminder_issue_channel">Notification channel</string>
+    <string name="reminder_issue_channel_message">One or more StudyFlow reminder categories are disabled at the Android channel level.</string>
+    <string name="reminder_issue_reconciliation_stale">Reminder reconciliation</string>
+    <string name="reminder_issue_reconciliation_stale_message">The reminder scheduler has not reconciled recently; open StudyFlow or refresh reliability.</string>
+
+    <string name="reminder_break_completed_title">Break complete</string>
+    <string name="reminder_break_completed_body">Ready to continue studying?</string>
 </resources>
