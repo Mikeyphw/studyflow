@@ -97,6 +97,11 @@ export interface StudyFlowAttentionDeliveryRoute {
   requiresUserAction?: boolean;
 }
 
+/** ATT12 call-site guard: route computation is not enough unless the surface checks ownership. */
+export function studyFlowAttentionRouteTargetsDevice(route: StudyFlowAttentionDeliveryRoute, deviceId: string): boolean {
+  return route.deliverable && route.targetDeviceIds.includes(deviceId);
+}
+
 export interface StudyFlowAttentionHandoffRequest {
   handoffId: string;
   occurrenceId: string;

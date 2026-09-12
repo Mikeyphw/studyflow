@@ -61,6 +61,7 @@ const tv_review_notebook_1 = require("../tv_review_notebook");
 const tv_progress_1 = require("../tv_progress");
 const tv_schedule_1 = require("../tv_schedule");
 const tv_library_1 = require("../tv_library");
+const tv_attention_1 = require("../tv_attention");
 const compact_attention_1 = require("../compact_attention");
 const calendar_attention_1 = require("../calendar_attention");
 const title = (v) => v.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -126,6 +127,20 @@ function tvSurfaceDestination(surface) { if (surface === "SETTINGS")
     return { screen: "progress" }; if (surface === "SCHEDULE")
     return { screen: "schedule" }; if (surface === "LIBRARY")
     return { screen: "library" }; return { screen: "today" }; }
+function WebTvAttentionBanner({ runtime, snapshot, run }) {
+    const projection = (0, tv_attention_1.projectWebAttentionToTv)(snapshot);
+    const banner = projection.activeBanner;
+    if (!banner)
+        return null;
+    const actionLabel = (action) => action === "move_to_phone" ? "Move to phone" : action === "continue" ? "Continue" : title(action);
+    return React.createElement("article", { className: "tv-pairing-banner tv-attention-banner", role: "status", "aria-live": "polite", "data-att12-tv-attention": "foreground-only" },
+        React.createElement("div", null,
+            React.createElement("p", { className: "eyebrow" }, "Attention \u00B7 foreground only"),
+            React.createElement("h2", null, banner.title),
+            React.createElement("p", { className: "muted" }, banner.body),
+            React.createElement("p", { className: "tv-continue-hint" }, "Closed-browser delivery is not guaranteed on TV. A designated phone, Desktop or normal Web notifier handles fallback.")),
+        React.createElement("div", { className: "button-row" }, banner.actions.map(action => React.createElement("button", { key: action, className: "button button-quiet", type: "button", "data-tv-control-action": action === "continue" ? "OPEN" : action === "open" ? "OPEN" : undefined, onClick: () => run(() => { void runtime.applyAction(banner.occurrenceId, action === "continue" ? "open" : action); }, action === "move_to_phone" ? "Reminder acknowledged for phone continuation." : `Attention ${actionLabel(action)}.`) }, actionLabel(action)))));
+}
 function useWebAttentionSnapshot(runtime) { const [snapshot, setSnapshot] = React.useState(() => { var _a; return (_a = runtime === null || runtime === void 0 ? void 0 : runtime.snapshot()) !== null && _a !== void 0 ? _a : null; }); React.useEffect(() => { if (!runtime) {
     setSnapshot(null);
     return;
@@ -362,6 +377,8 @@ function App({ store, persistence, attentionRuntime }) {
                     document.documentElement.dataset.studyflowTvSecureContext === "true" ? "secure" : "LAN HTTP"))),
         React.createElement("main", { id: "main-content", ref: mainRef, tabIndex: -1, "aria-labelledby": "screen-title", className: "app-main" },
             tvBrowser && React.createElement(TvPairingBanner, { snapshot: tvReceiver }),
+            " ",
+            tvBrowser && attentionRuntime && attentionSnapshot && React.createElement(WebTvAttentionBanner, { runtime: attentionRuntime, snapshot: attentionSnapshot, run: run }),
             " ",
             tvBrowser && tvCast && React.createElement(TvCastBanner, { cast: tvCast, onStop: () => setTvCast(null) }),
             " ",

@@ -16,7 +16,9 @@ class StudyFlowTvAttentionLedgerStorage(context: Context) : StudyFlowAttentionLe
         preferences.getString(TvAttentionLedgerSnapshotKey, null)
     }
 
-    override fun writeEncodedSnapshot(encoded: String) = synchronized(this) {
-        preferences.edit().putString(TvAttentionLedgerSnapshotKey, encoded).commit()
+    override fun writeEncodedSnapshot(encoded: String) {
+        synchronized(this) {
+            preferences.edit().putString(TvAttentionLedgerSnapshotKey, encoded).commit()
+        }
     }
 }

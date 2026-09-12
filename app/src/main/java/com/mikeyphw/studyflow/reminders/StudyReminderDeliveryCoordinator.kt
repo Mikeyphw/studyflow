@@ -267,6 +267,11 @@ class StudyReminderDeliveryCoordinator(
             ledgerEntry = ledgerEntry,
         )
         runCatching { attentionLedger.recordRouteDecision(route) }
+        // ATT12 closes the ATT07 explicit-target gap: a local scheduler may evaluate a
+        // remote-targeted occurrence, but it must never surface it unless ATT07 selected
+        // this Android device as owner or bounded mirror. Keep the ledger scheduled so
+        // the intended target can still deliver it.
+        if (!AndroidStudyFlowAttentionRouterBridge.isLocalTarget(route)) return
         val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
             occurrence = occurrence,
             policy = focusPolicy,

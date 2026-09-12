@@ -67,5 +67,9 @@ object DesktopAttentionDeliveryRouterBridge {
         localClientKind = StudyFlowLinkClientKind.DESKTOP,
     )
 
+    /** ATT12: Desktop delivery must obey ATT07 owner/mirror selection. */
+    fun isLocalTarget(route: StudyFlowAttentionDeliveryRoute): Boolean =
+        route.deliverable && localDeviceId in route.targetDeviceIds
+
     fun router(): StudyFlowAttentionDeliveryRouter = StudyFlowAttentionDeliveryRouter()
 }

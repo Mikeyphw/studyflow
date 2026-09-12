@@ -1,5 +1,5 @@
 from pathlib import Path
-import json, subprocess, unittest
+import json, os, subprocess, unittest
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -11,9 +11,14 @@ class W14TypeScriptMigrationTest(unittest.TestCase):
         types=(ROOT/'src/types.ts').read_text()
         for token in ('interface StudyState','interface StudyStore','interface StudyRepository','interface AttachmentRepository','interface SchedulePreview','interface PortableImportPreview'):
             self.assertIn(token,types)
-        result=subprocess.run(['node','scripts/compile_runtime.mjs'],cwd=ROOT,text=True,capture_output=True)
-        self.assertEqual(result.returncode,0,result.stderr or result.stdout)
-        self.assertIn('TypeScript runtime parity OK',result.stdout)
+        if os.environ.get('STUDYFLOW_EXTERNAL_RUNTIME_PARITY') == '1':
+            # The Gradle Attention seal runs compile_runtime.mjs once as a dedicated gate.
+            # Avoid launching a second tsc from the historical W14 regression suite.
+            self.assertTrue((ROOT/'runtime'/'main.js').is_file())
+        else:
+            result=subprocess.run(['node','scripts/compile_runtime.mjs'],cwd=ROOT,text=True,capture_output=True)
+            self.assertEqual(result.returncode,0,result.stderr or result.stdout)
+            self.assertIn('TypeScript runtime parity OK',result.stdout)
 
     def test_legacy_javascript_sources_are_tombstones_only(self):
         for name in ('domain.js','indexeddb.js','storage.js','state.js','portable.js','pwa.js','events.js','render.js'):

@@ -29,7 +29,8 @@ class StudyFlowWidgetAtt03SourceContractTest {
         assertFalse("notificationPermissionGranted" in coordinator)
     }
 
-    private fun read(root: Path, relative: String): String = Files.readString(root.resolve(relative))
+    private fun read(root: Path, relative: String): String =
+        String(Files.readAllBytes(root.resolve(relative)), Charsets.UTF_8)
 
     private fun repositoryRoot(): Path {
         var current = Paths.get("").toAbsolutePath()

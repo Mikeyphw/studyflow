@@ -51,7 +51,7 @@ class StudyFlowCompactCompanionAttentionTest {
             nowEpochMillis = 10_000L,
             context = StudyFlowAttentionRoutingContext(primaryDeviceId = phone.deviceId),
         )
-        val projection = projector.project(
+        val projection = StudyFlowCompactCompanionProjector(staleAfterMillis = 5_000L).project(
             occurrence = occurrence,
             route = route,
             companions = listOf(

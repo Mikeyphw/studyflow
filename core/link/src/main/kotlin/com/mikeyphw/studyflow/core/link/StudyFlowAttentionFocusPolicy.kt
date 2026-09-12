@@ -187,6 +187,7 @@ object StudyFlowAttentionFocusPolicyEngine {
             (policy.allowHighPriorityQuietBypass && occurrence.priority == StudyFlowAttentionPriority.HIGH)
 
         if (inQuiet && !quietBypass) {
+            val activeQuiet = requireNotNull(quiet)
             val quietOutcome = when (policy.profile) {
                 StudyFlowAttentionFocusProfile.SLEEP_MODE -> StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END
                 StudyFlowAttentionFocusProfile.MINIMAL_TV -> StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE
@@ -200,13 +201,13 @@ object StudyFlowAttentionFocusPolicyEngine {
                 }
             }
             val deferredUntil = if (quietOutcome == StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END) {
-                quiet?.nextEndEpochMillis(nowEpochMillis, occurrence.timezoneId)
+                activeQuiet.nextEndEpochMillis(nowEpochMillis, occurrence.timezoneId)
             } else null
             return decision(
                 occurrence, policy, nowEpochMillis, quietOutcome,
                 deferredUntil = deferredUntil,
                 quietHoursActive = true,
-                explanation = "Quiet hours are active in ${quiet?.timezoneId ?: occurrence.timezoneId ?: "UTC"}; ATT10 applied ${quietOutcome.name.lowercase()}.",
+                explanation = "Quiet hours are active in ${activeQuiet.timezoneId ?: occurrence.timezoneId ?: "UTC"}; ATT10 applied ${quietOutcome.name.lowercase()}.",
             )
         }
 

@@ -16,23 +16,25 @@ class DesktopStudyFlowAttentionLedgerStorage(
         Files.readString(ledgerFile)
     }
 
-    override fun writeEncodedSnapshot(encoded: String) = synchronized(this) {
-        Files.createDirectories(ledgerFile.parent)
-        val temporary = Files.createTempFile(ledgerFile.parent, "attention-ledger-", ".tmp")
-        try {
-            Files.writeString(temporary, encoded)
+    override fun writeEncodedSnapshot(encoded: String) {
+        synchronized(this) {
+            Files.createDirectories(ledgerFile.parent)
+            val temporary = Files.createTempFile(ledgerFile.parent, "attention-ledger-", ".tmp")
             try {
-                Files.move(
-                    temporary,
-                    ledgerFile,
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING,
-                )
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(temporary, ledgerFile, StandardCopyOption.REPLACE_EXISTING)
+                Files.writeString(temporary, encoded)
+                try {
+                    Files.move(
+                        temporary,
+                        ledgerFile,
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING,
+                    )
+                } catch (_: AtomicMoveNotSupportedException) {
+                    Files.move(temporary, ledgerFile, StandardCopyOption.REPLACE_EXISTING)
+                }
+            } finally {
+                Files.deleteIfExists(temporary)
             }
-        } finally {
-            Files.deleteIfExists(temporary)
         }
     }
 }

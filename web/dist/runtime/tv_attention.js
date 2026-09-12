@@ -85,7 +85,7 @@ class StudyFlowWebTvAttentionRuntime {
         return projectWebAttentionToTv(this.webRuntime.snapshot());
     }
     applyAction(occurrenceId, action) {
-        const mapped = action === "move_to_phone" ? "open" : action === "continue" ? "open" : action;
+        const mapped = action === "continue" ? "open" : action;
         void this.webRuntime.applyAction(occurrenceId, mapped);
     }
 }

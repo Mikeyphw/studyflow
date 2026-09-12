@@ -99,3 +99,8 @@ tasks.configureEach {
         }
     }
 }
+
+// ATT12 v4 — Termux final-seal test stability.
+tasks.withType<Test>().configureEach {
+    maxParallelForks = 1
+}

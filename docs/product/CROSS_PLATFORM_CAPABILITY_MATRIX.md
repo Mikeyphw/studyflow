@@ -50,12 +50,14 @@ with this matrix, this matrix owns the current product-state description.
 | Optional provider sync | FULL | PLATFORM_SPECIFIC | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE |
 | English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | FULL | PLATFORM_SPECIFIC | LIMITED |
-| Native reminder/background delivery | FULL (ATT02) | FULL (ATT05 foreground + optional Push foundation) | FULL (ATT04, while app is running) | MISSING | MISSING |
+| Native reminder/background delivery | FULL (ATT02) Android alarms/notifications | LIMITED (ATT05 foreground; closed-browser only when real Web Push subscription/relay is available) | LIMITED (ATT04 native/tray while StudyFlow is running; no daemon claim) | NOT_APPLICABLE (ATT06 foreground-only by design) | NOT_APPLICABLE (ATT06 foreground-only by design) |
 | ATT10 quiet hours / focus profiles / escalation | FULL | FULL | FULL | READ_ONLY (foreground projection; phone fallback) | READ_ONLY (foreground projection; phone fallback) |
 | ATT10 policy audit in canonical ATT01 ledger | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
 | ATT11 reliability evidence + cross-device delivery audit | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
 | ATT11 JSON/CSV audit export | FULL | FULL | FULL | HANDOFF | HANDOFF |
-| Home/widget-style glance surface | FULL (ATT03 five-mode suite) | FULL (ATT05 in-app Notification Center + badge) | FULL (ATT04 tray mini-dashboard) | MISSING | MISSING |
+| Attention glance/control surface | FULL (ATT03 widget suite + ATT02 notifications) | FULL (ATT05 Notification Center + badge) | FULL (ATT04 tray mini-dashboard) | FULL (ATT06 D-pad foreground banner) | FULL (ATT06 foreground banner) |
+
+Historical ATT06 contract markers retained for verifier compatibility: **Android TV ATT06 foreground banners** and **Web TV ATT06 foreground banners**. Both remain foreground-only and do not claim background delivery ownership.
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
 DOV08-DOV24 is complete. Desktop DOV08-DOV24 now provide the full applicable Desktop workspace: durable domain state, authoring and
@@ -210,7 +212,9 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Android ATT02 reminder delivery | Full native delivery/actions (ATT02) | Full native/tray delivery while running (ATT04) | Protocol only | Protocol only | Protocol only |
 | Durable ATT01 attention ledger | FULL | FULL | FULL | FULL | FULL (Web runtime) |
 | Cross-device attention delivery router | FULL (ATT07 owner/source) | FULL (ATT07 Web/PWA routing) | FULL (ATT07 while running) | FULL foreground-only (ATT07) | FULL foreground-only (ATT07) |
-| Compact companion attention | Android wearable/lock-screen/quick-tile, Desktop mini, Web compact, TV remote overlay | ATT08 compact companion surfaces are parent-owned mirrors; they never become independent owners. |
+| Compact companion attention | FULL (phone-owned wearable/lock-screen/quick-tile projections) | FULL (Desktop mini projection) | FULL (compact Web projection) | FULL (foreground remote overlay) | FULL (foreground compact projection) |
+
+Historical verifier provenance: **ATT08 compact companion** delivery is phone-/parent-owned mirroring; compact surfaces never become independent notification owners.
 | Schedule reminder sync | Read/write | Read/write | Read/write | Read-only | Read-only |
 | Material stream offer | Source/sink | Source/sink | Source/sink | Presentation sink only | Presentation sink only |
 | Material chunk acknowledgement | Yes | Yes | Yes | Yes, no import | Yes, no import |
@@ -249,19 +253,29 @@ receivers remain read/presentation/control clients and reject write-capability p
 
 ## ATT03 widget suite capability truth
 
-Android owns the configurable Today/Next/Reviews/Session/Compact home-screen widget suite. Its freshness scheduler is independent from notification permission and uses domain-boundary inexact alarms plus live repository invalidation. ATT04 adds the Desktop tray mini-dashboard as the Desktop glance-surface equivalent; Web/TV equivalents remain later roadmap work.
+Android owns the configurable Today/Next/Reviews/Session/Compact home-screen widget suite. Its freshness scheduler is independent from notification permission and uses domain-boundary inexact alarms plus live repository invalidation. ATT04 adds the Desktop tray mini-dashboard, ATT05 adds the Web Notification Center/badge, and ATT06 adds foreground-only TV banners. Those are semantic glance/attention equivalents; StudyFlow does not claim TV home-screen widgets or TV background alarms.
 
 
 ## ATT04 Desktop attention capability truth
 
 Desktop now owns a production reminder runtime backed by the shared ATT01 ledger and ATT02 planner. It performs startup/restart recovery, persistent dedupe, native AWT tray notification delivery when supported, and a tray mini-dashboard. Delivery is intentionally scoped to periods when the StudyFlow Desktop process is running; ATT04 does not claim launch-on-login or OS-daemon delivery.
 
-| Android TV ATT06 foreground banners | FULL (ATT06 foreground-only, D-pad safe, ledger-backed) | N/A | N/A | FULL (ATT06) | N/A | Closed-app delivery falls back to designated notifier. |
-| Web TV ATT06 foreground banners | FULL (ATT06 Web TV projection) | N/A | FULL (ATT06 foreground-only) | N/A | FULL (ATT06) | Browser background delivery remains capability-dependent; TV mode is honest foreground-only. |
+## ATT06 TV foreground-attention truth
+
+| Capability | Android TV | Web TV | Closed-client truth |
+| --- | --- | --- | --- |
+| Foreground banner | FULL, D-pad safe and ATT01-backed | FULL, remote-safe projection of the Web ATT01 runtime | Available only while the TV client is open |
+| Bounded banner actions | Open/start/review/continue/snooze/dismiss/move-to-phone as applicable | Open/continue/snooze/dismiss/move-to-phone as applicable | No action implies background ownership |
+| System/background notification ownership | Not claimed | Not claimed | Falls back to ATT07-designated phone/Desktop/normal-Web notifier |
+| Reliability/focus controls | Read-only projection | Read-only projection | No fake closed-TV delivery guarantee |
 
 ## ATT07 cross-device delivery router truth
 
-ATT07 adds a shared owner/mirror/suppression router for Attention occurrences. Android, Desktop, and Web/PWA can own durable notification routes when their runtime capabilities are present. Android TV and Web TV can own only foreground-banner routes, and closed-TV delivery falls back to a designated phone, Desktop, or Web/PWA notifier. The ATT01 ledger remains the final dedupe source, so acknowledged or handled occurrences suppress redelivery across all clients.
+ATT07 adds a shared owner/mirror/suppression router for Attention occurrences. Android, Desktop, and Web/PWA can own durable notification routes when their runtime capabilities are present. Android TV and Web TV can own only foreground-banner routes, and closed-TV delivery falls back to a designated phone, Desktop, or Web/PWA notifier. The ATT01 ledger remains the final dedupe source, so acknowledged or handled occurrences suppress redelivery across all clients. ATT12 additionally seals the production delivery edges: Android, Desktop and Web now refuse to surface an occurrence unless the computed ATT07 route explicitly selects the local device as owner or bounded mirror, so `targetDeviceIds` cannot degrade into accidental local broadcast.
+
+## ATT12 final Attention release-seal truth
+
+ATT12 reconciles the handoff roadmap against the post-ATT11 repository, repairs release-edge gaps, and makes this matrix the canonical Attention capability statement. The seal does not expand platform claims: Android TV/Web TV remain foreground-only, Desktop remains process-owned, and normal Web only claims closed-browser reliability when a real Push subscription exists. The final seal includes an explicit ATT01–ATT12 validation matrix and a verifier that rejects stale capability claims, duplicate Devtool Attention tasks, un-enforced ATT07 local targets, or unwired TV foreground surfaces.
 
 ## ATT09 calendar / schedule export attention
 

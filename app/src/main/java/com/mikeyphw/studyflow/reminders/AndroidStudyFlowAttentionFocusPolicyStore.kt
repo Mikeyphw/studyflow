@@ -82,8 +82,9 @@ class AndroidStudyFlowAttentionFocusPolicyStore(context: Context) {
             putInt("$prefix.schema", FocusSchemaVersion)
             putBoolean("$prefix.enabled", policy.enabled)
             putString("$prefix.profile", policy.profile.name)
-            putBoolean("$prefix.quiet.enabled", policy.quietWindow != null && policy.quietWindow.enabled)
-            policy.quietWindow?.let { quiet ->
+            val quietWindow = policy.quietWindow
+            putBoolean("$prefix.quiet.enabled", quietWindow?.enabled == true)
+            quietWindow?.let { quiet ->
                 putInt("$prefix.quiet.start", quiet.startMinute)
                 putInt("$prefix.quiet.end", quiet.endMinute)
                 putString("$prefix.quiet.zone", quiet.timezoneId ?: TimeZone.getDefault().id)

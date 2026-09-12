@@ -400,7 +400,8 @@ fun DesktopSettingsScreen(
             Text("Next reminder: ${attention.nextReminderLabel}")
             Text("Last delivered: ${attention.lastDeliveredLabel}")
             Text(
-                "Native notifications: ${if (attention.nativeNotificationsSupported) "supported" else "unavailable"} • " +
+                "Native notifications: " +
+                    "${if (attention.nativeNotificationsSupported) "supported" else "unavailable"} • " +
                     "Tray: ${if (attention.traySupported) "supported" else "unavailable"}",
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -413,10 +414,22 @@ fun DesktopSettingsScreen(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onToggleNativeNotifications, enabled = attention.available) {
-                    Text(desktopText(if (attention.nativeNotificationsEnabled) "Disable native notifications" else "Enable native notifications"))
+                    Text(
+                        desktopText(
+                            if (attention.nativeNotificationsEnabled) {
+                                "Disable native notifications"
+                            } else {
+                                "Enable native notifications"
+                            },
+                        ),
+                    )
                 }
                 OutlinedButton(onClick = onToggleTrayDashboard, enabled = attention.available) {
-                    Text(desktopText(if (attention.trayDashboardEnabled) "Hide tray dashboard" else "Show tray dashboard"))
+                    Text(
+                        desktopText(
+                            if (attention.trayDashboardEnabled) "Hide tray dashboard" else "Show tray dashboard",
+                        ),
+                    )
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -441,11 +454,17 @@ fun DesktopSettingsScreen(
                     Text(desktopText(if (attention.quietHoursEnabled) "Disable quiet hours" else "Enable quiet hours"))
                 }
             }
-            Text(desktopText("ATT10 decisions are audited in the ATT01 ledger; desktop never creates a second reminder truth store."))
+            Text(
+                desktopText(
+                    "ATT10 decisions are audited in the ATT01 ledger; " +
+                        "desktop never creates a second reminder truth store.",
+                ),
+            )
             val reliability = attention.reliabilityEvidence
             Text(desktopText("ATT11 delivery reliability and audit"), fontWeight = FontWeight.Bold)
             Text(
-                "Delivered ${reliability.analytics.deliveredCount} • deferred ${reliability.analytics.deferredCount} • " +
+                "Delivered ${reliability.analytics.deliveredCount} • " +
+                    "deferred ${reliability.analytics.deferredCount} • " +
                     "missed ${reliability.analytics.missedCount} • snoozed ${reliability.analytics.snoozedCount} • " +
                     "dismissed ${reliability.analytics.dismissedCount} • done ${reliability.analytics.doneCount}",
             )
@@ -463,34 +482,69 @@ fun DesktopSettingsScreen(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { clipboard.setText(AnnotatedString(StudyFlowAttentionReliabilityExport.toJson(reliability))) }) {
+                OutlinedButton(
+                    onClick = {
+                        clipboard.setText(
+                            AnnotatedString(StudyFlowAttentionReliabilityExport.toJson(reliability)),
+                        )
+                    },
+                ) {
                     Text(desktopText("Copy audit JSON"))
                 }
-                OutlinedButton(onClick = { clipboard.setText(AnnotatedString(StudyFlowAttentionReliabilityExport.toCsv(reliability))) }) {
+                OutlinedButton(
+                    onClick = {
+                        clipboard.setText(
+                            AnnotatedString(StudyFlowAttentionReliabilityExport.toCsv(reliability)),
+                        )
+                    },
+                ) {
                     Text(desktopText("Copy audit CSV"))
                 }
             }
-            Text(desktopText("ATT11 analytics are deterministic projections of the ATT01 ledger; export never creates a parallel reminder store."))
+            Text(
+                desktopText(
+                    "ATT11 analytics are deterministic projections of the ATT01 ledger; " +
+                        "export never creates a parallel reminder store.",
+                ),
+            )
             Text(desktopText("Reminder categories"), fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.PLANNED) }, enabled = attention.available) {
+                OutlinedButton(
+                    onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.PLANNED) },
+                    enabled = attention.available,
+                ) {
                     Text("Study ${if (attention.plannedStudyEnabled) "on" else "off"}")
                 }
-                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.REVIEWS) }, enabled = attention.available) {
+                OutlinedButton(
+                    onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.REVIEWS) },
+                    enabled = attention.available,
+                ) {
                     Text("Reviews ${if (attention.dueReviewEnabled) "on" else "off"}")
                 }
-                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.MISSED) }, enabled = attention.available) {
+                OutlinedButton(
+                    onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.MISSED) },
+                    enabled = attention.available,
+                ) {
                     Text("Missed ${if (attention.missedActivityEnabled) "on" else "off"}")
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.SUMMARY) }, enabled = attention.available) {
+                OutlinedButton(
+                    onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.SUMMARY) },
+                    enabled = attention.available,
+                ) {
                     Text("Summary ${if (attention.dailySummaryEnabled) "on" else "off"}")
                 }
-                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.SESSIONS) }, enabled = attention.available) {
+                OutlinedButton(
+                    onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.SESSIONS) },
+                    enabled = attention.available,
+                ) {
                     Text("Sessions ${if (attention.sessionTimerEnabled) "on" else "off"}")
                 }
-                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.EXAM) }, enabled = attention.available) {
+                OutlinedButton(
+                    onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.EXAM) },
+                    enabled = attention.available,
+                ) {
                     Text("Exam ${if (attention.examCountdownEnabled) "on" else "off"}")
                 }
             }

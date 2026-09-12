@@ -19,7 +19,7 @@ class DesktopLocalizationPersistenceTest {
         )
         assertEquals(
             AppLanguage.PORTUGUESE_BRAZIL,
-            DesktopTextCatalog.forLanguage(AppLanguage.SYSTEM_DEFAULT, Locale("pt", "BR")).resolvedLanguage,
+            DesktopTextCatalog.forLanguage(AppLanguage.SYSTEM_DEFAULT, Locale.forLanguageTag("pt-BR")).resolvedLanguage,
         )
         assertEquals(
             AppLanguage.ENGLISH,

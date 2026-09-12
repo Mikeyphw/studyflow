@@ -1270,21 +1270,60 @@ class StudyFlowTvActivity : Activity() {
         if (!::tvAttentionRuntime.isInitialized) return
         val banner = tvAttentionRuntime.snapshot().activeBanner ?: return
         contentCards.addView(
-            tvCardButton(
-                title = "${banner.title} · ${banner.category.name.lowercase()}",
-                body = "${banner.body}
-TV attention is foreground-only; closed-TV delivery falls back to a designated notifier.",
-                onClick = {
-                    val result = tvAttentionRuntime.applyAction(
-                        action = StudyFlowTvAttentionAction.OPEN,
-                        commandId = nextLocalCommandId(),
-                    )
-                    result.command?.let { command ->
-                        applyControlCommand(command, StudyFlowTvControlOrigin.LOCAL_REMOTE, System.currentTimeMillis())
-                    } ?: renderDestination(controlState.destination)
-                },
-            ),
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.START
+                setPadding(0, 0, 0, dp(12))
+                addView(
+                    TextView(this@StudyFlowTvActivity).apply {
+                        text = "${banner.title} · ${banner.category.name.lowercase()}\n${banner.body}\nTV attention is foreground-only; closed-TV delivery falls back to a designated notifier."
+                        setTextColor(Color.WHITE)
+                        applyStudyFlowTvTenFootText(StudyFlowTvTextRole.CONTROL)
+                        gravity = Gravity.START
+                        setPadding(dp(22), dp(16), dp(22), dp(16))
+                    },
+                )
+                addView(
+                    LinearLayout(this@StudyFlowTvActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.START
+                        banner.actions.forEach { action ->
+                            addView(
+                                tvTextActionButton(action.tvAttentionLabel()).apply {
+                                    tag = "att06-action-${action.name.lowercase()}"
+                                    setOnClickListener { handleTvAttentionAction(action) }
+                                },
+                            )
+                        }
+                    },
+                )
+            },
         )
+    }
+
+    private fun handleTvAttentionAction(action: StudyFlowTvAttentionAction) {
+        val result = tvAttentionRuntime.applyAction(
+            action = action,
+            commandId = nextLocalCommandId(),
+        )
+        if (result.handledOnTv) {
+            result.command?.let { command ->
+                applyControlCommand(command, StudyFlowTvControlOrigin.LOCAL_REMOTE, System.currentTimeMillis())
+            } ?: renderDestination(controlState.destination)
+        } else if (::continuityStatus.isInitialized) {
+            continuityStatus.text = "Attention acknowledged on TV · continue on the designated phone."
+        }
+        renderDestination(controlState.destination)
+    }
+
+    private fun StudyFlowTvAttentionAction.tvAttentionLabel(): String = when (this) {
+        StudyFlowTvAttentionAction.OPEN -> "Open"
+        StudyFlowTvAttentionAction.START_NOW -> "Start now"
+        StudyFlowTvAttentionAction.REVIEW_NOW -> "Review now"
+        StudyFlowTvAttentionAction.CONTINUE -> "Continue"
+        StudyFlowTvAttentionAction.SNOOZE -> "Snooze"
+        StudyFlowTvAttentionAction.DISMISS -> "Dismiss"
+        StudyFlowTvAttentionAction.MOVE_TO_PHONE -> "Move to phone"
     }
 
     private fun renderContinuityStatus() {

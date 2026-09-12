@@ -23,6 +23,7 @@ import {
 import {
   attentionDeviceFromWebPeer,
   routeStudyFlowAttentionDeliveryWithPolicy,
+  studyFlowAttentionRouteTargetsDevice,
   type StudyFlowAttentionDeliveryRoute,
   type StudyFlowAttentionDeviceCapability,
 } from "./attention_router";
@@ -454,17 +455,20 @@ export class StudyFlowWebAttentionRuntime {
     capabilities: StudyFlowPwaCapabilities,
     pushSubscription: StudyFlowWebPushSubscriptionRecord | null,
   ) {
+    const webTv = this.peer.identity.clientKind === "web_tv";
     return attentionDeviceFromWebPeer(this.peer, {
       availability: this.running ? "foreground" : "online",
       foregroundActive: this.running,
-      notificationPermissionGranted: this.environment.notificationPermission() === "granted",
-      designatedNotifier: this.preferences.systemNotificationsEnabled || !!pushSubscription,
-      primaryUserDevice: true,
-      deliverySurfaces: [
-        ...(pushSubscription ? ["web_push" as const] : []),
-        ...(capabilities.notifications ? ["system_notification" as const] : []),
-        "widget_or_badge" as const,
-      ],
+      notificationPermissionGranted: !webTv && this.environment.notificationPermission() === "granted",
+      designatedNotifier: !webTv && (this.preferences.systemNotificationsEnabled || !!pushSubscription),
+      primaryUserDevice: !webTv,
+      deliverySurfaces: webTv
+        ? ["foreground_banner" as const, "ledger_only" as const]
+        : [
+            ...(pushSubscription ? ["web_push" as const] : []),
+            ...(capabilities.notifications ? ["system_notification" as const] : []),
+            "widget_or_badge" as const,
+          ],
       lastSeenAtEpochMillis: now,
     });
   }
@@ -557,7 +561,13 @@ export class StudyFlowWebAttentionRuntime {
     if (result.status !== "accepted") return result.status;
     const occurrence = delivery.notification.attentionOccurrence ?? this.readLedger().entries.find(entry => entry.sequence === delivery.sequence && entry.sourceDeviceId === delivery.sourceDeviceId)?.occurrence;
     if (occurrence) {
-      await this.surfaceOccurrence(occurrence, delivery.notification.title, delivery.notification.body, delivery.notification.route?.workspaceId ? routeHashForCategory(occurrence.category) : undefined, false);
+      const explicitTargets = occurrence.targetDeviceIds ?? [];
+      // SFLP envelopes are target-aware, and ATT12 also preserves the occurrence-level
+      // ATT07 explicit target list so a broadcast transport cannot accidentally surface
+      // a reminder on a non-target browser.
+      if (!explicitTargets.length || explicitTargets.includes(this.peer.identity.deviceId)) {
+        await this.surfaceOccurrence(occurrence, delivery.notification.title, delivery.notification.body, delivery.notification.route?.workspaceId ? routeHashForCategory(occurrence.category) : undefined, false);
+      }
     }
     this.emit();
     return result.status;
@@ -580,6 +590,11 @@ export class StudyFlowWebAttentionRuntime {
       this.upsertOccurrence(snoozed, "scheduled", now);
     } else if (action === "dismiss") {
       this.transition(occurrenceId, "dismissed", now);
+    } else if (action === "move_to_phone") {
+      this.transition(occurrenceId, "acknowledged", now);
+      globalThis.dispatchEvent?.(new CustomEvent("studyflow:attention-move-to-phone", {
+        detail: { occurrenceId, fromDeviceId: this.peer.identity.deviceId, requestedAtEpochMillis: now },
+      }));
     } else if (action === "mark_done") {
       const activityId = typeof entry.occurrence.payload?.activityId === "string" ? entry.occurrence.payload.activityId : entry.occurrence.scheduleEntityId;
       const reviewId = typeof entry.occurrence.payload?.reviewId === "string" ? entry.occurrence.payload.reviewId : null;
@@ -622,6 +637,10 @@ export class StudyFlowWebAttentionRuntime {
         entry,
       );
       this.recordRouteDecision(route);
+      // ATT12: preserve ATT07 explicit-target safety at the production delivery edge.
+      // A local browser may hold the occurrence in its replicated ledger, but only a
+      // selected owner/mirror may surface it. Non-targeted entries remain scheduled.
+      if (!studyFlowAttentionRouteTargetsDevice(route, this.peer.identity.deviceId)) continue;
       const decision = evaluateWebAttentionFocusPolicy(entry.occurrence, this.preferences.focusPolicy, now, entry, "web");
       this.recordPolicyDecision(decision);
       if (decision.outcome === "suppress_duplicate" || decision.outcome === "route_to_phone") continue;
@@ -812,7 +831,7 @@ export class StudyFlowWebAttentionRuntime {
     const resolvedTitle = title ?? presentation.title;
     const resolvedBody = body ?? presentation.body;
     const resolvedRoute = routeHash ?? presentation.routeHash;
-    if (this.preferences.systemNotificationsEnabled && this.environment.notificationPermission() === "granted") {
+    if (this.peer.identity.clientKind !== "web_tv" && this.preferences.systemNotificationsEnabled && this.environment.notificationPermission() === "granted") {
       const actions = actionKindsForOccurrence(occurrence).map(action => ({ action, title: actionLabel(action) }));
       await this.environment.showNotification(resolvedTitle, {
         body: resolvedBody,

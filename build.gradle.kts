@@ -1997,29 +1997,76 @@ tasks.register<Exec>("verifyStudyFlowTvDevtoolAndroidRunner") {
 // ATT01 — Unified Attention Domain + SFLP Correctness Foundation
 tasks.register<Exec>("verifyAtt01AttentionContracts") {
     group = "verification"
-    description = "Checks ATT01 attention-domain, SFLP compatibility, persistence, migration, diagnostics, and documentation contracts."
+    description =
+        "Checks ATT01 attention-domain, SFLP compatibility, persistence, migration, " +
+            "diagnostics, and documentation contracts."
     commandLine("python3", "scripts/verify_att01_unified_attention_foundation.py")
+}
+
+// ATT12 v4: keep the final-seal JVM unit-test lanes deterministic on native Termux even when
+// Devtool intentionally enables Gradle --parallel. Module compilation may still run in parallel;
+// only the heavy test executors are ordered.
+gradle.projectsEvaluated {
+    project(":feature:settings").tasks.named("testDebugUnitTest") {
+        mustRunAfter(":feature:reminders:testDebugUnitTest")
+    }
+    project(":app").tasks.named("testReleaseUnitTest") {
+        mustRunAfter(":feature:settings:testDebugUnitTest")
+    }
+    project(":app-tv").tasks.named("testDebugUnitTest") {
+        mustRunAfter(":app:testReleaseUnitTest")
+    }
+    project(":desktopApp").tasks.named("test") {
+        mustRunAfter(":app-tv:testDebugUnitTest")
+    }
+}
+
+tasks.register<Exec>("verifyAttentionWebRuntimeParity") {
+    group = "verification"
+    description = "Runs the single shared TypeScript compile/runtime-parity gate for ATT01–ATT12."
+    workingDir(rootProject.file("web"))
+    commandLine("node", "scripts/compile_runtime.mjs")
+    // Under Devtool --parallel, keep the only TypeScript compiler process away from the
+    // memory-heavy Kotlin/JVM test workers. This avoids duplicate tsc processes and
+    // preserves one authoritative runtime-parity result for every Attention seal.
+    mustRunAfter(
+        ":core:link:test",
+        ":core:diagnostics:test",
+        ":core:domain:test",
+        ":feature:reminders:testDebugUnitTest",
+        ":feature:settings:testDebugUnitTest",
+        ":app:testReleaseUnitTest",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+    )
 }
 
 tasks.register<Exec>("verifyAtt01WebAttentionRuntime") {
     group = "verification"
-    description = "Checks ATT01 Web attention TypeScript parity and durable runtime behavior."
+    description =
+        "Checks ATT01 Web durable attention runtime behavior; TypeScript parity is shared " +
+            "by the Attention seal."
     workingDir(rootProject.file("web"))
     commandLine(
-        "bash",
-        "-lc",
-        "npx tsc -p tsconfig.json --noEmit --pretty false && " +
-            "node scripts/compile_runtime.mjs && " +
-            "python3 -m unittest tests.test_att01_attention_runtime tests.test_sflp18_19_notification_media",
+        "python3", "-m", "unittest",
+        "tests.test_att01_attention_runtime",
+        "tests.test_sflp18_19_notification_media",
     )
+}
+
+tasks.named("verifyAtt01WebAttentionRuntime") {
+    mustRunAfter("verifyAttentionWebRuntimeParity")
 }
 
 tasks.register("verifyAtt01UnifiedAttentionFoundation") {
     group = "verification"
-    description = "Focused ATT01 production gate across shared, Android, Desktop, Web, and Android TV attention foundations."
+    description =
+        "Focused ATT01 production gate across shared, Android, Desktop, Web, and Android TV " +
+            "attention foundations."
     dependsOn(
         "verifyAtt01AttentionContracts",
         "verifyAtt01WebAttentionRuntime",
+        "verifyAttentionWebRuntimeParity",
         ":core:link:test",
         ":core:diagnostics:test",
         ":desktopApp:test",
@@ -2031,7 +2078,9 @@ tasks.register("verifyAtt01UnifiedAttentionFoundation") {
 // ATT02 — Android Attention System 2.0
 tasks.register<Exec>("verifyAtt02AndroidAttentionContracts") {
     group = "verification"
-    description = "Checks ATT02 Android policy, scheduling, channels, actions, recovery, reliability, diagnostics, tests and documentation contracts."
+    description =
+        "Checks ATT02 Android policy, scheduling, channels, actions, recovery, reliability, " +
+            "diagnostics, tests and documentation contracts."
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_att02_android_attention_system.py")
 }
@@ -2051,7 +2100,9 @@ tasks.register("verifyAtt02AndroidAttentionSystem") {
 // ATT03 — Android Widget Suite 2.0
 tasks.register<Exec>("verifyAtt03AndroidWidgetContracts") {
     group = "verification"
-    description = "Checks ATT03 widget modes, per-instance configuration, freshness scheduling, actions, diagnostics, migration, tests and documentation contracts."
+    description =
+        "Checks ATT03 widget modes, per-instance configuration, freshness scheduling, actions, " +
+            "diagnostics, migration, tests and documentation contracts."
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_att03_android_widget_suite.py")
 }
@@ -2069,7 +2120,9 @@ tasks.register("verifyAtt03AndroidWidgetSuite") {
 // ATT04 — Desktop Native Attention + Tray Product
 tasks.register<Exec>("verifyAtt04DesktopAttentionContracts") {
     group = "verification"
-    description = "Checks ATT04 Desktop scheduler, persistence, native notification/tray, recovery, settings, diagnostics, tests and documentation contracts."
+    description =
+        "Checks ATT04 Desktop scheduler, persistence, native notification/tray, recovery, settings, " +
+            "diagnostics, tests and documentation contracts."
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_att04_desktop_attention_runtime.py")
 }
@@ -2089,23 +2142,35 @@ tasks.register("verifyAtt04DesktopAttentionRuntime") {
 // ATT05 — Web/PWA Notification & Attention Runtime
 tasks.register<Exec>("verifyAtt05WebAttentionContracts") {
     group = "verification"
-    description = "Checks ATT05 Web/PWA attention runtime, Notification Center, service worker, Push foundation, docs and source contracts."
+    description =
+        "Checks ATT05 Web/PWA attention runtime, Notification Center, service worker, Push foundation, " +
+            "docs and source contracts."
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_att05_web_pwa_attention_runtime.py")
 }
 
 tasks.register<Exec>("verifyAtt05WebAttentionLint") {
     group = "verification"
-    description = "Type-check Web ATT05 source and committed runtime parity."
+    description = "Run Web source/release validation without spawning a duplicate TypeScript compiler."
     workingDir = file("web")
-    commandLine("npm", "run", "lint")
+    commandLine("python3", "scripts/validate_web.py", "--all")
 }
 
 tasks.register<Exec>("verifyAtt05WebAttentionTests") {
     group = "verification"
-    description = "Run the Web regression suite including ATT05 attention runtime tests."
+    description =
+        "Run the complete Web regression suite; TypeScript parity is handled once by " +
+            "verifyAttentionWebRuntimeParity."
     workingDir = file("web")
-    commandLine("npm", "test")
+    environment("STUDYFLOW_EXTERNAL_RUNTIME_PARITY", "1")
+    commandLine("python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py")
+}
+
+tasks.named("verifyAtt05WebAttentionLint") {
+    mustRunAfter("verifyAttentionWebRuntimeParity")
+}
+tasks.named("verifyAtt05WebAttentionTests") {
+    mustRunAfter("verifyAttentionWebRuntimeParity")
 }
 
 tasks.register("verifyAtt05WebPwaAttentionRuntime") {
@@ -2115,6 +2180,7 @@ tasks.register("verifyAtt05WebPwaAttentionRuntime") {
         "verifyAtt05WebAttentionContracts",
         "verifyAtt05WebAttentionLint",
         "verifyAtt05WebAttentionTests",
+        "verifyAttentionWebRuntimeParity",
         "verifyAtt01UnifiedAttentionFoundation",
         "verifySflp18Sflp19NotificationMediaSync",
     )
@@ -2154,7 +2220,9 @@ tasks.register("verifyAtt06TvAttentionExperience") {
 // ATT07 — Cross-Device Delivery Router
 tasks.register<Exec>("verifyAtt07CrossDeviceDeliveryContracts") {
     group = "verification"
-    description = "Checks ATT07 owner/mirror/suppression routing, device capability bridges, Web parity, docs and source contracts."
+    description =
+        "Checks ATT07 owner/mirror/suppression routing, device capability bridges, Web parity, " +
+            "docs and source contracts."
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_att07_cross_device_delivery_router.py")
 }
@@ -2235,7 +2303,9 @@ tasks.register("verifyAtt09CalendarScheduleExportAttention") {
 // ATT10 — Quiet Hours / Focus Profiles / Escalation Policy
 tasks.register<Exec>("verifyAtt10QuietHoursFocusPolicyContracts") {
     group = "verification"
-    description = "Checks ATT10 focus-policy domain, ATT01/ATT07 integration, platform projections, Web parity and docs."
+    description =
+        "Checks ATT10 focus-policy domain, ATT01/ATT07 integration, platform projections, " +
+            "Web parity and docs."
     workingDir = rootProject.projectDir
     commandLine("python3", "scripts/verify_att10_quiet_hours_focus_profiles_escalation_policy.py")
 }
@@ -2293,11 +2363,90 @@ tasks.register<Exec>("verifyAtt11WebReliabilityTests") {
 
 tasks.register("verifyAtt11NotificationReliabilityEvidenceAudit") {
     group = "verification"
-    description = "Focused ATT11 gate for reliability evidence, delivery analytics, cross-device route audit and export."
+    description =
+        "Focused ATT11 gate for reliability evidence, delivery analytics, cross-device route " +
+            "audit and export."
     dependsOn(
         "verifyAtt11NotificationReliabilityContracts",
         "verifyAtt11WebReliabilityTests",
         "verifyAtt10QuietHoursFocusProfilesEscalationPolicy",
+        ":core:link:test",
+        ":app:testReleaseUnitTest",
+        ":desktopApp:test",
+        ":app-tv:testDebugUnitTest",
+    )
+}
+
+// ATT12 — Attention Release Final Seal / Roadmap Reconciliation
+tasks.register<Exec>("verifyAtt12AttentionReleaseContracts") {
+    group = "verification"
+    description =
+        "Checks ATT01–ATT12 roadmap promises, production reachability, capability truth, final docs " +
+            "and validation wiring."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att12_attention_release_final_seal.py")
+}
+
+tasks.register<Exec>("verifyAtt12WebAttentionReleaseTests") {
+    group = "verification"
+    description = "Runs ATT12 production-wiring tests plus the complete focused Web Attention regression set."
+    workingDir = file("web")
+    commandLine(
+        "python3", "-m", "unittest",
+        "tests/test_att12_attention_release_seal.py",
+        "tests/test_att11_attention_reliability.py",
+        "tests/test_att10_focus_policy.py",
+        "tests/test_att09_calendar_attention.py",
+        "tests/test_att08_compact_attention.py",
+        "tests/test_att07_attention_router.py",
+        "tests/test_att06_web_tv_attention.py",
+        "tests/test_att05_web_attention_runtime.py",
+        "tests/test_att01_attention_runtime.py",
+    )
+}
+
+tasks.register("verifyAtt12WebRuntimeParity") {
+    group = "verification"
+    description = "Reuses the single shared TypeScript runtime-parity gate for the ATT12 release seal."
+    dependsOn("verifyAttentionWebRuntimeParity")
+}
+
+tasks.register<Exec>("verifyAtt12WebReleaseValidation") {
+    group = "verification"
+    description = "Runs release-mode Web validation for the ATT12 final Attention seal."
+    workingDir = file("web")
+    commandLine("python3", "scripts/validate_web.py", "--release")
+}
+
+tasks.register<Exec>("verifyAtt12WebReleaseIntegrity") {
+    group = "verification"
+    description = "Checks the committed Web release manifest/cache/runtime integrity for ATT12."
+    workingDir = file("web")
+    commandLine("node", "scripts/check_release.mjs")
+}
+
+tasks.named("verifyAtt12WebAttentionReleaseTests") {
+    mustRunAfter("verifyAttentionWebRuntimeParity")
+}
+tasks.named("verifyAtt12WebReleaseValidation") {
+    mustRunAfter("verifyAttentionWebRuntimeParity")
+}
+tasks.named("verifyAtt12WebReleaseIntegrity") {
+    mustRunAfter("verifyAttentionWebRuntimeParity")
+}
+
+tasks.register("verifyAtt12AttentionReleaseFinalSeal") {
+    group = "verification"
+    description = "Final ATT01–ATT12 Attention roadmap reconciliation and cross-platform release seal."
+    dependsOn(
+        "verifyAtt12AttentionReleaseContracts",
+        "verifyAtt12WebAttentionReleaseTests",
+        "verifyAtt12WebRuntimeParity",
+        "verifyAtt12WebReleaseValidation",
+        "verifyAtt12WebReleaseIntegrity",
+        "verifyAtt11NotificationReliabilityEvidenceAudit",
+        "verifySflp18Sflp19NotificationMediaSync",
+        "verifyWeb20SharedSemanticGoldenVectors",
         ":core:link:test",
         ":app:testReleaseUnitTest",
         ":desktopApp:test",

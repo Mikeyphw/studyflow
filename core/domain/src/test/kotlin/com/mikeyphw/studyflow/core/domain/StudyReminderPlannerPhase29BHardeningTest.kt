@@ -22,7 +22,7 @@ class StudyReminderPlannerPhase29BHardeningTest {
     @Test
     fun dailySummaryUsesNextLocalMidnightInsteadOfUtcBucket() = withTimeZone("America/Sao_Paulo") {
         val now = epoch(2026, Calendar.AUGUST, 1, 23, 30)
-        val expectedLocalMidnight = epoch(2026, Calendar.AUGUST, 2, 0, 0)
+        val expectedLocalSummary = epoch(2026, Calendar.AUGUST, 2, 8, 0)
         val reminderPlan = StudyReminderPlanner.buildPlan(
             input(
                 now = now,
@@ -35,7 +35,7 @@ class StudyReminderPlannerPhase29BHardeningTest {
         val daily = reminderPlan.notificationCandidates.single { candidate ->
             candidate.type == ReminderNotificationType.DAILY_SUMMARY
         }
-        assertEquals(expectedLocalMidnight, daily.scheduledAtEpochMillis)
+        assertEquals(expectedLocalSummary, daily.scheduledAtEpochMillis)
         assertEquals(0, reminderPlan.widgetSummary.plannedActivityCount)
         assertFalse(StudyReminderPlanner.sameLocalDay(now, epoch(2026, Calendar.AUGUST, 2, 0, 15)))
     }

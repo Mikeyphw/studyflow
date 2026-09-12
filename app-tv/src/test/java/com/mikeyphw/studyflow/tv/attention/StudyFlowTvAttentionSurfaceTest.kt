@@ -3,9 +3,7 @@ package com.mikeyphw.studyflow.tv.attention
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionCategory
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
-import com.mikeyphw.studyflow.core.link.StudyFlowAttentionSource
-import com.mikeyphw.studyflow.core.link.StudyFlowAttentionTrigger
-import com.mikeyphw.studyflow.core.link.StudyFlowNotificationKind
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvDestination
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -60,14 +58,8 @@ class StudyFlowTvAttentionSurfaceTest {
 
     private fun occurrence(category: StudyFlowAttentionCategory) = StudyFlowAttentionOccurrence(
         occurrenceId = StudyFlowAttentionOccurrenceId("attention-${category.name.lowercase()}"),
+        workspaceId = StudyFlowWorkspaceId("workspace-tv-attention"),
         category = category,
-        source = StudyFlowAttentionSource.REMOTE_DELIVERY,
-        trigger = StudyFlowAttentionTrigger.NOTIFICATION,
-        notificationKind = when (category) {
-            StudyFlowAttentionCategory.DUE_REVIEW -> StudyFlowNotificationKind.REVIEW_DUE
-            StudyFlowAttentionCategory.EXAM_COUNTDOWN -> StudyFlowNotificationKind.PLAN_WARNING
-            else -> StudyFlowNotificationKind.PLAN_WARNING
-        },
         scheduledAtEpochMillis = 1_000L,
         expiresAtEpochMillis = 10_000L,
     )

@@ -333,6 +333,10 @@ class DesktopAttentionRuntime(
                     ledgerEntry = entry,
                 )
                 runCatching { attentionLedger.recordRouteDecision(route) }
+                // ATT12: ATT07 explicit target ownership is authoritative. A Desktop
+                // process that merely has a local ledger copy must not notify when the
+                // route selected another device. Leave the entry scheduled for its owner.
+                if (!DesktopAttentionDeliveryRouterBridge.isLocalTarget(route)) return@forEach
                 val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
                     occurrence = occurrence,
                     policy = focusPolicy,
@@ -407,7 +411,10 @@ class DesktopAttentionRuntime(
         val activities = planId?.let(services.scheduleRepository::currentActivities).orEmpty()
         val next = activities
             .filter { it.status in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED) }
-            .filter { it.scheduledStartEpochMillis == null || it.scheduledStartEpochMillis >= now - 2 * 60 * 60 * 1_000L }
+            .filter { activity ->
+                val scheduledStart = activity.scheduledStartEpochMillis
+                scheduledStart == null || scheduledStart >= now - 2 * 60 * 60 * 1_000L
+            }
             .minByOrNull { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
         val activeSession = planId?.let(services.sessionRepository::currentSessions)
             ?.firstOrNull { it.status in setOf(StudySessionStatus.RUNNING, StudySessionStatus.PAUSED) }

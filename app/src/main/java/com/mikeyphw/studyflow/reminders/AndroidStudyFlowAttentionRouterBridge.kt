@@ -72,5 +72,9 @@ object AndroidStudyFlowAttentionRouterBridge {
         localClientKind = StudyFlowLinkClientKind.ANDROID,
     )
 
+    /** ATT12: delivery call sites must enforce ATT07 ownership, not merely record it. */
+    fun isLocalTarget(route: StudyFlowAttentionDeliveryRoute): Boolean =
+        route.deliverable && localDeviceId in route.targetDeviceIds
+
     fun router(): StudyFlowAttentionDeliveryRouter = StudyFlowAttentionDeliveryRouter()
 }

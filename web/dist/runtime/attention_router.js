@@ -1,11 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.studyFlowAttentionRouteTargetsDevice = studyFlowAttentionRouteTargetsDevice;
 exports.defaultAttentionSurfacesForClient = defaultAttentionSurfacesForClient;
 exports.attentionDeviceFromWebPeer = attentionDeviceFromWebPeer;
 exports.routeStudyFlowAttentionDelivery = routeStudyFlowAttentionDelivery;
 exports.routeStudyFlowAttentionDeliveryWithPolicy = routeStudyFlowAttentionDeliveryWithPolicy;
 exports.createStudyFlowAttentionHandoffRequest = createStudyFlowAttentionHandoffRequest;
 const attention_focus_policy_1 = require("./attention_focus_policy");
+/** ATT12 call-site guard: route computation is not enough unless the surface checks ownership. */
+function studyFlowAttentionRouteTargetsDevice(route, deviceId) {
+    return route.deliverable && route.targetDeviceIds.includes(deviceId);
+}
 const DEFAULT_STALE_MS = 180000;
 const DEFAULT_MIRRORS = 2;
 const HANDLED_STATES = new Set([

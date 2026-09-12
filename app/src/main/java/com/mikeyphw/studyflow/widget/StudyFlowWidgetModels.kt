@@ -95,7 +95,7 @@ object StudyFlowWidgetSnapshotProjector {
             sessionFinish,
             sessionMinuteTick,
             nextMidnight,
-        ).filter { it > nowEpochMillis + MinimumRefreshDelayMillis }
+        ).filter { it >= nowEpochMillis + MinimumRefreshDelayMillis }
             .minOrNull()
             ?: nextMidnight
 

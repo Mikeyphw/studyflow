@@ -1,3 +1,6 @@
+> **ATT12 v6 final-seal closure:** the Attention release gate now includes the v4 widget/SFLP/parallel fixes,
+> reconciles final TV/Desktop regression expectations with delivered product truth, and makes Web runtime parity self-contained when a Termux TypeScript compiler cannot execute.
+
 ## ATT11 — Notification Reliability Evidence / Delivery Audit
 
 StudyFlow now derives notification reliability analytics and cross-device delivery audit evidence directly from the canonical ATT01 ledger. ATT07 owner/mirror decisions and ATT10 policy outcomes are inspectable across Android, Desktop, Web/PWA, and truthful read-only TV projections, with user-initiated JSON/CSV export on full clients. Web is counted as background-reliable only when an actual Web Push subscription exists. See `ATT11_NOTIFICATION_RELIABILITY_EVIDENCE_AUDIT.md` and `docs/product/NOTIFICATION_RELIABILITY_EVIDENCE_AUDIT.md`.
@@ -618,3 +621,8 @@ ATT08 adds wearable, lock-screen, quick-tile, Desktop mini, Web compact and TV r
 ### ATT09 calendar attention export
 
 StudyFlow can now export planned schedule blocks, reviews, mock exams and exam dates as a portable `.ics` calendar while also projecting matching StudyFlow attention occurrences. The calendar module is deliberately user-initiated: external calendars receive an exported file/feed, while ATT07 remains responsible for delivery ownership and dedupe across Android, Desktop, Web and TV.
+
+
+### ATT12 final Attention release seal
+
+ATT12 closes the ATT01–ATT12 Attention roadmap. It reconciles the handoff promise list against the current repository, enforces ATT07 local-target ownership at Android/Desktop/Web delivery edges, makes the full ATT06 native-TV action set reachable, boots the Web-TV foreground Attention runtime in production, cleans the canonical capability matrix and Devtool task list, and adds the final promise-audit/user/validation documentation. See `docs/product/ATTENTION_USER_GUIDE.md`, `docs/product/ATTENTION_ROADMAP_PROMISE_AUDIT.md`, and `docs/validation/ATT12_ATTENTION_FINAL_VALIDATION.md`. The v3/v4/v5/v6 closure series also reconciles the Android TV test model and settings counts, Android-compatible source-contract file reads, the ATT08 stale-companion regression fixture, DOV23 Desktop settings truth, headless Desktop test runtime dependencies, deterministic Termux test ordering, and a self-contained Web TypeScript/runtime parity gate.

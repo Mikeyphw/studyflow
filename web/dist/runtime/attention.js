@@ -349,17 +349,20 @@ class StudyFlowWebAttentionRuntime {
         };
     }
     localAttentionDevice(now, capabilities, pushSubscription) {
+        const webTv = this.peer.identity.clientKind === "web_tv";
         return (0, attention_router_1.attentionDeviceFromWebPeer)(this.peer, {
             availability: this.running ? "foreground" : "online",
             foregroundActive: this.running,
-            notificationPermissionGranted: this.environment.notificationPermission() === "granted",
-            designatedNotifier: this.preferences.systemNotificationsEnabled || !!pushSubscription,
-            primaryUserDevice: true,
-            deliverySurfaces: [
-                ...(pushSubscription ? ["web_push"] : []),
-                ...(capabilities.notifications ? ["system_notification"] : []),
-                "widget_or_badge",
-            ],
+            notificationPermissionGranted: !webTv && this.environment.notificationPermission() === "granted",
+            designatedNotifier: !webTv && (this.preferences.systemNotificationsEnabled || !!pushSubscription),
+            primaryUserDevice: !webTv,
+            deliverySurfaces: webTv
+                ? ["foreground_banner", "ledger_only"]
+                : [
+                    ...(pushSubscription ? ["web_push"] : []),
+                    ...(capabilities.notifications ? ["system_notification"] : []),
+                    "widget_or_badge",
+                ],
             lastSeenAtEpochMillis: now,
         });
     }
@@ -431,20 +434,26 @@ class StudyFlowWebAttentionRuntime {
         return result;
     }
     async ingestRemoteDelivery(delivery) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         const mediaRuntime = new sflp_link_1.StudyFlowNotificationMediaRuntime(this.peer.identity, this.ledgerStorage);
         const result = mediaRuntime.applyNotificationDelivery(delivery);
         if (result.status !== "accepted")
             return result.status;
         const occurrence = (_a = delivery.notification.attentionOccurrence) !== null && _a !== void 0 ? _a : (_b = this.readLedger().entries.find(entry => entry.sequence === delivery.sequence && entry.sourceDeviceId === delivery.sourceDeviceId)) === null || _b === void 0 ? void 0 : _b.occurrence;
         if (occurrence) {
-            await this.surfaceOccurrence(occurrence, delivery.notification.title, delivery.notification.body, ((_c = delivery.notification.route) === null || _c === void 0 ? void 0 : _c.workspaceId) ? routeHashForCategory(occurrence.category) : undefined, false);
+            const explicitTargets = (_c = occurrence.targetDeviceIds) !== null && _c !== void 0 ? _c : [];
+            // SFLP envelopes are target-aware, and ATT12 also preserves the occurrence-level
+            // ATT07 explicit target list so a broadcast transport cannot accidentally surface
+            // a reminder on a non-target browser.
+            if (!explicitTargets.length || explicitTargets.includes(this.peer.identity.deviceId)) {
+                await this.surfaceOccurrence(occurrence, delivery.notification.title, delivery.notification.body, ((_d = delivery.notification.route) === null || _d === void 0 ? void 0 : _d.workspaceId) ? routeHashForCategory(occurrence.category) : undefined, false);
+            }
         }
         this.emit();
         return result.status;
     }
     async applyAction(occurrenceId, action, snoozeMinutes = 10) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         const ledger = this.readLedger();
         const entry = ledger.entries.find(value => value.occurrence.occurrenceId === occurrenceId);
         if (!entry)
@@ -464,9 +473,15 @@ class StudyFlowWebAttentionRuntime {
         else if (action === "dismiss") {
             this.transition(occurrenceId, "dismissed", now);
         }
+        else if (action === "move_to_phone") {
+            this.transition(occurrenceId, "acknowledged", now);
+            (_b = globalThis.dispatchEvent) === null || _b === void 0 ? void 0 : _b.call(globalThis, new CustomEvent("studyflow:attention-move-to-phone", {
+                detail: { occurrenceId, fromDeviceId: this.peer.identity.deviceId, requestedAtEpochMillis: now },
+            }));
+        }
         else if (action === "mark_done") {
-            const activityId = typeof ((_b = entry.occurrence.payload) === null || _b === void 0 ? void 0 : _b.activityId) === "string" ? entry.occurrence.payload.activityId : entry.occurrence.scheduleEntityId;
-            const reviewId = typeof ((_c = entry.occurrence.payload) === null || _c === void 0 ? void 0 : _c.reviewId) === "string" ? entry.occurrence.payload.reviewId : null;
+            const activityId = typeof ((_c = entry.occurrence.payload) === null || _c === void 0 ? void 0 : _c.activityId) === "string" ? entry.occurrence.payload.activityId : entry.occurrence.scheduleEntityId;
+            const reviewId = typeof ((_d = entry.occurrence.payload) === null || _d === void 0 ? void 0 : _d.reviewId) === "string" ? entry.occurrence.payload.reviewId : null;
             if (reviewId)
                 this.store.completeReview(reviewId);
             else if (activityId) {
@@ -478,7 +493,7 @@ class StudyFlowWebAttentionRuntime {
         }
         else {
             this.transition(occurrenceId, action === "start_now" || action === "review_now" ? "started" : "acknowledged", now);
-            const route = typeof ((_d = entry.occurrence.payload) === null || _d === void 0 ? void 0 : _d.routeHash) === "string" ? entry.occurrence.payload.routeHash : routeHashForCategory(entry.occurrence.category);
+            const route = typeof ((_e = entry.occurrence.payload) === null || _e === void 0 ? void 0 : _e.routeHash) === "string" ? entry.occurrence.payload.routeHash : routeHashForCategory(entry.occurrence.category);
             this.environment.openRoute(route);
         }
         await this.updateBadge();
@@ -503,6 +518,11 @@ class StudyFlowWebAttentionRuntime {
         for (const entry of due) {
             const route = (0, attention_router_1.routeStudyFlowAttentionDeliveryWithPolicy)(entry.occurrence, [localDevice], now, this.preferences.focusPolicy, { localDeviceId: this.peer.identity.deviceId, primaryDeviceId: this.peer.identity.deviceId, designatedNotifierDeviceIds: localDevice.designatedNotifier ? [this.peer.identity.deviceId] : [] }, entry);
             this.recordRouteDecision(route);
+            // ATT12: preserve ATT07 explicit-target safety at the production delivery edge.
+            // A local browser may hold the occurrence in its replicated ledger, but only a
+            // selected owner/mirror may surface it. Non-targeted entries remain scheduled.
+            if (!(0, attention_router_1.studyFlowAttentionRouteTargetsDevice)(route, this.peer.identity.deviceId))
+                continue;
             const decision = (0, attention_focus_policy_1.evaluateWebAttentionFocusPolicy)(entry.occurrence, this.preferences.focusPolicy, now, entry, "web");
             this.recordPolicyDecision(decision);
             if (decision.outcome === "suppress_duplicate" || decision.outcome === "route_to_phone")
@@ -698,7 +718,7 @@ class StudyFlowWebAttentionRuntime {
         const resolvedTitle = title !== null && title !== void 0 ? title : presentation.title;
         const resolvedBody = body !== null && body !== void 0 ? body : presentation.body;
         const resolvedRoute = routeHash !== null && routeHash !== void 0 ? routeHash : presentation.routeHash;
-        if (this.preferences.systemNotificationsEnabled && this.environment.notificationPermission() === "granted") {
+        if (this.peer.identity.clientKind !== "web_tv" && this.preferences.systemNotificationsEnabled && this.environment.notificationPermission() === "granted") {
             const actions = actionKindsForOccurrence(occurrence).map(action => ({ action, title: actionLabel(action) }));
             await this.environment.showNotification(resolvedTitle, {
                 body: resolvedBody,

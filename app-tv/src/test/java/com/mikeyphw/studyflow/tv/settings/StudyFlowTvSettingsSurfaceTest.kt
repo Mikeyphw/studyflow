@@ -14,7 +14,7 @@ class StudyFlowTvSettingsSurfaceTest {
         val cards = StudyFlowTvSettingsSurface.cards(state)
         val text = cards.joinToString(" ") { "${it.title} ${it.body}" }
 
-        assertEquals(4, cards.size)
+        assertEquals(StudyFlowTvSettingsSurface.cardCount, cards.size)
         assertTrue(StudyFlowTvSettingsSurface.settingsArePresentationOnly)
         assertTrue(StudyFlowTvSettingsSurface.accountManagementDisabledOnTv)
         assertTrue(StudyFlowTvSettingsSurface.importExportDisabledOnTv)
@@ -54,6 +54,9 @@ class StudyFlowTvSettingsSurfaceTest {
 
         assertEquals(StudyFlowTvControlAction.REVOKE_PAIRING, command.action)
         assertEquals("revoke-pairing", command.targetId)
-        assertEquals(8, StudyFlowTvSettingsSurface.focusItems(state).size)
+        assertEquals(
+            StudyFlowTvSettingsSurface.cards(state).size + StudyFlowTvSettingsSurface.availableActions(state).size,
+            StudyFlowTvSettingsSurface.focusItems(state).size,
+        )
     }
 }

@@ -126,7 +126,7 @@ class StudyReminderPlannerBh08LateReconciliationTest {
         notificationCandidates.firstOrNull { candidate -> candidate.type == ReminderNotificationType.PLANNED_ACTIVITY }
 
     private fun plannedOccurrenceId(activityId: String, scheduledAt: Long): String =
-        "planned:$activityId:$scheduledAt"
+        "planned:$activityId:$scheduledAt:${StudyReminderPolicy().plannedStudyLeadMinutes}"
 
     private fun activity(
         id: String,

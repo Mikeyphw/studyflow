@@ -125,7 +125,7 @@ export class StudyFlowWebTvAttentionRuntime {
   }
 
   applyAction(occurrenceId: string, action: StudyFlowWebTvAttentionAction): void {
-    const mapped = action === "move_to_phone" ? "open" : action === "continue" ? "open" : action;
+    const mapped = action === "continue" ? "open" : action;
     void this.webRuntime.applyAction(occurrenceId, mapped);
   }
 }

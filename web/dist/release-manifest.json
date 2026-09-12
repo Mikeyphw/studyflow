@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-84cc8bfa7cc28db4",
+  "cacheVersion": "studyflow-local-1.0.0-8fdf5b3cb5c40e1c",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -42,8 +42,8 @@
     },
     {
       "path": "runtime/attention.js",
-      "sha256": "2b8ff0c4224614b66e9127bc0a2dffcc105a5dc4db556a420a9f2ce41e2537b9",
-      "bytes": 49424
+      "sha256": "b31d92abc3c0d76c9b92d72f7650d90f0c64803f38fc6376b012159d299d70e8",
+      "bytes": 50954
     },
     {
       "path": "runtime/attention_focus_policy.js",
@@ -57,8 +57,8 @@
     },
     {
       "path": "runtime/attention_router.js",
-      "sha256": "01f09bacc9f9f09de2d847d023795783647e53192d37f4134c8101666e4784eb",
-      "bytes": 18726
+      "sha256": "d75ee05ef31e1998afcc3c36687daf824fc0dbb83dc72d91a012f19fe91c9c94",
+      "bytes": 19051
     },
     {
       "path": "runtime/calendar_attention.js",
@@ -107,8 +107,8 @@
     },
     {
       "path": "runtime/main.js",
-      "sha256": "c8dc322e5f2cb0a0abf493bc259aece513678c1d6e087a67cff1f104e5d075c9",
-      "bytes": 3101
+      "sha256": "d0fc29468241c8e762584053b6ac1be2e3ded30235722f41c955c469d96d4eda",
+      "bytes": 3495
     },
     {
       "path": "runtime/mode_import.js",
@@ -162,8 +162,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "8888c5deb4ef2cf7ed4d6fd70c9643aa13702b48083f986ff60573344d02aeb9",
-      "bytes": 346327
+      "sha256": "7a6886a911ebf3d12309d145aa2acfcc39690fb5ff5750a277f1df2087f57a0b",
+      "bytes": 348133
     },
     {
       "path": "runtime/refinement.js",
@@ -222,8 +222,8 @@
     },
     {
       "path": "runtime/tv_attention.js",
-      "sha256": "a7a1235969d9dc6d5106aa998efdcf4d37286d004111b896fbbc8b84bc001044",
-      "bytes": 7109
+      "sha256": "1284245aaa8061e80d27429a8be4285a10181b4fbb39b425cc47979f994cc13f",
+      "bytes": 7071
     },
     {
       "path": "runtime/tv_control.js",
@@ -282,7 +282,7 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "951e78e0ec8b591d9bd58bbe82cb89be5dc30cd38324f6740d947a25e62dc3f3",
+      "sha256": "05ec33ab41cd98d567a9f05c69ac42bc3cc732dcb119331abf9cfe969d419653",
       "bytes": 9222
     },
     {

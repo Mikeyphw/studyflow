@@ -50,7 +50,7 @@ class StudyReminderPlannerPhase29HotfixTest {
 
     @Test
     fun stalePlannedActivityAlarmOutsideWindowIsSuppressed() {
-        val now = 1_000_000L
+        val now = 10_000_000L
         val plan = plan()
         val reminderPlan = StudyReminderPlanner.buildPlan(
             input(

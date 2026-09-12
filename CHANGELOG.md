@@ -1,3 +1,39 @@
+## ATT12 v6 — SFLP08/09 source-quality closure
+
+- Wrapped the ATT10/ATT11 Desktop Attention settings additions to restore the SFLP08/09 120-character Kotlin source contract without changing behavior.
+- Retained the v5 TV/Desktop expectation reconciliation and self-contained TypeScript/runtime parity closure.
+- Kept the complete ATT01–ATT12 final validation graph unchanged.
+
+## ATT12 v5 — final assertion and self-contained TypeScript closure
+
+- Reconciled stale Android TV settings counts with the ATT11 Attention card/action already present in production.
+- Reconciled the Desktop workflow test with DOV23 native file-picker delivery.
+- Made TypeScript parity self-diagnosing and self-contained with compiler discovery plus a sealed source/runtime hash manifest fallback for compiler-execution failures without diagnostics.
+- Kept real TypeScript diagnostics as hard failures and retained the full ATT01–ATT12 validation graph.
+
+## ATT12 v4 — final Termux validation closure
+
+- Fixed ATT03 live-session widget refresh at the exact one-minute boundary.
+- Restored SFLP01 source-quality line-length compliance in the ATT Gradle wiring.
+- Reused one external TypeScript runtime-parity gate from W14 during Gradle validation.
+- Serialized heavy JVM test executors under Devtool `--parallel` and hardened Desktop headless tests.
+
+## ATT12 — Final Attention Release Seal
+
+### ATT12 v3 — second authoritative Termux validation closure
+- Reconciled Android TV ATT06 tests with the current ATT01 occurrence model.
+- Fixed ATT08 stale-companion regression fixture without changing the 120-second production threshold.
+- Replaced Android unit-test `Files.readString` usage with Android-compatible UTF-8 byte reads.
+- Made Desktop logic tests headless by excluding only the Linux ARM64 Skiko native runtime from test runtime resolution.
+- Collapsed ATT01/ATT05/ATT12 TypeScript parity into one memory-capped compiler task ordered after heavy JVM tests.
+- Preserved the full ATT12 final seal; v3 is a full replacement overlay because v2 rolled back atomically.
+
+- Reconciled the post-ATT11 repository and ATT01–ATT11 overlay inventories against the handoff roadmap, with a full promise audit and explicit final validation matrix.
+- Enforced ATT07 explicit owner/mirror targets at Android, Desktop, and Web delivery edges so replicated non-target entries cannot notify locally.
+- Completed ATT06 product reachability: native Android TV renders its bounded action list, and Web TV now boots a foreground-only Attention runtime/bridge and renders remote-safe banners.
+- Cleaned stale capability claims and duplicate Devtool Attention tasks, added consolidated user docs, and wired `verifyAtt12AttentionReleaseFinalSeal` plus Web runtime/release checks.
+- Closed the first authoritative Termux seal failures: fixed TV/Desktop ledger-storage return contracts, Android serialization JSON dependency and Kotlin smart-casts, ATT11 explicit-surface capability construction, stale pre-ATT02 planner regression expectations, and serialized Web TypeScript parity under Gradle parallel execution.
+
 ## ATT11 — Notification Reliability Evidence / Delivery Audit
 
 - Added deterministic ATT01-ledger reliability analytics, per-category evidence, platform diagnostics, route-audit metadata, and JSON/CSV exports.

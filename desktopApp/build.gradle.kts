@@ -36,8 +36,17 @@ compose.desktop {
     }
 }
 
+// Desktop tests are headless domain/controller tests. The native Skiko AWT runtime is
+// required by the packaged desktop application, but not by this unit-test runtime; keeping it
+// out prevents Termux ARM64 validation from requiring an uncached host-native binary.
+configurations.named("testRuntimeClasspath") {
+    exclude(group = "org.jetbrains.skiko")
+}
+
 tasks.withType<Test>().configureEach {
     useJUnit()
+    maxParallelForks = 1
+    systemProperty("java.awt.headless", "true")
 }
 
 

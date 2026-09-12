@@ -642,6 +642,7 @@ class StudyFlowAttentionDeliveryRouter {
 
 fun StudyFlowLinkPeerDescriptor.asAttentionDeviceCapability(
     availability: StudyFlowAttentionDeviceAvailability = StudyFlowAttentionDeviceAvailability.ONLINE,
+    deliverySurfaces: List<StudyFlowAttentionDeliverySurface> = defaultAttentionSurfacesFor(clientKind),
     foregroundActive: Boolean = availability == StudyFlowAttentionDeviceAvailability.FOREGROUND,
     notificationPermissionGranted: Boolean = true,
     primaryUserDevice: Boolean = false,
@@ -652,7 +653,7 @@ fun StudyFlowLinkPeerDescriptor.asAttentionDeviceCapability(
 ): StudyFlowAttentionDeviceCapability = StudyFlowAttentionDeviceCapability(
     peer = this,
     availability = availability,
-    deliverySurfaces = defaultAttentionSurfacesFor(clientKind),
+    deliverySurfaces = deliverySurfaces,
     foregroundActive = foregroundActive,
     notificationPermissionGranted = notificationPermissionGranted,
     primaryUserDevice = primaryUserDevice,

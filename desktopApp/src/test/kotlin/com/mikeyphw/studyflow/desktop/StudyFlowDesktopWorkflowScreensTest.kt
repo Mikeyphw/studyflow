@@ -43,7 +43,9 @@ class StudyFlowDesktopWorkflowScreensTest {
         val settings = appState.settingsState()
         assertEquals(DesktopScreenStatus.CONTENT, settings.status)
         assertTrue(settings.boundaryModules.contains(":core:domain"))
-        assertTrue(settings.deferredDesktopIntegrations.contains("Native file pickers"))
+        assertFalse(settings.deferredDesktopIntegrations.contains("Native file pickers"))
+        assertTrue(settings.deferredDesktopIntegrations.contains("OS-specific rich notification action buttons"))
+        assertTrue(settings.deferredDesktopIntegrations.contains("Launch-on-login background reminders"))
     }
 
     @Test
