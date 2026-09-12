@@ -26,7 +26,10 @@ object StudyFlowDesktopBootstrap {
         return DesktopAppState(
             services = services,
             shellState = createDesktopShellState(),
-        )
+        ).also { appState ->
+            services.attentionRuntime?.bind(appState)
+            services.attentionRuntime?.start()
+        }
     }
 
     fun createProductionAppState(

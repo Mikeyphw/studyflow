@@ -2064,3 +2064,24 @@ tasks.register("verifyAtt03AndroidWidgetSuite") {
         ":app:testReleaseUnitTest",
     )
 }
+
+
+// ATT04 — Desktop Native Attention + Tray Product
+tasks.register<Exec>("verifyAtt04DesktopAttentionContracts") {
+    group = "verification"
+    description = "Checks ATT04 Desktop scheduler, persistence, native notification/tray, recovery, settings, diagnostics, tests and documentation contracts."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att04_desktop_attention_runtime.py")
+}
+
+tasks.register("verifyAtt04DesktopAttentionRuntime") {
+    group = "verification"
+    description = "Focused ATT04 production gate for the complete Desktop native attention and tray slice."
+    dependsOn(
+        "verifyAtt04DesktopAttentionContracts",
+        ":core:domain:test",
+        ":core:link:test",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:test",
+    )
+}

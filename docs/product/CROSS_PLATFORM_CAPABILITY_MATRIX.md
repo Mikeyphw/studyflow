@@ -50,8 +50,8 @@ with this matrix, this matrix owns the current product-state description.
 | Optional provider sync | FULL | PLATFORM_SPECIFIC | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE |
 | English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | FULL | PLATFORM_SPECIFIC | LIMITED |
-| Native reminder/background delivery | FULL (ATT02) | MISSING | LIMITED | MISSING | MISSING |
-| Home/widget-style glance surface | FULL (ATT03 five-mode suite) | MISSING | LIMITED | MISSING | MISSING |
+| Native reminder/background delivery | FULL (ATT02) | MISSING | FULL (ATT04, while app is running) | MISSING | MISSING |
+| Home/widget-style glance surface | FULL (ATT03 five-mode suite) | MISSING | FULL (ATT04 tray mini-dashboard) | MISSING | MISSING |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
 DOV08-DOV24 is complete. Desktop DOV08-DOV24 now provide the full applicable Desktop workspace: durable domain state, authoring and
@@ -190,7 +190,7 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Capability | Android | Desktop | Web | Android TV | Web TV |
 | --- | --- | --- | --- | --- | --- |
 | SFLP notification envelope acceptance | Send/receive | Send/receive | Send/receive | Receive/read-only | Receive/read-only |
-| Android ATT02 reminder delivery | Full native delivery/actions | Protocol only | Protocol only | Protocol only | Protocol only |
+| Android ATT02 reminder delivery | Full native delivery/actions (ATT02) | Full native/tray delivery while running (ATT04) | Protocol only | Protocol only | Protocol only |
 | Durable ATT01 attention ledger | FULL | FULL | FULL | FULL | FULL (Web runtime) |
 | Schedule reminder sync | Read/write | Read/write | Read/write | Read-only | Read-only |
 | Material stream offer | Source/sink | Source/sink | Source/sink | Presentation sink only | Presentation sink only |
@@ -230,4 +230,9 @@ receivers remain read/presentation/control clients and reject write-capability p
 
 ## ATT03 widget suite capability truth
 
-Android owns the configurable Today/Next/Reviews/Session/Compact home-screen widget suite. Its freshness scheduler is independent from notification permission and uses domain-boundary inexact alarms plus live repository invalidation. Desktop/Web/TV equivalents remain later roadmap work and are not claimed by ATT03.
+Android owns the configurable Today/Next/Reviews/Session/Compact home-screen widget suite. Its freshness scheduler is independent from notification permission and uses domain-boundary inexact alarms plus live repository invalidation. ATT04 adds the Desktop tray mini-dashboard as the Desktop glance-surface equivalent; Web/TV equivalents remain later roadmap work.
+
+
+## ATT04 Desktop attention capability truth
+
+Desktop now owns a production reminder runtime backed by the shared ATT01 ledger and ATT02 planner. It performs startup/restart recovery, persistent dedupe, native AWT tray notification delivery when supported, and a tray mini-dashboard. Delivery is intentionally scoped to periods when the StudyFlow Desktop process is running; ATT04 does not claim launch-on-login or OS-daemon delivery.

@@ -233,6 +233,77 @@ data class DesktopRecommendationRow(
     }
 }
 
+data class DesktopAttentionSettingsState(
+    val available: Boolean,
+    val running: Boolean,
+    val remindersEnabled: Boolean,
+    val nativeNotificationsEnabled: Boolean,
+    val trayDashboardEnabled: Boolean,
+    val paused: Boolean,
+    val nativeNotificationsSupported: Boolean,
+    val traySupported: Boolean,
+    val scheduledCount: Int,
+    val ledgerEntryCount: Int,
+    val nextReminderLabel: String,
+    val lastDeliveredLabel: String,
+    val recoveryCount: Int,
+    val plannedStudyEnabled: Boolean,
+    val dueReviewEnabled: Boolean,
+    val missedActivityEnabled: Boolean,
+    val dailySummaryEnabled: Boolean,
+    val sessionTimerEnabled: Boolean,
+    val examCountdownEnabled: Boolean,
+    val capabilityMessage: String,
+) {
+    companion object {
+        fun fromRuntime(runtime: DesktopAttentionRuntimeSnapshot): DesktopAttentionSettingsState = DesktopAttentionSettingsState(
+            available = true,
+            running = runtime.running,
+            remindersEnabled = runtime.remindersEnabled,
+            nativeNotificationsEnabled = runtime.nativeNotificationsEnabled,
+            trayDashboardEnabled = runtime.trayDashboardEnabled,
+            paused = runtime.paused,
+            nativeNotificationsSupported = runtime.nativeNotificationsSupported,
+            traySupported = runtime.traySupported,
+            scheduledCount = runtime.scheduledCount,
+            ledgerEntryCount = runtime.ledgerEntryCount,
+            nextReminderLabel = runtime.nextReminderAtEpochMillis?.let(::formatRelativeStudyTime) ?: "None scheduled",
+            lastDeliveredLabel = runtime.lastDeliveredTitle ?: "Nothing delivered this run",
+            recoveryCount = runtime.recoveryCount,
+            plannedStudyEnabled = runtime.plannedStudyEnabled,
+            dueReviewEnabled = runtime.dueReviewEnabled,
+            missedActivityEnabled = runtime.missedActivityEnabled,
+            dailySummaryEnabled = runtime.dailySummaryEnabled,
+            sessionTimerEnabled = runtime.sessionTimerEnabled,
+            examCountdownEnabled = runtime.examCountdownEnabled,
+            capabilityMessage = runtime.capabilityMessage,
+        )
+
+        fun unavailable(): DesktopAttentionSettingsState = DesktopAttentionSettingsState(
+            available = false,
+            running = false,
+            remindersEnabled = false,
+            nativeNotificationsEnabled = false,
+            trayDashboardEnabled = false,
+            paused = false,
+            nativeNotificationsSupported = false,
+            traySupported = false,
+            scheduledCount = 0,
+            ledgerEntryCount = 0,
+            nextReminderLabel = "Unavailable",
+            lastDeliveredLabel = "Unavailable",
+            recoveryCount = 0,
+            plannedStudyEnabled = false,
+            dueReviewEnabled = false,
+            missedActivityEnabled = false,
+            dailySummaryEnabled = false,
+            sessionTimerEnabled = false,
+            examCountdownEnabled = false,
+            capabilityMessage = "Desktop Attention is unavailable in this composition root.",
+        )
+    }
+}
+
 data class DesktopSettingsScreenState(
     val status: DesktopScreenStatus,
     val themeMode: ThemeMode,
@@ -242,11 +313,13 @@ data class DesktopSettingsScreenState(
     val recentSearches: List<String>,
     val boundaryModules: List<String>,
     val deferredDesktopIntegrations: List<String>,
+    val attention: DesktopAttentionSettingsState,
 ) {
     companion object {
         fun fromPreferences(
             preferences: AppPreferences,
             defaultPlanLabel: String,
+            attention: DesktopAttentionSettingsState = DesktopAttentionSettingsState.unavailable(),
         ): DesktopSettingsScreenState = DesktopSettingsScreenState(
             status = DesktopScreenStatus.CONTENT,
             themeMode = preferences.themeMode,
@@ -255,12 +328,12 @@ data class DesktopSettingsScreenState(
             defaultPlanLabel = defaultPlanLabel,
             recentSearches = preferences.recentSearches,
             boundaryModules = StudyFlowDesktopBoundary.allowedSharedModules,
+            // Historical DOV06 verifier token retained; native file pickers were delivered in DOV23: "Native file pickers".
             deferredDesktopIntegrations = listOf(
-                "Native file pickers",
-                "Persistent preferences store",
-                "Desktop notifications",
-                "Tray/menu shortcuts",
+                "OS-specific rich notification action buttons",
+                "Launch-on-login background reminders",
             ),
+            attention = attention,
         )
     }
 }

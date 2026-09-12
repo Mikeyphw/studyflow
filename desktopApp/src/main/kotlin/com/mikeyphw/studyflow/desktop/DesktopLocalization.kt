@@ -60,6 +60,26 @@ class DesktopTextCatalog private constructor(
             "Dark" to "Escuro",
             "Language" to "Idioma",
             "Desktop settings" to "Configurações do Desktop",
+            "Desktop reminders and tray" to "Lembretes e bandeja do Desktop",
+            "Reminder categories" to "Categorias de lembrete",
+            "Disable reminders" to "Desativar lembretes",
+            "Enable reminders" to "Ativar lembretes",
+            "Pause reminders" to "Pausar lembretes",
+            "Resume reminders" to "Retomar lembretes",
+            "Disable native notifications" to "Desativar notificações nativas",
+            "Enable native notifications" to "Ativar notificações nativas",
+            "Hide tray dashboard" to "Ocultar painel da bandeja",
+            "Show tray dashboard" to "Mostrar painel da bandeja",
+            "Reconcile reminders now" to "Reconciliar lembretes agora",
+            "Send test notification" to "Enviar notificação de teste",
+            "Desktop reminders run while StudyFlow is running. Launch-on-login is not enabled automatically." to
+                "Os lembretes do Desktop funcionam enquanto o StudyFlow está aberto. A inicialização automática não é ativada sem sua escolha.",
+            "Desktop reminders are available while StudyFlow is running." to
+                "Os lembretes do Desktop estão disponíveis enquanto o StudyFlow estiver em execução.",
+            "Native notification/tray APIs are unavailable; in-app state remains authoritative." to
+                "As APIs nativas de notificação/bandeja não estão disponíveis; o estado interno continua sendo a fonte de verdade.",
+            "System notifications are unavailable; the tray dashboard remains available." to
+                "As notificações do sistema não estão disponíveis; o painel da bandeja continua disponível.",
             "Cycle theme" to "Alternar tema",
             "Cycle language" to "Alternar idioma",
             "Portability and encrypted backup" to "Portabilidade e backup criptografado",

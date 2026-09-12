@@ -59,6 +59,7 @@ test = [
     "verifyAtt01UnifiedAttentionFoundation",
     "verifyAtt02AndroidAttentionSystem",
     "verifyAtt03AndroidWidgetSuite",
+    "verifyAtt04DesktopAttentionRuntime",
     "verifySflp20Sflp21ShareImportConflict",
     "verifySflp22Sflp23AccountBackupValidation",
     "verifySflp24FinalReleaseSeal",
@@ -344,6 +345,7 @@ build = [
     "verifyDesktopDov22SystemLightDarkAppearance",
     "verifyDesktopDov23NativeDesktopIntegration",
     "verifyDesktopDov24FullApplicableParitySeal",
+    "verifyAtt04DesktopAttentionRuntime",
     "verifySflp01ProtocolBaseline",
     "verifySflp02Sflp03JournalReconciliation",
     "verifySflp04Sflp05IdentityTransport",
@@ -373,6 +375,7 @@ test = [
     "verifyDesktopDov22SystemLightDarkAppearance",
     "verifyDesktopDov23NativeDesktopIntegration",
     "verifyDesktopDov24FullApplicableParitySeal",
+    "verifyAtt04DesktopAttentionRuntime",
     ":core:domain:test",
     ":core:link:test",
     ":core:model:test",
@@ -436,6 +439,7 @@ preflight = [
     "verifyDesktopDov22SystemLightDarkAppearance",
     "verifyDesktopDov23NativeDesktopIntegration",
     "verifyDesktopDov24FullApplicableParitySeal",
+    "verifyAtt04DesktopAttentionRuntime",
 ]
 compile = [
     ":core:domain:compileKotlin",

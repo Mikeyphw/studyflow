@@ -17,6 +17,7 @@ dependencies {
     implementation(project(":core:portability"))
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit4)
     testImplementation(kotlin("test-junit"))
@@ -175,4 +176,18 @@ tasks.register("verifyDesktopDov12Dov15Batch") {
         ":desktopApp:compileKotlin",
         ":desktopApp:test",
     )
+}
+
+
+tasks.register<Exec>("verifyAtt04DesktopAttentionContracts") {
+    group = "verification"
+    description = "Verify ATT04 Desktop native attention and tray product contracts"
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att04_desktop_attention_runtime.py")
+}
+
+tasks.register("verifyAtt04DesktopAttentionRuntime") {
+    group = "verification"
+    description = "Compile, test, and verify the ATT04 Desktop attention runtime"
+    dependsOn("verifyAtt04DesktopAttentionContracts", "compileKotlin", "test")
 }

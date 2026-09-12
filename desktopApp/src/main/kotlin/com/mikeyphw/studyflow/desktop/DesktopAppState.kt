@@ -24,6 +24,7 @@ class DesktopAppState(
     val shellState: DesktopShellState,
 ) {
     private var preferencesRevision: Int by mutableStateOf(0)
+    private var attentionRevision: Int by mutableStateOf(0)
 
     var selectedRoute: DesktopRoute by mutableStateOf(DesktopRoute.DASHBOARD)
         private set
@@ -771,7 +772,45 @@ class DesktopAppState(
 
     fun searchState(): DesktopSearchScreenState = services.createSearchState(searchQuery)
 
-    fun settingsState(): DesktopSettingsScreenState = services.createSettingsState()
+    fun settingsState(): DesktopSettingsScreenState {
+        attentionRevision
+        return services.createSettingsState()
+    }
+
+    fun toggleDesktopReminders() {
+        services.attentionRuntime?.toggleReminders()
+        attentionRevision += 1
+    }
+
+    fun toggleDesktopNativeNotifications() {
+        services.attentionRuntime?.toggleNativeNotifications()
+        attentionRevision += 1
+    }
+
+    fun toggleDesktopTrayDashboard() {
+        services.attentionRuntime?.toggleTrayDashboard()
+        attentionRevision += 1
+    }
+
+    fun toggleDesktopReminderPause() {
+        services.attentionRuntime?.togglePaused()
+        attentionRevision += 1
+    }
+
+    fun reconcileDesktopAttention() {
+        services.attentionRuntime?.reconcileNow(recovery = true)
+        attentionRevision += 1
+    }
+
+    fun testDesktopNotification() {
+        services.attentionRuntime?.showTestNotification()
+        attentionRevision += 1
+    }
+
+    fun toggleDesktopReminderCategory(category: DesktopReminderCategoryPreference) {
+        services.attentionRuntime?.toggleCategory(category)
+        attentionRevision += 1
+    }
 
     fun updateLinkQrInput(value: String) {
         linkQrInput = value
@@ -836,6 +875,7 @@ class DesktopAppState(
     }
 
     fun close() {
+        services.attentionRuntime?.close()
         services.linkService?.close()
     }
 

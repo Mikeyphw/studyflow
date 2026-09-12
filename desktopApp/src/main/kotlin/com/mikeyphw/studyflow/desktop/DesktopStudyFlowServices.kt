@@ -89,6 +89,7 @@ class DesktopStudyFlowServices(
     val goalWorkspaceController = DesktopGoalWorkspaceController(this)
     val progressReadinessController = DesktopProgressReadinessController(this, workspacePersistence?.root)
     val portabilityController = DesktopPortabilityController(this, workspacePersistence?.root)
+    var attentionRuntime: DesktopAttentionRuntime? = null
     val defaultPlanId: StudyPlanId?
         get() = preferencesStore.current().defaultStudyPlanId ?: planRepository.currentPlans().firstOrNull()?.id
 
@@ -248,6 +249,8 @@ class DesktopStudyFlowServices(
         return DesktopSettingsScreenState.fromPreferences(
             preferences = preferencesStore.current(),
             defaultPlanLabel = activePlan?.name ?: "No active Study Plan",
+            attention = attentionRuntime?.snapshot()?.let(DesktopAttentionSettingsState::fromRuntime)
+                ?: DesktopAttentionSettingsState.unavailable(),
         )
     }
 
@@ -441,6 +444,15 @@ fun createDesktopStudyFlowServices(
                 capture.chosenAnswer,
             )
         }
+    }
+    workspacePersistence?.let { persistence ->
+        services.attentionRuntime = DesktopAttentionRuntime(
+            services = services,
+            preferences = DesktopAttentionPreferences.open(persistence.root),
+            attentionLedger = com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedger(
+                DesktopStudyFlowAttentionLedgerStorage(persistence.root),
+            ),
+        )
     }
     return services
 }

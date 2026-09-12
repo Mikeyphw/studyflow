@@ -1,3 +1,7 @@
+## ATT04 — Desktop Native Attention + Tray
+
+Desktop now has a production attention runtime backed by the shared planner and durable ATT01 ledger. It performs startup recovery, native capability-aware tray notifications, snooze/dismiss lifecycle, a live tray mini-dashboard, and truthful settings/diagnostics while StudyFlow is running. See `ATT04_DESKTOP_NATIVE_ATTENTION_TRAY.md` and `docs/product/DESKTOP_ATTENTION_RUNTIME.md`.
+
 # StudyFlow Android
 
 ## ATT03 — Android Widget Suite 2.0

@@ -1,3 +1,10 @@
+## ATT04 — Desktop Native Attention + Tray Product
+
+- Added the production Desktop reminder scheduler with startup/restart recovery and 30-second reconciliation while StudyFlow is running.
+- Added durable Desktop attention preferences and shared ATT01 ledger lifecycle integration.
+- Upgraded native Desktop notifications to capability-aware identified delivery with tray click/action routing and a live mini-dashboard.
+- Added snooze/dismiss, Start next, Review due, pause/resume, manual reconcile, test notification, settings health evidence, tests, docs, and Devtool validation wiring.
+
 # Changelog
 
 ## ATT03 — Android Widget Suite 2.0

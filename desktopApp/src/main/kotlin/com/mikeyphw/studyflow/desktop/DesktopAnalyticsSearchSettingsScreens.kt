@@ -318,6 +318,13 @@ fun DesktopSettingsScreen(
     state: DesktopSettingsScreenState,
     onCycleTheme: () -> Unit,
     onCycleLanguage: () -> Unit,
+    onToggleReminders: () -> Unit,
+    onToggleNativeNotifications: () -> Unit,
+    onToggleTrayDashboard: () -> Unit,
+    onToggleReminderPause: () -> Unit,
+    onReconcileAttention: () -> Unit,
+    onTestNotification: () -> Unit,
+    onToggleReminderCategory: (DesktopReminderCategoryPreference) -> Unit,
     linkState: DesktopStudyFlowLinkState?,
     linkQrInput: String,
     linkManualEndpoint: String,
@@ -374,6 +381,74 @@ fun DesktopSettingsScreen(
                 Button(onClick = onCycleTheme) { Text(desktopText("Cycle theme")) }
                 Button(onClick = onCycleLanguage) { Text(desktopText("Cycle language")) }
             }
+        }
+
+        DesktopSectionCard(title = desktopText("Desktop reminders and tray")) {
+            val attention = state.attention
+            Text(desktopText(attention.capabilityMessage))
+            Text(
+                "Runtime: ${if (attention.running) "running" else "stopped"} • " +
+                    "scheduled ${attention.scheduledCount} • ledger ${attention.ledgerEntryCount} • " +
+                    "startup/recovery ${attention.recoveryCount}",
+            )
+            Text("Next reminder: ${attention.nextReminderLabel}")
+            Text("Last delivered: ${attention.lastDeliveredLabel}")
+            Text(
+                "Native notifications: ${if (attention.nativeNotificationsSupported) "supported" else "unavailable"} • " +
+                    "Tray: ${if (attention.traySupported) "supported" else "unavailable"}",
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = onToggleReminders, enabled = attention.available) {
+                    Text(desktopText(if (attention.remindersEnabled) "Disable reminders" else "Enable reminders"))
+                }
+                Button(onClick = onToggleReminderPause, enabled = attention.available && attention.remindersEnabled) {
+                    Text(desktopText(if (attention.paused) "Resume reminders" else "Pause reminders"))
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onToggleNativeNotifications, enabled = attention.available) {
+                    Text(desktopText(if (attention.nativeNotificationsEnabled) "Disable native notifications" else "Enable native notifications"))
+                }
+                OutlinedButton(onClick = onToggleTrayDashboard, enabled = attention.available) {
+                    Text(desktopText(if (attention.trayDashboardEnabled) "Hide tray dashboard" else "Show tray dashboard"))
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onReconcileAttention, enabled = attention.available) {
+                    Text(desktopText("Reconcile reminders now"))
+                }
+                OutlinedButton(onClick = onTestNotification, enabled = attention.available) {
+                    Text(desktopText("Send test notification"))
+                }
+            }
+            Text(desktopText("Reminder categories"), fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.PLANNED) }, enabled = attention.available) {
+                    Text("Study ${if (attention.plannedStudyEnabled) "on" else "off"}")
+                }
+                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.REVIEWS) }, enabled = attention.available) {
+                    Text("Reviews ${if (attention.dueReviewEnabled) "on" else "off"}")
+                }
+                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.MISSED) }, enabled = attention.available) {
+                    Text("Missed ${if (attention.missedActivityEnabled) "on" else "off"}")
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.SUMMARY) }, enabled = attention.available) {
+                    Text("Summary ${if (attention.dailySummaryEnabled) "on" else "off"}")
+                }
+                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.SESSIONS) }, enabled = attention.available) {
+                    Text("Sessions ${if (attention.sessionTimerEnabled) "on" else "off"}")
+                }
+                OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.EXAM) }, enabled = attention.available) {
+                    Text("Exam ${if (attention.examCountdownEnabled) "on" else "off"}")
+                }
+            }
+            Text(
+                desktopText(
+                    "Desktop reminders run while StudyFlow is running. Launch-on-login is not enabled automatically.",
+                ),
+            )
         }
 
         DesktopSectionCard(title = desktopText("Portability and encrypted backup")) {
