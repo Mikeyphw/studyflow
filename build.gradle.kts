@@ -2180,3 +2180,22 @@ tasks.register("verifyAtt07CrossDeviceDeliveryRouter") {
         ":app-tv:testDebugUnitTest",
     )
 }
+
+
+tasks.register<Exec>("verifyAtt08CompactCompanionAttentionContracts") {
+    group = "verification"
+    description = "Checks ATT08 compact companion routing, bridges, Web runtime parity and docs."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att08_compact_companion_attention.py")
+}
+
+tasks.register("verifyAtt08CompactCompanionAttention") {
+    group = "verification"
+    description = "Focused ATT08 compact companion attention gate."
+    dependsOn(
+        "verifyAtt08CompactCompanionAttentionContracts",
+        ":core:link:test",
+        ":app-tv:testDebugUnitTest",
+        ":desktopApp:test",
+    )
+}

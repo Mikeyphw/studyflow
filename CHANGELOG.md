@@ -762,3 +762,9 @@ copy.
 ### ATT05 Web/PWA Notification & Attention Runtime
 
 StudyFlow Web now has a production Web/PWA attention runtime with foreground scheduling, service-worker push/click/close/drain handling, browser notification permission flow, in-app Notification Center, optional Web Push subscription foundation, app-badge progressive enhancement, SFLP delivery ingestion, and durable ATT01 ledger convergence. The UI reports closed-browser delivery truthfully as foreground-only unless Push is subscribed.
+
+## ATT08 — Compact Companion Attention
+
+- Added phone-owned wearable/compact companion attention projections across Android, Desktop, TV and Web.
+- Added shared compact companion routing, privacy, suppression and action models on top of ATT07.
+- Added Web compact companion runtime/dist parity, tests, docs and `verifyAtt08CompactCompanionAttention`.

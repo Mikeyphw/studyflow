@@ -197,6 +197,7 @@ receivers remain read/presentation/control clients and reject write-capability p
 | Android ATT02 reminder delivery | Full native delivery/actions (ATT02) | Full native/tray delivery while running (ATT04) | Protocol only | Protocol only | Protocol only |
 | Durable ATT01 attention ledger | FULL | FULL | FULL | FULL | FULL (Web runtime) |
 | Cross-device attention delivery router | FULL (ATT07 owner/source) | FULL (ATT07 Web/PWA routing) | FULL (ATT07 while running) | FULL foreground-only (ATT07) | FULL foreground-only (ATT07) |
+| Compact companion attention | Android wearable/lock-screen/quick-tile, Desktop mini, Web compact, TV remote overlay | ATT08 compact companion surfaces are parent-owned mirrors; they never become independent owners. |
 | Schedule reminder sync | Read/write | Read/write | Read/write | Read-only | Read-only |
 | Material stream offer | Source/sink | Source/sink | Source/sink | Presentation sink only | Presentation sink only |
 | Material chunk acknowledgement | Yes | Yes | Yes | Yes, no import | Yes, no import |

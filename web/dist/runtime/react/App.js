@@ -61,6 +61,7 @@ const tv_review_notebook_1 = require("../tv_review_notebook");
 const tv_progress_1 = require("../tv_progress");
 const tv_schedule_1 = require("../tv_schedule");
 const tv_library_1 = require("../tv_library");
+const compact_attention_1 = require("../compact_attention");
 const title = (v) => v.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
@@ -396,7 +397,7 @@ function App({ store, persistence, attentionRuntime }) {
         !state.preferences.onboardingCompleted && (tvBrowser ? (tvSetupDismissed ? null : React.createElement(TvOnboardingHandoff, { onDismiss: () => setTvSetupDismissed(true) })) : React.createElement(OnboardingWizard, { state: state, store: store, run: run })),
         React.createElement("div", { id: "toast-region", className: "toast-region", role: "status", "aria-live": "polite", "aria-atomic": "true" }, toast && React.createElement("div", { className: "toast" }, toast)));
 }
-function WebAttentionCenterDialog({ state, runtime, snapshot, onClose, run }) { const [serverKey, setServerKey] = React.useState(""); const prefs = snapshot.preferences; const recent = snapshot.entries.slice(0, 24); const setCategory = (category, enabled) => runtime.setPreferences({ categories: { [category]: enabled } }); const setNumber = (key, value) => runtime.setPreferences({ [key]: value }); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
+function WebAttentionCenterDialog({ state, runtime, snapshot, onClose, run }) { const [serverKey, setServerKey] = React.useState(""); const prefs = snapshot.preferences; const recent = snapshot.entries.slice(0, 24); const compactProjection = (0, compact_attention_1.projectWebAttentionToCompactCompanions)(snapshot); const setCategory = (category, enabled) => runtime.setPreferences({ categories: { [category]: enabled } }); const setNumber = (key, value) => runtime.setPreferences({ [key]: value }); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
     React.createElement("section", { className: "modal-card settings-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "web-attention-title" },
         React.createElement("div", { className: "dialog-title" },
             React.createElement("h2", { id: "web-attention-title" }, "Notification Center"),
@@ -458,6 +459,28 @@ function WebAttentionCenterDialog({ state, runtime, snapshot, onClose, run }) { 
                     React.createElement("button", { className: "button button-quiet", type: "button", disabled: !snapshot.capabilities.push || !serverKey.trim(), onClick: () => run(() => { void runtime.subscribePush(serverKey); }, "Web Push subscription requested.") }, "Subscribe"),
                     React.createElement("button", { className: "button button-quiet", type: "button", disabled: !snapshot.pushSubscription, onClick: () => run(() => { void runtime.unsubscribePush(); }, "Web Push subscription removed.") }, "Unsubscribe")),
                 snapshot.pushSubscription && React.createElement("p", { className: "muted" }, "Subscribed endpoint stored locally.")),
+            React.createElement("article", { className: "card wide-card" },
+                React.createElement("h3", null, "Compact companion surface"),
+                React.createElement("p", { className: "muted" }, "Phone-owned wearable, lock-screen, quick tile and compact Web projections mirror the ATT07 parent route. They never become independent owners."),
+                React.createElement("p", { className: "muted" },
+                    compactProjection.diagnostics.projectedCount,
+                    " compact cards \u00B7 ",
+                    compactProjection.diagnostics.suppressedCompanionIds.length,
+                    " suppressed \u00B7 ",
+                    compactProjection.diagnostics.explanation),
+                React.createElement("ul", { className: "activity-list" },
+                    compactProjection.cards.map(card => React.createElement("li", { key: card.companionId },
+                        React.createElement("div", null,
+                            React.createElement("strong", null,
+                                card.companionDisplayName,
+                                " \u00B7 ",
+                                title(card.renderMode)),
+                            React.createElement("span", null,
+                                card.title,
+                                " \u00B7 ",
+                                card.body)),
+                        React.createElement("span", null, card.actions.map(action => action.label).join(" · ")))),
+                    !compactProjection.cards.length && React.createElement("li", null, "No compact companion card is active yet."))),
             React.createElement("article", { className: "card wide-card" },
                 React.createElement("h3", null, "Upcoming and recent attention"),
                 React.createElement("p", { className: "muted" },

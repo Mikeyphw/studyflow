@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-b735c9e1d21017f6",
+  "cacheVersion": "studyflow-local-1.0.0-ef71b0752e846702",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -49,6 +49,11 @@
       "path": "runtime/attention_router.js",
       "sha256": "a358cf62a6eee769d650d0db06409aaaf04d0f84351b87ba3d97218bcbf866b8",
       "bytes": 14568
+    },
+    {
+      "path": "runtime/compact_attention.js",
+      "sha256": "a37866ba7c1e92b9d6aa73406c528a7ff0a8b68d2224eeb60cbbdd91c5634e36",
+      "bytes": 10203
     },
     {
       "path": "runtime/content_import.js",
@@ -142,8 +147,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "edc9971ee95256c0e6ada156665b81e9b11ece17a7e17b19bbe8de79358a2925",
-      "bytes": 333839
+      "sha256": "1c7bbd81703fbdebaf432088c4436877e0d1fab6c9b354f267c1aea635f274d6",
+      "bytes": 335641
     },
     {
       "path": "runtime/refinement.js",
@@ -262,8 +267,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "1a622e559691d861785452789b9cdce31f68f96d144708ea3a0f308f55fbd8d9",
-      "bytes": 9076
+      "sha256": "4f9f0b555766bd50be8e6829880ab655edf8bcb125f0a9ed08f16715cfabbbdd",
+      "bytes": 9110
     },
     {
       "path": "styles.css",

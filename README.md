@@ -602,3 +602,7 @@ The Android release evidence campaign uses the dedicated `studyflow_release` Dev
 ### ATT05 Web/PWA attention runtime
 
 Normal Web/PWA clients now expose a Notification Center and participate in the ATT01 Attention ledger. The Web runtime schedules foreground reminders, can request browser notification permission from an explicit user action, handles service-worker notification clicks/closes and push deliveries, supports optional Web Push subscription setup, and uses browser badges as a progressive enhancement. Without Push, Web background delivery remains foreground-only by design.
+
+### ATT08 — Compact Companion Attention
+
+ATT08 adds wearable, lock-screen, quick-tile, Desktop mini, Web compact and TV remote-overlay attention surfaces as parent-owned projections of ATT07 delivery routes. Compact surfaces never become independent reminder owners; they suppress replay through the ATT01 ledger and hide sensitive text by default.
