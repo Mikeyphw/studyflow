@@ -1,3 +1,7 @@
+## ATT07 — Cross-Device Delivery Router
+
+StudyFlow now has a shared ATT07 delivery router that chooses one canonical owner and bounded mirror targets for every Attention occurrence across Android, Desktop, Web/PWA, Android TV, and Web TV. Routing is ledger-first, capability-aware, foreground-truthful for TV clients, and exposes canonical move-to-device handoff requests. See `ATT07_CROSS_DEVICE_DELIVERY_ROUTER.md`.
+
 ## ATT04 — Desktop Native Attention + Tray
 
 Desktop now has a production attention runtime backed by the shared planner and durable ATT01 ledger. It performs startup recovery, native capability-aware tray notifications, snooze/dismiss lifecycle, a live tray mini-dashboard, and truthful settings/diagnostics while StudyFlow is running. See `ATT04_DESKTOP_NATIVE_ATTENTION_TRAY.md` and `docs/product/DESKTOP_ATTENTION_RUNTIME.md`.

@@ -1,3 +1,9 @@
+### ATT07 — Cross-Device Delivery Router
+
+- Added shared Kotlin and Web attention delivery routers with single-owner routing, bounded mirrors, explicit-target routing, foreground-only TV truth, ledger-state suppression, and canonical move-to-device handoff requests.
+- Added Android, Desktop, and Android TV router capability bridges so each surface reports real delivery capability without mutating SFLP protocol-v1 golden capability lists.
+- Added Web Notification Center route-summary diagnostics, runtime/dist parity, tests, docs, and the focused `verifyAtt07CrossDeviceDeliveryRouter` gate.
+
 
 ### ATT06 — TV attention experience
 - Added Android TV foreground attention runtime, D-pad banners, Web TV attention projection, capability truth, diagnostics, docs and focused validation.

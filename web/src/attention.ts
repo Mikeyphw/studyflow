@@ -20,6 +20,11 @@ import {
   studyFlowServiceWorkerReady,
   type StudyFlowPwaCapabilities,
 } from "./pwa";
+import {
+  attentionDeviceFromWebPeer,
+  routeStudyFlowAttentionDelivery,
+  type StudyFlowAttentionDeliveryRoute,
+} from "./attention_router";
 
 const WEB_ATTENTION_PREFERENCES_KEY = "studyflow.attention.web.preferences.v1";
 const WEB_PUSH_SUBSCRIPTION_KEY = "studyflow.attention.web.push.v1";
@@ -49,6 +54,15 @@ export interface StudyFlowWebPushSubscriptionRecord {
   savedAtEpochMillis: number;
 }
 
+export interface StudyFlowWebAttentionRouteSummary {
+  localDeviceId: string;
+  deliverableCount: number;
+  ownedCount: number;
+  mirroredCount: number;
+  suppressedCount: number;
+  routes: StudyFlowAttentionDeliveryRoute[];
+}
+
 export interface StudyFlowWebAttentionSnapshot {
   permission: StudyFlowWebAttentionPermission;
   preferences: StudyFlowWebAttentionPreferences;
@@ -61,6 +75,7 @@ export interface StudyFlowWebAttentionSnapshot {
   badgeCount: number;
   lastScanAtEpochMillis: number | null;
   running: boolean;
+  routeSummary: StudyFlowWebAttentionRouteSummary;
 }
 
 export interface StudyFlowWebAttentionEnvironment {
@@ -407,6 +422,49 @@ export class StudyFlowWebAttentionRuntime {
       badgeCount,
       lastScanAtEpochMillis: this.lastScanAtEpochMillis,
       running: this.running,
+      routeSummary: this.routeSummary(entries, now, capabilities, pushSubscription),
+    };
+  }
+
+
+  private routeSummary(
+    entries: StudyFlowAttentionLedgerEntry[],
+    now: number,
+    capabilities: StudyFlowPwaCapabilities,
+    pushSubscription: StudyFlowWebPushSubscriptionRecord | null,
+  ): StudyFlowWebAttentionRouteSummary {
+    const local = attentionDeviceFromWebPeer(this.peer, {
+      availability: this.running ? "foreground" : "online",
+      foregroundActive: this.running,
+      notificationPermissionGranted: this.environment.notificationPermission() === "granted",
+      designatedNotifier: this.preferences.systemNotificationsEnabled || !!pushSubscription,
+      primaryUserDevice: true,
+      deliverySurfaces: [
+        ...(pushSubscription || capabilities.push ? ["web_push" as const] : []),
+        ...(capabilities.notifications ? ["system_notification" as const] : []),
+        "widget_or_badge" as const,
+      ],
+      lastSeenAtEpochMillis: now,
+    });
+    const activeEntries = entries.filter(entry => ACTIVE_DELIVERY_STATES.has(entry.state));
+    const routes = activeEntries.map(entry => routeStudyFlowAttentionDelivery(
+      entry.occurrence,
+      [local],
+      now,
+      {
+        localDeviceId: this.peer.identity.deviceId,
+        primaryDeviceId: this.peer.identity.deviceId,
+        designatedNotifierDeviceIds: local.designatedNotifier ? [this.peer.identity.deviceId] : [],
+      },
+      entry,
+    ));
+    return {
+      localDeviceId: this.peer.identity.deviceId,
+      deliverableCount: routes.filter(route => route.deliverable).length,
+      ownedCount: routes.filter(route => route.owner?.deviceId === this.peer.identity.deviceId).length,
+      mirroredCount: routes.filter(route => route.mirrors.some(mirror => mirror.deviceId === this.peer.identity.deviceId)).length,
+      suppressedCount: routes.filter(route => !route.deliverable).length,
+      routes,
     };
   }
 

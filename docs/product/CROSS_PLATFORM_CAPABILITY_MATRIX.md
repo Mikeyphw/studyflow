@@ -196,6 +196,7 @@ receivers remain read/presentation/control clients and reject write-capability p
 | SFLP notification envelope acceptance | Send/receive | Send/receive | Send/receive | Receive/read-only | Receive/read-only |
 | Android ATT02 reminder delivery | Full native delivery/actions (ATT02) | Full native/tray delivery while running (ATT04) | Protocol only | Protocol only | Protocol only |
 | Durable ATT01 attention ledger | FULL | FULL | FULL | FULL | FULL (Web runtime) |
+| Cross-device attention delivery router | FULL (ATT07 owner/source) | FULL (ATT07 Web/PWA routing) | FULL (ATT07 while running) | FULL foreground-only (ATT07) | FULL foreground-only (ATT07) |
 | Schedule reminder sync | Read/write | Read/write | Read/write | Read-only | Read-only |
 | Material stream offer | Source/sink | Source/sink | Source/sink | Presentation sink only | Presentation sink only |
 | Material chunk acknowledgement | Yes | Yes | Yes | Yes, no import | Yes, no import |
@@ -243,3 +244,7 @@ Desktop now owns a production reminder runtime backed by the shared ATT01 ledger
 
 | Android TV ATT06 foreground banners | FULL (ATT06 foreground-only, D-pad safe, ledger-backed) | N/A | N/A | FULL (ATT06) | N/A | Closed-app delivery falls back to designated notifier. |
 | Web TV ATT06 foreground banners | FULL (ATT06 Web TV projection) | N/A | FULL (ATT06 foreground-only) | N/A | FULL (ATT06) | Browser background delivery remains capability-dependent; TV mode is honest foreground-only. |
+
+## ATT07 cross-device delivery router truth
+
+ATT07 adds a shared owner/mirror/suppression router for Attention occurrences. Android, Desktop, and Web/PWA can own durable notification routes when their runtime capabilities are present. Android TV and Web TV can own only foreground-banner routes, and closed-TV delivery falls back to a designated phone, Desktop, or Web/PWA notifier. The ATT01 ledger remains the final dedupe source, so acknowledged or handled occurrences suppress redelivery across all clients.

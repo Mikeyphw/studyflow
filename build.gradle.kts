@@ -2149,3 +2149,34 @@ tasks.register("verifyAtt06TvAttentionExperience") {
         ":app-tv:testDebugUnitTest",
     )
 }
+
+
+// ATT07 — Cross-Device Delivery Router
+tasks.register<Exec>("verifyAtt07CrossDeviceDeliveryContracts") {
+    group = "verification"
+    description = "Checks ATT07 owner/mirror/suppression routing, device capability bridges, Web parity, docs and source contracts."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att07_cross_device_delivery_router.py")
+}
+
+tasks.register<Exec>("verifyAtt07WebDeliveryRouterTests") {
+    group = "verification"
+    description = "Run the Web ATT07 cross-device attention router regression tests."
+    workingDir = file("web")
+    commandLine("python3", "-m", "unittest", "tests/test_att07_attention_router.py")
+}
+
+tasks.register("verifyAtt07CrossDeviceDeliveryRouter") {
+    group = "verification"
+    description = "Focused ATT07 production gate for cross-device Attention delivery routing."
+    dependsOn(
+        "verifyAtt07CrossDeviceDeliveryContracts",
+        "verifyAtt07WebDeliveryRouterTests",
+        "verifyAtt06TvAttentionExperience",
+        "verifyAtt05WebPwaAttentionRuntime",
+        ":core:link:test",
+        ":desktopApp:test",
+        ":app:testReleaseUnitTest",
+        ":app-tv:testDebugUnitTest",
+    )
+}

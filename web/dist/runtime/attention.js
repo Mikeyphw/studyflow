@@ -8,6 +8,7 @@ exports.createBrowserAttentionEnvironment = createBrowserAttentionEnvironment;
 exports.installStudyFlowWebAttentionBridge = installStudyFlowWebAttentionBridge;
 const sflp_link_1 = require("./sflp_link");
 const pwa_1 = require("./pwa");
+const attention_router_1 = require("./attention_router");
 const WEB_ATTENTION_PREFERENCES_KEY = "studyflow.attention.web.preferences.v1";
 const WEB_PUSH_SUBSCRIPTION_KEY = "studyflow.attention.web.push.v1";
 const WEB_ATTENTION_SCAN_INTERVAL_MS = 30000;
@@ -337,6 +338,36 @@ class StudyFlowWebAttentionRuntime {
             badgeCount,
             lastScanAtEpochMillis: this.lastScanAtEpochMillis,
             running: this.running,
+            routeSummary: this.routeSummary(entries, now, capabilities, pushSubscription),
+        };
+    }
+    routeSummary(entries, now, capabilities, pushSubscription) {
+        const local = (0, attention_router_1.attentionDeviceFromWebPeer)(this.peer, {
+            availability: this.running ? "foreground" : "online",
+            foregroundActive: this.running,
+            notificationPermissionGranted: this.environment.notificationPermission() === "granted",
+            designatedNotifier: this.preferences.systemNotificationsEnabled || !!pushSubscription,
+            primaryUserDevice: true,
+            deliverySurfaces: [
+                ...(pushSubscription || capabilities.push ? ["web_push"] : []),
+                ...(capabilities.notifications ? ["system_notification"] : []),
+                "widget_or_badge",
+            ],
+            lastSeenAtEpochMillis: now,
+        });
+        const activeEntries = entries.filter(entry => ACTIVE_DELIVERY_STATES.has(entry.state));
+        const routes = activeEntries.map(entry => (0, attention_router_1.routeStudyFlowAttentionDelivery)(entry.occurrence, [local], now, {
+            localDeviceId: this.peer.identity.deviceId,
+            primaryDeviceId: this.peer.identity.deviceId,
+            designatedNotifierDeviceIds: local.designatedNotifier ? [this.peer.identity.deviceId] : [],
+        }, entry));
+        return {
+            localDeviceId: this.peer.identity.deviceId,
+            deliverableCount: routes.filter(route => route.deliverable).length,
+            ownedCount: routes.filter(route => { var _a; return ((_a = route.owner) === null || _a === void 0 ? void 0 : _a.deviceId) === this.peer.identity.deviceId; }).length,
+            mirroredCount: routes.filter(route => route.mirrors.some(mirror => mirror.deviceId === this.peer.identity.deviceId)).length,
+            suppressedCount: routes.filter(route => !route.deliverable).length,
+            routes,
         };
     }
     async requestBrowserNotifications() {
