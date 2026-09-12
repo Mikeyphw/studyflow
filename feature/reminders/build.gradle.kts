@@ -9,6 +9,7 @@ android {
 dependencies {
     api(project(":core:model"))
     implementation(project(":core:domain"))
+    implementation(project(":core:link"))
     implementation(project(":core:designsystem"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

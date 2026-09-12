@@ -34,7 +34,10 @@ export interface StudyFlowWebTvAttentionSnapshot {
   recentBanners: StudyFlowWebTvAttentionBanner[];
   badgeCount: number;
   lastScanAtEpochMillis: number | null;
-  source: "att05-web-runtime";
+  focusProfile: string;
+  focusOutcomes: string[];
+  focusControlsReadOnly: true;
+  source: "att10-web-runtime";
 }
 
 const TV_ACTION_LIMIT = 3;
@@ -101,7 +104,10 @@ export function projectWebAttentionToTv(snapshot: StudyFlowWebAttentionSnapshot)
     recentBanners,
     badgeCount: snapshot.badgeCount,
     lastScanAtEpochMillis: snapshot.lastScanAtEpochMillis,
-    source: "att05-web-runtime",
+    focusProfile: snapshot.preferences?.focusPolicy?.profile ?? "balanced",
+    focusOutcomes: snapshot.entries.map(entry => entry.policyAudit?.outcome).filter((value): value is string => !!value).slice(0, 8),
+    focusControlsReadOnly: true,
+    source: "att10-web-runtime",
   };
 }
 
@@ -126,6 +132,8 @@ export function installStudyFlowWebTvAttentionBridge(runtime: StudyFlowWebTvAtte
     root.dataset.studyflowTvAttention = snapshot.capabilities.deliveryMode;
     root.dataset.studyflowTvAttentionFallback = snapshot.capabilities.designatedNotifierFallback ? "designated-notifier" : "none";
     root.dataset.studyflowTvAttentionBadge = String(snapshot.badgeCount);
+    root.dataset.studyflowTvAttentionFocusProfile = snapshot.focusProfile;
+    root.dataset.studyflowTvAttentionFocusControls = snapshot.focusControlsReadOnly ? "remote-safe-read-only" : "local";
     globalThis.dispatchEvent?.(new CustomEvent("studyflow:tv-attention-snapshot", { detail: snapshot }));
   };
   const onAttention = () => render();
@@ -138,5 +146,7 @@ export function installStudyFlowWebTvAttentionBridge(runtime: StudyFlowWebTvAtte
     delete root.dataset.studyflowTvAttention;
     delete root.dataset.studyflowTvAttentionFallback;
     delete root.dataset.studyflowTvAttentionBadge;
+    delete root.dataset.studyflowTvAttentionFocusProfile;
+    delete root.dataset.studyflowTvAttentionFocusControls;
   };
 }

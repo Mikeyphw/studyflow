@@ -94,6 +94,8 @@ fun StudyFlowDesktopApp(
                             onReconcileAttention = appState::reconcileDesktopAttention,
                             onTestNotification = appState::testDesktopNotification,
                             onToggleReminderCategory = appState::toggleDesktopReminderCategory,
+                            onCycleAttentionFocusProfile = appState::cycleDesktopAttentionFocusProfile,
+                            onToggleAttentionQuietHours = appState::toggleDesktopAttentionQuietHours,
                             linkState = appState.linkState(),
                             linkQrInput = appState.linkQrInput,
                             linkManualEndpoint = appState.linkManualEndpoint,

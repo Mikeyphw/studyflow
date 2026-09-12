@@ -9,6 +9,8 @@ import com.mikeyphw.studyflow.core.domain.StudyInsight
 import com.mikeyphw.studyflow.core.domain.StudyRecommendation
 import com.mikeyphw.studyflow.core.domain.WeakStudyArea
 import com.mikeyphw.studyflow.core.model.AppLanguage
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyOutcome
 import com.mikeyphw.studyflow.core.model.AppPreferences
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityId
@@ -253,6 +255,10 @@ data class DesktopAttentionSettingsState(
     val dailySummaryEnabled: Boolean,
     val sessionTimerEnabled: Boolean,
     val examCountdownEnabled: Boolean,
+    val focusProfile: StudyFlowAttentionFocusProfile,
+    val quietHoursEnabled: Boolean,
+    val quietHoursLabel: String,
+    val lastPolicyOutcome: StudyFlowAttentionPolicyOutcome?,
     val capabilityMessage: String,
 ) {
     companion object {
@@ -276,6 +282,10 @@ data class DesktopAttentionSettingsState(
             dailySummaryEnabled = runtime.dailySummaryEnabled,
             sessionTimerEnabled = runtime.sessionTimerEnabled,
             examCountdownEnabled = runtime.examCountdownEnabled,
+            focusProfile = runtime.focusProfile,
+            quietHoursEnabled = runtime.quietHoursEnabled,
+            quietHoursLabel = runtime.quietHoursLabel,
+            lastPolicyOutcome = runtime.lastPolicyOutcome,
             capabilityMessage = runtime.capabilityMessage,
         )
 
@@ -299,6 +309,10 @@ data class DesktopAttentionSettingsState(
             dailySummaryEnabled = false,
             sessionTimerEnabled = false,
             examCountdownEnabled = false,
+            focusProfile = StudyFlowAttentionFocusProfile.BALANCED,
+            quietHoursEnabled = false,
+            quietHoursLabel = "Unavailable",
+            lastPolicyOutcome = null,
             capabilityMessage = "Desktop Attention is unavailable in this composition root.",
         )
     }

@@ -65,6 +65,7 @@ test = [
   "verifyAtt07CrossDeviceDeliveryRouter",
     "verifyAtt08CompactCompanionAttention",
     "verifyAtt09CalendarScheduleExportAttention",
+    "verifyAtt10QuietHoursFocusProfilesEscalationPolicy",
     "verifyAtt09CalendarScheduleExportAttention",
     "verifyAtt08CompactCompanionAttention",
     "verifyAtt09CalendarScheduleExportAttention",

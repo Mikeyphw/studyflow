@@ -51,6 +51,8 @@ with this matrix, this matrix owns the current product-state description.
 | English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | FULL | PLATFORM_SPECIFIC | LIMITED |
 | Native reminder/background delivery | FULL (ATT02) | FULL (ATT05 foreground + optional Push foundation) | FULL (ATT04, while app is running) | MISSING | MISSING |
+| ATT10 quiet hours / focus profiles / escalation | FULL | FULL | FULL | READ_ONLY (foreground projection; phone fallback) | READ_ONLY (foreground projection; phone fallback) |
+| ATT10 policy audit in canonical ATT01 ledger | FULL | FULL | FULL | READ_ONLY | READ_ONLY |
 | Home/widget-style glance surface | FULL (ATT03 five-mode suite) | FULL (ATT05 in-app Notification Center + badge) | FULL (ATT04 tray mini-dashboard) | MISSING | MISSING |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
@@ -142,6 +144,10 @@ instances, resumable activity hints, capability-aware visibility, and route-trac
 ephemeral and best-effort; it is not persisted as canonical workspace truth and cannot gate durable reconciliation.
 Transport peer-health and `lastSeen` remain separate signals. The old draft label “SFLP18 Presence” is superseded;
 shipped SFLP18 is notification/scheduling sync.
+
+### ATT10 quiet-hours/focus-policy truth
+
+ATT10 adds a shared interruption-policy layer without changing the ATT01 source of truth. Android, Desktop, and normal Web expose policy controls. Android TV and Web TV only project policy state and remote-safe behavior; neither gains background alarm ownership. Web remains foreground-only unless optional Push capability is genuinely configured. ATT10 escalation is bounded by ATT07 mirror limits and can never widen into an unbounded broadcast.
 
 ### ATT05 Web/PWA attention truth
 

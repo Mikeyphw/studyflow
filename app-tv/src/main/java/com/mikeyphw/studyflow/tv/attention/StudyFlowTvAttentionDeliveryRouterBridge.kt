@@ -1,6 +1,12 @@
 package com.mikeyphw.studyflow.tv.attention
 
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRouter
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRoute
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicyEngine
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedgerEntry
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyDecision
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliverySurface
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceAvailability
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceCapability
@@ -41,5 +47,55 @@ object StudyFlowTvAttentionDeliveryRouterBridge {
             allowTvForegroundOwners = true,
         )
 
+
+    fun focusProjection(
+        occurrence: StudyFlowAttentionOccurrence,
+        policy: StudyFlowAttentionFocusPolicy,
+        nowEpochMillis: Long,
+        ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
+    ): StudyFlowTvAttentionFocusProjection {
+        val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
+            occurrence = occurrence,
+            policy = policy,
+            nowEpochMillis = nowEpochMillis,
+            ledgerEntry = ledgerEntry,
+            localClientKind = StudyFlowLinkClientKind.ANDROID_TV,
+        )
+        return StudyFlowTvAttentionFocusProjection(
+            profile = decision.profile.name,
+            outcome = decision.outcome.name,
+            quietHoursActive = decision.quietHoursActive,
+            controlsReadOnly = true,
+            remoteControlRequired = true,
+            explanation = decision.explanation,
+        )
+    }
+
+    fun routeWithPolicy(
+        occurrence: StudyFlowAttentionOccurrence,
+        devices: List<StudyFlowAttentionDeviceCapability>,
+        policy: StudyFlowAttentionFocusPolicy,
+        nowEpochMillis: Long,
+        ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
+    ): StudyFlowAttentionDeliveryRoute = router().routeWithPolicy(
+        occurrence = occurrence,
+        devices = devices,
+        nowEpochMillis = nowEpochMillis,
+        focusPolicy = policy,
+        context = foregroundRoutingContext(nowEpochMillis),
+        ledgerEntry = ledgerEntry,
+        localClientKind = StudyFlowLinkClientKind.ANDROID_TV,
+    )
+
     fun router(): StudyFlowAttentionDeliveryRouter = StudyFlowAttentionDeliveryRouter()
 }
+
+data class StudyFlowTvAttentionFocusProjection(
+    val profile: String,
+    val outcome: String,
+    val quietHoursActive: Boolean,
+    val controlsReadOnly: Boolean,
+    val remoteControlRequired: Boolean,
+    val explanation: String,
+)
+

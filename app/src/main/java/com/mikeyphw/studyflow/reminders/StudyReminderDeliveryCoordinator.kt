@@ -40,11 +40,15 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedger
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPriority
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicyEngine
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyOutcome
 import com.mikeyphw.studyflow.core.link.StudyFlowEntityId
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.model.PlannedActivityId
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
+import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import java.util.Calendar
 import java.util.TimeZone
@@ -105,6 +109,7 @@ class StudyReminderDeliveryCoordinator(
     private val clock: () -> Long = System::currentTimeMillis,
     private val occurrenceStore: StudyReminderOccurrenceStore = StudyReminderOccurrenceStore(context),
     private val policyStore: AndroidStudyReminderPolicyStore = AndroidStudyReminderPolicyStore(context),
+    private val focusPolicyStore: AndroidStudyFlowAttentionFocusPolicyStore = AndroidStudyFlowAttentionFocusPolicyStore(context),
     private val runtimeStatusStore: StudyReminderRuntimeStatusStore = StudyReminderRuntimeStatusStore(context),
 ) {
     private val appContext = context.applicationContext
@@ -145,6 +150,14 @@ class StudyReminderDeliveryCoordinator(
     suspend fun updatePolicy(planId: StudyPlanId, policy: StudyReminderPolicy) {
         policyStore.save(planId, policy)
         reconcilePlan(planId, "policy-updated")
+    }
+
+    fun focusPolicyFor(planId: StudyPlanId, settings: StudyPlanSettings): StudyFlowAttentionFocusPolicy =
+        focusPolicyStore.load(planId, settings.quietHoursStartMinute, settings.quietHoursEndMinute)
+
+    suspend fun updateFocusPolicy(planId: StudyPlanId, policy: StudyFlowAttentionFocusPolicy) {
+        focusPolicyStore.save(planId, policy)
+        reconcilePlan(planId, "attention-focus-policy-updated")
     }
 
     fun runtimeStatus(): StudyReminderRuntimeStatus = runtimeStatusStore.snapshot()
@@ -229,11 +242,41 @@ class StudyReminderDeliveryCoordinator(
             current.type == type && current.occurrenceId == occurrenceId
         } ?: scheduled.toCandidate()
 
-        if (!postNotification(planId, candidate)) return
+        val occurrence = candidate.toAttentionOccurrence(planId)
+        val now = clock()
+        val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
+            occurrence = occurrence,
+            policy = focusPolicyStore.load(planId),
+            nowEpochMillis = now,
+            ledgerEntry = attentionLedger.entry(occurrence.occurrenceId),
+            localClientKind = com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind.ANDROID,
+        )
+        runCatching { attentionLedger.recordPolicyDecision(decision) }
+        if (decision.outcome == StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END) {
+            val deferredAt = decision.deferredUntilEpochMillis ?: return
+            val deferredCandidate = candidate.copy(
+                fireAtEpochMillis = deferredAt,
+                delayedByQuietHours = true,
+            )
+            occurrenceStore.addScheduled(planId, deferredCandidate)
+            upsertAttentionScheduled(planId, deferredCandidate)
+            runCatching { attentionLedger.recordPolicyDecision(decision) }
+            scheduleCandidate(planId, deferredCandidate)
+            StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
+            return
+        }
+        if (decision.outcome == StudyFlowAttentionPolicyOutcome.SUPPRESS_DUPLICATE) {
+            occurrenceStore.removeScheduled(planId, occurrenceId)
+            return
+        }
+
+        val compactOnly = decision.outcome == StudyFlowAttentionPolicyOutcome.COMPACT_ONLY
+        if (!compactOnly && !postNotification(planId, candidate, silent = decision.deliverSilently)) return
         occurrenceStore.markDelivered(planId, occurrenceId)
         occurrenceStore.removeScheduled(planId, occurrenceId)
         markAttentionDelivered(candidate)
-        runtimeStatusStore.markDelivered(occurrenceId, clock())
+        runCatching { attentionLedger.recordPolicyDecision(decision) }
+        runtimeStatusStore.markDelivered(occurrenceId, now)
         reconcilePlanInternal(planId)
         StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
     }
@@ -378,6 +421,9 @@ class StudyReminderDeliveryCoordinator(
         val plan = studyPlanRepository.observePlan(planId).first() ?: return null
         if (plan.status != StudyPlanStatus.ACTIVE) return null
         val settings = studyPlanRepository.observeStoredPlanSettings(planId).first() ?: return null
+        // ATT10 migration: preserve the user's existing quiet-hours opt-in/opt-out instead of
+        // silently enabling a new 22:00–07:00 policy on upgrade.
+        focusPolicyStore.load(planId, settings.quietHoursStartMinute, settings.quietHoursEndMinute)
         val now = clock()
         val scheduledOccurrences = occurrenceStore.scheduled(planId)
         val delivered = occurrenceStore.deliveredOccurrenceIds(planId).toMutableSet().apply {
@@ -454,7 +500,11 @@ class StudyReminderDeliveryCoordinator(
         )
 
     @SuppressLint("MissingPermission")
-    private fun postNotification(planId: StudyPlanId, candidate: ReminderNotificationCandidate): Boolean {
+    private fun postNotification(
+        planId: StudyPlanId,
+        candidate: ReminderNotificationCandidate,
+        silent: Boolean = false,
+    ): Boolean {
         if (!notificationsAllowed()) return false
         val text = localizedText(candidate)
         val builder = NotificationCompat.Builder(appContext, candidate.type.channelId())
@@ -467,6 +517,7 @@ class StudyReminderDeliveryCoordinator(
             .setAutoCancel(true)
             .setLocalOnly(true)
             .setPriority(candidate.type.compatPriority())
+            .setSilent(silent)
 
         candidate.actions().forEach { action ->
             builder.addAction(action.icon, appContext.getString(action.labelRes), action.pendingIntent(planId, candidate))

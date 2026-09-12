@@ -812,6 +812,16 @@ class DesktopAppState(
         attentionRevision += 1
     }
 
+    fun cycleDesktopAttentionFocusProfile() {
+        services.attentionRuntime?.cycleFocusProfile()
+        attentionRevision += 1
+    }
+
+    fun toggleDesktopAttentionQuietHours() {
+        services.attentionRuntime?.toggleFocusQuietHours()
+        attentionRevision += 1
+    }
+
     fun updateLinkQrInput(value: String) {
         linkQrInput = value
     }

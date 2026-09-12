@@ -8,6 +8,11 @@ import type {
   StudyFlowAttentionPriority,
   StudyFlowWebLinkPeer,
 } from "./sflp_link";
+import {
+  evaluateWebAttentionFocusPolicy,
+  type StudyFlowAttentionFocusPolicy,
+  type StudyFlowAttentionPolicyOutcome,
+} from "./attention_focus_policy";
 
 export type StudyFlowAttentionDeliverySurface =
   | "android_alarm"
@@ -71,6 +76,8 @@ export interface StudyFlowAttentionRouteDiagnostics {
   suppressedDeviceIds: string[];
   ledgerState?: StudyFlowAttentionDeliveryState;
   explanation: string;
+  policyOutcome?: StudyFlowAttentionPolicyOutcome;
+  deferredUntilEpochMillis?: number;
 }
 
 export interface StudyFlowAttentionDeliveryRoute {
@@ -84,6 +91,10 @@ export interface StudyFlowAttentionDeliveryRoute {
   diagnostics: StudyFlowAttentionRouteDiagnostics;
   deliverable: boolean;
   targetDeviceIds: string[];
+  policyOutcome?: StudyFlowAttentionPolicyOutcome;
+  deliverSilently?: boolean;
+  compactOnly?: boolean;
+  requiresUserAction?: boolean;
 }
 
 export interface StudyFlowAttentionHandoffRequest {
@@ -184,6 +195,79 @@ export function routeStudyFlowAttentionDelivery(
       return chooseRoute(occurrence, devices, chosen, [], nowEpochMillis, normalized, primary.length ? "primary_device" : "fallback_best_capable", "No active foreground client was available; ATT07 used a durable notifier.");
     }
   }
+}
+
+export function routeStudyFlowAttentionDeliveryWithPolicy(
+  occurrence: StudyFlowAttentionOccurrence,
+  devices: StudyFlowAttentionDeviceCapability[],
+  nowEpochMillis: number,
+  focusPolicy: StudyFlowAttentionFocusPolicy,
+  context: StudyFlowAttentionRoutingContext = {},
+  ledgerEntry?: StudyFlowAttentionLedgerEntry | null,
+  localClientKind: StudyFlowAttentionDeviceCapability["clientKind"] = "web",
+): StudyFlowAttentionDeliveryRoute {
+  const policyDecision = evaluateWebAttentionFocusPolicy(occurrence, focusPolicy, nowEpochMillis, ledgerEntry, localClientKind);
+  if (policyDecision.outcome === "suppress_duplicate" || policyDecision.outcome === "defer_until_quiet_end") {
+    const base = noRoute(occurrence, nowEpochMillis, devices.length, policyDecision.outcome === "suppress_duplicate" ? "ledger_already_handled" : "no_capable_device", {
+      explanation: policyDecision.explanation,
+      ledgerState: ledgerEntry?.state,
+    });
+    return {
+      ...base,
+      policyOutcome: policyDecision.outcome,
+      diagnostics: { ...base.diagnostics, policyOutcome: policyDecision.outcome, deferredUntilEpochMillis: policyDecision.deferredUntilEpochMillis },
+    };
+  }
+  let policyDevices = devices;
+  if (policyDecision.outcome === "route_to_phone") policyDevices = devices.filter(device => device.clientKind === "android");
+  if (policyDecision.outcome === "compact_only") policyDevices = devices
+    .filter(device => device.deliverySurfaces.includes("widget_or_badge"));
+  const normalizedContext = {
+    ...context,
+    maxMirrors: policyDecision.outcome === "escalate_mirror"
+      ? Math.min(context.maxMirrors ?? 2, policyDecision.requestedMirrorCount)
+      : context.maxMirrors,
+  };
+  const base = routeStudyFlowAttentionDelivery(occurrence, policyDevices, nowEpochMillis, normalizedContext, ledgerEntry);
+  const owner = policyDecision.compactOnly && base.owner
+    ? { ...base.owner, surface: "widget_or_badge" as StudyFlowAttentionDeliverySurface }
+    : base.owner;
+  let mirrors = policyDecision.compactOnly
+    ? base.mirrors.map(mirror => ({ ...mirror, surface: "widget_or_badge" as StudyFlowAttentionDeliverySurface }))
+    : base.mirrors;
+  if (policyDecision.outcome === "escalate_mirror" && owner) {
+    const normalized = normalizeContext(normalizedContext);
+    const explicitTargets = new Set(occurrence.targetDeviceIds ?? []);
+    const used = new Set([owner.deviceId, ...mirrors.map(mirror => mirror.deviceId)]);
+    const additional = policyDevices
+      .filter(device => device.deviceId !== owner.deviceId)
+      .filter(device => explicitTargets.size === 0 || explicitTargets.has(device.deviceId))
+      .filter(device => canOwn(device, occurrence, nowEpochMillis, normalized))
+      .sort((a, b) => compareDevice(a, b, occurrence, nowEpochMillis, normalized))
+      .filter(device => !used.has(device.deviceId) && used.add(device.deviceId))
+      .slice(0, Math.max(0, policyDecision.requestedMirrorCount - mirrors.length))
+      .map(device => toTarget(device, occurrence, nowEpochMillis, normalized, "mirror"));
+    mirrors = [...mirrors, ...additional];
+  }
+  const targetDeviceIds = [owner?.deviceId, ...mirrors.map(mirror => mirror.deviceId)]
+    .filter((value): value is string => !!value);
+  return {
+    ...base,
+    owner,
+    mirrors,
+    deliverable: !!owner,
+    targetDeviceIds,
+    policyOutcome: policyDecision.outcome,
+    deliverSilently: policyDecision.deliverSilently,
+    compactOnly: policyDecision.compactOnly,
+    requiresUserAction: policyDecision.requiresUserAction,
+    diagnostics: {
+      ...base.diagnostics,
+      policyOutcome: policyDecision.outcome,
+      deferredUntilEpochMillis: policyDecision.deferredUntilEpochMillis,
+      explanation: `${base.diagnostics.explanation} ${policyDecision.explanation}`,
+    },
+  };
 }
 
 export function createStudyFlowAttentionHandoffRequest(
@@ -297,6 +381,7 @@ function bestSurface(device: StudyFlowAttentionDeviceCapability, now: number, co
   if (surfaces.includes("system_notification") && device.notificationPermissionGranted !== false) return "system_notification";
   if (surfaces.includes("desktop_tray") && device.foregroundActive) return "desktop_tray";
   if (surfaces.includes("foreground_banner") && device.foregroundActive) return "foreground_banner";
+  if (surfaces.includes("widget_or_badge")) return "widget_or_badge";
   return null;
 }
 

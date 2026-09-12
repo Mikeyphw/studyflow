@@ -14,6 +14,10 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedger
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPriority
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicyEngine
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyOutcome
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowEntityId
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
@@ -56,6 +60,10 @@ data class DesktopAttentionRuntimeSnapshot(
     val dailySummaryEnabled: Boolean,
     val sessionTimerEnabled: Boolean,
     val examCountdownEnabled: Boolean,
+    val focusProfile: StudyFlowAttentionFocusProfile,
+    val quietHoursEnabled: Boolean,
+    val quietHoursLabel: String,
+    val lastPolicyOutcome: StudyFlowAttentionPolicyOutcome?,
     val capabilityMessage: String,
 )
 
@@ -73,6 +81,7 @@ class DesktopAttentionRuntime(
     @Volatile private var lastDeliveredAt: Long? = null
     @Volatile private var lastDeliveredTitle: String? = null
     @Volatile private var recoveryCount: Int = 0
+    @Volatile private var lastPolicyOutcome: StudyFlowAttentionPolicyOutcome? = null
     @Volatile private var appState: DesktopAppState? = null
 
     fun bind(appState: DesktopAppState) {
@@ -148,7 +157,7 @@ class DesktopAttentionRuntime(
                 attentionLedger.upsertScheduled(occurrence, now)
             }
         }
-        deliverDueEntries(now, global, policy)
+        deliverDueEntries(now, global, plan.id)
         updateTray(now)
     }
 
@@ -160,6 +169,7 @@ class DesktopAttentionRuntime(
         val plan = services.currentDefaultPlanForDesktop()
         val settings = plan?.id?.let { services.planRepository.currentSettings()[it] }
         val policy = if (plan != null && settings != null) preferences.policy(plan.id, settings) else StudyReminderPolicy()
+        val focusPolicy = if (plan != null) preferences.focusPolicy(plan.id, settings) else com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy()
         return DesktopAttentionRuntimeSnapshot(
             running = started,
             nativeNotificationsSupported = caps.nativeNotificationsSupported,
@@ -181,6 +191,18 @@ class DesktopAttentionRuntime(
             dailySummaryEnabled = policy.dailySummaryEnabled,
             sessionTimerEnabled = policy.sessionTimerEnabled,
             examCountdownEnabled = policy.examCountdownEnabled,
+            focusProfile = focusPolicy.profile,
+            quietHoursEnabled = focusPolicy.quietWindow?.enabled == true,
+            quietHoursLabel = focusPolicy.quietWindow?.let { quiet ->
+                "%02d:%02d–%02d:%02d %s".format(
+                    quiet.startMinute / 60,
+                    quiet.startMinute % 60,
+                    quiet.endMinute / 60,
+                    quiet.endMinute % 60,
+                    quiet.timezoneId ?: ZoneId.systemDefault().id,
+                )
+            } ?: "Off",
+            lastPolicyOutcome = lastPolicyOutcome,
             capabilityMessage = when {
                 !caps.traySupported && !caps.nativeNotificationsSupported ->
                     "Native notification/tray APIs are unavailable; in-app state remains authoritative."
@@ -198,6 +220,48 @@ class DesktopAttentionRuntime(
     fun toggleTrayDashboard() = preferences.updateGlobal { it.copy(trayDashboardEnabled = !it.trayDashboardEnabled) }.also { reconcileNow() }
     fun togglePaused() = preferences.updateGlobal { it.copy(paused = !it.paused) }.also { reconcileNow() }
 
+    fun cycleFocusProfile() {
+        val plan = services.currentDefaultPlanForDesktop() ?: return
+        val settings = services.planRepository.currentSettings()[plan.id]
+        val current = preferences.focusPolicy(plan.id, settings)
+        val profiles = StudyFlowAttentionFocusProfile.entries
+        val next = profiles[(profiles.indexOf(current.profile) + 1) % profiles.size]
+        preferences.saveFocusPolicy(
+            plan.id,
+            current.copy(
+                profile = next,
+                quietWindow = current.quietWindow?.copy(timezoneId = ZoneId.systemDefault().id),
+            ),
+        )
+        reconcileNow()
+    }
+
+    fun toggleFocusQuietHours() {
+        val plan = services.currentDefaultPlanForDesktop() ?: return
+        val settings = services.planRepository.currentSettings()[plan.id]
+            ?: com.mikeyphw.studyflow.core.model.StudyPlanSettings.defaults(plan.id)
+        val current = preferences.focusPolicy(plan.id, settings)
+        val nextQuiet = if (current.quietWindow?.enabled == true) {
+            null
+        } else {
+            com.mikeyphw.studyflow.core.link.StudyFlowAttentionQuietWindow(
+                enabled = true,
+                timezoneId = ZoneId.systemDefault().id,
+            )
+        }
+        preferences.saveFocusPolicy(plan.id, current.copy(quietWindow = nextQuiet))
+        // Keep the pre-ATT10 planner quiet-hours fields aligned with ATT10 so desktop does not
+        // accidentally maintain two independent quiet-hours truths.
+        runBlocking {
+            services.planRepository.updatePlanSettings(
+                settings.copy(
+                    quietHoursStartMinute = nextQuiet?.startMinute,
+                    quietHoursEndMinute = nextQuiet?.endMinute,
+                ),
+            )
+        }
+        reconcileNow()
+    }
 
     fun toggleCategory(category: DesktopReminderCategoryPreference) {
         val plan = services.currentDefaultPlanForDesktop() ?: return
@@ -227,7 +291,7 @@ class DesktopAttentionRuntime(
         )
     }
 
-    private fun deliverDueEntries(now: Long, global: DesktopAttentionGlobalPreferences, policy: StudyReminderPolicy) {
+    private fun deliverDueEntries(now: Long, global: DesktopAttentionGlobalPreferences, planId: StudyPlanId) {
         attentionLedger.snapshot().entries
             .filter { it.state == StudyFlowAttentionDeliveryState.SCHEDULED }
             .filter { it.occurrence.scheduledAtEpochMillis <= now }
@@ -237,6 +301,50 @@ class DesktopAttentionRuntime(
                 if (occurrence.expiresAtEpochMillis?.let { it < now } == true) {
                     runCatching { attentionLedger.transition(occurrence.occurrenceId, StudyFlowAttentionDeliveryState.EXPIRED, now) }
                     return@forEach
+                }
+                val focusPolicy = preferences.focusPolicy(planId, services.planRepository.currentSettings()[planId])
+                val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
+                    occurrence = occurrence,
+                    policy = focusPolicy,
+                    nowEpochMillis = now,
+                    ledgerEntry = entry,
+                    localClientKind = StudyFlowLinkClientKind.DESKTOP,
+                )
+                lastPolicyOutcome = decision.outcome
+                runCatching { attentionLedger.recordPolicyDecision(decision) }
+                when (decision.outcome) {
+                    StudyFlowAttentionPolicyOutcome.SUPPRESS_DUPLICATE -> return@forEach
+                    StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END -> {
+                        val deferred = decision.deferredUntilEpochMillis ?: return@forEach
+                        val deferredOccurrence = occurrence.copy(scheduledAtEpochMillis = deferred)
+                        attentionLedger.upsertScheduled(deferredOccurrence, now)
+                        runCatching { attentionLedger.recordPolicyDecision(decision) }
+                        return@forEach
+                    }
+                    StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE -> return@forEach
+                    StudyFlowAttentionPolicyOutcome.COMPACT_ONLY,
+                    StudyFlowAttentionPolicyOutcome.SILENT_DELIVERY -> {
+                        // Desktop compact/silent outcomes are consumed by the in-app/tray projection
+                        // without raising a native system notification. The ATT01 ledger still
+                        // advances so the same occurrence is not re-evaluated every reconcile tick.
+                        runCatching {
+                            attentionLedger.transition(
+                                occurrence.occurrenceId,
+                                StudyFlowAttentionDeliveryState.DELIVERY_PENDING,
+                                now,
+                            )
+                            attentionLedger.transition(
+                                occurrence.occurrenceId,
+                                StudyFlowAttentionDeliveryState.DELIVERED,
+                                now,
+                            )
+                        }
+                        lastDeliveredAt = now
+                        lastDeliveredTitle = occurrence.payload["title"]?.toString()?.trim('"')
+                            ?: occurrence.category.desktopTitle()
+                        return@forEach
+                    }
+                    else -> Unit
                 }
                 if (!global.nativeNotificationsEnabled || !services.platformPorts.notifications.capabilities().nativeNotificationsSupported) {
                     return@forEach

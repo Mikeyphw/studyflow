@@ -1,11 +1,11 @@
 "use strict";
 
-const CACHE_VERSION = "studyflow-local-1.0.0-d95bdf746b870d02";
+const CACHE_VERSION = "studyflow-local-1.0.0-8748622a15619126";
 const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
   "./runtime/main.js", "./runtime/domain.js", "./runtime/content_import.js",
   "./runtime/question_import.js", "./runtime/mode_import.js", "./runtime/intelligence.js", "./runtime/refinement.js", "./runtime/retention_viewer.js", "./runtime/parity_intelligence.js", "./runtime/promise_cleanup.js", "./runtime/product.js", "./runtime/exam_foundation.js", "./runtime/task_workflows.js", "./runtime/indexeddb.js", "./runtime/storage.js",
-  "./runtime/state.js", "./runtime/modes.js", "./runtime/schedule.js", "./runtime/portable.js", "./runtime/encrypted_portable.js", "./runtime/pwa.js", "./runtime/attention.js", "./runtime/compact_attention.js", "./runtime/calendar_attention.js", "./runtime/hardening.js", "./runtime/release.js", "./runtime/tv.js", "./runtime/tv_attention.js", "./runtime/presence.js", "./runtime/sflp_link.js", "./runtime/tv_history.js", "./runtime/tv_library.js", "./runtime/tv_control.js", "./runtime/tv_session.js", "./runtime/tv_question_set.js", "./runtime/tv_mock_exam.js", "./runtime/tv_review_notebook.js", "./runtime/tv_progress.js", "./runtime/tv_schedule.js", "./runtime/tv_semantic_parity.js", "./runtime/review_semantics.js", "./runtime/semantic_golden.js", "./runtime/types.js", "./runtime/react/App.js",
+  "./runtime/state.js", "./runtime/modes.js", "./runtime/schedule.js", "./runtime/portable.js", "./runtime/encrypted_portable.js", "./runtime/pwa.js", "./runtime/attention.js", "./runtime/attention_focus_policy.js", "./runtime/compact_attention.js", "./runtime/calendar_attention.js", "./runtime/hardening.js", "./runtime/release.js", "./runtime/tv.js", "./runtime/tv_attention.js", "./runtime/presence.js", "./runtime/sflp_link.js", "./runtime/tv_history.js", "./runtime/tv_library.js", "./runtime/tv_control.js", "./runtime/tv_session.js", "./runtime/tv_question_set.js", "./runtime/tv_mock_exam.js", "./runtime/tv_review_notebook.js", "./runtime/tv_progress.js", "./runtime/tv_schedule.js", "./runtime/tv_semantic_parity.js", "./runtime/review_semantics.js", "./runtime/semantic_golden.js", "./runtime/types.js", "./runtime/react/App.js",
   "./vendor/react.production.js",
   "./vendor/react-dom.production.js",
   "./vendor/react-dom-client.production.js",

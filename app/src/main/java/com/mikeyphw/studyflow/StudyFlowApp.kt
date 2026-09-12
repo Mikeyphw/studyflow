@@ -739,6 +739,9 @@ internal fun StudyFlowNavHost(
                     var reminderPolicy by remember(planId, settings.reviewNotificationsEnabled) {
                         mutableStateOf(StudyReminderPolicy.fromLegacy(settings))
                     }
+                    var attentionFocusPolicy by remember(planId) {
+                        mutableStateOf(container.reminderDeliveryCoordinator.focusPolicyFor(planId, settings))
+                    }
                     var reliabilityRefresh by remember(planId) { mutableIntStateOf(0) }
                     LaunchedEffect(planId, settings.reviewNotificationsEnabled) {
                         reminderPolicy = container.reminderDeliveryCoordinator.policyFor(planId)
@@ -751,6 +754,7 @@ internal fun StudyFlowNavHost(
                         plan = currentPlan,
                         settings = settings,
                         reminderPolicy = reminderPolicy,
+                        attentionFocusPolicy = attentionFocusPolicy,
                         runtimeEvidence = runtimeEvidence,
                         schedule = container.manageStudySchedule,
                         review = container.manageStudyReview,
@@ -760,6 +764,13 @@ internal fun StudyFlowNavHost(
                             coroutineScope.launch {
                                 container.manageStudyPlan.updateSettings(updatedSettings)
                                 container.reminderDeliveryCoordinator.updatePolicy(updatedSettings.studyPlanId, updatedPolicy)
+                                reliabilityRefresh += 1
+                            }
+                        },
+                        onAttentionFocusPolicyChanged = { updatedFocusPolicy ->
+                            attentionFocusPolicy = updatedFocusPolicy
+                            coroutineScope.launch {
+                                container.reminderDeliveryCoordinator.updateFocusPolicy(planId, updatedFocusPolicy)
                                 reliabilityRefresh += 1
                             }
                         },

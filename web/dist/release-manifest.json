@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-d95bdf746b870d02",
+  "cacheVersion": "studyflow-local-1.0.0-8748622a15619126",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -42,13 +42,18 @@
     },
     {
       "path": "runtime/attention.js",
-      "sha256": "3d154479ad05b09b5b7986ca19b77bad42cd2b38fd81859e5b035e62f672d689",
-      "bytes": 44005
+      "sha256": "45a462d7b9a223bb9ed930f6c78a4a614312ffaeb78533c141839b2f063baf6e",
+      "bytes": 47335
+    },
+    {
+      "path": "runtime/attention_focus_policy.js",
+      "sha256": "6dc0956fe8279898ea9c820ebb0ce3dac29b9de62f77fe8b0859c27142d776c9",
+      "bytes": 11793
     },
     {
       "path": "runtime/attention_router.js",
-      "sha256": "a358cf62a6eee769d650d0db06409aaaf04d0f84351b87ba3d97218bcbf866b8",
-      "bytes": 14568
+      "sha256": "01f09bacc9f9f09de2d847d023795783647e53192d37f4134c8101666e4784eb",
+      "bytes": 18726
     },
     {
       "path": "runtime/calendar_attention.js",
@@ -152,8 +157,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "fa159538a5b5e0543bacf5a632959760dfed03c076d04b09b7258dbd7bd8a98f",
-      "bytes": 338148
+      "sha256": "09bd632c575716ba5fd12fe4bc8a564c82c0ea9d6ae619a02ae50ed7b5f281e8",
+      "bytes": 343050
     },
     {
       "path": "runtime/refinement.js",
@@ -212,8 +217,8 @@
     },
     {
       "path": "runtime/tv_attention.js",
-      "sha256": "6670432760e1efcd453f548d1799abafb32ffc9993cf5ee752d43f363acf79f8",
-      "bytes": 5450
+      "sha256": "73c7840cac4367bc6e52ebc16f60cbf9fd7c30878549d60bb7ed1113743ea269",
+      "bytes": 6224
     },
     {
       "path": "runtime/tv_control.js",
@@ -272,8 +277,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "b8c7a3a614fab43cf29870e3969df4fe3fd9ae05b56e9893ed0ed67e502f8ad3",
-      "bytes": 9145
+      "sha256": "45a8b80bdec78cdf11d01200ef690d1a240c29ddc5e7bb30633ec70a72d14655",
+      "bytes": 9184
     },
     {
       "path": "styles.css",

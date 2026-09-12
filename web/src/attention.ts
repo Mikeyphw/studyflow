@@ -22,9 +22,16 @@ import {
 } from "./pwa";
 import {
   attentionDeviceFromWebPeer,
-  routeStudyFlowAttentionDelivery,
+  routeStudyFlowAttentionDeliveryWithPolicy,
   type StudyFlowAttentionDeliveryRoute,
 } from "./attention_router";
+import {
+  defaultWebAttentionFocusPolicy,
+  evaluateWebAttentionFocusPolicy,
+  normalizeWebAttentionFocusPolicy,
+  type StudyFlowAttentionFocusPolicy,
+  type StudyFlowAttentionPolicyDecision,
+} from "./attention_focus_policy";
 
 const WEB_ATTENTION_PREFERENCES_KEY = "studyflow.attention.web.preferences.v1";
 const WEB_PUSH_SUBSCRIPTION_KEY = "studyflow.attention.web.push.v1";
@@ -45,6 +52,7 @@ export interface StudyFlowWebAttentionPreferences {
   sessionLeadMinutes: number;
   dailySummaryMinute: number;
   categories: Record<StudyFlowAttentionCategory, boolean>;
+  focusPolicy: StudyFlowAttentionFocusPolicy;
 }
 
 export interface StudyFlowWebPushSubscriptionRecord {
@@ -139,6 +147,7 @@ export function defaultWebAttentionPreferences(): StudyFlowWebAttentionPreferenc
     sessionLeadMinutes: 5,
     dailySummaryMinute: 8 * 60,
     categories: defaultCategories(),
+    focusPolicy: defaultWebAttentionFocusPolicy(),
   };
 }
 
@@ -158,6 +167,7 @@ function normalizePreferences(value: unknown): StudyFlowWebAttentionPreferences 
     sessionLeadMinutes: clamp(candidate.sessionLeadMinutes, defaults.sessionLeadMinutes, 0, 60),
     dailySummaryMinute: clamp(candidate.dailySummaryMinute, defaults.dailySummaryMinute, 0, 1439),
     categories: { ...defaults.categories, ...(candidate.categories ?? {}) },
+    focusPolicy: normalizeWebAttentionFocusPolicy(candidate.focusPolicy),
   };
 }
 
@@ -447,10 +457,11 @@ export class StudyFlowWebAttentionRuntime {
       lastSeenAtEpochMillis: now,
     });
     const activeEntries = entries.filter(entry => ACTIVE_DELIVERY_STATES.has(entry.state));
-    const routes = activeEntries.map(entry => routeStudyFlowAttentionDelivery(
+    const routes = activeEntries.map(entry => routeStudyFlowAttentionDeliveryWithPolicy(
       entry.occurrence,
       [local],
       now,
+      this.preferences.focusPolicy,
       {
         localDeviceId: this.peer.identity.deviceId,
         primaryDeviceId: this.peer.identity.deviceId,
@@ -486,6 +497,25 @@ export class StudyFlowWebAttentionRuntime {
     void this.scan();
     this.emit();
     return this.preferences;
+  }
+
+  setFocusPolicy(input: Partial<StudyFlowAttentionFocusPolicy>): StudyFlowAttentionFocusPolicy {
+    const focusPolicy = normalizeWebAttentionFocusPolicy({
+      ...this.preferences.focusPolicy,
+      ...input,
+      quietWindow: input.quietWindow === undefined ? this.preferences.focusPolicy.quietWindow : input.quietWindow,
+      categoryPolicies: input.categoryPolicies ?? this.preferences.focusPolicy.categoryPolicies,
+    });
+    this.preferences = normalizePreferences({ ...this.preferences, focusPolicy });
+    this.persistPreferences();
+    void this.scan();
+    this.emit();
+    return focusPolicy;
+  }
+
+  setFocusCategoryMode(category: StudyFlowAttentionCategory, mode: StudyFlowAttentionFocusPolicy["categoryPolicies"][number]["mode"]): StudyFlowAttentionFocusPolicy {
+    const categoryPolicies = this.preferences.focusPolicy.categoryPolicies.map(value => value.category === category ? { ...value, mode } : value);
+    return this.setFocusPolicy({ categoryPolicies });
   }
 
   async subscribePush(applicationServerKey: string): Promise<StudyFlowWebPushSubscriptionRecord> {
@@ -559,7 +589,23 @@ export class StudyFlowWebAttentionRuntime {
       .filter(entry => ACTIVE_DELIVERY_STATES.has(entry.state) && entry.occurrence.scheduledAtEpochMillis <= now)
       .filter(entry => !entry.occurrence.expiresAtEpochMillis || entry.occurrence.expiresAtEpochMillis >= now)
       .sort((a, b) => a.occurrence.scheduledAtEpochMillis - b.occurrence.scheduledAtEpochMillis);
-    for (const entry of due) await this.surfaceOccurrence(entry.occurrence);
+    for (const entry of due) {
+      const decision = evaluateWebAttentionFocusPolicy(entry.occurrence, this.preferences.focusPolicy, now, entry, "web");
+      this.recordPolicyDecision(decision);
+      if (decision.outcome === "suppress_duplicate" || decision.outcome === "route_to_phone") continue;
+      if (decision.outcome === "defer_until_quiet_end" && decision.deferredUntilEpochMillis) {
+        this.upsertOccurrence({ ...entry.occurrence, scheduledAtEpochMillis: decision.deferredUntilEpochMillis }, "scheduled", now);
+        this.recordPolicyDecision(decision);
+        continue;
+      }
+      if (decision.outcome === "compact_only" || decision.outcome === "silent_delivery") {
+        this.transition(entry.occurrence.occurrenceId, entry.occurrence.category === "missed_activity" ? "missed" : "delivered", now, 1);
+        this.recordPolicyDecision(decision);
+        continue;
+      }
+      await this.surfaceOccurrence(entry.occurrence);
+      this.recordPolicyDecision(decision);
+    }
     this.lastScanAtEpochMillis = now;
     await this.updateBadge();
     this.emit();
@@ -778,8 +824,27 @@ export class StudyFlowWebAttentionRuntime {
       targetDeviceId: existing?.targetDeviceId,
       sequence: existing?.sequence,
       deliveryAttempts: existing?.deliveryAttempts ?? 0,
+      policyAudit: existing?.policyAudit,
     };
     this.writeLedger({ ...ledger, entries: [...ledger.entries.filter(value => value.occurrence.occurrenceId !== occurrence.occurrenceId), entry].slice(-WEB_ATTENTION_HISTORY_LIMIT) });
+  }
+
+  private recordPolicyDecision(decision: StudyFlowAttentionPolicyDecision): void {
+    const ledger = this.readLedger();
+    const existing = ledger.entries.find(value => value.occurrence.occurrenceId === decision.occurrenceId);
+    if (!existing) return;
+    const entry: StudyFlowAttentionLedgerEntry = {
+      ...existing,
+      updatedAtEpochMillis: Math.max(existing.updatedAtEpochMillis, decision.evaluatedAtEpochMillis),
+      policyAudit: {
+        profile: decision.profile,
+        outcome: decision.outcome,
+        evaluatedAtEpochMillis: decision.evaluatedAtEpochMillis,
+        deferredUntilEpochMillis: decision.deferredUntilEpochMillis,
+        explanation: decision.explanation,
+      },
+    };
+    this.writeLedger({ ...ledger, entries: [...ledger.entries.filter(value => value.occurrence.occurrenceId !== decision.occurrenceId), entry].slice(-WEB_ATTENTION_HISTORY_LIMIT) });
   }
 
   private transition(occurrenceId: string, state: StudyFlowAttentionDeliveryState, now: number, attemptDelta = 0): void {

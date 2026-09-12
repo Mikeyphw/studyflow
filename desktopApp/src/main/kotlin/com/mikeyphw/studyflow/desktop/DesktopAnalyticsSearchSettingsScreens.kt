@@ -325,6 +325,8 @@ fun DesktopSettingsScreen(
     onReconcileAttention: () -> Unit,
     onTestNotification: () -> Unit,
     onToggleReminderCategory: (DesktopReminderCategoryPreference) -> Unit,
+    onCycleAttentionFocusProfile: () -> Unit,
+    onToggleAttentionQuietHours: () -> Unit,
     linkState: DesktopStudyFlowLinkState?,
     linkQrInput: String,
     linkManualEndpoint: String,
@@ -421,6 +423,21 @@ fun DesktopSettingsScreen(
                     Text(desktopText("Send test notification"))
                 }
             }
+            Text(desktopText("ATT10 focus policy"), fontWeight = FontWeight.Bold)
+            Text(
+                "Profile: ${attention.focusProfile.name.lowercase().replace('_', ' ')} • " +
+                    "quiet hours ${if (attention.quietHoursEnabled) attention.quietHoursLabel else "off"} • " +
+                    "last decision ${attention.lastPolicyOutcome?.name?.lowercase()?.replace('_', ' ') ?: "none"}",
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onCycleAttentionFocusProfile, enabled = attention.available) {
+                    Text(desktopText("Cycle focus profile"))
+                }
+                OutlinedButton(onClick = onToggleAttentionQuietHours, enabled = attention.available) {
+                    Text(desktopText(if (attention.quietHoursEnabled) "Disable quiet hours" else "Enable quiet hours"))
+                }
+            }
+            Text(desktopText("ATT10 decisions are audited in the ATT01 ledger; desktop never creates a second reminder truth store."))
             Text(desktopText("Reminder categories"), fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { onToggleReminderCategory(DesktopReminderCategoryPreference.PLANNED) }, enabled = attention.available) {

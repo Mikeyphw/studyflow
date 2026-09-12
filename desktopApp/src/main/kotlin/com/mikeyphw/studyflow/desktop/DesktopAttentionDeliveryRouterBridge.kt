@@ -1,6 +1,10 @@
 package com.mikeyphw.studyflow.desktop
 
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRouter
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRoute
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedgerEntry
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliverySurface
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceAvailability
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceCapability
@@ -45,6 +49,23 @@ object DesktopAttentionDeliveryRouterBridge {
             designatedNotifierDeviceIds = listOf(localDeviceId),
             staleAfterMillis = 5 * 60_000L,
         )
+
+
+    fun routeWithPolicy(
+        occurrence: StudyFlowAttentionOccurrence,
+        devices: List<StudyFlowAttentionDeviceCapability>,
+        focusPolicy: StudyFlowAttentionFocusPolicy,
+        nowEpochMillis: Long,
+        ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
+    ): StudyFlowAttentionDeliveryRoute = router().routeWithPolicy(
+        occurrence = occurrence,
+        devices = devices,
+        nowEpochMillis = nowEpochMillis,
+        focusPolicy = focusPolicy,
+        context = defaultRoutingContext(nowEpochMillis),
+        ledgerEntry = ledgerEntry,
+        localClientKind = StudyFlowLinkClientKind.DESKTOP,
+    )
 
     fun router(): StudyFlowAttentionDeliveryRouter = StudyFlowAttentionDeliveryRouter()
 }

@@ -2,6 +2,10 @@ package com.mikeyphw.studyflow.reminders
 
 import android.content.Context
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRouter
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRoute
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionLedgerEntry
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliverySurface
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceAvailability
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeviceCapability
@@ -50,6 +54,23 @@ object AndroidStudyFlowAttentionRouterBridge {
             staleAfterMillis = 10 * 60_000L,
             allowTvForegroundOwners = true,
         )
+
+
+    fun routeWithPolicy(
+        occurrence: StudyFlowAttentionOccurrence,
+        devices: List<StudyFlowAttentionDeviceCapability>,
+        focusPolicy: StudyFlowAttentionFocusPolicy,
+        nowEpochMillis: Long,
+        ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
+    ): StudyFlowAttentionDeliveryRoute = router().routeWithPolicy(
+        occurrence = occurrence,
+        devices = devices,
+        nowEpochMillis = nowEpochMillis,
+        focusPolicy = focusPolicy,
+        context = defaultRoutingContext(nowEpochMillis),
+        ledgerEntry = ledgerEntry,
+        localClientKind = StudyFlowLinkClientKind.ANDROID,
+    )
 
     fun router(): StudyFlowAttentionDeliveryRouter = StudyFlowAttentionDeliveryRouter()
 }

@@ -112,6 +112,9 @@ data class StudyFlowAttentionDeviceCapability(
         ) {
             return StudyFlowAttentionDeliverySurface.FOREGROUND_BANNER
         }
+        if (StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE in deliverySurfaces) {
+            return StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE
+        }
         return null
     }
 
@@ -213,6 +216,8 @@ data class StudyFlowAttentionRouteDiagnostics(
     val eligibleCount: Int,
     val suppressedDeviceIds: List<StudyFlowDeviceId> = emptyList(),
     val ledgerState: StudyFlowAttentionDeliveryState? = null,
+    val policyOutcome: StudyFlowAttentionPolicyOutcome? = null,
+    val deferredUntilEpochMillis: Long? = null,
     val explanation: String,
 ) {
     init {
@@ -220,6 +225,9 @@ data class StudyFlowAttentionRouteDiagnostics(
         require(eligibleCount >= 0) { "Eligible count must not be negative" }
         require(suppressedDeviceIds.distinct().size == suppressedDeviceIds.size) {
             "Suppressed route devices must be unique"
+        }
+        require(deferredUntilEpochMillis == null || deferredUntilEpochMillis >= 0L) {
+            "Attention route deferral timestamp must not be negative"
         }
         require(explanation.isNotBlank()) { "Route diagnostics explanation must not be blank" }
     }
@@ -235,6 +243,10 @@ data class StudyFlowAttentionDeliveryRoute(
     val owner: StudyFlowAttentionDeliveryTarget? = null,
     val mirrors: List<StudyFlowAttentionDeliveryTarget> = emptyList(),
     val diagnostics: StudyFlowAttentionRouteDiagnostics,
+    val policyOutcome: StudyFlowAttentionPolicyOutcome? = null,
+    val deliverSilently: Boolean = false,
+    val compactOnly: Boolean = false,
+    val requiresUserAction: Boolean = false,
 ) {
     init {
         require(decidedAtEpochMillis >= 0L) { "Attention route decision time must not be negative" }
@@ -406,6 +418,109 @@ class StudyFlowAttentionDeliveryRouter {
                 explanation = "All capable policy routes one owner and bounded mirror surfaces.",
             )
         }
+    }
+
+    fun routeWithPolicy(
+        occurrence: StudyFlowAttentionOccurrence,
+        devices: List<StudyFlowAttentionDeviceCapability>,
+        nowEpochMillis: Long,
+        focusPolicy: StudyFlowAttentionFocusPolicy,
+        context: StudyFlowAttentionRoutingContext = StudyFlowAttentionRoutingContext(),
+        ledgerEntry: StudyFlowAttentionLedgerEntry? = null,
+        localClientKind: StudyFlowLinkClientKind? = null,
+    ): StudyFlowAttentionDeliveryRoute {
+        val decision = StudyFlowAttentionFocusPolicyEngine.evaluate(
+            occurrence = occurrence,
+            policy = focusPolicy,
+            nowEpochMillis = nowEpochMillis,
+            ledgerEntry = ledgerEntry,
+            localClientKind = localClientKind,
+        )
+        if (decision.outcome == StudyFlowAttentionPolicyOutcome.SUPPRESS_DUPLICATE ||
+            decision.outcome == StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END
+        ) {
+            return noRoute(
+                occurrence = occurrence,
+                policy = occurrence.deliveryPolicy,
+                reason = if (decision.outcome == StudyFlowAttentionPolicyOutcome.SUPPRESS_DUPLICATE) {
+                    StudyFlowAttentionRouteReason.LEDGER_ALREADY_HANDLED
+                } else {
+                    StudyFlowAttentionRouteReason.NO_CAPABLE_DEVICE
+                },
+                nowEpochMillis = nowEpochMillis,
+                candidateCount = devices.size,
+                ledgerState = ledgerEntry?.state,
+                explanation = decision.explanation,
+            ).copy(
+                policyOutcome = decision.outcome,
+                diagnostics = StudyFlowAttentionRouteDiagnostics(
+                    candidateCount = devices.size,
+                    eligibleCount = 0,
+                    suppressedDeviceIds = devices.map(StudyFlowAttentionDeviceCapability::deviceId),
+                    ledgerState = ledgerEntry?.state,
+                    policyOutcome = decision.outcome,
+                    deferredUntilEpochMillis = decision.deferredUntilEpochMillis,
+                    explanation = decision.explanation,
+                ),
+            )
+        }
+
+        val policyDevices = when (decision.outcome) {
+            StudyFlowAttentionPolicyOutcome.ROUTE_TO_PHONE -> devices.filter { it.clientKind == StudyFlowLinkClientKind.ANDROID }
+            StudyFlowAttentionPolicyOutcome.COMPACT_ONLY -> devices.filter {
+                StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE in it.deliverySurfaces
+            }
+            else -> devices
+        }
+        val policyContext = context.copy(
+            maxMirrors = if (decision.outcome == StudyFlowAttentionPolicyOutcome.ESCALATE_MIRROR) {
+                minOf(context.maxMirrors, decision.requestedMirrorCount).coerceIn(0, 3)
+            } else context.maxMirrors,
+        )
+        val routed = route(
+            occurrence = occurrence,
+            devices = policyDevices,
+            nowEpochMillis = nowEpochMillis,
+            context = policyContext,
+            ledgerEntry = ledgerEntry,
+        )
+        val owner = if (decision.compactOnly) routed.owner?.copy(surface = StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE) else routed.owner
+        val compactMirrors = if (decision.compactOnly) {
+            routed.mirrors.map { it.copy(surface = StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE) }
+        } else routed.mirrors
+        val mirrors = if (decision.outcome == StudyFlowAttentionPolicyOutcome.ESCALATE_MIRROR && owner != null) {
+            val explicitTargets = occurrence.targetDeviceIds.toSet()
+            val allowed = policyDevices
+                .filter { it.deviceId != owner.deviceId }
+                .filter { explicitTargets.isEmpty() || it.deviceId in explicitTargets }
+                .filter { it.canOwn(occurrence, nowEpochMillis, policyContext) }
+                .rankedFor(occurrence, nowEpochMillis, policyContext)
+            val existingIds = compactMirrors.mapTo(linkedSetOf(), StudyFlowAttentionDeliveryTarget::deviceId)
+            compactMirrors + allowed
+                .filterNot { it.deviceId in existingIds }
+                .take((decision.requestedMirrorCount - compactMirrors.size).coerceAtLeast(0))
+                .map {
+                    it.toTarget(
+                        occurrence = occurrence,
+                        nowEpochMillis = nowEpochMillis,
+                        context = policyContext,
+                        role = StudyFlowAttentionDeliveryRole.MIRROR,
+                    )
+                }
+        } else compactMirrors
+        return routed.copy(
+            owner = owner,
+            mirrors = mirrors,
+            policyOutcome = decision.outcome,
+            deliverSilently = decision.deliverSilently,
+            compactOnly = decision.compactOnly,
+            requiresUserAction = decision.requiresUserAction,
+            diagnostics = routed.diagnostics.copy(
+                policyOutcome = decision.outcome,
+                deferredUntilEpochMillis = decision.deferredUntilEpochMillis,
+                explanation = "${routed.diagnostics.explanation} ${decision.explanation}",
+            ),
+        )
     }
 
     fun createHandoffRequest(

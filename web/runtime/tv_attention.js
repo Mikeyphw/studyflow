@@ -57,7 +57,7 @@ function bannerFromWebAttentionEntry(entry) {
     };
 }
 function projectWebAttentionToTv(snapshot) {
-    var _a;
+    var _a, _b, _c, _d;
     const recentBanners = snapshot.entries
         .filter(entry => ACTIVE_STATES.has(entry.state))
         .slice(0, 8)
@@ -68,7 +68,10 @@ function projectWebAttentionToTv(snapshot) {
         recentBanners,
         badgeCount: snapshot.badgeCount,
         lastScanAtEpochMillis: snapshot.lastScanAtEpochMillis,
-        source: "att05-web-runtime",
+        focusProfile: (_d = (_c = (_b = snapshot.preferences) === null || _b === void 0 ? void 0 : _b.focusPolicy) === null || _c === void 0 ? void 0 : _c.profile) !== null && _d !== void 0 ? _d : "balanced",
+        focusOutcomes: snapshot.entries.map(entry => { var _a; return (_a = entry.policyAudit) === null || _a === void 0 ? void 0 : _a.outcome; }).filter((value) => !!value).slice(0, 8),
+        focusControlsReadOnly: true,
+        source: "att10-web-runtime",
     };
 }
 class StudyFlowWebTvAttentionRuntime {
@@ -95,6 +98,8 @@ function installStudyFlowWebTvAttentionBridge(runtime) {
         root.dataset.studyflowTvAttention = snapshot.capabilities.deliveryMode;
         root.dataset.studyflowTvAttentionFallback = snapshot.capabilities.designatedNotifierFallback ? "designated-notifier" : "none";
         root.dataset.studyflowTvAttentionBadge = String(snapshot.badgeCount);
+        root.dataset.studyflowTvAttentionFocusProfile = snapshot.focusProfile;
+        root.dataset.studyflowTvAttentionFocusControls = snapshot.focusControlsReadOnly ? "remote-safe-read-only" : "local";
         (_a = globalThis.dispatchEvent) === null || _a === void 0 ? void 0 : _a.call(globalThis, new CustomEvent("studyflow:tv-attention-snapshot", { detail: snapshot }));
     };
     const onAttention = () => render();
@@ -108,5 +113,7 @@ function installStudyFlowWebTvAttentionBridge(runtime) {
         delete root.dataset.studyflowTvAttention;
         delete root.dataset.studyflowTvAttentionFallback;
         delete root.dataset.studyflowTvAttentionBadge;
+        delete root.dataset.studyflowTvAttentionFocusProfile;
+        delete root.dataset.studyflowTvAttentionFocusControls;
     };
 }

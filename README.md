@@ -1,3 +1,7 @@
+## ATT10 — Quiet Hours / Focus Profiles / Escalation Policy
+
+StudyFlow now evaluates every Attention occurrence through one shared focus-policy model before ATT07 chooses delivery ownership. Timezone-safe quiet hours (including overnight windows), six focus profiles, per-category escalation, bounded mirrors, and explicit defer/silent/compact/phone/user-action outcomes are audited in the ATT01 ledger across Android, Desktop, Web/PWA and TV projections. Android and Desktop/Web settings can edit policy; Android TV and Web TV remain truthful read-only/remote-safe foreground projections. See `ATT10_QUIET_HOURS_FOCUS_PROFILES_ESCALATION_POLICY.md` and `docs/product/QUIET_HOURS_FOCUS_ESCALATION.md`.
+
 ## ATT07 — Cross-Device Delivery Router
 
 StudyFlow now has a shared ATT07 delivery router that chooses one canonical owner and bounded mirror targets for every Attention occurrence across Android, Desktop, Web/PWA, Android TV, and Web TV. Routing is ledger-first, capability-aware, foreground-truthful for TV clients, and exposes canonical move-to-device handoff requests. See `ATT07_CROSS_DEVICE_DELIVERY_ROUTER.md`.

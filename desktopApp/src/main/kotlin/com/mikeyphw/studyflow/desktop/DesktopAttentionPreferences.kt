@@ -1,6 +1,13 @@
 package com.mikeyphw.studyflow.desktop
 
 import com.mikeyphw.studyflow.core.domain.StudyReminderPolicy
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionCategory
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionCategoryEscalationPolicy
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionEscalationMode
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionQuietWindow
+import com.mikeyphw.studyflow.core.link.defaultAttentionEscalationPolicies
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import java.io.InputStream
@@ -9,6 +16,7 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.time.ZoneId
 import java.util.Properties
 
 data class DesktopAttentionGlobalPreferences(
@@ -78,6 +86,93 @@ class DesktopAttentionPreferences private constructor(
         properties[prefix + "snooze"] = policy.defaultSnoozeMinutes.toString()
         properties[prefix + "sessionLead"] = policy.sessionEndingLeadMinutes.toString()
         properties[prefix + "examDays"] = policy.examCountdownDays.toString()
+        persistLocked()
+    }
+
+
+    @Synchronized
+    fun focusPolicy(planId: StudyPlanId, legacySettings: StudyPlanSettings? = null): StudyFlowAttentionFocusPolicy {
+        val prefix = "plan.${planId.value}.focus."
+        val defaultsByCategory = defaultAttentionEscalationPolicies().associateBy { it.category }
+        val hasStoredPolicy = properties.getProperty(prefix + "schema") != null
+        val profile = properties.getProperty(prefix + "profile")
+            ?.let { raw -> runCatching { StudyFlowAttentionFocusProfile.valueOf(raw) }.getOrNull() }
+            ?: StudyFlowAttentionFocusProfile.BALANCED
+        val legacyQuiet = legacySettings?.let { settings ->
+            val start = settings.quietHoursStartMinute
+            val end = settings.quietHoursEndMinute
+            if (start != null && end != null && start != end) {
+                StudyFlowAttentionQuietWindow(
+                    enabled = true,
+                    startMinute = start,
+                    endMinute = end,
+                    timezoneId = ZoneId.systemDefault().id,
+                )
+            } else null
+        }
+        val quietEnabled = bool(prefix + "quietEnabled", !hasStoredPolicy && legacyQuiet != null)
+        val quietStart = int(prefix + "quietStart", legacyQuiet?.startMinute ?: 22 * 60).coerceIn(0, 1439)
+        var quietEnd = int(prefix + "quietEnd", legacyQuiet?.endMinute ?: 7 * 60).coerceIn(0, 1439)
+        if (quietEnd == quietStart) quietEnd = (quietStart + 1) % (24 * 60)
+        val timezone = properties.getProperty(prefix + "timezone")?.takeIf(String::isNotBlank)
+            ?: legacyQuiet?.timezoneId
+        val quietWindow = if (quietEnabled) {
+            StudyFlowAttentionQuietWindow(
+                enabled = true,
+                startMinute = quietStart,
+                endMinute = quietEnd,
+                timezoneId = timezone,
+            )
+        } else null
+        val policies = StudyFlowAttentionCategory.entries.map { category ->
+            val key = prefix + "category.${category.name}."
+            val default = defaultsByCategory.getValue(category)
+            val mode = properties.getProperty(key + "mode")
+                ?.let { raw -> runCatching { StudyFlowAttentionEscalationMode.valueOf(raw) }.getOrNull() }
+                ?: default.mode
+            StudyFlowAttentionCategoryEscalationPolicy(
+                category = category,
+                mode = mode,
+                bypassQuietHours = bool(key + "bypassQuiet", default.bypassQuietHours),
+                mirrorAfterMinutes = int(key + "mirrorAfter", default.mirrorAfterMinutes).coerceIn(0, 720),
+            )
+        }
+        return StudyFlowAttentionFocusPolicy(
+            enabled = bool(prefix + "enabled", true),
+            profile = profile,
+            quietWindow = quietWindow,
+            categoryPolicies = policies,
+            allowHighPriorityQuietBypass = bool(prefix + "highBypass", true),
+            allowTimeSensitiveQuietBypass = bool(prefix + "timeSensitiveBypass", true),
+            maxEscalationMirrors = int(prefix + "maxMirrors", 1).coerceIn(0, 3),
+        )
+    }
+
+    @Synchronized
+    fun saveFocusPolicy(planId: StudyPlanId, policy: StudyFlowAttentionFocusPolicy) {
+        val prefix = "plan.${planId.value}.focus."
+        properties[prefix + "schema"] = policy.version.toString()
+        properties[prefix + "enabled"] = policy.enabled.toString()
+        properties[prefix + "profile"] = policy.profile.name
+        properties[prefix + "highBypass"] = policy.allowHighPriorityQuietBypass.toString()
+        properties[prefix + "timeSensitiveBypass"] = policy.allowTimeSensitiveQuietBypass.toString()
+        properties[prefix + "maxMirrors"] = policy.maxEscalationMirrors.toString()
+        properties[prefix + "quietEnabled"] = (policy.quietWindow?.enabled == true).toString()
+        policy.quietWindow?.let { quiet ->
+            properties[prefix + "quietStart"] = quiet.startMinute.toString()
+            properties[prefix + "quietEnd"] = quiet.endMinute.toString()
+            properties[prefix + "timezone"] = quiet.timezoneId ?: ZoneId.systemDefault().id
+        } ?: run {
+            properties.remove(prefix + "quietStart")
+            properties.remove(prefix + "quietEnd")
+            properties.remove(prefix + "timezone")
+        }
+        policy.categoryPolicies.forEach { category ->
+            val key = prefix + "category.${category.category.name}."
+            properties[key + "mode"] = category.mode.name
+            properties[key + "bypassQuiet"] = category.bypassQuietHours.toString()
+            properties[key + "mirrorAfter"] = category.mirrorAfterMinutes.toString()
+        }
         persistLocked()
     }
 

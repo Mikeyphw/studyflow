@@ -1,3 +1,10 @@
+## ATT10 — Quiet Hours / Focus Profiles / Escalation Policy
+
+- Added the shared ATT10 focus-policy engine with timezone-safe/overnight quiet hours, balanced/exam/work/sleep/travel-offline/minimal-TV profiles, category escalation modes, explicit delivery outcomes, and ATT01 policy-audit metadata.
+- Made ATT07 policy-aware without introducing broadcast fan-out: defer/suppress decisions create no route, phone routing filters to capable Android owners, compact routing requires a real compact surface, and escalation can only narrow the existing mirror bound.
+- Added Android, Desktop and Web/PWA policy controls/runtime integration plus truthful read-only Android TV/Web TV projections and explicit closed-browser/foreground limitations.
+- Added Kotlin/Web tests, product docs/capability-matrix coverage, generated Web runtime/dist parity, and the focused `verifyAtt10QuietHoursFocusProfilesEscalationPolicy` gate.
+
 ### ATT07 — Cross-Device Delivery Router
 
 - Added shared Kotlin and Web attention delivery routers with single-owner routing, bounded mirrors, explicit-target routing, foreground-only TV truth, ledger-state suppression, and canonical move-to-device handoff requests.

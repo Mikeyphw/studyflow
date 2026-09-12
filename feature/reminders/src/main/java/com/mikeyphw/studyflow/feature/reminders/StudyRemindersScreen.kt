@@ -71,6 +71,11 @@ import com.mikeyphw.studyflow.core.domain.StudyReminderInput
 import com.mikeyphw.studyflow.core.domain.StudyReminderPlanner
 import com.mikeyphw.studyflow.core.domain.StudyReminderPolicy
 import com.mikeyphw.studyflow.core.domain.TodayWidgetSummary
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionCategory
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionEscalationMode
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusProfile
+import com.mikeyphw.studyflow.core.link.StudyFlowAttentionQuietWindow
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
 import com.mikeyphw.studyflow.core.model.StudySchedule
@@ -78,20 +83,24 @@ import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 private const val PostNotificationsPermission = "android.permission.POST_NOTIFICATIONS"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// ATT10 quiet hours / focus profiles / escalation policy projection.
 fun StudyRemindersScreen(
     plan: StudyPlan,
     settings: StudyPlanSettings,
     reminderPolicy: StudyReminderPolicy,
+    attentionFocusPolicy: StudyFlowAttentionFocusPolicy,
     runtimeEvidence: ReminderPlatformRuntimeEvidence,
     schedule: ManageStudySchedule,
     review: ManageStudyReview,
     sessions: ManageStudySession,
     onReminderSettingsChanged: (StudyPlanSettings, StudyReminderPolicy) -> Unit,
+    onAttentionFocusPolicyChanged: (StudyFlowAttentionFocusPolicy) -> Unit,
     onRefreshReliability: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -118,6 +127,7 @@ fun StudyRemindersScreen(
     }
 
     var draftPolicy by remember(plan.id.value, reminderPolicy) { mutableStateOf(reminderPolicy) }
+    var draftFocusPolicy by remember(plan.id.value, attentionFocusPolicy) { mutableStateOf(attentionFocusPolicy) }
     var quietHoursEnabled by rememberSaveable(plan.id.value, settings.quietHoursStartMinute) {
         mutableStateOf(settings.quietHoursStartMinute != null)
     }
@@ -154,7 +164,7 @@ fun StudyRemindersScreen(
     val parsedSnooze = snoozeMinutes.toIntOrNull()?.takeIf { it in 5..240 }
     val parsedSessionLead = sessionLeadMinutes.toIntOrNull()?.takeIf { it in 1..30 }
     val parsedExamDays = examCountdownDays.toIntOrNull()?.takeIf { it in 1..60 }
-    val settingsValid = (!quietHoursEnabled || (startMinute != null && endMinute != null)) &&
+    val settingsValid = (!quietHoursEnabled || (startMinute != null && endMinute != null && startMinute != endMinute)) &&
         parsedLead != null && parsedSummaryMinute != null && parsedMissedDelay != null &&
         parsedSnooze != null && parsedSessionLead != null && parsedExamDays != null
 
@@ -322,6 +332,57 @@ fun StudyRemindersScreen(
                 )
             }
 
+            StudyFlowSectionCard(title = stringResource(R.string.att10_focus_policy_title)) {
+                Text(
+                    text = stringResource(R.string.att10_focus_policy_description),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                StudyFlowAttentionFocusProfile.entries.forEach { profile ->
+                    OutlinedButton(
+                        onClick = { draftFocusPolicy = draftFocusPolicy.copy(profile = profile) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            if (draftFocusPolicy.profile == profile) {
+                                "✓ ${focusProfileLabel(profile)}"
+                            } else {
+                                focusProfileLabel(profile)
+                            },
+                        )
+                    }
+                }
+                PreferenceSwitch(
+                    title = stringResource(R.string.att10_high_priority_bypass),
+                    description = stringResource(R.string.att10_high_priority_bypass_description),
+                    checked = draftFocusPolicy.allowHighPriorityQuietBypass,
+                    onCheckedChange = { draftFocusPolicy = draftFocusPolicy.copy(allowHighPriorityQuietBypass = it) },
+                )
+                PreferenceSwitch(
+                    title = stringResource(R.string.att10_time_sensitive_bypass),
+                    description = stringResource(R.string.att10_time_sensitive_bypass_description),
+                    checked = draftFocusPolicy.allowTimeSensitiveQuietBypass,
+                    onCheckedChange = { draftFocusPolicy = draftFocusPolicy.copy(allowTimeSensitiveQuietBypass = it) },
+                )
+                Text(
+                    text = stringResource(R.string.att10_category_escalation_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                att10EditableCategories.forEach { category ->
+                    val current = draftFocusPolicy.categoryPolicy(category)
+                    OutlinedButton(
+                        onClick = {
+                            val next = current.copy(mode = current.mode.nextAtt10Mode())
+                            draftFocusPolicy = draftFocusPolicy.copy(
+                                categoryPolicies = draftFocusPolicy.categoryPolicies.map { if (it.category == category) next else it },
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("${attentionCategoryLabel(category)} · ${escalationModeLabel(current.mode)}")
+                    }
+                }
+            }
+
             StudyFlowSectionCard(title = stringResource(R.string.reminder_timing_title)) {
                 NumberPreferenceField(
                     label = stringResource(R.string.planned_study_lead_minutes),
@@ -418,6 +479,18 @@ fun StudyRemindersScreen(
                         ),
                         savedPolicy,
                     )
+                    val savedFocusPolicy = draftFocusPolicy.copy(
+                        quietWindow = if (quietHoursEnabled) {
+                            StudyFlowAttentionQuietWindow(
+                                enabled = true,
+                                startMinute = requireNotNull(startMinute),
+                                endMinute = requireNotNull(endMinute),
+                                timezoneId = TimeZone.getDefault().id,
+                            )
+                        } else null,
+                    )
+                    draftFocusPolicy = savedFocusPolicy
+                    onAttentionFocusPolicyChanged(savedFocusPolicy)
                 },
                 enabled = settingsValid,
                 modifier = Modifier.fillMaxWidth(),
@@ -486,6 +559,59 @@ fun StudyRemindersScreen(
             WidgetPreviewCard(reminderPlan.widgetSummary)
         }
     }
+}
+
+private val att10EditableCategories = listOf(
+    StudyFlowAttentionCategory.PLANNED_STUDY,
+    StudyFlowAttentionCategory.DUE_REVIEW,
+    StudyFlowAttentionCategory.MISSED_ACTIVITY,
+    StudyFlowAttentionCategory.DAILY_SUMMARY,
+    StudyFlowAttentionCategory.SESSION_ENDING,
+    StudyFlowAttentionCategory.EXAM_COUNTDOWN,
+)
+
+private fun StudyFlowAttentionEscalationMode.nextAtt10Mode(): StudyFlowAttentionEscalationMode {
+    val order = listOf(
+        StudyFlowAttentionEscalationMode.NORMAL,
+        StudyFlowAttentionEscalationMode.SILENT,
+        StudyFlowAttentionEscalationMode.DEFER,
+        StudyFlowAttentionEscalationMode.COMPACT_ONLY,
+        StudyFlowAttentionEscalationMode.ROUTE_TO_PHONE,
+        StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED,
+        StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION,
+    )
+    return order[(order.indexOf(this).coerceAtLeast(0) + 1) % order.size]
+}
+
+private fun focusProfileLabel(profile: StudyFlowAttentionFocusProfile): String = when (profile) {
+    StudyFlowAttentionFocusProfile.BALANCED -> "Balanced"
+    StudyFlowAttentionFocusProfile.EXAM_MODE -> "Exam mode"
+    StudyFlowAttentionFocusProfile.WORK_MODE -> "Work mode"
+    StudyFlowAttentionFocusProfile.SLEEP_MODE -> "Sleep mode"
+    StudyFlowAttentionFocusProfile.TRAVEL_OFFLINE -> "Travel / offline"
+    StudyFlowAttentionFocusProfile.MINIMAL_TV -> "Minimal / TV"
+}
+
+private fun attentionCategoryLabel(category: StudyFlowAttentionCategory): String = when (category) {
+    StudyFlowAttentionCategory.PLANNED_STUDY -> "Study blocks"
+    StudyFlowAttentionCategory.DUE_REVIEW -> "Reviews"
+    StudyFlowAttentionCategory.MISSED_ACTIVITY -> "Missed activities"
+    StudyFlowAttentionCategory.DAILY_SUMMARY -> "Daily summary"
+    StudyFlowAttentionCategory.SESSION_ENDING, StudyFlowAttentionCategory.SESSION_COMPLETED -> "Sessions"
+    StudyFlowAttentionCategory.EXAM_COUNTDOWN -> "Exam countdown"
+    StudyFlowAttentionCategory.SCHEDULE_CHANGE -> "Schedule changes"
+    StudyFlowAttentionCategory.PLAN_WARNING -> "Plan warnings"
+    StudyFlowAttentionCategory.SYNC_ATTENTION -> "Sync attention"
+}
+
+private fun escalationModeLabel(mode: StudyFlowAttentionEscalationMode): String = when (mode) {
+    StudyFlowAttentionEscalationMode.NORMAL -> "Normal"
+    StudyFlowAttentionEscalationMode.SILENT -> "Silent"
+    StudyFlowAttentionEscalationMode.DEFER -> "Defer"
+    StudyFlowAttentionEscalationMode.COMPACT_ONLY -> "Compact only"
+    StudyFlowAttentionEscalationMode.ROUTE_TO_PHONE -> "Route to phone"
+    StudyFlowAttentionEscalationMode.MIRROR_IF_UNHANDLED -> "Mirror if unhandled"
+    StudyFlowAttentionEscalationMode.REQUIRE_USER_ACTION -> "Require action"
 }
 
 @Composable

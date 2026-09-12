@@ -131,4 +131,13 @@
 
     <string name="reminder_break_completed_title">Pausa concluída</string>
     <string name="reminder_break_completed_body">Pronto para continuar estudando?</string>
+
+    <!-- ATT10 Quiet Hours / Focus Profiles / Escalation Policy -->
+    <string name="att10_focus_policy_title">Perfil de foco e escalonamento</string>
+    <string name="att10_focus_policy_description">O ATT10 aplica horário silencioso e política por categoria sem apagar lembretes. Toque em uma categoria para alternar o comportamento.</string>
+    <string name="att10_high_priority_bypass">Ignorar horário silencioso em alta prioridade</string>
+    <string name="att10_high_priority_bypass_description">Permite que lembretes de alta prioridade ignorem o horário silencioso quando a política exigir.</string>
+    <string name="att10_time_sensitive_bypass">Ignorar horário silencioso para itens urgentes</string>
+    <string name="att10_time_sensitive_bypass_description">Mantém temporizadores de sessão e outros alertas urgentes disponíveis durante o horário silencioso.</string>
+    <string name="att10_category_escalation_title">Escalonamento por categoria</string>
 </resources>

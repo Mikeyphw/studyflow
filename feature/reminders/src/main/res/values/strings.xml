@@ -127,4 +127,13 @@
 
     <string name="reminder_break_completed_title">Break complete</string>
     <string name="reminder_break_completed_body">Ready to continue studying?</string>
+
+    <!-- ATT10 Quiet Hours / Focus Profiles / Escalation Policy -->
+    <string name="att10_focus_policy_title">Focus profile and escalation</string>
+    <string name="att10_focus_policy_description">ATT10 applies quiet hours and per-category delivery policy without deleting reminders. Tap a category to cycle its escalation behavior.</string>
+    <string name="att10_high_priority_bypass">High-priority quiet-hours bypass</string>
+    <string name="att10_high_priority_bypass_description">Allow high-priority reminders to bypass quiet hours when policy requires it.</string>
+    <string name="att10_time_sensitive_bypass">Time-sensitive quiet-hours bypass</string>
+    <string name="att10_time_sensitive_bypass_description">Keep session timers and other time-sensitive attention deliverable during quiet hours.</string>
+    <string name="att10_category_escalation_title">Category escalation</string>
 </resources>

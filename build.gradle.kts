@@ -2231,3 +2231,38 @@ tasks.register("verifyAtt09CalendarScheduleExportAttention") {
         ":app-tv:testDebugUnitTest",
     )
 }
+
+// ATT10 — Quiet Hours / Focus Profiles / Escalation Policy
+tasks.register<Exec>("verifyAtt10QuietHoursFocusPolicyContracts") {
+    group = "verification"
+    description = "Checks ATT10 focus-policy domain, ATT01/ATT07 integration, platform projections, Web parity and docs."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att10_quiet_hours_focus_profiles_escalation_policy.py")
+}
+
+tasks.register<Exec>("verifyAtt10WebFocusPolicyTests") {
+    group = "verification"
+    description = "Runs ATT10 Web focus-policy, TV truthfulness, and delivery-router regression tests."
+    workingDir = file("web")
+    commandLine(
+        "python3", "-m", "unittest",
+        "tests/test_att10_focus_policy.py",
+        "tests/test_att06_web_tv_attention.py",
+        "tests/test_att07_attention_router.py",
+    )
+}
+
+tasks.register("verifyAtt10QuietHoursFocusProfilesEscalationPolicy") {
+    group = "verification"
+    description = "Focused ATT10 gate for quiet hours, focus profiles, escalation and auditable routing policy."
+    dependsOn(
+        "verifyAtt10QuietHoursFocusPolicyContracts",
+        "verifyAtt10WebFocusPolicyTests",
+        "verifyAtt09CalendarScheduleExportAttention",
+        ":core:link:test",
+        ":app:testReleaseUnitTest",
+        ":desktopApp:test",
+        ":app-tv:testDebugUnitTest",
+    )
+}
+

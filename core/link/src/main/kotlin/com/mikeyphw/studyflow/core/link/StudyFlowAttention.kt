@@ -175,6 +175,7 @@ data class StudyFlowAttentionLedgerEntry(
     val targetDeviceId: StudyFlowDeviceId? = null,
     val sequence: Long? = null,
     val deliveryAttempts: Int = 0,
+    val policyAudit: StudyFlowAttentionPolicyAudit? = null,
 ) {
     init {
         require(updatedAtEpochMillis >= 0L) { "Attention ledger timestamp must not be negative" }
@@ -288,6 +289,7 @@ class StudyFlowAttentionLedger(
             targetDeviceId = current?.targetDeviceId,
             sequence = current?.sequence,
             deliveryAttempts = current?.deliveryAttempts ?: 0,
+            policyAudit = current?.policyAudit,
         )
         replaceEntry(updated)
         return updated
@@ -322,6 +324,7 @@ class StudyFlowAttentionLedger(
             targetDeviceId = targetDeviceId,
             sequence = sequence,
             deliveryAttempts = (current?.deliveryAttempts ?: 0) + 1,
+            policyAudit = current?.policyAudit,
         )
         snapshot = compact(
             snapshot.copy(
@@ -333,6 +336,25 @@ class StudyFlowAttentionLedger(
         )
         persist()
         return StudyFlowAttentionLedgerAdmission.ACCEPTED
+    }
+
+    @Synchronized
+    fun recordPolicyDecision(decision: StudyFlowAttentionPolicyDecision): StudyFlowAttentionLedgerEntry {
+        val current = requireNotNull(entry(decision.occurrenceId)) {
+            "Unknown attention occurrence: ${decision.occurrenceId.value}"
+        }
+        val updated = current.copy(
+            updatedAtEpochMillis = maxOf(current.updatedAtEpochMillis, decision.evaluatedAtEpochMillis),
+            policyAudit = StudyFlowAttentionPolicyAudit(
+                profile = decision.profile,
+                outcome = decision.outcome,
+                evaluatedAtEpochMillis = decision.evaluatedAtEpochMillis,
+                deferredUntilEpochMillis = decision.deferredUntilEpochMillis,
+                explanation = decision.explanation,
+            ),
+        )
+        replaceEntry(updated)
+        return updated
     }
 
     @Synchronized

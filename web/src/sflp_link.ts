@@ -274,6 +274,13 @@ export interface StudyFlowAttentionLedgerEntry {
   targetDeviceId?: string
   sequence?: number
   deliveryAttempts: number
+  policyAudit?: {
+    profile: string
+    outcome: string
+    evaluatedAtEpochMillis: number
+    deferredUntilEpochMillis?: number
+    explanation: string
+  }
 }
 
 export const StudyFlowAttentionLedgerSnapshotSchemaVersion = 1 as const
