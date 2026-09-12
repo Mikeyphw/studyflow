@@ -749,3 +749,7 @@ copy.
 - Audited every pre-existing roadmap/product verifier and folded current-truth, localization, historical-provenance, stale-verifier, and source-hygiene gaps into the terminal release batch.
 - Added a machine-readable 213-verifier promise ledger and exhaustive 211-static-verifier audit runner.
 - Added a safe REL01-REL08 campaign orchestrator that remains pending until real signed artifact, connected-device, restart/restore, device-observation, and operator-checklist evidence closes both final readiness gates.
+
+### ATT05 Web/PWA Notification & Attention Runtime
+
+StudyFlow Web now has a production Web/PWA attention runtime with foreground scheduling, service-worker push/click/close/drain handling, browser notification permission flow, in-app Notification Center, optional Web Push subscription foundation, app-badge progressive enhancement, SFLP delivery ingestion, and durable ATT01 ledger convergence. The UI reports closed-browser delivery truthfully as foreground-only unless Push is subscribed.

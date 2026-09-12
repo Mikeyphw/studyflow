@@ -60,6 +60,7 @@ test = [
     "verifyAtt02AndroidAttentionSystem",
     "verifyAtt03AndroidWidgetSuite",
     "verifyAtt04DesktopAttentionRuntime",
+    "verifyAtt05WebPwaAttentionRuntime",
     "verifySflp20Sflp21ShareImportConflict",
     "verifySflp22Sflp23AccountBackupValidation",
     "verifySflp24FinalReleaseSeal",

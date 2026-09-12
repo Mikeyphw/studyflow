@@ -594,3 +594,7 @@ The exhaustive legacy-verifier pass is isolated in artifact validation before Gr
 The Android release evidence campaign uses the dedicated `studyflow_release` Devtool Android target. The target runs `verifyFinalReleaseAutomatedGate` through Devtool's Termux-safe Android builder with Termux AAPT2, NDK 29, configuration cache disabled, and the unrelated repository-wide `verifyFormatting` backlog excluded from this evidence lane. The release shell script never invokes raw Gradle.
 
 `studyflow_tv` remains an Android Devtool target, so normal TV builds continue using the same Termux-safe AAPT2/toolchain routing as the mobile app.
+
+### ATT05 Web/PWA attention runtime
+
+Normal Web/PWA clients now expose a Notification Center and participate in the ATT01 Attention ledger. The Web runtime schedules foreground reminders, can request browser notification permission from an explicit user action, handles service-worker notification clicks/closes and push deliveries, supports optional Web Push subscription setup, and uses browser badges as a progressive enhancement. Without Push, Web background delivery remains foreground-only by design.

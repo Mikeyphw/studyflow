@@ -2085,3 +2085,38 @@ tasks.register("verifyAtt04DesktopAttentionRuntime") {
         ":desktopApp:test",
     )
 }
+
+// ATT05 — Web/PWA Notification & Attention Runtime
+tasks.register<Exec>("verifyAtt05WebAttentionContracts") {
+    group = "verification"
+    description = "Checks ATT05 Web/PWA attention runtime, Notification Center, service worker, Push foundation, docs and source contracts."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_att05_web_pwa_attention_runtime.py")
+}
+
+tasks.register<Exec>("verifyAtt05WebAttentionLint") {
+    group = "verification"
+    description = "Type-check Web ATT05 source and committed runtime parity."
+    workingDir = file("web")
+    commandLine("npm", "run", "lint")
+}
+
+tasks.register<Exec>("verifyAtt05WebAttentionTests") {
+    group = "verification"
+    description = "Run the Web regression suite including ATT05 attention runtime tests."
+    workingDir = file("web")
+    commandLine("npm", "test")
+}
+
+tasks.register("verifyAtt05WebPwaAttentionRuntime") {
+    group = "verification"
+    description = "Focused ATT05 production gate for the complete Web/PWA notification and attention runtime slice."
+    dependsOn(
+        "verifyAtt05WebAttentionContracts",
+        "verifyAtt05WebAttentionLint",
+        "verifyAtt05WebAttentionTests",
+        "verifyAtt01UnifiedAttentionFoundation",
+        "verifySflp18Sflp19NotificationMediaSync",
+    )
+}
+

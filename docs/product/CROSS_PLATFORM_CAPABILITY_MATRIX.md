@@ -50,8 +50,8 @@ with this matrix, this matrix owns the current product-state description.
 | Optional provider sync | FULL | PLATFORM_SPECIFIC | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE |
 | English / pt-BR UI | FULL | FULL | FULL | LIMITED | FULL |
 | System / Light / Dark appearance | FULL | LIMITED | FULL | PLATFORM_SPECIFIC | LIMITED |
-| Native reminder/background delivery | FULL (ATT02) | MISSING | FULL (ATT04, while app is running) | MISSING | MISSING |
-| Home/widget-style glance surface | FULL (ATT03 five-mode suite) | MISSING | FULL (ATT04 tray mini-dashboard) | MISSING | MISSING |
+| Native reminder/background delivery | FULL (ATT02) | FULL (ATT05 foreground + optional Push foundation) | FULL (ATT04, while app is running) | MISSING | MISSING |
+| Home/widget-style glance surface | FULL (ATT03 five-mode suite) | FULL (ATT05 in-app Notification Center + badge) | FULL (ATT04 tray mini-dashboard) | MISSING | MISSING |
 | Termux exercise execution | PLATFORM_SPECIFIC | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE | NOT_APPLICABLE |
 
 DOV08-DOV24 is complete. Desktop DOV08-DOV24 now provide the full applicable Desktop workspace: durable domain state, authoring and
@@ -142,6 +142,10 @@ instances, resumable activity hints, capability-aware visibility, and route-trac
 ephemeral and best-effort; it is not persisted as canonical workspace truth and cannot gate durable reconciliation.
 Transport peer-health and `lastSeen` remain separate signals. The old draft label “SFLP18 Presence” is superseded;
 shipped SFLP18 is notification/scheduling sync.
+
+### ATT05 Web/PWA attention truth
+
+ATT05 makes normal Web a full applicable Attention client with a foreground scheduler, browser notification permission flow, service-worker push/click/close/drain handling, in-app Notification Center, app-badge progressive enhancement, optional Web Push subscription foundation, and ATT01 ledger convergence. Its closed-browser background delivery is explicitly capability-gated: without Push relay infrastructure the product state is `foreground-only`, not guaranteed arbitrary background alarms. Web TV remains outside ATT05 and is handled by ATT06.
 
 ## Intentional parity boundaries
 

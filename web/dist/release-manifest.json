@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-f9b521787f270e62",
+  "cacheVersion": "studyflow-local-1.0.0-bf421e85ff66a176",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -39,6 +39,11 @@
       "path": "manifest.webmanifest",
       "sha256": "15e29b92a9c9b3914a51063b088dc7fbea316e473ddb1975582405cacdcfa168",
       "bytes": 808
+    },
+    {
+      "path": "runtime/attention.js",
+      "sha256": "f4c4c20d5634d9d325532668e985215413cc2927de4107a41918872142b641a4",
+      "bytes": 42006
     },
     {
       "path": "runtime/content_import.js",
@@ -77,8 +82,8 @@
     },
     {
       "path": "runtime/main.js",
-      "sha256": "a09cbd14fb6297f9c6234ce12da6e79895d7e1a176013980217baed3cba7fb60",
-      "bytes": 2498
+      "sha256": "c8dc322e5f2cb0a0abf493bc259aece513678c1d6e087a67cff1f104e5d075c9",
+      "bytes": 3101
     },
     {
       "path": "runtime/mode_import.js",
@@ -122,8 +127,8 @@
     },
     {
       "path": "runtime/pwa.js",
-      "sha256": "ec099d4cbadf1e8d9d7a3fedeb5f47b531f2d6f25e4363f1f48d0d7f81b8c439",
-      "bytes": 3648
+      "sha256": "269feb1b6f4994e3a18e597e8a1509a50305bf570ef6eb58b9d2c129a2878aaa",
+      "bytes": 7072
     },
     {
       "path": "runtime/question_import.js",
@@ -132,8 +137,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "b2d7712bb427a643c7506600305de817351b8b3c7d4b2604f87fd70ec00ccc86",
-      "bytes": 322532
+      "sha256": "e0b7b50bd87c10c200918d0f29147e3a8d4dda7a9834ad3d28ae85308dd1b085",
+      "bytes": 333429
     },
     {
       "path": "runtime/refinement.js",
@@ -167,8 +172,8 @@
     },
     {
       "path": "runtime/sflp_link.js",
-      "sha256": "fde19d5b490d13c68d48c5b1074454eac8ceda30ebf2fbd68c9d679c838a3bd4",
-      "bytes": 29993
+      "sha256": "b34d7f7064d5da14b983e45464ac17a7702531ed83a8646e69c16e13f5a8ab22",
+      "bytes": 38618
     },
     {
       "path": "runtime/state.js",
@@ -247,8 +252,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "3b2e89124e04a9ba50294e907a6fbc6f23ba038437818c2b040effe35931184e",
-      "bytes": 2744
+      "sha256": "ef805e382017f41e42456da120e22cbd9533a5eef9355bdd53fa25d51a2683f4",
+      "bytes": 9047
     },
     {
       "path": "styles.css",

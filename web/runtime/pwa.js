@@ -1,6 +1,76 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.studyFlowPwaCapabilities = studyFlowPwaCapabilities;
+exports.notificationPermissionState = notificationPermissionState;
+exports.requestStudyFlowNotificationPermission = requestStudyFlowNotificationPermission;
+exports.registerStudyFlowServiceWorker = registerStudyFlowServiceWorker;
+exports.studyFlowServiceWorkerReady = studyFlowServiceWorkerReady;
+exports.showStudyFlowBrowserNotification = showStudyFlowBrowserNotification;
 exports.registerStudyFlowPwa = registerStudyFlowPwa;
+let registrationPromise = null;
+function studyFlowPwaCapabilities(navigatorObject, windowObject) {
+    var _a, _b;
+    if (navigatorObject === void 0) { navigatorObject = (_a = globalThis.navigator) !== null && _a !== void 0 ? _a : null; }
+    if (windowObject === void 0) { windowObject = (_b = globalThis.window) !== null && _b !== void 0 ? _b : null; }
+    const nav = navigatorObject;
+    return {
+        serviceWorker: Boolean(navigatorObject === null || navigatorObject === void 0 ? void 0 : navigatorObject.serviceWorker),
+        notifications: Boolean(windowObject && "Notification" in windowObject),
+        push: Boolean((navigatorObject === null || navigatorObject === void 0 ? void 0 : navigatorObject.serviceWorker) && windowObject && "PushManager" in windowObject),
+        badge: typeof (nav === null || nav === void 0 ? void 0 : nav.setAppBadge) === "function",
+    };
+}
+function notificationPermissionState(windowObject) {
+    var _a;
+    if (windowObject === void 0) { windowObject = (_a = globalThis.window) !== null && _a !== void 0 ? _a : null; }
+    const api = windowObject === null || windowObject === void 0 ? void 0 : windowObject.Notification;
+    if (!api)
+        return "unsupported";
+    return api.permission;
+}
+async function requestStudyFlowNotificationPermission(windowObject) {
+    var _a;
+    if (windowObject === void 0) { windowObject = (_a = globalThis.window) !== null && _a !== void 0 ? _a : null; }
+    const api = windowObject === null || windowObject === void 0 ? void 0 : windowObject.Notification;
+    if (!api)
+        return "unsupported";
+    return api.requestPermission();
+}
+function registerStudyFlowServiceWorker(navigatorObject) {
+    var _a;
+    if (navigatorObject === void 0) { navigatorObject = (_a = globalThis.navigator) !== null && _a !== void 0 ? _a : null; }
+    if (!(navigatorObject === null || navigatorObject === void 0 ? void 0 : navigatorObject.serviceWorker))
+        return Promise.resolve(null);
+    if (!registrationPromise) {
+        registrationPromise = navigatorObject.serviceWorker.register("./service-worker.js", { scope: "./" })
+            .catch(() => null);
+    }
+    return registrationPromise;
+}
+async function studyFlowServiceWorkerReady(navigatorObject) {
+    var _a;
+    if (navigatorObject === void 0) { navigatorObject = (_a = globalThis.navigator) !== null && _a !== void 0 ? _a : null; }
+    if (!(navigatorObject === null || navigatorObject === void 0 ? void 0 : navigatorObject.serviceWorker))
+        return null;
+    const registered = await registerStudyFlowServiceWorker(navigatorObject);
+    if (!registered)
+        return null;
+    try {
+        return await navigatorObject.serviceWorker.ready;
+    }
+    catch {
+        return registered;
+    }
+}
+async function showStudyFlowBrowserNotification(title, options) {
+    if (notificationPermissionState() !== "granted")
+        return false;
+    const registration = await studyFlowServiceWorkerReady();
+    if (!registration)
+        return false;
+    await registration.showNotification(title, options);
+    return true;
+}
 function registerStudyFlowPwa(_a) {
     var _b, _c;
     var { statusElement = null, installButton = null, navigatorObject = (_b = globalThis.navigator) !== null && _b !== void 0 ? _b : null, windowObject = (_c = globalThis.window) !== null && _c !== void 0 ? _c : null, } = _a === void 0 ? {} : _a;
@@ -19,9 +89,8 @@ function registerStudyFlowPwa(_a) {
         setStatus("Service workers are unavailable in this browser context.");
         return { supported: false, dispose: noop };
     }
-    navigatorObject.serviceWorker.register("./service-worker.js", { scope: "./" })
-        .then(() => syncNetworkStatus())
-        .catch((error) => setStatus(`Offline worker registration failed: ${error instanceof Error ? error.message : String(error)}`));
+    registerStudyFlowServiceWorker(navigatorObject)
+        .then((registration) => registration ? syncNetworkStatus() : setStatus("Offline worker registration failed."));
     const onBeforeInstall = ((event) => {
         event.preventDefault();
         installPrompt = event;

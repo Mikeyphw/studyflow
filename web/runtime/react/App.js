@@ -124,7 +124,19 @@ function tvSurfaceDestination(surface) { if (surface === "SETTINGS")
     return { screen: "progress" }; if (surface === "SCHEDULE")
     return { screen: "schedule" }; if (surface === "LIBRARY")
     return { screen: "library" }; return { screen: "today" }; }
-function App({ store, persistence }) {
+function useWebAttentionSnapshot(runtime) { const [snapshot, setSnapshot] = React.useState(() => { var _a; return (_a = runtime === null || runtime === void 0 ? void 0 : runtime.snapshot()) !== null && _a !== void 0 ? _a : null; }); React.useEffect(() => { if (!runtime) {
+    setSnapshot(null);
+    return;
+} const sync = () => setSnapshot(runtime.snapshot()); sync(); const unsubscribe = runtime.subscribe(sync); return () => unsubscribe(); }, [runtime]); return snapshot; }
+const attentionCategoryOrder = ["planned_study", "due_review", "missed_activity", "daily_summary", "session_ending", "session_completed", "exam_countdown", "schedule_change", "plan_warning", "sync_attention"];
+function attentionCategoryLabel(category) { return title(category); }
+function attentionEntryTime(entry) { const value = entry.state === "scheduled" ? entry.occurrence.scheduledAtEpochMillis : entry.updatedAtEpochMillis; try {
+    return new Date(value).toLocaleString();
+}
+catch {
+    return String(value);
+} }
+function App({ store, persistence, attentionRuntime }) {
     var _a, _b, _c;
     const state = useStudyState(store);
     const tvBrowser = isTvBrowserUi();
@@ -141,6 +153,8 @@ function App({ store, persistence }) {
     const [toast, setToast] = React.useState(null);
     const [searchOpen, setSearchOpen] = React.useState(false);
     const [settingsOpen, setSettingsOpen] = React.useState(false);
+    const [attentionOpen, setAttentionOpen] = React.useState(false);
+    const attentionSnapshot = useWebAttentionSnapshot(attentionRuntime);
     const [tvMaterialId, setTvMaterialId] = React.useState(null);
     const [tvCast, setTvCast] = React.useState(null);
     const [tvSetupDismissed, setTvSetupDismissed] = React.useState(false);
@@ -333,6 +347,9 @@ function App({ store, persistence }) {
             React.createElement("div", { className: "header-actions" },
                 tvBrowser ? React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => openTvOverlay("search") }, (0, product_1.uiText)(state.preferences.locale, "search")) : React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSearchOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "search")),
                 tvBrowser ? React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => openTvOverlay("settings") }, (0, product_1.uiText)(state.preferences.locale, "settings")) : React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setSettingsOpen(true) }, (0, product_1.uiText)(state.preferences.locale, "settings")),
+                !tvBrowser && attentionRuntime && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => setAttentionOpen(true) },
+                    "Notifications",
+                    attentionSnapshot && attentionSnapshot.badgeCount > 0 ? ` (${attentionSnapshot.badgeCount})` : ""),
                 React.createElement("span", { className: "status-pill" },
                     "v",
                     release_1.STUDYFLOW_LOCAL_RELEASE.version,
@@ -374,9 +391,90 @@ function App({ store, persistence }) {
         " ",
         settingsOpen && React.createElement(SettingsDialog, { state: state, store: store, persistence: persistence, onClose: closeTvOverlay, run: run }),
         " ",
+        attentionOpen && attentionRuntime && React.createElement(WebAttentionCenterDialog, { state: state, runtime: attentionRuntime, snapshot: attentionSnapshot !== null && attentionSnapshot !== void 0 ? attentionSnapshot : attentionRuntime.snapshot(), onClose: () => setAttentionOpen(false), run: run }),
+        " ",
         !state.preferences.onboardingCompleted && (tvBrowser ? (tvSetupDismissed ? null : React.createElement(TvOnboardingHandoff, { onDismiss: () => setTvSetupDismissed(true) })) : React.createElement(OnboardingWizard, { state: state, store: store, run: run })),
         React.createElement("div", { id: "toast-region", className: "toast-region", role: "status", "aria-live": "polite", "aria-atomic": "true" }, toast && React.createElement("div", { className: "toast" }, toast)));
 }
+function WebAttentionCenterDialog({ state, runtime, snapshot, onClose, run }) { const [serverKey, setServerKey] = React.useState(""); const prefs = snapshot.preferences; const recent = snapshot.entries.slice(0, 24); const setCategory = (category, enabled) => runtime.setPreferences({ categories: { [category]: enabled } }); const setNumber = (key, value) => runtime.setPreferences({ [key]: value }); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
+    React.createElement("section", { className: "modal-card settings-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "web-attention-title" },
+        React.createElement("div", { className: "dialog-title" },
+            React.createElement("h2", { id: "web-attention-title" }, "Notification Center"),
+            React.createElement("button", { className: "button button-quiet", type: "button", onClick: onClose }, (0, product_1.uiText)(state.preferences.locale, "close"))),
+        React.createElement("div", { className: "content-grid two-column" },
+            React.createElement("article", { className: "card" },
+                React.createElement("h3", null, "Web/PWA capability"),
+                React.createElement("p", { className: "muted" }, "Browser notifications are optional. StudyFlow still keeps an in-app notification center and foreground reminders when system notifications are disabled."),
+                React.createElement("ul", { className: "activity-list" },
+                    React.createElement("li", null,
+                        React.createElement("strong", null, "Permission"),
+                        React.createElement("span", null, snapshot.permission)),
+                    React.createElement("li", null,
+                        React.createElement("strong", null, "Service worker"),
+                        React.createElement("span", null, snapshot.capabilities.serviceWorker ? "Ready" : "Unavailable")),
+                    React.createElement("li", null,
+                        React.createElement("strong", null, "Push foundation"),
+                        React.createElement("span", null, snapshot.backgroundDelivery)),
+                    React.createElement("li", null,
+                        React.createElement("strong", null, "App badge"),
+                        React.createElement("span", null, snapshot.capabilities.badge ? "Supported" : "Unsupported")),
+                    React.createElement("li", null,
+                        React.createElement("strong", null, "Last scan"),
+                        React.createElement("span", null, snapshot.lastScanAtEpochMillis ? new Date(snapshot.lastScanAtEpochMillis).toLocaleString() : "Not scanned yet"))),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { className: "button button-primary", type: "button", disabled: snapshot.permission === "unsupported", onClick: () => run(() => { void runtime.requestBrowserNotifications(); }, "Browser notification permission requested.") }, "Enable browser notifications"),
+                    React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => runtime.setPreferences({ systemNotificationsEnabled: false }), "Browser notifications disabled inside StudyFlow.") }, "Use in-app only"))),
+            React.createElement("article", { className: "card" },
+                React.createElement("h3", null, "Reminder timing"),
+                React.createElement("label", null,
+                    "Study lead time",
+                    React.createElement("input", { "aria-label": "Web study reminder lead minutes", type: "number", min: "0", max: "240", value: prefs.reminderLeadMinutes, onChange: (e) => setNumber("reminderLeadMinutes", Number(e.target.value)) })),
+                React.createElement("label", null,
+                    "Missed delay",
+                    React.createElement("input", { "aria-label": "Web missed activity delay minutes", type: "number", min: "0", max: "720", value: prefs.missedDelayMinutes, onChange: (e) => setNumber("missedDelayMinutes", Number(e.target.value)) })),
+                React.createElement("label", null,
+                    "Session warning",
+                    React.createElement("input", { "aria-label": "Web session warning lead minutes", type: "number", min: "0", max: "60", value: prefs.sessionLeadMinutes, onChange: (e) => setNumber("sessionLeadMinutes", Number(e.target.value)) })),
+                React.createElement("label", null,
+                    "Daily summary minute",
+                    React.createElement("input", { "aria-label": "Web daily summary minute", type: "number", min: "0", max: "1439", value: prefs.dailySummaryMinute, onChange: (e) => setNumber("dailySummaryMinute", Number(e.target.value)) }))),
+            React.createElement("article", { className: "card" },
+                React.createElement("h3", null, "Reminder categories"),
+                attentionCategoryOrder.map(category => React.createElement("label", { key: category, className: "check-row" },
+                    React.createElement("input", { "aria-label": `Web category ${category}`, type: "checkbox", checked: prefs.categories[category], onChange: (e) => setCategory(category, e.target.checked) }),
+                    attentionCategoryLabel(category)))),
+            React.createElement("article", { className: "card" },
+                React.createElement("h3", null, "Optional Web Push foundation"),
+                React.createElement("p", { className: "muted" }, "Push is available only when a StudyFlow relay/application-server key is configured. This records browser subscription capability without pretending closed-browser alarms work everywhere."),
+                React.createElement("input", { "aria-label": "Web Push application server key", value: serverKey, onChange: (e) => setServerKey(e.target.value), placeholder: "VAPID public key" }),
+                React.createElement("div", { className: "button-row" },
+                    React.createElement("button", { className: "button button-quiet", type: "button", disabled: !snapshot.capabilities.push || !serverKey.trim(), onClick: () => run(() => { void runtime.subscribePush(serverKey); }, "Web Push subscription requested.") }, "Subscribe"),
+                    React.createElement("button", { className: "button button-quiet", type: "button", disabled: !snapshot.pushSubscription, onClick: () => run(() => { void runtime.unsubscribePush(); }, "Web Push subscription removed.") }, "Unsubscribe")),
+                snapshot.pushSubscription && React.createElement("p", { className: "muted" }, "Subscribed endpoint stored locally.")),
+            React.createElement("article", { className: "card wide-card" },
+                React.createElement("h3", null, "Upcoming and recent attention"),
+                React.createElement("p", { className: "muted" },
+                    snapshot.upcomingCount,
+                    " upcoming \u00B7 ",
+                    snapshot.recentCount,
+                    " recent \u00B7 badge ",
+                    snapshot.badgeCount),
+                React.createElement("ul", { className: "activity-list" },
+                    recent.map(entry => { var _a; return React.createElement("li", { key: entry.occurrence.occurrenceId },
+                        React.createElement("div", null,
+                            React.createElement("strong", null,
+                                attentionCategoryLabel(entry.occurrence.category),
+                                " \u00B7 ",
+                                title(entry.state)),
+                            React.createElement("span", null,
+                                attentionEntryTime(entry),
+                                " \u00B7 ",
+                                ((_a = entry.occurrence.payload) === null || _a === void 0 ? void 0 : _a.summary) ? String(entry.occurrence.payload.summary) : entry.occurrence.occurrenceId)),
+                        React.createElement("div", { className: "button-row" },
+                            React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => { void runtime.applyAction(entry.occurrence.occurrenceId, "open"); }, "Reminder opened.") }, "Open"),
+                            entry.state !== "dismissed" && entry.state !== "completed" && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => { void runtime.applyAction(entry.occurrence.occurrenceId, "snooze", 10); }, "Reminder snoozed.") }, "Snooze"),
+                            React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => { void runtime.applyAction(entry.occurrence.occurrenceId, "dismiss"); }, "Reminder dismissed.") }, "Dismiss"))); }),
+                    !recent.length && React.createElement("li", null, "No Web reminders have been scheduled yet. Keep StudyFlow open or enable notifications to test delivery.")))))); }
 function GlobalSearchDialog({ state, onClose, onOpen }) { const [query, setQuery] = React.useState(""); const results = (0, product_1.searchStudyState)(state, query, { limit: 50 }); return React.createElement("div", { className: "modal-backdrop", role: "presentation" },
     React.createElement("section", { className: "modal-card", role: "dialog", "aria-modal": "true", "aria-labelledby": "global-search-title" },
         React.createElement("div", { className: "dialog-title" },
