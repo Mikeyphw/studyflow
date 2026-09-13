@@ -1,275 +1,212 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov03_planner_schedule_goal_time_semantics_v1",
+  "name": "studyflow_ov04_room_graph_ownership_revision_integrity_v1",
   "target": "studyflow_android",
-  "description": "Overlay 3 of 30: close S1-03, S1-06, S1-07, S1-08, S1-09 and S1-10 with canonical plan ownership, recurrence-aware schedule policy and missed-item placement, strict goal dates, fail-closed topic graphs, a true Desktop monotonic session clock, regression tests, closure evidence, and a packaged target validator.",
-  "commit_message": "OV03: enforce planner schedule goal and monotonic time semantics",
+  "description": "Overlay 4 of 30: close S2-01, S2-02, S2-03, S2-04, S2-08, S2-09, S2-10 and S2-12 by making active-session policy global, bringing the modern Room graph under ownership and revision guards, hardening moveTopic and exam provenance, making study-cycle current-item references durable, sharing diagnostics with the canonical integrity engine, and replacing stale trigger definitions through schema 14 migration.",
+  "commit_message": "OV04: enforce Room graph ownership revision integrity",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV03: enforce planner schedule goal and monotonic time semantics"
+    "message": "OV04: enforce Room graph ownership revision integrity"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV03: enforce planner schedule goal and monotonic time semantics"
+      "message": "OV04: enforce Room graph ownership revision integrity"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively against the supplied StudyFlow snapshot plus OV01 and successfully-applied OV02. Intermediate roadmap overlay: apply with --no-validate, then run the packaged OV03 validator script."
+    "notes": "Built cumulatively against the supplied StudyFlow snapshot plus OV01, OV02 and OV03. Intermediate roadmap overlay: apply with --no-validate, then run scripts/validate_ov04_room_graph_integrity.sh."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov03_planner_schedule_goal_time_semantics_v1",
+    "name": "studyflow_ov04_room_graph_ownership_revision_integrity_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov03-schedule-policy",
-        "purpose": "Plan ownership, recurrence-aware generation/availability/day-off policy, and safe missed-activity rebalance.",
+        "id": "ov04-room-integrity",
+        "purpose": "Global active-session truth, modern stable-owner/scoped-reference/coherence guards, canonical diagnostic checks and graph revision coverage.",
         "paths": [
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudySchedule.kt",
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySchedulePlanner.kt",
-          "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySchedulePlannerTest.kt",
-          "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySchedulePolicyIntegrityTest.kt",
-          "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/Web20SharedSemanticGoldenVectorsTest.kt",
-          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlannerAuthoringController.kt",
-          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWeb20SemanticAdapter.kt",
-          "feature/schedule/src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleScreen.kt"
+          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowIntegrity.kt",
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyDatabaseDiagnostics.kt"
         ]
       },
       {
-        "id": "ov03-goal-topic-integrity",
-        "purpose": "Strict goal period dates and fail-closed topic graph projection.",
+        "id": "ov04-migration-schema",
+        "purpose": "Schema 14 trigger-spec replacement migration and exported Room schema evidence.",
         "paths": [
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/GoalProgressCalculator.kt",
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyProgress.kt",
-          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/IsoDateValidation.kt",
-          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudyPlanning.kt",
-          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudyStructure.kt",
-          "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudyGoalAndTopicIntegrityTest.kt"
+          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt",
+          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt",
+          "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/14.json"
         ]
       },
       {
-        "id": "ov03-desktop-clock",
-        "purpose": "Wall-clock and monotonic-clock separation for Desktop Study Session execution.",
+        "id": "ov04-repository-ownership",
+        "purpose": "Modern moveTopic rebinding and safe study-cycle pointer replacement ordering.",
         "paths": [
-          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowServices.kt",
-          "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopSessionMonotonicClockTest.kt"
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyContentRepository.kt",
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomPublicExamRepository.kt"
         ]
       },
       {
-        "id": "ov03-validator-evidence",
+        "id": "ov04-behavioral-tests",
+        "purpose": "Runtime ownership, revision, migration, diagnostic, provenance, cycle-pointer and topic-move regression contracts.",
+        "paths": [
+          "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyFlowOv04IntegrityTest.kt",
+          "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyFlowMigration13To14IntegrityTest.kt",
+          "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/StudyTopicMoveModernOwnershipTest.kt"
+        ]
+      },
+      {
+        "id": "ov04-validator-evidence",
         "purpose": "Closure ledger, implementation documentation, static verifier, target validator and changelog.",
         "paths": [
           "CHANGELOG.md",
-          "docs/quality/OV03_PLANNER_SCHEDULE_GOAL_TIME_SEMANTICS.md",
+          "docs/quality/OV04_ROOM_GRAPH_OWNERSHIP_REVISION_INTEGRITY.md",
           "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "scripts/validate_ov03_planner_schedule_goal_time.sh",
-          "scripts/verify_ov03_planner_schedule_goal_time.py"
+          "scripts/validate_ov04_room_graph_integrity.sh",
+          "scripts/verify_ov04_room_graph_integrity.py"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 21,
+    "count": 15,
     "entries": [
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "983718062f791f7868a473949b50e6266b1cfa331a58330bf64efa94c281f686",
-        "size": 67807,
+        "sha256": "5761c8beea99776381a8ea5c03d75fccfad106b4e3f11f8de2252562e50162cc",
+        "size": 68254,
         "source_mode": "0o600",
-        "source_sha256": "5e6dad0fbb55044c3d4daedff05b6573352bd3d31d76fb7b05008343c9bbc295",
-        "source_size": 66846
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/GoalProgressCalculator.kt",
-        "mode": "0o600",
-        "sha256": "b131b6c184f2280b902424c77f2f3486f26b7be8ea3bb96019c84e1a3f4686c1",
-        "size": 5763,
-        "source_mode": "0o600",
-        "source_sha256": "f4ed2eb3f3131a73f361bf847a414e46bde18f1f0b0010d5f61bf12f5e7f2b8d",
-        "source_size": 5781
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyProgress.kt",
-        "mode": "0o600",
-        "sha256": "d5168bb65a28962651a912e988ab895eb533aea93a2468d51be443cdcac12c78",
-        "size": 6125,
-        "source_mode": "0o600",
-        "source_sha256": "d2310b6f47bd3f3e40d63507fdf12b55fd354d2177bbc52c6290d3e1354d5e85",
-        "source_size": 6111
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudySchedule.kt",
-        "mode": "0o600",
-        "sha256": "e5896c36a7f193d225c751513c64ae33dffe6d44b53721f55aa0a9890c79419d",
-        "size": 6459,
-        "source_mode": "0o600",
-        "source_sha256": "8611f893d4af70bcfa134e4b8483b33a4dc155b3ee665ccf716709b956add8e6",
-        "source_size": 5485
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudySchedulePlanner.kt",
-        "mode": "0o600",
-        "sha256": "79e67b01501f4da27df07cf5290dffc756b89f13adb08812e4c27e7733007e52",
-        "size": 24020,
-        "source_mode": "0o600",
-        "source_sha256": "bcaad3dd27f718d0d99968ecc7cb24dea2e969cd65141d7eece80e082103900a",
-        "source_size": 15329
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySchedulePlannerTest.kt",
-        "mode": "0o600",
-        "sha256": "c03b8133ca85979a4e04b54a012e7d8e66c4dbbc0b194d42a03731b612b38db4",
-        "size": 6833,
-        "source_mode": "0o600",
-        "source_sha256": "659f38a73df3284987f56294d89972245ea366754326e4b2997c55bd32d6e56a",
-        "source_size": 6679
+        "source_sha256": "983718062f791f7868a473949b50e6266b1cfa331a58330bf64efa94c281f686",
+        "source_size": 67807
       },
       {
         "action": "add",
-        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudySchedulePolicyIntegrityTest.kt",
+        "path": "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/StudyTopicMoveModernOwnershipTest.kt",
         "mode": "0o644",
-        "sha256": "8096fcff091e080c6ce581cdb51549e577db35815c63a958b4155b58f3c5d6bd",
-        "size": 7899
+        "sha256": "8d494c292ff7d8178a0c38c57d043de9ce80269b09ae321f50eaa54e6f8e25ef",
+        "size": 5434
       },
       {
         "action": "modify",
-        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/Web20SharedSemanticGoldenVectorsTest.kt",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomPublicExamRepository.kt",
         "mode": "0o600",
-        "sha256": "0496cdb81e557eac326c468edd33a5e29200d189f206bdec3da10c008d73d3fb",
-        "size": 10944,
+        "sha256": "14940da82b3997d1846ee232f99da532f1244d2296d17a953c940b19650bee31",
+        "size": 32043,
         "source_mode": "0o600",
-        "source_sha256": "a0bad21ed8283a9038587a6c0b9646c2700cf44bc7860e426c2a7f4239651a93",
-        "source_size": 10870
+        "source_sha256": "3ece844b81683e3eb48c9728f2c1fe7aa5ea6e66791fa6553d73a4d09866e065",
+        "source_size": 31551
       },
       {
         "action": "modify",
-        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/IsoDateValidation.kt",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyContentRepository.kt",
         "mode": "0o600",
-        "sha256": "8685e16e5a4c17b10d531a326475b9e6e4f6ba6538b9c038aaeeb65c492c89cf",
-        "size": 1217,
+        "sha256": "6bcee9b903f0568ddf3cd4715ba86a92fa53690fedb40c2755d31aa40dddadd9",
+        "size": 22702,
         "source_mode": "0o600",
-        "source_sha256": "d6d74ed683614256a134cfa9198275054ef8e3bacd4740a3a6a84973a870094a",
-        "source_size": 855
+        "source_sha256": "21f4b98699d1052a9273ce798a8f323ce86639e710b89cf54d3a52b0bf26ca6e",
+        "source_size": 22579
       },
       {
         "action": "modify",
-        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudyPlanning.kt",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyDatabaseDiagnostics.kt",
         "mode": "0o600",
-        "sha256": "7a25c196307f8998f250ff100989575bf0371aa203c93d0b0bf8887d07b190f1",
-        "size": 7025,
+        "sha256": "0204369c433dabfe437b3e2c0900e51a2be1d49c442bb48a8bf67e7f9499fa63",
+        "size": 5103,
         "source_mode": "0o600",
-        "source_sha256": "3b625c9e1b8611dce59ec9f82f7bfd1aae3a8e887346d0c021a604866030a7fe",
-        "source_size": 6572
-      },
-      {
-        "action": "modify",
-        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudyStructure.kt",
-        "mode": "0o600",
-        "sha256": "a80d26dfca5672697523d7251efa4b64a065271a57683ceca89c24870ced3465",
-        "size": 6834,
-        "source_mode": "0o600",
-        "source_sha256": "2afe5554a0ccf8001d5e4894dc8ece36143d4efdde9730b2ae98bbb178761eb1",
-        "source_size": 5665
+        "source_sha256": "0d81f35dbcdd8e08b7b159b845c761941940099a4715c925616286051de8227e",
+        "source_size": 6459
       },
       {
         "action": "add",
-        "path": "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/StudyGoalAndTopicIntegrityTest.kt",
+        "path": "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/14.json",
         "mode": "0o644",
-        "sha256": "259743da247cc898eadb17a41fbfa4e682c1d9ed7ecb4c95777f974e067b9af8",
-        "size": 3879
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlannerAuthoringController.kt",
-        "mode": "0o600",
-        "sha256": "5c2856aa111e40557d75580a25f6684b67a6190b086e92aa9feebfcbf295e7a1",
-        "size": 6984,
-        "source_mode": "0o600",
-        "source_sha256": "ef7118715ac4246a8ca9f8dce04e979b7c12c07257801e34a3da441f1f682062",
-        "source_size": 7088
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowServices.kt",
-        "mode": "0o600",
-        "sha256": "f3ef9c437489fafe4db5da04778052fc2a3f7c992bfea1928806e3fee96cfac6",
-        "size": 23213,
-        "source_mode": "0o600",
-        "source_sha256": "580e7fdd3d53d0379ea7e9fe95ace1708271d976de1013248dd371675fb7e62f",
-        "source_size": 22712
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWeb20SemanticAdapter.kt",
-        "mode": "0o600",
-        "sha256": "e5686c19a884a8c600cad88969dae7e28c63a87d7f5eba94f02ea597b5deead6",
-        "size": 7707,
-        "source_mode": "0o600",
-        "source_sha256": "5571d8890d69ecb073122cf3b159c0cb293a8c26e021b7127aba8a1aa8a86280",
-        "source_size": 7609
+        "sha256": "0a82f9126c28bffa8d426e1779972036ca7d7fa02058d98dfc2ae5884e59725d",
+        "size": 181106
       },
       {
         "action": "add",
-        "path": "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopSessionMonotonicClockTest.kt",
+        "path": "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyFlowMigration13To14IntegrityTest.kt",
         "mode": "0o644",
-        "sha256": "dbb494c06cff42e3612917ff6d204cbd38cb92b76c70b5057fe2b92c1de24595",
-        "size": 1465
+        "sha256": "636613cf7f8d8cfb7c0851193cb49833c3544d5b9bf68e143e228a853f34dad9",
+        "size": 1869
       },
       {
         "action": "add",
-        "path": "docs/quality/OV03_PLANNER_SCHEDULE_GOAL_TIME_SEMANTICS.md",
+        "path": "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyFlowOv04IntegrityTest.kt",
         "mode": "0o644",
-        "sha256": "7fc020ce0b8a9345b2a06e319c90e22959417a9e4b64aba601249590dc4deea4",
-        "size": 2367
+        "sha256": "7fe77d6a2726b921f22ef66db3215fe9fc6d92f798129e6856baff51d9c693e0",
+        "size": 11696
+      },
+      {
+        "action": "modify",
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt",
+        "mode": "0o600",
+        "sha256": "f2f4c09addfbf5f474085bb25f14876a327876da512b4a827d29d0b0e2aab81b",
+        "size": 7354,
+        "source_mode": "0o600",
+        "source_sha256": "ec2137c117c906df306f2f9d1ab2f8dfd95f1204bf25a620752a107403b513f7",
+        "source_size": 7354
+      },
+      {
+        "action": "modify",
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowIntegrity.kt",
+        "mode": "0o600",
+        "sha256": "3bf0acff47b2fe5097a2aa710839368aa4639e9d0be3850935a08145bbe704d4",
+        "size": 44944,
+        "source_mode": "0o600",
+        "source_sha256": "ae4c1a71167c5804778c79f19b41c309d3461c1495ff24ba9e76a5e5ae6abd92",
+        "source_size": 28987
+      },
+      {
+        "action": "modify",
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt",
+        "mode": "0o600",
+        "sha256": "b9e859e72efff4992b2c33e0c2e3ca14ab44cdde8f45f0bb8687f3fbf14413df",
+        "size": 30429,
+        "source_mode": "0o600",
+        "source_sha256": "e6f5f269470f14e934480d460da3ba7964fea112709e08be7975c7e7a11982a0",
+        "source_size": 29980
+      },
+      {
+        "action": "add",
+        "path": "docs/quality/OV04_ROOM_GRAPH_OWNERSHIP_REVISION_INTEGRITY.md",
+        "mode": "0o644",
+        "sha256": "6139c928267f327001eac07b2c2e1e4de3bf6be52b3817b0c59316663eb84897",
+        "size": 1740
       },
       {
         "action": "modify",
         "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "55d89b5b76d8c627afb41397523544a1b154247cb0b4084d780bf64b23f658ea",
-        "size": 3332,
+        "sha256": "dbd2e9b262672cafe622b5efd118d52ab7ab328279262206abb44aff5e4df3db",
+        "size": 4576,
         "source_mode": "0o644",
-        "source_sha256": "7f08ef47cf525d670c7abdb3f0b3e321c8184132013f5d835cc565fe7a960d12",
-        "source_size": 2447
-      },
-      {
-        "action": "modify",
-        "path": "feature/schedule/src/main/java/com/mikeyphw/studyflow/feature/schedule/StudyScheduleScreen.kt",
-        "mode": "0o600",
-        "sha256": "d8071b260b8cc2e588c7850139739562d57b1f3cee12c13d5db2863a09cd1b4e",
-        "size": 58969,
-        "source_mode": "0o600",
-        "source_sha256": "18cf5492aa029245ceb09965cdd0ad21703ac215eb065ef4ff893622b7ced585",
-        "source_size": 59037
+        "source_sha256": "55d89b5b76d8c627afb41397523544a1b154247cb0b4084d780bf64b23f658ea",
+        "source_size": 3332
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov03_planner_schedule_goal_time.sh",
+        "path": "scripts/validate_ov04_room_graph_integrity.sh",
         "mode": "0o755",
-        "sha256": "8db2ceb4d2aa532099e196d8447ed82d5208c99eeb8af89807945c642af1bfcf",
-        "size": 622
+        "sha256": "e4a4d53e89eda93b990bb2fdd0fc1387b0488780c2b8ded0b1ceb80768cf2581",
+        "size": 681
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov03_planner_schedule_goal_time.py",
+        "path": "scripts/verify_ov04_room_graph_integrity.py",
         "mode": "0o755",
-        "sha256": "7963c5b46174e8c447d537c097297c6a6d0357a578c5d8560f3e95025ee24bb3",
-        "size": 5291
+        "sha256": "896c0f71bed6336da9fffcf60b47d37cba8746bb45db470e5d2fc24ed19f50ff",
+        "size": 3312
       }
     ]
   }

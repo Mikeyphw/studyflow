@@ -473,6 +473,10 @@ internal class RoomStudyContentRepository(
             "error_entries",
             "review_items",
             "study_notes",
+            "code_snippets",
+            "coding_exercises",
+            "mini_projects",
+            "study_cycle_items",
         )
     }
 

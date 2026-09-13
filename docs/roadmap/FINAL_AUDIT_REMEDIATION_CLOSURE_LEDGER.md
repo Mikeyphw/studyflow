@@ -28,3 +28,17 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S1-08 | 3/30 | Implemented | DAY_OFF and AVAILABILITY use the same WEEKLY/INTERVAL/COUNT recurrence evaluator as schedulable rules |
 | S1-09 | 3/30 | Implemented | topic projection rejects duplicate, orphan, cross-owner, self-parent, and cyclic graphs before recursive projection |
 | S1-10 | 3/30 | Implemented | Desktop Study Session wiring injects `System.nanoTime` milliseconds as its monotonic runtime clock |
+
+## Overlay 4 of 30 — OV04 Room graph ownership & revision integrity
+
+| Finding | Closure implementation | Behavioral evidence |
+|---|---|---|
+| S2-01 | Global active-session SQLite guard + global existing-data verification | `StudyFlowOv04IntegrityTest.singleActiveSessionIsGlobalAcrossPlans` |
+| S2-02 | Complete modern graph revision table registry | `StudyFlowOv04IntegrityTest.modernTablesAdvanceGraphRevision` |
+| S2-03 | Modern stable-owner/scoped-reference triggers | `StudyFlowOv04IntegrityTest.crossPlanModernReferencesAreRejectedAndDiagnosed` |
+| S2-04 | `moveTopic` modern linked-table rebinding | `StudyTopicMoveModernOwnershipTest` |
+| S2-08 | SQLite-scoped `questions.examStageId` and `examNoticeRevisionId` provenance | `StudyFlowOv04IntegrityTest.questionProvenanceAndCyclePointerAreDurable` |
+| S2-09 | Durable `study_cycles.currentItemId` ownership + delete/move safety | `StudyFlowOv04IntegrityTest.questionProvenanceAndCyclePointerAreDurable` |
+| S2-10 | Shared modern logical-integrity diagnostic engine | corruption probe in `StudyFlowOv04IntegrityTest.crossPlanModernReferencesAreRejectedAndDiagnosed` |
+| S2-12 | Schema 14 explicit managed-trigger drop/recreate migration | `StudyFlowMigration13To14IntegrityTest` |
+

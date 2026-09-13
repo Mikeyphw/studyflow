@@ -3,15 +3,21 @@ package com.mikeyphw.studyflow.core.database
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
- * Database-side invariants that Room's single-column foreign keys cannot express.
+ * Durable SQLite invariants for the complete StudyFlow graph.
  *
- * StudyFlow intentionally uses globally keyed child rows. These triggers prevent an existing
- * child id from being silently re-parented and make every cross-entity reference plan-scoped.
- * Repository validation remains the friendly error boundary; these triggers are the durable
- * last line of defense for imports, future repository code, and concurrent writes.
+ * Repository validation remains the friendly boundary, but imports, migrations and direct SQL must
+ * obey the same ownership/revision rules. The managed trigger set is explicitly versioned and the
+ * schema migration replaces stale trigger definitions instead of relying on CREATE TRIGGER IF NOT EXISTS.
  */
 object StudyFlowIntegrity {
     const val GraphRevisionMetadataKey = "graph_revision"
+    const val IntegrityTriggerSpecMetadataKey = "integrity_trigger_spec"
+    const val IntegrityTriggerSpecVersion = 14
+
+    private data class PlanOwnedTable(
+        val table: String,
+        val identityColumn: String = "id",
+    )
 
     private data class ScopedReference(
         val table: String,
@@ -22,33 +28,54 @@ object StudyFlowIntegrity {
     )
 
     private val planOwnedTables = listOf(
-        "study_targets",
-        "exam_stages",
-        "legislation_documents",
-        "legislation_provisions",
-        "legislation_evidence_links",
-        "subjects",
-        "topics",
-        "study_strategies",
-        "schedule_rules",
-        "planned_activities",
-        "study_sessions",
-        "study_goals",
-        "study_materials",
-        "video_resources",
-        "annexes",
-        "questions",
-        "study_tests",
-        "mock_exams",
-        "flashcards",
-        "error_entries",
-        "review_items",
-        "study_notes",
-        "plan_snapshots",
+        PlanOwnedTable("study_targets"),
+        PlanOwnedTable("exam_stages"),
+        PlanOwnedTable("exam_notice_revisions"),
+        PlanOwnedTable("legislation_documents"),
+        PlanOwnedTable("legislation_provisions"),
+        PlanOwnedTable("legislation_evidence_links"),
+        PlanOwnedTable("subjects"),
+        PlanOwnedTable("topics"),
+        PlanOwnedTable("study_strategies"),
+        PlanOwnedTable("study_cycles"),
+        PlanOwnedTable("study_cycle_items"),
+        PlanOwnedTable("schedule_rules"),
+        PlanOwnedTable("planned_activities"),
+        PlanOwnedTable("study_sessions"),
+        PlanOwnedTable("study_goals"),
+        PlanOwnedTable("study_materials"),
+        PlanOwnedTable("video_resources"),
+        PlanOwnedTable("annexes"),
+        PlanOwnedTable("questions"),
+        PlanOwnedTable("study_tests"),
+        PlanOwnedTable("mock_exams"),
+        PlanOwnedTable("flashcards"),
+        PlanOwnedTable("error_entries"),
+        PlanOwnedTable("review_items"),
+        PlanOwnedTable("study_notes"),
+        PlanOwnedTable("plan_snapshots"),
+        PlanOwnedTable("programming_course_profiles"),
+        PlanOwnedTable("code_snippets"),
+        PlanOwnedTable("coding_exercises"),
+        PlanOwnedTable("mini_projects"),
+        PlanOwnedTable("termux_runtime_preferences", identityColumn = "studyPlanId"),
+        PlanOwnedTable("termux_command_requests"),
+        PlanOwnedTable("language_deck_profiles"),
+        PlanOwnedTable("language_expressions"),
+        PlanOwnedTable("language_review_attempts"),
+    )
+
+    /** Tables whose mutation must advance the logical graph revision. */
+    private val revisionOnlyTables = listOf(
+        // These rows inherit ownership through their parent but are still user-data mutations.
+        "termux_command_results",
+        "idiom_cards",
+        "vocabulary_cards",
     )
 
     private val scopedReferences = listOf(
         ScopedReference("exam_stages", "studyTargetId", "study_targets"),
+        ScopedReference("exam_notice_revisions", "studyTargetId", "study_targets"),
         ScopedReference("legislation_provisions", "legislationDocumentId", "legislation_documents"),
         ScopedReference("legislation_evidence_links", "provisionId", "legislation_provisions"),
         ScopedReference("legislation_evidence_links", "questionId", "questions"),
@@ -63,6 +90,9 @@ object StudyFlowIntegrity {
             extraPredicate = " AND parent.subjectId = NEW.subjectId",
         ),
         ScopedReference("topics", "examStageId", "exam_stages"),
+        ScopedReference("study_cycle_items", "studyCycleId", "study_cycles"),
+        ScopedReference("study_cycle_items", "subjectId", "subjects"),
+        ScopedReference("study_cycle_items", "topicId", "topics"),
         ScopedReference("schedule_rules", "subjectId", "subjects"),
         ScopedReference("study_materials", "subjectId", "subjects"),
         ScopedReference("study_materials", "topicId", "topics"),
@@ -84,6 +114,8 @@ object StudyFlowIntegrity {
         ScopedReference("annexes", "materialId", "study_materials"),
         ScopedReference("questions", "subjectId", "subjects"),
         ScopedReference("questions", "topicId", "topics"),
+        ScopedReference("questions", "examStageId", "exam_stages"),
+        ScopedReference("questions", "examNoticeRevisionId", "exam_notice_revisions"),
         ScopedReference("error_entries", "questionId", "questions"),
         ScopedReference("error_entries", "subjectId", "subjects"),
         ScopedReference("error_entries", "topicId", "topics"),
@@ -97,32 +129,158 @@ object StudyFlowIntegrity {
         ScopedReference("study_notes", "subjectId", "subjects"),
         ScopedReference("study_notes", "topicId", "topics"),
         ScopedReference("study_notes", "materialId", "study_materials"),
+        ScopedReference("code_snippets", "subjectId", "subjects"),
+        ScopedReference("code_snippets", "topicId", "topics"),
+        ScopedReference("coding_exercises", "subjectId", "subjects"),
+        ScopedReference("coding_exercises", "topicId", "topics"),
+        ScopedReference("coding_exercises", "snippetId", "code_snippets"),
+        ScopedReference("mini_projects", "subjectId", "subjects"),
+        ScopedReference("mini_projects", "topicId", "topics"),
+        ScopedReference("termux_command_requests", "exerciseId", "coding_exercises"),
+        ScopedReference("language_expressions", "deckId", "language_deck_profiles"),
+        ScopedReference("language_review_attempts", "expressionId", "language_expressions"),
+        ScopedReference("language_review_attempts", "reviewItemId", "review_items"),
+    )
+
+    private val topicSubjectCoherenceTables = listOf(
+        "code_snippets",
+        "coding_exercises",
+        "mini_projects",
+        "study_cycle_items",
     )
 
     fun install(db: SupportSQLiteDatabase) {
-        planOwnedTables.filter { tableExists(db, it) }.forEach { table ->
-            installStablePlanOwnerTrigger(db, table)
+        ensureMetadata(db)
+        planOwnedTables.filter { spec -> tableExists(db, spec.table) }.forEach { spec ->
+            installStablePlanOwnerTrigger(db, spec)
         }
         installPlanSettingsIdentityTriggers(db)
         scopedReferences
             .filter { reference -> tableExists(db, reference.table) && tableExists(db, reference.targetTable) }
             .forEach { reference -> installScopedReferenceTriggers(db, reference) }
+        topicSubjectCoherenceTables.filter { tableExists(db, it) }.forEach { table ->
+            installTopicSubjectCoherenceTriggers(db, table)
+        }
+        installLanguageAttemptCardCoherenceTriggers(db)
+        installStudyCycleCurrentItemTriggers(db)
         installTopicHierarchyUpdateGuard(db)
         installExamStageDeleteCleanup(db)
         installSingleActiveSessionTriggers(db)
         installValueGuards(db)
         installLegislationEvidenceTargetTriggers(db)
         installGraphRevisionTriggers(db)
+        db.execSQL(
+            "INSERT OR REPLACE INTO database_metadata (`key`, value) VALUES " +
+                "('$IntegrityTriggerSpecMetadataKey', '$IntegrityTriggerSpecVersion')",
+        )
         StudyFlowSearchIndex.install(db)
     }
 
-    private fun installGraphRevisionTriggers(db: SupportSQLiteDatabase) {
+    /** Explicit replacement path used by schema migrations when trigger semantics change. */
+    fun reinstall(db: SupportSQLiteDatabase) {
+        dropManagedTriggers(db)
+        install(db)
+    }
+
+    fun verifyExistingData(db: SupportSQLiteDatabase) {
+        db.query("PRAGMA foreign_key_check").use { cursor ->
+            check(!cursor.moveToFirst()) {
+                "StudyFlow database corruption: foreign-key violations must be repaired before integrity upgrade."
+            }
+        }
+        planOwnedTables.filter { spec -> tableExists(db, spec.table) }.forEach { spec ->
+            val predicate = identityBlankPredicate(spec, alias = null)
+            requireNoRows(
+                db = db,
+                sql = "SELECT 1 FROM ${spec.table} WHERE $predicate LIMIT 1",
+                message = "StudyFlow database corruption: ${spec.table} contains a blank identity.",
+            )
+        }
+        if (tableExists(db, "study_plan_settings")) {
+            requireNoRows(
+                db = db,
+                sql = "SELECT 1 FROM study_plan_settings WHERE trim(studyPlanId) = '' LIMIT 1",
+                message = "StudyFlow database corruption: Study Plan settings contain a blank identity.",
+            )
+        }
+        scopedReferences
+            .filter { reference -> tableExists(db, reference.table) && tableExists(db, reference.targetTable) }
+            .forEach { reference -> verifyScopedReference(db, reference) }
+        topicSubjectCoherenceTables.filter { tableExists(db, it) }.forEach { table ->
+            verifyTopicSubjectCoherence(db, table)
+        }
+        verifyLanguageAttemptCardCoherence(db)
+        verifyStudyCycleCurrentItem(db)
+        verifyValueGuards(db)
+        verifyLegislationEvidenceTargets(db)
+        requireNoRows(
+            db = db,
+            sql =
+                "SELECT 1 FROM study_sessions WHERE status IN ('RUNNING', 'PAUSED') " +
+                    "LIMIT 1 OFFSET 1",
+            message = "StudyFlow database corruption: multiple active Study Sessions exist globally.",
+        )
+    }
+
+    /** Shared diagnostic truth: the debug health report uses exactly the same modern graph rules. */
+    fun logicalIntegrityViolationCount(db: SupportSQLiteDatabase): Int {
+        var total = 0L
+        fun addCount(sql: String) {
+            db.query(sql).use { cursor ->
+                if (cursor.moveToFirst()) total += cursor.getLong(0).coerceAtLeast(0L)
+            }
+        }
+        planOwnedTables.filter { spec -> tableExists(db, spec.table) }.forEach { spec ->
+            addCount("SELECT COUNT(*) FROM ${spec.table} WHERE ${identityBlankPredicate(spec, alias = null)}")
+        }
+        if (tableExists(db, "study_plan_settings")) {
+            addCount("SELECT COUNT(*) FROM study_plan_settings WHERE trim(studyPlanId) = ''")
+        }
+        scopedReferences
+            .filter { reference -> tableExists(db, reference.table) && tableExists(db, reference.targetTable) }
+            .forEach { reference -> addCount(scopedReferenceViolationCountSql(reference)) }
+        topicSubjectCoherenceTables.filter { tableExists(db, it) }.forEach { table ->
+            addCount(topicSubjectCoherenceViolationCountSql(table))
+        }
+        if (tableExists(db, "language_review_attempts") && tableExists(db, "idiom_cards")) {
+            addCount(languageAttemptCardViolationCountSql())
+        }
+        if (tableExists(db, "study_cycles") && tableExists(db, "study_cycle_items")) {
+            addCount(studyCycleCurrentItemViolationCountSql())
+        }
+        if (tableExists(db, "legislation_evidence_links")) {
+            addCount(
+                "SELECT COUNT(*) FROM legislation_evidence_links WHERE " +
+                    "((questionId IS NOT NULL) + (errorEntryId IS NOT NULL) + (reviewItemId IS NOT NULL)) <> 1",
+            )
+        }
+        if (tableExists(db, "study_sessions")) {
+            addCount(
+                "SELECT CASE WHEN COUNT(*) > 1 THEN COUNT(*) - 1 ELSE 0 END " +
+                    "FROM study_sessions WHERE status IN ('RUNNING', 'PAUSED')",
+            )
+        }
+        forEachValueGuard { table, predicate ->
+            if (tableExists(db, table)) {
+                addCount("SELECT COUNT(*) FROM $table AS row WHERE NOT (${predicate.replace("NEW.", "row.")})")
+            }
+        }
+        return total.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    private fun ensureMetadata(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "database_metadata")) return
         db.execSQL(
             "INSERT OR IGNORE INTO database_metadata (`key`, value) VALUES ('$GraphRevisionMetadataKey', '0')",
         )
-        val revisionTables = (listOf("study_plans") + planOwnedTables + "study_plan_settings")
-            .distinct()
-            .filter { tableExists(db, it) }
+    }
+
+    private fun installGraphRevisionTriggers(db: SupportSQLiteDatabase) {
+        ensureMetadata(db)
+        val revisionTables = (
+            listOf("study_plans") + planOwnedTables.map(PlanOwnedTable::table) +
+                listOf("study_plan_settings") + revisionOnlyTables
+            ).distinct().filter { tableExists(db, it) }
         revisionTables.forEach { table ->
             listOf("INSERT", "UPDATE", "DELETE").forEach { event ->
                 val suffix = event.lowercase()
@@ -141,104 +299,50 @@ object StudyFlowIntegrity {
         }
     }
 
-
-    fun verifyExistingData(db: SupportSQLiteDatabase) {
-        db.query("PRAGMA foreign_key_check").use { cursor ->
-            check(!cursor.moveToFirst()) {
-                "StudyFlow database corruption: foreign-key violations must be repaired before schema v4."
-            }
+    private fun dropManagedTriggers(db: SupportSQLiteDatabase) {
+        val names = db.query(
+            "SELECT name FROM sqlite_master WHERE type='trigger' AND (" +
+                "name LIKE 'guard_%' OR " +
+                "name LIKE 'studyflow_graph_revision_%' OR " +
+                "name = 'cleanup_exam_stage_subject_topic_refs')",
+        ).use { cursor ->
+            buildList { while (cursor.moveToNext()) add(cursor.getString(0)) }
         }
-        planOwnedTables.filter { tableExists(db, it) }.forEach { table ->
-            requireNoRows(
-                db = db,
-                sql = "SELECT 1 FROM $table WHERE trim(id) = '' OR trim(studyPlanId) = '' LIMIT 1",
-                message = "StudyFlow database corruption: $table contains a blank identity.",
-            )
+        names.forEach { name ->
+            val quoted = name.replace("\"", "\"\"")
+            db.execSQL("DROP TRIGGER IF EXISTS \"$quoted\"")
         }
-        requireNoRows(
-            db = db,
-            sql = "SELECT 1 FROM study_plan_settings WHERE trim(studyPlanId) = '' LIMIT 1",
-            message = "StudyFlow database corruption: Study Plan settings contain a blank identity.",
-        )
-        scopedReferences
-            .filter { reference -> tableExists(db, reference.table) && tableExists(db, reference.targetTable) }
-            .forEach { reference -> verifyScopedReference(db, reference) }
-        verifyValueGuards(db)
-        verifyLegislationEvidenceTargets(db)
-        requireNoRows(
-            db = db,
-            sql =
-                "SELECT 1 FROM study_sessions WHERE status IN ('RUNNING', 'PAUSED') " +
-                    "GROUP BY studyPlanId HAVING COUNT(*) > 1 LIMIT 1",
-            message =
-                "StudyFlow database corruption: multiple active Study Sessions exist for one Study Plan.",
-        )
     }
 
     private fun verifyScopedReference(db: SupportSQLiteDatabase, reference: ScopedReference) {
+        requireNoRows(
+            db = db,
+            sql = scopedReferenceViolationSelectSql(reference),
+            message = "StudyFlow database corruption: invalid ${reference.table}.${reference.column} ownership.",
+        )
+    }
+
+    private fun scopedReferenceViolationSelectSql(reference: ScopedReference): String =
+        scopedReferenceViolationSql(reference, count = false)
+
+    private fun scopedReferenceViolationCountSql(reference: ScopedReference): String =
+        scopedReferenceViolationSql(reference, count = true)
+
+    private fun scopedReferenceViolationSql(reference: ScopedReference, count: Boolean): String {
         val targetAlias = if (reference.targetTable == reference.table) "parent" else "target"
         val extraPredicate = reference.extraPredicate.replace("NEW.", "child.")
         val predicate =
             "$targetAlias.${reference.targetColumn} = child.${reference.column} " +
                 "AND $targetAlias.studyPlanId = child.studyPlanId$extraPredicate"
-        requireNoRows(
-            db = db,
-            sql =
-                "SELECT 1 FROM ${reference.table} AS child " +
-                    "WHERE child.${reference.column} IS NOT NULL AND NOT EXISTS " +
-                    "(SELECT 1 FROM ${reference.targetTable} AS $targetAlias WHERE $predicate) LIMIT 1",
-            message =
-                "StudyFlow database corruption: invalid ${reference.table}.${reference.column} ownership.",
-        )
+        val projection = if (count) "COUNT(*)" else "1"
+        val limit = if (count) "" else " LIMIT 1"
+        return "SELECT $projection FROM ${reference.table} AS child " +
+            "WHERE child.${reference.column} IS NOT NULL AND NOT EXISTS " +
+            "(SELECT 1 FROM ${reference.targetTable} AS $targetAlias WHERE $predicate)$limit"
     }
 
-    private fun installLegislationEvidenceTargetTriggers(db: SupportSQLiteDatabase) {
-        if (!tableExists(db, "legislation_evidence_links")) return
-        listOf("INSERT", "UPDATE").forEach { event ->
-            db.execSQL(
-                """
-                CREATE TRIGGER IF NOT EXISTS guard_legislation_evidence_exactly_one_${event.lowercase()}
-                BEFORE $event ON legislation_evidence_links
-                WHEN ((NEW.questionId IS NOT NULL) + (NEW.errorEntryId IS NOT NULL) +
-                    (NEW.reviewItemId IS NOT NULL)) <> 1
-                BEGIN
-                    SELECT RAISE(ABORT, 'StudyFlow integrity: legislation evidence requires exactly one target');
-                END
-                """.trimIndent(),
-            )
-        }
-    }
-
-    private fun verifyLegislationEvidenceTargets(db: SupportSQLiteDatabase) {
-        if (!tableExists(db, "legislation_evidence_links")) return
-        requireNoRows(
-            db = db,
-            sql =
-                "SELECT 1 FROM legislation_evidence_links WHERE " +
-                    "((questionId IS NOT NULL) + (errorEntryId IS NOT NULL) + " +
-                    "(reviewItemId IS NOT NULL)) <> 1 LIMIT 1",
-            message =
-                "StudyFlow database corruption: legislation evidence must reference exactly one target.",
-        )
-    }
-
-    private fun tableExists(db: SupportSQLiteDatabase, table: String): Boolean =
-        db.query(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
-            arrayOf(table),
-        ).use { cursor -> cursor.moveToFirst() }
-
-    private fun requireNoRows(
-        db: SupportSQLiteDatabase,
-        sql: String,
-        message: String,
-    ) {
-        db.query(sql).use { cursor ->
-            check(!cursor.moveToFirst()) { message }
-        }
-    }
-
-    private fun installStablePlanOwnerTrigger(db: SupportSQLiteDatabase, table: String) {
+    private fun installStablePlanOwnerTrigger(db: SupportSQLiteDatabase, spec: PlanOwnedTable) {
+        val table = spec.table
         db.execSQL(
             """
             CREATE TRIGGER IF NOT EXISTS guard_${table}_stable_plan_owner
@@ -254,7 +358,7 @@ object StudyFlowIntegrity {
                 """
                 CREATE TRIGGER IF NOT EXISTS guard_${table}_nonblank_identity_${event.lowercase()}
                 BEFORE $event ON $table
-                WHEN trim(NEW.id) = '' OR trim(NEW.studyPlanId) = ''
+                WHEN ${identityBlankPredicate(spec, alias = "NEW")}
                 BEGIN
                     SELECT RAISE(ABORT, 'StudyFlow integrity: $table identity cannot be blank');
                 END
@@ -263,7 +367,14 @@ object StudyFlowIntegrity {
         }
     }
 
+    private fun identityBlankPredicate(spec: PlanOwnedTable, alias: String?): String {
+        val prefix = alias?.let { "$it." }.orEmpty()
+        val plan = "trim(${prefix}studyPlanId) = ''"
+        return if (spec.identityColumn == "studyPlanId") plan else "trim(${prefix}${spec.identityColumn}) = '' OR $plan"
+    }
+
     private fun installPlanSettingsIdentityTriggers(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "study_plan_settings")) return
         db.execSQL(
             """
             CREATE TRIGGER IF NOT EXISTS guard_study_plan_settings_stable_plan_owner
@@ -314,8 +425,167 @@ object StudyFlowIntegrity {
         }
     }
 
+    private fun installTopicSubjectCoherenceTriggers(db: SupportSQLiteDatabase, table: String) {
+        val condition =
+            "NEW.topicId IS NOT NULL AND NEW.subjectId IS NOT NULL AND NOT EXISTS (" +
+                "SELECT 1 FROM topics AS topic WHERE topic.id = NEW.topicId " +
+                "AND topic.studyPlanId = NEW.studyPlanId AND topic.subjectId = NEW.subjectId)"
+        listOf("INSERT" to "", "UPDATE" to " OF topicId, subjectId, studyPlanId").forEach { (event, columns) ->
+            db.execSQL(
+                """
+                CREATE TRIGGER IF NOT EXISTS guard_${table}_topic_subject_coherence_${event.lowercase()}
+                BEFORE $event$columns ON $table
+                WHEN $condition
+                BEGIN
+                    SELECT RAISE(ABORT, 'StudyFlow integrity: $table topic and subject ownership disagree');
+                END
+                """.trimIndent(),
+            )
+        }
+    }
+
+    private fun verifyTopicSubjectCoherence(db: SupportSQLiteDatabase, table: String) {
+        requireNoRows(
+            db = db,
+            sql = topicSubjectCoherenceViolationSelectSql(table),
+            message = "StudyFlow database corruption: $table topic and subject ownership disagree.",
+        )
+    }
+
+    private fun topicSubjectCoherenceViolationSelectSql(table: String): String =
+        topicSubjectCoherenceViolationSql(table, count = false)
+
+    private fun topicSubjectCoherenceViolationCountSql(table: String): String =
+        topicSubjectCoherenceViolationSql(table, count = true)
+
+    private fun topicSubjectCoherenceViolationSql(table: String, count: Boolean): String {
+        val projection = if (count) "COUNT(*)" else "1"
+        val limit = if (count) "" else " LIMIT 1"
+        return "SELECT $projection FROM $table AS child WHERE child.topicId IS NOT NULL " +
+            "AND child.subjectId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM topics AS topic " +
+            "WHERE topic.id = child.topicId AND topic.studyPlanId = child.studyPlanId " +
+            "AND topic.subjectId = child.subjectId)$limit"
+    }
+
+    private fun installLanguageAttemptCardCoherenceTriggers(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "language_review_attempts") || !tableExists(db, "idiom_cards")) return
+        val condition =
+            "NEW.idiomCardId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM idiom_cards AS card " +
+                "WHERE card.id = NEW.idiomCardId AND card.expressionId = NEW.expressionId)"
+        listOf("INSERT" to "", "UPDATE" to " OF idiomCardId, expressionId").forEach { (event, columns) ->
+            db.execSQL(
+                """
+                CREATE TRIGGER IF NOT EXISTS guard_language_review_attempts_idiom_card_${event.lowercase()}
+                BEFORE $event$columns ON language_review_attempts
+                WHEN $condition
+                BEGIN
+                    SELECT RAISE(ABORT, 'StudyFlow integrity: language review card belongs to another expression');
+                END
+                """.trimIndent(),
+            )
+        }
+    }
+
+    private fun verifyLanguageAttemptCardCoherence(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "language_review_attempts") || !tableExists(db, "idiom_cards")) return
+        requireNoRows(
+            db = db,
+            sql = languageAttemptCardViolationSelectSql(),
+            message = "StudyFlow database corruption: language review card belongs to another expression.",
+        )
+    }
+
+    private fun languageAttemptCardViolationSelectSql(): String =
+        languageAttemptCardViolationSql(count = false)
+
+    private fun languageAttemptCardViolationCountSql(): String =
+        languageAttemptCardViolationSql(count = true)
+
+    private fun languageAttemptCardViolationSql(count: Boolean): String {
+        val projection = if (count) "COUNT(*)" else "1"
+        val limit = if (count) "" else " LIMIT 1"
+        return "SELECT $projection FROM language_review_attempts AS attempt " +
+            "WHERE attempt.idiomCardId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM idiom_cards AS card " +
+            "WHERE card.id = attempt.idiomCardId AND card.expressionId = attempt.expressionId)$limit"
+    }
+
+    private fun installStudyCycleCurrentItemTriggers(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "study_cycles") || !tableExists(db, "study_cycle_items")) return
+        val invalidPointer =
+            "NEW.currentItemId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM study_cycle_items AS item " +
+                "WHERE item.id = NEW.currentItemId AND item.studyCycleId = NEW.id " +
+                "AND item.studyPlanId = NEW.studyPlanId)"
+        listOf("INSERT" to "", "UPDATE" to " OF currentItemId, id, studyPlanId").forEach { (event, columns) ->
+            db.execSQL(
+                """
+                CREATE TRIGGER IF NOT EXISTS guard_study_cycles_current_item_${event.lowercase()}
+                BEFORE $event$columns ON study_cycles
+                WHEN $invalidPointer
+                BEGIN
+                    SELECT RAISE(ABORT, 'StudyFlow integrity: study cycle current item is not owned by the cycle');
+                END
+                """.trimIndent(),
+            )
+        }
+        db.execSQL(
+            """
+            CREATE TRIGGER IF NOT EXISTS guard_study_cycle_items_current_membership_update
+            BEFORE UPDATE OF id, studyCycleId, studyPlanId ON study_cycle_items
+            WHEN EXISTS (
+                SELECT 1 FROM study_cycles AS cycle
+                WHERE cycle.id = OLD.studyCycleId
+                  AND cycle.studyPlanId = OLD.studyPlanId
+                  AND cycle.currentItemId = OLD.id
+            ) AND (NEW.id <> OLD.id OR NEW.studyCycleId <> OLD.studyCycleId OR NEW.studyPlanId <> OLD.studyPlanId)
+            BEGIN
+                SELECT RAISE(ABORT, 'StudyFlow integrity: current study cycle item cannot move between cycles');
+            END
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            CREATE TRIGGER IF NOT EXISTS guard_study_cycle_items_current_delete_cleanup
+            AFTER DELETE ON study_cycle_items
+            WHEN EXISTS (
+                SELECT 1 FROM study_cycles AS cycle
+                WHERE cycle.id = OLD.studyCycleId
+                  AND cycle.studyPlanId = OLD.studyPlanId
+                  AND cycle.currentItemId = OLD.id
+            )
+            BEGIN
+                UPDATE study_cycles
+                SET currentItemId = NULL
+                WHERE id = OLD.studyCycleId AND studyPlanId = OLD.studyPlanId AND currentItemId = OLD.id;
+            END
+            """.trimIndent(),
+        )
+    }
+
+    private fun verifyStudyCycleCurrentItem(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "study_cycles") || !tableExists(db, "study_cycle_items")) return
+        requireNoRows(
+            db = db,
+            sql = studyCycleCurrentItemViolationSelectSql(),
+            message = "StudyFlow database corruption: study cycle current item is dangling or foreign.",
+        )
+    }
+
+    private fun studyCycleCurrentItemViolationSelectSql(): String =
+        studyCycleCurrentItemViolationSql(count = false)
+
+    private fun studyCycleCurrentItemViolationCountSql(): String =
+        studyCycleCurrentItemViolationSql(count = true)
+
+    private fun studyCycleCurrentItemViolationSql(count: Boolean): String {
+        val projection = if (count) "COUNT(*)" else "1"
+        val limit = if (count) "" else " LIMIT 1"
+        return "SELECT $projection FROM study_cycles AS cycle WHERE cycle.currentItemId IS NOT NULL " +
+            "AND NOT EXISTS (SELECT 1 FROM study_cycle_items AS item WHERE item.id = cycle.currentItemId " +
+            "AND item.studyCycleId = cycle.id AND item.studyPlanId = cycle.studyPlanId)$limit"
+    }
 
     private fun installTopicHierarchyUpdateGuard(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "topics")) return
         db.execSQL(
             """
             CREATE TRIGGER IF NOT EXISTS guard_topics_parent_subject_change
@@ -336,8 +606,8 @@ object StudyFlowIntegrity {
         )
     }
 
-
     private fun installExamStageDeleteCleanup(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "exam_stages")) return
         db.execSQL(
             """
             CREATE TRIGGER IF NOT EXISTS cleanup_exam_stage_subject_topic_refs
@@ -355,6 +625,7 @@ object StudyFlowIntegrity {
     }
 
     private fun installSingleActiveSessionTriggers(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "study_sessions")) return
         listOf("INSERT" to "", "UPDATE" to " OF status, studyPlanId").forEach { (event, columns) ->
             db.execSQL(
                 """
@@ -363,12 +634,11 @@ object StudyFlowIntegrity {
                 WHEN NEW.status IN ('RUNNING', 'PAUSED')
                   AND EXISTS (
                     SELECT 1 FROM study_sessions AS active
-                    WHERE active.studyPlanId = NEW.studyPlanId
-                      AND active.status IN ('RUNNING', 'PAUSED')
+                    WHERE active.status IN ('RUNNING', 'PAUSED')
                       AND active.id <> NEW.id
                   )
                 BEGIN
-                    SELECT RAISE(ABORT, 'StudyFlow integrity: only one active Study Session is allowed per Study Plan');
+                    SELECT RAISE(ABORT, 'StudyFlow integrity: only one active Study Session is allowed globally');
                 END
                 """.trimIndent(),
             )
@@ -377,19 +647,64 @@ object StudyFlowIntegrity {
 
     private fun installValueGuards(db: SupportSQLiteDatabase) {
         forEachValueGuard { table, predicate ->
-            installValueGuard(db, table, predicate)
+            if (tableExists(db, table)) installValueGuard(db, table, predicate)
         }
     }
 
     private fun verifyValueGuards(db: SupportSQLiteDatabase) {
         forEachValueGuard { table, predicate ->
-            val rowPredicate = predicate.replace("NEW.", "row.")
-            requireNoRows(
-                db = db,
-                sql = "SELECT 1 FROM $table AS row WHERE NOT ($rowPredicate) LIMIT 1",
-                message = "StudyFlow database corruption: $table contains invalid persisted values.",
+            if (tableExists(db, table)) {
+                val rowPredicate = predicate.replace("NEW.", "row.")
+                requireNoRows(
+                    db = db,
+                    sql = "SELECT 1 FROM $table AS row WHERE NOT ($rowPredicate) LIMIT 1",
+                    message = "StudyFlow database corruption: $table contains invalid persisted values.",
+                )
+            }
+        }
+    }
+
+    private fun installLegislationEvidenceTargetTriggers(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "legislation_evidence_links")) return
+        listOf("INSERT", "UPDATE").forEach { event ->
+            db.execSQL(
+                """
+                CREATE TRIGGER IF NOT EXISTS guard_legislation_evidence_exactly_one_${event.lowercase()}
+                BEFORE $event ON legislation_evidence_links
+                WHEN ((NEW.questionId IS NOT NULL) + (NEW.errorEntryId IS NOT NULL) +
+                    (NEW.reviewItemId IS NOT NULL)) <> 1
+                BEGIN
+                    SELECT RAISE(ABORT, 'StudyFlow integrity: legislation evidence requires exactly one target');
+                END
+                """.trimIndent(),
             )
         }
+    }
+
+    private fun verifyLegislationEvidenceTargets(db: SupportSQLiteDatabase) {
+        if (!tableExists(db, "legislation_evidence_links")) return
+        requireNoRows(
+            db = db,
+            sql =
+                "SELECT 1 FROM legislation_evidence_links WHERE " +
+                    "((questionId IS NOT NULL) + (errorEntryId IS NOT NULL) + " +
+                    "(reviewItemId IS NOT NULL)) <> 1 LIMIT 1",
+            message = "StudyFlow database corruption: legislation evidence must reference exactly one target.",
+        )
+    }
+
+    private fun tableExists(db: SupportSQLiteDatabase, table: String): Boolean =
+        db.query(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+            arrayOf(table),
+        ).use { cursor -> cursor.moveToFirst() }
+
+    private fun requireNoRows(
+        db: SupportSQLiteDatabase,
+        sql: String,
+        message: String,
+    ) {
+        db.query(sql).use { cursor -> check(!cursor.moveToFirst()) { message } }
     }
 
     private fun forEachValueGuard(block: (table: String, predicate: String) -> Unit) {

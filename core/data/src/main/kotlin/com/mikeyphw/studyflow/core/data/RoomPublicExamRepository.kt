@@ -417,19 +417,29 @@ class RoomPublicExamRepository(
                 completionRule = "SESSION_COMPLETED",
             )
         }
+        // currentItemId is a durable owned reference. Clear it before replacing the item set,
+        // insert the new items, then assign the pointer only after its target exists.
         publicExamDao.upsertStudyCycle(
             StudyCycleEntity(
                 id = cycleId,
                 studyPlanId = planId.value,
                 name = name,
                 enabled = existing?.enabled ?: true,
-                currentItemId = items.first().id,
+                currentItemId = null,
                 createdAtEpochMillis = existing?.createdAtEpochMillis ?: now,
                 updatedAtEpochMillis = now,
             ),
         )
         publicExamDao.deleteStudyCycleItems(planId.value, cycleId)
         publicExamDao.upsertStudyCycleItems(items)
+        require(
+            publicExamDao.setCurrentStudyCycleItem(
+                planId = planId.value,
+                cycleId = cycleId,
+                itemId = items.first().id,
+                updatedAt = now,
+            ) == 1,
+        ) { "Study cycle disappeared before its current item could be assigned." }
         requireNotNull(loadCycleSnapshot(planId))
     }
 

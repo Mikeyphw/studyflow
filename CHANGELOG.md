@@ -1,5 +1,14 @@
 ## OV03 — Planner, schedule, goal & time semantics (Overlay 3 of 30)
 
+## OV04 — Room graph ownership & revision integrity (2026-09-13)
+
+- Made active Study Session integrity global at SQLite level.
+- Added full modern graph revision/ownership/provenance/current-pointer enforcement and shared diagnostics.
+- Made topic moves update programming and study-cycle rows.
+- Added schema 14 migration that explicitly replaces stale integrity triggers.
+- Added OV04 runtime, migration, repository and validator evidence.
+
+
 - Made schedule generation fail closed on foreign Study Plan rules/strategies and use one recurrence evaluator for schedulable blocks, DAY_OFF, and AVAILABILITY policies.
 - Made missed-activity rebalance consume the canonical persisted schedule, reserve existing active blocks, and search only policy-compliant non-overlapping slots.
 - Made Study Goal date construction/evaluation strict: valid ISO dates, mandatory custom end dates, and no reversed ranges or silent date fallback.

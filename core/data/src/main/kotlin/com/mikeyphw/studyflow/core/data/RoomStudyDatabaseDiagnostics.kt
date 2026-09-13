@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.data
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
 import com.mikeyphw.studyflow.core.database.StudyFlowMigrations
 import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthMessage
@@ -21,7 +22,7 @@ internal suspend fun inspectStudyFlowDatabase(
         val quickCheckPassed = sqlite.singleString("PRAGMA quick_check")
             .equals("ok", ignoreCase = true)
         val foreignKeyViolationCount = sqlite.rowCount("PRAGMA foreign_key_check")
-        val logicalIntegrityViolationCount = sqlite.logicalIntegrityViolationCount()
+        val logicalIntegrityViolationCount = StudyFlowIntegrity.logicalIntegrityViolationCount(sqlite)
         val tableNames = sqlite.userTableNames()
         val totalRows = tableNames.sumOf { tableName -> sqlite.tableRowCount(tableName) }
         val metadataPresent = sqlite.singleLong("SELECT COUNT(*) FROM database_metadata") > 0L
@@ -112,27 +113,4 @@ private fun SupportSQLiteDatabase.userTableNames(): List<String> = query(
 private fun SupportSQLiteDatabase.tableRowCount(tableName: String): Long {
     val quoted = tableName.replace("\"", "\"\"")
     return singleLong("SELECT COUNT(*) FROM \"$quoted\"")
-}
-
-private fun SupportSQLiteDatabase.logicalIntegrityViolationCount(): Int {
-    val checks = listOf(
-        """SELECT COUNT(*) FROM topics t JOIN subjects s ON s.id=t.subjectId WHERE t.studyPlanId<>s.studyPlanId""",
-        """SELECT COUNT(*) FROM questions q JOIN subjects s ON s.id=q.subjectId WHERE q.studyPlanId<>s.studyPlanId""",
-        """SELECT COUNT(*) FROM questions q JOIN topics t ON t.id=q.topicId WHERE q.studyPlanId<>t.studyPlanId""",
-        """SELECT COUNT(*) FROM annexes a JOIN subjects s ON s.id=a.subjectId WHERE a.studyPlanId<>s.studyPlanId""",
-        """SELECT COUNT(*) FROM annexes a JOIN topics t ON t.id=a.topicId WHERE a.studyPlanId<>t.studyPlanId""",
-        """SELECT COUNT(*) FROM annexes a
-            JOIN study_materials m ON m.id=a.materialId
-            WHERE a.studyPlanId<>m.studyPlanId""".trimIndent(),
-        """SELECT COUNT(*) FROM review_items r
-            JOIN questions q ON q.id=r.questionId
-            WHERE r.studyPlanId<>q.studyPlanId""".trimIndent(),
-        """SELECT COUNT(*) FROM review_items r
-            JOIN flashcards f ON f.id=r.flashcardId
-            WHERE r.studyPlanId<>f.studyPlanId""".trimIndent(),
-        """SELECT COUNT(*) FROM review_items r
-            JOIN error_entries e ON e.id=r.errorEntryId
-            WHERE r.studyPlanId<>e.studyPlanId""".trimIndent(),
-    )
-    return checks.sumOf { sql -> singleLong(sql).coerceAtMost(Int.MAX_VALUE.toLong()).toInt() }
 }

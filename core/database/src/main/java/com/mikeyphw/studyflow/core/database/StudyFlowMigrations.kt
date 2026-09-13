@@ -645,6 +645,16 @@ object StudyFlowMigrations {
     }
 
 
+    val Migration13To14 = object : Migration(13, 14) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // OV04 changes trigger semantics. CREATE TRIGGER IF NOT EXISTS cannot upgrade an
+            // existing database, so validate the modern graph and replace the managed trigger set.
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.reinstall(db)
+        }
+    }
+
+
     val All = arrayOf(
         Migration1To2,
         Migration2To3,
@@ -658,6 +668,7 @@ object StudyFlowMigrations {
         Migration10To11,
         Migration11To12,
         Migration12To13,
+        Migration13To14,
     )
 }
 
