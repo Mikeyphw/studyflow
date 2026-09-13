@@ -19,6 +19,9 @@ object StudyPlanPrivacyPolicy {
         "error_entries",
         "exam_notice_revisions",
         "legislation_evidence_links",
+        "language_review_attempts",
+        "termux_command_requests",
+        "termux_command_results",
     )
 
     private val AllowedSections = setOf(MetadataSection, NotesSection, HistorySection)
@@ -38,13 +41,20 @@ object StudyPlanPrivacyPolicy {
     fun redactedSections(options: StudyPlanExportOptions): Set<String> = buildSet {
         if (options.metadataPrivacyMode) add(MetadataSection)
         if (options.redactNotes) add(NotesSection)
-        if (options.redactHistory || options.mode == StudyPlanExportMode.PRIVATE_STRIPPED) add(HistorySection)
+        if (historyRedacted(options)) add(HistorySection)
     }
 
     fun excludedTableNames(options: StudyPlanExportOptions): Set<String> = buildSet {
         if (options.redactNotes) add("study_notes")
-        if (options.redactHistory || options.mode == StudyPlanExportMode.PRIVATE_STRIPPED) addAll(HistoryTableNames)
+        if (historyRedacted(options)) addAll(HistoryTableNames)
     }
+
+    private fun historyRedacted(options: StudyPlanExportOptions): Boolean =
+        options.redactHistory || options.mode in setOf(
+            StudyPlanExportMode.PRIVATE_STRIPPED,
+            StudyPlanExportMode.STRUCTURE_ONLY,
+            StudyPlanExportMode.TEMPLATE,
+        )
 
     fun sanitizeRoot(row: PortableRow, options: StudyPlanExportOptions): PortableRow {
         var sanitized = row
@@ -73,7 +83,7 @@ object StudyPlanPrivacyPolicy {
         row: PortableRow,
         options: StudyPlanExportOptions,
     ): PortableRow {
-        if (!options.redactHistory && options.mode != StudyPlanExportMode.PRIVATE_STRIPPED) return row
+        if (!historyRedacted(options)) return row
         return when (tableName) {
             "subjects" -> row.withValues(
                 "progressPercent" to integer(0),
@@ -97,6 +107,22 @@ object StudyPlanPrivacyPolicy {
             "study_goals" -> row.withValues(
                 "currentValue" to real(0.0),
                 "completedAtEpochMillis" to nullValue(),
+            )
+            "legislation_provisions" -> row.withValues(
+                "read" to integer(0),
+                "important" to integer(0),
+            )
+            "study_cycles" -> row.withValues("currentItemId" to nullValue())
+            "programming_course_profiles" -> row.withValues(
+                "repositoryUri" to nullValue(),
+                "workspaceRelativePath" to text("course"),
+            )
+            "termux_runtime_preferences" -> row.withValues(
+                "enabled" to integer(0),
+                "workspaceRoot" to text("~/studyflow/courses"),
+                "defaultRunCommand" to nullValue(),
+                "defaultTestCommand" to nullValue(),
+                "allowedCommandTemplatesJson" to text("[]"),
             )
             else -> row
         }
@@ -206,6 +232,26 @@ object StudyPlanPrivacyPolicy {
         tables["study_goals"]?.rows.orEmpty().forEach { row ->
             require(row.isZero("currentValue") && row.isNull("completedAtEpochMillis")) {
                 "Goal progress remains in a history-redacted package."
+            }
+        }
+        tables["legislation_provisions"]?.rows.orEmpty().forEach { row ->
+            require(row.isZero("read") && row.isZero("important")) {
+                "Legislation reading state remains in a history-redacted package."
+            }
+        }
+        tables["study_cycles"]?.rows.orEmpty().forEach { row ->
+            require(row.isNull("currentItemId")) { "Study-cycle progress remains in a history-redacted package." }
+        }
+        tables["programming_course_profiles"]?.rows.orEmpty().forEach { row ->
+            require(row.isNull("repositoryUri") && row.textValue("workspaceRelativePath") == "course") {
+                "Programming workspace identity remains in a history-redacted package."
+            }
+        }
+        tables["termux_runtime_preferences"]?.rows.orEmpty().forEach { row ->
+            require(row.isZero("enabled") && row.textValue("workspaceRoot") == "~/studyflow/courses" &&
+                row.isNull("defaultRunCommand") && row.isNull("defaultTestCommand") &&
+                row.textValue("allowedCommandTemplatesJson") == "[]") {
+                "Termux runtime state remains in a history-redacted package."
             }
         }
     }

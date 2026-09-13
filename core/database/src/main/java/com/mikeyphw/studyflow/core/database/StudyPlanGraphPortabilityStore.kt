@@ -16,6 +16,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportCompatibility
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageManifest
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePayload
+import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePurpose
 import com.mikeyphw.studyflow.core.portability.StudyPlanPrivacyPolicy
 import java.util.UUID
 
@@ -27,6 +28,7 @@ class StudyPlanGraphPortabilityStore(
         options: StudyPlanExportOptions,
         applicationVersion: String,
         exportedAtEpochMillis: Long,
+        packagePurpose: StudyPlanPackagePurpose = StudyPlanPackagePurpose.PORTABLE,
     ): StudyPlanPackagePayload = roomDatabase.withTransaction {
         val database = roomDatabase.openHelper.writableDatabase
         val root = queryRows(database, RootSpec, planId)
@@ -36,7 +38,8 @@ class StudyPlanGraphPortabilityStore(
         val selectedSpecs = selectedSpecs(options)
         val tables = buildList {
             val rootRows = root.map { row ->
-                StudyPlanPrivacyPolicy.sanitizeRoot(row, options).let { sanitized ->
+                (if (packagePurpose == StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT) row
+                else StudyPlanPrivacyPolicy.sanitizeRoot(row, options)).let { sanitized ->
                     if (options.metadataPrivacyMode) {
                         sanitized.withValues("id" to text(exportedPlanId))
                     } else {
@@ -47,15 +50,16 @@ class StudyPlanGraphPortabilityStore(
             add(PortableTable(RootSpec.tableName, rootRows))
             selectedSpecs.forEach { spec ->
                 val sourceRows = queryRows(database, spec, planId).filter { row ->
-                    spec.tableName != "annexes" || row.values["storageMode"]?.value == "IMPORTED_COPY"
+                    packagePurpose == StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT ||
+                        spec.tableName != "annexes" || row.values["storageMode"]?.value == "IMPORTED_COPY"
                 }
                 val rows = sourceRows.map { row ->
-                    val privacySanitized = StudyPlanPrivacyPolicy.sanitizeRow(spec.tableName, row, options)
-                    val sanitized = if (spec.tableName == "annexes") {
-                        sanitizeAnnex(privacySanitized, metadataPrivacyMode = options.metadataPrivacyMode)
-                    } else {
-                        privacySanitized
-                    }
+                    val privacySanitized = if (packagePurpose == StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT) row
+                    else StudyPlanPrivacyPolicy.sanitizeRow(spec.tableName, row, options)
+                    val sanitized = if (spec.tableName == "annexes" &&
+                        packagePurpose == StudyPlanPackagePurpose.PORTABLE
+                    ) sanitizeAnnex(privacySanitized, metadataPrivacyMode = options.metadataPrivacyMode)
+                    else privacySanitized
                     if (options.metadataPrivacyMode) {
                         privatizeIdentifiers(
                             row = sanitized,
@@ -91,6 +95,7 @@ class StudyPlanGraphPortabilityStore(
                 } else {
                     planName
                 },
+                packagePurpose = packagePurpose,
                 exportMode = options.mode,
                 includesPrivateHistory = options.mode == StudyPlanExportMode.FULL && !options.redactHistory,
                 includesAnnexMetadata = options.includeAnnexMetadata &&
@@ -122,8 +127,14 @@ class StudyPlanGraphPortabilityStore(
         }
         val tableMap = payload.tables.associateBy { it.name }
         val expectedTables = expectedTableNames(payload.manifest)
-        require(tableMap.keys == expectedTables) {
-            "Study Plan package table inventory does not match its declared export mode."
+        if (payload.manifest.schemaVersion == 1) {
+            require(RootSpec.tableName in tableMap && tableMap.keys.all { it in expectedTables }) {
+                "Legacy Study Plan package contains an incompatible table inventory."
+            }
+        } else {
+            require(tableMap.keys == expectedTables) {
+                "Study Plan package table inventory does not match its declared export mode."
+            }
         }
         val counts = payload.tables.associate { it.name to it.rows.size }
         require(counts == payload.manifest.tableRowCounts) {
@@ -138,8 +149,10 @@ class StudyPlanGraphPortabilityStore(
         supportedSpecs.forEach { (tableName, spec) ->
             tableMap[tableName]?.rows.orEmpty().forEach { row ->
                 validateColumns(spec, row)
-                require(row.values["studyPlanId"]?.value == payload.manifest.sourceStudyPlanId) {
-                    "Study Plan package row in $tableName belongs to a different Study Plan."
+                if ("studyPlanId" in spec.columns) {
+                    require(row.values["studyPlanId"]?.value == payload.manifest.sourceStudyPlanId) {
+                        "Study Plan package row in $tableName belongs to a different Study Plan."
+                    }
                 }
                 if (payload.manifest.metadataPrivacyMode) {
                     spec.remappedIdentifierColumns.forEach { column ->
@@ -153,6 +166,27 @@ class StudyPlanGraphPortabilityStore(
         }
         validateRelationalOwnership(payload, tableMap)
         return counts.values.sum()
+    }
+
+    data class ImportProjection(
+        val payload: StudyPlanPackagePayload,
+        val ignoredRowsByTable: Map<String, Int>,
+    )
+
+    suspend fun projectPayloadForImport(
+        payload: StudyPlanPackagePayload,
+        strategy: StudyPlanImportStrategy,
+        targetPlanId: String,
+        importedAtEpochMillis: Long,
+        importToken: String = "dry-run",
+    ): ImportProjection {
+        validatePayload(payload)
+        return roomDatabase.withTransaction {
+            buildImportProjection(
+                roomDatabase.openHelper.writableDatabase, payload, strategy, targetPlanId,
+                importedAtEpochMillis, importToken,
+            )
+        }
     }
 
     suspend fun importPayload(
@@ -170,57 +204,116 @@ class StudyPlanGraphPortabilityStore(
                 StudyPlanImportStrategy.CREATE_AS_NEW -> require(!exists) {
                     "A Study Plan with id $targetPlanId already exists."
                 }
-                StudyPlanImportStrategy.REPLACE_EXISTING,
-                StudyPlanImportStrategy.MERGE_COMPATIBLE,
-                -> require(exists) { "Study Plan $targetPlanId does not exist." }
+                StudyPlanImportStrategy.REPLACE_EXISTING, StudyPlanImportStrategy.MERGE_COMPATIBLE ->
+                    require(exists) { "Study Plan $targetPlanId does not exist." }
             }
-
-            if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
-                clearPlanForReplacement(database, targetPlanId)
-            }
-
-            val importToken = UUID.randomUUID().toString()
-            val prefix = if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE) {
-                "$targetPlanId:import:$importToken"
-            } else {
-                targetPlanId
-            }
-            val sourcePlanId = payload.manifest.sourceStudyPlanId
-            var importedRows = 0
-
-            val tableMap = payload.tables.associateBy { it.name }
-            val root = tableMap.getValue(RootSpec.tableName).rows.single()
-            if (strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE) {
-                val remappedRoot = remapRoot(
-                    row = root,
-                    targetPlanId = targetPlanId,
-                    exportMode = payload.manifest.exportMode,
-                    now = importedAtEpochMillis,
-                )
-                if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) {
-                    updateRoot(database, remappedRoot, targetPlanId)
-                } else {
-                    insertRow(database = database, spec = RootSpec, row = remappedRoot)
+            if (payload.manifest.packagePurpose == StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT) {
+                require(strategy == StudyPlanImportStrategy.REPLACE_EXISTING &&
+                    payload.manifest.sourceStudyPlanId == targetPlanId) {
+                    "Point-in-time snapshots may only replace their original Study Plan."
                 }
+            }
+            val projection = buildImportProjection(
+                database, payload, strategy, targetPlanId, importedAtEpochMillis, UUID.randomUUID().toString(),
+            )
+            if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) clearPlanForReplacement(database, targetPlanId)
+            val tables = projection.payload.tables.associateBy(PortableTable::name)
+            var importedRows = 0
+            if (strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE) {
+                val root = tables.getValue(RootSpec.tableName).rows.single()
+                if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) updateRoot(database, root, targetPlanId)
+                else insertRow(database, RootSpec, root)
                 importedRows++
             }
-
-            StudyPlanGraphDuplicator.PortabilityTableSpecs
-                .forEach { spec ->
-                    if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE &&
-                        spec.tableName in StudyPlanImportCompatibility.MergeSkippedTables
-                    ) return@forEach
-                    tableMap[spec.tableName].orEmptyRows().forEach { row ->
-                        insertRow(
-                            database,
-                            spec,
-                            remapChild(row, spec, sourcePlanId, targetPlanId, prefix),
-                        )
-                        importedRows++
-                    }
+            StudyPlanGraphDuplicator.PortabilityTableSpecs.forEach { spec ->
+                tables[spec.tableName].orEmptyRows().forEach { row ->
+                    insertRow(database, spec, row); importedRows++
                 }
+            }
             beforeCommit()
             importedRows
+        }
+    }
+
+    private fun buildImportProjection(
+        database: SupportSQLiteDatabase,
+        payload: StudyPlanPackagePayload,
+        strategy: StudyPlanImportStrategy,
+        targetPlanId: String,
+        importedAtEpochMillis: Long,
+        importToken: String,
+    ): ImportProjection {
+        val exactSnapshot = payload.manifest.packagePurpose == StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT
+        val sourcePlanId = payload.manifest.sourceStudyPlanId
+        val prefix = if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE)
+            "$targetPlanId:import:$importToken" else targetPlanId
+        val tableMap = payload.tables.associateBy(PortableTable::name)
+        val ignored = linkedMapOf<String, Int>()
+        if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE) ignored[RootSpec.tableName] = 1
+        val referenceOverrides = if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE)
+            mergeSingletonReferenceOverrides(database, tableMap, targetPlanId, ignored) else emptyMap()
+        val privacy = StudyPlanExportOptions(
+            mode = payload.manifest.exportMode,
+            includeAnnexMetadata = payload.manifest.includesAnnexMetadata,
+            includeAnnexPayloads = payload.manifest.includesAnnexPayloads,
+            metadataPrivacyMode = payload.manifest.metadataPrivacyMode,
+            redactNotes = StudyPlanPrivacyPolicy.NotesSection in payload.manifest.redactedSections,
+            redactHistory = StudyPlanPrivacyPolicy.HistorySection in payload.manifest.redactedSections,
+        )
+        val payloadAnnexIds = payload.manifest.annexPayloads.mapTo(hashSetOf()) { it.annexId }
+        val projectedTables = buildList {
+            val sourceRoot = tableMap.getValue(RootSpec.tableName).rows.single()
+            val root = if (exactSnapshot) sourceRoot else remapRoot(
+                StudyPlanPrivacyPolicy.sanitizeRoot(sourceRoot, privacy), targetPlanId,
+                payload.manifest.exportMode, importedAtEpochMillis,
+            )
+            add(PortableTable(RootSpec.tableName, listOf(root)))
+            StudyPlanGraphDuplicator.PortabilityTableSpecs.forEach { spec ->
+                val rows = buildList {
+                    tableMap[spec.tableName].orEmptyRows().forEach { sourceRow ->
+                        if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE &&
+                            spec.tableName in StudyPlanImportCompatibility.MergeSingletonTables &&
+                            (ignored[spec.tableName] ?: 0) > 0
+                        ) return@forEach
+                        if (!exactSnapshot && spec.tableName == "annexes" &&
+                            sourceRow.values["id"]?.value !in payloadAnnexIds
+                        ) {
+                            ignored[spec.tableName] = (ignored[spec.tableName] ?: 0) + 1
+                            return@forEach
+                        }
+                        add(if (exactSnapshot) sourceRow else remapChild(
+                            StudyPlanPrivacyPolicy.sanitizeRow(spec.tableName, sourceRow, privacy),
+                            spec, sourcePlanId, targetPlanId, prefix, referenceOverrides,
+                        ))
+                    }
+                }
+                add(PortableTable(spec.tableName, rows))
+            }
+        }
+        val projectedManifest = payload.manifest.copy(
+            sourceStudyPlanId = targetPlanId,
+            tableRowCounts = projectedTables.associate { it.name to it.rows.size },
+        )
+        return ImportProjection(payload.copy(manifest = projectedManifest, tables = projectedTables), ignored)
+    }
+
+    private fun mergeSingletonReferenceOverrides(
+        database: SupportSQLiteDatabase,
+        tables: Map<String, PortableTable>,
+        targetPlanId: String,
+        ignored: MutableMap<String, Int>,
+    ): Map<String, String> = buildMap {
+        StudyPlanImportCompatibility.MergeSingletonTables.forEach { tableName ->
+            val spec = StudyPlanGraphDuplicator.PortabilityTableSpecs.firstOrNull { it.tableName == tableName }
+                ?: return@forEach
+            val incoming = tables[tableName]?.rows.orEmpty()
+            if (incoming.isEmpty()) return@forEach
+            val existing = queryRows(database, spec, targetPlanId).singleOrNull() ?: return@forEach
+            ignored[tableName] = incoming.size
+            if ("id" in spec.columns) {
+                val existingId = existing.values["id"]?.value ?: return@forEach
+                incoming.forEach { row -> row.values["id"]?.value?.let { sourceId -> put(sourceId, existingId) } }
+            }
         }
     }
 
@@ -362,14 +455,16 @@ class StudyPlanGraphPortabilityStore(
             requireTopicSubjectConsistency("study_goals", row)
         }
         rows("annexes").forEach { row ->
-            require(row.values["storageMode"]?.value == "IMPORTED_COPY") {
-                "Portable annex metadata may only describe app-owned imported copies."
-            }
-            require(row.values["storageReference"]?.value.orEmpty().isBlank()) {
-                "Portable annex metadata must not contain a device-local storage path."
-            }
-            require(row.values["persistedPermission"]?.value in setOf("0", null)) {
-                "Portable annex metadata must not claim a device-local persisted URI grant."
+            if (payload.manifest.packagePurpose == StudyPlanPackagePurpose.PORTABLE) {
+                require(row.values["storageMode"]?.value == "IMPORTED_COPY") {
+                    "Portable annex metadata may only describe app-owned imported copies."
+                }
+                require(row.values["storageReference"]?.value.orEmpty().isBlank()) {
+                    "Portable annex metadata must not contain a device-local storage path."
+                }
+                require(row.values["persistedPermission"]?.value in setOf("0", null)) {
+                    "Portable annex metadata must not claim a device-local persisted URI grant."
+                }
             }
             requireReference("annexes", row, "subjectId", "subjects")
             requireReference("annexes", row, "topicId", "topics")
@@ -428,6 +523,26 @@ class StudyPlanGraphPortabilityStore(
             requireReference("mini_projects", row, "topicId", "topics")
             requireTopicSubjectConsistency("mini_projects", row)
         }
+        rows("termux_command_requests").forEach { row ->
+            requireReference("termux_command_requests", row, "exerciseId", "coding_exercises")
+        }
+        rows("termux_command_results").forEach { row ->
+            requireReference("termux_command_results", row, "requestId", "termux_command_requests", required = true)
+        }
+        rows("language_expressions").forEach { row ->
+            requireReference("language_expressions", row, "deckId", "language_deck_profiles", required = true)
+        }
+        rows("idiom_cards").forEach { row ->
+            requireReference("idiom_cards", row, "expressionId", "language_expressions", required = true)
+        }
+        rows("vocabulary_cards").forEach { row ->
+            requireReference("vocabulary_cards", row, "expressionId", "language_expressions", required = true)
+        }
+        rows("language_review_attempts").forEach { row ->
+            requireReference("language_review_attempts", row, "expressionId", "language_expressions", required = true)
+            requireReference("language_review_attempts", row, "idiomCardId", "idiom_cards")
+            requireReference("language_review_attempts", row, "reviewItemId", "review_items")
+        }
 
         val questionIds = idsByTable["questions"].orEmpty()
         listOf("study_tests", "mock_exams").forEach { tableName ->
@@ -441,11 +556,13 @@ class StudyPlanGraphPortabilityStore(
             }
         }
 
-        require(rows("planned_activities").none { it.values["status"]?.value == "IN_PROGRESS" }) {
-            "Study Plan packages cannot capture an in-progress activity; finish or cancel the active session first."
-        }
-        require(rows("study_sessions").none { it.values["status"]?.value in setOf("RUNNING", "PAUSED") }) {
-            "Study Plan packages cannot capture a live Study Session; finish or cancel it first."
+        if (payload.manifest.packagePurpose == StudyPlanPackagePurpose.PORTABLE) {
+            require(rows("planned_activities").none { it.values["status"]?.value == "IN_PROGRESS" }) {
+                "Portable Study Plan packages cannot capture an in-progress activity."
+            }
+            require(rows("study_sessions").none { it.values["status"]?.value in setOf("RUNNING", "PAUSED") }) {
+                "Portable Study Plan packages cannot capture a live Study Session."
+            }
         }
 
         val manifestAnnexIds = payload.manifest.annexPayloads.map(PortableAnnexPayload::annexId).toSet()
@@ -509,9 +626,9 @@ class StudyPlanGraphPortabilityStore(
         spec: StudyPlanGraphDuplicator.TableSpec,
         planId: String,
     ): List<PortableRow> {
-        val identityColumn = if (spec.tableName == RootSpec.tableName) "id" else "studyPlanId"
+        val predicate = if (spec.tableName == RootSpec.tableName) "`id` = ?" else spec.sourcePlanPredicate
         return database.query(
-            "SELECT * FROM `${spec.tableName}` WHERE `$identityColumn` = ?",
+            "SELECT * FROM `${spec.tableName}` WHERE $predicate",
             arrayOf(planId),
         ).use { cursor -> buildList { while (cursor.moveToNext()) add(cursor.toPortableRow()) } }
     }
@@ -542,7 +659,10 @@ class StudyPlanGraphPortabilityStore(
         now: Long,
     ): PortableRow = row.withValues(
         "id" to text(targetPlanId),
-        "status" to text(if (exportMode == StudyPlanExportMode.TEMPLATE) "DRAFT" else "PAUSED"),
+        "status" to text(
+            if (exportMode in setOf(StudyPlanExportMode.TEMPLATE, StudyPlanExportMode.STRUCTURE_ONLY)) "DRAFT"
+            else "PAUSED",
+        ),
         "createdAtEpochMillis" to integer(now),
         "updatedAtEpochMillis" to integer(now),
         "trashedAtEpochMillis" to PortableValue(PortableValueType.NULL),
@@ -554,14 +674,15 @@ class StudyPlanGraphPortabilityStore(
         sourcePlanId: String,
         targetPlanId: String,
         prefix: String,
+        referenceOverrides: Map<String, String> = emptyMap(),
     ): PortableRow {
         val values = row.values.toMutableMap()
-        values["studyPlanId"] = text(targetPlanId)
+        if ("studyPlanId" in spec.columns) values["studyPlanId"] = text(targetPlanId)
         spec.remappedIdentifierColumns.forEach { column ->
             val original = values[column] ?: return@forEach
             if (original.type != PortableValueType.NULL) {
                 val raw = original.value.orEmpty()
-                values[column] = text(if (raw == sourcePlanId) targetPlanId else "$prefix:$raw")
+                values[column] = text(referenceOverrides[raw] ?: if (raw == sourcePlanId) targetPlanId else "$prefix:$raw")
             }
         }
         return PortableRow(values).remapPracticeConfiguration(spec.tableName) { rawQuestionId ->
@@ -571,7 +692,7 @@ class StudyPlanGraphPortabilityStore(
 
     private fun clearPlanForReplacement(database: SupportSQLiteDatabase, planId: String) {
         StudyPlanGraphDuplicator.PortabilityTableSpecs.asReversed()
-            .forEach { spec -> database.delete(spec.tableName, "studyPlanId = ?", arrayOf(planId)) }
+            .forEach { spec -> database.delete(spec.tableName, spec.sourcePlanPredicate, arrayOf(planId)) }
     }
 
     private fun updateRoot(
@@ -665,7 +786,7 @@ class StudyPlanGraphPortabilityStore(
         exportedPlanId: String,
     ): PortableRow {
         val privateValues = row.values.toMutableMap()
-        privateValues["studyPlanId"] = text(exportedPlanId)
+        if ("studyPlanId" in spec.columns) privateValues["studyPlanId"] = text(exportedPlanId)
         spec.remappedIdentifierColumns.forEach { column ->
             val current = privateValues[column] ?: return@forEach
             val rawIdentifier = current.value ?: return@forEach

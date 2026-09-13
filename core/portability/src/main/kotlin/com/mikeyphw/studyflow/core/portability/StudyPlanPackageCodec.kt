@@ -30,6 +30,9 @@ class StudyPlanPackageCodec(
     fun writeArchive(archive: StudyPlanPackageArchive, output: OutputStream) {
         val payload = archive.payload
         validateManifest(payload.manifest)
+        if (payload.manifest.schemaVersion != StudyPlanPackageSchemaVersion) {
+            throw StudyPlanPackageException("New Study Plan packages must use schema $StudyPlanPackageSchemaVersion.")
+        }
         StudyPlanPrivacyPolicy.validatePayload(payload)
         val declaredPayloads = payload.manifest.annexPayloads.associateBy { it.entryName }
         val sourceEntries = archive.annexPayloadBytes.keys + archive.annexPayloadStreams.keys
@@ -348,14 +351,23 @@ class StudyPlanPackageCodec(
         if (manifest.format != StudyPlanPackageFormat) {
             throw StudyPlanPackageException("Unsupported Study Plan package format.")
         }
-        if (manifest.schemaVersion != StudyPlanPackageSchemaVersion) {
+        if (manifest.schemaVersion !in StudyPlanPackageMinimumReadableSchemaVersion..StudyPlanPackageSchemaVersion) {
             throw StudyPlanPackageException(
-                "Unsupported Study Plan package schema ${manifest.schemaVersion}; " +
-                    "expected $StudyPlanPackageSchemaVersion.",
+                "Unsupported Study Plan package schema ${manifest.schemaVersion}; supported range is " +
+                    "$StudyPlanPackageMinimumReadableSchemaVersion..$StudyPlanPackageSchemaVersion.",
             )
         }
         if (manifest.applicationId != "com.mikeyphw.studyflow" || manifest.applicationVersion.isBlank()) {
             throw StudyPlanPackageException("Study Plan package application identity is invalid.")
+        }
+        if (manifest.packagePurpose == StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT &&
+            (manifest.schemaVersion != StudyPlanPackageSchemaVersion ||
+                manifest.exportMode != StudyPlanExportMode.FULL || manifest.metadataPrivacyMode ||
+                manifest.redactedSections.isNotEmpty() || !manifest.includesAnnexMetadata)
+        ) {
+            throw StudyPlanPackageException(
+                "Point-in-time snapshots require schema 2 FULL unredacted graph metadata.",
+            )
         }
         if (manifest.sourceStudyPlanId.isBlank() || manifest.displayName.isBlank()) {
             throw StudyPlanPackageException("Study Plan package identity is incomplete.")

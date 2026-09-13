@@ -901,3 +901,10 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Added a dedicated `studyflow_tv_release` Devtool target so expensive optimized/package/release checks no longer run in the routine TV target.
 - Migrated `.devtool.toml` to canonical workspace/runner/platform/device-policy configuration and added safe workspace groups/scheduling.
 - Added `verifyStudyFlowGradleTaskGraphOptimizationV4` to prevent task-graph duplication and validation-truth regressions.
+
+## OV06 — Portable package semantics & restore modes
+
+- Expanded FULL portability and REPLACE semantics to the complete modern Study Plan graph, including parent-scoped language and Termux data.
+- Added schema-2 point-in-time snapshot purpose for exact safety rollback without portable-ID/status/timestamp rewriting.
+- Hardened annex import, STRUCTURE/TEMPLATE privacy, MERGE parent rebinding, and dry-run parity with the production import projector.
+- Versioned portable packages to schema 2 with an explicit readable v1 compatibility path and strict v2/future-schema behavior.

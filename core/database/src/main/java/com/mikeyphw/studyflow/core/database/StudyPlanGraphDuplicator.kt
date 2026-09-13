@@ -441,20 +441,9 @@ class StudyPlanGraphDuplicator(
             remap = setOf("id", "subjectId", "topicId", "materialId"),
         )
 
-        private val DuplicationOnlyTableNames = setOf(
-            "termux_command_requests",
-            "termux_command_results",
-            "language_deck_profiles",
-            "language_expressions",
-            "idiom_cards",
-            "vocabulary_cards",
-            "language_review_attempts",
-        )
+        // OV06: FULL portability covers the complete persisted plan graph, including parent-scoped rows.
+        val PortabilityTableSpecs: List<TableSpec> = TableSpecs + AnnexSpec
 
-        // OV06 owns portable-package graph expansion. Keep OV05's new parent-scoped duplication rows
-        // out of the legacy portability iterator until that overlay teaches import/export the same scope rules.
-        val PortabilityTableSpecs: List<TableSpec> =
-            TableSpecs.filterNot { it.tableName in DuplicationOnlyTableNames } + AnnexSpec
 
         private fun table(
             tableName: String,

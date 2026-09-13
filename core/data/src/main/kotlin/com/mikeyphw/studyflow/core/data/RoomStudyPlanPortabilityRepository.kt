@@ -27,6 +27,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageArchive
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackageCodec
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePayload
+import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePurpose
 import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePasswordRequiredException
 import com.mikeyphw.studyflow.core.portability.StudyPlanPrivacyPolicy
 import com.mikeyphw.studyflow.core.portability.StudyPlanPortabilityWarning
@@ -149,6 +150,9 @@ internal class RoomStudyPlanPortabilityRepository(
         return try {
             val archive = decoded.archive
             graphStore.validatePayload(archive.payload)
+            require(archive.payload.manifest.packagePurpose == StudyPlanPackagePurpose.PORTABLE) {
+                "Point-in-time safety snapshots may only be restored from the snapshot workflow."
+            }
             require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.payload.manifest
                 .annexPayloads.isEmpty()) {
                 "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
@@ -175,11 +179,19 @@ internal class RoomStudyPlanPortabilityRepository(
                     exportedAtEpochMillis = clock(),
                 )
             }
-            val tableDiffs = StudyPlanImportDiffEngine.diff(
-                incoming = archive.payload,
+            val previewTargetId = targetPlanId?.value ?: "dry-run:new:${archive.payload.manifest.sourceStudyPlanId}"
+            val projected = graphStore.projectPayloadForImport(
+                payload = archive.payload,
+                strategy = strategy,
+                targetPlanId = previewTargetId,
+                importedAtEpochMillis = clock(),
+                importToken = "dry-run",
+            )
+            val tableDiffs = StudyPlanImportDiffEngine.diffProjected(
+                incoming = projected.payload,
                 current = currentPayload,
                 strategy = strategy,
-                targetStudyPlanId = targetPlanId?.value,
+                ignoredRowsByTable = projected.ignoredRowsByTable,
             )
             StudyPlanRestoreDryRun(
                 strategy = strategy,
@@ -198,7 +210,9 @@ internal class RoomStudyPlanPortabilityRepository(
                         )
                     }
                 },
-                databaseRowsChanged = 0,
+                databaseRowsChanged = tableDiffs.sumOf { diff ->
+                    diff.addedRows + diff.removedRows + diff.changedRows
+                },
                 tableDiffs = tableDiffs,
                 transactionalRollbackProtected = true,
             )
@@ -221,6 +235,9 @@ internal class RoomStudyPlanPortabilityRepository(
         try {
             val archive = decoded.archive
             graphStore.validatePayload(archive.payload)
+            require(archive.payload.manifest.packagePurpose == StudyPlanPackagePurpose.PORTABLE) {
+                "Point-in-time safety snapshots may only be restored from the snapshot workflow."
+            }
             require(strategy != StudyPlanImportStrategy.MERGE_COMPATIBLE || archive.payload.manifest
                 .annexPayloads.isEmpty()) {
             "Annex payload import does not support merge yet. Import as new or replace an existing Study Plan."
@@ -320,6 +337,12 @@ internal class RoomStudyPlanPortabilityRepository(
             }
             try {
                 graphStore.validatePayload(archive.payload)
+                require(archive.payload.manifest.packagePurpose == StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT) {
+                    "Stored snapshot is not a point-in-time StudyFlow snapshot."
+                }
+                require(archive.payload.manifest.sourceStudyPlanId == snapshot.studyPlanId.value) {
+                    "Stored snapshot belongs to a different Study Plan."
+                }
                 val staged = stageAnnexPayloads(snapshot.studyPlanId, archive)
                 val oldAnnexes = libraryDao.findAnnexes(snapshot.studyPlanId.value)
                 try {
@@ -336,10 +359,7 @@ internal class RoomStudyPlanPortabilityRepository(
                         importedAtEpochMillis = clock(),
                         beforeCommit = {
                             commitStagedAnnexPayloads(snapshot.studyPlanId, staged)
-                            if (supportDao.findPlanSettings(snapshot.studyPlanId.value) == null) {
-                                supportDao.upsertPlanSettings(StudyPlanSettings.defaults(snapshot
-                                    .studyPlanId).asEntity())
-                            }
+                            // Exact snapshots preserve whether settings existed at capture time.
                             restoreFailureHook(RestoreFailurePoint.BEFORE_DATABASE_COMMIT)
                         },
                     )
@@ -556,7 +576,9 @@ internal class RoomStudyPlanPortabilityRepository(
         val entries = mutableListOf<StagedAnnexEntry>()
         try {
             archive.payload.manifest.annexPayloads.forEach { payload ->
-                val importedAnnexId = "${planId.value}:${payload.annexId}"
+                val importedAnnexId = if (archive.payload.manifest.packagePurpose ==
+                    StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT
+                ) payload.annexId else "${planId.value}:${payload.annexId}"
                 val stagedFile = File(stagingRoot, "${sanitizeSegment(importedAnnexId)}.bin").canonicalFile
                 require(stagedFile.path.startsWith(stagingRoot.path + File
                     .separator)) { "Unsafe restore staging path." }
@@ -588,9 +610,22 @@ internal class RoomStudyPlanPortabilityRepository(
                     "Annex staged checksum verification failed."
                 }
                 require(stagedFile.length() == payload.byteSize) { "Annex staging write was incomplete." }
-                val directory = annexDirectory(planId.value, importedAnnexId).canonicalFile
-                val destination = File(directory, sanitizeFileName(payload.fileName)).canonicalFile
-                require(destination.path.startsWith(directory.path + File.separator)) { "Unsafe annex restore path." }
+                val snapshotMetadata = archive.payload.tables.firstOrNull { it.name == "annexes" }
+                    ?.rows?.firstOrNull { it.values["id"]?.value == payload.annexId }
+                val destination = if (archive.payload.manifest.packagePurpose ==
+                    StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT
+                ) {
+                    val reference = requireNotNull(snapshotMetadata?.values?.get("storageReference")?.value
+                        ?.takeIf(String::isNotBlank)) {
+                        "Point-in-time annex snapshot is missing its storage reference."
+                    }
+                    resolveAnnexFile(planId.value, reference)
+                } else {
+                    val directory = annexDirectory(planId.value, importedAnnexId).canonicalFile
+                    File(directory, sanitizeFileName(payload.fileName)).canonicalFile.also { candidate ->
+                        require(candidate.path.startsWith(directory.path + File.separator)) { "Unsafe annex restore path." }
+                    }
+                }
                 entries += StagedAnnexEntry(
                     annexId = importedAnnexId,
                     temporaryFile = stagedFile,
@@ -600,7 +635,12 @@ internal class RoomStudyPlanPortabilityRepository(
                     checksumSha256 = payload.checksumSha256,
                 )
             }
-            return StagedAnnexRestore(stagingRoot, entries)
+            return StagedAnnexRestore(
+                stagingDirectory = stagingRoot,
+                entries = entries,
+                preserveSnapshotMetadata = archive.payload.manifest.packagePurpose ==
+                    StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT,
+            )
         } catch (error: Throwable) {
             stagingRoot.deleteRecursively()
             throw error
@@ -616,27 +656,43 @@ internal class RoomStudyPlanPortabilityRepository(
                 "Restored annex destination must have a parent directory."
             }
             require(directory.mkdirs() || directory.isDirectory) { "Could not create restored annex directory." }
-            require(!entry.destinationFile.exists()) { "Restored annex destination already exists." }
-            check(entry.temporaryFile.renameTo(entry
-                .destinationFile)) { "Could not atomically place restored annex bytes." }
-            staged.createdFinalFiles += entry.destinationFile
+            if (entry.destinationFile.exists()) {
+                if (entry.destinationFile.length() == entry.byteSize &&
+                    sha256(entry.destinationFile).equals(entry.checksumSha256, ignoreCase = true)
+                ) {
+                    entry.temporaryFile.delete()
+                } else {
+                    val backup = File(staged.stagingDirectory, "backup-${sanitizeSegment(entry.annexId)}.bin")
+                    check(entry.destinationFile.renameTo(backup)) {
+                        "Could not preserve the previous annex bytes before snapshot restore."
+                    }
+                    staged.replacedFinalFiles += entry.destinationFile to backup
+                    check(entry.temporaryFile.renameTo(entry.destinationFile)) {
+                        "Could not atomically replace restored annex bytes."
+                    }
+                    staged.createdFinalFiles += entry.destinationFile
+                }
+            } else {
+                check(entry.temporaryFile.renameTo(entry.destinationFile)) {
+                    "Could not atomically place restored annex bytes."
+                }
+                staged.createdFinalFiles += entry.destinationFile
+            }
             require(entry.destinationFile.length() == entry
                 .byteSize) { "Restored annex byte-size verification failed." }
             require(sha256(entry.destinationFile).equals(entry.checksumSha256, ignoreCase = true)) {
                 "Restored annex checksum verification failed."
             }
-            require(
-                libraryDao.updateAnnexStorage(
-                    planId = planId.value,
-                    annexId = entry.annexId,
-                    storageMode = AnnexStorageMode.IMPORTED_COPY.name,
-                    storageReference = entry.storageReference,
-                    persistedPermission = false,
-                    byteSize = entry.byteSize,
-                    checksumSha256 = entry.checksumSha256,
-                    updatedAtEpochMillis = clock(),
-                ) == 1,
-            ) { "Imported annex metadata could not be bound to its staged payload." }
+            if (!staged.preserveSnapshotMetadata) {
+                require(
+                    libraryDao.updateAnnexStorage(
+                        planId = planId.value, annexId = entry.annexId,
+                        storageMode = AnnexStorageMode.IMPORTED_COPY.name, storageReference = entry.storageReference,
+                        persistedPermission = false, byteSize = entry.byteSize, checksumSha256 = entry.checksumSha256,
+                        updatedAtEpochMillis = clock(),
+                    ) == 1,
+                ) { "Imported annex metadata could not be bound to its staged payload." }
+            }
         }
     }
 
@@ -691,6 +747,7 @@ internal class RoomStudyPlanPortabilityRepository(
             ),
             applicationVersion = applicationVersion,
             exportedAtEpochMillis = clock(),
+            packagePurpose = StudyPlanPackagePurpose.POINT_IN_TIME_SNAPSHOT,
         )
         try {
             val archive = prepareArchive(
@@ -776,10 +833,12 @@ internal class RoomStudyPlanPortabilityRepository(
     )
 
     private class StagedAnnexRestore(
-        private val stagingRoot: File,
+        val stagingDirectory: File,
         val entries: List<StagedAnnexEntry>,
+        val preserveSnapshotMetadata: Boolean,
     ) {
         val createdFinalFiles = mutableListOf<File>()
+        val replacedFinalFiles = mutableListOf<Pair<File, File>>()
         val finalReferences: Set<String> get() = entries.mapTo(linkedSetOf()) { it.storageReference }
         private var committed = false
 
@@ -787,16 +846,16 @@ internal class RoomStudyPlanPortabilityRepository(
 
         fun rollbackCreatedFiles() {
             if (committed) return
-            createdFinalFiles.asReversed().forEach { file ->
+            createdFinalFiles.asReversed().forEach { file -> runCatching { file.delete() } }
+            replacedFinalFiles.asReversed().forEach { (destination, backup) ->
                 runCatching {
-                    file.delete()
-                    file.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
+                    destination.delete(); destination.parentFile?.mkdirs(); backup.renameTo(destination)
                 }
             }
         }
 
         fun cleanupStagingDirectory() {
-            runCatching { stagingRoot.deleteRecursively() }
+            runCatching { stagingDirectory.deleteRecursively() }
         }
     }
 

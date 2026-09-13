@@ -3,9 +3,16 @@ package com.mikeyphw.studyflow.core.portability
 import kotlinx.serialization.Serializable
 
 const val StudyPlanPackageFormat = "com.mikeyphw.studyflow.studyplan"
-const val StudyPlanPackageSchemaVersion = 1
+const val StudyPlanPackageSchemaVersion = 2
+const val StudyPlanPackageMinimumReadableSchemaVersion = 1
 const val StudyPlanPackageMimeType = "application/vnd.studyflow.studyplan+zip"
 const val StudyPlanPackageExtension = ".studyplan"
+
+@Serializable
+enum class StudyPlanPackagePurpose {
+    PORTABLE,
+    POINT_IN_TIME_SNAPSHOT,
+}
 
 @Serializable
 enum class StudyPlanExportMode {
@@ -93,6 +100,7 @@ data class StudyPlanPackageManifest(
     val exportedAtEpochMillis: Long,
     val sourceStudyPlanId: String,
     val displayName: String,
+    val packagePurpose: StudyPlanPackagePurpose = StudyPlanPackagePurpose.PORTABLE,
     val exportMode: StudyPlanExportMode,
     val includesPrivateHistory: Boolean,
     val includesAnnexMetadata: Boolean,

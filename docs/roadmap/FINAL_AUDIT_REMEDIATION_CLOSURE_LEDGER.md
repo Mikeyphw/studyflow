@@ -52,3 +52,16 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S2-07 | 2→3 target-duration normalization + schema-15 trigger replacement align persistence with canonical 5..720 duration | `StudyFlowOv05MigrationCoverageTest.twoToFifteenAcceptsLegacyLongFocusDurationAndPreservesCanonicalTarget` |
 | S2-11 | checked schema 7/8 snapshots and direct sequential 6→7→8→9 migration coverage | `StudyFlowOv05MigrationCoverageTest.sixToNineHasCheckedIntermediateSchemasAndPreservesTermuxAndLanguageRows` |
 | S2-13 | logical snapshot excludes FTS/internal tables and orders every table by primary key | `StudyFlowDatabaseSnapshotWriterOv05Test` |
+
+## Overlay 6 of 30 — OV06 Portable package semantics & restore modes
+
+| Finding | Closure implementation | Behavioral evidence |
+|---|---|---|
+| S3-01 | FULL inventory now uses the complete portability graph, including parent-scoped language and Termux rows | `StudyPlanPortabilityOv06Test.fullReplaceCoversParentScopedLanguageAndTermuxRows` |
+| S3-02 | REPLACE clears every portability table using each table's canonical ownership predicate in reverse graph order | `StudyPlanPortabilityOv06Test.fullReplaceCoversParentScopedLanguageAndTermuxRows`; OV06 verifier |
+| S3-03 | schema-2 `POINT_IN_TIME_SNAPSHOT` purpose preserves exact identities/state/timestamps/settings/annex metadata and restores only to the source plan | `StudyPlanPortabilityOv06Test.exactSnapshotRestoresRootStateAndTimestamps`; repository restore path |
+| S3-04 | portable annex rows without matching archive payload bytes are ignored before persistence | OV06 projector/verifier; snapshot purpose remains exact |
+| S3-05 | STRUCTURE/TEMPLATE are history-redacted across legislation, cycle cursor, programming workspace, Termux runtime/history and language review state | `StudyPlanOv06SemanticsTest.structureAndTemplateStripProgressAndDeviceState` |
+| S3-06 | MERGE retains only existing singleton parents and rewrites imported child references to the retained canonical IDs | `StudyPlanPortabilityOv06Test.mergeRebindsChildrenToRetainedSingletonParent` |
+| S3-07 | dry-run consumes `projectPayloadForImport` and `diffProjected`, the same ID/reference projection used by production import | `StudyPlanOv06SemanticsTest.projectedDiffConsumesProductionRemappedIds`; repository dry-run path |
+| S3-08 | package schema advances to v2; writers are v2-only; readers accept explicit v1 migration semantics while v2 remains inventory-strict and future versions fail closed | `StudyPlanPortabilityOv06Test.legacyV1MayOmitModernTablesButV2IsStrict`; codec unit/source contracts |

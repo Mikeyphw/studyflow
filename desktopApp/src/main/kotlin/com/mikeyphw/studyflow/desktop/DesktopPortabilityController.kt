@@ -208,7 +208,11 @@ class DesktopPortabilityController(
                 programming?.let { listOf(it.toPortableRow()) }.orEmpty(),
             ),
             PortableTable("termux_runtime_preferences", emptyList()),
-        )
+        ).map { table ->
+            if (table.name == "study_plans") table else table.copy(
+                rows = table.rows.map { row -> StudyPlanPrivacyPolicy.sanitizeRow(table.name, row, options) },
+            )
+        }
         return StudyPlanPackagePayload(
             manifest = StudyPlanPackageManifest(
                 applicationVersion = "desktop-dov20",

@@ -1,241 +1,223 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov05_duplication_migrations_snapshot_determinism_v1",
+  "name": "studyflow_ov06_portable_package_semantics_restore_modes_v1",
   "target": "studyflow_android",
-  "description": "Overlay 5 of 30: close S2-A1, S2-05, S2-06, S2-07, S2-11 and S2-13 by completing Study Plan duplication across practice snapshots, language learning and Termux history; repairing migration compatibility and historical migration coverage; explicitly upgrading session target triggers in schema 15; making logical snapshots deterministic and derived-table safe; and counting reclaimed annex bytes only after successful deletion.",
-  "commit_message": "OV05: complete duplication migrations and snapshot determinism",
+  "description": "Overlay 6 of 30: close S3-01 through S3-08 by completing portable FULL/REPLACE coverage for the modern Study Plan graph, introducing exact point-in-time snapshot rollback semantics, preventing invalid metadata-only annex persistence, stripping personal/runtime state from STRUCTURE_ONLY and TEMPLATE, rebinding MERGE singleton children, making dry-run consume the production import projection, and advancing the package schema to v2 with explicit legacy-v1 compatibility and fail-closed future-version handling.",
+  "commit_message": "OV06: harden portable package semantics and restore modes",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV05: complete duplication migrations and snapshot determinism"
+    "message": "OV06: harden portable package semantics and restore modes"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV05: complete duplication migrations and snapshot determinism"
+      "message": "OV06: harden portable package semantics and restore modes"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively against the supplied StudyFlow snapshot plus OV01 through OV04. Intermediate roadmap overlay: apply with --no-validate, then run scripts/validate_ov05_duplication_migrations_snapshots.sh."
+    "notes": "Built cumulatively against the supplied StudyFlow snapshot plus OV01 through OV05. Intermediate roadmap overlay: apply with --no-validate, then run scripts/validate_ov06_portable_package_semantics.sh."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov05_duplication_migrations_snapshot_determinism_v1",
+    "name": "studyflow_ov06_portable_package_semantics_restore_modes_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov05-duplication",
-        "purpose": "Complete semantic duplication including immutable practice question identities, language graph and parent-scoped Termux history while preserving OV06 ownership of portability expansion.",
+        "id": "ov06-package-schema-privacy",
+        "purpose": "Version portable packages to schema 2, distinguish portable vs exact point-in-time snapshot purpose, preserve a bounded legacy-v1 read path, and strip progress/device identity for STRUCTURE/TEMPLATE exports.",
+        "paths": [
+          "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageModels.kt",
+          "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageCodec.kt",
+          "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPrivacyPolicy.kt",
+          "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanImportCompatibility.kt",
+          "core/portability/src/test/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanOv06SemanticsTest.kt"
+        ]
+      },
+      {
+        "id": "ov06-graph-import-projection",
+        "purpose": "Expand portability to parent-scoped modern tables, clear REPLACE in reverse ownership order, filter metadata-only annex rows, rebind retained MERGE singleton parents, and share production ID projection with dry-run.",
         "paths": [
           "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphDuplicator.kt",
-          "core/database/src/test/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphDuplicatorTest.kt",
-          "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphDuplicationOv05Test.kt"
+          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphPortabilityStore.kt",
+          "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanImportDiffEngine.kt",
+          "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyPlanPortabilityOv06Test.kt"
         ]
       },
       {
-        "id": "ov05-migrations",
-        "purpose": "2\u21923 canonical duration normalization, schema-15 trigger replacement and checked 7/8 historical schemas with direct 6\u21929 coverage.",
+        "id": "ov06-repository-snapshot-desktop",
+        "purpose": "Wire exact safety snapshot capture/restore, annex staging semantics, production dry-run projection and Desktop privacy parity through the repository/controller surfaces.",
         "paths": [
-          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt",
-          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowIntegrity.kt",
-          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt",
-          "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/7.json",
-          "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/8.json",
-          "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/15.json",
-          "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyFlowOv05MigrationCoverageTest.kt"
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanPortabilityRepository.kt",
+          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPortabilityController.kt"
         ]
       },
       {
-        "id": "ov05-snapshot-cleanup",
-        "purpose": "Stable primary-key ordered logical snapshots without FTS/internal derived tables and exact orphan byte reclamation accounting.",
-        "paths": [
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDatabaseSnapshotWriter.kt",
-          "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDatabaseSnapshotWriterOv05Test.kt",
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomAnnexFileStorageRepository.kt",
-          "core/data/src/test/kotlin/com/mikeyphw/studyflow/core/data/AnnexOrphanCleanupAccountingTest.kt"
-        ]
-      },
-      {
-        "id": "ov05-validator-evidence",
-        "purpose": "Closure ledger, implementation documentation, static verifier, Termux-aware validator and changelog.",
+        "id": "ov06-validator-evidence",
+        "purpose": "Record closure of S3-01 through S3-08 and provide a Termux/ADB-aware validator that always compiles instrumentation and executes it when a device is present.",
         "paths": [
           "CHANGELOG.md",
-          "docs/quality/OV05_DUPLICATION_MIGRATIONS_SNAPSHOT_DETERMINISM.md",
+          "docs/quality/OV06_PORTABLE_PACKAGE_SEMANTICS_RESTORE_MODES.md",
           "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "scripts/validate_ov05_duplication_migrations_snapshots.sh",
-          "scripts/verify_ov05_duplication_migrations_snapshots.py"
+          "scripts/validate_ov06_portable_package_semantics.sh",
+          "scripts/verify_ov06_portable_package_semantics.py"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 19,
+    "count": 16,
     "entries": [
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "e92ccbba109c27fb3304f17d60ae62bf1ff1d20e9390748d9e28b96cdfdb43c0",
-        "size": 68715,
+        "sha256": "f5033b31985e142a817e24bd99cde2940d3bf9ff686e1894e6900dcd9d1da547",
+        "size": 69297,
         "source_mode": "0o600",
-        "source_sha256": "5761c8beea99776381a8ea5c03d75fccfad106b4e3f11f8de2252562e50162cc",
-        "source_size": 68254
-      },
-      {
-        "action": "add",
-        "path": "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDatabaseSnapshotWriterOv05Test.kt",
-        "mode": "0o644",
-        "sha256": "fc817c16f918a6870ca1c9477d1583c7df126ee7cfd101c142efc9201100f9d2",
-        "size": 2240
+        "source_sha256": "e92ccbba109c27fb3304f17d60ae62bf1ff1d20e9390748d9e28b96cdfdb43c0",
+        "source_size": 68715
       },
       {
         "action": "modify",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomAnnexFileStorageRepository.kt",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanPortabilityRepository.kt",
         "mode": "0o600",
-        "sha256": "a22e1d10155cb0075b95cfe1f8d3ce428c101740d61e077c38ae6be725a7eeed",
-        "size": 20787,
+        "sha256": "280de3bf3109f81050c55e4f1a04d2824566f7071bf1a0904935256a6936a197",
+        "size": 41227,
         "source_mode": "0o600",
-        "source_sha256": "e6613764fa85990b2cb1bf860a97def1f1c4267c05879cc0445744f88fb317c5",
-        "source_size": 20322
-      },
-      {
-        "action": "modify",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDatabaseSnapshotWriter.kt",
-        "mode": "0o600",
-        "sha256": "5043547ea0ae51cc20a372606134f5228a13ff98081e5951ffa9faf1c6f2c732",
-        "size": 6059,
-        "source_mode": "0o600",
-        "source_sha256": "40851f4ececa7fb170be6a517f16380dbb1bf380ba159d1701aeff30afe07bcc",
-        "source_size": 4785
-      },
-      {
-        "action": "add",
-        "path": "core/data/src/test/kotlin/com/mikeyphw/studyflow/core/data/AnnexOrphanCleanupAccountingTest.kt",
-        "mode": "0o644",
-        "sha256": "e6fdde6eb2b3b8b134f5695bc2d5355b1e7a9f51e0ac2946fa2f13ab7f2a0b79",
-        "size": 917
-      },
-      {
-        "action": "add",
-        "path": "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/15.json",
-        "mode": "0o644",
-        "sha256": "dd6235debdf7a9f7ce8c3325bbfd8124927616a3fa245a1b08a0ff9138798e9b",
-        "size": 181106
-      },
-      {
-        "action": "add",
-        "path": "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/7.json",
-        "mode": "0o644",
-        "sha256": "0c409437e6a7729f9a50279eb1f49a028d3102f275415741ed2fd92dea2e1f0a",
-        "size": 134395
-      },
-      {
-        "action": "add",
-        "path": "core/database/schemas/com.mikeyphw.studyflow.core.database.StudyFlowDatabase/8.json",
-        "mode": "0o644",
-        "sha256": "9f179f295d4bb08746dbd21df0f02a366413081f88a12f03d7f25777983f82ee",
-        "size": 147887
-      },
-      {
-        "action": "add",
-        "path": "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyFlowOv05MigrationCoverageTest.kt",
-        "mode": "0o644",
-        "sha256": "b8340ef1cb0286a050771f926ab2747fa1686e5580f19399da65e3965a727fa0",
-        "size": 7164
-      },
-      {
-        "action": "add",
-        "path": "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphDuplicationOv05Test.kt",
-        "mode": "0o644",
-        "sha256": "d716b3d7b1ca28d772bda4c9e4ef817e467f42e665018513c1386552396046d4",
-        "size": 5769
-      },
-      {
-        "action": "modify",
-        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt",
-        "mode": "0o600",
-        "sha256": "d25a88c057a570aa45a11e61a3309ed56b60fca5210e7a759627984ace415233",
-        "size": 7354,
-        "source_mode": "0o600",
-        "source_sha256": "f2f4c09addfbf5f474085bb25f14876a327876da512b4a827d29d0b0e2aab81b",
-        "source_size": 7354
-      },
-      {
-        "action": "modify",
-        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowIntegrity.kt",
-        "mode": "0o600",
-        "sha256": "bfc0ffa58c66af1c5b089a3364576a768210e56783414a3547fc043c8d776a95",
-        "size": 44944,
-        "source_mode": "0o600",
-        "source_sha256": "3bf0acff47b2fe5097a2aa710839368aa4639e9d0be3850935a08145bbe704d4",
-        "source_size": 44944
-      },
-      {
-        "action": "modify",
-        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt",
-        "mode": "0o600",
-        "sha256": "04db26176d2d6ab35913a78b977c4e6ea9224704a439fc1c8951f9f7b1e59fcd",
-        "size": 31078,
-        "source_mode": "0o600",
-        "source_sha256": "b9e859e72efff4992b2c33e0c2e3ca14ab44cdde8f45f0bb8687f3fbf14413df",
-        "source_size": 30429
+        "source_sha256": "76b25610424601b3a3eefd1c5da2c98c31f366fb6cbd325b98bbaac6afafa27c",
+        "source_size": 37591
       },
       {
         "action": "modify",
         "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphDuplicator.kt",
         "mode": "0o600",
-        "sha256": "dc59e61ac2183de9f0ca506c077c1ae66283278f77eefef497373c9cb8076731",
-        "size": 23514,
+        "sha256": "3daa2e75254f58dc4161301c8490f7b476e788a810e1ae397078edecac7db4c9",
+        "size": 23022,
         "source_mode": "0o600",
-        "source_sha256": "9e9ae601fbd9d556228fcd1f4510aea13a916d5ce7e938f26f1675bdb4a6eaa1",
-        "source_size": 14832
+        "source_sha256": "dc59e61ac2183de9f0ca506c077c1ae66283278f77eefef497373c9cb8076731",
+        "source_size": 23514
       },
       {
         "action": "modify",
-        "path": "core/database/src/test/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphDuplicatorTest.kt",
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyPlanGraphPortabilityStore.kt",
         "mode": "0o600",
-        "sha256": "ca86eff20531562e361e918cc8180ea9dfe7dec050a9ce55010c7b5cdb63dfde",
-        "size": 4710,
+        "sha256": "812824f89cb3120b28597ebd4fe2c33665182d50fafa5063255cf8449b192ff8",
+        "size": 42233,
         "source_mode": "0o600",
-        "source_sha256": "32408ba2c6a3106a0f59ec42ff5ab24d0db7dc46afff0b728363badd996b0f34",
-        "source_size": 3345
+        "source_sha256": "3b1a2fdb40ef9b1c035be7569e2775ca39b1eb0fb3587135c0fd68589367f957",
+        "source_size": 34960
       },
       {
-        "action": "add",
-        "path": "docs/quality/OV05_DUPLICATION_MIGRATIONS_SNAPSHOT_DETERMINISM.md",
-        "mode": "0o644",
-        "sha256": "915f5d0c783d35d691f20f7b13142abbd584171b5d99fe27469aff63fbd3b47b",
-        "size": 1089
+        "action": "modify",
+        "path": "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanImportCompatibility.kt",
+        "mode": "0o600",
+        "sha256": "d4d59e4995355b8df1ba28add08fdeef1539003496d58f186c7f2c3329693ff3",
+        "size": 388,
+        "source_mode": "0o600",
+        "source_sha256": "8186f152332ed9002344f657684641151d56cfc0980ae89a36e9d31c71b7ee38",
+        "source_size": 519
+      },
+      {
+        "action": "modify",
+        "path": "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanImportDiffEngine.kt",
+        "mode": "0o600",
+        "sha256": "2ab4d4d88aa960f781b63c29175bb59b45e1aab85420158c51683b58a3264595",
+        "size": 6976,
+        "source_mode": "0o600",
+        "source_sha256": "977e910be70c6c50e8b5a23f09a4f38064d55ac00ff500b195aaf7b57ee65e6c",
+        "source_size": 4935
+      },
+      {
+        "action": "modify",
+        "path": "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageCodec.kt",
+        "mode": "0o600",
+        "sha256": "0ecda791f4617117228f5b0d30c29bb88b2b213b928313a5a29c01bd2bf516fa",
+        "size": 25979,
+        "source_mode": "0o600",
+        "source_sha256": "c5cdec0a4eae2473eceb6207956726a3c30c5c72c0b5f5ee19923211deed5fa0",
+        "source_size": 25143
+      },
+      {
+        "action": "modify",
+        "path": "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageModels.kt",
+        "mode": "0o600",
+        "sha256": "7db59e748aa0bc3d06facce2d068247ddbbb33508a6c2d3f3d774f825eef86f4",
+        "size": 6090,
+        "source_mode": "0o600",
+        "source_sha256": "7e6caaca6fb4ca3a38b0d743278c6904c3e804b1193db8482963558c99523765",
+        "source_size": 5851
+      },
+      {
+        "action": "modify",
+        "path": "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPrivacyPolicy.kt",
+        "mode": "0o600",
+        "sha256": "03b0a31095ec5ff03e4ddbc1f0cf562699f54f94a5bdd04cca44cb218aa50e18",
+        "size": 12415,
+        "source_mode": "0o600",
+        "source_sha256": "9fd40be25c16313484bfe428595335de95c49eae3950c21ee4eecbdb64de6611",
+        "source_size": 10253
+      },
+      {
+        "action": "modify",
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPortabilityController.kt",
+        "mode": "0o600",
+        "sha256": "bc69d5fb8290a231e9df139ccd45c90613fcd697546348bc48faf1f7b204d4ef",
+        "size": 39847,
+        "source_mode": "0o600",
+        "source_sha256": "6f80dbaca8dd805c3f357b968cfb5554415d3b9f6653bc48f8e0bc465cd147c4",
+        "source_size": 39629
       },
       {
         "action": "modify",
         "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "b5732dc56ec29a9321c6705aca64e7aa1e2fd0a4e488c00bf577fd6facfda933",
-        "size": 5774,
+        "sha256": "5d046d27187c0d344a512b942be6355f1c09e482984540e735afa2b213aa077f",
+        "size": 7721,
         "source_mode": "0o644",
-        "source_sha256": "dbd2e9b262672cafe622b5efd118d52ab7ab328279262206abb44aff5e4df3db",
-        "source_size": 4576
+        "source_sha256": "b5732dc56ec29a9321c6705aca64e7aa1e2fd0a4e488c00bf577fd6facfda933",
+        "source_size": 5774
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov05_duplication_migrations_snapshots.sh",
-        "mode": "0o755",
-        "sha256": "a230668b6168563e75ab978712a8fc70948285e246047b614e19a5d5e28c5a7a",
-        "size": 1112
+        "path": "core/database/src/androidTest/java/com/mikeyphw/studyflow/core/database/StudyPlanPortabilityOv06Test.kt",
+        "mode": "0o644",
+        "sha256": "71e7570aa345555c323a16ba5cc1dc2b7c721f49d95df1c322c452de42f0de4b",
+        "size": 8054
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov05_duplication_migrations_snapshots.py",
+        "path": "core/portability/src/test/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanOv06SemanticsTest.kt",
+        "mode": "0o644",
+        "sha256": "4b86d69dc6a5aa55242707a6b3e8e331155713b1fad502e922cf6cbce30cd6d1",
+        "size": 3440
+      },
+      {
+        "action": "add",
+        "path": "docs/quality/OV06_PORTABLE_PACKAGE_SEMANTICS_RESTORE_MODES.md",
+        "mode": "0o644",
+        "sha256": "f5b6eb4eff779993549dbc3c70c1d5f44c5ccd4023309ef566a15896475d7807",
+        "size": 2751
+      },
+      {
+        "action": "add",
+        "path": "scripts/validate_ov06_portable_package_semantics.sh",
         "mode": "0o755",
-        "sha256": "a75ef810ccbfdd705e3ed1d28487d2454a2d5381b264b1a03c470bd82032d8c6",
-        "size": 2598
+        "sha256": "32fa727953d297e698aeb255608551002aec0f02537d8b6482b871d3307abb25",
+        "size": 1130
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_ov06_portable_package_semantics.py",
+        "mode": "0o755",
+        "sha256": "704be578ae0546e2f55aabb86cde7393ebf410fdaef64dc11da23208a6fa4a2b",
+        "size": 4868
       }
     ]
   }

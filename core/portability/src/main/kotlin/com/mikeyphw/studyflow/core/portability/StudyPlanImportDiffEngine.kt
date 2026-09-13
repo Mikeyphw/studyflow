@@ -1,6 +1,43 @@
 package com.mikeyphw.studyflow.core.portability
 
 object StudyPlanImportDiffEngine {
+    fun diffProjected(
+        incoming: StudyPlanPackagePayload,
+        current: StudyPlanPackagePayload?,
+        strategy: StudyPlanImportStrategy,
+        ignoredRowsByTable: Map<String, Int> = emptyMap(),
+    ): List<StudyPlanImportTableDiff> {
+        val incomingTables = incoming.tables.associateBy(PortableTable::name)
+        val currentTables = current?.tables.orEmpty().associateBy(PortableTable::name)
+        val names = linkedSetOf<String>().apply {
+            addAll(incoming.tables.map(PortableTable::name)); addAll(current?.tables.orEmpty().map(PortableTable::name))
+        }
+        return names.map { name ->
+            val a = incomingTables[name]?.rows.orEmpty(); val b = currentTables[name]?.rows.orEmpty()
+            val ignored = ignoredRowsByTable[name] ?: 0
+            if (strategy == StudyPlanImportStrategy.MERGE_COMPATIBLE && ignored > 0) {
+                StudyPlanImportTableDiff(name, a.size, b.size, 0, 0, 0, b.size, ignored)
+            } else if (strategy == StudyPlanImportStrategy.CREATE_AS_NEW) {
+                StudyPlanImportTableDiff(name, a.size, 0, a.size, 0, 0, 0, ignored)
+            } else {
+                val ak = keyedProjected(name, a); val bk = keyedProjected(name, b)
+                val shared = ak.keys intersect bk.keys
+                val changed = shared.count { ak.getValue(it) != bk.getValue(it) }
+                StudyPlanImportTableDiff(
+                    name, a.size, b.size, (ak.keys - bk.keys).size,
+                    if (strategy == StudyPlanImportStrategy.REPLACE_EXISTING) (bk.keys - ak.keys).size else 0,
+                    changed, shared.size - changed, ignored,
+                )
+            }
+        }
+    }
+
+    private fun keyedProjected(tableName: String, rows: List<PortableRow>): Map<String, String> =
+        rows.mapIndexed { index, row ->
+            val key = row.values["id"]?.value ?: row.values["studyPlanId"]?.value?.let { "$tableName:$it" }
+                ?: "$tableName:index:$index"
+            key to canonical(row)
+        }.toMap()
     fun diff(
         incoming: StudyPlanPackagePayload,
         current: StudyPlanPackagePayload?,
