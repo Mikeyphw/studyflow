@@ -4,8 +4,9 @@ package com.mikeyphw.studyflow.core.portability
  * Reads and rewrites the stable question references embedded in StudyTest/MockExam configuration.
  *
  * Practice attempt configuration is line-oriented. Question ids appear both in the leading
- * `questionIds=` record and, after answers are recorded, as the first Base64Url field of every
- * `answer=` record. Portability must treat those references like ordinary foreign keys so plan
+ * `questionIds=` record, the first Base64Url field of every immutable `questionSnapshotV1=` record,
+ * and, after answers are recorded, the first Base64Url field of every `answer=` record. Portability
+ * must treat those references like ordinary foreign keys so plan
  * remapping and metadata-private pseudonymization cannot leave stale/raw ids behind.
  */
 object PracticeConfigurationReferences {
@@ -19,6 +20,7 @@ object PracticeConfigurationReferences {
                         .filter(String::isNotBlank)
                         .forEach(::add)
                 }
+                line.startsWith(QuestionSnapshotPrefix) -> add(decodeSnapshotQuestionId(line))
                 line.startsWith(AnswerPrefix) -> add(decodeAnswerQuestionId(line))
             }
         }
@@ -38,15 +40,42 @@ object PracticeConfigurationReferences {
                     .map { id -> requireMappedId(transform(id)) }
                 QuestionIdsPrefix + mapped.joinToString(",")
             }
+            trimmed.startsWith(QuestionSnapshotPrefix) -> remapSnapshotLine(trimmed, transform)
             trimmed.startsWith(AnswerPrefix) -> remapAnswerLine(trimmed, transform)
             else -> originalLine
+        }
+    }
+
+
+    private fun remapSnapshotLine(line: String, transform: (String) -> String): String {
+        val encoded = line.removePrefix(QuestionSnapshotPrefix)
+        val parts = encoded.split(FieldSeparator)
+        if (parts.size < SnapshotMinimumFieldCount) {
+            throw StudyPlanPackageException("Practice attempt configuration contains an invalid question snapshot record.")
+        }
+        val rawQuestionId = decodeBase64Url(parts[0])
+        val mapped = requireMappedId(transform(rawQuestionId))
+        return QuestionSnapshotPrefix + parts.toMutableList().also { values ->
+            values[0] = encodeBase64Url(mapped)
+        }.joinToString(FieldSeparator)
+    }
+
+    private fun decodeSnapshotQuestionId(line: String): String {
+        val parts = line.removePrefix(QuestionSnapshotPrefix).split(FieldSeparator)
+        if (parts.size < SnapshotMinimumFieldCount) {
+            throw StudyPlanPackageException("Practice attempt configuration contains an invalid question snapshot record.")
+        }
+        return decodeBase64Url(parts[0]).also { id ->
+            if (id.isBlank()) {
+                throw StudyPlanPackageException("Practice attempt configuration contains a blank frozen question id.")
+            }
         }
     }
 
     private fun remapAnswerLine(line: String, transform: (String) -> String): String {
         val encoded = line.removePrefix(AnswerPrefix)
         val parts = encoded.split(FieldSeparator)
-        if (parts.size != AnswerFieldCount) {
+        if (parts.size !in LegacyAnswerFieldCount..AnswerFieldCount) {
             throw StudyPlanPackageException("Practice attempt configuration contains an invalid answer record.")
         }
         val rawQuestionId = decodeBase64Url(parts[0])
@@ -58,7 +87,7 @@ object PracticeConfigurationReferences {
 
     private fun decodeAnswerQuestionId(line: String): String {
         val parts = line.removePrefix(AnswerPrefix).split(FieldSeparator)
-        if (parts.size != AnswerFieldCount) {
+        if (parts.size !in LegacyAnswerFieldCount..AnswerFieldCount) {
             throw StudyPlanPackageException("Practice attempt configuration contains an invalid answer record.")
         }
         return decodeBase64Url(parts[0]).also { id ->
@@ -128,8 +157,11 @@ object PracticeConfigurationReferences {
     }
 
     private const val QuestionIdsPrefix = "questionIds="
+    private const val QuestionSnapshotPrefix = "questionSnapshotV1="
     private const val AnswerPrefix = "answer="
     private const val FieldSeparator = "|"
-    private const val AnswerFieldCount = 6
+    private const val LegacyAnswerFieldCount = 6
+    private const val AnswerFieldCount = 7
+    private const val SnapshotMinimumFieldCount = 9
     private const val Base64UrlAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 }

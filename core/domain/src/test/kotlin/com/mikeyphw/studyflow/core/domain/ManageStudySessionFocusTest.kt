@@ -180,6 +180,78 @@ class ManageStudySessionFocusTest {
         assertEquals(started.startedAtEpochMillis, completed.endedAtEpochMillis)
     }
 
+
+    @Test
+    fun validLongPlannedActivityStartsWithItsFullTargetDuration() = runBlocking {
+        val repository = FakeStudySessionRepository()
+        val manager = ManageStudySession(repository)
+        val activity = com.mikeyphw.studyflow.core.model.PlannedActivity(
+            id = com.mikeyphw.studyflow.core.model.PlannedActivityId("long-activity"),
+            studyPlanId = StudyPlanId("plan"),
+            subjectId = null,
+            topicId = null,
+            materialId = null,
+            videoResourceId = null,
+            type = StudyActivityType.THEORY,
+            title = "Long simulation",
+            scheduledStartEpochMillis = null,
+            plannedDurationMinutes = 300,
+            status = PlannedActivityStatus.PLANNED,
+            locked = false,
+            completedAtEpochMillis = null,
+        )
+
+        val started = manager.startFromActivity(StudySessionId("long-session"), activity)
+
+        assertEquals(300, started.targetDurationMinutes)
+    }
+
+    @Test
+    fun pauseResumePersistsActiveAndPausedTimeWithoutDoubleCounting() = runBlocking {
+        var wallNow = 1_000L
+        var monotonicNow = 1_000L
+        val repository = FakeStudySessionRepository()
+        val manager = ManageStudySession(
+            repository = repository,
+            clock = { wallNow },
+            monotonicClockMillis = { monotonicNow },
+        )
+        val planId = StudyPlanId("plan")
+        val started = manager.startQuickSession(
+            sessionId = StudySessionId("paused-session"),
+            studyPlanId = planId,
+            title = "Pause semantics",
+            type = StudyActivityType.THEORY,
+            targetDurationMinutes = 30,
+        )
+
+        wallNow += 600_000L
+        monotonicNow += 600_000L
+        val paused = manager.pause(planId, started.id)
+        assertEquals(600L, paused.grossDurationSeconds)
+        assertEquals(0L, paused.pauseDurationSeconds)
+
+        wallNow += 600_000L
+        monotonicNow += 600_000L
+        val resumed = manager.resume(planId, started.id)
+        assertEquals(600L, resumed.grossDurationSeconds)
+        assertEquals(600L, resumed.pauseDurationSeconds)
+
+        val completed = manager.complete(
+            planId = planId,
+            sessionId = started.id,
+            pagesCompleted = 0,
+            questionsAnswered = 0,
+            correctAnswers = 0,
+            concentrationRating = null,
+            difficultyRating = null,
+            notes = "",
+        )
+        assertEquals(600L, completed.grossDurationSeconds)
+        assertEquals(600L, completed.pauseDurationSeconds)
+        assertEquals(600L, StudySessionTimer.persistedActiveSeconds(completed))
+    }
+
     @Test
     fun targetDurationRejectsValuesOutsideFocusBounds() = runBlocking {
         val manager = ManageStudySession(FakeStudySessionRepository())
@@ -194,7 +266,7 @@ class ManageStudySessionFocusTest {
             )
             fail("Expected an invalid focus duration to be rejected")
         } catch (_: IllegalArgumentException) {
-            // Expected. Focus sessions are intentionally bounded to 5..240 minutes.
+            // Expected. Session targets are canonically bounded to 5..720 minutes.
         }
     }
 }
@@ -292,4 +364,5 @@ private class FakeStudyPlanSettingsRepository(
     override suspend fun clear() = Unit
 
     override suspend fun restoreFoundationSamples() = Unit
+
 }

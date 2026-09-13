@@ -224,14 +224,14 @@ object PublicExamDashboardBuilder {
     private fun questionsPerHour(sessions: List<StudySession>, since: Long): Double? {
         val scoped = sessions.filter { it.startedAtEpochMillis >= since }
         val questions = scoped.sumOf { it.questionsAnswered }
-        val seconds = scoped.sumOf { (it.grossDurationSeconds - it.pauseDurationSeconds).coerceAtLeast(0) }
+        val seconds = scoped.sumOf(StudySessionTimer::persistedActiveSeconds)
         return if (questions > 0 && seconds > 0) questions / (seconds / 3600.0) else null
     }
 
     private fun averageSecondsPerQuestion(sessions: List<StudySession>, since: Long): Double? {
         val scoped = sessions.filter { it.startedAtEpochMillis >= since }
         val questions = scoped.sumOf { it.questionsAnswered }
-        val seconds = scoped.sumOf { (it.grossDurationSeconds - it.pauseDurationSeconds).coerceAtLeast(0) }
+        val seconds = scoped.sumOf(StudySessionTimer::persistedActiveSeconds)
         return if (questions > 0 && seconds > 0) seconds.toDouble() / questions else null
     }
 

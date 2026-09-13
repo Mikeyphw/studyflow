@@ -60,6 +60,7 @@ import com.mikeyphw.studyflow.core.designsystem.studyFlowSectionHeader
 import com.mikeyphw.studyflow.core.domain.runRecoverableOperation
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.model.StudyActivityType
+import com.mikeyphw.studyflow.core.model.StudyDomainInvariants
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySession
@@ -465,7 +466,7 @@ private fun QuickSessionDialog(
                         }
                     }
                 },
-                enabled = title.isNotBlank() && (duration.toIntOrNull() ?: 0) in 5..240,
+                enabled = title.isNotBlank() && (duration.toIntOrNull() ?: 0) in StudyDomainInvariants.sessionMinutes,
             ) {
                 Text(stringResource(R.string.begin))
             }

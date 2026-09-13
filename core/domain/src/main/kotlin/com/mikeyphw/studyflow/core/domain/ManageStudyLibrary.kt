@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.Annex
 import com.mikeyphw.studyflow.core.model.AnnexId
+import com.mikeyphw.studyflow.core.model.StudyDomainInvariants
 import com.mikeyphw.studyflow.core.model.StudyMaterial
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.StudyMaterialType
@@ -53,7 +54,7 @@ class ManageStudyLibrary(
         tags: List<String>,
     ): StudyMaterial {
         require(title.isNotBlank()) { "Material title cannot be blank." }
-        require(totalUnits == null || totalUnits > 0) { "Total units must be positive when present." }
+        StudyDomainInvariants.requireMaterialTotalUnits(totalUnits)
         val normalizedSource = sourceUri?.trim()?.ifBlank { null }
         if (type in EXTERNALLY_LAUNCHED_MATERIAL_TYPES) {
             require(normalizedSource != null) { "This material type requires a launchable source URI." }

@@ -101,7 +101,12 @@ if "$cygwin" || "$msys" ; then
 fi
 
 DEFAULT_JVM_OPTS='-Dfile.encoding=UTF-8 "-Xmx64m" "-Xms64m"'
-set --         "-Dorg.gradle.appname=$APP_BASE_NAME"         -jar "$APP_HOME/gradle/wrapper/gradle-wrapper.jar"         "$@"
+CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+set -- \
+        "-Dorg.gradle.appname=$APP_BASE_NAME" \
+        -classpath "$CLASSPATH" \
+        org.gradle.wrapper.GradleWrapperMain \
+        "$@"
 
 if ! command -v xargs >/dev/null 2>&1; then
     die "xargs is not available"

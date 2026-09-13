@@ -24,6 +24,7 @@ class MockExamStudioPlannerTest {
         )
 
         val blueprint = MockExamStudioPlanner.preview(
+            planId = planId,
             questions = questions,
             request = MockExamStudioRequest(
                 title = "Final sprint mock",
@@ -45,6 +46,7 @@ class MockExamStudioPlannerTest {
     @Test
     fun studioWarnsInsteadOfInventingQuestions() {
         val blueprint = MockExamStudioPlanner.preview(
+            planId = planId,
             questions = listOf(question("essay", subjectA, QuestionType.ESSAY)),
             request = MockExamStudioRequest(questionCount = 10),
         )
@@ -61,6 +63,7 @@ class MockExamStudioPlannerTest {
         val wrongTag = question("wrong-tag", subjectB, board = "FGV", tags = listOf("tributario"))
 
         val blueprint = MockExamStudioPlanner.preview(
+            planId = planId,
             questions = listOf(wrongBoard, wrongTag, keep),
             request = MockExamStudioRequest(
                 questionCount = 5,
@@ -87,10 +90,12 @@ class MockExamStudioPlannerTest {
         val wrongSource = question("wrong-source", subjectA, source = "course")
 
         val defaultBlueprint = MockExamStudioPlanner.preview(
+            planId = planId,
             questions = listOf(disputed, wrongSource, keep),
             request = MockExamStudioRequest(questionCount = 5, source = "official"),
         )
         val inclusiveBlueprint = MockExamStudioPlanner.preview(
+            planId = planId,
             questions = listOf(disputed, wrongSource, keep),
             request = MockExamStudioRequest(
                 questionCount = 5,
@@ -101,6 +106,21 @@ class MockExamStudioPlannerTest {
 
         assertEquals(listOf("keep"), defaultBlueprint.selectedQuestions.map { it.id.value })
         assertEquals(listOf("disputed", "keep"), inclusiveBlueprint.selectedQuestions.map { it.id.value })
+    }
+
+
+    @Test
+    fun studioRejectsMixedPlanQuestionBanksInsteadOfInferringFirstOwner() {
+        val foreign = question("foreign", subjectA).copy(studyPlanId = StudyPlanId("foreign"))
+        val result = runCatching {
+            MockExamStudioPlanner.preview(
+                planId = planId,
+                questions = listOf(foreign, question("local", subjectB)),
+                request = MockExamStudioRequest(questionCount = 1),
+            )
+        }
+
+        assertTrue(result.isFailure)
     }
 
     private fun question(

@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.ErrorCategory
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
+import com.mikeyphw.studyflow.core.model.QuestionType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.StudyTestId
@@ -15,6 +16,7 @@ import kotlin.math.roundToInt
 
 private const val QuestionIdsPrefix = "questionIds="
 private const val AnswerPrefix = "answer="
+private const val QuestionSnapshotPrefix = "questionSnapshotV1="
 private const val FieldSeparator = "|"
 private const val Base64UrlAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
@@ -24,6 +26,7 @@ class PracticeExecutionEngine(
     fun stateForTest(test: StudyTest, questions: List<Question>): PracticeExecutionState =
         PracticeAttemptCodec.decode(
             attemptId = test.id.value,
+            studyPlanId = test.studyPlanId,
             title = test.title,
             mode = test.mode,
             questionCount = test.questionCount,
@@ -39,6 +42,7 @@ class PracticeExecutionEngine(
     fun stateForMockExam(mockExam: MockExam, questions: List<Question>): PracticeExecutionState =
         PracticeAttemptCodec.decode(
             attemptId = mockExam.id.value,
+            studyPlanId = mockExam.studyPlanId,
             title = mockExam.title,
             mode = mockExam.mode,
             questionCount = mockExam.questionCount,
@@ -61,18 +65,20 @@ class PracticeExecutionEngine(
         require(!state.submitted) { "Submitted attempts cannot be changed." }
         require(state.startedAtEpochMillis != null) { "Attempt must be explicitly started before answering." }
         require(!state.deadlinePassed(clock())) { "Attempt deadline has elapsed; submit the attempt." }
-        require(state.questionIds.contains(question.id)) { "Question does not belong to this attempt." }
+        val frozenQuestion = requireNotNull(state.questions.firstOrNull { it.id == question.id }) {
+            "Question does not belong to this attempt."
+        }
         require(elapsedSeconds >= 0L) { "Answer elapsed time cannot be negative." }
         val normalizedAnswer = chosenAnswer.trim()
         require(normalizedAnswer.isNotBlank()) { "Answer cannot be blank." }
         val record = PracticeAnswerRecord(
-            questionId = question.id,
+            questionId = frozenQuestion.id,
             chosenAnswer = normalizedAnswer,
-            correctAnswer = question.correctAnswer,
-            correct = normalizedAnswer.equals(question.correctAnswer.trim(), ignoreCase = true),
+            correctAnswer = frozenQuestion.correctAnswer,
+            correct = normalizedAnswer.equals(frozenQuestion.correctAnswer.trim(), ignoreCase = true),
             elapsedSeconds = elapsedSeconds,
             answeredAtEpochMillis = clock(),
-            errorCategory = if (normalizedAnswer.equals(question.correctAnswer.trim(), ignoreCase = true)) {
+            errorCategory = if (normalizedAnswer.equals(frozenQuestion.correctAnswer.trim(), ignoreCase = true)) {
                 null
             } else {
                 errorCategory ?: ErrorCategory.OTHER
@@ -162,6 +168,7 @@ data class PracticeExecutionSummary(
 object PracticeAttemptCodec {
     fun decode(
         attemptId: String,
+        studyPlanId: StudyPlanId,
         title: String,
         mode: TestMode = TestMode.PRACTICE,
         questionCount: Int,
@@ -174,27 +181,42 @@ object PracticeAttemptCodec {
         minimumScorePercent: Int? = null,
     ): PracticeExecutionState {
         val lines = configuration.lineSequence().map(String::trim).filter(String::isNotBlank).toList()
-        val ids = lines.firstOrNull { it.startsWith(QuestionIdsPrefix) }
-            ?.removePrefix(QuestionIdsPrefix)
-            ?.split(',')
-            ?.map(String::trim)
-            ?.filter(String::isNotBlank)
-            ?.map(::QuestionId)
-            .orEmpty()
-            .ifEmpty { questions.take(questionCount).map { it.id } }
-        val knownQuestions = questions.associateBy(Question::id)
+        val ids = requireQuestionIds(lines, questionCount)
+        val frozen = lines.filter { it.startsWith(QuestionSnapshotPrefix) }
+            .map(::decodeQuestionSnapshot)
+        val resolvedQuestions = if (frozen.isNotEmpty()) {
+            require(frozen.map(Question::id).distinct().size == frozen.size) {
+                "Practice attempt contains duplicate frozen question identities."
+            }
+            val byId = frozen.associateBy(Question::id)
+            require(byId.keys == ids.toSet()) {
+                "Practice attempt frozen questions do not match the recorded question identity."
+            }
+            ids.map { id -> byId.getValue(id).copy(studyPlanId = studyPlanId) }
+        } else {
+            require(startedAtEpochMillis == null) {
+                "Started practice attempts must contain immutable question snapshots."
+            }
+            val knownQuestions = questions.associateBy(Question::id)
+            require(ids.all(knownQuestions::containsKey)) {
+                "Practice attempt references missing questions; refusing mutable legacy fallback."
+            }
+            ids.map(knownQuestions::getValue)
+        }
         val answerRecords = lines
             .filter { it.startsWith(AnswerPrefix) }
             .mapNotNull { decodeAnswerLine(it.removePrefix(AnswerPrefix)) }
             .filter { ids.contains(it.questionId) }
             .distinctBy(PracticeAnswerRecord::questionId)
-        val metadata = lines.filterNot { it.startsWith(QuestionIdsPrefix) || it.startsWith(AnswerPrefix) }
+        val metadata = lines.filterNot {
+            it.startsWith(QuestionIdsPrefix) || it.startsWith(QuestionSnapshotPrefix) || it.startsWith(AnswerPrefix)
+        }
         return PracticeExecutionState(
             attemptId = attemptId,
             title = title,
             mode = mode,
             questionIds = ids,
-            questions = ids.mapNotNull { knownQuestions[it] },
+            questions = resolvedQuestions,
             answers = answerRecords,
             startedAtEpochMillis = startedAtEpochMillis,
             submittedAtEpochMillis = submittedAtEpochMillis,
@@ -205,11 +227,86 @@ object PracticeAttemptCodec {
         )
     }
 
-    fun encode(state: PracticeExecutionState): String = buildString {
+    fun configurationForQuestions(
+        questions: List<Question>,
+        metadataLines: List<String> = emptyList(),
+    ): String {
+        require(questions.isNotEmpty()) { "Practice attempt needs at least one question." }
+        require(questions.map(Question::id).distinct().size == questions.size) {
+            "Practice attempt contains duplicate question identities."
+        }
+        val owner = questions.first().studyPlanId
+        require(questions.all { it.studyPlanId == owner }) { "Practice attempt questions must belong to one Study Plan." }
+        return encodeConfiguration(questions, metadataLines, emptyList())
+    }
+
+    fun freezeConfiguration(configuration: String, questions: List<Question>): String {
+        val lines = configuration.lineSequence().map(String::trim).filter(String::isNotBlank).toList()
+        val ids = requireQuestionIds(lines, questions.size)
+        val byId = questions.associateBy(Question::id)
+        require(byId.size == questions.size && ids.all(byId::containsKey)) {
+            "Cannot freeze a practice attempt whose question identities do not resolve exactly."
+        }
+        val ordered = ids.map(byId::getValue)
+        val metadata = lines.filterNot {
+            it.startsWith(QuestionIdsPrefix) || it.startsWith(QuestionSnapshotPrefix) || it.startsWith(AnswerPrefix)
+        }
+        val answers = lines.filter { it.startsWith(AnswerPrefix) }
+            .mapNotNull { decodeAnswerLine(it.removePrefix(AnswerPrefix)) }
+        return encodeConfiguration(ordered, metadata, answers)
+    }
+
+    fun hasFrozenQuestions(configuration: String): Boolean = configuration.lineSequence()
+        .map(String::trim)
+        .any { it.startsWith(QuestionSnapshotPrefix) }
+
+    fun encode(state: PracticeExecutionState): String = encodeConfiguration(
+        questions = state.questions,
+        metadataLines = state.metadataLines,
+        answers = state.answers,
+    )
+
+    fun referencedQuestionIds(configuration: String): Set<QuestionId> {
+        val lines = configuration.lineSequence().map(String::trim).filter(String::isNotBlank).toList()
+        val idLine = lines.firstOrNull { it.startsWith(QuestionIdsPrefix) } ?: return emptySet()
+        return idLine.removePrefix(QuestionIdsPrefix)
+            .split(',')
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .map(::QuestionId)
+            .toSet()
+    }
+
+    private fun requireQuestionIds(lines: List<String>, questionCount: Int): List<QuestionId> {
+        val records = lines.filter { it.startsWith(QuestionIdsPrefix) }
+        require(records.size == 1) { "Practice attempt must contain exactly one question identity record." }
+        val ids = records.single().removePrefix(QuestionIdsPrefix)
+            .split(',')
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .map(::QuestionId)
+        require(ids.isNotEmpty()) { "Practice attempt question identity cannot be empty." }
+        require(ids.distinct().size == ids.size) { "Practice attempt question identity contains duplicates." }
+        require(ids.size == questionCount) {
+            "Practice attempt question identity does not match its recorded question count."
+        }
+        return ids
+    }
+
+    private fun encodeConfiguration(
+        questions: List<Question>,
+        metadataLines: List<String>,
+        answers: List<PracticeAnswerRecord>,
+    ): String = buildString {
         append(QuestionIdsPrefix)
-        appendLine(state.questionIds.joinToString(",") { it.value })
-        state.metadataLines.forEach(::appendLine)
-        state.answers.forEach { answer ->
+        appendLine(questions.joinToString(",") { it.id.value })
+        questions.forEach { question -> appendLine(encodeQuestionSnapshot(question)) }
+        metadataLines.map(String::trim).filter(String::isNotBlank).forEach { line ->
+            require(!line.startsWith(QuestionIdsPrefix) && !line.startsWith(QuestionSnapshotPrefix) &&
+                !line.startsWith(AnswerPrefix)) { "Practice metadata collides with a reserved attempt record." }
+            appendLine(line)
+        }
+        answers.forEach { answer ->
             append(AnswerPrefix)
             append(answer.questionId.value.b64())
             append(FieldSeparator)
@@ -227,16 +324,48 @@ object PracticeAttemptCodec {
         }
     }.trimEnd()
 
-    fun referencedQuestionIds(configuration: String): Set<QuestionId> = configuration.lineSequence()
-        .firstOrNull { it.trim().startsWith(QuestionIdsPrefix) }
-        ?.trim()
-        ?.removePrefix(QuestionIdsPrefix)
-        ?.split(',')
-        ?.map(String::trim)
-        ?.filter(String::isNotBlank)
-        ?.map(::QuestionId)
-        ?.toSet()
-        .orEmpty()
+    private fun encodeQuestionSnapshot(question: Question): String = buildString {
+        append(QuestionSnapshotPrefix)
+        append(question.id.value.b64())
+        append(FieldSeparator).append(question.type.name)
+        append(FieldSeparator).append(question.statement.b64())
+        append(FieldSeparator).append(question.correctAnswer.b64())
+        append(FieldSeparator).append(question.explanation.b64())
+        append(FieldSeparator).append(question.difficulty)
+        append(FieldSeparator).append(question.favorite)
+        append(FieldSeparator).append(question.disputed)
+        append(FieldSeparator).append(question.options.size)
+        question.options.forEach { option -> append(FieldSeparator).append(option.b64()) }
+    }
+
+    private fun decodeQuestionSnapshot(line: String): Question {
+        val parts = line.removePrefix(QuestionSnapshotPrefix).split(FieldSeparator)
+        require(parts.size >= QuestionSnapshotFixedFields) { "Practice attempt contains an invalid question snapshot." }
+        return runCatching {
+            val optionCount = parts[8].toInt()
+            require(optionCount >= 0 && parts.size == QuestionSnapshotFixedFields + optionCount)
+            Question(
+                id = QuestionId(parts[0].fromB64()),
+                studyPlanId = StudyPlanId(FrozenOwnerPlaceholder),
+                subjectId = null,
+                topicId = null,
+                type = QuestionType.valueOf(parts[1]),
+                statement = parts[2].fromB64(),
+                options = parts.drop(QuestionSnapshotFixedFields).map { it.fromB64() },
+                correctAnswer = parts[3].fromB64(),
+                explanation = parts[4].fromB64(),
+                examBoard = null,
+                source = null,
+                year = null,
+                difficulty = parts[5].toInt(),
+                favorite = parts[6].toBooleanStrict(),
+                disputed = parts[7].toBooleanStrict(),
+                tags = emptyList(),
+                createdAtEpochMillis = 0L,
+                updatedAtEpochMillis = 0L,
+            )
+        }.getOrElse { throw IllegalArgumentException("Practice attempt contains an invalid question snapshot.", it) }
+    }
 
     private fun decodeAnswerLine(value: String): PracticeAnswerRecord? {
         val parts = value.split(FieldSeparator)
@@ -299,8 +428,12 @@ object PracticeAttemptCodec {
                 output.write((buffer shr bits) and 0xFF)
             }
         }
+        require(bits == 0 || (buffer and ((1 shl bits) - 1)) == 0) { "Invalid Base64Url tail bits." }
         return output.toByteArray()
     }
+
+    private const val QuestionSnapshotFixedFields = 9
+    private const val FrozenOwnerPlaceholder = "__frozen_attempt_owner__"
 }
 
 class ManagePracticeExecution(
@@ -308,8 +441,11 @@ class ManagePracticeExecution(
     private val engine: PracticeExecutionEngine = PracticeExecutionEngine(),
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
-    suspend fun startTest(planId: StudyPlanId, testId: StudyTestId): StudyTest =
-        repository.startTestIfNotStarted(planId, testId, clock())
+    suspend fun startTest(planId: StudyPlanId, testId: StudyTestId): StudyTest {
+        val current = requireNotNull(repository.findTest(planId, testId)) { "Practice Test does not exist." }
+        val prepared = ensureFrozen(current)
+        return repository.startTestIfNotStarted(planId, prepared.id, clock())
+    }
 
     suspend fun answerTestQuestion(
         planId: StudyPlanId,
@@ -320,10 +456,11 @@ class ManagePracticeExecution(
         errorCategory: ErrorCategory? = null,
     ): StudyTest {
         val test = requireNotNull(repository.findTest(planId, testId)) { "Practice Test does not exist." }
-        val question = requireNotNull(repository.findQuestion(planId, questionId)) { "Question does not exist." }
-        val questions = questionsForAttempt(planId, test.configurationJson)
-        val current = engine.stateForTest(test, questions)
-        val next = engine.answer(current, question, chosenAnswer, elapsedSeconds, errorCategory)
+        val current = engine.stateForTest(test, emptyList())
+        val frozenQuestion = requireNotNull(current.questions.firstOrNull { it.id == questionId }) {
+            "Question does not belong to this attempt."
+        }
+        val next = engine.answer(current, frozenQuestion, chosenAnswer, elapsedSeconds, errorCategory)
         return repository.updateTestAttemptIfOpen(
             expectedConfiguration = test.configurationJson,
             next = test.copy(
@@ -336,8 +473,7 @@ class ManagePracticeExecution(
 
     suspend fun finishTest(planId: StudyPlanId, testId: StudyTestId): StudyTest {
         val test = requireNotNull(repository.findTest(planId, testId)) { "Practice Test does not exist." }
-        val questions = questionsForAttempt(planId, test.configurationJson)
-        val state = engine.stateForTest(test, questions)
+        val state = engine.stateForTest(test, emptyList())
         val summary = engine.finish(state)
         return repository.submitTestIfOpen(
             expectedConfiguration = test.configurationJson,
@@ -351,8 +487,11 @@ class ManagePracticeExecution(
         )
     }
 
-    suspend fun startMockExam(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
-        repository.startMockExamIfNotStarted(planId, mockExamId, clock())
+    suspend fun startMockExam(planId: StudyPlanId, mockExamId: MockExamId): MockExam {
+        val current = requireNotNull(repository.findMockExam(planId, mockExamId)) { "Mock Exam does not exist." }
+        val prepared = ensureFrozen(current)
+        return repository.startMockExamIfNotStarted(planId, prepared.id, clock())
+    }
 
     suspend fun answerMockQuestion(
         planId: StudyPlanId,
@@ -363,10 +502,11 @@ class ManagePracticeExecution(
         errorCategory: ErrorCategory? = null,
     ): MockExam {
         val mock = requireNotNull(repository.findMockExam(planId, mockExamId)) { "Mock Exam does not exist." }
-        val question = requireNotNull(repository.findQuestion(planId, questionId)) { "Question does not exist." }
-        val questions = questionsForAttempt(planId, mock.configurationJson)
-        val current = engine.stateForMockExam(mock, questions)
-        val next = engine.answer(current, question, chosenAnswer, elapsedSeconds, errorCategory)
+        val current = engine.stateForMockExam(mock, emptyList())
+        val frozenQuestion = requireNotNull(current.questions.firstOrNull { it.id == questionId }) {
+            "Question does not belong to this attempt."
+        }
+        val next = engine.answer(current, frozenQuestion, chosenAnswer, elapsedSeconds, errorCategory)
         return repository.updateMockExamAttemptIfOpen(
             expectedConfiguration = mock.configurationJson,
             next = mock.copy(
@@ -379,8 +519,7 @@ class ManagePracticeExecution(
 
     suspend fun finishMockExam(planId: StudyPlanId, mockExamId: MockExamId): MockExam {
         val mock = requireNotNull(repository.findMockExam(planId, mockExamId)) { "Mock Exam does not exist." }
-        val questions = questionsForAttempt(planId, mock.configurationJson)
-        val state = engine.stateForMockExam(mock, questions)
+        val state = engine.stateForMockExam(mock, emptyList())
         val summary = engine.finish(state)
         val blueprintScore = ExamBlueprintCodec.decode(mock.configurationJson)?.let { frozen ->
             ExamBlueprintScorer.score(state, frozen)
@@ -403,6 +542,32 @@ class ManagePracticeExecution(
     fun stateForMockExam(mockExam: MockExam, questions: List<Question>): PracticeExecutionState = engine
         .stateForMockExam(mockExam, questions)
 
+    private suspend fun ensureFrozen(test: StudyTest): StudyTest {
+        if (PracticeAttemptCodec.hasFrozenQuestions(test.configurationJson)) return test
+        require(test.startedAtEpochMillis == null) {
+            "Started Practice Test is missing immutable question snapshots and cannot be repaired safely."
+        }
+        val questions = questionsForAttempt(test.studyPlanId, test.configurationJson, test.questionCount)
+        val frozen = PracticeAttemptCodec.freezeConfiguration(test.configurationJson, questions)
+        return repository.updateTestAttemptIfOpen(
+            expectedConfiguration = test.configurationJson,
+            next = test.copy(configurationJson = frozen),
+        )
+    }
+
+    private suspend fun ensureFrozen(mock: MockExam): MockExam {
+        if (PracticeAttemptCodec.hasFrozenQuestions(mock.configurationJson)) return mock
+        require(mock.startedAtEpochMillis == null) {
+            "Started Mock Exam is missing immutable question snapshots and cannot be repaired safely."
+        }
+        val questions = questionsForAttempt(mock.studyPlanId, mock.configurationJson, mock.questionCount)
+        val frozen = PracticeAttemptCodec.freezeConfiguration(mock.configurationJson, questions)
+        return repository.updateMockExamAttemptIfOpen(
+            expectedConfiguration = mock.configurationJson,
+            next = mock.copy(configurationJson = frozen),
+        )
+    }
+
     private fun wrongAnswers(state: PracticeExecutionState): List<PracticeWrongAnswerCapture> = state.answers
         .filterNot(PracticeAnswerRecord::correct)
         .mapNotNull { answer ->
@@ -415,6 +580,23 @@ class ManagePracticeExecution(
             }
         }
 
-    private suspend fun questionsForAttempt(planId: StudyPlanId, configuration: String): List<Question> =
-        PracticeAttemptCodec.referencedQuestionIds(configuration).mapNotNull { repository.findQuestion(planId, it) }
+    private suspend fun questionsForAttempt(
+        planId: StudyPlanId,
+        configuration: String,
+        expectedCount: Int,
+    ): List<Question> {
+        val ids = PracticeAttemptCodec.referencedQuestionIds(configuration).toList()
+        require(ids.size == expectedCount && ids.isNotEmpty()) {
+            "Practice attempt has malformed or missing question identity."
+        }
+        val questions = ids.map { id ->
+            requireNotNull(repository.findQuestion(planId, id)) {
+                "Practice attempt references a missing question and cannot be frozen safely."
+            }
+        }
+        require(questions.all { it.studyPlanId == planId }) {
+            "Practice attempt question ownership does not match the Study Plan."
+        }
+        return questions
+    }
 }

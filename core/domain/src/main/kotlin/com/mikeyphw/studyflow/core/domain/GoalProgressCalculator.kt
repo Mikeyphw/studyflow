@@ -64,9 +64,7 @@ object StudyGoalProgressEngine {
             submittedAt != null && submittedAt in startMillis until endMillis
         }
         val current = when (goal.type) {
-            GoalType.STUDY_TIME -> sessions.sumOf { session ->
-                (session.grossDurationSeconds - session.pauseDurationSeconds).coerceAtLeast(0L)
-            } / 60.0
+            GoalType.STUDY_TIME -> sessions.sumOf(StudySessionTimer::persistedActiveSeconds) / 60.0
             GoalType.SESSION_COUNT -> sessions.size.toDouble()
             GoalType.QUESTION_COUNT -> (
                 sessions.sumOf(StudySession::questionsAnswered) + submittedTests.sumOf(StudyTest::answeredCount)

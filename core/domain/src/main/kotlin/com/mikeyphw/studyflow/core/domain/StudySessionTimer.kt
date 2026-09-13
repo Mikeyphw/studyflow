@@ -4,6 +4,11 @@ import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 
 object StudySessionTimer {
+    /**
+     * Returns active study seconds. The historical `grossDurationSeconds` persistence column stores
+     * active seconds at pause/terminal checkpoints; `pauseDurationSeconds` is independent telemetry
+     * and must never be subtracted from that persisted value a second time.
+     */
     fun activeSeconds(session: StudySession, nowEpochMillis: Long): Long = when (session.status) {
         StudySessionStatus.RUNNING -> runningActiveSeconds(session, nowEpochMillis)
         StudySessionStatus.PAUSED,
@@ -11,6 +16,8 @@ object StudySessionTimer {
         StudySessionStatus.CANCELLED,
         -> session.grossDurationSeconds.coerceAtLeast(0)
     }
+
+    fun persistedActiveSeconds(session: StudySession): Long = session.grossDurationSeconds.coerceAtLeast(0L)
 
     fun pausedSeconds(session: StudySession, nowEpochMillis: Long): Long = when (session.status) {
         StudySessionStatus.PAUSED -> {

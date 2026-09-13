@@ -1,12 +1,14 @@
 package com.mikeyphw.studyflow.desktop
 
 import com.mikeyphw.studyflow.core.domain.MockExamStudioBlueprint
+import com.mikeyphw.studyflow.core.domain.MockExamStudioPlanner
 import com.mikeyphw.studyflow.core.domain.MockExamStudioRequest
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionState
 import com.mikeyphw.studyflow.core.model.MockExam
 import com.mikeyphw.studyflow.core.model.MockExamId
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionId
+import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import java.util.UUID
 
@@ -37,7 +39,8 @@ class DesktopMockExamStudioController(
     fun state(request: MockExamStudioRequest = defaultRequest()): DesktopMockExamStudioState {
         val planId = services.defaultPlanId
         val questions = planId?.let(services.practiceRepository::currentQuestions).orEmpty()
-        val preview = services.manageStudyPractice.previewMockExamStudio(questions, request)
+        val preview = planId?.let { services.manageStudyPractice.previewMockExamStudio(it, questions, request) }
+            ?: MockExamStudioPlanner.preview(StudyPlanId("desktop-unselected"), emptyList(), request)
         val exams = planId?.let(services.practiceRepository::currentMockExams).orEmpty()
         val active = exams.firstOrNull { it.submittedAtEpochMillis == null }
         val execution = active?.let { services.manageStudyPractice.stateForMockExam(it, questions) }

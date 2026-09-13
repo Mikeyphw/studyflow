@@ -84,8 +84,7 @@ data class StudyStrategy(
     val configurationJson: String,
 ) {
     init {
-        require(minimumSessionMinutes in 5..240) { "Minimum session duration must be between 5 and 240 minutes." }
-        require(maximumSessionMinutes in minimumSessionMinutes..720) { "Maximum session duration is invalid." }
+        StudyDomainInvariants.requireStrategyDurations(minimumSessionMinutes, maximumSessionMinutes)
         require(theoryRatioPercent in 0..100 && questionRatioPercent in 0..100 && reviewRatioPercent in 0..100) {
             "Study strategy ratios must be between 0 and 100 percent."
         }
@@ -111,7 +110,7 @@ data class ScheduleRule(
     init {
         require(dayOfWeek == null || dayOfWeek in 1..7) { "Schedule day must be between 1 and 7." }
         require(startMinuteOfDay == null || startMinuteOfDay in 0..1439) { "Schedule start must be within the day." }
-        require(durationMinutes in 1..720) { "Schedule duration must be between 1 and 720 minutes." }
+        StudyDomainInvariants.requireSessionMinutes(durationMinutes, "Schedule duration")
         require(position >= 0) { "Schedule position cannot be negative." }
     }
 }
@@ -133,7 +132,7 @@ data class PlannedActivity(
 ) {
     init {
         require(title.isNotBlank()) { "Planned activity title cannot be blank." }
-        require(plannedDurationMinutes in 1..720) { "Planned duration must be between 1 and 720 minutes." }
+        StudyDomainInvariants.requireSessionMinutes(plannedDurationMinutes, "Planned duration")
     }
 }
 
@@ -167,9 +166,7 @@ data class StudySession(
         require(correctAnswers in 0..questionsAnswered) { "Correct answers must be within answered questions." }
         require(concentrationRating == null || concentrationRating in 1..5) { "Concentration rating must be 1 to 5." }
         require(difficultyRating == null || difficultyRating in 1..5) { "Difficulty rating must be 1 to 5." }
-        require(targetDurationMinutes == null || targetDurationMinutes in 5..240) {
-            "Target duration must be 5 to 240 minutes."
-        }
+        StudyDomainInvariants.requireOptionalSessionMinutes(targetDurationMinutes, "Target duration")
         require(endedAtEpochMillis == null || endedAtEpochMillis >= startedAtEpochMillis) {
             "Session end cannot precede start."
         }

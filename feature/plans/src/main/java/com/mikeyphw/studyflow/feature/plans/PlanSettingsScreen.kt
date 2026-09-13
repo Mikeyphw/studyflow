@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.mikeyphw.studyflow.core.domain.PublicExamReviewPolicy
 import com.mikeyphw.studyflow.core.domain.PublicExamReviewPolicyCodec
+import com.mikeyphw.studyflow.core.model.StudyDomainInvariants
 import com.mikeyphw.studyflow.core.model.ExamStage
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
@@ -94,7 +95,7 @@ fun PlanSettingsScreen(
     val reviewDays = listOf(reviewDay1, reviewDay2, reviewDay3).map { it.toIntOrNull() }
     val reviewPolicyValid = reviewDays.all { it != null && it in 1..365 } &&
         reviewDays.filterNotNull().zipWithNext().all { (left, right) -> right >= left }
-    val formValid = preferredSessionValue in 5..240 && quietHoursValid &&
+    val formValid = preferredSessionValue in StudyDomainInvariants.preferredSessionMinutes && quietHoursValid &&
         (!shouldShowPublicExamProfile(plan.type) || reviewPolicyValid)
 
     Scaffold(
@@ -170,7 +171,7 @@ fun PlanSettingsScreen(
                 label = { Text(stringResource(R.string.preferred_session_minutes)) },
                 supportingText = { Text(stringResource(R.string.preferred_session_hint)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                isError = preferredSessionValue !in 5..240,
+                isError = preferredSessionValue !in StudyDomainInvariants.preferredSessionMinutes,
                 singleLine = true,
             )
             PreferenceSwitch(

@@ -1,5 +1,6 @@
 package com.mikeyphw.studyflow.desktop
 
+import com.mikeyphw.studyflow.core.domain.PracticeAttemptCodec
 import com.mikeyphw.studyflow.core.model.Annex
 import com.mikeyphw.studyflow.core.model.AnnexId
 import com.mikeyphw.studyflow.core.model.AnnexStorageMode
@@ -462,7 +463,7 @@ data class DesktopStudyFlowSampleData(
                 correctCount = 1,
                 startedAtEpochMillis = now - 5 * HOUR_MILLIS,
                 submittedAtEpochMillis = now - 4 * HOUR_MILLIS,
-                configurationJson = questions.joinToString(prefix = "questionIds=", separator = ",") { it.id.value },
+                configurationJson = PracticeAttemptCodec.configurationForQuestions(questions),
             ),
         )
 
@@ -481,7 +482,7 @@ data class DesktopStudyFlowSampleData(
                 minimumScorePercent = 60,
                 startedAtEpochMillis = now - ONE_WEEK_MILLIS / 5,
                 submittedAtEpochMillis = now - ONE_WEEK_MILLIS / 5 + 25 * 60_000L,
-                configurationJson = questions.joinToString(prefix = "questionIds=", separator = ",") { it.id.value },
+                configurationJson = PracticeAttemptCodec.configurationForQuestions(questions),
             ),
         )
 

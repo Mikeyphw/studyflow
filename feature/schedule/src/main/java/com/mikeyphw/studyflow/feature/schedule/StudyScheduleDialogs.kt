@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.model.StudyDomainInvariants
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.Subject
 import com.mikeyphw.studyflow.core.model.SubjectId
@@ -71,7 +72,7 @@ internal fun ScheduleRuleDialog(
     var enabled by rememberSaveable { mutableStateOf(true) }
     val activeSubjects = subjects.filterNot(Subject::archived).sortedBy(Subject::position)
     val parsedStart = parseMinuteOfDay(start)
-    val parsedDuration = duration.toIntOrNull()?.takeIf { it in 5..720 }
+    val parsedDuration = duration.toIntOrNull()?.takeIf { it in StudyDomainInvariants.sessionMinutes }
     val inputValid = parsedStart != null && parsedDuration != null
 
     AlertDialog(
@@ -167,7 +168,7 @@ internal fun PlannedActivityDialog(
     val availableTopics = topics.filter { topic ->
         !topic.archived && selectedSubject != null && topic.subjectId == selectedSubject
     }.sortedBy(Topic::position)
-    val parsedActivityDuration = duration.toIntOrNull()?.takeIf { it in 5..720 }
+    val parsedActivityDuration = duration.toIntOrNull()?.takeIf { it in StudyDomainInvariants.sessionMinutes }
     val parsedDate = parseScheduleDate(date)
     val parsedTime = parseScheduleTime(start)
     val scheduledStart = scheduleStartEpochMillis(date, start, zoneId)

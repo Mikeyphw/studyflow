@@ -166,8 +166,9 @@ data class StudyPlanSettings(
     val configurationJson: String,
 ) {
     init {
-        require(preferredSessionMinutes in 5..240) {
-            "Preferred session duration must be between 5 and 240 minutes."
+        require(preferredSessionMinutes in StudyDomainInvariants.preferredSessionMinutes) {
+            "Preferred session duration must be between ${StudyDomainInvariants.MIN_SESSION_MINUTES} and " +
+                "${StudyDomainInvariants.MAX_PREFERRED_SESSION_MINUTES} minutes."
         }
         require(quietHoursStartMinute == null || quietHoursStartMinute in 0..1439) {
             "Quiet-hours start must be a minute within the day."

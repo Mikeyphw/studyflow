@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.domain
 
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.QuestionType
+import com.mikeyphw.studyflow.core.model.StudyPlanId
 
 private const val DefaultQuestionCount = 50
 private const val DefaultTimeLimitMinutes = 120
@@ -15,12 +16,15 @@ private const val MaxQuestionCount = 120
  */
 object MockExamStudioPlanner {
     fun preview(
+        planId: StudyPlanId,
         questions: List<Question>,
         request: MockExamStudioRequest = MockExamStudioRequest(),
     ): MockExamStudioBlueprint {
+        require(questions.all { it.studyPlanId == planId }) {
+            "Mock Exam Studio question bank must belong entirely to the requested Study Plan."
+        }
         val normalized = request.normalized()
         val candidates = questions
-            .filter { question -> question.studyPlanId == normalized.planQuestionOwner(questions) }
             .filter { question -> question.isExamEligible() }
             .map { question -> MockExamCandidate(question, question.scoreFor(normalized)) }
             .filter { candidate -> candidate.score > 0 }
@@ -83,9 +87,6 @@ object MockExamStudioPlanner {
     }
 
     private fun Question.isExamEligible(): Boolean = correctAnswer.isNotBlank() && type != QuestionType.ESSAY
-
-    private fun MockExamStudioRequest.planQuestionOwner(questions: List<Question>) =
-        questions.firstOrNull()?.studyPlanId
 
     private fun MockExamStudioRequest.normalized(): MockExamStudioRequest = copy(
         title = title.trim().ifBlank { "Mock exam" },

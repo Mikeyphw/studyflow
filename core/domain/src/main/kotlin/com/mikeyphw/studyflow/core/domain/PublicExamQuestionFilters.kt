@@ -75,6 +75,7 @@ object PublicExamQuestionOutcomeEvidence {
         tests.forEach { test ->
             collect(PracticeAttemptCodec.decode(
                 attemptId = test.id.value,
+                studyPlanId = test.studyPlanId,
                 title = test.title,
                 mode = test.mode,
                 questionCount = test.questionCount,
@@ -88,6 +89,7 @@ object PublicExamQuestionOutcomeEvidence {
         mockExams.forEach { mock ->
             collect(PracticeAttemptCodec.decode(
                 attemptId = mock.id.value,
+                studyPlanId = mock.studyPlanId,
                 title = mock.title,
                 mode = mock.mode,
                 questionCount = mock.questionCount,

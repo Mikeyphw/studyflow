@@ -173,6 +173,7 @@ fun PracticeWorkspaceScreen(
     val mockStudioDefaultTitle = stringResource(R.string.mock_exam_studio_generated_title, plan.name)
     val mockStudio = remember(questions, mockStudioDefaultTitle) {
         practiceManager.previewMockExamStudio(
+            planId = plan.id,
             questions = questions,
             request = MockExamStudioRequest(title = mockStudioDefaultTitle),
         )
@@ -267,7 +268,7 @@ fun PracticeWorkspaceScreen(
                         openMockStudio = openMockStudio,
                         onOpenQuestionBank = onOpenQuestionBank,
                         onPreviewMockExam = { request ->
-                            practiceManager.previewMockExamStudio(questions, request)
+                            practiceManager.previewMockExamStudio(plan.id, questions, request)
                         },
                         onPreviewQuestionImport = { rawText ->
                             practiceManager.previewQuestionImport(

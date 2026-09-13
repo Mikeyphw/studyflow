@@ -16,3 +16,9 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S0-10 | 1/30 | Implemented | desugaring dependency/configuration owned only by Android convention |
 | S0-11 | 1/30 | Implemented; materialization required on target | dependency locking + SHA-256 metadata refresh/finalizer + fail-closed release integrity gate |
 | S0-12 | 1/30 | Implemented | global `android.sync.suppressAgpWarnings` removed |
+| S1-01 | 2/30 | Implemented | canonical persisted active seconds + monotonic millisecond runtime clock; goal/public-exam analytics regression tests |
+| S1-02 | 2/30 | Implemented | shared 5..720 session/activity target contract; long planned-activity start regression |
+| S1-04 | 2/30 | Implemented | `questionSnapshotV1` immutable attempt payload; frozen grading and legacy start upgrade/fail-closed behavior |
+| S1-05 | 2/30 | Implemented | explicit `StudyPlanId` Mock Exam Studio owner + mixed-plan rejection |
+| S1-11 | 2/30 | Implemented | strict single non-empty identity record; no current-bank fallback; malformed/started legacy attempts fail closed |
+| S1-12 | 2/30 | Implemented | `StudyDomainInvariants` shared by models/managers and relevant Android forms; material/duration contracts reconciled |

@@ -10,6 +10,7 @@ import com.mikeyphw.studyflow.core.model.ScheduleGenerationResult
 import com.mikeyphw.studyflow.core.model.ScheduleRule
 import com.mikeyphw.studyflow.core.model.ScheduleRuleId
 import com.mikeyphw.studyflow.core.model.ScheduleRuleType
+import com.mikeyphw.studyflow.core.model.StudyDomainInvariants
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyStrategy
 import java.time.LocalDate
@@ -23,12 +24,10 @@ class ManageStudySchedule(
     fun observeSchedule(planId: StudyPlanId) = repository.observeSchedule(planId)
 
     suspend fun saveStrategy(strategy: StudyStrategy): StudyStrategy {
-        require(strategy.minimumSessionMinutes in 5..480) {
-            "Minimum session length must be between 5 and 480 minutes."
-        }
-        require(strategy.maximumSessionMinutes in strategy.minimumSessionMinutes..720) {
-            "Maximum session length must be greater than or equal to the minimum."
-        }
+        StudyDomainInvariants.requireStrategyDurations(
+            strategy.minimumSessionMinutes,
+            strategy.maximumSessionMinutes,
+        )
         val ratioTotal = strategy.theoryRatioPercent + strategy.questionRatioPercent + strategy.reviewRatioPercent
         require(ratioTotal == 100) { "Theory, question and review ratios must total 100 percent." }
         return repository.upsertStrategy(strategy)
@@ -44,7 +43,7 @@ class ManageStudySchedule(
     }
 
     suspend fun saveRule(rule: ScheduleRule): ScheduleRule {
-        require(rule.durationMinutes in 5..720) { "Schedule blocks must be between 5 and 720 minutes." }
+        StudyDomainInvariants.requireSessionMinutes(rule.durationMinutes, "Schedule block")
         require(rule.dayOfWeek in 1..7) { "Day of week must be between 1 and 7." }
         if (rule.type != ScheduleRuleType.DAY_OFF) {
             require(rule.startMinuteOfDay in 0..1439) { "Start time must be inside the day." }
@@ -57,7 +56,7 @@ class ManageStudySchedule(
 
     suspend fun saveActivity(activity: PlannedActivity): PlannedActivity {
         require(activity.title.isNotBlank()) { "Planned activity title cannot be blank." }
-        require(activity.plannedDurationMinutes in 5..720) { "Planned duration must be between 5 and 720 minutes." }
+        StudyDomainInvariants.requireSessionMinutes(activity.plannedDurationMinutes, "Planned duration")
         return repository.upsertPlannedActivity(activity)
     }
 

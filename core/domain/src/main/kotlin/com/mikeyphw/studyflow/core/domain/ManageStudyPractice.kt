@@ -141,7 +141,7 @@ class ManageStudyPractice(
                 correctCount = 0,
                 startedAtEpochMillis = null,
                 submittedAtEpochMillis = null,
-                configurationJson = questions.joinToString(prefix = "questionIds=", separator = ",") { it.id.value },
+                configurationJson = PracticeAttemptCodec.configurationForQuestions(questions),
             ),
         )
     }
@@ -177,6 +177,7 @@ class ManageStudyPractice(
     ): MockExam {
         require(title.isNotBlank()) { "Mock Exam title cannot be blank." }
         require(questions.isNotEmpty()) { "Mock Exam needs at least one question." }
+        require(questions.all { it.studyPlanId == planId }) { "All Mock Exam questions must belong to the Study Plan." }
         require(timeLimitSeconds > 0) { "Mock Exam time limit must be positive." }
         require(negativeMarking.isFinite() && negativeMarking >= 0.0) {
             "Negative marking must be finite and non-negative."
@@ -199,16 +200,17 @@ class ManageStudyPractice(
                 minimumScorePercent = minimumScorePercent,
                 startedAtEpochMillis = null,
                 submittedAtEpochMillis = null,
-                configurationJson = questions.joinToString(prefix = "questionIds=", separator = ",") { it.id.value },
+                configurationJson = PracticeAttemptCodec.configurationForQuestions(questions),
             ),
         )
     }
 
 
     fun previewMockExamStudio(
+        planId: StudyPlanId,
         questions: List<Question>,
         request: MockExamStudioRequest = MockExamStudioRequest(),
-    ): MockExamStudioBlueprint = MockExamStudioPlanner.preview(questions, request)
+    ): MockExamStudioBlueprint = MockExamStudioPlanner.preview(planId, questions, request)
 
     suspend fun createMockExamFromStudio(
         id: MockExamId,
@@ -216,7 +218,7 @@ class ManageStudyPractice(
         questions: List<Question>,
         request: MockExamStudioRequest = MockExamStudioRequest(),
     ): MockExam {
-        val blueprint = previewMockExamStudio(questions, request)
+        val blueprint = previewMockExamStudio(planId, questions, request)
         require(blueprint.executable) { "Mock Exam Studio needs at least one eligible question." }
         return createMockExam(
             id = id,
@@ -247,7 +249,10 @@ class ManageStudyPractice(
         require(preview.executable) {
             "Exam blueprint is incomplete; preview the missing question supply before creating the mock."
         }
-        val frozenConfiguration = ExamBlueprintCodec.encodeConfiguration(preview)
+        val frozenConfiguration = PracticeAttemptCodec.freezeConfiguration(
+            ExamBlueprintCodec.encodeConfiguration(preview),
+            preview.selectedQuestions,
+        )
         return repository.upsertMockExam(
             MockExam(
                 id = id,
@@ -465,10 +470,10 @@ class ManageStudyPractice(
             correctCount = 0,
             startedAtEpochMillis = null,
             submittedAtEpochMillis = null,
-            configurationJson = drill.questions.joinToString(
-                prefix = "questionIds=",
-                separator = ",",
-            ) { it.id.value } + "\nweaknessDrillKey=$key",
+            configurationJson = PracticeAttemptCodec.configurationForQuestions(
+                drill.questions,
+                metadataLines = listOf("weaknessDrillKey=$key"),
+            ),
         )
         return repository.createWeaknessDrillIfAbsent(candidate, key)
     }

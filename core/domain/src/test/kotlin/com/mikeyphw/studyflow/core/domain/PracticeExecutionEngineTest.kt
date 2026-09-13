@@ -19,12 +19,13 @@ class PracticeExecutionEngineTest {
     @Test
     fun answerRecordsCorrectnessAndRoundTripsConfiguration() {
         val engine = PracticeExecutionEngine(clock = { 42L })
-        val test = test("questionIds=q1")
+        val test = test(PracticeAttemptCodec.configurationForQuestions(listOf(question)))
         val state = engine.stateForTest(test, listOf(question))
         val answered = engine.answer(state, question, "b", elapsedSeconds = 12)
         val encoded = PracticeAttemptCodec.encode(answered)
         val decoded = PracticeAttemptCodec.decode(
             attemptId = test.id.value,
+            studyPlanId = test.studyPlanId,
             title = test.title,
             questionCount = 1,
             configuration = encoded,
@@ -42,12 +43,12 @@ class PracticeExecutionEngineTest {
     @Test
     fun wrongAnswerClassificationRoundTripsAndDefaultsTruthfully() {
         val engine = PracticeExecutionEngine(clock = { 43L })
-        val base = engine.stateForTest(test("questionIds=q1"), listOf(question))
+        val base = engine.stateForTest(test(PracticeAttemptCodec.configurationForQuestions(listOf(question))), listOf(question))
         val classified = engine.answer(
             base, question, "A", elapsedSeconds = 9, errorCategory = ErrorCategory.INTERPRETATION,
         )
         val decoded = PracticeAttemptCodec.decode(
-            attemptId = "test", title = "Attempt", questionCount = 1,
+            attemptId = "test", studyPlanId = planId, title = "Attempt", questionCount = 1,
             configuration = PracticeAttemptCodec.encode(classified), questions = listOf(question),
             startedAtEpochMillis = 1, submittedAtEpochMillis = null, timeLimitSeconds = null,
         )
@@ -60,7 +61,7 @@ class PracticeExecutionEngineTest {
     fun finishSummarizesAnsweredQuestions() {
         val engine = PracticeExecutionEngine(clock = { 100L })
         val state = engine.answer(
-            state = engine.stateForTest(test("questionIds=q1"), listOf(question)),
+            state = engine.stateForTest(test(PracticeAttemptCodec.configurationForQuestions(listOf(question))), listOf(question)),
             question = question,
             chosenAnswer = "A",
             elapsedSeconds = 5,
@@ -76,7 +77,7 @@ class PracticeExecutionEngineTest {
     @Test
     fun examModeHidesExplanationUntilTerminalSubmission() {
         val engine = PracticeExecutionEngine(clock = { 50L })
-        val initial = engine.stateForTest(test("questionIds=q1").copy(mode = TestMode.EXAM), listOf(question))
+        val initial = engine.stateForTest(test(PracticeAttemptCodec.configurationForQuestions(listOf(question))).copy(mode = TestMode.EXAM), listOf(question))
         val answered = engine.answer(initial, question, "B", elapsedSeconds = 7)
 
         assertFalse(answered.explanationVisible(question.id))
@@ -91,10 +92,11 @@ class PracticeExecutionEngineTest {
         val second = question("q2", "A")
         val base = PracticeAttemptCodec.decode(
             attemptId = "mock",
+            studyPlanId = planId,
             title = "Mock",
             mode = TestMode.EXAM,
             questionCount = 2,
-            configuration = "questionIds=q1,q2",
+            configuration = PracticeAttemptCodec.configurationForQuestions(listOf(question, second)),
             questions = listOf(question, second),
             startedAtEpochMillis = 1L,
             submittedAtEpochMillis = null,
@@ -109,6 +111,49 @@ class PracticeExecutionEngineTest {
         assertEquals(2, summary.totalCount)
         assertEquals(38, summary.scorePercent)
         assertEquals(false, summary.passed)
+    }
+
+
+    @Test
+    fun frozenAttemptGradesAgainstCreationSnapshotAfterQuestionMutation() {
+        val engine = PracticeExecutionEngine(clock = { 77L })
+        val frozenConfiguration = PracticeAttemptCodec.configurationForQuestions(listOf(question))
+        val mutated = question.copy(correctAnswer = "A", updatedAtEpochMillis = 99L)
+        val state = engine.stateForTest(test(frozenConfiguration), listOf(mutated))
+        val answered = engine.answer(state, mutated, "B", elapsedSeconds = 3)
+
+        assertEquals("B", state.questions.single().correctAnswer)
+        assertEquals(true, answered.answers.single().correct)
+        assertEquals("B", answered.answers.single().correctAnswer)
+    }
+
+
+    @Test
+    fun frozenAttemptRemainsExecutableWhenBankQuestionIsDeleted() {
+        val engine = PracticeExecutionEngine(clock = { 78L })
+        val frozenConfiguration = PracticeAttemptCodec.configurationForQuestions(listOf(question))
+        val state = engine.stateForTest(test(frozenConfiguration), emptyList())
+        val answered = engine.answer(state, question, "B", elapsedSeconds = 4)
+
+        assertEquals("Question", state.questions.single().statement)
+        assertEquals(true, answered.answers.single().correct)
+    }
+
+    @Test
+    fun malformedLegacyAttemptCannotBorrowCurrentQuestionIdentity() {
+        val engine = PracticeExecutionEngine()
+        val unstarted = test("").copy(startedAtEpochMillis = null)
+        val result = runCatching { engine.stateForTest(unstarted, listOf(question)) }
+
+        assertEquals(true, result.isFailure)
+    }
+
+    @Test
+    fun startedLegacyAttemptWithoutSnapshotFailsClosed() {
+        val engine = PracticeExecutionEngine()
+        val result = runCatching { engine.stateForTest(test("questionIds=q1"), listOf(question)) }
+
+        assertEquals(true, result.isFailure)
     }
 
     private fun test(configuration: String) = StudyTest(

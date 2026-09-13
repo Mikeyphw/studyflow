@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mikeyphw.studyflow.core.model.StudyDomainInvariants
 import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanSettings
@@ -116,7 +117,7 @@ fun PlanEditorScreen(
     val dateValid = isValidIsoDateOrBlank(examDate)
     val objectiveValid = name.isNotBlank()
     val targetValid = weeklyGoalValue in 1..100 && dateValid
-    val preferencesValid = preferredSessionValue in 5..240
+    val preferencesValid = preferredSessionValue in StudyDomainInvariants.preferredSessionMinutes
     val canAdvance = when (currentStep) {
         0 -> objectiveValid
         1 -> targetValid

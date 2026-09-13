@@ -64,6 +64,86 @@ class CoreModelInvariantTest {
         }
     }
 
+
+    @Test
+    fun canonicalSessionBoundsAcceptLongStudyDurationsAcrossModels() {
+        val planId = StudyPlanId("plan")
+        StudyStrategy(
+            id = StudyStrategyId("long-strategy"),
+            studyPlanId = planId,
+            type = StudyStrategyType.ADAPTIVE,
+            minimumSessionMinutes = 480,
+            maximumSessionMinutes = 720,
+            theoryRatioPercent = 50,
+            questionRatioPercent = 30,
+            reviewRatioPercent = 20,
+            adaptivePlanningEnabled = true,
+            configurationJson = "{}",
+        )
+        PlannedActivity(
+            id = PlannedActivityId("long-activity"),
+            studyPlanId = planId,
+            subjectId = null,
+            topicId = null,
+            materialId = null,
+            videoResourceId = null,
+            type = StudyActivityType.THEORY,
+            title = "Long block",
+            scheduledStartEpochMillis = null,
+            plannedDurationMinutes = 720,
+            status = PlannedActivityStatus.PLANNED,
+            locked = false,
+            completedAtEpochMillis = null,
+        )
+        StudySession(
+            id = StudySessionId("long-session"),
+            studyPlanId = planId,
+            plannedActivityId = null,
+            subjectId = null,
+            topicId = null,
+            materialId = null,
+            videoResourceId = null,
+            type = StudyActivityType.THEORY,
+            status = StudySessionStatus.RUNNING,
+            startedAtEpochMillis = 1L,
+            endedAtEpochMillis = null,
+            grossDurationSeconds = 0L,
+            pauseDurationSeconds = 0L,
+            pagesCompleted = 0,
+            questionsAnswered = 0,
+            correctAnswers = 0,
+            concentrationRating = null,
+            difficultyRating = null,
+            notes = "",
+            targetDurationMinutes = 720,
+        )
+    }
+
+    @Test
+    fun materialTotalUnitsUsesSamePositiveContractAsManager() {
+        assertThrows(IllegalArgumentException::class.java) {
+            StudyMaterial(
+                id = StudyMaterialId("empty-material"),
+                studyPlanId = StudyPlanId("plan"),
+                subjectId = null,
+                topicId = null,
+                type = StudyMaterialType.BOOK,
+                title = "Book",
+                description = "",
+                sourceUri = null,
+                author = null,
+                totalUnits = 0,
+                completedUnits = 0,
+                primary = false,
+                favorite = false,
+                archived = false,
+                tags = emptyList(),
+                createdAtEpochMillis = 1L,
+                updatedAtEpochMillis = 1L,
+            )
+        }
+    }
+
     @Test
     fun mockExamRejectsNonFiniteNegativeMarking() {
         assertThrows(IllegalArgumentException::class.java) {

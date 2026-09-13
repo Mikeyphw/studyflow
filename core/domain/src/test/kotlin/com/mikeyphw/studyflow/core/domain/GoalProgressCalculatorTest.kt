@@ -50,7 +50,25 @@ class GoalProgressCalculatorTest {
         assertEquals(null, evaluated.completedAtEpochMillis)
     }
 
-    private fun session(id: String, startedAt: Long, grossSeconds: Long) = StudySession(
+    @Test
+    fun completedSessionDoesNotSubtractRecordedPauseFromPersistedActiveTimeAgain() {
+        val now = Instant.parse("2026-08-13T12:00:00Z").toEpochMilli()
+        val evaluated = StudyGoalProgressEngine.evaluate(
+            goal = goal(current = 0.0, target = 30.0),
+            evidence = GoalEvidence(
+                sessions = listOf(session("paused", now - 60_000L, 600L, pauseSeconds = 600L)),
+                tests = emptyList(),
+                mockExams = emptyList(),
+                topics = emptyList(),
+            ),
+            nowEpochMillis = now,
+            zoneId = ZoneId.of("UTC"),
+        )
+
+        assertEquals(10.0, evaluated.currentValue, 0.0)
+    }
+
+    private fun session(id: String, startedAt: Long, grossSeconds: Long, pauseSeconds: Long = 0L) = StudySession(
         id = StudySessionId(id),
         studyPlanId = StudyPlanId("plan-1"),
         plannedActivityId = null,
@@ -63,7 +81,7 @@ class GoalProgressCalculatorTest {
         startedAtEpochMillis = startedAt,
         endedAtEpochMillis = startedAt + grossSeconds * 1_000L,
         grossDurationSeconds = grossSeconds,
-        pauseDurationSeconds = 0L,
+        pauseDurationSeconds = pauseSeconds,
         pagesCompleted = 0,
         questionsAnswered = 0,
         correctAnswers = 0,

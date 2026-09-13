@@ -44,7 +44,7 @@ data class StudyMaterial(
 ) {
     init {
         require(title.isNotBlank()) { "Study material title cannot be blank." }
-        require(totalUnits == null || totalUnits >= 0) { "Total units cannot be negative." }
+        StudyDomainInvariants.requireMaterialTotalUnits(totalUnits)
         require(completedUnits >= 0) { "Completed units cannot be negative." }
         require(totalUnits == null || completedUnits <= totalUnits) { "Completed units cannot exceed total units." }
     }

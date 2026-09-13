@@ -12,6 +12,7 @@ import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabMessage
 import com.mikeyphw.studyflow.core.diagnostics.StudyEngineLabReport
 import com.mikeyphw.studyflow.core.domain.GlobalSearchContentType
 import com.mikeyphw.studyflow.core.domain.PracticeAnalytics
+import com.mikeyphw.studyflow.core.domain.PracticeAttemptCodec
 import com.mikeyphw.studyflow.core.domain.PracticeExecutionEngine
 import com.mikeyphw.studyflow.core.domain.PracticeDeckRequest
 import com.mikeyphw.studyflow.core.domain.MockExamStudioPlanner
@@ -243,7 +244,7 @@ private suspend fun inspectStudyEngine(
         diagnosticQuestion(planId, "debug-practice-1", "A", nowEpochMillis),
         diagnosticQuestion(planId, "debug-practice-2", "B", nowEpochMillis),
     )
-    val questionIdsConfig = "questionIds=${syntheticQuestions.joinToString(",") { it.id.value }}"
+    val questionIdsConfig = PracticeAttemptCodec.configurationForQuestions(syntheticQuestions)
     val executionEngine = PracticeExecutionEngine(clock = { nowEpochMillis + 1_000L })
     val immediateTest = StudyTest(
         id = StudyTestId("debug-immediate"),
@@ -355,8 +356,9 @@ private suspend fun inspectStudyEngine(
         true
     }
     val mockRequest = MockExamStudioRequest(questionCount = 1)
-    val mockBlueprintA = MockExamStudioPlanner.preview(questions, mockRequest)
-    val mockBlueprintB = MockExamStudioPlanner.preview(questions, mockRequest)
+    val mockOwner = questions.firstOrNull()?.studyPlanId ?: plan.id
+    val mockBlueprintA = MockExamStudioPlanner.preview(mockOwner, questions, mockRequest)
+    val mockBlueprintB = MockExamStudioPlanner.preview(mockOwner, questions, mockRequest)
     val mockPlannerCanaryValid = mockBlueprintA == mockBlueprintB &&
         mockBlueprintA.questionCount <= mockRequest.questionCount &&
         mockBlueprintA.selectedQuestions.map { it.id }.distinct().size == mockBlueprintA.selectedQuestions.size &&

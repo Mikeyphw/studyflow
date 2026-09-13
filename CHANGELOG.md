@@ -1,5 +1,14 @@
 ## Final remediation OV01 — repository / Gradle / Devtool truth baseline
 
+## OV02 — Session & practice canonical invariants (Overlay 2 of 30)
+
+- Fixed active-vs-paused Study Session accounting and monotonic pause/resume accumulation.
+- Unified session, strategy and material invariants across shared models/managers and relevant Android forms.
+- Added immutable practice/mock question snapshots, strict attempt identity, frozen grading, and portability remapping.
+- Made Mock Exam Studio Plan ownership explicit and fail-closed for mixed-Plan inputs.
+- Corrected the OV01 Gradle wrapper launcher to invoke `GradleWrapperMain` through the wrapper classpath.
+- Added `scripts/validate_ov02_session_practice_invariants.sh` as the targeted OV02 validator.
+
 - Replaced configuration-cache-risky root execution closures and `projectsEvaluated` ordering with standalone verifiers and lazy task ordering.
 - Made phone Release signing fail before Release work, converted `verifyRepositoryContracts` to explicit task ownership, and added declared I/O/cache boundaries for root verification `Exec` tasks.
 - Made Devtool `@everything` include quality, aligned direct Gradle resources with the standard Termux policy, restored generated-style wrapper launchers, removed duplicate core:data desugaring and broad AGP warning suppression.

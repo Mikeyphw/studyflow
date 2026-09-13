@@ -5,6 +5,7 @@ import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyActivityType
 import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.StudyCycleSessionBinding
+import com.mikeyphw.studyflow.core.model.StudyDomainInvariants
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
@@ -47,9 +48,7 @@ class ManageStudySession(
         cycleBinding: StudyCycleSessionBinding? = null,
     ): StudySession {
         require(title.isNotBlank()) { "Quick Study Session title cannot be blank." }
-        require(targetDurationMinutes == null || targetDurationMinutes in 5..240) {
-            "Target duration must be between 5 and 240 minutes."
-        }
+        StudyDomainInvariants.requireOptionalSessionMinutes(targetDurationMinutes, "Target duration")
         val resolvedTargetDurationMinutes = targetDurationMinutes ?: studyPlanRepository?.let { plans ->
             requireNotNull(plans.observeStoredPlanSettings(studyPlanId).first()) {
                 "Study Plan settings must be persisted before starting a quick Study Session."
@@ -291,18 +290,21 @@ private class StudySessionRuntimeClock(
 ) {
     private data class RuntimeState(
         val status: StudySessionStatus,
-        val activeSeconds: Long,
-        val pausedSeconds: Long,
+        val activeMillis: Long,
+        val pausedMillis: Long,
         val lastMonotonicMillis: Long,
-    )
+    ) {
+        val activeSeconds: Long get() = activeMillis / 1_000L
+        val pausedSeconds: Long get() = pausedMillis / 1_000L
+    }
 
     private val states = java.util.concurrent.ConcurrentHashMap<StudySessionId, RuntimeState>()
 
     fun register(session: StudySession) {
         states[session.id] = RuntimeState(
             status = session.status,
-            activeSeconds = session.grossDurationSeconds.coerceAtLeast(0),
-            pausedSeconds = session.pauseDurationSeconds.coerceAtLeast(0),
+            activeMillis = session.grossDurationSeconds.coerceAtLeast(0) * 1_000L,
+            pausedMillis = session.pauseDurationSeconds.coerceAtLeast(0) * 1_000L,
             lastMonotonicMillis = monotonicClockMillis(),
         )
     }
@@ -320,6 +322,7 @@ private class StudySessionRuntimeClock(
         return session.copy(
             status = StudySessionStatus.PAUSED,
             endedAtEpochMillis = wallNow.coerceAtLeast(session.startedAtEpochMillis),
+            // Historical schema name: this column stores canonical active study time, not wall/gross time.
             grossDurationSeconds = snapshot.activeSeconds,
             pauseDurationSeconds = snapshot.pausedSeconds,
         )
@@ -358,14 +361,14 @@ private class StudySessionRuntimeClock(
     private fun snapshot(session: StudySession): RuntimeState {
         val monotonicNow = monotonicClockMillis()
         val previous = states[session.id]?.takeIf { it.status == session.status } ?: bootstrap(session, monotonicNow)
-        val deltaSeconds = ((monotonicNow - previous.lastMonotonicMillis).coerceAtLeast(0L) / 1_000L)
+        val deltaMillis = (monotonicNow - previous.lastMonotonicMillis).coerceAtLeast(0L)
         val updated = when (session.status) {
             StudySessionStatus.RUNNING -> previous.copy(
-                activeSeconds = previous.activeSeconds + deltaSeconds,
+                activeMillis = previous.activeMillis + deltaMillis,
                 lastMonotonicMillis = monotonicNow,
             )
             StudySessionStatus.PAUSED -> previous.copy(
-                pausedSeconds = previous.pausedSeconds + deltaSeconds,
+                pausedMillis = previous.pausedMillis + deltaMillis,
                 lastMonotonicMillis = monotonicNow,
             )
             StudySessionStatus.COMPLETED, StudySessionStatus.CANCELLED -> previous
@@ -379,8 +382,8 @@ private class StudySessionRuntimeClock(
         val wallNow = wallClockMillis()
         return RuntimeState(
             status = session.status,
-            activeSeconds = StudySessionTimer.activeSeconds(session, wallNow),
-            pausedSeconds = StudySessionTimer.pausedSeconds(session, wallNow),
+            activeMillis = StudySessionTimer.activeSeconds(session, wallNow) * 1_000L,
+            pausedMillis = StudySessionTimer.pausedSeconds(session, wallNow) * 1_000L,
             lastMonotonicMillis = monotonicNow,
         )
     }
