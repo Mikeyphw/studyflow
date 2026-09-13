@@ -128,6 +128,32 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
 }
 
+
+
+// OV01: fail release packaging on missing/partial signing credentials before release build work.
+// `mustRunAfter` has no effect for ordinary Release unit tests/lint unless the preflight is also
+// in the graph, so source validation can still run without production signing secrets.
+val verifyPhoneReleaseSigningPreflight = tasks.register<Exec>("verifyPhoneReleaseSigningPreflight") {
+    group = "verification"
+    description = "Fails fast when StudyFlow phone Release signing inputs are incomplete or invalid."
+    workingDir(rootProject.projectDir)
+    commandLine("python3", "scripts/ov01_release_gate.py", "signing", "--surface", "phone")
+}
+
+tasks.configureEach {
+    if (name != "verifyPhoneReleaseSigningPreflight" && "Release" in name) {
+        mustRunAfter(verifyPhoneReleaseSigningPreflight)
+    }
+    val releasePackagingTask =
+        name == "assembleRelease" ||
+            name == "bundleRelease" ||
+            name.startsWith("packageRelease") ||
+            name.startsWith("signRelease")
+    if (releasePackagingTask) {
+        dependsOn(verifyPhoneReleaseSigningPreflight)
+    }
+}
+
 // ATT12 v4 — Termux final-seal test stability.
 tasks.withType<Test>().configureEach {
     maxParallelForks = 1

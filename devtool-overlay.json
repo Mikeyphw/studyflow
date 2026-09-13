@@ -1,334 +1,382 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_sflp02_03_journal_reconciliation_v1",
+  "name": "studyflow_ov01_repository_gradle_devtool_truth_baseline_v1",
   "target": "studyflow_android",
-  "description": "SFLP02+SFLP03 complete canonical append-only domain operation journal and transport-neutral vector-frontier reconciliation engine with deterministic conflict/replay semantics.",
-  "commit_message": "SFLP02-03: add journal and reconciliation engine",
+  "description": "Overlay 1 of 30: remediate all twelve S0 repository/Gradle/Devtool foundation findings with configuration-cache-safe task ownership, fail-fast signing, verifier I/O boundaries, Devtool truth, wrapper/dependency integrity, runtime-state hygiene/finalization, docs and regression contracts.",
+  "commit_message": "OV01: establish repository Gradle Devtool truth baseline",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "SFLP02-03: add journal and reconciliation engine"
+    "message": "OV01: establish repository Gradle Devtool truth baseline"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "SFLP02-03: add journal and reconciliation engine"
+      "message": "OV01: establish repository Gradle Devtool truth baseline"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built against the exact post-PARITY01-03 + SFLP01 state produced from studyflow-20260909-005851-916596.tar.gz."
+    "notes": "Built against exact supplied studyflow-20260912-173134-808724.tar.gz snapshot and final deduplicated audit package dated 2026-09-13."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_sflp02_03_journal_reconciliation_v1",
+    "name": "studyflow_ov01_repository_gradle_devtool_truth_baseline_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "sflp02-operation-journal",
-        "purpose": "Canonical append-only domain operations, vector frontiers, revisions, replay, checkpoints, tombstones, and integrity.",
+        "id": "ov01-gradle-truth",
+        "purpose": "Configuration-cache-safe Gradle graph, signing preflight, Exec I/O ownership, dependency locking, wrappers and warning policy.",
         "paths": [
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowDomainOperation.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournal.kt",
-          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournalTest.kt"
+          "app/build.gradle.kts",
+          "build-logic/convention/build.gradle.kts",
+          "build.gradle.kts",
+          "core/data/build.gradle.kts",
+          "gradle.properties",
+          "gradlew",
+          "gradlew.bat",
+          "settings.gradle.kts"
         ]
       },
       {
-        "id": "sflp03-reconciliation",
-        "purpose": "Transport-neutral peer frontier exchange, batched missing-operation transfer, conflict handling, dedupe, and interruption recovery.",
-        "paths": [
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliation.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncProtocol.kt",
-          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliationEngineTest.kt",
-          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncCodecGoldenTest.kt",
-          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncWireTest.kt",
-          "core/link/src/test/resources/sflp/v1/sync-frontier-request.json",
-          "core/link/src/test/resources/sflp/v1/sync-frontier-response.json",
-          "core/link/src/test/resources/sflp/v1/sync-operations-response.json",
-          "core/link/src/test/resources/sflp/v1/sync-pull-request.json",
-          "protocol/sflp/v1/golden/sync-frontier-request.json",
-          "protocol/sflp/v1/golden/sync-frontier-response.json",
-          "protocol/sflp/v1/golden/sync-operations-response.json",
-          "protocol/sflp/v1/golden/sync-pull-request.json",
-          "protocol/sflp/v1/sflp-sync.schema.json"
-        ]
-      },
-      {
-        "id": "sflp02-03-integration-truth",
-        "purpose": "Focused Gradle/Devtool validation plus architecture, roadmap, product-truth, and changelog updates.",
+        "id": "ov01-devtool-truth",
+        "purpose": "Complete Devtool workspace groups/resource policy plus safe runtime-registry cleanup/finalization without inventorying Devtool-owned state.",
         "paths": [
           ".devtool.toml",
+          ".gitignore",
+          "scripts/ov01_finalize_target_state.sh",
+          "scripts/ov01_prune_stale_devtool_state.py"
+        ]
+      },
+      {
+        "id": "ov01-validation-integrity",
+        "purpose": "Behavioral OV01 verifier, dependency-integrity materialization, release gate migration, and compatibility updates to historical validators.",
+        "paths": [
+          "scripts/ov01_release_gate.py",
+          "scripts/refresh_gradle_dependency_integrity.sh",
+          "scripts/run_gradle_verifier.py",
+          "scripts/verify_att12_attention_release_final_seal.py",
+          "scripts/verify_formatting.py",
+          "scripts/verify_gradle_dependency_integrity.py",
+          "scripts/verify_ov01_repository_gradle_devtool_truth.py",
+          "scripts/verify_phase_48_49.py",
+          "scripts/verify_phase_50_51.py",
+          "scripts/verify_phase_52_53.py",
+          "scripts/verify_phase_54_55.py",
+          "scripts/verify_phase_56_57.py",
+          "scripts/verify_phase_58_59.py",
+          "scripts/verify_phase_60_61.py",
+          "scripts/verify_stable_toolchain_baseline.py",
+          "scripts/verify_studyflow_gradle_task_graph_optimization_v4.py"
+        ]
+      },
+      {
+        "id": "ov01-documentation-ledger",
+        "purpose": "Roadmap closure ledger and implementation/change documentation for S0-01 through S0-12.",
+        "paths": [
           "CHANGELOG.md",
-          "SFLP02_03_JOURNAL_RECONCILIATION.md",
-          "build.gradle.kts",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLinkProtocol.kt",
-          "docs/architecture/SFLP02_03_JOURNAL_RECONCILIATION.md",
-          "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md",
-          "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
-          "scripts/verify_sflp02_03_journal_reconciliation.py"
+          "README.md",
+          "docs/quality/OV01_REPOSITORY_GRADLE_DEVTOOL_TRUTH_BASELINE.md",
+          "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 26,
+    "count": 32,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool.toml",
         "mode": "0o600",
-        "sha256": "c48352e05d5b2357fcb10e15acbda8404a3f8f88b3b109d57587e4bae9d66d19",
-        "size": 24384,
+        "sha256": "f70949718ca4e983bc186fbf102c6b05f7a7639e15e756a5acd3469227bf76ee",
+        "size": 14969,
         "source_mode": "0o600",
-        "source_sha256": "f28e19c1f1602a30dbc81f95f8c8010f19467e12c5c48852f6b09a4520b47499",
-        "source_size": 24290
+        "source_sha256": "d5fbd2c4221cab1e8e3c89b3cc2abffd2f03c26846537405ec5417eb153083f2",
+        "source_size": 14789
+      },
+      {
+        "action": "modify",
+        "path": ".gitignore",
+        "mode": "0o600",
+        "sha256": "899da4f80420674d0f19f6bea19ec138540a030a26df3d9ea36817601d90dfd6",
+        "size": 1267,
+        "source_mode": "0o600",
+        "source_sha256": "36c9b79495b7b48dfc004dd4d379bc5fd7e24faf47125a3c4817c742d8d94d8e",
+        "source_size": 1165
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "cd11cd54f1d03e6195034e6939a9e7de9cb4a9f33d2942cf214375a5c5692c74",
-        "size": 39467,
+        "sha256": "b30995b5d79f0a6dfed80f5f5772c67e4739c2e2ab1478997f830c1625d7b746",
+        "size": 66165,
         "source_mode": "0o600",
-        "source_sha256": "b291855d1c45746ad47ee7d0654e62f582c3c4ca7ddc16aebb373675dd11d763",
-        "source_size": 38759
+        "source_sha256": "1840ee34a558ed44a522605179d71b922089de34b794ed10f10f07c5681dd8f7",
+        "source_size": 65159
       },
       {
-        "action": "add",
-        "path": "SFLP02_03_JOURNAL_RECONCILIATION.md",
-        "mode": "0o644",
-        "sha256": "b8864192708bc11c085033ec9e9fc2d239c21ccc76c70a24e41726932bb0f09b",
-        "size": 3947
+        "action": "modify",
+        "path": "README.md",
+        "mode": "0o600",
+        "sha256": "b887e009f55711c7e1b13d61957ac8395bafb080b5f086c7184006da713c6447",
+        "size": 46690,
+        "source_mode": "0o600",
+        "source_sha256": "251aa4f4c66b6570b89593004961b1a985065f73baca05ee1020f762530ba715",
+        "source_size": 46110
+      },
+      {
+        "action": "modify",
+        "path": "app/build.gradle.kts",
+        "mode": "0o600",
+        "sha256": "c5bdd6cd6cef05955b46506e1aec66384d1c13f09d32c888851ddd8c35c00dd5",
+        "size": 6265,
+        "source_mode": "0o600",
+        "source_sha256": "f3c9bb1e3679b0e2e452546f7df64126b1dce9ba16eff9ef1c9d638c11a0cb1a",
+        "source_size": 5158
+      },
+      {
+        "action": "modify",
+        "path": "build-logic/convention/build.gradle.kts",
+        "mode": "0o600",
+        "sha256": "b0b6eccf8d236b64b657fbda39274517314f6b271ee0278d8ec9793c4bf18a19",
+        "size": 1995,
+        "source_mode": "0o600",
+        "source_sha256": "4ebb96095aa78d58516565b6c5ed3037b0c51862b37ba7a20d38ce895cf8a8f1",
+        "source_size": 1860
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o600",
-        "sha256": "ef8baa85d0bd3944f917f4d36d0d11b8586d492ff11246aeb6c976e866550749",
-        "size": 56497,
+        "sha256": "c6202d9f9f88ad48093a7536de5e0625867e3150a591d2a744f6eee5159006a4",
+        "size": 90855,
         "source_mode": "0o600",
-        "source_sha256": "6c9986d528ac3bef2eebbcab2ed9798d9cf6353f2d3d797c8a9c902201f7b671",
-        "source_size": 56036
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowDomainOperation.kt",
-        "mode": "0o644",
-        "sha256": "4a7a685661208d82286bf52edcc25a5c690ca65acad3db631a0ccfe46ae3116f",
-        "size": 2461
+        "source_sha256": "e3ad2b1db659cbee96a46932d80b23c20992218db6429382a13423ced6e1d7dc",
+        "source_size": 105771
       },
       {
         "action": "modify",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLinkProtocol.kt",
-        "mode": "0o644",
-        "sha256": "6451a788b01cb8bb72e4d89448f69351216cfb896de0e06f2054c3b6e2076d2b",
-        "size": 9801,
-        "source_mode": "0o644",
-        "source_sha256": "46441175db70ec536d3dc377477a532a63dfa8582e9d5af2b5e00f05e8287a81",
-        "source_size": 9725
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournal.kt",
-        "mode": "0o644",
-        "sha256": "0228c0011c91935018d9c530df6d8f5097b6f5b96bba6269e0f85545b52d35bd",
-        "size": 13646
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliation.kt",
-        "mode": "0o644",
-        "sha256": "e7ff934ba78b6a44f89f13a6a88328166e54725fe5a6aba06ccc06d392da581d",
-        "size": 7709
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncProtocol.kt",
-        "mode": "0o644",
-        "sha256": "a273d0623f7d95eaf2b518bac89cb03b4c7ca71566f1bbcb76fe6dd678c17406",
-        "size": 4825
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournalTest.kt",
-        "mode": "0o644",
-        "sha256": "0834cd353049151a820b6c91ca1962617a39b187c94adbaec65e5520b532fb14",
-        "size": 9461
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliationEngineTest.kt",
-        "mode": "0o644",
-        "sha256": "29d29f29728c4b2d33d1d8059133b14e8f21918d2ed89aa45cf76e7deca09116",
-        "size": 7785
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncCodecGoldenTest.kt",
-        "mode": "0o644",
-        "sha256": "d3bddcceb052e56a0ec81789f8d2ac889100c84cb31ba24c5d4fbc75144cd981",
-        "size": 2031
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncWireTest.kt",
-        "mode": "0o644",
-        "sha256": "e73bafac4dbf0372203401844fe4095f3e95fc89266fe83acb845be905c1772a",
-        "size": 3218
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/resources/sflp/v1/sync-frontier-request.json",
-        "mode": "0o644",
-        "sha256": "efc19e7a9aa58048e0629782515c6f6b9abf96369c6d4ee65ed53a70082c4aaf",
-        "size": 369
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/resources/sflp/v1/sync-frontier-response.json",
-        "mode": "0o644",
-        "sha256": "b28b25abf0bbf4d849b2769d9271313bdd2c553370dff9cc3c56160cd4349b36",
-        "size": 477
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/resources/sflp/v1/sync-operations-response.json",
-        "mode": "0o644",
-        "sha256": "a437de5eb417ee2018c46924da212a35ffb73cff8baa887ec7d7ef0e5d8e9730",
-        "size": 1437
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/resources/sflp/v1/sync-pull-request.json",
-        "mode": "0o644",
-        "sha256": "d95bfa1cf76f7a121febbad7c1553ab0b2100fd124cf47a50726239d9ba694c1",
-        "size": 422
-      },
-      {
-        "action": "add",
-        "path": "docs/architecture/SFLP02_03_JOURNAL_RECONCILIATION.md",
-        "mode": "0o644",
-        "sha256": "b8864192708bc11c085033ec9e9fc2d239c21ccc76c70a24e41726932bb0f09b",
-        "size": 3947
-      },
-      {
-        "action": "modify",
-        "path": "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md",
+        "path": "core/data/build.gradle.kts",
         "mode": "0o600",
-        "sha256": "f1740a53a14f70393afbf1c4a0bc72cbbebcf5edbbdf7437fd85875c61445f2a",
-        "size": 6044,
+        "sha256": "21d84eb60a9d352c091bf551769440c61dd63375fbf646153eafd75a9431d4d7",
+        "size": 719,
         "source_mode": "0o600",
-        "source_sha256": "09b6e9fbb70dd633233d202acc9f2b03d200a32193b65ee91a97a1bef03658b4",
-        "source_size": 5703
+        "source_sha256": "4a9efbc8d950caae6f6d2e654a2555092f6e54c42ec00b522fe060c0953bc327",
+        "source_size": 1012
+      },
+      {
+        "action": "add",
+        "path": "docs/quality/OV01_REPOSITORY_GRADLE_DEVTOOL_TRUTH_BASELINE.md",
+        "mode": "0o644",
+        "sha256": "90a975a655376e16b96aa9af02b7f0c270e2d7fd64317122be671f26cf25fc64",
+        "size": 2919
+      },
+      {
+        "action": "add",
+        "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
+        "mode": "0o644",
+        "sha256": "235f739f477d317a8f46389a416ae2484d53e7da0d97503ef1a90091c4cc664f",
+        "size": 1636
       },
       {
         "action": "modify",
-        "path": "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md",
+        "path": "gradle.properties",
         "mode": "0o600",
-        "sha256": "dd9cda3e8c99f539f23f9ffbddec07d303e13ccf9422f5fb91e26d5a935096eb",
-        "size": 7071,
+        "sha256": "833b39f530759d9d5fe218dd1e1890517d0da86802e74963c1c70742747c1914",
+        "size": 603,
         "source_mode": "0o600",
-        "source_sha256": "1ffe7c818acff86c7cf2ba34afa4a071e4fc15d3e9135f508943a4960efb2d30",
-        "source_size": 6914
+        "source_sha256": "ec1f00bdc458bdc2174291d719560c0bc2d03a9a6880360776ebd8cf4f78d0fc",
+        "source_size": 742
       },
       {
-        "action": "add",
-        "path": "protocol/sflp/v1/golden/sync-frontier-request.json",
-        "mode": "0o644",
-        "sha256": "efc19e7a9aa58048e0629782515c6f6b9abf96369c6d4ee65ed53a70082c4aaf",
-        "size": 369
-      },
-      {
-        "action": "add",
-        "path": "protocol/sflp/v1/golden/sync-frontier-response.json",
-        "mode": "0o644",
-        "sha256": "b28b25abf0bbf4d849b2769d9271313bdd2c553370dff9cc3c56160cd4349b36",
-        "size": 477
-      },
-      {
-        "action": "add",
-        "path": "protocol/sflp/v1/golden/sync-operations-response.json",
-        "mode": "0o644",
-        "sha256": "a437de5eb417ee2018c46924da212a35ffb73cff8baa887ec7d7ef0e5d8e9730",
-        "size": 1437
-      },
-      {
-        "action": "add",
-        "path": "protocol/sflp/v1/golden/sync-pull-request.json",
-        "mode": "0o644",
-        "sha256": "d95bfa1cf76f7a121febbad7c1553ab0b2100fd124cf47a50726239d9ba694c1",
-        "size": 422
-      },
-      {
-        "action": "add",
-        "path": "protocol/sflp/v1/sflp-sync.schema.json",
-        "mode": "0o644",
-        "sha256": "07473871d40a2db0a7393547d713433933bdd82ca7d431776d5f19939ae3c51d",
-        "size": 3767
-      },
-      {
-        "action": "add",
-        "path": "scripts/verify_sflp02_03_journal_reconciliation.py",
+        "action": "modify",
+        "path": "gradlew",
         "mode": "0o755",
-        "sha256": "bca7913f77c47502e52589dae8b33c47d36baa32f684e00678f860c4e99c9081",
-        "size": 11794
+        "sha256": "25970dd3eaf4b3809f471a4fef68ddaf28df2f696929d2202a8a01650d9888c6",
+        "size": 3437,
+        "source_mode": "0o700",
+        "source_sha256": "627a8ce7df705f4e7f9bec823e521e0b89ba8f0a712ce08beb77b7d41dd07eb0",
+        "source_size": 323
+      },
+      {
+        "action": "modify",
+        "path": "gradlew.bat",
+        "mode": "0o600",
+        "sha256": "fbcb0138e92eafba8b25ca85a17eaf5874882b2b9f9c09127ea8dbfdb4205e67",
+        "size": 2151,
+        "source_mode": "0o600",
+        "source_sha256": "a39fd6ff9aade4bc07640c2f42c3803c7f0ad727a82f9eb9578676e95d115dcb",
+        "source_size": 279
+      },
+      {
+        "action": "add",
+        "path": "scripts/ov01_finalize_target_state.sh",
+        "mode": "0o755",
+        "sha256": "f2b1cb48d937225d78e6101b205f6512519d34d2cb4f53660e9c3fa5c4af3e73",
+        "size": 1376
+      },
+      {
+        "action": "add",
+        "path": "scripts/ov01_prune_stale_devtool_state.py",
+        "mode": "0o755",
+        "sha256": "49bc8bda03a9b0ffce8b878defa0ecff1d44b8f92ac5f362e4c217fb99ccd4ef",
+        "size": 588
+      },
+      {
+        "action": "add",
+        "path": "scripts/ov01_release_gate.py",
+        "mode": "0o755",
+        "sha256": "79cd3a07cd81e7af461c0fb8364c0f40abad5aa3fae3dbcef4132c380a02c734",
+        "size": 5492
+      },
+      {
+        "action": "add",
+        "path": "scripts/refresh_gradle_dependency_integrity.sh",
+        "mode": "0o755",
+        "sha256": "a5ec1d1057f604fa6c5687109c86ddfe0bab908fcd697d69a975e6c6dbbacabd",
+        "size": 904
+      },
+      {
+        "action": "add",
+        "path": "scripts/run_gradle_verifier.py",
+        "mode": "0o755",
+        "sha256": "d3e0e20e892a52f494328c3e98a2ee757524e851dc80fa62cba93f59a02e2f64",
+        "size": 1095
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_att12_attention_release_final_seal.py",
+        "mode": "0o600",
+        "sha256": "9cb8caf61c5dad95424bf80f5184993f1d5681f2055eaa482d4cdb793743ab6f",
+        "size": 19038,
+        "source_mode": "0o600",
+        "source_sha256": "ec814e3fee64bbc348529b63d8b5a74722fe90f089ac80822ee2d60d0005d618",
+        "source_size": 18997
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_formatting.py",
+        "mode": "0o755",
+        "sha256": "b67222c2be39272bb9f836d668d014c2c581c5e870e46c9205a602cc24f05b09",
+        "size": 1482
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_gradle_dependency_integrity.py",
+        "mode": "0o755",
+        "sha256": "b3bba3e0a8b9662ce10e2d41a143124c5b14e0a6accfed68e714be9ddf4b6d12",
+        "size": 4440
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_ov01_repository_gradle_devtool_truth.py",
+        "mode": "0o755",
+        "sha256": "d59c967d8af95929c965ef9afb92fbc53f98c8b6aaca24e59806b667314023a1",
+        "size": 9687
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_phase_48_49.py",
+        "mode": "0o600",
+        "sha256": "1c8a6b169e41f1404e717c77c033c9bb87642f7366c2191634a200e74dcdf549",
+        "size": 7708,
+        "source_mode": "0o600",
+        "source_sha256": "cfdffe6d097eacc5506f5db47a3348a5d35d8447ff9bc780eb9a96390d82f9fa",
+        "source_size": 7716
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_phase_50_51.py",
+        "mode": "0o600",
+        "sha256": "c452d50e8cc861f25b196901f6da245ccb875eb7d29f8ee72a4153b885e60fa4",
+        "size": 8984,
+        "source_mode": "0o600",
+        "source_sha256": "865fc8a1aa59bfe58218783a2d72bf2f6f44d6e0e97b0257ece5ee335a1e9931",
+        "source_size": 8992
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_phase_52_53.py",
+        "mode": "0o600",
+        "sha256": "e39cb610640282726c6a4361e1af600c09af0780152a8f6b0aac0b52118ab9bd",
+        "size": 8081,
+        "source_mode": "0o600",
+        "source_sha256": "19c42136d66dd3a1839e72a207915a8a1700fad73423471c3eea8fc5c2eebfba",
+        "source_size": 8089
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_phase_54_55.py",
+        "mode": "0o600",
+        "sha256": "23d116097040169e86aafbadee72138d331372c6e2ede880f1c6ae11660369a0",
+        "size": 8501,
+        "source_mode": "0o600",
+        "source_sha256": "7a674c1d0999d23c5bb0e94e4872133fa75c31a4cb77745ca2b86b5ac9dd9c87",
+        "source_size": 8509
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_phase_56_57.py",
+        "mode": "0o600",
+        "sha256": "b8e9ca61f8bf1689d97c91e0d3d66ae5a107dffe91e106c294444f8e508e6b8d",
+        "size": 8698,
+        "source_mode": "0o600",
+        "source_sha256": "7e238485e319d55df70fd14280fc6ab72d7eafc73a5a008777e523c0fbd2fdcb",
+        "source_size": 8719
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_phase_58_59.py",
+        "mode": "0o600",
+        "sha256": "92ca069837461aea56cc49bcdaf7477a13245d0fb5f6682d5501721403e6a31d",
+        "size": 7726,
+        "source_mode": "0o600",
+        "source_sha256": "c1b38f0e9238e7a308620be67641cdd0da2859e3ea28591a20aee2352220a7a2",
+        "source_size": 7734
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_phase_60_61.py",
+        "mode": "0o600",
+        "sha256": "43e78a9d75c57afe51488959f48179c3298bd504f8df80aa9fedd0bd3b82f270",
+        "size": 12389,
+        "source_mode": "0o600",
+        "source_sha256": "c48a8b8cb1ff82b64162866faab28d9dbee191b29e464fd98b0d4c9317f55d6b",
+        "source_size": 12397
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_stable_toolchain_baseline.py",
+        "mode": "0o755",
+        "sha256": "bbfda87f0d5cf3d2cd71a0dc4e9aa9f29cbb3215519a40c7511f34b109e0126f",
+        "size": 5260
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_studyflow_gradle_task_graph_optimization_v4.py",
+        "mode": "0o600",
+        "sha256": "55eea2b338da640e2e5ba356da34cc12a7fb7730a8e33f96d8c6a300314c0b4b",
+        "size": 15470,
+        "source_mode": "0o600",
+        "source_sha256": "66803fe85a3c1ba650e750489996c53f4390f69955ab3775558a30ecb7500736",
+        "source_size": 15345
+      },
+      {
+        "action": "modify",
+        "path": "settings.gradle.kts",
+        "mode": "0o600",
+        "sha256": "549287abb1aa0b9bcb15dee0f951938410f3eeedfb37e9762b488e6fa39512ee",
+        "size": 1257,
+        "source_mode": "0o600",
+        "source_sha256": "eba0d6eb1fced88bfc851045fb3208b0bc525ae6ecdcbcf0cf42b9332778ca57",
+        "source_size": 1053
       }
     ]
-  },
-  "integrity": {
-    "sha256": {
-      ".devtool.toml": "c48352e05d5b2357fcb10e15acbda8404a3f8f88b3b109d57587e4bae9d66d19",
-      "CHANGELOG.md": "cd11cd54f1d03e6195034e6939a9e7de9cb4a9f33d2942cf214375a5c5692c74",
-      "SFLP02_03_JOURNAL_RECONCILIATION.md": "b8864192708bc11c085033ec9e9fc2d239c21ccc76c70a24e41726932bb0f09b",
-      "build.gradle.kts": "ef8baa85d0bd3944f917f4d36d0d11b8586d492ff11246aeb6c976e866550749",
-      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowDomainOperation.kt": "4a7a685661208d82286bf52edcc25a5c690ca65acad3db631a0ccfe46ae3116f",
-      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLinkProtocol.kt": "6451a788b01cb8bb72e4d89448f69351216cfb896de0e06f2054c3b6e2076d2b",
-      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournal.kt": "0228c0011c91935018d9c530df6d8f5097b6f5b96bba6269e0f85545b52d35bd",
-      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliation.kt": "e7ff934ba78b6a44f89f13a6a88328166e54725fe5a6aba06ccc06d392da581d",
-      "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncProtocol.kt": "a273d0623f7d95eaf2b518bac89cb03b4c7ca71566f1bbcb76fe6dd678c17406",
-      "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOperationJournalTest.kt": "0834cd353049151a820b6c91ca1962617a39b187c94adbaec65e5520b532fb14",
-      "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowReconciliationEngineTest.kt": "29d29f29728c4b2d33d1d8059133b14e8f21918d2ed89aa45cf76e7deca09116",
-      "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncCodecGoldenTest.kt": "d3bddcceb052e56a0ec81789f8d2ac889100c84cb31ba24c5d4fbc75144cd981",
-      "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowSyncWireTest.kt": "e73bafac4dbf0372203401844fe4095f3e95fc89266fe83acb845be905c1772a",
-      "core/link/src/test/resources/sflp/v1/sync-frontier-request.json": "efc19e7a9aa58048e0629782515c6f6b9abf96369c6d4ee65ed53a70082c4aaf",
-      "core/link/src/test/resources/sflp/v1/sync-frontier-response.json": "b28b25abf0bbf4d849b2769d9271313bdd2c553370dff9cc3c56160cd4349b36",
-      "core/link/src/test/resources/sflp/v1/sync-operations-response.json": "a437de5eb417ee2018c46924da212a35ffb73cff8baa887ec7d7ef0e5d8e9730",
-      "core/link/src/test/resources/sflp/v1/sync-pull-request.json": "d95bfa1cf76f7a121febbad7c1553ab0b2100fd124cf47a50726239d9ba694c1",
-      "docs/architecture/SFLP02_03_JOURNAL_RECONCILIATION.md": "b8864192708bc11c085033ec9e9fc2d239c21ccc76c70a24e41726932bb0f09b",
-      "docs/product/CROSS_PLATFORM_CAPABILITY_MATRIX.md": "f1740a53a14f70393afbf1c4a0bc72cbbebcf5edbbdf7437fd85875c61445f2a",
-      "docs/roadmap/CROSS_PLATFORM_PARITY_CONNECTIVITY_ROADMAP.md": "dd9cda3e8c99f539f23f9ffbddec07d303e13ccf9422f5fb91e26d5a935096eb",
-      "protocol/sflp/v1/golden/sync-frontier-request.json": "efc19e7a9aa58048e0629782515c6f6b9abf96369c6d4ee65ed53a70082c4aaf",
-      "protocol/sflp/v1/golden/sync-frontier-response.json": "b28b25abf0bbf4d849b2769d9271313bdd2c553370dff9cc3c56160cd4349b36",
-      "protocol/sflp/v1/golden/sync-operations-response.json": "a437de5eb417ee2018c46924da212a35ffb73cff8baa887ec7d7ef0e5d8e9730",
-      "protocol/sflp/v1/golden/sync-pull-request.json": "d95bfa1cf76f7a121febbad7c1553ab0b2100fd124cf47a50726239d9ba694c1",
-      "protocol/sflp/v1/sflp-sync.schema.json": "07473871d40a2db0a7393547d713433933bdd82ca7d431776d5f19939ae3c51d",
-      "scripts/verify_sflp02_03_journal_reconciliation.py": "bca7913f77c47502e52589dae8b33c47d36baa32f684e00678f860c4e99c9081"
-    }
-  },
-  "validation": {
-    "mode": "required",
-    "required": true,
-    "script": {
-      "description": "Validate complete SFLP02/SFLP03 journal/reconciliation source, schema, golden-vector, and documentation contracts.",
-      "interpreter": "sh",
-      "path": ".devtool-artifact/validation/validate.sh",
-      "sha256": "6f0b6007534f83458e00cc9f33d801a05175a95c85840bb53e6bbd986338d1b4",
-      "timeout_seconds": 600,
-      "working_directory": "."
-    },
-    "notes": [
-      "Explicit validation_tasks contains only verifySflp02Sflp03JournalReconciliation.",
-      "That task depends on verifySflp01ProtocolBaseline and :core:link:test; Gradle de-duplicates shared test dependencies.",
-      "The combined delivery remains transport-neutral; live trust/discovery/transport/client adapters remain SFLP04-SFLP12.",
-      "Auto-commit is enabled with a single commit."
-    ]
-  },
-  "validation_tasks": [
-    "verifySflp02Sflp03JournalReconciliation"
-  ]
+  }
 }

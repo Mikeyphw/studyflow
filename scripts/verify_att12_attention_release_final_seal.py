@@ -348,7 +348,7 @@ require(
     'dependsOn("verifyAttentionWebRuntimeParity")',
     'environment("STUDYFLOW_EXTERNAL_RUNTIME_PARITY", "1")',
     'commandLine("python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py")',
-    'gradle.projectsEvaluated {',
+    'tasks.matching { it.name == \"testDebugUnitTest\" }.configureEach {',
 )
 reject(
     "build.gradle.kts",

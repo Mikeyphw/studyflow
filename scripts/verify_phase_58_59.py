@@ -125,7 +125,7 @@ for path in (
     source = text(path)
     require("@Test" in source, f"{path} lacks tests")
 
-require("python3 scripts/verify_phase_58_59.py" in build, "Phase 58/59 verifier is not wired")
+require("scripts/verify_phase_58_59.py" in build, "Phase 58/59 verifier is not wired")
 require("verifyPhase58_59WarningHygiene" in build, "Phase 58/59 warning hygiene gate is missing")
 require(":app:lintRelease" in text(".devtool-artifact.json") if (ROOT / ".devtool-artifact.json").exists() else True,
         "overlay validation must retain release lint")

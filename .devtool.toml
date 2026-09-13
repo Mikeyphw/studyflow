@@ -12,7 +12,7 @@ clients = ["studyflow_android", "studyflow_desktop", "studyflow_web", "studyflow
 mobile = ["studyflow_android", "studyflow_tv"]
 release = ["studyflow_release", "studyflow_tv_release", "studyflow_parity"]
 quality = ["studyflow_quality"]
-everything = ["@clients", "@release"]
+everything = ["@clients", "@release", "@quality"]
 
 [workspace.scheduler]
 parallel = true
@@ -492,8 +492,8 @@ args = [
 ]
 
 [targets.studyflow_quality.tasks]
-build = ["verifyStudyFlowGradleTaskGraphOptimizationV4", "verifyFinalSourceAcceptance"]
-test = ["verifyFinalSourceAcceptance"]
+build = ["verifyOv01RepositoryGradleDevtoolTruth", "verifyStudyFlowGradleTaskGraphOptimizationV4", "verifyFinalSourceAcceptance"]
+test = ["verifyOv01RepositoryGradleDevtoolTruth", "verifyFinalSourceAcceptance"]
 lint = ["verifyFormatting"]
 clean = ["clean"]
 
@@ -511,11 +511,11 @@ gradle_metaspace_mb = 768
 memory_guard_mb = 0
 
 [targets.studyflow_quality.validation.phases]
-preflight = ["verifyStudyFlowGradleTaskGraphOptimizationV4"]
+preflight = ["verifyOv01RepositoryGradleDevtoolTruth", "verifyStudyFlowGradleTaskGraphOptimizationV4"]
 dependencies = []
 compile = []
 resources = []
-unit-test = ["verifyFinalSourceAcceptance"]
+unit-test = ["verifyOv01RepositoryGradleDevtoolTruth", "verifyFinalSourceAcceptance"]
 package = []
 lint = ["verifyFormatting"]
 

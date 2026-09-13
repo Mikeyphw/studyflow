@@ -23,16 +23,3 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
 }
 
-
-// Validation compatibility: core:data is linted as an isolated Android
-// library, so desugaring must be visible directly to this module.
-android {
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-    }
-}
-
-
-dependencies {
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
-}

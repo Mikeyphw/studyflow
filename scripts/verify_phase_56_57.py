@@ -164,8 +164,8 @@ for path in (
     "scripts/verify_phase_54_55.py",
 ):
     require((ROOT / path).is_file(), f"missing previous verifier: {path}")
-    require(f"python3 {path}" in build, f"{path} is not wired into verifyRepositoryContracts")
-require("python3 scripts/verify_phase_56_57.py" in build, "Phase 56/57 verifier is not wired")
+    require(path in build, f"{path} is not wired into verifyRepositoryContracts")
+require("scripts/verify_phase_56_57.py" in build, "Phase 56/57 verifier is not wired")
 require(
     "verifyPhase56_57ReleaseReadiness" in build,
     "Phase 56/57 release-readiness Gradle gate is not defined",

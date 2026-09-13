@@ -51,3 +51,9 @@ gradlePlugin {
         }
     }
 }
+
+
+// OV01: included build dependencies are locked independently from the main build.
+dependencyLocking {
+    lockAllConfigurations()
+}

@@ -1,3 +1,5 @@
+// OV01 dependency integrity: repositories remain centralized here; project dependency locking is
+// enabled in the root build; the canonical integrity refresh materializes SHA-256 verification metadata.
 pluginManagement {
     includeBuild("build-logic")
     repositories {

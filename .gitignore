@@ -77,6 +77,9 @@ htmlcov/
 **/.devtool/reports/
 **/.devtool/tmp/
 **/.devtool/build-artifacts/
+**/.devtool/artifacts/registry.json
+**/.devtool/artifacts/registry.lock
+**/.devtool/test-history.json
 
 # OS noise
 .DS_Store

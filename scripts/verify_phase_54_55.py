@@ -88,7 +88,7 @@ for token in (
 ):
     require(token in nav, f"Navigation missing Phase 55 manager wiring: {token}")
 
-require("python3 scripts/verify_phase_54_55.py" in build, "Phase 54/55 verifier is not wired")
+require("scripts/verify_phase_54_55.py" in build, "Phase 54/55 verifier is not wired")
 
 for path in (
     "feature/reminders/src/main/res/values/strings.xml",

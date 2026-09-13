@@ -19,6 +19,10 @@ Desktop now has a production attention runtime backed by the shared planner and 
 
 # StudyFlow Android
 
+## Current status: Final remediation OV01 build/tooling truth baseline implemented
+
+Overlay 1 of 30 closes the repository/Gradle/Devtool foundation findings: configuration-cache-safe task wiring, fail-fast phone signing, explicit verification task I/O, deduplicated repository contracts, complete Devtool grouping/resource truth, generated-style wrappers, dependency-integrity enforcement, runtime registry hygiene, and narrower AGP warning policy. See `docs/quality/OV01_REPOSITORY_GRADLE_DEVTOOL_TRUTH_BASELINE.md` and `docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md`.
+
 ## ATT03 — Android Widget Suite 2.0
 
 Android now has a configurable five-mode StudyFlow widget suite: Today, Next, Reviews, Session, and Compact. Each instance can follow the default plan or pin its own active plan; active-session controls and Start-next are real domain actions. Widget freshness is independently scheduled from notification permission using a dedicated inexact AlarmManager path, with boot/time/timezone/date/package recovery and Debug Workbench evidence. See `ATT03_ANDROID_WIDGET_SUITE_2_0.md` and `docs/product/ANDROID_WIDGET_SUITE.md`.

@@ -114,7 +114,7 @@ require("android.appwidget.provider" in manifest, "app widget provider metadata 
 require("@xml/studyflow_today_widget_info" in manifest, "app widget info XML not linked")
 require("android:description=\"@string/widget_today_description\"" in widget_info,
         "app widget info missing localized description")
-require("python3 scripts/verify_phase_52_53.py" in build, "Phase 52/53 verifier is not wired")
+require("scripts/verify_phase_52_53.py" in build, "Phase 52/53 verifier is not wired")
 
 mock_test = text("core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/MockExamStudioPlannerTest.kt")
 for token in (

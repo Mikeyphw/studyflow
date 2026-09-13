@@ -1,3 +1,11 @@
+## Final remediation OV01 — repository / Gradle / Devtool truth baseline
+
+- Replaced configuration-cache-risky root execution closures and `projectsEvaluated` ordering with standalone verifiers and lazy task ordering.
+- Made phone Release signing fail before Release work, converted `verifyRepositoryContracts` to explicit task ownership, and added declared I/O/cache boundaries for root verification `Exec` tasks.
+- Made Devtool `@everything` include quality, aligned direct Gradle resources with the standard Termux policy, restored generated-style wrapper launchers, removed duplicate core:data desugaring and broad AGP warning suppression.
+- Enabled Gradle dependency locking for the main and included builds, added a canonical SHA-256 verification-metadata refresh and a fail-closed Release integrity check, and isolated stale Devtool runtime registry/history from repository truth.
+- Added the OV01 behavioral verifier, implementation note, and final-audit closure ledger for S0-01 through S0-12.
+
 ## StudyFlow Gradle / Devtool task-graph optimization v4
 
 - Fixed the real Termux ATT v3 compile break by updating Android TV Attention runtime tests for the required `localPeer` constructor argument.

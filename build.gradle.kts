@@ -1,206 +1,15 @@
-val qualitySourceRoots = listOf(
-    "app",
-    "app-tv",
-    "core",
-    "feature",
-    "desktopApp",
-    "build-logic",
-)
+import org.gradle.api.tasks.PathSensitivity
 
-val excludedDirectoryNames = setOf("build", ".gradle", ".idea")
-
-fun File.isQualitySource(): Boolean =
-    extension in setOf("kt", "kts", "xml") &&
-        toPath().none { pathSegment -> pathSegment.toString() in excludedDirectoryNames }
-
-tasks.register("verifyStableToolchainBaseline") {
+tasks.register<Exec>("verifyStableToolchainBaseline") {
     group = "verification"
-    description = "Checks the shared stable Gradle, Android, Kotlin, JVM, SDK, and dependency baseline."
-
-    doLast {
-        val failures = mutableListOf<String>()
-        val versionsText = file("gradle/libs.versions.toml").readText()
-        val buildLogicText = file("build-logic/convention/build.gradle.kts").readText()
-        val androidConventionText =
-            file("build-logic/convention/src/main/kotlin/AndroidConvention.kt").readText()
-        val kotlinConventionText =
-            file("build-logic/convention/src/main/kotlin/KotlinLibraryConventionPlugin.kt").readText()
-        val desktopBuildText = file("desktopApp/build.gradle.kts").readText()
-        val wrapperText = file("gradle/wrapper/gradle-wrapper.properties").readText()
-
-        val requiredCatalogVersions = mapOf(
-            "agp" to "9.3.1",
-            "kotlin" to "2.4.10",
-            "composeBom" to "2026.06.01",
-            "ksp" to "2.3.11",
-        )
-        requiredCatalogVersions.forEach { (name, version) ->
-            if ("$name = \"$version\"" !in versionsText) {
-                failures += "gradle/libs.versions.toml: $name must be $version"
-            }
-        }
-
-        val requiredBuildLogicTokens = listOf(
-            "JavaLanguageVersion.of(21)",
-            "com.android.tools.build:gradle:9.3.1",
-            "org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10",
-            "com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.11",
-        )
-        requiredBuildLogicTokens.forEach { token ->
-            if (token !in buildLogicText) {
-                failures += "build-logic/convention/build.gradle.kts: missing $token"
-            }
-        }
-
-        val requiredAndroidTokenCounts = mapOf(
-            "compileSdk = 36" to 2,
-            "targetSdk = 36" to 1,
-            "buildToolsVersion = \"36.0.0\"" to 2,
-            "sourceCompatibility = JavaVersion.VERSION_21" to 2,
-            "targetCompatibility = JavaVersion.VERSION_21" to 2,
-        )
-        requiredAndroidTokenCounts.forEach { (token, minimumCount) ->
-            val count = Regex(Regex.escape(token)).findAll(androidConventionText).count()
-            if (count < minimumCount) {
-                failures += "AndroidConvention.kt: expected at least $minimumCount occurrences of $token"
-            }
-        }
-
-        if ("jvmToolchain(21)" !in kotlinConventionText) {
-            failures += "Kotlin library convention must use JVM toolchain 21"
-        }
-        if ("jvmToolchain(21)" !in desktopBuildText) {
-            failures += "desktopApp must use JVM toolchain 21"
-        }
-        val gradleVersionMatch =
-            Regex("gradle-([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)-bin\\.zip").find(wrapperText)
-        val wrapperGradleVersion = gradleVersionMatch?.groupValues?.get(1)
-        fun stableGradleTuple(version: String): Triple<Int, Int, Int>? {
-            val match = Regex("^([0-9]+)\\.([0-9]+)(?:\\.([0-9]+))?$").matchEntire(version)
-                ?: return null
-            return Triple(
-                match.groupValues[1].toInt(),
-                match.groupValues[2].toInt(),
-                match.groupValues[3].ifEmpty { "0" }.toInt(),
-            )
-        }
-        fun isAtLeastGradle970(version: String): Boolean {
-            val parsed = stableGradleTuple(version) ?: return false
-            return parsed.first > 9 ||
-                (parsed.first == 9 && parsed.second > 7) ||
-                (parsed.first == 9 && parsed.second == 7 && parsed.third >= 0)
-        }
-        if (wrapperGradleVersion == null || !isAtLeastGradle970(wrapperGradleVersion)) {
-            failures += "Gradle wrapper must use a stable Gradle version >= 9.7.0"
-        }
-        val wrapperChecksum =
-            Regex("(?m)^distributionSha256Sum=([0-9a-f]{64})$")
-                .find(wrapperText)
-                ?.groupValues
-                ?.get(1)
-        if (wrapperChecksum == null) {
-            failures += "Gradle wrapper must pin a lowercase 64-character SHA-256 checksum"
-        }
-        if (
-            wrapperGradleVersion == "9.7.1" &&
-            wrapperChecksum != "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a"
-        ) {
-            failures += "Gradle 9.7.1 wrapper checksum is missing or unexpected"
-        }
-
-        val devtoolText = file(".devtool.toml").readText()
-        val devtoolGradleVersions =
-            Regex("(?m)^version = \"([^\"]+)\"$")
-                .findAll(devtoolText)
-                .map { it.groupValues[1] }
-                .toList()
-        if (devtoolGradleVersions.size < 2 || devtoolGradleVersions.any { !isAtLeastGradle970(it) }) {
-            failures += "Devtool Gradle targets must use stable Gradle >= 9.7.0"
-        }
-        if (wrapperGradleVersion != null && devtoolGradleVersions.any { it != wrapperGradleVersion }) {
-            failures += "Devtool Gradle targets must match the wrapper Gradle version"
-        }
-        if ("ndk_version = \"29.0.14206865\"" !in devtoolText) {
-            failures += "Devtool Android target must pin NDK 29.0.14206865"
-        }
-        if ("internal const val STUDYFLOW_NDK_VERSION = \"29.0.14206865\"" !in androidConventionText) {
-            failures += "AndroidConvention.kt must define the canonical NDK 29.0.14206865 version"
-        }
-        if (Regex("ndkVersion = STUDYFLOW_NDK_VERSION").findAll(androidConventionText).count() != 2) {
-            failures += "Application and library Android conventions must both use the canonical NDK version"
-        }
-        if ("VERSION_17" in androidConventionText || "jvmToolchain(17)" in kotlinConventionText) {
-            failures += "Java 17 remnants are forbidden in the standardized JVM lane"
-        }
-        if ("jvmToolchain(17)" in desktopBuildText || "JavaLanguageVersion.of(17)" in buildLogicText) {
-            failures += "Java 17 remnants are forbidden in desktop/build-logic toolchains"
-        }
-
-        val prereleasePattern =
-            Regex(
-                "(?i)(?:^|[-.+_])" +
-                    "(alpha|beta|rc|preview|canary|eap|snapshot|nightly|milestone|dev|m\\d+)" +
-                    "(?:[-.+_]?\\d*)",
-            )
-        var inVersions = false
-        versionsText.lineSequence().forEach { line ->
-            val trimmed = line.trim()
-            when {
-                trimmed == "[versions]" -> inVersions = true
-                inVersions && trimmed.startsWith("[") -> inVersions = false
-                inVersions -> {
-                    val match = Regex("^([A-Za-z0-9_.-]+)\\s*=\\s*\"([^\"]+)\"$").matchEntire(trimmed)
-                    if (match != null) {
-                        val name = match.groupValues[1]
-                        val version = match.groupValues[2]
-                        if (prereleasePattern.containsMatchIn(version)) {
-                            failures += "gradle/libs.versions.toml: prerelease $name=$version is forbidden"
-                        }
-                    }
-                }
-            }
-        }
-
-        if (failures.isNotEmpty()) {
-            throw GradleException(failures.joinToString(prefix = "Stable toolchain violations:\n", separator = "\n"))
-        }
-    }
+    description = "Checks the shared stable Gradle, Android, Kotlin, JVM, SDK, wrapper, and dependency baseline."
+    commandLine("python3", "scripts/verify_stable_toolchain_baseline.py")
 }
 
-tasks.register("verifyFormatting") {
+tasks.register<Exec>("verifyFormatting") {
     group = "verification"
-    description =
-        "Checks source files for tabs, trailing whitespace, missing final newlines, and overlong Kotlin lines."
-
-    doLast {
-        val failures = mutableListOf<String>()
-        qualitySourceRoots
-            .map(::file)
-            .filter(File::exists)
-            .flatMap { sourceRoot -> sourceRoot.walkTopDown().filter(File::isQualitySource).toList() }
-            .forEach { sourceFile ->
-                val text = sourceFile.readText()
-                if (!text.endsWith("\n")) {
-                    failures += "${sourceFile.relativeTo(rootDir)}: missing final newline"
-                }
-                text.lineSequence().forEachIndexed { index, line ->
-                    val lineNumber = index + 1
-                    if ('\t' in line) {
-                        failures += "${sourceFile.relativeTo(rootDir)}:$lineNumber: tab character"
-                    }
-                    if (line != line.trimEnd()) {
-                        failures += "${sourceFile.relativeTo(rootDir)}:$lineNumber: trailing whitespace"
-                    }
-                    if (sourceFile.extension in setOf("kt", "kts") && line.length > 120) {
-                        failures += "${sourceFile.relativeTo(rootDir)}:$lineNumber: ${line.length} characters"
-                    }
-                }
-            }
-
-        if (failures.isNotEmpty()) {
-            throw GradleException(failures.joinToString(prefix = "Formatting violations:\n", separator = "\n"))
-        }
-    }
+    description = "Checks source files for tabs, trailing whitespace, missing final newlines, and overlong Kotlin lines."
+    commandLine("python3", "scripts/verify_formatting.py")
 }
 
 tasks.register<Exec>("verifyCpov00Toolchain") {
@@ -227,173 +36,73 @@ tasks.register<Exec>("verifyCpov03Cpov04PublicExamProgress") {
     commandLine("python3", "scripts/verify_cpov03_04_public_exam_progress.py")
 }
 
-tasks.register<Exec>("verifyRepositoryContracts") {
+val historicalRepositoryContractTasks = (0..37).map { phase ->
+    tasks.register<Exec>("verifyHistoricalPhase${phase.toString().padStart(2, '0')}") {
+        group = "verification"
+        description = "Runs the historical Phase $phase repository contract."
+        commandLine("python3", "scripts/verify_phase_${phase}.py")
+    }
+}
+
+val repositoryContractVerifierScripts = linkedMapOf(
+    "verifyHistoricalDebugWorkbenchD1R2" to "scripts/verify_debug_workbench_d1_r2.py",
+    "verifyHistoricalDebugWorkbenchD2" to "scripts/verify_debug_workbench_d2.py",
+    "verifyHistoricalDebugWorkbenchD3" to "scripts/verify_debug_workbench_d3.py",
+    "verifyHistoricalDebugWorkbenchD2D3CorrectiveSeal" to "scripts/verify_debug_workbench_d2_d3_corrective_seal.py",
+    "verifyHistoricalDebugWorkbenchD4" to "scripts/verify_debug_workbench_d4.py",
+    "verifyHistoricalDebugWorkbenchD5" to "scripts/verify_debug_workbench_d5.py",
+    "verifyHistoricalDebugWorkbenchD6" to "scripts/verify_debug_workbench_d6.py",
+    "verifyHistoricalDebugWorkbenchD7" to "scripts/verify_debug_workbench_d7.py",
+    "verifyHistoricalDebugWorkbenchD8" to "scripts/verify_debug_workbench_d8.py",
+    "verifyHistoricalUiUxV2" to "scripts/verify_ui_ux_v2.py",
+    "verifyHistoricalPhase48_49" to "scripts/verify_phase_48_49.py",
+    "verifyHistoricalPhase50_51" to "scripts/verify_phase_50_51.py",
+    "verifyHistoricalPhase52_53" to "scripts/verify_phase_52_53.py",
+    "verifyHistoricalPhase54_55" to "scripts/verify_phase_54_55.py",
+    "verifyHistoricalFullAppReadiness" to "scripts/verify_full_app_final_user_readiness.py",
+    "verifyHistoricalRemediationPhase1_2" to "scripts/verify_remediation_phase_1_2.py",
+    "verifyHistoricalFinalReleaseVerdictContract" to "scripts/verify_final_release_verdict_contract.py",
+)
+
+val repositoryContractVerifierTasks = repositoryContractVerifierScripts.map { (taskName, scriptPath) ->
+    tasks.register<Exec>(taskName) {
+        group = "verification"
+        description = "Runs $scriptPath as an individually owned repository contract."
+        commandLine("python3", scriptPath)
+    }
+}
+
+tasks.register("verifyRepositoryContracts") {
     group = "verification"
-    dependsOn("verifyStableToolchainBaseline", "verifyCpov00Toolchain")
     description =
-        "Runs historical contracts through Phase 37, post-V2 features through Phase 64, " +
-            "and Debug Workbench D1 through D8."
-    commandLine(
-        "bash",
-        "-lc",
-        """
-        set -euo pipefail
-        for phase in {0..37}; do
-            python3 "scripts/verify_phase_${'$'}{phase}.py"
-        done
-        python3 scripts/verify_debug_workbench_d1_r2.py
-        python3 scripts/verify_debug_workbench_d2.py
-        python3 scripts/verify_debug_workbench_d3.py
-        python3 scripts/verify_debug_workbench_d2_d3_corrective_seal.py
-        python3 scripts/verify_debug_workbench_d4.py
-        python3 scripts/verify_debug_workbench_d5.py
-        python3 scripts/verify_debug_workbench_d6.py
-        python3 scripts/verify_debug_workbench_d7.py
-        python3 scripts/verify_debug_workbench_d8.py
-        python3 scripts/verify_ui_ux_v2.py
-        python3 scripts/verify_android_focus_shell_r2.py
-        python3 scripts/verify_phase_48_49.py
-        python3 scripts/verify_phase_50_51.py
-        python3 scripts/verify_phase_52_53.py
-        python3 scripts/verify_phase_54_55.py
-        python3 scripts/verify_phase_56_57.py
-        python3 scripts/verify_phase_58_59.py
-        python3 scripts/verify_phase_60_61.py
-        python3 scripts/verify_phase_62.py
-        python3 scripts/verify_phase_63_64.py
-        python3 scripts/verify_post_phase_64_final_validation.py
-        python3 scripts/verify_full_app_final_user_readiness.py
-        python3 scripts/verify_final_app_acceptance.py
-        python3 scripts/verify_remediation_phase_1_2.py
-        python3 scripts/verify_remediation_ov_13.py
-        python3 scripts/verify_final_release_verdict_contract.py
-        """.trimIndent(),
+        "Aggregates historical contracts without hiding duplicate verifier execution inside a shell process."
+    dependsOn("verifyStableToolchainBaseline", "verifyCpov00Toolchain")
+    dependsOn(historicalRepositoryContractTasks)
+    dependsOn(repositoryContractVerifierTasks)
+    dependsOn(
+        "verifyAndroidFocusShellFinalSeal",
+        "verifyPhase56_57ReleaseReadiness",
+        "verifyPhase58_59WarningHygiene",
+        "verifyPhase60_61ContentReportSeal",
+        "verifyPhase62OnboardingSeal",
+        "verifyPhase63_64ExamRunbookSprintSeal",
+        "verifyPostPhase64FinalValidationRefresh",
+        "verifyFinalSourceAcceptance",
+        "verifyRemediationOv13",
     )
 }
 
-tasks.register("verifyPhase56_57ReleaseReadiness") {
+tasks.register<Exec>("verifyPhase56_57ReleaseReadiness") {
     group = "verification"
-    description =
-        "Checks release-facing StudyFlow source gates that do not require signing credentials."
-
-    doLast {
-        val failures = mutableListOf<String>()
-        val appBuild = file("app/build.gradle.kts").readText()
-        val manifest = file("app/src/main/AndroidManifest.xml").readText()
-        val widgetLayout = file("app/src/main/res/layout/widget_today.xml").readText()
-        val reminderStrings = listOf(
-            file("feature/reminders/src/main/res/values/strings.xml"),
-            file("feature/reminders/src/main/res/values-pt-rBR/strings.xml"),
-        ).joinToString("\n") { resourceFile -> resourceFile.readText() }
-
-        if ("release" !in appBuild) {
-            failures += "app/build.gradle.kts: missing release build-type configuration"
-        }
-        if ("applicationId" !in appBuild || "versionCode" !in appBuild || "versionName" !in appBuild) {
-            failures += "app/build.gradle.kts: release identity fields are not visible"
-        }
-        if ("android.intent.action.MAIN" !in manifest || "android.intent.category.LAUNCHER" !in manifest) {
-            failures += "AndroidManifest.xml: launcher entry point is missing"
-        }
-        if ("android:tint" in widgetLayout) {
-            failures += "widget_today.xml: android:tint is forbidden; use app:tint"
-        }
-        listOf(
-            "app/src/main/res/values/strings.xml",
-            "app/src/main/res/values-pt-rBR/strings.xml",
-            "feature/settings/src/main/res/values/strings.xml",
-            "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-            "feature/workspace/src/main/res/values/strings.xml",
-            "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
-        ).forEach { resourcePath ->
-            val firstLines = file(resourcePath).readLines().take(3).joinToString("\n")
-            if ("tools:ignore=\"PluralsCandidate,UnusedResources\"" in firstLines ||
-                "tools:ignore=\"UnusedResources\"" in firstLines) {
-                failures += "$resourcePath: must not suppress warning cleanup at file scope"
-            }
-        }
-
-        if ("\\u" in reminderStrings || "app's safe" in reminderStrings || "plan's quiet" in reminderStrings) {
-            failures += "reminder strings contain known release resource-flattening risks"
-        }
-        if (failures.isNotEmpty()) {
-            throw GradleException(failures.joinToString(prefix = "Release-readiness violations:\n", separator = "\n"))
-        }
-    }
+    description = "Checks release-facing StudyFlow source gates that do not require signing credentials."
+    commandLine("python3", "scripts/verify_phase_56_57.py")
 }
 
 
-tasks.register("verifyPhase58_59WarningHygiene") {
+tasks.register<Exec>("verifyPhase58_59WarningHygiene") {
     group = "verification"
-    description =
-        "Checks Phase 58/59 warning cleanup boundaries before Android lint runs."
-
-    doLast {
-        val failures = mutableListOf<String>()
-        val routes = file("core/navigation/src/main/kotlin/com/mikeyphw/studyflow/core/navigation/StudyFlowRoutes.kt")
-            .readText()
-        val design = file(
-            "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/" +
-                "StudyFlowWorkspaceComponents.kt",
-        ).readText()
-        val workspaceStrings = file("feature/workspace/src/main/res/values/strings.xml").readText()
-        val reminders = file(
-            "feature/reminders/src/main/java/com/mikeyphw/studyflow/feature/reminders/StudyRemindersScreen.kt",
-        ).readText()
-        val widgetLayout = file("app/src/main/res/layout/widget_today.xml").readText()
-
-        listOf(
-            "StudyFlowWorkspaceRoot",
-            "PlanWorkspaceTab",
-            "PracticeWorkspaceTab",
-            "ProgressWorkspacePeriod",
-        ).forEach { enumName ->
-            if ("""@Keep
-@Serializable
-enum class $enumName""" !in routes) {
-                failures += "StudyFlowRoutes.kt: $enumName must be annotated with @Keep"
-            }
-        }
-        if ("PrimaryScrollableTabRow(" in design || "ScrollableTabRow(" in design) {
-            failures += "StudyFlowWorkspaceComponents.kt: stock Material tab rows must stay retired"
-        }
-        val focusPrimitives = file(
-            "core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/" +
-                "StudyFlowFocusWorkspacePrimitives.kt",
-        ).readText()
-        if ("fun <T> StudyFlowTabStrip(" !in focusPrimitives || "Role.Tab" !in focusPrimitives) {
-            failures += "StudyFlowFocusWorkspacePrimitives.kt: custom accessible tab strip is missing"
-        }
-        if ("name=\"in_progress\"" in workspaceStrings) {
-            failures += "workspace strings must not override private androidx.compose.ui:in_progress"
-        }
-        if ("Build.VERSION.SDK_INT < 23" in reminders) {
-            failures += "StudyRemindersScreen.kt: obsolete minSdk < 23 branch remains"
-        }
-        if ("android:tint" in widgetLayout) {
-            failures += "widget_today.xml: android:tint is forbidden; use app:tint"
-        }
-        listOf(
-            "app/src/main/res/values/strings.xml",
-            "app/src/main/res/values-pt-rBR/strings.xml",
-            "feature/settings/src/main/res/values/strings.xml",
-            "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-            "feature/workspace/src/main/res/values/strings.xml",
-            "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
-        ).forEach { resourcePath ->
-            val firstLines = file(resourcePath).readLines().take(3).joinToString("\n")
-            if ("tools:ignore=\"PluralsCandidate,UnusedResources\"" in firstLines ||
-                "tools:ignore=\"UnusedResources\"" in firstLines) {
-                failures += "$resourcePath: must not suppress warning cleanup at file scope"
-            }
-        }
-
-        if (failures.isNotEmpty()) {
-            throw GradleException(
-                failures.joinToString(prefix = "Phase 58/59 warning hygiene violations:\n"),
-            )
-        }
-    }
+    description = "Checks Phase 58/59 warning cleanup boundaries before Android lint runs."
+    commandLine("python3", "scripts/verify_phase_58_59.py")
 }
 
 tasks.register<Exec>("verifyPhase60_61ContentReportSeal") {
@@ -694,86 +403,18 @@ tasks.register<Exec>("verifyRemediationOv13") {
     commandLine("python3", "scripts/verify_remediation_ov_13.py")
 }
 
-tasks.register("verifyFinalReleaseHostGate") {
+tasks.register<Exec>("verifyFinalReleaseHostGate") {
     group = "verification"
     description = "Runs the signed host-side Release regression gate and records APK/AAB evidence."
     dependsOn(
         "checkAll",
+        ":app:verifyPhoneReleaseSigningPreflight",
         ":app:compileReleaseAndroidTestKotlin",
         ":app:processReleaseResources",
         ":app:assembleRelease",
         ":app:bundleRelease",
     )
-    doLast {
-        fun sha256(source: File): String {
-            val digest = java.security.MessageDigest.getInstance("SHA-256")
-            source.inputStream().buffered().use { input ->
-                val buffer = ByteArray(1024 * 1024)
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    digest.update(buffer, 0, count)
-                }
-            }
-            return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
-        }
-
-        val signingVariables = listOf(
-            "STUDYFLOW_RELEASE_STORE_FILE",
-            "STUDYFLOW_RELEASE_STORE_PASSWORD",
-            "STUDYFLOW_RELEASE_KEY_ALIAS",
-            "STUDYFLOW_RELEASE_KEY_PASSWORD",
-        )
-        val missingSigningVariables = signingVariables.filter { name -> System.getenv(name).isNullOrBlank() }
-        if (missingSigningVariables.isNotEmpty()) {
-            throw GradleException(
-                "Final Release validation requires signing credentials: ${missingSigningVariables.joinToString()}",
-            )
-        }
-        val releaseApk = file("app/build/outputs/apk/release/app-release.apk")
-        val releaseAab = file("app/build/outputs/bundle/release/app-release.aab")
-        if (!releaseApk.isFile) {
-            throw GradleException("Signed Release APK output is missing: ${releaseApk.absolutePath}")
-        }
-        if (!releaseAab.isFile) {
-            throw GradleException("Signed Release AAB output is missing: ${releaseAab.absolutePath}")
-        }
-        val validationSession = System.getenv("STUDYFLOW_RELEASE_VALIDATION_SESSION")
-            ?.trim()
-            ?.takeIf(String::isNotEmpty)
-            ?: "host-${java.util.UUID.randomUUID()}"
-        val report = file("build/reports/studyflow/release-host-gates.json")
-        report.parentFile.mkdirs()
-        val generatedAtUtc = java.time.Instant.now().toString()
-        report.writeText(
-            """
-            {
-              "schemaVersion": 2,
-              "status": "PASS",
-              "validationSession": "$validationSession",
-              "generatedAtUtc": "$generatedAtUtc",
-              "gates": [
-                {"name": "gradle_configuration", "status": "PASS"},
-                {"name": "source_contracts", "status": "PASS"},
-                {"name": "main_compilation", "status": "PASS"},
-                {"name": "test_compilation", "status": "PASS"},
-                {"name": "unit_tests", "status": "PASS"},
-                {"name": "resource_merge", "status": "PASS"},
-                {"name": "lint", "status": "PASS"},
-                {"name": "release_assemble", "status": "PASS"},
-                {"name": "release_bundle", "status": "PASS"}
-              ],
-              "artifacts": {
-                "releaseApk": {"path": "${releaseApk.absolutePath}", "sha256": "${sha256(releaseApk)}"},
-                "releaseAab": {"path": "${releaseAab.absolutePath}", "sha256": "${sha256(releaseAab)}"}
-              },
-              "scope": "signed host Release gate; connected Android evidence is recorded separately"
-            }
-            """.trimIndent() + "\n",
-        )
-        println("FINAL_RELEASE_HOST_GATES: PASS")
-        println("Evidence: ${report.absolutePath}")
-    }
+    commandLine("python3", "scripts/ov01_release_gate.py", "host")
 }
 
 tasks.register<Exec>("verifyFinalReleaseArtifact") {
@@ -792,7 +433,7 @@ tasks.register<Exec>("verifyFinalReleaseArtifact") {
     commandLine("python3", "scripts/verify_final_release_artifact.py")
 }
 
-tasks.register("recordConnectedReleaseTestGates") {
+tasks.register<Exec>("recordConnectedReleaseTestGates") {
     group = "verification"
     description = "Runs required connected Android suites and records PASS only after every suite succeeds."
     dependsOn(
@@ -805,56 +446,7 @@ tasks.register("recordConnectedReleaseTestGates") {
         ":feature:workspace:connectedDebugAndroidTest",
         ":app:connectedReleaseAndroidTest",
     )
-    doLast {
-        val host = file("build/reports/studyflow/release-host-gates.json").readText()
-        val artifact = file("build/reports/studyflow/release-artifact-identity.json").readText()
-        fun requiredMatch(text: String, pattern: Regex, label: String): String =
-            pattern.find(text)?.groupValues?.get(1)
-                ?: throw GradleException("Connected test evidence cannot resolve $label")
-
-        val validationSession = requiredMatch(
-            host,
-            Regex("\\\"validationSession\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""),
-            "validation session",
-        )
-        val artifactSession = requiredMatch(
-            artifact,
-            Regex("\\\"validationSession\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""),
-            "artifact validation session",
-        )
-        if (artifactSession != validationSession) {
-            throw GradleException("Connected test prerequisites came from mixed validation sessions")
-        }
-        val artifactSha = requiredMatch(
-            artifact,
-            Regex("\\\"artifact\\\"\\s*:\\s*\\{[\\s\\S]*?\\\"sha256\\\"\\s*:\\s*\\\"([0-9a-f]{64})\\\""),
-            "signed APK SHA-256",
-        )
-        val report = file("build/reports/studyflow/connected-test-gates.json")
-        report.parentFile.mkdirs()
-        report.writeText(
-            """
-            {
-              "schemaVersion": 1,
-              "status": "PASS",
-              "validationSession": "$validationSession",
-              "generatedAtUtc": "${java.time.Instant.now()}",
-              "artifactSha256": "$artifactSha",
-              "gates": [
-                {"name": "core_data", "status": "PASS"},
-                {"name": "core_database_migrations", "status": "PASS"},
-                {"name": "feature_plans", "status": "PASS"},
-                {"name": "feature_practice", "status": "PASS"},
-                {"name": "feature_schedule", "status": "PASS"},
-                {"name": "feature_workspace", "status": "PASS"},
-                {"name": "app_release_suite", "status": "PASS"}
-              ]
-            }
-            """.trimIndent() + "\n",
-        )
-        println("CONNECTED_RELEASE_TEST_GATES: PASS")
-        println("Evidence: ${report.absolutePath}")
-    }
+    commandLine("python3", "scripts/ov01_release_gate.py", "connected")
 }
 
 tasks.register<Exec>("recordFullJourneyEvidence") {
@@ -864,18 +456,11 @@ tasks.register<Exec>("recordFullJourneyEvidence") {
     commandLine("python3", "scripts/record_full_journey_evidence.py")
 }
 
-tasks.register("verifyFinalReleaseAutomatedGate") {
+tasks.register<Exec>("verifyFinalReleaseAutomatedGate") {
     group = "verification"
     description = "Mandatory automated final gate: signed artifacts, connected suites, and restore/restart journey."
     dependsOn("recordFullJourneyEvidence")
-    doLast {
-        val journey = file("build/reports/studyflow/full-journey.json")
-        if (!journey.isFile || !Regex("\\\"status\\\"\\s*:\\s*\\\"PASS\\\"").containsMatchIn(journey.readText())) {
-            throw GradleException("Full restore/restart journey evidence is missing or not PASS")
-        }
-        println("FINAL_RELEASE_AUTOMATED_GATE: PASS")
-        println("Manual real-device observations remain required before productSealed=true.")
-    }
+    commandLine("python3", "scripts/ov01_release_gate.py", "automated")
 }
 
 tasks.register<Exec>("verifyFinalReleaseVerdict") {
@@ -2111,22 +1696,19 @@ tasks.register<Exec>("verifyAtt01AttentionContracts") {
     commandLine("python3", "scripts/verify_att01_unified_attention_foundation.py")
 }
 
-// ATT12 v4: keep the final-seal JVM unit-test lanes deterministic on native Termux even when
-// Devtool intentionally enables Gradle --parallel. Module compilation may still run in parallel;
-// only the heavy test executors are ordered.
-gradle.projectsEvaluated {
-    project(":feature:settings").tasks.named("testDebugUnitTest") {
-        mustRunAfter(":feature:reminders:testDebugUnitTest")
-    }
-    project(":app").tasks.named("testReleaseUnitTest") {
-        mustRunAfter(":feature:settings:testDebugUnitTest")
-    }
-    project(":app-tv").tasks.named("testDebugUnitTest") {
-        mustRunAfter(":app:testReleaseUnitTest")
-    }
-    project(":desktopApp").tasks.named("test") {
-        mustRunAfter(":app-tv:testDebugUnitTest")
-    }
+// ATT12 v4 / OV01: preserve deterministic heavy-test ordering without projectsEvaluated.
+// Task matching is lazy, so it remains compatible with configuration cache and plugin-created tasks.
+project(":feature:settings").tasks.matching { it.name == "testDebugUnitTest" }.configureEach {
+    mustRunAfter(":feature:reminders:testDebugUnitTest")
+}
+project(":app").tasks.matching { it.name == "testReleaseUnitTest" }.configureEach {
+    mustRunAfter(":feature:settings:testDebugUnitTest")
+}
+project(":app-tv").tasks.matching { it.name == "testDebugUnitTest" }.configureEach {
+    mustRunAfter(":app:testReleaseUnitTest")
+}
+project(":desktopApp").tasks.matching { it.name == "test" }.configureEach {
+    mustRunAfter(":app-tv:testDebugUnitTest")
 }
 
 tasks.register<Exec>("verifyAttentionWebRuntimeParity") {
@@ -2619,3 +2201,111 @@ tasks.register("verifyAttentionRoadmapPostsealCompletion") {
     )
 }
 
+// OV01 — repository/Gradle/Devtool truth baseline.
+// Lock every resolvable project configuration. Lock state is refreshed intentionally with
+// `./gradlew --write-locks ...`; ordinary builds consume the committed state when present.
+allprojects {
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+}
+
+val repositoryVerificationInputs = files(
+    fileTree(rootDir) {
+        include(
+            "*.gradle.kts",
+            "*.properties",
+            "*.toml",
+            "*.md",
+            "gradle/**",
+            "build-logic/**",
+            "scripts/**",
+            "tests/**",
+            "app/**",
+            "app-tv/**",
+            "core/**",
+            "feature/**",
+            "desktopApp/**",
+            "web/**",
+            "protocol/**",
+            "docs/**",
+        )
+        exclude(
+            "**/build/**",
+            "**/.gradle/**",
+            "**/.idea/**",
+            "**/.kotlin/**",
+            "**/node_modules/**",
+            ".devtool/**",
+        )
+    },
+)
+
+val volatileVerifierNameFragments = listOf(
+    "Artifact",
+    "Evidence",
+    "Device",
+    "Physical",
+    "Campaign",
+    "Verdict",
+    "Packaged",
+    "Install",
+    "Rollout",
+    "Connected",
+    "Release",
+    "Runtime",
+    "External",
+)
+
+// Give every root verification Exec an explicit, reproducible source-input boundary and a
+// unique stamp output. Pure source verifiers become UP-TO-DATE/cacheable; runtime/evidence
+// verifiers retain declared I/O but deliberately execute every time.
+tasks.withType<Exec>().configureEach {
+    if (project == rootProject && group == "verification") {
+        val originalCommand = commandLine.map(Any::toString)
+        val alreadyWrapped = originalCommand.getOrNull(1)?.endsWith("run_gradle_verifier.py") == true
+        if (originalCommand.isNotEmpty() && !alreadyWrapped) {
+            val stampFile = layout.buildDirectory.file("verification-stamps/$name.ok")
+            inputs.files(repositoryVerificationInputs)
+                .withPropertyName("repositoryVerificationInputs")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+            inputs.property("verificationCommand", originalCommand.joinToString("\u0000"))
+            outputs.file(stampFile).withPropertyName("verificationStamp")
+
+            val scriptPath = originalCommand.getOrNull(1).orEmpty()
+            val isPureSourceVerifier =
+                originalCommand.firstOrNull() == "python3" &&
+                    scriptPath.startsWith("scripts/verify_") &&
+                    volatileVerifierNameFragments.none(name::contains)
+            if (isPureSourceVerifier) {
+                outputs.cacheIf("source-only repository verifier") { true }
+            } else {
+                outputs.upToDateWhen { false }
+                outputs.cacheIf("runtime, report-producing, or environment-sensitive verifier") { false }
+            }
+
+            commandLine(
+                listOf(
+                    "python3",
+                    rootProject.file("scripts/run_gradle_verifier.py").absolutePath,
+                    "--stamp",
+                    stampFile.get().asFile.absolutePath,
+                    "--",
+                ) + originalCommand,
+            )
+        }
+    }
+}
+
+tasks.register<Exec>("verifyGradleDependencyIntegrityPolicy") {
+    group = "verification"
+    description = "Checks Gradle dependency locking, pinned wrapper provenance, and SHA-256 materialization policy."
+    commandLine("python3", "scripts/verify_gradle_dependency_integrity.py")
+}
+
+tasks.register<Exec>("verifyOv01RepositoryGradleDevtoolTruth") {
+    group = "verification"
+    description = "Behaviorally checks OV01 repository, Gradle, Devtool, wrapper, dependency and metadata contracts."
+    dependsOn("verifyGradleDependencyIntegrityPolicy")
+    commandLine("python3", "scripts/verify_ov01_repository_gradle_devtool_truth.py")
+}

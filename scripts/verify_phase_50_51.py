@@ -148,7 +148,7 @@ for required_task in (
 ):
     require(required_task in build or required_task in devtool, f"validation task missing: {required_task}")
 
-require("python3 scripts/verify_phase_50_51.py" in build, "Phase 50/51 verifier is not wired")
+require("scripts/verify_phase_50_51.py" in build, "Phase 50/51 verifier is not wired")
 
 expected_versions = {
     "agp": "9.3.1",
