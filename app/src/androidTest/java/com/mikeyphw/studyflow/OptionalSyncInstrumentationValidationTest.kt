@@ -39,6 +39,7 @@ class OptionalSyncInstrumentationValidationTest {
                     onCheckRemoteCheckpoints = {},
                     onPreviewRemoteRestore = {},
                     onViewSyncHistory = {},
+                    onApplyRemoteRestore = {},
                 )
             }
         }
@@ -72,6 +73,7 @@ class OptionalSyncInstrumentationValidationTest {
                     onCheckRemoteCheckpoints = {},
                     onPreviewRemoteRestore = {},
                     onViewSyncHistory = {},
+                    onApplyRemoteRestore = {},
                 )
             }
         }

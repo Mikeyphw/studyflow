@@ -1,3 +1,10 @@
+## OV07 — backup, snapshot, SAF & manual-sync durability (overlay 7 of 30)
+
+- Added production manual-folder restore with authenticated private staging, logical Room replacement, annex rebinding, rollback, revision verification and restore ledger evidence.
+- Moved manual-sync annex collection/hashing outside Room transactions and made restore preview stream decrypted metadata through private bounded staging.
+- Made manual-sync and Plan Portability passphrases wipeable and released temporary SAF import grants deterministically.
+- Hardened Desktop backups against symlink escape and self-unrestorable size, and tightened duplicate annex, snapshot path/deletion, and private-byte deletion guarantees.
+
 ## OV05 — duplication, migrations & snapshot determinism (overlay 5 of 30)
 
 - Complete Study Plan duplication across language and Termux history, with immutable practice-ID rebinding.

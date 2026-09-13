@@ -483,4 +483,6 @@
     <string name="debug_reminder_lab_last_reconciled">Last reconciled: %1$s</string>
     <string name="debug_reminder_lab_last_delivered">Last delivered: %1$s</string>
     <string name="debug_reminder_lab_last_recovery_reason">Last recovery trigger: %1$s</string>
+    <string name="sync_restore_preview_ready">The checkpoint is authenticated and ready. Re-enter the passphrase, then apply to replace local StudyFlow data atomically.</string>
+    <string name="sync_apply_restore">Apply restore</string>
 </resources>

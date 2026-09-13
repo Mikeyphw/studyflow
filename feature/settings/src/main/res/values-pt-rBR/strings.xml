@@ -488,4 +488,6 @@
     <string name="debug_reminder_lab_last_reconciled">Última reconciliação: %1$s</string>
     <string name="debug_reminder_lab_last_delivered">Última entrega: %1$s</string>
     <string name="debug_reminder_lab_last_recovery_reason">Último gatilho de recuperação: %1$s</string>
+    <string name="sync_restore_preview_ready">O checkpoint foi autenticado e está pronto. Digite a senha novamente e aplique para substituir os dados locais do StudyFlow de forma atômica.</string>
+    <string name="sync_apply_restore">Aplicar restauração</string>
 </resources>

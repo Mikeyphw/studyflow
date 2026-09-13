@@ -200,29 +200,68 @@ internal class RoomAnnexFileStorageRepository(
     override suspend fun deleteStoredAnnex(studyPlanId: StudyPlanId, annexId: AnnexId) {
         withContext(Dispatchers.IO) {
             fileMutationMutex.withLock {
-                val deleted = database.withTransaction {
-                    val annex = libraryDao.findAnnex(studyPlanId.value, annexId.value)
-                        ?: return@withTransaction null
-                    require(libraryDao.deleteAnnex(studyPlanId.value, annexId.value) == 1) {
-                        "Annex disappeared while deleting."
-                    }
-                    annex
-                } ?: return@withLock
+                val annex = libraryDao.findAnnex(studyPlanId.value, annexId.value) ?: return@withLock
+                val referenceCount = if (annex.storageReference.isBlank()) 0 else
+                    libraryDao.countAnnexesByStorageReference(annex.storageReference)
 
-                when (deleted.storageMode) {
-                    AnnexStorageMode.IMPORTED_COPY.name -> if (
-                        deleted.storageReference.isNotBlank() &&
-                        libraryDao.countAnnexesByStorageReference(deleted.storageReference) == 0
-                    ) {
-                        val ownedFile = resolveAnnexReference(deleted.storageReference)
-                        if (ownedFile.exists()) ownedFile.delete()
-                        ownedFile.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
+                when (annex.storageMode) {
+                    AnnexStorageMode.IMPORTED_COPY.name -> {
+                        if (annex.storageReference.isBlank() || referenceCount > 1) {
+                            require(libraryDao.deleteAnnex(studyPlanId.value, annexId.value) == 1) {
+                                "Annex disappeared while deleting."
+                            }
+                            return@withLock
+                        }
+                        val ownedFile = resolveAnnexReference(annex.storageReference)
+                        if (!ownedFile.exists()) {
+                            require(libraryDao.deleteAnnex(studyPlanId.value, annexId.value) == 1) {
+                                "Annex disappeared while deleting."
+                            }
+                            return@withLock
+                        }
+                        val tombstone = File(
+                            requireNotNull(ownedFile.parentFile),
+                            ".${ownedFile.name}.delete-${java.util.UUID.randomUUID()}.pending",
+                        )
+                        check(ownedFile.renameTo(tombstone)) {
+                            "Could not stage imported annex bytes for physical deletion."
+                        }
+                        try {
+                            require(libraryDao.deleteAnnex(studyPlanId.value, annexId.value) == 1) {
+                                "Annex disappeared while deleting."
+                            }
+                            if (!tombstone.delete()) {
+                                libraryDao.upsertAnnex(annex)
+                                check(tombstone.renameTo(ownedFile)) {
+                                    "Annex physical deletion failed and its private file could not be restored."
+                                }
+                                error("Annex physical deletion failed; the annex remains tracked.")
+                            }
+                            ownedFile.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
+                        } catch (error: Throwable) {
+                            if (libraryDao.findAnnex(studyPlanId.value, annexId.value) == null) {
+                                libraryDao.upsertAnnex(annex)
+                            }
+                            if (tombstone.exists() && !ownedFile.exists()) {
+                                check(tombstone.renameTo(ownedFile)) {
+                                    "Annex deletion rollback could not restore the private file."
+                                }
+                            }
+                            throw error
+                        }
                     }
-                    AnnexStorageMode.LINKED_DOCUMENT.name -> if (
-                        deleted.persistedPermission && libraryDao.countAnnexesByStorageReference(deleted
-                            .storageReference) == 0
-                    ) {
-                        releasePersistedReadPermission(deleted.storageReference)
+                    AnnexStorageMode.LINKED_DOCUMENT.name -> {
+                        require(libraryDao.deleteAnnex(studyPlanId.value, annexId.value) == 1) {
+                            "Annex disappeared while deleting."
+                        }
+                        if (annex.persistedPermission && referenceCount <= 1) {
+                            try {
+                                releasePersistedReadPermissionOrThrow(annex.storageReference)
+                            } catch (error: Throwable) {
+                                libraryDao.upsertAnnex(annex)
+                                throw error
+                            }
+                        }
                     }
                 }
             }
@@ -400,11 +439,17 @@ internal class RoomAnnexFileStorageRepository(
         return digest.digest().toHex()
     }
 
-    private fun releasePersistedReadPermission(storageReference: String) {
+    private fun releasePersistedReadPermissionOrThrow(storageReference: String) {
         val uri = Uri.parse(storageReference)
         if (!uri.scheme.equals("content", ignoreCase = true)) return
-        runCatching {
+        val held = resolver.persistedUriPermissions.any { permission ->
+            permission.uri == uri && permission.isReadPermission
+        }
+        if (held) {
             resolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            require(resolver.persistedUriPermissions.none { permission ->
+                permission.uri == uri && permission.isReadPermission
+            }) { "Persisted linked-document permission could not be released." }
         }
     }
 

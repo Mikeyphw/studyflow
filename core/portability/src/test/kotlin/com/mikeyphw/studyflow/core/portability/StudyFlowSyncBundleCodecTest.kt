@@ -55,6 +55,40 @@ class StudyFlowSyncBundleCodecTest {
         assertArrayEquals(databaseSnapshot, decoded.databaseSnapshot)
     }
 
+
+    @Test
+    fun streamingPreviewAndStageAvoidWholeArchiveHeapMaterialization() {
+        val archive = sampleArchive()
+        val password = "sync-passphrase".toCharArray()
+        val encrypted = codec.encodeEncryptedArchive(archive, password)
+        password.fill('\u0000')
+        val root = kotlin.io.path.createTempDirectory("studyflow-sync-ov07-").toFile()
+        val plaintext = java.io.File(root, "authenticated.zip")
+        val staging = java.io.File(root, "stage")
+        try {
+            val readPassword = "sync-passphrase".toCharArray()
+            encrypted.inputStream().use { input ->
+                plaintext.outputStream().use { output ->
+                    codec.decryptEncryptedArchive(input, output, readPassword, encrypted.size.toLong())
+                }
+            }
+            readPassword.fill('\u0000')
+
+            val preview = plaintext.inputStream().use(codec::readManifestStreaming)
+            assertEquals(archive.manifest, preview)
+
+            val staged = plaintext.inputStream().use { codec.stageArchive(it, staging) }
+            assertEquals(archive.manifest, staged.manifest)
+            assertArrayEquals(databaseSnapshot, staged.databaseSnapshotFile.readBytes())
+            assertArrayEquals(
+                "annex".encodeToByteArray(),
+                staged.attachmentFiles.getValue("attachments/annex.bin").readBytes(),
+            )
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
     @Test(expected = StudyPlanPackageException::class)
     fun manifestRejectsRawRemoteUploadDeclaration() {
         val archive = sampleArchive(encryptedForRemote = false)

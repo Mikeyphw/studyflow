@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -94,13 +95,13 @@ fun PlanPortabilityScreen(
     var pendingExportRedactHistory by rememberSaveable { mutableStateOf(false) }
     var pendingExportRequiresPassword by rememberSaveable { mutableStateOf(false) }
     var pendingExportPassword by remember { mutableStateOf<CharArray?>(null) }
-    var selectedImportUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedImportUriString by remember { mutableStateOf<String?>(null) }
     val selectedImportUri = selectedImportUriString?.let(Uri::parse)
     var importPreview by remember { mutableStateOf<StudyPlanImportPreview?>(null) }
     var integrityReport by remember { mutableStateOf<StudyPlanBackupIntegrityReport?>(null) }
     var dryRun by remember { mutableStateOf<StudyPlanRestoreDryRun?>(null) }
-    var exportPassword by remember { mutableStateOf("") }
-    var importPassword by remember { mutableStateOf("") }
+    var exportPassword by remember { mutableStateOf(CharArray(0)) }
+    var importPassword by remember { mutableStateOf(CharArray(0)) }
     var encryptExport by rememberSaveable { mutableStateOf(false) }
     var metadataPrivacy by rememberSaveable { mutableStateOf(false) }
     var redactNotes by rememberSaveable { mutableStateOf(false) }
@@ -125,8 +126,28 @@ fun PlanPortabilityScreen(
     val yesLabel = stringResource(R.string.yes)
     val noLabel = stringResource(R.string.no)
 
-    suspend fun <T> usePassword(value: String, block: suspend (CharArray?) -> T): T {
-        val password = value.takeIf(String::isNotBlank)?.toCharArray()
+    fun replaceExportPassword(value: String) {
+        exportPassword.fill('\u0000')
+        exportPassword = value.toCharArray()
+    }
+
+    fun replaceImportPassword(value: String) {
+        importPassword.fill('\u0000')
+        importPassword = value.toCharArray()
+    }
+
+    fun clearExportPassword() {
+        exportPassword.fill('\u0000')
+        exportPassword = CharArray(0)
+    }
+
+    fun clearImportPassword() {
+        importPassword.fill('\u0000')
+        importPassword = CharArray(0)
+    }
+
+    suspend fun <T> usePassword(value: CharArray, block: suspend (CharArray?) -> T): T {
+        val password = value.takeIf { it.isNotEmpty() }?.copyOf()
         return try {
             block(password)
         } finally {
@@ -160,6 +181,34 @@ fun PlanPortabilityScreen(
         pendingExportRequiresPassword = false
     }
 
+    fun releaseImportGrant(uriString: String?) {
+        val uri = uriString?.let(Uri::parse) ?: return
+        runCatching {
+            context.contentResolver.releasePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+        }
+    }
+
+    fun clearSelectedImport() {
+        releaseImportGrant(selectedImportUriString)
+        selectedImportUriString = null
+        importPreview = null
+        integrityReport = null
+        dryRun = null
+        clearImportPassword()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            releaseImportGrant(selectedImportUriString)
+            importPassword.fill('\u0000')
+            exportPassword.fill('\u0000')
+            pendingExportPassword?.fill('\u0000')
+        }
+    }
+
     fun restoredPendingExportOptions(): StudyPlanExportOptions? {
         val modeName = pendingExportModeName ?: return null
         val mode = StudyPlanExportMode.entries.firstOrNull { it.name == modeName } ?: return null
@@ -181,11 +230,13 @@ fun PlanPortabilityScreen(
         val password = pendingExportPassword
         if (uri == null || options == null || plan == null) {
             clearPendingExport()
+            clearExportPassword()
             return@rememberLauncherForActivityResult
         }
         if (requiresPassword && password == null) {
             cleanupFailedExportDestination(context, uri)
             clearPendingExport()
+            clearExportPassword()
             message = exportPasswordLost
             return@rememberLauncherForActivityResult
         }
@@ -198,13 +249,15 @@ fun PlanPortabilityScreen(
                     }
                 }.onSuccess {
                     message = exportCompleted
-                    exportPassword = ""
+                    clearExportPassword()
                 }.onFailure { error ->
                     cleanupFailedExportDestination(context, uri)
+                    clearExportPassword()
                     message = operationFailure(error)
                 }
             } finally {
                 clearPendingExport()
+                clearExportPassword()
                 busy = false
             }
         }
@@ -223,6 +276,7 @@ fun PlanPortabilityScreen(
                 }.onSuccess { integrityReport = it; message = null }
                     .onFailure { message = operationFailure(it) }
             } finally {
+                clearImportPassword()
                 busy = false
             }
         }
@@ -231,6 +285,7 @@ fun PlanPortabilityScreen(
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             try {
+                releaseImportGrant(selectedImportUriString)
                 context.contentResolver.takePersistableUriPermission(
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION,
@@ -241,7 +296,9 @@ fun PlanPortabilityScreen(
                 dryRun = null
                 inspect(uri)
             } catch (_: SecurityException) {
+                releaseImportGrant(uri.toString())
                 selectedImportUriString = null
+                clearImportPassword()
                 message = failedMessage
             }
         }
@@ -249,7 +306,7 @@ fun PlanPortabilityScreen(
 
     fun export(mode: StudyPlanExportMode, includeAnnexMetadata: Boolean, includeAnnexPayloads: Boolean) {
         val current = plan ?: return
-        if (encryptExport && exportPassword.length < StudyPlanEncryptedPackageCodec.MinimumPasswordLength) {
+        if (encryptExport && exportPassword.size < StudyPlanEncryptedPackageCodec.MinimumPasswordLength) {
             message = passwordTooShort
             return
         }
@@ -269,7 +326,7 @@ fun PlanPortabilityScreen(
         pendingExportRedactNotes = options.redactNotes
         pendingExportRedactHistory = options.redactHistory
         pendingExportRequiresPassword = encryptExport
-        pendingExportPassword = if (encryptExport) exportPassword.toCharArray() else null
+        pendingExportPassword = if (encryptExport) exportPassword.copyOf() else null
         val fileName = if (metadataPrivacy) {
             StudyPlanPrivacyPolicy.PrivateExportFileName
         } else {
@@ -292,6 +349,7 @@ fun PlanPortabilityScreen(
                 }.onSuccess { importPreview = it; message = null }
                     .onFailure { message = operationFailure(it) }
             } finally {
+                clearImportPassword()
                 busy = false
             }
         }
@@ -311,6 +369,7 @@ fun PlanPortabilityScreen(
                 }.onSuccess { dryRun = it; message = null }
                     .onFailure { message = operationFailure(it) }
             } finally {
+                clearImportPassword()
                 busy = false
             }
         }
@@ -329,12 +388,12 @@ fun PlanPortabilityScreen(
                     }
                 }.onSuccess { result ->
                     importPreview = null
-                    selectedImportUriString = null
-                    importPassword = ""
+                    clearSelectedImport()
                     message = importCompleted
                     onImported(result.studyPlanId)
                 }.onFailure { message = operationFailure(it) }
             } finally {
+                clearImportPassword()
                 busy = false
             }
         }
@@ -346,7 +405,12 @@ fun PlanPortabilityScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.portability_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        clearSelectedImport()
+                        clearExportPassword()
+                        clearPendingExport()
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.go_back))
                     }
                 },
@@ -367,8 +431,8 @@ fun PlanPortabilityScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         OutlinedTextField(
-                            value = importPassword,
-                            onValueChange = { importPassword = it },
+                            value = importPassword.concatToString(),
+                            onValueChange = ::replaceImportPassword,
                             label = { Text(stringResource(R.string.import_password_optional)) },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth(),
@@ -493,8 +557,8 @@ fun PlanPortabilityScreen(
                             )
                             if (encryptExport) {
                                 OutlinedTextField(
-                                    value = exportPassword,
-                                    onValueChange = { exportPassword = it },
+                                    value = exportPassword.concatToString(),
+                                    onValueChange = ::replaceExportPassword,
                                     label = { Text(stringResource(R.string.export_password)) },
                                     visualTransformation = PasswordVisualTransformation(),
                                     modifier = Modifier.fillMaxWidth(),
@@ -610,7 +674,10 @@ fun PlanPortabilityScreen(
 
     importPreview?.let { preview ->
         AlertDialog(
-            onDismissRequest = { importPreview = null },
+            onDismissRequest = {
+                importPreview = null
+                clearImportPassword()
+            },
             title = { Text(stringResource(R.string.import_preview_title, preview.manifest.displayName)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

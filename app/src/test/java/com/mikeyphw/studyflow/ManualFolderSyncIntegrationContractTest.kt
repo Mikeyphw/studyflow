@@ -34,6 +34,7 @@ class ManualFolderSyncIntegrationContractTest {
         assertTrue("uploadManualFolderCheckpoint(password)" in app)
         assertTrue("scanManualFolderCheckpoints()" in app)
         assertTrue("previewLatestManualFolderRestore(password)" in app)
+        assertTrue("applyLatestManualFolderRestore(password)" in app)
         assertTrue("inspectSyncLedger()" in app)
         assertFalse("recordManualUploadCheckpoint" in app)
         assertFalse("recordManualRemoteCheck" in app)
@@ -42,7 +43,10 @@ class ManualFolderSyncIntegrationContractTest {
         assertTrue("StudyFlowDatabaseSnapshotWriter.capture(database)" in repository)
         assertTrue("writeEncryptedArchive(archive, output, password)" in repository)
         assertTrue("listCheckpointDocuments(folderUri)" in repository)
-        assertTrue("readEncryptedArchive(" in repository)
+        assertTrue("decryptEncryptedArchive(" in repository)
+        assertTrue("readManifestStreaming" in repository)
+        assertTrue("stageArchive(" in repository)
+        assertTrue("StudyFlowDatabaseSnapshotRestorer.restore(" in repository)
 
         assertTrue("DocumentsContract.buildChildDocumentsUriUsingTree" in storage)
         assertTrue("DocumentsContract.buildDocumentUriUsingTree" in storage)
@@ -64,5 +68,6 @@ class ManualFolderSyncIntegrationContractTest {
         assertFalse("onCheckRemoteCheckpoints: suspend () -> Unit =" in screen)
         assertFalse("onPreviewRemoteRestore: suspend (CharArray) -> Unit =" in screen)
         assertFalse("onViewSyncHistory: suspend () -> Unit =" in screen)
+        assertFalse("onApplyRemoteRestore: suspend (CharArray) -> Unit =" in screen)
     }
 }

@@ -42,6 +42,7 @@ class SyncRecoveryInstrumentationTest {
                     onCheckRemoteCheckpoints = {},
                     onPreviewRemoteRestore = {},
                     onViewSyncHistory = {},
+                    onApplyRemoteRestore = {},
                 )
             }
         }

@@ -48,6 +48,7 @@ import com.mikeyphw.studyflow.core.portability.StudyPlanPackagePayload
 import com.mikeyphw.studyflow.core.portability.StudyPlanPrivacyPolicy
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.Properties
@@ -97,32 +98,48 @@ class DesktopPortabilityController(
     }
 
     fun createEncryptedWorkspaceBackup(destination: Path, password: CharArray): Path {
-        val workspace = requireRoot()
+        val workspace = requireRoot().toRealPath(LinkOption.NOFOLLOW_LINKS)
+        requireWorkspaceTreeHasNoSymlinks(workspace)
         val normalizedDestination = destination.toAbsolutePath().normalize()
-        require(!normalizedDestination.startsWith(workspace)) {
-            "Encrypted Desktop backups must be written outside the active StudyFlow workspace."
+        val destinationParent = requireNotNull(normalizedDestination.parent) {
+            "Encrypted Desktop backup destination must have a parent directory."
         }
-        normalizedDestination.parent?.let(Files::createDirectories)
-        Files.newOutputStream(normalizedDestination).use { output ->
-            encryptedCodec.encrypt(output, password) { encryptedOutput ->
-                ZipOutputStream(encryptedOutput.buffered()).use { zip ->
-                    writeBackupManifest(zip)
-                    Files.walk(workspace).use { paths ->
-                        paths.filter(Files::isRegularFile)
-                            .sorted()
-                            .forEach { file -> writeWorkspaceFile(zip, workspace, file) }
+        Files.createDirectories(destinationParent)
+        requireExternalPath(workspace, destinationParent, normalizedDestination, "backup destination")
+        val files = workspaceBackupFiles(workspace)
+        try {
+            Files.newOutputStream(normalizedDestination).use { rawOutput ->
+                val boundedOutput = BoundedBackupOutputStream(rawOutput, MAX_BACKUP_BYTES)
+                encryptedCodec.encrypt(boundedOutput, password) { encryptedOutput ->
+                    ZipOutputStream(encryptedOutput.buffered()).use { zip ->
+                        writeBackupManifest(zip)
+                        files.forEach { file -> writeWorkspaceFile(zip, workspace, file) }
                     }
                 }
             }
+        } catch (error: Throwable) {
+            Files.deleteIfExists(normalizedDestination)
+            throw error
+        }
+        require(Files.size(normalizedDestination) <= MAX_BACKUP_BYTES) {
+            "Encrypted Desktop backup exceeds the restore size limit."
         }
         return normalizedDestination
     }
 
     fun restoreEncryptedWorkspaceBackup(source: Path, password: CharArray): DesktopWorkspaceRestoreResult {
-        val workspace = requireRoot()
+        val workspace = requireRoot().toRealPath(LinkOption.NOFOLLOW_LINKS)
+        requireWorkspaceTreeHasNoSymlinks(workspace)
         val sourceFile = source.toAbsolutePath().normalize()
-        require(!sourceFile.startsWith(workspace)) {
-            "Restore source must live outside the active StudyFlow workspace."
+        require(Files.exists(sourceFile, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(sourceFile)) {
+            "Restore source must be a real regular file, not a symbolic link."
+        }
+        require(Files.isRegularFile(sourceFile, LinkOption.NOFOLLOW_LINKS)) {
+            "Restore source must be a regular backup file."
+        }
+        requireExternalPath(workspace, requireNotNull(sourceFile.parent), sourceFile, "restore source")
+        require(Files.size(sourceFile) <= MAX_BACKUP_BYTES) {
+            "Desktop backup exceeds the supported size."
         }
         val parent = workspace.parent ?: error("Desktop workspace has no parent directory.")
         val staging = Files.createTempDirectory(parent, ".studyflow-restore-")
@@ -292,6 +309,9 @@ class DesktopPortabilityController(
     }
 
     private fun writeWorkspaceFile(zip: ZipOutputStream, workspace: Path, file: Path) {
+        require(!Files.isSymbolicLink(file) && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
+            "Workspace backups refuse symbolic links and non-regular files: $file"
+        }
         val relative = workspace.relativize(file).normalize()
         require(!relative.startsWith("..")) { "Workspace backup path escaped its root." }
         val size = Files.size(file)
@@ -299,6 +319,54 @@ class DesktopPortabilityController(
         zip.putNextEntry(ZipEntry("workspace/${relative.toString().replace('\\', '/')}").apply { time = 0L })
         Files.newInputStream(file).use { input -> input.copyTo(zip) }
         zip.closeEntry()
+    }
+
+    private fun workspaceBackupFiles(workspace: Path): List<Path> {
+        var total = 0L
+        return Files.walk(workspace).use { paths ->
+            paths.sorted().map { path ->
+                require(!Files.isSymbolicLink(path)) {
+                    "Desktop backup refuses symbolic links inside the workspace: ${workspace.relativize(path)}"
+                }
+                path
+            }.filter { path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) }
+                .peek { file ->
+                    val size = Files.size(file)
+                    require(size <= MAX_ENTRY_BYTES) {
+                        "Workspace file is too large to back up: ${workspace.relativize(file)}"
+                    }
+                    require(total <= MAX_BACKUP_PAYLOAD_BYTES - size) {
+                        "Desktop workspace is too large to create a restorable encrypted backup."
+                    }
+                    total += size
+                }.toList()
+        }
+    }
+
+    private fun requireWorkspaceTreeHasNoSymlinks(workspace: Path) {
+        Files.walk(workspace).use { paths ->
+            paths.forEach { path ->
+                require(!Files.isSymbolicLink(path)) {
+                    "Desktop workspace contains a symbolic link and cannot be backed up safely: " +
+                        workspace.relativize(path)
+                }
+            }
+        }
+    }
+
+    private fun requireExternalPath(workspace: Path, parent: Path, candidate: Path, label: String) {
+        val realWorkspace = workspace.toRealPath(LinkOption.NOFOLLOW_LINKS)
+        val realParent = parent.toRealPath(LinkOption.NOFOLLOW_LINKS)
+        require(!realParent.startsWith(realWorkspace)) {
+            "Desktop $label must live outside the active StudyFlow workspace."
+        }
+        if (Files.exists(candidate, LinkOption.NOFOLLOW_LINKS)) {
+            require(!Files.isSymbolicLink(candidate)) { "Desktop $label cannot be a symbolic link." }
+            val realCandidate = candidate.toRealPath(LinkOption.NOFOLLOW_LINKS)
+            require(!realCandidate.startsWith(realWorkspace)) {
+                "Desktop $label must live outside the active StudyFlow workspace."
+            }
+        }
     }
 
     private fun extractWorkspaceBackup(archive: Path, staging: Path) {
@@ -357,9 +425,10 @@ class DesktopPortabilityController(
             paths.sorted().forEach { path ->
                 val relative = source.relativize(path)
                 val target = destination.resolve(relative.toString())
-                if (Files.isDirectory(path)) {
+                require(!Files.isSymbolicLink(path)) { "Refusing to copy symbolic link in Desktop workspace tree." }
+                if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
                     Files.createDirectories(target)
-                } else if (Files.isRegularFile(path)) {
+                } else if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
                     target.parent?.let(Files::createDirectories)
                     Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES)
                 }
@@ -375,7 +444,33 @@ class DesktopPortabilityController(
     }
 
     private fun regularFileCount(path: Path): Int = Files.walk(path).use { paths ->
-        paths.filter(Files::isRegularFile).count().toInt()
+        paths.filter { candidate -> Files.isRegularFile(candidate, LinkOption.NOFOLLOW_LINKS) }.count().toInt()
+    }
+
+    private class BoundedBackupOutputStream(
+        private val delegate: java.io.OutputStream,
+        private val limit: Long,
+    ) : java.io.OutputStream() {
+        private var written = 0L
+
+        override fun write(value: Int) {
+            reserve(1)
+            delegate.write(value)
+        }
+
+        override fun write(bytes: ByteArray, offset: Int, length: Int) {
+            reserve(length.toLong())
+            delegate.write(bytes, offset, length)
+        }
+
+        override fun flush() = delegate.flush()
+
+        private fun reserve(bytes: Long) {
+            require(bytes >= 0L && written <= limit - bytes) {
+                "Encrypted Desktop backup exceeds the restore size limit."
+            }
+            written += bytes
+        }
     }
 
     private fun requirePlanId(): StudyPlanId = requireNotNull(services.defaultPlanId) { "No active Study Plan." }
@@ -696,6 +791,7 @@ class DesktopPortabilityController(
         private const val MAX_MANIFEST_BYTES = 64L * 1024L
         private const val MAX_ENTRY_BYTES = 256L * 1024L * 1024L
         private const val MAX_BACKUP_BYTES = 2L * 1024L * 1024L * 1024L
+        private const val MAX_BACKUP_PAYLOAD_BYTES = MAX_BACKUP_BYTES - (64L * 1024L * 1024L)
     }
 }
 

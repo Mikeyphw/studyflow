@@ -400,6 +400,10 @@ class StudyPlanPackageCodec(
         if (entryNames.size != entryNames.toSet().size) {
             throw StudyPlanPackageException("Study Plan package contains duplicate annex payload entries.")
         }
+        val annexIds = manifest.annexPayloads.map { it.annexId }
+        if (annexIds.size != annexIds.toSet().size) {
+            throw StudyPlanPackageException("Study Plan package contains duplicate annex IDs.")
+        }
         manifest.annexPayloads.forEach { payload ->
             validateEntryName(ZipEntry(payload.entryName))
             if (!payload.entryName.startsWith(AnnexPayloadPrefix) ||

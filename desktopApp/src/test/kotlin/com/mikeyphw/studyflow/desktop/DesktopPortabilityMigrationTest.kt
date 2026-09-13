@@ -5,6 +5,8 @@ import java.util.Properties
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
+import org.junit.Assume.assumeTrue
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
@@ -54,6 +56,32 @@ class DesktopPortabilityMigrationTest {
         } finally {
             root.toFile().deleteRecursively()
             importRoot.toFile().deleteRecursively()
+            outside.toFile().deleteRecursively()
+        }
+    }
+
+
+    @Test
+    fun encryptedWorkspaceBackupRefusesWorkspaceSymlinkEscape() {
+        val root = Files.createTempDirectory("studyflow-ov07-symlink-root-")
+        val outside = Files.createTempDirectory("studyflow-ov07-symlink-outside-")
+        try {
+            val source = services(root)
+            val external = outside.resolve("private.txt")
+            Files.writeString(external, "outside workspace")
+            val link = root.resolve("external-alias")
+            val linked = runCatching { Files.createSymbolicLink(link, external) }.isSuccess
+            assumeTrue("symbolic links are unavailable on this test platform", linked)
+
+            assertFailsWith<IllegalArgumentException> {
+                source.portabilityController.createEncryptedWorkspaceBackup(
+                    outside.resolve("must-not-exist.sfbak"),
+                    "correct horse".toCharArray(),
+                )
+            }
+            assertFalse(Files.exists(outside.resolve("must-not-exist.sfbak")))
+        } finally {
+            root.toFile().deleteRecursively()
             outside.toFile().deleteRecursively()
         }
     }

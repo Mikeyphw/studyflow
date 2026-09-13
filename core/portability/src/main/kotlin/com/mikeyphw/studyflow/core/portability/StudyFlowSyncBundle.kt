@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.portability
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.MessageDigest
@@ -60,6 +61,17 @@ data class StudyFlowSyncIntegrity(
     val algorithm: String = "SHA-256",
     val entries: Map<String, String>,
 )
+
+data class StudyFlowSyncBundleStagedArchive(
+    val manifest: StudyFlowSyncBundleManifest,
+    val databaseSnapshotFile: File,
+    val attachmentFiles: Map<String, File>,
+    val stagingDirectory: File,
+) {
+    fun cleanup() {
+        stagingDirectory.deleteRecursively()
+    }
+}
 
 data class StudyFlowSyncBundleArchive(
     val manifest: StudyFlowSyncBundleManifest,
@@ -210,6 +222,146 @@ class StudyFlowSyncBundleCodec(
         return readArchive(ByteArrayInputStream(plain.toByteArray()))
     }
 
+    /** Streams authenticated plaintext to [output] without materializing the checkpoint in heap. */
+    fun decryptEncryptedArchive(
+        input: InputStream,
+        output: OutputStream,
+        password: CharArray,
+        maximumEncryptedBytes: Long,
+    ) {
+        encryptedCodec.decrypt(input, output, password, maximumEncryptedBytes)
+    }
+
+    /** Reads only authenticated manifest/checkpoint metadata from an already-decrypted archive. */
+    fun readManifestStreaming(input: InputStream): StudyFlowSyncBundleManifest {
+        var manifest: StudyFlowSyncBundleManifest? = null
+        var checkpoint: StudyFlowSyncCheckpoint? = null
+        ZipInputStream(input.buffered()).use { zip ->
+            while (manifest == null || checkpoint == null) {
+                val entry = zip.nextEntry ?: break
+                if (!entry.isDirectory) {
+                    requireSafeEntryName(entry.name)
+                    when (entry.name) {
+                        ManifestEntry -> manifest = decode(readBounded(zip, MaxMetadataBytes))
+                        CheckpointEntry -> checkpoint = decode(readBounded(zip, MaxMetadataBytes))
+                    }
+                }
+                zip.closeEntry()
+            }
+        }
+        val parsedManifest = manifest ?: throw StudyPlanPackageException("Sync bundle manifest is missing.")
+        val parsedCheckpoint = checkpoint ?: throw StudyPlanPackageException("Sync checkpoint metadata is missing.")
+        if (parsedManifest.checkpoint != parsedCheckpoint) {
+            throw StudyPlanPackageException("Sync manifest and checkpoint metadata do not match.")
+        }
+        validateManifestMetadata(parsedManifest)
+        return parsedManifest
+    }
+
+    /**
+     * Extracts a decrypted sync archive to private staging files with bounded streaming checksums.
+     * Database and attachment payloads never need to coexist as heap byte arrays.
+     */
+    fun stageArchive(input: InputStream, stagingDirectory: File): StudyFlowSyncBundleStagedArchive {
+        require(stagingDirectory.mkdirs() || stagingDirectory.isDirectory) {
+            "Could not create sync restore staging directory."
+        }
+        val files = linkedMapOf<String, File>()
+        val hashes = linkedMapOf<String, String>()
+        val sizes = linkedMapOf<String, Long>()
+        val budget = ArchiveBudget()
+        try {
+            ZipInputStream(input.buffered()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    if (!entry.isDirectory) {
+                        requireSafeEntryName(entry.name)
+                        require(!files.containsKey(entry.name)) { "Duplicate sync bundle entry: ${entry.name}" }
+                        budget.reserveEntry()
+                        val destination = File(stagingDirectory, "entry-${files.size}.bin").canonicalFile
+                        require(destination.path.startsWith(stagingDirectory.canonicalPath + File.separator)) {
+                            "Unsafe sync staging path."
+                        }
+                        val digest = MessageDigest.getInstance("SHA-256")
+                        val limit = if (entry.name in setOf(ManifestEntry, CheckpointEntry, IntegrityEntry)) {
+                            MaxMetadataBytes.toLong()
+                        } else {
+                            MaxEntryBytes.toLong()
+                        }
+                        var total = 0L
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        destination.outputStream().buffered().use { output ->
+                            while (true) {
+                                val count = zip.read(buffer)
+                                if (count < 0) break
+                                total += count
+                                require(total <= limit) { "Sync bundle entry is larger than the supported limit." }
+                                budget.recordStreamingBytes(count.toLong())
+                                digest.update(buffer, 0, count)
+                                output.write(buffer, 0, count)
+                            }
+                        }
+                        buffer.fill(0)
+                        files[entry.name] = destination
+                        sizes[entry.name] = total
+                        hashes[entry.name] = digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+                    }
+                    zip.closeEntry()
+                }
+            }
+            val required = setOf(ManifestEntry, CheckpointEntry, DatabaseSnapshotEntry, IntegrityEntry)
+            if (!files.keys.containsAll(required)) {
+                throw StudyPlanPackageException("Sync bundle is incomplete: ${(required - files.keys).joinToString()}.")
+            }
+            val manifest = decode<StudyFlowSyncBundleManifest>(files.getValue(ManifestEntry).readBytes())
+            val checkpoint = decode<StudyFlowSyncCheckpoint>(files.getValue(CheckpointEntry).readBytes())
+            if (manifest.checkpoint != checkpoint) {
+                throw StudyPlanPackageException("Sync manifest and checkpoint metadata do not match.")
+            }
+            validateManifestMetadata(manifest)
+            val integrity = decode<StudyFlowSyncIntegrity>(files.getValue(IntegrityEntry).readBytes())
+            require(integrity.algorithm == "SHA-256") { "Unsupported sync integrity algorithm: ${integrity.algorithm}" }
+            val allowed = required + manifest.attachments.map { it.entryName }.toSet()
+            val extras = files.keys - allowed
+            if (extras.isNotEmpty()) {
+                throw StudyPlanPackageException("Unexpected sync bundle entry: ${extras.sorted().first()}")
+            }
+            val missing = allowed - files.keys
+            if (missing.isNotEmpty()) {
+                throw StudyPlanPackageException("Sync bundle is missing entry: ${missing.sorted().first()}")
+            }
+            allowed.filterNot { it == IntegrityEntry }.forEach { name ->
+                val expected = integrity.entries[name]
+                    ?: throw StudyPlanPackageException("Missing sync checksum for $name.")
+                if (!hashes.getValue(name).equals(expected, ignoreCase = true)) {
+                    throw StudyPlanPackageException("Sync checksum verification failed for $name.")
+                }
+            }
+            val databaseFile = files.getValue(DatabaseSnapshotEntry)
+            require(sizes.getValue(DatabaseSnapshotEntry) == manifest.databaseByteSize) {
+                "Sync database snapshot size does not match manifest."
+            }
+            require(hashes.getValue(DatabaseSnapshotEntry).equals(manifest.databaseChecksumSha256, ignoreCase = true)) {
+                "Sync database checksum does not match database.snapshot."
+            }
+            val attachments = manifest.attachments.associate { attachment ->
+                val file = files[attachment.entryName]
+                    ?: throw StudyPlanPackageException("Sync bundle is missing attachment ${attachment.entryName}.")
+                require(sizes.getValue(attachment.entryName) == attachment.byteSize) {
+                    "Sync attachment size does not match ${attachment.entryName}."
+                }
+                require(hashes.getValue(attachment.entryName).equals(attachment.checksumSha256, ignoreCase = true)) {
+                    "Sync attachment checksum failed for ${attachment.entryName}."
+                }
+                attachment.entryName to file
+            }
+            return StudyFlowSyncBundleStagedArchive(manifest, databaseFile, attachments, stagingDirectory)
+        } catch (error: Throwable) {
+            stagingDirectory.deleteRecursively()
+            throw error
+        }
+    }
+
     fun buildManifest(
         applicationVersion: String,
         checkpoint: StudyFlowSyncCheckpoint,
@@ -233,6 +385,16 @@ class StudyFlowSyncBundleCodec(
     )
 
     private fun validateManifest(manifest: StudyFlowSyncBundleManifest, databaseSnapshot: ByteArray) {
+        validateManifestMetadata(manifest)
+        require(manifest.databaseByteSize == databaseSnapshot.size.toLong()) {
+            "Sync database snapshot size does not match manifest."
+        }
+        require(sha256(databaseSnapshot) == manifest.databaseChecksumSha256) {
+            "Sync database checksum does not match database.snapshot."
+        }
+    }
+
+    private fun validateManifestMetadata(manifest: StudyFlowSyncBundleManifest) {
         require(manifest.format == StudyFlowSyncBundleFormat) { "Unsupported sync bundle format: ${manifest.format}" }
         require(manifest.schemaVersion == StudyFlowSyncBundleSchemaVersion) {
             "Unsupported sync bundle schema version: ${manifest.schemaVersion}"
@@ -242,14 +404,11 @@ class StudyFlowSyncBundleCodec(
         require(manifest.checkpoint.databaseHashSha256 == manifest.databaseChecksumSha256) {
             "Sync checkpoint database hash must match the manifest."
         }
-        require(manifest.databaseByteSize == databaseSnapshot.size.toLong()) {
-            "Sync database snapshot size does not match manifest."
+        require(manifest.databaseByteSize in 0L..MaxEntryBytes.toLong()) {
+            "Sync database snapshot size is outside the supported range."
         }
         require(manifest.databaseEntryName == DatabaseSnapshotEntry) { "Sync database entry path is fixed." }
         require(manifest.databaseChecksumSha256.matches(Sha256Regex)) { "Sync database checksum must be SHA-256 hex." }
-        require(sha256(databaseSnapshot) == manifest.databaseChecksumSha256) {
-            "Sync database checksum does not match database.snapshot."
-        }
         val attachmentEntryNames = manifest.attachments.map { it.entryName }
         require(attachmentEntryNames.size == attachmentEntryNames.toSet().size) {
             "Sync attachment declarations must use unique entry names."
@@ -259,7 +418,7 @@ class StudyFlowSyncBundleCodec(
                 "Sync attachments must live under attachments/."
             }
             requireSafeEntryName(attachment.entryName)
-            require(attachment.byteSize >= 0L) { "Sync attachment size cannot be negative." }
+            require(attachment.byteSize in 0L..MaxEntryBytes.toLong()) { "Sync attachment size is invalid." }
             require(attachment.checksumSha256.matches(Sha256Regex)) { "Sync attachment checksum must be SHA-256 hex." }
         }
     }
@@ -320,6 +479,13 @@ class StudyFlowSyncBundleCodec(
             totalBytes += bytes
         }
 
+        fun recordStreamingBytes(bytes: Long) {
+            require(bytes >= 0L && totalBytes <= MaxTotalBytes - bytes) {
+                "Sync bundle is larger than the supported limit."
+            }
+            totalBytes += bytes
+        }
+
         fun recordEntry(bytes: Long) {
             reserveEntry()
             recordBytes(bytes)
@@ -373,6 +539,7 @@ class StudyFlowSyncBundleCodec(
         const val AttachmentsPrefix = "attachments/"
         private const val MaxEntryCount = 2_048
         private const val MaxEntryBytes = 64 * 1024 * 1024
+        private const val MaxMetadataBytes = 1024 * 1024
         private const val MaxTotalBytes = 512 * 1024 * 1024
         private val Sha256Regex = Regex("[0-9a-f]{64}")
     }

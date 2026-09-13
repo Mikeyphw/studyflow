@@ -973,6 +973,14 @@ internal fun StudyFlowNavHost(
                 onViewSyncHistory = {
                     syncHistory = container.manageStudyCloudSync.inspectSyncLedger()
                 },
+                onApplyRemoteRestore = { password ->
+                    container.manageStudyCloudSync.applyLatestManualFolderRestore(password)
+                    restorePreview = null
+                    remoteScan = container.manageStudyCloudSync.scanManualFolderCheckpoints()
+                    syncHistory = container.manageStudyCloudSync.inspectSyncLedger()
+                    summary = container.manageStudyCloudSync.inspectLocalChanges()
+                    summaryFailed = false
+                },
                 remoteScan = remoteScan,
                 restorePreview = restorePreview,
                 syncHistory = syncHistory,

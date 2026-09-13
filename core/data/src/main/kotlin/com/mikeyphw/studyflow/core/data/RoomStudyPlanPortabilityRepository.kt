@@ -387,10 +387,46 @@ internal class RoomStudyPlanPortabilityRepository(
     override suspend fun deleteSnapshot(snapshotId: PlanSnapshotId) {
         PhysicalStorageMutationCoordinator.mutex.withLock {
             val snapshot = supportDao.findSnapshot(snapshotId.value) ?: return@withLock
-            require(supportDao.deleteSnapshot(snapshotId.value) == 1) {
-                "Snapshot changed before it could be deleted."
+            val file = resolveSnapshotFile(snapshot.studyPlanId, snapshot.payloadReference)
+            val referenceCount = supportDao.findSnapshotPayloadReferences().count { reference ->
+                reference == snapshot.payloadReference
             }
-            resolveSnapshotFile(snapshot.studyPlanId, snapshot.payloadReference).delete()
+            if (referenceCount > 1 || !file.exists()) {
+                require(supportDao.deleteSnapshot(snapshotId.value) == 1) {
+                    "Snapshot changed before it could be deleted."
+                }
+                return@withLock
+            }
+
+            val tombstone = File(
+                requireNotNull(file.parentFile),
+                ".${file.name}.delete-${UUID.randomUUID()}.pending",
+            )
+            check(file.renameTo(tombstone)) {
+                "Could not stage the private snapshot for physical deletion."
+            }
+            try {
+                require(supportDao.deleteSnapshot(snapshotId.value) == 1) {
+                    "Snapshot changed before it could be deleted."
+                }
+                if (!tombstone.delete()) {
+                    supportDao.upsertSnapshots(listOf(snapshot))
+                    check(tombstone.renameTo(file)) {
+                        "Snapshot physical deletion failed and its private file could not be restored."
+                    }
+                    error("Snapshot physical deletion failed; the snapshot remains tracked.")
+                }
+            } catch (error: Throwable) {
+                if (supportDao.findSnapshot(snapshotId.value) == null) {
+                    supportDao.upsertSnapshots(listOf(snapshot))
+                }
+                if (tombstone.exists() && !file.exists()) {
+                    check(tombstone.renameTo(file)) {
+                        "Snapshot deletion rollback could not restore the private file."
+                    }
+                }
+                throw error
+            }
         }
     }
 
@@ -735,9 +771,14 @@ internal class RoomStudyPlanPortabilityRepository(
         label: String,
     ): PlanSnapshot {
         val id = PlanSnapshotId(UUID.randomUUID().toString())
-        val directory = File(applicationFiles, "study-plans/${planId.value}/snapshots").apply { mkdirs() }
-        val destination = File(directory, "${id.value}.studyplan")
-        val temporary = File(directory, ".${id.value}.tmp")
+        val planRoot = File(applicationFiles, "study-plans/${sanitizeSegment(planId.value)}").canonicalFile
+        val directory = File(planRoot, "snapshots").canonicalFile
+        require(directory.path.startsWith(planRoot.path + File.separator)) { "Unsafe snapshot directory." }
+        require(directory.mkdirs() || directory.isDirectory) { "Could not create snapshot directory." }
+        val destination = File(directory, "${sanitizeSegment(id.value)}.studyplan").canonicalFile
+        val temporary = File(directory, ".${sanitizeSegment(id.value)}.tmp").canonicalFile
+        require(destination.path.startsWith(directory.path + File.separator)) { "Unsafe snapshot destination." }
+        require(temporary.path.startsWith(directory.path + File.separator)) { "Unsafe snapshot temporary path." }
         val payload = graphStore.exportPayload(
             planId = planId.value,
             options = StudyPlanExportOptions(

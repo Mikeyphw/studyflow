@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.entity.StudyPlanEntity
 import com.mikeyphw.studyflow.core.model.PlanSnapshotKind
+import com.mikeyphw.studyflow.core.model.AnnexStorageMode
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.portability.StudyPlanExportOptions
 import com.mikeyphw.studyflow.core.portability.StudyPlanImportStrategy
@@ -49,6 +50,56 @@ class StudyPlanPortabilityAtomicRestoreTest {
         RoomStudyPlanPortabilityRepository(context, database, clock = { 1_000L })
 
         assertTrue("Stale authenticated restore plaintext must be removed at startup", !stale.exists())
+    }
+
+
+    @Test
+    fun repeatedAnnexBearingSnapshotRestoreAtomicallyReplacesExistingDestination() = runBlocking {
+        val planId = StudyPlanId("plan")
+        database.studyPlanDao().insert(plan(name = "Snapshot annex state"))
+        val storage = RoomAnnexFileStorageRepository(context, database, clock = { 1_000L })
+        val annex = storage.importAnnexCopy(
+            studyPlanId = planId,
+            subjectId = null,
+            topicId = null,
+            materialId = null,
+            displayName = "evidence.txt",
+            mimeType = "text/plain",
+            declaredByteSize = 8L,
+            input = ByteArrayInputStream("original".encodeToByteArray()),
+        )
+        assertEquals(AnnexStorageMode.IMPORTED_COPY, annex.storageMode)
+        val portability = RoomStudyPlanPortabilityRepository(context, database, clock = { 2_000L })
+        val snapshot = portability.createSnapshot(planId, PlanSnapshotKind.MANUAL, "Annex snapshot")
+        val stored = requireNotNull(database.studyLibraryDao().findAnnex(planId.value, annex.id.value))
+        val destination = java.io.File(context.filesDir, stored.storageReference)
+
+        destination.writeText("changed-one")
+        portability.restoreSnapshot(snapshot.id)
+        assertEquals("original", destination.readText())
+
+        destination.writeText("changed-two")
+        portability.restoreSnapshot(snapshot.id)
+        assertEquals("original", destination.readText())
+    }
+
+
+    @Test
+    fun snapshotDeletionRemovesPrivateBytesAndUsesSanitizedPlanPath() = runBlocking {
+        val unsafePlanId = StudyPlanId("plan/unsafe")
+        database.studyPlanDao().insert(plan(name = "Unsafe id").copy(id = unsafePlanId.value))
+        val portability = RoomStudyPlanPortabilityRepository(context, database, clock = { 3_000L })
+        val snapshot = portability.createSnapshot(unsafePlanId, PlanSnapshotKind.MANUAL, "Delete me")
+        val stored = requireNotNull(database.studySupportDao().findSnapshot(snapshot.id.value))
+        val snapshotFile = java.io.File(context.filesDir, stored.payloadReference)
+
+        assertTrue(snapshotFile.isFile)
+        assertTrue(stored.payloadReference.startsWith("study-plans/plan_unsafe/snapshots/"))
+
+        portability.deleteSnapshot(snapshot.id)
+
+        assertTrue(database.studySupportDao().findSnapshot(snapshot.id.value) == null)
+        assertTrue(!snapshotFile.exists())
     }
 
     @Test

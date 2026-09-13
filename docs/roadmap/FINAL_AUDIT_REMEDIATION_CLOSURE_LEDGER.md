@@ -65,3 +65,21 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S3-06 | MERGE retains only existing singleton parents and rewrites imported child references to the retained canonical IDs | `StudyPlanPortabilityOv06Test.mergeRebindsChildrenToRetainedSingletonParent` |
 | S3-07 | dry-run consumes `projectPayloadForImport` and `diffProjected`, the same ID/reference projection used by production import | `StudyPlanOv06SemanticsTest.projectedDiffConsumesProductionRemappedIds`; repository dry-run path |
 | S3-08 | package schema advances to v2; writers are v2-only; readers accept explicit v1 migration semantics while v2 remains inventory-strict and future versions fail closed | `StudyPlanPortabilityOv06Test.legacyV1MayOmitModernTablesButV2IsStrict`; codec unit/source contracts |
+
+## Overlay 7 of 30 — OV07 Backup, snapshot, SAF & manual-sync durability
+
+| Finding | Closure implementation | Behavioral evidence |
+|---|---|---|
+| S3-09 | deterministic annex restore destinations preserve/rollback existing bytes and commit replacement only with the database transaction | `StudyPlanPortabilityAtomicRestoreTest.repeatedAnnexBearingSnapshotRestoreAtomicallyReplacesExistingDestination` + OV07 verifier |
+| S3-10 | Desktop backup/restore rejects symlinks throughout workspace/source traversal and resolves real external boundaries | Desktop portability source contracts + OV07 verifier |
+| S3-11 | Desktop backup pre-budgets payload and bounds encrypted output to the same 2 GiB accepted by restore | `BoundedBackupOutputStream`; OV07 verifier |
+| S3-12 | Plan Portability SAF import grants are released on replace/success/back/dispose | `PlanPortabilityScreen.releaseImportGrant`; OV07 verifier |
+| S3-13 | package manifests reject duplicate annex IDs as well as duplicate entry names | `StudyPlanPackageCodecAnnexPayloadTest.writerRejectsDuplicateAnnexIdsEvenWhenEntryNamesDiffer` |
+| S3-14 | snapshot deletion tombstones the file and restores the row/file if physical deletion fails | `RoomStudyPlanPortabilityRepository.deleteSnapshot`; OV07 verifier |
+| S3-15 | snapshot write/resolve paths use the same sanitized plan segment and canonical boundary checks | `RoomStudyPlanPortabilityRepository.writeSnapshotFile`; OV07 verifier |
+| DS2-05 | manual-folder sync has a production apply path with private staging, transactional logical DB restore, annex rebinding and revision/integrity verification | `ManualSyncDatabaseRestoreOv07Test`; `ManualFolderSyncIntegrationContractTest` |
+| DS2-10 | manual-sync passphrase is wipeable `CharArray` state and cleared in operation `finally` | `SyncFoundationScreen`; OV07 verifier |
+| DS2-11 | manual restore preview decrypts to private bounded storage and streams metadata instead of materializing plaintext archive in heap | `StudyFlowSyncBundleCodecTest.streamingPreviewAndStageAvoidWholeArchiveHeapMaterialization` |
+| DS2-12 | annex SAF/file inspection and hashing are outside Room transaction; graph-revision retry rejects mixed captures | `LocalStudyCloudSyncRepository.captureStableManualCheckpoint`; OV07 verifier |
+| DS2-41 | Plan Portability export/import password state and pending launcher password are wipeable arrays and cleared across failure/cancel/dispose | `PlanPortabilityScreen`; OV07 verifier |
+| S12-08 | explicit snapshot/imported-annex deletion is reversible until physical deletion succeeds; final linked-document grant release is verified | Room portability/annex repositories + OV07 verifier |

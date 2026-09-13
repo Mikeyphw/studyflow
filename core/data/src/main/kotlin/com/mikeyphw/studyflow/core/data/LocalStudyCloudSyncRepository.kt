@@ -33,12 +33,15 @@ import com.mikeyphw.studyflow.core.portability.StudyFlowSyncBundleArchive
 import com.mikeyphw.studyflow.core.portability.StudyFlowSyncBundleCodec
 import com.mikeyphw.studyflow.core.portability.StudyFlowSyncBundleManifest
 import com.mikeyphw.studyflow.core.portability.StudyFlowSyncCheckpoint
+import java.io.File
 import java.security.MessageDigest
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.withLock
 
 private val Context.studySyncDataStore by preferencesDataStore(name = "study_sync_foundation")
 
@@ -219,13 +222,7 @@ internal class LocalStudyCloudSyncRepository(
         val before = dataStore.data.first()
         val folderUri = requireConfiguredManualFolder(before, "uploading a checkpoint")
         val previousRevision = before[ChangeTokenKey].revisionFromToken()
-        val (revision, databaseSnapshot, attachments) = database.withTransaction {
-            Triple(
-                metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision(),
-                StudyFlowDatabaseSnapshotWriter.capture(database),
-                attachmentCollector.collect(),
-            )
-        }
+        val (revision, databaseSnapshot, attachments) = captureStableManualCheckpoint()
         val now = clock()
         val deviceName = before[DeviceNameKey] ?: "This device"
         val deviceId = StudySyncDeviceIdentity.resolveInstallationDeviceId(before[DeviceIdKey])
@@ -345,56 +342,178 @@ internal class LocalStudyCloudSyncRepository(
         require(latest.byteSize == 0L || latest.byteSize <= MaximumManualEncryptedBundleBytes) {
             "The selected encrypted sync checkpoint exceeds the supported size limit."
         }
-        val archive = manualFolderStorage.openCheckpoint(latest.uri).use { input ->
-            syncBundleCodec.readEncryptedArchive(
-                input = input,
-                password = password,
-                maximumEncryptedBytes = MaximumManualEncryptedBundleBytes,
-            )
+        val plaintext = File.createTempFile("studyflow-sync-preview-", ".zip", appContext.cacheDir)
+        try {
+            manualFolderStorage.openCheckpoint(latest.uri).use { input ->
+                plaintext.outputStream().buffered().use { output ->
+                    syncBundleCodec.decryptEncryptedArchive(
+                        input = input,
+                        output = output,
+                        password = password,
+                        maximumEncryptedBytes = MaximumManualEncryptedBundleBytes,
+                    )
+                }
+            }
+            val manifest = plaintext.inputStream().buffered().use(syncBundleCodec::readManifestStreaming)
+            require(manifest.encryptedForRemote) {
+                "Manual folder restore preview only accepts encrypted remote-ready checkpoints."
+            }
+            val now = clock()
+            val deviceId = StudySyncDeviceIdentity.resolveInstallationDeviceId(before[DeviceIdKey])
+            dataStore.edit { preferences ->
+                preferences[DeviceIdKey] = deviceId
+                preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
+                preferences[DeviceLastSeenAtKey] = now
+                preferences[LastRemoteCheckAtKey] = now
+                preferences[RemoteCheckpointCountKey] = documents.size.toLong()
+                if (preferences[LastCheckpointIdKey] == manifest.checkpointId) {
+                    preferences[LastRestorePreviewedAtKey] = now
+                    persistCurrentCheckpointHistory(preferences)
+                } else {
+                    persistCheckpointHistory(
+                        preferences,
+                        StudySyncCheckpointRecord(
+                            id = manifest.checkpointId,
+                            deviceId = manifest.checkpoint.deviceId,
+                            deviceName = manifest.checkpoint.deviceName,
+                            createdAtEpochMillis = manifest.checkpoint.createdAtEpochMillis,
+                            databaseRevision = manifest.checkpoint.graphRevision,
+                            localChangeToken = revisionToken(manifest.checkpoint.graphRevision),
+                            changeCount = manifest.checkpoint.changeCount,
+                            remoteLocation = latest.uri,
+                            restorePreviewedAtEpochMillis = now,
+                        ),
+                    )
+                }
+                appendLedgerEvent(
+                    preferences = preferences,
+                    type = StudySyncLedgerEventType.RESTORE_PREVIEWED,
+                    deviceId = deviceId,
+                    checkpointId = manifest.checkpointId,
+                    now = now,
+                    message = "Decrypted, authenticated, and streamed the latest SAF checkpoint " +
+                        "metadata for restore preview.",
+                )
+                preferences.remove(BlockedReasonKey)
+            }
+            manifest.toManualFolderDetails(latest.fileName)
+        } finally {
+            require(!plaintext.exists() || plaintext.delete()) {
+                "Could not delete decrypted manual-sync preview staging bytes."
+            }
         }
-        require(archive.manifest.encryptedForRemote) {
-            "Manual folder restore preview only accepts encrypted remote-ready checkpoints."
+    }
+
+    override suspend fun applyLatestManualFolderRestore(
+        password: CharArray,
+    ): StudyManualFolderCheckpointDetails = withContext(Dispatchers.IO) {
+        val before = dataStore.data.first()
+        val folderUri = requireConfiguredManualFolder(before, "applying a restore")
+        val documents = manualFolderStorage.listCheckpointDocuments(folderUri)
+        val latest = documents.firstOrNull()
+            ?: throw IllegalStateException("No encrypted checkpoint exists in the selected sync folder.")
+        require(latest.byteSize == 0L || latest.byteSize <= MaximumManualEncryptedBundleBytes) {
+            "The selected encrypted sync checkpoint exceeds the supported size limit."
         }
-        val now = clock()
-        val deviceId = StudySyncDeviceIdentity.resolveInstallationDeviceId(before[DeviceIdKey])
-        dataStore.edit { preferences ->
-            preferences[DeviceIdKey] = deviceId
-            preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
-            preferences[DeviceLastSeenAtKey] = now
-            preferences[LastRemoteCheckAtKey] = now
-            preferences[RemoteCheckpointCountKey] = documents.size.toLong()
-            if (preferences[LastCheckpointIdKey] == archive.manifest.checkpointId) {
-                preferences[LastRestorePreviewedAtKey] = now
-                persistCurrentCheckpointHistory(preferences)
-            } else {
+        val restoreRoot = File(appContext.cacheDir, "manual-sync-restore-${UUID.randomUUID()}")
+        require(restoreRoot.mkdirs()) { "Could not create private manual-sync restore staging." }
+        val plaintext = File(restoreRoot, "authenticated.zip")
+        val archiveStage = File(restoreRoot, "archive")
+        val previousSnapshot = File(restoreRoot, "previous-database.snapshot")
+        try {
+            manualFolderStorage.openCheckpoint(latest.uri).use { input ->
+                plaintext.outputStream().buffered().use { output ->
+                    syncBundleCodec.decryptEncryptedArchive(
+                        input = input,
+                        output = output,
+                        password = password,
+                        maximumEncryptedBytes = MaximumManualEncryptedBundleBytes,
+                    )
+                }
+            }
+            val staged = plaintext.inputStream().buffered().use { input ->
+                syncBundleCodec.stageArchive(input, archiveStage)
+            }
+            val manifest = staged.manifest
+            require(manifest.encryptedForRemote) {
+                "Manual folder restore only accepts encrypted remote-ready checkpoints."
+            }
+            StudyFlowDatabaseSnapshotRestorer.inspect(staged.databaseSnapshotFile)
+            val prepared = ManualSyncRestoreStager(appContext).prepare(staged)
+            previousSnapshot.writeBytes(database.withTransaction { StudyFlowDatabaseSnapshotWriter.capture(database) })
+
+            PhysicalStorageMutationCoordinator.mutex.withLock {
+                prepared.commitFiles()
+                try {
+                    StudyFlowDatabaseSnapshotRestorer.restore(
+                        database = database,
+                        snapshotFile = staged.databaseSnapshotFile,
+                        annexBindings = prepared.bindings,
+                    )
+                    val restoredRevision = metadataDao
+                        .findValue(StudyFlowIntegrity.GraphRevisionMetadataKey)
+                        .toRevision()
+                    require(restoredRevision == manifest.checkpoint.graphRevision) {
+                        "Restored database revision does not match the selected sync checkpoint."
+                    }
+                    prepared.markCommitted()
+                } catch (error: Throwable) {
+                    val rollbackFailure = runCatching { prepared.rollbackFiles() }.exceptionOrNull()
+                    val databaseRollbackFailure = runCatching {
+                        StudyFlowDatabaseSnapshotRestorer.restore(database, previousSnapshot, emptyList())
+                    }.exceptionOrNull()
+                    if (rollbackFailure != null) error.addSuppressed(rollbackFailure)
+                    if (databaseRollbackFailure != null) error.addSuppressed(databaseRollbackFailure)
+                    throw error
+                }
+            }
+
+            val restoredRevision = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+            val now = clock()
+            val localDeviceId = StudySyncDeviceIdentity.resolveInstallationDeviceId(before[DeviceIdKey])
+            val localDeviceName = before[DeviceNameKey] ?: "This device"
+            dataStore.edit { preferences ->
+                preferences[EnabledKey] = true
+                preferences[StatusKey] = StudySyncConnectionStatus.LOCAL_READY.name
+                preferences[DeviceIdKey] = localDeviceId
+                preferences[DeviceNameKey] = localDeviceName
+                preferences[DeviceFirstSeenAtKey] = preferences[DeviceFirstSeenAtKey] ?: now
+                preferences[DeviceLastSeenAtKey] = now
+                preferences[PreparedAtKey] = now
+                preferences[ChangeTokenKey] = revisionToken(restoredRevision)
+                preferences[PendingLocalChangeKey] = 0L
+                preferences[LastRemoteCheckAtKey] = now
+                preferences[RemoteCheckpointCountKey] = documents.size.toLong()
                 persistCheckpointHistory(
                     preferences,
                     StudySyncCheckpointRecord(
-                        id = archive.manifest.checkpointId,
-                        deviceId = archive.manifest.checkpoint.deviceId,
-                        deviceName = archive.manifest.checkpoint.deviceName,
-                        createdAtEpochMillis = archive.manifest.checkpoint.createdAtEpochMillis,
-                        databaseRevision = archive.manifest.checkpoint.graphRevision,
-                        localChangeToken = revisionToken(archive.manifest.checkpoint.graphRevision),
-                        changeCount = archive.manifest.checkpoint.changeCount,
+                        id = manifest.checkpointId,
+                        deviceId = manifest.checkpoint.deviceId,
+                        deviceName = manifest.checkpoint.deviceName,
+                        createdAtEpochMillis = manifest.checkpoint.createdAtEpochMillis,
+                        databaseRevision = manifest.checkpoint.graphRevision,
+                        localChangeToken = revisionToken(manifest.checkpoint.graphRevision),
+                        changeCount = manifest.checkpoint.changeCount,
                         remoteLocation = latest.uri,
-                        restorePreviewedAtEpochMillis = now,
                     ),
                 )
+                appendLedgerEvent(
+                    preferences = preferences,
+                    type = StudySyncLedgerEventType.RESTORE_APPLIED,
+                    deviceId = localDeviceId,
+                    checkpointId = manifest.checkpointId,
+                    now = now,
+                    message = "Applied the authenticated SAF checkpoint and verified restored database integrity.",
+                )
+                preferences.remove(BlockedReasonKey)
             }
-            appendLedgerEvent(
-                preferences = preferences,
-                type = StudySyncLedgerEventType.RESTORE_PREVIEWED,
-                deviceId = deviceId,
-                checkpointId = archive.manifest.checkpointId,
-                now = now,
-                message = "Decrypted, authenticated, and inspected the latest SAF checkpoint for restore preview.",
-            )
-            preferences.remove(BlockedReasonKey)
+            manifest.toManualFolderDetails(latest.fileName)
+        } finally {
+            require(!restoreRoot.exists() || restoreRoot.deleteRecursively()) {
+                "Could not delete private manual-sync restore staging bytes."
+            }
         }
-        archive.manifest.toManualFolderDetails(latest.fileName)
     }
-
 
     override suspend fun clearLocalFoundation(): StudySyncState {
         val before = dataStore.data.first()
@@ -420,6 +539,21 @@ internal class LocalStudyCloudSyncRepository(
         return syncState.first()
     }
 
+
+    private suspend fun captureStableManualCheckpoint(): Triple<Long, ByteArray, List<ManualSyncAttachmentSource>> {
+        repeat(MaximumStableCaptureAttempts) {
+            val (revision, snapshot) = database.withTransaction {
+                metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision() to
+                    StudyFlowDatabaseSnapshotWriter.capture(database)
+            }
+            val attachments = attachmentCollector.collect()
+            val afterCollection = metadataDao.findValue(StudyFlowIntegrity.GraphRevisionMetadataKey).toRevision()
+            if (afterCollection == revision) return Triple(revision, snapshot, attachments)
+        }
+        throw IllegalStateException(
+            "StudyFlow data kept changing while preparing the manual checkpoint; retry after current edits finish.",
+        )
+    }
 
     private fun requireConfiguredManualFolder(
         preferences: androidx.datastore.preferences.core.Preferences,
@@ -721,6 +855,7 @@ internal class LocalStudyCloudSyncRepository(
     private companion object {
         const val RevisionTokenPrefix = "revision="
         const val MaximumManualEncryptedBundleBytes = 576L * 1024L * 1024L
+        const val MaximumStableCaptureAttempts = 3
         val EnabledKey = booleanPreferencesKey("enabled")
         val StatusKey = stringPreferencesKey("status")
         val ConflictPolicyKey = stringPreferencesKey("conflict_policy")

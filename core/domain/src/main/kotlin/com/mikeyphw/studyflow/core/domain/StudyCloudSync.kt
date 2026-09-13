@@ -31,6 +31,7 @@ interface StudyCloudSyncRepository {
 
     suspend fun previewLatestManualFolderRestore(password: CharArray): StudyManualFolderCheckpointDetails
 
+    suspend fun applyLatestManualFolderRestore(password: CharArray): StudyManualFolderCheckpointDetails
 
     suspend fun clearLocalFoundation(): StudySyncState
 }
@@ -81,6 +82,13 @@ class ManageStudyCloudSync(
         return repository.previewLatestManualFolderRestore(password)
     }
 
+    suspend fun applyLatestManualFolderRestore(password: CharArray): StudyManualFolderCheckpointDetails {
+        require(password.size >= StudyPlanEncryptedPackageCodec.MinimumPasswordLength) {
+            "Encrypted sync checkpoints require at least " +
+                "${StudyPlanEncryptedPackageCodec.MinimumPasswordLength} characters."
+        }
+        return repository.applyLatestManualFolderRestore(password)
+    }
 
     suspend fun clearLocalFoundation(): StudySyncState = repository.clearLocalFoundation()
 }

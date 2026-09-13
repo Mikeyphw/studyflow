@@ -84,6 +84,26 @@ class StudyPlanPackageCodecAnnexPayloadTest {
         }
     }
 
+
+    @Test(expected = StudyPlanPackageException::class)
+    fun writerRejectsDuplicateAnnexIdsEvenWhenEntryNamesDiffer() {
+        val first = PortableAnnexPayload(
+            annexId = "annex-duplicate",
+            entryName = "annex-payloads/one/payload.bin",
+            fileName = "one.bin",
+            mimeType = "application/octet-stream",
+            byteSize = 0L,
+            checksumSha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        )
+        val second = first.copy(entryName = "annex-payloads/two/payload.bin", fileName = "two.bin")
+        codec.toByteArray(
+            StudyPlanPackageArchive(
+                payload = samplePayload(listOf(first, second)),
+                annexPayloadBytes = mapOf(first.entryName to byteArrayOf(), second.entryName to byteArrayOf()),
+            ),
+        )
+    }
+
     @Test(expected = StudyPlanPackageException::class)
     fun writerRejectsArchiveWhoseEntryCountWouldExceedReaderLimit() {
         val emptyChecksum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
