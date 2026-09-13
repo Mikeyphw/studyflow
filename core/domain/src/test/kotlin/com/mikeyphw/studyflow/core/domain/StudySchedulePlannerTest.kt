@@ -107,7 +107,12 @@ class StudySchedulePlannerTest {
         val now = generated.maxOf {
             (it.scheduledStartEpochMillis ?: 0L) + it.plannedDurationMinutes * 60_000L
         } + 5L * 60_000L
-        val updates = planner.rebalanceMissedActivities(generated, MissedActivityHandling.RETURN_TO_BACKLOG, now)
+        val updates = planner.rebalanceMissedActivities(
+            activities = generated,
+            rules = emptyList(),
+            handling = MissedActivityHandling.RETURN_TO_BACKLOG,
+            nowEpochMillis = now,
+        )
 
         assertEquals(1, updates.size)
         assertEquals(PlannedActivityStatus.PLANNED, updates.single().status)
@@ -124,6 +129,7 @@ class StudySchedulePlannerTest {
         val missed = generated.single().copy(status = PlannedActivityStatus.MISSED)
         val mutations = planner.rebalanceMissedMutations(
             activities = listOf(missed),
+            rules = emptyList(),
             handling = MissedActivityHandling.SKIP,
             nowEpochMillis = (missed.scheduledStartEpochMillis ?: 0L) + 10_000_000L,
         )

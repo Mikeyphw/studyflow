@@ -557,7 +557,6 @@ fun StudyScheduleScreen(
                                 launchAction(missedRebalanced) {
                                     scheduleManager.rebalanceMissed(
                                         plan.id,
-                                        schedule.plannedActivities,
                                         MissedActivityHandling.RETURN_TO_BACKLOG,
                                     )
                                 }

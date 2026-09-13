@@ -20,3 +20,16 @@ internal fun requireValidIsoDate(value: String, field: String) {
 
 private fun isLeapYear(year: Int): Boolean =
     year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+
+
+internal fun requireIsoDateOnOrAfter(
+    value: String,
+    minimum: String,
+    field: String,
+    minimumField: String,
+) {
+    requireValidIsoDate(minimum, minimumField)
+    requireValidIsoDate(value, field)
+    // Strict YYYY-MM-DD is lexicographically sortable after validation.
+    require(value >= minimum) { "$field cannot precede $minimumField." }
+}

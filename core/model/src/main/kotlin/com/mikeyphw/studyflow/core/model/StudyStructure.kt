@@ -156,17 +156,45 @@ data class TopicNode(
 )
 
 fun buildTopicTree(topics: List<Topic>): List<TopicNode> {
-    val byParent = topics.groupBy { it.parentTopicId }
-    fun build(parentId: TopicId?, depth: Int, ancestry: Set<TopicId>): List<TopicNode> =
-        byParent[parentId].orEmpty()
-            .sortedWith(compareBy<Topic> { it.position }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
-            .mapNotNull { topic ->
-                if (topic.id in ancestry) return@mapNotNull null
-                TopicNode(
-                    topic = topic,
-                    children = build(topic.id, depth + 1, ancestry + topic.id),
-                    depth = depth,
-                )
-            }
-    return build(parentId = null, depth = 0, ancestry = emptySet())
+    if (topics.isEmpty()) return emptyList()
+    val byId = topics.associateBy(Topic::id)
+    require(byId.size == topics.size) { "Topic tree contains duplicate topic identities." }
+    topics.forEach { topic ->
+        val parentId = topic.parentTopicId ?: return@forEach
+        require(parentId != topic.id) { "Topic ${topic.id.value} cannot be its own parent." }
+        val parent = requireNotNull(byId[parentId]) {
+            "Topic ${topic.id.value} references missing parent ${parentId.value}."
+        }
+        require(parent.studyPlanId == topic.studyPlanId && parent.subjectId == topic.subjectId) {
+            "Topic ${topic.id.value} parent belongs to another Study Plan or subject."
+        }
+    }
+
+    val visitState = mutableMapOf<TopicId, Int>()
+    fun detectCycle(topicId: TopicId) {
+        when (visitState[topicId]) {
+            1 -> error("Topic tree contains a parent cycle involving ${topicId.value}.")
+            2 -> return
+        }
+        visitState[topicId] = 1
+        byId.getValue(topicId).parentTopicId?.let(::detectCycle)
+        visitState[topicId] = 2
+    }
+    topics.forEach { detectCycle(it.id) }
+
+    val byParent = topics.groupBy(Topic::parentTopicId)
+    fun build(parentId: TopicId?, depth: Int): List<TopicNode> = byParent[parentId].orEmpty()
+        .sortedWith(compareBy<Topic> { it.position }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+        .map { topic ->
+            TopicNode(
+                topic = topic,
+                children = build(topic.id, depth + 1),
+                depth = depth,
+            )
+        }
+
+    val result = build(parentId = null, depth = 0)
+    fun count(nodes: List<TopicNode>): Int = nodes.sumOf { 1 + count(it.children) }
+    require(count(result) == topics.size) { "Topic tree projection lost one or more topics." }
+    return result
 }

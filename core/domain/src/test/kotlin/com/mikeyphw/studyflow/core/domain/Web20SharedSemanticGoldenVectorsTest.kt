@@ -66,7 +66,7 @@ class Web20SharedSemanticGoldenVectorsTest {
                 add(
                     ScheduleRule(
                         ScheduleRuleId("rule-off"), plan, null, ScheduleRuleType.DAY_OFF,
-                        input.i("dayOfWeek"), null, 1, null, false, true, 1,
+                        input.i("dayOfWeek"), null, 5, null, false, true, 1,
                     ),
                 )
             }
@@ -91,9 +91,10 @@ class Web20SharedSemanticGoldenVectorsTest {
             PlannedActivityStatus.MISSED, false, null,
         )
         val result = StudySchedulePlanner(TimeZone.getTimeZone("UTC")).rebalanceMissedActivities(
-            listOf(activity),
-            MissedActivityHandling.valueOf(input.s("handling")),
-            input.l("nowEpochMillis"),
+            activities = listOf(activity),
+            rules = emptyList(),
+            handling = MissedActivityHandling.valueOf(input.s("handling")),
+            nowEpochMillis = input.l("nowEpochMillis"),
         )
         assertEquals(id, expected.i("changed"), result.size)
         val changed = result.firstOrNull()

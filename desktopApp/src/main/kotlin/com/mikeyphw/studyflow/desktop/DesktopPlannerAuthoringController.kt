@@ -143,10 +143,8 @@ class DesktopPlannerAuthoringController(
 
     suspend fun rebalanceMissed(): Int {
         val plan = requireEditablePlan()
-        val activities = services.scheduleRepository.currentActivities(plan.id)
         return services.manageStudySchedule.rebalanceMissed(
             plan.id,
-            activities,
             MissedActivityHandling.POSTPONE,
         ).updatedActivities
     }

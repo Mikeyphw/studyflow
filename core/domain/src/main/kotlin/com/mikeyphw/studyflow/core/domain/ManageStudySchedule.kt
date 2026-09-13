@@ -111,10 +111,31 @@ class ManageStudySchedule(
 
     suspend fun rebalanceMissed(
         planId: StudyPlanId,
-        currentActivities: List<PlannedActivity>,
         handling: MissedActivityHandling,
     ): RebalanceResult {
-        val mutations = planner.rebalanceMissedMutations(currentActivities, handling, clock())
+        val schedule = repository.observeSchedule(planId).first()
+        require(schedule.studyPlanId == planId) { "Schedule snapshot belongs to another Study Plan." }
+        require(schedule.strategy == null || schedule.strategy.studyPlanId == planId) {
+            "Schedule strategy belongs to another Study Plan."
+        }
+        require(schedule.scheduleRules.all { it.studyPlanId == planId }) {
+            "Schedule rules belong to another Study Plan."
+        }
+        require(schedule.plannedActivities.all { it.studyPlanId == planId }) {
+            "Schedule activities belong to another Study Plan."
+        }
+        val now = clock()
+        val policyAnchor = schedule.plannedActivities
+            .mapNotNull(PlannedActivity::scheduledStartEpochMillis)
+            .minOrNull()
+            ?: now
+        val mutations = planner.rebalanceMissedMutations(
+            activities = schedule.plannedActivities,
+            rules = schedule.scheduleRules,
+            handling = handling,
+            nowEpochMillis = now,
+            policyRangeStartEpochMillis = minOf(policyAnchor, now),
+        )
         val changed = repository.applyMissedRebalance(planId, mutations)
         return RebalanceResult(changed, handling)
     }

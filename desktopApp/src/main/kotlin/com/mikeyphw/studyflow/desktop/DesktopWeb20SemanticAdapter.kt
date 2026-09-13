@@ -49,7 +49,7 @@ object DesktopWeb20SemanticAdapter {
                 add(
                     ScheduleRule(
                         ScheduleRuleId("desktop-rule-off"), plan, null, ScheduleRuleType.DAY_OFF,
-                        dayOfWeek, null, 1, null, false, true, 1,
+                        dayOfWeek, null, 5, null, false, true, 1,
                     ),
                 )
             }
@@ -71,7 +71,10 @@ object DesktopWeb20SemanticAdapter {
             PlannedActivityStatus.MISSED, false, null,
         )
         val result = StudySchedulePlanner(TimeZone.getTimeZone("UTC")).rebalanceMissedActivities(
-            listOf(activity), MissedActivityHandling.valueOf(handling), nowEpochMillis,
+            activities = listOf(activity),
+            rules = emptyList(),
+            handling = MissedActivityHandling.valueOf(handling),
+            nowEpochMillis = nowEpochMillis,
         )
         val changed = result.firstOrNull()
         return DesktopWeb20RebalanceResult(result.size, changed?.status?.name, changed?.scheduledStartEpochMillis)

@@ -97,7 +97,7 @@ object StudyGoalProgressEngine {
     }
 
     private fun effectivePeriod(goal: StudyGoal, today: LocalDate): Pair<LocalDate, LocalDate> {
-        val configuredStart = runCatching { LocalDate.parse(goal.startsOnIso) }.getOrElse { today }
+        val configuredStart = LocalDate.parse(goal.startsOnIso)
         return when (goal.period) {
             GoalPeriod.DAILY -> today to today.plusDays(1)
             GoalPeriod.WEEKLY -> {
@@ -106,9 +106,10 @@ object StudyGoalProgressEngine {
             }
             GoalPeriod.MONTHLY -> today.withDayOfMonth(1).let { it to it.plusMonths(1) }
             GoalPeriod.CUSTOM -> {
-                val end = goal.endsOnIso?.let { runCatching { LocalDate.parse(it).plusDays(1) }.getOrNull() }
-                    ?: configuredStart.plusYears(100)
-                configuredStart to end
+                val configuredEnd = LocalDate.parse(requireNotNull(goal.endsOnIso) {
+                    "Custom goals require an end date."
+                })
+                configuredStart to configuredEnd.plusDays(1)
             }
         }
     }

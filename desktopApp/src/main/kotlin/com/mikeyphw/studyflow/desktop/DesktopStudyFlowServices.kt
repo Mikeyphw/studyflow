@@ -46,12 +46,19 @@ class DesktopStudyFlowServices(
         review = reviewRepository,
     ),
     val progressRepository: DesktopStudyProgressRepository = DesktopStudyProgressRepository(),
+    private val wallClockMillis: () -> Long = System::currentTimeMillis,
+    private val monotonicClockMillis: () -> Long = { System.nanoTime() / 1_000_000L },
 ) {
     val manageStudyPlan: ManageStudyPlan = ManageStudyPlan(planRepository)
     val manageStudyContent: ManageStudyContent = ManageStudyContent(contentRepository)
     val manageStudyLibrary: ManageStudyLibrary = ManageStudyLibrary(libraryRepository)
     val manageStudySchedule: ManageStudySchedule = ManageStudySchedule(scheduleRepository)
-    val manageStudySession: ManageStudySession = ManageStudySession(sessionRepository, planRepository)
+    val manageStudySession: ManageStudySession = ManageStudySession(
+        sessionRepository,
+        planRepository,
+        clock = wallClockMillis,
+        monotonicClockMillis = monotonicClockMillis,
+    )
     val manageStudyPractice: ManageStudyPractice = ManageStudyPractice(practiceRepository, planRepository)
     val manageStudyProgress: ManageStudyProgress = ManageStudyProgress(progressRepository)
     val manageStudyReview: ManageStudyReview = ManageStudyReview(
@@ -76,6 +83,8 @@ class DesktopStudyFlowServices(
         contentModeRepository = contentModeRepository,
         publicExamRepository = publicExamRepository,
         progressRepository = progressRepository,
+        wallClockMillis = wallClockMillis,
+        monotonicClockMillis = monotonicClockMillis,
     )
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
@@ -281,6 +290,8 @@ fun createDesktopStudyFlowServices(
     platformPorts: DesktopPlatformPorts = NoOpDesktopPlatformPorts,
     linkService: DesktopStudyFlowLinkService? = null,
     workspacePersistence: DesktopWorkspacePersistence? = null,
+    wallClockMillis: () -> Long = System::currentTimeMillis,
+    monotonicClockMillis: () -> Long = { System.nanoTime() / 1_000_000L },
 ): DesktopStudyFlowServices {
     val sample = DesktopStudyFlowSampleData.create()
     val persisted = workspacePersistence?.current()

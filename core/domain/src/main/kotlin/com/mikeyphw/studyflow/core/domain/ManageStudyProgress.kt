@@ -46,7 +46,8 @@ class ManageStudyProgress(
     ): StudyGoal {
         require(title.isNotBlank()) { "Goal title cannot be blank." }
         require(targetValue > 0.0) { "Goal target must be positive." }
-        require(startsOnIso.isNotBlank()) { "Goal start date cannot be blank." }
+        val normalizedStart = startsOnIso.trim()
+        val normalizedEnd = endsOnIso?.trim()?.ifBlank { null }
         return repository.upsertGoal(
             StudyGoal(
                 id = id,
@@ -58,8 +59,8 @@ class ManageStudyProgress(
                 title = title.trim(),
                 targetValue = targetValue,
                 currentValue = 0.0,
-                startsOnIso = startsOnIso,
-                endsOnIso = endsOnIso?.trim()?.ifBlank { null },
+                startsOnIso = normalizedStart,
+                endsOnIso = normalizedEnd,
                 completedAtEpochMillis = null,
                 archived = false,
             ),

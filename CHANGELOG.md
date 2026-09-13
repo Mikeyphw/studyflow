@@ -1,3 +1,12 @@
+## OV03 — Planner, schedule, goal & time semantics (Overlay 3 of 30)
+
+- Made schedule generation fail closed on foreign Study Plan rules/strategies and use one recurrence evaluator for schedulable blocks, DAY_OFF, and AVAILABILITY policies.
+- Made missed-activity rebalance consume the canonical persisted schedule, reserve existing active blocks, and search only policy-compliant non-overlapping slots.
+- Made Study Goal date construction/evaluation strict: valid ISO dates, mandatory custom end dates, and no reversed ranges or silent date fallback.
+- Made topic-tree projection reject orphan, cross-owner, duplicate, self-parent, and cyclic graphs instead of silently dropping content.
+- Wired Desktop Study Sessions to a real monotonic `System.nanoTime` millisecond clock while retaining wall time for persisted timestamps.
+- Added focused regression contracts plus `scripts/validate_ov03_planner_schedule_goal_time.sh` for target-repository validation.
+
 ## Final remediation OV01 — repository / Gradle / Devtool truth baseline
 
 ## OV02 — Session & practice canonical invariants (Overlay 2 of 30)

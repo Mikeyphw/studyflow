@@ -192,6 +192,18 @@ data class StudyGoal(
         require(title.isNotBlank()) { "Study goal title cannot be blank." }
         require(targetValue > 0.0) { "Study goal target must be positive." }
         require(currentValue >= 0.0) { "Study goal progress cannot be negative." }
+        requireValidIsoDate(startsOnIso, "Goal start date")
+        if (period == GoalPeriod.CUSTOM) {
+            require(!endsOnIso.isNullOrBlank()) { "Custom goals require an end date." }
+        }
+        endsOnIso?.let { end ->
+            requireIsoDateOnOrAfter(
+                value = end,
+                minimum = startsOnIso,
+                field = "Goal end date",
+                minimumField = "goal start date",
+            )
+        }
     }
 }
 

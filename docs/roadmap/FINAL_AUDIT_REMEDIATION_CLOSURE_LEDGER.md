@@ -22,3 +22,9 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S1-05 | 2/30 | Implemented | explicit `StudyPlanId` Mock Exam Studio owner + mixed-plan rejection |
 | S1-11 | 2/30 | Implemented | strict single non-empty identity record; no current-bank fallback; malformed/started legacy attempts fail closed |
 | S1-12 | 2/30 | Implemented | `StudyDomainInvariants` shared by models/managers and relevant Android forms; material/duration contracts reconciled |
+| S1-03 | 3/30 | Implemented | missed-activity rebalance uses canonical persisted schedule/rules, recurrence-aware policy placement, overlap reservation, and atomic mutation evidence |
+| S1-06 | 3/30 | Implemented | generation rejects foreign-Plan rules/strategy and shares canonical rule/activity ownership and duration contracts |
+| S1-07 | 3/30 | Implemented | strict ISO goal dates, mandatory custom end date, non-reversed ranges, and fail-closed goal evaluation |
+| S1-08 | 3/30 | Implemented | DAY_OFF and AVAILABILITY use the same WEEKLY/INTERVAL/COUNT recurrence evaluator as schedulable rules |
+| S1-09 | 3/30 | Implemented | topic projection rejects duplicate, orphan, cross-owner, self-parent, and cyclic graphs before recursive projection |
+| S1-10 | 3/30 | Implemented | Desktop Study Session wiring injects `System.nanoTime` milliseconds as its monotonic runtime clock |
