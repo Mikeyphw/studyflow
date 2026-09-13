@@ -16,6 +16,8 @@ internal object StudyFlowDatabaseSnapshotWriter {
     private const val SnapshotMagic = "studyflow-logical-database-snapshot"
     private const val SnapshotFormatVersion = 1
     private const val MaximumSnapshotBytes = 64 * 1024 * 1024
+    private val SnapshotExcludedTables = setOf("room_master_table", "android_metadata")
+    private val SnapshotExcludedPrefixes = listOf("studyflow_search_fts")
 
     fun capture(database: StudyFlowDatabase): ByteArray {
         val db = database.openHelper.readableDatabase
@@ -29,13 +31,32 @@ internal object StudyFlowDatabaseSnapshotWriter {
                     "WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
             ).use { cursor ->
                 buildList {
-                    while (cursor.moveToNext()) add(cursor.getString(0))
+                    while (cursor.moveToNext()) {
+                        val table = cursor.getString(0)
+                        if (table !in SnapshotExcludedTables && SnapshotExcludedPrefixes.none(table::startsWith)) {
+                            add(table)
+                        }
+                    }
                 }
             }
             data.writeInt(tables.size)
             tables.forEach { table ->
                 data.writeUtf8(table)
-                db.query("SELECT * FROM ${quoteIdentifier(table)}").use { cursor ->
+                val primaryKeyColumns = db.query("PRAGMA table_info(${quoteIdentifier(table)})").use { cursor ->
+                    buildList {
+                        val nameIndex = cursor.getColumnIndexOrThrow("name")
+                        val pkIndex = cursor.getColumnIndexOrThrow("pk")
+                        while (cursor.moveToNext()) {
+                            val order = cursor.getInt(pkIndex)
+                            if (order > 0) add(order to cursor.getString(nameIndex))
+                        }
+                    }.sortedBy { it.first }.map { it.second }
+                }
+                require(primaryKeyColumns.isNotEmpty()) {
+                    "Logical snapshot table $table has no stable primary-key ordering."
+                }
+                val orderBy = primaryKeyColumns.joinToString(", ") { quoteIdentifier(it) }
+                db.query("SELECT * FROM ${quoteIdentifier(table)} ORDER BY $orderBy").use { cursor ->
                     data.writeInt(cursor.columnCount)
                     cursor.columnNames.forEach { columnName -> data.writeUtf8(columnName) }
                     data.writeInt(cursor.count)

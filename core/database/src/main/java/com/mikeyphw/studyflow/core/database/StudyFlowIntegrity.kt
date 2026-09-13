@@ -796,7 +796,7 @@ object StudyFlowIntegrity {
                     "AND NEW.correctAnswers BETWEEN 0 AND NEW.questionsAnswered " +
                     "AND (NEW.concentrationRating IS NULL OR NEW.concentrationRating BETWEEN 1 AND 5) " +
                     "AND (NEW.difficultyRating IS NULL OR NEW.difficultyRating BETWEEN 1 AND 5) " +
-                    "AND (NEW.targetDurationMinutes IS NULL OR NEW.targetDurationMinutes BETWEEN 5 AND 240) " +
+                    "AND (NEW.targetDurationMinutes IS NULL OR NEW.targetDurationMinutes BETWEEN 5 AND 720) " +
                     "AND (NEW.endedAtEpochMillis IS NULL OR NEW.endedAtEpochMillis >= NEW.startedAtEpochMillis)",
         )
         guard(

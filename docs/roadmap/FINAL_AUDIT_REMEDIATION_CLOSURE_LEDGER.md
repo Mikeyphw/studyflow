@@ -42,3 +42,13 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S2-10 | Shared modern logical-integrity diagnostic engine | corruption probe in `StudyFlowOv04IntegrityTest.crossPlanModernReferencesAreRejectedAndDiagnosed` |
 | S2-12 | Schema 14 explicit managed-trigger drop/recreate migration | `StudyFlowMigration13To14IntegrityTest` |
 
+## Overlay 5 of 30 — OV05 Duplication, migrations & snapshot determinism
+
+| Finding | Closure implementation | Behavioral evidence |
+|---|---|---|
+| S2-A1 | orphan byte accounting advances only on successful physical deletion | OV05 source verifier + cleanup implementation |
+| S2-05 | duplicated Practice/Mock configuration remaps question identity, frozen snapshot IDs and answer IDs | `StudyPlanGraphDuplicationOv05Test` |
+| S2-06 | language graph + Termux request/result tables join the duplication graph with parent-scoped predicates | `StudyPlanGraphDuplicatorTest`; `StudyPlanGraphDuplicationOv05Test` |
+| S2-07 | 2→3 target-duration normalization + schema-15 trigger replacement align persistence with canonical 5..720 duration | `StudyFlowOv05MigrationCoverageTest.twoToFifteenAcceptsLegacyLongFocusDurationAndPreservesCanonicalTarget` |
+| S2-11 | checked schema 7/8 snapshots and direct sequential 6→7→8→9 migration coverage | `StudyFlowOv05MigrationCoverageTest.sixToNineHasCheckedIntermediateSchemasAndPreservesTermuxAndLanguageRows` |
+| S2-13 | logical snapshot excludes FTS/internal tables and orders every table by primary key | `StudyFlowDatabaseSnapshotWriterOv05Test` |

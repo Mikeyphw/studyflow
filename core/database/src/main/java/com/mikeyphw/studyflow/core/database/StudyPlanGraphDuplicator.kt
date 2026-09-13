@@ -20,6 +20,7 @@ class StudyPlanGraphDuplicator(
         require(sourcePlanId != newPlanId) { "A Study Plan graph cannot be copied onto itself." }
 
         TableSpecs.forEach { spec -> duplicateTable(spec, sourcePlanId, newPlanId) }
+        remapDuplicatedPracticeConfigurations(newPlanId)
     }
 
     private fun duplicateTable(
@@ -53,12 +54,115 @@ class StudyPlanGraphDuplicator(
             INSERT INTO ${quoteIdentifier(spec.tableName)} (${spec.columns.joinToString { quoteIdentifier(it) }})
             SELECT ${selections.joinToString()}
             FROM ${quoteIdentifier(spec.tableName)}
-            WHERE ${quoteIdentifier("studyPlanId")} = ?${
+            WHERE ${spec.sourcePlanPredicate}${
                 if (spec.tableName == "study_sessions") " AND `status` NOT IN ('RUNNING', 'PAUSED')" else ""
             }
             """.trimIndent(),
             arguments.toTypedArray(),
         )
+    }
+
+    private fun remapDuplicatedPracticeConfigurations(newPlanId: String) {
+        listOf("study_tests", "mock_exams").forEach { table ->
+            val updates = database.query(
+                "SELECT `id`, `configurationJson` FROM ${quoteIdentifier(table)} WHERE `studyPlanId` = ?",
+                arrayOf(newPlanId),
+            ).use { cursor ->
+                buildList {
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        val configuration = cursor.getString(1)
+                        add(id to remapPracticeConfiguration(configuration, newPlanId))
+                    }
+                }
+            }
+            updates.forEach { (id, configuration) ->
+                database.execSQL(
+                    "UPDATE ${quoteIdentifier(table)} SET `configurationJson` = ? WHERE `id` = ? AND `studyPlanId` = ?",
+                    arrayOf(configuration, id, newPlanId),
+                )
+            }
+        }
+    }
+
+    private fun remapPracticeConfiguration(configuration: String, newPlanId: String): String =
+        configuration.lineSequence().joinToString("\n") { rawLine ->
+            val line = rawLine.trimEnd()
+            when {
+                line.startsWith(QuestionIdsPrefix) -> {
+                    val ids = line.removePrefix(QuestionIdsPrefix).split(',')
+                        .map(String::trim)
+                        .filter(String::isNotBlank)
+                    QuestionIdsPrefix + ids.joinToString(",") { id -> remappedId(newPlanId, id) }
+                }
+                line.startsWith(QuestionSnapshotPrefix) ->
+                    remapEncodedLeadingId(line, QuestionSnapshotPrefix, newPlanId)
+                line.startsWith(AnswerPrefix) ->
+                    remapEncodedLeadingId(line, AnswerPrefix, newPlanId)
+                else -> line
+            }
+        }
+
+    private fun remapEncodedLeadingId(line: String, prefix: String, newPlanId: String): String {
+        val body = line.removePrefix(prefix)
+        val separatorIndex = body.indexOf(FieldSeparator)
+        require(separatorIndex > 0) { "Practice attempt contains an invalid encoded identity record." }
+        val encodedId = body.substring(0, separatorIndex)
+        val decodedId = decodeBase64UrlNoPadding(encodedId)
+        return prefix + encodeBase64UrlNoPadding(remappedId(newPlanId, decodedId)) + body.substring(separatorIndex)
+    }
+
+    private fun remappedId(newPlanId: String, sourceId: String): String = "$newPlanId:$sourceId"
+
+    private fun encodeBase64UrlNoPadding(value: String): String {
+        val bytes = value.encodeToByteArray()
+        return buildString((bytes.size * 4 + 2) / 3) {
+            var index = 0
+            while (index + 2 < bytes.size) {
+                val chunk = ((bytes[index].toInt() and 0xFF) shl 16) or
+                    ((bytes[index + 1].toInt() and 0xFF) shl 8) or
+                    (bytes[index + 2].toInt() and 0xFF)
+                append(Base64UrlAlphabet[(chunk ushr 18) and 0x3F])
+                append(Base64UrlAlphabet[(chunk ushr 12) and 0x3F])
+                append(Base64UrlAlphabet[(chunk ushr 6) and 0x3F])
+                append(Base64UrlAlphabet[chunk and 0x3F])
+                index += 3
+            }
+            when (bytes.size - index) {
+                1 -> {
+                    val chunk = (bytes[index].toInt() and 0xFF) shl 4
+                    append(Base64UrlAlphabet[(chunk ushr 6) and 0x3F])
+                    append(Base64UrlAlphabet[chunk and 0x3F])
+                }
+                2 -> {
+                    val chunk = ((bytes[index].toInt() and 0xFF) shl 10) or
+                        ((bytes[index + 1].toInt() and 0xFF) shl 2)
+                    append(Base64UrlAlphabet[(chunk ushr 12) and 0x3F])
+                    append(Base64UrlAlphabet[(chunk ushr 6) and 0x3F])
+                    append(Base64UrlAlphabet[chunk and 0x3F])
+                }
+            }
+        }
+    }
+
+    private fun decodeBase64UrlNoPadding(value: String): String {
+        val output = java.io.ByteArrayOutputStream(value.length * 3 / 4)
+        var buffer = 0
+        var bits = 0
+        value.forEach { character ->
+            val decoded = Base64UrlAlphabet.indexOf(character)
+            require(decoded >= 0) { "Practice attempt contains an invalid Base64Url identity." }
+            buffer = (buffer shl 6) or decoded
+            bits += 6
+            while (bits >= 8) {
+                bits -= 8
+                output.write((buffer shr bits) and 0xFF)
+            }
+        }
+        require(bits == 0 || (buffer and ((1 shl bits) - 1)) == 0) {
+            "Practice attempt contains invalid Base64Url tail bits."
+        }
+        return output.toByteArray().decodeToString()
     }
 
     private fun quoteIdentifier(identifier: String): String = "`$identifier`"
@@ -67,9 +171,16 @@ class StudyPlanGraphDuplicator(
         val tableName: String,
         val columns: List<String>,
         val remappedIdentifierColumns: Set<String>,
+        val sourcePlanPredicate: String = "`studyPlanId` = ?",
     )
 
     companion object {
+        private const val QuestionIdsPrefix = "questionIds="
+        private const val QuestionSnapshotPrefix = "questionSnapshotV1="
+        private const val AnswerPrefix = "answer="
+        private const val FieldSeparator = "|"
+        private const val Base64UrlAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
         val TableSpecs = listOf(
             table(
                 "study_targets",
@@ -265,6 +376,56 @@ class StudyPlanGraphDuplicator(
                 "updatedAtEpochMillis",
                 remap = emptySet(),
             ),
+            table(
+                "termux_command_requests",
+                "id", "studyPlanId", "exerciseId", "workspaceRoot", "courseSlug", "workspaceRelativePath",
+                "action", "commandTemplateId", "commandTemplateLabel", "commandTemplateLanguage", "commandLine",
+                "workingDirectory", "state", "createdAtEpochMillis",
+                remap = setOf("id", "exerciseId"),
+            ),
+            table(
+                "termux_command_results",
+                "id", "requestId", "state", "exitCode", "stdoutText", "stderrText", "resultJson",
+                "durationMillis", "completedAtEpochMillis",
+                remap = setOf("id", "requestId"),
+                sourcePlanPredicate =
+                    "`requestId` IN (SELECT `id` FROM `termux_command_requests` WHERE `studyPlanId` = ?)",
+            ),
+            table(
+                "language_deck_profiles",
+                "id", "studyPlanId", "targetLanguage", "nativeLanguage", "regionFocus", "defaultRegister",
+                "reviewDirectionsJson", "tagsJson", "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id"),
+            ),
+            table(
+                "language_expressions",
+                "id", "studyPlanId", "deckId", "expression", "meaning", "literalTranslation",
+                "translationEquivalent", "type", "register", "region", "pronunciationNote", "commonMistake",
+                "examplesJson", "tagsJson", "createdAtEpochMillis", "updatedAtEpochMillis",
+                remap = setOf("id", "deckId"),
+            ),
+            table(
+                "idiom_cards",
+                "id", "expressionId", "naturalExample", "userSentence", "clozePrompt", "acceptedAnswersJson",
+                "reviewDirectionsJson", "difficulty",
+                remap = setOf("id", "expressionId"),
+                sourcePlanPredicate =
+                    "`expressionId` IN (SELECT `id` FROM `language_expressions` WHERE `studyPlanId` = ?)",
+            ),
+            table(
+                "vocabulary_cards",
+                "id", "expressionId", "partOfSpeech", "synonymsJson", "antonymsJson",
+                "reviewDirectionsJson", "difficulty",
+                remap = setOf("id", "expressionId"),
+                sourcePlanPredicate =
+                    "`expressionId` IN (SELECT `id` FROM `language_expressions` WHERE `studyPlanId` = ?)",
+            ),
+            table(
+                "language_review_attempts",
+                "id", "studyPlanId", "expressionId", "idiomCardId", "direction", "promptText", "answerText",
+                "outcome", "scorePercent", "reviewItemId", "createdAtEpochMillis",
+                remap = setOf("id", "expressionId", "idiomCardId", "reviewItemId"),
+            ),
         )
 
         /**
@@ -280,12 +441,26 @@ class StudyPlanGraphDuplicator(
             remap = setOf("id", "subjectId", "topicId", "materialId"),
         )
 
-        val PortabilityTableSpecs: List<TableSpec> = TableSpecs + AnnexSpec
+        private val DuplicationOnlyTableNames = setOf(
+            "termux_command_requests",
+            "termux_command_results",
+            "language_deck_profiles",
+            "language_expressions",
+            "idiom_cards",
+            "vocabulary_cards",
+            "language_review_attempts",
+        )
+
+        // OV06 owns portable-package graph expansion. Keep OV05's new parent-scoped duplication rows
+        // out of the legacy portability iterator until that overlay teaches import/export the same scope rules.
+        val PortabilityTableSpecs: List<TableSpec> =
+            TableSpecs.filterNot { it.tableName in DuplicationOnlyTableNames } + AnnexSpec
 
         private fun table(
             tableName: String,
             vararg columns: String,
             remap: Set<String>,
-        ) = TableSpec(tableName, columns.toList(), remap)
+            sourcePlanPredicate: String = "`studyPlanId` = ?",
+        ) = TableSpec(tableName, columns.toList(), remap, sourcePlanPredicate)
     }
 }

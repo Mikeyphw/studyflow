@@ -137,7 +137,7 @@ abstract class StudyFlowDatabase : RoomDatabase() {
     abstract fun publicExamDao(): PublicExamDao
 
     companion object {
-        const val SCHEMA_VERSION = 14
+        const val SCHEMA_VERSION = 15
         const val DATABASE_NAME = "studyflow.db"
 
         fun create(context: Context): StudyFlowDatabase =

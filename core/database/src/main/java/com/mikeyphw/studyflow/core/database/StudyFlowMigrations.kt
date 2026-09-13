@@ -22,7 +22,11 @@ object StudyFlowMigrations {
                 """
                 UPDATE study_sessions
                 SET targetDurationMinutes = (
-                    SELECT activity.plannedDurationMinutes
+                    SELECT CASE
+                        WHEN activity.plannedDurationMinutes < 5 THEN 5
+                        WHEN activity.plannedDurationMinutes > 720 THEN 720
+                        ELSE activity.plannedDurationMinutes
+                    END
                     FROM planned_activities AS activity
                     WHERE activity.id = study_sessions.plannedActivityId
                       AND activity.studyPlanId = study_sessions.studyPlanId
@@ -655,6 +659,16 @@ object StudyFlowMigrations {
     }
 
 
+    val Migration14To15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // OV05 widens the persisted Study Session target contract to the canonical 5..720 range.
+            // Trigger definitions must be explicitly replaced on upgraded databases.
+            StudyFlowIntegrity.verifyExistingData(db)
+            StudyFlowIntegrity.reinstall(db)
+        }
+    }
+
+
     val All = arrayOf(
         Migration1To2,
         Migration2To3,
@@ -669,6 +683,7 @@ object StudyFlowMigrations {
         Migration11To12,
         Migration12To13,
         Migration13To14,
+        Migration14To15,
     )
 }
 

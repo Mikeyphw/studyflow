@@ -24,6 +24,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+internal fun deleteOrphanCandidate(
+    file: File,
+    delete: (File) -> Boolean = { candidate -> candidate.delete() },
+): AnnexFileCleanupResult {
+    val candidateBytes = file.length()
+    return if (delete(file)) {
+        AnnexFileCleanupResult(removedFiles = 1, removedBytes = candidateBytes)
+    } else {
+        AnnexFileCleanupResult(removedFiles = 0, removedBytes = 0L)
+    }
+}
+
 internal class RoomAnnexFileStorageRepository(
     context: Context,
     private val database: StudyFlowDatabase,
@@ -235,8 +247,9 @@ internal class RoomAnnexFileStorageRepository(
                 root.walkBottomUp()
                     .filter { file -> file.isFile && file.canonicalPath !in referenced }
                     .forEach { file ->
-                        removedBytes += file.length()
-                        if (file.delete()) removedFiles++
+                        val deleted = deleteOrphanCandidate(file)
+                        removedFiles += deleted.removedFiles
+                        removedBytes += deleted.removedBytes
                     }
                 root.walkBottomUp()
                     .filter { file -> file.isDirectory && file.listFiles().isNullOrEmpty() && file != root }

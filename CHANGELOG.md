@@ -1,3 +1,11 @@
+## OV05 — duplication, migrations & snapshot determinism (overlay 5 of 30)
+
+- Complete Study Plan duplication across language and Termux history, with immutable practice-ID rebinding.
+- Normalize legacy session targets and replace trigger semantics through schema 15.
+- Add checked Room schema 7/8 migration evidence.
+- Make logical database snapshots derived-table-safe and deterministic.
+- Count orphan annex bytes only after successful physical deletion.
+
 ## OV03 — Planner, schedule, goal & time semantics (Overlay 3 of 30)
 
 ## OV04 — Room graph ownership & revision integrity (2026-09-13)

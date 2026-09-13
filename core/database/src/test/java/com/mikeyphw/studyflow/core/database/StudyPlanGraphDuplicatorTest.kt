@@ -40,6 +40,13 @@ class StudyPlanGraphDuplicatorTest {
             "coding_exercises",
             "mini_projects",
             "termux_runtime_preferences",
+            "termux_command_requests",
+            "termux_command_results",
+            "language_deck_profiles",
+            "language_expressions",
+            "idiom_cards",
+            "vocabulary_cards",
+            "language_review_attempts",
         )
 
         assertEquals(expectedTables, names.toSet())
@@ -78,9 +85,20 @@ class StudyPlanGraphDuplicatorTest {
         val snippets = StudyPlanGraphDuplicator.TableSpecs.single { it.tableName == "code_snippets" }
         val exercises = StudyPlanGraphDuplicator.TableSpecs.single { it.tableName == "coding_exercises" }
         val termux = StudyPlanGraphDuplicator.TableSpecs.single { it.tableName == "termux_runtime_preferences" }
+        val requests = StudyPlanGraphDuplicator.TableSpecs.single { it.tableName == "termux_command_requests" }
+        val results = StudyPlanGraphDuplicator.TableSpecs.single { it.tableName == "termux_command_results" }
+        val expressions = StudyPlanGraphDuplicator.TableSpecs.single { it.tableName == "language_expressions" }
+        val idioms = StudyPlanGraphDuplicator.TableSpecs.single { it.tableName == "idiom_cards" }
+        val attempts = StudyPlanGraphDuplicator.TableSpecs.single { it.tableName == "language_review_attempts" }
 
         assertTrue(snippets.remappedIdentifierColumns.containsAll(setOf("id", "subjectId", "topicId")))
         assertTrue(exercises.remappedIdentifierColumns.containsAll(setOf("id", "subjectId", "topicId", "snippetId")))
         assertTrue(termux.remappedIdentifierColumns.isEmpty())
+        assertTrue(requests.remappedIdentifierColumns.containsAll(setOf("id", "exerciseId")))
+        assertTrue(results.remappedIdentifierColumns.containsAll(setOf("id", "requestId")))
+        assertTrue(results.sourcePlanPredicate.contains("termux_command_requests"))
+        assertTrue(expressions.remappedIdentifierColumns.containsAll(setOf("id", "deckId")))
+        assertTrue(idioms.sourcePlanPredicate.contains("language_expressions"))
+        assertTrue(attempts.remappedIdentifierColumns.containsAll(setOf("id", "expressionId", "idiomCardId", "reviewItemId")))
     }
 }
