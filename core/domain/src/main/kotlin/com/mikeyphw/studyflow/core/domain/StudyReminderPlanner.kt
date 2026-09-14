@@ -73,6 +73,10 @@ object StudyReminderPlanner {
                         ),
                     )
                 }
+            } else if (policy.dueReviewEnabled) {
+                nextFutureReviewCandidate(input)?.let { futureReview ->
+                    if (futureReview.occurrenceId !in input.deliveredOccurrenceIds) add(futureReview)
+                }
             }
             if (policy.plannedStudyEnabled) nextActivityCandidate?.let(::add)
             if (policy.missedActivityEnabled && missedActivities.isNotEmpty()) {
@@ -338,6 +342,27 @@ object StudyReminderPlanner {
             scheduledAtEpochMillis = scheduledAtEpochMillis,
             fireAtEpochMillis = fireAt,
             delayedByQuietHours = fireAt != scheduledAtEpochMillis,
+        )
+    }
+
+
+    private fun nextFutureReviewCandidate(input: StudyReminderInput): ReminderNotificationCandidate? {
+        val firstUpcoming = input.reviewQueue.upcoming.minWithOrNull(
+            compareBy({ it.dueAtEpochMillis }, { it.id.value }),
+        ) ?: return null
+        if (firstUpcoming.dueAtEpochMillis <= input.nowEpochMillis) return null
+        val dueAt = firstUpcoming.dueAtEpochMillis
+        val dueCountAtWakeup = input.reviewQueue.upcoming.count { it.dueAtEpochMillis == dueAt }.coerceAtLeast(1)
+        val occurrenceId = "due-future:$dueAt:${firstUpcoming.id.value}:$dueCountAtWakeup"
+        return candidate(
+            type = ReminderNotificationType.DUE_REVIEWS,
+            occurrenceId = occurrenceId,
+            content = ReminderNotificationContent(
+                kind = ReminderNotificationContentKind.DUE_REVIEWS,
+                count = dueCountAtWakeup,
+            ),
+            scheduledAtEpochMillis = input.persistedScheduledAt(occurrenceId) ?: dueAt,
+            settings = input.settings,
         )
     }
 

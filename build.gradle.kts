@@ -2410,3 +2410,17 @@ tasks.register<Exec>("verifyOv15AndroidProductFlowHonesty") {
     )
     commandLine("bash", "scripts/validate_ov15_android_product_flow_honesty.sh")
 }
+
+
+// OV16 — Attention scheduler, quiet-hours & durable wakeups.
+tasks.register<Exec>("verifyOv16AttentionSchedulerDurableWakeups") {
+    group = "verification"
+    description = "Validates OV16 ATT10-first quiet-hours rearm, mirror escalation wakeups, future review alarms, exact session/widget scheduling and permission-denied delivery truth."
+    dependsOn(
+        ":core:link:test",
+        ":core:domain:test",
+        ":app:compileDebugKotlin",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("bash", "scripts/validate_ov16_attention_scheduler_wakeups.sh")
+}

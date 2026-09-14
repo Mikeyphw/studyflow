@@ -103,6 +103,28 @@ class StudyFlowWidgetSnapshotProjectorAtt03Test {
         assertEquals(now + 15 * 60 * 1_000L, snapshot.nextRefreshEpochMillis)
     }
 
+
+    @Test
+    fun keepsSubMinutePlannedBoundaryForExactFreshnessScheduler() {
+        val nextStart = now + 30_000L
+        val snapshot = StudyFlowWidgetSnapshotProjector.project(
+            plan = plan(),
+            schedule = StudySchedule(
+                studyPlanId = StudyPlanId("plan"),
+                strategy = null,
+                scheduleRules = emptyList(),
+                plannedActivities = listOf(activity("soon", nextStart)),
+            ),
+            reviewQueue = ReviewQueue(emptyList(), emptyList(), emptyList(), emptyList(), emptyList()),
+            activeSession = null,
+            liveActiveSeconds = null,
+            nowEpochMillis = now,
+            zoneId = zone,
+        )
+
+        assertEquals(nextStart, snapshot.nextRefreshEpochMillis)
+    }
+
     private fun plan() = StudyPlan(
         id = StudyPlanId("plan"),
         name = "ATT03 plan",

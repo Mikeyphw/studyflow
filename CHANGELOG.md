@@ -1,4 +1,11 @@
 
+## OV16 — Attention scheduler, quiet-hours & durable wakeups
+
+- Added ATT10-first Android wakeup contracts for quiet-hours rearm, permission-denied retry, mirror escalation, exact session/break reminders and near-term widget refreshes.
+- Future due reviews now receive durable wakeup candidates, and widget freshness no longer drops sub-minute schedule/session boundaries.
+- Added embedded `verifyOv16AttentionSchedulerDurableWakeups` validation with no Gradle daemon stop in the hook.
+
+
 ## OV15 — Android product-flow and UI/domain honesty
 
 - Stopped optionless practice questions from exposing the correct answer as the only selectable button.

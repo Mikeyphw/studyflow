@@ -304,10 +304,14 @@ class StudyReminderDeliveryCoordinator(
         }
         // POST_NOTIFICATIONS only gates native notification surfaces. ATT08 compact
         // widgets/tiles remain a valid ATT07 target, so due-time reconciliation must stay alive.
+        val focusPolicy = focusPolicyStore.load(planId)
+        val candidates = runtimePlan.notificationCandidates.map { candidate ->
+            StudyReminderWakeupContracts.applyAuthoritativeQuietHours(candidate, focusPolicy, clock())
+        }
         val previouslyScheduled = occurrenceStore.scheduled(planId)
-        cancelPlanAlarms(planId, clearBookkeeping = false, retainCandidates = runtimePlan.notificationCandidates)
-        occurrenceStore.replaceScheduled(planId, runtimePlan.notificationCandidates)
-        runtimePlan.notificationCandidates.forEach { candidate ->
+        cancelPlanAlarms(planId, clearBookkeeping = false, retainCandidates = candidates)
+        occurrenceStore.replaceScheduled(planId, candidates)
+        candidates.forEach { candidate ->
             upsertAttentionScheduled(planId, candidate)
             if (previouslyScheduled.none { occurrence -> occurrence.matches(candidate) }) {
                 scheduleCandidate(planId, candidate)
@@ -321,18 +325,29 @@ class StudyReminderDeliveryCoordinator(
         } ?: return
 
         val runtimePlan = buildRuntimePlan(planId, allowOccurrenceId = occurrenceId) ?: return
-        if (runtimePlan.quietHoursActive && scheduled.fireAtEpochMillis <= clock()) {
-            reconcilePlanInternal(planId)
-            return
+        val now = clock()
+        val focusPolicy = focusPolicyStore.load(planId)
+        if (scheduled.fireAtEpochMillis <= now) {
+            val rearmed = StudyReminderWakeupContracts.rearmFiredQuietCandidate(
+                candidate = scheduled.toCandidate(),
+                focusPolicy = focusPolicy,
+                nowEpochMillis = now,
+            )
+            if (rearmed != null) {
+                occurrenceStore.addScheduled(planId, rearmed, snoozedFromOccurrenceId = scheduled.snoozedFromOccurrenceId)
+                upsertAttentionScheduled(planId, rearmed)
+                scheduleCandidate(planId, rearmed)
+                StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
+                return
+            }
         }
 
         val candidate = runtimePlan.notificationCandidates.firstOrNull { current ->
             current.type == type && current.occurrenceId == occurrenceId
-        } ?: scheduled.toCandidate()
+        }?.let { StudyReminderWakeupContracts.applyAuthoritativeQuietHours(it, focusPolicy, now) }
+            ?: scheduled.toCandidate()
 
         val occurrence = candidate.toAttentionOccurrence(planId)
-        val now = clock()
-        val focusPolicy = focusPolicyStore.load(planId)
         val ledgerEntry = attentionLedger.entry(occurrence.occurrenceId)
         val linkPeer = linkPeerProvider() ?: return
         val localPeer = linkPeer.runtime.localIdentity.descriptor
@@ -456,7 +471,26 @@ class StudyReminderDeliveryCoordinator(
                 candidate = candidate,
                 silent = decision.deliverSilently,
             )
-        ) return
+        ) {
+            val retry = StudyReminderWakeupContracts.permissionDeniedRetryCandidate(candidate, now)
+            occurrenceStore.addScheduled(planId, retry)
+            upsertAttentionScheduled(planId, retry)
+            scheduleCandidate(planId, retry)
+            StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
+            return
+        }
+        val mirrorEscalationAt = StudyReminderWakeupContracts.mirrorEscalationEpochMillis(candidate, focusPolicy)
+        if (mirrorEscalationAt != null && now < mirrorEscalationAt &&
+            decision.outcome != StudyFlowAttentionPolicyOutcome.ESCALATE_MIRROR
+        ) {
+            val escalationCandidate = candidate.copy(fireAtEpochMillis = mirrorEscalationAt)
+            occurrenceStore.addScheduled(planId, escalationCandidate)
+            upsertAttentionScheduled(planId, escalationCandidate)
+            scheduleCandidate(planId, escalationCandidate)
+            transitionAttention(occurrenceId, StudyFlowAttentionDeliveryState.DELIVERY_PENDING)
+            StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
+            return
+        }
         occurrenceStore.markDelivered(planId, occurrenceId)
         occurrenceStore.removeScheduled(planId, occurrenceId)
         markAttentionDelivered(candidate)
@@ -586,11 +620,16 @@ class StudyReminderDeliveryCoordinator(
                     ?: return StudyReminderActionResult.None
                 val policy = policyFor(planId)
                 val snoozedAt = clock() + policy.defaultSnoozeMinutes * 60_000L
-                val snoozed = source.copy(
+                val rawSnoozed = source.copy(
                     occurrenceId = "${source.occurrenceId}:snooze:$snoozedAt",
                     scheduledAtEpochMillis = snoozedAt,
                     fireAtEpochMillis = snoozedAt,
                     delayedByQuietHours = false,
+                )
+                val snoozed = StudyReminderWakeupContracts.applyAuthoritativeQuietHours(
+                    rawSnoozed,
+                    focusPolicyStore.load(planId),
+                    clock(),
                 )
                 occurrenceStore.addScheduled(planId, snoozed, snoozedFromOccurrenceId = source.occurrenceId)
                 scheduleCandidate(planId, snoozed)
@@ -655,7 +694,7 @@ class StudyReminderDeliveryCoordinator(
             StudyReminderNotificationAction.START_BREAK -> {
                 val source = candidate ?: return StudyReminderActionResult.None
                 val breakEndsAt = clock() + 5 * 60_000L
-                val snoozed = source.copy(
+                val rawBreakReminder = source.copy(
                     occurrenceId = "${source.occurrenceId}:break:$breakEndsAt",
                     type = ReminderNotificationType.SESSION_COMPLETED,
                     content = source.content.copy(
@@ -665,6 +704,11 @@ class StudyReminderDeliveryCoordinator(
                     scheduledAtEpochMillis = breakEndsAt,
                     fireAtEpochMillis = breakEndsAt,
                     delayedByQuietHours = false,
+                )
+                val snoozed = StudyReminderWakeupContracts.applyAuthoritativeQuietHours(
+                    rawBreakReminder,
+                    focusPolicyStore.load(planId),
+                    clock(),
                 )
                 occurrenceStore.addScheduled(planId, snoozed, snoozedFromOccurrenceId = source.occurrenceId)
                 scheduleCandidate(planId, snoozed)
@@ -782,14 +826,40 @@ class StudyReminderDeliveryCoordinator(
         return ownerDelivered
     }
 
+    @SuppressLint("ScheduleExactAlarm")
     private fun scheduleCandidate(planId: StudyPlanId, candidate: ReminderNotificationCandidate) {
-        val triggerAt = candidate.fireAtEpochMillis.coerceAtLeast(clock() + MinimumFutureDelayMillis)
-        alarmManager.setWindow(
-            AlarmManager.RTC_WAKEUP,
-            triggerAt,
-            StudyReminderPlanner.PlannedActivityDeliveryGraceMillis,
-            pendingIntent(planId, candidate.type, candidate.occurrenceId),
+        val triggerAt = candidate.fireAtEpochMillis.coerceAtLeast(
+            clock() + StudyReminderWakeupContracts.MinimumImmediateWakeupDelayMillis,
         )
+        val operation = pendingIntent(planId, candidate.type, candidate.occurrenceId)
+        if (StudyReminderWakeupContracts.requiresExactWakeup(candidate)) {
+            scheduleExactOrShortestWindow(triggerAt, operation)
+        } else {
+            alarmManager.setWindow(
+                AlarmManager.RTC_WAKEUP,
+                triggerAt,
+                StudyReminderPlanner.PlannedActivityDeliveryGraceMillis,
+                operation,
+            )
+        }
+    }
+
+    @SuppressLint("ScheduleExactAlarm")
+    private fun scheduleExactOrShortestWindow(triggerAtEpochMillis: Long, operation: PendingIntent) {
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms() -> {
+                alarmManager.setWindow(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtEpochMillis,
+                    StudyReminderWakeupContracts.NearTermWidgetExactThresholdMillis,
+                    operation,
+                )
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtEpochMillis, operation)
+            }
+            else -> alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtEpochMillis, operation)
+        }
     }
 
     private fun cancelPlanAlarms(

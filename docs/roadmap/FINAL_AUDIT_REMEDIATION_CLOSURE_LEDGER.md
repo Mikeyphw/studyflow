@@ -136,3 +136,16 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S6-11 | Manual import text/source name are `rememberSaveable`, so drafts survive Activity recreation. | OV15 verifier checks dialog state storage. |
 | S6-12 | Pasted import text is bounded by `boundManualImportDraft`; PDF size/text extraction is bounded by `Ov15MaxPdfImportBytes` and `MaxTextBytes`. | `Ov15ImportHonestyContractsTest.manualImportDraftIsBoundedBeforePreviewAndSaveableRecreationState`; OV15 verifier. |
 | S6-13 | `QuestionEditorDialog` iterates `QuestionType.entries`, exposing MC, true/false, short-answer, and essay editing. | `Ov15PracticeHonestyContractsTest.manualEditorRepresentsEverySupportedQuestionType`. |
+## OV16 — Attention scheduler, quiet-hours & durable wakeups
+
+| Finding | Production closure | Behavioral evidence |
+|---|---|---|
+| S7-01 | Fired snooze/break reminders are evaluated against ATT10 and re-added with the quiet-window end before delivery consumes them. | `StudyReminderWakeupContracts.rearmFiredQuietCandidate`; `StudyReminderWakeupContractsOv16Test.att10QuietHoursRearmSnoozeInsteadOfConsumingIt`. |
+| S7-02 | Android reconciliation maps every planner candidate through `applyAuthoritativeQuietHours`, so ATT10 is authoritative even when legacy planner times differ. | `StudyReminderDeliveryCoordinator.reconcilePlanInternal`; OV16 verifier. |
+| S7-03 | `MIRROR_IF_UNHANDLED` computes a mirror boundary and keeps the occurrence scheduled in `DELIVERY_PENDING` until escalation time. | `StudyReminderWakeupContracts.mirrorEscalationEpochMillis`; `StudyReminderWakeupContractsOv16Test.mirrorIfUnhandledProducesSecondWakeupBoundary`. |
+| S7-04 | The reminder planner emits `due-future:*` candidates from the first upcoming review when no reviews are currently due. | `StudyReminderPlannerOv16Test.futureDueReviewsReceiveDurableWakeupCandidate`. |
+| S7-05 | Android topology advertises notification/compact surfaces only when real surfaces exist; failed notification posts retry instead of marking delivered. | `AndroidStudyFlowAttentionRouterBridge.localCapability`; `permissionDeniedRetryCandidate`; OV16 verifier. |
+| S7-06 | Session-ending, session-completed and break-completed candidates use exact alarm scheduling when exact alarms are allowed. | `StudyReminderWakeupContracts.requiresExactWakeup`; `scheduleExactOrShortestWindow`; manifest exact-alarm permission. |
+| S7-07 | Widget snapshot projection keeps sub-minute upcoming activity boundaries instead of dropping them through a one-minute filter. | `StudyFlowWidgetSnapshotProjectorAtt03Test.keepsSubMinutePlannedBoundaryForExactFreshnessScheduler`. |
+| S7-08 | Widget freshness alarms use exact near-term scheduling for active-session/minute-boundary refreshes with bounded fallback. | `StudyFlowWidgetFreshnessScheduler.schedule`; OV16 verifier. |
+

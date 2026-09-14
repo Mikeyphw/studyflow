@@ -1,69 +1,66 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov15_android_product_flow_honesty_v1",
+  "name": "studyflow_ov16_attention_scheduler_durable_wakeups_v1",
   "target": "studyflow_android",
-  "description": "OV15 closes Android product-flow and UI/domain honesty findings across practice, plan cards, focus/workspace loading, active-session navigation and bounded import paths.",
+  "description": "OV16 closes Android attention scheduler, ATT10 quiet-hours ordering, durable wakeups, notification-denied delivery truth, exact near-term session/widget alarms and future-review wakeups.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV15: enforce Android product-flow and UI honesty"
+    "message": "OV16: harden attention scheduler durable wakeups"
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively on successful OV14 commit 11e42138."
+    "notes": "Built cumulatively on successful OV15 commit d5a58e0e."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov15_android_product_flow_honesty_v1",
+    "name": "studyflow_ov16_attention_scheduler_durable_wakeups_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov15-practice-question-editor-honesty",
-        "purpose": "Prevent answer-leak fallback in practice, expose all supported question types, and keep failed async question saves visible and retryable.",
+        "id": "ov16-att10-authoritative-wakeup-contracts",
+        "purpose": "Make ATT10 focus/quiet-hours policy the authority before alarms are scheduled or consumed, with durable re-arm semantics for snooze and break reminders.",
         "paths": [
-          "feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeHonestyContracts.kt",
-          "feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeUiModels.kt",
-          "feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeScreen.kt",
-          "feature/practice/src/main/res/values/strings.xml",
-          "feature/practice/src/main/res/values-pt-rBR/strings.xml",
-          "feature/practice/src/test/java/com/mikeyphw/studyflow/feature/practice/Ov15PracticeHonestyContractsTest.kt"
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContracts.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
+          "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContractsOv16Test.kt"
         ]
       },
       {
-        "id": "ov15-plan-workspace-session-honesty",
-        "purpose": "Remove impossible archived-plan opens and fabricated next-activity text, use local-calendar exam countdowns, split required/optional workspace streams, and avoid focus back traps while session state is loading.",
+        "id": "ov16-attention-delivery-truth-and-escalation",
+        "purpose": "Prevent notification-denied phantom deliveries, expose only actually available local surfaces, and schedule MIRROR_IF_UNHANDLED as a second durable wakeup.",
         "paths": [
-          "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanHonestyContracts.kt",
-          "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt",
-          "feature/plans/src/main/res/values/strings.xml",
-          "feature/plans/src/main/res/values-pt-rBR/strings.xml",
-          "feature/plans/src/test/java/com/mikeyphw/studyflow/feature/plans/Ov15PlanHonestyContractsTest.kt",
-          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceHonestyContracts.kt",
-          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/FocusSessionScreen.kt",
-          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PlanWorkspaceScreen.kt",
-          "feature/workspace/src/main/res/values/strings.xml",
-          "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
-          "feature/workspace/src/test/java/com/mikeyphw/studyflow/feature/workspace/Ov15WorkspaceHonestyContractsTest.kt"
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyFlowAttentionRouterBridge.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
+          "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContractsOv16Test.kt"
         ]
       },
       {
-        "id": "ov15-import-durability-bounds-validation",
-        "purpose": "Persist large import drafts through recreation, bound manual/PDF document inputs, and install apply-time validation without stopping Gradle daemons.",
+        "id": "ov16-future-review-and-near-term-widget-wakeups",
+        "purpose": "Create durable alarms for future review due-times and preserve sub-minute widget/session refresh boundaries using exact alarms where supported.",
         "paths": [
-          "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/ImportHonestyContracts.kt",
-          "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt",
-          "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/ExamNoticeDocumentLoader.kt",
-          "feature/subjects/src/test/java/com/mikeyphw/studyflow/feature/subjects/Ov15ImportHonestyContractsTest.kt",
+          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt",
+          "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerOv16Test.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetModels.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetFreshnessScheduler.kt",
+          "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetSnapshotProjectorAtt03Test.kt",
+          "app/src/main/AndroidManifest.xml"
+        ]
+      },
+      {
+        "id": "ov16-validation-evidence",
+        "purpose": "Install apply-time OV16 verification without stopping Gradle daemons and document closure against the final audit ledger.",
+        "paths": [
           ".devtool-artifact/validation/validate.sh",
           ".devtool.toml",
           "build.gradle.kts",
-          "scripts/validate_ov15_android_product_flow_honesty.sh",
-          "scripts/verify_ov15_android_product_flow_honesty.py",
-          "docs/remediation/OV15_ANDROID_PRODUCT_FLOW_UI_DOMAIN_HONESTY.md",
+          "scripts/verify_ov16_attention_scheduler_wakeups.py",
+          "scripts/validate_ov16_attention_scheduler_wakeups.sh",
+          "docs/remediation/OV16_ATTENTION_SCHEDULER_QUIET_HOURS_DURABLE_WAKEUPS.md",
           "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "REMEDIATION_OV_15_IMPLEMENTATION.md",
+          "REMEDIATION_OV_16_IMPLEMENTATION.md",
           "CHANGELOG.md"
         ]
       }
@@ -71,338 +68,224 @@
   },
   "findings": [
     {
-      "id": "S6-01",
+      "id": "S7-01",
       "severity": "HIGH",
-      "status": "closed-by-ov15"
+      "status": "closed-by-ov16"
     },
     {
-      "id": "S6-02",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov15"
-    },
-    {
-      "id": "S6-03",
+      "id": "S7-02",
       "severity": "HIGH",
-      "status": "closed-by-ov15"
+      "status": "closed-by-ov16"
     },
     {
-      "id": "S6-04",
+      "id": "S7-03",
       "severity": "HIGH",
-      "status": "closed-by-ov15"
+      "status": "closed-by-ov16"
     },
     {
-      "id": "S6-05",
+      "id": "S7-04",
+      "severity": "HIGH",
+      "status": "closed-by-ov16"
+    },
+    {
+      "id": "S7-05",
+      "severity": "HIGH",
+      "status": "closed-by-ov16"
+    },
+    {
+      "id": "S7-06",
       "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov15"
+      "status": "closed-by-ov16"
     },
     {
-      "id": "S6-06",
+      "id": "S7-07",
       "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov15"
+      "status": "closed-by-ov16"
     },
     {
-      "id": "S6-07",
+      "id": "S7-08",
       "severity": "MEDIUM",
-      "status": "closed-by-ov15"
-    },
-    {
-      "id": "S6-08",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov15"
-    },
-    {
-      "id": "S6-09",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov15"
-    },
-    {
-      "id": "S6-10",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov15"
-    },
-    {
-      "id": "S6-11",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov15"
-    },
-    {
-      "id": "S6-12",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov15"
-    },
-    {
-      "id": "S6-13",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov15"
+      "status": "closed-by-ov16"
     }
   ],
+  "validation": {
+    "hook": ".devtool-artifact/validation/validate.sh",
+    "gradle_task": "verifyOv16AttentionSchedulerDurableWakeups",
+    "stops_gradle_daemon": false,
+    "separate_user_validation_required": false
+  },
   "inventory": {
     "format": 1,
-    "count": 30,
+    "count": 19,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "03b2ef5248a1a42bcc2a6fe6ac73acc00b042c552260b72d176c824442ec22f6",
-        "size": 313,
+        "sha256": "38d273961d6c114bc3dcccc7a76ef9aea8b26a7843940a2103468336322da09c",
+        "size": 320,
         "source_mode": "0o755",
-        "source_sha256": "dcddd2c5b34d2b88434dd870a3622a20aabc0fe79e3096c3c7f997583f8f28af",
-        "source_size": 332
+        "source_sha256": "03b2ef5248a1a42bcc2a6fe6ac73acc00b042c552260b72d176c824442ec22f6",
+        "source_size": 313
       },
       {
         "action": "modify",
         "path": ".devtool.toml",
         "mode": "0o600",
-        "sha256": "77b7390efc41c14061ea014bc2e654476418dbc186ecfaaa99a35fc00557ba3f",
-        "size": 15447,
+        "sha256": "0c8227f76ba77dba0921017377f8f8bde7f6257da8bf5153ce761fb81b030525",
+        "size": 15543,
         "source_mode": "0o600",
-        "source_sha256": "d50abf86a3f51508ee75b22a0698c5bfb5bed8e58aca8c92d08f6624675dc1bb",
-        "source_size": 15365
+        "source_sha256": "77b7390efc41c14061ea014bc2e654476418dbc186ecfaaa99a35fc00557ba3f",
+        "source_size": 15447
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "6ca69039b908651d6ba12021361d48695598826c06d5467df527b464f3507e5b",
-        "size": 75915,
+        "sha256": "44c980783823b6ca5239e1fcddc9dbb38726b61d55b7ee3053559e8fd9ebda6d",
+        "size": 76405,
         "source_mode": "0o600",
-        "source_sha256": "0b1d66b04cc331197e785e85f1758ee82a915b5860c37980cfc978aeb933c87c",
-        "source_size": 75263
+        "source_sha256": "6ca69039b908651d6ba12021361d48695598826c06d5467df527b464f3507e5b",
+        "source_size": 75915
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_15_IMPLEMENTATION.md",
+        "path": "REMEDIATION_OV_16_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "b0dc6b475b44811933ab23552f31678b9296725e0cb96d899ab564dcf60eaca2",
-        "size": 1098
+        "sha256": "85ea366292a9e6fa7f29092482a49646ab9debc1664a3e672bd1a099f2b86587",
+        "size": 1275
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/AndroidManifest.xml",
+        "mode": "0o600",
+        "sha256": "b5974a4b1f3d68bb9cc4894c7266f901113bc7d2c80cfc8dabfea4e1c87937a2",
+        "size": 5403,
+        "source_mode": "0o600",
+        "source_sha256": "59d7e0ee5632437fdfad08cce2ba4629e5f71c865630656c4e6659c306f76d79",
+        "source_size": 5324
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyFlowAttentionRouterBridge.kt",
+        "mode": "0o600",
+        "sha256": "83fe6e60ac58f53a5ef13583c2ee977ae542b127362c2658664cd9fb56d98e41",
+        "size": 4933,
+        "source_mode": "0o600",
+        "source_sha256": "97b99aafed2538764d83ebe9646785b3316100e607445c2b7eea362175a974f0",
+        "source_size": 4347
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
+        "mode": "0o600",
+        "sha256": "b39dc501991cf470f5addfa6477d1944873e353089ad6d1f33840dd2fa3a2b53",
+        "size": 65920,
+        "source_mode": "0o600",
+        "source_sha256": "efea42bd7858681ff2e6e0ce90dc2829ad7d67faddf7a1da712768adc2ae38e8",
+        "source_size": 62406
+      },
+      {
+        "action": "add",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContracts.kt",
+        "mode": "0o644",
+        "sha256": "e513afc7bc6625a63d3465d024968110e85b400a820afd2d0ec50a8b7269bd4b",
+        "size": 6226
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetFreshnessScheduler.kt",
+        "mode": "0o600",
+        "sha256": "b59a62466cd66cde49ea725663b68b1415428e0d770d7819dbef2eaa7f6c47de",
+        "size": 3917,
+        "source_mode": "0o600",
+        "source_sha256": "d491273a21bcf4be96eef50ef3cad0d140f6aa1e2c541be649285830a743c2ac",
+        "source_size": 2999
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetModels.kt",
+        "mode": "0o600",
+        "sha256": "1d8c6d28d8f9385c40e8d8bd060a04c9878c95c74c0eb9fee406d56e559470ce",
+        "size": 5416,
+        "source_mode": "0o600",
+        "source_sha256": "0ce290016ccba418d7a844cb5875dffbe4bdd31bfb2f01f55c81f7a18221330a",
+        "source_size": 5471
+      },
+      {
+        "action": "add",
+        "path": "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContractsOv16Test.kt",
+        "mode": "0o644",
+        "sha256": "cc7584a89bda9a04bb88671e0d87b1f0161ec50a127e432e8f6313815fa2f2e6",
+        "size": 4353
+      },
+      {
+        "action": "modify",
+        "path": "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetSnapshotProjectorAtt03Test.kt",
+        "mode": "0o600",
+        "sha256": "9e06a25f4be4c6edecaf80e496c5c5f98199c08ff2f6a1562d2cec74dec8f317",
+        "size": 7308,
+        "source_mode": "0o600",
+        "source_sha256": "4ae6ce91b3dbbac12cf1ed9b5417b6822c62b59ed070c2e43c308e2e80a3cf3d",
+        "source_size": 6524
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o600",
-        "sha256": "9181dd0256a52dc3d7367bc1555dcb652361a2f1e4a5a79bfd8690e488451ea9",
-        "size": 95030,
+        "sha256": "df2440eea97bc0f15d338ca87e3662103078af9625712957904f0bca10ef504c",
+        "size": 95607,
         "source_mode": "0o600",
-        "source_sha256": "3d3ffc5492136f1de4d25109327da32ac70f64db29a360cf9d04686de0840b6e",
-        "source_size": 94389
+        "source_sha256": "9181dd0256a52dc3d7367bc1555dcb652361a2f1e4a5a79bfd8690e488451ea9",
+        "source_size": 95030
+      },
+      {
+        "action": "modify",
+        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt",
+        "mode": "0o600",
+        "sha256": "17a0030a668252f4737b7f3bf37b3b6e72793794b7096ebe9ac022af8f8eb5f4",
+        "size": 22289,
+        "source_mode": "0o600",
+        "source_sha256": "34d3e4a9b8591a81757376bbefefd64a9f5a4da18b2e47da9644dc0c9ba1fe16",
+        "source_size": 21003
       },
       {
         "action": "add",
-        "path": "docs/remediation/OV15_ANDROID_PRODUCT_FLOW_UI_DOMAIN_HONESTY.md",
+        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerOv16Test.kt",
         "mode": "0o644",
-        "sha256": "9ddf86a5bb807c93406217e2e8a1a58dc604811b75e5c0487a22402a33f86879",
-        "size": 2064
+        "sha256": "66698ad9961ee9a4520b833a506f10d4f7835e6f6db738d0c0187a021941acf0",
+        "size": 3089
+      },
+      {
+        "action": "add",
+        "path": "docs/remediation/OV16_ATTENTION_SCHEDULER_QUIET_HOURS_DURABLE_WAKEUPS.md",
+        "mode": "0o644",
+        "sha256": "47d8c6e17efd5e619a4943ea94b206a80a880b98ffb8b60017cd24cdf274c208",
+        "size": 1731
       },
       {
         "action": "modify",
         "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "e04b3b8addcf45f40579e66e47c3ca6bbb56daf95c2a96513aaf43d7dca16dea",
-        "size": 18804,
+        "sha256": "05786251f0339695bae1164dcb40c432b82d89e116732d9f93f596f00ee82b33",
+        "size": 20933,
         "source_mode": "0o644",
-        "source_sha256": "dc3140386f2c9bb412dea0b93ce23b7997bd990e5e5d0d781ed7156164fa33a0",
-        "source_size": 15934
+        "source_sha256": "e04b3b8addcf45f40579e66e47c3ca6bbb56daf95c2a96513aaf43d7dca16dea",
+        "source_size": 18804
       },
       {
         "action": "add",
-        "path": "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanHonestyContracts.kt",
-        "mode": "0o644",
-        "sha256": "6c48c65d6d3b0f799ac2eb42b7ec8dc3aa8689a706897132d6b84ff6cc865300",
-        "size": 1495
-      },
-      {
-        "action": "modify",
-        "path": "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt",
-        "mode": "0o600",
-        "sha256": "371ad8d9f9a332732a4a85b8f36b53e1783f52faea3da5973493ec2625620e1b",
-        "size": 18621,
-        "source_mode": "0o600",
-        "source_sha256": "24257a6f3c43d07b51419ee9089800a14d5af18e111f7cc463fec5dd081d2d4f",
-        "source_size": 19068
-      },
-      {
-        "action": "modify",
-        "path": "feature/plans/src/main/res/values-pt-rBR/strings.xml",
-        "mode": "0o600",
-        "sha256": "9ac82691b3fb81772f6b868b6db748cca039e5eaec76df65a35c5958ef46f13a",
-        "size": 30445,
-        "source_mode": "0o600",
-        "source_sha256": "addb537263752267a35ca1403e4e8962c7e5805b36530ead613e2b75ebc5e94a",
-        "source_size": 30336
-      },
-      {
-        "action": "modify",
-        "path": "feature/plans/src/main/res/values/strings.xml",
-        "mode": "0o600",
-        "sha256": "14bc873a06850ec69b2ffcdf1351b5b2a3bfc93e48f925d87c0a12fc780695d7",
-        "size": 28386,
-        "source_mode": "0o600",
-        "source_sha256": "9a1ed4f734394cc950d29e007ac1ca1682039cc8ad77fa80f9c969d695faff8a",
-        "source_size": 28289
-      },
-      {
-        "action": "add",
-        "path": "feature/plans/src/test/java/com/mikeyphw/studyflow/feature/plans/Ov15PlanHonestyContractsTest.kt",
-        "mode": "0o644",
-        "sha256": "66cdc5561fec5915ea9337be93f2a9af0793d18de6acb832792e25deec2f58ac",
-        "size": 1720
-      },
-      {
-        "action": "add",
-        "path": "feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeHonestyContracts.kt",
-        "mode": "0o644",
-        "sha256": "926502145e494b845555b4b425f7a5dc9666caa6852e0cae68e7e735f4b263c7",
-        "size": 2790
-      },
-      {
-        "action": "modify",
-        "path": "feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeScreen.kt",
-        "mode": "0o600",
-        "sha256": "eaecb86fcb1d025881790e91c43c0c29210cbed28554c2aa9739cdb8037d943b",
-        "size": 73254,
-        "source_mode": "0o600",
-        "source_sha256": "18115014cae4c70c9bc6b6f0a5261b630e4b9ddd1eda37c0f95519d635f702c3",
-        "source_size": 67777
-      },
-      {
-        "action": "modify",
-        "path": "feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeUiModels.kt",
-        "mode": "0o600",
-        "sha256": "f3ca801910bbbd102a7fb7ee928bbe282861ec9b32bdebaa078550e51ccba36f",
-        "size": 1740,
-        "source_mode": "0o600",
-        "source_sha256": "b28f4a9e685664624bc62bb4aea1f8859d96e7a90c9ec0d58137a936ee8e4f62",
-        "source_size": 1869
-      },
-      {
-        "action": "modify",
-        "path": "feature/practice/src/main/res/values-pt-rBR/strings.xml",
-        "mode": "0o600",
-        "sha256": "81fa2c7b56c808def996e9e1a59e306fa1e75536585e56fd38b2d9f1670a61ac",
-        "size": 10232,
-        "source_mode": "0o600",
-        "source_sha256": "21cc52dc15f5c99fb0a46c7265008b18c221e3fcb2f28f83d6b038ee12ef6812",
-        "source_size": 9279
-      },
-      {
-        "action": "modify",
-        "path": "feature/practice/src/main/res/values/strings.xml",
-        "mode": "0o600",
-        "sha256": "b9d0984b65e5c07e91e8ec528917eb856bdd92d8ec5c83ce0730307747b990ec",
-        "size": 9399,
-        "source_mode": "0o600",
-        "source_sha256": "5257bafe2ab7bb54cb95ce63392ebe6bb70a862711c07f5848d114a8500b7888",
-        "source_size": 8486
-      },
-      {
-        "action": "add",
-        "path": "feature/practice/src/test/java/com/mikeyphw/studyflow/feature/practice/Ov15PracticeHonestyContractsTest.kt",
-        "mode": "0o644",
-        "sha256": "6c3ff929ceb22611650b97b344a1d136f36877d6307dfe259a185f25898070fd",
-        "size": 2708
-      },
-      {
-        "action": "modify",
-        "path": "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/ExamNoticeDocumentLoader.kt",
-        "mode": "0o600",
-        "sha256": "20550a56e9649badba66c91b5e059137d768f25e158cbad665d06defac01738d",
-        "size": 7245,
-        "source_mode": "0o600",
-        "source_sha256": "c69c567ffb12eb48dffb148c474d9c35c93f080f08ce580655531d9ba91110cd",
-        "source_size": 6669
-      },
-      {
-        "action": "add",
-        "path": "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/ImportHonestyContracts.kt",
-        "mode": "0o644",
-        "sha256": "bba2eb7c8583a20cc2fe361a0f7155721f1346026519d522195585deeb40c7e1",
-        "size": 610
-      },
-      {
-        "action": "modify",
-        "path": "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt",
-        "mode": "0o600",
-        "sha256": "9c9f2a197678a27634db0dbe64f42faa7f32a0790ddae6b7d31650ee11649507",
-        "size": 31737,
-        "source_mode": "0o600",
-        "source_sha256": "0a3b07eb291692b0a18dae7f34f051829b320d20822aee5c7c19cb392a3449b4",
-        "source_size": 31487
-      },
-      {
-        "action": "add",
-        "path": "feature/subjects/src/test/java/com/mikeyphw/studyflow/feature/subjects/Ov15ImportHonestyContractsTest.kt",
-        "mode": "0o644",
-        "sha256": "f5e074e84767702cdb5aefc5bebd3e75af0d0ac62703b06abc4a51a2b7c1bb98",
-        "size": 842
-      },
-      {
-        "action": "modify",
-        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/FocusSessionScreen.kt",
-        "mode": "0o600",
-        "sha256": "a7678faa4ae14937dd3f28484822b265af890eac0eed13f174b49f7d44df6790",
-        "size": 19916,
-        "source_mode": "0o600",
-        "source_sha256": "1894062a3f0bad58d70367a6ee94881030ed52181c3b7f3c7fe464c828b1d6b7",
-        "source_size": 19441
-      },
-      {
-        "action": "modify",
-        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PlanWorkspaceScreen.kt",
-        "mode": "0o600",
-        "sha256": "8ed66b5ca32c86295545316e07ba0a6acd3f67ff19a51a3197c9fb15467a3c84",
-        "size": 57562,
-        "source_mode": "0o600",
-        "source_sha256": "1e9442cd6a1e7d2f20270e2bf5fa4d337c391a58e4a8cdf7afabc112d71531a8",
-        "source_size": 57442
-      },
-      {
-        "action": "add",
-        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceHonestyContracts.kt",
-        "mode": "0o644",
-        "sha256": "54d7d34db1141107db0a131c13766f45a12f7ca49e507cba1ca1d183011c158c",
-        "size": 1065
-      },
-      {
-        "action": "modify",
-        "path": "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
-        "mode": "0o600",
-        "sha256": "1f68394acb4dc781b4f029497a0724024de20494d4d7954118028dc332f45f2f",
-        "size": 63338,
-        "source_mode": "0o600",
-        "source_sha256": "d547474784799262d69fad2429357c95f0bd2397b39f7829e9d4c21d8e644f36",
-        "source_size": 63207
-      },
-      {
-        "action": "modify",
-        "path": "feature/workspace/src/main/res/values/strings.xml",
-        "mode": "0o600",
-        "sha256": "5bcb23eae3018a9345deaf2011ee40a4f24b0286148b92c928909f9ad3db4898",
-        "size": 56239,
-        "source_mode": "0o600",
-        "source_sha256": "834095e92f3e9cc69102c168287148d0b7c5a2574f432898dd5a4de58c585cda",
-        "source_size": 56118
-      },
-      {
-        "action": "add",
-        "path": "feature/workspace/src/test/java/com/mikeyphw/studyflow/feature/workspace/Ov15WorkspaceHonestyContractsTest.kt",
-        "mode": "0o644",
-        "sha256": "0d3ba627370b65b42f953c81ca37d063fa3b15f4a0a0de8d5506fcb48a9b1950",
-        "size": 1138
-      },
-      {
-        "action": "add",
-        "path": "scripts/validate_ov15_android_product_flow_honesty.sh",
+        "path": "scripts/validate_ov16_attention_scheduler_wakeups.sh",
         "mode": "0o755",
-        "sha256": "00c55c2f62fdba4935e5e5299284e62d224bfa07b3daaeae86c479aa8668e82b",
-        "size": 85
+        "sha256": "87916ed41f3725095bb534dd4be9147c7a498eee0a8773574e41a49368d86a36",
+        "size": 282
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov15_android_product_flow_honesty.py",
+        "path": "scripts/verify_ov16_attention_scheduler_wakeups.py",
         "mode": "0o755",
-        "sha256": "ac49200e64856cb6a118ed5b8c566839bf3939dc9cbbc5ebc2a6ebfc7c569294",
-        "size": 3330
+        "sha256": "8cddf215b96f71f87e9f5b7ae54f77e9fbcd747b40b2cfba05fc1f61aed38a83",
+        "size": 3995
       }
     ]
   }

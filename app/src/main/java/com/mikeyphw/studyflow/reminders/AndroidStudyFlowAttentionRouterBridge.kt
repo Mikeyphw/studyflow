@@ -1,5 +1,7 @@
 package com.mikeyphw.studyflow.reminders
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRouter
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionDeliveryRoute
@@ -16,6 +18,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkPeerDescriptor
 import com.mikeyphw.studyflow.core.link.StudyFlowPresenceView
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
+import com.mikeyphw.studyflow.widget.StudyFlowTodayWidgetProvider
 
 object AndroidStudyFlowAttentionRouterBridge {
     fun localCapability(
@@ -25,14 +28,15 @@ object AndroidStudyFlowAttentionRouterBridge {
         nowEpochMillis: Long,
     ): StudyFlowAttentionDeviceCapability {
         val capability = coordinator.platformCapability()
+        val surfaces = buildList {
+            add(StudyFlowAttentionDeliverySurface.ANDROID_ALARM)
+            if (capability.notificationsAllowed) add(StudyFlowAttentionDeliverySurface.SYSTEM_NOTIFICATION)
+            if (hasCompactSurface(context)) add(StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE)
+        }
         return StudyFlowAttentionDeviceCapability(
             peer = peer,
             availability = StudyFlowAttentionDeviceAvailability.ONLINE,
-            deliverySurfaces = listOf(
-                StudyFlowAttentionDeliverySurface.ANDROID_ALARM,
-                StudyFlowAttentionDeliverySurface.SYSTEM_NOTIFICATION,
-                StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE,
-            ),
+            deliverySurfaces = surfaces,
             notificationPermissionGranted = capability.notificationsAllowed,
             primaryUserDevice = true,
             designatedNotifier = true,
@@ -93,4 +97,11 @@ object AndroidStudyFlowAttentionRouterBridge {
         route.deliverable && localDeviceId in route.targetDeviceIds
 
     fun router(): StudyFlowAttentionDeliveryRouter = StudyFlowAttentionDeliveryRouter()
+
+    private fun hasCompactSurface(context: Context): Boolean {
+        val appContext = context.applicationContext
+        val manager = AppWidgetManager.getInstance(appContext)
+        val component = ComponentName(appContext, StudyFlowTodayWidgetProvider::class.java)
+        return manager.getAppWidgetIds(component).isNotEmpty()
+    }
 }

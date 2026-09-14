@@ -89,13 +89,13 @@ object StudyFlowWidgetSnapshotProjector {
             ?.takeIf { it.status == StudySessionStatus.RUNNING }
             ?.let { nowEpochMillis + MinimumRefreshDelayMillis }
         val nextRefresh = listOfNotNull(
-            nextActivity?.scheduledStartEpochMillis?.takeIf { it > nowEpochMillis + MinimumRefreshDelayMillis },
+            nextActivity?.scheduledStartEpochMillis?.takeIf { it >= nowEpochMillis },
             currentBlockRecheck,
             nextUpcomingReview,
             sessionFinish,
             sessionMinuteTick,
             nextMidnight,
-        ).filter { it >= nowEpochMillis + MinimumRefreshDelayMillis }
+        ).filter { it >= nowEpochMillis }
             .minOrNull()
             ?: nextMidnight
 
