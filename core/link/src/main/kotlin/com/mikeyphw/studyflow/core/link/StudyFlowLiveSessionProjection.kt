@@ -157,12 +157,14 @@ data class StudyFlowLiveSessionEvent(
     val participant: StudyFlowLiveSessionParticipant? = null,
     val completionOperationId: StudyFlowOperationId? = null,
     val occurredAtEpochMillis: Long,
+    val fencingToken: String? = null,
     val payload: JsonObject = JsonObject(emptyMap()),
 ) {
     init {
         require(sessionEpoch >= 1L) { "Live session event epoch must be at least 1" }
         require(sequence >= 1L) { "Live session event sequence must be at least 1" }
         require(occurredAtEpochMillis >= 0L) { "Live session event time must not be negative" }
+        require(fencingToken == null || fencingToken.isNotBlank()) { "Live session fencing token must not be blank" }
         if (kind == StudyFlowLiveSessionEventKind.COMPLETED) {
             requireNotNull(completionOperationId) { "Completion events require a completion operation ID" }
         }
@@ -212,7 +214,19 @@ class StudyFlowLiveSessionReducer(initialSnapshot: StudyFlowLiveSessionSnapshot)
 
     fun snapshot(): StudyFlowLiveSessionSnapshot = synchronized(this) { current }
 
+    fun applyVerified(event: StudyFlowLiveSessionEvent): StudyFlowLiveSessionApplyResult = synchronized(this) {
+        when (val guard = StudyFlowLiveSessionFencingPolicy.validate(current, event)) {
+            is StudyFlowLiveSessionApplyResult.Rejected -> return guard
+            else -> Unit
+        }
+        applyLocked(event)
+    }
+
     fun apply(event: StudyFlowLiveSessionEvent): StudyFlowLiveSessionApplyResult = synchronized(this) {
+        applyLocked(event)
+    }
+
+    private fun applyLocked(event: StudyFlowLiveSessionEvent): StudyFlowLiveSessionApplyResult {
         if (event.eventId in appliedEvents) return StudyFlowLiveSessionApplyResult.Duplicate
         if (event.workspaceId != current.workspaceId) {
             return StudyFlowLiveSessionApplyResult.Rejected("workspace_mismatch")
@@ -259,13 +273,41 @@ class StudyFlowLiveSessionReducer(initialSnapshot: StudyFlowLiveSessionSnapshot)
             updatedAtEpochMillis = event.occurredAtEpochMillis,
         )
         appliedEvents += event.eventId
-        StudyFlowLiveSessionApplyResult.Applied(current)
+        return StudyFlowLiveSessionApplyResult.Applied(current)
     }
 
     private fun mergeParticipant(event: StudyFlowLiveSessionEvent): List<StudyFlowLiveSessionParticipant> {
         val incoming = event.participant ?: return current.participants
         return (current.participants.filter { it.device.deviceId != incoming.device.deviceId } + incoming)
             .sortedBy { it.device.deviceId.value }
+    }
+}
+
+object StudyFlowLiveSessionFencingPolicy {
+    private val executorOnlyKinds = setOf(
+        StudyFlowLiveSessionEventKind.CURSOR,
+        StudyFlowLiveSessionEventKind.ANSWER_RECORDED,
+        StudyFlowLiveSessionEventKind.COMPLETED,
+    )
+
+    fun validate(
+        current: StudyFlowLiveSessionSnapshot,
+        event: StudyFlowLiveSessionEvent,
+    ): StudyFlowLiveSessionApplyResult {
+        if (event.fencingToken != current.fencingToken) {
+            return StudyFlowLiveSessionApplyResult.Rejected("fencing_token_mismatch")
+        }
+        if (event.cursor.activityId != current.activityId) {
+            return StudyFlowLiveSessionApplyResult.Rejected("activity_mismatch")
+        }
+        if (event.kind in executorOnlyKinds && event.sourceDeviceId != current.activeExecutorDeviceId) {
+            return StudyFlowLiveSessionApplyResult.Rejected("executor_mismatch")
+        }
+        val sourceParticipant = current.participants.firstOrNull { it.device.deviceId == event.sourceDeviceId }
+        if (sourceParticipant == null && event.kind != StudyFlowLiveSessionEventKind.STARTED) {
+            return StudyFlowLiveSessionApplyResult.Rejected("unknown_participant")
+        }
+        return StudyFlowLiveSessionApplyResult.Applied(current)
     }
 }
 
@@ -315,7 +357,7 @@ class StudyFlowLiveSessionContinuityController(
         completionOperationId: StudyFlowOperationId? = null,
     ): StudyFlowLiveSessionApplyResult {
         val before = snapshot()
-        return reducer.apply(
+        return reducer.applyVerified(
             StudyFlowLiveSessionEvent(
                 eventId = eventId,
                 sessionId = before.sessionId,
@@ -327,6 +369,7 @@ class StudyFlowLiveSessionContinuityController(
                 cursor = cursor,
                 completionOperationId = completionOperationId,
                 occurredAtEpochMillis = clock.nowEpochMillis(),
+                fencingToken = before.fencingToken,
             ),
         )
     }
@@ -491,6 +534,7 @@ class StudyFlowPresentationProjectionReceiver(
     private val clock: StudyFlowPeerClock,
 ) {
     private val acceptedProjectionIds = linkedSetOf<StudyFlowProjectionId>()
+    private val acceptedOffers = linkedMapOf<StudyFlowProjectionId, StudyFlowPresentationProjectionOffer>()
     private val consumedFrames = linkedSetOf<StudyFlowMessageId>()
     private val latestFrames = linkedMapOf<StudyFlowProjectionId, StudyFlowPresentationFrame>()
 
@@ -509,13 +553,22 @@ class StudyFlowPresentationProjectionReceiver(
         val missing = offer.requiredCapabilities.filter { it !in sinkCapabilities }
         if (missing.isNotEmpty()) return StudyFlowPresentationApplyResult.Rejected("missing_capability")
         acceptedProjectionIds += offer.projectionId
+        acceptedOffers[offer.projectionId] = offer
         StudyFlowPresentationApplyResult.Accepted(activeFrame = null)
     }
 
     fun applyFrame(frame: StudyFlowPresentationFrame): StudyFlowPresentationApplyResult = synchronized(this) {
         if (frame.frameId in consumedFrames) return StudyFlowPresentationApplyResult.Duplicate
-        if (frame.projectionId !in acceptedProjectionIds) {
-            return StudyFlowPresentationApplyResult.Rejected("projection_not_accepted")
+        val offer = acceptedOffers[frame.projectionId]
+            ?: return StudyFlowPresentationApplyResult.Rejected("projection_not_accepted")
+        if (frame.workspaceId != offer.workspaceId) {
+            return StudyFlowPresentationApplyResult.Rejected("workspace_mismatch")
+        }
+        if (frame.sourceDeviceId != offer.sourceDevice.deviceId) {
+            return StudyFlowPresentationApplyResult.Rejected("wrong_source")
+        }
+        if (frame.contentHash != offer.contentHash) {
+            return StudyFlowPresentationApplyResult.Rejected("content_hash_mismatch")
         }
         val latest = latestFrames[frame.projectionId]
         if (latest != null && frame.sequence <= latest.sequence) {

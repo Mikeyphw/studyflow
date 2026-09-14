@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.core.link
 
 import java.security.MessageDigest
+import java.util.Base64
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -489,6 +490,8 @@ class StudyFlowMaterialStreamReducer(
 ) {
     private val acceptedOffers = linkedMapOf<StudyFlowMaterialStreamId, StudyFlowMaterialStreamOffer>()
     private val receivedChunks = linkedMapOf<StudyFlowMaterialStreamId, LinkedHashSet<Int>>()
+    private val assembledBytes = linkedMapOf<StudyFlowMaterialStreamId, java.io.ByteArrayOutputStream>()
+    private val completedStreams = linkedSetOf<StudyFlowMaterialStreamId>()
 
     fun accept(offer: StudyFlowMaterialStreamOffer): Boolean = synchronized(this) {
         if (!offer.accepts(localDevice, clock.nowEpochMillis())) return false
@@ -506,20 +509,50 @@ class StudyFlowMaterialStreamReducer(
         if (chunk.sourceDeviceId != offer.sourceDevice.deviceId) {
             return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "wrong_source")
         }
-        if (chunk.byteOffset != chunk.chunkIndex.toLong() * offer.chunkSize.toLong()) {
-            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "unexpected_offset")
+        if (chunk.streamId in completedStreams) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.DUPLICATE, null)
+        }
+        val bytes = runCatching { Base64.getDecoder().decode(chunk.bytesBase64) }.getOrElse {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "invalid_base64")
+        }
+        if (sha256Hex(bytes) != chunk.chunkSha256) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "chunk_hash_mismatch")
         }
         val chunks = receivedChunks.getOrPut(chunk.streamId) { linkedSetOf() }
         if (chunk.chunkIndex in chunks) {
             return ack(chunk, StudyFlowMaterialChunkStatus.DUPLICATE, null)
         }
-        chunks += chunk.chunkIndex
-        val status = if (chunk.finalChunk) {
-            StudyFlowMaterialChunkStatus.COMPLETE
-        } else {
-            StudyFlowMaterialChunkStatus.ACCEPTED
+        val expectedIndex = chunks.size
+        if (chunk.chunkIndex != expectedIndex) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "out_of_order_chunk")
         }
-        return ack(chunk, status, null)
+        val expectedOffset = chunks.sumOf { index ->
+            if (index < expectedIndex) offer.chunkSize.toLong() else 0L
+        }
+        val assembled = assembledBytes.getOrPut(chunk.streamId) { java.io.ByteArrayOutputStream() }
+        if (chunk.byteOffset != assembled.size().toLong() || chunk.byteOffset != expectedOffset) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "unexpected_offset")
+        }
+        if (!chunk.finalChunk && bytes.size != offer.chunkSize) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "short_non_final_chunk")
+        }
+        val wouldTotal = assembled.size().toLong() + bytes.size.toLong()
+        if (wouldTotal > offer.totalBytes) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "stream_too_large")
+        }
+        assembled.write(bytes)
+        chunks += chunk.chunkIndex
+        if (!chunk.finalChunk) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.ACCEPTED, null)
+        }
+        if (wouldTotal != offer.totalBytes) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "incomplete_final_chunk")
+        }
+        if (sha256Hex(assembled.toByteArray()) != offer.contentSha256) {
+            return ack(chunk, StudyFlowMaterialChunkStatus.REJECTED, "content_hash_mismatch")
+        }
+        completedStreams += chunk.streamId
+        return ack(chunk, StudyFlowMaterialChunkStatus.COMPLETE, null)
     }
 
     private fun ack(

@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.core.link
 
 import java.security.MessageDigest
+import java.util.Base64
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -100,6 +101,7 @@ data class StudyFlowShareImportOffer(
     val mimeType: String? = null,
     val previewText: String? = null,
     val contentSha256: String,
+    val contentBytesBase64: String? = null,
     val requiredCapabilities: List<StudyFlowLinkCapability>,
     val createdAtEpochMillis: Long,
     val expiresAtEpochMillis: Long = createdAtEpochMillis + DefaultShareImportTtlMillis,
@@ -110,6 +112,9 @@ data class StudyFlowShareImportOffer(
         require(mimeType == null || mimeType.contains('/')) { "Share/import MIME type must be explicit" }
         require(previewText == null || previewText.length <= 16_384) { "Share/import preview must be bounded" }
         require(shareImportSha256Pattern.matches(contentSha256)) { "Share/import content hash must be SHA-256 hex" }
+        require(contentBytesBase64 == null || contentBytesBase64.isNotBlank()) {
+            "Share/import content bytes must not be blank when supplied"
+        }
         require(requiredCapabilities.isNotEmpty()) { "Share/import route must require at least one capability" }
         require(requiredCapabilities.distinct().size == requiredCapabilities.size) {
             "Share/import capabilities must be unique"
@@ -138,6 +143,24 @@ data class StudyFlowShareImportOffer(
             return false
         }
         return requiredCapabilities.all { it in target.capabilities }
+    }
+
+    fun verifiedContentBytes(): ByteArray? {
+        val encoded = contentBytesBase64 ?: return null
+        val bytes = runCatching { Base64.getDecoder().decode(encoded) }.getOrNull() ?: return null
+        val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
+            .joinToString("") { byte -> "%02x".format(byte) }
+        return if (digest == contentSha256) bytes else null
+    }
+}
+
+object StudyFlowShareImportPayloadPolicy {
+    fun validateCompleteContent(offer: StudyFlowShareImportOffer): String? {
+        if (!offer.isWriteIntent && offer.contentBytesBase64 == null) return null
+        if (offer.verifiedContentBytes() == null) {
+            return if (offer.contentBytesBase64 == null) "missing_content_bytes" else "content_hash_mismatch"
+        }
+        return null
     }
 }
 
@@ -190,8 +213,17 @@ class StudyFlowShareImportReducer(
         if (delivery.offer.isExpired(clock.nowEpochMillis())) {
             return delivery.ack(StudyFlowShareImportStatus.EXPIRED, "expired")
         }
+        if (delivery.offer.sourceDevice.deviceId != delivery.sourceDeviceId) {
+            return delivery.ack(StudyFlowShareImportStatus.REJECTED, "wrong_source")
+        }
+        if (delivery.offer.targetDeviceId != null && delivery.offer.targetDeviceId != delivery.targetDeviceId) {
+            return delivery.ack(StudyFlowShareImportStatus.REJECTED, "inner_target_mismatch")
+        }
         if (!delivery.offer.accepts(localDevice, clock.nowEpochMillis())) {
             return delivery.ack(StudyFlowShareImportStatus.REJECTED, "missing_capability")
+        }
+        StudyFlowShareImportPayloadPolicy.validateCompleteContent(delivery.offer)?.let { reason ->
+            return delivery.ack(StudyFlowShareImportStatus.REJECTED, reason)
         }
         if (delivery.offer.importId in acceptedImports) {
             return delivery.ack(StudyFlowShareImportStatus.DUPLICATE, "duplicate")
@@ -416,6 +448,8 @@ object StudyFlowShareImportDefaults {
         val digest = MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8))
         return digest.joinToString("") { byte -> "%02x".format(byte) }
     }
+
+    fun base64Utf8(text: String): String = Base64.getEncoder().encodeToString(text.toByteArray(Charsets.UTF_8))
 
     fun textCapabilitiesFor(intent: StudyFlowShareImportIntent): List<StudyFlowLinkCapability> = when (intent) {
         StudyFlowShareImportIntent.CLIPBOARD_PREVIEW -> listOf(StudyFlowLinkCapabilities.ClipboardRead)

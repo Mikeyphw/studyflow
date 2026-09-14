@@ -23,6 +23,7 @@ class StudyFlowShareImportConflictReviewTest {
             mimeType = "text/markdown",
             previewText = "# Biology",
             contentSha256 = StudyFlowShareImportDefaults.sha256Hex("# Biology"),
+            contentBytesBase64 = StudyFlowShareImportDefaults.base64Utf8("# Biology"),
             requiredCapabilities = StudyFlowShareImportDefaults.textCapabilitiesFor(
                 StudyFlowShareImportIntent.SHARE_IMPORT,
             ),
@@ -117,6 +118,7 @@ class StudyFlowShareImportConflictReviewTest {
         mimeType = "text/plain",
         previewText = "Remember this",
         contentSha256 = StudyFlowShareImportDefaults.sha256Hex("Remember this"),
+        contentBytesBase64 = StudyFlowShareImportDefaults.base64Utf8("Remember this"),
         requiredCapabilities = StudyFlowShareImportDefaults.textCapabilitiesFor(intent),
         createdAtEpochMillis = 1_000L,
     )

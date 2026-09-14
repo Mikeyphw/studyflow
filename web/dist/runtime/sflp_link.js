@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION = exports.STUDYFLOW_SHARE_IMPORT_INTENTS = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowAttentionLedgerSnapshotSchemaVersion = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebSocketRpcConnection = exports.StudyFlowWebPeerPersistence = exports.StudyFlowWebCryptoTrustKeyStore = exports.StudyFlowWebTerminalPeerError = exports.StudyFlowWebSyncIntegrityError = exports.StudyFlowWebRpcError = void 0;
+exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION = exports.STUDYFLOW_SHARE_IMPORT_INTENTS = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowAttentionLedgerSnapshotSchemaVersion = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebHashing = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebSocketRpcConnection = exports.StudyFlowWebPeerPersistence = exports.StudyFlowWebCryptoTrustKeyStore = exports.StudyFlowWebTerminalPeerError = exports.StudyFlowWebSyncIntegrityError = exports.StudyFlowWebRpcError = void 0;
 exports.decodeStudyFlowPairingQr = decodeStudyFlowPairingQr;
 exports.installStudyFlowWebSflpPeer = installStudyFlowWebSflpPeer;
 const presence_js_1 = require("./presence.js");
@@ -425,9 +425,12 @@ class StudyFlowWebTvConnectivityController {
         this.peer = peer;
         if (peer.identity.clientKind !== "web_tv")
             throw new Error("SFLP12 requires a web_tv peer");
+        this.controlRuntime = new StudyFlowControlInputRuntime(peer.identity);
     }
+    rememberControlLease(lease) { return this.controlRuntime.rememberControlLease(lease); }
     createReceiverOffer(workspaceId, endpointHints = this.peer.createPairingOffer().endpointHints) { const pairing = this.peer.createPairingOffer(endpointHints); const createdAtEpochMillis = Date.now(); const offer = { type: "studyflow.sflp.web_tv.receiver.v1", receiver: this.peer.identity, workspaceId, pairingCode: pairing.pairingCode, endpointHints, createdAtEpochMillis, expiresAtEpochMillis: pairing.expiresAtEpochMillis, qrPayload: "" }; offer.qrPayload = JSON.stringify({ ...offer, qrPayload: undefined }); return offer; }
-    acceptRemoteInput(command) { return command.targetDeviceId === this.peer.identity.deviceId && ["dpad_up", "dpad_down", "dpad_left", "dpad_right", "select", "back", "text"].includes(command.kind); }
+    acceptRemoteInput(command) { if (command.sessionId === undefined || command.workspaceId === undefined || command.leaseToken === undefined || command.sequence === undefined)
+        return false; const result = this.controlRuntime.applyControlCommand({ messageId: command.commandId, sessionId: command.sessionId, workspaceId: command.workspaceId, sourceDeviceId: command.sourceDeviceId, targetDeviceId: command.targetDeviceId, leaseToken: command.leaseToken, sequence: command.sequence, kind: command.kind, occurredAtEpochMillis: command.issuedAtEpochMillis, payload: command.text ? { text: command.text } : undefined }); return result.status === "accepted"; }
     acceptProjection(snapshot) { return snapshot.kind === "presentation_projection" && snapshot.continuityMode === "presentation_sink" && snapshot.requiredCapabilities.includes("device.presentation_sink") && snapshot.requiredCapabilities.includes("dpad.input"); }
 }
 exports.StudyFlowWebTvConnectivityController = StudyFlowWebTvConnectivityController;
@@ -447,6 +450,7 @@ class StudyFlowWebActivityHandoffController {
     resumePayload(offer) { return { type: "studyflow.sflp.activity_handoff.v1", handoffId: offer.handoffId, workspaceId: offer.activity.workspaceId, activityId: offer.activity.activityId, cursor: offer.activity.cursor }; }
 }
 exports.StudyFlowWebActivityHandoffController = StudyFlowWebActivityHandoffController;
+exports.StudyFlowWebHashing = { sha256HexBytes, base64ToBytes, utf8Base64 };
 function installStudyFlowWebSflpPeer(kind = "web") { if (typeof globalThis.localStorage === "undefined")
     return null; const peer = new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(globalThis.localStorage), kind); globalThis.studyFlowSflpPeer = peer; globalThis.dispatchEvent(new CustomEvent("studyflow:sflp-peer-ready", { detail: { deviceId: peer.identity.deviceId, clientKind: peer.identity.clientKind } })); return peer; }
 exports.SFLP14_LIVE_CURSOR_WIRE_NAME = "session.live_cursor";
@@ -458,20 +462,25 @@ class StudyFlowWebLiveSessionContinuityController {
     }
     current() { return JSON.parse(JSON.stringify(this.snapshot)); }
     applyEvent(event) { var _a; if (this.applied.has(event.eventId))
-        return "duplicate"; if (event.sessionEpoch < this.snapshot.sessionEpoch)
+        return "duplicate"; if (event.sessionId !== this.snapshot.sessionId)
+        return "session_mismatch"; if (event.workspaceId !== this.snapshot.workspaceId)
+        return "workspace_mismatch"; if (event.cursor.activityId !== this.snapshot.activityId)
+        return "activity_mismatch"; if (event.fencingToken !== this.snapshot.fencingToken)
+        return "fencing_token_mismatch"; if (["cursor", "answer_recorded", "completed"].includes(event.kind) && event.sourceDeviceId !== this.snapshot.activeExecutorDeviceId)
+        return "executor_mismatch"; if (event.sessionEpoch < this.snapshot.sessionEpoch)
         return "stale_epoch"; if (event.sessionEpoch === this.snapshot.sessionEpoch && event.sequence <= this.snapshot.lastSequence)
         return "stale_sequence"; if (this.snapshot.state === "completed")
         return "already_completed"; this.snapshot = { ...this.snapshot, state: event.kind === "paused" ? "paused" : event.kind === "completed" ? "completed" : "running", cursor: event.cursor, lastSequence: event.sequence, sessionEpoch: event.sessionEpoch, completionOperationId: (_a = event.completionOperationId) !== null && _a !== void 0 ? _a : this.snapshot.completionOperationId }; this.applied.add(event.eventId); return "applied"; }
     pause(sourceDeviceId) { return this.event(sourceDeviceId, "paused"); }
     resume(sourceDeviceId) { return this.event(sourceDeviceId, "resumed"); }
     complete(sourceDeviceId, completionOperationId) { return this.event(sourceDeviceId, "completed", completionOperationId); }
-    event(sourceDeviceId, kind, completionOperationId) { return { eventId: `live-${kind}-${Date.now()}`, sessionId: this.snapshot.sessionId, workspaceId: this.snapshot.workspaceId, sourceDeviceId, sessionEpoch: this.snapshot.sessionEpoch, sequence: this.snapshot.lastSequence + 1, kind, cursor: this.snapshot.cursor, completionOperationId }; }
+    event(sourceDeviceId, kind, completionOperationId) { return { eventId: `live-${kind}-${Date.now()}`, sessionId: this.snapshot.sessionId, workspaceId: this.snapshot.workspaceId, sourceDeviceId, sessionEpoch: this.snapshot.sessionEpoch, sequence: this.snapshot.lastSequence + 1, kind, cursor: this.snapshot.cursor, completionOperationId, fencingToken: this.snapshot.fencingToken }; }
 }
 exports.StudyFlowWebLiveSessionContinuityController = StudyFlowWebLiveSessionContinuityController;
 class StudyFlowWebPresentationProjectionController {
     constructor(peer) {
         this.peer = peer;
-        this.accepted = new Set();
+        this.accepted = new Map();
         this.frames = {};
     }
     createProjectionOffer(workspaceId, title, contentHash, targetDeviceId) { const now = Date.now(); return { projectionId: `projection-${this.peer.identity.deviceId}-${now}`, workspaceId, sourceDevice: this.peer.identity, targetDeviceId, contentKind: "document", title, contentHash, requiredCapabilities: ["workspace.read", "device.presentation_sink", "video.output"], createdAtEpochMillis: now, expiresAtEpochMillis: now + 120000 }; }
@@ -479,8 +488,11 @@ class StudyFlowWebPresentationProjectionController {
         return false; if (offer.targetDeviceId && offer.targetDeviceId !== this.peer.identity.deviceId)
         return false; const caps = new Set(this.peer.identity.capabilities); if (offer.requiredCapabilities.some(capability => !caps.has(capability)))
         return false; if (offer.requiredCapabilities.some(capability => capability.endsWith(".write") || capability === "library.import" || capability === "writing.edit"))
-        return false; this.accepted.add(offer.projectionId); return true; }
-    applyProjectionFrame(frame) { if (!this.accepted.has(frame.projectionId))
+        return false; this.accepted.set(offer.projectionId, offer); return true; }
+    applyProjectionFrame(frame) { const offer = this.accepted.get(frame.projectionId); if (!offer)
+        return false; if (frame.workspaceId !== offer.workspaceId)
+        return false; if (frame.sourceDeviceId !== offer.sourceDevice.deviceId)
+        return false; if (frame.contentHash !== offer.contentHash)
         return false; const current = this.frames[frame.projectionId]; if (current && frame.sequence <= current.sequence)
         return false; this.frames[frame.projectionId] = frame; return true; }
     acknowledgeProjectionFrame(projectionId) { const frame = this.frames[projectionId]; if (!frame)
@@ -640,12 +652,97 @@ function stableAttentionOccurrenceId(parts) {
     }
     return `attn-${(hash >>> 0).toString(16).padStart(8, '0')}`;
 }
+function base64ToBytes(encoded) {
+    if (!encoded || typeof encoded !== 'string')
+        return null;
+    try {
+        const bufferCtor = globalThis.Buffer;
+        if (bufferCtor)
+            return new Uint8Array(bufferCtor.from(encoded, 'base64'));
+        const raw = globalThis.atob(encoded);
+        const out = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++)
+            out[i] = raw.charCodeAt(i);
+        return out;
+    }
+    catch {
+        return null;
+    }
+}
+function sha256HexBytes(input) {
+    const k = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+    ];
+    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    const bytes = new Uint8Array((((input.length + 9 + 63) >> 6) << 6));
+    bytes.set(input);
+    bytes[input.length] = 0x80;
+    const bitLength = input.length * 8;
+    const view = new DataView(bytes.buffer);
+    view.setUint32(bytes.length - 4, bitLength >>> 0);
+    const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    const w = new Array(64);
+    for (let offset = 0; offset < bytes.length; offset += 64) {
+        for (let i = 0; i < 16; i++)
+            w[i] = view.getUint32(offset + i * 4);
+        for (let i = 16; i < 64; i++) {
+            const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+            const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+            w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+        }
+        let [a, b, c, d, e, f, g, hh] = h;
+        for (let i = 0; i < 64; i++) {
+            const s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+            const ch = (e & f) ^ (~e & g);
+            const temp1 = (hh + s1 + ch + k[i] + w[i]) >>> 0;
+            const s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+            const maj = (a & b) ^ (a & c) ^ (b & c);
+            const temp2 = (s0 + maj) >>> 0;
+            hh = g;
+            g = f;
+            f = e;
+            e = (d + temp1) >>> 0;
+            d = c;
+            c = b;
+            b = a;
+            a = (temp1 + temp2) >>> 0;
+        }
+        h[0] = (h[0] + a) >>> 0;
+        h[1] = (h[1] + b) >>> 0;
+        h[2] = (h[2] + c) >>> 0;
+        h[3] = (h[3] + d) >>> 0;
+        h[4] = (h[4] + e) >>> 0;
+        h[5] = (h[5] + f) >>> 0;
+        h[6] = (h[6] + g) >>> 0;
+        h[7] = (h[7] + hh) >>> 0;
+    }
+    return h.map(x => x.toString(16).padStart(8, '0')).join('');
+}
+function utf8Base64(value) {
+    const bytes = new TextEncoder().encode(value);
+    const bufferCtor = globalThis.Buffer;
+    if (bufferCtor)
+        return bufferCtor.from(bytes).toString('base64');
+    let raw = '';
+    for (const byte of bytes)
+        raw += String.fromCharCode(byte);
+    return globalThis.btoa(raw);
+}
 class StudyFlowNotificationMediaRuntime {
     constructor(peer, attentionStorage = new StudyFlowBrowserAttentionLedgerStorage(`studyflow.attention.v1.${peer.deviceId}`)) {
         this.peer = peer;
         this.attentionStorage = attentionStorage;
         this.materialStreams = new Map();
         this.materialChunks = new Map();
+        this.materialBytes = new Map();
+        this.completedMaterialStreams = new Set();
         this.attentionLedger = this.loadAttentionLedger();
     }
     applyNotificationDelivery(delivery) {
@@ -761,20 +858,46 @@ class StudyFlowNotificationMediaRuntime {
         return true;
     }
     applyMaterialChunk(chunk) {
-        var _a;
+        var _a, _b;
         const offer = this.materialStreams.get(chunk.streamId);
         if (!offer)
             return { status: 'rejected', reason: 'unknown_stream' };
         if (chunk.targetDeviceId !== this.peer.deviceId)
             return { status: 'rejected', reason: 'wrong_target' };
-        if (chunk.byteOffset !== chunk.chunkIndex * offer.chunkSize)
-            return { status: 'rejected', reason: 'unexpected_offset' };
+        if (chunk.sourceDeviceId && chunk.sourceDeviceId !== offer.sourceDeviceId)
+            return { status: 'rejected', reason: 'wrong_source' };
+        if (this.completedMaterialStreams.has(chunk.streamId))
+            return { status: 'duplicate', acknowledgedChunkIndex: chunk.chunkIndex };
+        const bytes = chunk.bytesBase64 ? base64ToBytes(chunk.bytesBase64) : null;
+        if (!bytes || !chunk.chunkSha256)
+            return { status: 'rejected', reason: 'missing_chunk_bytes' };
+        if (sha256HexBytes(bytes) !== chunk.chunkSha256)
+            return { status: 'rejected', reason: 'chunk_hash_mismatch' };
         const chunks = (_a = this.materialChunks.get(chunk.streamId)) !== null && _a !== void 0 ? _a : new Set();
         if (chunks.has(chunk.chunkIndex))
             return { status: 'duplicate', acknowledgedChunkIndex: chunk.chunkIndex };
+        if (chunk.chunkIndex !== chunks.size)
+            return { status: 'rejected', reason: 'out_of_order_chunk' };
+        const assembled = (_b = this.materialBytes.get(chunk.streamId)) !== null && _b !== void 0 ? _b : [];
+        const expectedOffset = assembled.length;
+        if (chunk.byteOffset !== expectedOffset || chunk.byteOffset !== chunk.chunkIndex * offer.chunkSize)
+            return { status: 'rejected', reason: 'unexpected_offset' };
+        if (!chunk.finalChunk && bytes.length !== offer.chunkSize)
+            return { status: 'rejected', reason: 'short_non_final_chunk' };
+        if (assembled.length + bytes.length > offer.totalBytes)
+            return { status: 'rejected', reason: 'stream_too_large' };
+        assembled.push(...bytes);
         chunks.add(chunk.chunkIndex);
         this.materialChunks.set(chunk.streamId, chunks);
-        return { status: chunk.finalChunk ? 'complete' : 'accepted', acknowledgedChunkIndex: chunk.chunkIndex };
+        this.materialBytes.set(chunk.streamId, assembled);
+        if (!chunk.finalChunk)
+            return { status: 'accepted', acknowledgedChunkIndex: chunk.chunkIndex };
+        if (assembled.length !== offer.totalBytes)
+            return { status: 'rejected', reason: 'incomplete_final_chunk' };
+        if (sha256HexBytes(new Uint8Array(assembled)) !== offer.contentSha256)
+            return { status: 'rejected', reason: 'content_hash_mismatch' };
+        this.completedMaterialStreams.add(chunk.streamId);
+        return { status: 'complete', acknowledgedChunkIndex: chunk.chunkIndex };
     }
     legacyNotificationOccurrence(delivery) {
         var _a, _b, _c, _d, _e, _f;
@@ -837,12 +960,29 @@ class StudyFlowShareImportConflictRuntime {
     localClientKind() { var _a, _b; return (_a = this.peer.clientKind) !== null && _a !== void 0 ? _a : (_b = this.peer.identity) === null || _b === void 0 ? void 0 : _b.clientKind; }
     isReadOnlyTv() { return this.localClientKind() === 'android_tv' || this.localClientKind() === 'web_tv'; }
     applyShareImportDelivery(delivery) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e;
         const localId = (_a = this.peer.deviceId) !== null && _a !== void 0 ? _a : (_b = this.peer.identity) === null || _b === void 0 ? void 0 : _b.deviceId;
         if (delivery.targetDeviceId !== localId)
             return { status: 'rejected', reason: 'wrong_target' };
+        if (delivery.offer.targetDeviceId && delivery.offer.targetDeviceId !== delivery.targetDeviceId)
+            return { status: 'rejected', reason: 'inner_target_mismatch' };
+        const source = delivery.offer.sourceDevice;
+        if ((source === null || source === void 0 ? void 0 : source.deviceId) && source.deviceId !== delivery.sourceDeviceId)
+            return { status: 'rejected', reason: 'wrong_source' };
+        if (delivery.offer.expiresAtEpochMillis < Date.now())
+            return { status: 'expired', reason: 'expired' };
+        const caps = new Set((_e = (_c = this.peer.capabilities) !== null && _c !== void 0 ? _c : (_d = this.peer.identity) === null || _d === void 0 ? void 0 : _d.capabilities) !== null && _e !== void 0 ? _e : []);
+        if (delivery.offer.requiredCapabilities.some(capability => !caps.has(capability)))
+            return { status: 'rejected', reason: 'missing_capability' };
         if (this.isReadOnlyTv() && (delivery.offer.intent === 'clipboard_apply' || delivery.offer.intent === 'share_import')) {
             return { status: 'rejected', reason: 'tv_write_forbidden' };
+        }
+        if (delivery.offer.intent === 'clipboard_apply' || delivery.offer.intent === 'share_import' || delivery.offer.contentBytesBase64) {
+            const bytes = delivery.offer.contentBytesBase64 ? base64ToBytes(delivery.offer.contentBytesBase64) : null;
+            if (!bytes)
+                return { status: 'rejected', reason: 'missing_content_bytes' };
+            if (sha256HexBytes(bytes) !== delivery.offer.contentSha256)
+                return { status: 'rejected', reason: 'content_hash_mismatch' };
         }
         if (this.imports.has(delivery.offer.importId))
             return { status: 'duplicate' };
@@ -875,6 +1015,8 @@ class StudyFlowAccountBackupReleaseRuntime {
     applyAccountHandoff(delivery) {
         if (delivery.targetDeviceId !== this.localDeviceId())
             return { status: 'rejected', reason: 'wrong_target' };
+        if (delivery.offer.targetDeviceId && delivery.offer.targetDeviceId !== delivery.targetDeviceId)
+            return { status: 'rejected', reason: 'inner_target_mismatch' };
         if (delivery.offer.expiresAtEpochMillis < Date.now())
             return { status: 'expired', reason: 'expired' };
         if (this.handoffs.has(delivery.offer.handoffId))
@@ -891,6 +1033,8 @@ class StudyFlowAccountBackupReleaseRuntime {
     acceptBackupRestore(plan) {
         if (plan.targetDeviceId !== this.localDeviceId())
             return { status: 'rejected', reason: 'wrong_target' };
+        if (plan.bundle.targetDeviceId && plan.bundle.targetDeviceId !== plan.targetDeviceId)
+            return { status: 'rejected', reason: 'inner_target_mismatch' };
         if (plan.bundle.expiresAtEpochMillis && plan.bundle.expiresAtEpochMillis < Date.now())
             return { status: 'expired', reason: 'expired' };
         if (this.restores.has(plan.restoreId))

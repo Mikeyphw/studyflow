@@ -1,3 +1,12 @@
+## OV12 — SFLP live session, projection, material, share & backup RPC semantics (2026-09-14)
+
+- Added verified live-session fencing across session, workspace, activity and active executor identity.
+- Bound presentation projection frames to the accepted source/workspace/content hash on native and Web.
+- Hardened material streaming with decoded byte assembly, chunk SHA-256, contiguous ordering, final-size and aggregate hash checks.
+- Required complete content bytes for share/import writes and rejected wrong-source, wrong-target and tampered payloads.
+- Hardened account/backup handoff targets and Web-TV remote input with core-equivalent lease/token/sequence semantics.
+- Added `verifyOv12SflpAdvancedRpcSemantics` integrated validation without stopping Gradle daemons.
+
 ## OV11 — SFLP reconciliation, frontier, retry & corruption recovery (2026-09-14)
 
 - Reworked native and Web frontier handling so only contiguous, validated journal history can become acknowledged state; advertised peer frontiers no longer suppress unsent local work.

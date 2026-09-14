@@ -39,6 +39,7 @@ class DesktopShareImportConflictController(
         mimeType = "text/markdown",
         previewText = markdown.take(16_384),
         contentSha256 = StudyFlowShareImportDefaults.sha256Hex(markdown),
+        contentBytesBase64 = StudyFlowShareImportDefaults.base64Utf8(markdown),
         requiredCapabilities = StudyFlowShareImportDefaults.textCapabilitiesFor(StudyFlowShareImportIntent.SHARE_IMPORT),
         createdAtEpochMillis = clock.nowEpochMillis(),
     )

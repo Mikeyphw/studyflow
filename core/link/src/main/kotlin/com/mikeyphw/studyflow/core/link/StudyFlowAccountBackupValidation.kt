@@ -222,6 +222,12 @@ class StudyFlowAccountHandoffReducer(
         if (delivery.offer.isExpired(clock.nowEpochMillis())) {
             return delivery.ack(StudyFlowAccountHandoffStatus.EXPIRED, "expired")
         }
+        if (delivery.offer.sourceDevice.deviceId != delivery.sourceDeviceId) {
+            return delivery.ack(StudyFlowAccountHandoffStatus.REJECTED, "wrong_source")
+        }
+        if (delivery.offer.targetDeviceId != null && delivery.offer.targetDeviceId != delivery.targetDeviceId) {
+            return delivery.ack(StudyFlowAccountHandoffStatus.REJECTED, "inner_target_mismatch")
+        }
         if (!delivery.offer.accepts(localDevice, clock.nowEpochMillis())) {
             return delivery.ack(StudyFlowAccountHandoffStatus.REJECTED, "missing_capability")
         }
@@ -254,6 +260,7 @@ data class StudyFlowBackupBundleManifest(
     val bundleId: StudyFlowBackupBundleId,
     val workspaceId: StudyFlowWorkspaceId,
     val sourceDevice: StudyFlowLinkPeerDescriptor,
+    val targetDeviceId: StudyFlowDeviceId? = null,
     val kind: StudyFlowBackupBundleKind,
     val totalBytes: Long,
     val itemCount: Int,
@@ -286,6 +293,7 @@ data class StudyFlowBackupBundleManifest(
         nowEpochMillis: Long,
     ): Boolean {
         if (isExpired(nowEpochMillis)) return false
+        if (targetDeviceId != null && targetDeviceId != target.deviceId) return false
         val tvClass = target.clientKind == StudyFlowLinkClientKind.ANDROID_TV ||
             target.clientKind == StudyFlowLinkClientKind.WEB_TV
         if (tvClass && mode != StudyFlowBackupRestoreMode.VERIFY_ONLY) return false
@@ -381,6 +389,9 @@ class StudyFlowBackupRestoreReducer(
     private var lastSequence = 0L
 
     fun apply(plan: StudyFlowBackupRestorePlan): StudyFlowBackupRestoreAck {
+        if (plan.bundle.targetDeviceId != null && plan.bundle.targetDeviceId != plan.targetDeviceId) {
+            return plan.ack(StudyFlowBackupRestoreStatus.REJECTED, "inner_target_mismatch")
+        }
         if (!plan.accepts(localDevice, clock.nowEpochMillis())) {
             return plan.ack(StudyFlowBackupRestoreStatus.REJECTED, "not_accepted")
         }

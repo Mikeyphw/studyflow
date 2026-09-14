@@ -46,6 +46,7 @@ class AndroidStudyFlowShareImportBridge(
         mimeType = "text/plain",
         previewText = text.take(16_384),
         contentSha256 = StudyFlowShareImportDefaults.sha256Hex(text),
+        contentBytesBase64 = StudyFlowShareImportDefaults.base64Utf8(text),
         requiredCapabilities = StudyFlowShareImportDefaults.textCapabilitiesFor(intent),
         createdAtEpochMillis = clock.nowEpochMillis(),
     )

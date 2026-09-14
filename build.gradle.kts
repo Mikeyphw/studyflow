@@ -2352,3 +2352,19 @@ tasks.register<Exec>("verifyOv11SflpReconciliationRecovery") {
     )
     commandLine("bash", "scripts/validate_ov11_sflp_reconciliation_recovery.sh")
 }
+
+
+// OV12 — SFLP live session, projection, material, share & backup RPC semantics.
+tasks.register<Exec>("verifyOv12SflpAdvancedRpcSemantics") {
+    group = "verification"
+    description = "Validates OV12 advanced SFLP RPC semantics for live-session fencing, projection, material streaming, share/import, Web-TV input and account/backup targets."
+    dependsOn(
+        ":core:link:test",
+        ":core:tvcontrol:test",
+        ":core:tvlink:compileDebugKotlin",
+        ":app:compileDebugKotlin",
+        ":app-tv:compileDebugKotlin",
+        ":desktopApp:compileKotlin",
+    )
+    commandLine("bash", "scripts/validate_ov12_sflp_advanced_rpc_semantics.sh")
+}

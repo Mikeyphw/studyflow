@@ -110,7 +110,70 @@ object StudyFlowRoutedRpcContracts {
     )
 
     fun supports(name: String): Boolean = name in RequestNames
+
+    /** Minimum sender capability enforced at the authenticated server boundary for authority-bearing RPCs. */
+    fun requiredSenderCapabilities(name: String): Set<StudyFlowLinkCapability> = when (name) {
+        StudyFlowActivityHandoffMessageNames.RemoteInput,
+        StudyFlowControlMessageNames.LeaseGrant,
+        StudyFlowControlMessageNames.Command,
+        StudyFlowControlMessageNames.CommandAck,
+        StudyFlowControlMessageNames.InputOffer,
+        StudyFlowControlMessageNames.InputEvent,
+        StudyFlowControlMessageNames.InputAck,
+        -> setOf(StudyFlowLinkCapabilities.DeviceControl)
+
+        StudyFlowLiveSessionMessageNames.Start,
+        StudyFlowLiveSessionMessageNames.Heartbeat,
+        StudyFlowLiveSessionMessageNames.Cursor,
+        StudyFlowLiveSessionMessageNames.Complete,
+        -> setOf(StudyFlowLinkCapabilities.SessionExecute)
+
+        StudyFlowLiveSessionMessageNames.Join,
+        StudyFlowLiveSessionMessageNames.Pause,
+        StudyFlowLiveSessionMessageNames.Resume,
+        -> setOf(StudyFlowLinkCapabilities.SessionControl)
+
+        StudyFlowPresentationProjectionMessageNames.Offer,
+        StudyFlowPresentationProjectionMessageNames.Frame,
+        StudyFlowPresentationProjectionMessageNames.End,
+        -> setOf(StudyFlowLinkCapabilities.DevicePresentationSource)
+
+        StudyFlowPresentationProjectionMessageNames.Accept,
+        StudyFlowPresentationProjectionMessageNames.Ack,
+        StudyFlowPresentationProjectionMessageNames.Control,
+        -> setOf(StudyFlowLinkCapabilities.DevicePresentationSink)
+
+        StudyFlowNotificationMediaMessageNames.MaterialOffer,
+        StudyFlowNotificationMediaMessageNames.MaterialChunk,
+        -> setOf(StudyFlowLinkCapabilities.LibraryRead)
+
+        StudyFlowShareImportWireNames.ShareImportOffer,
+        StudyFlowShareImportWireNames.ConflictReviewOpen,
+        -> setOf(StudyFlowLinkCapabilities.ShareReceive)
+
+        StudyFlowAccountBackupMessageNames.AccountHandoffOffer,
+        StudyFlowAccountBackupMessageNames.BackupRestorePlan,
+        -> setOf(StudyFlowLinkCapabilities.BackupImport)
+
+        StudyFlowAccountBackupMessageNames.BackupBundleOffer,
+        -> setOf(StudyFlowLinkCapabilities.BackupExport)
+
+        else -> emptySet()
+    }
 }
+
+object StudyFlowAdvancedRpcSemanticHandlers {
+    val serverHandledFamilies: Set<String> = linkedSetOf(
+        StudyFlowLiveSessionMessageNames.Cursor,
+        StudyFlowPresentationProjectionMessageNames.Frame,
+        StudyFlowControlMessageNames.Command,
+        StudyFlowNotificationMediaMessageNames.MaterialChunk,
+        StudyFlowShareImportWireNames.ShareImportOffer,
+        StudyFlowAccountBackupMessageNames.AccountHandoffOffer,
+        StudyFlowAccountBackupMessageNames.BackupRestorePlan,
+    )
+}
+
 
 internal fun StudyFlowRoutedRpcAccepted.toPayload(): JsonObject =
     StudyFlowLinkCodec.encodePayload(StudyFlowRoutedRpcAccepted.serializer(), this)

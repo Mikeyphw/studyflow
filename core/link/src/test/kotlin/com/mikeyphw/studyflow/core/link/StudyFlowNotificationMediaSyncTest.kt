@@ -97,7 +97,7 @@ class StudyFlowNotificationMediaSyncTest {
             mimeType = "application/pdf",
             totalBytes = 6L,
             chunkSize = 3,
-            contentSha256 = "0".repeat(64),
+            contentSha256 = StudyFlowMaterialStreamReducer.sha256Hex("ABCDEF".toByteArray(Charsets.UTF_8)),
             requiredCapabilities = listOf(
                 StudyFlowLinkCapabilities.LibraryRead,
                 StudyFlowLinkCapabilities.DocumentPresent,
@@ -113,7 +113,7 @@ class StudyFlowNotificationMediaSyncTest {
             chunkIndex = 0,
             byteOffset = 0L,
             bytesBase64 = "QUJD",
-            chunkSha256 = "1".repeat(64),
+            chunkSha256 = StudyFlowMaterialStreamReducer.sha256Hex("ABC".toByteArray(Charsets.UTF_8)),
             sentAtEpochMillis = 1_100L,
         )
         assertEquals(StudyFlowMaterialChunkStatus.ACCEPTED, reducer.apply(chunk).status)
