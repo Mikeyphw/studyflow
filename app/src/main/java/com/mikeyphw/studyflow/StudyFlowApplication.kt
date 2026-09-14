@@ -293,7 +293,9 @@ private class DefaultAppContainer(
             reminderDeliveryCoordinator.createNotificationChannels()
         }
         linkPeer.runtime.setNotificationDeliveryHandler(reminderDeliveryCoordinator::receiveRemoteNotification)
-        runCatching { linkPeer.start() }
+        // OV13: Application startup must not call linkPeer.start() automatically.
+        // Local SFLP sockets/discovery are user-enabled and permission-gated by AndroidStudyFlowLinkPeer.
+        linkPeer.startIfUserEnabled()
         startSflpReconciliationDriver()
         retryInitialization()
     }
@@ -451,7 +453,7 @@ private class DefaultAppContainer(
                         area = DiagnosticArea.SYNC_FOUNDATION,
                         action = "sflp-peer-start",
                     ) {
-                        linkPeer.start()
+                        linkPeer.startIfUserEnabled()
                     }
                 } catch (cancelled: CancellationException) {
                     throw cancelled

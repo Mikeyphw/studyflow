@@ -15,11 +15,13 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainAction
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionResult
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingEngine
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingInfo
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingCrypto
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPairingOffer
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationReceipt
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvReceiverEndpoint
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSessionCredential
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireAuthenticator
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireCodec
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireOperation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireProtocol
@@ -30,10 +32,12 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 object StudyFlowTvLocalLinkContract {
@@ -43,6 +47,8 @@ object StudyFlowTvLocalLinkContract {
     const val explicitPairingCodeRequired = true
     const val pairingNonceRequired = true
     const val sessionSecretRequired = true
+    const val sessionSecretNeverOnWire = true
+    const val authenticatedRequestsUseHmacProof = true
     const val sessionsPersistAcrossProcessRestart = true
     const val phoneAndTvShareOneTransportModule = true
     const val transportUsesNoCastSdk = true
@@ -169,36 +175,22 @@ class StudyFlowTvReceiverDiscovery(context: Context) : Closeable {
     private val nsdManager = appContext.getSystemService(Context.NSD_SERVICE) as NsdManager
     private val mainHandler = Handler(Looper.getMainLooper())
     private val receivers = linkedMapOf<String, StudyFlowTvReceiverEndpoint>()
+    private val pendingResolveQueue = ConcurrentLinkedQueue<NsdServiceInfo>()
+    private val resolving = AtomicBoolean(false)
     private var listener: Listener? = null
     private var discovering = false
+    private var desiredDiscovering = false
+    private var lastFailure: String? = null
 
     private val discoveryListener = object : NsdManager.DiscoveryListener {
-        override fun onDiscoveryStarted(serviceType: String) = publishStatus(StudyFlowTvLinkStatus.READY)
+        override fun onDiscoveryStarted(serviceType: String) {
+            lastFailure = null
+            publishStatus(StudyFlowTvLinkStatus.READY)
+        }
 
         override fun onServiceFound(serviceInfo: NsdServiceInfo) {
             if (!serviceInfo.serviceType.startsWith(StudyFlowTvWireProtocol.serviceType.removeSuffix("."))) return
-            runCatching {
-                nsdManager.resolveService(
-                    serviceInfo,
-                    object : NsdManager.ResolveListener {
-                        override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) = Unit
-
-                        override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
-                            val host = serviceInfo.host?.hostAddress ?: return
-                            val port = serviceInfo.port
-                            if (port !in 1..65_535) return
-                            synchronized(receivers) {
-                                receivers[serviceInfo.serviceName] = StudyFlowTvReceiverEndpoint(
-                                    serviceName = serviceInfo.serviceName,
-                                    hostAddress = host,
-                                    port = port,
-                                )
-                            }
-                            publishReceivers()
-                        }
-                    },
-                )
-            }
+            enqueueResolve(serviceInfo)
         }
 
         override fun onServiceLost(serviceInfo: NsdServiceInfo) {
@@ -210,18 +202,24 @@ class StudyFlowTvReceiverDiscovery(context: Context) : Closeable {
 
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
             discovering = false
+            lastFailure = "discover:$errorCode"
             publishStatus(StudyFlowTvLinkStatus.ERROR)
+            scheduleRestartAfterFailure()
         }
 
         override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {
             discovering = false
+            lastFailure = "stop:$errorCode"
             publishStatus(StudyFlowTvLinkStatus.ERROR)
+            scheduleRestartAfterFailure()
         }
     }
 
     fun start(listener: Listener): Boolean {
         this.listener = listener
+        desiredDiscovering = true
         if (!StudyFlowTvLocalNetworkPermission.isGranted(appContext)) {
+            lastFailure = "local-network-permission-required"
             publishStatus(StudyFlowTvLinkStatus.PERMISSION_REQUIRED)
             return false
         }
@@ -244,12 +242,17 @@ class StudyFlowTvReceiverDiscovery(context: Context) : Closeable {
             false
         } catch (_: RuntimeException) {
             discovering = false
+            lastFailure = "discover-runtime"
             publishStatus(StudyFlowTvLinkStatus.ERROR)
+            scheduleRestartAfterFailure()
             false
         }
     }
 
     fun stop() {
+        desiredDiscovering = false
+        pendingResolveQueue.clear()
+        resolving.set(false)
         if (discovering) {
             runCatching { nsdManager.stopServiceDiscovery(discoveryListener) }
         }
@@ -262,6 +265,77 @@ class StudyFlowTvReceiverDiscovery(context: Context) : Closeable {
 
     override fun close() = stop()
 
+    fun lastFailureReason(): String? = lastFailure
+
+    private fun enqueueResolve(serviceInfo: NsdServiceInfo) {
+        pendingResolveQueue.add(serviceInfo)
+        drainResolveQueue()
+    }
+
+    private fun retryResolve(serviceInfo: NsdServiceInfo) {
+        if (!desiredDiscovering || !StudyFlowTvLocalNetworkPermission.isGranted(appContext)) return
+        mainHandler.postDelayed({ enqueueResolve(serviceInfo) }, RESOLVE_RETRY_DELAY_MILLIS)
+    }
+
+    private fun drainResolveQueue() {
+        if (!resolving.compareAndSet(false, true)) return
+        val serviceInfo = pendingResolveQueue.poll()
+        if (serviceInfo == null) {
+            resolving.set(false)
+            return
+        }
+        runCatching {
+            nsdManager.resolveService(
+                serviceInfo,
+                object : NsdManager.ResolveListener {
+                    override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
+                        resolving.set(false)
+                        lastFailure = "resolve:$errorCode"
+                        retryResolve(serviceInfo)
+                        drainResolveQueue()
+                    }
+
+                    override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
+                        try {
+                            val host = serviceInfo.host?.hostAddress ?: return
+                            val port = serviceInfo.port
+                            if (port !in 1..65_535) return
+                            if (host == "127.0.0.1" || host == "0.0.0.0" || host == "::1") return
+                            synchronized(receivers) {
+                                receivers[serviceInfo.serviceName] = StudyFlowTvReceiverEndpoint(
+                                    serviceName = serviceInfo.serviceName,
+                                    hostAddress = host,
+                                    port = port,
+                                )
+                            }
+                            lastFailure = null
+                            publishReceivers()
+                        } finally {
+                            resolving.set(false)
+                            drainResolveQueue()
+                        }
+                    }
+                },
+            )
+        }.onFailure { error ->
+            resolving.set(false)
+            lastFailure = "resolve:${error.javaClass.simpleName}"
+            retryResolve(serviceInfo)
+            drainResolveQueue()
+        }
+    }
+
+    private fun scheduleRestartAfterFailure() {
+        val currentListener = listener ?: return
+        if (!desiredDiscovering || !StudyFlowTvLocalNetworkPermission.isGranted(appContext)) return
+        mainHandler.postDelayed(
+            {
+                if (desiredDiscovering && !discovering) start(currentListener)
+            },
+            DISCOVERY_RESTART_DELAY_MILLIS,
+        )
+    }
+
     private fun publishStatus(status: StudyFlowTvLinkStatus) {
         val current = listener ?: return
         mainHandler.post { current.onStatusChanged(status) }
@@ -271,6 +345,11 @@ class StudyFlowTvReceiverDiscovery(context: Context) : Closeable {
         val current = listener ?: return
         val snapshot = synchronized(receivers) { receivers.values.sortedBy { it.serviceName }.toList() }
         mainHandler.post { current.onReceiversChanged(snapshot) }
+    }
+
+    private companion object {
+        const val DISCOVERY_RESTART_DELAY_MILLIS = 2_000L
+        const val RESOLVE_RETRY_DELAY_MILLIS = 750L
     }
 }
 
@@ -312,6 +391,14 @@ class StudyFlowTvLocalTransportClient(context: Context) {
                 respondedAtEpochMillis = nowEpochMillis,
             )
         }
+        val hostKey = pairingInfo.hostKeyAgreementPublicKeyHex
+            ?: return StudyFlowTvWireResponse(
+                requestId = infoResponse.requestId,
+                ok = false,
+                reason = "pairing-host-key-missing",
+                respondedAtEpochMillis = nowEpochMillis,
+            )
+        val keyMaterial = StudyFlowTvPairingCrypto.createClientKeyMaterial()
         val response = exchange(
             endpoint,
             StudyFlowTvWireRequest(
@@ -320,10 +407,27 @@ class StudyFlowTvLocalTransportClient(context: Context) {
                 pairingCode = pairingCode,
                 sessionNonce = pairingInfo.sessionNonce,
                 phoneDeviceName = phoneDeviceName,
+                clientKeyAgreementPublicKeyHex = keyMaterial.publicKeyX509Hex,
                 issuedAtEpochMillis = nowEpochMillis,
             ),
         )
-        response.credential?.takeIf { response.ok }?.let(sessionStore::save)
+        if (response.ok) {
+            val grant = response.encryptedCredential
+                ?: return response.copy(ok = false, reason = "encrypted-credential-missing")
+            if (grant.hostKeyAgreementPublicKeyHex != hostKey) {
+                return response.copy(ok = false, reason = "pairing-host-key-mismatch", encryptedCredential = null)
+            }
+            val decrypted = runCatching {
+                StudyFlowTvPairingCrypto.decryptCredential(
+                    grant = grant,
+                    sessionNonce = pairingInfo.sessionNonce,
+                    keyMaterial = keyMaterial,
+                )
+            }.getOrElse {
+                return response.copy(ok = false, reason = "pairing-credential-decrypt-failed", encryptedCredential = null)
+            }
+            sessionStore.save(decrypted)
+        }
         return response
     }
 
@@ -396,10 +500,10 @@ class StudyFlowTvLocalTransportClient(context: Context) {
             requestId = requestId(),
             operation = operation,
             sessionId = credential.sessionId,
-            sessionSecret = credential.sessionSecret,
             issuedAtEpochMillis = nowEpochMillis,
         )
-        return exchange(endpoint, base.transform())
+        val request = StudyFlowTvWireAuthenticator.sign(base.transform(), credential)
+        return exchange(endpoint, request)
     }
 
     private fun exchange(
@@ -468,6 +572,7 @@ class StudyFlowTvLocalTransportHost(
     private var credential: StudyFlowTvSessionCredential? = null
     @Volatile
     private var pairingAttemptCount: Int = 0
+    private val consumedAuthNonces = linkedSetOf<String>()
     private var serverSocket: ServerSocket? = null
     private var acceptExecutor: ExecutorService? = null
     private var workerExecutor: ExecutorService? = null
@@ -594,6 +699,7 @@ class StudyFlowTvLocalTransportHost(
                         pairingActive = offer != null,
                         sessionNonce = offer?.token?.sessionNonce,
                         expiresAtEpochMillis = offer?.token?.expiresAtEpochMillis,
+                        hostKeyAgreementPublicKeyHex = offer?.hostKeyAgreementPublicKeyHex,
                     ),
                     respondedAtEpochMillis = nowEpochMillis,
                 )
@@ -622,17 +728,20 @@ class StudyFlowTvLocalTransportHost(
             pairingAttemptCount = 0
             return response(request, false, "pairing-attempt-limit", nowEpochMillis)
         }
-        val accepted = pairingEngine.accept(offer, code, nonce, phoneName, nowEpochMillis)
+        val clientKey = request.clientKeyAgreementPublicKeyHex
+            ?: return response(request, false, "pairing-client-key-required", nowEpochMillis)
+        val accepted = pairingEngine.accept(offer, code, nonce, phoneName, clientKey, nowEpochMillis)
             ?: return response(request, false, "pairing-rejected", nowEpochMillis)
-        credential = accepted
+        credential = accepted.credential
         currentOffer = null
         pairingAttemptCount = 0
-        sessionStore.save(accepted)
-        publishSession(accepted.toControlSession())
+        consumedAuthNonces.clear()
+        sessionStore.save(accepted.credential)
+        publishSession(accepted.credential.toControlSession())
         return StudyFlowTvWireResponse(
             requestId = request.requestId,
             ok = true,
-            credential = accepted,
+            encryptedCredential = accepted.encryptedCredential,
             continuity = safeContinuity(),
             respondedAtEpochMillis = nowEpochMillis,
         )
@@ -649,8 +758,15 @@ class StudyFlowTvLocalTransportHost(
             }
             return response(request, false, "session-expired-or-missing", nowEpochMillis)
         }
-        if (!pairingEngine.isAuthorized(activeCredential, request.sessionId, request.sessionSecret, nowEpochMillis)) {
+        val authNonce = request.authNonceHex
+        if (!StudyFlowTvWireAuthenticator.verify(request, activeCredential, nowEpochMillis)) {
             return response(request, false, "session-authorization-failed", nowEpochMillis)
+        }
+        synchronized(consumedAuthNonces) {
+            if (authNonce == null || !consumedAuthNonces.add(authNonce)) {
+                return response(request, false, "session-auth-replay", nowEpochMillis)
+            }
+            while (consumedAuthNonces.size > 512) consumedAuthNonces.remove(consumedAuthNonces.first())
         }
         return when (request.operation) {
             StudyFlowTvWireOperation.COMMAND -> {
@@ -663,6 +779,7 @@ class StudyFlowTvLocalTransportHost(
                     currentOffer = null
                     pairingAttemptCount = 0
                     sessionStore.clear()
+                    consumedAuthNonces.clear()
                 }
                 response(
                     request = request,
@@ -723,6 +840,7 @@ class StudyFlowTvLocalTransportHost(
                 currentOffer = null
                 pairingAttemptCount = 0
                 sessionStore.clear()
+                consumedAuthNonces.clear()
                 publishSession(revoked)
                 response(
                     request = request,

@@ -910,8 +910,10 @@ internal fun StudyFlowNavHost(
                 coroutineScope.launch {
                     val permissionFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
                         Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    var syncFolderGrantPersisted = false
                     runRecoverableOperation {
                         context.contentResolver.takePersistableUriPermission(uri, permissionFlags)
+                        syncFolderGrantPersisted = true
                         container.manageStudyCloudSync.configureLocalFolderProvider(uri.toString())
                     }.onSuccess {
                         remoteScan = null
@@ -920,6 +922,11 @@ internal fun StudyFlowNavHost(
                         summary = container.manageStudyCloudSync.inspectLocalChanges()
                         summaryFailed = false
                     }.onFailure {
+                        if (syncFolderGrantPersisted) {
+                            runCatching {
+                                context.contentResolver.releasePersistableUriPermission(uri, permissionFlags)
+                            }
+                        }
                         summaryFailed = true
                     }
                 }

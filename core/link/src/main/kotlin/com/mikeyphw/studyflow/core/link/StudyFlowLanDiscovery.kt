@@ -50,10 +50,30 @@ object StudyFlowLanEndpointResolver {
         return networkInterfaces()
             .flatMap { network -> network.inetAddresses.toList() }
             .filter { address -> !address.isLoopbackAddress && !address.isAnyLocalAddress }
-            .mapNotNull { address -> address.hostAddress?.substringBefore('%') }
+            .mapNotNull { address -> address.hostAddress }
+            .filter(::isExternallyReachableHost)
             .distinct()
             .sorted()
             .map { host -> StudyFlowTransportEndpoint(StudyFlowTransportScheme.TCP, host, port) }
+    }
+
+    fun isExternallyReachableEndpoint(endpoint: StudyFlowTransportEndpoint): Boolean =
+        endpoint.scheme != StudyFlowTransportScheme.LOOPBACK && isExternallyReachableHost(endpoint.host)
+
+    fun isExternallyReachableHost(host: String): Boolean {
+        val normalized = host.trim().removePrefix("[").removeSuffix("]")
+        if (normalized.isBlank()) return false
+        val lower = normalized.lowercase()
+        if (lower == "localhost" || lower == "0.0.0.0" || lower == "::" || lower == "::1") return false
+        if (lower.startsWith("127.")) return false
+        return runCatching {
+            // Preserve IPv6 zone/scope identifiers in the returned endpoint host, but strip them only
+            // for Java InetAddress validation because InetAddress parsing may not know Android NIC names
+            // in unit tests. The production endpoint still carries values such as fe80::1234%wlan0.
+            val validationHost = normalized.substringBefore('%')
+            val address = InetAddress.getByName(validationHost)
+            !address.isLoopbackAddress && !address.isAnyLocalAddress
+        }.getOrDefault(true)
     }
 
     fun ipv4BroadcastAddresses(): List<InetAddress> = networkInterfaces()
@@ -144,7 +164,8 @@ class StudyFlowLanBeaconDiscovery(
                 StudyFlowLanBeaconCodec.decode(received.data, received.length)
             }.getOrNull() ?: continue
             if (beacon.peer.deviceId == localPeer.deviceId) continue
-            val host = received.address?.hostAddress?.substringBefore('%') ?: continue
+            val host = received.address?.hostAddress ?: continue
+            if (!StudyFlowLanEndpointResolver.isExternallyReachableHost(host)) continue
             records[beacon.peer.deviceId] = StudyFlowDiscoveredPeer(
                 discoveryId = "lan:${beacon.peer.deviceId.value}",
                 deviceId = beacon.peer.deviceId,

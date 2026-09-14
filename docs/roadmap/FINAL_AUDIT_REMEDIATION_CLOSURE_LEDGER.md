@@ -93,3 +93,18 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S4-09 | Android app starts SFLP and runs a 15-second reconciliation coroutine; native TV runs its own 15-second scheduled reconciler. | OV08 verifier checks both production driver call paths; core/link tests cover membership semantics used by the drivers. |
 | DS2-01 | `StudyFlowWorkspaceMembershipManager` is independent from trust; Android/TV/Desktop persist grants and sync RPC rejects non-members. | `StudyFlowWorkspaceMembershipOv08Test` proves access does not leak between workspaces and scoped revocation works. |
 | DS2-56 | TV persistent actions are journaled as `tv.domain_action_requested` in `plan-*` workspaces and Android writable peers drain them through `StudyFlowTvDomainActionExecutor`. | OV08 source/compile validator requires TV publication, active-workspace reconciliation and Android canonical execution wiring. |
+
+## OV13 — Android peer lifecycle & LAN discovery recovery
+
+| Finding | Production closure | Behavioral evidence |
+|---|---|---|
+| S5-01 | `StudyFlowApplication` no longer starts generic SFLP sockets unconditionally; `AndroidStudyFlowLinkPeer` requires persisted user enablement before `start()` can bind TCP/WebSocket or advertise. | `StudyFlowOv13AndroidPeerLifecycleContractTest.applicationNoLongerStartsGenericSflpSocketsBeforeUserEnablement`; OV13 source verifier. |
+| S5-02 | Peer lifecycle readiness and enablement now live in `AndroidStudyFlowLinkPeer` persisted lifecycle state, not only in the `Application` process. | `AndroidStudyFlowPeerLifecycleState`; `StudyFlowPeerLifecyclePolicy`; OV13 tests. |
+| S5-05 | Android NSD failures preserve desired state and schedule recovery instead of leaving discovery disabled for process lifetime. | `AndroidStudyFlowNsdDiscovery.scheduleRestartAfterFailure`; OV13 source verifier. |
+| S5-06 | Generic Android and phone→TV discovery now serialize and retry service resolution through queues instead of relying on one callback-only one-shot resolve. | `pendingResolveQueue` in both discovery adapters; OV13 source verifier. |
+| S5-07 | LAN endpoint collection and NSD records preserve IPv6 link-local scope identifiers in endpoint hosts. | `StudyFlowOv13PeerLifecycleLanRecoveryTest.externallyReachableEndpointFilterRejectsLoopbackWildcardAndPreservesIpv6ScopeIds`. |
+| S5-08 | Android pairing QR hints are generated only from externally reachable TCP/WebSocket endpoints and no longer fall back to `127.0.0.1`. | `AndroidStudyFlowLinkPeer.pairingOffer`; OV13 app contract test. |
+| S5-10 | Generic SFLP socket/listener startup is permission-gated with `NEARBY_WIFI_DEVICES` before local LAN transports are opened. | `AndroidStudyFlowLocalNetworkPermission`; OV13 app contract test. |
+| S5-11 | Failed SAF sync-folder configuration releases the just-taken persistable tree URI grant. | `StudyFlowApp` grant cleanup branch; OV13 app contract test. |
+| DS2-07 | Closing the Android link no longer permanently detaches NSD from the discovery registry; restart re-adds the source and recreates the LAN beacon source. | `discoveryRegistry.add(nsdDiscovery)` in `start()`; OV13 verifier. |
+| DS2-39 | Peer startup failures remain retryable through explicit lifecycle/backoff state after the app reaches Ready. | `StudyFlowPeerLifecycleRecovery`; `AndroidStudyFlowNsdDiscovery.lastFailureReason`; OV13 core tests. |

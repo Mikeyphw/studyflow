@@ -2368,3 +2368,16 @@ tasks.register<Exec>("verifyOv12SflpAdvancedRpcSemantics") {
     )
     commandLine("bash", "scripts/validate_ov12_sflp_advanced_rpc_semantics.sh")
 }
+
+// OV13 — Android peer lifecycle & LAN discovery recovery.
+tasks.register<Exec>("verifyOv13AndroidPeerLifecycleLanRecovery") {
+    group = "verification"
+    description = "Validates OV13 Android peer lifecycle, LAN permission gating, restartable NSD/discovery, IPv6 scoped endpoints, QR reachability, and SAF grant cleanup."
+    dependsOn(
+        ":core:link:test",
+        ":core:tvlink:compileDebugKotlin",
+        ":app:compileDebugKotlin",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("bash", "scripts/validate_ov13_android_peer_lifecycle_lan_recovery.sh")
+}

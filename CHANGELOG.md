@@ -960,3 +960,12 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Removed raw Web trust secrets, Web-TV bearer/session credentials, and dedicated TV session secrets from LAN traffic.
 - Added nonce-bound HMAC request authentication/replay rejection and native-equivalent Web control/input checks.
 - Added integrated `verifyOv10SflpTrustSecurity` validation.
+
+## OV13 — Android peer lifecycle & LAN discovery recovery
+
+- Moved generic Android SFLP startup behind persisted user enablement and local-network permission gates instead of starting sockets from `Application` startup.
+- Made Android NSD/mDNS discovery and phone→TV receiver discovery restartable after bind, start, stop and resolve failures without requiring a process restart.
+- Serialized and retried NSD resolution, preserved IPv6 link-local scope identifiers, and filtered loopback/wildcard endpoints out of local pairing QR hints.
+- Reattached discovery sources after Android link close/restart and kept peer readiness explicit through lifecycle state.
+- Released SAF sync-folder URI grants if provider configuration fails after a persistable grant was taken.
+- Added `verifyOv13AndroidPeerLifecycleLanRecovery` with integrated apply-time validation.
