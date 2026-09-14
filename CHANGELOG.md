@@ -926,3 +926,11 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Added schema-2 point-in-time snapshot purpose for exact safety rollback without portable-ID/status/timestamp rewriting.
 - Hardened annex import, STRUCTURE/TEMPLATE privacy, MERGE parent rebinding, and dry-run parity with the production import projector.
 - Versioned portable packages to schema 2 with an explicit readable v1 compatibility path and strict v2/future-schema behavior.
+
+## Remediation OV10 — SFLP trust/pairing/security
+- Added QR v2 ephemeral ECDH + HKDF/AES-GCM pairing so long-term trust secrets are never emitted as plaintext grants.
+- Made single-use pairing consumption atomic and enforced offer/request expiry and response identity/envelope checks.
+- Enforced protocol and advertised capability authorization on production sync/control RPC paths.
+- Wired remote `retryable` errors into reconnect queue behavior.
+- Hardened Web/Web-TV randomness and identity partitioning and removed raw trust-secret persistence from localStorage.
+- Added integrated no-Gradle-daemon-stop OV10 artifact validation and native/browser security regressions.

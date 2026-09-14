@@ -1,259 +1,183 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov09_sflp_native_web_interop_v2",
+  "name": "studyflow_ov10_sflp_trust_pairing_security_v1",
   "target": "studyflow_android",
-  "description": "OV09 fully unifies native and browser SFLP transport/wire semantics with an RFC 6455 bridge, canonical pairing/reconnect, aligned journals/identities, and authenticated production routing for SFLP14-SFLP23 message families.",
+  "description": "OV10 hardens SFLP trust, pairing, authorization and transport security: encrypted ECDH pairing grants, atomic single-use offers, protocol/capability enforcement, retryable remote errors, fail-closed Web crypto, non-extractable IndexedDB trust keys, Web/Web-TV identity partition and strict pairing envelope/expiry validation.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV09: unify native Web SFLP interoperability"
+    "message": "OV10: harden SFLP trust pairing and authorization"
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively on successful OV08 product-state/full-mesh overlay; user-side OV08 commit is d0e9c46f. Packaging-only v2 removes the root tar member and canonicalizes archive member paths; OV09 source payload is unchanged."
+    "notes": "Built cumulatively on successful OV09 commit d3eda41a."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov09_sflp_native_web_interop_v2",
+    "name": "studyflow_ov10_sflp_trust_pairing_security_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov09-native-browser-transport",
-        "purpose": "Production RFC 6455 WebSocket bridge, native peer runtime routing, Android/Desktop/TV endpoint publication, and browser-shaped transport tests.",
+        "id": "ov10-native-security",
+        "purpose": "ECDH pairing, atomic offer consumption, protocol/capability authorization and retry semantics.",
         "paths": [
-          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpPeer.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkPeer.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowRoutedRpc.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWebSocketTransport.kt",
-          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv09NativeWebInteropTest.kt",
-          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWebSocketBrowserInteropTest.kt",
-          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkService.kt"
+          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv10SecurityTest.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPairing.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOfflineQueue.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt"
         ]
       },
       {
-        "id": "ov09-web-wire-parity",
-        "purpose": "Canonical browser pairing/reconnect, aligned journal/frontier schema, distinct Web/Web-TV identity persistence, runtime output, and interoperability tests.",
+        "id": "ov10-web-security",
+        "purpose": "Fail-closed WebCrypto, non-extractable trust-key persistence, identity partition and strict native pairing parity.",
         "paths": [
-          "web/dist/runtime/sflp_link.js",
           "web/runtime-parity-manifest.json",
           "web/runtime/sflp_link.js",
+          "web/tests/ov10_security_runner.mjs",
           "web/src/sflp_link.ts",
-          "web/tests/ov09_interop_runner.mjs",
-          "web/tests/parity04_runner.mjs",
-          "web/tests/test_ov09_native_web_interop.py"
+          "web/dist/runtime/sflp_link.js"
         ]
       },
       {
-        "id": "ov09-validation-truth",
-        "purpose": "Integrated Devtool validation wiring, source contracts, remediation documentation and changelog truth.",
+        "id": "ov10-validation-truth",
+        "purpose": "Owned-finding evidence, integrated artifact validation and remediation documentation.",
         "paths": [
-          ".devtool.toml",
           "CHANGELOG.md",
-          "REMEDIATION_OV_09_IMPLEMENTATION.md",
-          "build.gradle.kts",
-          "docs/remediation/OV09_SFLP_NATIVE_WEB_INTEROPERABILITY_TRANSPORT.md",
-          "scripts/validate_ov09_sflp_native_web_interop.sh",
-          "scripts/verify_ov09_sflp_native_web_interop.py"
+          "REMEDIATION_OV_10_IMPLEMENTATION.md",
+          "scripts/validate_ov10_sflp_security.sh",
+          "scripts/verify_ov10_sflp_security.py",
+          "docs/remediation/OV10_SFLP_TRUST_PAIRING_AUTHORIZATION_TRANSPORT_SECURITY.md"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 22,
+    "count": 14,
     "entries": [
-      {
-        "action": "modify",
-        "path": ".devtool.toml",
-        "mode": "0o600",
-        "sha256": "71d003d468b18ceb0c680363340cb7b33bb5ebaeb9b28ce02772068df0e34252",
-        "size": 15041,
-        "source_mode": "0o600",
-        "source_sha256": "f70949718ca4e983bc186fbf102c6b05f7a7639e15e756a5acd3469227bf76ee",
-        "source_size": 14969
-      },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "ebf1c93ece150887a038cf1e06464cc1ab9ae5fe842494dc97511d3e1f28c8e2",
-        "size": 70754,
+        "sha256": "473a6552fd814ee3457c8787f575dc1041d2bd97eaa23846b1454e90d05bf18c",
+        "size": 71432,
         "source_mode": "0o600",
-        "source_sha256": "d3cb20e2a2b2609c90f3fee24e8f2e00ac9a5d73dab594583f7d680243a176fc",
-        "source_size": 70248
+        "source_sha256": "ebf1c93ece150887a038cf1e06464cc1ab9ae5fe842494dc97511d3e1f28c8e2",
+        "source_size": 70754
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_09_IMPLEMENTATION.md",
+        "path": "REMEDIATION_OV_10_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "b319abf99b095e4e8af5329134443b1b500b2b8789ca37fc10079a414ce312b6",
-        "size": 1375
+        "sha256": "96a71616265fda322547278d9e85c4014221b7bb9dbec10f06eb4a187ffdddbe",
+        "size": 385
       },
       {
         "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpPeer.kt",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOfflineQueue.kt",
         "mode": "0o600",
-        "sha256": "02f2e6384516b80921e233c924bf52f490779239367c7d7ce41ea83d05e0ab30",
-        "size": 11352,
+        "sha256": "7c9e9feb276fcd60122e589be66f9a67c7293658185e45d672e271243c46704c",
+        "size": 16299,
         "source_mode": "0o600",
-        "source_sha256": "868544f15214080bdcdc6c3ed3e8068173b53b5b36f18c845094abcff2c65cfc",
-        "source_size": 10676
+        "source_sha256": "0d6553f7200bf306e4c1b009b13e1f6181e4394dbfc620b2601fe2b1f1a5aab4",
+        "source_size": 15005
       },
       {
         "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkPeer.kt",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPairing.kt",
         "mode": "0o600",
-        "sha256": "c2c9adffd2c1a7b1d07f7cadb11278988887805430eed596d3a976cd59c280c7",
-        "size": 11179,
+        "sha256": "84eae4a34bb151c1c4bfe5a65ce6a14097898a49d63a60b18805256f2103d1b6",
+        "size": 24178,
         "source_mode": "0o600",
-        "source_sha256": "f44e4fd53e81dd16d32f1a0078dc3c3e67884bf2d2f7eaf43a93d6d5f2917abb",
-        "source_size": 10307
-      },
-      {
-        "action": "modify",
-        "path": "build.gradle.kts",
-        "mode": "0o600",
-        "sha256": "327d08cb01d0fb477b4b8a55c6714316d523f68de2aefd599d94830c222bb5f7",
-        "size": 91354,
-        "source_mode": "0o600",
-        "source_sha256": "c6202d9f9f88ad48093a7536de5e0625867e3150a591d2a744f6eee5159006a4",
-        "source_size": 90855
+        "source_sha256": "f0f293c552dbea4f08e60dfdff58d9a8f5ec627078ca4c37fd4d4123da38dbee",
+        "source_size": 11785
       },
       {
         "action": "modify",
         "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt",
         "mode": "0o600",
-        "sha256": "85a4d5a32e6a248bbf2ab78c19298cd3141733b15a4f01b2ecb6eb41c9d808ca",
-        "size": 50979,
+        "sha256": "4ec4b2bdc0300eee915bb1015d8c493bcb0643a6e7da34912bdcddada1092a46",
+        "size": 55227,
         "source_mode": "0o600",
-        "source_sha256": "dd643e1c6575e05267a55e5d2b955302bae0cbf2e6b99d9bb876dfb1c5c857f0",
-        "source_size": 45813
+        "source_sha256": "85a4d5a32e6a248bbf2ab78c19298cd3141733b15a4f01b2ecb6eb41c9d808ca",
+        "source_size": 50979
       },
       {
         "action": "add",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowRoutedRpc.kt",
+        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv10SecurityTest.kt",
         "mode": "0o644",
-        "sha256": "73f31a8b38c969fab3a0a5c3d45def1a7a3cedebd27517d63be78d1e12b68fec",
-        "size": 4937
+        "sha256": "60a2727f8b5f2a2deb9f7ff4afae3b9c8777beef08393c0dbce2abf15b98e233",
+        "size": 2804
       },
       {
         "action": "add",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWebSocketTransport.kt",
+        "path": "docs/remediation/OV10_SFLP_TRUST_PAIRING_AUTHORIZATION_TRANSPORT_SECURITY.md",
         "mode": "0o644",
-        "sha256": "5a563fd98f87c9a99145d649f59574af2b838d7b4b1dbfc79121fa54bc30a845",
-        "size": 18696
+        "sha256": "14a1b8ea898189e3fc02780b1db4d7f420db57747b7a42bb61e68f35a5ef932e",
+        "size": 1537
       },
       {
         "action": "add",
-        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv09NativeWebInteropTest.kt",
-        "mode": "0o644",
-        "sha256": "95149afe6bb5d27b7edf36ec81e5dc6342d11bf10b128d6346bd93be2d1abf06",
-        "size": 5260
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWebSocketBrowserInteropTest.kt",
-        "mode": "0o644",
-        "sha256": "8c6a88ce8600b460f5931e90da1495b21b1c2e168af4cb55a3ef4627d9cc8a1e",
-        "size": 5198
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkService.kt",
-        "mode": "0o600",
-        "sha256": "0b10d8bf49835ce4434820bc89171390df396eb3037e21057ec062db1253e706",
-        "size": 15527,
-        "source_mode": "0o600",
-        "source_sha256": "2e178f2e59e031e1bf8a27eac428a8631695dedaf0756f496a9a201b1172b31a",
-        "source_size": 14582
-      },
-      {
-        "action": "add",
-        "path": "docs/remediation/OV09_SFLP_NATIVE_WEB_INTEROPERABILITY_TRANSPORT.md",
-        "mode": "0o644",
-        "sha256": "b319abf99b095e4e8af5329134443b1b500b2b8789ca37fc10079a414ce312b6",
-        "size": 1375
-      },
-      {
-        "action": "add",
-        "path": "scripts/validate_ov09_sflp_native_web_interop.sh",
+        "path": "scripts/validate_ov10_sflp_security.sh",
         "mode": "0o755",
-        "sha256": "1903b71d4020b3c5b30fb268cf7e8febfd0ac10013b29f07a5226778f0e38598",
-        "size": 381
+        "sha256": "3398bbbd0fcce6d5866355e6f3d8b1b7798cee718d64237e3d9f8a06146e0726",
+        "size": 282
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov09_sflp_native_web_interop.py",
+        "path": "scripts/verify_ov10_sflp_security.py",
         "mode": "0o755",
-        "sha256": "2dfaf8594cd9db19cf911a3344e9f6f64b5cb12c59e94e284ffdc35336a18d41",
-        "size": 3126
+        "sha256": "f11b4606d1c4679eb2ee7f78d50ca337291e00924852bb944725b490b2282879",
+        "size": 1838
       },
       {
         "action": "modify",
         "path": "web/dist/runtime/sflp_link.js",
         "mode": "0o600",
-        "sha256": "a9134258f7aa83d7d2a906ec9afcfdda93be85220cc24f13760cbda89a66dfc5",
-        "size": 51668,
+        "sha256": "3f8349addcacfcc92124737c567f4002c0f4956565658c4041f9d898880760d1",
+        "size": 67013,
         "source_mode": "0o600",
-        "source_sha256": "458280197c8ca993d9435a59fac4f1f419bc4fae5632c227f7e3fe57f24e40ef",
-        "source_size": 40016
+        "source_sha256": "a9134258f7aa83d7d2a906ec9afcfdda93be85220cc24f13760cbda89a66dfc5",
+        "source_size": 51668
       },
       {
         "action": "modify",
         "path": "web/runtime-parity-manifest.json",
         "mode": "0o600",
-        "sha256": "23da94ca470ee1ceb7f33c68593ebfc9b5fcb6aa31965386332bc008f7c56891",
+        "sha256": "ebff567efa3b444a76496ebf97c17402c8ac27f2c2133f8873c759914ac2046b",
         "size": 8871,
         "source_mode": "0o600",
-        "source_sha256": "e4f5fde3dfe5079a976224aae818d2ab4046be95016f6cebfb1cc01eb93efd8b",
+        "source_sha256": "23da94ca470ee1ceb7f33c68593ebfc9b5fcb6aa31965386332bc008f7c56891",
         "source_size": 8871
       },
       {
         "action": "modify",
         "path": "web/runtime/sflp_link.js",
         "mode": "0o600",
-        "sha256": "a9134258f7aa83d7d2a906ec9afcfdda93be85220cc24f13760cbda89a66dfc5",
-        "size": 51668,
+        "sha256": "3f8349addcacfcc92124737c567f4002c0f4956565658c4041f9d898880760d1",
+        "size": 67013,
         "source_mode": "0o600",
-        "source_sha256": "458280197c8ca993d9435a59fac4f1f419bc4fae5632c227f7e3fe57f24e40ef",
-        "source_size": 40016
+        "source_sha256": "a9134258f7aa83d7d2a906ec9afcfdda93be85220cc24f13760cbda89a66dfc5",
+        "source_size": 51668
       },
       {
         "action": "modify",
         "path": "web/src/sflp_link.ts",
         "mode": "0o600",
-        "sha256": "b4904be3f742ccb8f9c21162bb913560af68aa40f5b17c9d6593fd417936f137",
-        "size": 60464,
+        "sha256": "7d072584bc64fb5ead9b3a4a8a22d5e2d2c62d51fc734cf6ff01466bcb3ad15d",
+        "size": 76001,
         "source_mode": "0o600",
-        "source_sha256": "495ceb461d459432950d5def7e3ee445e5c8b393cc563adecc0a110d4c864db7",
-        "source_size": 48679
+        "source_sha256": "b4904be3f742ccb8f9c21162bb913560af68aa40f5b17c9d6593fd417936f137",
+        "source_size": 60464
       },
       {
         "action": "add",
-        "path": "web/tests/ov09_interop_runner.mjs",
+        "path": "web/tests/ov10_security_runner.mjs",
         "mode": "0o644",
-        "sha256": "d25d0870a61d73d17b8c5dabfdecfb8b90d4303c3498fd2583bf88a049964858",
-        "size": 4803
-      },
-      {
-        "action": "modify",
-        "path": "web/tests/parity04_runner.mjs",
-        "mode": "0o600",
-        "sha256": "9029871b5fae363bf34817aad45b7679ae8cb99f98904ef140d0a9c2ccdb9d6f",
-        "size": 4783,
-        "source_mode": "0o600",
-        "source_sha256": "f7cf2d296b24fb3e5fca5dca0aaa60bb1d115618c62dda5377d615d2a3f48c05",
-        "source_size": 4837
-      },
-      {
-        "action": "add",
-        "path": "web/tests/test_ov09_native_web_interop.py",
-        "mode": "0o644",
-        "sha256": "b0ebe0336fe91d330a87f2563d975f81ec3fd1bccd160b3d15fb043a3509a0a7",
-        "size": 509
+        "sha256": "b5bcad22a3afe426a7645520476737a5adba66cb76a41092209f14720790235a",
+        "size": 1877
       }
     ]
   },
@@ -261,21 +185,16 @@
     "mode": "required",
     "required": true,
     "script": {
-      "description": "Run OV09 source/Web interoperability, generated-runtime parity, browser/native wire, and five-client semantic checks without invoking or stopping Gradle daemons.",
+      "description": "Run OV10 finding-to-code checks plus TypeScript/runtime parity and browser security regressions. Does not invoke Gradle or stop Gradle daemons.",
       "interpreter": "sh",
       "path": ".devtool-artifact/validation/validate.sh",
-      "sha256": "a78ebf62b29f0b41fba494a2c847d3774ee062c45bcad2d8c823256c05a2dcb4",
+      "sha256": "3398bbbd0fcce6d5866355e6f3d8b1b7798cee718d64237e3d9f8a06146e0726",
       "timeout_seconds": 900,
       "working_directory": "."
     },
     "notes": [
-      "The artifact validator never invokes gradle or gradle --stop.",
-      "Devtool runs verifyOv09SflpNativeWebInterop as the focused Gradle validation task.",
-      "That Gradle task owns :core:link:test plus Android, Android TV, and Desktop Kotlin compile gates, and invokes the source/Web validator.",
-      "OV10 retains TLS/WSS, credential-at-rest, expiry, authorization, randomness and other security-hardening findings."
+      "No Gradle daemon stop is performed by the overlay validation script.",
+      "OV10 native Kotlin regression coverage is packaged for the final/campaign Gradle validation gate."
     ]
-  },
-  "validation_tasks": [
-    "verifyOv09SflpNativeWebInterop"
-  ]
+  }
 }

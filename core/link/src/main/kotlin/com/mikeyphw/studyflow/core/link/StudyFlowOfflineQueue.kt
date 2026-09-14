@@ -188,6 +188,10 @@ class StudyFlowPeerUnavailableException(
     cause: Throwable? = null,
 ) : RuntimeException(message, cause)
 
+class StudyFlowRemoteProtocolException(
+    val remoteError: StudyFlowLinkError,
+) : RuntimeException("${remoteError.code}: ${remoteError.message}")
+
 interface StudyFlowSyncPeerSession {
     val deviceId: StudyFlowDeviceId
     val workspaceId: StudyFlowWorkspaceId
@@ -218,6 +222,7 @@ fun interface StudyFlowSyncMessageIdFactory {
 enum class StudyFlowReconnectStatus {
     COMPLETE,
     INTERRUPTED,
+    TERMINAL_FAILURE,
     ROUND_LIMIT_REACHED,
 }
 
@@ -337,6 +342,28 @@ class StudyFlowReconnectionCoordinator(
                     )
                 }
             }
+        } catch (failure: StudyFlowRemoteProtocolException) {
+            val retryable = failure.remoteError.retryable
+            if (retryable) {
+                val dueIds = outgoingQueue.pendingForPeer(peer.deviceId)
+                    .map { it.operation.operationId }
+                    .toSet()
+                if (dueIds.isNotEmpty()) {
+                    outgoingQueue.markFailed(peer.deviceId, dueIds, nowEpochMillis, failure.message.orEmpty())
+                }
+            }
+            return StudyFlowReconnectResult(
+                status = if (retryable) StudyFlowReconnectStatus.INTERRUPTED else StudyFlowReconnectStatus.TERMINAL_FAILURE,
+                pushedOperations = pushed,
+                pulledOperations = pulled,
+                duplicateOperations = duplicates,
+                pushBatches = pushBatches,
+                pullBatches = pullBatches,
+                acknowledgedQueueEntries = acknowledged,
+                localFrontier = localEngine.currentFrontier().normalized(),
+                remoteFrontier = remoteFrontier,
+                failure = failure.message,
+            )
         } catch (failure: StudyFlowPeerUnavailableException) {
             val dueIds = outgoingQueue.pendingForPeer(peer.deviceId)
                 .map { it.operation.operationId }

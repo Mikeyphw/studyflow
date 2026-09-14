@@ -110,8 +110,18 @@ class StudyFlowPeerServer(
             var authenticatedPeer: StudyFlowDeviceId? = null
             while (running.get() && link.isOpen) {
                 val request = runCatching { link.receive() }.getOrNull() ?: return
+                if (!StudyFlowLinkProtocol.CurrentSupport.contains(request.protocol)) {
+                    sendError(
+                        link,
+                        request,
+                        StudyFlowLinkErrorCodes.IncompatibleProtocol,
+                        "Unsupported SFLP protocol ${request.protocol.major}.${request.protocol.minor}",
+                        false,
+                    )
+                    continue
+                }
                 if (request.messageType != StudyFlowLinkMessageType.REQUEST) {
-                    sendError(link, request, "request_required", "Only SFLP requests are accepted", false)
+                    sendError(link, request, StudyFlowLinkErrorCodes.InvalidMessage, "Only SFLP requests are accepted", false)
                     continue
                 }
                 when (request.name) {
@@ -130,7 +140,7 @@ class StudyFlowPeerServer(
                     else -> if (StudyFlowRoutedRpcContracts.supports(request.name)) {
                         handleRoutedRpc(link, request, authenticatedPeer)
                     } else {
-                        sendError(link, request, "unsupported_request", "Unsupported SFLP request", false)
+                        sendError(link, request, "link.unsupported_request", "Unsupported SFLP request", false)
                     }
                 }
             }
@@ -138,10 +148,22 @@ class StudyFlowPeerServer(
     }
 
     private fun handlePairing(link: StudyFlowLinkConnection, request: StudyFlowLinkEnvelope) {
+        if (request.workspaceId != StudyFlowLinkSystemWorkspaceId) {
+            sendError(link, request, "link.workspace_mismatch", "Pairing must use the link-system workspace", false)
+            return
+        }
         val pairing = runCatching {
             StudyFlowLinkCodec.decodePayload(StudyFlowPairingRequest.serializer(), request.payload)
         }.getOrElse {
-            sendError(link, request, "invalid_pairing", "Invalid pairing request", false)
+            sendError(link, request, "link.invalid_pairing", "Invalid pairing request", false)
+            return
+        }
+        if (pairing.peer.deviceId != request.senderDeviceId) {
+            sendError(link, request, "link.identity_mismatch", "Pairing peer does not match envelope sender", false)
+            return
+        }
+        if (StudyFlowLinkProtocol.negotiate(localIdentity.descriptor.protocolSupport, pairing.peer.protocolSupport) == null) {
+            sendError(link, request, StudyFlowLinkErrorCodes.IncompatibleProtocol, "Pairing peer has no compatible protocol", false)
             return
         }
         when (val result = pairingAuthority.accept(pairing, clock.nowEpochMillis())) {
@@ -169,17 +191,17 @@ class StudyFlowPeerServer(
         val challengeRequest = runCatching {
             StudyFlowLinkCodec.decodePayload(StudyFlowReconnectChallengeRequest.serializer(), request.payload)
         }.getOrElse {
-            sendError(link, request, "invalid_reconnect", "Invalid reconnect request", false)
+            sendError(link, request, "link.invalid_reconnect", "Invalid reconnect request", false)
             return
         }
         if (challengeRequest.peerDeviceId != request.senderDeviceId) {
-            sendError(link, request, "identity_mismatch", "Reconnect identity mismatch", false)
+            sendError(link, request, "link.identity_mismatch", "Reconnect identity mismatch", false)
             return
         }
         val challenge = runCatching {
             trustManager.issueReconnectChallenge(request.senderDeviceId, clock.nowEpochMillis())
         }.getOrElse {
-            sendError(link, request, "peer_not_trusted", "Peer is not trusted", false)
+            sendError(link, request, "link.peer_not_trusted", "Peer is not trusted", false)
             return
         }
         link.send(
@@ -198,13 +220,13 @@ class StudyFlowPeerServer(
         val proof = runCatching {
             StudyFlowLinkCodec.decodePayload(StudyFlowReconnectProof.serializer(), request.payload)
         }.getOrElse {
-            sendError(link, request, "invalid_reconnect_proof", "Invalid reconnect proof", false)
+            sendError(link, request, "link.invalid_reconnect_proof", "Invalid reconnect proof", false)
             return null
         }
         if (proof.proverDeviceId != request.senderDeviceId ||
             !trustManager.verifyReconnectProof(proof, clock.nowEpochMillis())
         ) {
-            sendError(link, request, "authentication_failed", "Reconnect authentication failed", false)
+            sendError(link, request, "link.authentication_failed", "Reconnect authentication failed", false)
             return null
         }
         link.send(
@@ -226,15 +248,29 @@ class StudyFlowPeerServer(
         authenticatedPeer: StudyFlowDeviceId?,
     ) {
         if (authenticatedPeer == null || authenticatedPeer != request.senderDeviceId) {
-            sendError(link, request, "authentication_required", "Trusted reconnect is required", false)
+            sendError(link, request, "link.authentication_required", "Trusted reconnect is required", false)
             return
         }
-        if (trustManager.trustedPeers().none { it.peer.deviceId == authenticatedPeer }) {
-            sendError(link, request, "peer_revoked", "Peer trust was revoked", false)
+        val authenticatedRecord = trustManager.trustedPeers().firstOrNull { it.peer.deviceId == authenticatedPeer }
+        if (authenticatedRecord == null) {
+            sendError(link, request, "link.peer_revoked", "Peer trust was revoked", false)
             return
         }
-        if (workspaceMembership?.canWrite(request.workspaceId, authenticatedPeer) == false) {
-            sendError(link, request, "workspace_access_denied", "Peer is not a writable member of this workspace", false)
+        val required = when (request.name) {
+            StudyFlowPeerRpcMessageNames.SyncApply -> setOf(StudyFlowLinkCapabilities.WorkspaceSync, StudyFlowLinkCapabilities.WorkspaceWrite)
+            StudyFlowSyncMessageNames.Frontier, StudyFlowSyncMessageNames.Pull -> setOf(StudyFlowLinkCapabilities.WorkspaceSync, StudyFlowLinkCapabilities.WorkspaceRead)
+            else -> emptySet()
+        }
+        if (!authenticatedRecord.peer.capabilities.containsAll(required)) {
+            sendError(link, request, StudyFlowLinkErrorCodes.UnsupportedCapability, "Peer did not advertise required sync capability", false)
+            return
+        }
+        val membershipAllowed = when (request.name) {
+            StudyFlowPeerRpcMessageNames.SyncApply -> workspaceMembership?.canWrite(request.workspaceId, authenticatedPeer) != false
+            else -> workspaceMembership?.canRead(request.workspaceId, authenticatedPeer) != false
+        }
+        if (!membershipAllowed) {
+            sendError(link, request, "link.workspace_access_denied", "Peer lacks workspace membership for this sync operation", false)
             return
         }
         val workspace = workspaces.workspace(request.workspaceId)
@@ -253,7 +289,7 @@ class StudyFlowPeerServer(
                 val pull = runCatching {
                     StudyFlowLinkCodec.decodePayload(StudyFlowSyncPullRequest.serializer(), request.payload)
                 }.getOrElse {
-                    sendError(link, request, "invalid_sync_pull", "Invalid sync pull request", false)
+                    sendError(link, request, "link.invalid_sync_pull", "Invalid sync pull request", false)
                     return
                 }
                 val batch = workspace.reconciliation.nextBatch(pull, messageIds.next("operations-batch"))
@@ -272,11 +308,11 @@ class StudyFlowPeerServer(
                 val batch = runCatching {
                     StudyFlowLinkCodec.decodePayload(StudyFlowSyncOperationsBatch.serializer(), request.payload)
                 }.getOrElse {
-                    sendError(link, request, "invalid_sync_batch", "Invalid sync operation batch", false)
+                    sendError(link, request, "link.invalid_sync_batch", "Invalid sync operation batch", false)
                     return
                 }
                 val result = runCatching { workspace.reconciliation.applyBatch(batch) }.getOrElse {
-                    sendError(link, request, "sync_apply_failed", it.message ?: "Sync apply failed", true)
+                    sendError(link, request, "link.sync_apply_failed", it.message ?: "Sync apply failed", true)
                     return
                 }
                 link.send(
@@ -296,19 +332,19 @@ class StudyFlowPeerServer(
         authenticatedPeer: StudyFlowDeviceId?,
     ) {
         if (authenticatedPeer == null || authenticatedPeer != request.senderDeviceId) {
-            sendError(link, request, "authentication_required", "Trusted reconnect is required", false)
+            sendError(link, request, "link.authentication_required", "Trusted reconnect is required", false)
             return
         }
         val trusted = trustManager.trustedPeers()
         val authenticatedRecord = trusted.firstOrNull { it.peer.deviceId == authenticatedPeer }
         if (authenticatedRecord == null) {
-            sendError(link, request, "peer_revoked", "Peer trust was revoked", false)
+            sendError(link, request, "link.peer_revoked", "Peer trust was revoked", false)
             return
         }
         val exchange = runCatching {
             StudyFlowLinkCodec.decodePayload(StudyFlowPresenceExchangeRequest.serializer(), request.payload)
         }.getOrElse {
-            sendError(link, request, "invalid_presence_exchange", "Invalid presence exchange", false)
+            sendError(link, request, "link.invalid_presence_exchange", "Invalid presence exchange", false)
             return
         }
         val trustedSourceIds = trusted.mapTo(linkedSetOf()) { it.peer.deviceId }
@@ -345,39 +381,39 @@ class StudyFlowPeerServer(
         authenticatedPeer: StudyFlowDeviceId?,
     ) {
         if (authenticatedPeer == null || authenticatedPeer != request.senderDeviceId) {
-            sendError(link, request, "authentication_required", "Trusted reconnect is required", false)
+            sendError(link, request, "link.authentication_required", "Trusted reconnect is required", false)
             return
         }
         if (trustManager.trustedPeers().none { it.peer.deviceId == authenticatedPeer }) {
-            sendError(link, request, "peer_revoked", "Peer trust was revoked", false)
+            sendError(link, request, "link.peer_revoked", "Peer trust was revoked", false)
             return
         }
         val delivery = runCatching {
             StudyFlowLinkCodec.decodePayload(StudyFlowNotificationDelivery.serializer(), request.payload)
         }.getOrElse {
-            sendError(link, request, "invalid_notification_delivery", "Invalid notification delivery", false)
+            sendError(link, request, "link.invalid_notification_delivery", "Invalid notification delivery", false)
             return
         }
         if (delivery.sourceDeviceId != authenticatedPeer || delivery.sourceDeviceId != request.senderDeviceId) {
             sendError(
                 link,
                 request,
-                "identity_mismatch",
+                "link.identity_mismatch",
                 "Notification source does not match authenticated peer",
                 false,
             )
             return
         }
         if (delivery.targetDeviceId != localIdentity.descriptor.deviceId) {
-            sendError(link, request, "wrong_target", "Notification targets another device", false)
+            sendError(link, request, "link.wrong_target", "Notification targets another device", false)
             return
         }
         if (delivery.notification.route.workspaceId != request.workspaceId) {
-            sendError(link, request, "workspace_mismatch", "Notification route workspace mismatch", false)
+            sendError(link, request, "link.workspace_mismatch", "Notification route workspace mismatch", false)
             return
         }
         if (!delivery.notification.route.accepts(localIdentity.descriptor)) {
-            sendError(link, request, "route_rejected", "Notification route does not accept this target", false)
+            sendError(link, request, "link.route_rejected", "Notification route does not accept this target", false)
             return
         }
         val ack = notificationDeliveryHandler(delivery) ?: StudyFlowNotificationDeliveryAck(
@@ -404,15 +440,27 @@ class StudyFlowPeerServer(
         authenticatedPeer: StudyFlowDeviceId?,
     ) {
         if (authenticatedPeer == null || authenticatedPeer != request.senderDeviceId) {
-            sendError(link, request, "authentication_required", "Trusted reconnect is required", false)
+            sendError(link, request, "link.authentication_required", "Trusted reconnect is required", false)
             return
         }
-        if (trustManager.trustedPeers().none { it.peer.deviceId == authenticatedPeer }) {
-            sendError(link, request, "peer_revoked", "Peer trust was revoked", false)
+        val authenticatedRecord = trustManager.trustedPeers().firstOrNull { it.peer.deviceId == authenticatedPeer }
+        if (authenticatedRecord == null) {
+            sendError(link, request, "link.peer_revoked", "Peer trust was revoked", false)
+            return
+        }
+        val requiredCapabilities = StudyFlowRoutedRpcContracts.requiredSenderCapabilities(request.name)
+        if (!authenticatedRecord.peer.capabilities.containsAll(requiredCapabilities)) {
+            sendError(
+                link,
+                request,
+                StudyFlowLinkErrorCodes.UnsupportedCapability,
+                "Peer did not advertise required routed-RPC capability",
+                false,
+            )
             return
         }
         if (workspaceMembership?.canRead(request.workspaceId, authenticatedPeer) == false) {
-            sendError(link, request, "workspace_access_denied", "Peer is not a member of this workspace", false)
+            sendError(link, request, "link.workspace_access_denied", "Peer is not a member of this workspace", false)
             return
         }
         routedRpcBus.publish(
@@ -441,6 +489,7 @@ class StudyFlowPeerServer(
         name: String,
         payload: kotlinx.serialization.json.JsonObject,
     ): StudyFlowLinkEnvelope = StudyFlowLinkEnvelope(
+        protocol = request.protocol,
         messageId = messageIds.next("response"),
         workspaceId = request.workspaceId,
         senderDeviceId = localIdentity.descriptor.deviceId,
@@ -460,6 +509,7 @@ class StudyFlowPeerServer(
     ) {
         link.send(
             StudyFlowLinkEnvelope(
+                protocol = if (StudyFlowLinkProtocol.CurrentSupport.contains(request.protocol)) request.protocol else StudyFlowLinkProtocol.Current,
                 messageId = messageIds.next("error"),
                 workspaceId = request.workspaceId,
                 senderDeviceId = localIdentity.descriptor.deviceId,
@@ -634,9 +684,11 @@ class StudyFlowRemoteSyncPeerSession(
         link.send(request)
         val response = link.receive() ?: error("Peer closed the SFLP connection")
         require(response.correlationId == request.messageId) { "SFLP response correlation mismatch" }
+        require(StudyFlowLinkProtocol.CurrentSupport.contains(response.protocol)) { "Peer returned an unsupported SFLP protocol" }
+        require(response.protocol == request.protocol) { "SFLP response protocol does not match the request" }
         if (response.messageType == StudyFlowLinkMessageType.ERROR) {
             val error = StudyFlowLinkCodec.decodePayload(StudyFlowLinkError.serializer(), response.payload)
-            throw StudyFlowPeerUnavailableException("${error.code}: ${error.message}")
+            throw StudyFlowRemoteProtocolException(error)
         }
         require(response.messageType == StudyFlowLinkMessageType.RESPONSE) { "Expected an SFLP response" }
         require(response.name == expectedName) { "Unexpected SFLP response ${response.name}" }
@@ -666,8 +718,9 @@ class StudyFlowNetworkPairingClient(
             .mapNotNull { hint -> runCatching { StudyFlowManualEndpointParser.parse(hint) }.getOrNull() }
             .firstOrNull()
             ?: error("Pairing QR does not contain a usable endpoint")
+        require(payload.isActive(clock.nowEpochMillis())) { "Pairing QR is expired" }
         val requestPayload = pairingClient.requestFromQr(qrPayload, clock.nowEpochMillis())
-        return sendPairingRequest(endpoint, requestPayload)
+        return sendPairingRequest(endpoint, requestPayload, payload.host.deviceId)
     }
 
     fun pairFromCode(
@@ -677,11 +730,13 @@ class StudyFlowNetworkPairingClient(
     ): StudyFlowTrustedPeerRecord = sendPairingRequest(
         endpoint,
         pairingClient.requestFromCode(offer, pairingCode, clock.nowEpochMillis()),
+        offer.host.deviceId,
     )
 
     private fun sendPairingRequest(
         endpoint: StudyFlowTransportEndpoint,
         pairingRequest: StudyFlowPairingRequest,
+        expectedHostDeviceId: StudyFlowDeviceId,
     ): StudyFlowTrustedPeerRecord {
         StudyFlowLinkConnection(transportRegistry.connect(endpoint)).use { link ->
             val request = StudyFlowLinkEnvelope(
@@ -696,10 +751,16 @@ class StudyFlowNetworkPairingClient(
             link.send(request)
             val response = link.receive() ?: error("Pairing host closed the connection")
             require(response.correlationId == request.messageId) { "Pairing response correlation mismatch" }
+            require(StudyFlowLinkProtocol.CurrentSupport.contains(response.protocol)) { "Pairing response uses an unsupported protocol" }
+            require(response.protocol == request.protocol) { "Pairing response protocol mismatch" }
+            require(response.senderDeviceId == expectedHostDeviceId) { "Pairing response came from an unexpected host" }
+            require(response.workspaceId == StudyFlowLinkSystemWorkspaceId) { "Pairing response workspace mismatch" }
             if (response.messageType == StudyFlowLinkMessageType.ERROR) {
                 val error = StudyFlowLinkCodec.decodePayload(StudyFlowLinkError.serializer(), response.payload)
-                error("Pairing failed: ${error.code}")
+                throw StudyFlowRemoteProtocolException(error)
             }
+            require(response.messageType == StudyFlowLinkMessageType.RESPONSE) { "Expected a pairing RESPONSE envelope" }
+            require(response.name == StudyFlowPairingMessageNames.Grant) { "Unexpected pairing response ${response.name}" }
             val grant = runCatching {
                 StudyFlowLinkCodec.decodePayload(StudyFlowPairingGrant.serializer(), response.payload)
             }.getOrElse {
@@ -709,6 +770,7 @@ class StudyFlowNetworkPairingClient(
                 )
                 error("Pairing rejected: ${rejected.reason}")
             }
+            require(grant.host.deviceId == expectedHostDeviceId) { "Pairing grant host does not match response sender" }
             return pairingClient.acceptGrant(grant, clock.nowEpochMillis())
         }
     }
