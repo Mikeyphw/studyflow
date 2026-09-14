@@ -1,3 +1,10 @@
+# OV23 — Desktop runtime, UX, tray & SFLP correctness
+
+- Hardened Desktop StudyFlow Link UX so pairing offers never advertise loopback-only endpoints and manual/QR endpoints are normalized through a Desktop peer policy.
+- Added retry-aware sync summaries, reachable-peer health, and Settings copy for no-shareable-endpoint conditions.
+- Isolated AWT tray action callback failures and corrected Desktop reminder time labels to use local time from epoch instants.
+- Fixed Desktop restore Settings copy so it reflects OV22 immediate memory reload instead of claiming a restart is required.
+
 
 ## OV18 — Native TV durable canonical state & action journal
 

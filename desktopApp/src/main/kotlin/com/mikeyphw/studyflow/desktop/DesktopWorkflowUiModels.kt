@@ -24,8 +24,10 @@ import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
 import com.mikeyphw.studyflow.core.model.StudyTest
 import com.mikeyphw.studyflow.core.model.ThemeMode
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
-private const val MinuteMillis: Long = 60_000L
 
 data class DesktopPlannerScreenState(
     val status: DesktopScreenStatus,
@@ -370,9 +372,6 @@ fun buildDesktopPracticeDeck(questions: List<Question>): List<Question> = Practi
     request = PracticeDeckRequest(disputedOnly = false, minimumDifficulty = 2, limit = 8),
 )
 
-private fun formatRelativeStudyTime(epochMillis: Long): String {
-    val minutes = epochMillis / MinuteMillis
-    val hour = ((minutes / 60L) % 24L).toString().padStart(2, '0')
-    val minute = (minutes % 60L).toString().padStart(2, '0')
-    return "${hour}:${minute}"
-}
+private fun formatRelativeStudyTime(epochMillis: Long): String = DateTimeFormatter.ofPattern("HH:mm")
+    .withZone(ZoneId.systemDefault())
+    .format(Instant.ofEpochMilli(epochMillis))

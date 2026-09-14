@@ -215,11 +215,12 @@ args = [
 ]
 
 [targets.studyflow_desktop.tasks]
-build = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", ":desktopApp:compileKotlin"]
+build = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", "verifyDesktopDov23NativeDesktopIntegration", ":desktopApp:compileKotlin"]
 test = [
   "verifyCpovAllContracts",
   "verifyStudyFlowDesktopAllContracts",
   "verifySflp08Sflp09AndroidDesktopIntegration",
+  "verifyDesktopDov23NativeDesktopIntegration",
   ":core:domain:test",
   ":core:link:test",
   ":core:model:test",
@@ -243,12 +244,13 @@ gradle_metaspace_mb = 768
 memory_guard_mb = 0
 
 [targets.studyflow_desktop.validation.phases]
-preflight = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", "verifyOv19PromiseAudit"]
+preflight = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", "verifyDesktopDov23NativeDesktopIntegration", "verifyOv19PromiseAudit"]
 dependencies = []
 compile = []
 resources = []
 unit-test = [
   "verifySflp08Sflp09AndroidDesktopIntegration",
+  "verifyDesktopDov23NativeDesktopIntegration",
   ":core:domain:test",
   ":core:link:test",
   ":core:model:test",

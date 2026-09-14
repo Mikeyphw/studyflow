@@ -618,7 +618,7 @@ fun DesktopSettingsScreen(
             }
             Text(
                 desktopText(
-                    "Restore is rollback-protected and requires an application restart before continuing work.",
+                    "Restore is rollback-protected, reloads Desktop memory immediately, and does not require restart.",
                 ),
             )
             if (portabilityActionMessage.isNotBlank()) Text(portabilityActionMessage, fontWeight = FontWeight.Bold)
@@ -630,7 +630,12 @@ fun DesktopSettingsScreen(
             } else {
                 Text("Device: ${linkState.localDeviceId}", fontWeight = FontWeight.Bold)
                 Text("Status: ${linkState.status}")
+                Text("Health: ${linkState.healthMessage}")
+                Text(desktopText(linkState.capabilityMessage))
                 Text("Pending offline operations: ${linkState.pendingOutgoingOperations}")
+                if (linkState.localEndpoints.isEmpty()) {
+                    Text(desktopText("No shareable endpoint is being advertised from loopback-only desktop addresses."))
+                }
                 linkState.localEndpoints.forEach { endpoint -> Text("• $endpoint") }
                 if (linkActionMessage.isNotBlank()) Text(linkActionMessage)
 
@@ -677,7 +682,7 @@ fun DesktopSettingsScreen(
                                 if (peer.trusted) "trusted" else "revoked",
                             fontWeight = FontWeight.Bold,
                         )
-                        Text("${peer.endpointCount} remembered endpoint(s) • ${peer.deviceId}")
+                        Text("${peer.endpointCount} remembered endpoint(s) • ${if (peer.reachable) "reachable" else "not currently reachable"} • ${peer.deviceId}")
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(onClick = { onRevokePeer(peer.deviceId) }, enabled = peer.trusted) {
                                 Text(desktopText("Revoke"))

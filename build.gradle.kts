@@ -2505,3 +2505,15 @@ tasks.register<Exec>("verifyOv22DesktopPersistenceAtomicRestoreFileSafety") {
     )
     commandLine("bash", "scripts/validate_ov22_desktop_persistence_atomic_restore_file_safety.sh")
 }
+
+// OV23 — Desktop runtime, UX, tray & SFLP correctness.
+tasks.register<Exec>("verifyOv23DesktopRuntimeUxSflpCorrectness") {
+    group = "verification"
+    description = "Validates OV23 Desktop runtime copy, tray action isolation, SFLP endpoint truth, retry-aware sync status and local-time labels."
+    dependsOn(
+        ":core:link:test",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:test",
+    )
+    commandLine("bash", "scripts/validate_ov23_desktop_runtime_ux_sflp_correctness.sh")
+}

@@ -9,6 +9,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowLinkCapabilities
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkCapability
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowManualDiscovery
+import com.mikeyphw.studyflow.core.link.StudyFlowManualEndpointParser
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingPublicOffer
 import com.mikeyphw.studyflow.core.link.StudyFlowPairingQrCodec
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerRuntime
@@ -117,10 +118,12 @@ class DesktopStudyFlowLinkService(
                 path = "/sflp",
             )
         }
-        val hints = (webSocketEndpoints + tcpEndpoints)
+        val hints = DesktopStudyFlowLinkUxPolicy.shareableEndpoints(webSocketEndpoints + tcpEndpoints)
             .map(StudyFlowTransportEndpoint::canonicalUri)
             .distinct()
-            .ifEmpty { listOf("sflp+tcp://127.0.0.1:$port") }
+        require(hints.isNotEmpty()) {
+            "No shareable Desktop LAN endpoint is available; pair by entering this desktop from the other device or add a reachable relay/manual endpoint."
+        }
         return runtime.createPairingOffer(hints).also {
             currentOffer = it
             lastStatus = "Pairing offer ready"
@@ -135,7 +138,9 @@ class DesktopStudyFlowLinkService(
         val payload = StudyFlowPairingQrCodec.decode(qrPayload)
         val record = runtime.pairingClient.pairFromQr(qrPayload)
         val endpoints = payload.endpointHints.mapNotNull { hint ->
-            runCatching { com.mikeyphw.studyflow.core.link.StudyFlowManualEndpointParser.parse(hint) }.getOrNull()
+            runCatching {
+                DesktopStudyFlowLinkUxPolicy.validateManualEndpoint(StudyFlowManualEndpointParser.parse(hint))
+            }.getOrNull()
         }
         if (endpoints.isNotEmpty()) runtime.rememberEndpoints(record.peer.deviceId, endpoints)
         synchronized(activeWorkspaces) { activeWorkspaces.forEach { runtime.grantWorkspaceAccess(it, record.peer.deviceId, StudyFlowWorkspaceAccess.WRITE) } }
@@ -144,7 +149,8 @@ class DesktopStudyFlowLinkService(
     }
 
     fun rememberManualEndpoint(value: String) {
-        manualDiscovery.remember(value, System.currentTimeMillis())
+        val endpoint = DesktopStudyFlowLinkUxPolicy.validateManualEndpoint(StudyFlowManualEndpointParser.parse(value))
+        manualDiscovery.remember(endpoint.canonicalUri(), System.currentTimeMillis())
         runtime.ingestDiscovery()
         lastStatus = "Manual peer endpoint remembered"
     }
@@ -167,11 +173,13 @@ class DesktopStudyFlowLinkService(
     fun syncAll(workspaceId: StudyFlowWorkspaceId): List<StudyFlowReconnectResult> {
         registerWorkspace(workspaceId)
         runtime.ingestDiscovery()
-        return runtime.workspacePeers(workspaceId).mapNotNull { record ->
+        val results = runtime.workspacePeers(workspaceId).mapNotNull { record ->
             runCatching { runtime.reconcileWith(workspaceId, record.peer.deviceId) }
                 .onFailure { lastStatus = "Peer offline: ${record.peer.displayName}" }
                 .getOrNull()
         }
+        lastStatus = DesktopStudyFlowLinkUxPolicy.syncSummary(results)
+        return results
     }
 
     fun updatePresence(
@@ -206,9 +214,11 @@ class DesktopStudyFlowLinkService(
         val port = serverEndpoint?.port
         val tcpEndpoints = if (port == null) emptyList() else StudyFlowLanEndpointResolver.endpointsForPort(port)
         val wsPort = browserBridgeEndpoint?.port
-        val endpoints = if (wsPort == null) tcpEndpoints else (
-            tcpEndpoints.map { it.copy(scheme = StudyFlowTransportScheme.WEBSOCKET, port = wsPort, path = "/sflp") } + tcpEndpoints
-        ).distinct()
+        val endpoints = DesktopStudyFlowLinkUxPolicy.shareableEndpoints(
+            if (wsPort == null) tcpEndpoints else (
+                tcpEndpoints.map { it.copy(scheme = StudyFlowTransportScheme.WEBSOCKET, port = wsPort, path = "/sflp") } + tcpEndpoints
+            ).distinct()
+        )
         val pending = workspaceId?.let { runtime.workspace(it).outgoingQueue.entries().size } ?: 0
         return DesktopStudyFlowLinkState(
             localDeviceId = localDeviceId.value,
@@ -229,6 +239,7 @@ class DesktopStudyFlowLinkService(
                     clientKind = record.peer.clientKind.name,
                     trusted = record.state.name == "TRUSTED",
                     endpointCount = runtime.endpointStore.get(record.peer.deviceId)?.endpoints?.size ?: 0,
+                    reachable = runtime.bestEndpoint(record.peer.deviceId) != null,
                 )
             },
             pairingCode = pairingCode(),
@@ -246,7 +257,10 @@ class DesktopStudyFlowLinkService(
                 )
             },
             status = lastStatus,
-        )
+            healthMessage = "pending=$pending endpoints=${endpoints.size} trusted=${runtime.trustManager.rememberedPeers().size}",
+        ).let { state ->
+            state.copy(capabilityMessage = DesktopStudyFlowLinkUxPolicy.capabilityMessage(state))
+        }
     }
 
     private fun backgroundReconnect() {
@@ -329,6 +343,8 @@ data class DesktopStudyFlowLinkState(
     val pendingOutgoingOperations: Int,
     val presence: List<DesktopStudyFlowPresence>,
     val status: String,
+    val healthMessage: String,
+    val capabilityMessage: String = "Desktop SFLP status unavailable",
 )
 
 data class DesktopStudyFlowPresence(
@@ -355,4 +371,5 @@ data class DesktopStudyFlowTrustedPeer(
     val clientKind: String,
     val trusted: Boolean,
     val endpointCount: Int,
+    val reachable: Boolean = false,
 )

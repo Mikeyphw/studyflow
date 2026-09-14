@@ -891,7 +891,7 @@ class DesktopAppState(
         val service = services.linkService ?: return
         linkActionMessage = runCatching {
             val offer = service.createPairingOffer()
-            "Pairing offer ready until ${offer.expiresAtEpochMillis}"
+            "Pairing offer ready until ${DesktopStudyFlowLinkUxPolicy.formatPairingExpiry(offer.expiresAtEpochMillis)}"
         }.getOrElse { error -> "Pairing offer failed: ${error.message.orEmpty()}" }
         linkRevision += 1
     }
@@ -918,8 +918,7 @@ class DesktopAppState(
         val service = services.linkService ?: return
         val workspace = linkWorkspaceId() ?: return
         linkActionMessage = runCatching {
-            val results = service.syncAll(workspace)
-            "Sync complete for ${results.size} peer(s)"
+            DesktopStudyFlowLinkUxPolicy.syncSummary(service.syncAll(workspace))
         }.getOrElse { error -> "Sync failed: ${error.message.orEmpty()}" }
         linkRevision += 1
     }

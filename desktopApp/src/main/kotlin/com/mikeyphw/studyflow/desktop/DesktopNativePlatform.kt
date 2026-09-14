@@ -136,7 +136,14 @@ private object AwtDesktopNotificationPort : DesktopNotificationPort {
     }
 
     private fun fire(action: DesktopAttentionSurfaceAction, notificationId: String? = null) {
-        handler?.invoke(action, notificationId)
+        val callback = handler ?: return
+        runCatching { callback(action, notificationId) }.onFailure { error ->
+            trayIconRef?.displayMessage(
+                "StudyFlow action failed",
+                error.message?.take(96) ?: "Desktop action could not be completed.",
+                TrayIcon.MessageType.ERROR,
+            )
+        }
     }
 
     private fun createStudyFlowTrayImage(): BufferedImage = BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB).also { image ->

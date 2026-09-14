@@ -1,247 +1,163 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov22_desktop_persistence_atomic_restore_file_safety_v1",
+  "name": "studyflow_ov23_desktop_runtime_ux_tray_sflp_correctness_v1",
   "target": "studyflow_android",
-  "description": "OV22 Desktop persistence, atomicity, restore and file safety remediation overlay.",
+  "description": "OV23 Desktop runtime, UX, tray and SFLP correctness remediation overlay.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV22: harden Desktop persistence atomic restore and file safety"
+    "message": "OV23: harden Desktop runtime UX tray and SFLP correctness"
   },
   "baseline": {
-    "previous_overlay": "studyflow_ov21_unified_tv_control_plane_v1",
-    "previous_commit": "user-applied OV21 cumulative state",
-    "roadmap_overlay": "22 of 30"
+    "previous_overlay": "studyflow_ov22_desktop_persistence_atomic_restore_file_safety_v1",
+    "previous_commit": "user-applied OV22 cumulative state",
+    "roadmap_overlay": "23 of 30"
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov22_desktop_persistence_atomic_restore_file_safety_v1",
+    "name": "studyflow_ov23_desktop_runtime_ux_tray_sflp_correctness_v1",
     "target": "studyflow_android",
     "sections": [
-      "desktop-ui-nonblocking",
-      "referential-cleanup",
-      "linked-session-atomicity",
-      "backup-restore-reload",
-      "migration-locking-permissions-secret-clearing",
+      "desktop-sflp-endpoint-truth",
+      "retry-aware-sync-health",
+      "tray-action-isolation",
+      "settings-copy-corrections",
+      "local-time-runtime-labels",
       "validation"
     ]
   },
   "findings": [
     {
-      "id": "S9-01",
+      "id": "S9-10",
       "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Desktop UI event-thread blocking removed from normal action/search paths"
+      "status": "closed-by-ov23",
+      "evidence": "Desktop pairing hints filter loopback and wildcard endpoints before creating QR offers"
     },
     {
-      "id": "S9-02",
+      "id": "S9-11",
       "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Desktop subject/topic deletion now scrubs cross-store references"
+      "status": "closed-by-ov23",
+      "evidence": "Desktop manual and QR peer endpoints reject self-loopback/wildcard addresses"
     },
     {
-      "id": "S9-03",
+      "id": "S9-12",
       "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Linked Desktop session creation rolls back across session/activity files"
+      "status": "closed-by-ov23",
+      "evidence": "Desktop sync actions report complete, partial, retryable and terminal outcomes truthfully"
     },
     {
-      "id": "S9-04",
-      "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Practice/mock submissions commit wrong-answer evidence before attempts"
-    },
-    {
-      "id": "S9-05",
-      "severity": "CRITICAL",
-      "status": "closed-by-ov22",
-      "evidence": "Restore reloads running in-memory Desktop graph after replacing disk"
-    },
-    {
-      "id": "S9-06",
-      "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Encrypted backup uses point-in-time staging snapshot"
-    },
-    {
-      "id": "S9-07",
-      "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Restore validates auxiliary Desktop feature stores"
-    },
-    {
-      "id": "S9-08",
-      "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Legacy Desktop contentMode migration is tolerant"
-    },
-    {
-      "id": "S9-09",
-      "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Single-instance workspace file lock blocks multi-process lost updates"
-    },
-    {
-      "id": "S12-06",
+      "id": "S9-13",
       "severity": "MEDIUM",
-      "status": "closed-by-ov22",
-      "evidence": "Workspace and SFLP/trust files apply owner-only permissions"
+      "status": "closed-by-ov23",
+      "evidence": "Desktop Settings exposes link health, shareable endpoint count and reachable peer state"
     },
     {
-      "id": "S12-09",
-      "severity": "MEDIUM-LOW",
-      "status": "closed-by-ov22",
-      "evidence": "Encrypted-backup password uses zeroed CharArray secret"
+      "id": "S9-14",
+      "severity": "MEDIUM",
+      "status": "closed-by-ov23",
+      "evidence": "Desktop pairing expiry is formatted as local user time instead of raw epoch millis"
     },
     {
-      "id": "DS2-38",
-      "severity": "HIGH",
-      "status": "closed-by-ov22",
-      "evidence": "Linked session/activity transitions use atomic rollback semantics"
+      "id": "S9-15",
+      "severity": "MEDIUM",
+      "status": "closed-by-ov23",
+      "evidence": "AWT tray action callback failures are isolated and surfaced as bounded StudyFlow failures"
+    },
+    {
+      "id": "S10-01",
+      "severity": "MEDIUM",
+      "status": "closed-by-ov23",
+      "evidence": "Desktop reminder Settings labels format local time from epoch instants"
+    },
+    {
+      "id": "DS2-46",
+      "severity": "MEDIUM",
+      "status": "closed-by-ov23",
+      "evidence": "Desktop restore copy matches immediate memory reload and no longer claims restart required"
     }
   ],
   "validation": {
     "hook": ".devtool-artifact/validation/validate.sh",
-    "gradle_task": "verifyOv22DesktopPersistenceAtomicRestoreFileSafety",
+    "gradle_task": "verifyOv23DesktopRuntimeUxSflpCorrectness",
     "daemon_stop": false
   },
   "inventory": {
-    "count": 27,
+    "count": 15,
     "entries": [
       {
         "path": ".devtool-artifact/validation/validate.sh",
-        "size": 105,
-        "sha256": "cd9478f0f8331dd4d1c3be8ad5655ccc26fcb93bb9cb7b31dfe3397d0c4499fa"
+        "size": 95,
+        "sha256": "8a2a8d5905ee6c54fff4c2e7041cb0e30ed5060b4aeae6360417897989e0e5e5"
+      },
+      {
+        "path": ".devtool.toml",
+        "size": 16231,
+        "sha256": "f9eb81e6ed71daae97e5138da7c570573cc4d78d8e30176bdb374e91ad3aa973"
       },
       {
         "path": "CHANGELOG.md",
-        "size": 80374,
-        "sha256": "447e1bbbe795ff5bfadc8749d5aadddb44ef293d06c8c7b56896bfbddd1ef085"
+        "size": 80964,
+        "sha256": "9509fea3f44070d5781e9196890892dde86b759d16b54796bf12c4829c03d006"
       },
       {
-        "path": "REMEDIATION_OV_22_IMPLEMENTATION.md",
-        "size": 4393,
-        "sha256": "21bcf14d639ec03d89bb0a4502c8b990fdf41c4b52ae654d26340ed7f4739e73"
+        "path": "REMEDIATION_OV_23_IMPLEMENTATION.md",
+        "size": 3624,
+        "sha256": "9fbdf806d776d7494afa4f37cb158033436df462a4f3263f8b4db61f7eee7cfc"
       },
       {
         "path": "build.gradle.kts",
-        "size": 99268,
-        "sha256": "58d32d62295b5c3e6fd05d970d9db1dd3681c3538ba453738d0ebfcd4e544990"
+        "size": 99773,
+        "sha256": "f3ebf5f9893a1f1245e487377898e82ec5397db08ba825927825dc346b31d90d"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAnalyticsDiscovery.kt",
-        "size": 14615,
-        "sha256": "59e3d6a7c568f587a3e42d3744b5a3a7ee86244d16c6ce5ebea355d6d0fd2261"
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAnalyticsSearchSettingsScreens.kt",
+        "size": 35491,
+        "sha256": "b1364b3b23c1cf598c788f637130249df070d612849dec38c2a575d00715e768"
       },
       {
         "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAppState.kt",
-        "size": 37287,
-        "sha256": "c49577733b67b0c098995872a723057e8c88406b319ff7c216efec4ef4df3f16"
+        "size": 37309,
+        "sha256": "8a9812563d85e1674f86ddf19f2aa20e1cca18849b0d9e8c70f2512a1a6f15c5"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModePersistence.kt",
-        "size": 18556,
-        "sha256": "290710ebbc1828e43b26bc7c0d753123e48df8005f3ce4e4d71917deab59320f"
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopNativePlatform.kt",
+        "size": 7311,
+        "sha256": "54d51836849c67cca2a5d288363722c916effe9dced78bfb8d1ad2e79e0dde6d"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlanContentController.kt",
-        "size": 10436,
-        "sha256": "351848754809714a873a1b554546e7012087a99d3114c96a3d15d6d7c9a0399d"
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkService.kt",
+        "size": 16842,
+        "sha256": "772b68430baea12f127fb53188bb2982c767d127233aca87f3c99bc6c9b35639"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPortabilityController.kt",
-        "size": 47577,
-        "sha256": "b9a99afcb55b2b17f88255aa22b62e16d446593daaa0866f555d51c5ea7852c2"
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkUxPolicy.kt",
+        "size": 4211,
+        "sha256": "f51e6afdfa75651f99baed84ce53a16b378c0f2045f7e33f22372b2395dcd4ef"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPublicExamController.kt",
-        "size": 8146,
-        "sha256": "8c31532662b6c54d992a849b1646e32b249cb38b6914c65554b2d1814ee34e63"
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkflowUiModels.kt",
+        "size": 15222,
+        "sha256": "f978dd9efad2069e1e310f0366b805e8940715ee95d6724884edd63ed4cb3407"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPublicExamPersistence.kt",
-        "size": 39852,
-        "sha256": "b4646a73c765885bf1bd9c3ec8ee2be0303ab21e930626bf37b395f5ceb91dfc"
+        "path": "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopOv23RuntimeUxSflpCorrectnessTest.kt",
+        "size": 4096,
+        "sha256": "99a76b8d283352daa33fe827cfa000b6ec0af940023fe9783f1c7f09c7ba3186"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopSessionRuntimeController.kt",
-        "size": 4348,
-        "sha256": "e6f1751e909772ff04184c0ca97b460ccd5ff728598e92afe01d0ad7005dd9e1"
+        "path": "docs/remediation/OV23_DESKTOP_RUNTIME_UX_TRAY_SFLP_CORRECTNESS.md",
+        "size": 3624,
+        "sha256": "9fbdf806d776d7494afa4f37cb158033436df462a4f3263f8b4db61f7eee7cfc"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyContentRepository.kt",
-        "size": 19596,
-        "sha256": "4842daa16cb056c2558b97f55d7b1e67a0b5ec486406fdea915e8e88df8d211f"
+        "path": "scripts/validate_ov23_desktop_runtime_ux_sflp_correctness.sh",
+        "size": 105,
+        "sha256": "be94de480cbd45b1754e1157016b4b080b6e52ab44eed25d7b0aa7cd5e8a384f"
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkPersistence.kt",
-        "size": 16811,
-        "sha256": "76660d526ba0a3abdaac487a617b6370a624e8c8ffc5a143cd0714a780d87643"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowServices.kt",
-        "size": 25696,
-        "sha256": "2e61e9017b5d2422ab50d16dff39ae11c8af976e8dd2443620a265081e734dc1"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyProgressRepository.kt",
-        "size": 10010,
-        "sha256": "69b30d7da38cf2c1c8dc05ad81500dba4f6949d4d3b207a5a49824ebaecd4069"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopUiActionRunner.kt",
-        "size": 1184,
-        "sha256": "07be5d69cc094e03820cdfe56691c927d8e2d6e5b5b7b78cb178cb238ba046a6"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkspaceStore.kt",
-        "size": 38720,
-        "sha256": "e826e22f939b8306b490d99e24607a9304927bccbba782fd08f249f952d1025a"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWritingWorkspaceController.kt",
-        "size": 4825,
-        "sha256": "dcbc89b35cf727a4f90979fce9662df7e0caef24d513d5f6fef267e8859810d6"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyLibraryRepository.kt",
-        "size": 5036,
-        "sha256": "a771c8b88452a51538fc31b90980918027fba9645ed39c6841e91ec9cbcf8cb6"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyPlanRepository.kt",
-        "size": 4801,
-        "sha256": "d1486ae0e5859c2de32613541ea3a0eddcc4d4fb7610cf14a5a297916b7d0315"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyPracticeRepository.kt",
-        "size": 8946,
-        "sha256": "58b50453eae55bac28607fe6f20c782548c65661fdf389e63354973561c4e5b9"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyReviewRepository.kt",
-        "size": 10028,
-        "sha256": "ba4609e7bb74906fc70ad592029beca045b4614e10c9aadc6df10cf8edd8d407"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyScheduleRepository.kt",
-        "size": 19498,
-        "sha256": "f01cca3f225bda60a4657edb0efea9a999ecc555b67dbc7247b356a829b16b51"
-      },
-      {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudySessionRepository.kt",
-        "size": 8955,
-        "sha256": "3a618ea21f0c58a3bf5fa904fcc7252b4435fb5d9679a30ed659923be8c0962d"
-      },
-      {
-        "path": "scripts/validate_ov22_desktop_persistence_atomic_restore_file_safety.sh",
-        "size": 229,
-        "sha256": "38d2929046bba6e3e9d946a549f0a49ec207e919a8d36a4a6407a5b0cad84679"
-      },
-      {
-        "path": "scripts/verify_ov22_desktop_persistence_atomic_restore_file_safety.py",
-        "size": 7511,
-        "sha256": "7edf44bb45792b122a801ba6121a012e59a59ac9abc2d371b3e7a3e96af9dab2"
+        "path": "scripts/verify_ov23_desktop_runtime_ux_sflp_correctness.py",
+        "size": 4513,
+        "sha256": "cfaf018d2263ed929e6b4d87c4328ff813d61cf009930a66256b35d593797974"
       }
     ]
   }
