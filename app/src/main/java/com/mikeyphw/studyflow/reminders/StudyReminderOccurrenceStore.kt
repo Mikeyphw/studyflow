@@ -8,6 +8,7 @@ import com.mikeyphw.studyflow.core.domain.ReminderNotificationContent
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationContentKind
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import java.security.MessageDigest
 
 private const val ReminderOccurrencePreferences = "studyflow_reminder_occurrences_v2"
 private const val FieldSeparator = '\u001f'
@@ -70,6 +71,25 @@ class StudyReminderOccurrenceStore(context: Context) {
         encoded.removeAll { value -> decodeScheduled(value)?.occurrenceId == candidate.occurrenceId }
         encoded += encodeScheduled(candidate.toOccurrence(snoozedFromOccurrenceId))
         preferences.edit(commit = true) { putStringSet(scheduledKey(planId), encoded) }
+    }
+
+    @Synchronized
+    fun purgeExpiredSnoozes(planId: StudyPlanId, nowEpochMillis: Long, graceMillis: Long = ExpiredSnoozeRetentionMillis): Int {
+        val encoded = preferences.getStringSet(scheduledKey(planId), emptySet()).orEmpty()
+        var removed = 0
+        val retained = encoded.filterTo(linkedSetOf()) { value ->
+            val occurrence = decodeScheduled(value)
+            val expiredSnooze = occurrence?.snoozedFromOccurrenceId != null &&
+                occurrence.fireAtEpochMillis + graceMillis < nowEpochMillis
+            if (expiredSnooze) removed += 1
+            !expiredSnooze
+        }
+        if (removed > 0) {
+            preferences.edit(commit = true) {
+                if (retained.isEmpty()) remove(scheduledKey(planId)) else putStringSet(scheduledKey(planId), retained)
+            }
+        }
+        return removed
     }
 
     @Synchronized
@@ -225,7 +245,16 @@ internal fun ReminderNotificationType.defaultContentKind(): ReminderNotification
     ReminderNotificationType.EXAM_COUNTDOWN -> ReminderNotificationContentKind.EXAM_COUNTDOWN
 }
 
-internal fun stableNotificationId(occurrenceId: String): Int = occurrenceId.hashCode() and 0x7fffffff
+private const val ExpiredSnoozeRetentionMillis = 7 * 24 * 60 * 60 * 1_000L
+
+internal fun stableNotificationId(occurrenceId: String): Int {
+    val digest = MessageDigest.getInstance("SHA-256").digest(occurrenceId.toByteArray(Charsets.UTF_8))
+    val raw = ((digest[0].toInt() and 0x7f) shl 24) or
+        ((digest[1].toInt() and 0xff) shl 16) or
+        ((digest[2].toInt() and 0xff) shl 8) or
+        (digest[3].toInt() and 0xff)
+    return raw.takeIf { it != 0 } ?: 1
+}
 
 private fun encodeNullable(value: String?): String = value?.let {
     Base64.encodeToString(it.toByteArray(Charsets.UTF_8), Base64.NO_WRAP or Base64.URL_SAFE)

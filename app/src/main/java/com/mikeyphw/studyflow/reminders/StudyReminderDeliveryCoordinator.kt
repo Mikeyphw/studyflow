@@ -62,6 +62,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicy
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionFocusPolicyEngine
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionPolicyOutcome
 import com.mikeyphw.studyflow.core.link.StudyFlowEntityId
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkClientKind
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.model.PlannedActivityId
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
@@ -304,6 +305,7 @@ class StudyReminderDeliveryCoordinator(
         }
         // POST_NOTIFICATIONS only gates native notification surfaces. ATT08 compact
         // widgets/tiles remain a valid ATT07 target, so due-time reconciliation must stay alive.
+        occurrenceStore.purgeExpiredSnoozes(planId, clock())
         val focusPolicy = focusPolicyStore.load(planId)
         val candidates = runtimePlan.notificationCandidates.map { candidate ->
             StudyReminderWakeupContracts.applyAuthoritativeQuietHours(candidate, focusPolicy, clock())
@@ -514,9 +516,44 @@ class StudyReminderDeliveryCoordinator(
             )
         val notification = delivery.notification
         val transportedRoute = notification.attentionRoute
+        val occurrence = notification.canonicalAttentionOccurrence(delivery.sourceDeviceId)
+        val recipientPlanId = notification.route.workspaceId.toRecipientPlanIdOrNull()
+        val policyDecision = recipientPlanId?.let { planId ->
+            StudyFlowAttentionFocusPolicyEngine.evaluate(
+                occurrence = occurrence.copy(timezoneId = TimeZone.getDefault().id),
+                policy = focusPolicyStore.load(planId),
+                nowEpochMillis = clock(),
+                ledgerEntry = attentionLedger.entry(occurrence.occurrenceId),
+                localClientKind = StudyFlowLinkClientKind.ANDROID,
+            )
+        }
+        runCatching { policyDecision?.let(attentionLedger::recordPolicyDecision) }
+        if (policyDecision?.outcome == StudyFlowAttentionPolicyOutcome.DEFER_UNTIL_QUIET_END) {
+            val deferredAt = policyDecision.deferredUntilEpochMillis ?: return remoteNotificationAck(
+                delivery,
+                StudyFlowNotificationDeliveryStatus.REJECTED,
+                "recipient_quiet_hours_deferred",
+            )
+            val planId = recipientPlanId ?: return remoteNotificationAck(
+                delivery,
+                StudyFlowNotificationDeliveryStatus.REJECTED,
+                "recipient_plan_unavailable",
+            )
+            val deferredCandidate = notification.toRecipientReminderCandidate(occurrence, deferredAt)
+            occurrenceStore.addScheduled(planId, deferredCandidate, snoozedFromOccurrenceId = occurrence.occurrenceId.value)
+            upsertAttentionScheduled(planId, deferredCandidate)
+            scheduleCandidate(planId, deferredCandidate)
+            StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
+            return remoteNotificationAck(delivery, StudyFlowNotificationDeliveryStatus.ACCEPTED, "recipient_quiet_hours_deferred")
+        }
+        if (policyDecision?.outcome == StudyFlowAttentionPolicyOutcome.SUPPRESS_DUPLICATE) {
+            return remoteNotificationAck(delivery, StudyFlowNotificationDeliveryStatus.DUPLICATE, "recipient_policy_duplicate")
+        }
+
         val selectedSurface = transportedRoute?.targetFor(localPeer.deviceId)?.surface
         val compactDelivery = transportedRoute?.compactOnly == true ||
-            selectedSurface == StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE
+            selectedSurface == StudyFlowAttentionDeliverySurface.WIDGET_OR_BADGE ||
+            (policyDecision?.outcome == StudyFlowAttentionPolicyOutcome.COMPACT_ONLY && transportedRoute != null)
         if (!compactDelivery && !notificationsAllowed()) {
             return remoteNotificationAck(
                 delivery,
@@ -532,7 +569,6 @@ class StudyReminderDeliveryCoordinator(
         val ack = reducer.apply(delivery)
         if (ack.status != StudyFlowNotificationDeliveryStatus.ACCEPTED) return ack
 
-        val occurrence = notification.canonicalAttentionOccurrence(delivery.sourceDeviceId)
         if (compactDelivery) {
             val compactRoute = checkNotNull(transportedRoute) {
                 "Compact delivery requires an ATT07 route"
@@ -557,9 +593,7 @@ class StudyReminderDeliveryCoordinator(
         val openIntent = PendingIntent.getActivity(
             appContext,
             stableNotificationId("remote:${notification.notificationId.value}"),
-            Intent(appContext, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            },
+            notification.remoteOpenIntent(appContext, occurrence, recipientPlanId),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val builder = NotificationCompat.Builder(appContext, channelId)
@@ -579,7 +613,7 @@ class StudyReminderDeliveryCoordinator(
                     .setContentText("Open StudyFlow to view this reminder.")
                     .build(),
             )
-        if (transportedRoute?.deliverSilently == true) builder.setSilent(true)
+        if (transportedRoute?.deliverSilently == true || policyDecision?.deliverSilently == true) builder.setSilent(true)
         NotificationManagerCompat.from(appContext).notify(
             stableNotificationId("remote:${notification.notificationId.value}"),
             builder.build(),
@@ -1179,6 +1213,59 @@ private fun ReminderNotificationCandidate.actions(): List<NotificationActionSpec
         ),
     )
     }
+}
+
+
+private fun StudyFlowWorkspaceId.toRecipientPlanIdOrNull(): StudyPlanId? =
+    value.removePrefix("plan-").takeIf { it != value && it.isNotBlank() }?.let(::StudyPlanId)
+
+private fun com.mikeyphw.studyflow.core.link.StudyFlowNotificationPayload.toRecipientReminderCandidate(
+    occurrence: StudyFlowAttentionOccurrence,
+    fireAtEpochMillis: Long,
+): ReminderNotificationCandidate = ReminderNotificationCandidate(
+    type = kind.toReminderNotificationType(),
+    occurrenceId = occurrence.occurrenceId.value,
+    content = ReminderNotificationContent(
+        kind = kind.toReminderNotificationType().defaultContentKind(),
+        targetId = occurrence.scheduleEntityId?.value,
+    ),
+    scheduledAtEpochMillis = occurrence.originalScheduledAtEpochMillis,
+    fireAtEpochMillis = fireAtEpochMillis,
+    delayedByQuietHours = true,
+)
+
+private fun com.mikeyphw.studyflow.core.link.StudyFlowNotificationPayload.remoteOpenIntent(
+    context: Context,
+    occurrence: StudyFlowAttentionOccurrence,
+    recipientPlanId: StudyPlanId?,
+): Intent {
+    val planId = recipientPlanId ?: return Intent(context.applicationContext, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
+    val type = kind.toReminderNotificationType()
+    return studyReminderOpenIntent(
+        context = context,
+        planId = planId,
+        type = type,
+        identity = studyReminderIdentityUri(
+            context,
+            planId,
+            type,
+            "remote:${notificationId.value}:${occurrence.occurrenceId.value}",
+            openApp = true,
+        ),
+        targetId = occurrence.scheduleEntityId?.value,
+    )
+}
+
+private fun StudyFlowNotificationKind.toReminderNotificationType(): ReminderNotificationType = when (this) {
+    StudyFlowNotificationKind.REVIEW_DUE -> ReminderNotificationType.DUE_REVIEWS
+    StudyFlowNotificationKind.SESSION_RESUME -> ReminderNotificationType.SESSION_ENDING
+    StudyFlowNotificationKind.STUDY_DUE -> ReminderNotificationType.PLANNED_ACTIVITY
+    StudyFlowNotificationKind.SYNC_ATTENTION,
+    StudyFlowNotificationKind.HANDOFF_READY,
+    StudyFlowNotificationKind.MATERIAL_READY,
+    -> ReminderNotificationType.DAILY_SUMMARY
 }
 
 private fun StudyFlowNotificationKind.remoteChannelId(): String = when (this) {

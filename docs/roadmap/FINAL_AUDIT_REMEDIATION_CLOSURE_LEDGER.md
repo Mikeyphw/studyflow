@@ -148,4 +148,7 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S7-06 | Session-ending, session-completed and break-completed candidates use exact alarm scheduling when exact alarms are allowed. | `StudyReminderWakeupContracts.requiresExactWakeup`; `scheduleExactOrShortestWindow`; manifest exact-alarm permission. |
 | S7-07 | Widget snapshot projection keeps sub-minute upcoming activity boundaries instead of dropping them through a one-minute filter. | `StudyFlowWidgetSnapshotProjectorAtt03Test.keepsSubMinutePlannedBoundaryForExactFreshnessScheduler`. |
 | S7-08 | Widget freshness alarms use exact near-term scheduling for active-session/minute-boundary refreshes with bounded fallback. | `StudyFlowWidgetFreshnessScheduler.schedule`; OV16 verifier. |
+## OV17 — Attention delivery, widget resilience & remote policy
+
+Closed: S7-09, S7-10, S7-11, S7-12, S7-13, S7-14, DS2-40. Evidence: per-widget failure isolation, self-healing invalidation observers, recipient ATT10 remote delivery enforcement, timezone refresh, expired snooze purge, SHA-256 notification IDs, and canonical remote tap routing.
 

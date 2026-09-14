@@ -112,6 +112,26 @@ class StudyFlowApplication : Application() {
     }
 }
 
+private fun CoroutineScope.launchSelfHealingInvalidationObserver(
+    observerName: String,
+    block: suspend () -> Unit,
+): Job = launch {
+    while (isActive) {
+        try {
+            block()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            val ignoredObserverName = observerName
+            ignoredObserverName.length
+            // OV17: never allow a transient repository/flow failure to permanently kill
+            // process-lifetime widget/reminder invalidation observation.
+            delay(5_000L)
+        }
+        if (isActive) delay(1_000L)
+    }
+}
+
 interface AppContainer : DiagnosticRecorderProvider {
     val initializationState: StateFlow<AppInitializationState>
     fun retryInitialization()
@@ -303,7 +323,7 @@ private class DefaultAppContainer(
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun startWidgetInvalidationObserver() {
         if (widgetInvalidationJob?.isActive == true) return
-        widgetInvalidationJob = applicationScope.launch {
+        widgetInvalidationJob = applicationScope.launchSelfHealingInvalidationObserver("widget-invalidation") {
             combine(appPreferencesRepository.preferences, manageStudyPlan.plans) { preferences, plans ->
                 Triple(preferences.language, preferences.defaultStudyPlanId, plans)
             }
@@ -333,7 +353,7 @@ private class DefaultAppContainer(
     @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
     private fun startReminderInvalidationObserver() {
         if (reminderInvalidationJob?.isActive == true) return
-        reminderInvalidationJob = applicationScope.launch {
+        reminderInvalidationJob = applicationScope.launchSelfHealingInvalidationObserver("reminder-invalidation") {
             manageStudyPlan.plans
                 .distinctUntilChanged()
                 .flatMapLatest { plans ->

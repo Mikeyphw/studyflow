@@ -1,66 +1,67 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov16_attention_scheduler_durable_wakeups_v1",
+  "name": "studyflow_ov17_attention_delivery_widget_remote_policy_v1",
   "target": "studyflow_android",
-  "description": "OV16 closes Android attention scheduler, ATT10 quiet-hours ordering, durable wakeups, notification-denied delivery truth, exact near-term session/widget alarms and future-review wakeups.",
+  "description": "OV17 closes Android attention delivery, widget resilience and remote ATT10 recipient policy findings with per-widget isolation, self-healing observers, timezone refresh, expired snooze purge, stable notification IDs and canonical remote taps.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV16: harden attention scheduler durable wakeups"
+    "message": "OV17: harden attention delivery widget and remote policy"
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively on successful OV15 commit d5a58e0e."
+    "notes": "Built cumulatively on successful OV16 user-side apply after OV15 commit d5a58e0e."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov16_attention_scheduler_durable_wakeups_v1",
+    "name": "studyflow_ov17_attention_delivery_widget_remote_policy_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov16-att10-authoritative-wakeup-contracts",
-        "purpose": "Make ATT10 focus/quiet-hours policy the authority before alarms are scheduled or consumed, with durable re-arm semantics for snooze and break reminders.",
+        "id": "ov17-widget-resilience",
+        "purpose": "Isolate per-widget refresh failures and surface failed instance counts without aborting the refresh loop.",
         "paths": [
-          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContracts.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyFlowWidgetUpdateCoordinator.kt",
+          "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetOv17ResilienceContractTest.kt"
+        ]
+      },
+      {
+        "id": "ov17-remote-attention-recipient-policy",
+        "purpose": "Apply recipient Android ATT10 focus/quiet-hours policy to inbound SFLP notifications and keep remote taps routed to canonical plan/type/target destinations.",
+        "paths": [
           "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
-          "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContractsOv16Test.kt"
+          "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderOv17DeliveryPolicyTest.kt"
         ]
       },
       {
-        "id": "ov16-attention-delivery-truth-and-escalation",
-        "purpose": "Prevent notification-denied phantom deliveries, expose only actually available local surfaces, and schedule MIRROR_IF_UNHANDLED as a second durable wakeup.",
+        "id": "ov17-scheduler-bookkeeping-and-id-stability",
+        "purpose": "Refresh quiet-hours timezone state, purge expired snoozes, and replace collision-prone hashCode notification IDs with SHA-256-derived IDs.",
         "paths": [
-          "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyFlowAttentionRouterBridge.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
-          "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContractsOv16Test.kt"
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyFlowAttentionFocusPolicyStore.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderOccurrenceStore.kt"
         ]
       },
       {
-        "id": "ov16-future-review-and-near-term-widget-wakeups",
-        "purpose": "Create durable alarms for future review due-times and preserve sub-minute widget/session refresh boundaries using exact alarms where supported.",
+        "id": "ov17-self-healing-invalidation-observers",
+        "purpose": "Make process-lifetime widget and reminder invalidation collectors retry after transient repository/flow failures.",
         "paths": [
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt",
-          "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerOv16Test.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetModels.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetFreshnessScheduler.kt",
-          "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetSnapshotProjectorAtt03Test.kt",
-          "app/src/main/AndroidManifest.xml"
+          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt"
         ]
       },
       {
-        "id": "ov16-validation-evidence",
-        "purpose": "Install apply-time OV16 verification without stopping Gradle daemons and document closure against the final audit ledger.",
+        "id": "ov17-validation-evidence",
+        "purpose": "Install apply-time OV17 verification without stopping Gradle daemons and document closure against the final audit ledger.",
         "paths": [
           ".devtool-artifact/validation/validate.sh",
           ".devtool.toml",
           "build.gradle.kts",
-          "scripts/verify_ov16_attention_scheduler_wakeups.py",
-          "scripts/validate_ov16_attention_scheduler_wakeups.sh",
-          "docs/remediation/OV16_ATTENTION_SCHEDULER_QUIET_HOURS_DURABLE_WAKEUPS.md",
+          "scripts/verify_ov17_attention_delivery_widget_remote_policy.py",
+          "scripts/validate_ov17_attention_delivery_widget_remote_policy.sh",
+          "docs/remediation/OV17_ATTENTION_DELIVERY_WIDGET_REMOTE_POLICY.md",
           "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "REMEDIATION_OV_16_IMPLEMENTATION.md",
+          "REMEDIATION_OV_17_IMPLEMENTATION.md",
           "CHANGELOG.md"
         ]
       }
@@ -68,224 +69,192 @@
   },
   "findings": [
     {
-      "id": "S7-01",
-      "severity": "HIGH",
-      "status": "closed-by-ov16"
-    },
-    {
-      "id": "S7-02",
-      "severity": "HIGH",
-      "status": "closed-by-ov16"
-    },
-    {
-      "id": "S7-03",
-      "severity": "HIGH",
-      "status": "closed-by-ov16"
-    },
-    {
-      "id": "S7-04",
-      "severity": "HIGH",
-      "status": "closed-by-ov16"
-    },
-    {
-      "id": "S7-05",
-      "severity": "HIGH",
-      "status": "closed-by-ov16"
-    },
-    {
-      "id": "S7-06",
+      "id": "S7-09",
       "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov16"
+      "status": "closed-by-ov17"
     },
     {
-      "id": "S7-07",
+      "id": "S7-10",
       "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov16"
+      "status": "closed-by-ov17"
     },
     {
-      "id": "S7-08",
+      "id": "S7-11",
       "severity": "MEDIUM",
-      "status": "closed-by-ov16"
+      "status": "closed-by-ov17"
+    },
+    {
+      "id": "S7-12",
+      "severity": "MEDIUM-LOW",
+      "status": "closed-by-ov17"
+    },
+    {
+      "id": "S7-13",
+      "severity": "MEDIUM",
+      "status": "closed-by-ov17"
+    },
+    {
+      "id": "S7-14",
+      "severity": "MEDIUM",
+      "status": "closed-by-ov17"
+    },
+    {
+      "id": "DS2-40",
+      "severity": "HIGH",
+      "status": "closed-by-ov17"
     }
   ],
   "validation": {
     "hook": ".devtool-artifact/validation/validate.sh",
-    "gradle_task": "verifyOv16AttentionSchedulerDurableWakeups",
+    "gradle_task": "verifyOv17AttentionDeliveryWidgetRemotePolicy",
     "stops_gradle_daemon": false,
     "separate_user_validation_required": false
   },
   "inventory": {
     "format": 1,
-    "count": 19,
+    "count": 16,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "38d273961d6c114bc3dcccc7a76ef9aea8b26a7843940a2103468336322da09c",
-        "size": 320,
+        "sha256": "49bb2b7cca545301756958e810f051c71f7441ea55d21e084c22272c2d496894",
+        "size": 328,
         "source_mode": "0o755",
-        "source_sha256": "03b2ef5248a1a42bcc2a6fe6ac73acc00b042c552260b72d176c824442ec22f6",
-        "source_size": 313
+        "source_sha256": "38d273961d6c114bc3dcccc7a76ef9aea8b26a7843940a2103468336322da09c",
+        "source_size": 320
       },
       {
         "action": "modify",
         "path": ".devtool.toml",
         "mode": "0o600",
-        "sha256": "0c8227f76ba77dba0921017377f8f8bde7f6257da8bf5153ce761fb81b030525",
-        "size": 15543,
+        "sha256": "71a462ee26d541044c08c47941adaa1e6febfaa8f51a951433fa7823cc9f4ba2",
+        "size": 15645,
         "source_mode": "0o600",
-        "source_sha256": "77b7390efc41c14061ea014bc2e654476418dbc186ecfaaa99a35fc00557ba3f",
-        "source_size": 15447
+        "source_sha256": "0c8227f76ba77dba0921017377f8f8bde7f6257da8bf5153ce761fb81b030525",
+        "source_size": 15543
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "44c980783823b6ca5239e1fcddc9dbb38726b61d55b7ee3053559e8fd9ebda6d",
-        "size": 76405,
+        "sha256": "a3646f4a51b9076ae6350d050d14a83f767680c51aea261b05f03f5ae7876ea1",
+        "size": 77047,
         "source_mode": "0o600",
-        "source_sha256": "6ca69039b908651d6ba12021361d48695598826c06d5467df527b464f3507e5b",
-        "source_size": 75915
+        "source_sha256": "44c980783823b6ca5239e1fcddc9dbb38726b61d55b7ee3053559e8fd9ebda6d",
+        "source_size": 76405
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_16_IMPLEMENTATION.md",
+        "path": "REMEDIATION_OV_17_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "85ea366292a9e6fa7f29092482a49646ab9debc1664a3e672bd1a099f2b86587",
-        "size": 1275
+        "sha256": "f7f81f5c79c815d74850d18b3fa38c2313a9cf5da95a3b986269cfdb8e64059e",
+        "size": 566
       },
       {
         "action": "modify",
-        "path": "app/src/main/AndroidManifest.xml",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
         "mode": "0o600",
-        "sha256": "b5974a4b1f3d68bb9cc4894c7266f901113bc7d2c80cfc8dabfea4e1c87937a2",
-        "size": 5403,
+        "sha256": "f879b3aefd3498c3b8b0ab2d8b652a62e2b4bbba1e18c0eb0d8d32ce9bf7d428",
+        "size": 26176,
         "source_mode": "0o600",
-        "source_sha256": "59d7e0ee5632437fdfad08cce2ba4629e5f71c865630656c4e6659c306f76d79",
-        "source_size": 5324
+        "source_sha256": "a2b64bf59ede7ef9989fe7a62be363c9f15de666bdb788a0d804bfe994bc494d",
+        "source_size": 25420
       },
       {
         "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyFlowAttentionRouterBridge.kt",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyFlowAttentionFocusPolicyStore.kt",
         "mode": "0o600",
-        "sha256": "83fe6e60ac58f53a5ef13583c2ee977ae542b127362c2658664cd9fb56d98e41",
-        "size": 4933,
+        "sha256": "c813cec9f2d63b7754d72ccdc0551ba044f2ea95672c26e5fa695ee61bef3bdc",
+        "size": 6506,
         "source_mode": "0o600",
-        "source_sha256": "97b99aafed2538764d83ebe9646785b3316100e607445c2b7eea362175a974f0",
-        "source_size": 4347
+        "source_sha256": "d6ea573c7b495ca13eb6d9f60c883394e8135446d3d5ca49818c436083288610",
+        "source_size": 6158
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyFlowWidgetUpdateCoordinator.kt",
+        "mode": "0o600",
+        "sha256": "0227e27c45a72264c5fa12501877518fc4bdc52e8c34ff41f4ae6569a620cbd2",
+        "size": 9648,
+        "source_mode": "0o600",
+        "source_sha256": "abdb618821aa3ff1dd95d6f2dca20d753d2dcccf27aa3dc6b7782fd675d13962",
+        "source_size": 8968
       },
       {
         "action": "modify",
         "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
         "mode": "0o600",
-        "sha256": "b39dc501991cf470f5addfa6477d1944873e353089ad6d1f33840dd2fa3a2b53",
-        "size": 65920,
+        "sha256": "aa4baa0030896096a38ec499f3277a3250cd71f78fe8a91462d383b0af30c279",
+        "size": 70360,
         "source_mode": "0o600",
-        "source_sha256": "efea42bd7858681ff2e6e0ce90dc2829ad7d67faddf7a1da712768adc2ae38e8",
-        "source_size": 62406
+        "source_sha256": "b39dc501991cf470f5addfa6477d1944873e353089ad6d1f33840dd2fa3a2b53",
+        "source_size": 65920
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderOccurrenceStore.kt",
+        "mode": "0o600",
+        "sha256": "3b5bc6729c70719361189d8e55559741200b56d9f32c20b963621f166f08de81",
+        "size": 11965,
+        "source_mode": "0o600",
+        "source_sha256": "82568ce830e482a65e6fef04cecc2561f4c65c8da78e1aad184542d4ecbfcb1f",
+        "source_size": 10699
       },
       {
         "action": "add",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContracts.kt",
+        "path": "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderOv17DeliveryPolicyTest.kt",
         "mode": "0o644",
-        "sha256": "e513afc7bc6625a63d3465d024968110e85b400a820afd2d0ec50a8b7269bd4b",
-        "size": 6226
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetFreshnessScheduler.kt",
-        "mode": "0o600",
-        "sha256": "b59a62466cd66cde49ea725663b68b1415428e0d770d7819dbef2eaa7f6c47de",
-        "size": 3917,
-        "source_mode": "0o600",
-        "source_sha256": "d491273a21bcf4be96eef50ef3cad0d140f6aa1e2c541be649285830a743c2ac",
-        "source_size": 2999
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetModels.kt",
-        "mode": "0o600",
-        "sha256": "1d8c6d28d8f9385c40e8d8bd060a04c9878c95c74c0eb9fee406d56e559470ce",
-        "size": 5416,
-        "source_mode": "0o600",
-        "source_sha256": "0ce290016ccba418d7a844cb5875dffbe4bdd31bfb2f01f55c81f7a18221330a",
-        "source_size": 5471
+        "sha256": "a9d09aa5b5ac9122f3f19ec40096c58b470cc4e36c5324983834addb7b6c7685",
+        "size": 550
       },
       {
         "action": "add",
-        "path": "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderWakeupContractsOv16Test.kt",
+        "path": "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetOv17ResilienceContractTest.kt",
         "mode": "0o644",
-        "sha256": "cc7584a89bda9a04bb88671e0d87b1f0161ec50a127e432e8f6313815fa2f2e6",
-        "size": 4353
-      },
-      {
-        "action": "modify",
-        "path": "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetSnapshotProjectorAtt03Test.kt",
-        "mode": "0o600",
-        "sha256": "9e06a25f4be4c6edecaf80e496c5c5f98199c08ff2f6a1562d2cec74dec8f317",
-        "size": 7308,
-        "source_mode": "0o600",
-        "source_sha256": "4ae6ce91b3dbbac12cf1ed9b5417b6822c62b59ed070c2e43c308e2e80a3cf3d",
-        "source_size": 6524
+        "sha256": "12ffbba041868b4e619dd7c28cb5a62628894389d6867feb113f3d16b3ffacec",
+        "size": 550
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o600",
-        "sha256": "df2440eea97bc0f15d338ca87e3662103078af9625712957904f0bca10ef504c",
-        "size": 95607,
+        "sha256": "e4aeeb26d21e725ef5c3975f88ce93b40e0c2212afe58becd8b1fa210ca95cbc",
+        "size": 96219,
         "source_mode": "0o600",
-        "source_sha256": "9181dd0256a52dc3d7367bc1555dcb652361a2f1e4a5a79bfd8690e488451ea9",
-        "source_size": 95030
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlanner.kt",
-        "mode": "0o600",
-        "sha256": "17a0030a668252f4737b7f3bf37b3b6e72793794b7096ebe9ac022af8f8eb5f4",
-        "size": 22289,
-        "source_mode": "0o600",
-        "source_sha256": "34d3e4a9b8591a81757376bbefefd64a9f5a4da18b2e47da9644dc0c9ba1fe16",
-        "source_size": 21003
+        "source_sha256": "df2440eea97bc0f15d338ca87e3662103078af9625712957904f0bca10ef504c",
+        "source_size": 95607
       },
       {
         "action": "add",
-        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/StudyReminderPlannerOv16Test.kt",
+        "path": "docs/remediation/OV17_ATTENTION_DELIVERY_WIDGET_REMOTE_POLICY.md",
         "mode": "0o644",
-        "sha256": "66698ad9961ee9a4520b833a506f10d4f7835e6f6db738d0c0187a021941acf0",
-        "size": 3089
-      },
-      {
-        "action": "add",
-        "path": "docs/remediation/OV16_ATTENTION_SCHEDULER_QUIET_HOURS_DURABLE_WAKEUPS.md",
-        "mode": "0o644",
-        "sha256": "47d8c6e17efd5e619a4943ea94b206a80a880b98ffb8b60017cd24cdf274c208",
-        "size": 1731
+        "sha256": "a29a79f8e93fb08f662e2738c0260e319a87120efaa0f0ccaa22acd79d867b42",
+        "size": 1119
       },
       {
         "action": "modify",
         "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "05786251f0339695bae1164dcb40c432b82d89e116732d9f93f596f00ee82b33",
-        "size": 20933,
+        "sha256": "8aa013f5b3c74f259112fee6acaae79fe496febf75e3184d7882cecc2dc91c03",
+        "size": 21280,
         "source_mode": "0o644",
-        "source_sha256": "e04b3b8addcf45f40579e66e47c3ca6bbb56daf95c2a96513aaf43d7dca16dea",
-        "source_size": 18804
+        "source_sha256": "05786251f0339695bae1164dcb40c432b82d89e116732d9f93f596f00ee82b33",
+        "source_size": 20933
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov16_attention_scheduler_wakeups.sh",
+        "path": "scripts/validate_ov17_attention_delivery_widget_remote_policy.sh",
         "mode": "0o755",
-        "sha256": "87916ed41f3725095bb534dd4be9147c7a498eee0a8773574e41a49368d86a36",
-        "size": 282
+        "sha256": "c53eececc2b4906c949d28363f64f19805395c239012f8d50150e5f720af7868",
+        "size": 294
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov16_attention_scheduler_wakeups.py",
+        "path": "scripts/verify_ov17_attention_delivery_widget_remote_policy.py",
         "mode": "0o755",
-        "sha256": "8cddf215b96f71f87e9f5b7ae54f77e9fbcd747b40b2cfba05fc1f61aed38a83",
-        "size": 3995
+        "sha256": "eecb0f3d31a7b96f2ee6576c090c94114309778041cdc8c65d4b5875200ae2d6",
+        "size": 4138
       }
     ]
   }

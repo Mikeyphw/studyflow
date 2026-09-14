@@ -2424,3 +2424,17 @@ tasks.register<Exec>("verifyOv16AttentionSchedulerDurableWakeups") {
     )
     commandLine("bash", "scripts/validate_ov16_attention_scheduler_wakeups.sh")
 }
+
+
+// OV17 — Attention delivery, widget resilience & remote policy.
+tasks.register<Exec>("verifyOv17AttentionDeliveryWidgetRemotePolicy") {
+    group = "verification"
+    description = "Validates OV17 per-widget isolation, recipient ATT10 remote delivery policy, timezone refresh, expired snooze purge, stable notification IDs and self-healing invalidation observers."
+    dependsOn(
+        ":core:link:test",
+        ":core:domain:test",
+        ":app:compileDebugKotlin",
+        ":app:testReleaseUnitTest",
+    )
+    commandLine("bash", "scripts/validate_ov17_attention_delivery_widget_remote_policy.sh")
+}

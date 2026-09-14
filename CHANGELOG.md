@@ -1,4 +1,15 @@
 
+## OV17 — Attention delivery, widget resilience & remote policy
+
+- Isolated per-widget refresh failures so one broken widget does not abort all widget updates.
+- Added self-healing widget/reminder invalidation observers for transient flow failures.
+- Applied recipient Android ATT10 policy to inbound SFLP remote notifications before posting/compact delivery.
+- Refreshed ATT10 quiet-hours timezone state after travel/timezone changes.
+- Purged expired snoozes during reconciliation.
+- Replaced Java String.hashCode notification IDs with SHA-256-derived stable IDs.
+- Preserved canonical destination context for remote notification taps.
+
+
 ## OV16 — Attention scheduler, quiet-hours & durable wakeups
 
 - Added ATT10-first Android wakeup contracts for quiet-hours rearm, permission-denied retry, mirror escalation, exact session/break reminders and near-term widget refreshes.

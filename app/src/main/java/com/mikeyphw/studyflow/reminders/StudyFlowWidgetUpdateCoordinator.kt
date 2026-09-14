@@ -37,6 +37,7 @@ data class WidgetRefreshResult(
     val configuredInstanceCount: Int = 0,
     val modeCounts: Map<StudyFlowWidgetMode, Int> = emptyMap(),
     val nextRefreshEpochMillis: Long? = null,
+    val failedInstanceCount: Int = 0,
 )
 
 private data class WidgetRefreshWaiter(
@@ -121,33 +122,42 @@ object StudyFlowWidgetUpdateCoordinator {
         val stateNames = mutableSetOf<String>()
         val modeCounts = mutableMapOf<StudyFlowWidgetMode, Int>()
         var nextRefreshAt: Long? = null
+        var failedWidgets = 0
 
         ids.forEach { appWidgetId ->
-            val configuration = configStore.load(appWidgetId)
-            modeCounts[configuration.mode] = (modeCounts[configuration.mode] ?: 0) + 1
-            val selectedPlanId = configuration.studyPlanId?.let(::StudyPlanId) ?: preferences.defaultStudyPlanId
-            val state = when {
-                selectedPlanId == null -> TodayWidgetRenderState.NoPlan(configuration)
-                else -> {
-                    val plan = resolveConfiguredWidgetPlan(plans, selectedPlanId)
-                    if (plan == null) {
-                        TodayWidgetRenderState.PlanUnavailable(configuration)
-                    } else {
-                        val activeSession = container.manageStudySession.observeActiveSessions().first()
-                            .firstOrNull { it.studyPlanId == plan.id }
-                        val now = System.currentTimeMillis()
-                        val snapshot = StudyFlowWidgetSnapshotProjector.project(
-                            plan = plan,
-                            schedule = container.manageStudySchedule.observeSchedule(plan.id).first(),
-                            reviewQueue = container.manageStudyReview.observeQueue(plan.id).first(),
-                            activeSession = activeSession,
-                            liveActiveSeconds = activeSession?.let(container.manageStudySession::liveActiveSeconds),
-                            nowEpochMillis = now,
-                        )
-                        nextRefreshAt = listOfNotNull(nextRefreshAt, snapshot.nextRefreshEpochMillis).minOrNull()
-                        TodayWidgetRenderState.Ready(configuration, snapshot)
+            val fallbackConfiguration = runCatching { configStore.load(appWidgetId) }
+                .getOrElse { StudyFlowWidgetConfiguration(appWidgetId = appWidgetId) }
+            val state = runCatching {
+                val configuration = configStore.load(appWidgetId)
+                modeCounts[configuration.mode] = (modeCounts[configuration.mode] ?: 0) + 1
+                val selectedPlanId = configuration.studyPlanId?.let(::StudyPlanId) ?: preferences.defaultStudyPlanId
+                when {
+                    selectedPlanId == null -> TodayWidgetRenderState.NoPlan(configuration)
+                    else -> {
+                        val plan = resolveConfiguredWidgetPlan(plans, selectedPlanId)
+                        if (plan == null) {
+                            TodayWidgetRenderState.PlanUnavailable(configuration)
+                        } else {
+                            val activeSession = container.manageStudySession.observeActiveSessions().first()
+                                .firstOrNull { it.studyPlanId == plan.id }
+                            val now = System.currentTimeMillis()
+                            val snapshot = StudyFlowWidgetSnapshotProjector.project(
+                                plan = plan,
+                                schedule = container.manageStudySchedule.observeSchedule(plan.id).first(),
+                                reviewQueue = container.manageStudyReview.observeQueue(plan.id).first(),
+                                activeSession = activeSession,
+                                liveActiveSeconds = activeSession?.let(container.manageStudySession::liveActiveSeconds),
+                                nowEpochMillis = now,
+                            )
+                            nextRefreshAt = listOfNotNull(nextRefreshAt, snapshot.nextRefreshEpochMillis).minOrNull()
+                            TodayWidgetRenderState.Ready(configuration, snapshot)
+                        }
                     }
                 }
+            }.getOrElse {
+                failedWidgets += 1
+                modeCounts[fallbackConfiguration.mode] = (modeCounts[fallbackConfiguration.mode] ?: 0) + 1
+                TodayWidgetRenderState.DataUnavailable(fallbackConfiguration)
             }
             stateNames += state.debugName
             StudyFlowTodayWidgetProvider.updateWidget(context, manager, appWidgetId, state)
@@ -159,6 +169,7 @@ object StudyFlowWidgetUpdateCoordinator {
             state = stateNames.sorted().joinToString("+").ifBlank { "unknown" },
             modeCounts = modeCounts.toMap(),
             nextRefreshEpochMillis = nextRefreshAt,
+            failedInstanceCount = failedWidgets,
         )
     }
 

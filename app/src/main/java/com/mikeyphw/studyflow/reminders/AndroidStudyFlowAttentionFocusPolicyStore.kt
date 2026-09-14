@@ -44,6 +44,12 @@ class AndroidStudyFlowAttentionFocusPolicyStore(context: Context) {
         }
         val quietEnabled = preferences.getBoolean("$prefix.quiet.enabled", false)
         val quiet = if (quietEnabled) {
+            val currentZone = TimeZone.getDefault().id
+            val storedZone = preferences.getString("$prefix.quiet.zone", currentZone)
+            if (storedZone != currentZone) {
+                // OV17: ATT10 quiet hours track the recipient phone timezone after travel/timezone changes.
+                preferences.edit(commit = true) { putString("$prefix.quiet.zone", currentZone) }
+            }
             StudyFlowAttentionQuietWindow(
                 enabled = true,
                 startMinute = preferences.getInt("$prefix.quiet.start", 22 * 60).coerceIn(0, 1439),
@@ -51,7 +57,7 @@ class AndroidStudyFlowAttentionFocusPolicyStore(context: Context) {
                     val start = preferences.getInt("$prefix.quiet.start", 22 * 60).coerceIn(0, 1439)
                     if (end == start) (end + 60) % 1440 else end
                 },
-                timezoneId = preferences.getString("$prefix.quiet.zone", TimeZone.getDefault().id),
+                timezoneId = currentZone,
             )
         } else null
         val categories = defaultAttentionEscalationPolicies().map { default ->
