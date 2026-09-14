@@ -16,6 +16,7 @@ import kotlin.math.roundToInt
 
 private const val QuestionIdsPrefix = "questionIds="
 private const val AnswerPrefix = "answer="
+private const val TvMockPausedAtPrefix = "tvMockPausedAtEpochMillis="
 private const val QuestionSnapshotPrefix = "questionSnapshotV1="
 private const val FieldSeparator = "|"
 private const val Base64UrlAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
@@ -260,6 +261,26 @@ object PracticeAttemptCodec {
         .map(String::trim)
         .any { it.startsWith(QuestionSnapshotPrefix) }
 
+    fun tvMockPausedAtEpochMillis(configuration: String): Long? = configuration.lineSequence()
+        .map(String::trim)
+        .filter { it.startsWith(TvMockPausedAtPrefix) }
+        .mapNotNull { it.removePrefix(TvMockPausedAtPrefix).toLongOrNull()?.takeIf { value -> value >= 0L } }
+        .lastOrNull()
+
+    fun pauseTvMock(configuration: String, pausedAtEpochMillis: Long): String {
+        require(pausedAtEpochMillis >= 0L) { "Mock pause timestamp cannot be negative." }
+        return rewriteTvMockPauseMetadata(configuration, listOf("$TvMockPausedAtPrefix$pausedAtEpochMillis"))
+    }
+
+    fun resumeTvMock(configuration: String): String = rewriteTvMockPauseMetadata(configuration, emptyList())
+
+    private fun rewriteTvMockPauseMetadata(configuration: String, appendedLines: List<String>): String =
+        (configuration.lineSequence()
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .filterNot { it.startsWith(TvMockPausedAtPrefix) } + appendedLines)
+            .joinToString("\n")
+
     fun encode(state: PracticeExecutionState): String = encodeConfiguration(
         questions = state.questions,
         metadataLines = state.metadataLines,
@@ -491,6 +512,28 @@ class ManagePracticeExecution(
         val current = requireNotNull(repository.findMockExam(planId, mockExamId)) { "Mock Exam does not exist." }
         val prepared = ensureFrozen(current)
         return repository.startMockExamIfNotStarted(planId, prepared.id, clock())
+    }
+
+    suspend fun pauseMockExam(planId: StudyPlanId, mockExamId: MockExamId): MockExam {
+        val mock = requireNotNull(repository.findMockExam(planId, mockExamId)) { "Mock Exam does not exist." }
+        require(mock.startedAtEpochMillis != null) { "Mock Exam has not started." }
+        require(mock.submittedAtEpochMillis == null) { "Submitted Mock Exam cannot be paused." }
+        require(PracticeAttemptCodec.tvMockPausedAtEpochMillis(mock.configurationJson) == null) { "Mock Exam is already paused." }
+        return repository.updateMockExamAttemptIfOpen(
+            expectedConfiguration = mock.configurationJson,
+            next = mock.copy(configurationJson = PracticeAttemptCodec.pauseTvMock(mock.configurationJson, clock())),
+        )
+    }
+
+    suspend fun resumeMockExam(planId: StudyPlanId, mockExamId: MockExamId): MockExam {
+        val mock = requireNotNull(repository.findMockExam(planId, mockExamId)) { "Mock Exam does not exist." }
+        require(mock.startedAtEpochMillis != null) { "Mock Exam has not started." }
+        require(mock.submittedAtEpochMillis == null) { "Submitted Mock Exam cannot be resumed." }
+        require(PracticeAttemptCodec.tvMockPausedAtEpochMillis(mock.configurationJson) != null) { "Mock Exam is not paused." }
+        return repository.updateMockExamAttemptIfOpen(
+            expectedConfiguration = mock.configurationJson,
+            next = mock.copy(configurationJson = PracticeAttemptCodec.resumeTvMock(mock.configurationJson)),
+        )
     }
 
     suspend fun answerMockQuestion(

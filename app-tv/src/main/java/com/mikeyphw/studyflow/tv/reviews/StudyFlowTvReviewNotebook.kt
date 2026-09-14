@@ -262,9 +262,13 @@ object StudyFlowTvReviewNotebook {
             surface = StudyFlowTvSurface.REVIEW,
             action = controlActionFor(action),
             targetId = if (isErrorMutation) active.errorEntryId else active.sourceId,
-            optionId = if (action == StudyFlowTvReviewAction.RECLASSIFY_ERROR) nextErrorCategory(active.errorCategory)
-                else if (action == StudyFlowTvReviewAction.REOPEN_ERROR) active.errorCategory
-                else null,
+            optionId = when (action) {
+                StudyFlowTvReviewAction.RECLASSIFY_ERROR -> nextErrorCategory(active.errorCategory)
+                StudyFlowTvReviewAction.REOPEN_ERROR -> active.errorCategory
+                StudyFlowTvReviewAction.MARK_KNOWN -> "known"
+                StudyFlowTvReviewAction.COMPLETE_REVIEW -> "complete"
+                else -> null
+            },
             issuedAtEpochMillis = issuedAtEpochMillis,
         )
     }

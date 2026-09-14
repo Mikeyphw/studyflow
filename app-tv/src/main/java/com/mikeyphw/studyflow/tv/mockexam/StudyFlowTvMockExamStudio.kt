@@ -27,6 +27,14 @@ enum class StudyFlowTvMockExamSectionId {
     PORTUGUESE,
     ADMIN_LAW,
     SPECIFIC_KNOWLEDGE,
+    SECTION_FIVE,
+    SECTION_SIX,
+    SECTION_SEVEN,
+    SECTION_EIGHT,
+    SECTION_NINE,
+    SECTION_TEN,
+    SECTION_ELEVEN,
+    SECTION_TWELVE,
 }
 
 enum class StudyFlowTvMockExamAction {
@@ -48,6 +56,8 @@ data class StudyFlowTvMockExamSection(
     val minutes: Int,
     val row: Int,
     val column: Int,
+    val answeredCount: Int = 0,
+    val correctCount: Int = 0,
 ) {
     init {
         require(sourceId.isNotBlank()) { "TV mock exam source id must not be blank." }
@@ -56,6 +66,8 @@ data class StudyFlowTvMockExamSection(
         require(minutes > 0) { "TV mock exam section minutes must be positive." }
         require(row >= 0) { "TV mock exam section row must be non-negative." }
         require(column >= 0) { "TV mock exam section column must be non-negative." }
+        require(answeredCount in 0..questionCount) { "TV mock exam section answered count is outside question count." }
+        require(correctCount in 0..answeredCount) { "TV mock exam section correct count is outside answered count." }
     }
 }
 
@@ -68,6 +80,9 @@ data class StudyFlowTvMockExamState(
     val elapsedMinutes: Int = 0,
     val flaggedSectionIds: Set<StudyFlowTvMockExamSectionId> = emptySet(),
     val correctAnswerCount: Int = 0,
+    val answeredQuestionCount: Int = sections.sumOf { it.answeredCount },
+    val canPersistActions: Boolean = true,
+    val projectedAtEpochMillis: Long = 0L,
 ) {
     init {
         require(examId.isNotBlank()) { "TV mock exam id must not be blank." }
@@ -76,6 +91,11 @@ data class StudyFlowTvMockExamState(
         require(activeSectionIndex in sections.indices) { "TV mock exam active section index is out of bounds." }
         require(elapsedMinutes >= 0) { "TV mock exam elapsed minutes must be non-negative." }
         require(correctAnswerCount >= 0) { "TV mock exam correct answer count must be non-negative." }
+        require(answeredQuestionCount in 0..totalQuestions) { "TV mock exam answered count is outside question count." }
+        require(correctAnswerCount <= answeredQuestionCount.coerceAtLeast(correctAnswerCount)) {
+            "TV mock exam correct answer count must not exceed answered count when an answered count is available."
+        }
+        require(projectedAtEpochMillis >= 0L) { "TV mock exam projection time must not be negative." }
     }
 
     val activeSection: StudyFlowTvMockExamSection
@@ -101,6 +121,7 @@ data class StudyFlowTvMockExamState(
 
 object StudyFlowTvMockExamStudio {
     const val overlay = "TVOV10"
+    const val ov19TruthOverlay = "OV19"
     const val ownsMockExamSurface = true
     const val timedSectionsVisible = true
     const val remoteCanStartPauseSubmitAndReview = true
@@ -151,13 +172,19 @@ object StudyFlowTvMockExamStudio {
         ),
     )
 
-    fun availableActions(state: StudyFlowTvMockExamState): List<StudyFlowTvMockExamAction> = when (state.status) {
+    fun availableActions(state: StudyFlowTvMockExamState): List<StudyFlowTvMockExamAction> {
+        if (!state.canPersistActions) {
+            return listOf(StudyFlowTvMockExamAction.RETURN_HOME)
+        }
+        return when (state.status) {
         StudyFlowTvMockExamStatus.READY -> listOf(
             StudyFlowTvMockExamAction.START,
             StudyFlowTvMockExamAction.RETURN_HOME,
         )
         StudyFlowTvMockExamStatus.RUNNING -> listOf(
+            StudyFlowTvMockExamAction.PAUSE,
             StudyFlowTvMockExamAction.NEXT_SECTION,
+            StudyFlowTvMockExamAction.MARK_FOR_REVIEW,
             StudyFlowTvMockExamAction.SUBMIT,
             StudyFlowTvMockExamAction.RETURN_HOME,
         )
@@ -173,6 +200,7 @@ object StudyFlowTvMockExamStudio {
         StudyFlowTvMockExamStatus.RESULTS -> listOf(
             StudyFlowTvMockExamAction.RETURN_HOME,
         )
+        }
     }
 
     fun applyAction(
@@ -220,7 +248,8 @@ object StudyFlowTvMockExamStudio {
         commandId = commandId,
         surface = StudyFlowTvSurface.MOCK_EXAM,
         action = controlActionFor(action),
-        targetId = state.activeSection.sourceId,
+        targetId = targetIdForAction(action, state),
+        optionId = action.name.lowercase(),
         issuedAtEpochMillis = issuedAtEpochMillis,
     )
 
@@ -233,13 +262,49 @@ object StudyFlowTvMockExamStudio {
         surface = StudyFlowTvSurface.MOCK_EXAM,
         title = state.title,
         subtitle = "${state.status.name.lowercase()} · ${state.activeSection.title}",
-        progressPercent = state.progressPercent,
+        progressPercent = progressPercentAt(state, updatedAtEpochMillis),
         activeItemId = state.activeSection.sourceId,
         updatedAtEpochMillis = updatedAtEpochMillis,
     )
 
     fun resultSummary(state: StudyFlowTvMockExamState): String =
-        "${state.correctAnswerCount}/${state.totalQuestions} correct · ${state.flaggedSectionIds.size} sections marked"
+        "${state.correctAnswerCount}/${state.totalQuestions} correct · ${state.answeredQuestionCount} answered · ${state.flaggedSectionIds.size} sections marked"
+
+    fun liveElapsedMinutes(
+        state: StudyFlowTvMockExamState,
+        nowEpochMillis: Long,
+    ): Int {
+        val base = state.elapsedMinutes.coerceIn(0, state.totalMinutes)
+        if (state.status != StudyFlowTvMockExamStatus.RUNNING || state.projectedAtEpochMillis <= 0L) return base
+        val deltaMinutes = ((nowEpochMillis - state.projectedAtEpochMillis).coerceAtLeast(0L) / 60_000L).toInt()
+        return (base + deltaMinutes).coerceIn(0, state.totalMinutes)
+    }
+
+    fun progressPercentAt(state: StudyFlowTvMockExamState, nowEpochMillis: Long): Int = when (state.status) {
+        StudyFlowTvMockExamStatus.READY -> 0
+        StudyFlowTvMockExamStatus.SUBMITTED,
+        StudyFlowTvMockExamStatus.RESULTS,
+        -> 100
+        StudyFlowTvMockExamStatus.RUNNING,
+        StudyFlowTvMockExamStatus.PAUSED,
+        -> ((liveElapsedMinutes(state, nowEpochMillis) * 100) / state.totalMinutes).coerceIn(0, 99)
+    }
+
+    private fun targetIdForAction(
+        action: StudyFlowTvMockExamAction,
+        state: StudyFlowTvMockExamState,
+    ): String = when (action) {
+        StudyFlowTvMockExamAction.START,
+        StudyFlowTvMockExamAction.PAUSE,
+        StudyFlowTvMockExamAction.RESUME,
+        StudyFlowTvMockExamAction.SUBMIT,
+        StudyFlowTvMockExamAction.REVIEW_RESULTS,
+        -> state.examId
+        StudyFlowTvMockExamAction.NEXT_SECTION,
+        StudyFlowTvMockExamAction.MARK_FOR_REVIEW,
+        -> state.activeSection.sourceId
+        StudyFlowTvMockExamAction.RETURN_HOME -> "home"
+    }
 
     private fun advanceSection(state: StudyFlowTvMockExamState): StudyFlowTvMockExamState {
         val nextIndex = (state.activeSectionIndex + 1).coerceAtMost(state.sections.lastIndex)

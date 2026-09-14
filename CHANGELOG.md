@@ -1014,3 +1014,12 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Reattached discovery sources after Android link close/restart and kept peer readiness explicit through lifecycle state.
 - Released SAF sync-folder URI grants if provider configuration fails after a persistable grant was taken.
 - Added `verifyOv13AndroidPeerLifecycleLanRecovery` with integrated apply-time validation.
+
+## Remediation OV19 - Native TV practice, mock, review and schedule truth
+
+- Expanded TV question-practice reachability to the full 20-question projection while preserving canonical source IDs.
+- Blocked synthetic practice/mock mutation controls when the projection cannot persist.
+- Added live elapsed projection for sessions and mocks.
+- Projected real mock sections, persisted mock pause/resume through domain attempt metadata, and preferred ready/running mocks over stale submissions.
+- Split review known/complete grade intent and formatted schedule times without raw epoch labels.
+- Preserved canonical review/schedule source IDs for open commands.

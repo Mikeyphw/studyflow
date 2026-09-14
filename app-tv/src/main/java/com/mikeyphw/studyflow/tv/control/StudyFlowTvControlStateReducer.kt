@@ -216,7 +216,7 @@ object StudyFlowTvControlStateReducer {
 
         return when (command.surface) {
             StudyFlowTvSurface.REVIEW -> {
-                val index = state.review.items.indexOfFirst { it.sourceId == command.targetId || it.id.name.lowercase() == command.targetId }
+                val index = state.review.items.indexOfFirst { it.sourceId == command.targetId }
                 state.copy(
                     destination = StudyFlowTvDestination.REVIEWS,
                     review = if (index >= 0) {
@@ -231,7 +231,7 @@ object StudyFlowTvControlStateReducer {
                 )
             }
             StudyFlowTvSurface.SCHEDULE -> {
-                val index = state.schedule.items.indexOfFirst { it.sourceId == command.targetId || it.id.name.lowercase() == command.targetId }
+                val index = state.schedule.items.indexOfFirst { it.sourceId == command.targetId }
                 state.copy(
                     destination = StudyFlowTvDestination.SCHEDULE,
                     schedule = if (index >= 0) state.schedule.copy(activeItemIndex = index) else state.schedule,

@@ -168,6 +168,12 @@ class DefaultStudyFlowTvCanonicalMutationGateway(
             StudyFlowTvDomainActionKind.MOCK_START ->
                 practiceManager.startMockExamAttempt(planId, MockExamId(requireContext(action)))
 
+            StudyFlowTvDomainActionKind.MOCK_PAUSE ->
+                practiceManager.pauseMockExamAttempt(planId, MockExamId(requireContext(action)))
+
+            StudyFlowTvDomainActionKind.MOCK_RESUME ->
+                practiceManager.resumeMockExamAttempt(planId, MockExamId(requireContext(action)))
+
             StudyFlowTvDomainActionKind.MOCK_FINISH -> {
                 val mockId = MockExamId(requireContext(action))
                 val mock = requireNotNull(practiceRepository.findMockExam(planId, mockId)) {

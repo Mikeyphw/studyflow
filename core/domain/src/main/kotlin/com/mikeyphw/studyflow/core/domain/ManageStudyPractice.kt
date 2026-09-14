@@ -330,6 +330,12 @@ class ManageStudyPractice(
     suspend fun startMockExamAttempt(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
         execution.startMockExam(planId, mockExamId)
 
+    suspend fun pauseMockExamAttempt(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
+        execution.pauseMockExam(planId, mockExamId)
+
+    suspend fun resumeMockExamAttempt(planId: StudyPlanId, mockExamId: MockExamId): MockExam =
+        execution.resumeMockExam(planId, mockExamId)
+
     suspend fun answerMockQuestion(
         planId: StudyPlanId,
         mockExamId: MockExamId,

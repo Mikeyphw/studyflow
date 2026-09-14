@@ -13,6 +13,10 @@ import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamSection
 import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamSectionId
 import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamState
 import com.mikeyphw.studyflow.tv.mockexam.StudyFlowTvMockExamStatus
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import com.mikeyphw.studyflow.tv.navigation.StudyFlowTvDestination
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeChoice
 import com.mikeyphw.studyflow.tv.practice.StudyFlowTvPracticeChoiceId
@@ -85,9 +89,9 @@ object StudyFlowTvPresentationAdapter {
         if (snapshot.availability != StudyFlowTvPresentationAvailability.READY) return waitingState(current)
         return current.copy(
             today = snapshot.today?.let(::todayState) ?: waitingToday(),
-            studySession = snapshot.studySession?.let(::sessionState) ?: waitingSession(),
+            studySession = snapshot.studySession?.let { sessionState(it, snapshot.generatedAtEpochMillis) } ?: waitingSession(),
             questionPractice = snapshot.questionSet?.let(::practiceState) ?: waitingPractice(),
-            mockExam = snapshot.mockExam?.let(::mockExamState) ?: waitingMockExam(),
+            mockExam = snapshot.mockExam?.let { mockExamState(it, snapshot.generatedAtEpochMillis) } ?: waitingMockExam(),
             review = snapshot.review?.let(::reviewState) ?: waitingReview(),
             progress = snapshot.progress?.let(::progressState) ?: waitingProgress(),
             schedule = snapshot.schedule?.let(::scheduleState) ?: waitingSchedule(),
@@ -109,7 +113,10 @@ object StudyFlowTvPresentationAdapter {
         )
     }
 
-    private fun sessionState(source: com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvStudySessionPresentation): StudyFlowTvSessionState =
+    private fun sessionState(
+        source: com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvStudySessionPresentation,
+        projectedAtEpochMillis: Long,
+    ): StudyFlowTvSessionState =
         StudyFlowTvSessionState(
             sessionId = source.sessionId,
             title = source.title,
@@ -131,6 +138,7 @@ object StudyFlowTvPresentationAdapter {
             activeSegmentIndex = 0,
             elapsedMinutes = source.elapsedMinutes.coerceAtMost(source.targetMinutes),
             targetMinutes = source.targetMinutes,
+            projectedAtEpochMillis = projectedAtEpochMillis,
         )
 
     private fun practiceState(source: com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvQuestionSetPresentation): StudyFlowTvQuestionPracticeState {
@@ -175,14 +183,30 @@ object StudyFlowTvPresentationAdapter {
             selectedChoices = selectedChoices,
             explanationVisible = source.submitted,
             completed = source.submitted,
+            canPersistActions = source.started && !source.submitted,
+            availabilityReason = if (source.started && !source.submitted) null else "Practice actions require an open canonical attempt.",
         )
     }
 
-    private fun mockExamState(source: com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMockExamPresentation): StudyFlowTvMockExamState =
-        StudyFlowTvMockExamState(
-            examId = source.mockExamId,
-            title = source.title,
-            sections = listOf(
+    private fun mockExamState(
+        source: com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMockExamPresentation,
+        projectedAtEpochMillis: Long,
+    ): StudyFlowTvMockExamState {
+        val slots = StudyFlowTvMockExamSectionId.entries
+        val projectedSections = source.sections.take(slots.size).mapIndexed { index, section ->
+            StudyFlowTvMockExamSection(
+                id = slots[index],
+                sourceId = section.sectionId,
+                title = section.title,
+                questionCount = section.questionCount,
+                minutes = section.totalMinutes,
+                row = index / 2,
+                column = 1 + (index % 2),
+                answeredCount = section.answeredCount,
+                correctCount = section.correctCount,
+            )
+        }.ifEmpty {
+            listOf(
                 StudyFlowTvMockExamSection(
                     id = StudyFlowTvMockExamSectionId.GENERAL_KNOWLEDGE,
                     sourceId = source.mockExamId,
@@ -191,8 +215,20 @@ object StudyFlowTvPresentationAdapter {
                     minutes = source.totalMinutes,
                     row = 0,
                     column = 1,
+                    answeredCount = source.answeredCount,
+                    correctCount = source.correctCount,
                 ),
-            ),
+            )
+        }
+        val activeIndex = source.currentSectionId
+            ?.let { id -> projectedSections.indexOfFirst { it.sourceId == id } }
+            ?.takeIf { it >= 0 }
+            ?: projectedSections.indexOfFirst { it.answeredCount < it.questionCount }.takeIf { it >= 0 }
+            ?: projectedSections.lastIndex
+        return StudyFlowTvMockExamState(
+            examId = source.mockExamId,
+            title = source.title,
+            sections = projectedSections,
             status = when (source.status.uppercase()) {
                 "RUNNING" -> StudyFlowTvMockExamStatus.RUNNING
                 "PAUSED" -> StudyFlowTvMockExamStatus.PAUSED
@@ -200,9 +236,14 @@ object StudyFlowTvPresentationAdapter {
                 "RESULTS" -> StudyFlowTvMockExamStatus.RESULTS
                 else -> StudyFlowTvMockExamStatus.READY
             },
+            activeSectionIndex = activeIndex,
             elapsedMinutes = source.elapsedMinutes,
             correctAnswerCount = source.correctCount,
+            answeredQuestionCount = source.answeredCount,
+            canPersistActions = source.canPersistActions,
+            projectedAtEpochMillis = projectedAtEpochMillis,
         )
+    }
 
     private fun reviewState(source: com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvReviewPresentation): StudyFlowTvReviewState {
         val slots = StudyFlowTvReviewId.entries
@@ -305,8 +346,7 @@ object StudyFlowTvPresentationAdapter {
                 id = slots[index],
                 sourceId = item.activityId,
                 title = item.title,
-                timeLabel = item.scheduledStartEpochMillis?.let { "$it · ${item.plannedDurationMinutes} min" }
-                    ?: "Unscheduled · ${item.plannedDurationMinutes} min",
+                timeLabel = formatScheduleTimeLabel(item.scheduledStartEpochMillis, item.plannedDurationMinutes),
                 kind = when (item.activityType.uppercase()) {
                     "REVIEW", "FLASHCARDS" -> StudyFlowTvScheduleItemKind.REVIEW_WINDOW
                     "QUESTIONS" -> StudyFlowTvScheduleItemKind.PRACTICE_SET
@@ -328,6 +368,16 @@ object StudyFlowTvPresentationAdapter {
             items = items,
         )
     }
+
+    private fun formatScheduleTimeLabel(
+        scheduledStartEpochMillis: Long?,
+        plannedDurationMinutes: Int,
+    ): String = scheduledStartEpochMillis?.let { millis ->
+        val formatted = Instant.ofEpochMilli(millis)
+            .atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("EEE HH:mm", Locale.getDefault()))
+        "$formatted · $plannedDurationMinutes min"
+    } ?: "Unscheduled · $plannedDurationMinutes min"
 
     private fun libraryState(source: com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvLibraryPresentation): StudyFlowTvLibrarySnapshot {
         val slots = StudyFlowTvLibraryReferenceId.entries
@@ -413,6 +463,8 @@ object StudyFlowTvPresentationAdapter {
                 column = 1,
             ),
         ),
+        canPersistActions = false,
+        availabilityReason = "Waiting for a canonical question-set projection.",
     )
 
     private fun waitingMockExam() = StudyFlowTvMockExamState(
@@ -429,6 +481,7 @@ object StudyFlowTvPresentationAdapter {
                 column = 1,
             ),
         ),
+        canPersistActions = false,
     )
 
     private fun waitingReview() = StudyFlowTvReviewState(

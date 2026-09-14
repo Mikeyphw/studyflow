@@ -227,7 +227,17 @@ object StudyFlowTvScheduleSurface {
     ): StudyFlowTvControlCommand = when (action) {
         StudyFlowTvScheduleAction.PREVIOUS_ITEM -> scheduleCommand(action, snapshot, commandId, issuedAtEpochMillis, StudyFlowTvControlAction.PREVIOUS)
         StudyFlowTvScheduleAction.NEXT_ITEM -> scheduleCommand(action, snapshot, commandId, issuedAtEpochMillis, StudyFlowTvControlAction.NEXT)
-        else -> StudyFlowTvNavigationShell.openCommandFor(
+        StudyFlowTvScheduleAction.OPEN_ACTIVE_ITEM -> StudyFlowTvControlCommand(
+            commandId = commandId,
+            surface = snapshot.activeItem.destination.surface,
+            action = StudyFlowTvControlAction.OPEN,
+            targetId = snapshot.activeItem.sourceId,
+            optionId = snapshot.activeItem.destination.route,
+            issuedAtEpochMillis = issuedAtEpochMillis,
+        )
+        StudyFlowTvScheduleAction.OPEN_TODAY,
+        StudyFlowTvScheduleAction.OPEN_MOCK_EXAM,
+        -> StudyFlowTvNavigationShell.openCommandFor(
             destination = destinationForAction(action, snapshot),
             commandId = commandId,
             issuedAtEpochMillis = issuedAtEpochMillis,

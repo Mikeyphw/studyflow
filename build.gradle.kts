@@ -2451,3 +2451,19 @@ tasks.register<Exec>("verifyOv18NativeTvDurableStateActionJournal") {
     )
     commandLine("bash", "scripts/validate_ov18_native_tv_durable_state_action_journal.sh")
 }
+
+
+// OV19 — Native TV practice, mock, review & schedule truth.
+tasks.register<Exec>("verifyOv19NativeTvPracticeMockReviewScheduleTruth") {
+    group = "verification"
+    description = "Validates OV19 native TV practice reachability, mock execution semantics, review grade intent, schedule labels and canonical source IDs."
+    dependsOn(
+        ":core:domain:test",
+        ":core:tvcontrol:test",
+        ":app:compileDebugKotlin",
+        ":app:testReleaseUnitTest",
+        ":app-tv:compileDebugKotlin",
+        ":app-tv:testDebugUnitTest",
+    )
+    commandLine("bash", "scripts/validate_ov19_native_tv_practice_mock_review_schedule_truth.sh")
+}

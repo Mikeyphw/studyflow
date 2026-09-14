@@ -59,6 +59,7 @@ data class StudyFlowTvSessionState(
     val activeSegmentIndex: Int,
     val elapsedMinutes: Int,
     val targetMinutes: Int,
+    val projectedAtEpochMillis: Long = 0L,
 ) {
     init {
         require(sessionId.isNotBlank()) { "TV session id must not be blank." }
@@ -69,6 +70,7 @@ data class StudyFlowTvSessionState(
         require(elapsedMinutes >= 0) { "TV session elapsed time must be non-negative." }
         require(targetMinutes > 0) { "TV session target time must be positive." }
         require(elapsedMinutes <= targetMinutes) { "TV session elapsed time must not exceed target." }
+        require(projectedAtEpochMillis >= 0L) { "TV session projection time must not be negative." }
     }
 
     val progressPercent: Int
@@ -80,6 +82,7 @@ data class StudyFlowTvSessionState(
 
 object StudyFlowTvStudySessionExperience {
     const val overlay = "TVOV08"
+    const val ov19TruthOverlay = "OV19"
     const val ownsStudySessionSurface = true
     const val remoteCanStartPauseResumeAndComplete = true
     const val pairedPhoneCanStartPauseResumeAndComplete = true
@@ -107,6 +110,20 @@ object StudyFlowTvStudySessionExperience {
         StudyFlowTvSessionSegment(StudyFlowTvSessionSegmentId.CHECKPOINT, minutes = 5, row = 1, column = segmentColumnStart),
         StudyFlowTvSessionSegment(StudyFlowTvSessionSegmentId.SUMMARY, minutes = 5, row = 1, column = segmentColumnStart + 1),
     )
+
+
+    fun liveElapsedMinutes(
+        state: StudyFlowTvSessionState,
+        nowEpochMillis: Long,
+    ): Int {
+        val base = state.elapsedMinutes.coerceIn(0, state.targetMinutes)
+        if (state.status != StudyFlowTvSessionStatus.RUNNING || state.projectedAtEpochMillis <= 0L) return base
+        val deltaMinutes = ((nowEpochMillis - state.projectedAtEpochMillis).coerceAtLeast(0L) / 60_000L).toInt()
+        return (base + deltaMinutes).coerceIn(0, state.targetMinutes)
+    }
+
+    fun StudyFlowTvSessionState.progressPercentAt(nowEpochMillis: Long): Int =
+        ((liveElapsedMinutes(this, nowEpochMillis) * 100) / targetMinutes).coerceIn(0, 100)
 
     fun availableActions(state: StudyFlowTvSessionState): List<StudyFlowTvSessionAction> = when (state.status) {
         StudyFlowTvSessionStatus.READY -> listOf(
@@ -182,7 +199,7 @@ object StudyFlowTvStudySessionExperience {
         surface = StudyFlowTvSurface.STUDY_SESSION,
         title = state.title,
         subtitle = "${state.subject} · ${state.activeSegment.id.name.lowercase().replace('_', ' ')}",
-        progressPercent = state.progressPercent,
+        progressPercent = state.progressPercentAt(updatedAtEpochMillis),
         activeItemId = state.activeSegment.id.name.lowercase(),
         updatedAtEpochMillis = updatedAtEpochMillis,
     )

@@ -18,6 +18,23 @@ enum class StudyFlowTvPracticeQuestionId {
     QUESTION_ONE,
     QUESTION_TWO,
     QUESTION_THREE,
+    QUESTION_FOUR,
+    QUESTION_FIVE,
+    QUESTION_SIX,
+    QUESTION_SEVEN,
+    QUESTION_EIGHT,
+    QUESTION_NINE,
+    QUESTION_TEN,
+    QUESTION_ELEVEN,
+    QUESTION_TWELVE,
+    QUESTION_THIRTEEN,
+    QUESTION_FOURTEEN,
+    QUESTION_FIFTEEN,
+    QUESTION_SIXTEEN,
+    QUESTION_SEVENTEEN,
+    QUESTION_EIGHTEEN,
+    QUESTION_NINETEEN,
+    QUESTION_TWENTY,
 }
 
 enum class StudyFlowTvPracticeChoiceId(val optionId: String) {
@@ -80,13 +97,21 @@ data class StudyFlowTvQuestionPracticeState(
     val selectedChoices: Map<StudyFlowTvPracticeQuestionId, StudyFlowTvPracticeChoiceId> = emptyMap(),
     val explanationVisible: Boolean = false,
     val completed: Boolean = false,
+    val canPersistActions: Boolean = true,
+    val availabilityReason: String? = null,
 ) {
     init {
         require(questionSetId.isNotBlank()) { "TV practice question set id must not be blank." }
         require(title.isNotBlank()) { "TV practice title must not be blank." }
         require(subject.isNotBlank()) { "TV practice subject must not be blank." }
         require(questions.isNotEmpty()) { "TV practice must have questions." }
+        require(questions.size <= StudyFlowTvQuestionPractice.questionCount) {
+            "TV practice must not exceed the remote-reachable projection size."
+        }
         require(activeQuestionIndex in questions.indices) { "TV practice active question index is out of bounds." }
+        require(availabilityReason == null || availabilityReason.isNotBlank()) {
+            "TV practice availability reason must not be blank when present."
+        }
     }
 
     val activeQuestion: StudyFlowTvPracticeQuestion
@@ -107,12 +132,13 @@ data class StudyFlowTvQuestionPracticeState(
 
 object StudyFlowTvQuestionPractice {
     const val overlay = "TVOV09"
+    const val ov19TruthOverlay = "OV19"
     const val ownsQuestionPracticeSurface = true
     const val remoteCanSelectAnswersAndRevealExplanation = true
     const val pairedPhoneCanSelectAnswersAndNavigateQuestions = true
     const val emitsCastStateWithoutMirroring = true
     const val usesSharedControlProtocol = true
-    const val questionCount = 3
+    const val questionCount = 20
     const val choiceCount = 4
     const val actionCount = 8
     const val choiceRow = 0
@@ -123,53 +149,34 @@ object StudyFlowTvQuestionPractice {
         questionSetId = "tv-practice-core-1",
         title = "Question practice",
         subject = "Concurso basics",
-        questions = listOf(
+        questions = StudyFlowTvPracticeQuestionId.entries.take(questionCount).mapIndexed { index, id ->
+            val correct = StudyFlowTvPracticeChoiceId.entries[index % StudyFlowTvPracticeChoiceId.entries.size]
             StudyFlowTvPracticeQuestion(
-                id = StudyFlowTvPracticeQuestionId.QUESTION_ONE,
-                prompt = "Which action keeps TV practice under user control?",
+                id = id,
+                sourceId = "tv-practice-question-${index + 1}",
+                prompt = "Practice question ${index + 1}: choose the StudyFlow-safe answer.",
                 choices = defaultChoices(
-                    a = "Auto-advance without review",
-                    b = "Select answer and reveal explanation",
-                    c = "Skip all feedback",
-                    d = "Open phone-only editor",
+                    a = "Persist through the phone domain owner",
+                    b = "Mutate only local TV memory",
+                    c = "Skip canonical evidence",
+                    d = "Use a private fixture row",
                 ),
-                correctChoiceId = StudyFlowTvPracticeChoiceId.B,
-                explanation = "TV practice must support answer selection, explanation reveal, and explicit navigation.",
-                row = 0,
-                column = contentColumnStart,
-            ),
-            StudyFlowTvPracticeQuestion(
-                id = StudyFlowTvPracticeQuestionId.QUESTION_TWO,
-                prompt = "What must paired-phone control send to the TV?",
-                choices = defaultChoices(
-                    a = "Raw database rows",
-                    b = "Arbitrary UI trees",
-                    c = "Small StudyFlow control commands",
-                    d = "Unscoped file paths",
-                ),
-                correctChoiceId = StudyFlowTvPracticeChoiceId.C,
-                explanation = "Phone control sends small commands through the shared TV protocol, not private storage data.",
-                row = 0,
-                column = contentColumnStart,
-            ),
-            StudyFlowTvPracticeQuestion(
-                id = StudyFlowTvPracticeQuestionId.QUESTION_THREE,
-                prompt = "Which TV affordance is required for couch practice?",
-                choices = defaultChoices(
-                    a = "Visible focused choices",
-                    b = "Hidden touch-only actions",
-                    c = "Mouse-only navigation",
-                    d = "Desktop shortcut keys",
-                ),
-                correctChoiceId = StudyFlowTvPracticeChoiceId.A,
-                explanation = "Question choices must be focusable, visible, and operable from a D-pad remote.",
-                row = 0,
-                column = contentColumnStart,
-            ),
-        ),
+                correctChoiceId = correct,
+                explanation = "Every TV answer is projected from, and persisted by, canonical StudyFlow domain state.",
+                row = index / 4,
+                column = contentColumnStart + (index % 4),
+            )
+        },
     )
 
     fun availableActions(state: StudyFlowTvQuestionPracticeState): List<StudyFlowTvPracticeAction> {
+        if (!state.canPersistActions || state.completed) {
+            return listOfNotNull(
+                StudyFlowTvPracticeAction.PREVIOUS_QUESTION.takeIf { state.activeQuestionIndex > 0 },
+                StudyFlowTvPracticeAction.NEXT_QUESTION.takeIf { state.activeQuestionIndex < state.questions.lastIndex },
+                StudyFlowTvPracticeAction.SHOW_EXPLANATION.takeIf { state.selectedChoiceId != null },
+            )
+        }
         val selectionActions = state.activeQuestion.choices.map { choice ->
             when (choice.id) {
                 StudyFlowTvPracticeChoiceId.A -> StudyFlowTvPracticeAction.SELECT_A

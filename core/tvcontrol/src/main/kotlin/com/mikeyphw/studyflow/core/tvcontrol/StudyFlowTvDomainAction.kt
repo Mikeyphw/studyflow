@@ -27,6 +27,8 @@ object StudyFlowTvDomainActionProtocol {
         )
         StudyFlowTvSurface.MOCK_EXAM -> command.action in setOf(
             StudyFlowTvControlAction.START,
+            StudyFlowTvControlAction.PAUSE,
+            StudyFlowTvControlAction.RESUME,
             StudyFlowTvControlAction.SUBMIT,
         )
         StudyFlowTvSurface.REVIEW -> command.action in setOf(
@@ -55,6 +57,8 @@ enum class StudyFlowTvDomainActionKind {
     PRACTICE_MARK_REVIEW,
     PRACTICE_FINISH,
     MOCK_START,
+    MOCK_PAUSE,
+    MOCK_RESUME,
     MOCK_FINISH,
     REVIEW_GRADE,
     REVIEW_ERROR_NOTE,
@@ -150,6 +154,8 @@ object StudyFlowTvDomainActionMapper {
             }
             StudyFlowTvSurface.MOCK_EXAM -> when (command.action) {
                 StudyFlowTvControlAction.START -> StudyFlowTvDomainActionKind.MOCK_START
+                StudyFlowTvControlAction.PAUSE -> StudyFlowTvDomainActionKind.MOCK_PAUSE
+                StudyFlowTvControlAction.RESUME -> StudyFlowTvDomainActionKind.MOCK_RESUME
                 StudyFlowTvControlAction.SUBMIT -> StudyFlowTvDomainActionKind.MOCK_FINISH
                 else -> return null
             }
@@ -196,6 +202,8 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvDomainActionKind.PRACTICE_FINISH,
                 -> questionSet?.questionSetId
                 StudyFlowTvDomainActionKind.MOCK_START,
+                StudyFlowTvDomainActionKind.MOCK_PAUSE,
+                StudyFlowTvDomainActionKind.MOCK_RESUME,
                 StudyFlowTvDomainActionKind.MOCK_FINISH,
                 -> current.mockExam?.mockExamId
                 StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE -> reviewItem?.questionId
@@ -214,6 +222,11 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvDomainActionKind.PRACTICE_ANSWER,
                 StudyFlowTvDomainActionKind.PRACTICE_MARK_REVIEW,
                 -> command.targetId ?: question?.questionId ?: questionSet?.currentQuestionId
+                StudyFlowTvDomainActionKind.MOCK_START,
+                StudyFlowTvDomainActionKind.MOCK_PAUSE,
+                StudyFlowTvDomainActionKind.MOCK_RESUME,
+                StudyFlowTvDomainActionKind.MOCK_FINISH,
+                -> current.mockExam?.mockExamId
                 StudyFlowTvDomainActionKind.REVIEW_GRADE,
                 StudyFlowTvDomainActionKind.REVIEW_ERROR_NOTE,
                 -> command.targetId ?: reviewItem?.reviewItemId
@@ -230,7 +243,7 @@ object StudyFlowTvDomainActionMapper {
             optionId = choice?.optionId ?: command.optionId,
             answerText = choice?.label,
             reviewGrade = when (kind) {
-                StudyFlowTvDomainActionKind.REVIEW_GRADE -> 4
+                StudyFlowTvDomainActionKind.REVIEW_GRADE -> reviewGradeFor(command.optionId)
                 StudyFlowTvDomainActionKind.PRACTICE_MARK_REVIEW -> 3
                 else -> null
             },
@@ -251,9 +264,12 @@ object StudyFlowTvDomainActionMapper {
                 StudyFlowTvDomainActionKind.PRACTICE_MARK_REVIEW ->
                     !action.targetId.isNullOrBlank()
                 StudyFlowTvDomainActionKind.PRACTICE_FINISH,
-                StudyFlowTvDomainActionKind.MOCK_START,
-                StudyFlowTvDomainActionKind.MOCK_FINISH,
                 -> !action.contextId.isNullOrBlank()
+                StudyFlowTvDomainActionKind.MOCK_START,
+                StudyFlowTvDomainActionKind.MOCK_PAUSE,
+                StudyFlowTvDomainActionKind.MOCK_RESUME,
+                StudyFlowTvDomainActionKind.MOCK_FINISH,
+                -> !action.contextId.isNullOrBlank() && !action.targetId.isNullOrBlank()
                 StudyFlowTvDomainActionKind.SESSION_START,
                 StudyFlowTvDomainActionKind.SESSION_PAUSE,
                 StudyFlowTvDomainActionKind.SESSION_RESUME,
@@ -273,6 +289,13 @@ object StudyFlowTvDomainActionMapper {
                     !action.errorCategory.isNullOrBlank()
             }
         }
+    }
+
+    private fun reviewGradeFor(optionId: String?): Int = when (optionId?.trim()?.lowercase()) {
+        "known", "mark_known", "mark-known" -> 5
+        "complete", "complete_review", "complete-review" -> 4
+        "again", "forgot" -> 1
+        else -> 4
     }
 
     private fun resolveChoice(

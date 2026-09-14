@@ -30,6 +30,9 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvLibraryReferencePresenta
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMaterialViewerKind
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMaterialViewerPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMockExamPresentation
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMockExamSectionPresentation
+import com.mikeyphw.studyflow.core.domain.ExamBlueprintCodec
+import com.mikeyphw.studyflow.core.domain.PracticeAttemptCodec
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationAvailability
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationProtocol
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
@@ -286,19 +289,20 @@ object StudyFlowTvPresentationProjector {
         mockExams: List<MockExam>,
         nowEpochMillis: Long,
     ): StudyFlowTvMockExamPresentation? {
-        val mock = mockExams.firstOrNull { it.startedAtEpochMillis != null && it.submittedAtEpochMillis == null }
-            ?: mockExams.maxByOrNull { it.submittedAtEpochMillis ?: it.startedAtEpochMillis ?: Long.MIN_VALUE }
-            ?: return null
+        val mock = selectTvMockExam(mockExams) ?: return null
         val totalMinutes = (mock.timeLimitSeconds / 60L).toInt().coerceAtLeast(1)
+        val pausedAtEpochMillis = PracticeAttemptCodec.tvMockPausedAtEpochMillis(mock.configurationJson)
         val elapsedMinutes = mock.startedAtEpochMillis?.let { started ->
-            val end = mock.submittedAtEpochMillis ?: nowEpochMillis
+            val end = mock.submittedAtEpochMillis ?: pausedAtEpochMillis ?: nowEpochMillis
             ((end - started).coerceAtLeast(0L) / 60_000L).toInt().coerceAtMost(totalMinutes)
         } ?: 0
+        val sections = mock.toTvMockSections(totalMinutes)
         return StudyFlowTvMockExamPresentation(
             mockExamId = mock.id.value,
             title = mock.title,
             status = when {
                 mock.submittedAtEpochMillis != null -> "SUBMITTED"
+                pausedAtEpochMillis != null -> "PAUSED"
                 mock.startedAtEpochMillis != null -> "RUNNING"
                 else -> "READY"
             },
@@ -308,7 +312,69 @@ object StudyFlowTvPresentationProjector {
             answeredCount = mock.answeredCount,
             correctCount = mock.correctCount,
             scorePercent = mock.scorePercent?.toInt()?.coerceIn(0, 100),
+            sections = sections,
+            currentSectionId = sections.firstOrNull { section -> section.answeredCount < section.questionCount }?.sectionId
+                ?: sections.lastOrNull()?.sectionId,
+            canPersistActions = mock.submittedAtEpochMillis == null,
         )
+    }
+
+    internal fun selectTvMockExam(mockExams: List<MockExam>): MockExam? = mockExams
+        .sortedWith(
+            compareByDescending<MockExam> { it.startedAtEpochMillis != null && it.submittedAtEpochMillis == null }
+                .thenByDescending { it.startedAtEpochMillis == null && it.submittedAtEpochMillis == null }
+                .thenByDescending { it.startedAtEpochMillis ?: it.submittedAtEpochMillis ?: Long.MIN_VALUE }
+                .thenByDescending { it.submittedAtEpochMillis ?: Long.MIN_VALUE }
+                .thenBy { it.title },
+        )
+        .firstOrNull()
+
+    private fun MockExam.toTvMockSections(totalMinutes: Int): List<StudyFlowTvMockExamSectionPresentation> {
+        val frozen = ExamBlueprintCodec.decode(configurationJson)
+        val blueprintSections = frozen?.sections.orEmpty()
+        val rawSections = if (blueprintSections.isNotEmpty()) {
+            blueprintSections.map { section ->
+                section.key to section.questionCount
+            }
+        } else {
+            listOf("mock" to questionCount)
+        }
+        val boundedSections = rawSections.take(StudyFlowTvPresentationProtocol.maxTvMockExamSections)
+        var remainingQuestions = questionCount
+        var remainingMinutes = totalMinutes
+        var remainingAnswered = answeredCount
+        var remainingCorrect = correctCount
+        return boundedSections.mapIndexed { index, (key, rawCount) ->
+            val sectionCount = if (index == boundedSections.lastIndex) remainingQuestions else rawCount.coerceIn(1, remainingQuestions)
+            val sectionMinutes = if (index == boundedSections.lastIndex) remainingMinutes.coerceAtLeast(1) else
+                ((sectionCount.toDouble() / questionCount.toDouble()) * totalMinutes.toDouble()).toInt().coerceAtLeast(1)
+                    .coerceAtMost((remainingMinutes - (boundedSections.lastIndex - index)).coerceAtLeast(1))
+            val sectionAnswered = remainingAnswered.coerceIn(0, sectionCount)
+            val sectionCorrect = remainingCorrect.coerceIn(0, sectionAnswered)
+            remainingQuestions = (remainingQuestions - sectionCount).coerceAtLeast(0)
+            remainingMinutes = (remainingMinutes - sectionMinutes).coerceAtLeast(0)
+            remainingAnswered = (remainingAnswered - sectionAnswered).coerceAtLeast(0)
+            remainingCorrect = (remainingCorrect - sectionCorrect).coerceAtLeast(0)
+            StudyFlowTvMockExamSectionPresentation(
+                sectionId = key.stableSlug().ifBlank { "section-${index + 1}" },
+                title = key.replace('-', ' ').replace('_', ' ').replaceFirstChar(Char::uppercase),
+                questionCount = sectionCount,
+                totalMinutes = sectionMinutes,
+                answeredCount = sectionAnswered,
+                correctCount = sectionCorrect,
+            )
+        }.ifEmpty {
+            listOf(
+                StudyFlowTvMockExamSectionPresentation(
+                    sectionId = "mock",
+                    title = title,
+                    questionCount = questionCount,
+                    totalMinutes = totalMinutes,
+                    answeredCount = answeredCount,
+                    correctCount = correctCount,
+                ),
+            )
+        }
     }
 
     private fun projectReview(

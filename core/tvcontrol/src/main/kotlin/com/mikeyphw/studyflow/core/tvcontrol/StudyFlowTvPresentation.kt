@@ -15,6 +15,7 @@ object StudyFlowTvPresentationProtocol {
     const val maxTvQuestions = 20
     const val maxTvReviewItems = 20
     const val maxTvScheduleItems = 40
+    const val maxTvMockExamSections = 12
     const val maxTvLibraryReferences = 20
     const val maxTvGoals = 12
     const val maxInlineMaterialTextChars = 14_400
@@ -223,6 +224,9 @@ data class StudyFlowTvMockExamPresentation(
     val answeredCount: Int,
     val correctCount: Int,
     val scorePercent: Int?,
+    val sections: List<StudyFlowTvMockExamSectionPresentation> = emptyList(),
+    val currentSectionId: String? = null,
+    val canPersistActions: Boolean = true,
 ) {
     init {
         require(mockExamId.isNotBlank())
@@ -234,6 +238,30 @@ data class StudyFlowTvMockExamPresentation(
         require(answeredCount in 0..questionCount)
         require(correctCount in 0..answeredCount)
         require(scorePercent == null || scorePercent in 0..100)
+        require(sections.size <= StudyFlowTvPresentationProtocol.maxTvMockExamSections)
+        require(sections.sumOf { it.questionCount }.let { it == 0 || it == questionCount }) {
+            "TV mock sections must represent the whole mock exam when present."
+        }
+        require(currentSectionId == null || sections.any { it.sectionId == currentSectionId })
+    }
+}
+
+@Serializable
+data class StudyFlowTvMockExamSectionPresentation(
+    val sectionId: String,
+    val title: String,
+    val questionCount: Int,
+    val totalMinutes: Int,
+    val answeredCount: Int = 0,
+    val correctCount: Int = 0,
+) {
+    init {
+        require(sectionId.isNotBlank())
+        require(title.isNotBlank())
+        require(questionCount > 0)
+        require(totalMinutes > 0)
+        require(answeredCount in 0..questionCount)
+        require(correctCount in 0..answeredCount)
     }
 }
 
