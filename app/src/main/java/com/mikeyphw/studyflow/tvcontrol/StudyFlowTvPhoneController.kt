@@ -679,12 +679,17 @@ class StudyFlowTvPhoneController(
         )
         val now = System.currentTimeMillis()
         val surface = mutableState.value.continuity?.currentSurface ?: StudyFlowTvSurface.HOME
+        val castScope = StudyFlowTvCastSynchronizationPolicy.remoteStopScope(
+            mutableState.value.castSync.planId,
+            surface.name,
+        )
         val response = withContext(ioDispatcher) {
             gateway.sendCommand(
                 endpoint,
                 StudyFlowTvPhoneCommandFactory.command(
                     surface = surface,
                     action = StudyFlowTvControlAction.STOP_CAST,
+                    targetId = castScope,
                     nowEpochMillis = now,
                 ),
             )

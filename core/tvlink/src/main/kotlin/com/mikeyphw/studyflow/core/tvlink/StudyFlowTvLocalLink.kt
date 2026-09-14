@@ -56,6 +56,9 @@ object StudyFlowTvLocalLinkContract {
     const val phoneAndTvShareOneTransportModule = true
     const val transportUsesNoCastSdk = true
     const val transportUsesNoMediaRouter = true
+    const val unifiedPlaneEnvelopeRequired = true
+    const val localTcpUsesUnifiedTvPlane = true
+    const val browserRelaySharesUnifiedTvPlane = true
     const val localNetworkPermissionName = "android.permission.NEARBY_WIFI_DEVICES"
 }
 
@@ -524,7 +527,14 @@ class StudyFlowTvLocalTransportClient(context: Context) {
             sessionId = credential.sessionId,
             issuedAtEpochMillis = nowEpochMillis,
         )
-        val request = StudyFlowTvWireAuthenticator.sign(base.transform(), credential)
+        val payload = base.transform()
+        val withPlane = StudyFlowTvUnifiedControlPlane.attachEnvelope(
+            request = payload,
+            credential = credential,
+            endpoint = endpoint,
+            nowEpochMillis = nowEpochMillis,
+        )
+        val request = StudyFlowTvWireAuthenticator.sign(withPlane, credential)
         return exchange(endpoint, request)
     }
 
@@ -785,6 +795,14 @@ class StudyFlowTvLocalTransportHost(
         val authNonce = request.authNonceHex
         if (!StudyFlowTvWireAuthenticator.verify(request, activeCredential, nowEpochMillis)) {
             return response(request, false, "session-authorization-failed", nowEpochMillis)
+        }
+        val planeDecision = StudyFlowTvUnifiedControlPlane.authorizeAuthenticatedRequest(
+            request = request,
+            credential = activeCredential,
+            nowEpochMillis = nowEpochMillis,
+        )
+        if (!planeDecision.accepted) {
+            return response(request, false, planeDecision.reason ?: "tv-plane-rejected", nowEpochMillis)
         }
         synchronized(consumedAuthNonces) {
             if (authNonce == null || !consumedAuthNonces.add(authNonce)) {

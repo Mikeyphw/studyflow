@@ -145,4 +145,5 @@ data class StudyFlowTvAttentionDiagnostics(
     val lastAction: StudyFlowTvAttentionAction?,
 ) {
     val closedAppDeliveryTruth: String = "foreground-only; fallback requires designated notifier"
+    val unifiedTvPlaneTruth: String = "OV21 attention ingress uses canonical TV plane before surface delivery"
 }

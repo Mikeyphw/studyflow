@@ -2481,3 +2481,15 @@ tasks.register<Exec>("verifyOv20NativeTvMaterialsFocusProjectionResilience") {
     commandLine("bash", "scripts/validate_ov20_native_tv_materials_focus_projection_resilience.sh")
 }
 
+// OV21 — Unified TV control, pairing, relay, cast & attention plane.
+tasks.register<Exec>("verifyOv21UnifiedTvControlPlane") {
+    group = "verification"
+    description = "Validates OV21 unified TV control plane envelopes across local TCP, browser relay, cast, domain acknowledgements and TV attention ingress."
+    dependsOn(
+        ":core:tvcontrol:test",
+        ":core:tvlink:compileDebugKotlin",
+        ":app:compileDebugKotlin",
+        ":app-tv:compileDebugKotlin",
+    )
+    commandLine("bash", "scripts/validate_ov21_unified_tv_control_plane.sh")
+}

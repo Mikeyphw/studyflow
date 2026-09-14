@@ -1033,3 +1033,9 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Wrapped vulnerable schedule/library/material control rows in scroll-safe horizontal containers.
 - Added failure-isolated presentation feed assembly with explicit `failedFeeds` evidence.
 - Added the embedded `verifyOv20NativeTvMaterialsFocusProjectionResilience` validation gate.
+
+## OV21 — unified TV control plane
+
+- Added a transport-neutral signed TV-plane envelope for local TCP, Web relay, cast, domain-action acknowledgements and TV attention ingress.
+- Bound authenticated TV requests to receiver/session/operation/body hash before TV state mutation.
+- Required cast scopes for presentation delivery and STOP_CAST and kept relay bearer/controller tokens forbidden.

@@ -170,3 +170,11 @@ Evidence: full 20-question TV practice reachability, synthetic/non-persistable a
 Closed: `S8-08`, `S8-09`, `S8-10`, `S8-16`, `S8-17`, `S8-20`.
 
 Evidence: TV-transferable material descriptors, phone-local URI rejection, renderer-backed PDF page counts, captured media playback position before play/pause/seek, dynamic live-View focus wiring, scroll-safe horizontal material/schedule/library rows, failure-isolated projection feeds, and apply-time `verifyOv20NativeTvMaterialsFocusProjectionResilience` validation.
+
+## OV21 — Unified TV control, pairing, relay, cast & attention plane
+
+Overlay 21 of 30.
+
+Closed: `S9-01`, `S9-02`, `S9-03`, `S9-04`, `S9-05`, `S9-06`, `S9-07`, `S9-08`, `S9-09`.
+
+Evidence: signed TV-plane envelopes on authenticated wire requests, receiver/session/operation/body-hash fail-closed admission, cast-scope and STOP_CAST binding, domain-action result binding, TV attention plane evidence, browser relay plane validation without bearer/controller tokens, and apply-time `verifyOv21UnifiedTvControlPlane` validation.

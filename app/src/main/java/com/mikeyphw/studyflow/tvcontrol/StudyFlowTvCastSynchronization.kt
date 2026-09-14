@@ -18,6 +18,9 @@ object StudyFlowTvCastSynchronizationContract {
     const val rawDatabaseRowsForbidden = true
     const val castSdkForbidden = true
     const val mediaRouterForbidden = true
+    const val unifiedTvPlaneEnvelopeRequired = true
+    const val castScopeBoundToStudyPlan = true
+    const val presentationReceiptsValidatedThroughPlane = true
 }
 
 enum class StudyFlowTvCastSyncStatus {
@@ -65,4 +68,9 @@ object StudyFlowTvCastSynchronizationPolicy {
             receipt.snapshotId == snapshot.snapshotId &&
             receipt.generatedAtEpochMillis == snapshot.generatedAtEpochMillis
     }
+
+    fun castScopeFor(snapshot: StudyFlowTvPresentationSnapshot): String = snapshot.studyPlanId
+
+    fun remoteStopScope(planId: String?, fallbackSurface: String): String =
+        planId?.takeIf(String::isNotBlank) ?: fallbackSurface
 }

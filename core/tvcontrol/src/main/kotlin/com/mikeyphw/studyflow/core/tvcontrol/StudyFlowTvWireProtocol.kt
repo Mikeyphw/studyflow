@@ -43,6 +43,7 @@ object StudyFlowTvWireProtocol {
     const val controlSessionTtlSeconds = 86_400L
     const val maxPairingAttemptsPerOffer = 10
     const val authProofMaxClockSkewMillis = 30_000L
+    const val unifiedPlaneEnvelopeRequired = true
     const val localPairingDiscoveryAndTransportImplemented = true
     const val rawDatabaseRowsForbidden = true
     const val arbitraryUiTreesForbidden = true
@@ -223,6 +224,7 @@ data class StudyFlowTvWireRequest(
     val command: StudyFlowTvControlCommand? = null,
     val presentation: StudyFlowTvPresentationSnapshot? = null,
     val domainActionResult: StudyFlowTvDomainActionResult? = null,
+    val planeEnvelope: StudyFlowTvPlaneEnvelope? = null,
     val issuedAtEpochMillis: Long,
 ) {
     init {
