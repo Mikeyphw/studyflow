@@ -20,6 +20,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowReconnectResult
 import com.mikeyphw.studyflow.core.link.StudyFlowTransportEndpoint
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceAccess
 import java.io.Closeable
 import java.net.InetAddress
 import java.nio.file.Path
@@ -51,6 +52,7 @@ class DesktopStudyFlowLinkService(
         queueStore = persistence.queueStore,
         endpointStore = persistence.endpointStore,
         discovery = discoveryRegistry,
+        membershipStore = persistence.membershipStore,
     )
     private val started = AtomicBoolean(false)
     private val activeWorkspaces = linkedSetOf<StudyFlowWorkspaceId>()
@@ -94,6 +96,9 @@ class DesktopStudyFlowLinkService(
     fun registerWorkspace(workspaceId: StudyFlowWorkspaceId) {
         synchronized(activeWorkspaces) { activeWorkspaces += workspaceId }
         runtime.workspace(workspaceId)
+        runtime.trustManager.trustedPeers().forEach { peer ->
+            runtime.grantWorkspaceAccess(workspaceId, peer.peer.deviceId, StudyFlowWorkspaceAccess.WRITE)
+        }
         runtime.updatePresence(workspaceId, StudyFlowPresenceAvailability.ONLINE)
     }
 
@@ -120,6 +125,7 @@ class DesktopStudyFlowLinkService(
             runCatching { com.mikeyphw.studyflow.core.link.StudyFlowManualEndpointParser.parse(hint) }.getOrNull()
         }
         if (endpoints.isNotEmpty()) runtime.rememberEndpoints(record.peer.deviceId, endpoints)
+        synchronized(activeWorkspaces) { activeWorkspaces.forEach { runtime.grantWorkspaceAccess(it, record.peer.deviceId, StudyFlowWorkspaceAccess.WRITE) } }
         lastStatus = "Paired with ${record.peer.displayName}"
         return record
     }
@@ -148,7 +154,7 @@ class DesktopStudyFlowLinkService(
     fun syncAll(workspaceId: StudyFlowWorkspaceId): List<StudyFlowReconnectResult> {
         registerWorkspace(workspaceId)
         runtime.ingestDiscovery()
-        return runtime.trustManager.trustedPeers().mapNotNull { record ->
+        return runtime.workspacePeers(workspaceId).mapNotNull { record ->
             runCatching { runtime.reconcileWith(workspaceId, record.peer.deviceId) }
                 .onFailure { lastStatus = "Peer offline: ${record.peer.displayName}" }
                 .getOrNull()
@@ -231,7 +237,7 @@ class DesktopStudyFlowLinkService(
         runCatching { runtime.ingestDiscovery() }
         val workspaces = synchronized(activeWorkspaces) { activeWorkspaces.toList() }
         workspaces.forEach { workspaceId ->
-            runtime.trustManager.trustedPeers().forEach { peer ->
+            runtime.workspacePeers(workspaceId).forEach { peer ->
                 runCatching { runtime.reconcileWith(workspaceId, peer.peer.deviceId) }
             }
         }

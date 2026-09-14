@@ -76,6 +76,7 @@ class StudyFlowPeerServer(
     private val presencePublisher: StudyFlowLocalPresencePublisher,
     private val clock: StudyFlowPeerClock,
     private val messageIds: StudyFlowSyncMessageIdFactory,
+    private val workspaceMembership: StudyFlowWorkspaceMembershipManager? = null,
     private val notificationDeliveryHandler:
         (StudyFlowNotificationDelivery) -> StudyFlowNotificationDeliveryAck? = { null },
     private val listeningTransport: StudyFlowListeningTransport = StudyFlowTcpTransport(),
@@ -224,6 +225,10 @@ class StudyFlowPeerServer(
         }
         if (trustManager.trustedPeers().none { it.peer.deviceId == authenticatedPeer }) {
             sendError(link, request, "peer_revoked", "Peer trust was revoked", false)
+            return
+        }
+        if (workspaceMembership?.canWrite(request.workspaceId, authenticatedPeer) == false) {
+            sendError(link, request, "workspace_access_denied", "Peer is not a writable member of this workspace", false)
             return
         }
         val workspace = workspaces.workspace(request.workspaceId)
@@ -657,8 +662,12 @@ class StudyFlowPeerRuntime(
     val transportRegistry: StudyFlowTransportRegistry = StudyFlowTransportRegistry(listOf(StudyFlowTcpTransport())),
     val clock: StudyFlowPeerClock = StudyFlowPeerClock(System::currentTimeMillis),
     val messageIds: StudyFlowSyncMessageIdFactory = StudyFlowUuidMessageIdFactory(),
+    membershipStore: StudyFlowWorkspaceMembershipStore? = null,
 ) : StudyFlowWorkspaceRuntimeProvider, Closeable {
     val trustManager = StudyFlowTrustManager(localIdentity, trustStore)
+    val workspaceMembership: StudyFlowWorkspaceMembershipManager? = membershipStore?.let {
+        StudyFlowWorkspaceMembershipManager(localIdentity.descriptor.deviceId, it)
+    }
     val pairingAuthority = StudyFlowPairingAuthority(trustManager)
     val pairingClient = StudyFlowNetworkPairingClient(
         localIdentity = localIdentity,
@@ -709,6 +718,7 @@ class StudyFlowPeerRuntime(
             presencePublisher = presencePublisher,
             clock = clock,
             messageIds = messageIds,
+            workspaceMembership = workspaceMembership,
             notificationDeliveryHandler = { delivery -> notificationDeliveryHandler?.invoke(delivery) },
         )
         val bound = created.start(StudyFlowTransportEndpoint(StudyFlowTransportScheme.TCP, bindHost, port))
@@ -894,11 +904,47 @@ class StudyFlowPeerRuntime(
         )
         runtime.reconnect.enqueueLocalOperation(
             operation = operation,
-            peerDeviceIds = trustManager.trustedPeers().map { it.peer.deviceId },
+            peerDeviceIds = trustManager.trustedPeers().map { it.peer.deviceId }.filter { peerId ->
+                workspaceMembership?.canWrite(workspaceId, peerId) != false
+            },
             nowEpochMillis = clock.nowEpochMillis(),
         )
         return operation
     }
+
+    fun grantWorkspaceAccess(
+        workspaceId: StudyFlowWorkspaceId,
+        peerDeviceId: StudyFlowDeviceId,
+        access: StudyFlowWorkspaceAccess = StudyFlowWorkspaceAccess.WRITE,
+    ): StudyFlowWorkspaceMember {
+        require(trustManager.trustedPeers().any { it.peer.deviceId == peerDeviceId }) { "Peer must be trusted before workspace access is granted" }
+        return requireNotNull(workspaceMembership) { "Workspace membership persistence is not configured" }
+            .grant(workspaceId, peerDeviceId, access, clock.nowEpochMillis())
+    }
+
+    fun workspacePeers(workspaceId: StudyFlowWorkspaceId, requireWrite: Boolean = true): List<StudyFlowTrustedPeerRecord> =
+        trustManager.trustedPeers().filter { record ->
+            if (requireWrite) workspaceMembership?.canWrite(workspaceId, record.peer.deviceId) != false
+            else workspaceMembership?.canRead(workspaceId, record.peer.deviceId) != false
+        }
+
+    fun flushProductState(workspaceId: StudyFlowWorkspaceId, bridge: StudyFlowProductStateBridge): Int {
+        var appended = 0
+        bridge.captureLocalMutations(workspaceId).forEach { mutation ->
+            val runtime = workspace(workspaceId)
+            val op = if (mutation.tombstone) runtime.journal.appendLocalTombstone(
+                mutation.operationId, mutation.entityId, mutation.operationType, clock.nowEpochMillis(), mutation.payload
+            ) else runtime.journal.appendLocalMutation(
+                mutation.operationId, mutation.entityId, mutation.operationType, clock.nowEpochMillis(), mutation.payload
+            )
+            runtime.reconnect.enqueueLocalOperation(op, workspacePeers(workspaceId).map { it.peer.deviceId }, clock.nowEpochMillis())
+            appended++
+        }
+        return appended
+    }
+
+    fun projectProductState(workspaceId: StudyFlowWorkspaceId, bridge: StudyFlowProductStateBridge): Int =
+        bridge.projectResolved(workspaceId, workspace(workspaceId).reconciliation.resolvedReplay().operations)
 
     private fun refreshTopologyRoutes(
         peerDeviceId: StudyFlowDeviceId,
@@ -951,6 +997,7 @@ class StudyFlowPeerRuntime(
 
     fun revoke(peerDeviceId: StudyFlowDeviceId): StudyFlowTrustedPeerRecord? {
         val revoked = trustManager.revoke(peerDeviceId, clock.nowEpochMillis())
+        workspaceMembership?.revokeDevice(peerDeviceId)
         endpointStore.remove(peerDeviceId)
         workspaceRuntimes.values.forEach { it.outgoingQueue.clearPeer(peerDeviceId) }
         workspaceTopologies.values.forEach { it.removePeer(peerDeviceId) }
@@ -959,6 +1006,7 @@ class StudyFlowPeerRuntime(
     }
 
     fun forget(peerDeviceId: StudyFlowDeviceId): Boolean {
+        workspaceMembership?.revokeDevice(peerDeviceId)
         endpointStore.remove(peerDeviceId)
         workspaceRuntimes.values.forEach { it.outgoingQueue.clearPeer(peerDeviceId) }
         workspaceTopologies.values.forEach { it.removePeer(peerDeviceId) }

@@ -1,3 +1,7 @@
+## OV08 — SFLP product-state bridge & full-mesh mutation projection
+
+- Added row-level Room↔SFLP mutation capture/projection, persistent workspace-scoped membership, continuous Android/TV reconciliation, and SFLP-backed TV domain actions.
+
 ## OV07 — backup, snapshot, SAF & manual-sync durability (overlay 7 of 30)
 
 - Added production manual-folder restore with authenticated private staging, logical Room replacement, annex rebinding, rollback, revision verification and restore ledger evidence.

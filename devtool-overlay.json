@@ -1,352 +1,288 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov07_backup_snapshot_saf_manual_sync_durability_v1",
+  "name": "studyflow_ov08_sflp_product_state_full_mesh_v1",
   "target": "studyflow_android",
-  "description": "Overlay 7 of 30: close S3-09 through S3-15, DS2-05, DS2-10, DS2-11, DS2-12, DS2-41, and S12-08 by hardening Desktop backup boundaries and size limits, annex/snapshot physical deletion and path safety, SAF grant lifecycle and wipeable secrets, duplicate annex identity validation, streaming manual-sync preview/staging, transaction-safe checkpoint capture, and recoverable logical database/annex restore with integrity verification before sync state advances.",
-  "commit_message": "OV07: harden backup snapshot SAF and manual sync durability",
+  "description": "Overlay 8 of 30: wire ordinary Room mutations into SFLP, project reconciled operations back into canonical Room state, persist workspace-scoped membership, run continuous Android/Android TV reconciliation, and promote native TV persistent actions into the shared SFLP journal.",
+  "commit_message": "OV08: wire SFLP product state full mesh",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV07: harden backup snapshot SAF and manual sync durability"
+    "message": "OV08: wire SFLP product state full mesh"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV07: harden backup snapshot SAF and manual sync durability"
+      "message": "OV08: wire SFLP product state full mesh"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively against the supplied StudyFlow snapshot plus OV01 through OV06. Intermediate roadmap overlay: apply with --no-validate, then run scripts/validate_ov07_backup_snapshot_saf_manual_sync.sh."
+    "notes": "Built cumulatively against supplied StudyFlow snapshot plus OV01-OV07 (latest confirmed commit 40041741). Intermediate roadmap overlay: apply with --no-validate, then run scripts/validate_ov08_sflp_product_state_full_mesh.sh."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov07_backup_snapshot_saf_manual_sync_durability_v1",
+    "name": "studyflow_ov08_sflp_product_state_full_mesh_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov07-backup-snapshot-annex-durability",
-        "purpose": "Bound Desktop backups, reject symlink escape, sanitize snapshot paths, make annex/snapshot physical deletion fail closed, and keep repeated annex-bearing restores rollback-safe.",
+        "id": "ov08-product-state-bridge",
+        "purpose": "Capture ordinary Room row mutations and transactionally project reconciled row operations without echo loops.",
         "paths": [
-          "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/StudyPlanPortabilityAtomicRestoreTest.kt",
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomAnnexFileStorageRepository.kt",
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanPortabilityRepository.kt",
-          "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageCodec.kt",
-          "core/portability/src/test/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageCodecAnnexPayloadTest.kt",
-          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPortabilityController.kt",
-          "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopPortabilityMigrationTest.kt"
+          "core/data/build.gradle.kts",
+          "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/SflpProductStateBridgeOv08Test.kt",
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyFlowSflpProductStateBridge.kt",
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt"
         ]
       },
       {
-        "id": "ov07-manual-sync-recoverable-restore",
-        "purpose": "Stream authenticated checkpoints into bounded private staging, capture database state independently from annex I/O, restore the logical Room graph atomically with rollback, and only advance sync state after revision/integrity verification.",
+        "id": "ov08-workspace-membership",
+        "purpose": "Separate trust from persistent workspace-scoped read/write authority and enforce it in sync RPC.",
         "paths": [
-          "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/ManualSyncDatabaseRestoreOv07Test.kt",
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/ManualSyncRestoreStager.kt",
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDatabaseSnapshotRestorer.kt",
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
-          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-          "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyFlowSyncBundle.kt",
-          "core/portability/src/test/kotlin/com/mikeyphw/studyflow/core/portability/StudyFlowSyncBundleCodecTest.kt"
+          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWorkspaceMembershipOv08Test.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWorkspaceMembership.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerPersistence.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt"
         ]
       },
       {
-        "id": "ov07-saf-secret-lifecycle-ui",
-        "purpose": "Release persisted SAF grants when ownership ends, retain passwords only in wipeable character buffers, and route manual-folder apply through the real restore implementation across app/settings/plan surfaces.",
+        "id": "ov08-native-reconciliation",
+        "purpose": "Continuously reconcile Android/TV workspaces and promote TV persistent domain actions into SFLP; keep Desktop membership scoped.",
         "paths": [
-          "app/src/androidTest/java/com/mikeyphw/studyflow/OptionalSyncInstrumentationValidationTest.kt",
-          "app/src/androidTest/java/com/mikeyphw/studyflow/SyncRecoveryInstrumentationTest.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
-          "app/src/test/java/com/mikeyphw/studyflow/ManualFolderSyncIntegrationContractTest.kt",
-          "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanPortabilityScreen.kt",
-          "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-          "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-          "feature/settings/src/main/res/values/strings.xml"
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpStatePersistence.kt",
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpPeer.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkStateStore.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkPeer.kt",
+          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkPersistence.kt",
+          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkService.kt"
         ]
       },
       {
-        "id": "ov07-validator-evidence",
-        "purpose": "Record closure evidence for all 13 OV07 findings and provide a Termux/ADB-aware validator that always compiles durability tests and executes instrumentation when a device is authorized.",
+        "id": "ov08-evidence",
+        "purpose": "Map all five owned findings to production code and behavioral/compile validators.",
         "paths": [
           "CHANGELOG.md",
-          "docs/quality/OV07_BACKUP_SNAPSHOT_SAF_MANUAL_SYNC_DURABILITY.md",
-          "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "scripts/validate_ov07_backup_snapshot_saf_manual_sync.sh",
-          "scripts/verify_ov07_backup_snapshot_saf_manual_sync.py"
+          "scripts/verify_ov08_sflp_product_state_full_mesh.py",
+          "scripts/validate_ov08_sflp_product_state_full_mesh.sh",
+          "docs/quality/OV08_SFLP_PRODUCT_STATE_FULL_MESH.md",
+          "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md"
         ]
       }
     ]
   },
+  "findings": [
+    {
+      "id": "S4-01",
+      "severity": "CRITICAL",
+      "status": "closed-by-ov08"
+    },
+    {
+      "id": "S4-02",
+      "severity": "CRITICAL",
+      "status": "closed-by-ov08"
+    },
+    {
+      "id": "S4-09",
+      "severity": "HIGH",
+      "status": "closed-by-ov08"
+    },
+    {
+      "id": "DS2-01",
+      "severity": "HIGH",
+      "status": "closed-by-ov08"
+    },
+    {
+      "id": "DS2-56",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov08"
+    }
+  ],
   "inventory": {
     "format": 1,
-    "count": 28,
+    "count": 20,
     "entries": [
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "8a9060b22094bff6f8e58615e5c1e49c9c93fc7871509f19ee03eb0f311b93b3",
-        "size": 70004,
+        "sha256": "d3cb20e2a2b2609c90f3fee24e8f2e00ac9a5d73dab594583f7d680243a176fc",
+        "size": 70248,
         "source_mode": "0o600",
-        "source_sha256": "f5033b31985e142a817e24bd99cde2940d3bf9ff686e1894e6900dcd9d1da547",
-        "source_size": 69297
+        "source_sha256": "8a9060b22094bff6f8e58615e5c1e49c9c93fc7871509f19ee03eb0f311b93b3",
+        "source_size": 70004
       },
       {
         "action": "modify",
-        "path": "app/src/androidTest/java/com/mikeyphw/studyflow/OptionalSyncInstrumentationValidationTest.kt",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpPeer.kt",
         "mode": "0o600",
-        "sha256": "813bf6cc5d14be246a0c1b2bcdb02ce6af1a5f67f60885e21e1099d41f3ed3a9",
-        "size": 5205,
+        "sha256": "868544f15214080bdcdc6c3ed3e8068173b53b5b36f18c845094abcff2c65cfc",
+        "size": 10676,
         "source_mode": "0o600",
-        "source_sha256": "583b9d190850198be9eb7ce11071ddab4340ec5f535df02c8c3b83737aa6d32f",
-        "source_size": 5111
+        "source_sha256": "64430fa5de61502ff1859c013c994ce3fc106e529ecb108c3c253291589b8a0d",
+        "source_size": 7865
       },
       {
         "action": "modify",
-        "path": "app/src/androidTest/java/com/mikeyphw/studyflow/SyncRecoveryInstrumentationTest.kt",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpStatePersistence.kt",
         "mode": "0o600",
-        "sha256": "7de30951687b27a3569722f89e3eb8cac53385e6a43b140dc2f4bd71bb424017",
-        "size": 2532,
+        "sha256": "9a3422d13aa0c8bb26ff26d7be467b7a228260c73e64512e6d164252c3a931ae",
+        "size": 9994,
         "source_mode": "0o600",
-        "source_sha256": "c45d91c0bcde5d1a43411f2de2effacb50b4228ca8b6d3c53e6ca7fd76fcf53c",
-        "source_size": 2485
+        "source_sha256": "4bc6df7dd56e3eebe56860f7e76c123d7ff1e06aee2fc4b1ecc2c8565c0c9b47",
+        "source_size": 8553
       },
       {
         "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
         "mode": "0o600",
-        "sha256": "af8499f1bc38624a33d1e7aadd54113378bd7d40a4c0d735c5936e6b3bdfb51f",
-        "size": 61695,
+        "sha256": "fbb09d008ac72f16234f856468b1621187ec77761cb9ead5dabfce069b3882ea",
+        "size": 25220,
         "source_mode": "0o600",
-        "source_sha256": "904c52e79d8c346132843a02aa7884c220c55bc925b36ec6fbd511e5b076abaf",
-        "source_size": 61185
+        "source_sha256": "351211df43c1d1eeca9129eb76ee3c68c45ca33301686adc4d8b4d254d289375",
+        "source_size": 23209
       },
       {
         "action": "modify",
-        "path": "app/src/test/java/com/mikeyphw/studyflow/ManualFolderSyncIntegrationContractTest.kt",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkPeer.kt",
         "mode": "0o600",
-        "sha256": "a32bb98c73eccbf2e90d8a236372e43014155bc3366e08927fd56a8e6db4eed3",
-        "size": 3498,
+        "sha256": "f44e4fd53e81dd16d32f1a0078dc3c3e67884bf2d2f7eaf43a93d6d5f2917abb",
+        "size": 10307,
         "source_mode": "0o600",
-        "source_sha256": "d77ba95cdb3c5d58d4514105e8360e72ffacbce67a0ea5a5ec1d310a2c07c1b8",
-        "source_size": 3153
+        "source_sha256": "37b6e81f04fd0002343f459523605d1fa3674aea191f926995b78149b8056250",
+        "source_size": 9013
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkStateStore.kt",
+        "mode": "0o600",
+        "sha256": "fa79a8137cb9eda8e4ef97c8cdfe854125c5c7cd1d0050245160528d05242677",
+        "size": 9993,
+        "source_mode": "0o600",
+        "source_sha256": "765ce3abd8fe0bb25dc41badcc88305e433c9f4a5ccfc3e43ab323c043bdea6b",
+        "source_size": 8552
+      },
+      {
+        "action": "modify",
+        "path": "core/data/build.gradle.kts",
+        "mode": "0o600",
+        "sha256": "dc350ff7be2c958043dd6eaa9164c0e31cfd3d97a79352e6027b583246633c62",
+        "size": 761,
+        "source_mode": "0o600",
+        "source_sha256": "21d84eb60a9d352c091bf551769440c61dd63375fbf646153eafd75a9431d4d7",
+        "source_size": 719
       },
       {
         "action": "add",
-        "path": "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/ManualSyncDatabaseRestoreOv07Test.kt",
+        "path": "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/SflpProductStateBridgeOv08Test.kt",
         "mode": "0o644",
-        "sha256": "627822f2204cf6a0c1ed6db18b0052d63eb48b8a21294bd5a03ccc2ce88db387",
-        "size": 2324
-      },
-      {
-        "action": "modify",
-        "path": "core/data/src/androidTest/kotlin/com/mikeyphw/studyflow/core/data/StudyPlanPortabilityAtomicRestoreTest.kt",
-        "mode": "0o600",
-        "sha256": "c64307a39ed6d765c0a46ae336693cf5c2a5b3f369da8b7817821d552685a780",
-        "size": 8303,
-        "source_mode": "0o600",
-        "source_sha256": "67eb52b454811e444a23e2c0f80d1026c4e06775b700d99c31bea654e005a9dd",
-        "source_size": 5842
-      },
-      {
-        "action": "modify",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/LocalStudyCloudSyncRepository.kt",
-        "mode": "0o600",
-        "sha256": "32094b6eaff476b5926d281686a4d808a3492697e3e38bbffd80ac7b5bfbc743",
-        "size": 46191,
-        "source_mode": "0o600",
-        "source_sha256": "d367d91b319a0133f47f3f97fe3f1e7246fdb4de98735b451f858ab55b8d4e06",
-        "source_size": 38558
+        "sha256": "a6f00c1f94a783f7d62cb583fec0cf68ec5d1c42ae0bed0c89bc41196af7f8e0",
+        "size": 2212
       },
       {
         "action": "add",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/ManualSyncRestoreStager.kt",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyFlowSflpProductStateBridge.kt",
         "mode": "0o644",
-        "sha256": "c094fe4d88e110387bd4756cb841317dc4fae07570a81aeb7f0a86c0994663a5",
-        "size": 6296
+        "sha256": "3dc7323c94ba846023a73b7a0ea30446a145d4d2ab394c8e3ce9ccac936b6e19",
+        "size": 9476
       },
       {
         "action": "modify",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomAnnexFileStorageRepository.kt",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt",
         "mode": "0o600",
-        "sha256": "a6581336b05a486262864188c722d46f71ed326c9380f713d7a503d12f20d9b1",
-        "size": 23490,
+        "sha256": "5d9c16c1c9f4c97452aebf2b1f2af6424cbc91e0214fb46e820eff394dcf4756",
+        "size": 6402,
         "source_mode": "0o600",
-        "source_sha256": "a22e1d10155cb0075b95cfe1f8d3ce428c101740d61e077c38ae6be725a7eeed",
-        "source_size": 20787
+        "source_sha256": "91af7091528014e4865bc04d2a0384c9351365ecf77e08ae2b1a2e633ff84923",
+        "source_size": 6193
       },
       {
         "action": "modify",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanPortabilityRepository.kt",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerPersistence.kt",
         "mode": "0o600",
-        "sha256": "b85540f83ce6064d5470ebcf060507933a847d1f097ed2eba6cd97e4e2e39e53",
-        "size": 43443,
+        "sha256": "fdf0d4130eaecc24ad71e7aed2d8eb845a3b779d0c85ca62e91b13ad38cdd0a6",
+        "size": 5270,
         "source_mode": "0o600",
-        "source_sha256": "280de3bf3109f81050c55e4f1a04d2824566f7071bf1a0904935256a6936a197",
-        "source_size": 41227
+        "source_sha256": "34ef6311154fd66d984d7ac7e4b75cdffec53bf3b4f63ba22dc3e3897fdae195",
+        "source_size": 4778
+      },
+      {
+        "action": "modify",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt",
+        "mode": "0o600",
+        "sha256": "dd643e1c6575e05267a55e5d2b955302bae0cbf2e6b99d9bb876dfb1c5c857f0",
+        "size": 45813,
+        "source_mode": "0o600",
+        "source_sha256": "31566e0ee6263ca77700595ec7a799daa4b68f1e4ac2b0adb53b63e9f8fd6926",
+        "source_size": 42953
       },
       {
         "action": "add",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDatabaseSnapshotRestorer.kt",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWorkspaceMembership.kt",
         "mode": "0o644",
-        "sha256": "171bb2ecd3bfe5d6c4ecbdf1b8be0792bd547afd474e94c8f76292e061423f99",
-        "size": 11633
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyCloudSync.kt",
-        "mode": "0o600",
-        "sha256": "a945a99b9a501b7f20b822a15fe893c0c85ad6f1c01d83043a77c0ce7407ceab",
-        "size": 6602,
-        "source_mode": "0o600",
-        "source_sha256": "24d9442b468e50edc9acd786999bf3d66109d58dc790eb53f6f387ce3144d3f9",
-        "source_size": 6073
-      },
-      {
-        "action": "modify",
-        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudySync.kt",
-        "mode": "0o600",
-        "sha256": "e60a114f6c909bed30515e597f84978855e415e50e1caf455fd2430ba2dfeb11",
-        "size": 24201,
-        "source_mode": "0o600",
-        "source_sha256": "bde7148b243327e8b044536014fadbf79f22d4b91d3683f4bf36701b8a9b4dc0",
-        "source_size": 24180
-      },
-      {
-        "action": "modify",
-        "path": "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyFlowSyncBundle.kt",
-        "mode": "0o600",
-        "sha256": "3596e988ac5c6aa388f22cb5e582b9db53254dbae5c759eb36bc02e06174fb49",
-        "size": 25730,
-        "source_mode": "0o600",
-        "source_sha256": "734aeab85243231f527872bb79af48c3f724917bf8efe7a261adebf855b2b382",
-        "source_size": 17000
-      },
-      {
-        "action": "modify",
-        "path": "core/portability/src/main/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageCodec.kt",
-        "mode": "0o600",
-        "sha256": "0fedf4f8137353ee4b5231387ef889726d4896d6ae0c063726661b005045c08d",
-        "size": 26204,
-        "source_mode": "0o600",
-        "source_sha256": "0ecda791f4617117228f5b0d30c29bb88b2b213b928313a5a29c01bd2bf516fa",
-        "source_size": 25979
-      },
-      {
-        "action": "modify",
-        "path": "core/portability/src/test/kotlin/com/mikeyphw/studyflow/core/portability/StudyFlowSyncBundleCodecTest.kt",
-        "mode": "0o600",
-        "sha256": "a809fa7497bfca2cfc2f11898a45f6b96805d352106c10a6016f9bebcfe4b567",
-        "size": 11371,
-        "source_mode": "0o600",
-        "source_sha256": "a848175a7c97a051b99b0fb73f4aa50334ab25cfa048db0c221fd5e8662f69bf",
-        "source_size": 9902
-      },
-      {
-        "action": "modify",
-        "path": "core/portability/src/test/kotlin/com/mikeyphw/studyflow/core/portability/StudyPlanPackageCodecAnnexPayloadTest.kt",
-        "mode": "0o600",
-        "sha256": "4cb3b830726856ddb9c253329d58af7fe4d20603c7b8e2874f2dea525cd0a550",
-        "size": 7414,
-        "source_mode": "0o600",
-        "source_sha256": "8c7a941805c6bc9bbd20d5f489ae12278ed9821d5d52334cf6c9d81d3ed0002e",
-        "source_size": 6559
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPortabilityController.kt",
-        "mode": "0o600",
-        "sha256": "7126d3af0aa214ca31ebf69b8374883f59dc42f8c40dc20bdc8fd295a81fd1ca",
-        "size": 44388,
-        "source_mode": "0o600",
-        "source_sha256": "bc69d5fb8290a231e9df139ccd45c90613fcd697546348bc48faf1f7b204d4ef",
-        "source_size": 39847
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopPortabilityMigrationTest.kt",
-        "mode": "0o600",
-        "sha256": "f6c66fcad1692acfa2ea89110e211b96ae3602594bc35f3b17a18d5ee6b3cd58",
-        "size": 5558,
-        "source_mode": "0o600",
-        "source_sha256": "1187eeeda12ac54aba3f66cf0d0224861420889ddf6709c2beb629e48dfecb6c",
-        "source_size": 4356
+        "sha256": "f3d8480042d552901936679d922c0e683f20c81a1a010afd2ceacb00fa16caef",
+        "size": 3261
       },
       {
         "action": "add",
-        "path": "docs/quality/OV07_BACKUP_SNAPSHOT_SAF_MANUAL_SYNC_DURABILITY.md",
+        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWorkspaceMembershipOv08Test.kt",
         "mode": "0o644",
-        "sha256": "8f7b6f0c94fd1e09aec9b7eea310db1b21c54d199d67ab0c0f7be8265397ba7e",
-        "size": 3198
+        "sha256": "7f71c25d4b80b2cb35cd26371ee999ad6cbf5e286a72c013738602bfa085152d",
+        "size": 1469
+      },
+      {
+        "action": "modify",
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkPersistence.kt",
+        "mode": "0o600",
+        "sha256": "30f6cd283d43991599e72c9f64f83e83e7704753b219d99abbf4c73876179b58",
+        "size": 11344,
+        "source_mode": "0o600",
+        "source_sha256": "856fce5d7e6ddd09df85cee4d19abac79171d0c6d3a5fb53fba671cd174aeced",
+        "source_size": 9904
+      },
+      {
+        "action": "modify",
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkService.kt",
+        "mode": "0o600",
+        "sha256": "2e178f2e59e031e1bf8a27eac428a8631695dedaf0756f496a9a201b1172b31a",
+        "size": 14582,
+        "source_mode": "0o600",
+        "source_sha256": "7fdb0a38d1ace63fe4c99eb6bf0ddc6397cb23e1ea6ca281b34211b49af0c6c7",
+        "source_size": 14125
+      },
+      {
+        "action": "add",
+        "path": "docs/quality/OV08_SFLP_PRODUCT_STATE_FULL_MESH.md",
+        "mode": "0o644",
+        "sha256": "2b3543e8f318459402d221cfe6c7b978242f79857b21dacabebced01ef9beb68",
+        "size": 1789
       },
       {
         "action": "modify",
         "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "508d23b9aa5e36a7dafcbc4263039ee34bf6bbb8ac8952fe356f836b01f9e490",
-        "size": 10406,
+        "sha256": "dd1e4343948c0ae3060d107f4b659f9c188cf1f18892cf53958fe0666953c429",
+        "size": 11907,
         "source_mode": "0o644",
-        "source_sha256": "5d046d27187c0d344a512b942be6355f1c09e482984540e735afa2b213aa077f",
-        "source_size": 7721
-      },
-      {
-        "action": "modify",
-        "path": "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanPortabilityScreen.kt",
-        "mode": "0o600",
-        "sha256": "37ed928ced69ab50ecba7c4fe2d2103882906d83cc1e747d4d0934592dd1b4f1",
-        "size": 40489,
-        "source_mode": "0o600",
-        "source_sha256": "e70a1282939057124afab3ad43fceb13546ab2639be4f5c7d2c31f0cdd4930a2",
-        "source_size": 38444
-      },
-      {
-        "action": "modify",
-        "path": "feature/settings/src/main/java/com/mikeyphw/studyflow/feature/settings/SyncFoundationScreen.kt",
-        "mode": "0o600",
-        "sha256": "18e4042392ee2a9dfb63e48242b3a6623b13c1e838c18702f2fba3f7d700fff0",
-        "size": 34008,
-        "source_mode": "0o600",
-        "source_sha256": "250b6fa7ef9b9019c90dd4b41f1fd2615ffc0a74efb8ff76a66a4740d6e430f2",
-        "source_size": 32659
-      },
-      {
-        "action": "modify",
-        "path": "feature/settings/src/main/res/values-pt-rBR/strings.xml",
-        "mode": "0o600",
-        "sha256": "bf170f9dc6d062d54f4549278d1d8eab6e913039af316968ab0cb4d84a62cba2",
-        "size": 44865,
-        "source_mode": "0o600",
-        "source_sha256": "f7d894a93a8a2cf30a19f28d1d05166f58a0f6d0bd57e789f615dd5c958662be",
-        "source_size": 44597
-      },
-      {
-        "action": "modify",
-        "path": "feature/settings/src/main/res/values/strings.xml",
-        "mode": "0o600",
-        "sha256": "3e944f91db3867d0ba851bdc9b3fd05771c6bd43c8998c096127fa09a502ed43",
-        "size": 41398,
-        "source_mode": "0o600",
-        "source_sha256": "4db2f2751093d62637039e6b28930dbf89fd539d48322a9a47cf179e4b82a7f1",
-        "source_size": 41159
+        "source_sha256": "508d23b9aa5e36a7dafcbc4263039ee34bf6bbb8ac8952fe356f836b01f9e490",
+        "source_size": 10406
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov07_backup_snapshot_saf_manual_sync.sh",
+        "path": "scripts/validate_ov08_sflp_product_state_full_mesh.sh",
         "mode": "0o755",
-        "sha256": "d3a018926a9fe1941b5379caaac4e40269de21624b2f070a107d5600a65f47ac",
-        "size": 1226
+        "sha256": "b5ff3947b31de861956b004f25e6cb7f01a58e11c28b9e097ba76bcaa7e03386",
+        "size": 540
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov07_backup_snapshot_saf_manual_sync.py",
+        "path": "scripts/verify_ov08_sflp_product_state_full_mesh.py",
         "mode": "0o755",
-        "sha256": "50955610f7cdcd5cbad9071e4df89be0a3d282c272398361180af48ed5a59c70",
-        "size": 8844
+        "sha256": "eab44b96a09c7414fbe3706b5ed2b6d2218b17778d19b0c8d173d95a5d85f6d3",
+        "size": 1564
       }
     ]
   }

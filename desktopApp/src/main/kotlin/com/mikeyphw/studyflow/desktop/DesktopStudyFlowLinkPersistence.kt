@@ -15,6 +15,8 @@ import com.mikeyphw.studyflow.core.link.StudyFlowPeerPersistenceCodec
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustStore
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceMember
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceMembershipStore
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -124,6 +126,22 @@ class DesktopStudyFlowLinkPersistence(
                     snapshot.checkpoints + checkpoint,
                 )
             }
+        }
+    }
+
+    val membershipStore: StudyFlowWorkspaceMembershipStore = object : StudyFlowWorkspaceMembershipStore {
+        override fun list(): List<StudyFlowWorkspaceMember> = synchronized(this@DesktopStudyFlowLinkPersistence) {
+            readText(root.resolve("workspace-membership.json"))?.let { encoded ->
+                runCatching { StudyFlowPeerPersistenceCodec.decodeWorkspaceMembership(encoded) }.getOrNull()
+            }.orEmpty()
+        }
+        override fun put(member: StudyFlowWorkspaceMember) { synchronized(this@DesktopStudyFlowLinkPersistence) {
+            val next = list().filterNot { it.workspaceId == member.workspaceId && it.deviceId == member.deviceId } + member
+            writeText(root.resolve("workspace-membership.json"), StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next))
+        } }
+        override fun remove(workspaceId: StudyFlowWorkspaceId, deviceId: StudyFlowDeviceId): Boolean = synchronized(this@DesktopStudyFlowLinkPersistence) {
+            val current = list(); val next = current.filterNot { it.workspaceId == workspaceId && it.deviceId == deviceId }
+            if (next.size == current.size) false else { writeText(root.resolve("workspace-membership.json"), StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next)); true }
         }
     }
 

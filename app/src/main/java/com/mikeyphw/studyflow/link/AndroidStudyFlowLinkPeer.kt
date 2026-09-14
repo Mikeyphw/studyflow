@@ -23,6 +23,9 @@ import com.mikeyphw.studyflow.core.link.StudyFlowReconnectResult
 import com.mikeyphw.studyflow.core.link.StudyFlowTransportEndpoint
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
+import com.mikeyphw.studyflow.core.link.StudyFlowProductStateBridge
+import com.mikeyphw.studyflow.core.link.StudyFlowProductStateContract
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceAccess
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -48,6 +51,7 @@ class AndroidStudyFlowLinkPeer(
         queueStore = persistence.queueStore,
         endpointStore = persistence.endpointStore,
         discovery = discoveryRegistry,
+        membershipStore = persistence.membershipStore,
     )
     private val started = AtomicBoolean(false)
     private var lanDiscovery: StudyFlowLanBeaconDiscovery? = null
@@ -94,6 +98,7 @@ class AndroidStudyFlowLinkPeer(
             runCatching { com.mikeyphw.studyflow.core.link.StudyFlowManualEndpointParser.parse(hint) }.getOrNull()
         }
         if (endpoints.isNotEmpty()) runtime.rememberEndpoints(record.peer.deviceId, endpoints)
+        runtime.grantWorkspaceAccess(StudyFlowProductStateContract.WorkspaceId, record.peer.deviceId, StudyFlowWorkspaceAccess.WRITE)
         return record
     }
 
@@ -119,6 +124,25 @@ class AndroidStudyFlowLinkPeer(
             runtime.rememberEndpoints(peerDeviceId, listOf(endpoint))
             runtime.reconcileWith(workspaceId, peerDeviceId, endpoint)
         }
+    }
+
+    fun registerWritableWorkspace(workspaceId: StudyFlowWorkspaceId) {
+        runtime.workspace(workspaceId)
+        trustedPeers().filter { it.peer.capabilities.contains(StudyFlowLinkCapabilities.WorkspaceWrite) }.forEach { peer ->
+            runtime.grantWorkspaceAccess(workspaceId, peer.peer.deviceId, StudyFlowWorkspaceAccess.WRITE)
+        }
+    }
+
+    fun reconcileProductState(bridge: StudyFlowProductStateBridge): Int {
+        val workspaceId = StudyFlowProductStateContract.WorkspaceId
+        registerWritableWorkspace(workspaceId)
+        var changes = runtime.flushProductState(workspaceId, bridge)
+        runtime.ingestDiscovery()
+        runtime.workspacePeers(workspaceId).forEach { peer ->
+            runCatching { runtime.reconcileWith(workspaceId, peer.peer.deviceId) }
+        }
+        changes += runtime.projectProductState(workspaceId, bridge)
+        return changes
     }
 
     fun updatePresence(

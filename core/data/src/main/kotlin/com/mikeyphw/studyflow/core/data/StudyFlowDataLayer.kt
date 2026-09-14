@@ -20,6 +20,7 @@ import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
 import com.mikeyphw.studyflow.core.domain.StudyReviewRepository
 import com.mikeyphw.studyflow.core.domain.StudyScheduleRepository
 import com.mikeyphw.studyflow.core.domain.StudySessionRepository
+import com.mikeyphw.studyflow.core.link.StudyFlowProductStateBridge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,6 +47,7 @@ class StudyFlowDataLayer internal constructor(
     val studyAnalyticsRepository: StudyAnalyticsRepository,
     val publicExamRepository: PublicExamRepository,
     val annexFileStorageRepository: AnnexFileStorageRepository,
+    val sflpProductStateBridge: StudyFlowProductStateBridge,
     private val initializeData: suspend () -> Unit,
     private val inspectDatabase: suspend () -> DatabaseHealthLabReport,
 ) {
@@ -113,6 +115,7 @@ fun createStudyFlowDataLayer(
         studyAnalyticsRepository = studyAnalyticsRepository,
         publicExamRepository = publicExamRepository,
         annexFileStorageRepository = annexFileStorageRepository,
+        sflpProductStateBridge = RoomStudyFlowSflpProductStateBridge(database),
         initializeData = {
             studyPlanRepository.seedFoundationSamplesOnce()
             annexFileStorageRepository.migrateOwnedAnnexesToShareableRoot()

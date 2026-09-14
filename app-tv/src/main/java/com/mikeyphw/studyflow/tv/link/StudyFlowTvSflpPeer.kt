@@ -26,8 +26,18 @@ import com.mikeyphw.studyflow.core.link.StudyFlowReconnectResult
 import com.mikeyphw.studyflow.core.link.StudyFlowTransportEndpoint
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceAccess
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkCapabilities
+import com.mikeyphw.studyflow.core.link.StudyFlowProductStateContract
+import com.mikeyphw.studyflow.core.link.StudyFlowOperationId
+import com.mikeyphw.studyflow.core.link.StudyFlowEntityId
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkCodec
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainAction
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 /**
  * SFLP11 generic Android TV peer. The historical phone/TV local-control host stays available as
@@ -54,10 +64,13 @@ class StudyFlowTvSflpPeer(
         queueStore = persistence.queueStore,
         endpointStore = persistence.endpointStore,
         discovery = discoveryRegistry,
+        membershipStore = persistence.membershipStore,
     )
     private val started = AtomicBoolean(false)
     private var lanDiscovery: StudyFlowLanBeaconDiscovery? = null
     private var serverEndpoint: StudyFlowTransportEndpoint? = null
+    private val activeWorkspaces = linkedSetOf<StudyFlowWorkspaceId>()
+    private var reconciliationScheduler: ScheduledExecutorService? = null
 
     val localDeviceId: StudyFlowDeviceId get() = identity.descriptor.deviceId
     val localDescriptor get() = identity.descriptor
@@ -77,6 +90,9 @@ class StudyFlowTvSflpPeer(
                 }
             }
             runtime.ingestDiscovery()
+            reconciliationScheduler = Executors.newSingleThreadScheduledExecutor { runnable ->
+                Thread(runnable, "studyflow-tv-sflp-reconcile").apply { isDaemon = true }
+            }.also { scheduler -> scheduler.scheduleWithFixedDelay(::reconcileActiveWorkspaces, 5L, 15L, TimeUnit.SECONDS) }
             endpoint
         } catch (error: Throwable) {
             started.set(false)
@@ -100,6 +116,7 @@ class StudyFlowTvSflpPeer(
             runCatching { StudyFlowManualEndpointParser.parse(hint) }.getOrNull()
         }
         if (endpoints.isNotEmpty()) runtime.rememberEndpoints(record.peer.deviceId, endpoints)
+        synchronized(activeWorkspaces) { activeWorkspaces.forEach { runtime.grantWorkspaceAccess(it, record.peer.deviceId, StudyFlowWorkspaceAccess.WRITE) } }
         return record
     }
 
@@ -124,6 +141,37 @@ class StudyFlowTvSflpPeer(
         } else {
             runtime.rememberEndpoints(peerDeviceId, listOf(endpoint))
             runtime.reconcileWith(workspaceId, peerDeviceId, endpoint)
+        }
+    }
+
+    fun registerWritableWorkspace(workspaceId: StudyFlowWorkspaceId) {
+        synchronized(activeWorkspaces) { activeWorkspaces += workspaceId }
+        runtime.workspace(workspaceId)
+        trustedPeers().filter { it.peer.capabilities.contains(StudyFlowLinkCapabilities.WorkspaceWrite) }.forEach { peer ->
+            runtime.grantWorkspaceAccess(workspaceId, peer.peer.deviceId, StudyFlowWorkspaceAccess.WRITE)
+        }
+    }
+
+    fun publishDomainAction(action: StudyFlowTvDomainAction) {
+        val workspaceId = StudyFlowWorkspaceId("plan-${action.studyPlanId}")
+        registerWritableWorkspace(workspaceId)
+        runtime.appendLocalMutation(
+            workspaceId = workspaceId,
+            operationId = StudyFlowOperationId("tv-${action.actionId}"),
+            entityId = StudyFlowEntityId("tv-action-${action.actionId}"),
+            operationType = StudyFlowProductStateContract.TvDomainAction,
+            payload = StudyFlowLinkCodec.encodePayload(StudyFlowTvDomainAction.serializer(), action),
+        )
+    }
+
+    private fun reconcileActiveWorkspaces() {
+        if (!started.get()) return
+        runCatching { runtime.ingestDiscovery() }
+        val workspaces = synchronized(activeWorkspaces) { activeWorkspaces.toList() }
+        workspaces.forEach { workspaceId ->
+            runtime.workspacePeers(workspaceId).forEach { peer ->
+                runCatching { runtime.reconcileWith(workspaceId, peer.peer.deviceId) }
+            }
         }
     }
 
@@ -159,6 +207,8 @@ class StudyFlowTvSflpPeer(
         lanDiscovery?.let { discoveryRegistry.remove(it) }
         lanDiscovery?.close()
         lanDiscovery = null
+        reconciliationScheduler?.shutdownNow()
+        reconciliationScheduler = null
         runtime.close()
         serverEndpoint = null
         started.set(false)

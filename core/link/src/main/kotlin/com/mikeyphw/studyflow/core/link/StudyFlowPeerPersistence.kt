@@ -10,6 +10,9 @@ data class StudyFlowTrustSnapshot(
 )
 
 @Serializable
+data class StudyFlowWorkspaceMembershipSnapshot(val members: List<StudyFlowWorkspaceMember> = emptyList())
+
+@Serializable
 data class StudyFlowOutgoingQueueSnapshot(
     val workspaceId: StudyFlowWorkspaceId,
     val entries: List<StudyFlowOutgoingQueueEntry> = emptyList(),
@@ -85,6 +88,12 @@ object StudyFlowPeerPersistenceCodec {
 
     fun decodeTrustRecords(encoded: String): List<StudyFlowTrustedPeerRecord> =
         StudyFlowLinkCodec.json.decodeFromString<StudyFlowTrustSnapshot>(encoded).records
+
+    fun encodeWorkspaceMembership(members: List<StudyFlowWorkspaceMember>): String =
+        StudyFlowLinkCodec.json.encodeToString(StudyFlowWorkspaceMembershipSnapshot(members))
+
+    fun decodeWorkspaceMembership(encoded: String): List<StudyFlowWorkspaceMember> =
+        StudyFlowLinkCodec.json.decodeFromString<StudyFlowWorkspaceMembershipSnapshot>(encoded).members
 
     fun encodeOutgoingQueue(
         workspaceId: StudyFlowWorkspaceId,

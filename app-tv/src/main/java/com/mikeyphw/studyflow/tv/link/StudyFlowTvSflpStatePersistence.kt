@@ -17,6 +17,8 @@ import com.mikeyphw.studyflow.core.link.StudyFlowPeerPersistenceCodec
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustStore
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceMember
+import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceMembershipStore
 
 class StudyFlowTvSflpStatePersistence(context: Context) {
     private val preferences: SharedPreferences = context.applicationContext.getSharedPreferences(
@@ -115,6 +117,26 @@ class StudyFlowTvSflpStatePersistence(context: Context) {
         }
     }
 
+    val membershipStore: StudyFlowWorkspaceMembershipStore = object : StudyFlowWorkspaceMembershipStore {
+        override fun list(): List<StudyFlowWorkspaceMember> = synchronized(preferences) {
+            preferences.getString(MembershipKey, null)?.let { encoded ->
+                runCatching { StudyFlowPeerPersistenceCodec.decodeWorkspaceMembership(encoded) }.getOrNull()
+            }.orEmpty()
+        }
+
+        override fun put(member: StudyFlowWorkspaceMember) { synchronized(preferences) {
+            val next = list().filterNot { it.workspaceId == member.workspaceId && it.deviceId == member.deviceId } + member
+            preferences.edit().putString(MembershipKey, StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next)).apply()
+        } }
+
+        override fun remove(workspaceId: StudyFlowWorkspaceId, deviceId: StudyFlowDeviceId): Boolean = synchronized(preferences) {
+            val current = list(); val next = current.filterNot { it.workspaceId == workspaceId && it.deviceId == deviceId }
+            if (next.size == current.size) false else {
+                preferences.edit().putString(MembershipKey, StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next)).apply(); true
+            }
+        }
+    }
+
     val endpointStore: StudyFlowPeerEndpointStore = object : StudyFlowPeerEndpointStore {
         override fun get(deviceId: StudyFlowDeviceId): StudyFlowPeerEndpointRecord? = synchronized(preferences) {
             endpointRecords().firstOrNull { it.deviceId == deviceId }
@@ -188,5 +210,6 @@ class StudyFlowTvSflpStatePersistence(context: Context) {
         const val IdentityKey = "identity"
         const val TrustKey = "trust"
         const val EndpointsKey = "endpoints"
+        const val MembershipKey = "workspace-membership"
     }
 }

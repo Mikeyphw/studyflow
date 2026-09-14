@@ -43,6 +43,9 @@ import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrence
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionOccurrenceId
 import com.mikeyphw.studyflow.core.link.StudyFlowAttentionWorkspace
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
+import com.mikeyphw.studyflow.core.link.StudyFlowProductStateContract
+import com.mikeyphw.studyflow.core.link.StudyFlowLinkCodec
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainAction
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLocalTransportClient
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvReceiverDiscovery
 import com.mikeyphw.studyflow.reminders.StudyReminderDeliveryCoordinator
@@ -66,6 +69,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 sealed interface AppInitializationState {
     data object Initializing : AppInitializationState
@@ -152,6 +157,7 @@ private class DefaultAppContainer(
     private var initializationJob: Job? = null
     private var widgetInvalidationJob: Job? = null
     private var reminderInvalidationJob: Job? = null
+    private var sflpReconciliationJob: Job? = null
     private val dataLayer = createStudyFlowDataLayer(
         context = application,
         applicationVersion = BuildConfig.VERSION_NAME,
@@ -287,6 +293,8 @@ private class DefaultAppContainer(
             reminderDeliveryCoordinator.createNotificationChannels()
         }
         linkPeer.runtime.setNotificationDeliveryHandler(reminderDeliveryCoordinator::receiveRemoteNotification)
+        runCatching { linkPeer.start() }
+        startSflpReconciliationDriver()
         retryInitialization()
     }
 
@@ -387,6 +395,35 @@ private class DefaultAppContainer(
             attentionLedger.migrateLegacyDeliveredAliases(
                 occurrenceStore.deliveredOccurrenceIds(plan.id),
             )
+        }
+    }
+
+    private fun startSflpReconciliationDriver() {
+        if (sflpReconciliationJob?.isActive == true) return
+        sflpReconciliationJob = applicationScope.launch {
+            // Establish a baseline before normal repositories begin emitting user mutations.
+            runCatching { linkPeer.reconcileProductState(dataLayer.sflpProductStateBridge) }
+            while (isActive) {
+                delay(15_000L)
+                runCatching {
+                    manageStudyPlan.plans.first().forEach { plan ->
+                        val workspaceId = StudyFlowWorkspaceId("plan-${plan.id.value}")
+                        linkPeer.registerWritableWorkspace(workspaceId)
+                        linkPeer.runtime.workspacePeers(workspaceId).forEach { peer ->
+                            runCatching { linkPeer.runtime.reconcileWith(workspaceId, peer.peer.deviceId) }
+                        }
+                        linkPeer.runtime.workspace(workspaceId).journal.replay()
+                            .filter { it.operationType == StudyFlowProductStateContract.TvDomainAction }
+                            .forEach { operation ->
+                                runCatching {
+                                    val action = StudyFlowLinkCodec.decodePayload(StudyFlowTvDomainAction.serializer(), operation.payload)
+                                    tvDomainActionExecutor.execute(action)
+                                }
+                            }
+                    }
+                    linkPeer.reconcileProductState(dataLayer.sflpProductStateBridge)
+                }
+            }
         }
     }
 

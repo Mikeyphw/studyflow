@@ -83,3 +83,13 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | DS2-12 | annex SAF/file inspection and hashing are outside Room transaction; graph-revision retry rejects mixed captures | `LocalStudyCloudSyncRepository.captureStableManualCheckpoint`; OV07 verifier |
 | DS2-41 | Plan Portability export/import password state and pending launcher password are wipeable arrays and cleared across failure/cancel/dispose | `PlanPortabilityScreen`; OV07 verifier |
 | S12-08 | explicit snapshot/imported-annex deletion is reversible until physical deletion succeeds; final linked-document grant release is verified | Room portability/annex repositories + OV07 verifier |
+
+## OV08 — SFLP product-state bridge & full-mesh mutation projection
+
+| Finding | Production closure | Behavioral evidence |
+|---|---|---|
+| S4-01 | `RoomStudyFlowSflpProductStateBridge` diffs canonical Room rows and `StudyFlowPeerRuntime.flushProductState` journals normal DB mutations. | `SflpProductStateBridgeOv08Test` performs an ordinary SQLite/Room graph write and requires a product journal mutation. |
+| S4-02 | `projectProductState` replays resolved SFLP row operations transactionally into Room and refreshes the baseline to prevent echo. | `SflpProductStateBridgeOv08Test` projects a remote operation and verifies no new local mutation is emitted. |
+| S4-09 | Android app starts SFLP and runs a 15-second reconciliation coroutine; native TV runs its own 15-second scheduled reconciler. | OV08 verifier checks both production driver call paths; core/link tests cover membership semantics used by the drivers. |
+| DS2-01 | `StudyFlowWorkspaceMembershipManager` is independent from trust; Android/TV/Desktop persist grants and sync RPC rejects non-members. | `StudyFlowWorkspaceMembershipOv08Test` proves access does not leak between workspaces and scoped revocation works. |
+| DS2-56 | TV persistent actions are journaled as `tv.domain_action_requested` in `plan-*` workspaces and Android writable peers drain them through `StudyFlowTvDomainActionExecutor`. | OV08 source/compile validator requires TV publication, active-workspace reconciliation and Android canonical execution wiring. |
