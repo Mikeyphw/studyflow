@@ -970,6 +970,10 @@ class StudyFlowPeerRuntime(
         peerDeviceId: StudyFlowDeviceId,
         endpoint: StudyFlowTransportEndpoint? = null,
     ): StudyFlowReconnectResult {
+        val workspaceRuntime = workspace(workspaceId)
+        val now = clock.nowEpochMillis()
+        workspaceRuntime.reconnect.deferredResultIfBackoff(peerDeviceId, now)?.let { return it }
+
         val topology = topology(workspaceId)
         val selectedEndpoint = endpoint
             ?: topology.bestRouteTo(peerDeviceId)?.endpoint
@@ -985,7 +989,7 @@ class StudyFlowPeerRuntime(
         )
         val startedAt = System.nanoTime()
         return try {
-            StudyFlowRemoteSyncPeerSession(
+            val result = StudyFlowRemoteSyncPeerSession(
                 deviceId = peerDeviceId,
                 workspaceId = workspaceId,
                 localIdentity = localIdentity,
@@ -995,21 +999,42 @@ class StudyFlowPeerRuntime(
                 clock = clock,
                 messageIds = messageIds,
             ).use { remote ->
-                val result = workspace(workspaceId).reconnect.reconcile(remote, clock.nowEpochMillis())
-                runCatching { exchangePresenceWith(remote, peerDeviceId, workspaceId) }
-                result
-            }.also {
-                val elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000L
-                topology.updateNextHopHealth(
-                    peerDeviceId,
-                    StudyFlowPeerHealth(
-                        state = StudyFlowPeerConnectionState.CONNECTED,
-                        lastSuccessAtEpochMillis = clock.nowEpochMillis(),
-                        roundTripMillis = elapsedMillis,
-                    ),
-                    clock.nowEpochMillis(),
-                )
+                workspaceRuntime.reconnect.reconcile(remote, clock.nowEpochMillis()).also { reconnectResult ->
+                    if (reconnectResult.status == StudyFlowReconnectStatus.COMPLETE) {
+                        runCatching { exchangePresenceWith(remote, peerDeviceId, workspaceId) }
+                    }
+                }
             }
+            val elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000L
+            val connected = result.status == StudyFlowReconnectStatus.COMPLETE
+            topology.updateNextHopHealth(
+                peerDeviceId,
+                StudyFlowPeerHealth(
+                    state = if (connected) StudyFlowPeerConnectionState.CONNECTED else StudyFlowPeerConnectionState.DEGRADED,
+                    lastSuccessAtEpochMillis = if (connected) clock.nowEpochMillis() else null,
+                    lastFailureAtEpochMillis = if (connected) null else clock.nowEpochMillis(),
+                    consecutiveFailures = if (connected) 0 else 1,
+                    roundTripMillis = elapsedMillis,
+                ),
+                clock.nowEpochMillis(),
+            )
+            result
+        } catch (error: StudyFlowPeerUnavailableException) {
+            val failure = workspaceRuntime.reconnect.recordConnectionFailure(
+                peerDeviceId = peerDeviceId,
+                nowEpochMillis = clock.nowEpochMillis(),
+                failure = error.message ?: "Peer unavailable",
+            )
+            topology.updateNextHopHealth(
+                peerDeviceId,
+                StudyFlowPeerHealth(
+                    state = StudyFlowPeerConnectionState.DEGRADED,
+                    lastFailureAtEpochMillis = clock.nowEpochMillis(),
+                    consecutiveFailures = 1,
+                ),
+                clock.nowEpochMillis(),
+            )
+            failure
         } catch (error: Throwable) {
             topology.updateNextHopHealth(
                 peerDeviceId,
@@ -1023,6 +1048,11 @@ class StudyFlowPeerRuntime(
             throw error
         }
     }
+
+    fun nextReconnectAt(
+        workspaceId: StudyFlowWorkspaceId,
+        peerDeviceId: StudyFlowDeviceId,
+    ): Long? = workspace(workspaceId).outgoingQueue.nextPeerAttemptAt(peerDeviceId)
 
     fun updatePresence(
         workspaceId: StudyFlowWorkspaceId,

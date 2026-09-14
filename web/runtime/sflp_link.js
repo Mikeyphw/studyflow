@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION = exports.STUDYFLOW_SHARE_IMPORT_INTENTS = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowAttentionLedgerSnapshotSchemaVersion = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebSocketRpcConnection = exports.StudyFlowWebPeerPersistence = exports.StudyFlowWebCryptoTrustKeyStore = exports.StudyFlowWebRpcError = void 0;
+exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION = exports.STUDYFLOW_SHARE_IMPORT_INTENTS = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowAttentionLedgerSnapshotSchemaVersion = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebSocketRpcConnection = exports.StudyFlowWebPeerPersistence = exports.StudyFlowWebCryptoTrustKeyStore = exports.StudyFlowWebTerminalPeerError = exports.StudyFlowWebSyncIntegrityError = exports.StudyFlowWebRpcError = void 0;
 exports.decodeStudyFlowPairingQr = decodeStudyFlowPairingQr;
 exports.installStudyFlowWebSflpPeer = installStudyFlowWebSflpPeer;
 const presence_js_1 = require("./presence.js");
@@ -29,14 +29,7 @@ function normalizeEndpoint(uri) { const text = uri.trim(); if (!text)
     return { kind: "manual", uri: text, lastSeenAtEpochMillis: Date.now() }; throw new Error("Unsupported SFLP endpoint scheme"); }
 function capabilitiesFor(kind) { return kind === "web_tv" ? [...WEB_TV_CAPABILITIES] : [...WEB_CAPABILITIES]; }
 function defaultState(kind) { if (kind !== "web" && kind !== "web_tv")
-    throw new Error("Browser persistence supports web or web_tv identities only"); const suffix = randomHex(8); const prefix = kind === "web_tv" ? "device-web-tv" : "device-web"; return { identity: { deviceId: `${prefix}-${suffix}`, displayName: kind === "web_tv" ? "StudyFlow Web TV" : "StudyFlow Web", clientKind: kind, protocolSupport: PROTOCOL_SUPPORT, capabilities: capabilitiesFor(kind) }, trustedPeers: [], endpoints: {}, pendingQueue: [], journal: [] }; }
-function safeParse(text) { if (!text)
-    return null; try {
-    return JSON.parse(text);
-}
-catch {
-    return null;
-} }
+    throw new Error("Browser persistence supports web or web_tv identities only"); const suffix = randomHex(8); const prefix = kind === "web_tv" ? "device-web-tv" : "device-web"; return { identity: { deviceId: `${prefix}-${suffix}`, displayName: kind === "web_tv" ? "StudyFlow Web TV" : "StudyFlow Web", clientKind: kind, protocolSupport: PROTOCOL_SUPPORT, capabilities: capabilitiesFor(kind) }, trustedPeers: [], endpoints: {}, pendingQueue: [], journal: [], peerRetryStates: {}, verifiedRemoteFrontiers: {} }; }
 function hexBytes(value) { if (value.length % 2 !== 0 || !/^[a-f0-9]+$/.test(value))
     throw new Error("Expected lower-case hex"); const out = new Uint8Array(value.length / 2); for (let i = 0; i < out.length; i++)
     out[i] = Number.parseInt(value.slice(i * 2, i * 2 + 2), 16); return out; }
@@ -68,9 +61,58 @@ catch {
     throw new Error("Invalid StudyFlow pairing QR endpoints"); if (typeof parsed.hostKeyAgreementPublicKeyHex !== "string" || parsed.hostKeyAgreementPublicKeyHex.length < 160 || parsed.hostKeyAgreementPublicKeyHex.length > 1024 || parsed.hostKeyAgreementPublicKeyHex.length % 2 !== 0 || !/^[a-f0-9]+$/.test(parsed.hostKeyAgreementPublicKeyHex))
     throw new Error("Invalid pairing host key"); return { ...parsed, host }; }
 function envelope(senderDeviceId, workspaceId, name, payload) { return { protocol: PROTOCOL_VERSION, messageId: messageId("web"), workspaceId, senderDeviceId, type: "request", name, sentAtEpochMillis: Date.now(), payload }; }
-function frontierFromMap(value) { return { origins: Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([deviceId, contiguousSequence]) => ({ deviceId, contiguousSequence })) }; }
-function frontierToMap(value) { var _a; const result = {}; for (const origin of (_a = value.origins) !== null && _a !== void 0 ? _a : [])
-    result[origin.deviceId] = origin.contiguousSequence; return result; }
+function frontierFromMap(value) { return { origins: Object.entries(value).filter(([, sequence]) => sequence > 0).sort(([a], [b]) => a.localeCompare(b)).map(([deviceId, contiguousSequence]) => ({ deviceId, contiguousSequence })) }; }
+function frontierToMap(value) { if (!value || !Array.isArray(value.origins))
+    throw new Error("Malformed SFLP frontier"); const result = {}; for (const origin of value.origins) {
+    if (!origin || typeof origin.deviceId !== "string" || !origin.deviceId || !Number.isSafeInteger(origin.contiguousSequence) || origin.contiguousSequence < 0)
+        throw new Error("Malformed SFLP frontier origin");
+    if (Object.prototype.hasOwnProperty.call(result, origin.deviceId))
+        throw new Error("SFLP frontier repeats an origin");
+    result[origin.deviceId] = origin.contiguousSequence;
+} return result; }
+function frontierEquals(left, right) { var _a, _b; const keys = new Set([...Object.keys(left), ...Object.keys(right)]); for (const key of keys)
+    if (((_a = left[key]) !== null && _a !== void 0 ? _a : 0) !== ((_b = right[key]) !== null && _b !== void 0 ? _b : 0))
+        return false; return true; }
+function frontierDominates(left, right) { return Object.entries(right).every(([deviceId, sequence]) => { var _a; return ((_a = left[deviceId]) !== null && _a !== void 0 ? _a : 0) >= sequence; }); }
+function retryKey(peerDeviceId, workspaceId) { return `${peerDeviceId}|${workspaceId}`; }
+function retryDelayMillis(attempts) { return Math.min(60000, 1000 * Math.pow(2, Math.max(0, Math.min(attempts - 1, 6)))); }
+function validateJournalOperation(value, workspaceId) { if (!value || typeof value !== "object")
+    throw new Error("Malformed SFLP journal operation"); const op = value; for (const field of ["workspaceId", "operationId", "originDeviceId", "entityId", "operationType"]) {
+    if (typeof op[field] !== "string" || !op[field].trim())
+        throw new Error(`Malformed SFLP journal operation ${field}`);
+} if (workspaceId && op.workspaceId !== workspaceId)
+    throw new Error("SFLP operation belongs to another workspace"); for (const field of ["originSequence", "entityRevision", "logicalTimestamp"]) {
+    if (!Number.isSafeInteger(op[field]) || op[field] < 1)
+        throw new Error(`Malformed SFLP journal operation ${field}`);
+} if (!Number.isSafeInteger(op.occurredAtEpochMillis) || Number(op.occurredAtEpochMillis) < 0)
+    throw new Error("Malformed SFLP journal operation timestamp"); if (op.kind !== "mutation" && op.kind !== "tombstone")
+    throw new Error("Malformed SFLP journal operation kind"); if (!op.payload || typeof op.payload !== "object" || Array.isArray(op.payload))
+    throw new Error("Malformed SFLP journal operation payload"); return op; }
+function advanceFrontier(base, operations) { var _a, _b; const result = { ...base }; const sequences = new Map(); for (const operation of operations) {
+    const set = (_a = sequences.get(operation.originDeviceId)) !== null && _a !== void 0 ? _a : new Set();
+    set.add(operation.originSequence);
+    sequences.set(operation.originDeviceId, set);
+} for (const [deviceId, available] of sequences) {
+    let contiguous = (_b = result[deviceId]) !== null && _b !== void 0 ? _b : 0;
+    while (available.has(contiguous + 1))
+        contiguous++;
+    result[deviceId] = contiguous;
+} return result; }
+function validateSyncBatch(value, workspaceId, expectedBase, trustedOrigins) { if (!value || typeof value !== "object")
+    throw new StudyFlowWebSyncIntegrityError("Malformed SFLP sync batch"); const batch = value; if (typeof batch.batchId !== "string" || !batch.batchId || batch.workspaceId !== workspaceId || !Array.isArray(batch.operations) || typeof batch.hasMore !== "boolean")
+    throw new StudyFlowWebSyncIntegrityError("Malformed SFLP sync batch"); const base = frontierToMap(batch.baseFrontier); if (!frontierEquals(base, expectedBase))
+    throw new StudyFlowWebSyncIntegrityError("SFLP sync batch base frontier is inconsistent"); const operations = batch.operations.map(operation => validateJournalOperation(operation, workspaceId)); const operationIds = new Set(); const originSequences = new Set(); for (const operation of operations) {
+    if (!trustedOrigins.has(operation.originDeviceId))
+        throw new StudyFlowWebSyncIntegrityError("SFLP operation claims an untrusted origin");
+    if (operationIds.has(operation.operationId))
+        throw new StudyFlowWebSyncIntegrityError("SFLP sync batch repeats an operation ID");
+    operationIds.add(operation.operationId);
+    const sequenceKey = `${operation.originDeviceId}:${operation.originSequence}`;
+    if (originSequences.has(sequenceKey))
+        throw new StudyFlowWebSyncIntegrityError("SFLP sync batch repeats an origin sequence");
+    originSequences.add(sequenceKey);
+} const through = frontierToMap(batch.throughFrontier); if (!frontierEquals(through, advanceFrontier(base, operations)))
+    throw new StudyFlowWebSyncIntegrityError("SFLP sync batch declares a spoofed or gapped through frontier"); return batch; }
 class StudyFlowWebRpcError extends Error {
     constructor(code, retryable, message) {
         super(`${code}: ${message}`);
@@ -80,6 +122,14 @@ class StudyFlowWebRpcError extends Error {
     }
 }
 exports.StudyFlowWebRpcError = StudyFlowWebRpcError;
+class StudyFlowWebSyncIntegrityError extends Error {
+    constructor(message) { super(message); this.name = "StudyFlowWebSyncIntegrityError"; }
+}
+exports.StudyFlowWebSyncIntegrityError = StudyFlowWebSyncIntegrityError;
+class StudyFlowWebTerminalPeerError extends Error {
+    constructor(message) { super(message); this.name = "StudyFlowWebTerminalPeerError"; }
+}
+exports.StudyFlowWebTerminalPeerError = StudyFlowWebTerminalPeerError;
 class StudyFlowWebCryptoTrustKeyStore {
     constructor(indexedDb = globalThis.indexedDB) {
         this.indexedDb = indexedDb;
@@ -117,11 +167,33 @@ class StudyFlowWebPeerPersistence {
     constructor(storage = globalThis.localStorage) {
         this.storage = storage;
     }
-    load(kind) { var _a, _b, _c, _d, _e; const loaded = safeParse(this.storage.getItem(storageKey(kind))); if (!loaded)
-        return defaultState(kind); if (((_a = loaded.identity) === null || _a === void 0 ? void 0 : _a.clientKind) !== kind)
-        return defaultState(kind); const trustedPeers = ((_b = loaded.trustedPeers) !== null && _b !== void 0 ? _b : []).map(record => { var _a, _b; const legacy = record; return { peer: record.peer, state: legacy.trustSecret ? "revoked" : record.state, pairedAtEpochMillis: record.pairedAtEpochMillis, updatedAtEpochMillis: record.updatedAtEpochMillis, lastSeenAtEpochMillis: record.lastSeenAtEpochMillis, revokedAtEpochMillis: legacy.trustSecret ? ((_a = record.revokedAtEpochMillis) !== null && _a !== void 0 ? _a : Date.now()) : record.revokedAtEpochMillis, trustKeyId: legacy.trustSecret ? null : ((_b = record.trustKeyId) !== null && _b !== void 0 ? _b : null) }; }); return { identity: { ...loaded.identity, clientKind: kind, protocolSupport: PROTOCOL_SUPPORT, capabilities: capabilitiesFor(kind) }, trustedPeers, endpoints: (_c = loaded.endpoints) !== null && _c !== void 0 ? _c : {}, pendingQueue: (_d = loaded.pendingQueue) !== null && _d !== void 0 ? _d : [], journal: (_e = loaded.journal) !== null && _e !== void 0 ? _e : [] }; }
+    load(kind) { var _a, _b; const key = storageKey(kind); const encoded = this.storage.getItem(key); if (!encoded)
+        return defaultState(kind); try {
+        const loaded = JSON.parse(encoded);
+        if (!loaded.identity || loaded.identity.clientKind !== kind)
+            throw new Error("Persisted SFLP identity kind is inconsistent");
+        validateDescriptor(loaded.identity);
+        if (!Array.isArray(loaded.trustedPeers) || !loaded.endpoints || typeof loaded.endpoints !== "object" || !Array.isArray(loaded.pendingQueue) || !Array.isArray(loaded.journal))
+            throw new Error("Persisted SFLP snapshot shape is invalid");
+        const trustedPeers = loaded.trustedPeers.map(record => { var _a, _b; const legacy = record; validateDescriptor(record.peer); return { peer: record.peer, state: legacy.trustSecret ? "revoked" : record.state, pairedAtEpochMillis: record.pairedAtEpochMillis, updatedAtEpochMillis: record.updatedAtEpochMillis, lastSeenAtEpochMillis: record.lastSeenAtEpochMillis, revokedAtEpochMillis: legacy.trustSecret ? ((_a = record.revokedAtEpochMillis) !== null && _a !== void 0 ? _a : Date.now()) : record.revokedAtEpochMillis, trustKeyId: legacy.trustSecret ? null : ((_b = record.trustKeyId) !== null && _b !== void 0 ? _b : null) }; });
+        const journal = loaded.journal.map(operation => validateJournalOperation(operation));
+        return { identity: { ...loaded.identity, clientKind: kind, protocolSupport: PROTOCOL_SUPPORT, capabilities: capabilitiesFor(kind) }, trustedPeers, endpoints: loaded.endpoints, pendingQueue: loaded.pendingQueue, journal, peerRetryStates: (_a = loaded.peerRetryStates) !== null && _a !== void 0 ? _a : {}, verifiedRemoteFrontiers: (_b = loaded.verifiedRemoteFrontiers) !== null && _b !== void 0 ? _b : {} };
+    }
+    catch (error) {
+        this.quarantine(kind, key, encoded, error);
+        return defaultState(kind);
+    } }
     save(snapshot) { const sanitized = { ...snapshot, trustedPeers: snapshot.trustedPeers.map(record => ({ peer: record.peer, state: record.state, pairedAtEpochMillis: record.pairedAtEpochMillis, updatedAtEpochMillis: record.updatedAtEpochMillis, lastSeenAtEpochMillis: record.lastSeenAtEpochMillis, revokedAtEpochMillis: record.revokedAtEpochMillis, trustKeyId: record.trustKeyId })) }; this.storage.setItem(storageKey(snapshot.identity.clientKind), JSON.stringify(sanitized)); }
     clear(kind = "web") { this.storage.removeItem(storageKey(kind)); }
+    corruptionRecords(kind = "web") { const raw = this.storage.getItem(`${storageKey(kind)}.corruption.v1`); if (!raw)
+        return []; try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    }
+    catch {
+        return [];
+    } }
+    quarantine(kind, key, encoded, error) { const observedAtEpochMillis = Date.now(); const quarantineReference = `${key}.quarantine.${observedAtEpochMillis}.${randomHex(6)}`; this.storage.setItem(quarantineReference, encoded); const record = { kind, observedAtEpochMillis, storageKey: key, quarantineReference, reason: (error instanceof Error ? error.message : String(error)).slice(0, 512) }; this.storage.setItem(`${key}.corruption.v1`, JSON.stringify([...this.corruptionRecords(kind), record].slice(-64))); this.storage.removeItem(key); }
 }
 exports.StudyFlowWebPeerPersistence = StudyFlowWebPeerPersistence;
 function validateEnvelopeShape(value) { if (!value || typeof value !== "object")
@@ -215,13 +287,26 @@ class StudyFlowWebLinkPeer {
         connection.close();
     } }
     rememberManualEndpoint(peerDeviceId, uri) { var _a; const endpoint = this.discovery.remember(peerDeviceId, uri); const existing = (_a = this.snapshot.endpoints[peerDeviceId]) !== null && _a !== void 0 ? _a : []; this.snapshot.endpoints[peerDeviceId] = [endpoint, ...existing.filter(item => item.uri !== endpoint.uri)]; this.persistence.save(this.snapshot); return endpoint; }
-    appendLocalMutation(workspaceId, entityId, operationType, payload) { const mine = this.snapshot.journal.filter(op => op.originDeviceId === this.identity.deviceId); const sequence = mine.reduce((max, op) => Math.max(max, op.originSequence), 0) + 1; const entityRevision = this.snapshot.journal.filter(op => op.workspaceId === workspaceId && op.entityId === entityId).reduce((max, op) => Math.max(max, op.entityRevision), 0) + 1; const logicalTimestamp = this.snapshot.journal.filter(op => op.workspaceId === workspaceId).reduce((max, op) => { var _a; return Math.max(max, (_a = op.logicalTimestamp) !== null && _a !== void 0 ? _a : 0); }, 0) + 1; const occurredAtEpochMillis = Date.now(); const operation = { workspaceId, operationId: `op-${this.identity.deviceId}-${sequence}`, originDeviceId: this.identity.deviceId, originSequence: sequence, entityId, entityRevision, logicalTimestamp, operationType, kind: "mutation", occurredAtEpochMillis, payload }; this.snapshot.journal = [...this.snapshot.journal, operation]; for (const peer of this.snapshot.trustedPeers.filter(p => p.state === "trusted")) {
+    appendLocalMutation(workspaceId, entityId, operationType, payload) { const sequence = this.snapshot.journal.filter(op => op.workspaceId === workspaceId && op.originDeviceId === this.identity.deviceId).reduce((max, op) => Math.max(max, op.originSequence), 0) + 1; const entityRevision = this.snapshot.journal.filter(op => op.workspaceId === workspaceId && op.entityId === entityId).reduce((max, op) => Math.max(max, op.entityRevision), 0) + 1; const logicalTimestamp = this.snapshot.journal.filter(op => op.workspaceId === workspaceId).reduce((max, op) => { var _a; return Math.max(max, (_a = op.logicalTimestamp) !== null && _a !== void 0 ? _a : 0); }, 0) + 1; const occurredAtEpochMillis = Date.now(); const operation = { workspaceId, operationId: `op-${this.identity.deviceId}-${sequence}`, originDeviceId: this.identity.deviceId, originSequence: sequence, entityId, entityRevision, logicalTimestamp, operationType, kind: "mutation", occurredAtEpochMillis, payload }; this.snapshot.journal = [...this.snapshot.journal, operation]; for (const peer of this.snapshot.trustedPeers.filter(p => p.state === "trusted")) {
         this.snapshot.pendingQueue.push({ peerDeviceId: peer.peer.deviceId, workspaceId, operationId: operation.operationId, attempts: 0, nextAttemptEpochMillis: Date.now() });
     } this.persistence.save(this.snapshot); return operation; }
-    applyRemoteOperations(operations) { const seen = new Set(this.snapshot.journal.map(op => op.operationId)); let added = 0; for (const operation of operations) {
-        if (seen.has(operation.operationId))
+    applyRemoteOperations(operations, workspaceId, sourcePeerDeviceId) { const trustedOrigins = new Set(this.snapshot.trustedPeers.filter(item => item.state === "trusted").map(item => item.peer.deviceId)); trustedOrigins.add(this.identity.deviceId); if (sourcePeerDeviceId && !trustedOrigins.has(sourcePeerDeviceId))
+        throw new StudyFlowWebSyncIntegrityError("SFLP operation source peer is not trusted"); const byId = new Map(this.snapshot.journal.map(op => [op.operationId, op])); const byOriginSequence = new Map(this.snapshot.journal.map(op => [`${op.originDeviceId}:${op.originSequence}`, op])); let added = 0; for (const raw of operations) {
+        const operation = validateJournalOperation(raw, workspaceId);
+        if (!trustedOrigins.has(operation.originDeviceId))
+            throw new StudyFlowWebSyncIntegrityError("SFLP operation claims an untrusted origin");
+        const existingById = byId.get(operation.operationId);
+        if (existingById) {
+            if (JSON.stringify(existingById) !== JSON.stringify(operation))
+                throw new StudyFlowWebSyncIntegrityError("SFLP operation ID was reused with different content");
             continue;
-        seen.add(operation.operationId);
+        }
+        const sequenceKey = `${operation.originDeviceId}:${operation.originSequence}`;
+        const existingSequence = byOriginSequence.get(sequenceKey);
+        if (existingSequence && existingSequence.operationId !== operation.operationId)
+            throw new StudyFlowWebSyncIntegrityError("SFLP origin sequence was reused by another operation");
+        byId.set(operation.operationId, operation);
+        byOriginSequence.set(sequenceKey, operation);
         this.snapshot.journal.push(operation);
         added++;
     } if (added)
@@ -235,31 +320,65 @@ class StudyFlowWebLinkPeer {
         let contiguous = 0;
         while (set.has(contiguous + 1))
             contiguous++;
-        out[deviceId] = contiguous;
+        if (contiguous > 0)
+            out[deviceId] = contiguous;
     } return out; }
     operationsAfter(workspaceId, frontier, limit = 100) { return this.snapshot.journal.filter(op => { var _a; return op.workspaceId === workspaceId && op.originSequence > ((_a = frontier[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0); }).sort((a, b) => a.originDeviceId.localeCompare(b.originDeviceId) || a.originSequence - b.originSequence).slice(0, limit); }
-    acknowledge(peerDeviceId, workspaceId, frontier) { this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(entry => { var _a; if (entry.peerDeviceId !== peerDeviceId || entry.workspaceId !== workspaceId)
-        return true; const op = this.snapshot.journal.find(item => item.operationId === entry.operationId); return !op || op.originSequence > ((_a = frontier[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0); }); this.persistence.save(this.snapshot); }
-    async reconcileWith(peerDeviceId, workspaceId) { return this.withAuthenticatedConnection(peerDeviceId, async (connection) => { var _a; const initialFrontier = frontierFromMap(this.frontier(workspaceId)); const frontierResponse = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.frontier", { knownFrontier: initialFrontier })); if (frontierResponse.name !== "sync.frontier" || frontierResponse.senderDeviceId !== peerDeviceId)
-        throw new Error(`Unexpected frontier response ${frontierResponse.name}`); let remoteFrontier = frontierResponse.payload.currentFrontier; let pulled = 0; let hasMore = true; while (hasMore) {
-        const pull = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.pull", { workspaceId, knownFrontier: frontierFromMap(this.frontier(workspaceId)), maxOperations: 100 }));
-        if (pull.name !== "sync.operations" || pull.senderDeviceId !== peerDeviceId)
-            throw new Error(`Unexpected pull response ${pull.name}`);
-        const batch = pull.payload;
-        pulled += this.applyRemoteOperations(batch.operations);
-        hasMore = batch.hasMore;
-        remoteFrontier = batch.throughFrontier;
-    } const remoteMap = frontierToMap(remoteFrontier); const outgoing = this.operationsAfter(workspaceId, remoteMap, 1000); let pushed = 0; if (outgoing.length) {
-        const through = { ...remoteMap };
-        for (const op of outgoing)
-            through[op.originDeviceId] = Math.max((_a = through[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0, op.originSequence);
-        const batch = { batchId: messageId("web-batch"), workspaceId, baseFrontier: remoteFrontier, operations: outgoing, throughFrontier: frontierFromMap(through), hasMore: false };
-        const apply = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.apply", batch));
-        if (apply.name !== "sync.apply" || apply.senderDeviceId !== peerDeviceId)
-            throw new Error(`Unexpected apply response ${apply.name}`);
-        pushed = outgoing.length;
-        this.acknowledge(peerDeviceId, workspaceId, through);
-    } return { pulled, pushed }; }); }
+    acknowledge(peerDeviceId, workspaceId, operationIds) { const acknowledged = new Set(operationIds); if (acknowledged.size === 0)
+        return; this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(entry => entry.peerDeviceId !== peerDeviceId || entry.workspaceId !== workspaceId || !acknowledged.has(entry.operationId)); this.persistence.save(this.snapshot); }
+    peerRetry(peerDeviceId, workspaceId) { return this.snapshot.peerRetryStates[retryKey(peerDeviceId, workspaceId)]; }
+    recordPeerFailure(peerDeviceId, workspaceId, now, failure, attemptedOperationIds) { var _a; const key = retryKey(peerDeviceId, workspaceId); const previous = this.snapshot.peerRetryStates[key]; const attempts = ((_a = previous === null || previous === void 0 ? void 0 : previous.attempts) !== null && _a !== void 0 ? _a : 0) + 1; const state = { peerDeviceId, workspaceId, attempts, lastAttemptEpochMillis: now, nextAttemptEpochMillis: now + retryDelayMillis(attempts), lastFailure: failure.slice(0, 512) }; this.snapshot.peerRetryStates[key] = state; if (attemptedOperationIds.size) {
+        this.snapshot.pendingQueue = this.snapshot.pendingQueue.map(entry => entry.peerDeviceId === peerDeviceId && entry.workspaceId === workspaceId && attemptedOperationIds.has(entry.operationId) ? { ...entry, attempts: entry.attempts + 1, lastAttemptEpochMillis: now, nextAttemptEpochMillis: state.nextAttemptEpochMillis, lastFailure: state.lastFailure } : entry);
+    } this.persistence.save(this.snapshot); return state; }
+    clearPeerRetry(peerDeviceId, workspaceId) { const key = retryKey(peerDeviceId, workspaceId); if (this.snapshot.peerRetryStates[key]) {
+        delete this.snapshot.peerRetryStates[key];
+        this.persistence.save(this.snapshot);
+    } }
+    verifiedRemoteFrontier(peerDeviceId, workspaceId) { var _a; return { ...((_a = this.snapshot.verifiedRemoteFrontiers[retryKey(peerDeviceId, workspaceId)]) !== null && _a !== void 0 ? _a : {}) }; }
+    saveVerifiedRemoteFrontier(peerDeviceId, workspaceId, frontier) { this.snapshot.verifiedRemoteFrontiers[retryKey(peerDeviceId, workspaceId)] = { ...frontier }; this.persistence.save(this.snapshot); }
+    async reconcileWith(peerDeviceId, workspaceId) { const now = Date.now(); const retry = this.peerRetry(peerDeviceId, workspaceId); if (retry && retry.nextAttemptEpochMillis > now)
+        return { pulled: 0, pushed: 0, status: "deferred", failure: retry.lastFailure, retryAtEpochMillis: retry.nextAttemptEpochMillis }; const attemptedOperationIds = new Set(); let pulled = 0; let pushed = 0; try {
+        const result = await this.withAuthenticatedConnection(peerDeviceId, async (connection) => { var _a; const trustedOrigins = new Set(this.snapshot.trustedPeers.filter(item => item.state === "trusted").map(item => item.peer.deviceId)); trustedOrigins.add(this.identity.deviceId); const initialFrontier = this.frontier(workspaceId); const frontierResponse = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.frontier", { knownFrontier: frontierFromMap(initialFrontier) })); if (frontierResponse.name !== "sync.frontier" || frontierResponse.senderDeviceId !== peerDeviceId)
+            throw new StudyFlowWebSyncIntegrityError(`Unexpected frontier response ${frontierResponse.name}`); const advertisedRemote = frontierToMap(frontierResponse.payload.currentFrontier); let hasMore = true; let pullRounds = 0; while (hasMore) {
+            if (++pullRounds > 256)
+                throw new StudyFlowWebSyncIntegrityError("SFLP pull exceeded the bounded continuation limit");
+            const known = this.frontier(workspaceId);
+            const pull = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.pull", { workspaceId, knownFrontier: frontierFromMap(known), maxOperations: 100 }));
+            if (pull.name !== "sync.operations" || pull.senderDeviceId !== peerDeviceId)
+                throw new StudyFlowWebSyncIntegrityError(`Unexpected pull response ${pull.name}`);
+            const batch = validateSyncBatch(pull.payload, workspaceId, known, trustedOrigins);
+            if (batch.hasMore && batch.operations.length === 0)
+                throw new StudyFlowWebSyncIntegrityError("SFLP peer declared continuation without operations");
+            pulled += this.applyRemoteOperations(batch.operations, workspaceId, peerDeviceId);
+            hasMore = batch.hasMore;
+        } const verifiedBase = this.verifiedRemoteFrontier(peerDeviceId, workspaceId); for (const [origin, sequence] of Object.entries(verifiedBase)) {
+            if (sequence > ((_a = advertisedRemote[origin]) !== null && _a !== void 0 ? _a : 0))
+                throw new StudyFlowWebSyncIntegrityError("SFLP peer regressed below its verified frontier");
+        } const outgoing = this.operationsAfter(workspaceId, verifiedBase, 1000); if (outgoing.length) {
+            outgoing.forEach(operation => attemptedOperationIds.add(operation.operationId));
+            const through = advanceFrontier(verifiedBase, outgoing);
+            const batch = { batchId: messageId("web-batch"), workspaceId, baseFrontier: frontierFromMap(verifiedBase), operations: outgoing, throughFrontier: frontierFromMap(through), hasMore: false };
+            const apply = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.apply", batch));
+            if (apply.name !== "sync.apply" || apply.senderDeviceId !== peerDeviceId)
+                throw new StudyFlowWebSyncIntegrityError(`Unexpected apply response ${apply.name}`);
+            const applyPayload = apply.payload;
+            const resulting = frontierToMap(applyPayload.resultingFrontier);
+            if (!frontierDominates(resulting, through))
+                throw new StudyFlowWebSyncIntegrityError("SFLP apply response did not cover the accepted batch");
+            pushed = outgoing.length;
+            this.acknowledge(peerDeviceId, workspaceId, attemptedOperationIds);
+            this.saveVerifiedRemoteFrontier(peerDeviceId, workspaceId, through);
+        } return { pulled, pushed, status: "complete" }; });
+        this.clearPeerRetry(peerDeviceId, workspaceId);
+        return result;
+    }
+    catch (error) {
+        const message = (error instanceof Error ? error.message : String(error)).slice(0, 512);
+        if (error instanceof StudyFlowWebSyncIntegrityError || error instanceof StudyFlowWebTerminalPeerError || (error instanceof StudyFlowWebRpcError && !error.retryable))
+            return { pulled, pushed, status: "terminal_failure", failure: message };
+        const state = this.recordPeerFailure(peerDeviceId, workspaceId, Date.now(), message, attemptedOperationIds);
+        return { pulled, pushed, status: "interrupted", failure: message, retryAtEpochMillis: state.nextAttemptEpochMillis };
+    } }
     async sendRoutedRpc(peerDeviceId, workspaceId, name, payload) { return this.withAuthenticatedConnection(peerDeviceId, async (connection) => { const response = await connection.exchange(envelope(this.identity.deviceId, workspaceId, name, payload)); if (response.name !== "link.rpc_accepted" || response.senderDeviceId !== peerDeviceId)
         throw new Error(`Unexpected routed RPC response ${response.name}`); return response.payload; }); }
     updatePresence(workspaceId, availability, activityHint, visibilityCapabilities = []) { return this.presence.announce(workspaceId, availability, activityHint, visibilityCapabilities); }
@@ -272,7 +391,11 @@ class StudyFlowWebLinkPeer {
         return record; if (record.trustKeyId)
         void this.trustKeys.remove(record.trustKeyId); revoked = { ...record, state: "revoked", trustKeyId: null, updatedAtEpochMillis: now, revokedAtEpochMillis: now }; return revoked; }); this.persistence.save(this.snapshot); return revoked; }
     forget(peerDeviceId) { this.presence.forgetPeer(peerDeviceId); const record = this.snapshot.trustedPeers.find(item => item.peer.deviceId === peerDeviceId); if (record === null || record === void 0 ? void 0 : record.trustKeyId)
-        void this.trustKeys.remove(record.trustKeyId); const before = this.snapshot.trustedPeers.length; this.snapshot.trustedPeers = this.snapshot.trustedPeers.filter(item => item.peer.deviceId !== peerDeviceId); delete this.snapshot.endpoints[peerDeviceId]; this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(item => item.peerDeviceId !== peerDeviceId); this.persistence.save(this.snapshot); return before !== this.snapshot.trustedPeers.length; }
+        void this.trustKeys.remove(record.trustKeyId); const before = this.snapshot.trustedPeers.length; this.snapshot.trustedPeers = this.snapshot.trustedPeers.filter(item => item.peer.deviceId !== peerDeviceId); delete this.snapshot.endpoints[peerDeviceId]; this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(item => item.peerDeviceId !== peerDeviceId); for (const key of Object.keys(this.snapshot.peerRetryStates))
+        if (key.startsWith(`${peerDeviceId}|`))
+            delete this.snapshot.peerRetryStates[key]; for (const key of Object.keys(this.snapshot.verifiedRemoteFrontiers))
+        if (key.startsWith(`${peerDeviceId}|`))
+            delete this.snapshot.verifiedRemoteFrontiers[key]; this.persistence.save(this.snapshot); return before !== this.snapshot.trustedPeers.length; }
     snapshotForDebug() { return JSON.parse(JSON.stringify(this.snapshot)); }
     endpointFor(peerDeviceId) { var _a; const endpoint = ((_a = this.snapshot.endpoints[peerDeviceId]) !== null && _a !== void 0 ? _a : []).find(item => item.kind === "websocket"); if (!endpoint)
         throw new Error(`No ws/wss endpoint remembered for ${peerDeviceId}`); return endpoint; }
@@ -281,14 +404,14 @@ class StudyFlowWebLinkPeer {
     async withAuthenticatedConnection(peerDeviceId, block) { const record = this.trusted(peerDeviceId); const connection = await this.transport.connect(this.endpointFor(peerDeviceId)); try {
         const challengeResponse = await connection.exchange(envelope(this.identity.deviceId, LINK_SYSTEM_WORKSPACE_ID, "link.reconnect_challenge", { peerDeviceId: this.identity.deviceId }));
         if (challengeResponse.name !== "link.reconnect_challenge" || challengeResponse.senderDeviceId !== record.peer.deviceId)
-            throw new Error(`Unexpected reconnect challenge ${challengeResponse.name}`);
+            throw new StudyFlowWebTerminalPeerError(`Unexpected reconnect challenge ${challengeResponse.name}`);
         const challenge = challengeResponse.payload;
         if (challenge.challengerDeviceId !== record.peer.deviceId || challenge.peerDeviceId !== this.identity.deviceId || challenge.expiresAtEpochMillis <= Date.now())
-            throw new Error("Reconnect challenge identity/expiry mismatch");
+            throw new StudyFlowWebTerminalPeerError("Reconnect challenge identity/expiry mismatch");
         const proofHex = await reconnectProofHex(this.trustKeys, record.trustKeyId, challenge);
         const accepted = await connection.exchange(envelope(this.identity.deviceId, LINK_SYSTEM_WORKSPACE_ID, "link.reconnect_proof", { proverDeviceId: this.identity.deviceId, nonce: challenge.nonce, proofHex }));
         if (accepted.name !== "link.reconnect_accepted" || accepted.senderDeviceId !== record.peer.deviceId)
-            throw new Error(`Unexpected reconnect response ${accepted.name}`);
+            throw new StudyFlowWebTerminalPeerError(`Unexpected reconnect response ${accepted.name}`);
         return await block(connection);
     }
     finally {

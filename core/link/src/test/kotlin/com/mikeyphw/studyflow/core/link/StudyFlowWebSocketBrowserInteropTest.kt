@@ -3,11 +3,15 @@ package com.mikeyphw.studyflow.core.link
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.Socket
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Test
 
 class StudyFlowWebSocketBrowserInteropTest {
@@ -78,6 +82,66 @@ class StudyFlowWebSocketBrowserInteropTest {
         } finally {
             listener.close()
             executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun committedBrowserRuntimeExchangesRealSflpEnvelopesWithNativeTransport() {
+        val runtimePath = generateSequence(Path.of(System.getProperty("user.dir")).toAbsolutePath()) { it.parent }
+            .map { it.resolve("web/runtime/sflp_link.js") }
+            .firstOrNull { Files.isRegularFile(it) }
+            ?: error("Unable to locate committed web/runtime/sflp_link.js")
+        val transport = StudyFlowWebSocketTransport("/sflp")
+        val listener = transport.listen(
+            StudyFlowTransportEndpoint(StudyFlowTransportScheme.WEBSOCKET, "127.0.0.1", 0, "/sflp"),
+        )
+        val endpoint = "ws://127.0.0.1:${requireNotNull(listener.boundEndpoint.port)}/sflp"
+        try {
+            listOf("device-web-ov11", "device-web-tv-ov11").forEach { sender ->
+                val script = """
+                    const { StudyFlowWebSocketTransportAdapter } = require(process.argv[1]);
+                    const endpoint = { kind: 'websocket', uri: process.argv[2], lastSeenAtEpochMillis: Date.now() };
+                    const sender = process.argv[3];
+                    (async () => {
+                      const connection = await new StudyFlowWebSocketTransportAdapter().connect(endpoint);
+                      const request = { protocol:{major:1,minor:0}, messageId:'ov11-'+sender, workspaceId:'workspace-ov11-browser', senderDeviceId:sender, type:'request', name:'sync.frontier', sentAtEpochMillis:Date.now(), payload:{knownFrontier:{origins:[]}} };
+                      const response = await connection.exchange(request);
+                      if (response.name !== 'sync.frontier' || response.senderDeviceId !== 'device-native-ov11') throw new Error('unexpected native response');
+                      connection.close();
+                      process.stdout.write('OV11_REAL_BROWSER_NATIVE_INTEROP: '+sender+' PASS\n');
+                    })().catch(error => { console.error(error); process.exitCode = 1; });
+                """.trimIndent()
+                val process = ProcessBuilder("node", "-e", script, runtimePath.toString(), endpoint, sender)
+                    .redirectErrorStream(true)
+                    .start()
+                val connection = requireNotNull(listener.accept())
+                connection.use { native ->
+                    val request = StudyFlowLinkCodec.decode(
+                        requireNotNull(native.receiveFrame()).toString(Charsets.UTF_8),
+                    )
+                    assertEquals(StudyFlowDeviceId(sender), request.senderDeviceId)
+                    assertEquals("sync.frontier", request.name)
+                    val response = StudyFlowLinkEnvelope(
+                        messageId = StudyFlowMessageId("response-${request.messageId.value}"),
+                        workspaceId = request.workspaceId,
+                        senderDeviceId = StudyFlowDeviceId("device-native-ov11"),
+                        messageType = StudyFlowLinkMessageType.RESPONSE,
+                        name = StudyFlowSyncMessageNames.Frontier,
+                        sentAtEpochMillis = request.sentAtEpochMillis + 1L,
+                        correlationId = request.messageId,
+                        payload = buildJsonObject {
+                            put("currentFrontier", buildJsonObject { put("origins", kotlinx.serialization.json.JsonArray(emptyList())) })
+                        },
+                    )
+                    native.sendFrame(StudyFlowLinkCodec.encode(response).toByteArray(Charsets.UTF_8))
+                }
+                assertTrue(process.waitFor(10, TimeUnit.SECONDS))
+                val output = process.inputStream.bufferedReader().readText()
+                assertEquals(output, 0, process.exitValue())
+                assertTrue(output.contains("OV11_REAL_BROWSER_NATIVE_INTEROP: $sender PASS"))
+            }
+        } finally {
+            listener.close()
         }
     }
 

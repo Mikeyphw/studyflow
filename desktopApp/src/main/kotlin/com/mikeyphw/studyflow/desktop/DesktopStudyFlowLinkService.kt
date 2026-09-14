@@ -254,8 +254,12 @@ class DesktopStudyFlowLinkService(
         runCatching { runtime.ingestDiscovery() }
         val workspaces = synchronized(activeWorkspaces) { activeWorkspaces.toList() }
         workspaces.forEach { workspaceId ->
+            val now = System.currentTimeMillis()
             runtime.workspacePeers(workspaceId).forEach { peer ->
-                runCatching { runtime.reconcileWith(workspaceId, peer.peer.deviceId) }
+                val retryAt = runtime.nextReconnectAt(workspaceId, peer.peer.deviceId)
+                if (retryAt == null || retryAt <= now) {
+                    runCatching { runtime.reconcileWith(workspaceId, peer.peer.deviceId) }
+                }
             }
         }
     }

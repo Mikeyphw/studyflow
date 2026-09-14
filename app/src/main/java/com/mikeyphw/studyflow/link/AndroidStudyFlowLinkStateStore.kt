@@ -14,11 +14,16 @@ import com.mikeyphw.studyflow.core.link.StudyFlowOutgoingQueueStore
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerEndpointRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerEndpointStore
 import com.mikeyphw.studyflow.core.link.StudyFlowPeerPersistenceCodec
+import com.mikeyphw.studyflow.core.link.StudyFlowPeerRetryState
+import com.mikeyphw.studyflow.core.link.StudyFlowPersistenceCorruptionRecord
+import com.mikeyphw.studyflow.core.link.StudyFlowPersistedStateKind
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustStore
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceMember
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceMembershipStore
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 
 class AndroidStudyFlowLinkStatePersistence(context: Context) {
     private val preferences: SharedPreferences = context.applicationContext.getSharedPreferences(
@@ -29,7 +34,9 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
     val identityStore: StudyFlowDeviceIdentityStore = object : StudyFlowDeviceIdentityStore {
         override fun load(): StudyFlowLocalDeviceIdentity? = synchronized(preferences) {
             preferences.getString(IdentityKey, null)?.let { encoded ->
-                runCatching { StudyFlowPeerPersistenceCodec.decodeIdentity(encoded) }.getOrNull()
+                decodeOrQuarantine(IdentityKey, StudyFlowPersistedStateKind.IDENTITY, encoded, fallback = { null }) {
+                    StudyFlowPeerPersistenceCodec.decodeIdentity(it)
+                }
             }
         }
 
@@ -70,20 +77,34 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
 
     val queueStore: StudyFlowOutgoingQueueStore = object : StudyFlowOutgoingQueueStore {
         override fun load(workspaceId: StudyFlowWorkspaceId): List<StudyFlowOutgoingQueueEntry> =
-            synchronized(preferences) {
-                preferences.getString(queueKey(workspaceId), null)?.let { encoded ->
-                    runCatching {
-                        StudyFlowPeerPersistenceCodec.decodeOutgoingQueue(workspaceId, encoded)
-                    }.getOrNull()
-                }.orEmpty()
-            }
+            synchronized(preferences) { queueSnapshot(workspaceId).entries }
 
         override fun save(workspaceId: StudyFlowWorkspaceId, entries: List<StudyFlowOutgoingQueueEntry>) {
             synchronized(preferences) {
+                val current = queueSnapshot(workspaceId)
                 preferences.edit()
                     .putString(
                         queueKey(workspaceId),
-                        StudyFlowPeerPersistenceCodec.encodeOutgoingQueue(workspaceId, entries),
+                        StudyFlowPeerPersistenceCodec.encodeOutgoingQueue(
+                            workspaceId,
+                            entries,
+                            current.peerRetryStates,
+                        ),
+                    )
+                    .apply()
+            }
+        }
+
+        override fun loadPeerRetryStates(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPeerRetryState> =
+            synchronized(preferences) { queueSnapshot(workspaceId).peerRetryStates }
+
+        override fun savePeerRetryStates(workspaceId: StudyFlowWorkspaceId, states: List<StudyFlowPeerRetryState>) {
+            synchronized(preferences) {
+                val current = queueSnapshot(workspaceId)
+                preferences.edit()
+                    .putString(
+                        queueKey(workspaceId),
+                        StudyFlowPeerPersistenceCodec.encodeOutgoingQueue(workspaceId, current.entries, states),
                     )
                     .apply()
             }
@@ -120,7 +141,12 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
     val membershipStore: StudyFlowWorkspaceMembershipStore = object : StudyFlowWorkspaceMembershipStore {
         override fun list(): List<StudyFlowWorkspaceMember> = synchronized(preferences) {
             preferences.getString(MembershipKey, null)?.let { encoded ->
-                runCatching { StudyFlowPeerPersistenceCodec.decodeWorkspaceMembership(encoded) }.getOrNull()
+                decodeOrQuarantine(
+                    MembershipKey,
+                    StudyFlowPersistedStateKind.WORKSPACE_MEMBERSHIP,
+                    encoded,
+                    fallback = { emptyList() },
+                ) { StudyFlowPeerPersistenceCodec.decodeWorkspaceMembership(it) }
             }.orEmpty()
         }
 
@@ -169,7 +195,9 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
 
     private fun trustRecords(): List<StudyFlowTrustedPeerRecord> =
         preferences.getString(TrustKey, null)?.let { encoded ->
-            runCatching { StudyFlowPeerPersistenceCodec.decodeTrustRecords(encoded) }.getOrNull()
+            decodeOrQuarantine(TrustKey, StudyFlowPersistedStateKind.TRUST, encoded, fallback = { emptyList() }) {
+                StudyFlowPeerPersistenceCodec.decodeTrustRecords(it)
+            }
         }.orEmpty()
 
     private fun writeTrust(records: List<StudyFlowTrustedPeerRecord>) {
@@ -180,13 +208,31 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
 
     private fun endpointRecords(): List<StudyFlowPeerEndpointRecord> =
         preferences.getString(EndpointsKey, null)?.let { encoded ->
-            runCatching { StudyFlowPeerPersistenceCodec.decodePeerEndpoints(encoded) }.getOrNull()
+            decodeOrQuarantine(EndpointsKey, StudyFlowPersistedStateKind.ENDPOINTS, encoded, fallback = { emptyList() }) {
+                StudyFlowPeerPersistenceCodec.decodePeerEndpoints(it)
+            }
         }.orEmpty()
 
-    private fun journalSnapshot(workspaceId: StudyFlowWorkspaceId): StudyFlowJournalSnapshot =
-        preferences.getString(journalKey(workspaceId), null)?.let { encoded ->
-            runCatching { StudyFlowPeerPersistenceCodec.decodeJournal(workspaceId, encoded) }.getOrNull()
+    private fun journalSnapshot(workspaceId: StudyFlowWorkspaceId): StudyFlowJournalSnapshot {
+        val key = journalKey(workspaceId)
+        return preferences.getString(key, null)?.let { encoded ->
+            decodeOrQuarantine(key, StudyFlowPersistedStateKind.JOURNAL, encoded, fallback = { StudyFlowJournalSnapshot(workspaceId) }) {
+                StudyFlowPeerPersistenceCodec.decodeJournal(workspaceId, it)
+            }
         } ?: StudyFlowJournalSnapshot(workspaceId)
+    }
+
+    private fun queueSnapshot(workspaceId: StudyFlowWorkspaceId): com.mikeyphw.studyflow.core.link.StudyFlowOutgoingQueueSnapshot {
+        val key = queueKey(workspaceId)
+        return preferences.getString(key, null)?.let { encoded ->
+            decodeOrQuarantine(
+                key,
+                StudyFlowPersistedStateKind.OUTGOING_QUEUE,
+                encoded,
+                fallback = { com.mikeyphw.studyflow.core.link.StudyFlowOutgoingQueueSnapshot(workspaceId) },
+            ) { StudyFlowPeerPersistenceCodec.decodeOutgoingQueueSnapshot(workspaceId, it) }
+        } ?: com.mikeyphw.studyflow.core.link.StudyFlowOutgoingQueueSnapshot(workspaceId)
+    }
 
     private fun writeJournal(
         workspaceId: StudyFlowWorkspaceId,
@@ -201,6 +247,45 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
             .apply()
     }
 
+    fun corruptionRecords(): List<StudyFlowPersistenceCorruptionRecord> = synchronized(preferences) {
+        preferences.getString(CorruptionKey, null)?.let { encoded ->
+            runCatching { StudyFlowPeerPersistenceCodec.decodeCorruptionRecords(encoded) }.getOrNull()
+        }.orEmpty()
+    }
+
+    private fun <T> decodeOrQuarantine(
+        storageKey: String,
+        kind: StudyFlowPersistedStateKind,
+        encoded: String,
+        fallback: () -> T,
+        decode: (String) -> T,
+    ): T = try {
+        decode(encoded)
+    } catch (error: Exception) {
+        val observedAt = System.currentTimeMillis()
+        val digest = sha256Hex(encoded)
+        val quarantineKey = "quarantine:$observedAt:${digest.take(12)}:$storageKey"
+        val record = StudyFlowPersistenceCorruptionRecord(
+            stateKind = kind,
+            storageKey = storageKey,
+            observedAtEpochMillis = observedAt,
+            quarantineReference = quarantineKey,
+            encodedSha256 = digest,
+            reason = (error.message ?: error.javaClass.simpleName).take(512),
+        )
+        val records = corruptionRecords().plus(record).takeLast(64)
+        preferences.edit()
+            .putString(quarantineKey, encoded)
+            .putString(CorruptionKey, StudyFlowPeerPersistenceCodec.encodeCorruptionRecords(records))
+            .remove(storageKey)
+            .commit()
+        fallback()
+    }
+
+    private fun sha256Hex(value: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray(StandardCharsets.UTF_8))
+        .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
+
     private fun queueKey(workspaceId: StudyFlowWorkspaceId): String = "queue:${workspaceId.value}"
 
     private fun journalKey(workspaceId: StudyFlowWorkspaceId): String = "journal:${workspaceId.value}"
@@ -211,5 +296,6 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
         const val TrustKey = "trust"
         const val EndpointsKey = "endpoints"
         const val MembershipKey = "workspace-membership"
+        const val CorruptionKey = "corruption-ledger"
     }
 }

@@ -2322,3 +2322,33 @@ tasks.register<Exec>("verifyOv09SflpNativeWebInterop") {
     )
     commandLine("bash", "scripts/validate_ov09_sflp_native_web_interop.sh")
 }
+
+
+// OV10 — SFLP trust, pairing, authorization & transport security.
+tasks.register<Exec>("verifyOv10SflpTrustSecurity") {
+    group = "verification"
+    description = "Validates OV10 SFLP trust, encrypted pairing, protocol/capability authorization and LAN credential hardening."
+    dependsOn(
+        ":core:link:test",
+        ":core:tvcontrol:test",
+        ":core:tvlink:compileDebugKotlin",
+        ":app:compileDebugKotlin",
+        ":app-tv:compileDebugKotlin",
+        ":desktopApp:compileKotlin",
+    )
+    commandLine("bash", "scripts/validate_ov10_sflp_security.sh")
+}
+
+
+// OV11 — SFLP reconciliation, frontier, retry & corruption recovery.
+tasks.register<Exec>("verifyOv11SflpReconciliationRecovery") {
+    group = "verification"
+    description = "Validates OV11 contiguous frontiers, persisted retry gating, peer isolation, corruption recovery and real browser/native interop."
+    dependsOn(
+        ":core:link:test",
+        ":desktopApp:test",
+        ":app:compileDebugKotlin",
+        ":app-tv:compileDebugKotlin",
+    )
+    commandLine("bash", "scripts/validate_ov11_sflp_reconciliation_recovery.sh")
+}

@@ -1,3 +1,12 @@
+## OV11 — SFLP reconciliation, frontier, retry & corruption recovery (2026-09-14)
+
+- Reworked native and Web frontier handling so only contiguous, validated journal history can become acknowledged state; advertised peer frontiers no longer suppress unsent local work.
+- Persisted per-peer exponential backoff and wired it ahead of native/Web socket creation plus Desktop periodic reconnect attempts.
+- Classified retryable transport/protocol failures separately from terminal sync-integrity failures and limited queue penalties to operations actually attempted.
+- Added corruption quarantine + SHA-256 evidence ledgers for SFLP identity, trust, membership, endpoints, queues and journals across Desktop, Android, Android TV and Web persistence.
+- Replaced PARITY04-only browser confidence with a real committed Web/Web-TV runtime ↔ native RFC6455 SFLP envelope acceptance test.
+- Added `verifyOv11SflpReconciliationRecovery` and apply-time artifact validation covering native compile/tests, Web runtime parity, OV09/OV10 compatibility, OV11 behavior, and five-client semantic vectors.
+
 ## OV09 — SFLP native/Web interoperability transport (2026-09-13)
 
 - Added a production RFC 6455 browser/native SFLP bridge and canonical Web pairing/reconnect wire contract.
@@ -934,3 +943,11 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Wired remote `retryable` errors into reconnect queue behavior.
 - Hardened Web/Web-TV randomness and identity partitioning and removed raw trust-secret persistence from localStorage.
 - Added integrated no-Gradle-daemon-stop OV10 artifact validation and native/browser security regressions.
+
+## OV10 — SFLP trust, pairing, authorization & transport security
+
+- Encrypted initial SFLP and dedicated TV pairing credentials with ephemeral ECDH/AES-GCM.
+- Enforced protocol/capability/envelope authorization and typed retryable/terminal remote failures.
+- Removed raw Web trust secrets, Web-TV bearer/session credentials, and dedicated TV session secrets from LAN traffic.
+- Added nonce-bound HMAC request authentication/replay rejection and native-equivalent Web control/input checks.
+- Added integrated `verifyOv10SflpTrustSecurity` validation.

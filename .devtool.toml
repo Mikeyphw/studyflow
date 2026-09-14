@@ -69,6 +69,8 @@ build = ["verifyStudyFlowAndroidPreflightContracts", "prepareDevtoolValidationAr
 test = [
   "verifyStudyFlowAndroidPreflightContracts",
   "verifyOv09SflpNativeWebInterop",
+  "verifyOv10SflpTrustSecurity",
+  "verifyOv11SflpReconciliationRecovery",
   "verifySflp24FinalReleaseSeal",
   "verifyAttentionRoadmapPostsealCompletion",
   "verifyRel07Rel08FinalReleaseOpsSeal",
@@ -130,6 +132,8 @@ compile = []
 resources = []
 unit-test = [
   "verifyOv09SflpNativeWebInterop",
+  "verifyOv10SflpTrustSecurity",
+  "verifyOv11SflpReconciliationRecovery",
   "verifySflp24FinalReleaseSeal",
   "verifyAttentionRoadmapPostsealCompletion",
   "verifyRel07Rel08FinalReleaseOpsSeal",

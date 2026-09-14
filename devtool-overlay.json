@@ -1,200 +1,283 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov10_sflp_trust_pairing_security_v1",
+  "name": "studyflow_ov11_sflp_reconciliation_recovery_v1",
   "target": "studyflow_android",
-  "description": "OV10 hardens SFLP trust, pairing, authorization and transport security: encrypted ECDH pairing grants, atomic single-use offers, protocol/capability enforcement, retryable remote errors, fail-closed Web crypto, non-extractable IndexedDB trust keys, Web/Web-TV identity partition and strict pairing envelope/expiry validation.",
+  "description": "OV11 closes SFLP reconciliation/frontier/retry/corruption findings with contiguous verified frontiers, persisted socket-gating backoff, attempted-operation failure isolation, structured remote integrity handling, corrupt-state quarantine, and real committed browser-runtime/native WebSocket acceptance.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV10: harden SFLP trust pairing and authorization"
+    "message": "OV11: harden SFLP reconciliation retry and recovery"
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively on successful OV09 commit d3eda41a."
+    "notes": "Built cumulatively on successful OV10 commit b0b86e5e."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov10_sflp_trust_pairing_security_v1",
+    "name": "studyflow_ov11_sflp_reconciliation_recovery_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov10-native-security",
-        "purpose": "ECDH pairing, atomic offer consumption, protocol/capability authorization and retry semantics.",
+        "id": "ov11-native-reconciliation",
+        "purpose": "Persisted per-peer retry/backoff gates real connection attempts; structured retryable/terminal reconciliation and attempted-operation isolation.",
         "paths": [
-          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv10SecurityTest.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPairing.kt",
+          ".devtool.toml",
+          "build.gradle.kts",
           "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOfflineQueue.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt"
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerPersistence.kt",
+          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt",
+          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv11ReconciliationRecoveryTest.kt",
+          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWebSocketBrowserInteropTest.kt"
         ]
       },
       {
-        "id": "ov10-web-security",
-        "purpose": "Fail-closed WebCrypto, non-extractable trust-key persistence, identity partition and strict native pairing parity.",
+        "id": "ov11-persistence-recovery",
+        "purpose": "Quarantine corrupt SFLP persisted state with SHA-256 evidence and retain peer retry state across Desktop, Android and Android TV.",
         "paths": [
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpStatePersistence.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkStateStore.kt",
+          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkPersistence.kt",
+          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkService.kt",
+          "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowOv11PersistenceRecoveryTest.kt"
+        ]
+      },
+      {
+        "id": "ov11-web-frontier",
+        "purpose": "Contiguous Web frontier math, verified remote-frontier acknowledgment, retry gating and real browser/native interoperability.",
+        "paths": [
+          "web/dist/runtime/sflp_link.js",
           "web/runtime-parity-manifest.json",
           "web/runtime/sflp_link.js",
-          "web/tests/ov10_security_runner.mjs",
           "web/src/sflp_link.ts",
-          "web/dist/runtime/sflp_link.js"
+          "web/tests/ov11_reconciliation_runner.mjs",
+          "web/tests/test_ov11_reconciliation_recovery.py"
         ]
       },
       {
-        "id": "ov10-validation-truth",
-        "purpose": "Owned-finding evidence, integrated artifact validation and remediation documentation.",
+        "id": "ov11-evidence",
+        "purpose": "Seven-finding closure documentation, source evidence and automatic apply-time targeted validation.",
         "paths": [
           "CHANGELOG.md",
-          "REMEDIATION_OV_10_IMPLEMENTATION.md",
-          "scripts/validate_ov10_sflp_security.sh",
-          "scripts/verify_ov10_sflp_security.py",
-          "docs/remediation/OV10_SFLP_TRUST_PAIRING_AUTHORIZATION_TRANSPORT_SECURITY.md"
+          "REMEDIATION_OV_11_IMPLEMENTATION.md",
+          "docs/remediation/OV11_SFLP_RECONCILIATION_FRONTIER_RETRY_CORRUPTION_RECOVERY.md",
+          "scripts/validate_ov11_sflp_reconciliation_recovery.sh",
+          "scripts/verify_ov11_sflp_reconciliation_recovery.py"
         ]
       }
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 14,
+    "count": 23,
     "entries": [
+      {
+        "action": "modify",
+        "path": ".devtool.toml",
+        "mode": "0o600",
+        "sha256": "a4e9668a04748e4d7347e6564476e70337f2a1dc4e8007006bde44c775f67c28",
+        "size": 15191,
+        "source_mode": "0o600",
+        "source_sha256": "0522e415968403a3120ae5d2a43a275443d7a45b05098ed4eba3c2c697f66ff6",
+        "source_size": 15107
+      },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "473a6552fd814ee3457c8787f575dc1041d2bd97eaa23846b1454e90d05bf18c",
-        "size": 71432,
+        "sha256": "6112e62ca832c9788fc439dd4927f8ba759250910a405fe6c492f76fe7e77f9d",
+        "size": 73076,
         "source_mode": "0o600",
-        "source_sha256": "ebf1c93ece150887a038cf1e06464cc1ab9ae5fe842494dc97511d3e1f28c8e2",
-        "source_size": 70754
+        "source_sha256": "05b66bf1a24f1ebfad9914220f08bf3eea73b9bae3f2a15ebc447f208e78a64a",
+        "source_size": 71986
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_10_IMPLEMENTATION.md",
+        "path": "REMEDIATION_OV_11_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "96a71616265fda322547278d9e85c4014221b7bb9dbec10f06eb4a187ffdddbe",
-        "size": 385
+        "sha256": "93ee5bf79067968231020973473ca673906f81ea28116619112d6a7270feda31",
+        "size": 4567
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpStatePersistence.kt",
+        "mode": "0o600",
+        "sha256": "b5f7c11b4e567d979ccdb3b036e33c95482072c69840d827db8adae80086e687",
+        "size": 13974,
+        "source_mode": "0o600",
+        "source_sha256": "9a3422d13aa0c8bb26ff26d7be467b7a228260c73e64512e6d164252c3a931ae",
+        "source_size": 9994
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkStateStore.kt",
+        "mode": "0o600",
+        "sha256": "2d224e6fb4b30735e11bfae2b75ab9649f8b0eb7acb15ede75312928cf8f2507",
+        "size": 13973,
+        "source_mode": "0o600",
+        "source_sha256": "fa79a8137cb9eda8e4ef97c8cdfe854125c5c7cd1d0050245160528d05242677",
+        "source_size": 9993
+      },
+      {
+        "action": "modify",
+        "path": "build.gradle.kts",
+        "mode": "0o600",
+        "sha256": "b539ad6340dec77cdea9d7c00b4572a51ed70060a6a7f8217d481c47a94376cb",
+        "size": 92483,
+        "source_mode": "0o600",
+        "source_sha256": "1d7d8618d42c8a1b29af981e23c344bfcc67ef11c231e7a2978561256b209f52",
+        "source_size": 91937
       },
       {
         "action": "modify",
         "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOfflineQueue.kt",
         "mode": "0o600",
-        "sha256": "7c9e9feb276fcd60122e589be66f9a67c7293658185e45d672e271243c46704c",
-        "size": 16299,
+        "sha256": "aea48ba36bed91a8d123b8eb80de7b4a39ae4ae7959d49a32d07777488e68da1",
+        "size": 21489,
         "source_mode": "0o600",
-        "source_sha256": "0d6553f7200bf306e4c1b009b13e1f6181e4394dbfc620b2601fe2b1f1a5aab4",
-        "source_size": 15005
+        "source_sha256": "7c9e9feb276fcd60122e589be66f9a67c7293658185e45d672e271243c46704c",
+        "source_size": 16299
       },
       {
         "action": "modify",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPairing.kt",
+        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerPersistence.kt",
         "mode": "0o600",
-        "sha256": "84eae4a34bb151c1c4bfe5a65ce6a14097898a49d63a60b18805256f2103d1b6",
-        "size": 24178,
+        "sha256": "ef6985d109171b2b24699ff1532f5c04dd20c2e62e7ad55402aa6ce72838da51",
+        "size": 7617,
         "source_mode": "0o600",
-        "source_sha256": "f0f293c552dbea4f08e60dfdff58d9a8f5ec627078ca4c37fd4d4123da38dbee",
-        "source_size": 11785
+        "source_sha256": "fdf0d4130eaecc24ad71e7aed2d8eb845a3b779d0c85ca62e91b13ad38cdd0a6",
+        "source_size": 5270
       },
       {
         "action": "modify",
         "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt",
         "mode": "0o600",
-        "sha256": "4ec4b2bdc0300eee915bb1015d8c493bcb0643a6e7da34912bdcddada1092a46",
-        "size": 55227,
+        "sha256": "26131655988b8dd8e5ff1b160e59e12fa4efe64be3f5236e42327f1598b7db2a",
+        "size": 56732,
         "source_mode": "0o600",
-        "source_sha256": "85a4d5a32e6a248bbf2ab78c19298cd3141733b15a4f01b2ecb6eb41c9d808ca",
-        "source_size": 50979
+        "source_sha256": "4ec4b2bdc0300eee915bb1015d8c493bcb0643a6e7da34912bdcddada1092a46",
+        "source_size": 55227
       },
       {
         "action": "add",
-        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv10SecurityTest.kt",
+        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv11ReconciliationRecoveryTest.kt",
         "mode": "0o644",
-        "sha256": "60a2727f8b5f2a2deb9f7ff4afae3b9c8777beef08393c0dbce2abf15b98e233",
-        "size": 2804
+        "sha256": "ccb6d26875d2872c21f1678666f911d692078ea9f1d521244c3d96f1d4c90807",
+        "size": 11119
       },
       {
-        "action": "add",
-        "path": "docs/remediation/OV10_SFLP_TRUST_PAIRING_AUTHORIZATION_TRANSPORT_SECURITY.md",
+        "action": "modify",
+        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWebSocketBrowserInteropTest.kt",
         "mode": "0o644",
-        "sha256": "14a1b8ea898189e3fc02780b1db4d7f420db57747b7a42bb61e68f35a5ef932e",
-        "size": 1537
+        "sha256": "78f7c5b536e6f9554fe866a182b1cf793d5e428eba7d6f3a8a2ce299003023c4",
+        "size": 9252,
+        "source_mode": "0o644",
+        "source_sha256": "8c6a88ce8600b460f5931e90da1495b21b1c2e168af4cb55a3ef4627d9cc8a1e",
+        "source_size": 5198
+      },
+      {
+        "action": "modify",
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkPersistence.kt",
+        "mode": "0o600",
+        "sha256": "ed5d77160469a2c78f71c5071a6d764de8e670963f1e86bf98fa9f4059145388",
+        "size": 15661,
+        "source_mode": "0o600",
+        "source_sha256": "30f6cd283d43991599e72c9f64f83e83e7704753b219d99abbf4c73876179b58",
+        "source_size": 11344
+      },
+      {
+        "action": "modify",
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkService.kt",
+        "mode": "0o600",
+        "sha256": "c534dd98ff22a3e95bf3e8bc1f40e403b294e95036ad10e91853f69d31e8c03a",
+        "size": 15742,
+        "source_mode": "0o600",
+        "source_sha256": "0b10d8bf49835ce4434820bc89171390df396eb3037e21057ec062db1253e706",
+        "source_size": 15527
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov10_sflp_security.sh",
-        "mode": "0o755",
-        "sha256": "3398bbbd0fcce6d5866355e6f3d8b1b7798cee718d64237e3d9f8a06146e0726",
-        "size": 282
+        "path": "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowOv11PersistenceRecoveryTest.kt",
+        "mode": "0o644",
+        "sha256": "c817f1b64775846a783582229ed70a0f85f682653b347d7fe357283199bd8da0",
+        "size": 2240
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov10_sflp_security.py",
+        "path": "docs/remediation/OV11_SFLP_RECONCILIATION_FRONTIER_RETRY_CORRUPTION_RECOVERY.md",
+        "mode": "0o644",
+        "sha256": "cecfa2157f442ca6d653a3cc6841120adcdc61d27b6a351c694792ab0cfe13b7",
+        "size": 5174
+      },
+      {
+        "action": "add",
+        "path": "scripts/validate_ov11_sflp_reconciliation_recovery.sh",
         "mode": "0o755",
-        "sha256": "f11b4606d1c4679eb2ee7f78d50ca337291e00924852bb944725b490b2282879",
-        "size": 1838
+        "sha256": "95be800c71435c2fdc4b985c1f7d9a2a1a894699836f264018b0405537fd860c",
+        "size": 501
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_ov11_sflp_reconciliation_recovery.py",
+        "mode": "0o755",
+        "sha256": "ed10533537204bda979550a25a80f8fc36473dc925b75d7f081e26e4cf5002a3",
+        "size": 5422
       },
       {
         "action": "modify",
         "path": "web/dist/runtime/sflp_link.js",
         "mode": "0o600",
-        "sha256": "3f8349addcacfcc92124737c567f4002c0f4956565658c4041f9d898880760d1",
-        "size": 67013,
+        "sha256": "e61469eb99a1c8b6af41c790bfdd14fc71fca4f0ac4ba4c5f200b3cb2ce4665e",
+        "size": 79522,
         "source_mode": "0o600",
-        "source_sha256": "a9134258f7aa83d7d2a906ec9afcfdda93be85220cc24f13760cbda89a66dfc5",
-        "source_size": 51668
+        "source_sha256": "3f8349addcacfcc92124737c567f4002c0f4956565658c4041f9d898880760d1",
+        "source_size": 67013
       },
       {
         "action": "modify",
         "path": "web/runtime-parity-manifest.json",
         "mode": "0o600",
-        "sha256": "ebff567efa3b444a76496ebf97c17402c8ac27f2c2133f8873c759914ac2046b",
-        "size": 8871,
+        "sha256": "7a77a07c99bf3741aa7e2f2000d6af8071f5502d491867ee5cb49ffb273553fc",
+        "size": 8817,
         "source_mode": "0o600",
-        "source_sha256": "23da94ca470ee1ceb7f33c68593ebfc9b5fcb6aa31965386332bc008f7c56891",
+        "source_sha256": "06675d38c2ae477592c0a4f7ac213dfa4972a161ee18bf026f3e20fabee6922d",
         "source_size": 8871
       },
       {
         "action": "modify",
         "path": "web/runtime/sflp_link.js",
         "mode": "0o600",
-        "sha256": "3f8349addcacfcc92124737c567f4002c0f4956565658c4041f9d898880760d1",
-        "size": 67013,
+        "sha256": "e61469eb99a1c8b6af41c790bfdd14fc71fca4f0ac4ba4c5f200b3cb2ce4665e",
+        "size": 79522,
         "source_mode": "0o600",
-        "source_sha256": "a9134258f7aa83d7d2a906ec9afcfdda93be85220cc24f13760cbda89a66dfc5",
-        "source_size": 51668
+        "source_sha256": "3f8349addcacfcc92124737c567f4002c0f4956565658c4041f9d898880760d1",
+        "source_size": 67013
       },
       {
         "action": "modify",
         "path": "web/src/sflp_link.ts",
         "mode": "0o600",
-        "sha256": "7d072584bc64fb5ead9b3a4a8a22d5e2d2c62d51fc734cf6ff01466bcb3ad15d",
-        "size": 76001,
+        "sha256": "e9a0374bfd0c0f9bf197a60d4444c3f198b32981510c63e6d4e4f64fa881dde2",
+        "size": 88521,
         "source_mode": "0o600",
-        "source_sha256": "b4904be3f742ccb8f9c21162bb913560af68aa40f5b17c9d6593fd417936f137",
-        "source_size": 60464
+        "source_sha256": "7d072584bc64fb5ead9b3a4a8a22d5e2d2c62d51fc734cf6ff01466bcb3ad15d",
+        "source_size": 76001
       },
       {
         "action": "add",
-        "path": "web/tests/ov10_security_runner.mjs",
+        "path": "web/tests/ov11_reconciliation_runner.mjs",
         "mode": "0o644",
-        "sha256": "b5bcad22a3afe426a7645520476737a5adba66cb76a41092209f14720790235a",
-        "size": 1877
+        "sha256": "cf495dd7f3075b435f2f7cc8235331c6d038139f8cba94221db24a0e93b16fee",
+        "size": 6963
+      },
+      {
+        "action": "add",
+        "path": "web/tests/test_ov11_reconciliation_recovery.py",
+        "mode": "0o644",
+        "sha256": "e238846e52f624979e55ea20f7e8016137a5fd83385631c7257d700ce2807a11",
+        "size": 1143
       }
-    ]
-  },
-  "validation": {
-    "mode": "required",
-    "required": true,
-    "script": {
-      "description": "Run OV10 finding-to-code checks plus TypeScript/runtime parity and browser security regressions. Does not invoke Gradle or stop Gradle daemons.",
-      "interpreter": "sh",
-      "path": ".devtool-artifact/validation/validate.sh",
-      "sha256": "3398bbbd0fcce6d5866355e6f3d8b1b7798cee718d64237e3d9f8a06146e0726",
-      "timeout_seconds": 900,
-      "working_directory": "."
-    },
-    "notes": [
-      "No Gradle daemon stop is performed by the overlay validation script.",
-      "OV10 native Kotlin regression coverage is packaged for the final/campaign Gradle validation gate."
     ]
   }
 }

@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 private const val DefaultSyncBatchSize = 100
 private const val DefaultMaxSyncRounds = 8
+private const val MaxFailureTextLength = 512
 
 @Serializable
 data class StudyFlowOutgoingQueueEntry(
@@ -29,19 +30,51 @@ data class StudyFlowOutgoingQueueEntry(
     val deliveryKey: String get() = "${peerDeviceId.value}|${operation.operationId.value}"
 }
 
+@Serializable
+data class StudyFlowPeerRetryState(
+    val workspaceId: StudyFlowWorkspaceId,
+    val peerDeviceId: StudyFlowDeviceId,
+    val attemptCount: Int,
+    val lastAttemptAtEpochMillis: Long,
+    val nextAttemptAtEpochMillis: Long,
+    val lastFailure: String,
+) {
+    init {
+        require(attemptCount >= 1) { "Peer retry attempt count must be at least one" }
+        require(lastAttemptAtEpochMillis >= 0L) { "Peer retry timestamp must not be negative" }
+        require(nextAttemptAtEpochMillis > lastAttemptAtEpochMillis) {
+            "Peer retry time must follow the failed attempt"
+        }
+        require(lastFailure.length <= MaxFailureTextLength) { "Peer retry failure is too long" }
+    }
+}
+
 interface StudyFlowOutgoingQueueStore {
     fun load(workspaceId: StudyFlowWorkspaceId): List<StudyFlowOutgoingQueueEntry>
     fun save(workspaceId: StudyFlowWorkspaceId, entries: List<StudyFlowOutgoingQueueEntry>)
+
+    /** Persisted per-peer backoff gates actual connection attempts, not only individual queue entries. */
+    fun loadPeerRetryStates(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPeerRetryState> = emptyList()
+
+    fun savePeerRetryStates(workspaceId: StudyFlowWorkspaceId, states: List<StudyFlowPeerRetryState>) = Unit
 }
 
 class InMemoryStudyFlowOutgoingQueueStore : StudyFlowOutgoingQueueStore {
     private val entriesByWorkspace = linkedMapOf<StudyFlowWorkspaceId, List<StudyFlowOutgoingQueueEntry>>()
+    private val retryByWorkspace = linkedMapOf<StudyFlowWorkspaceId, List<StudyFlowPeerRetryState>>()
 
     override fun load(workspaceId: StudyFlowWorkspaceId): List<StudyFlowOutgoingQueueEntry> =
         synchronized(this) { entriesByWorkspace[workspaceId].orEmpty().toList() }
 
     override fun save(workspaceId: StudyFlowWorkspaceId, entries: List<StudyFlowOutgoingQueueEntry>) {
         synchronized(this) { entriesByWorkspace[workspaceId] = entries.toList() }
+    }
+
+    override fun loadPeerRetryStates(workspaceId: StudyFlowWorkspaceId): List<StudyFlowPeerRetryState> =
+        synchronized(this) { retryByWorkspace[workspaceId].orEmpty().toList() }
+
+    override fun savePeerRetryStates(workspaceId: StudyFlowWorkspaceId, states: List<StudyFlowPeerRetryState>) {
+        synchronized(this) { retryByWorkspace[workspaceId] = states.toList() }
     }
 }
 
@@ -133,6 +166,7 @@ class StudyFlowOutgoingOperationQueue(
         failure: String,
     ) {
         require(nowEpochMillis >= 0L) { "Queue failure timestamp must not be negative" }
+        if (operationIds.isEmpty()) return
         val updated = entries().map { entry ->
             if (entry.peerDeviceId != peerDeviceId || entry.operation.operationId !in operationIds) {
                 entry
@@ -142,7 +176,7 @@ class StudyFlowOutgoingOperationQueue(
                     attemptCount = attempts,
                     lastAttemptAtEpochMillis = nowEpochMillis,
                     nextAttemptAtEpochMillis = nowEpochMillis + retryPolicy.delayAfterFailure(attempts),
-                    lastFailure = failure.take(512),
+                    lastFailure = failure.take(MaxFailureTextLength),
                 )
             }
         }
@@ -168,11 +202,52 @@ class StudyFlowOutgoingOperationQueue(
     fun nextAttemptAt(peerDeviceId: StudyFlowDeviceId): Long? =
         pendingForPeer(peerDeviceId).minOfOrNull(StudyFlowOutgoingQueueEntry::nextAttemptAtEpochMillis)
 
+    fun peerRetryState(peerDeviceId: StudyFlowDeviceId): StudyFlowPeerRetryState? =
+        store.loadPeerRetryStates(workspaceId).firstOrNull { it.peerDeviceId == peerDeviceId }
+
+    fun nextPeerAttemptAt(peerDeviceId: StudyFlowDeviceId): Long? = peerRetryState(peerDeviceId)?.nextAttemptAtEpochMillis
+
+    fun isPeerAttemptDue(peerDeviceId: StudyFlowDeviceId, nowEpochMillis: Long): Boolean {
+        require(nowEpochMillis >= 0L) { "Retry clock must not be negative" }
+        return nextPeerAttemptAt(peerDeviceId)?.let { it <= nowEpochMillis } ?: true
+    }
+
+    fun recordPeerFailure(
+        peerDeviceId: StudyFlowDeviceId,
+        nowEpochMillis: Long,
+        failure: String,
+    ): StudyFlowPeerRetryState {
+        require(nowEpochMillis >= 0L) { "Retry clock must not be negative" }
+        val current = store.loadPeerRetryStates(workspaceId)
+        val previous = current.firstOrNull { it.peerDeviceId == peerDeviceId }
+        val attempts = (previous?.attemptCount ?: 0) + 1
+        val state = StudyFlowPeerRetryState(
+            workspaceId = workspaceId,
+            peerDeviceId = peerDeviceId,
+            attemptCount = attempts,
+            lastAttemptAtEpochMillis = nowEpochMillis,
+            nextAttemptAtEpochMillis = nowEpochMillis + retryPolicy.delayAfterFailure(attempts),
+            lastFailure = failure.take(MaxFailureTextLength),
+        )
+        store.savePeerRetryStates(
+            workspaceId,
+            current.filterNot { it.peerDeviceId == peerDeviceId }.plus(state).sortedBy { it.peerDeviceId.value },
+        )
+        return state
+    }
+
+    fun recordPeerSuccess(peerDeviceId: StudyFlowDeviceId) {
+        val current = store.loadPeerRetryStates(workspaceId)
+        val retained = current.filterNot { it.peerDeviceId == peerDeviceId }
+        if (retained.size != current.size) store.savePeerRetryStates(workspaceId, retained)
+    }
+
     fun clearPeer(peerDeviceId: StudyFlowDeviceId): Int {
         val current = entries()
         val retained = current.filterNot { it.peerDeviceId == peerDeviceId }
         val removed = current.size - retained.size
         if (removed > 0) save(retained)
+        recordPeerSuccess(peerDeviceId)
         return removed
     }
 
@@ -221,6 +296,7 @@ fun interface StudyFlowSyncMessageIdFactory {
 
 enum class StudyFlowReconnectStatus {
     COMPLETE,
+    DEFERRED_BY_BACKOFF,
     INTERRUPTED,
     TERMINAL_FAILURE,
     ROUND_LIMIT_REACHED,
@@ -237,6 +313,7 @@ data class StudyFlowReconnectResult(
     val localFrontier: StudyFlowJournalFrontier,
     val remoteFrontier: StudyFlowJournalFrontier?,
     val failure: String? = null,
+    val retryAtEpochMillis: Long? = null,
 )
 
 class StudyFlowReconnectionCoordinator(
@@ -262,12 +339,55 @@ class StudyFlowReconnectionCoordinator(
         nowEpochMillis,
     )
 
+    fun deferredResultIfBackoff(
+        peerDeviceId: StudyFlowDeviceId,
+        nowEpochMillis: Long,
+    ): StudyFlowReconnectResult? {
+        val retryAt = outgoingQueue.nextPeerAttemptAt(peerDeviceId) ?: return null
+        if (retryAt <= nowEpochMillis) return null
+        return StudyFlowReconnectResult(
+            status = StudyFlowReconnectStatus.DEFERRED_BY_BACKOFF,
+            pushedOperations = 0,
+            pulledOperations = 0,
+            duplicateOperations = 0,
+            pushBatches = 0,
+            pullBatches = 0,
+            acknowledgedQueueEntries = 0,
+            localFrontier = localEngine.currentFrontier().normalized(),
+            remoteFrontier = null,
+            failure = "Peer retry is deferred by persisted backoff",
+            retryAtEpochMillis = retryAt,
+        )
+    }
+
+    fun recordConnectionFailure(
+        peerDeviceId: StudyFlowDeviceId,
+        nowEpochMillis: Long,
+        failure: String,
+    ): StudyFlowReconnectResult {
+        val state = outgoingQueue.recordPeerFailure(peerDeviceId, nowEpochMillis, failure)
+        return StudyFlowReconnectResult(
+            status = StudyFlowReconnectStatus.INTERRUPTED,
+            pushedOperations = 0,
+            pulledOperations = 0,
+            duplicateOperations = 0,
+            pushBatches = 0,
+            pullBatches = 0,
+            acknowledgedQueueEntries = 0,
+            localFrontier = localEngine.currentFrontier().normalized(),
+            remoteFrontier = null,
+            failure = failure.take(MaxFailureTextLength),
+            retryAtEpochMillis = state.nextAttemptAtEpochMillis,
+        )
+    }
+
     fun reconcile(
         peer: StudyFlowSyncPeerSession,
         nowEpochMillis: Long,
     ): StudyFlowReconnectResult {
         require(peer.deviceId != localDeviceId) { "Cannot reconcile a device with itself" }
         require(peer.workspaceId == outgoingQueue.workspaceId) { "Peer belongs to another workspace" }
+        deferredResultIfBackoff(peer.deviceId, nowEpochMillis)?.let { return it }
 
         var pushed = 0
         var pulled = 0
@@ -276,6 +396,31 @@ class StudyFlowReconnectionCoordinator(
         var pullBatches = 0
         var acknowledged = 0
         var remoteFrontier: StudyFlowJournalFrontier? = null
+        val attemptedOperationIds = linkedSetOf<StudyFlowOperationId>()
+
+        fun result(status: StudyFlowReconnectStatus, failure: String? = null, retryAt: Long? = null) =
+            StudyFlowReconnectResult(
+                status = status,
+                pushedOperations = pushed,
+                pulledOperations = pulled,
+                duplicateOperations = duplicates,
+                pushBatches = pushBatches,
+                pullBatches = pullBatches,
+                acknowledgedQueueEntries = acknowledged,
+                localFrontier = localEngine.currentFrontier().normalized(),
+                remoteFrontier = remoteFrontier,
+                failure = failure?.take(MaxFailureTextLength),
+                retryAtEpochMillis = retryAt,
+            )
+
+        fun retryableFailure(failure: Throwable): StudyFlowReconnectResult {
+            val message = failure.message ?: failure.javaClass.simpleName
+            if (attemptedOperationIds.isNotEmpty()) {
+                outgoingQueue.markFailed(peer.deviceId, attemptedOperationIds, nowEpochMillis, message)
+            }
+            val state = outgoingQueue.recordPeerFailure(peer.deviceId, nowEpochMillis, message)
+            return result(StudyFlowReconnectStatus.INTERRUPTED, message, state.nextAttemptAtEpochMillis)
+        }
 
         try {
             repeat(maxRounds) { round ->
@@ -294,6 +439,7 @@ class StudyFlowReconnectionCoordinator(
                     if (localBatch.operations.isEmpty()) break
                     localBatch.operations.forEach { operation ->
                         outgoingQueue.enqueue(peer.deviceId, operation, nowEpochMillis)
+                        attemptedOperationIds += operation.operationId
                     }
                     val applied = peer.applyBatch(localBatch)
                     pushBatches += 1
@@ -329,72 +475,38 @@ class StudyFlowReconnectionCoordinator(
                 remoteFrontier = peer.currentFrontier().normalized()
                 acknowledged += outgoingQueue.acknowledgeCovered(peer.deviceId, requireNotNull(remoteFrontier))
                 if (localAfter == remoteFrontier) {
-                    return StudyFlowReconnectResult(
-                        status = StudyFlowReconnectStatus.COMPLETE,
-                        pushedOperations = pushed,
-                        pulledOperations = pulled,
-                        duplicateOperations = duplicates,
-                        pushBatches = pushBatches,
-                        pullBatches = pullBatches,
-                        acknowledgedQueueEntries = acknowledged,
-                        localFrontier = localAfter,
-                        remoteFrontier = remoteFrontier,
-                    )
+                    outgoingQueue.recordPeerSuccess(peer.deviceId)
+                    return result(StudyFlowReconnectStatus.COMPLETE)
                 }
             }
         } catch (failure: StudyFlowRemoteProtocolException) {
-            val retryable = failure.remoteError.retryable
-            if (retryable) {
-                val dueIds = outgoingQueue.pendingForPeer(peer.deviceId)
-                    .map { it.operation.operationId }
-                    .toSet()
-                if (dueIds.isNotEmpty()) {
-                    outgoingQueue.markFailed(peer.deviceId, dueIds, nowEpochMillis, failure.message.orEmpty())
-                }
+            return if (failure.remoteError.retryable) {
+                retryableFailure(failure)
+            } else {
+                result(StudyFlowReconnectStatus.TERMINAL_FAILURE, failure.message)
             }
-            return StudyFlowReconnectResult(
-                status = if (retryable) StudyFlowReconnectStatus.INTERRUPTED else StudyFlowReconnectStatus.TERMINAL_FAILURE,
-                pushedOperations = pushed,
-                pulledOperations = pulled,
-                duplicateOperations = duplicates,
-                pushBatches = pushBatches,
-                pullBatches = pullBatches,
-                acknowledgedQueueEntries = acknowledged,
-                localFrontier = localEngine.currentFrontier().normalized(),
-                remoteFrontier = remoteFrontier,
-                failure = failure.message,
-            )
+        } catch (failure: StudyFlowSyncContinuationException) {
+            return retryableFailure(failure)
         } catch (failure: StudyFlowPeerUnavailableException) {
-            val dueIds = outgoingQueue.pendingForPeer(peer.deviceId)
-                .map { it.operation.operationId }
-                .toSet()
-            if (dueIds.isNotEmpty()) {
-                outgoingQueue.markFailed(peer.deviceId, dueIds, nowEpochMillis, failure.message.orEmpty())
-            }
-            return StudyFlowReconnectResult(
-                status = StudyFlowReconnectStatus.INTERRUPTED,
-                pushedOperations = pushed,
-                pulledOperations = pulled,
-                duplicateOperations = duplicates,
-                pushBatches = pushBatches,
-                pullBatches = pullBatches,
-                acknowledgedQueueEntries = acknowledged,
-                localFrontier = localEngine.currentFrontier().normalized(),
-                remoteFrontier = remoteFrontier,
-                failure = failure.message,
-            )
+            return retryableFailure(failure)
+        } catch (failure: StudyFlowSyncBatchIntegrityException) {
+            return result(StudyFlowReconnectStatus.TERMINAL_FAILURE, failure.message)
+        } catch (failure: StudyFlowJournalIntegrityException) {
+            return result(StudyFlowReconnectStatus.TERMINAL_FAILURE, failure.message)
+        } catch (failure: IllegalArgumentException) {
+            // Remote decode/model invariants fail closed as a structured terminal peer failure instead of escaping.
+            return result(StudyFlowReconnectStatus.TERMINAL_FAILURE, failure.message)
         }
 
-        return StudyFlowReconnectResult(
-            status = StudyFlowReconnectStatus.ROUND_LIMIT_REACHED,
-            pushedOperations = pushed,
-            pulledOperations = pulled,
-            duplicateOperations = duplicates,
-            pushBatches = pushBatches,
-            pullBatches = pullBatches,
-            acknowledgedQueueEntries = acknowledged,
-            localFrontier = localEngine.currentFrontier().normalized(),
-            remoteFrontier = remoteFrontier,
+        val state = outgoingQueue.recordPeerFailure(
+            peer.deviceId,
+            nowEpochMillis,
+            "Reconciliation round limit reached before frontiers converged",
+        )
+        return result(
+            StudyFlowReconnectStatus.ROUND_LIMIT_REACHED,
+            "Reconciliation round limit reached before frontiers converged",
+            state.nextAttemptAtEpochMillis,
         )
     }
 }

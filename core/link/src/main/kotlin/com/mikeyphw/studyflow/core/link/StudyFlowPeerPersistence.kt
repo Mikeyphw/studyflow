@@ -16,6 +16,7 @@ data class StudyFlowWorkspaceMembershipSnapshot(val members: List<StudyFlowWorks
 data class StudyFlowOutgoingQueueSnapshot(
     val workspaceId: StudyFlowWorkspaceId,
     val entries: List<StudyFlowOutgoingQueueEntry> = emptyList(),
+    val peerRetryStates: List<StudyFlowPeerRetryState> = emptyList(),
 )
 
 @Serializable
@@ -23,6 +24,42 @@ data class StudyFlowJournalSnapshot(
     val workspaceId: StudyFlowWorkspaceId,
     val entries: List<StudyFlowJournalEntry> = emptyList(),
     val checkpoints: List<StudyFlowJournalCheckpoint> = emptyList(),
+)
+
+
+@Serializable
+enum class StudyFlowPersistedStateKind {
+    IDENTITY,
+    TRUST,
+    WORKSPACE_MEMBERSHIP,
+    OUTGOING_QUEUE,
+    JOURNAL,
+    ENDPOINTS,
+    WEB_SNAPSHOT,
+}
+
+@Serializable
+data class StudyFlowPersistenceCorruptionRecord(
+    val stateKind: StudyFlowPersistedStateKind,
+    val storageKey: String,
+    val observedAtEpochMillis: Long,
+    val quarantineReference: String,
+    val encodedSha256: String,
+    val reason: String,
+) {
+    init {
+        require(storageKey.isNotBlank()) { "Corruption storage key must not be blank" }
+        require(observedAtEpochMillis >= 0L) { "Corruption timestamp must not be negative" }
+        require(quarantineReference.isNotBlank()) { "Corruption quarantine reference must not be blank" }
+        require(encodedSha256.matches(Regex("[a-f0-9]{64}"))) { "Corruption digest must be SHA-256 hex" }
+        require(reason.isNotBlank()) { "Corruption reason must not be blank" }
+        require(reason.length <= 512) { "Corruption reason is too long" }
+    }
+}
+
+@Serializable
+data class StudyFlowPersistenceCorruptionSnapshot(
+    val records: List<StudyFlowPersistenceCorruptionRecord> = emptyList(),
 )
 
 @Serializable
@@ -98,17 +135,35 @@ object StudyFlowPeerPersistenceCodec {
     fun encodeOutgoingQueue(
         workspaceId: StudyFlowWorkspaceId,
         entries: List<StudyFlowOutgoingQueueEntry>,
+        peerRetryStates: List<StudyFlowPeerRetryState> = emptyList(),
     ): String = StudyFlowLinkCodec.json.encodeToString(
-        StudyFlowOutgoingQueueSnapshot(workspaceId = workspaceId, entries = entries),
+        StudyFlowOutgoingQueueSnapshot(
+            workspaceId = workspaceId,
+            entries = entries,
+            peerRetryStates = peerRetryStates,
+        ),
     )
+
+    fun decodeOutgoingQueueSnapshot(
+        workspaceId: StudyFlowWorkspaceId,
+        encoded: String,
+    ): StudyFlowOutgoingQueueSnapshot =
+        StudyFlowLinkCodec.json.decodeFromString<StudyFlowOutgoingQueueSnapshot>(encoded).also {
+            require(it.workspaceId == workspaceId) { "Outgoing queue snapshot belongs to another workspace" }
+            require(it.peerRetryStates.all { state -> state.workspaceId == workspaceId }) {
+                "Peer retry snapshot belongs to another workspace"
+            }
+        }
 
     fun decodeOutgoingQueue(
         workspaceId: StudyFlowWorkspaceId,
         encoded: String,
-    ): List<StudyFlowOutgoingQueueEntry> =
-        StudyFlowLinkCodec.json.decodeFromString<StudyFlowOutgoingQueueSnapshot>(encoded).also {
-            require(it.workspaceId == workspaceId) { "Outgoing queue snapshot belongs to another workspace" }
-        }.entries
+    ): List<StudyFlowOutgoingQueueEntry> = decodeOutgoingQueueSnapshot(workspaceId, encoded).entries
+
+    fun decodePeerRetryStates(
+        workspaceId: StudyFlowWorkspaceId,
+        encoded: String,
+    ): List<StudyFlowPeerRetryState> = decodeOutgoingQueueSnapshot(workspaceId, encoded).peerRetryStates
 
     fun encodeJournal(
         workspaceId: StudyFlowWorkspaceId,
@@ -130,4 +185,10 @@ object StudyFlowPeerPersistenceCodec {
 
     fun decodePeerEndpoints(encoded: String): List<StudyFlowPeerEndpointRecord> =
         StudyFlowLinkCodec.json.decodeFromString<StudyFlowPeerEndpointSnapshot>(encoded).records
+
+    fun encodeCorruptionRecords(records: List<StudyFlowPersistenceCorruptionRecord>): String =
+        StudyFlowLinkCodec.json.encodeToString(StudyFlowPersistenceCorruptionSnapshot(records))
+
+    fun decodeCorruptionRecords(encoded: String): List<StudyFlowPersistenceCorruptionRecord> =
+        StudyFlowLinkCodec.json.decodeFromString<StudyFlowPersistenceCorruptionSnapshot>(encoded).records
 }
