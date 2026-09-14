@@ -21,6 +21,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowPresenceRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowPresenceView
 import com.mikeyphw.studyflow.core.link.StudyFlowReconnectResult
 import com.mikeyphw.studyflow.core.link.StudyFlowTransportEndpoint
+import com.mikeyphw.studyflow.core.link.StudyFlowTransportScheme
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.link.StudyFlowProductStateBridge
@@ -56,6 +57,7 @@ class AndroidStudyFlowLinkPeer(
     private val started = AtomicBoolean(false)
     private var lanDiscovery: StudyFlowLanBeaconDiscovery? = null
     private var serverEndpoint: StudyFlowTransportEndpoint? = null
+    private var browserBridgeEndpoint: StudyFlowTransportEndpoint? = null
 
     val localDeviceId: StudyFlowDeviceId get() = identity.descriptor.deviceId
 
@@ -65,6 +67,7 @@ class AndroidStudyFlowLinkPeer(
         return try {
             val endpoint = runtime.startServer()
             serverEndpoint = endpoint
+            browserBridgeEndpoint = runtime.startWebSocketServer()
             val port = requireNotNull(endpoint.port)
             runCatching { nsdDiscovery.start(port) }
             runCatching {
@@ -85,8 +88,18 @@ class AndroidStudyFlowLinkPeer(
     fun pairingOffer(): StudyFlowPairingPublicOffer {
         val endpoint = serverEndpoint ?: start()
         val port = requireNotNull(endpoint.port)
-        val hints = StudyFlowLanEndpointResolver.endpointsForPort(port)
+        val tcpEndpoints = StudyFlowLanEndpointResolver.endpointsForPort(port)
+        val webSocketPort = browserBridgeEndpoint?.port
+        val webSocketEndpoints = if (webSocketPort == null) emptyList() else tcpEndpoints.map { endpoint ->
+            endpoint.copy(
+                scheme = StudyFlowTransportScheme.WEBSOCKET,
+                port = webSocketPort,
+                path = "/sflp",
+            )
+        }
+        val hints = (webSocketEndpoints + tcpEndpoints)
             .map(StudyFlowTransportEndpoint::canonicalUri)
+            .distinct()
             .ifEmpty { listOf("sflp+tcp://127.0.0.1:$port") }
         return runtime.createPairingOffer(hints)
     }
@@ -166,7 +179,9 @@ class AndroidStudyFlowLinkPeer(
 
     fun localEndpoints(): List<StudyFlowTransportEndpoint> {
         val port = serverEndpoint?.port ?: return emptyList()
-        return StudyFlowLanEndpointResolver.endpointsForPort(requireNotNull(port))
+        val tcp = StudyFlowLanEndpointResolver.endpointsForPort(requireNotNull(port))
+        val wsPort = browserBridgeEndpoint?.port ?: return tcp
+        return (tcp.map { it.copy(scheme = StudyFlowTransportScheme.WEBSOCKET, port = wsPort, path = "/sflp") } + tcp).distinct()
     }
 
     override fun close() {
@@ -177,6 +192,7 @@ class AndroidStudyFlowLinkPeer(
         lanDiscovery = null
         runtime.close()
         serverEndpoint = null
+        browserBridgeEndpoint = null
         started.set(false)
     }
 

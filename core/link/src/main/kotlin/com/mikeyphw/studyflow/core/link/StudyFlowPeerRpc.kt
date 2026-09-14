@@ -28,6 +28,7 @@ data class StudyFlowPairingRejectedPayload(
 object StudyFlowPeerRpcMessageNames {
     const val SyncApply = "sync.apply"
     const val ReconnectAccepted = "link.reconnect_accepted"
+    const val RoutedAccepted = "link.rpc_accepted"
 }
 
 fun interface StudyFlowPeerClock {
@@ -77,6 +78,7 @@ class StudyFlowPeerServer(
     private val clock: StudyFlowPeerClock,
     private val messageIds: StudyFlowSyncMessageIdFactory,
     private val workspaceMembership: StudyFlowWorkspaceMembershipManager? = null,
+    private val routedRpcBus: StudyFlowRoutedRpcBus = StudyFlowRoutedRpcBus(),
     private val notificationDeliveryHandler:
         (StudyFlowNotificationDelivery) -> StudyFlowNotificationDeliveryAck? = { null },
     private val listeningTransport: StudyFlowListeningTransport = StudyFlowTcpTransport(),
@@ -125,7 +127,11 @@ class StudyFlowPeerServer(
                     StudyFlowPresenceMessageNames.Exchange -> handlePresence(link, request, authenticatedPeer)
                     StudyFlowNotificationMediaMessageNames.NotificationDeliver ->
                         handleNotificationDelivery(link, request, authenticatedPeer)
-                    else -> sendError(link, request, "unsupported_request", "Unsupported SFLP request", false)
+                    else -> if (StudyFlowRoutedRpcContracts.supports(request.name)) {
+                        handleRoutedRpc(link, request, authenticatedPeer)
+                    } else {
+                        sendError(link, request, "unsupported_request", "Unsupported SFLP request", false)
+                    }
                 }
             }
         }
@@ -392,6 +398,44 @@ class StudyFlowPeerServer(
         )
     }
 
+    private fun handleRoutedRpc(
+        link: StudyFlowLinkConnection,
+        request: StudyFlowLinkEnvelope,
+        authenticatedPeer: StudyFlowDeviceId?,
+    ) {
+        if (authenticatedPeer == null || authenticatedPeer != request.senderDeviceId) {
+            sendError(link, request, "authentication_required", "Trusted reconnect is required", false)
+            return
+        }
+        if (trustManager.trustedPeers().none { it.peer.deviceId == authenticatedPeer }) {
+            sendError(link, request, "peer_revoked", "Peer trust was revoked", false)
+            return
+        }
+        if (workspaceMembership?.canRead(request.workspaceId, authenticatedPeer) == false) {
+            sendError(link, request, "workspace_access_denied", "Peer is not a member of this workspace", false)
+            return
+        }
+        routedRpcBus.publish(
+            StudyFlowRoutedRpcMessage(
+                authenticatedPeerDeviceId = authenticatedPeer,
+                envelope = request,
+                receivedAtEpochMillis = clock.nowEpochMillis(),
+            ),
+        )
+        link.send(
+            response(
+                request = request,
+                name = StudyFlowPeerRpcMessageNames.RoutedAccepted,
+                payload = StudyFlowRoutedRpcAccepted(
+                    requestMessageId = request.messageId,
+                    requestName = request.name,
+                    receivingDeviceId = localIdentity.descriptor.deviceId,
+                    acceptedAtEpochMillis = clock.nowEpochMillis(),
+                ).toPayload(),
+            ),
+        )
+    }
+
     private fun response(
         request: StudyFlowLinkEnvelope,
         name: String,
@@ -565,6 +609,24 @@ class StudyFlowRemoteSyncPeerSession(
         return StudyFlowLinkCodec.decodePayload(StudyFlowNotificationDeliveryAck.serializer(), response.payload)
     }
 
+    fun exchangeRoutedRpc(
+        name: String,
+        payload: kotlinx.serialization.json.JsonObject,
+    ): StudyFlowRoutedRpcAccepted {
+        require(StudyFlowRoutedRpcContracts.supports(name)) { "Unsupported routed RPC $name" }
+        val request = StudyFlowLinkEnvelope(
+            messageId = messageIds.next("routed-rpc"),
+            workspaceId = workspaceId,
+            senderDeviceId = localIdentity.descriptor.deviceId,
+            messageType = StudyFlowLinkMessageType.REQUEST,
+            name = name,
+            sentAtEpochMillis = clock.nowEpochMillis(),
+            payload = payload,
+        )
+        val response = exchange(request, StudyFlowPeerRpcMessageNames.RoutedAccepted)
+        return StudyFlowLinkCodec.decodePayload(StudyFlowRoutedRpcAccepted.serializer(), response.payload)
+    }
+
     private fun exchange(
         request: StudyFlowLinkEnvelope,
         expectedName: String,
@@ -659,7 +721,9 @@ class StudyFlowPeerRuntime(
     private val queueStore: StudyFlowOutgoingQueueStore,
     val endpointStore: StudyFlowPeerEndpointStore,
     val discovery: StudyFlowDiscovery,
-    val transportRegistry: StudyFlowTransportRegistry = StudyFlowTransportRegistry(listOf(StudyFlowTcpTransport())),
+    val transportRegistry: StudyFlowTransportRegistry = StudyFlowTransportRegistry(
+        listOf(StudyFlowTcpTransport(), StudyFlowWebSocketTransport()),
+    ),
     val clock: StudyFlowPeerClock = StudyFlowPeerClock(System::currentTimeMillis),
     val messageIds: StudyFlowSyncMessageIdFactory = StudyFlowUuidMessageIdFactory(),
     membershipStore: StudyFlowWorkspaceMembershipStore? = null,
@@ -676,6 +740,7 @@ class StudyFlowPeerRuntime(
         clock = clock,
         messageIds = messageIds,
     )
+    val routedRpcBus = StudyFlowRoutedRpcBus()
     val presenceRegistry = StudyFlowPresenceRegistry(localIdentity.descriptor.deviceId)
     val presencePublisher = StudyFlowLocalPresencePublisher(
         localDevice = localIdentity.descriptor,
@@ -688,6 +753,7 @@ class StudyFlowPeerRuntime(
     private var notificationDeliveryHandler:
         ((StudyFlowNotificationDelivery) -> StudyFlowNotificationDeliveryAck)? = null
     private var server: StudyFlowPeerServer? = null
+    private var webSocketServer: StudyFlowPeerServer? = null
 
     override fun workspace(workspaceId: StudyFlowWorkspaceId): StudyFlowWorkspaceRuntime {
         topology(workspaceId)
@@ -719,10 +785,39 @@ class StudyFlowPeerRuntime(
             clock = clock,
             messageIds = messageIds,
             workspaceMembership = workspaceMembership,
+            routedRpcBus = routedRpcBus,
             notificationDeliveryHandler = { delivery -> notificationDeliveryHandler?.invoke(delivery) },
         )
         val bound = created.start(StudyFlowTransportEndpoint(StudyFlowTransportScheme.TCP, bindHost, port))
         server = created
+        return bound
+    }
+
+    fun startWebSocketServer(
+        bindHost: String = "0.0.0.0",
+        port: Int = 0,
+        path: String = "/sflp",
+    ): StudyFlowTransportEndpoint {
+        check(webSocketServer == null) { "SFLP WebSocket server is already started" }
+        val transport = StudyFlowWebSocketTransport(path)
+        val created = StudyFlowPeerServer(
+            localIdentity = localIdentity,
+            trustManager = trustManager,
+            pairingAuthority = pairingAuthority,
+            workspaces = this,
+            presenceRegistry = presenceRegistry,
+            presencePublisher = presencePublisher,
+            clock = clock,
+            messageIds = messageIds,
+            workspaceMembership = workspaceMembership,
+            routedRpcBus = routedRpcBus,
+            notificationDeliveryHandler = { delivery -> notificationDeliveryHandler?.invoke(delivery) },
+            listeningTransport = transport,
+        )
+        val bound = created.start(
+            StudyFlowTransportEndpoint(StudyFlowTransportScheme.WEBSOCKET, bindHost, port, path),
+        )
+        webSocketServer = created
         return bound
     }
 
@@ -755,6 +850,29 @@ class StudyFlowPeerRuntime(
             clock = clock,
             messageIds = messageIds,
         ).use { it.deliverNotification(delivery) }
+    }
+
+    fun sendRoutedRpc(
+        workspaceId: StudyFlowWorkspaceId,
+        peerDeviceId: StudyFlowDeviceId,
+        name: String,
+        payload: kotlinx.serialization.json.JsonObject,
+        endpoint: StudyFlowTransportEndpoint? = null,
+    ): StudyFlowRoutedRpcAccepted {
+        require(StudyFlowRoutedRpcContracts.supports(name)) { "Unsupported routed RPC $name" }
+        val selectedEndpoint = endpoint
+            ?: topology(workspaceId).bestRouteTo(peerDeviceId)?.endpoint
+            ?: requireNotNull(bestEndpoint(peerDeviceId)) { "No remembered endpoint for ${peerDeviceId.value}" }
+        return StudyFlowRemoteSyncPeerSession(
+            deviceId = peerDeviceId,
+            workspaceId = workspaceId,
+            localIdentity = localIdentity,
+            trustManager = trustManager,
+            endpoint = selectedEndpoint,
+            transportRegistry = transportRegistry,
+            clock = clock,
+            messageIds = messageIds,
+        ).use { it.exchangeRoutedRpc(name, payload) }
     }
 
     fun createPairingOffer(endpointHints: List<String>): StudyFlowPairingPublicOffer =
@@ -1017,5 +1135,7 @@ class StudyFlowPeerRuntime(
     override fun close() {
         server?.close()
         server = null
+        webSocketServer?.close()
+        webSocketServer = null
     }
 }

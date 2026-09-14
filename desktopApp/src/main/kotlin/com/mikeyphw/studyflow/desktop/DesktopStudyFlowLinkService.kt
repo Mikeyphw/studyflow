@@ -18,6 +18,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowPresenceRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowPresenceView
 import com.mikeyphw.studyflow.core.link.StudyFlowReconnectResult
 import com.mikeyphw.studyflow.core.link.StudyFlowTransportEndpoint
+import com.mikeyphw.studyflow.core.link.StudyFlowTransportScheme
 import com.mikeyphw.studyflow.core.link.StudyFlowTrustedPeerRecord
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceId
 import com.mikeyphw.studyflow.core.link.StudyFlowWorkspaceAccess
@@ -58,6 +59,7 @@ class DesktopStudyFlowLinkService(
     private val activeWorkspaces = linkedSetOf<StudyFlowWorkspaceId>()
     private var lanDiscovery: StudyFlowLanBeaconDiscovery? = null
     private var serverEndpoint: StudyFlowTransportEndpoint? = null
+    private var browserBridgeEndpoint: StudyFlowTransportEndpoint? = null
     private var currentOffer: StudyFlowPairingPublicOffer? = null
     @Volatile
     private var lastStatus: String = "SFLP not started"
@@ -70,6 +72,7 @@ class DesktopStudyFlowLinkService(
         return try {
             val endpoint = runtime.startServer()
             serverEndpoint = endpoint
+            browserBridgeEndpoint = runtime.startWebSocketServer()
             val port = requireNotNull(endpoint.port)
             runCatching {
                 StudyFlowLanBeaconDiscovery(identity.descriptor, port).also { discovery ->
@@ -105,8 +108,18 @@ class DesktopStudyFlowLinkService(
     fun createPairingOffer(): StudyFlowPairingPublicOffer {
         val endpoint = serverEndpoint ?: start()
         val port = requireNotNull(endpoint.port)
-        val hints = StudyFlowLanEndpointResolver.endpointsForPort(port)
+        val tcpEndpoints = StudyFlowLanEndpointResolver.endpointsForPort(port)
+        val webSocketPort = browserBridgeEndpoint?.port
+        val webSocketEndpoints = if (webSocketPort == null) emptyList() else tcpEndpoints.map { endpoint ->
+            endpoint.copy(
+                scheme = StudyFlowTransportScheme.WEBSOCKET,
+                port = webSocketPort,
+                path = "/sflp",
+            )
+        }
+        val hints = (webSocketEndpoints + tcpEndpoints)
             .map(StudyFlowTransportEndpoint::canonicalUri)
+            .distinct()
             .ifEmpty { listOf("sflp+tcp://127.0.0.1:$port") }
         return runtime.createPairingOffer(hints).also {
             currentOffer = it
@@ -191,7 +204,11 @@ class DesktopStudyFlowLinkService(
     fun snapshot(workspaceId: StudyFlowWorkspaceId?): DesktopStudyFlowLinkState {
         runtime.ingestDiscovery()
         val port = serverEndpoint?.port
-        val endpoints = if (port == null) emptyList() else StudyFlowLanEndpointResolver.endpointsForPort(port)
+        val tcpEndpoints = if (port == null) emptyList() else StudyFlowLanEndpointResolver.endpointsForPort(port)
+        val wsPort = browserBridgeEndpoint?.port
+        val endpoints = if (wsPort == null) tcpEndpoints else (
+            tcpEndpoints.map { it.copy(scheme = StudyFlowTransportScheme.WEBSOCKET, port = wsPort, path = "/sflp") } + tcpEndpoints
+        ).distinct()
         val pending = workspaceId?.let { runtime.workspace(it).outgoingQueue.entries().size } ?: 0
         return DesktopStudyFlowLinkState(
             localDeviceId = localDeviceId.value,
@@ -250,6 +267,7 @@ class DesktopStudyFlowLinkService(
         runtime.close()
         scheduler.shutdownNow()
         serverEndpoint = null
+        browserBridgeEndpoint = null
         started.set(false)
         lastStatus = "SFLP stopped"
     }

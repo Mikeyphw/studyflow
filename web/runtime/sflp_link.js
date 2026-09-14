@@ -1,21 +1,28 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION = exports.STUDYFLOW_SHARE_IMPORT_INTENTS = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowAttentionLedgerSnapshotSchemaVersion = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebPeerPersistence = void 0;
+exports.StudyFlowAccountBackupReleaseRuntime = exports.StudyFlowShareImportConflictRuntime = exports.STUDYFLOW_CONFLICT_REVIEW_OPERATION = exports.STUDYFLOW_SHARE_IMPORT_INTENTS = exports.StudyFlowNotificationMediaRuntime = exports.StudyFlowBrowserAttentionLedgerStorage = exports.StudyFlowMemoryAttentionLedgerStorage = exports.StudyFlowAttentionLedgerSnapshotSchemaVersion = exports.StudyFlowControlInputRuntime = exports.StudyFlowWebPresentationProjectionController = exports.StudyFlowWebLiveSessionContinuityController = exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = exports.SFLP14_LIVE_CURSOR_WIRE_NAME = exports.StudyFlowWebActivityHandoffController = exports.StudyFlowWebTvConnectivityController = exports.StudyFlowWebLinkPeer = exports.StudyFlowWebManualDiscovery = exports.StudyFlowWebSocketTransportAdapter = exports.StudyFlowWebSocketRpcConnection = exports.StudyFlowWebPeerPersistence = void 0;
+exports.decodeStudyFlowPairingQr = decodeStudyFlowPairingQr;
 exports.installStudyFlowWebSflpPeer = installStudyFlowWebSflpPeer;
 const presence_js_1 = require("./presence.js");
-const STORAGE_KEY = "studyflow.sflp.web.peer.v1";
+const WEB_STORAGE_KEY = "studyflow.sflp.web.peer.v1";
+const WEB_TV_STORAGE_KEY = "studyflow.sflp.web_tv.peer.v1";
+const PAIRING_SCHEME_PREFIX = "studyflow://pair?data=";
+const LINK_SYSTEM_WORKSPACE_ID = "link-system-v1";
 const PAIRING_TTL_MILLIS = 120000;
 const TRUST_SECRET_HEX_LENGTH = 64;
 const PROTOCOL_SUPPORT = { major: 1, minMinor: 0, maxMinor: 0 };
-const WEB_CAPABILITIES = ["workspace.read", "workspace.write", "workspace.sync", "plan.read", "plan.write", "schedule.read", "schedule.write", "session.execute", "session.control", "session.present", "question.answer", "review.execute", "goal.read", "goal.complete", "library.read", "library.present", "document.read", "document.present", "writing.read", "writing.edit", "analytics.read", "backup.export", "backup.import", "device.control", "device.presentation_source", "text_input.provide", "keyboard.input", "touch.input"];
-const WEB_TV_CAPABILITIES = ["workspace.read", "workspace.sync", "schedule.read", "session.control", "session.present", "question.answer", "review.execute", "goal.read", "library.read", "library.present", "document.read", "document.present", "analytics.read", "device.control", "device.presentation_sink", "dpad.input", "audio.output", "video.output"];
+const PROTOCOL_VERSION = { major: 1, minor: 0 };
+const WEB_CAPABILITIES = ["workspace.read", "workspace.write", "workspace.sync", "plan.read", "plan.write", "schedule.read", "schedule.write", "session.execute", "session.control", "session.present", "question.answer", "review.execute", "goal.read", "goal.complete", "library.read", "library.present", "document.read", "document.present", "writing.read", "writing.edit", "analytics.read", "backup.export", "backup.import", "device.control", "device.presentation_source", "text_input.provide", "keyboard.input", "touch.input", "clipboard.read", "clipboard.write", "share.receive", "import.preview", "conflict.review"];
+const WEB_TV_CAPABILITIES = ["workspace.read", "workspace.sync", "schedule.read", "session.control", "session.present", "question.answer", "review.execute", "goal.read", "library.read", "library.present", "document.read", "document.present", "analytics.read", "device.control", "device.presentation_sink", "dpad.input", "audio.output", "video.output", "clipboard.read", "share.receive", "import.preview", "conflict.review"];
 function randomHex(bytes) { var _a, _b; const buffer = new Uint8Array(bytes); (_b = (_a = globalThis.crypto) === null || _a === void 0 ? void 0 : _a.getRandomValues) === null || _b === void 0 ? void 0 : _b.call(_a, buffer); return [...buffer].map(x => x.toString(16).padStart(2, "0")).join("") || Math.random().toString(16).slice(2).padEnd(bytes * 2, "0").slice(0, bytes * 2); }
 function sixDigitCode() { return String(Math.floor(Math.random() * 900000) + 100000); }
+function messageId(prefix) { return `${prefix}-${Date.now()}-${randomHex(6)}`; }
 function normalizeEndpoint(uri) { const text = uri.trim(); if (!text)
     throw new Error("SFLP endpoint cannot be blank"); if (text.startsWith("ws://") || text.startsWith("wss://"))
     return { kind: "websocket", uri: text, lastSeenAtEpochMillis: Date.now() }; if (text.startsWith("sflp+relay://"))
     return { kind: "relay", uri: text, lastSeenAtEpochMillis: Date.now() }; return { kind: "manual", uri: text, lastSeenAtEpochMillis: Date.now() }; }
-function defaultState(kind) { const suffix = randomHex(8); return { identity: { deviceId: `device-web-${suffix}`, displayName: kind === "web_tv" ? "StudyFlow Web TV" : "StudyFlow Web", clientKind: kind, protocolSupport: PROTOCOL_SUPPORT, capabilities: kind === "web_tv" ? WEB_TV_CAPABILITIES : WEB_CAPABILITIES }, trustedPeers: [], endpoints: {}, pendingQueue: [], journal: [] }; }
+function storageKey(kind) { return kind === "web_tv" ? WEB_TV_STORAGE_KEY : WEB_STORAGE_KEY; }
+function defaultState(kind) { const suffix = randomHex(8); const prefix = kind === "web_tv" ? "device-web-tv" : "device-web"; return { identity: { deviceId: `${prefix}-${suffix}`, displayName: kind === "web_tv" ? "StudyFlow Web TV" : "StudyFlow Web", clientKind: kind, protocolSupport: PROTOCOL_SUPPORT, capabilities: kind === "web_tv" ? WEB_TV_CAPABILITIES : WEB_CAPABILITIES }, trustedPeers: [], endpoints: {}, pendingQueue: [], journal: [] }; }
 function safeParse(text) { if (!text)
     return null; try {
     return JSON.parse(text);
@@ -23,23 +30,62 @@ function safeParse(text) { if (!text)
 catch {
     return null;
 } }
+function encodePairingQr(payload) { return PAIRING_SCHEME_PREFIX + encodeURIComponent(JSON.stringify(payload)); }
+function decodeStudyFlowPairingQr(encoded) { if (!encoded.startsWith(PAIRING_SCHEME_PREFIX))
+    throw new Error("Unsupported StudyFlow pairing QR payload"); const parsed = JSON.parse(decodeURIComponent(encoded.slice(PAIRING_SCHEME_PREFIX.length))); if (parsed.version !== 1)
+    throw new Error(`Unsupported pairing QR version ${parsed.version}`); if (!/^pair-[A-Za-z0-9._:-]+$/.test(parsed.pairingId) || !/^[a-f0-9]{48}$/.test(parsed.sessionNonce) || !/^[0-9]{6}$/.test(parsed.pairingCode) || !Array.isArray(parsed.endpointHints))
+    throw new Error("Invalid StudyFlow pairing QR payload"); return parsed; }
+function envelope(senderDeviceId, workspaceId, name, payload) { return { protocol: PROTOCOL_VERSION, messageId: messageId("web"), workspaceId, senderDeviceId, type: "request", name, sentAtEpochMillis: Date.now(), payload }; }
+function frontierFromMap(value) { return { origins: Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([deviceId, contiguousSequence]) => ({ deviceId, contiguousSequence })) }; }
+function frontierToMap(value) { var _a; const result = {}; for (const origin of (_a = value.origins) !== null && _a !== void 0 ? _a : [])
+    result[origin.deviceId] = origin.contiguousSequence; return result; }
+function hexBytes(value) { if (value.length % 2 !== 0 || !/^[a-f0-9]+$/.test(value))
+    throw new Error("Expected lower-case hex"); const out = new Uint8Array(value.length / 2); for (let i = 0; i < out.length; i++)
+    out[i] = Number.parseInt(value.slice(i * 2, i * 2 + 2), 16); return out; }
+function bytesHex(value) { return [...new Uint8Array(value)].map(x => x.toString(16).padStart(2, "0")).join(""); }
+async function reconnectProofHex(secret, challenge) { var _a; if (!((_a = globalThis.crypto) === null || _a === void 0 ? void 0 : _a.subtle))
+    throw new Error("Web Crypto is required for SFLP reconnect authentication"); const transcript = ["SFLP-RECONNECT-V1", challenge.challengerDeviceId, challenge.peerDeviceId, challenge.nonce, String(challenge.expiresAtEpochMillis)].join("|"); const key = await globalThis.crypto.subtle.importKey("raw", hexBytes(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]); return bytesHex(await globalThis.crypto.subtle.sign("HMAC", key, new TextEncoder().encode(transcript))); }
 class StudyFlowWebPeerPersistence {
     constructor(storage = globalThis.localStorage) {
         this.storage = storage;
     }
-    load(kind) { const loaded = safeParse(this.storage.getItem(STORAGE_KEY)); if (!loaded)
+    load(kind) { const key = storageKey(kind); const loaded = safeParse(this.storage.getItem(key)); if (!loaded)
         return defaultState(kind); const refreshed = { ...loaded, identity: { ...loaded.identity, clientKind: kind, capabilities: kind === "web_tv" ? WEB_TV_CAPABILITIES : WEB_CAPABILITIES } }; return refreshed; }
-    save(snapshot) { this.storage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); }
-    clear() { this.storage.removeItem(STORAGE_KEY); }
+    save(snapshot) { this.storage.setItem(storageKey(snapshot.identity.clientKind), JSON.stringify(snapshot)); }
+    clear(kind = "web") { this.storage.removeItem(storageKey(kind)); }
 }
 exports.StudyFlowWebPeerPersistence = StudyFlowWebPeerPersistence;
+class StudyFlowWebSocketRpcConnection {
+    constructor(socket) {
+        this.socket = socket;
+    }
+    async exchange(request) { if (this.socket.readyState !== WebSocket.OPEN)
+        throw new Error("SFLP WebSocket is not open"); return new Promise((resolve, reject) => { const cleanup = () => { this.socket.removeEventListener("message", onMessage); this.socket.removeEventListener("error", onError); this.socket.removeEventListener("close", onClose); }; const onError = () => { cleanup(); reject(new Error("SFLP WebSocket exchange failed")); }; const onClose = () => { cleanup(); reject(new Error("SFLP WebSocket closed before a response")); }; const onMessage = (event) => { var _a, _b; try {
+        if (typeof event.data !== "string")
+            return;
+        const response = JSON.parse(event.data);
+        if (response.correlationId !== request.messageId)
+            return;
+        cleanup();
+        if (response.type === "error")
+            throw new Error(`${String((_a = response.payload.code) !== null && _a !== void 0 ? _a : "link.error")}: ${String((_b = response.payload.message) !== null && _b !== void 0 ? _b : "SFLP request failed")}`);
+        resolve(response);
+    }
+    catch (error) {
+        cleanup();
+        reject(error);
+    } }; this.socket.addEventListener("message", onMessage); this.socket.addEventListener("error", onError, { once: true }); this.socket.addEventListener("close", onClose, { once: true }); this.socket.send(JSON.stringify(request)); }); }
+    close() { this.socket.close(); }
+}
+exports.StudyFlowWebSocketRpcConnection = StudyFlowWebSocketRpcConnection;
 class StudyFlowWebSocketTransportAdapter {
     constructor() {
         this.supportsListen = false;
         this.supportsClientConnect = true;
     }
     async open(endpoint) { if (endpoint.kind !== "websocket")
-        throw new Error("Web SFLP peers can connect only to ws/wss endpoints directly"); return new Promise((resolve, reject) => { const socket = new WebSocket(endpoint.uri); socket.onopen = () => resolve(socket); socket.onerror = () => reject(new Error("SFLP WebSocket connection failed")); }); }
+        throw new Error("Web SFLP peers can connect only to ws/wss endpoints directly"); return new Promise((resolve, reject) => { const socket = new WebSocket(endpoint.uri, "studyflow.sflp.v1"); socket.onopen = () => resolve(socket); socket.onerror = () => reject(new Error("SFLP WebSocket connection failed")); }); }
+    async connect(endpoint) { return new StudyFlowWebSocketRpcConnection(await this.open(endpoint)); }
 }
 exports.StudyFlowWebSocketTransportAdapter = StudyFlowWebSocketTransportAdapter;
 class StudyFlowWebManualDiscovery {
@@ -51,23 +97,42 @@ class StudyFlowWebManualDiscovery {
 }
 exports.StudyFlowWebManualDiscovery = StudyFlowWebManualDiscovery;
 class StudyFlowWebLinkPeer {
-    constructor(persistence = new StudyFlowWebPeerPersistence(), kind = "web") {
+    constructor(persistence = new StudyFlowWebPeerPersistence(), kind = "web", transport = new StudyFlowWebSocketTransportAdapter()) {
         this.persistence = persistence;
         this.discovery = new StudyFlowWebManualDiscovery();
-        this.transport = new StudyFlowWebSocketTransportAdapter();
         this.snapshot = this.persistence.load(kind);
         this.persistence.save(this.snapshot);
+        this.transport = transport;
         this.presence = new presence_js_1.StudyFlowWebPresenceRuntime(this.identity);
     }
     get identity() { return this.snapshot.identity; }
     get trustedPeers() { return [...this.snapshot.trustedPeers]; }
     get pendingOutgoingOperations() { return [...this.snapshot.pendingQueue]; }
     get journal() { return [...this.snapshot.journal]; }
-    createPairingOffer(endpointHints = this.localEndpointHints()) { const pairingCode = sixDigitCode(); const expiresAtEpochMillis = Date.now() + PAIRING_TTL_MILLIS; const offer = { pairingCode, expiresAtEpochMillis, descriptor: this.identity, endpointHints }; const qrPayload = JSON.stringify({ type: "studyflow.sflp.pairing.v1", ...offer }); return { ...offer, qrPayload }; }
-    pairFromQr(qrPayload) { var _a; const parsed = JSON.parse(qrPayload); const trustSecret = randomHex(TRUST_SECRET_HEX_LENGTH / 2); const now = Date.now(); const record = { peer: parsed.descriptor, state: "trusted", pairedAtEpochMillis: now, updatedAtEpochMillis: now, lastSeenAtEpochMillis: now, revokedAtEpochMillis: null, trustSecret }; this.snapshot.trustedPeers = [record, ...this.snapshot.trustedPeers.filter(item => item.peer.deviceId !== record.peer.deviceId)]; for (const hint of (_a = parsed.endpointHints) !== null && _a !== void 0 ? _a : [])
-        this.rememberManualEndpoint(record.peer.deviceId, hint); this.persistence.save(this.snapshot); return record; }
+    /** Browser-hosted receiver metadata; production native/browser pairing uses pairFromQr with the canonical URI codec. */
+    createPairingOffer(endpointHints = this.localEndpointHints()) { const pairingCode = sixDigitCode(); const expiresAtEpochMillis = Date.now() + PAIRING_TTL_MILLIS; const pairingId = `pair-web-${randomHex(8)}`; const sessionNonce = randomHex(24); const qrPayload = encodePairingQr({ version: 1, pairingId, sessionNonce, pairingCode, endpointHints }); return { pairingCode, expiresAtEpochMillis, descriptor: this.identity, endpointHints, qrPayload }; }
+    async pairFromQr(qrPayload) { const parsed = decodeStudyFlowPairingQr(qrPayload); const endpoint = parsed.endpointHints.map(normalizeEndpoint).find(item => item.kind === "websocket"); if (!endpoint)
+        throw new Error("Pairing QR does not contain a browser-compatible ws/wss endpoint"); const connection = await this.transport.connect(endpoint); try {
+        const request = envelope(this.identity.deviceId, LINK_SYSTEM_WORKSPACE_ID, "link.pair", { pairingId: parsed.pairingId, sessionNonce: parsed.sessionNonce, pairingCode: parsed.pairingCode, peer: this.identity, requestedAtEpochMillis: Date.now() });
+        const response = await connection.exchange(request);
+        if (response.name !== "link.pairing_grant")
+            throw new Error(`Unexpected pairing response ${response.name}`);
+        const grant = response.payload;
+        if (grant.pairingId !== parsed.pairingId || grant.peerDeviceId !== this.identity.deviceId || typeof grant.trustSecret !== "string" || grant.trustSecret.length !== TRUST_SECRET_HEX_LENGTH)
+            throw new Error("Invalid native SFLP pairing grant");
+        const now = Date.now();
+        const record = { peer: grant.host, state: "trusted", pairedAtEpochMillis: grant.pairedAtEpochMillis, updatedAtEpochMillis: now, lastSeenAtEpochMillis: now, revokedAtEpochMillis: null, trustSecret: grant.trustSecret };
+        this.snapshot.trustedPeers = [record, ...this.snapshot.trustedPeers.filter(item => item.peer.deviceId !== record.peer.deviceId)];
+        for (const hint of parsed.endpointHints)
+            this.rememberManualEndpoint(record.peer.deviceId, hint);
+        this.persistence.save(this.snapshot);
+        return record;
+    }
+    finally {
+        connection.close();
+    } }
     rememberManualEndpoint(peerDeviceId, uri) { var _a; const endpoint = this.discovery.remember(peerDeviceId, uri); const existing = (_a = this.snapshot.endpoints[peerDeviceId]) !== null && _a !== void 0 ? _a : []; this.snapshot.endpoints[peerDeviceId] = [endpoint, ...existing.filter(item => item.uri !== endpoint.uri)]; this.persistence.save(this.snapshot); return endpoint; }
-    appendLocalMutation(workspaceId, entityId, operationType, payload) { const mine = this.snapshot.journal.filter(op => op.originDeviceId === this.identity.deviceId); const sequence = mine.reduce((max, op) => Math.max(max, op.originSequence), 0) + 1; const operation = { workspaceId, operationId: `op-${this.identity.deviceId}-${sequence}`, originDeviceId: this.identity.deviceId, originSequence: sequence, entityId, entityRevision: sequence, operationType, payload, createdAtEpochMillis: Date.now() }; this.snapshot.journal = [...this.snapshot.journal, operation]; for (const peer of this.snapshot.trustedPeers.filter(p => p.state === "trusted")) {
+    appendLocalMutation(workspaceId, entityId, operationType, payload) { const mine = this.snapshot.journal.filter(op => op.originDeviceId === this.identity.deviceId); const sequence = mine.reduce((max, op) => Math.max(max, op.originSequence), 0) + 1; const entityRevision = this.snapshot.journal.filter(op => op.workspaceId === workspaceId && op.entityId === entityId).reduce((max, op) => Math.max(max, op.entityRevision), 0) + 1; const logicalTimestamp = this.snapshot.journal.filter(op => op.workspaceId === workspaceId).reduce((max, op) => { var _a; return Math.max(max, (_a = op.logicalTimestamp) !== null && _a !== void 0 ? _a : 0); }, 0) + 1; const occurredAtEpochMillis = Date.now(); const operation = { workspaceId, operationId: `op-${this.identity.deviceId}-${sequence}`, originDeviceId: this.identity.deviceId, originSequence: sequence, entityId, entityRevision, logicalTimestamp, operationType, kind: "mutation", occurredAtEpochMillis, payload }; this.snapshot.journal = [...this.snapshot.journal, operation]; for (const peer of this.snapshot.trustedPeers.filter(p => p.state === "trusted")) {
         this.snapshot.pendingQueue.push({ peerDeviceId: peer.peer.deviceId, workspaceId, operationId: operation.operationId, attempts: 0, nextAttemptEpochMillis: Date.now() });
     } this.persistence.save(this.snapshot); return operation; }
     applyRemoteOperations(operations) { const seen = new Set(this.snapshot.journal.map(op => op.operationId)); let added = 0; for (const operation of operations) {
@@ -78,12 +143,58 @@ class StudyFlowWebLinkPeer {
         added++;
     } if (added)
         this.persistence.save(this.snapshot); return added; }
-    frontier(workspaceId) { var _a; const out = {}; for (const op of this.snapshot.journal.filter(item => item.workspaceId === workspaceId)) {
-        out[op.originDeviceId] = Math.max((_a = out[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0, op.originSequence);
+    frontier(workspaceId) { var _a; const grouped = new Map(); for (const op of this.snapshot.journal.filter(item => item.workspaceId === workspaceId)) {
+        const values = (_a = grouped.get(op.originDeviceId)) !== null && _a !== void 0 ? _a : [];
+        values.push(op.originSequence);
+        grouped.set(op.originDeviceId, values);
+    } const out = {}; for (const [deviceId, sequences] of grouped) {
+        const set = new Set(sequences);
+        let contiguous = 0;
+        while (set.has(contiguous + 1))
+            contiguous++;
+        out[deviceId] = contiguous;
     } return out; }
     operationsAfter(workspaceId, frontier, limit = 100) { return this.snapshot.journal.filter(op => { var _a; return op.workspaceId === workspaceId && op.originSequence > ((_a = frontier[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0); }).sort((a, b) => a.originDeviceId.localeCompare(b.originDeviceId) || a.originSequence - b.originSequence).slice(0, limit); }
     acknowledge(peerDeviceId, workspaceId, frontier) { this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(entry => { var _a; if (entry.peerDeviceId !== peerDeviceId || entry.workspaceId !== workspaceId)
         return true; const op = this.snapshot.journal.find(item => item.operationId === entry.operationId); return !op || op.originSequence > ((_a = frontier[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0); }); this.persistence.save(this.snapshot); }
+    async reconcileWith(peerDeviceId, workspaceId) {
+        return this.withAuthenticatedConnection(peerDeviceId, async (connection) => {
+            var _a;
+            const initialFrontier = frontierFromMap(this.frontier(workspaceId));
+            const frontierResponse = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.frontier", { knownFrontier: initialFrontier }));
+            if (frontierResponse.name !== "sync.frontier")
+                throw new Error(`Unexpected frontier response ${frontierResponse.name}`);
+            let remoteFrontier = frontierResponse.payload.currentFrontier;
+            let pulled = 0;
+            let hasMore = true;
+            while (hasMore) {
+                const pull = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.pull", { workspaceId, knownFrontier: frontierFromMap(this.frontier(workspaceId)), maxOperations: 100 }));
+                if (pull.name !== "sync.operations")
+                    throw new Error(`Unexpected pull response ${pull.name}`);
+                const batch = pull.payload;
+                pulled += this.applyRemoteOperations(batch.operations);
+                hasMore = batch.hasMore;
+                remoteFrontier = batch.throughFrontier;
+            }
+            const remoteMap = frontierToMap(remoteFrontier);
+            const outgoing = this.operationsAfter(workspaceId, remoteMap, 1000);
+            let pushed = 0;
+            if (outgoing.length) {
+                const through = { ...remoteMap };
+                for (const op of outgoing)
+                    through[op.originDeviceId] = Math.max((_a = through[op.originDeviceId]) !== null && _a !== void 0 ? _a : 0, op.originSequence);
+                const batch = { batchId: messageId("web-batch"), workspaceId, baseFrontier: remoteFrontier, operations: outgoing, throughFrontier: frontierFromMap(through), hasMore: false };
+                const apply = await connection.exchange(envelope(this.identity.deviceId, workspaceId, "sync.apply", batch));
+                if (apply.name !== "sync.apply")
+                    throw new Error(`Unexpected apply response ${apply.name}`);
+                pushed = outgoing.length;
+                this.acknowledge(peerDeviceId, workspaceId, through);
+            }
+            return { pulled, pushed };
+        });
+    }
+    async sendRoutedRpc(peerDeviceId, workspaceId, name, payload) { return this.withAuthenticatedConnection(peerDeviceId, async (connection) => { const response = await connection.exchange(envelope(this.identity.deviceId, workspaceId, name, payload)); if (response.name !== "link.rpc_accepted")
+        throw new Error(`Unexpected routed RPC response ${response.name}`); return response.payload; }); }
     updatePresence(workspaceId, availability, activityHint, visibilityCapabilities = []) { return this.presence.announce(workspaceId, availability, activityHint, visibilityCapabilities); }
     presenceViews(workspaceId) { return this.presence.views(workspaceId, this.identity); }
     presenceExchangeFor(peerDeviceId, workspaceId) { var _a; const peer = (_a = this.snapshot.trustedPeers.find(item => item.state === "trusted" && item.peer.deviceId === peerDeviceId)) === null || _a === void 0 ? void 0 : _a.peer; if (!peer)
@@ -94,6 +205,26 @@ class StudyFlowWebLinkPeer {
         return record; revoked = { ...record, state: "revoked", trustSecret: null, updatedAtEpochMillis: now, revokedAtEpochMillis: now }; return revoked; }); this.persistence.save(this.snapshot); return revoked; }
     forget(peerDeviceId) { this.presence.forgetPeer(peerDeviceId); const before = this.snapshot.trustedPeers.length; this.snapshot.trustedPeers = this.snapshot.trustedPeers.filter(item => item.peer.deviceId !== peerDeviceId); delete this.snapshot.endpoints[peerDeviceId]; this.snapshot.pendingQueue = this.snapshot.pendingQueue.filter(item => item.peerDeviceId !== peerDeviceId); this.persistence.save(this.snapshot); return before !== this.snapshot.trustedPeers.length; }
     snapshotForDebug() { return JSON.parse(JSON.stringify(this.snapshot)); }
+    endpointFor(peerDeviceId) { var _a; const endpoint = ((_a = this.snapshot.endpoints[peerDeviceId]) !== null && _a !== void 0 ? _a : []).find(item => item.kind === "websocket"); if (!endpoint)
+        throw new Error(`No ws/wss endpoint remembered for ${peerDeviceId}`); return endpoint; }
+    trusted(peerDeviceId) { const record = this.snapshot.trustedPeers.find(item => item.peer.deviceId === peerDeviceId && item.state === "trusted"); if (!(record === null || record === void 0 ? void 0 : record.trustSecret))
+        throw new Error(`Peer ${peerDeviceId} is not trusted`); return record; }
+    async withAuthenticatedConnection(peerDeviceId, block) { const record = this.trusted(peerDeviceId); const connection = await this.transport.connect(this.endpointFor(peerDeviceId)); try {
+        const challengeResponse = await connection.exchange(envelope(this.identity.deviceId, LINK_SYSTEM_WORKSPACE_ID, "link.reconnect_challenge", { peerDeviceId: this.identity.deviceId }));
+        if (challengeResponse.name !== "link.reconnect_challenge")
+            throw new Error(`Unexpected reconnect challenge ${challengeResponse.name}`);
+        const challenge = challengeResponse.payload;
+        if (challenge.challengerDeviceId !== record.peer.deviceId || challenge.peerDeviceId !== this.identity.deviceId)
+            throw new Error("Reconnect challenge identity mismatch");
+        const proofHex = await reconnectProofHex(record.trustSecret, challenge);
+        const accepted = await connection.exchange(envelope(this.identity.deviceId, LINK_SYSTEM_WORKSPACE_ID, "link.reconnect_proof", { proverDeviceId: this.identity.deviceId, nonce: challenge.nonce, proofHex }));
+        if (accepted.name !== "link.reconnect_accepted")
+            throw new Error(`Unexpected reconnect response ${accepted.name}`);
+        return await block(connection);
+    }
+    finally {
+        connection.close();
+    } }
     localEndpointHints() { var _a, _b; return ((_b = (_a = globalThis.location) === null || _a === void 0 ? void 0 : _a.origin) === null || _b === void 0 ? void 0 : _b.startsWith("http")) ? [globalThis.location.origin.replace(/^http/, "ws") + "/sflp"] : []; }
 }
 exports.StudyFlowWebLinkPeer = StudyFlowWebLinkPeer;

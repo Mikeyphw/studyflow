@@ -2309,3 +2309,16 @@ tasks.register<Exec>("verifyOv01RepositoryGradleDevtoolTruth") {
     dependsOn("verifyGradleDependencyIntegrityPolicy")
     commandLine("python3", "scripts/verify_ov01_repository_gradle_devtool_truth.py")
 }
+
+// OV09 — SFLP native/Web interoperability transport.
+tasks.register<Exec>("verifyOv09SflpNativeWebInterop") {
+    group = "verification"
+    description = "Validates OV09 native/Web SFLP WebSocket, pairing, journal, identity and routed-RPC interoperability."
+    dependsOn(
+        ":core:link:test",
+        ":app:compileDebugKotlin",
+        ":app-tv:compileDebugKotlin",
+        ":desktopApp:compileKotlin",
+    )
+    commandLine("bash", "scripts/validate_ov09_sflp_native_web_interop.sh")
+}

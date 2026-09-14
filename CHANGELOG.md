@@ -1,3 +1,10 @@
+## OV09 — SFLP native/Web interoperability transport (2026-09-13)
+
+- Added a production RFC 6455 browser/native SFLP bridge and canonical Web pairing/reconnect wire contract.
+- Aligned Web journal schema/frontier semantics and split Web/Web-TV persistent identities.
+- Added authenticated peer-server routing for the SFLP14–SFLP23 production message families.
+- Added integrated OV09 source, Web, parity, native WebSocket and compile validation wiring without daemon management in validation scripts.
+
 ## OV08 — SFLP product-state bridge & full-mesh mutation projection
 
 - Added row-level Room↔SFLP mutation capture/projection, persistent workspace-scoped membership, continuous Android/TV reconciliation, and SFLP-backed TV domain actions.

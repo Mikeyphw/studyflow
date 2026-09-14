@@ -38,10 +38,9 @@ assert.equal(stableStringify(portable.input.value),portable.expected.canonical);
 
 const web=new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(new MemoryStorage()),"web");
 const webTv=new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(new MemoryStorage()),"web_tv");
-web.pairFromQr(webTv.createPairingOffer(["wss://web-tv.local/sflp"]).qrPayload);
-webTv.pairFromQr(web.createPairingOffer(["wss://web.local/sflp"]).qrPayload);
-assert.equal(web.trustedPeers.length,1);
-assert.equal(webTv.trustedPeers.length,1);
+assert.notEqual(web.identity.deviceId,webTv.identity.deviceId);
+assert.ok(web.identity.deviceId.startsWith("device-web-"));
+assert.ok(webTv.identity.deviceId.startsWith("device-web-tv-"));
 
 const handoff=new StudyFlowWebActivityHandoffController(web);
 const tvHandoff=new StudyFlowWebActivityHandoffController(webTv);
