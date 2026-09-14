@@ -1,4 +1,13 @@
 
+## OV15 — Android product-flow and UI/domain honesty
+
+- Stopped optionless practice questions from exposing the correct answer as the only selectable button.
+- Added validation-backed manual question editing for all four supported question types and kept failed asynchronous saves visible.
+- Blocked archived/trashed plan opening, removed fabricated next-activity copy, and switched exam countdowns to local calendar days.
+- Made focus/session failure states honest and optional workspace streams non-blocking.
+- Added recreation-safe, size-bounded syllabus/exam-notice import drafts and integrated OV15 validation without stopping Gradle daemons.
+
+
 ## OV14 — Android receiver/widget durability
 
 - Bound phone↔TV credentials to the selected receiver endpoint before saving and rejected authenticated sends to mismatched receivers.

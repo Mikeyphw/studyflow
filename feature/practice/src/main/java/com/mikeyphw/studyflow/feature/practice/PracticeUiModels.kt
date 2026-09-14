@@ -29,8 +29,7 @@ internal data class QuestionEditorState(
         get() = tags.split(',', ';').map(String::trim).filter(String::isNotBlank).distinct()
 
     val canSave: Boolean
-        get() = statement.isNotBlank() && correctAnswer.isNotBlank() && difficulty in 1..5 &&
-            (type != QuestionType.MULTIPLE_CHOICE || options.size >= 2)
+        get() = validation().canSave
 }
 
 internal data class PracticeScreenState(

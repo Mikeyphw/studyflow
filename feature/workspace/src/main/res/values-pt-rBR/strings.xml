@@ -854,4 +854,6 @@
     <string name="hide_dashboard_details">Ocultar matriz detalhada</string>
     <string name="dashboard_details_expanded">Detalhes expandidos</string>
     <string name="dashboard_details_collapsed">Detalhes recolhidos</string>
+
+    <string name="session_load_failed">A sessão de foco não pôde ser carregada. Volte e tente novamente por Sessões.</string>
 </resources>

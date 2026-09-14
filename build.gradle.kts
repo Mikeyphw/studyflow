@@ -2395,3 +2395,18 @@ tasks.register<Exec>("verifyOv14AndroidReceiverWidgetDurability") {
     )
     commandLine("bash", "scripts/validate_ov14_android_receiver_widget_durability.sh")
 }
+
+
+// OV15 — Android product-flow and UI/domain honesty.
+tasks.register<Exec>("verifyOv15AndroidProductFlowHonesty") {
+    group = "verification"
+    description = "Validates OV15 Android question editor/practice honesty, active-session plan guards, partial load states, local date countdowns and bounded imports."
+    dependsOn(
+        ":feature:practice:testDebugUnitTest",
+        ":feature:plans:testDebugUnitTest",
+        ":feature:workspace:testDebugUnitTest",
+        ":feature:subjects:testDebugUnitTest",
+        ":app:compileDebugKotlin",
+    )
+    commandLine("bash", "scripts/validate_ov15_android_product_flow_honesty.sh")
+}

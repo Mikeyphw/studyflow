@@ -379,4 +379,6 @@
     <string name="onboarding_stage_objective">Prova objetiva</string>
     <string name="onboarding_stage_essay">Redação</string>
 
+
+    <string name="next_activity_unavailable">Próxima atividade: nenhuma atividade agendada ainda.</string>
 </resources>

@@ -109,6 +109,7 @@ fun PracticeScreen(
     )
     val syllabus by syllabusFlow.collectAsStateWithLifecycle(initialValue = null)
     var showEditor by rememberSaveable { mutableStateOf(false) }
+    var savingQuestion by rememberSaveable { mutableStateOf(false) }
     var favoriteOnly by rememberSaveable { mutableStateOf(false) }
     var disputedOnly by rememberSaveable { mutableStateOf(false) }
     var examBoardFilter by rememberSaveable { mutableStateOf("") }
@@ -811,27 +812,38 @@ fun PracticeScreen(
 
     if (showEditor) {
         QuestionEditorDialog(
-            onDismiss = { showEditor = false },
+            saving = savingQuestion,
+            onDismiss = { if (!savingQuestion) showEditor = false },
             onSave = { state ->
-                launchAction(questionSaved) {
-                    practice.createQuestion(
-                        id = QuestionId(UUID.randomUUID().toString()),
-                        studyPlanId = plan.id,
-                        subjectId = null,
-                        topicId = null,
-                        type = state.type,
-                        statement = state.statement,
-                        options = state.options,
-                        correctAnswer = state.correctAnswer,
-                        explanation = state.explanation,
-                        examBoard = null,
-                        source = null,
-                        year = null,
-                        difficulty = state.difficulty,
-                        tags = state.tagList,
-                    )
+                if (!savingQuestion && state.canSave) {
+                    savingQuestion = true
+                    scope.launch {
+                        runRecoverableOperation {
+                            practice.createQuestion(
+                                id = QuestionId(UUID.randomUUID().toString()),
+                                studyPlanId = plan.id,
+                                subjectId = null,
+                                topicId = null,
+                                type = state.type,
+                                statement = state.statement,
+                                options = state.domainOptions(),
+                                correctAnswer = state.domainCorrectAnswer(),
+                                explanation = state.explanation,
+                                examBoard = null,
+                                source = null,
+                                year = null,
+                                difficulty = state.difficulty,
+                                tags = state.tagList,
+                            )
+                        }.onSuccess {
+                            snackbar.showSnackbar(questionSaved)
+                            showEditor = false
+                        }.onFailure {
+                            snackbar.showSnackbar(operationFailed)
+                        }
+                        savingQuestion = false
+                    }
                 }
-                showEditor = false
             },
         )
     }
@@ -898,22 +910,44 @@ private fun PracticeRunnerCard(
             } else {
                 Text(question.statement, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 val questionStartedAt = remember(state.attemptId, question.id.value) { SystemClock.elapsedRealtime() }
-                val options = question.options.ifEmpty { listOf(question.correctAnswer) }
-                options.forEach { option ->
-                    OutlinedButton(
-                        enabled = !state.submitted && !state.deadlinePassed(nowEpochMillis),
+                val answerChoices = questionAnswerChoices(question)
+                var draftTextAnswer by rememberSaveable(state.attemptId, question.id.value) { mutableStateOf("") }
+                if (questionRequiresTextAnswer(question)) {
+                    OutlinedTextField(
+                        value = draftTextAnswer,
+                        onValueChange = { draftTextAnswer = it },
+                        label = { Text(stringResource(R.string.answer_input)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = if (question.type == QuestionType.ESSAY) 5 else 1,
+                    )
+                    Button(
+                        enabled = draftTextAnswer.isNotBlank() && !state.submitted &&
+                            !state.deadlinePassed(nowEpochMillis),
                         onClick = {
                             val elapsedSeconds = ((SystemClock
                                 .elapsedRealtime() - questionStartedAt) / 1_000L).coerceAtLeast(0L)
-                            val wrong = !option.trim().equals(question.correctAnswer.trim(), ignoreCase = true)
-                            if (wrong && state.mode == TestMode.IMMEDIATE_FEEDBACK) {
-                                pendingWrongAnswer = PendingWrongAnswer(question, option, elapsedSeconds)
-                            } else {
-                                onAnswer(question, option, elapsedSeconds, null)
-                            }
+                            onAnswer(question, draftTextAnswer.trim(), elapsedSeconds, null)
+                            draftTextAnswer = ""
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(option) }
+                    ) { Text(stringResource(R.string.submit_answer)) }
+                } else {
+                    answerChoices.forEach { option ->
+                        OutlinedButton(
+                            enabled = !state.submitted && !state.deadlinePassed(nowEpochMillis),
+                            onClick = {
+                                val elapsedSeconds = ((SystemClock
+                                    .elapsedRealtime() - questionStartedAt) / 1_000L).coerceAtLeast(0L)
+                                val wrong = !option.trim().equals(question.correctAnswer.trim(), ignoreCase = true)
+                                if (wrong && state.mode == TestMode.IMMEDIATE_FEEDBACK) {
+                                    pendingWrongAnswer = PendingWrongAnswer(question, option, elapsedSeconds)
+                                } else {
+                                    onAnswer(question, option, elapsedSeconds, null)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(option) }
+                    }
                 }
                 if (state.explanationVisible(question.id)) {
                     Text(
@@ -1158,18 +1192,38 @@ private val QuestionEditorStateSaver = listSaver<QuestionEditorState, Any>(
 internal fun QuestionEditorDialog(
     onDismiss: () -> Unit,
     onSave: (QuestionEditorState) -> Unit,
+    saving: Boolean = false,
 ) {
     var state by rememberSaveable(stateSaver = QuestionEditorStateSaver) {
         mutableStateOf(QuestionEditorState())
     }
+    val validation = state.validation()
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!saving) onDismiss() },
         title = { Text(stringResource(R.string.add_question)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                Text(stringResource(R.string.question_type))
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    QuestionType.entries.forEach { type ->
+                        FilterChip(
+                            selected = state.type == type,
+                            onClick = {
+                                state = state.copy(
+                                    type = type,
+                                    correctAnswer = if (type == QuestionType.TRUE_FALSE) "True" else state.correctAnswer,
+                                )
+                            },
+                            label = { Text(type.editorLabel()) },
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = state.statement,
                     onValueChange = { state = state.copy(statement = it) },
@@ -1177,36 +1231,57 @@ internal fun QuestionEditorDialog(
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                 )
-                OutlinedTextField(
-                    value = state.optionA,
-                    onValueChange = { state = state.copy(optionA = it) },
-                    label = { Text(stringResource(R.string.option_a)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = state.optionB,
-                    onValueChange = { state = state.copy(optionB = it) },
-                    label = { Text(stringResource(R.string.option_b)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = state.optionC,
-                    onValueChange = { state = state.copy(optionC = it) },
-                    label = { Text(stringResource(R.string.option_c)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = state.optionD,
-                    onValueChange = { state = state.copy(optionD = it) },
-                    label = { Text(stringResource(R.string.option_d)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = state.correctAnswer,
-                    onValueChange = { state = state.copy(correctAnswer = it) },
-                    label = { Text(stringResource(R.string.correct_answer)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (state.type == QuestionType.MULTIPLE_CHOICE) {
+                    OutlinedTextField(
+                        value = state.optionA,
+                        onValueChange = { state = state.copy(optionA = it) },
+                        label = { Text(stringResource(R.string.option_a)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = state.optionB,
+                        onValueChange = { state = state.copy(optionB = it) },
+                        label = { Text(stringResource(R.string.option_b)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = state.optionC,
+                        onValueChange = { state = state.copy(optionC = it) },
+                        label = { Text(stringResource(R.string.option_c)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = state.optionD,
+                        onValueChange = { state = state.copy(optionD = it) },
+                        label = { Text(stringResource(R.string.option_d)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = state.correctAnswer,
+                        onValueChange = { state = state.copy(correctAnswer = it) },
+                        label = { Text(stringResource(R.string.correct_answer)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else if (state.type == QuestionType.TRUE_FALSE) {
+                    Text(stringResource(R.string.correct_answer))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("True", "False").forEach { answer ->
+                            FilterChip(
+                                selected = state.correctAnswer.equals(answer, ignoreCase = true),
+                                onClick = { state = state.copy(correctAnswer = answer) },
+                                label = { Text(answer) },
+                            )
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = state.correctAnswer,
+                        onValueChange = { state = state.copy(correctAnswer = it) },
+                        label = { Text(stringResource(R.string.correct_answer)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = if (state.type == QuestionType.ESSAY) 4 else 1,
+                    )
+                }
                 OutlinedTextField(
                     value = state.explanation,
                     onValueChange = { state = state.copy(explanation = it) },
@@ -1231,17 +1306,34 @@ internal fun QuestionEditorDialog(
                         )
                     }
                 }
+                validation.issues.firstOrNull()?.let { issue ->
+                    Text(
+                        text = stringResource(issue.messageRes()),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         },
         confirmButton = {
-            Button(enabled = state.canSave, onClick = { onSave(state) }) {
-                Text(stringResource(R.string.save_question))
+            Button(enabled = !saving && validation.canSave, onClick = { onSave(state) }) {
+                Text(stringResource(if (saving) R.string.saving_question else R.string.save_question))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            TextButton(enabled = !saving, onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
+}
+
+private fun QuestionType.editorLabel(): String = name.lowercase().replace('_', ' ')
+
+private fun QuestionEditorValidationIssue.messageRes(): Int = when (this) {
+    QuestionEditorValidationIssue.BLANK_STATEMENT -> R.string.question_validation_blank_statement
+    QuestionEditorValidationIssue.BLANK_ANSWER -> R.string.question_validation_blank_answer
+    QuestionEditorValidationIssue.INVALID_DIFFICULTY -> R.string.question_validation_invalid_difficulty
+    QuestionEditorValidationIssue.MULTIPLE_CHOICE_NEEDS_TWO_OPTIONS -> R.string.question_validation_mc_two_options
+    QuestionEditorValidationIssue.MULTIPLE_CHOICE_ANSWER_NOT_IN_OPTIONS -> R.string.question_validation_mc_answer_not_option
+    QuestionEditorValidationIssue.TRUE_FALSE_ANSWER_NOT_BOOLEAN -> R.string.question_validation_true_false_answer
 }
 
 

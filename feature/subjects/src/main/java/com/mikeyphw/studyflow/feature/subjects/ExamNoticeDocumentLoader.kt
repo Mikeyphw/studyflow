@@ -123,6 +123,10 @@ internal object ExamNoticeDocumentLoader {
     ): ExamNoticeDocumentLoadResult = try {
         val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
             ?: return ExamNoticeDocumentLoadResult.Failure(ExamNoticeDocumentFailure.READ_FAILED)
+        if (descriptor.statSize > Ov15MaxPdfImportBytes) {
+            descriptor.close()
+            return ExamNoticeDocumentLoadResult.Failure(ExamNoticeDocumentFailure.DOCUMENT_TOO_LARGE)
+        }
         val text = descriptor.use { fileDescriptor ->
             PdfRenderer(fileDescriptor).use { renderer ->
                 buildString {
@@ -134,6 +138,9 @@ internal object ExamNoticeDocumentLoader {
                             if (pageText.isNotEmpty()) {
                                 if (isNotEmpty()) append("\n\n")
                                 append(pageText)
+                                if (length > MaxTextBytes) {
+                                    throw DocumentTooLargeException()
+                                }
                             }
                         }
                     }
@@ -151,11 +158,15 @@ internal object ExamNoticeDocumentLoader {
                 ),
             )
         }
+    } catch (tooLarge: DocumentTooLargeException) {
+        ExamNoticeDocumentLoadResult.Failure(ExamNoticeDocumentFailure.DOCUMENT_TOO_LARGE)
     } catch (cancellation: CancellationException) {
         throw cancellation
     } catch (_: Exception) {
         ExamNoticeDocumentLoadResult.Failure(ExamNoticeDocumentFailure.READ_FAILED)
     }
+
+    private class DocumentTooLargeException : RuntimeException()
 
     private fun queryDisplayName(context: Context, uri: Uri): String? = try {
         context.contentResolver.query(

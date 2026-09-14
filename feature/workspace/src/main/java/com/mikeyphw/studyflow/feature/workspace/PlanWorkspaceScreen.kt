@@ -53,6 +53,8 @@ import com.mikeyphw.studyflow.core.domain.ManageStudyProgress
 import com.mikeyphw.studyflow.core.domain.ManageStudyReview
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.StudyLibrarySnapshot
+import com.mikeyphw.studyflow.core.domain.StudyProgressSnapshot
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardBuilder
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardSnapshot
 import com.mikeyphw.studyflow.core.domain.PublicExamDateResolver
@@ -77,6 +79,7 @@ import com.mikeyphw.studyflow.core.model.Flashcard
 import com.mikeyphw.studyflow.core.model.Question
 import com.mikeyphw.studyflow.core.model.ReviewItem
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
+import com.mikeyphw.studyflow.core.model.LegislationStudySnapshot
 import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyType
@@ -178,18 +181,6 @@ fun PlanWorkspaceScreen(
             states = listOf(
                 scheduleState,
                 syllabusState,
-                libraryState,
-                questionsState,
-                reviewItemsState,
-                flashcardsState,
-                errorEntriesState,
-                progressState,
-                sessionsState,
-                targetState,
-                mockExamsState,
-                legislationState,
-                studyCycleState,
-                examNoticeRevisionsState,
             ),
             onRetry = { loadAttempt += 1 },
             modifier = modifier,
@@ -197,18 +188,18 @@ fun PlanWorkspaceScreen(
     ) return
     val readySchedule = scheduleState.readyValue()
     val readySyllabus = syllabusState.readyValue()
-    val readyLibrary = libraryState.readyValue()
-    val readyQuestions = questionsState.readyValue()
-    val readyReviewItems = reviewItemsState.readyValue()
-    val readyFlashcards = flashcardsState.readyValue()
-    val readyErrorEntries = errorEntriesState.readyValue()
-    val readyProgress = progressState.readyValue()
-    val readySessions = sessionsState.readyValue()
-    val readyTarget = targetState.readyValue()
-    val readyMockExams = mockExamsState.readyValue()
-    val readyLegislation = legislationState.readyValue()
-    val readyStudyCycle = studyCycleState.readyValue()
-    val readyExamNoticeRevisions = examNoticeRevisionsState.readyValue()
+    val readyLibrary = libraryState.readyOrFallback(StudyLibrarySnapshot(emptyList(), emptyList(), emptyList()))
+    val readyQuestions = questionsState.readyOrFallback(emptyList())
+    val readyReviewItems = reviewItemsState.readyOrFallback(emptyList())
+    val readyFlashcards = flashcardsState.readyOrFallback(emptyList())
+    val readyErrorEntries = errorEntriesState.readyOrFallback(emptyList())
+    val readyProgress = progressState.readyOrFallback(StudyProgressSnapshot(emptyList(), emptyList()))
+    val readySessions = sessionsState.readyOrFallback(emptyList())
+    val readyTarget = targetState.readyOrFallback(null)
+    val readyMockExams = mockExamsState.readyOrFallback(emptyList())
+    val readyLegislation = legislationState.readyOrFallback(LegislationStudySnapshot(plan.id, emptyList(), emptyList(), emptyList()))
+    val readyStudyCycle = studyCycleState.readyOrFallback(null)
+    val readyExamNoticeRevisions = examNoticeRevisionsState.readyOrFallback(emptyList())
     val currentStudyPhase = remember(readySchedule.strategy?.configurationJson) {
         StudyPhasePlanCodec.decode(readySchedule.strategy?.configurationJson.orEmpty()).activeOn(LocalDate.now())
     }

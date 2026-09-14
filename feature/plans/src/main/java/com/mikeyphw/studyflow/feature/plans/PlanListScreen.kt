@@ -48,11 +48,6 @@ import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
-import java.text.ParsePosition
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 internal enum class PlanCollectionFilter {
     CURRENT,
@@ -200,8 +195,9 @@ private fun StudyPlanCard(
     var menuExpanded by rememberSaveable(plan.id.value) { mutableStateOf(false) }
     var confirmationActionName by rememberSaveable(plan.id.value) { mutableStateOf<String?>(null) }
     val confirmationAction = confirmationActionName?.let(StudyPlanAction::valueOf)
+    val canOpen = canOpenPlanFromList(plan)
 
-    ElevatedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    ElevatedCard(onClick = { if (canOpen) onClick() }, modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -290,11 +286,13 @@ private fun StudyPlanCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = stringResource(R.string.next_activity_unconfigured),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (plan.status != StudyPlanStatus.TRASHED) {
+            if (!truthfulNextActivityAvailable(hasConcreteActivity = false)) {
+                Text(
+                    text = stringResource(R.string.next_activity_unavailable),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (canOpen) {
                 Button(onClick = onClick, modifier = Modifier.align(Alignment.End)) {
                     Text(text = stringResource(R.string.open_plan))
                 }
@@ -391,7 +389,7 @@ internal fun planActions(
 
 @Composable
 private fun examCountdownLabel(examDateIso: String?): String {
-    val days = examDateIso?.let(::daysUntilExam) ?: return stringResource(R.string.no_exam_date)
+    val days = examDateIso?.let(::daysUntilExamLocalCalendar) ?: return stringResource(R.string.no_exam_date)
     return when {
         days > 0 -> pluralStringResource(R.plurals.days_until_exam, days.toInt(), days.toInt())
         days == 0L -> stringResource(R.string.exam_today)
@@ -402,15 +400,7 @@ private fun examCountdownLabel(examDateIso: String?): String {
 internal fun daysUntilExam(
     examDateIso: String,
     nowEpochMillis: Long = System.currentTimeMillis(),
-): Long? {
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply { isLenient = false }
-    val position = ParsePosition(0)
-    val parsed = formatter.parse(examDateIso, position) ?: return null
-    if (position.index != examDateIso.length) return null
-    val today = Date(nowEpochMillis - Math.floorMod(nowEpochMillis, TimeUnit.DAYS.toMillis(1)))
-    val exam = Date(parsed.time - Math.floorMod(parsed.time, TimeUnit.DAYS.toMillis(1)))
-    return TimeUnit.MILLISECONDS.toDays(exam.time - today.time)
-}
+): Long? = daysUntilExamLocalCalendar(examDateIso, nowEpochMillis)
 
 @StringRes
 private fun filterLabel(filter: PlanCollectionFilter): Int = when (filter) {

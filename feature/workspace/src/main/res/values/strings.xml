@@ -801,4 +801,6 @@
     <string name="hide_dashboard_details">Hide detailed matrix</string>
     <string name="dashboard_details_expanded">Details expanded</string>
     <string name="dashboard_details_collapsed">Details collapsed</string>
+
+    <string name="session_load_failed">The focus session could not be loaded. Go back and retry from Sessions.</string>
 </resources>

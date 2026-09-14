@@ -118,3 +118,21 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S5-09 | Reminder and widget receivers journal accepted asynchronous mutation work to persistent SharedPreferences before launching and settle each handle on completion/failure. | `StudyFlowReceiverMutationJournal`; OV14 source verifier. |
 | DS2-06 | Widget `START_NEXT` filters active sessions to the configured widget plan before opening a session; unrelated active sessions no longer override the selected plan. | `StudyFlowWidgetActionPolicyOv14Test.startNextOnlyTreatsConfiguredPlanSessionAsActive`. |
 | DS2-28 | Domain-action journal/SFLP keys use full SHA-256 digests from `StudyFlowTvDomainActionJournalKeys` instead of filtered/truncated action IDs. | `StudyFlowOv14ReceiverBindingJournalKeysTest.domainActionJournalKeysUseFullSha256InsteadOfSanitizedTruncation`. |
+
+## OV15 — Android product-flow and UI/domain honesty
+
+| Finding | Production closure | Behavioral evidence |
+|---|---|---|
+| S6-01 | `PracticeRunnerCard` now renders free-text entry for short-answer/essay questions and never falls back to `correctAnswer` as a single option. | `Ov15PracticeHonestyContractsTest.optionlessQuestionsDoNotExposeCorrectAnswerAsOnlyButton`; OV15 verifier. |
+| S6-02 | `QuestionEditorState.validation()` requires MC correct answers to match visible options; the dialog remains open while the asynchronous save is in-flight and only closes on success. | `Ov15PracticeHonestyContractsTest.manualEditorValidatesMultipleChoiceCorrectAnswerAgainstOptions`; OV15 verifier. |
+| S6-03 | Manual question saves and import previews run behind explicit validation/bounds and recoverable-operation surfaces before domain mutation. | `PracticeHonestyContracts`; `ImportHonestyContracts`; OV15 verifier. |
+| S6-04 | Plan list opening is guarded by `canOpenPlanFromList`, so archived/trashed plans from All Plans cannot resolve into a workspace. | `Ov15PlanHonestyContractsTest.archivedPlansDoNotExposeOpenAction`. |
+| S6-05 | `PlanWorkspaceScreen` keeps required schedule/syllabus gating but applies safe fallbacks to unrelated optional stream failures. | `Ov15WorkspaceHonestyContractsTest.optionalStreamFailuresDoNotBlockWholeWorkspace`. |
+| S6-06 | Focus-session predictive back is no longer intercepted while sessions are loading, and the loading empty state has a working Back action. | `Ov15WorkspaceHonestyContractsTest.focusBackIsNotTrappedWhileLoading`. |
+| S6-07 | A failed focus-session stream now displays `session_load_failed` instead of the missing-session copy. | OV15 verifier checks failed-state branch in `FocusSessionScreen`. |
+| S6-08 | Archived plan cards no longer show the Open button and their card click is a no-op. | `canOpenPlanFromList`; OV15 plan test. |
+| S6-09 | Plan cards show a truthful no-scheduled-activity message rather than fabricating a next activity. | `truthfulNextActivityAvailable`; OV15 plan test. |
+| S6-10 | Exam countdowns use local calendar dates via `daysUntilExamLocalCalendar`. | `Ov15PlanHonestyContractsTest.examCountdownUsesLocalCalendarDayInsteadOfUtcFlooring`. |
+| S6-11 | Manual import text/source name are `rememberSaveable`, so drafts survive Activity recreation. | OV15 verifier checks dialog state storage. |
+| S6-12 | Pasted import text is bounded by `boundManualImportDraft`; PDF size/text extraction is bounded by `Ov15MaxPdfImportBytes` and `MaxTextBytes`. | `Ov15ImportHonestyContractsTest.manualImportDraftIsBoundedBeforePreviewAndSaveableRecreationState`; OV15 verifier. |
+| S6-13 | `QuestionEditorDialog` iterates `QuestionType.entries`, exposing MC, true/false, short-answer, and essay editing. | `Ov15PracticeHonestyContractsTest.manualEditorRepresentsEverySupportedQuestionType`. |

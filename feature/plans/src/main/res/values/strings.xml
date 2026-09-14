@@ -368,4 +368,6 @@
     <string name="onboarding_stage_objective">Objective test</string>
     <string name="onboarding_stage_essay">Essay</string>
 
+
+    <string name="next_activity_unavailable">Next activity: no scheduled activity yet.</string>
 </resources>

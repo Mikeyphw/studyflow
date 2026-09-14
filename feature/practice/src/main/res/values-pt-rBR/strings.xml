@@ -150,4 +150,15 @@
     <string name="banca_blueprint_section_weights">Peso por seção</string>
     <string name="banca_blueprint_comma_separated_hint">Valores separados por vírgula na ordem acima; em branco mantém o padrão equilibrado.</string>
     <string name="banca_blueprint_general_section">Geral / sem disciplina</string>
+
+    <string name="answer_input">Resposta</string>
+    <string name="submit_answer">Enviar resposta</string>
+    <string name="question_type">Tipo de questão</string>
+    <string name="saving_question">Salvando…</string>
+    <string name="question_validation_blank_statement">Escreva o enunciado antes de salvar.</string>
+    <string name="question_validation_blank_answer">Defina a resposta correta antes de salvar.</string>
+    <string name="question_validation_invalid_difficulty">Escolha uma dificuldade de 1 a 5.</string>
+    <string name="question_validation_mc_two_options">Questões de múltipla escolha precisam de pelo menos duas alternativas.</string>
+    <string name="question_validation_mc_answer_not_option">A resposta correta de múltipla escolha deve corresponder a uma alternativa.</string>
+    <string name="question_validation_true_false_answer">Questões verdadeiro/falso devem usar True ou False como resposta correta.</string>
 </resources>

@@ -74,6 +74,7 @@ fun FocusSessionScreen(
     val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val sessions = (sessionsState as? StudyFlowLoadState.Ready<List<StudySession>>)?.value
     val sessionsLoading = sessionsState is StudyFlowLoadState.Loading
+    val sessionsFailed = sessionsState is StudyFlowLoadState.Failed
     val session = sessions?.firstOrNull { it.id == sessionId }
     val activeSession = session?.takeIf { current ->
         current.status == StudySessionStatus.RUNNING || current.status == StudySessionStatus.PAUSED
@@ -107,7 +108,7 @@ fun FocusSessionScreen(
         }
     }
 
-    PredictiveBackHandler(enabled = sessionsLoading || shouldInterceptFocusBack(session?.status)) { progress ->
+    PredictiveBackHandler(enabled = shouldInterceptFocusBackWhileLoading(sessionsLoading, session?.status)) { progress ->
         if (sessionsLoading || transitionInFlight) return@PredictiveBackHandler
         try {
             progress.collect { }
@@ -123,7 +124,15 @@ fun FocusSessionScreen(
                 title = focusTitle,
                 message = stringResource(R.string.session_loading),
                 actionLabel = stringResource(R.string.back),
-                onAction = {},
+                onAction = onFinished,
+                modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
+            )
+        } else if (sessionsFailed) {
+            StudyFlowEmptyState(
+                title = focusTitle,
+                message = stringResource(R.string.session_load_failed),
+                actionLabel = stringResource(R.string.back),
+                onAction = onFinished,
                 modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
             )
         } else if (activeSession == null) {

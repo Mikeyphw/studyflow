@@ -142,4 +142,15 @@
     <string name="banca_blueprint_section_weights">Weight per section</string>
     <string name="banca_blueprint_comma_separated_hint">Comma-separated values in the section order above; blank keeps the balanced default.</string>
     <string name="banca_blueprint_general_section">General / unassigned</string>
+
+    <string name="answer_input">Answer</string>
+    <string name="submit_answer">Submit answer</string>
+    <string name="question_type">Question type</string>
+    <string name="saving_question">Saving…</string>
+    <string name="question_validation_blank_statement">Write the question statement before saving.</string>
+    <string name="question_validation_blank_answer">Set the correct answer before saving.</string>
+    <string name="question_validation_invalid_difficulty">Choose a difficulty from 1 to 5.</string>
+    <string name="question_validation_mc_two_options">Multiple-choice questions need at least two answer options.</string>
+    <string name="question_validation_mc_answer_not_option">The multiple-choice correct answer must match one of the options.</string>
+    <string name="question_validation_true_false_answer">True/false questions must use True or False as the correct answer.</string>
 </resources>

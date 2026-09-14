@@ -345,8 +345,8 @@ internal fun ImportSyllabusDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var formatName by rememberSaveable { mutableStateOf(SyllabusImportFormat.STRUCTURED_TEXT.name) }
-    var input by remember { mutableStateOf("") }
-    var sourceName by remember { mutableStateOf<String?>(null) }
+    var input by rememberSaveable { mutableStateOf("") }
+    var sourceName by rememberSaveable { mutableStateOf<String?>(null) }
     var preview by remember { mutableStateOf<Result<ExamNoticeImportPreview>?>(null) }
     var documentFailure by remember { mutableStateOf<ExamNoticeDocumentFailure?>(null) }
     var loadingDocument by remember { mutableStateOf(false) }
@@ -435,11 +435,12 @@ internal fun ImportSyllabusDialog(
                 }
                 OutlinedTextField(
                     value = input,
-                    onValueChange = {
-                        input = it
+                    onValueChange = { candidate ->
+                        val bounded = boundManualImportDraft(candidate)
+                        input = bounded.text
                         sourceName = null
                         preview = null
-                        documentFailure = null
+                        documentFailure = if (bounded.accepted) null else ExamNoticeDocumentFailure.DOCUMENT_TOO_LARGE
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(format.importFormatLabel())) },
@@ -460,7 +461,7 @@ internal fun ImportSyllabusDialog(
                             )
                         }
                     },
-                    enabled = input.isNotBlank() && !loadingDocument,
+                    enabled = input.isNotBlank() && !loadingDocument && documentFailure != ExamNoticeDocumentFailure.DOCUMENT_TOO_LARGE,
                 ) {
                     Text(stringResource(R.string.preview))
                 }
