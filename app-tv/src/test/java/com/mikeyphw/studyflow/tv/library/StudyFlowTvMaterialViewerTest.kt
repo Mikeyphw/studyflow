@@ -32,7 +32,7 @@ class StudyFlowTvMaterialViewerTest {
                 reference(
                     StudyFlowTvMaterialViewerPresentation(
                         kind = StudyFlowTvMaterialViewerKind.PDF,
-                        sourceUri = "content://pdf",
+                        sourceUri = "studyflow-transfer://material/pdf",
                         mimeType = "application/pdf",
                         pageCountHint = 3,
                     ),
@@ -51,7 +51,7 @@ class StudyFlowTvMaterialViewerTest {
     @Test
     fun imagePdfAndMediaExposeOnlyRelevantControls() {
         val image = requireNotNull(StudyFlowTvMaterialViewer.open(reference(
-            StudyFlowTvMaterialViewerPresentation(StudyFlowTvMaterialViewerKind.IMAGE, "content://image", "image/png"),
+            StudyFlowTvMaterialViewerPresentation(StudyFlowTvMaterialViewerKind.IMAGE, "https://example.invalid/image.png", "image/png"),
         )))
         assertTrue(StudyFlowTvMaterialViewerAction.ZOOM_IN in StudyFlowTvMaterialViewer.availableActions(image))
         assertFalse(StudyFlowTvMaterialViewerAction.PLAY_PAUSE in StudyFlowTvMaterialViewer.availableActions(image))

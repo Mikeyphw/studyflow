@@ -2467,3 +2467,17 @@ tasks.register<Exec>("verifyOv19NativeTvPracticeMockReviewScheduleTruth") {
     )
     commandLine("bash", "scripts/validate_ov19_native_tv_practice_mock_review_schedule_truth.sh")
 }
+
+// OV20 — Native TV materials, focus, layout & projection resilience.
+tasks.register<Exec>("verifyOv20NativeTvMaterialsFocusProjectionResilience") {
+    group = "verification"
+    description = "Validates OV20 TV-transferable materials, renderer-backed PDF navigation, captured media playback position, dynamic focus wiring, scroll-safe rows and failure-isolated presentation feeds."
+    dependsOn(
+        ":core:tvcontrol:test",
+        ":app:compileDebugKotlin",
+        ":app-tv:compileDebugKotlin",
+        ":app-tv:testDebugUnitTest",
+    )
+    commandLine("bash", "scripts/validate_ov20_native_tv_materials_focus_projection_resilience.sh")
+}
+

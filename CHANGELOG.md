@@ -1023,3 +1023,13 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Projected real mock sections, persisted mock pause/resume through domain attempt metadata, and preferred ready/running mocks over stale submissions.
 - Split review known/complete grade intent and formatted schedule times without raw epoch labels.
 - Preserved canonical review/schedule source IDs for open commands.
+
+## OV20 - Native TV materials, focus, layout & projection resilience
+
+- Replaced phone-local TV material projection URIs with inline/TV-resolvable/transfer-id material descriptors.
+- Added renderer-backed PDF page-count capture so the TV PDF viewer can navigate beyond page 1 even when projection hints are absent.
+- Captured `VideoView` playback position before material play/pause and seek reductions.
+- Added dynamic live-View focus wiring from the deterministic TV focus policy.
+- Wrapped vulnerable schedule/library/material control rows in scroll-safe horizontal containers.
+- Added failure-isolated presentation feed assembly with explicit `failedFeeds` evidence.
+- Added the embedded `verifyOv20NativeTvMaterialsFocusProjectionResilience` validation gate.

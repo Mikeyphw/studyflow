@@ -158,3 +158,15 @@ Closed: S7-09, S7-10, S7-11, S7-12, S7-13, S7-14, DS2-40. Evidence: per-widget f
 Closed: `S8-01`, `S8-02`, `S8-03`, `S8-07`, `S8-18`, `S8-19`, `DS2-27`, `DS2-44`.
 
 Evidence: persistent TV domain-action outbox, durable local command sequencer, explicit outbox backpressure, removal of wall-clock stale rejection, persisted TV UI cursors, synchronous phone↔TV credential commits, and apply-time `verifyOv18NativeTvDurableStateActionJournal` validation.
+
+## OV19 — Native TV practice, mock, review & schedule truth
+
+Closed: `S8-04`, `S8-05`, `S8-06`, `S8-11`, `S8-12`, `S8-13`, `S8-14`, `S8-15`, `DS2-45`.
+
+Evidence: full 20-question TV practice reachability, synthetic/non-persistable action fencing, live session/mock elapsed projection, real mock sections, canonical pause/resume persistence, actionable mock selection, distinct review-grade intent, formatted schedule labels, canonical source-ID commands, and apply-time `verifyOv19NativeTvPracticeMockReviewScheduleTruth` validation.
+
+## OV20 — Native TV materials, focus, layout & projection resilience
+
+Closed: `S8-08`, `S8-09`, `S8-10`, `S8-16`, `S8-17`, `S8-20`.
+
+Evidence: TV-transferable material descriptors, phone-local URI rejection, renderer-backed PDF page counts, captured media playback position before play/pause/seek, dynamic live-View focus wiring, scroll-safe horizontal material/schedule/library rows, failure-isolated projection feeds, and apply-time `verifyOv20NativeTvMaterialsFocusProjectionResilience` validation.

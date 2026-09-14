@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+python3 scripts/verify_ov20_native_tv_materials_focus_projection_resilience.py
+python3 scripts/verify_tvov27_full_native_material_viewer.py
+python3 scripts/verify_tvov31_android_web_tv_semantic_parity.py

@@ -1,337 +1,251 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov19_native_tv_practice_mock_review_schedule_truth_v1",
+  "name": "studyflow_ov20_native_tv_materials_focus_projection_resilience_v1",
   "target": "studyflow_android",
-  "description": "OV19 closes native Android TV practice, mock, review and schedule truth findings with full practice reachability, non-persistable action fencing, live elapsed projection, real mock sections, canonical pause/resume persistence, correct mock selection, distinct review grades, formatted schedule labels and canonical source IDs.",
+  "description": "OV20 closes native Android TV materials, focus, layout and projection resilience findings with transferable material descriptors, renderer-backed PDF navigation, captured media position, dynamic View focus wiring, scroll-safe rows and failure-isolated presentation feeds.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV19: enforce native TV practice mock review and schedule truth"
+    "message": "OV20: harden native TV materials focus and projection resilience"
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively on successful OV18 apply at commit af82e13a."
+    "notes": "Built cumulatively on successful OV19 apply after commit af82e13a plus OV19 apply."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov19_native_tv_practice_mock_review_schedule_truth_v1",
+    "name": "studyflow_ov20_native_tv_materials_focus_projection_resilience_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov19-practice-truth",
-        "description": "Full 20-question reachability and non-persistable action fencing for native TV practice."
+        "id": "ov20-transferable-materials",
+        "description": "Reject phone-local material URIs and project inline, transfer-id, or TV-resolvable material sources."
       },
       {
-        "id": "ov19-mock-truth",
-        "description": "Real mock sections, canonical pause/resume persistence, live elapsed projection and actionable mock selection."
+        "id": "ov20-native-viewer-resilience",
+        "description": "Renderer-backed PDF page counts and captured media playback position."
       },
       {
-        "id": "ov19-review-schedule-truth",
-        "description": "Distinct review grades, formatted schedule labels and canonical source-ID open commands."
+        "id": "ov20-focus-layout-resilience",
+        "description": "Dynamic live View focus binder and scroll-safe ten-foot horizontal rows."
       },
       {
-        "id": "ov19-validation",
+        "id": "ov20-presentation-feed-isolation",
+        "description": "Failure-isolated presentation feed assembly with explicit failedFeeds evidence."
+      },
+      {
+        "id": "ov20-validation",
         "description": "Embedded Gradle validation and source-evidence gate."
       }
     ]
   },
   "findings": [
     {
-      "id": "S8-04",
+      "id": "S8-08",
       "severity": "HIGH",
-      "status": "closed-by-ov19"
+      "status": "closed-by-ov20"
     },
     {
-      "id": "S8-05",
+      "id": "S8-09",
       "severity": "HIGH",
-      "status": "closed-by-ov19"
+      "status": "closed-by-ov20"
     },
     {
-      "id": "S8-06",
-      "severity": "HIGH",
-      "status": "closed-by-ov19"
-    },
-    {
-      "id": "S8-11",
-      "severity": "HIGH",
-      "status": "closed-by-ov19"
-    },
-    {
-      "id": "S8-12",
-      "severity": "HIGH",
-      "status": "closed-by-ov19"
-    },
-    {
-      "id": "S8-13",
+      "id": "S8-10",
       "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov19"
+      "status": "closed-by-ov20"
     },
     {
-      "id": "S8-14",
+      "id": "S8-16",
       "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov19"
+      "status": "closed-by-ov20"
     },
     {
-      "id": "S8-15",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov19"
+      "id": "S8-17",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov20"
     },
     {
-      "id": "DS2-45",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov19"
+      "id": "S8-20",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov20"
     }
   ],
   "validation": {
     "hook": ".devtool-artifact/validation/validate.sh",
-    "gradle_task": "verifyOv19NativeTvPracticeMockReviewScheduleTruth",
+    "gradle_task": "verifyOv20NativeTvMaterialsFocusProjectionResilience",
     "stops_gradle_daemon": false,
     "separate_user_validation_required": false
   },
   "inventory": {
     "format": 1,
-    "count": 26,
+    "count": 18,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "794604fb54bb0a788c2d03cb1b3ac5f8e507d43f36b1b7418de9f06f7891d75a",
-        "size": 338,
+        "sha256": "0b6de7f731dbd24be57ad1ef7b37368cf201bacb25bdaf4eba2f7906b647bda6",
+        "size": 349,
         "source_mode": "0o755",
-        "source_sha256": "f6b9e4fb5d9df6448119ddff8087393b3aba54dec40282b677eeec901bb0c571",
-        "source_size": 325
+        "source_sha256": "794604fb54bb0a788c2d03cb1b3ac5f8e507d43f36b1b7418de9f06f7891d75a",
+        "source_size": 338
       },
       {
         "action": "modify",
         "path": ".devtool.toml",
         "mode": "0o600",
-        "sha256": "293a74f42b59c30a889783e733d2478112c8364627a35e05507aaf1dabf6617a",
-        "size": 15853,
+        "sha256": "1d83070a9e76b754b40dff4a4c4e5ffc72085d561cc1ea0bfec1427a0866fe59",
+        "size": 15969,
         "source_mode": "0o600",
-        "source_sha256": "1aea32bddf66f83845b6009fc8fdb7eec7bda340b5e101cd080c7592e27c0198",
-        "source_size": 15743
+        "source_sha256": "293a74f42b59c30a889783e733d2478112c8364627a35e05507aaf1dabf6617a",
+        "source_size": 15853
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "ed546b2b56e82f93a6a6b4fad63bcb371d67a5b7876e9ed9d4ad1ec53184d02a",
-        "size": 78332,
+        "sha256": "5f0534becb6cb15ad7d13f176527acfdc0c676211a41daef279b7e344f33dcb1",
+        "size": 79097,
         "source_mode": "0o600",
-        "source_sha256": "b5962487efcf4aac5fde00e031927cf3d6cbaf73c87e7b64f6ae924195d28194",
-        "source_size": 77676
-      },
-      {
-        "action": "add",
-        "path": "REMEDIATION_OV_19_IMPLEMENTATION.md",
-        "mode": "0o644",
-        "sha256": "1ab03ecad3bcfdc09ef15042dfd389dd07cd9f80c249a7de91ae787c10dad41c",
-        "size": 2321
-      },
-      {
-        "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/control/StudyFlowTvControlStateReducer.kt",
-        "mode": "0o600",
-        "sha256": "f2e5fa444ba3dd57729eb34c53fcf14fb25691c5e0668e31b90ff10340735df6",
-        "size": 23264,
-        "source_mode": "0o600",
-        "source_sha256": "c3bda23c0052caf860f07de83d12217938bbd4706a5e6d0819c1068809ee29ce",
-        "source_size": 23356
-      },
-      {
-        "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/mockexam/StudyFlowTvMockExamStudio.kt",
-        "mode": "0o600",
-        "sha256": "63bb1018395535ce7712f961324cd30f4988453454ba1c671677d1fb6efeb09e",
-        "size": 13102,
-        "source_mode": "0o600",
-        "source_sha256": "bb8f015fc77ab46489549ad6aa3bdcbb008f06387034786a5579fa7025187e96",
-        "source_size": 10121
-      },
-      {
-        "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/practice/StudyFlowTvQuestionPractice.kt",
-        "mode": "0o600",
-        "sha256": "9efa84150f928be5d4d24499bd5b1735bd7a522a895b2faee4259e842dad9908",
-        "size": 12892,
-        "source_mode": "0o600",
-        "source_sha256": "030500a3fcd0da285473ba4853f0bf5a40882a4a04319de2da5394f8ad1c104e",
-        "source_size": 12820
-      },
-      {
-        "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapter.kt",
-        "mode": "0o600",
-        "sha256": "1a2da9cc7e745c33717e0a95a1ee92e4004ed148a1a08af08125ce9fa962431e",
-        "size": 27786,
-        "source_mode": "0o600",
-        "source_sha256": "c47499935432d3d62d44bf80f64377c43a0ed26219b3f6f9a9dd5a6082e9fcaa",
-        "source_size": 25342
-      },
-      {
-        "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/reviews/StudyFlowTvReviewNotebook.kt",
-        "mode": "0o600",
-        "sha256": "3598a86c3c0ecd9194483508fbf7338e4943991706df09dbe8e4fb95efb6ab51",
-        "size": 13662,
-        "source_mode": "0o600",
-        "source_sha256": "b4359b2923b53bc07cd2ad58139f75eb469bf3caa7c0c92e073a1e22396ff3f9",
-        "source_size": 13510
-      },
-      {
-        "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/schedule/StudyFlowTvScheduleSurface.kt",
-        "mode": "0o600",
-        "sha256": "bb14f531e0199826858806c0d8f3dbd8fee3c282883a3fc0c4206655fff3a9e4",
-        "size": 11360,
-        "source_mode": "0o600",
-        "source_sha256": "5f79ef0a0f10565f3499b2cf41ca9ffe05c4479798fd532a41f2f501977d8d08",
-        "source_size": 10858
-      },
-      {
-        "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/session/StudyFlowTvStudySessionExperience.kt",
-        "mode": "0o600",
-        "sha256": "6b43b9947be9767547d64a5d055722b10c99922433eb5a58af2992dd9a5e27f6",
-        "size": 9021,
-        "source_mode": "0o600",
-        "source_sha256": "5a3d8932842e81913b6443a460e98aaab9b1c5103b988195137584e61523a0e4",
-        "source_size": 8154
-      },
-      {
-        "action": "add",
-        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/mockexam/StudyFlowTvMockExamStudioOv19TruthTest.kt",
-        "mode": "0o644",
-        "sha256": "188325cdd8d3c184f1ce132bb2d3cec72ccfb37ffea382910287c7df7a4ec5c5",
-        "size": 2070
-      },
-      {
-        "action": "add",
-        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/practice/StudyFlowTvQuestionPracticeOv19TruthTest.kt",
-        "mode": "0o644",
-        "sha256": "d9ebd52fc772c7a23976d9360ed55d9f6a0e3daf58ab83dd461b57696331c0cd",
-        "size": 2029
-      },
-      {
-        "action": "add",
-        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapterOv19TruthTest.kt",
-        "mode": "0o644",
-        "sha256": "d50f1d244b55307e39a59a3122c28cafc906d88927ed4e702e0b76da2011a64b",
-        "size": 3938
-      },
-      {
-        "action": "add",
-        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/schedule/StudyFlowTvScheduleSurfaceOv19TruthTest.kt",
-        "mode": "0o644",
-        "sha256": "48ee5af2acf1c1a82bf224bfc4d33061de2e3e6f2b64da81fbc31c85a9d391f8",
-        "size": 1685
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvDomainActionExecutor.kt",
-        "mode": "0o600",
-        "sha256": "5f7b3a74f6c8ee2ac4368ccd3a0fad3e70757bbbf8e47583df15f1a79099863c",
-        "size": 13017,
-        "source_mode": "0o600",
-        "source_sha256": "857aecdc9e74d54285162f1080195f2feecf769bae24056759c88f532b031dd2",
-        "source_size": 12711
+        "source_sha256": "ed546b2b56e82f93a6a6b4fad63bcb371d67a5b7876e9ed9d4ad1ec53184d02a",
+        "source_size": 78332
       },
       {
         "action": "modify",
         "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPresentationProjector.kt",
         "mode": "0o600",
-        "sha256": "efcff075466c218a0f268d11b77720036ccf56d17230ee9940b3b1ceafe25d65",
-        "size": 31204,
+        "sha256": "25bdb22fe55d8f11a07f75ba65c774aa07e80764fd5471f3d788eb4e8d161470",
+        "size": 34809,
         "source_mode": "0o600",
-        "source_sha256": "226e280179d99a1b8d4b5a46ebc562b55cab4a3c2a72d3e88bbc88a59e8a5e57",
-        "source_size": 27406
+        "source_sha256": "efcff075466c218a0f268d11b77720036ccf56d17230ee9940b3b1ceafe25d65",
+        "source_size": 31204
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvActivity.kt",
+        "mode": "0o600",
+        "sha256": "942a2c9dd014cc5977f6dd5222d1b2650ebb46773780d01a4f7adf9bd0871e08",
+        "size": 100528,
+        "source_mode": "0o600",
+        "source_sha256": "cd043fce22a3ae5b12a8ddb8a2f42fc08b0ea1a19c4eda3b956aba92b7f6b94a",
+        "source_size": 98296
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/library/StudyFlowTvMaterialViewer.kt",
+        "mode": "0o600",
+        "sha256": "88b19a1b080bc00d75dc9557c3623dc3d0014b2a6d9f954790083f4b8357c055",
+        "size": 9443,
+        "source_mode": "0o600",
+        "source_sha256": "d2030177b0038be65c491897e5ea7377839887850dfccad18b528ead3d0b3f61",
+        "source_size": 7600
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/StudyFlowTvCommonSemanticFixtureTest.kt",
+        "mode": "0o600",
+        "sha256": "65337ffc4969a04f545e5c8f7523d62a5ba62b4d21b6740689898e1477e90847",
+        "size": 5322,
+        "source_mode": "0o600",
+        "source_sha256": "f7a8ff6b0b694d07fdc967e344741930a3670fb281e9feaec1669ab699665b04",
+        "source_size": 5302
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/library/StudyFlowTvMaterialViewerTest.kt",
+        "mode": "0o600",
+        "sha256": "e329af52b1a1234bb78db1fe1a283797920fca3905d6cbdb7f81d092f960450e",
+        "size": 3700,
+        "source_mode": "0o600",
+        "source_sha256": "e1ae5468fea1c3bc1a00d583731c25e6f334d2704b7cf83745577932ff1a80b0",
+        "source_size": 3662
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o600",
-        "sha256": "044c21fa3d2b0204eeaddfc539c2a6666dcf28a43dc0e34b6ac5dbb264ffa5c0",
-        "size": 97434,
+        "sha256": "a39944a41d803421cad44675b5e49c7c615e34ee9febd00e02d2b1ed6b2c3140",
+        "size": 98087,
         "source_mode": "0o600",
-        "source_sha256": "0de445df466b778d51a50df9e6334a8c07b10945227a74c1a887b3ecf6e011d7",
-        "source_size": 96781
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyPractice.kt",
-        "mode": "0o600",
-        "sha256": "2b32a308eaab2a4b9b6fc3447e2a6718ffe1193ee089ccc13b1b6827996cd9fd",
-        "size": 21301,
-        "source_mode": "0o600",
-        "source_sha256": "77be5cb3c2d6ef7e7ff61164bb4352f18a94b7c07a5b61cfb58a8a2dd151e1cd",
-        "source_size": 21005
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/PracticeExecutionEngine.kt",
-        "mode": "0o600",
-        "sha256": "1d0d0b282f8d649783ac571474eed05010ed649851cc688770a805bbfd06a945",
-        "size": 30463,
-        "source_mode": "0o600",
-        "source_sha256": "635af3cd42aa0d1b7f10b4a6461bee09a8bd1594123f353b42e7c0e284b2fbe1",
-        "source_size": 27850
-      },
-      {
-        "action": "add",
-        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/PracticeExecutionEngineOv19MockPauseTest.kt",
-        "mode": "0o644",
-        "sha256": "072a28a5c0210c595d3a25ab7b16df0fd128f2fd54cd4e58ff61722b25cd65cf",
-        "size": 5152
-      },
-      {
-        "action": "modify",
-        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainAction.kt",
-        "mode": "0o600",
-        "sha256": "dde0ea42645b92ca8dce758a236f969dd892b5ef7605c054099d93c9906dfe55",
-        "size": 14979,
-        "source_mode": "0o600",
-        "source_sha256": "b4a21b2193aa32a253ba6700c272588b23f6fc25591a1b3c36ac686e05e6426d",
-        "source_size": 13794
+        "source_sha256": "044c21fa3d2b0204eeaddfc539c2a6666dcf28a43dc0e34b6ac5dbb264ffa5c0",
+        "source_size": 97434
       },
       {
         "action": "modify",
         "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvPresentation.kt",
         "mode": "0o600",
-        "sha256": "26daf1fe17be8b09e9339d3087cf96c2da4ce042953ab87f4e45e47aecba452f",
-        "size": 15081,
+        "sha256": "ab9eef647d7e34e5a22fc59f1a8a5d1e3e5e1812ab96589ddcdcefbd18713700",
+        "size": 17544,
         "source_mode": "0o600",
-        "source_sha256": "1fbaabc69852a0480f439e963727f3e1ca57e18f5535873cc5fc8a20758797a5",
-        "source_size": 14007
+        "source_sha256": "26daf1fe17be8b09e9339d3087cf96c2da4ce042953ab87f4e45e47aecba452f",
+        "source_size": 15081
       },
       {
-        "action": "add",
-        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvDomainActionOv19TruthTest.kt",
+        "action": "modify",
+        "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "a5c99b755f172fc42323fbb4e8fa7088464eaf6866096307128ea43238abef6b",
-        "size": 4026
+        "sha256": "bd6dbbbd09bbae841cf7708660acb4daf9cfc09a10924f0968b2af71c652bc61",
+        "size": 22759,
+        "source_mode": "0o644",
+        "source_sha256": "ff87d3a9f761f6866a5b15e6c573265c7e9982153574898676614b4390f6bf6c",
+        "source_size": 21717
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov19_native_tv_practice_mock_review_schedule_truth.sh",
-        "mode": "0o755",
-        "sha256": "d3311d003c404a30dc5e35732930a25197222e159dbc39db3efeb3e433bfc047",
-        "size": 115
+        "path": "REMEDIATION_OV_20_IMPLEMENTATION.md",
+        "mode": "0o644",
+        "sha256": "67ade36176726c6b11fb416d70a9bae6cff54f109bf72c084be8d93603bc852d",
+        "size": 1605
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov19_native_tv_practice_mock_review_schedule_truth.py",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/focus/StudyFlowTvDynamicFocusBinder.kt",
+        "mode": "0o644",
+        "sha256": "061ac300674845a7d1e7c98ead09c63284fea794de83c5f24c8dc55f84bbc0e1",
+        "size": 2153
+      },
+      {
+        "action": "add",
+        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/library/StudyFlowTvMaterialViewerOv20ResilienceTest.kt",
+        "mode": "0o644",
+        "sha256": "e9560d2c7e143222b74da149cc0c38d07cbbf0461158a81b46e15c78520961f0",
+        "size": 1783
+      },
+      {
+        "action": "add",
+        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvPresentationOv20MaterialTransferTest.kt",
+        "mode": "0o644",
+        "sha256": "2107b53982e9e4b17d16521cfcb130d315325d34d89d19ca989989ca08ce293f",
+        "size": 1052
+      },
+      {
+        "action": "add",
+        "path": "docs/remediation/OV20_NATIVE_TV_MATERIALS_FOCUS_PROJECTION_RESILIENCE.md",
+        "mode": "0o644",
+        "sha256": "67ade36176726c6b11fb416d70a9bae6cff54f109bf72c084be8d93603bc852d",
+        "size": 1605
+      },
+      {
+        "action": "add",
+        "path": "scripts/validate_ov20_native_tv_materials_focus_projection_resilience.sh",
         "mode": "0o755",
-        "sha256": "938f9b5ebc47a8e9116b00be950872a60f4e2a19db6326b5fb0d38da2bdb3b18",
-        "size": 6788
+        "sha256": "62c2615df0c42f9733043a9f32ab1966f8a5e1e10b24acf44a259d828a99b420",
+        "size": 242
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_ov20_native_tv_materials_focus_projection_resilience.py",
+        "mode": "0o755",
+        "sha256": "8aa019474d432801d95e2f9f7aff833f8c7ed16e36021f9f4ae789843bb9b656",
+        "size": 5054
       }
     ]
   },
   "notes": [
-    "The validation hook intentionally does not stop Gradle daemons.",
-    "No separate user validation command is required; Devtool invokes the embedded hook during apply.",
-    "Archive layout is Devtool-safe: file members only, no root directory member and no ./ prefixes."
+    "Artifact contains file members only; no root directory, no directory-only entries, and no ./ prefixes.",
+    "Validation is embedded in the Devtool apply hook; no separate user validation command is required."
   ]
 }

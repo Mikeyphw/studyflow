@@ -11,7 +11,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMaterialViewerKind
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvMaterialViewerPresentation
 
 object StudyFlowTvMaterialViewerContract {
-    const val overlay = "TVOV27"
+    const val overlay = "OV20"
     const val nativeTextPagination = true
     const val nativeImageZoom = true
     const val nativePdfRenderer = true
@@ -22,6 +22,20 @@ object StudyFlowTvMaterialViewerContract {
     const val maxZoomPercent = 300
     const val zoomStepPercent = 25
     const val seekStepMillis = 10_000L
+    const val pdfPageCountMustComeFromRenderer = true
+    const val mediaPositionCapturedBeforePlaybackToggle = true
+    const val transferableMaterialSourcesRequired = true
+}
+
+data class StudyFlowTvRenderedPdfPage(
+    val bitmap: Bitmap,
+    val pageIndex: Int,
+    val pageCount: Int,
+) {
+    init {
+        require(pageCount > 0)
+        require(pageIndex in 0 until pageCount)
+    }
 }
 
 enum class StudyFlowTvMaterialViewerAction {
@@ -43,10 +57,11 @@ data class StudyFlowTvMaterialViewerState(
     val zoomPercent: Int = 100,
     val playing: Boolean = false,
     val mediaPositionMillis: Long = presentation.playbackPositionMillis,
+    val nativePdfPageCount: Int? = null,
 ) {
     val pageCount: Int = when (presentation.kind) {
         StudyFlowTvMaterialViewerKind.TEXT -> textPages.size
-        StudyFlowTvMaterialViewerKind.PDF -> presentation.pageCountHint ?: 1
+        StudyFlowTvMaterialViewerKind.PDF -> nativePdfPageCount ?: presentation.pageCountHint ?: textPages.size.coerceAtLeast(1)
         else -> 1
     }
 
@@ -59,8 +74,13 @@ data class StudyFlowTvMaterialViewerState(
                 StudyFlowTvMaterialViewerContract.minZoomPercent..StudyFlowTvMaterialViewerContract.maxZoomPercent,
         )
         require(mediaPositionMillis >= 0L)
+        require(nativePdfPageCount == null || nativePdfPageCount > 0)
     }
+
+    val resolvedSourceUri: String?
+        get() = presentation.tvResolvableSourceUri
 }
+
 
 object StudyFlowTvMaterialViewer {
     fun open(reference: StudyFlowTvLibraryReference): StudyFlowTvMaterialViewerState? {
@@ -71,6 +91,7 @@ object StudyFlowTvMaterialViewer {
             presentation = viewer,
             textPages = pages,
             pageIndex = 0,
+            nativePdfPageCount = viewer.pageCountHint,
         )
     }
 
@@ -124,6 +145,27 @@ object StudyFlowTvMaterialViewer {
         StudyFlowTvMaterialViewerAction.CLOSE -> state
     }
 
+
+    fun withResolvedPdfPageCount(
+        state: StudyFlowTvMaterialViewerState,
+        pageCount: Int,
+    ): StudyFlowTvMaterialViewerState {
+        require(pageCount > 0) { "Native PDF page count must be positive." }
+        return state.copy(
+            nativePdfPageCount = pageCount,
+            pageIndex = state.pageIndex.coerceIn(0, pageCount - 1),
+        )
+    }
+
+    fun captureMediaPosition(
+        state: StudyFlowTvMaterialViewerState,
+        actualPositionMillis: Long,
+    ): StudyFlowTvMaterialViewerState {
+        val bounded = actualPositionMillis.coerceAtLeast(0L)
+            .coerceAtMost(state.presentation.durationMillis ?: Long.MAX_VALUE)
+        return state.copy(mediaPositionMillis = bounded)
+    }
+
     fun paginate(text: String): List<String> {
         if (text.isEmpty()) return listOf("")
         val limit = StudyFlowTvMaterialViewerContract.textPageChars
@@ -153,7 +195,7 @@ object StudyFlowTvNativeMaterialViewer {
     }
 
     fun bindMedia(view: VideoView, state: StudyFlowTvMaterialViewerState) {
-        val source = state.presentation.sourceUri ?: return
+        val source = state.resolvedSourceUri ?: return
         view.setVideoURI(Uri.parse(source))
         view.setOnPreparedListener { player ->
             player.seekTo(state.mediaPositionMillis.toInt().coerceAtLeast(0))
@@ -161,12 +203,15 @@ object StudyFlowTvNativeMaterialViewer {
         }
     }
 
+    fun captureMediaPosition(view: VideoView, state: StudyFlowTvMaterialViewerState): StudyFlowTvMaterialViewerState =
+        StudyFlowTvMaterialViewer.captureMediaPosition(state, view.currentPosition.toLong())
+
     fun renderPdfPage(
         context: Context,
         sourceUri: String,
         pageIndex: Int,
         zoomPercent: Int,
-    ): Bitmap? {
+    ): StudyFlowTvRenderedPdfPage? {
         val descriptor: ParcelFileDescriptor = context.contentResolver
             .openFileDescriptor(Uri.parse(sourceUri), "r") ?: return null
         descriptor.use { pfd ->
@@ -181,7 +226,11 @@ object StudyFlowTvNativeMaterialViewer {
                         Bitmap.Config.ARGB_8888,
                     )
                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                    return bitmap
+                    return StudyFlowTvRenderedPdfPage(
+                        bitmap = bitmap,
+                        pageIndex = safeIndex,
+                        pageCount = renderer.pageCount,
+                    )
                 }
             }
         }

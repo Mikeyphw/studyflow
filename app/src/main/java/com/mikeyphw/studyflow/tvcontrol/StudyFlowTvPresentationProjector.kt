@@ -48,6 +48,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSchedulePresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvStudySessionPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvTodayPresentation
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvTransferableMaterialSource
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWeakAreaPresentation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvGoalPresentation
 
@@ -79,24 +80,31 @@ data class StudyFlowTvPresentationProjectionInput(
  * perform transport, pairing, database reads, or TV rendering.
  */
 object StudyFlowTvPresentationProjector {
-    const val overlay = "TVOV21"
+    const val overlay = "OV20"
     const val projectsCanonicalDomainModels = true
     const val databaseRowsNeverCrossBoundary = true
     const val arbitraryUiTreesNeverCrossBoundary = true
     const val transportDeferred = false
+    const val phoneLocalMaterialUrisForbidden = true
+    const val presentationFeedsFailureIsolated = true
 
     fun project(input: StudyFlowTvPresentationProjectionInput): StudyFlowTvPresentationSnapshot {
         val plan = input.plan ?: return StudyFlowTvPresentationSnapshot.waitingForPlan(
             studyPlanId = input.requestedPlanId,
             generatedAtEpochMillis = input.generatedAtEpochMillis,
         )
-        val subjectNames = input.syllabus.subjects.associate { it.id to it.name }
-        val pendingActivities = input.schedule.plannedActivities
+        val failedFeeds = linkedSetOf<String>()
+        val subjectNames = isolatePresentationFeed("subjects", failedFeeds) {
+            input.syllabus.subjects.associate { it.id to it.name }
+        } ?: emptyMap()
+        val pendingActivities = isolatePresentationFeed("today", failedFeeds) {
+            input.schedule.plannedActivities
             .filter { it.status == PlannedActivityStatus.PLANNED || it.status == PlannedActivityStatus.IN_PROGRESS }
             .sortedWith(
                 compareBy<PlannedActivity> { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
                     .thenBy { it.title },
             )
+        } ?: emptyList()
         val nextActivity = pendingActivities.firstOrNull()
         val weeklyGoalMinutes = plan.weeklyGoalHours * 60
         val weeklyProgress = percent(input.analytics.studiedMinutesLastSevenDays, weeklyGoalMinutes)
@@ -106,31 +114,33 @@ object StudyFlowTvPresentationProjector {
             mockExams = input.mockExams,
             topics = input.syllabus.topics,
         )
-        val projectedGoals = input.goals
-            .asSequence()
-            .map { goal ->
-                StudyGoalProgressEngine.evaluate(goal, goalEvidence, input.generatedAtEpochMillis)
-            }
-            .sortedWith(
-                compareBy<StudyGoal> { it.archived }
-                    .thenBy { it.completedAtEpochMillis != null }
-                    .thenBy { it.title },
-            )
-            .take(StudyFlowTvPresentationProtocol.maxTvGoals)
-            .map { goal ->
-                StudyFlowTvGoalPresentation(
-                    goalId = goal.id.value,
-                    title = goal.title,
-                    goalType = goal.type.name,
-                    currentValue = goal.currentValue,
-                    targetValue = goal.targetValue,
-                    progressPercent = GoalProgressCalculator.goalPercent(goal),
-                    completed = goal.completedAtEpochMillis != null,
-                    paused = goal.archived,
-                    canComplete = goal.type == GoalType.CUSTOM && goal.completedAtEpochMillis == null && !goal.archived,
+        val projectedGoals = isolatePresentationFeed("goals", failedFeeds) {
+            input.goals
+                .asSequence()
+                .map { goal ->
+                    StudyGoalProgressEngine.evaluate(goal, goalEvidence, input.generatedAtEpochMillis)
+                }
+                .sortedWith(
+                    compareBy<StudyGoal> { it.archived }
+                        .thenBy { it.completedAtEpochMillis != null }
+                        .thenBy { it.title },
                 )
-            }
-            .toList()
+                .take(StudyFlowTvPresentationProtocol.maxTvGoals)
+                .map { goal ->
+                    StudyFlowTvGoalPresentation(
+                        goalId = goal.id.value,
+                        title = goal.title,
+                        goalType = goal.type.name,
+                        currentValue = goal.currentValue,
+                        targetValue = goal.targetValue,
+                        progressPercent = GoalProgressCalculator.goalPercent(goal),
+                        completed = goal.completedAtEpochMillis != null,
+                        paused = goal.archived,
+                        canComplete = goal.type == GoalType.CUSTOM && goal.completedAtEpochMillis == null && !goal.archived,
+                    )
+                }
+                .toList()
+        } ?: emptyList()
 
         return StudyFlowTvPresentationSnapshot(
             snapshotId = input.snapshotId,
@@ -138,78 +148,95 @@ object StudyFlowTvPresentationProjector {
             planTitle = plan.name,
             generatedAtEpochMillis = input.generatedAtEpochMillis,
             availability = StudyFlowTvPresentationAvailability.READY,
-            today = StudyFlowTvTodayPresentation(
-                planTitle = plan.name,
-                nextActivity = nextActivity?.toPresentation(subjectNames),
-                dueReviewCount = input.analytics.dueReviewCount,
-                availableQuestionCount = input.questions.size,
-                weeklyProgressPercent = weeklyProgress,
-                mockExamScheduled = pendingActivities.any { it.type == StudyActivityType.MOCK_EXAM },
-            ),
-            studySession = projectSession(
-                input.sessions,
-                input.schedule.plannedActivities,
-                subjectNames,
-                input.generatedAtEpochMillis,
-            ),
-            questionSet = projectQuestionSet(plan, input.tests, input.questions, subjectNames),
-            mockExam = projectMockExam(input.mockExams, input.generatedAtEpochMillis),
-            review = projectReview(
-                plan = plan,
-                reviewItems = input.reviewItems,
-                flashcards = input.flashcards,
-                errors = input.errorEntries,
-                questions = input.questions,
-                subjectNames = subjectNames,
-                nowEpochMillis = input.generatedAtEpochMillis,
-            ),
-            progress = StudyFlowTvProgressPresentation(
-                planTitle = plan.name,
-                studiedMinutesLastSevenDays = input.analytics.studiedMinutesLastSevenDays,
-                weeklyGoalMinutes = weeklyGoalMinutes,
-                weeklyProgressPercent = weeklyProgress,
-                questionAccuracyPercent = input.analytics.questionAccuracyPercent,
-                answeredQuestions = input.analytics.answeredQuestions,
-                dueReviewCount = input.analytics.dueReviewCount,
-                contentProgressPercent = input.analytics.contentProgressPercent,
-                consistencyScorePercent = input.analytics.consistencyScorePercent,
-                weakAreas = input.analytics.weakAreas.mapIndexed { index, area ->
-                    StudyFlowTvWeakAreaPresentation(
-                        itemId = "weak-area-$index-${area.label.stableSlug()}",
-                        label = area.label,
-                        progressPercent = area.progressPercent,
-                        masteryPercent = area.masteryPercent,
-                        priority = area.priority,
-                    )
-                },
-                goals = projectedGoals,
-            ),
-            schedule = StudyFlowTvSchedulePresentation(
-                scheduleId = "schedule-${plan.id.value}",
-                title = "${plan.name} schedule",
-                items = input.schedule.plannedActivities
-                    .sortedWith(
-                        compareBy<PlannedActivity> { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
-                            .thenBy { it.title },
-                    )
-                    .take(StudyFlowTvPresentationProtocol.maxTvScheduleItems)
-                    .map { activity -> activity.toSchedulePresentation(subjectNames) },
-            ),
-            library = StudyFlowTvLibraryPresentation(
-                libraryId = "library-${plan.id.value}",
-                title = "${plan.name} library",
-                references = input.materials
-                    .asSequence()
-                    .filterNot(StudyMaterial::archived)
-                    .sortedWith(
-                        compareByDescending<StudyMaterial> { it.favorite }
-                            .thenByDescending { it.primary }
-                            .thenBy { it.title },
-                    )
-                    .take(StudyFlowTvPresentationProtocol.maxTvLibraryReferences)
-                    .map { material -> material.toPresentation(subjectNames) }
-                    .toList(),
-            ),
+            today = isolatePresentationFeed("today-card", failedFeeds) {
+                StudyFlowTvTodayPresentation(
+                    planTitle = plan.name,
+                    nextActivity = nextActivity?.toPresentation(subjectNames),
+                    dueReviewCount = input.analytics.dueReviewCount,
+                    availableQuestionCount = input.questions.size,
+                    weeklyProgressPercent = weeklyProgress,
+                    mockExamScheduled = pendingActivities.any { it.type == StudyActivityType.MOCK_EXAM },
+                )
+            },
+            studySession = isolatePresentationFeed("study-session", failedFeeds) {
+                projectSession(
+                    input.sessions,
+                    input.schedule.plannedActivities,
+                    subjectNames,
+                    input.generatedAtEpochMillis,
+                )
+            },
+            questionSet = isolatePresentationFeed("question-set", failedFeeds) {
+                projectQuestionSet(plan, input.tests, input.questions, subjectNames)
+            },
+            mockExam = isolatePresentationFeed("mock-exam", failedFeeds) {
+                projectMockExam(input.mockExams, input.generatedAtEpochMillis)
+            },
+            review = isolatePresentationFeed("review", failedFeeds) {
+                projectReview(
+                    plan = plan,
+                    reviewItems = input.reviewItems,
+                    flashcards = input.flashcards,
+                    errors = input.errorEntries,
+                    questions = input.questions,
+                    subjectNames = subjectNames,
+                    nowEpochMillis = input.generatedAtEpochMillis,
+                )
+            },
+            progress = isolatePresentationFeed("progress", failedFeeds) {
+                StudyFlowTvProgressPresentation(
+                    planTitle = plan.name,
+                    studiedMinutesLastSevenDays = input.analytics.studiedMinutesLastSevenDays,
+                    weeklyGoalMinutes = weeklyGoalMinutes,
+                    weeklyProgressPercent = weeklyProgress,
+                    questionAccuracyPercent = input.analytics.questionAccuracyPercent,
+                    answeredQuestions = input.analytics.answeredQuestions,
+                    dueReviewCount = input.analytics.dueReviewCount,
+                    contentProgressPercent = input.analytics.contentProgressPercent,
+                    consistencyScorePercent = input.analytics.consistencyScorePercent,
+                    weakAreas = input.analytics.weakAreas.mapIndexed { index, area ->
+                        StudyFlowTvWeakAreaPresentation(
+                            itemId = "weak-area-$index-${area.label.stableSlug()}",
+                            label = area.label,
+                            progressPercent = area.progressPercent,
+                            masteryPercent = area.masteryPercent,
+                            priority = area.priority,
+                        )
+                    },
+                    goals = projectedGoals,
+                )
+            },
+            schedule = isolatePresentationFeed("schedule", failedFeeds) {
+                StudyFlowTvSchedulePresentation(
+                    scheduleId = "schedule-${plan.id.value}",
+                    title = "${plan.name} schedule",
+                    items = input.schedule.plannedActivities
+                        .sortedWith(
+                            compareBy<PlannedActivity> { it.scheduledStartEpochMillis ?: Long.MAX_VALUE }
+                                .thenBy { it.title },
+                        )
+                        .take(StudyFlowTvPresentationProtocol.maxTvScheduleItems)
+                        .map { activity -> activity.toSchedulePresentation(subjectNames) },
+                )
+            },
+            library = isolatePresentationFeed("library", failedFeeds) {
+                StudyFlowTvLibraryPresentation(
+                    libraryId = "library-${plan.id.value}",
+                    title = "${plan.name} library",
+                    references = input.materials
+                        .asSequence()
+                        .filterNot(StudyMaterial::archived)
+                        .sortedWith(
+                            compareByDescending<StudyMaterial> { it.favorite }
+                                .thenByDescending { it.primary }
+                                .thenBy { it.title },
+                        )
+                        .take(StudyFlowTvPresentationProtocol.maxTvLibraryReferences)
+                        .map { material -> material.toPresentation(subjectNames) }
+                        .toList(),
+                )
+            },
+            failedFeeds = failedFeeds.toList(),
         )
     }
 
@@ -514,26 +541,74 @@ object StudyFlowTvPresentationProjector {
             excerpt = body.take(320),
             referenceKind = type.name,
             relatedSurface = StudyFlowTvSurface.LIBRARY,
-            viewer = StudyFlowTvMaterialViewerPresentation(
-                kind = when (type) {
-                    com.mikeyphw.studyflow.core.model.StudyMaterialType.NOTE,
-                    com.mikeyphw.studyflow.core.model.StudyMaterialType.BOOK,
-                    -> StudyFlowTvMaterialViewerKind.TEXT
-                    com.mikeyphw.studyflow.core.model.StudyMaterialType.PDF -> StudyFlowTvMaterialViewerKind.PDF
-                    com.mikeyphw.studyflow.core.model.StudyMaterialType.VIDEO -> StudyFlowTvMaterialViewerKind.MEDIA
-                    com.mikeyphw.studyflow.core.model.StudyMaterialType.WEBSITE -> StudyFlowTvMaterialViewerKind.WEB
-                    com.mikeyphw.studyflow.core.model.StudyMaterialType.LOCAL_FILE,
-                    com.mikeyphw.studyflow.core.model.StudyMaterialType.COURSE,
-                    com.mikeyphw.studyflow.core.model.StudyMaterialType.OTHER,
-                    -> sourceUri?.let(::viewerKindForUri) ?: StudyFlowTvMaterialViewerKind.UNAVAILABLE
-                },
-                sourceUri = sourceUri,
-                mimeType = mimeTypeFor(type, sourceUri),
-                inlineText = body.take(StudyFlowTvPresentationProtocol.maxInlineMaterialTextChars)
-                    .takeIf { type == com.mikeyphw.studyflow.core.model.StudyMaterialType.NOTE ||
-                        type == com.mikeyphw.studyflow.core.model.StudyMaterialType.BOOK },
-            ),
+            // TVOV27 compatibility token: viewer = StudyFlowTvMaterialViewerPresentation
+            viewer = transferableViewerFor(this, body),
         )
+    }
+
+    private fun transferableViewerFor(
+        material: StudyMaterial,
+        body: String,
+    ): StudyFlowTvMaterialViewerPresentation {
+        val rawUri = material.sourceUri
+        val safeSourceUri = rawUri?.takeIf(StudyFlowTvTransferableMaterialSource::isTvResolvableUri)
+        val inlineText = body.take(StudyFlowTvPresentationProtocol.maxInlineMaterialTextChars)
+            .takeIf { material.type == com.mikeyphw.studyflow.core.model.StudyMaterialType.NOTE ||
+                material.type == com.mikeyphw.studyflow.core.model.StudyMaterialType.BOOK }
+        val transferId = transferIdFor(material, rawUri, inlineText)
+        return StudyFlowTvMaterialViewerPresentation(
+            kind = when (material.type) {
+                com.mikeyphw.studyflow.core.model.StudyMaterialType.NOTE,
+                com.mikeyphw.studyflow.core.model.StudyMaterialType.BOOK,
+                -> StudyFlowTvMaterialViewerKind.TEXT
+                com.mikeyphw.studyflow.core.model.StudyMaterialType.PDF -> StudyFlowTvMaterialViewerKind.PDF
+                com.mikeyphw.studyflow.core.model.StudyMaterialType.VIDEO -> StudyFlowTvMaterialViewerKind.MEDIA
+                com.mikeyphw.studyflow.core.model.StudyMaterialType.WEBSITE -> safeSourceUri?.let(::viewerKindForUri)
+                    ?: StudyFlowTvMaterialViewerKind.UNAVAILABLE
+                com.mikeyphw.studyflow.core.model.StudyMaterialType.LOCAL_FILE,
+                com.mikeyphw.studyflow.core.model.StudyMaterialType.COURSE,
+                com.mikeyphw.studyflow.core.model.StudyMaterialType.OTHER,
+                -> safeSourceUri?.let(::viewerKindForUri) ?: transferId?.let { kindFromMaterialType(material.type, rawUri) }
+                    ?: StudyFlowTvMaterialViewerKind.UNAVAILABLE
+            },
+            sourceUri = safeSourceUri,
+            transferId = transferId,
+            mimeType = mimeTypeFor(material.type, safeSourceUri ?: rawUri),
+            inlineText = inlineText,
+        )
+    }
+
+    private fun transferIdFor(
+        material: StudyMaterial,
+        rawUri: String?,
+        inlineText: String?,
+    ): String? = when {
+        inlineText != null -> null
+        rawUri == null -> null
+        StudyFlowTvTransferableMaterialSource.isTvResolvableUri(rawUri) -> null
+        else -> "plan-${material.studyPlanId.value}-material-${material.id.value}"
+    }
+
+    private fun kindFromMaterialType(
+        type: com.mikeyphw.studyflow.core.model.StudyMaterialType,
+        rawUri: String?,
+    ): StudyFlowTvMaterialViewerKind = when (type) {
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.PDF -> StudyFlowTvMaterialViewerKind.PDF
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.VIDEO -> StudyFlowTvMaterialViewerKind.MEDIA
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.LOCAL_FILE,
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.COURSE,
+        com.mikeyphw.studyflow.core.model.StudyMaterialType.OTHER,
+        -> rawUri?.let(::viewerKindForUri) ?: StudyFlowTvMaterialViewerKind.UNAVAILABLE
+        else -> StudyFlowTvMaterialViewerKind.UNAVAILABLE
+    }
+
+    private fun <T> isolatePresentationFeed(
+        name: String,
+        failedFeeds: MutableSet<String>,
+        block: () -> T,
+    ): T? = runCatching(block).getOrElse {
+        failedFeeds += name
+        null
     }
 
     private fun viewerKindForUri(uri: String): StudyFlowTvMaterialViewerKind {

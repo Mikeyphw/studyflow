@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -42,6 +43,9 @@ import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlStateReducer
 import com.mikeyphw.studyflow.tv.domain.AndroidStudyFlowTvDomainActionOutboxPersistence
 import com.mikeyphw.studyflow.tv.domain.StudyFlowTvDomainActionOutbox
 import com.mikeyphw.studyflow.tv.domain.StudyFlowTvDurableCommandSequencer
+import com.mikeyphw.studyflow.tv.focus.StudyFlowTvDynamicFocusBinder
+import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusItem
+import com.mikeyphw.studyflow.tv.focus.StudyFlowTvFocusRole
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteCommand
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteKeyMapper
 import com.mikeyphw.studyflow.tv.focus.applyStudyFlowTvDpadFocus
@@ -169,6 +173,7 @@ class StudyFlowTvActivity : Activity() {
     private lateinit var sflpPeer: StudyFlowTvSflpPeer
     private var pendingPairingAfterPermission = false
     private var libraryViewerState: StudyFlowTvMaterialViewerState? = null
+    private var activeMaterialVideoView: VideoView? = null
     private var searchState: StudyFlowTvSearchState = StudyFlowTvSearchState()
     private lateinit var delegatedSearchInput: StudyFlowTvDelegatedSearchInput
     private lateinit var tvAttentionRuntime: StudyFlowTvAttentionRuntime
@@ -544,6 +549,22 @@ class StudyFlowTvActivity : Activity() {
                 button.nextFocusDownId = buttons.getValue(destinations[index + 1]).id
             }
         }
+        val navItems = destinations.mapIndexed { index, destination ->
+            StudyFlowTvFocusItem(
+                id = "nav-${destination.route}",
+                role = StudyFlowTvFocusRole.NAVIGATION_ITEM,
+                row = index,
+                column = 0,
+            )
+        } + StudyFlowTvFocusItem(
+            id = "content-primary-action",
+            role = StudyFlowTvFocusRole.PRIMARY_ACTION,
+            row = 0,
+            column = 1,
+        )
+        val viewsById = buttons.mapKeys { (destination, _) -> "nav-${destination.route}" } +
+            mapOf("content-primary-action" to contentAction)
+        StudyFlowTvDynamicFocusBinder.wire(navItems, viewsById, "nav-${selectedDestination.route}")
     }
 
     private fun selectDestination(destination: StudyFlowTvDestination) {
@@ -1029,9 +1050,7 @@ class StudyFlowTvActivity : Activity() {
         contentCards.addView(sectionLabel(R.string.tv_schedule_section_title))
         snapshot.items.chunked(2).forEach { rowItems ->
             contentCards.addView(
-                LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.START
+                tvScrollableHorizontalRow {
                     rowItems.forEach { item -> addView(tvScheduleItem(item)) }
                 },
             )
@@ -1050,9 +1069,7 @@ class StudyFlowTvActivity : Activity() {
             },
         )
         contentCards.addView(
-            LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.START
+            tvScrollableHorizontalRow {
                 setPadding(0, dp(12), 0, 0)
                 StudyFlowTvScheduleSurface.actions.forEach { action -> addView(tvScheduleAction(action)) }
             },
@@ -1085,9 +1102,7 @@ class StudyFlowTvActivity : Activity() {
         contentCards.addView(sectionLabel(R.string.tv_library_section_title))
         snapshot.references.chunked(2).forEach { rowReferences ->
             contentCards.addView(
-                LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.START
+                tvScrollableHorizontalRow {
                     rowReferences.forEach { reference -> addView(tvLibraryReference(reference)) }
                 },
             )
@@ -1106,9 +1121,7 @@ class StudyFlowTvActivity : Activity() {
             },
         )
         contentCards.addView(
-            LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.START
+            tvScrollableHorizontalRow {
                 setPadding(0, dp(12), 0, 0)
                 StudyFlowTvLibrarySurface.actions.forEach { action -> addView(tvLibraryAction(action)) }
             },
@@ -1116,6 +1129,7 @@ class StudyFlowTvActivity : Activity() {
     }
 
     private fun renderLibraryMaterialViewer(state: StudyFlowTvMaterialViewerState) {
+        activeMaterialVideoView = null
         contentCards.visibility = View.VISIBLE
         contentCards.removeAllViews()
         contentTitle.text = state.title
@@ -1137,26 +1151,34 @@ class StudyFlowTvActivity : Activity() {
             )
             StudyFlowTvMaterialViewerKind.IMAGE -> contentCards.addView(
                 ImageView(this).apply {
-                    state.presentation.sourceUri?.let { uri ->
+                    state.resolvedSourceUri?.let { uri ->
                         StudyFlowTvNativeMaterialViewer.bindImage(this, uri, state.zoomPercent)
                     }
                 },
             )
             StudyFlowTvMaterialViewerKind.PDF -> contentCards.addView(
                 ImageView(this).apply {
-                    state.presentation.sourceUri?.let { uri ->
+                    state.resolvedSourceUri?.let { uri ->
                         StudyFlowTvNativeMaterialViewer.renderPdfPage(
                             this@StudyFlowTvActivity,
                             uri,
                             state.pageIndex,
                             state.zoomPercent,
-                        )?.let(::setImageBitmap)
+                        )?.let { rendered ->
+                            setImageBitmap(rendered.bitmap)
+                            if (rendered.pageCount != state.pageCount) {
+                                libraryViewerState = StudyFlowTvMaterialViewer.withResolvedPdfPageCount(state, rendered.pageCount)
+                            }
+                        }
                     }
                     adjustViewBounds = true
                 },
             )
             StudyFlowTvMaterialViewerKind.MEDIA -> contentCards.addView(
-                VideoView(this).apply { StudyFlowTvNativeMaterialViewer.bindMedia(this, state) },
+                VideoView(this).apply {
+                    activeMaterialVideoView = this
+                    StudyFlowTvNativeMaterialViewer.bindMedia(this, state)
+                },
             )
             StudyFlowTvMaterialViewerKind.WEB,
             StudyFlowTvMaterialViewerKind.UNAVAILABLE,
@@ -1169,16 +1191,24 @@ class StudyFlowTvActivity : Activity() {
             )
         }
         contentCards.addView(
-            LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.START
+            tvScrollableHorizontalRow {
                 StudyFlowTvMaterialViewer.availableActions(state).forEach { action ->
                     addView(tvTextActionButton(materialViewerActionLabel(action)).apply {
                         setOnClickListener {
                             if (action == StudyFlowTvMaterialViewerAction.CLOSE) {
                                 libraryViewerState = null
                             } else {
-                                libraryViewerState = StudyFlowTvMaterialViewer.reduce(state, action)
+                                val baseState = if (action == StudyFlowTvMaterialViewerAction.PLAY_PAUSE ||
+                                    action == StudyFlowTvMaterialViewerAction.SEEK_BACK ||
+                                    action == StudyFlowTvMaterialViewerAction.SEEK_FORWARD
+                                ) {
+                                    activeMaterialVideoView?.let { view ->
+                                        StudyFlowTvNativeMaterialViewer.captureMediaPosition(view, state)
+                                    } ?: state
+                                } else {
+                                    state
+                                }
+                                libraryViewerState = StudyFlowTvMaterialViewer.reduce(baseState, action)
                             }
                             if (::durableUiStateStore.isInitialized) durableUiStateStore.saveMaterialViewerState(
                                 libraryViewerState,
@@ -1777,6 +1807,21 @@ class StudyFlowTvActivity : Activity() {
         StudyFlowTvSettingsAction.OPEN_ATTENTION_STATUS -> getString(R.string.tv_settings_action_attention)
         StudyFlowTvSettingsAction.OPEN_ABOUT -> getString(R.string.tv_settings_action_about)
     }
+
+    private fun tvScrollableHorizontalRow(build: LinearLayout.() -> Unit): HorizontalScrollView =
+        HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = true
+            isFillViewport = false
+            clipToPadding = false
+            descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+            addView(
+                LinearLayout(this@StudyFlowTvActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.START
+                    build()
+                },
+            )
+        }
 
     private fun tvCardButton(
         title: String,

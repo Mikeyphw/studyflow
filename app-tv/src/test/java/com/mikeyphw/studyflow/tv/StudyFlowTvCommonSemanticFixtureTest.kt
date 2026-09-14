@@ -88,7 +88,7 @@ class StudyFlowTvCommonSemanticFixtureTest {
     private fun viewerState(page: Int, total: Int) = StudyFlowTvMaterialViewerState(
         title = "Fixture",
         presentation = StudyFlowTvMaterialViewerPresentation(
-            kind = StudyFlowTvMaterialViewerKind.PDF, sourceUri = "content://fixture", pageCountHint = total,
+            kind = StudyFlowTvMaterialViewerKind.PDF, sourceUri = "studyflow-transfer://material/fixture", pageCountHint = total,
         ),
         textPages = listOf("fixture"),
         pageIndex = page,

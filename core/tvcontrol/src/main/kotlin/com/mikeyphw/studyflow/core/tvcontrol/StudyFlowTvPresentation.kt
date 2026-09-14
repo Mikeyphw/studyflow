@@ -58,6 +58,7 @@ data class StudyFlowTvPresentationSnapshot(
     val progress: StudyFlowTvProgressPresentation? = null,
     val schedule: StudyFlowTvSchedulePresentation? = null,
     val library: StudyFlowTvLibraryPresentation? = null,
+    val failedFeeds: List<String> = emptyList(),
 ) {
     init {
         require(snapshotId.isNotBlank()) { "TV presentation snapshot id must not be blank." }
@@ -67,6 +68,8 @@ data class StudyFlowTvPresentationSnapshot(
         require(studyPlanId.isNotBlank()) { "TV presentation plan id must not be blank." }
         require(planTitle.isNotBlank()) { "TV presentation plan title must not be blank." }
         require(generatedAtEpochMillis >= 0L) { "TV presentation generation time cannot be negative." }
+        require(failedFeeds.all { it.isNotBlank() }) { "TV presentation failed-feed names must not be blank." }
+        require(failedFeeds.toSet().size == failedFeeds.size) { "TV presentation failed-feed names must be unique." }
     }
 
     val hasRenderableStudyData: Boolean
@@ -431,6 +434,32 @@ enum class StudyFlowTvMaterialViewerKind {
     UNAVAILABLE,
 }
 
+object StudyFlowTvTransferableMaterialSource {
+    const val phoneLocalUrisForbidden = true
+    const val transferIdRequiredForPhoneLocalSources = true
+    const val tvResolvableSchemes = "https,http,studyflow-transfer,studyflow-tv-cache"
+
+    fun isPhoneLocalUri(uri: String): Boolean {
+        val normalized = uri.trim().lowercase()
+        return normalized.startsWith("content://") ||
+            normalized.startsWith("file://") ||
+            normalized.startsWith("android.resource://")
+    }
+
+    fun isTvResolvableUri(uri: String): Boolean {
+        val normalized = uri.trim().lowercase()
+        return normalized.startsWith("https://") ||
+            normalized.startsWith("http://") ||
+            normalized.startsWith("studyflow-transfer://") ||
+            normalized.startsWith("studyflow-tv-cache://")
+    }
+
+    fun transferUriFor(transferId: String): String {
+        require(transferId.isNotBlank()) { "TV transfer id must not be blank." }
+        return "studyflow-transfer://material/$transferId"
+    }
+}
+
 @Serializable
 data class StudyFlowTvMaterialViewerPresentation(
     val kind: StudyFlowTvMaterialViewerKind,
@@ -440,14 +469,35 @@ data class StudyFlowTvMaterialViewerPresentation(
     val pageCountHint: Int? = null,
     val durationMillis: Long? = null,
     val playbackPositionMillis: Long = 0L,
+    val transferId: String? = null,
+    val contentSha256: String? = null,
+    val totalBytes: Long? = null,
 ) {
+    val hasTransferableSource: Boolean
+        get() = sourceUri != null || transferId != null || inlineText != null
+
+    val tvResolvableSourceUri: String?
+        get() = sourceUri ?: transferId?.let(StudyFlowTvTransferableMaterialSource::transferUriFor)
+
     init {
         require(sourceUri == null || sourceUri.isNotBlank())
+        require(transferId == null || transferId.isNotBlank())
         require(mimeType == null || mimeType.contains('/'))
         require(inlineText == null || inlineText.length <= StudyFlowTvPresentationProtocol.maxInlineMaterialTextChars)
         require(pageCountHint == null || pageCountHint > 0)
         require(durationMillis == null || durationMillis >= 0L)
         require(playbackPositionMillis >= 0L)
+        require(contentSha256 == null || contentSha256.matches(Regex("[0-9a-fA-F]{64}")))
+        require(totalBytes == null || totalBytes >= 0L)
+        require(sourceUri == null || !StudyFlowTvTransferableMaterialSource.isPhoneLocalUri(sourceUri)) {
+            "TV material projection must not expose phone-local URIs."
+        }
+        require(sourceUri == null || StudyFlowTvTransferableMaterialSource.isTvResolvableUri(sourceUri)) {
+            "TV material source URI must be resolvable by the TV runtime."
+        }
+        require(kind == StudyFlowTvMaterialViewerKind.UNAVAILABLE || hasTransferableSource) {
+            "Renderable TV material needs inline text, a TV-resolvable URI, or a transfer id."
+        }
     }
 }
 
