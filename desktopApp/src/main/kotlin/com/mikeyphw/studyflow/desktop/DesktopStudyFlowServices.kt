@@ -22,7 +22,6 @@ import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.ThemeMode
-import kotlinx.coroutines.runBlocking
 
 class DesktopStudyFlowServices(
     val planRepository: InMemoryStudyPlanRepository,
@@ -234,15 +233,14 @@ class DesktopStudyFlowServices(
         val activePlan = currentDefaultPlan()
         val trimmed = query.trim()
         val results = if (trimmed.length >= 2) {
-            runBlocking { manageStudyDiscovery.search(trimmed).map(DesktopSearchResultRow::fromResult) }
+            discoveryRepository.currentSearch(trimmed).map(DesktopSearchResultRow::fromResult)
         } else {
             emptyList()
         }
         if (results.isNotEmpty()) preferencesStore.recordSearch(trimmed)
         val recommendations = activePlan?.id?.let { planId ->
-            runBlocking {
-                manageStudyDiscovery.recommendations(planId).map(DesktopRecommendationRow::fromRecommendation)
-            }
+            discoveryRepository.currentRecommendations(planId, wallClockMillis())
+                .map(DesktopRecommendationRow::fromRecommendation)
         }.orEmpty()
         return DesktopSearchScreenState(
             status = if (activePlan == null) DesktopScreenStatus.EMPTY else DesktopScreenStatus.CONTENT,
@@ -269,6 +267,50 @@ class DesktopStudyFlowServices(
 
     fun setLanguage(language: AppLanguage) {
         preferencesStore.setLanguage(language)
+    }
+
+    fun <T> atomicDesktopMutation(reason: String, block: () -> T): T =
+        workspacePersistence?.atomicCompositeMutation(reason, block) ?: block()
+
+    fun reloadFromDiskAfterRestore(): Int {
+        val persistence = workspacePersistence ?: return 0
+        val sample = DesktopStudyFlowSampleData.create()
+        val core = persistence.replaceFromDisk(DesktopWorkspaceSnapshot.seed(sample))
+        planRepository.replaceFromPersistence(core.plans, core.planSettings)
+        preferencesStore.replaceFromPersistence(core.preferences)
+        contentRepository.replaceFromPersistence(
+            DesktopStudyContentState(core.studyTargets, core.examStages, core.subjects, core.topics),
+        )
+        scheduleRepository.replaceFromPersistence(core.strategies, core.scheduleRules, core.plannedActivities)
+        sessionRepository.replaceFromPersistence(core.sessions)
+        val library = DesktopLibraryPersistence.open(
+            persistence.root,
+            DesktopLibrarySnapshot(sample.materials, sample.videos, sample.annexes),
+        ).current()
+        libraryRepository.replaceFromPersistence(library)
+        val practice = DesktopPracticePersistence.open(
+            persistence.root,
+            DesktopPracticeSnapshot(sample.questions, sample.tests, sample.mockExams),
+        ).current()
+        practiceRepository.replaceFromPersistence(practice)
+        reviewRepository.replaceFromPersistence(DesktopReviewPersistence.open(persistence.root).current())
+        contentModeRepository.replaceFromPersistence(DesktopContentModePersistence.open(persistence.root).current())
+        publicExamRepository.replaceFromPersistence(DesktopPublicExamPersistence.open(persistence.root).current())
+        progressRepository.reloadFromDisk()
+        return 8
+    }
+
+    fun scrubDeletedDesktopContentReferences(
+        planId: StudyPlanId,
+        removedSubjectIds: Set<com.mikeyphw.studyflow.core.model.SubjectId> = emptySet(),
+        removedTopicIds: Set<com.mikeyphw.studyflow.core.model.TopicId> = emptySet(),
+    ) {
+        atomicDesktopMutation("referential cleanup") {
+            scheduleRepository.scrubDeletedContentReferences(planId, removedSubjectIds, removedTopicIds)
+            sessionRepository.scrubDeletedContentReferences(planId, removedSubjectIds, removedTopicIds)
+            practiceRepository.scrubDeletedContentReferences(planId, removedSubjectIds, removedTopicIds)
+            reviewRepository.scrubDeletedContentReferences(planId, removedSubjectIds, removedTopicIds)
+        }
     }
 
     fun currentDefaultPlanForDesktop(): StudyPlan? = currentDefaultPlan()

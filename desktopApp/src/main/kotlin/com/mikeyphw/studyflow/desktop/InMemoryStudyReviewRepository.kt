@@ -135,6 +135,39 @@ class InMemoryStudyReviewRepository(
     fun currentErrors(planId: StudyPlanId): List<ErrorEntry> = errorState.value.filter { it.studyPlanId == planId }
         .sortedByDescending(ErrorEntry::updatedAtEpochMillis)
 
+    fun currentAllReviews(): List<ReviewItem> = reviewState.value
+    fun currentAllFlashcards(): List<Flashcard> = flashcardState.value
+    fun currentAllErrors(): List<ErrorEntry> = errorState.value
+
+    fun replaceFromPersistence(snapshot: DesktopReviewSnapshot) {
+        reviewState.value = snapshot.reviews
+        flashcardState.value = snapshot.flashcards
+        errorState.value = snapshot.errors
+    }
+
+    fun scrubDeletedContentReferences(
+        planId: StudyPlanId,
+        removedSubjectIds: Set<com.mikeyphw.studyflow.core.model.SubjectId> = emptySet(),
+        removedTopicIds: Set<com.mikeyphw.studyflow.core.model.TopicId> = emptySet(),
+    ) {
+        if (removedSubjectIds.isEmpty() && removedTopicIds.isEmpty()) return
+        reviewState.value = reviewState.value.map { review ->
+            if (review.studyPlanId != planId) review else when {
+                review.subjectId in removedSubjectIds -> review.copy(subjectId = null, topicId = null)
+                review.topicId in removedTopicIds -> review.copy(topicId = null)
+                else -> review
+            }
+        }
+        errorState.value = errorState.value.map { error ->
+            if (error.studyPlanId != planId) error else when {
+                error.subjectId in removedSubjectIds -> error.copy(subjectId = null, topicId = null)
+                error.topicId in removedTopicIds -> error.copy(topicId = null)
+                else -> error
+            }
+        }
+        persist()
+    }
+
     fun purgePlan(planId: StudyPlanId) {
         reviewState.value = reviewState.value.filterNot { it.studyPlanId == planId }
         flashcardState.value = flashcardState.value.filterNot { it.studyPlanId == planId }

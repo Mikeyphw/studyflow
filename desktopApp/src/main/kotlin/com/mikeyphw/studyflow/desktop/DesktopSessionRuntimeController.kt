@@ -21,9 +21,9 @@ class DesktopSessionRuntimeController(
     private val services: DesktopStudyFlowServices,
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
-    suspend fun state(): DesktopSessionRuntimeState {
+    fun state(): DesktopSessionRuntimeState {
         val plan = services.planContentController.state().selectedPlan
-        val active = plan?.id?.let { planId -> services.manageStudySession.activeSession(planId) }
+        val active = plan?.id?.let { planId -> services.sessionRepository.currentSessions(planId).firstOrNull { it.status in ActiveStatuses } }
         val next = plan?.id?.let(services.scheduleRepository::currentActivities)
             ?.firstOrNull { it.status in setOf(PlannedActivityStatus.PLANNED, PlannedActivityStatus.MISSED) }
         return DesktopSessionRuntimeState(
@@ -91,7 +91,13 @@ class DesktopSessionRuntimeController(
         return plan
     }
 
-    private suspend fun requireActive(): StudySession = requireNotNull(services.manageStudySession.activeSession()) {
+    private companion object {
+        val ActiveStatuses = setOf(StudySessionStatus.RUNNING, StudySessionStatus.PAUSED)
+    }
+
+    private fun requireActive(): StudySession = requireNotNull(
+        services.sessionRepository.currentAllSessions().firstOrNull { it.status in ActiveStatuses },
+    ) {
         "No active Study Session."
     }
 }

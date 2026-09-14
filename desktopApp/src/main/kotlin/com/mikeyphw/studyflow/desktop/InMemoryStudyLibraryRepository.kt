@@ -85,5 +85,15 @@ class InMemoryStudyLibraryRepository(
     fun currentVideos(planId: StudyPlanId): List<VideoResource> = videoState.value.filter { it.studyPlanId == planId }
     fun currentAnnexes(planId: StudyPlanId): List<Annex> = annexState.value.filter { it.studyPlanId == planId }
 
+    fun currentAllMaterials(): List<StudyMaterial> = materialState.value
+    fun currentAllVideos(): List<VideoResource> = videoState.value
+    fun currentAllAnnexes(): List<Annex> = annexState.value
+
+    fun replaceFromPersistence(snapshot: DesktopLibrarySnapshot) {
+        materialState.value = snapshot.materials
+        videoState.value = snapshot.videos
+        annexState.value = snapshot.annexes
+    }
+
     private fun persist() = onChanged(materialState.value, videoState.value, annexState.value)
 }

@@ -21,7 +21,6 @@ import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.StudyTargetId
 import com.mikeyphw.studyflow.core.model.StudyType
 import java.util.UUID
-import kotlinx.coroutines.flow.first
 
 data class DesktopPublicExamState(
     val plan: StudyPlan?,
@@ -42,14 +41,14 @@ class DesktopPublicExamController(
 ) {
     private val manager = ManagePublicExam(repository, services.manageStudySession)
 
-    suspend fun state(): DesktopPublicExamState {
+    fun state(): DesktopPublicExamState {
         val plan = services.planContentController.state().selectedPlan
         if (plan == null) return DesktopPublicExamState(null, null, 0, emptyList(), null, null, null, null)
         val syllabus = services.contentRepository.currentSyllabus(plan.id)
         val target = services.contentRepository.currentState().targets.firstOrNull { it.studyPlanId == plan.id }
-        val revisions = manager.observeExamNoticeRevisions(plan.id).first()
-        val legislation = manager.observeLegislation(plan.id).first()
-        val cycle = manager.observeStudyCycle(plan.id).first()
+        val revisions = repository.currentRevisions(plan.id)
+        val legislation = repository.currentLegislation(plan.id)
+        val cycle = repository.currentCycle(plan.id)
         val dashboard = PublicExamDashboardBuilder.build(
             plan = plan,
             target = target,

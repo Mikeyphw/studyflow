@@ -59,6 +59,10 @@ class DesktopContentModePersistence private constructor(
 ) {
     fun current(): DesktopContentModeSnapshot = snapshot
 
+    fun replaceFromPersistence(next: DesktopContentModeSnapshot) {
+        snapshot = next
+    }
+
     @Synchronized
     fun update(next: DesktopContentModeSnapshot) {
         writeAtomically(next)
@@ -104,6 +108,10 @@ class DesktopContentModeRepository(
     private var snapshot = initial
 
     fun current(): DesktopContentModeSnapshot = snapshot
+
+    fun replaceFromPersistence(next: DesktopContentModeSnapshot) {
+        snapshot = next
+    }
     fun programmingProfile(planId: StudyPlanId) = snapshot.programmingProfiles.firstOrNull { it.studyPlanId == planId }
     fun codingExercises(planId: StudyPlanId) = snapshot.codingExercises.filter { it.studyPlanId == planId }
     fun languageDeck(planId: StudyPlanId) = snapshot.languageDecks.firstOrNull { it.studyPlanId == planId }

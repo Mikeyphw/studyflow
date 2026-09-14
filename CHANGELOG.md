@@ -1039,3 +1039,12 @@ StudyFlow Web now has a production Web/PWA attention runtime with foreground sch
 - Added a transport-neutral signed TV-plane envelope for local TCP, Web relay, cast, domain-action acknowledgements and TV attention ingress.
 - Bound authenticated TV requests to receiver/session/operation/body hash before TV state mutation.
 - Required cast scopes for presentation delivery and STOP_CAST and kept relay bearer/controller tokens forbidden.
+
+## OV22 — Desktop persistence, atomicity, restore & file safety
+
+- Added a nonblocking Desktop UI action runner and removed event-thread `runBlocking` from normal Desktop app-state mutation and search derivation paths.
+- Added referential cleanup for deleted subjects/topics across schedule, session, practice, and review repositories.
+- Made linked Desktop session creation/transition rollback session and planned-activity changes together on failure.
+- Reordered practice/mock submission so wrong-answer evidence commits before attempt rows.
+- Added point-in-time encrypted workspace backup staging, auxiliary store validation during restore, and immediate in-memory graph reload after restore/rollback.
+- Added tolerant legacy `contentMode` migration, a single-instance workspace file lock, owner-only workspace/link file permissions, and backup password `CharArray` zeroing.

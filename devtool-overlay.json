@@ -1,286 +1,248 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov21_unified_tv_control_plane_v1",
+  "name": "studyflow_ov22_desktop_persistence_atomic_restore_file_safety_v1",
   "target": "studyflow_android",
-  "description": "OV21 closes the unified TV control, pairing, relay, cast and attention plane by adding a signed TV-plane envelope across local TCP, browser relay, cast delivery, domain acknowledgements and attention ingress.",
+  "description": "OV22 Desktop persistence, atomicity, restore and file safety remediation overlay.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV21: unify TV control pairing relay cast and attention plane"
+    "message": "OV22: harden Desktop persistence atomic restore and file safety"
   },
   "baseline": {
-    "repo": "studyflow",
-    "target": "studyflow_android",
-    "expected_target_type": "android",
-    "notes": "Built cumulatively on successful OV20 apply after native TV materials/focus/projection resilience."
+    "previous_overlay": "studyflow_ov21_unified_tv_control_plane_v1",
+    "previous_commit": "user-applied OV21 cumulative state",
+    "roadmap_overlay": "22 of 30"
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov21_unified_tv_control_plane_v1",
+    "name": "studyflow_ov22_desktop_persistence_atomic_restore_file_safety_v1",
     "target": "studyflow_android",
     "sections": [
-      {
-        "id": "ov21-plane-contract",
-        "description": "Transport-neutral signed TV-plane envelope shared by local TCP and browser relay."
-      },
-      {
-        "id": "ov21-native-admission",
-        "description": "Android phone attaches and Android TV receiver enforces session, receiver, operation, body hash and cast/domain scope."
-      },
-      {
-        "id": "ov21-web-relay",
-        "description": "Web TV relay and browser remote validate the same plane semantics without bearer or controller tokens."
-      },
-      {
-        "id": "ov21-attention-plane",
-        "description": "TV attention exposes canonical-plane evidence instead of remaining a parallel policy island."
-      },
-      {
-        "id": "ov21-validation",
-        "description": "Embedded Gradle validation and source-evidence gate."
-      }
+      "desktop-ui-nonblocking",
+      "referential-cleanup",
+      "linked-session-atomicity",
+      "backup-restore-reload",
+      "migration-locking-permissions-secret-clearing",
+      "validation"
     ]
   },
   "findings": [
     {
       "id": "S9-01",
       "severity": "HIGH",
-      "status": "closed-by-ov21"
+      "status": "closed-by-ov22",
+      "evidence": "Desktop UI event-thread blocking removed from normal action/search paths"
     },
     {
       "id": "S9-02",
       "severity": "HIGH",
-      "status": "closed-by-ov21"
+      "status": "closed-by-ov22",
+      "evidence": "Desktop subject/topic deletion now scrubs cross-store references"
     },
     {
       "id": "S9-03",
       "severity": "HIGH",
-      "status": "closed-by-ov21"
+      "status": "closed-by-ov22",
+      "evidence": "Linked Desktop session creation rolls back across session/activity files"
     },
     {
       "id": "S9-04",
       "severity": "HIGH",
-      "status": "closed-by-ov21"
+      "status": "closed-by-ov22",
+      "evidence": "Practice/mock submissions commit wrong-answer evidence before attempts"
     },
     {
       "id": "S9-05",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov21"
+      "severity": "CRITICAL",
+      "status": "closed-by-ov22",
+      "evidence": "Restore reloads running in-memory Desktop graph after replacing disk"
     },
     {
       "id": "S9-06",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov21"
+      "severity": "HIGH",
+      "status": "closed-by-ov22",
+      "evidence": "Encrypted backup uses point-in-time staging snapshot"
     },
     {
       "id": "S9-07",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov21"
+      "severity": "HIGH",
+      "status": "closed-by-ov22",
+      "evidence": "Restore validates auxiliary Desktop feature stores"
     },
     {
       "id": "S9-08",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov21"
+      "severity": "HIGH",
+      "status": "closed-by-ov22",
+      "evidence": "Legacy Desktop contentMode migration is tolerant"
     },
     {
       "id": "S9-09",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov21"
+      "severity": "HIGH",
+      "status": "closed-by-ov22",
+      "evidence": "Single-instance workspace file lock blocks multi-process lost updates"
+    },
+    {
+      "id": "S12-06",
+      "severity": "MEDIUM",
+      "status": "closed-by-ov22",
+      "evidence": "Workspace and SFLP/trust files apply owner-only permissions"
+    },
+    {
+      "id": "S12-09",
+      "severity": "MEDIUM-LOW",
+      "status": "closed-by-ov22",
+      "evidence": "Encrypted-backup password uses zeroed CharArray secret"
+    },
+    {
+      "id": "DS2-38",
+      "severity": "HIGH",
+      "status": "closed-by-ov22",
+      "evidence": "Linked session/activity transitions use atomic rollback semantics"
     }
   ],
   "validation": {
     "hook": ".devtool-artifact/validation/validate.sh",
-    "gradle_task": "verifyOv21UnifiedTvControlPlane",
-    "stops_gradle_daemon": false,
-    "separate_user_validation_required": false
+    "gradle_task": "verifyOv22DesktopPersistenceAtomicRestoreFileSafety",
+    "daemon_stop": false
   },
   "inventory": {
-    "format": 1,
-    "count": 20,
+    "count": 27,
     "entries": [
       {
-        "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
-        "mode": "0o755",
-        "sha256": "69ef65cc453d842ed1893438370ee843892c859f858c8b56e6981ababb132872",
-        "size": 328,
-        "source_mode": "0o755",
-        "source_sha256": "0b6de7f731dbd24be57ad1ef7b37368cf201bacb25bdaf4eba2f7906b647bda6",
-        "source_size": 349
+        "size": 105,
+        "sha256": "cd9478f0f8331dd4d1c3be8ad5655ccc26fcb93bb9cb7b31dfe3397d0c4499fa"
       },
       {
-        "action": "modify",
-        "path": ".devtool.toml",
-        "mode": "0o600",
-        "sha256": "994f61e661ffdf0e114cb7600e7cbc440eb50209a62a266ed9f182f45e8588b9",
-        "size": 16043,
-        "source_mode": "0o600",
-        "source_sha256": "1d83070a9e76b754b40dff4a4c4e5ffc72085d561cc1ea0bfec1427a0866fe59",
-        "source_size": 15969
-      },
-      {
-        "action": "modify",
         "path": "CHANGELOG.md",
-        "mode": "0o600",
-        "sha256": "a659cd6b5a1bcaeeda7b4d3ac777142860074bb508217705a928262a8d984a6b",
-        "size": 79492,
-        "source_mode": "0o600",
-        "source_sha256": "5f0534becb6cb15ad7d13f176527acfdc0c676211a41daef279b7e344f33dcb1",
-        "source_size": 79097
+        "size": 80374,
+        "sha256": "447e1bbbe795ff5bfadc8749d5aadddb44ef293d06c8c7b56896bfbddd1ef085"
       },
       {
-        "action": "add",
-        "path": "REMEDIATION_OV_21_IMPLEMENTATION.md",
-        "mode": "0o644",
-        "sha256": "f64a82c8867bed75f4340a89ddc2c8d01695653a5f29b10dc5eb0cb64476847e",
-        "size": 755
+        "path": "REMEDIATION_OV_22_IMPLEMENTATION.md",
+        "size": 4393,
+        "sha256": "21bcf14d639ec03d89bb0a4502c8b990fdf41c4b52ae654d26340ed7f4739e73"
       },
       {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvCastSynchronization.kt",
-        "mode": "0o600",
-        "sha256": "df563616ee4ad82ad28165b981fa72c89ac8ceb8531e63de7dcec6327ced6bff",
-        "size": 2833,
-        "source_mode": "0o600",
-        "source_sha256": "571ecbfe73d57c9875ab693290be3aaa03e84b8df64950953c34fcdf09efa73c",
-        "source_size": 2436
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt",
-        "mode": "0o600",
-        "sha256": "4a94c912aa21d44e84f59e84e8e82fdee307c6eda06c2f9ae1ecb8b8168b4d5c",
-        "size": 36171,
-        "source_mode": "0o600",
-        "source_sha256": "65fc5540f00fbc57e5679934d05ee7c617019b45098fcb45fb83a57f1ed257f8",
-        "source_size": 35967
-      },
-      {
-        "action": "modify",
-        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/attention/StudyFlowTvAttentionRuntime.kt",
-        "mode": "0o600",
-        "sha256": "7c32632e7d7f7f94cb9b25bda46cd072dfecec826087631fa0465d25fb970673",
-        "size": 6870,
-        "source_mode": "0o600",
-        "source_sha256": "78e2951073b9f718cef3c4cba25413039caebf8846b80e1e8bf1a69571ba6d66",
-        "source_size": 6759
-      },
-      {
-        "action": "modify",
         "path": "build.gradle.kts",
-        "mode": "0o600",
-        "sha256": "8fd2ece1d16da54e7830d382c0987e48ab9e40ba00cd60b66294c46688cf2098",
-        "size": 98651,
-        "source_mode": "0o600",
-        "source_sha256": "a39944a41d803421cad44675b5e49c7c615e34ee9febd00e02d2b1ed6b2c3140",
-        "source_size": 98087
+        "size": 99268,
+        "sha256": "58d32d62295b5c3e6fd05d970d9db1dd3681c3538ba453738d0ebfcd4e544990"
       },
       {
-        "action": "add",
-        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvUnifiedControlPlane.kt",
-        "mode": "0o644",
-        "sha256": "1c4eb7eba97b47835473a9512ad36ad620e33dca23c80f2e774101d0025b7494",
-        "size": 10790
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAnalyticsDiscovery.kt",
+        "size": 14615,
+        "sha256": "59e3d6a7c568f587a3e42d3744b5a3a7ee86244d16c6ce5ebea355d6d0fd2261"
       },
       {
-        "action": "modify",
-        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt",
-        "mode": "0o600",
-        "sha256": "5aacb6c26c351ddb5ab58a6697500042f8750e6ee1507eb2f2658a86aca95c4d",
-        "size": 22709,
-        "source_mode": "0o600",
-        "source_sha256": "0e018f06a7ae0ad24f7388442da9a11c288949d58dfe7002194c333b90e357de",
-        "source_size": 22602
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAppState.kt",
+        "size": 37287,
+        "sha256": "c49577733b67b0c098995872a723057e8c88406b319ff7c216efec4ef4df3f16"
       },
       {
-        "action": "add",
-        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvUnifiedControlPlaneOv21Test.kt",
-        "mode": "0o644",
-        "sha256": "6d22b9a82643f2111ce7f660af5da3f7a5e0adf89ea955d16af1f3a638f83de8",
-        "size": 3901
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModePersistence.kt",
+        "size": 18556,
+        "sha256": "290710ebbc1828e43b26bc7c0d753123e48df8005f3ce4e4d71917deab59320f"
       },
       {
-        "action": "modify",
-        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocolTest.kt",
-        "mode": "0o600",
-        "sha256": "4b1e89b4253be7ef5fb563b338e7032af2b6b81e38f54da4d52bf19dc5e96bdd",
-        "size": 7897,
-        "source_mode": "0o600",
-        "source_sha256": "ab387136540752fca53043129ba63cea732ac9cadc7b5d786952c5471abefa77",
-        "source_size": 7824
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPlanContentController.kt",
+        "size": 10436,
+        "sha256": "351848754809714a873a1b554546e7012087a99d3114c96a3d15d6d7c9a0399d"
       },
       {
-        "action": "modify",
-        "path": "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt",
-        "mode": "0o600",
-        "sha256": "ca440d5084344ac08b457acb0a31d406d1fe304b03b1071370d132a050c6e28e",
-        "size": 42547,
-        "source_mode": "0o600",
-        "source_sha256": "4ad5b7c2e84ff3892e8227b6e3064236f59465f8ebdfc0108de1ad81751fd385",
-        "source_size": 41763
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPortabilityController.kt",
+        "size": 47577,
+        "sha256": "b9a99afcb55b2b17f88255aa22b62e16d446593daaa0866f555d51c5ea7852c2"
       },
       {
-        "action": "add",
-        "path": "docs/remediation/OV21_UNIFIED_TV_CONTROL_PAIRING_RELAY_CAST_ATTENTION_PLANE.md",
-        "mode": "0o644",
-        "sha256": "b2a16fa0a757326f8230436329fc99b943c9c279eb19676da74beead527d7f4f",
-        "size": 1505
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPublicExamController.kt",
+        "size": 8146,
+        "sha256": "8c31532662b6c54d992a849b1646e32b249cb38b6914c65554b2d1814ee34e63"
       },
       {
-        "action": "modify",
-        "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-        "mode": "0o644",
-        "sha256": "c0fe89e5d57f4d4a5dd1eb6560c01e1291ff39425a8933937a865a45d2e8b0aa",
-        "size": 23288,
-        "source_mode": "0o644",
-        "source_sha256": "bd6dbbbd09bbae841cf7708660acb4daf9cfc09a10924f0968b2af71c652bc61",
-        "source_size": 22759
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopPublicExamPersistence.kt",
+        "size": 39852,
+        "sha256": "b4646a73c765885bf1bd9c3ec8ee2be0303ab21e930626bf37b395f5ceb91dfc"
       },
       {
-        "action": "add",
-        "path": "scripts/validate_ov21_unified_tv_control_plane.sh",
-        "mode": "0o755",
-        "sha256": "77ce5fda2b8c68d4617d016210bd6dd971d222d06f3c1753f5dd8481d7cec5fc",
-        "size": 134
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopSessionRuntimeController.kt",
+        "size": 4348,
+        "sha256": "e6f1751e909772ff04184c0ca97b460ccd5ff728598e92afe01d0ad7005dd9e1"
       },
       {
-        "action": "add",
-        "path": "scripts/verify_ov21_unified_tv_control_plane.py",
-        "mode": "0o755",
-        "sha256": "48e5fe8f4a65091fc4cb1c7b3647331792d082e53f3c672092fdff3ca8979df1",
-        "size": 4127
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyContentRepository.kt",
+        "size": 19596,
+        "sha256": "4842daa16cb056c2558b97f55d7b1e67a0b5ec486406fdea915e8e88df8d211f"
       },
       {
-        "action": "modify",
-        "path": "web/scripts/serve_tv.mjs",
-        "mode": "0o600",
-        "sha256": "f7640f4d6bd3fad7c79256dbc55e9550e39ac4da6da8e90b8f63a051cfc2b327",
-        "size": 11673,
-        "source_mode": "0o600",
-        "source_sha256": "8faf98d92bfddc6633050e5eb8059966283d6a072708230214b844c1ed338eb4",
-        "source_size": 10934
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkPersistence.kt",
+        "size": 16811,
+        "sha256": "76660d526ba0a3abdaac487a617b6370a624e8c8ffc5a143cd0714a780d87643"
       },
       {
-        "action": "modify",
-        "path": "web/scripts/tv_relay.mjs",
-        "mode": "0o600",
-        "sha256": "e945c99edbac2662322b9fc6b804d0464632784af03e8c7e8da83a2cb520a562",
-        "size": 12545,
-        "source_mode": "0o600",
-        "source_sha256": "b7ceafd6d19de5b04be0834b3ce49cfede458ead48406564962aad2514110f6a",
-        "source_size": 10741
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowServices.kt",
+        "size": 25696,
+        "sha256": "2e61e9017b5d2422ab50d16dff39ae11c8af976e8dd2443620a265081e734dc1"
       },
       {
-        "action": "add",
-        "path": "web/tests/ov21_tv_plane_runner.mjs",
-        "mode": "0o644",
-        "sha256": "99738be80b91d33dfb7a6a3cc1892a5916382e3f03c8719a22a5acae2993d328",
-        "size": 658
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyProgressRepository.kt",
+        "size": 10010,
+        "sha256": "69b30d7da38cf2c1c8dc05ad81500dba4f6949d4d3b207a5a49824ebaecd4069"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopUiActionRunner.kt",
+        "size": 1184,
+        "sha256": "07be5d69cc094e03820cdfe56691c927d8e2d6e5b5b7b78cb178cb238ba046a6"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkspaceStore.kt",
+        "size": 38720,
+        "sha256": "e826e22f939b8306b490d99e24607a9304927bccbba782fd08f249f952d1025a"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWritingWorkspaceController.kt",
+        "size": 4825,
+        "sha256": "dcbc89b35cf727a4f90979fce9662df7e0caef24d513d5f6fef267e8859810d6"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyLibraryRepository.kt",
+        "size": 5036,
+        "sha256": "a771c8b88452a51538fc31b90980918027fba9645ed39c6841e91ec9cbcf8cb6"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyPlanRepository.kt",
+        "size": 4801,
+        "sha256": "d1486ae0e5859c2de32613541ea3a0eddcc4d4fb7610cf14a5a297916b7d0315"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyPracticeRepository.kt",
+        "size": 8946,
+        "sha256": "58b50453eae55bac28607fe6f20c782548c65661fdf389e63354973561c4e5b9"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyReviewRepository.kt",
+        "size": 10028,
+        "sha256": "ba4609e7bb74906fc70ad592029beca045b4614e10c9aadc6df10cf8edd8d407"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudyScheduleRepository.kt",
+        "size": 19498,
+        "sha256": "f01cca3f225bda60a4657edb0efea9a999ecc555b67dbc7247b356a829b16b51"
+      },
+      {
+        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/InMemoryStudySessionRepository.kt",
+        "size": 8955,
+        "sha256": "3a618ea21f0c58a3bf5fa904fcc7252b4435fb5d9679a30ed659923be8c0962d"
+      },
+      {
+        "path": "scripts/validate_ov22_desktop_persistence_atomic_restore_file_safety.sh",
+        "size": 229,
+        "sha256": "38d2929046bba6e3e9d946a549f0a49ec207e919a8d36a4a6407a5b0cad84679"
+      },
+      {
+        "path": "scripts/verify_ov22_desktop_persistence_atomic_restore_file_safety.py",
+        "size": 7511,
+        "sha256": "7edf44bb45792b122a801ba6121a012e59a59ac9abc2d371b3e7a3e96af9dab2"
       }
     ]
-  },
-  "notes": [
-    "Artifact contains file members only; no root directory, no directory-only entries, and no ./ prefixes.",
-    "Validation is embedded in the Devtool apply hook; no separate user validation command is required."
-  ]
+  }
 }

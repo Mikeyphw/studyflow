@@ -270,6 +270,10 @@ class DesktopStudyContentRepository(
 
     fun currentState(): DesktopStudyContentState = state.value
 
+    fun replaceFromPersistence(next: DesktopStudyContentState) {
+        state.value = next
+    }
+
     fun currentSyllabus(planId: StudyPlanId): StudySyllabus = StudySyllabus(
         studyPlanId = planId,
         subjects = state.value.subjects.filter { it.studyPlanId == planId }.sortedBy(Subject::position),

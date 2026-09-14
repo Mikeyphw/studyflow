@@ -156,7 +156,14 @@ class DesktopPlanContentController(
 
     suspend fun deleteSubject(subjectId: SubjectId) {
         val selected = requireNotNull(state().selectedPlan)
+        val removedTopics = contentRepository.currentSyllabus(selected.id).topics
+            .filter { it.subjectId == subjectId }
+            .mapTo(linkedSetOf(), Topic::id)
         manageContent.deleteSubject(selected.id, subjectId)
+        scheduleRepository?.scrubDeletedContentReferences(selected.id, removedSubjectIds = setOf(subjectId), removedTopicIds = removedTopics)
+        sessionRepository?.scrubDeletedContentReferences(selected.id, removedSubjectIds = setOf(subjectId), removedTopicIds = removedTopics)
+        practiceRepository?.scrubDeletedContentReferences(selected.id, removedSubjectIds = setOf(subjectId), removedTopicIds = removedTopics)
+        reviewRepository?.scrubDeletedContentReferences(selected.id, removedSubjectIds = setOf(subjectId), removedTopicIds = removedTopics)
     }
 
     suspend fun createTopic(subjectId: SubjectId, name: String): Topic {
@@ -199,6 +206,24 @@ class DesktopPlanContentController(
 
     suspend fun deleteTopic(topicId: TopicId) {
         val selected = requireNotNull(state().selectedPlan)
+        val allTopics = contentRepository.currentSyllabus(selected.id).topics
+        val removedTopics = topicDescendants(topicId, allTopics) + topicId
         manageContent.deleteTopic(selected.id, topicId)
+        scheduleRepository?.scrubDeletedContentReferences(selected.id, removedTopicIds = removedTopics)
+        sessionRepository?.scrubDeletedContentReferences(selected.id, removedTopicIds = removedTopics)
+        practiceRepository?.scrubDeletedContentReferences(selected.id, removedTopicIds = removedTopics)
+        reviewRepository?.scrubDeletedContentReferences(selected.id, removedTopicIds = removedTopics)
+    }
+
+    private fun topicDescendants(topicId: TopicId, topics: List<Topic>): Set<TopicId> {
+        val byParent = topics.groupBy(Topic::parentTopicId)
+        val result = linkedSetOf<TopicId>()
+        fun visit(parent: TopicId) {
+            byParent[parent].orEmpty().forEach { child ->
+                if (result.add(child.id)) visit(child.id)
+            }
+        }
+        visit(topicId)
+        return result
     }
 }

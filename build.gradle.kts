@@ -2493,3 +2493,15 @@ tasks.register<Exec>("verifyOv21UnifiedTvControlPlane") {
     )
     commandLine("bash", "scripts/validate_ov21_unified_tv_control_plane.sh")
 }
+// OV22 — Desktop persistence, atomicity, restore & file safety.
+tasks.register<Exec>("verifyOv22DesktopPersistenceAtomicRestoreFileSafety") {
+    group = "verification"
+    description = "Validates OV22 Desktop nonblocking UI actions, referential cleanup, atomic linked commits, point-in-time restore reload, schema migration, workspace locking and file secrecy."
+    dependsOn(
+        ":core:domain:test",
+        ":core:portability:test",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:test",
+    )
+    commandLine("bash", "scripts/validate_ov22_desktop_persistence_atomic_restore_file_safety.sh")
+}

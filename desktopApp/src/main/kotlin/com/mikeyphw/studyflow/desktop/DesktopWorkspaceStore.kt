@@ -38,8 +38,13 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
+import java.nio.channels.FileChannel
+import java.nio.channels.FileLock
+import java.nio.file.attribute.PosixFilePermission
 import java.util.Properties
 
 /** Durable Desktop workspace state that is intentionally independent of Android persistence APIs. */
@@ -77,11 +82,43 @@ data class DesktopWorkspaceSnapshot(
 class DesktopWorkspacePersistence private constructor(
     val root: Path,
     private var snapshot: DesktopWorkspaceSnapshot,
-) {
+    private val lockChannel: FileChannel?,
+    private val lock: FileLock?,
+) : AutoCloseable {
     private val workspaceFile: Path = root.resolve(WORKSPACE_FILE)
 
     @Synchronized
     fun current(): DesktopWorkspaceSnapshot = snapshot
+
+    @Synchronized
+    fun replaceFromDisk(seed: DesktopWorkspaceSnapshot): DesktopWorkspaceSnapshot {
+        val loaded = Files.newInputStream(workspaceFile).use { input -> DesktopWorkspacePropertiesCodec.read(input, seed) }
+        snapshot = loaded
+        return loaded
+    }
+
+    @Synchronized
+    fun rewriteAfterRestore(snapshot: DesktopWorkspaceSnapshot) {
+        this.snapshot = snapshot
+        persistLocked()
+    }
+
+    @Synchronized
+    fun <T> atomicCompositeMutation(reason: String, block: () -> T): T {
+        val before = snapshot
+        return try {
+            block()
+        } catch (error: Throwable) {
+            snapshot = before
+            persistLocked()
+            throw IllegalStateException("Desktop composite persistence transaction failed during $reason; workspace rolled back.", error)
+        }
+    }
+
+    override fun close() {
+        runCatching { lock?.release() }
+        runCatching { lockChannel?.close() }
+    }
 
     @Synchronized
     fun updatePlans(
@@ -143,10 +180,12 @@ class DesktopWorkspacePersistence private constructor(
     @Synchronized
     private fun persistLocked() {
         Files.createDirectories(root)
+        applyOwnerOnlyPermissions(root, directory = true)
         val temporary = root.resolve("$WORKSPACE_FILE.tmp")
         Files.newOutputStream(temporary).use { output ->
             DesktopWorkspacePropertiesCodec.write(snapshot, output)
         }
+        applyOwnerOnlyPermissions(temporary, directory = false)
         try {
             Files.move(
                 temporary,
@@ -157,25 +196,57 @@ class DesktopWorkspacePersistence private constructor(
         } catch (_: AtomicMoveNotSupportedException) {
             Files.move(temporary, workspaceFile, StandardCopyOption.REPLACE_EXISTING)
         }
+        applyOwnerOnlyPermissions(workspaceFile, directory = false)
+    }
+
+    private fun applyOwnerOnlyPermissions(path: Path, directory: Boolean) {
+        val permissions = if (directory) {
+            setOf(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE,
+            )
+        } else {
+            setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
+        }
+        runCatching { Files.setPosixFilePermissions(path, permissions) }
     }
 
     companion object {
         const val CURRENT_SCHEMA_VERSION: Int = 4
         private const val WORKSPACE_FILE = "workspace-v1.properties"
+        private const val LOCK_FILE = ".studyflow-workspace.lock"
 
         fun open(
             root: Path = defaultDesktopWorkspaceRoot(),
             seed: DesktopWorkspaceSnapshot,
         ): DesktopWorkspacePersistence {
             Files.createDirectories(root)
-            val file = root.resolve(WORKSPACE_FILE)
-            val initial = if (Files.exists(file)) {
-                Files.newInputStream(file).use { input -> DesktopWorkspacePropertiesCodec.read(input, seed) }
-            } else {
-                seed
-            }
-            return DesktopWorkspacePersistence(root, initial).also { persistence ->
-                if (!Files.exists(file)) persistence.persistLocked()
+            val normalized = root.toAbsolutePath().normalize()
+            val lockPath = normalized.resolve(LOCK_FILE)
+            val channel = FileChannel.open(
+                lockPath,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+            )
+            val exclusiveLock = channel.tryLock()
+                ?: error("StudyFlow Desktop workspace is already open in another process: $normalized")
+            return runCatching {
+                val file = normalized.resolve(WORKSPACE_FILE)
+                val initial = if (Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
+                    Files.newInputStream(file).use { input -> DesktopWorkspacePropertiesCodec.read(input, seed) }
+                } else {
+                    seed
+                }
+                DesktopWorkspacePersistence(normalized, initial, channel, exclusiveLock).also { persistence ->
+                    persistence.applyOwnerOnlyPermissions(normalized, directory = true)
+                    persistence.applyOwnerOnlyPermissions(lockPath, directory = false)
+                    if (!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) persistence.persistLocked()
+                }
+            }.getOrElse { error ->
+                runCatching { exclusiveLock.release() }
+                runCatching { channel.close() }
+                throw error
             }
         }
     }
@@ -327,7 +398,9 @@ private object DesktopWorkspacePropertiesCodec {
         createdAtEpochMillis = properties.requiredLong("$prefix.createdAtEpochMillis"),
         updatedAtEpochMillis = properties.requiredLong("$prefix.updatedAtEpochMillis"),
         trashedAtEpochMillis = properties.optionalLong("$prefix.trashedAtEpochMillis"),
-        contentMode = StudyContentMode.valueOf(properties.required("$prefix.contentMode")),
+        contentMode = com.mikeyphw.studyflow.core.model.contentModeOrDefault(
+            properties.getProperty("$prefix.contentMode"),
+        ),
     )
 
     private fun writeSettings(properties: Properties, prefix: String, settings: StudyPlanSettings) {

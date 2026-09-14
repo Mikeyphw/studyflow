@@ -125,6 +125,12 @@ class DesktopStudyDiscoveryRepository(
         query: String,
         contentTypes: Set<GlobalSearchContentType>,
         includeArchived: Boolean,
+    ): List<GlobalSearchResult> = currentSearch(query, contentTypes, includeArchived)
+
+    fun currentSearch(
+        query: String,
+        contentTypes: Set<GlobalSearchContentType> = GlobalSearchContentType.entries.toSet(),
+        includeArchived: Boolean = false,
     ): List<GlobalSearchResult> {
         val plansRows = plans.currentPlans()
         val planById = plansRows.associateBy(StudyPlan::id)
@@ -202,6 +208,11 @@ class DesktopStudyDiscoveryRepository(
     override suspend fun recommendations(
         studyPlanId: StudyPlanId,
         nowEpochMillis: Long,
+    ): List<StudyRecommendation> = currentRecommendations(studyPlanId, nowEpochMillis)
+
+    fun currentRecommendations(
+        studyPlanId: StudyPlanId,
+        nowEpochMillis: Long = System.currentTimeMillis(),
     ): List<StudyRecommendation> {
         val snapshot = analytics.currentSnapshot(studyPlanId)
         val nextActivity = schedule.currentActivities(studyPlanId).firstOrNull { activity ->
@@ -267,6 +278,10 @@ class DesktopPreferencesStore(
     val changes: Flow<AppPreferences> = preferences
 
     fun current(): AppPreferences = preferences.value
+
+    fun replaceFromPersistence(next: AppPreferences) {
+        preferences.value = next
+    }
 
     fun setTheme(themeMode: ThemeMode) {
         preferences.value = preferences.value.copy(themeMode = themeMode)

@@ -97,35 +97,41 @@ class DesktopPortabilityController(
         importStructurePayload(payload)
     }
 
-    fun createEncryptedWorkspaceBackup(destination: Path, password: CharArray): Path {
-        val workspace = requireRoot().toRealPath(LinkOption.NOFOLLOW_LINKS)
-        requireWorkspaceTreeHasNoSymlinks(workspace)
-        val normalizedDestination = destination.toAbsolutePath().normalize()
-        val destinationParent = requireNotNull(normalizedDestination.parent) {
-            "Encrypted Desktop backup destination must have a parent directory."
-        }
-        Files.createDirectories(destinationParent)
-        requireExternalPath(workspace, destinationParent, normalizedDestination, "backup destination")
-        val files = workspaceBackupFiles(workspace)
-        try {
-            Files.newOutputStream(normalizedDestination).use { rawOutput ->
-                val boundedOutput = BoundedBackupOutputStream(rawOutput, MAX_BACKUP_BYTES)
-                encryptedCodec.encrypt(boundedOutput, password) { encryptedOutput ->
-                    ZipOutputStream(encryptedOutput.buffered()).use { zip ->
-                        writeBackupManifest(zip)
-                        files.forEach { file -> writeWorkspaceFile(zip, workspace, file) }
-                    }
-                }
+    fun createEncryptedWorkspaceBackup(destination: Path, password: CharArray): Path =
+        services.atomicDesktopMutation("point-in-time encrypted Desktop backup") {
+            val workspace = requireRoot().toRealPath(LinkOption.NOFOLLOW_LINKS)
+            requireWorkspaceTreeHasNoSymlinks(workspace)
+            val normalizedDestination = destination.toAbsolutePath().normalize()
+            val destinationParent = requireNotNull(normalizedDestination.parent) {
+                "Encrypted Desktop backup destination must have a parent directory."
             }
-        } catch (error: Throwable) {
-            Files.deleteIfExists(normalizedDestination)
-            throw error
+            Files.createDirectories(destinationParent)
+            requireExternalPath(workspace, destinationParent, normalizedDestination, "backup destination")
+            val snapshotRoot = Files.createTempDirectory(destinationParent, ".studyflow-backup-snapshot-")
+            try {
+                val snapshotFiles = createPointInTimeWorkspaceSnapshot(workspace, snapshotRoot, workspaceBackupFiles(workspace))
+                try {
+                    Files.newOutputStream(normalizedDestination).use { rawOutput ->
+                        val boundedOutput = BoundedBackupOutputStream(rawOutput, MAX_BACKUP_BYTES)
+                        encryptedCodec.encrypt(boundedOutput, password) { encryptedOutput ->
+                            ZipOutputStream(encryptedOutput.buffered()).use { zip ->
+                                writeBackupManifest(zip)
+                                snapshotFiles.forEach { file -> writeWorkspaceFile(zip, snapshotRoot, file) }
+                            }
+                        }
+                    }
+                } catch (error: Throwable) {
+                    Files.deleteIfExists(normalizedDestination)
+                    throw error
+                }
+                require(Files.size(normalizedDestination) <= MAX_BACKUP_BYTES) {
+                    "Encrypted Desktop backup exceeds the restore size limit."
+                }
+                normalizedDestination
+            } finally {
+                deleteTree(snapshotRoot)
+            }
         }
-        require(Files.size(normalizedDestination) <= MAX_BACKUP_BYTES) {
-            "Encrypted Desktop backup exceeds the restore size limit."
-        }
-        return normalizedDestination
-    }
 
     fun restoreEncryptedWorkspaceBackup(source: Path, password: CharArray): DesktopWorkspaceRestoreResult {
         val workspace = requireRoot().toRealPath(LinkOption.NOFOLLOW_LINKS)
@@ -153,16 +159,20 @@ class DesktopPortabilityController(
             }
             extractWorkspaceBackup(plain, staging)
             validateStagedWorkspace(staging)
+            validateAuxiliaryStagedStores(staging)
+            val restoredFileCount = regularFileCount(staging)
             copyTree(workspace, safety)
             try {
                 replaceTree(workspace, staging)
+                services.reloadFromDiskAfterRestore()
             } catch (error: Throwable) {
                 replaceTree(workspace, safety)
+                services.reloadFromDiskAfterRestore()
                 throw error
             }
             return DesktopWorkspaceRestoreResult(
-                restoredFiles = regularFileCount(staging),
-                restartRequired = true,
+                restoredFiles = restoredFileCount,
+                restartRequired = false,
                 safetySnapshotCreated = true,
             )
         } finally {
@@ -410,7 +420,54 @@ class DesktopPortabilityController(
         DesktopWorkspacePersistence.open(
             root = staging,
             seed = DesktopWorkspaceSnapshot.seed(DesktopStudyFlowSampleData.create()),
-        )
+        ).use { it.current() }
+        Files.deleteIfExists(staging.resolve(".studyflow-workspace.lock"))
+    }
+
+    private fun validateAuxiliaryStagedStores(staging: Path) {
+        val sample = DesktopStudyFlowSampleData.create()
+        if (Files.isRegularFile(staging.resolve("library-v1.properties"), LinkOption.NOFOLLOW_LINKS)) {
+            DesktopLibraryPersistence.open(
+                staging,
+                DesktopLibrarySnapshot(sample.materials, sample.videos, sample.annexes),
+            ).current()
+        }
+        if (Files.isRegularFile(staging.resolve("practice-v1.properties"), LinkOption.NOFOLLOW_LINKS)) {
+            DesktopPracticePersistence.open(
+                staging,
+                DesktopPracticeSnapshot(sample.questions, sample.tests, sample.mockExams),
+            ).current()
+        }
+        if (Files.isRegularFile(staging.resolve("reviews-v1.properties"), LinkOption.NOFOLLOW_LINKS)) {
+            DesktopReviewPersistence.open(staging).current()
+        }
+        if (Files.isRegularFile(staging.resolve("content-modes-v1.properties"), LinkOption.NOFOLLOW_LINKS)) {
+            DesktopContentModePersistence.open(staging).current()
+        }
+        if (Files.isRegularFile(staging.resolve("public-exam-v1.properties"), LinkOption.NOFOLLOW_LINKS)) {
+            DesktopPublicExamPersistence.open(staging).current()
+        }
+        if (Files.isRegularFile(staging.resolve("progress-v1.properties"), LinkOption.NOFOLLOW_LINKS)) {
+            DesktopStudyProgressRepository(root = staging).reloadFromDisk()
+        }
+    }
+
+    private fun createPointInTimeWorkspaceSnapshot(
+        workspace: Path,
+        snapshotRoot: Path,
+        files: List<Path>,
+    ): List<Path> {
+        Files.createDirectories(snapshotRoot)
+        files.sorted().forEach { file ->
+            val relative = workspace.relativize(file).normalize()
+            require(!relative.startsWith("..")) { "Workspace snapshot path escaped its root." }
+            val target = snapshotRoot.resolve(relative.toString()).normalize()
+            require(target.startsWith(snapshotRoot)) { "Workspace snapshot target escaped its root." }
+            target.parent?.let(Files::createDirectories)
+            Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES)
+        }
+        requireWorkspaceTreeHasNoSymlinks(snapshotRoot)
+        return workspaceBackupFiles(snapshotRoot)
     }
 
     private fun replaceTree(destination: Path, source: Path) {

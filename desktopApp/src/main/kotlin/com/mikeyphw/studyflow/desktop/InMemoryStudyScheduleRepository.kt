@@ -276,6 +276,11 @@ class InMemoryStudyScheduleRepository(
         mutations.size
     }
 
+    suspend fun replaceActivityFromSessionRollback(activity: PlannedActivity) = mutationMutex.withLock {
+        activityState.value = activityState.value.map { row -> if (row.id == activity.id) activity else row }
+        persist()
+    }
+
     suspend fun transitionFromSession(
         planId: StudyPlanId,
         activityId: PlannedActivityId,
@@ -346,6 +351,38 @@ class InMemoryStudyScheduleRepository(
             scheduledStartEpochMillis == expected.scheduledStartEpochMillis
 
     fun currentStrategies(): List<StudyStrategy> = strategyState.value
+
+    fun currentAllRules(): List<ScheduleRule> = ruleState.value
+    fun currentAllActivities(): List<PlannedActivity> = activityState.value
+
+    fun replaceFromPersistence(
+        strategies: List<StudyStrategy>,
+        rules: List<ScheduleRule>,
+        activities: List<PlannedActivity>,
+    ) {
+        strategyState.value = strategies.toList()
+        ruleState.value = rules.toList()
+        activityState.value = activities.toList()
+    }
+
+    fun scrubDeletedContentReferences(
+        planId: StudyPlanId,
+        removedSubjectIds: Set<com.mikeyphw.studyflow.core.model.SubjectId> = emptySet(),
+        removedTopicIds: Set<com.mikeyphw.studyflow.core.model.TopicId> = emptySet(),
+    ) {
+        if (removedSubjectIds.isEmpty() && removedTopicIds.isEmpty()) return
+        ruleState.value = ruleState.value.filterNot { rule ->
+            rule.studyPlanId == planId && rule.subjectId in removedSubjectIds
+        }
+        activityState.value = activityState.value.map { activity ->
+            if (activity.studyPlanId != planId) activity else when {
+                activity.subjectId in removedSubjectIds -> activity.copy(subjectId = null, topicId = null)
+                activity.topicId in removedTopicIds -> activity.copy(topicId = null)
+                else -> activity
+            }
+        }
+        persist()
+    }
 
     private fun persist() {
         onChanged(strategyState.value, ruleState.value, activityState.value)

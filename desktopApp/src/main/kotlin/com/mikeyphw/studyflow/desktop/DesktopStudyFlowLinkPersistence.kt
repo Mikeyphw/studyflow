@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.PosixFilePermission
 import java.security.MessageDigest
 
 class DesktopStudyFlowLinkPersistence(
@@ -34,6 +35,10 @@ class DesktopStudyFlowLinkPersistence(
         Files.createDirectories(root.resolve("queue"))
         Files.createDirectories(root.resolve("journal"))
         Files.createDirectories(root.resolve("quarantine"))
+        applyOwnerOnlyPermissions(root, directory = true)
+        applyOwnerOnlyPermissions(root.resolve("queue"), directory = true)
+        applyOwnerOnlyPermissions(root.resolve("journal"), directory = true)
+        applyOwnerOnlyPermissions(root.resolve("quarantine"), directory = true)
     }
 
     val identityStore: StudyFlowDeviceIdentityStore = object : StudyFlowDeviceIdentityStore {
@@ -286,7 +291,9 @@ class DesktopStudyFlowLinkPersistence(
         val safeName = path.fileName.toString().replace(Regex("[^A-Za-z0-9._-]"), "_")
         val quarantine = root.resolve("quarantine").resolve("${observedAt}-${digest.take(12)}-$safeName.corrupt")
         Files.createDirectories(quarantine.parent)
+        applyOwnerOnlyPermissions(quarantine.parent, directory = true)
         Files.writeString(quarantine, encoded, StandardCharsets.UTF_8)
+        applyOwnerOnlyPermissions(quarantine, directory = false)
         Files.deleteIfExists(path)
         val record = StudyFlowPersistenceCorruptionRecord(
             stateKind = kind,
@@ -318,13 +325,29 @@ class DesktopStudyFlowLinkPersistence(
 
     private fun writeText(path: Path, value: String) {
         Files.createDirectories(path.parent)
+        applyOwnerOnlyPermissions(path.parent, directory = true)
         val temp = path.resolveSibling("${path.fileName}.tmp")
         Files.writeString(temp, value, StandardCharsets.UTF_8)
+        applyOwnerOnlyPermissions(temp, directory = false)
         try {
             Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         } catch (_: Exception) {
             Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING)
         }
+        applyOwnerOnlyPermissions(path, directory = false)
+    }
+
+    private fun applyOwnerOnlyPermissions(path: Path, directory: Boolean) {
+        val permissions = if (directory) {
+            setOf(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE,
+            )
+        } else {
+            setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
+        }
+        runCatching { Files.setPosixFilePermissions(path, permissions) }
     }
 
     private fun workspaceKey(workspaceId: StudyFlowWorkspaceId): String =

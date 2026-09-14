@@ -112,9 +112,8 @@ class InMemoryStudyPracticeRepository(
         next: StudyTest,
         wrongAnswers: List<PracticeWrongAnswerCapture>,
     ): StudyTest {
-        val submitted = updateTestAttemptIfOpen(expectedConfiguration, next)
         if (wrongAnswers.isNotEmpty()) wrongAnswerSink(wrongAnswers)
-        return submitted
+        return updateTestAttemptIfOpen(expectedConfiguration, next)
     }
 
     override suspend fun startMockExamIfNotStarted(
@@ -140,9 +139,8 @@ class InMemoryStudyPracticeRepository(
         next: MockExam,
         wrongAnswers: List<PracticeWrongAnswerCapture>,
     ): MockExam {
-        val submitted = updateMockExamAttemptIfOpen(expectedConfiguration, next)
         if (wrongAnswers.isNotEmpty()) wrongAnswerSink(wrongAnswers)
-        return submitted
+        return updateMockExamAttemptIfOpen(expectedConfiguration, next)
     }
 
     fun attachWrongAnswerSink(sink: suspend (List<PracticeWrongAnswerCapture>) -> Unit) {
@@ -167,6 +165,32 @@ class InMemoryStudyPracticeRepository(
     fun currentMockExams(planId: StudyPlanId): List<MockExam> = mockExamState.value
         .filter { it.studyPlanId == planId }
         .sortedByDescending { it.startedAtEpochMillis ?: 0L }
+
+    fun currentAllQuestions(): List<Question> = questionState.value
+    fun currentAllTests(): List<StudyTest> = testState.value
+    fun currentAllMockExams(): List<MockExam> = mockExamState.value
+
+    fun replaceFromPersistence(snapshot: DesktopPracticeSnapshot) {
+        questionState.value = snapshot.questions
+        testState.value = snapshot.tests
+        mockExamState.value = snapshot.mockExams
+    }
+
+    fun scrubDeletedContentReferences(
+        planId: StudyPlanId,
+        removedSubjectIds: Set<com.mikeyphw.studyflow.core.model.SubjectId> = emptySet(),
+        removedTopicIds: Set<com.mikeyphw.studyflow.core.model.TopicId> = emptySet(),
+    ) {
+        if (removedSubjectIds.isEmpty() && removedTopicIds.isEmpty()) return
+        questionState.value = questionState.value.map { question ->
+            if (question.studyPlanId != planId) question else when {
+                question.subjectId in removedSubjectIds -> question.copy(subjectId = null, topicId = null)
+                question.topicId in removedTopicIds -> question.copy(topicId = null)
+                else -> question
+            }
+        }
+        persist()
+    }
 
     private fun persist() = onChanged(questionState.value, testState.value, mockExamState.value)
 }

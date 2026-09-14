@@ -124,6 +124,18 @@ class DesktopPublicExamRepository(
 
     fun current(): DesktopPublicExamSnapshot = state.value
 
+    fun currentRevisions(planId: StudyPlanId): List<ExamNoticeRevision> = state.value.revisions
+        .filter { it.studyPlanId == planId }
+        .sortedByDescending { it.importedAtEpochMillis }
+
+    fun currentLegislation(planId: StudyPlanId): LegislationStudySnapshot = state.value.legislation(planId)
+
+    fun currentCycle(planId: StudyPlanId): StudyCycleSnapshot? = state.value.cycle(planId)
+
+    fun replaceFromPersistence(snapshot: DesktopPublicExamSnapshot) {
+        state.value = snapshot
+    }
+
     fun importPortableStructure(
         planId: StudyPlanId,
         documents: List<LegislationDocument>,

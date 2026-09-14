@@ -64,20 +64,35 @@ class InMemoryStudySessionRepository(
             "Finish or cancel the active Study Session before starting another one."
         }
         val activityId = session.plannedActivityId
-        if (activityId != null && linkedActivityExpectedStatus != null) {
+        val linkedRepository = if (activityId != null && linkedActivityExpectedStatus != null) {
             requireNotNull(scheduleRepository) { "Linked Study Session requires a schedule repository." }
-                .transitionFromSession(
+        } else null
+        val beforeSessions = sessionState.value
+        val linkedBefore = activityId?.let { id ->
+            linkedRepository?.currentActivities(session.studyPlanId)?.firstOrNull { it.id == id }
+        }
+        try {
+            if (activityId != null && linkedActivityExpectedStatus != null && linkedRepository != null) {
+                linkedRepository.transitionFromSession(
                     planId = session.studyPlanId,
                     activityId = activityId,
                     expectedStatus = linkedActivityExpectedStatus,
                     newStatus = PlannedActivityStatus.IN_PROGRESS,
                     completedAtEpochMillis = null,
                 )
+            }
+            sessionState.value = sessionState.value + session
+            persist()
+            if (cycleBinding != null) cycleBindingRecorder?.invoke(session.id, cycleBinding)
+            session
+        } catch (error: Throwable) {
+            sessionState.value = beforeSessions
+            persist()
+            if (activityId != null && linkedBefore != null && linkedRepository != null) {
+                linkedRepository.replaceActivityFromSessionRollback(linkedBefore)
+            }
+            throw IllegalStateException("Linked Desktop Study Session did not commit atomically.", error)
         }
-        sessionState.value = sessionState.value + session
-        persist()
-        if (cycleBinding != null) cycleBindingRecorder?.invoke(session.id, cycleBinding)
-        session
     }
 
     override suspend fun transitionSession(
@@ -90,21 +105,36 @@ class InMemoryStudySessionRepository(
         val current = requireNotNull(findSession(session.studyPlanId, session.id)) { "Study Session does not exist." }
         require(current.status == expectedStatus) { "Study Session status changed before transition." }
         val activityId = session.plannedActivityId
-        if (activityId != null && linkedActivityExpectedStatus != null && linkedActivityStatus != null) {
+        val linkedRepository = if (activityId != null && linkedActivityExpectedStatus != null && linkedActivityStatus != null) {
             requireNotNull(scheduleRepository) { "Linked Study Session requires a schedule repository." }
-                .transitionFromSession(
+        } else null
+        val beforeSessions = sessionState.value
+        val linkedBefore = activityId?.let { id ->
+            linkedRepository?.currentActivities(session.studyPlanId)?.firstOrNull { it.id == id }
+        }
+        try {
+            if (activityId != null && linkedActivityExpectedStatus != null && linkedActivityStatus != null && linkedRepository != null) {
+                linkedRepository.transitionFromSession(
                     planId = session.studyPlanId,
                     activityId = activityId,
                     expectedStatus = linkedActivityExpectedStatus,
                     newStatus = linkedActivityStatus,
                     completedAtEpochMillis = linkedActivityCompletedAtEpochMillis,
                 )
+            }
+            replace(session).also { persist() }
+            if (session.status in TerminalStatuses) {
+                cycleTerminalHandler?.invoke(session.studyPlanId, session.id, session.status)
+            }
+            session
+        } catch (error: Throwable) {
+            sessionState.value = beforeSessions
+            persist()
+            if (activityId != null && linkedBefore != null && linkedRepository != null) {
+                linkedRepository.replaceActivityFromSessionRollback(linkedBefore)
+            }
+            throw IllegalStateException("Linked Desktop Study Session transition did not commit atomically.", error)
         }
-        replace(session).also { persist() }
-        if (session.status in TerminalStatuses) {
-            cycleTerminalHandler?.invoke(session.studyPlanId, session.id, session.status)
-        }
-        session
     }
 
     suspend fun purgePlan(planId: StudyPlanId) = mutationMutex.withLock {
@@ -117,6 +147,26 @@ class InMemoryStudySessionRepository(
         .sortedByDescending(StudySession::startedAtEpochMillis)
 
     fun currentAllSessions(): List<StudySession> = sessionState.value
+
+    fun replaceFromPersistence(sessions: List<StudySession>) {
+        sessionState.value = sessions.toList()
+    }
+
+    fun scrubDeletedContentReferences(
+        planId: StudyPlanId,
+        removedSubjectIds: Set<com.mikeyphw.studyflow.core.model.SubjectId> = emptySet(),
+        removedTopicIds: Set<com.mikeyphw.studyflow.core.model.TopicId> = emptySet(),
+    ) {
+        if (removedSubjectIds.isEmpty() && removedTopicIds.isEmpty()) return
+        sessionState.value = sessionState.value.map { session ->
+            if (session.studyPlanId != planId) session else when {
+                session.subjectId in removedSubjectIds -> session.copy(subjectId = null, topicId = null)
+                session.topicId in removedTopicIds -> session.copy(topicId = null)
+                else -> session
+            }
+        }
+        persist()
+    }
 
     private fun replace(session: StudySession): StudySession {
         sessionState.value = sessionState.value.map { existing -> if (existing.id == session.id) session else existing }

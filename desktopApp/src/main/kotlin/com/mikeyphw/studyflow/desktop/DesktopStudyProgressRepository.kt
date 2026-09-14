@@ -80,6 +80,12 @@ class DesktopStudyProgressRepository(
 
     fun currentNotes(planId: StudyPlanId): List<StudyNote> = notes.value.filter { it.studyPlanId == planId }
 
+    fun reloadFromDisk() {
+        goals.value = emptyList()
+        notes.value = emptyList()
+        root?.let(::load)
+    }
+
     fun purgePlan(planId: StudyPlanId) {
         goals.value = goals.value.filterNot { it.studyPlanId == planId }
         notes.value = notes.value.filterNot { it.studyPlanId == planId }

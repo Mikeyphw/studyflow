@@ -16,7 +16,6 @@ import com.mikeyphw.studyflow.core.model.StudyMaterialId
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
 import java.nio.file.Path
-import kotlinx.coroutines.runBlocking
 import com.mikeyphw.studyflow.core.model.ThemeMode
 
 class DesktopAppState(
@@ -161,6 +160,8 @@ class DesktopAppState(
         private set
     var portabilityPasswordDraft: String by mutableStateOf("")
         private set
+
+    private var portabilityPasswordSecret: CharArray = CharArray(0)
     var portabilityActionMessage: String by mutableStateOf("")
         private set
 
@@ -174,6 +175,8 @@ class DesktopAppState(
         private set
 
     private var linkRevision: Int by mutableStateOf(0)
+
+    private val uiActions = DesktopUiActionRunner()
 
     fun selectRoute(route: DesktopRoute) {
         selectedRoute = route
@@ -248,9 +251,12 @@ class DesktopAppState(
     }
 
     private fun runStructureAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { structureActionMessage = success }
-            .onFailure { structureActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { structureActionMessage = success },
+            onFailure = { error -> structureActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
     fun updateSearchQuery(query: String) {
@@ -332,12 +338,15 @@ class DesktopAppState(
     }
 
     private fun runLibraryAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess {
+        uiActions.launch(
+            actionName = success,
+            onSuccess = {
                 libraryActionMessage = success
                 services.platformPorts.notifications.showInfo(StudyFlowDesktopBoundary.appName, success)
-            }
-            .onFailure { libraryActionMessage = it.message.orEmpty() }
+            },
+            onFailure = { error -> libraryActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
     fun contentModeState(): DesktopContentModeState = services.contentModeController.state()
@@ -372,19 +381,20 @@ class DesktopAppState(
     }
 
     private fun runContentModeAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { contentModeActionMessage = success }
-            .onFailure { contentModeActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { contentModeActionMessage = success },
+            onFailure = { error -> contentModeActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
-    fun publicExamState(): DesktopPublicExamState = runBlocking {
-        services.publicExamController.state().also { state ->
-            state.target?.let { target ->
-                if (publicExamOrganizationDraft.isBlank()) publicExamOrganizationDraft = target.organization
-                if (publicExamRoleDraft.isBlank()) publicExamRoleDraft = target.role
-                if (publicExamBoardDraft.isBlank()) publicExamBoardDraft = target.examBoard
-                if (publicExamDateDraft.isBlank()) publicExamDateDraft = target.confirmedExamDateIso.orEmpty()
-            }
+    fun publicExamState(): DesktopPublicExamState = services.publicExamController.state().also { state ->
+        state.target?.let { target ->
+            if (publicExamOrganizationDraft.isBlank()) publicExamOrganizationDraft = target.organization
+            if (publicExamRoleDraft.isBlank()) publicExamRoleDraft = target.role
+            if (publicExamBoardDraft.isBlank()) publicExamBoardDraft = target.examBoard
+            if (publicExamDateDraft.isBlank()) publicExamDateDraft = target.confirmedExamDateIso.orEmpty()
         }
     }
 
@@ -430,17 +440,18 @@ class DesktopAppState(
     }
 
     private fun runPublicExamAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { publicExamActionMessage = success }
-            .onFailure { publicExamActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { publicExamActionMessage = success },
+            onFailure = { error -> publicExamActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
-    fun writingWorkspaceState(): DesktopWritingWorkspaceState = runBlocking {
-        services.writingWorkspaceController.state().also { state ->
-            state.record?.let { record ->
-                if (writingPromptDraft.isBlank()) writingPromptDraft = record.prompt
-                if (writingTextDraft.isBlank()) writingTextDraft = record.draftText
-            }
+    fun writingWorkspaceState(): DesktopWritingWorkspaceState = services.writingWorkspaceController.state().also { state ->
+        state.record?.let { record ->
+            if (writingPromptDraft.isBlank()) writingPromptDraft = record.prompt
+            if (writingTextDraft.isBlank()) writingTextDraft = record.draftText
         }
     }
 
@@ -502,9 +513,12 @@ class DesktopAppState(
     private fun score(raw: String): Int = raw.toIntOrNull()?.coerceIn(0, 20) ?: 0
 
     private fun runWritingAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { writingActionMessage = success }
-            .onFailure { writingActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { writingActionMessage = success },
+            onFailure = { error -> writingActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
     fun plannerState(): DesktopPlannerScreenState = services.createPlannerState()
@@ -541,12 +555,15 @@ class DesktopAppState(
     }
 
     private fun runPlannerAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { plannerActionMessage = success }
-            .onFailure { plannerActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { plannerActionMessage = success },
+            onFailure = { error -> plannerActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
-    fun sessionRuntimeState(): DesktopSessionRuntimeState = runBlocking { services.sessionRuntimeController.state() }
+    fun sessionRuntimeState(): DesktopSessionRuntimeState = services.sessionRuntimeController.state()
 
     fun startNextSessionActivity() = runSessionAction("Study Session started") {
         services.sessionRuntimeController.startNextActivity()
@@ -565,9 +582,12 @@ class DesktopAppState(
     fun cancelSession() = runSessionAction("Study Session cancelled") { services.sessionRuntimeController.cancel() }
 
     private fun runSessionAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { sessionActionMessage = success }
-            .onFailure { sessionActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { sessionActionMessage = success },
+            onFailure = { error -> sessionActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
     fun practiceState(): DesktopPracticeScreenState = services.createPracticeState()
@@ -602,9 +622,12 @@ class DesktopAppState(
         runPracticeAction("Disputed state updated") { services.practiceExecutionController.toggleDisputed(questionId) }
 
     private fun runPracticeAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { practiceActionMessage = success }
-            .onFailure { practiceActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { practiceActionMessage = success },
+            onFailure = { error -> practiceActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
     fun mockExamStudioState(): DesktopMockExamStudioState = services.mockExamStudioController.state()
@@ -625,9 +648,12 @@ class DesktopAppState(
     fun finishMockExam() = runMockExamAction("Mock Exam submitted") { services.mockExamStudioController.finish() }
 
     private fun runMockExamAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { mockExamActionMessage = success }
-            .onFailure { mockExamActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { mockExamActionMessage = success },
+            onFailure = { error -> mockExamActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
     fun reviewWorkspaceState(): DesktopReviewWorkspaceState = services.reviewWorkspaceController.state()
@@ -656,9 +682,12 @@ class DesktopAppState(
     }
 
     private fun runReviewAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { reviewActionMessage = success }
-            .onFailure { reviewActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { reviewActionMessage = success },
+            onFailure = { error -> reviewActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
     fun analyticsState(): DesktopAnalyticsScreenState = services.createAnalyticsState()
@@ -702,15 +731,22 @@ class DesktopAppState(
     }
 
     private fun runGoalAction(success: String, action: suspend () -> Unit) {
-        runCatching { runBlocking { action() } }
-            .onSuccess { goalActionMessage = success }
-            .onFailure { goalActionMessage = it.message.orEmpty() }
+        uiActions.launch(
+            actionName = success,
+            onSuccess = { goalActionMessage = success },
+            onFailure = { error -> goalActionMessage = error.cause?.message ?: error.message.orEmpty() },
+            action = action,
+        )
     }
 
     fun applyStudySprint() {
-        runCatching { runBlocking { services.progressReadinessController.applyCurrentSprint() } }
-            .onSuccess { count -> progressActionMessage = "Applied $count study sprint change(s)" }
-            .onFailure { error -> progressActionMessage = error.message.orEmpty() }
+        uiActions.launch(
+            actionName = "Apply study sprint",
+            onSuccess = { progressActionMessage = "Applied study sprint changes" },
+            onFailure = { error -> progressActionMessage = error.cause?.message ?: error.message.orEmpty() },
+        ) {
+            services.progressReadinessController.applyCurrentSprint()
+        }
     }
 
     fun exportExamReport() {
@@ -731,7 +767,11 @@ class DesktopAppState(
 
     fun updatePortabilityPath(value: String) { portabilityPathDraft = value }
 
-    fun updatePortabilityPassword(value: String) { portabilityPasswordDraft = value }
+    fun updatePortabilityPassword(value: String) {
+        portabilityPasswordSecret.fill('\u0000')
+        portabilityPasswordSecret = value.toCharArray()
+        portabilityPasswordDraft = "•".repeat(value.length)
+    }
 
     fun exportPortableStructure() = runPortabilityAction("Portable Study Plan exported") {
         val destination = Path.of(portabilityPathDraft.trim())
@@ -743,17 +783,27 @@ class DesktopAppState(
     }
 
     fun createEncryptedWorkspaceBackup() = runPortabilityAction("Encrypted Desktop backup created") {
-        services.portabilityController.createEncryptedWorkspaceBackup(
-            Path.of(portabilityPathDraft.trim()),
-            portabilityPasswordDraft.toCharArray(),
-        )
+        val secret = portabilityPasswordSecret.copyOf()
+        try {
+            services.portabilityController.createEncryptedWorkspaceBackup(Path.of(portabilityPathDraft.trim()), secret)
+        } finally {
+            secret.fill('\u0000')
+            portabilityPasswordSecret.fill('\u0000')
+            portabilityPasswordSecret = CharArray(0)
+            portabilityPasswordDraft = ""
+        }
     }
 
-    fun restoreEncryptedWorkspaceBackup() = runPortabilityAction("Workspace restored; restart StudyFlow") {
-        services.portabilityController.restoreEncryptedWorkspaceBackup(
-            Path.of(portabilityPathDraft.trim()),
-            portabilityPasswordDraft.toCharArray(),
-        )
+    fun restoreEncryptedWorkspaceBackup() = runPortabilityAction("Workspace restored and memory reloaded") {
+        val secret = portabilityPasswordSecret.copyOf()
+        try {
+            services.portabilityController.restoreEncryptedWorkspaceBackup(Path.of(portabilityPathDraft.trim()), secret)
+        } finally {
+            secret.fill('\u0000')
+            portabilityPasswordSecret.fill('\u0000')
+            portabilityPasswordSecret = CharArray(0)
+            portabilityPasswordDraft = ""
+        }
     }
 
     fun migrateDesktopWorkspace() = runPortabilityAction("Desktop workspace schema migrated") {

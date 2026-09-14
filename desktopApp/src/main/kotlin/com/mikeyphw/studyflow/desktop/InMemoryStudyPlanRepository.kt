@@ -107,6 +107,11 @@ class InMemoryStudyPlanRepository(
 
     fun currentSettings(): Map<StudyPlanId, StudyPlanSettings> = settingsState.value
 
+    fun replaceFromPersistence(plans: List<StudyPlan>, settings: Map<StudyPlanId, StudyPlanSettings>) {
+        planState.value = plans.toList()
+        settingsState.value = settings.toMap()
+    }
+
     private fun persist() {
         onChanged(planState.value, settingsState.value)
     }

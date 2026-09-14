@@ -30,9 +30,9 @@ class DesktopWritingWorkspaceController(
     private val services: DesktopStudyFlowServices,
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
-    suspend fun state(): DesktopWritingWorkspaceState {
+    fun state(): DesktopWritingWorkspaceState {
         val plan = services.planContentController.state().selectedPlan
-        val anyActive = services.manageStudySession.activeSession()
+        val anyActive = services.sessionRepository.currentAllSessions().firstOrNull { it.status in ActiveSessionStatuses }
         val activeWriting = anyActive?.takeIf { it.type == StudyActivityType.WRITING }
         val sessions = plan?.id?.let(services.sessionRepository::currentSessions).orEmpty()
         val record = activeWriting?.let { WritingSessionNoteCodec.decode(it.notes) }
@@ -94,8 +94,8 @@ class DesktopWritingWorkspaceController(
         }
     }
 
-    private suspend fun requireActiveWriting(): StudySession {
-        val active = requireNotNull(services.manageStudySession.activeSession()) { "No active Writing Session." }
+    private fun requireActiveWriting(): StudySession {
+        val active = requireNotNull(services.sessionRepository.currentAllSessions().firstOrNull { it.status in ActiveSessionStatuses }) { "No active Writing Session." }
         require(active.type == StudyActivityType.WRITING) { "The active Study Session is not a Writing Session." }
         require(active.status in ActiveSessionStatuses) { "Writing Session is not active." }
         return active
