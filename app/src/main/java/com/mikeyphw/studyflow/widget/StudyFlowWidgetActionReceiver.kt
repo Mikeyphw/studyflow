@@ -11,6 +11,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySessionId
 import com.mikeyphw.studyflow.core.model.StudySessionStatus
+import com.mikeyphw.studyflow.reminders.StudyFlowReceiverMutationJournal
 import com.mikeyphw.studyflow.reminders.StudyFlowWidgetUpdateCoordinator
 import com.mikeyphw.studyflow.reminders.studyReminderOpenIntent
 import java.util.UUID
@@ -22,6 +23,13 @@ import kotlinx.coroutines.launch
 
 private val WidgetActionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+object StudyFlowWidgetActionPolicy {
+    fun activeSessionForConfiguredPlan(
+        sessions: List<com.mikeyphw.studyflow.core.model.StudySession>,
+        configuredPlanId: StudyPlanId,
+    ): com.mikeyphw.studyflow.core.model.StudySession? = sessions.firstOrNull { it.studyPlanId == configuredPlanId }
+}
+
 class StudyFlowWidgetActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != StudyFlowWidgetAction) return
@@ -29,15 +37,24 @@ class StudyFlowWidgetActionReceiver : BroadcastReceiver() {
         val action = intent.getStringExtra(ExtraWidgetAction)
             ?.let { raw -> StudyFlowWidgetActionType.entries.firstOrNull { it.name == raw } }
             ?: return
+        val journal = StudyFlowReceiverMutationJournal(context)
+        val handle = journal.begin("widget-action", "$widgetId:${action.name}")
         val result = goAsync()
         WidgetActionScope.launch {
             try {
                 val container = context.requireStudyFlowAppContainer()
                 val configuration = StudyFlowWidgetConfigurationStore(context).load(widgetId)
-                val planId = resolvePlanId(context, configuration) ?: return@launch
+                val planId = resolvePlanId(context, configuration)
+                if (planId == null) {
+                    journal.fail(handle, "widget-plan-unavailable")
+                    return@launch
+                }
                 when (action) {
                     StudyFlowWidgetActionType.START_NEXT -> {
-                        val active = container.manageStudySession.observeActiveSessions().first().firstOrNull()
+                        val active = StudyFlowWidgetActionPolicy.activeSessionForConfiguredPlan(
+                            container.manageStudySession.observeActiveSessions().first(),
+                            planId,
+                        )
                         if (active != null) {
                             context.startActivity(
                                 studyReminderOpenIntent(
@@ -72,6 +89,9 @@ class StudyFlowWidgetActionReceiver : BroadcastReceiver() {
                         }
                     }
                 }
+                journal.complete(handle)
+            } catch (error: Exception) {
+                journal.fail(handle, "widget-${error.javaClass.simpleName.lowercase()}")
             } finally {
                 StudyFlowWidgetUpdateCoordinator.refreshAll(context.applicationContext)
                 result.finish()

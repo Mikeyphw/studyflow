@@ -108,3 +108,13 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 | S5-11 | Failed SAF sync-folder configuration releases the just-taken persistable tree URI grant. | `StudyFlowApp` grant cleanup branch; OV13 app contract test. |
 | DS2-07 | Closing the Android link no longer permanently detaches NSD from the discovery registry; restart re-adds the source and recreates the LAN beacon source. | `discoveryRegistry.add(nsdDiscovery)` in `start()`; OV13 verifier. |
 | DS2-39 | Peer startup failures remain retryable through explicit lifecycle/backoff state after the app reaches Ready. | `StudyFlowPeerLifecycleRecovery`; `AndroidStudyFlowNsdDiscovery.lastFailureReason`; OV13 core tests. |
+
+## OV14 — Android receiver, deep-link, widget & device-target durability
+
+| Finding | Production closure | Behavioral evidence |
+|---|---|---|
+| S5-03 | `StudyFlowTvSessionCredential` now carries selected receiver service/host/port binding; phone client and controller reject authenticated sends to mismatched endpoints before emitting HMAC-authenticated LAN traffic. | `StudyFlowOv14ReceiverBindingJournalKeysTest.sessionCredentialBindsToTheSelectedReceiverEndpoint`; OV14 source verifier. |
+| S5-04 | Reminder launch destination state is written onto the MainActivity Intent via `putReminderLaunchExtras`; MainActivity consumes actual intent extras before falling back to the in-memory handoff. | OV14 source verifier checks trampoline, parser and MainActivity intent consumption. |
+| S5-09 | Reminder and widget receivers journal accepted asynchronous mutation work to persistent SharedPreferences before launching and settle each handle on completion/failure. | `StudyFlowReceiverMutationJournal`; OV14 source verifier. |
+| DS2-06 | Widget `START_NEXT` filters active sessions to the configured widget plan before opening a session; unrelated active sessions no longer override the selected plan. | `StudyFlowWidgetActionPolicyOv14Test.startNextOnlyTreatsConfiguredPlanSessionAsActive`. |
+| DS2-28 | Domain-action journal/SFLP keys use full SHA-256 digests from `StudyFlowTvDomainActionJournalKeys` instead of filtered/truncated action IDs. | `StudyFlowOv14ReceiverBindingJournalKeysTest.domainActionJournalKeysUseFullSha256InsteadOfSanitizedTruncation`. |

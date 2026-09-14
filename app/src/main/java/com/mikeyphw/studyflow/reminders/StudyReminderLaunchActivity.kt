@@ -21,7 +21,9 @@ class StudyReminderLaunchActivity : Activity() {
             StudyReminderLaunchStore.publish(launch)
             startActivity(
                 Intent(this, MainActivity::class.java).apply {
+                    data = intent.data
                     flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putReminderLaunchExtras(launch)
                 },
             )
         }
@@ -35,8 +37,8 @@ internal object StudyReminderLaunchStore {
 
     fun publish(launch: StudyReminderLaunch) = synchronized(lock) { pending = launch }
 
-    fun consume(): StudyReminderLaunch? = synchronized(lock) {
-        val launch = pending
+    fun consume(intent: Intent? = null): StudyReminderLaunch? = synchronized(lock) {
+        val launch = intent?.toStudyReminderLaunch() ?: pending
         pending = null
         launch
     }
@@ -52,13 +54,24 @@ internal fun studyReminderOpenIntent(
 ): Intent = Intent(context.applicationContext, StudyReminderLaunchActivity::class.java).apply {
     data = identity
     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-    putExtra(StudyReminderExtraPlanId, planId.value)
-    putExtra(StudyReminderExtraType, type.name)
-    putExtra(StudyReminderExtraTargetId, targetId)
-    putExtra(StudyReminderExtraSessionId, sessionId)
+    putReminderLaunchExtras(
+        StudyReminderLaunch(
+            planId = planId.value,
+            type = type,
+            targetId = targetId,
+            sessionId = sessionId,
+        ),
+    )
 }
 
-private fun Intent.toStudyReminderLaunch(): StudyReminderLaunch? {
+internal fun Intent.putReminderLaunchExtras(launch: StudyReminderLaunch): Intent = apply {
+    putExtra(StudyReminderExtraPlanId, launch.planId)
+    putExtra(StudyReminderExtraType, launch.type.name)
+    putExtra(StudyReminderExtraTargetId, launch.targetId)
+    putExtra(StudyReminderExtraSessionId, launch.sessionId)
+}
+
+internal fun Intent.toStudyReminderLaunch(): StudyReminderLaunch? {
     val planId = getStringExtra(StudyReminderExtraPlanId)?.takeIf(String::isNotBlank) ?: return null
     val type = getStringExtra(StudyReminderExtraType)
         ?.let { raw -> enumValues<ReminderNotificationType>().firstOrNull { it.name == raw } }

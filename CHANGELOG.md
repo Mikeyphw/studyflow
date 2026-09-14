@@ -1,3 +1,11 @@
+
+## OV14 — Android receiver/widget durability
+
+- Bound phone↔TV credentials to the selected receiver endpoint before saving and rejected authenticated sends to mismatched receivers.
+- Persisted reminder launch destination extras on the actual MainActivity intent instead of relying only on an in-memory singleton.
+- Added a receiver mutation journal for reminder/widget broadcast work and fixed widgets so START_NEXT is scoped to the configured plan.
+- Replaced collision-prone TV domain-action journal/SFLP keys with SHA-256 action-id keys.
+
 ## OV12 — SFLP live session, projection, material, share & backup RPC semantics (2026-09-14)
 
 - Added verified live-session fencing across session, workspace, activity and active executor identity.

@@ -12,6 +12,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionResult
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationSnapshot
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvReceiverEndpoint
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSessionCredential
+import com.mikeyphw.studyflow.core.tvcontrol.matchesCredentialBinding
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSurface
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireResponse
 import com.mikeyphw.studyflow.core.tvlink.StudyFlowTvLinkStatus
@@ -182,9 +183,13 @@ object StudyFlowTvPhoneCommandFactory {
         if (current != null) {
             receivers.firstOrNull { it == current }?.let { return it }
         }
-        val pairedName = credential?.tvDeviceName
-        if (!pairedName.isNullOrBlank()) {
-            receivers.firstOrNull { it.serviceName == pairedName }?.let { return it }
+        if (credential != null) {
+            receivers.firstOrNull { it.matchesCredentialBinding(credential) }?.let { return it }
+            if (credential.receiverServiceName == null && credential.receiverHostAddress == null && credential.receiverPort == null) {
+                val pairedName = credential.tvDeviceName
+                receivers.firstOrNull { it.serviceName == pairedName }?.let { return it }
+            }
+            return null
         }
         return receivers.singleOrNull()
     }
@@ -303,7 +308,7 @@ class StudyFlowTvPhoneController(
         targetId: String? = null,
         optionId: String? = null,
     ) {
-        val endpoint = requireSelectedReceiver() ?: return
+        val endpoint = requireAuthorizedReceiver() ?: return
         if (mutableState.value.credential == null) {
             mutableState.value = mutableState.value.copy(lastMessage = "pair-first")
             return
@@ -440,7 +445,7 @@ class StudyFlowTvPhoneController(
     }
 
     fun refreshContinuity() {
-        val endpoint = requireSelectedReceiver() ?: return
+        val endpoint = requireAuthorizedReceiver() ?: return
         if (mutableState.value.credential == null) {
             mutableState.value = mutableState.value.copy(lastMessage = "pair-first")
             return
@@ -545,7 +550,9 @@ class StudyFlowTvPhoneController(
                 delay(1_000L)
                 val state = mutableState.value
                 if (state.credential == null) continue
-                val endpoint = state.selectedReceiver ?: continue
+                val endpoint = state.selectedReceiver?.takeIf { selected ->
+                    state.credential?.let { selected.matchesCredentialBinding(it) } ?: true
+                } ?: continue
                 try {
                     val response = withContext(ioDispatcher) { gateway.fetchContinuity(endpoint) }
                     if (StudyFlowTvCastSynchronizationPolicy.isSessionFailure(response)) {
@@ -593,7 +600,9 @@ class StudyFlowTvPhoneController(
             while (castDeliveryRequested) {
                 castDeliveryRequested = false
                 val state = mutableState.value
-                val endpoint = state.selectedReceiver
+                val endpoint = state.selectedReceiver?.takeIf { selected ->
+                    state.credential?.let { selected.matchesCredentialBinding(it) } ?: true
+                }
                 val cast = state.castSync
 
                 if (state.credential == null) {
@@ -759,6 +768,16 @@ class StudyFlowTvPhoneController(
         val endpoint = mutableState.value.selectedReceiver
         if (endpoint == null) {
             mutableState.value = mutableState.value.copy(lastMessage = "receiver-required")
+        }
+        return endpoint
+    }
+
+    private fun requireAuthorizedReceiver(): StudyFlowTvReceiverEndpoint? {
+        val endpoint = requireSelectedReceiver() ?: return null
+        val credential = mutableState.value.credential ?: return endpoint
+        if (!endpoint.matchesCredentialBinding(credential)) {
+            mutableState.value = mutableState.value.copy(lastMessage = "receiver-binding-mismatch")
+            return null
         }
         return endpoint
     }

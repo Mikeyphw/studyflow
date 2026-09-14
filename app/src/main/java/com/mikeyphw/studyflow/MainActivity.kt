@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.mikeyphw.studyflow.core.domain.ReminderNotificationType
+import com.mikeyphw.studyflow.reminders.StudyFlowReceiverMutationRecovery
 import com.mikeyphw.studyflow.reminders.StudyReminderLaunchStore
 
 data class StudyReminderLaunch(
@@ -25,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        reminderLaunch.value = StudyReminderLaunchStore.consume()
+        reminderLaunch.value = StudyReminderLaunchStore.consume(intent)
         tvControllerLaunchRequested.value = intent?.action == ACTION_OPEN_TV_CONTROLLER
         val container = (application as StudyFlowApplication).container
         setContent {
@@ -41,7 +42,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        reminderLaunch.value = StudyReminderLaunchStore.consume()
+        reminderLaunch.value = StudyReminderLaunchStore.consume(intent)
         if (intent.action == ACTION_OPEN_TV_CONTROLLER) tvControllerLaunchRequested.value = true
         setIntent(intent)
     }
@@ -51,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         val app = application as? StudyFlowApplication ?: return
         lifecycleScope.launch {
             runCatching { app.container.reminderDeliveryCoordinator.reconcileAll("activity-resume") }
+            StudyFlowReceiverMutationRecovery.noteReconcile(this@MainActivity, "activity-resume")
         }
     }
 

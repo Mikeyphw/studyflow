@@ -20,6 +20,8 @@ class StudyReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != StudyReminderAction) return
         val parsed = intent.parseReminderIdentity() ?: return
+        val journal = StudyFlowReceiverMutationJournal(context)
+        val handle = journal.begin("reminder-deliver", "${parsed.planId.value}:${parsed.type}:${parsed.occurrenceId}")
         val result = goAsync()
         ReminderReceiverScope.launch {
             try {
@@ -28,6 +30,9 @@ class StudyReminderReceiver : BroadcastReceiver() {
                     parsed.type,
                     parsed.occurrenceId,
                 )
+                journal.complete(handle)
+            } catch (error: Exception) {
+                journal.fail(handle, "deliver-${error.javaClass.simpleName.lowercase()}")
             } finally {
                 result.finish()
             }
@@ -43,6 +48,8 @@ class StudyReminderActionReceiver : BroadcastReceiver() {
             ?.let { raw -> StudyReminderNotificationAction.entries.firstOrNull { it.name == raw } }
             ?: return
         val targetId = intent.getStringExtra(StudyReminderExtraTargetId)?.takeIf(String::isNotBlank)
+        val journal = StudyFlowReceiverMutationJournal(context)
+        val handle = journal.begin("reminder-action", "${parsed.planId.value}:${parsed.type}:${parsed.occurrenceId}:${action.name}")
         val result = goAsync()
         ReminderReceiverScope.launch {
             try {
@@ -55,6 +62,7 @@ class StudyReminderActionReceiver : BroadcastReceiver() {
                         targetId = targetId,
                         sourceCandidate = intent.parseReminderCandidate(parsed),
                     )
+                journal.complete(handle)
                 if (actionResult is StudyReminderActionResult.Open) {
                     context.startActivity(
                         studyReminderOpenIntent(
@@ -73,6 +81,8 @@ class StudyReminderActionReceiver : BroadcastReceiver() {
                         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                     )
                 }
+            } catch (error: Exception) {
+                journal.fail(handle, "action-${error.javaClass.simpleName.lowercase()}")
             } finally {
                 result.finish()
             }
@@ -91,6 +101,7 @@ class StudyReminderBootReceiver : BroadcastReceiver() {
                         reason = "system:${intent.action}",
                     )
                 }
+                StudyFlowReceiverMutationRecovery.noteReconcile(context, "system:${intent.action}")
                 StudyFlowWidgetUpdateCoordinator.refreshAll(context.applicationContext)
             } finally {
                 result.finish()

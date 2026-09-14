@@ -22,6 +22,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvPresentationReceipt
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvReceiverEndpoint
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvSessionCredential
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireAuthenticator
+import com.mikeyphw.studyflow.core.tvcontrol.matchesCredentialBinding
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireCodec
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireOperation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireProtocol
@@ -123,6 +124,10 @@ class StudyFlowTvSessionStore(
                 pairedDeviceName = phoneName,
                 pairedAtEpochMillis = pairedAt,
                 expiresAtEpochMillis = expiresAt,
+                receiverServiceName = preferences.getString(KEY_RECEIVER_SERVICE_NAME, null),
+                receiverHostAddress = preferences.getString(KEY_RECEIVER_HOST_ADDRESS, null),
+                receiverPort = preferences.getInt(KEY_RECEIVER_PORT, -1).takeIf { it in 1..65_535 },
+                receiverHostKeyAgreementPublicKeyHex = preferences.getString(KEY_RECEIVER_HOST_KEY, null),
             )
         }.getOrNull() ?: run {
             clear()
@@ -143,6 +148,10 @@ class StudyFlowTvSessionStore(
             .putString(KEY_PHONE_NAME, credential.pairedDeviceName)
             .putLong(KEY_PAIRED_AT, credential.pairedAtEpochMillis)
             .putLong(KEY_EXPIRES_AT, credential.expiresAtEpochMillis)
+            .putString(KEY_RECEIVER_SERVICE_NAME, credential.receiverServiceName)
+            .putString(KEY_RECEIVER_HOST_ADDRESS, credential.receiverHostAddress)
+            .putInt(KEY_RECEIVER_PORT, credential.receiverPort ?: -1)
+            .putString(KEY_RECEIVER_HOST_KEY, credential.receiverHostKeyAgreementPublicKeyHex)
             .apply()
     }
 
@@ -157,6 +166,10 @@ class StudyFlowTvSessionStore(
         const val KEY_PHONE_NAME = "phone_name"
         const val KEY_PAIRED_AT = "paired_at"
         const val KEY_EXPIRES_AT = "expires_at"
+        const val KEY_RECEIVER_SERVICE_NAME = "receiver_service_name"
+        const val KEY_RECEIVER_HOST_ADDRESS = "receiver_host_address"
+        const val KEY_RECEIVER_PORT = "receiver_port"
+        const val KEY_RECEIVER_HOST_KEY = "receiver_host_key"
     }
 }
 
@@ -426,7 +439,7 @@ class StudyFlowTvLocalTransportClient(context: Context) {
             }.getOrElse {
                 return response.copy(ok = false, reason = "pairing-credential-decrypt-failed", encryptedCredential = null)
             }
-            sessionStore.save(decrypted)
+            sessionStore.save(decrypted.bindToReceiver(endpoint, hostKey))
         }
         return response
     }
@@ -489,15 +502,24 @@ class StudyFlowTvLocalTransportClient(context: Context) {
         nowEpochMillis: Long,
         transform: StudyFlowTvWireRequest.() -> StudyFlowTvWireRequest,
     ): StudyFlowTvWireResponse {
+        val requestId = requestId()
         val credential = sessionStore.load(nowEpochMillis)
             ?: return StudyFlowTvWireResponse(
-                requestId = requestId(),
+                requestId = requestId,
                 ok = false,
                 reason = "no-active-session",
                 respondedAtEpochMillis = nowEpochMillis,
             )
+        if (!endpoint.matchesCredentialBinding(credential)) {
+            return StudyFlowTvWireResponse(
+                requestId = requestId,
+                ok = false,
+                reason = "receiver-binding-mismatch",
+                respondedAtEpochMillis = nowEpochMillis,
+            )
+        }
         val base = StudyFlowTvWireRequest(
-            requestId = requestId(),
+            requestId = requestId,
             operation = operation,
             sessionId = credential.sessionId,
             issuedAtEpochMillis = nowEpochMillis,

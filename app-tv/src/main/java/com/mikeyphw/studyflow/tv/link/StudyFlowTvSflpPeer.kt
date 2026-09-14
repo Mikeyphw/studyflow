@@ -34,6 +34,7 @@ import com.mikeyphw.studyflow.core.link.StudyFlowOperationId
 import com.mikeyphw.studyflow.core.link.StudyFlowEntityId
 import com.mikeyphw.studyflow.core.link.StudyFlowLinkCodec
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainAction
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionJournalKeys
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.Executors
@@ -170,8 +171,8 @@ class StudyFlowTvSflpPeer(
         registerWritableWorkspace(workspaceId)
         runtime.appendLocalMutation(
             workspaceId = workspaceId,
-            operationId = StudyFlowOperationId("tv-${action.actionId}"),
-            entityId = StudyFlowEntityId("tv-action-${action.actionId}"),
+            operationId = StudyFlowOperationId(StudyFlowTvDomainActionJournalKeys.sflpOperationId(action.actionId)),
+            entityId = StudyFlowEntityId(StudyFlowTvDomainActionJournalKeys.sflpEntityId(action.actionId)),
             operationType = StudyFlowProductStateContract.TvDomainAction,
             payload = StudyFlowLinkCodec.encodePayload(StudyFlowTvDomainAction.serializer(), action),
         )

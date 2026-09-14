@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.first
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainAction
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionKind
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionResult
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvDomainActionJournalKeys
 
 /** TVOV25 phone/data-owner persistence contract. */
 object StudyFlowTvDomainPersistenceContract {
@@ -71,9 +72,7 @@ class SharedPreferencesStudyFlowTvDomainActionJournal(context: Context) : StudyF
         preferences.edit().putString(key(result.actionId), value).apply()
     }
 
-    private fun key(actionId: String): String = "action_" + actionId
-        .filter { it.isLetterOrDigit() || it in "-_" }
-        .take(160)
+    private fun key(actionId: String): String = StudyFlowTvDomainActionJournalKeys.forAction(actionId)
 
     private companion object {
         const val PREFERENCE_NAME = "studyflow_tv_domain_actions"

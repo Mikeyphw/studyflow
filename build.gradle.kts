@@ -2381,3 +2381,17 @@ tasks.register<Exec>("verifyOv13AndroidPeerLifecycleLanRecovery") {
     )
     commandLine("bash", "scripts/validate_ov13_android_peer_lifecycle_lan_recovery.sh")
 }
+
+// OV14 — Android receiver, deep-link, widget & device-target durability.
+tasks.register<Exec>("verifyOv14AndroidReceiverWidgetDurability") {
+    group = "verification"
+    description = "Validates OV14 receiver-bound TV sessions, durable reminder/widget broadcast handling, deep-link persistence, configured-plan widgets, and collision-proof domain action keys."
+    dependsOn(
+        ":core:tvcontrol:test",
+        ":core:tvlink:compileDebugKotlin",
+        ":app:compileDebugKotlin",
+        ":app:testReleaseUnitTest",
+        ":app-tv:compileDebugKotlin",
+    )
+    commandLine("bash", "scripts/validate_ov14_android_receiver_widget_durability.sh")
+}

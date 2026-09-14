@@ -1,227 +1,273 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov13_android_peer_lifecycle_lan_recovery_v1",
+  "name": "studyflow_ov14_android_receiver_widget_durability_v1",
   "target": "studyflow_android",
-  "description": "OV13 closes Android peer lifecycle and LAN discovery recovery findings with user/permission-gated generic SFLP startup, restartable NSD discovery, serialized resolve retry, externally reachable QR hints, IPv6 scope preservation, close/restart reattachment and SAF grant cleanup.",
+  "description": "OV14 closes Android receiver, reminder deep-link, widget action and TV domain-action durability findings with receiver-bound TV credentials, persisted reminder launch extras, receiver mutation journaling, configured-plan widget START_NEXT semantics and SHA-256 domain-action journal keys.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV13: recover Android peer lifecycle and LAN discovery"
+    "message": "OV14: harden Android receiver widget durability"
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively on successful OV12 commit a862fd54."
+    "notes": "Built cumulatively on successful OV13 commit cc95602e."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov13_android_peer_lifecycle_lan_recovery_v1",
+    "name": "studyflow_ov14_android_receiver_widget_durability_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov13-android-lifecycle",
-        "purpose": "Persisted user enablement, local-network permission gate, app startup decoupling, lifecycle state and close/restart source reattachment.",
+        "id": "ov14-tv-receiver-binding",
+        "purpose": "Bind phone-TV credentials to the selected receiver and prevent authenticated sends to the wrong endpoint.",
         "paths": [
-          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkPeer.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerLifecycle.kt",
-          "app/src/test/java/com/mikeyphw/studyflow/StudyFlowOv13AndroidPeerLifecycleContractTest.kt"
-        ]
-      },
-      {
-        "id": "ov13-discovery-networking",
-        "purpose": "Restartable Android NSD and TV receiver discovery, serialized resolve retry, IPv6 scope preservation, externally reachable endpoint filtering and no loopback QR hints.",
-        "paths": [
-          "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowNsdDiscovery.kt",
-          "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLanDiscovery.kt",
+          "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt",
           "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt",
-          "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv13PeerLifecycleLanRecoveryTest.kt"
+          "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt",
+          "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowOv14ReceiverBindingJournalKeysTest.kt"
         ]
       },
       {
-        "id": "ov13-saf-validation-evidence",
-        "purpose": "SAF grant cleanup, closure docs, changelog, root validation task and automatic apply-time validation hook.",
+        "id": "ov14-reminder-widget-durability",
+        "purpose": "Persist reminder launch destinations and journal asynchronous receiver/widget mutation work before execution.",
         "paths": [
+          "app/src/main/java/com/mikeyphw/studyflow/MainActivity.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderLaunchActivity.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderReceivers.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyFlowReceiverMutationJournal.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetActionReceiver.kt",
+          "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetActionPolicyOv14Test.kt"
+        ]
+      },
+      {
+        "id": "ov14-domain-action-keying-validation",
+        "purpose": "Use collision-proof SHA-256 TV action keys and install apply-time validation without daemon stops.",
+        "paths": [
+          "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvDomainActionExecutor.kt",
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpPeer.kt",
           ".devtool-artifact/validation/validate.sh",
-          ".devtool.toml",
-          "CHANGELOG.md",
-          "REMEDIATION_OV_13_IMPLEMENTATION.md",
-          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
           "build.gradle.kts",
-          "docs/remediation/OV13_ANDROID_PEER_LIFECYCLE_LAN_RECOVERY.md",
+          "scripts/validate_ov14_android_receiver_widget_durability.sh",
+          "scripts/verify_ov14_android_receiver_widget_durability.py",
+          "docs/remediation/OV14_ANDROID_RECEIVER_WIDGET_DURABILITY.md",
           "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "scripts/validate_ov13_android_peer_lifecycle_lan_recovery.sh",
-          "scripts/verify_ov13_android_peer_lifecycle_lan_recovery.py"
+          "REMEDIATION_OV_14_IMPLEMENTATION.md",
+          "CHANGELOG.md"
         ]
       }
     ]
   },
+  "findings": [
+    {
+      "id": "S5-03",
+      "severity": "HIGH",
+      "status": "closed-by-ov14"
+    },
+    {
+      "id": "S5-04",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov14"
+    },
+    {
+      "id": "S5-09",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov14"
+    },
+    {
+      "id": "DS2-06",
+      "severity": "MEDIUM",
+      "status": "closed-by-ov14"
+    },
+    {
+      "id": "DS2-28",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov14"
+    }
+  ],
   "inventory": {
     "format": 1,
-    "count": 18,
+    "count": 20,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "a717907495c291979a60754abe810f2990374cf3931f0c98064c126699396d0d",
-        "size": 333,
+        "sha256": "dcddd2c5b34d2b88434dd870a3622a20aabc0fe79e3096c3c7f997583f8f28af",
+        "size": 332,
         "source_mode": "0o755",
-        "source_sha256": "46f9a7eaeb410e63caa0b181427842c0f30d85293ce213b814f5edf84c17ebea",
-        "source_size": 317
-      },
-      {
-        "action": "modify",
-        "path": ".devtool.toml",
-        "mode": "0o600",
-        "sha256": "d50abf86a3f51508ee75b22a0698c5bfb5bed8e58aca8c92d08f6624675dc1bb",
-        "size": 15365,
-        "source_mode": "0o600",
-        "source_sha256": "ee5c7560e96b40a005edb56298fc0009030ff680a0b904665975b2644fbe096f",
-        "source_size": 15271
+        "source_sha256": "a717907495c291979a60754abe810f2990374cf3931f0c98064c126699396d0d",
+        "source_size": 333
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "58a919bcad97d3f1e2f7b86cf51227fab3aa04ac5a18726a1d9ee663d100daf3",
-        "size": 74716,
+        "sha256": "0b1d66b04cc331197e785e85f1758ee82a915b5860c37980cfc978aeb933c87c",
+        "size": 75263,
         "source_mode": "0o600",
-        "source_sha256": "aaf22230bbc5bd15f480761e5a9e078fab5d23ecf66298e628b808ead06653d8",
-        "source_size": 73853
-      },
-      {
-        "action": "modify",
-        "path": "REMEDIATION_OV_13_IMPLEMENTATION.md",
-        "mode": "0o600",
-        "sha256": "531961cdc73e32bf309e34795d3d4df766e2ae1c4b3dfd5e118e235c7b88c896",
-        "size": 1666,
-        "source_mode": "0o600",
-        "source_sha256": "287e4eed7e8519a5f5904a881e07820efea68377ecce0fab32986cb46c96d53f",
-        "source_size": 5273
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
-        "mode": "0o600",
-        "sha256": "ac4ba2b39663a360caaab3b33a7c14d08b4a54712e2187f95a7ad0e804e1d00d",
-        "size": 62072,
-        "source_mode": "0o600",
-        "source_sha256": "af8499f1bc38624a33d1e7aadd54113378bd7d40a4c0d735c5936e6b3bdfb51f",
-        "source_size": 61695
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
-        "mode": "0o600",
-        "sha256": "a2b64bf59ede7ef9989fe7a62be363c9f15de666bdb788a0d804bfe994bc494d",
-        "size": 25420,
-        "source_mode": "0o600",
-        "source_sha256": "fbb09d008ac72f16234f856468b1621187ec77761cb9ead5dabfce069b3882ea",
-        "source_size": 25220
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowLinkPeer.kt",
-        "mode": "0o600",
-        "sha256": "606a501085633b5ce066540042171678c8c925efa29a4efabb8c123c8e2663dc",
-        "size": 15865,
-        "source_mode": "0o600",
-        "source_sha256": "c2c9adffd2c1a7b1d07f7cadb11278988887805430eed596d3a976cd59c280c7",
-        "source_size": 11179
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/link/AndroidStudyFlowNsdDiscovery.kt",
-        "mode": "0o600",
-        "sha256": "c83d0bf361e7c2da995141eb9800b440316fd9201cba9b03b335d0414af58e6c",
-        "size": 10742,
-        "source_mode": "0o600",
-        "source_sha256": "99975ed8b15211f376c4097271442bcddb43a9105ed0815d935c86aa7be9072a",
-        "source_size": 5188
+        "source_sha256": "58a919bcad97d3f1e2f7b86cf51227fab3aa04ac5a18726a1d9ee663d100daf3",
+        "source_size": 74716
       },
       {
         "action": "add",
-        "path": "app/src/test/java/com/mikeyphw/studyflow/StudyFlowOv13AndroidPeerLifecycleContractTest.kt",
+        "path": "REMEDIATION_OV_14_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "1bf16708899d750931774f143968257ddcf1e7da0738c1b6723aff145f2628ff",
-        "size": 2923
+        "sha256": "107adb865e20f83a6e6e4f7ad98cbcd6aa90f02b1921549a43505bf3785eecb9",
+        "size": 822
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/MainActivity.kt",
+        "mode": "0o600",
+        "sha256": "a127350b8c7305195f21823b157044f0cdd222573b236244ee0c7626336e79b6",
+        "size": 2462,
+        "source_mode": "0o600",
+        "source_sha256": "e5d3e96e9bf3860640938ba2481c48f8c3492c458c4d14cefb4386a431b60b7a",
+        "source_size": 2278
+      },
+      {
+        "action": "add",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyFlowReceiverMutationJournal.kt",
+        "mode": "0o644",
+        "sha256": "4a64f9fa688a91fb0b8966f9b8fd06ebd0e8b634504414773187f9781d4aec29",
+        "size": 2644
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderLaunchActivity.kt",
+        "mode": "0o600",
+        "sha256": "65610082d46e28944d4c2b98911dbac334e5e811608b987102a3d0e2086b287a",
+        "size": 3128,
+        "source_mode": "0o600",
+        "source_sha256": "632caa29acc12e138f0a37445d9f7b11dff96faba1a6871576514767e4c943f0",
+        "source_size": 2660
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderReceivers.kt",
+        "mode": "0o600",
+        "sha256": "c45242b9e67e0b6576fcedd393ca53ddcde9d385ff7ba87ad40255a4d5b5cf73",
+        "size": 7133,
+        "source_mode": "0o600",
+        "source_sha256": "46c600527661eb99ea4670cdb1e36c2428d531cabc935bb139b9d2070b9d4fbd",
+        "source_size": 6310
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvDomainActionExecutor.kt",
+        "mode": "0o600",
+        "sha256": "857aecdc9e74d54285162f1080195f2feecf769bae24056759c88f532b031dd2",
+        "size": 12711,
+        "source_mode": "0o600",
+        "source_sha256": "3b1cbe33be615070e45bc5d4130b6e43f4f22db29ef58c99d1e4f42ec5afd737",
+        "source_size": 12671
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/tvcontrol/StudyFlowTvPhoneController.kt",
+        "mode": "0o600",
+        "sha256": "65fc5540f00fbc57e5679934d05ee7c617019b45098fcb45fb83a57f1ed257f8",
+        "size": 35967,
+        "source_mode": "0o600",
+        "source_sha256": "4083e41a3c843d02267f4b5e948075d0588829557678e37094395aa9c8b35306",
+        "source_size": 34916
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetActionReceiver.kt",
+        "mode": "0o600",
+        "sha256": "b7407f6e17d921817086250dd20cbb64b47fb4a3df187231de5c885afe4781af",
+        "size": 6294,
+        "source_mode": "0o600",
+        "source_sha256": "081544af0570d5bdd8bfe25f6044bffb714cda3ff35784f93da1f0dc23af4da1",
+        "source_size": 5320
+      },
+      {
+        "action": "add",
+        "path": "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetActionPolicyOv14Test.kt",
+        "mode": "0o644",
+        "sha256": "223b5b405df934ef9cb1b800b3b4704033e4dcdf6b7982425e98cb81b38da759",
+        "size": 1782
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/link/StudyFlowTvSflpPeer.kt",
+        "mode": "0o600",
+        "sha256": "4909f975ea20d9639c78560467d5781d849b0ac228d60d89eb88c48e5b7ed515",
+        "size": 11510,
+        "source_mode": "0o600",
+        "source_sha256": "02f2e6384516b80921e233c924bf52f490779239367c7d7ce41ea83d05e0ab30",
+        "source_size": 11352
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o600",
-        "sha256": "6f1e8b7cdc857083cd4a8505b722d4aa89cb961fd7e9b767bd857bb025441ed7",
-        "size": 93728,
+        "sha256": "3d3ffc5492136f1de4d25109327da32ac70f64db29a360cf9d04686de0840b6e",
+        "size": 94389,
         "source_mode": "0o600",
-        "source_sha256": "1c81909e8425173cada79c1bd1bce81b0b347fb3a8494dd0ef6564fb3f3265d5",
-        "source_size": 93147
+        "source_sha256": "6f1e8b7cdc857083cd4a8505b722d4aa89cb961fd7e9b767bd857bb025441ed7",
+        "source_size": 93728
       },
       {
         "action": "modify",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLanDiscovery.kt",
+        "path": "core/tvcontrol/src/main/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowTvWireProtocol.kt",
         "mode": "0o600",
-        "sha256": "ff91d24ccd007acf17b0d38e6de4e338d026f6d1b524bf38e586260a21e3a7f8",
-        "size": 8234,
+        "sha256": "0e018f06a7ae0ad24f7388442da9a11c288949d58dfe7002194c333b90e357de",
+        "size": 22602,
         "source_mode": "0o600",
-        "source_sha256": "5051c8a83904ad1db8e71baf54dad71f9aaa304efe43f97b0f8ecb6a60ddb28f",
-        "source_size": 6998
+        "source_sha256": "d58c785709f40916a6d6da0ab9ce7ad0e91c3fe793051d860c247c8cebdd534c",
+        "source_size": 19938
       },
       {
         "action": "add",
-        "path": "core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerLifecycle.kt",
+        "path": "core/tvcontrol/src/test/kotlin/com/mikeyphw/studyflow/core/tvcontrol/StudyFlowOv14ReceiverBindingJournalKeysTest.kt",
         "mode": "0o644",
-        "sha256": "d333a553569bb7a90dec77b1565dcd17332db9f3ededad2ac2c5302e0d2be5fd",
-        "size": 2277
-      },
-      {
-        "action": "add",
-        "path": "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv13PeerLifecycleLanRecoveryTest.kt",
-        "mode": "0o644",
-        "sha256": "e12f9af684e65779b47b319abbf196e9badfe3128e9cd09d7bc009bd8eac60d5",
-        "size": 3467
+        "sha256": "174721aee0a96200b75fdde7a46d0b92afa7ce39fe992b78cee364a979fd3876",
+        "size": 2127
       },
       {
         "action": "modify",
         "path": "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt",
         "mode": "0o600",
-        "sha256": "0bbdabd2d5f4e851a3b0221b14c1e8c62361cda0ec9ac316ad4592aa4785dd63",
-        "size": 40025,
+        "sha256": "04832961ab94dac0ff5f614ec3ea15b581d7931eb0dd8b1c08373d4c29fe4c3d",
+        "size": 41450,
         "source_mode": "0o600",
-        "source_sha256": "9ba8d4a58cb2660ed66e6238c6dc0826b213c5b2fe71f244210624c042d43986",
-        "source_size": 37197
+        "source_sha256": "0bbdabd2d5f4e851a3b0221b14c1e8c62361cda0ec9ac316ad4592aa4785dd63",
+        "source_size": 40025
       },
       {
         "action": "add",
-        "path": "docs/remediation/OV13_ANDROID_PEER_LIFECYCLE_LAN_RECOVERY.md",
+        "path": "docs/remediation/OV14_ANDROID_RECEIVER_WIDGET_DURABILITY.md",
         "mode": "0o644",
-        "sha256": "adb5b9a491c1e558a5a54d0575fc59c7f4f5389679ce0e24c29b4e092359a6a2",
-        "size": 1575
+        "sha256": "1286f6f861a09109fbb2dff696dbc72792b6422d988827de8272128830923e95",
+        "size": 1449
       },
       {
         "action": "modify",
         "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "cc61e153a458c55207ec5feffecbeb602b99102a7710a249a273a81ce676bcdf",
-        "size": 14370,
+        "sha256": "dc3140386f2c9bb412dea0b93ce23b7997bd990e5e5d0d781ed7156164fa33a0",
+        "size": 15934,
         "source_mode": "0o644",
-        "source_sha256": "dd1e4343948c0ae3060d107f4b659f9c188cf1f18892cf53958fe0666953c429",
-        "source_size": 11907
+        "source_sha256": "cc61e153a458c55207ec5feffecbeb602b99102a7710a249a273a81ce676bcdf",
+        "source_size": 14370
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov13_android_peer_lifecycle_lan_recovery.sh",
+        "path": "scripts/validate_ov14_android_receiver_widget_durability.sh",
         "mode": "0o755",
-        "sha256": "936e1766c2dbf4885c7d5dad8f6360658c360633764aa8e4b1db17a7b5b26a31",
-        "size": 106
+        "sha256": "31b665a0aec276983610ac38413899935d29bc27dedf02e7dd20770b8030aca6",
+        "size": 207
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov13_android_peer_lifecycle_lan_recovery.py",
+        "path": "scripts/verify_ov14_android_receiver_widget_durability.py",
         "mode": "0o755",
-        "sha256": "af82e27ea91987157af1c634a5667dabc5cfa5c599cc9e7b6dea6a34e8899a76",
-        "size": 4506
+        "sha256": "b1e3b610c35190ab45992100750a1f17ca987dfc8f7bb9a76ac8afa4b7ef1fd0",
+        "size": 3629
       }
     ]
   }
