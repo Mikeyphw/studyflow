@@ -106,7 +106,7 @@ class StudyFlowTvControlStateReducerTest {
     }
 
     @Test
-    fun duplicateStaleExpiredAndRevokedPhoneCommandsFailClosed() {
+    fun duplicateExpiredAndRevokedPhoneCommandsFailClosedWithoutWallClockStaleRejection() {
         val initial = StudyFlowTvControlStateReducer.defaultState(pairedSession)
         val firstCommand = command(StudyFlowTvSurface.HOME, StudyFlowTvControlAction.OPEN, "home", 20_000L)
         val first = StudyFlowTvControlStateReducer.reduce(initial, firstCommand, StudyFlowTvControlOrigin.PAIRED_PHONE, 20_000L)
@@ -116,14 +116,13 @@ class StudyFlowTvControlStateReducerTest {
         assertFalse(duplicate.applied)
         assertEquals("duplicate-command", duplicate.reason)
 
-        val stale = StudyFlowTvControlStateReducer.reduce(
+        val olderClock = StudyFlowTvControlStateReducer.reduce(
             first.state,
             command(StudyFlowTvSurface.TODAY, StudyFlowTvControlAction.OPEN, "today", 19_999L),
             StudyFlowTvControlOrigin.PAIRED_PHONE,
             20_002L,
         )
-        assertFalse(stale.applied)
-        assertEquals("stale-command", stale.reason)
+        assertTrue(olderClock.applied)
 
         val expired = StudyFlowTvControlStateReducer.reduce(
             first.state,

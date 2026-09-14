@@ -152,3 +152,9 @@ This ledger is updated by the 30-overlay final remediation campaign. “Implemen
 
 Closed: S7-09, S7-10, S7-11, S7-12, S7-13, S7-14, DS2-40. Evidence: per-widget failure isolation, self-healing invalidation observers, recipient ATT10 remote delivery enforcement, timezone refresh, expired snooze purge, SHA-256 notification IDs, and canonical remote tap routing.
 
+
+## OV18 — Native TV durable canonical state & action journal
+
+Closed: `S8-01`, `S8-02`, `S8-03`, `S8-07`, `S8-18`, `S8-19`, `DS2-27`, `DS2-44`.
+
+Evidence: persistent TV domain-action outbox, durable local command sequencer, explicit outbox backpressure, removal of wall-clock stale rejection, persisted TV UI cursors, synchronous phone↔TV credential commits, and apply-time `verifyOv18NativeTvDurableStateActionJournal` validation.

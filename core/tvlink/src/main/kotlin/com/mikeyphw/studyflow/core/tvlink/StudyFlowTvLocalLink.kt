@@ -51,6 +51,8 @@ object StudyFlowTvLocalLinkContract {
     const val sessionSecretNeverOnWire = true
     const val authenticatedRequestsUseHmacProof = true
     const val sessionsPersistAcrossProcessRestart = true
+    const val sessionCredentialCommitBeforeSuccess = true
+    const val tvAndSflpTrustUseCanonicalStore = true
     const val phoneAndTvShareOneTransportModule = true
     const val transportUsesNoCastSdk = true
     const val transportUsesNoMediaRouter = true
@@ -140,24 +142,20 @@ class StudyFlowTvSessionStore(
         return credential
     }
 
-    fun save(credential: StudyFlowTvSessionCredential) {
-        preferences.edit()
-            .putString(KEY_SESSION_ID, credential.sessionId)
-            .putString(KEY_SESSION_SECRET, credential.sessionSecret)
-            .putString(KEY_TV_NAME, credential.tvDeviceName)
-            .putString(KEY_PHONE_NAME, credential.pairedDeviceName)
-            .putLong(KEY_PAIRED_AT, credential.pairedAtEpochMillis)
-            .putLong(KEY_EXPIRES_AT, credential.expiresAtEpochMillis)
-            .putString(KEY_RECEIVER_SERVICE_NAME, credential.receiverServiceName)
-            .putString(KEY_RECEIVER_HOST_ADDRESS, credential.receiverHostAddress)
-            .putInt(KEY_RECEIVER_PORT, credential.receiverPort ?: -1)
-            .putString(KEY_RECEIVER_HOST_KEY, credential.receiverHostKeyAgreementPublicKeyHex)
-            .apply()
-    }
+    fun save(credential: StudyFlowTvSessionCredential): Boolean = preferences.edit()
+        .putString(KEY_SESSION_ID, credential.sessionId)
+        .putString(KEY_SESSION_SECRET, credential.sessionSecret)
+        .putString(KEY_TV_NAME, credential.tvDeviceName)
+        .putString(KEY_PHONE_NAME, credential.pairedDeviceName)
+        .putLong(KEY_PAIRED_AT, credential.pairedAtEpochMillis)
+        .putLong(KEY_EXPIRES_AT, credential.expiresAtEpochMillis)
+        .putString(KEY_RECEIVER_SERVICE_NAME, credential.receiverServiceName)
+        .putString(KEY_RECEIVER_HOST_ADDRESS, credential.receiverHostAddress)
+        .putInt(KEY_RECEIVER_PORT, credential.receiverPort ?: -1)
+        .putString(KEY_RECEIVER_HOST_KEY, credential.receiverHostKeyAgreementPublicKeyHex)
+        .commit()
 
-    fun clear() {
-        preferences.edit().clear().apply()
-    }
+    fun clear(): Boolean = preferences.edit().clear().commit()
 
     private companion object {
         const val KEY_SESSION_ID = "session_id"
@@ -439,7 +437,9 @@ class StudyFlowTvLocalTransportClient(context: Context) {
             }.getOrElse {
                 return response.copy(ok = false, reason = "pairing-credential-decrypt-failed", encryptedCredential = null)
             }
-            sessionStore.save(decrypted.bindToReceiver(endpoint, hostKey))
+            if (!sessionStore.save(decrypted.bindToReceiver(endpoint, hostKey))) {
+                return response.copy(ok = false, reason = "pairing-credential-save-failed", encryptedCredential = null)
+            }
         }
         return response
     }
@@ -754,11 +754,13 @@ class StudyFlowTvLocalTransportHost(
             ?: return response(request, false, "pairing-client-key-required", nowEpochMillis)
         val accepted = pairingEngine.accept(offer, code, nonce, phoneName, clientKey, nowEpochMillis)
             ?: return response(request, false, "pairing-rejected", nowEpochMillis)
+        if (!sessionStore.save(accepted.credential)) {
+            return response(request, false, "pairing-credential-save-failed", nowEpochMillis)
+        }
         credential = accepted.credential
         currentOffer = null
         pairingAttemptCount = 0
         consumedAuthNonces.clear()
-        sessionStore.save(accepted.credential)
         publishSession(accepted.credential.toControlSession())
         return StudyFlowTvWireResponse(
             requestId = request.requestId,

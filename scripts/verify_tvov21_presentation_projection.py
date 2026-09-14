@@ -96,7 +96,7 @@ adapter = require_tokens(
     "runtimeFixtureDefaultsForbidden = true",
     "databaseAndRepositoryDependenciesForbidden = true",
     "class StudyFlowTvPresentationInbox",
-    "snapshot.generatedAtEpochMillis < previous.generatedAtEpochMillis",
+    "identity/revision based, not wall-clock based",
 )
 activity = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvActivity.kt",
@@ -126,7 +126,7 @@ require(('versionCode = 26' in app_tv_build and 'versionName = "0.1.0-tv26"' in 
 require_tokens(
     "app-tv/src/test/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapterTest.kt",
     "typedSnapshotKeepsCanonicalSourceIdsWhenAdaptedToTvSlots",
-    "inboxRejectsDuplicateAndOlderPresentationSnapshots",
+    "inboxRejectsDuplicatesButDoesNotUseUnsynchronizedWallClockStaleness",
     "waitingStateIsExplicitAndContainsNoHistoricalExamFixture",
 )
 

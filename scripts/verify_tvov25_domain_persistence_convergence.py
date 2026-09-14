@@ -140,7 +140,7 @@ outbox = require_tokens(
 )
 activity = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvActivity.kt",
-    "private val domainActionOutbox = StudyFlowTvDomainActionOutbox()",
+    "private lateinit var domainActionOutbox: StudyFlowTvDomainActionOutbox",
     "override fun pendingDomainAction(): StudyFlowTvDomainAction?",
     "override fun acknowledgeDomainAction(result: StudyFlowTvDomainActionResult): Boolean",
     "StudyFlowTvDomainActionProtocol.requiresPersistence(command)",

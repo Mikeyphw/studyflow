@@ -35,11 +35,11 @@ class StudyFlowTvPresentationAdapterTest {
     }
 
     @Test
-    fun inboxRejectsDuplicateAndOlderPresentationSnapshots() {
+    fun inboxRejectsDuplicatesButDoesNotUseUnsynchronizedWallClockStaleness() {
         val inbox = StudyFlowTvPresentationInbox()
         assertTrue(inbox.apply(snapshot("snap-1", 100L)))
         assertFalse(inbox.apply(snapshot("snap-1", 100L)))
-        assertFalse(inbox.apply(snapshot("snap-old", 99L)))
+        assertTrue(inbox.apply(snapshot("snap-old", 99L)))
         assertTrue(inbox.apply(snapshot("snap-2", 101L)))
         assertEquals("snap-2", inbox.current?.snapshotId)
     }

@@ -1,67 +1,77 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov17_attention_delivery_widget_remote_policy_v1",
+  "name": "studyflow_ov18_native_tv_durable_state_action_journal_v1",
   "target": "studyflow_android",
-  "description": "OV17 closes Android attention delivery, widget resilience and remote ATT10 recipient policy findings with per-widget isolation, self-healing observers, timezone refresh, expired snooze purge, stable notification IDs and canonical remote taps.",
+  "description": "OV18 closes native Android TV durable canonical state and action-journal findings with persistent outbox snapshots, durable command sequencing, explicit backpressure, wall-clock-free admission, persisted TV UI cursors and commit-before-success phone\u2194TV credentials.",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV17: harden attention delivery widget and remote policy"
+    "message": "OV18: harden native TV durable state and action journal"
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built cumulatively on successful OV16 user-side apply after OV15 commit d5a58e0e."
+    "notes": "Built cumulatively on successful OV17 user-side apply after OV15 commit d5a58e0e and OV16/OV17 applied."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov17_attention_delivery_widget_remote_policy_v1",
+    "name": "studyflow_ov18_native_tv_durable_state_action_journal_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov17-widget-resilience",
-        "purpose": "Isolate per-widget refresh failures and surface failed instance counts without aborting the refresh loop.",
+        "id": "ov18-domain-action-journal",
+        "purpose": "Persist canonical TV mutation requests and acknowledgements, preserve pending order, and reject overflow with explicit backpressure instead of dropping oldest actions.",
         "paths": [
-          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyFlowWidgetUpdateCoordinator.kt",
-          "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetOv17ResilienceContractTest.kt"
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/domain/StudyFlowTvDomainActionOutbox.kt",
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/domain/AndroidStudyFlowTvDomainActionOutboxPersistence.kt",
+          "app-tv/src/test/java/com/mikeyphw/studyflow/tv/domain/StudyFlowTvDomainActionOutboxOv18DurabilityTest.kt"
         ]
       },
       {
-        "id": "ov17-remote-attention-recipient-policy",
-        "purpose": "Apply recipient Android ATT10 focus/quiet-hours policy to inbound SFLP notifications and keep remote taps routed to canonical plan/type/target destinations.",
+        "id": "ov18-command-sequencing",
+        "purpose": "Move TV-local command identifiers out of Activity memory and reserve each id through committed persistent storage before exposure.",
         "paths": [
-          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
-          "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderOv17DeliveryPolicyTest.kt"
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/domain/StudyFlowTvDurableCommandSequencer.kt",
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvActivity.kt"
         ]
       },
       {
-        "id": "ov17-scheduler-bookkeeping-and-id-stability",
-        "purpose": "Refresh quiet-hours timezone state, purge expired snoozes, and replace collision-prone hashCode notification IDs with SHA-256-derived IDs.",
+        "id": "ov18-wall-clock-free-admission",
+        "purpose": "Remove stale command and presentation rejection based on unsynchronized phone/TV wall clocks while preserving id-based replay barriers.",
         "paths": [
-          "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyFlowAttentionFocusPolicyStore.kt",
-          "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderOccurrenceStore.kt"
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/control/StudyFlowTvControlStateReducer.kt",
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapter.kt",
+          "app-tv/src/test/java/com/mikeyphw/studyflow/tv/control/StudyFlowTvControlStateReducerOv18ClockTest.kt"
         ]
       },
       {
-        "id": "ov17-self-healing-invalidation-observers",
-        "purpose": "Make process-lifetime widget and reminder invalidation collectors retry after transient repository/flow failures.",
+        "id": "ov18-tv-ui-state",
+        "purpose": "Persist destination, search and material-viewer cursors outside Activity memory so TV shell state survives recreation/restart.",
         "paths": [
-          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt"
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvDurableUiStateStore.kt",
+          "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvActivity.kt"
         ]
       },
       {
-        "id": "ov17-validation-evidence",
-        "purpose": "Install apply-time OV17 verification without stopping Gradle daemons and document closure against the final audit ledger.",
+        "id": "ov18-trust-and-credential-commit",
+        "purpose": "Declare SFLP trust as the canonical TV trust authority and synchronously commit phone\u2194TV credentials before publishing paired success.",
+        "paths": [
+          "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt"
+        ]
+      },
+      {
+        "id": "ov18-validation-evidence",
+        "purpose": "Install apply-time OV18 verification without stopping Gradle daemons and update remediation closure evidence.",
         "paths": [
           ".devtool-artifact/validation/validate.sh",
           ".devtool.toml",
           "build.gradle.kts",
-          "scripts/verify_ov17_attention_delivery_widget_remote_policy.py",
-          "scripts/validate_ov17_attention_delivery_widget_remote_policy.sh",
-          "docs/remediation/OV17_ATTENTION_DELIVERY_WIDGET_REMOTE_POLICY.md",
+          "scripts/verify_ov18_native_tv_durable_state_action_journal.py",
+          "scripts/validate_ov18_native_tv_durable_state_action_journal.sh",
+          "docs/remediation/OV18_NATIVE_TV_DURABLE_CANONICAL_STATE.md",
           "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "REMEDIATION_OV_17_IMPLEMENTATION.md",
+          "REMEDIATION_OV_18_IMPLEMENTATION.md",
           "CHANGELOG.md"
         ]
       }
@@ -69,193 +79,274 @@
   },
   "findings": [
     {
-      "id": "S7-09",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov17"
+      "id": "S8-01",
+      "severity": "CRITICAL",
+      "status": "closed-by-ov18"
     },
     {
-      "id": "S7-10",
-      "severity": "MEDIUM-HIGH",
-      "status": "closed-by-ov17"
+      "id": "S8-02",
+      "severity": "CRITICAL",
+      "status": "closed-by-ov18"
     },
     {
-      "id": "S7-11",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov17"
-    },
-    {
-      "id": "S7-12",
-      "severity": "MEDIUM-LOW",
-      "status": "closed-by-ov17"
-    },
-    {
-      "id": "S7-13",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov17"
-    },
-    {
-      "id": "S7-14",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov17"
-    },
-    {
-      "id": "DS2-40",
+      "id": "S8-03",
       "severity": "HIGH",
-      "status": "closed-by-ov17"
+      "status": "closed-by-ov18"
+    },
+    {
+      "id": "S8-07",
+      "severity": "HIGH",
+      "status": "closed-by-ov18"
+    },
+    {
+      "id": "S8-18",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov18"
+    },
+    {
+      "id": "S8-19",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov18"
+    },
+    {
+      "id": "DS2-27",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov18"
+    },
+    {
+      "id": "DS2-44",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed-by-ov18"
     }
   ],
   "validation": {
     "hook": ".devtool-artifact/validation/validate.sh",
-    "gradle_task": "verifyOv17AttentionDeliveryWidgetRemotePolicy",
+    "gradle_task": "verifyOv18NativeTvDurableStateActionJournal",
     "stops_gradle_daemon": false,
     "separate_user_validation_required": false
   },
   "inventory": {
     "format": 1,
-    "count": 16,
+    "count": 24,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "49bb2b7cca545301756958e810f051c71f7441ea55d21e084c22272c2d496894",
-        "size": 328,
+        "sha256": "f6b9e4fb5d9df6448119ddff8087393b3aba54dec40282b677eeec901bb0c571",
+        "size": 325,
         "source_mode": "0o755",
-        "source_sha256": "38d273961d6c114bc3dcccc7a76ef9aea8b26a7843940a2103468336322da09c",
-        "source_size": 320
+        "source_sha256": "49bb2b7cca545301756958e810f051c71f7441ea55d21e084c22272c2d496894",
+        "source_size": 328
       },
       {
         "action": "modify",
         "path": ".devtool.toml",
         "mode": "0o600",
-        "sha256": "71a462ee26d541044c08c47941adaa1e6febfaa8f51a951433fa7823cc9f4ba2",
-        "size": 15645,
+        "sha256": "1aea32bddf66f83845b6009fc8fdb7eec7bda340b5e101cd080c7592e27c0198",
+        "size": 15743,
         "source_mode": "0o600",
-        "source_sha256": "0c8227f76ba77dba0921017377f8f8bde7f6257da8bf5153ce761fb81b030525",
-        "source_size": 15543
+        "source_sha256": "71a462ee26d541044c08c47941adaa1e6febfaa8f51a951433fa7823cc9f4ba2",
+        "source_size": 15645
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o600",
-        "sha256": "a3646f4a51b9076ae6350d050d14a83f767680c51aea261b05f03f5ae7876ea1",
-        "size": 77047,
+        "sha256": "b5962487efcf4aac5fde00e031927cf3d6cbaf73c87e7b64f6ae924195d28194",
+        "size": 77676,
         "source_mode": "0o600",
-        "source_sha256": "44c980783823b6ca5239e1fcddc9dbb38726b61d55b7ee3053559e8fd9ebda6d",
-        "source_size": 76405
+        "source_sha256": "a3646f4a51b9076ae6350d050d14a83f767680c51aea261b05f03f5ae7876ea1",
+        "source_size": 77047
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_17_IMPLEMENTATION.md",
+        "path": "REMEDIATION_OV_18_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "f7f81f5c79c815d74850d18b3fa38c2313a9cf5da95a3b986269cfdb8e64059e",
-        "size": 566
+        "sha256": "e3e1b1f9c094354154e6c397ac0947cd71b019455af5d8290f44f7cb520f3bfb",
+        "size": 583
       },
       {
         "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvActivity.kt",
         "mode": "0o600",
-        "sha256": "f879b3aefd3498c3b8b0ab2d8b652a62e2b4bbba1e18c0eb0d8d32ce9bf7d428",
-        "size": 26176,
+        "sha256": "cd043fce22a3ae5b12a8ddb8a2f42fc08b0ea1a19c4eda3b956aba92b7f6b94a",
+        "size": 98296,
         "source_mode": "0o600",
-        "source_sha256": "a2b64bf59ede7ef9989fe7a62be363c9f15de666bdb788a0d804bfe994bc494d",
-        "source_size": 25420
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyFlowAttentionFocusPolicyStore.kt",
-        "mode": "0o600",
-        "sha256": "c813cec9f2d63b7754d72ccdc0551ba044f2ea95672c26e5fa695ee61bef3bdc",
-        "size": 6506,
-        "source_mode": "0o600",
-        "source_sha256": "d6ea573c7b495ca13eb6d9f60c883394e8135446d3d5ca49818c436083288610",
-        "source_size": 6158
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyFlowWidgetUpdateCoordinator.kt",
-        "mode": "0o600",
-        "sha256": "0227e27c45a72264c5fa12501877518fc4bdc52e8c34ff41f4ae6569a620cbd2",
-        "size": 9648,
-        "source_mode": "0o600",
-        "source_sha256": "abdb618821aa3ff1dd95d6f2dca20d753d2dcccf27aa3dc6b7782fd675d13962",
-        "source_size": 8968
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderDeliveryCoordinator.kt",
-        "mode": "0o600",
-        "sha256": "aa4baa0030896096a38ec499f3277a3250cd71f78fe8a91462d383b0af30c279",
-        "size": 70360,
-        "source_mode": "0o600",
-        "source_sha256": "b39dc501991cf470f5addfa6477d1944873e353089ad6d1f33840dd2fa3a2b53",
-        "source_size": 65920
-      },
-      {
-        "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyReminderOccurrenceStore.kt",
-        "mode": "0o600",
-        "sha256": "3b5bc6729c70719361189d8e55559741200b56d9f32c20b963621f166f08de81",
-        "size": 11965,
-        "source_mode": "0o600",
-        "source_sha256": "82568ce830e482a65e6fef04cecc2561f4c65c8da78e1aad184542d4ecbfcb1f",
-        "source_size": 10699
+        "source_sha256": "503813b63ff164e0215439e2c5658926ad72ca5a2072297333fa102f376f2944",
+        "source_size": 94745
       },
       {
         "action": "add",
-        "path": "app/src/test/java/com/mikeyphw/studyflow/reminders/StudyReminderOv17DeliveryPolicyTest.kt",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/StudyFlowTvDurableUiStateStore.kt",
         "mode": "0o644",
-        "sha256": "a9d09aa5b5ac9122f3f19ec40096c58b470cc4e36c5324983834addb7b6c7685",
-        "size": 550
+        "sha256": "8b9abca0beb9eb940042c651c961c4328caf1b9ecc14bb0328ce1834c1445b5b",
+        "size": 4790
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/control/StudyFlowTvControlStateReducer.kt",
+        "mode": "0o600",
+        "sha256": "c3bda23c0052caf860f07de83d12217938bbd4706a5e6d0819c1068809ee29ce",
+        "size": 23356,
+        "source_mode": "0o600",
+        "source_sha256": "d244ed50b264783d1e992ba8101ff7503e4222cbd269985baee0ce69ac7ffbfc",
+        "source_size": 23295
       },
       {
         "action": "add",
-        "path": "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetOv17ResilienceContractTest.kt",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/domain/AndroidStudyFlowTvDomainActionOutboxPersistence.kt",
         "mode": "0o644",
-        "sha256": "12ffbba041868b4e619dd7c28cb5a62628894389d6867feb113f3d16b3ffacec",
-        "size": 550
+        "sha256": "14cb44838d5e862e5d03ef99cf23ede3a898512bcfc3181dc61f98131179001e",
+        "size": 2318
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/domain/StudyFlowTvDomainActionOutbox.kt",
+        "mode": "0o600",
+        "sha256": "a27f9bb834387bf2e93852d21720a1822789fe58800ba9b3ac845fefcf142387",
+        "size": 3519,
+        "source_mode": "0o600",
+        "source_sha256": "11141d7cade3180530fe33031c81681d4b1656cecb3449e813f4024066c43f5c",
+        "source_size": 1859
+      },
+      {
+        "action": "add",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/domain/StudyFlowTvDurableCommandSequencer.kt",
+        "mode": "0o644",
+        "sha256": "67f3e38a07dabff3073fc4e41ed131663dcc9b1e8f3df76d0d3b86763f6eda8a",
+        "size": 1404
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/main/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapter.kt",
+        "mode": "0o600",
+        "sha256": "c47499935432d3d62d44bf80f64377c43a0ed26219b3f6f9a9dd5a6082e9fcaa",
+        "size": 25342,
+        "source_mode": "0o600",
+        "source_sha256": "a3aeae5a992ea8c3f1175d934028c7aab9f3450278cfa1de8a2b2e1a6dbb90cc",
+        "source_size": 25208
+      },
+      {
+        "action": "add",
+        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/control/StudyFlowTvControlStateReducerOv18ClockTest.kt",
+        "mode": "0o644",
+        "sha256": "bb260c8e589602f14baa239b3223a8ea50a31c810fc4ef7ebafad3e42b2fe895",
+        "size": 1751
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/control/StudyFlowTvControlStateReducerTest.kt",
+        "mode": "0o600",
+        "sha256": "1c40677c0a0b006b975cf77ea1f76e9f76f9efbdea9d9794e8550a27ed4ae0a5",
+        "size": 8928,
+        "source_mode": "0o600",
+        "source_sha256": "2e2dc991761898df14375901eda4fe828d211d43bbca7d9d4647ae14e3c2dbbc",
+        "source_size": 8946
+      },
+      {
+        "action": "add",
+        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/domain/StudyFlowTvDomainActionOutboxOv18DurabilityTest.kt",
+        "mode": "0o644",
+        "sha256": "93517d48a1ba909c247d0b71bac70fb11074ec153530b9767aef4709d91bc8c9",
+        "size": 3748
+      },
+      {
+        "action": "modify",
+        "path": "app-tv/src/test/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapterTest.kt",
+        "mode": "0o600",
+        "sha256": "97bd53375d24b7bb7c631910a5ef952da56e3c8ce3891da8f2da16080ed7eeca",
+        "size": 6712,
+        "source_mode": "0o600",
+        "source_sha256": "df0460fe4e9d23cce49134dde98b3e77b6d90d0646e76ae9bf63297912167c86",
+        "source_size": 6696
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o600",
-        "sha256": "e4aeeb26d21e725ef5c3975f88ce93b40e0c2212afe58becd8b1fa210ca95cbc",
-        "size": 96219,
+        "sha256": "0de445df466b778d51a50df9e6334a8c07b10945227a74c1a887b3ecf6e011d7",
+        "size": 96781,
         "source_mode": "0o600",
-        "source_sha256": "df2440eea97bc0f15d338ca87e3662103078af9625712957904f0bca10ef504c",
-        "source_size": 95607
+        "source_sha256": "e4aeeb26d21e725ef5c3975f88ce93b40e0c2212afe58becd8b1fa210ca95cbc",
+        "source_size": 96219
+      },
+      {
+        "action": "modify",
+        "path": "core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyFlowTvLocalLink.kt",
+        "mode": "0o600",
+        "sha256": "4ad5b7c2e84ff3892e8227b6e3064236f59465f8ebdfc0108de1ad81751fd385",
+        "size": 41763,
+        "source_mode": "0o600",
+        "source_sha256": "04832961ab94dac0ff5f614ec3ea15b581d7931eb0dd8b1c08373d4c29fe4c3d",
+        "source_size": 41450
       },
       {
         "action": "add",
-        "path": "docs/remediation/OV17_ATTENTION_DELIVERY_WIDGET_REMOTE_POLICY.md",
+        "path": "docs/remediation/OV18_NATIVE_TV_DURABLE_CANONICAL_STATE.md",
         "mode": "0o644",
-        "sha256": "a29a79f8e93fb08f662e2738c0260e319a87120efaa0f0ccaa22acd79d867b42",
-        "size": 1119
+        "sha256": "c1b77ea5525b15bf39bfd8599d9b9a0e676a58f353b1673625f27d1cb8c0283c",
+        "size": 1957
       },
       {
         "action": "modify",
         "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "8aa013f5b3c74f259112fee6acaae79fe496febf75e3184d7882cecc2dc91c03",
-        "size": 21280,
+        "sha256": "ff87d3a9f761f6866a5b15e6c573265c7e9982153574898676614b4390f6bf6c",
+        "size": 21717,
         "source_mode": "0o644",
-        "source_sha256": "05786251f0339695bae1164dcb40c432b82d89e116732d9f93f596f00ee82b33",
-        "source_size": 20933
+        "source_sha256": "8aa013f5b3c74f259112fee6acaae79fe496febf75e3184d7882cecc2dc91c03",
+        "source_size": 21280
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov17_attention_delivery_widget_remote_policy.sh",
+        "path": "scripts/validate_ov18_native_tv_durable_state_action_journal.sh",
         "mode": "0o755",
-        "sha256": "c53eececc2b4906c949d28363f64f19805395c239012f8d50150e5f720af7868",
-        "size": 294
+        "sha256": "c69354139b6f9311b627e5da098e60ec82fc3d64335fc5a87a7c7ef5667b3435",
+        "size": 343
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov17_attention_delivery_widget_remote_policy.py",
+        "path": "scripts/verify_ov18_native_tv_durable_state_action_journal.py",
         "mode": "0o755",
-        "sha256": "eecb0f3d31a7b96f2ee6576c090c94114309778041cdc8c65d4b5875200ae2d6",
-        "size": 4138
+        "sha256": "9bb9cea7dce24572d62b904569af6f4d4f9cacd343a28c75b8975a6a57e178b9",
+        "size": 5851
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_tvov16_control_state_continuity.py",
+        "mode": "0o600",
+        "sha256": "94ac4a2423739b4d77bc7e6199d8ed8346516094ceef743f11bc924c179645b1",
+        "size": 6309,
+        "source_mode": "0o600",
+        "source_sha256": "266263b0ee92d385885fddf8d4ef03684a6d493d7436495c9098e66ecd80bde9",
+        "source_size": 6257
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_tvov21_presentation_projection.py",
+        "mode": "0o600",
+        "sha256": "fa88f073ed3841da1106fde65fcef01488c9d6ad6aafbf2fb39f611130233fbd",
+        "size": 8778,
+        "source_mode": "0o600",
+        "source_sha256": "d64f62b2a0e9b8faf37e65dea7fc0207a1ed60d3a09875b2fd5149beda96aa51",
+        "source_size": 8781
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_tvov25_domain_persistence_convergence.py",
+        "mode": "0o600",
+        "sha256": "2e7d900ab94b40571ce1685db90bf09fae9a0aa26fe705607ceea707c1cc9947",
+        "size": 14253,
+        "source_mode": "0o600",
+        "source_sha256": "2197ac2a2568286dac3f11cdd002be6a96c7171781ed88f95e8f0839c0f6d422",
+        "source_size": 14247
       }
     ]
-  }
+  },
+  "notes": [
+    "Validation hook invokes one Gradle task and never stops Gradle daemons.",
+    "The shell validator contains no nested Gradle invocation; native compile/tests are declared as Gradle task dependencies.",
+    "Archive is packaged with file members only: no root member, no directory headers, no ./ prefixes."
+  ]
 }

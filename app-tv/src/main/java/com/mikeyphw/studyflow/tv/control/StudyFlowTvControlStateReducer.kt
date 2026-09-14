@@ -65,15 +65,16 @@ data class StudyFlowTvControlReduction(
 )
 
 /**
- * TVOV16 deterministic reducer. No network transport lives here: callers provide a command and its
- * origin, and both local and paired-phone paths converge on this exact state transition function.
+ * TVOV16 deterministic reducer. OV18 keeps this reducer transport-free while removing wall-clock
+ * stale rejection, because phones and TVs can have unsynchronized clocks.
  */
 object StudyFlowTvControlStateReducer {
-    const val overlay = "TVOV16"
+    const val overlay = "OV18"
     const val localAndPairedPhoneUseSameReducer = true
     const val transportDeferred = false
     const val monotonicRevisionRequired = true
-    const val staleAndDuplicateCommandsRejected = true
+    const val duplicateCommandsRejected = true
+    const val wallClockStaleDetectionForbidden = true
     const val expiredAndRevokedPairingsRejected = true
     const val controlledSurfaceCount = 10
 
@@ -108,10 +109,9 @@ object StudyFlowTvControlStateReducer {
         if (command.commandId == state.lastCommandId) {
             return StudyFlowTvControlReduction(state, applied = false, reason = "duplicate-command")
         }
-        val lastIssued = state.lastCommandIssuedAtEpochMillis
-        if (lastIssued != null && command.issuedAtEpochMillis < lastIssued) {
-            return StudyFlowTvControlReduction(state, applied = false, reason = "stale-command")
-        }
+        // OV18: command freshness is identity/revision based, not wall-clock based.
+        // Do not reject commands because a sender's wall clock appears older than this TV.
+        // Replay protection is command-id based; ordered canonical mutations are handled by the durable outbox.
         if (origin == StudyFlowTvControlOrigin.PAIRED_PHONE && !state.session.acceptsPairedPhoneCommands(nowEpochMillis)) {
             // Snapshot the nullable cross-module property before checking it. Kotlin cannot smart-cast
             // a public property declared in another module because an overriding/custom getter could

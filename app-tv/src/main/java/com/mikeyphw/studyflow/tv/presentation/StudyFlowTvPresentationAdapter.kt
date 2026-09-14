@@ -514,7 +514,9 @@ class StudyFlowTvPresentationInbox {
     fun apply(snapshot: StudyFlowTvPresentationSnapshot): Boolean {
         val previous = current
         if (previous != null && snapshot.snapshotId == previous.snapshotId) return false
-        if (previous != null && snapshot.generatedAtEpochMillis < previous.generatedAtEpochMillis) return false
+        // OV18: snapshot freshness is identity/revision based, not wall-clock based. The paired
+        // phone and TV can be unsynchronized, so an older generatedAt value must not discard a
+        // distinct canonical presentation snapshot.
         current = snapshot
         return true
     }

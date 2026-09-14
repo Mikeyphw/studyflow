@@ -2438,3 +2438,16 @@ tasks.register<Exec>("verifyOv17AttentionDeliveryWidgetRemotePolicy") {
     )
     commandLine("bash", "scripts/validate_ov17_attention_delivery_widget_remote_policy.sh")
 }
+
+
+tasks.register<Exec>("verifyOv18NativeTvDurableStateActionJournal") {
+    group = "verification"
+    description = "Validates OV18 native TV durable command sequencing, outbox persistence, explicit backpressure, wall-clock-free admission, UI-state checkpoints and commit-before-success pairing."
+    dependsOn(
+        ":core:tvcontrol:test",
+        ":core:tvlink:compileDebugKotlin",
+        ":app-tv:compileDebugKotlin",
+        ":app-tv:testDebugUnitTest",
+    )
+    commandLine("bash", "scripts/validate_ov18_native_tv_durable_state_action_journal.sh")
+}

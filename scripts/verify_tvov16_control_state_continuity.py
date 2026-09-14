@@ -55,17 +55,17 @@ require("REVOKE_PAIRING" in protocol, "shared TV protocol must model pairing rev
 
 for token in (
     'object StudyFlowTvControlStateReducer',
-    'const val overlay = "TVOV16"',
+    'object StudyFlowTvControlStateReducer',
     'localAndPairedPhoneUseSameReducer = true',
     'transportDeferred = false',
     'monotonicRevisionRequired = true',
-    'staleAndDuplicateCommandsRejected = true',
+    'duplicateCommandsRejected = true',
+    'wallClockStaleDetectionForbidden = true',
     'expiredAndRevokedPairingsRejected = true',
     'fun reduce(',
     'fun continuityState(',
     'StudyFlowTvControlOrigin.PAIRED_PHONE',
     'duplicate-command',
-    'stale-command',
     'expired-pairing',
 ):
     require(token in reducer, f"TVOV16 reducer missing token: {token}")
@@ -87,7 +87,7 @@ for token in (
     'localRemoteAndPairedPhoneDriveTheSameReducerState',
     'openCommandsCoverEveryImplementedTvDestination',
     'surfaceCommandsPreserveActiveQuestionSectionReviewScheduleAndLibraryState',
-    'duplicateStaleExpiredAndRevokedPhoneCommandsFailClosed',
+    'duplicateExpiredAndRevokedPhoneCommandsFailClosedWithoutWallClockStaleRejection',
     'settingsCanRevokePairingThroughTheSameSharedCommandLayer',
 ):
     require(token in reducer_test, f"TVOV16 app-tv unit test missing token: {token}")

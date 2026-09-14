@@ -1,4 +1,14 @@
 
+## OV18 — Native TV durable canonical state & action journal
+
+- Persisted Android TV canonical domain-action outbox snapshots and acknowledgements.
+- Replaced Activity-local TV command sequence with a committed durable command-id generator.
+- Changed full TV domain-action queues to return explicit backpressure instead of dropping pending actions.
+- Removed unsynchronized wall-clock stale rejection from TV command and presentation admission.
+- Added durable TV destination, search, and material-viewer cursor checkpoints.
+- Changed phone↔TV session credential persistence to synchronous commit-before-success semantics.
+
+
 ## OV17 — Attention delivery, widget resilience & remote policy
 
 - Isolated per-widget refresh failures so one broken widget does not abort all widget updates.

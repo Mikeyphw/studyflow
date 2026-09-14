@@ -39,7 +39,9 @@ import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvAccessibilityNode
 import com.mikeyphw.studyflow.tv.accessibility.applyStudyFlowTvTenFootText
 import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlState
 import com.mikeyphw.studyflow.tv.control.StudyFlowTvControlStateReducer
+import com.mikeyphw.studyflow.tv.domain.AndroidStudyFlowTvDomainActionOutboxPersistence
 import com.mikeyphw.studyflow.tv.domain.StudyFlowTvDomainActionOutbox
+import com.mikeyphw.studyflow.tv.domain.StudyFlowTvDurableCommandSequencer
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteCommand
 import com.mikeyphw.studyflow.tv.focus.StudyFlowTvRemoteKeyMapper
 import com.mikeyphw.studyflow.tv.focus.applyStudyFlowTvDpadFocus
@@ -123,9 +125,11 @@ class StudyFlowTvActivity : Activity() {
     // TVOV21: the runtime shell starts from an explicit waiting state. Historical fixture defaults
     // remain unit-test helpers only and are never the Activity's presentation source.
     private val presentationInbox = StudyFlowTvPresentationInbox()
-    private val domainActionOutbox = StudyFlowTvDomainActionOutbox()
+    private lateinit var domainActionOutbox: StudyFlowTvDomainActionOutbox
+    private lateinit var commandSequencer: StudyFlowTvDurableCommandSequencer
+    private lateinit var durableUiStateStore: StudyFlowTvDurableUiStateStore
     private var controlState: StudyFlowTvControlState = StudyFlowTvPresentationAdapter.waitingState()
-    private var localCommandSequence: Long = 0
+    private var lastTvCommandFailureReason: String? = null
     private val selectedDestination: StudyFlowTvDestination
         get() = controlState.destination
     private var todaySnapshot: StudyFlowTvTodaySnapshot
@@ -183,6 +187,15 @@ class StudyFlowTvActivity : Activity() {
             tvIdentity = sflpPeer.localDescriptor,
             clock = StudyFlowPeerClock(System::currentTimeMillis),
         )
+        commandSequencer = StudyFlowTvDurableCommandSequencer(applicationContext)
+        durableUiStateStore = StudyFlowTvDurableUiStateStore(applicationContext)
+        domainActionOutbox = StudyFlowTvDomainActionOutbox(
+            AndroidStudyFlowTvDomainActionOutboxPersistence(applicationContext),
+        )
+        controlState = controlState.copy(destination = durableUiStateStore.restoreDestination())
+        searchState = durableUiStateStore.restoreSearchState(
+            searchState.copy(documents = StudyFlowTvSearch.documents(controlState)),
+        )
         sflpPeer.setNotificationDeliveryHandler { delivery ->
             val result = tvAttentionRuntime.ingest(delivery)
             runOnUiThread {
@@ -214,7 +227,7 @@ class StudyFlowTvActivity : Activity() {
                     val applied = this@StudyFlowTvActivity.applyPairedPhoneCommand(command, nowEpochMillis)
                     return StudyFlowTvTransportApplyResult(
                         applied = applied,
-                        reason = if (applied) null else "command-rejected",
+                        reason = if (applied) null else lastTvCommandFailureReason ?: "command-rejected",
                         continuity = StudyFlowTvControlStateReducer.continuityState(controlState),
                         presentationReceipt = presentationInbox.receipt(),
                     )
@@ -314,6 +327,7 @@ class StudyFlowTvActivity : Activity() {
         val updated = delegatedSearchInput.apply(searchState, event)
         val changed = updated != searchState
         searchState = updated
+        if (::durableUiStateStore.isInitialized) durableUiStateStore.saveSearchState(searchState, System.currentTimeMillis())
         if (::contentTitle.isInitialized) {
             if (searchState.visible) renderSearchOverlay() else renderDestination(selectedDestination)
         }
@@ -322,28 +336,33 @@ class StudyFlowTvActivity : Activity() {
 
     private fun openSearchOverlay() {
         searchState = StudyFlowTvSearch.open(controlState)
+        if (::durableUiStateStore.isInitialized) durableUiStateStore.saveSearchState(searchState, System.currentTimeMillis())
         renderSearchOverlay()
     }
 
     private fun handleSearchKey(keyCode: Int): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_DPAD_UP -> {
             searchState = StudyFlowTvSearch.move(searchState, -1)
+            if (::durableUiStateStore.isInitialized) durableUiStateStore.saveSearchState(searchState, System.currentTimeMillis())
             renderSearchOverlay()
             true
         }
         KeyEvent.KEYCODE_DPAD_DOWN -> {
             searchState = StudyFlowTvSearch.move(searchState, 1)
+            if (::durableUiStateStore.isInitialized) durableUiStateStore.saveSearchState(searchState, System.currentTimeMillis())
             renderSearchOverlay()
             true
         }
         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
             val selected = searchState.selected ?: return true
             searchState = searchState.copy(visible = false)
+            if (::durableUiStateStore.isInitialized) durableUiStateStore.saveSearchState(searchState, System.currentTimeMillis())
             selectDestination(selected.destination)
             true
         }
         KeyEvent.KEYCODE_BACK -> {
             searchState = searchState.copy(visible = false)
+            if (::durableUiStateStore.isInitialized) durableUiStateStore.saveSearchState(searchState, System.currentTimeMillis())
             renderDestination(selectedDestination)
             true
         }
@@ -543,6 +562,7 @@ class StudyFlowTvActivity : Activity() {
     internal fun applyPresentationSnapshot(snapshot: StudyFlowTvPresentationSnapshot): Boolean {
         if (!presentationInbox.apply(snapshot)) return false
         controlState = StudyFlowTvPresentationAdapter.applySnapshot(controlState, snapshot)
+        if (::durableUiStateStore.isInitialized) durableUiStateStore.saveDestination(controlState.destination, System.currentTimeMillis())
         if (::contentTitle.isInitialized) renderDestination(controlState.destination)
         return true
     }
@@ -557,7 +577,8 @@ class StudyFlowTvActivity : Activity() {
                 snapshot = presentationInbox.current,
                 origin = StudyFlowTvControlOrigin.PAIRED_PHONE,
             )
-            if (queued && ::continuityStatus.isInitialized) renderContinuityStatus()
+            lastTvCommandFailureReason = if (queued) null else domainActionOutbox.lastRejectionReason()
+            if (::continuityStatus.isInitialized) renderContinuityStatus()
             return queued
         }
         return applyControlCommand(
@@ -573,6 +594,7 @@ class StudyFlowTvActivity : Activity() {
             session = session,
             nowEpochMillis = System.currentTimeMillis(),
         )
+        if (::durableUiStateStore.isInitialized) durableUiStateStore.saveDestination(controlState.destination, System.currentTimeMillis())
         if (::contentTitle.isInitialized) {
             renderDestination(controlState.destination)
         }
@@ -631,10 +653,12 @@ class StudyFlowTvActivity : Activity() {
     ): Boolean {
         val reduction = StudyFlowTvControlStateReducer.reduce(controlState, command, origin, nowEpochMillis)
         controlState = reduction.state
+        lastTvCommandFailureReason = reduction.reason
         if (reduction.applied && command.action == com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvControlAction.STOP_CAST) {
             presentationInbox.clear()
             controlState = StudyFlowTvPresentationAdapter.waitingState(controlState)
         }
+        if (::durableUiStateStore.isInitialized) durableUiStateStore.saveDestination(controlState.destination, nowEpochMillis)
         if (reduction.applied && ::contentTitle.isInitialized) {
             renderDestination(controlState.destination)
         } else if (::continuityStatus.isInitialized) {
@@ -643,7 +667,7 @@ class StudyFlowTvActivity : Activity() {
         return reduction.applied
     }
 
-    private fun nextLocalCommandId(): String = "tv-local-${++localCommandSequence}"
+    private fun nextLocalCommandId(): String = commandSequencer.next()
 
     private fun dispatchLocalCommand(
         factory: (commandId: String, issuedAtEpochMillis: Long) -> StudyFlowTvControlCommand,
@@ -656,7 +680,8 @@ class StudyFlowTvActivity : Activity() {
                 snapshot = presentationInbox.current,
                 origin = StudyFlowTvControlOrigin.LOCAL_REMOTE,
             )
-            if (queued && ::continuityStatus.isInitialized) renderContinuityStatus()
+            lastTvCommandFailureReason = if (queued) null else domainActionOutbox.lastRejectionReason()
+            if (::continuityStatus.isInitialized) renderContinuityStatus()
             return queued
         }
         return applyControlCommand(
@@ -1036,6 +1061,12 @@ class StudyFlowTvActivity : Activity() {
 
     private fun renderLibraryDestination() {
         if (!hasPresentationFor(StudyFlowTvDestination.LIBRARY)) return renderPresentationUnavailableDestination()
+        if (libraryViewerState == null && ::durableUiStateStore.isInitialized) {
+            StudyFlowTvMaterialViewer.open(librarySnapshot.activeReference)?.let { candidate ->
+                val restored = durableUiStateStore.restoreMaterialViewerState(candidate)
+                if (restored.title == candidate.title && restored != candidate) libraryViewerState = restored
+            }
+        }
         libraryViewerState?.let { state ->
             renderLibraryMaterialViewer(state)
             return
@@ -1149,6 +1180,10 @@ class StudyFlowTvActivity : Activity() {
                             } else {
                                 libraryViewerState = StudyFlowTvMaterialViewer.reduce(state, action)
                             }
+                            if (::durableUiStateStore.isInitialized) durableUiStateStore.saveMaterialViewerState(
+                                libraryViewerState,
+                                System.currentTimeMillis(),
+                            )
                             renderLibraryDestination()
                         }
                     })
@@ -1647,6 +1682,10 @@ class StudyFlowTvActivity : Activity() {
             val index = librarySnapshot.references.indexOfFirst { it.sourceId == reference.sourceId }
             if (index >= 0) librarySnapshot = librarySnapshot.copy(activeReferenceIndex = index)
             libraryViewerState = StudyFlowTvMaterialViewer.open(reference)
+            if (::durableUiStateStore.isInitialized) durableUiStateStore.saveMaterialViewerState(
+                libraryViewerState,
+                System.currentTimeMillis(),
+            )
             dispatchLocalCommand { commandId, issuedAt ->
                 StudyFlowTvControlCommand(
                     commandId = commandId,
@@ -1665,6 +1704,10 @@ class StudyFlowTvActivity : Activity() {
             when (action) {
                 StudyFlowTvLibraryAction.OPEN_REFERENCE -> {
                     libraryViewerState = StudyFlowTvMaterialViewer.open(librarySnapshot.activeReference)
+                    if (::durableUiStateStore.isInitialized) durableUiStateStore.saveMaterialViewerState(
+                        libraryViewerState,
+                        System.currentTimeMillis(),
+                    )
                     renderLibraryDestination()
                 }
                 StudyFlowTvLibraryAction.PREVIOUS_REFERENCE,
@@ -1672,6 +1715,7 @@ class StudyFlowTvActivity : Activity() {
                 -> {
                     librarySnapshot = StudyFlowTvLibrarySurface.applyAction(librarySnapshot, action)
                     libraryViewerState = null
+                    if (::durableUiStateStore.isInitialized) durableUiStateStore.saveMaterialViewerState(null, System.currentTimeMillis())
                     renderLibraryDestination()
                 }
                 StudyFlowTvLibraryAction.START_RELATED_PRACTICE,
