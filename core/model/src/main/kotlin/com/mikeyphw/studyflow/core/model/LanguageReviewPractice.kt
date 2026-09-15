@@ -167,6 +167,34 @@ fun buildLanguageReviewPrompt(
     }
 }
 
+object LanguageReviewEngine {
+    fun buildPrompt(
+        expression: LanguageExpression,
+        idiomCard: IdiomCard,
+        direction: LanguageReviewDirection,
+    ): LanguageReviewPrompt = buildLanguageReviewPrompt(expression, idiomCard, direction)
+
+    fun evaluateAnswer(
+        prompt: LanguageReviewPrompt,
+        attemptId: LanguageReviewAttemptId,
+        answerText: String,
+        createdAtEpochMillis: Long,
+        reviewItemId: ReviewItemId? = null,
+    ): LanguageReviewAttempt = evaluateLanguageReviewAnswer(
+        prompt = prompt,
+        attemptId = attemptId,
+        answerText = answerText,
+        createdAtEpochMillis = createdAtEpochMillis,
+        reviewItemId = reviewItemId,
+    )
+
+    fun deterministicChoiceOrder(
+        correct: LanguageReviewChoice,
+        distractors: List<LanguageReviewChoice>,
+        seed: String,
+    ): List<LanguageReviewChoice> = deterministicLanguageReviewChoiceOrder(correct, distractors, seed)
+}
+
 fun evaluateLanguageReviewAnswer(
     prompt: LanguageReviewPrompt,
     attemptId: LanguageReviewAttemptId,

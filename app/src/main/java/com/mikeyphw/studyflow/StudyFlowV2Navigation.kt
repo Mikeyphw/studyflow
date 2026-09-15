@@ -746,7 +746,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
             onPortability = { plan?.let { navController.navigate(PlanPortabilityRoute(it.id.value)) } },
             onSync = { navController.navigate(SyncRoute) },
             onPrivacy = { navController.navigate(PrivacyRoute) },
-            onDebug = { navController.navigate(DebugWorkbenchRoute) },
+            onDebug = { if (BuildConfig.DEBUG) navController.navigate(DebugWorkbenchRoute) },
             onBack = navController::popBackStack,
         )
     }

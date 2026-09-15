@@ -142,6 +142,8 @@ data class DatabaseHealthLabReport(
     val totalEntityRows: Long = 0L,
     val metadataPresent: Boolean = false,
     val migrationPathComplete: Boolean = false,
+    val currentSchemaIntegrityVerified: Boolean = false,
+    val currentSchemaCorruptionDetected: Boolean = false,
 ) {
     init {
         require(schemaVersion >= 0)
@@ -150,6 +152,12 @@ data class DatabaseHealthLabReport(
         require(logicalIntegrityViolationCount >= 0)
         require(userTableCount >= 0)
         require(totalEntityRows >= 0L)
+        require(!currentSchemaIntegrityVerified || status == DebugLabStatus.PASSED) {
+            "Current-schema integrity can only be verified on a passing Database Health Lab report."
+        }
+        require(!currentSchemaIntegrityVerified || !currentSchemaCorruptionDetected) {
+            "Current-schema corruption cannot be reported as verified."
+        }
     }
 }
 

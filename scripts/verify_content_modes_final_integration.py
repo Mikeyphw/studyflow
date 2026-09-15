@@ -1,65 +1,101 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def read(path: str) -> str:
-    return (ROOT / path).read_text()
+CMOV_VALIDATORS = [
+    "verify_content_mode_foundation.py",
+    "verify_programming_course_model.py",
+    "verify_code_blocks_syntax.py",
+    "verify_termux_runtime_foundation.py",
+    "verify_programming_course_ui.py",
+    "verify_coding_exercise_termux_execution.py",
+    "verify_language_deck_idiom_model.py",
+    "verify_language_review_modes.py",
+    "verify_import_templates.py",
+    "verify_mode_aware_analytics.py",
+]
+
+PRODUCTION_FLOW_FILES = [
+    "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
+    "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+    "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt",
+    "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/ProgrammingCourseWorkspacePanel.kt",
+    "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/LanguageDeckWorkspacePanel.kt",
+    "feature/analytics/src/main/java/com/mikeyphw/studyflow/feature/analytics/AnalyticsUiModels.kt",
+    "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomProgrammingCourseRepository.kt",
+    "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomLanguageLearningRepository.kt",
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ProgrammingCourseRepository.kt",
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/LanguageLearningRepository.kt",
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/SpecializedContentImportWorkflow.kt",
+    "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ModeAwareAnalytics.kt",
+    "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/LanguageLearning.kt",
+    "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/LanguageReviewPractice.kt",
+    "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntime.kt",
+    "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/CodingExerciseTermuxExecution.kt",
+]
+
+errors: list[str] = []
+
 
 def require(condition: bool, message: str) -> None:
     if not condition:
-        raise SystemExit(message)
+        errors.append(message)
 
-manifest = read("app/src/main/AndroidManifest.xml")
-bridge = read("app/src/main/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxRunCommandBridge.kt")
-receiver = read("app/src/main/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxResultReceiver.kt")
-termux = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntime.kt")
-execution = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/CodingExerciseTermuxExecution.kt")
-imports = read("core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/ContentImportTemplates.kt")
-analytics = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ModeAwareAnalytics.kt")
-code_block = read("core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowCodeBlock.kt")
 
+def text(rel: str) -> str:
+    path = ROOT / rel
+    require(path.is_file(), f"missing {rel}")
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+for validator in CMOV_VALIDATORS:
+    path = ROOT / "scripts" / validator
+    require(path.is_file(), f"missing CMOV validator {validator}")
+    if path.is_file():
+        result = subprocess.run([sys.executable, str(path)], cwd=ROOT, text=True, capture_output=True)
+        if result.returncode != 0:
+            errors.append(f"{validator} failed: {(result.stderr or result.stdout).strip()}")
+
+combined_flow = "\n".join(text(rel) for rel in PRODUCTION_FLOW_FILES)
 for marker in [
-    "com.termux.permission.RUN_COMMAND",
-    ".termux.StudyFlowTermuxResultReceiver",
+    "RoomProgrammingCourseRepository",
+    "RoomLanguageLearningRepository",
+    "safeCommandTemplateFor",
+    "ProgrammingCourseSnapshot",
+    "LanguageLearningSnapshot",
+    "ProgrammingCourseWorkspacePanel",
+    "LanguageDeckWorkspacePanel",
+    "applyProgrammingCourseImportPreview",
+    "applyLanguageDeckImportPreview",
+    "SpecializedContentImportWorkflow",
+    "ModeAwareAnalyticsCalculator",
+    "LanguageReviewEngine",
+    "tokenizeTermuxCommandTemplate",
 ]:
-    require(marker in manifest, f"Missing manifest Termux bridge marker: {marker}")
-require("<queries>" not in manifest, "Termux bridge must not broaden package visibility")
+    require(marker in combined_flow, f"production content-mode flow missing {marker}")
 
-for marker in [
-    "com.termux.app.RunCommandService",
-    "com.termux.RUN_COMMAND_PATH",
-    "com.termux.RUN_COMMAND_ARGUMENTS",
-    "com.termux.RUN_COMMAND_WORKDIR",
-    "com.termux.RUN_COMMAND_PENDING_INTENT",
-    "PendingIntent.FLAG_ONE_SHOT",
-    "splitTermuxCommandTemplate",
-    "termuxExecutablePath",
-    "context.startService(intent)",
+build = text("build.gradle.kts")
+for task in [
+    "verifyContentModeFoundation",
+    "verifyProgrammingCourseModel",
+    "verifyCodeBlocksSyntax",
+    "verifyTermuxRuntimeFoundation",
+    "verifyProgrammingCourseUi",
+    "verifyCodingExerciseTermuxExecution",
+    "verifyLanguageDeckIdiomModel",
+    "verifyLanguageReviewModes",
+    "verifyImportTemplates",
+    "verifyModeAwareAnalytics",
 ]:
-    require(marker in bridge, f"Missing Android Termux RUN_COMMAND bridge marker: {marker}")
+    require(task in build, f"Gradle graph omits {task}")
 
-for marker in ['EXTRA_PLUGIN_RESULT_BUNDLE = \"result\"', 'exitCode', 'stdout', 'stderr', 'StudyFlowTermuxResultCache.record']:
-    require(marker in receiver, f"Missing Termux result receiver marker: {marker}")
-
-for marker in ["TermuxCommandInvocation", "splitTermuxCommandTemplate", "termuxExecutablePath"]:
-    require(marker in termux, f"Missing safe command invocation marker: {marker}")
-
-require("safeCommandTemplateFor" in execution, "Coding exercises must guard safe Termux commands")
-require("No safe Termux command is available" in execution, "Unsupported languages must fail closed")
-require('ProgrammingLanguage.SHELL -> "sh main.sh"' not in execution, "Shell default must not call sh")
-require('ProgrammingLanguage.SQL -> "sqlite3 < query.sql"' not in execution, "SQL default must not use redirection")
-require('""' in execution and "ProgrammingLanguage.SQL" in execution, "Unsupported language defaults must be blank")
-
-require("while (index < line.length)" in imports, "CSV parser must skip escaped quote pairs")
-require("while (index < lines.size && !lines[index].startsWith(headingPrefix))" in imports,
-        "Markdown preview must parse row-local blocks")
-require("Import heading title is blank" in imports, "Markdown preview must report row-level heading errors")
-
-for marker in ["StudyContentMode.PROGRAMMING_COURSE", "StudyContentMode.LANGUAGE_DECK", "WEAK_CONCEPTS", "MISTAKE_PATTERNS"]:
-    require(marker in analytics, f"Missing mode-aware analytics marker: {marker}")
-
-for marker in ["StudyFlowCodeBlock", "LocalClipboard", "setClipEntry", "SelectionContainer", "showLineNumbers"]:
-    require(marker in code_block, f"Missing syntax code block marker: {marker}")
-
-print("CONTENT_MODES_FINAL_INTEGRATION_SEAL_R3_OK")
+if errors:
+    print("CONTENT_MODES_FINAL_INTEGRATION_SEAL_R4: FAIL")
+    for error in errors:
+        print("-", error)
+    raise SystemExit(1)
+print("CONTENT_MODES_FINAL_INTEGRATION_SEAL_R4: PASS (10 validators + production flows)")

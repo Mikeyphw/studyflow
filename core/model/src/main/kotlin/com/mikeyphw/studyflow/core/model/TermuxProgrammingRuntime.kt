@@ -187,6 +187,21 @@ fun isAllowedTermuxCommandTemplate(template: String?): Boolean {
     return invocation.isAllowedStudyFlowInvocation()
 }
 
+fun safeTermuxCommandInvocation(commandLine: String): TermuxCommandInvocation? = runCatching {
+    splitTermuxCommandTemplate(commandLine)
+}.getOrNull()
+
+fun isAllowedInlineInterpreterInvocation(
+    executable: String,
+    arguments: List<String>,
+): Boolean {
+    if (executable !in InlineInterpreterExecutables) return false
+    val invocation = runCatching {
+        TermuxCommandInvocation(executable = executable, arguments = arguments)
+    }.getOrElse { return false }
+    return invocation.isAllowedStudyFlowInvocation()
+}
+
 data class TermuxCommandInvocation(
     val executable: String,
     val arguments: List<String>,

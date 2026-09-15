@@ -26,6 +26,8 @@ internal suspend fun inspectStudyFlowDatabase(
         val tableNames = sqlite.userTableNames()
         val totalRows = tableNames.sumOf { tableName -> sqlite.tableRowCount(tableName) }
         val metadataPresent = sqlite.singleLong("SELECT COUNT(*) FROM database_metadata") > 0L
+        val currentSchemaCorruptionDetected =
+            !quickCheckPassed || foreignKeyViolationCount > 0 || logicalIntegrityViolationCount > 0 || !metadataPresent
         val migrationPathComplete = migrationPathComplete(
             fromVersion = 1,
             toVersion = StudyFlowDatabase.SCHEMA_VERSION,
@@ -37,8 +39,13 @@ internal suspend fun inspectStudyFlowDatabase(
             logicalIntegrityViolationCount > 0 -> DatabaseHealthMessage.LOGICAL_INTEGRITY_VIOLATIONS
             !metadataPresent -> DatabaseHealthMessage.METADATA_MISSING
             !migrationPathComplete -> DatabaseHealthMessage.MIGRATION_PATH_INCOMPLETE
+            currentSchemaCorruptionDetected -> DatabaseHealthMessage.LOGICAL_INTEGRITY_VIOLATIONS
             else -> DatabaseHealthMessage.NONE
         }
+        val currentSchemaIntegrityVerified =
+            schemaVersion == StudyFlowDatabase.SCHEMA_VERSION &&
+                !currentSchemaCorruptionDetected &&
+                migrationPathComplete
         DatabaseHealthLabReport(
             status = if (message == DatabaseHealthMessage.NONE) DebugLabStatus.PASSED else DebugLabStatus.FAILED,
             message = message,
@@ -51,6 +58,8 @@ internal suspend fun inspectStudyFlowDatabase(
             totalEntityRows = totalRows,
             metadataPresent = metadataPresent,
             migrationPathComplete = migrationPathComplete,
+            currentSchemaIntegrityVerified = currentSchemaIntegrityVerified,
+            currentSchemaCorruptionDetected = currentSchemaCorruptionDetected,
         )
     }
 }

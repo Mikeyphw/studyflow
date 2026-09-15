@@ -3,6 +3,7 @@ package com.mikeyphw.studyflow.core.domain
 import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyFlowImportPreview
 import com.mikeyphw.studyflow.core.model.StudyPlan
+import com.mikeyphw.studyflow.core.model.StudyPlanId
 
 sealed interface SpecializedContentImportApplyResult {
     data class ProgrammingApplied(val snapshot: ProgrammingCourseSnapshot) : SpecializedContentImportApplyResult
@@ -36,4 +37,42 @@ class ApplySpecializedContentImport(
         StudyContentMode.GENERAL_SKILL,
         -> SpecializedContentImportApplyResult.UnsupportedContentMode
     }
+}
+
+
+/**
+ * Executable OV29 contract facade for specialized import behavior.
+ *
+ * These helpers intentionally delegate to the production managers instead of re-parsing previews in
+ * validation scripts. Release gates call this surface to prove programming/language imports are
+ * actionable runtime flows rather than source-presence tokens.
+ */
+object SpecializedContentImportWorkflow {
+    suspend fun applyProgrammingCourseImportPreview(
+        programmingCourse: ManageProgrammingCourse,
+        planId: StudyPlanId,
+        preview: StudyFlowImportPreview,
+    ): ProgrammingCourseSnapshot = programmingCourse.applyImportPreview(
+        planId,
+        StudyFlowProgrammingImportPreview(preview),
+    )
+
+    suspend fun applyLanguageDeckImportPreview(
+        languageLearning: ManageLanguageLearning,
+        planId: StudyPlanId,
+        preview: StudyFlowImportPreview,
+    ): LanguageLearningSnapshot = languageLearning.applyImportPreview(
+        planId,
+        StudyFlowLanguageImportPreview(preview),
+    )
+
+    suspend fun apply(
+        programmingCourse: ManageProgrammingCourse,
+        languageLearning: ManageLanguageLearning,
+        plan: StudyPlan,
+        preview: StudyFlowImportPreview,
+    ): SpecializedContentImportApplyResult = ApplySpecializedContentImport(
+        programmingCourse = programmingCourse,
+        languageLearning = languageLearning,
+    ).apply(plan, preview)
 }

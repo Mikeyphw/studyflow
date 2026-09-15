@@ -1,3 +1,10 @@
+## 2026-09-15 — OV29 behavioral validation, debug labs & release-truth gates
+
+- Wired the missing CMOV validators into quality, Android, parity, and release-truth gates.
+- Replaced token-only CMOV final integration with an executable aggregate validation path.
+- Hardened Debug Workbench database and backup labs against current-schema corruption and modern-data omission.
+- Added Web stale-dist release integrity and exhaustive verifier inventory checks before the OV30 terminal seal.
+
 # StudyFlow Changelog
 
 ## OV28 — Language review correctness & Desktop specialized parity

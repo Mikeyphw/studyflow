@@ -82,8 +82,17 @@ def main() -> None:
     require('status = "PASS" if ready else ("BLOCKED" if blocked else "PENDING_TARGET_EXECUTION")' in campaign,
             "campaign must distinguish BLOCKED from pending manual evidence")
 
+    ov29_required_rel_final_gates = (
+        "verifyOv29BehavioralValidationReleaseTruthGates",
+        "verifyOv29ExhaustiveVerifierInventory",
+        "verifyWebStaleDistReleaseIntegrity",
+    )
+    for gate in ov29_required_rel_final_gates:
+        require(gate in build, f"REL-FINAL omits OV29 gate: {gate}")
+
     print("REL_FINAL_DEVTOOL_RELEASE_RUNNER: PASS")
 
 
 if __name__ == "__main__":
     main()
+

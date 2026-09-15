@@ -109,6 +109,21 @@ test = [
   ":feature:subjects:testDebugUnitTest",
   ":feature:workspace:testDebugUnitTest",
   ":app:testReleaseUnitTest",
+  "verifyTermuxRuntimeFoundation",
+  "verifyProgrammingCourseUi",
+  "verifyCodingExerciseTermuxExecution",
+  "verifyLanguageDeckIdiomModel",
+  "verifyLanguageReviewModes",
+  "verifyImportTemplates",
+  "verifyModeAwareAnalytics",
+  "verifyContentModesFinalIntegrationSeal",
+  "verifyOv26SpecializedContentDataUi",
+  "verifyOv27TermuxExecutionPipelineSandboxCorrectness",
+  "verifyOv28LanguageReviewDesktopSpecializedParity",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyContentModeFoundation",
+  "verifyProgrammingCourseModel",
+  "verifyCodeBlocksSyntax",
 ]
 lint = [":app:lintDebug", ":app:lintRelease"]
 clean = ["clean"]
@@ -518,8 +533,45 @@ args = [
 ]
 
 [targets.studyflow_quality.tasks]
-build = ["verifyOv01RepositoryGradleDevtoolTruth", "verifyStudyFlowGradleTaskGraphOptimizationV4", "verifyFinalSourceAcceptance"]
-test = ["verifyOv01RepositoryGradleDevtoolTruth", "verifyFinalSourceAcceptance"]
+build = [
+  "verifyOv01RepositoryGradleDevtoolTruth",
+  "verifyStudyFlowGradleTaskGraphOptimizationV4",
+  "verifyFinalSourceAcceptance",
+  "verifyTermuxRuntimeFoundation",
+  "verifyProgrammingCourseUi",
+  "verifyCodingExerciseTermuxExecution",
+  "verifyLanguageDeckIdiomModel",
+  "verifyLanguageReviewModes",
+  "verifyImportTemplates",
+  "verifyModeAwareAnalytics",
+  "verifyContentModesFinalIntegrationSeal",
+  "verifyOv26SpecializedContentDataUi",
+  "verifyOv27TermuxExecutionPipelineSandboxCorrectness",
+  "verifyOv28LanguageReviewDesktopSpecializedParity",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyContentModeFoundation",
+  "verifyProgrammingCourseModel",
+  "verifyCodeBlocksSyntax",
+]
+test = [
+  "verifyOv01RepositoryGradleDevtoolTruth",
+  "verifyFinalSourceAcceptance",
+  "verifyTermuxRuntimeFoundation",
+  "verifyProgrammingCourseUi",
+  "verifyCodingExerciseTermuxExecution",
+  "verifyLanguageDeckIdiomModel",
+  "verifyLanguageReviewModes",
+  "verifyImportTemplates",
+  "verifyModeAwareAnalytics",
+  "verifyContentModesFinalIntegrationSeal",
+  "verifyOv26SpecializedContentDataUi",
+  "verifyOv27TermuxExecutionPipelineSandboxCorrectness",
+  "verifyOv28LanguageReviewDesktopSpecializedParity",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyContentModeFoundation",
+  "verifyProgrammingCourseModel",
+  "verifyCodeBlocksSyntax",
+]
 lint = ["verifyFormatting"]
 clean = ["clean"]
 
@@ -537,11 +589,47 @@ gradle_metaspace_mb = 768
 memory_guard_mb = 0
 
 [targets.studyflow_quality.validation.phases]
-preflight = ["verifyOv01RepositoryGradleDevtoolTruth", "verifyStudyFlowGradleTaskGraphOptimizationV4"]
+preflight = [
+  "verifyOv01RepositoryGradleDevtoolTruth",
+  "verifyStudyFlowGradleTaskGraphOptimizationV4",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyContentModeFoundation",
+  "verifyProgrammingCourseModel",
+  "verifyCodeBlocksSyntax",
+  "verifyTermuxRuntimeFoundation",
+  "verifyProgrammingCourseUi",
+  "verifyCodingExerciseTermuxExecution",
+  "verifyLanguageDeckIdiomModel",
+  "verifyLanguageReviewModes",
+  "verifyImportTemplates",
+  "verifyModeAwareAnalytics",
+  "verifyContentModesFinalIntegrationSeal",
+  "verifyOv26SpecializedContentDataUi",
+  "verifyOv27TermuxExecutionPipelineSandboxCorrectness",
+  "verifyOv28LanguageReviewDesktopSpecializedParity",
+]
 dependencies = []
 compile = []
 resources = []
-unit-test = ["verifyOv01RepositoryGradleDevtoolTruth", "verifyFinalSourceAcceptance"]
+unit-test = [
+  "verifyOv01RepositoryGradleDevtoolTruth",
+  "verifyFinalSourceAcceptance",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyContentModeFoundation",
+  "verifyProgrammingCourseModel",
+  "verifyCodeBlocksSyntax",
+  "verifyTermuxRuntimeFoundation",
+  "verifyProgrammingCourseUi",
+  "verifyCodingExerciseTermuxExecution",
+  "verifyLanguageDeckIdiomModel",
+  "verifyLanguageReviewModes",
+  "verifyImportTemplates",
+  "verifyModeAwareAnalytics",
+  "verifyContentModesFinalIntegrationSeal",
+  "verifyOv26SpecializedContentDataUi",
+  "verifyOv27TermuxExecutionPipelineSandboxCorrectness",
+  "verifyOv28LanguageReviewDesktopSpecializedParity",
+]
 package = []
 lint = ["verifyFormatting"]
 
@@ -570,8 +658,18 @@ args = [
 ]
 
 [targets.studyflow_parity.tasks]
-build = ["verifyRelFinalTerminalSeal"]
-test = ["verifyRelFinalTerminalSeal"]
+build = [
+  "verifyRelFinalTerminalSeal",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyOv29ExhaustiveVerifierInventory",
+  "verifyWebStaleDistReleaseIntegrity",
+]
+test = [
+  "verifyRelFinalTerminalSeal",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyOv29ExhaustiveVerifierInventory",
+  "verifyWebStaleDistReleaseIntegrity",
+]
 lint = ["verifyFinalSourceAcceptance"]
 clean = ["clean"]
 
@@ -589,10 +687,20 @@ gradle_metaspace_mb = 768
 memory_guard_mb = 0
 
 [targets.studyflow_parity.validation.phases]
-preflight = ["verifyRelFinalRoadmapPromiseAudit"]
+preflight = [
+  "verifyRelFinalRoadmapPromiseAudit",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyOv29ExhaustiveVerifierInventory",
+  "verifyWebStaleDistReleaseIntegrity",
+]
 dependencies = []
 compile = []
 resources = []
-unit-test = ["verifyRelFinalTerminalSeal"]
+unit-test = [
+  "verifyRelFinalTerminalSeal",
+  "verifyOv29BehavioralValidationReleaseTruthGates",
+  "verifyOv29ExhaustiveVerifierInventory",
+  "verifyWebStaleDistReleaseIntegrity",
+]
 package = []
 lint = []

@@ -229,3 +229,25 @@ Findings closed:
 
 Validation entrypoint: `scripts/validate_ov28_language_review_desktop_specialized_parity.sh`.
 
+
+## OV29 — Behavioral validation, debug labs & release-truth gates
+
+Overlay 29 of 30.
+
+| Finding | Production closure | Behavioral evidence |
+|---|---|---|
+| S12-04 | Database Health Lab reports current-schema corruption with explicit fail-closed flags and cannot mark corrupted state as verified. | `DebugWorkbenchLabsOv29BehaviorTest`; OV29 verifier. |
+| S12-05 | Backup/Restore Lab requires modern programming, language, Termux/review and annex/material table-family coverage before release readiness. | `BackupRestoreDrillSealOv29BehaviorTest`; OV29 verifier. |
+| S12-10 | Debug Workbench navigation and route registration are `BuildConfig.DEBUG` gated. | OV29 source verifier. |
+| S13-01 | Quality, Android and parity gates include all registered CMOV validators. | exhaustive Gradle/Devtool inventory. |
+| S13-02 | CMOV final integration executes every CMOV validator and checks production flow wiring. | executable CMOV aggregate verifier. |
+| S13-03 | Duplication inventory is guarded by exhaustive verifier inventory rather than stale token-only claims. | OV29 verifier. |
+| S13-04 | Migration validation includes the 6→9 blind-spot contract before terminal seal. | OV29 verifier. |
+| S13-05 | Five-client parity gate runs the Web production runner and semantic vectors. | PARITY04 runner + OV29 verifier. |
+| S13-06 | REL-FINAL includes OV29 behavioral and exhaustive-inventory gates. | REL-FINAL source contract. |
+| S13-07 | Exhaustive verifier inventory is regenerated from current Gradle/Devtool graph. | `verify_ov29_exhaustive_verifier_inventory.py`. |
+| S13-08 | Roadmap truth is tied to validator exit codes, not checked-in status text alone. | OV29 remediation doc + verifier. |
+| S13-09 | Web release integrity compares runtime/dist SHA-256 hashes. | `assert_runtime_dist_fresh.mjs`. |
+| S13-10 | Debug Workbench tests exercise production lab semantics for database and backup behavior. | new behavior tests. |
+| DS2-13 | Android SFLP/manual-folder gates remain behavior-backed in the optimized graph. | OV29 verifier. |
+| DS2-30 | Web validation includes behavioral runners plus stale-dist detection. | OV24/OV25/Web freshness gates. |

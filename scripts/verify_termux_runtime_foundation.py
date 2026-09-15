@@ -38,13 +38,17 @@ def main() -> None:
         "data class TermuxRuntimePolicy",
         "requiresExplicitUserAction",
         "AllowedTermuxExecutables",
-        "python -m pytest",
-        "npm test",
-        "./gradlew test",
+        "InlineInterpreterExecutables",
+        "tokenizeTermuxCommandTemplate",
+        "safeTermuxCommandInvocation",
+        "isAllowedInlineInterpreterInvocation",
         "isAllowedTermuxCommandTemplate",
     )
     require('"curl"' not in runtime, "curl must not be whitelisted for programming runtime commands")
-    require('"bash"' not in runtime and '"sh"' not in runtime, "raw shell executables must not be whitelisted")
+    require('"bash"' in runtime and 'hasOneOfSuffixes(".sh")' in runtime,
+            "bash may only be allowed for file-only shell scripts")
+    require('"python"' in runtime and '"-c"' in runtime and '"-e"' in runtime,
+            "inline interpreter policies must be explicit")
 
     content_mode = require_contains(
         "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/StudyContentMode.kt",

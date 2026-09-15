@@ -88,6 +88,10 @@ tasks.register("verifyRepositoryContracts") {
         "verifyPhase63_64ExamRunbookSprintSeal",
         "verifyPostPhase64FinalValidationRefresh",
         "verifyFinalSourceAcceptance",
+        "verifyOv26SpecializedContentDataUi",
+        "verifyOv27TermuxExecutionPipelineSandboxCorrectness",
+        "verifyOv28LanguageReviewDesktopSpecializedParity",
+        "verifyOv29BehavioralValidationReleaseTruthGates",
         "verifyRemediationOv13",
     )
 }
@@ -762,6 +766,18 @@ tasks.register("verifyStudyFlowAndroidPreflightContracts") {
         "verifyRepositoryContracts",
         "verifyCpovAllContracts",
         "verifyOv19PromiseAudit",
+        "verifyTermuxRuntimeFoundation",
+        "verifyProgrammingCourseUi",
+        "verifyCodingExerciseTermuxExecution",
+        "verifyLanguageDeckIdiomModel",
+        "verifyLanguageReviewModes",
+        "verifyImportTemplates",
+        "verifyModeAwareAnalytics",
+        "verifyContentModesFinalIntegrationSeal",
+        "verifyOv26SpecializedContentDataUi",
+        "verifyOv27TermuxExecutionPipelineSandboxCorrectness",
+        "verifyOv28LanguageReviewDesktopSpecializedParity",
+        "verifyOv29BehavioralValidationReleaseTruthGates",
     )
 }
 
@@ -812,6 +828,13 @@ tasks.register("checkAll") {
         "verifyContentModeFoundation",
         "verifyProgrammingCourseModel",
         "verifyCodeBlocksSyntax",
+        "verifyTermuxRuntimeFoundation",
+        "verifyProgrammingCourseUi",
+        "verifyCodingExerciseTermuxExecution",
+        "verifyLanguageDeckIdiomModel",
+        "verifyLanguageReviewModes",
+        "verifyImportTemplates",
+        "verifyModeAwareAnalytics",
         "verifyContentModesFinalIntegrationSeal",
         "verifyOv19PromiseAudit",
         "verifyOv20FinalIntegration",
@@ -2537,4 +2560,38 @@ tasks.register<Exec>("verifyOv28LanguageReviewDesktopSpecializedParity") {
     group = "verification"
     description = "Validates OV28 language review correctness, deterministic choice ordering and Desktop specialized graph persistence/execution parity."
     commandLine("bash", "scripts/validate_ov28_language_review_desktop_specialized_parity.sh")
+}
+
+// OV26 — Specialized content production data & UI.
+tasks.register<Exec>("verifyOv26SpecializedContentDataUi") {
+    group = "verification"
+    description = "Validates OV26 Room-backed specialized repositories, UI snapshots, safe command templates, analytics and import apply workflows."
+    commandLine("bash", "scripts/validate_ov26_specialized_content_data_ui.sh")
+}
+
+// OV27 — Termux execution pipeline & sandbox correctness.
+tasks.register<Exec>("verifyOv27TermuxExecutionPipelineSandboxCorrectness") {
+    group = "verification"
+    description = "Validates OV27 four-stage durable Termux execution, quote-safe tokenization, workspace confinement and exact request/result correlation."
+    commandLine("bash", "scripts/validate_ov27_termux_execution_pipeline_sandbox_correctness.sh")
+}
+
+tasks.register<Exec>("verifyOv29ExhaustiveVerifierInventory") {
+    group = "verification"
+    description = "Builds and checks the exhaustive OV29 verifier inventory against the optimized Gradle/Devtool graph."
+    commandLine("python3", "scripts/verify_ov29_exhaustive_verifier_inventory.py")
+}
+
+tasks.register<Exec>("verifyWebStaleDistReleaseIntegrity") {
+    group = "verification"
+    description = "Rejects stale Web release dist assets whose runtime hashes no longer match the compiled runtime output."
+    commandLine("python3", "scripts/verify_web_stale_dist_release_integrity.py")
+}
+
+// OV29 — Behavioral validation, debug labs & release-truth gates.
+tasks.register<Exec>("verifyOv29BehavioralValidationReleaseTruthGates") {
+    group = "verification"
+    description = "Validates OV29 behavioral CMOV gates, Debug Workbench lab semantics, exhaustive verifier inventory, Web dist freshness and release-truth wiring."
+    dependsOn("verifyOv29ExhaustiveVerifierInventory", "verifyWebStaleDistReleaseIntegrity")
+    commandLine("bash", "scripts/validate_ov29_behavioral_validation_release_truth_gates.sh")
 }

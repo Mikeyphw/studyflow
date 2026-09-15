@@ -28,6 +28,7 @@ enum class BackupRestoreDrillKind {
     WRONG_PASSWORD,
     TAMPER_DETECTION,
     METADATA_PRIVATE_ANNEX,
+    MODERN_DATA_COVERAGE,
     RESTORE_DRY_RUN,
     RETENTION_CLEANUP,
     RECOVERY_REPORT,
@@ -166,6 +167,7 @@ object BackupRestoreDrillSeal {
             )
         } ?: false
         val dryRunValue = dryRun.getOrNull()
+        val modernDataCoverageVerified = decodedArchive?.payload?.manifest?.let(::modernDataCoverageVerified) == true
         val retentionReady = retentionCleanupTruthfulnessHolds(retentionPolicy)
         val recoveryReport = recoveryReport(decodedArchive?.payload?.manifest, dryRunValue)
         return BackupRestoreDrillReport(
@@ -198,6 +200,11 @@ object BackupRestoreDrillSeal {
                         "Every metadata-private annex payload ID and ZIP path hides raw database IDs.",
                     )
                 },
+                result(
+                    BackupRestoreDrillKind.MODERN_DATA_COVERAGE,
+                    modernDataCoverageVerified,
+                    "Backup manifest includes every modern programming, language, Termux, annex and review table family.",
+                ),
                 result(
                     BackupRestoreDrillKind.RESTORE_DRY_RUN,
                     dryRunValue != null &&
@@ -275,6 +282,18 @@ object BackupRestoreDrillSeal {
     private fun retentionCleanupTruthfulnessHolds(policy: LocalDataRetentionPolicy): Boolean =
         !policy.automaticDeletionEnabled &&
             LocalRetentionRuleType.EXPORTED_FILES in policy.rules.map { rule -> rule.type }
+    internal fun modernDataCoverageVerified(manifest: StudyPlanPackageManifest): Boolean {
+        val tables = manifest.tableRowCounts.keys
+        val requiredFamilies = listOf(
+            listOf("programming", "exercise", "code", "snippet", "termux"),
+            listOf("language", "idiom", "vocabulary", "review"),
+            listOf("annex", "material"),
+        )
+        return requiredFamilies.all { aliases ->
+            tables.any { table -> aliases.any { alias -> table.contains(alias, ignoreCase = true) } }
+        }
+    }
+
 
     private fun metadataPrivateAnnexArchive(
         rawAnnexId: String,

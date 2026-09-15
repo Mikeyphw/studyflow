@@ -994,6 +994,7 @@ internal fun StudyFlowNavHost(
                 onBack = navController::popBackStack,
             )
         }
+        if (BuildConfig.DEBUG) {
         composable<DebugWorkbenchRoute> {
             val debugViewModelFactory = remember(
                 container,
@@ -1060,8 +1061,8 @@ internal fun StudyFlowNavHost(
                     )
                 },
             )
-        }
-        composable<RuntimeSmokeRoute> {
+            }
+            composable<RuntimeSmokeRoute> {
             var report by androidx.compose.runtime.remember {
                 mutableStateOf(
                     RuntimeSmokeWorkbench.initialReport(System.currentTimeMillis()),
@@ -1124,6 +1125,7 @@ internal fun StudyFlowNavHost(
                 onBack = navController::popBackStack,
             )
         }
+        }
         composable<SettingsRoute> {
             SettingsScreen(
                 preferences = preferences,
@@ -1143,7 +1145,7 @@ internal fun StudyFlowNavHost(
                 onOpenPrivacyCenter = { navController.navigate(PrivacyRoute) },
                 onOpenSyncCenter = { navController.navigate(SyncRoute) },
                 onOpenTvController = { navController.navigate(TvControllerRoute) },
-                onOpenDebugWorkbench = { navController.navigate(DebugWorkbenchRoute) },
+                onOpenDebugWorkbench = { if (BuildConfig.DEBUG) navController.navigate(DebugWorkbenchRoute) },
                 diagnosticsAvailable = BuildConfig.DEBUG,
             )
         }

@@ -1,230 +1,418 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov28_language_review_desktop_specialized_parity_v1",
+  "name": "studyflow_ov29_behavioral_validation_debug_labs_release_truth_gates_v1",
   "target": "studyflow_android",
-  "description": "Overlay 28 of 30: close five S11 findings by hardening shared language review scoring and multiple-choice ordering while expanding Desktop specialized content persistence and execution parity.",
-  "commit_message": "OV28: harden language review and Desktop specialized parity",
+  "description": "Overlay 29 of 30: replace source-presence seals with executable behavioral gates, fail-closed debug labs, stale Web dist certification, release debug-route gating, and exhaustive verifier inventory.",
+  "commit_message": "OV29: harden behavioral validation and release truth gates",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV28: harden language review and Desktop specialized parity"
+    "message": "OV29: harden behavioral validation and release truth gates"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV28: harden language review and Desktop specialized parity"
+      "message": "OV29: harden behavioral validation and release truth gates"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "previous_overlay": "studyflow_ov27_termux_execution_pipeline_sandbox_correctness_v1",
-    "previous_commit": "user-applied-ov27",
-    "roadmap_overlay": "28 of 30",
-    "notes": "Built cumulatively against the supplied StudyFlow snapshot with OV24, OV25 v2, OV26 and OV27 applied. The embedded validator is network-independent by default and uses kotlinc when available; focused Gradle tests are opt-in via STUDYFLOW_RUN_GRADLE_OV28=1."
+    "previous_overlay": "studyflow_ov28_language_review_desktop_specialized_parity_v1",
+    "previous_commit": "user-applied-ov28",
+    "roadmap_overlay": "29 of 30",
+    "notes": "Built cumulatively against the supplied StudyFlow snapshot with OV24, OV25 v2, OV26, OV27 and OV28 applied. The embedded validator is network-independent and executable; terminal full validation remains Overlay 30."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov28_language_review_desktop_specialized_parity_v1",
+    "name": "studyflow_ov29_behavioral_validation_debug_labs_release_truth_gates_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "language-review-correctness",
-        "purpose": "Reject gibberish, prompt echoes and literal-only mistake answers while making natural-usage choices deterministic but non-fixed.",
-        "paths": [
-          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/LanguageReviewPractice.kt",
-          "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/LanguageReviewPracticeTest.kt"
-        ]
-      },
-      {
-        "id": "desktop-specialized-parity",
-        "purpose": "Persist full Desktop specialized graph and honor command templates plus expected output during Desktop execution.",
-        "paths": [
-          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModeController.kt",
-          "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModePersistence.kt",
-          "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModePersistenceExecutionTest.kt"
-        ]
-      },
-      {
-        "id": "validation-docs",
-        "purpose": "Record OV28 closure evidence and provide a network-independent validator.",
+        "id": "behavioral-release-gates",
+        "purpose": "Make CMOV, Web dist, release and verifier inventory gates execute real behavior instead of relying on source-presence tokens.",
         "paths": [
           ".devtool-artifact/validation/validate.sh",
-          "CHANGELOG.md",
-          "REMEDIATION_OV_28_IMPLEMENTATION.md",
+          ".devtool.toml",
           "build.gradle.kts",
-          "docs/remediation/OV28_LANGUAGE_REVIEW_DESKTOP_SPECIALIZED_PARITY.md",
+          "scripts/validate_ov29_behavioral_validation_release_truth_gates.sh",
+          "scripts/verify_content_modes_final_integration.py",
+          "scripts/verify_ov29_behavioral_validation_release_truth_gates.py",
+          "scripts/verify_ov29_exhaustive_verifier_inventory.py",
+          "scripts/verify_rel_final_devtool_release_runner.py",
+          "scripts/verify_termux_runtime_foundation.py",
+          "scripts/verify_web_stale_dist_release_integrity.py"
+        ]
+      },
+      {
+        "id": "debug-labs-fail-closed",
+        "purpose": "Make debug database/backup labs reject corruption and modern-data omissions.",
+        "paths": [
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyDatabaseDiagnostics.kt",
+          "core/diagnostics/src/main/kotlin/com/mikeyphw/studyflow/core/diagnostics/DebugWorkbenchLabs.kt",
+          "core/diagnostics/src/test/kotlin/com/mikeyphw/studyflow/core/diagnostics/DebugWorkbenchLabsOv29BehaviorTest.kt",
+          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSeal.kt",
+          "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSealOv29BehaviorTest.kt"
+        ]
+      },
+      {
+        "id": "release-route-safety",
+        "purpose": "Prevent release builds from registering or navigating to debug workbench routes.",
+        "paths": [
+          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt"
+        ]
+      },
+      {
+        "id": "docs-ledger",
+        "purpose": "Record OV29 closure evidence and validation inventory.",
+        "paths": [
+          "CHANGELOG.md",
+          "REMEDIATION_OV_29_IMPLEMENTATION.md",
+          "docs/remediation/OV29_BEHAVIORAL_VALIDATION_RELEASE_TRUTH_GATES.md",
           "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "scripts/validate_ov28_language_review_desktop_specialized_parity.sh",
-          "scripts/verify_ov28_language_review_desktop_specialized_parity.py"
+          "docs/validation/OV29_EXHAUSTIVE_VERIFIER_INVENTORY.json"
         ]
       }
     ]
   },
   "findings": [
     {
-      "id": "S11-14",
+      "id": "S12-04",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "Free-form language review rejects gibberish below valid target usage."
+      "summary": "Behavioral validation replaces source-token-only CMOV/import seals."
     },
     {
-      "id": "S11-15",
+      "id": "S12-05",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "Spot-the-mistake rejects repeated mistakes and literal-only answers."
+      "summary": "Debug Workbench labs fail on known database corruption and missing modern backup data."
     },
     {
-      "id": "S11-16",
+      "id": "S12-10",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "Release routes cannot register debug workbench/smoke surfaces."
+    },
+    {
+      "id": "S13-01",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "CMOV final gate executes every mode validator."
+    },
+    {
+      "id": "S13-02",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "CMOV/import aggregate checks production Room/UI/import wiring."
+    },
+    {
+      "id": "S13-03",
       "severity": "MEDIUM-HIGH",
       "status": "closed",
-      "summary": "Natural-usage MC correct answer is not always first and grading requires expected choice."
+      "summary": "Full-mesh release gates include stale Web dist checks."
     },
     {
-      "id": "S11-19",
+      "id": "S13-04",
       "severity": "MEDIUM-HIGH",
       "status": "closed",
-      "summary": "Desktop persists the full shared specialized content graph."
+      "summary": "Runtime/dist certification hashes executable Web files."
     },
     {
-      "id": "S11-20",
+      "id": "S13-05",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed",
+      "summary": "Debug labs expose current-schema corruption truth instead of schema-version tokens."
+    },
+    {
+      "id": "S13-06",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed",
+      "summary": "Backup drills reject omissions of programming/language/annex table families."
+    },
+    {
+      "id": "S13-07",
       "severity": "MEDIUM",
       "status": "closed",
-      "summary": "Desktop programming execution uses command templates and expected output."
+      "summary": "Termux validator reflects executable sandbox rules and inline interpreter policy."
+    },
+    {
+      "id": "S13-08",
+      "severity": "MEDIUM",
+      "status": "closed",
+      "summary": "Release final runner inventory includes OV29 gates."
+    },
+    {
+      "id": "S13-09",
+      "severity": "MEDIUM",
+      "status": "closed",
+      "summary": "Devtool quality target executes the OV29 release-truth validators."
+    },
+    {
+      "id": "S13-10",
+      "severity": "MEDIUM",
+      "status": "closed",
+      "summary": "Validation inventory is generated from Gradle/Devtool references."
+    },
+    {
+      "id": "DS2-13",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed",
+      "summary": "Debug-only route exposure is prevented in release navigation."
+    },
+    {
+      "id": "DS2-30",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed",
+      "summary": "Roadmap/release seals cannot pass with stale dist or circular verifier omissions."
     }
   ],
   "validation": {
-    "entrypoint": "scripts/validate_ov28_language_review_desktop_specialized_parity.sh",
+    "entrypoint": "scripts/validate_ov29_behavioral_validation_release_truth_gates.sh",
     "devtool_entrypoint": ".devtool-artifact/validation/validate.sh",
     "expected": [
-      "OV28 language review/Desktop specialized parity contract: PASS",
-      "OV28 model and Desktop persistence syntax: PASS"
+      "OV29 behavioral validation, debug labs & release-truth gates: PASS",
+      "CONTENT_MODES_FINAL_INTEGRATION_SEAL_R4: PASS",
+      "WEB_STALE_DIST_RELEASE_INTEGRITY: PASS"
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 13,
+    "count": 26,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "114fe45ac8844a90b9550cfd0108e5696b545bd234fc95ee83ac4cdd7031278a",
-        "size": 166,
+        "sha256": "7c618904db2716629696a35f77c1fb945716eff3ae595544c4261af5aa1441e0",
+        "size": 180,
         "source_mode": "0o755",
-        "source_sha256": "adaae26387091b758db062c1dbb5cbf0490af1e858060cbdc9e793d2fabfb088",
-        "source_size": 184
+        "source_sha256": "114fe45ac8844a90b9550cfd0108e5696b545bd234fc95ee83ac4cdd7031278a",
+        "source_size": 166
+      },
+      {
+        "action": "modify",
+        "path": ".devtool.toml",
+        "mode": "0o644",
+        "sha256": "8b826c43aaafdf5cea529d5909e188f2020808c91396be0ba9e928a373d86714",
+        "size": 19685,
+        "source_mode": "0o644",
+        "source_sha256": "f9eb81e6ed71daae97e5138da7c570573cc4d78d8e30176bdb374e91ad3aa973",
+        "source_size": 16231
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o644",
-        "sha256": "0f3b3a59b462f52a32091661461749e2ac985632177d736885de1f9bc1d78185",
-        "size": 84365,
+        "sha256": "92b456b95e3c76838ffc24571229324081bc6990df0edd006d83c9f82599bf8b",
+        "size": 84854,
         "source_mode": "0o644",
-        "source_sha256": "a208637cb3a78820059601facd55d702027b2aefdffc87e77b23f96145d80603",
-        "source_size": 83819
+        "source_sha256": "0f3b3a59b462f52a32091661461749e2ac985632177d736885de1f9bc1d78185",
+        "source_size": 84365
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_28_IMPLEMENTATION.md",
+        "path": "REMEDIATION_OV_29_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "c9aa26b920dc85f1d94cd3eee607587158a2073a7d8098bae3587f1cc0255aea",
-        "size": 1425
+        "sha256": "6ccbda906035eb4f2ac7398b62923c33169aefdfa79bf86cab4d6cc94c4f7d35",
+        "size": 820
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+        "mode": "0o600",
+        "sha256": "ac96ceb96034aa80899939fcc093c2f741eaf43445b1931dfaa46c92e2175dcd",
+        "size": 62146,
+        "source_mode": "0o600",
+        "source_sha256": "ac4ba2b39663a360caaab3b33a7c14d08b4a54712e2187f95a7ad0e804e1d00d",
+        "source_size": 62072
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+        "mode": "0o600",
+        "sha256": "ed33877b6a1752a3d4bf843796e6fce4663ea210ccbb2039bdd8877d4bab1d64",
+        "size": 42232,
+        "source_mode": "0o600",
+        "source_sha256": "530e1d2ec73a517caa6691833e13f2837895f2ab6c08b0ec60d8ec1691e1d1d7",
+        "source_size": 42209
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o644",
-        "sha256": "072fd7c29ccfa2ec6ed725b9d76b9d6a8a51805813d29b0b58d03b1776d1c5a9",
-        "size": 101220,
+        "sha256": "7f7529e97dc75411bc66c80b3f5ac468fdfe0801cba671e9b43ae821a40022b4",
+        "size": 104185,
         "source_mode": "0o644",
-        "source_sha256": "91a0e0e6e7638ef60d04b0396d32129f34b6efca71f3925bb3ec9f9b2ad9421c",
-        "source_size": 100796
+        "source_sha256": "072fd7c29ccfa2ec6ed725b9d76b9d6a8a51805813d29b0b58d03b1776d1c5a9",
+        "source_size": 101220
+      },
+      {
+        "action": "modify",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyDatabaseDiagnostics.kt",
+        "mode": "0o600",
+        "sha256": "9081b1cb78c94d8da369f0d4eb3c1cd737718fc6b4efdd809dbca5d6599d6025",
+        "size": 5723,
+        "source_mode": "0o600",
+        "source_sha256": "0204369c433dabfe437b3e2c0900e51a2be1d49c442bb48a8bf67e7f9499fa63",
+        "source_size": 5103
+      },
+      {
+        "action": "modify",
+        "path": "core/diagnostics/src/main/kotlin/com/mikeyphw/studyflow/core/diagnostics/DebugWorkbenchLabs.kt",
+        "mode": "0o600",
+        "sha256": "9548cb05db09e1b9903bc23aeccb8604d279b6a88def18d704f35dea503c0b8f",
+        "size": 9051,
+        "source_mode": "0o600",
+        "source_sha256": "b3f965a78ee4ea3e0b5214b65e3da2167b5d66e39a2b3a1da3ad89c24d008a39",
+        "source_size": 8570
+      },
+      {
+        "action": "add",
+        "path": "core/diagnostics/src/test/kotlin/com/mikeyphw/studyflow/core/diagnostics/DebugWorkbenchLabsOv29BehaviorTest.kt",
+        "mode": "0o644",
+        "sha256": "6bcdb1575cc3331d26e715253ac6b5f9320be7687ede8eaabed3278b54f84747",
+        "size": 1676
+      },
+      {
+        "action": "modify",
+        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSeal.kt",
+        "mode": "0o600",
+        "sha256": "207d5569584db6cd208173ef683508aa27d4bccef9b73b1ace3e002827737f03",
+        "size": 17764,
+        "source_mode": "0o600",
+        "source_sha256": "0e513897df85b1ea6fac31fc0681321b3111bfdf90dbcc1e80aafbe3eb5c0081",
+        "source_size": 16801
+      },
+      {
+        "action": "modify",
+        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/SpecializedContentImportWorkflow.kt",
+        "mode": "0o644",
+        "sha256": "53cc0854e37fdc06f7822faa5c958f59160894833f399cd18c632fdd93353e8e",
+        "size": 3315,
+        "source_mode": "0o644",
+        "source_sha256": "64d4830a4a3975f9324f3dc3a16e0128c92220e274d4f1bfb2b1b921ca6f925a",
+        "source_size": 1855
+      },
+      {
+        "action": "add",
+        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSealOv29BehaviorTest.kt",
+        "mode": "0o644",
+        "sha256": "8423a35ed2e076f1a87f99f8ed255fe041b6fe33004bf66c7813030f17f5a257",
+        "size": 1560
       },
       {
         "action": "modify",
         "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/LanguageReviewPractice.kt",
         "mode": "0o600",
-        "sha256": "de813395642a8e25e6f2f60349e1cf76716e6e879b5e417bc9530fa9b2fe0f3b",
-        "size": 16740,
+        "sha256": "0c6776239b59534ac3960e65c987c4d35d624449c411ea329d725f11a618afe4",
+        "size": 17707,
         "source_mode": "0o600",
-        "source_sha256": "1db2ea2cb6476c1d516907705d0b917668be5ddd4826d58d1de409b78c5ac632",
-        "source_size": 12234
+        "source_sha256": "de813395642a8e25e6f2f60349e1cf76716e6e879b5e417bc9530fa9b2fe0f3b",
+        "source_size": 16740
       },
       {
         "action": "modify",
-        "path": "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/LanguageReviewPracticeTest.kt",
+        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntime.kt",
         "mode": "0o600",
-        "sha256": "bbb6f6a4059229eebb68f3b30e0c4987b686996670fcef2e5b5edb56f799e180",
-        "size": 7680,
+        "sha256": "33b7d7757e76ec49b4ae7437f67ef3fc2c95189f2d79a809f3feb8ecbfbf2430",
+        "size": 14103,
         "source_mode": "0o600",
-        "source_sha256": "bd7b82fda475c36c77906979c0428e707ee33e0756ac48d80832cf99b08594b1",
-        "source_size": 3999
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModeController.kt",
-        "mode": "0o600",
-        "sha256": "6a9cddb7cb8ee7f73e8c9c609e450277125c9e8f6e4acd78f0bfa04cd02f14cf",
-        "size": 19542,
-        "source_mode": "0o600",
-        "source_sha256": "d0d7c2cd34a7d055db78f53712336d00d0925f1d54102231b3da97e958973421",
-        "source_size": 13574
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModePersistence.kt",
-        "mode": "0o644",
-        "sha256": "9ed8722cf5f2a2b2183719ccb0648157a5b4a9e4e4d8ecd5ec6f5f73a216da0e",
-        "size": 25770,
-        "source_mode": "0o644",
-        "source_sha256": "290710ebbc1828e43b26bc7c0d753123e48df8005f3ce4e4d71917deab59320f",
-        "source_size": 18556
-      },
-      {
-        "action": "modify",
-        "path": "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopContentModePersistenceExecutionTest.kt",
-        "mode": "0o600",
-        "sha256": "980056eb9defef05786f824291a633b19fd04ade77ffb63a44d59857206e334e",
-        "size": 4765,
-        "source_mode": "0o600",
-        "source_sha256": "7878a2f63f4bd7cbd66333aebf07c65dfe99cd86f94fd5859474a29517f6c343",
-        "source_size": 2305
+        "source_sha256": "9671416fd57a9cb1ef1d2098f743d0b6873df3af7e016c8adb6afd9619c80555",
+        "source_size": 13571
       },
       {
         "action": "add",
-        "path": "docs/remediation/OV28_LANGUAGE_REVIEW_DESKTOP_SPECIALIZED_PARITY.md",
+        "path": "docs/remediation/OV29_BEHAVIORAL_VALIDATION_RELEASE_TRUTH_GATES.md",
         "mode": "0o644",
-        "sha256": "e496c4ada38ece557ce9e6033096c87816a19aa10af5c04f75839896a1cc9b91",
-        "size": 1276
+        "sha256": "d71f45b3c7d7714d66c3749fe8a972d4a49cdcf916336e57900c8b80bc4744bd",
+        "size": 954
       },
       {
         "action": "modify",
         "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
         "mode": "0o644",
-        "sha256": "50992b109e1436feb9107c29cd694cde23a33bf7a939c5a35dda76e530a415da",
-        "size": 28337,
+        "sha256": "9c77a05085da6943498708546a484cf6606904ec3760c51e0120343350f0feba",
+        "size": 30498,
         "source_mode": "0o644",
-        "source_sha256": "8a5a5a0633975c98b5cddf5f42a7838d9013421b01aa836401541884beb589b8",
-        "source_size": 27538
+        "source_sha256": "50992b109e1436feb9107c29cd694cde23a33bf7a939c5a35dda76e530a415da",
+        "source_size": 28337
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov28_language_review_desktop_specialized_parity.sh",
-        "mode": "0o755",
-        "sha256": "4b9a718a50bfed624b7487e55069f97206a31f1805ce1f1ad2fe26add2b1df07",
-        "size": 1076
+        "path": "docs/validation/OV29_EXHAUSTIVE_VERIFIER_INVENTORY.json",
+        "mode": "0o644",
+        "sha256": "3e5406108587b8199510f6d8bd0b26113bc908b642287a45bfb2cbf93e5c443a",
+        "size": 20596
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov28_language_review_desktop_specialized_parity.py",
+        "path": "scripts/validate_ov29_behavioral_validation_release_truth_gates.sh",
         "mode": "0o755",
-        "sha256": "fe7e00b1748d2b9a211e097a0b7d8e799851d6da929ef3d25edcceeab9c34693",
-        "size": 8925
+        "sha256": "5d64288fd26ee3986e574d6bda7915e7ec5d110470ba7b640fb73ba3c7fee80d",
+        "size": 178
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_content_modes_final_integration.py",
+        "mode": "0o755",
+        "sha256": "d1e7294a1617b26c63bffb0f940b7935bdc00845778fbe048434518e31cbc580",
+        "size": 4194,
+        "source_mode": "0o600",
+        "source_sha256": "099584a1dad17252caf5297d6c3879eba4a703d2e8738f589b17cb245e330ad0",
+        "source_size": 3534
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_ov29_behavioral_validation_release_truth_gates.py",
+        "mode": "0o755",
+        "sha256": "30c916cf7f792bd43d7685bd50875ef9241168762e921db0ef7213a949b067e8",
+        "size": 8047
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_ov29_exhaustive_verifier_inventory.py",
+        "mode": "0o755",
+        "sha256": "c3529471a4bfb5a988c5efedd9760c6ce4d218f3979c00220fbf88412ef1b92d",
+        "size": 3113
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_rel_final_devtool_release_runner.py",
+        "mode": "0o600",
+        "sha256": "16b07ca0560880af33ed25c80c5cd3817e66339ee0b7f06a6781a6f909f429f1",
+        "size": 5328,
+        "source_mode": "0o600",
+        "source_sha256": "caff1d84cced55e47d07e0c1efc0266d26783d6fb8cd00a7117497b29ca286d3",
+        "source_size": 5012
+      },
+      {
+        "action": "modify",
+        "path": "scripts/verify_termux_runtime_foundation.py",
+        "mode": "0o711",
+        "sha256": "2266893a23253ee7a6b980073c2e42dda95ecf26deda60eaa204b18264a29401",
+        "size": 3040,
+        "source_mode": "0o600",
+        "source_sha256": "f599ea35c1a9f5d673d34c5d9097a6dcd11a8753c28cadfd5491e32b11be1c9f",
+        "source_size": 2777
+      },
+      {
+        "action": "add",
+        "path": "scripts/verify_web_stale_dist_release_integrity.py",
+        "mode": "0o755",
+        "sha256": "fd258f23e2750af02e92a90df279452496d0409a1d3ff9f78d7fcb1c8c1cdf13",
+        "size": 418
+      },
+      {
+        "action": "add",
+        "path": "web/scripts/assert_runtime_dist_fresh.mjs",
+        "mode": "0o755",
+        "sha256": "004d3a9a2514011108d5615d443f96d577b31c17fde9185e1d7827a867792847",
+        "size": 1657
       }
     ]
   }
