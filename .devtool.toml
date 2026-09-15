@@ -290,6 +290,21 @@ parallel = true
 low_priority = false
 memory_guard_mb = 0
 
+[targets.studyflow_web.tasks]
+build = ["npm run ov30r2:proper-validation-seal", "npm run build"]
+test = ["npm run ov30r2:proper-validation-seal", "npm test"]
+lint = ["npm run ov30r2:proper-validation-seal", "npm run lint"]
+clean = []
+
+[targets.studyflow_web.validation.phases]
+preflight = ["npm run ov30r2:proper-validation-seal"]
+dependencies = []
+compile = ["npm run build"]
+resources = []
+unit-test = ["npm test"]
+package = ["npm run release:check"]
+lint = ["npm run lint"]
+
 [targets.studyflow_tv]
 runner = "android"
 platform = "tv"

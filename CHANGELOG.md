@@ -1,3 +1,9 @@
+## OV30R2 studyflow_web proper validation seal
+
+- Added first-class validation task `verifyOv30R2StudyflowWebProperValidationSeal` for `studyflow_web`.
+- Wired Devtool target validation so the seal can run during apply without `--no-validate`.
+- Added proper seal evidence documents for the target.
+
 ## OV30R2 studyflow_desktop proper validation seal
 
 - Added first-class validation task `verifyOv30R2StudyflowDesktopProperValidationSeal` for `studyflow_desktop`.
