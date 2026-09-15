@@ -368,6 +368,8 @@ export function createBrowserAttentionEnvironment(): StudyFlowWebAttentionEnviro
   };
 }
 
+function safeBrowserLocalStorage(): Storage | null { try { return globalThis.localStorage ?? null; } catch { return null; } }
+
 export class StudyFlowWebAttentionRuntime {
   private readonly environment: StudyFlowWebAttentionEnvironment;
   private readonly storage: Storage | null;
@@ -388,7 +390,7 @@ export class StudyFlowWebAttentionRuntime {
     options: StudyFlowWebAttentionRuntimeOptions = {},
   ) {
     this.environment = options.environment ?? createBrowserAttentionEnvironment();
-    this.storage = options.storage === undefined ? (globalThis.localStorage ?? null) : options.storage;
+    this.storage = options.storage === undefined ? safeBrowserLocalStorage() : options.storage;
     this.ledgerStorage = new StudyFlowBrowserAttentionLedgerStorage(`studyflow.attention.v1.${peer.identity.deviceId}`);
     this.pushRegistry = new StudyFlowWebPushRegistry(this.storage, this.environment);
     this.preferences = this.loadPreferences();

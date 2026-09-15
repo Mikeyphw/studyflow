@@ -1,7 +1,9 @@
 // Portable package v1 compatibility + v2 full local ownership package.
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MAX_PORTABLE_V2_BYTES = exports.MAX_PORTABLE_V1_BYTES = exports.PORTABLE_FORMAT_VERSION = exports.LEGACY_PORTABLE_FORMAT_VERSION = exports.PORTABLE_FORMAT = void 0;
+exports.MAX_PLAN_CONTENT_IMPORT_BYTES = exports.MAX_PORTABLE_V2_BYTES = exports.MAX_PORTABLE_V1_BYTES = exports.PORTABLE_FORMAT_VERSION = exports.LEGACY_PORTABLE_FORMAT_VERSION = exports.PORTABLE_FORMAT = void 0;
+exports.assertPortableByteLength = assertPortableByteLength;
+exports.sanitizePortableRuntimeState = sanitizePortableRuntimeState;
 exports.stableStringify = stableStringify;
 exports.createPortablePackage = createPortablePackage;
 exports.createPortablePackageV2 = createPortablePackageV2;
@@ -18,6 +20,7 @@ exports.LEGACY_PORTABLE_FORMAT_VERSION = 1;
 exports.PORTABLE_FORMAT_VERSION = 2;
 exports.MAX_PORTABLE_V1_BYTES = 5 * 1024 * 1024;
 exports.MAX_PORTABLE_V2_BYTES = 200 * 1024 * 1024;
+exports.MAX_PLAN_CONTENT_IMPORT_BYTES = 5 * 1024 * 1024;
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function counts(state) { return Object.fromEntries(domain_js_1.ENTITY_COLLECTIONS.map((name) => [name, Array.isArray(state[name]) ? state[name].length : 0])); }
 function byId(items) { return new Map((items !== null && items !== void 0 ? items : []).map((item) => [item.id, item])); }
@@ -30,6 +33,10 @@ function stableValue(value) { if (Array.isArray(value))
         out[key] = stableValue(value[key]);
     return out;
 } return value; }
+function assertPortableByteLength(byteCount, maximumBytes, label = "Portable import") { if (!Number.isFinite(byteCount) || byteCount < 0)
+    throw new TypeError(`${label} size is unavailable; refusing to import before materialization.`); if (byteCount > maximumBytes)
+    throw new TypeError(`${label} exceeds the ${Math.floor(maximumBytes / (1024 * 1024))} MiB local import limit.`); }
+function sanitizePortableRuntimeState(state) { var _a, _b; const next = clone(state); next.focus = (0, domain_js_1.createFocusState)({ durationMinutes: (_b = (_a = state.focus) === null || _a === void 0 ? void 0 : _a.durationMinutes) !== null && _b !== void 0 ? _b : 25 }); return next; }
 function stableStringify(value) { return JSON.stringify(stableValue(value)); }
 function randomSuffix() { var _a, _b, _c; return (_c = (_b = (_a = globalThis.crypto) === null || _a === void 0 ? void 0 : _a.randomUUID) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`; }
 function bytesToBase64(bytes) { let binary = ""; const chunk = 0x8000; for (let i = 0; i < bytes.length; i += chunk)
@@ -49,7 +56,7 @@ function createPortablePackage(state, { now = () => new Date().toISOString() } =
     if (errors.length)
         throw new TypeError(`Cannot export invalid StudyFlow state: ${errors[0]}`);
     const exportedAt = now();
-    const payload = clone(state);
+    const payload = sanitizePortableRuntimeState(state);
     const attachmentReferences = payload.materials.filter((material) => material.attachmentId).length;
     payload.materials = payload.materials.map((material) => { var _a; return ({ ...material, attachmentId: null, locator: String((_a = material.locator) !== null && _a !== void 0 ? _a : "").startsWith("local-blob:") ? null : material.locator }); });
     return { format: exports.PORTABLE_FORMAT, formatVersion: exports.LEGACY_PORTABLE_FORMAT_VERSION, exportedAt, stateSchemaVersion: state.schemaVersion, manifest: { activePlanId: state.activePlanId, counts: counts(payload), attachments: { references: attachmentReferences, bytesIncluded: false } }, payload };
@@ -59,7 +66,7 @@ async function createPortablePackageV2(state, attachments, { now = () => new Dat
     const errors = (0, domain_js_1.validateStudyState)(state);
     if (errors.length)
         throw new TypeError(`Cannot export invalid StudyFlow state: ${errors[0]}`);
-    const payload = clone(state);
+    const payload = sanitizePortableRuntimeState(state);
     const exportedAt = now();
     const refs = [...new Set(payload.materials.map(m => m.attachmentId).filter(Boolean))];
     if (refs.length && !attachments)
@@ -90,7 +97,7 @@ function validateParsedState(parsed, now, stripAttachments) {
     var _a;
     if (!parsed.payload || typeof parsed.payload !== "object" || Array.isArray(parsed.payload))
         throw new TypeError("Portable package payload is missing");
-    const candidate = (0, domain_js_1.migrateStudyState)(clone(parsed.payload), { now: now() });
+    const candidate = sanitizePortableRuntimeState((0, domain_js_1.migrateStudyState)(clone(parsed.payload), { now: now() }));
     if (stripAttachments)
         candidate.materials = candidate.materials.map((material) => { var _a; return ({ ...material, attachmentId: null, locator: String((_a = material.locator) !== null && _a !== void 0 ? _a : "").startsWith("local-blob:") ? null : material.locator }); });
     const errors = (0, domain_js_1.validateStudyState)(candidate);

@@ -1,163 +1,325 @@
 {
   "schema_version": 1,
-  "name": "studyflow_ov23_desktop_runtime_ux_tray_sflp_correctness_v1",
+  "type": "overlay",
+  "name": "studyflow_ov24_web_persistence_bootstrap_portable_secret_hygiene_v1",
   "target": "studyflow_android",
-  "description": "OV23 Desktop runtime, UX, tray and SFLP correctness remediation overlay.",
+  "description": "Overlay 24 of 30: close S10-01, S10-02, S10-03, S10-04, S10-09, S10-10, S10-11, S10-12, S10-13, S10-14, DS2-04, DS2-36, DS2-46 and DS2-48 by hardening Web/PWA IndexedDB durability and multi-tab conflicts, explicit persistence degradation, service-worker retry, bounded local imports, portable focus sanitization, denied-storage bootstrap safety, BFCache attention resume, attachment cleanup, async success copy and encrypted portable secret lifecycle.",
+  "commit_message": "OV24: harden web persistence bootstrap portable secret hygiene",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV23: harden Desktop runtime UX tray and SFLP correctness"
+    "message": "OV24: harden web persistence bootstrap portable secret hygiene"
+  },
+  "apply": {
+    "commit": {
+      "enabled": true,
+      "strategy": "single",
+      "message": "OV24: harden web persistence bootstrap portable secret hygiene"
+    }
   },
   "baseline": {
-    "previous_overlay": "studyflow_ov22_desktop_persistence_atomic_restore_file_safety_v1",
-    "previous_commit": "user-applied OV22 cumulative state",
-    "roadmap_overlay": "23 of 30"
+    "repo": "studyflow",
+    "target": "studyflow_android",
+    "expected_target_type": "android",
+    "notes": "Built against the supplied StudyFlow snapshot after OV23. Overlay 24 of 30 for the normal Web/PWA remediation track. Apply with --commit \"OV24: harden web persistence bootstrap portable secret hygiene\"; run scripts/validate_ov24_web_persistence_bootstrap_secret_hygiene.sh or ./gradlew --no-daemon --offline verifyOv24WebPersistenceBootstrapSecretHygiene when the Gradle wrapper/cache is available."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov23_desktop_runtime_ux_tray_sflp_correctness_v1",
+    "name": "studyflow_ov24_web_persistence_bootstrap_portable_secret_hygiene_v1",
     "target": "studyflow_android",
     "sections": [
-      "desktop-sflp-endpoint-truth",
-      "retry-aware-sync-health",
-      "tray-action-isolation",
-      "settings-copy-corrections",
-      "local-time-runtime-labels",
-      "validation"
+      {
+        "id": "ov24-indexeddb-durability-conflicts",
+        "purpose": "Make Web IndexedDB save/clear acknowledgement durable and reject stale multi-tab writes before transaction commit.",
+        "paths": [
+          "web/src/indexeddb.ts",
+          "web/runtime/indexeddb.js",
+          "web/tests/fake_indexeddb.mjs"
+        ]
+      },
+      {
+        "id": "ov24-bootstrap-degradation-attention",
+        "purpose": "Make persistence degradation explicit, avoid denied localStorage boot crashes, retry service-worker registration and resume attention runtime from BFCache.",
+        "paths": [
+          "web/src/storage.ts",
+          "web/runtime/storage.js",
+          "web/src/pwa.ts",
+          "web/runtime/pwa.js",
+          "web/src/main.tsx",
+          "web/runtime/main.js",
+          "web/src/attention.ts",
+          "web/runtime/attention.js",
+          "web/src/sflp_link.ts",
+          "web/runtime/sflp_link.js"
+        ]
+      },
+      {
+        "id": "ov24-portable-secret-attachment-ui",
+        "purpose": "Bound imports before materialization, sanitize focus runtime from portable packages, clear encrypted portable passwords, hide unsupported attachment upload and clean local blobs.",
+        "paths": [
+          "web/src/portable.ts",
+          "web/runtime/portable.js",
+          "web/src/react/App.tsx",
+          "web/runtime/react/App.js"
+        ]
+      },
+      {
+        "id": "ov24-evidence-validation-docs",
+        "purpose": "Add focused behavior tests, verifier, Gradle validation task, remediation documentation, changelog and closure ledger evidence for all OV24 findings.",
+        "paths": [
+          "web/tests/test_ov24_web_persistence_bootstrap_secret_hygiene.py",
+          "scripts/verify_ov24_web_persistence_bootstrap_secret_hygiene.py",
+          "scripts/validate_ov24_web_persistence_bootstrap_secret_hygiene.sh",
+          "build.gradle.kts",
+          "CHANGELOG.md",
+          "docs/remediation/OV24_WEB_PERSISTENCE_BOOTSTRAP_PORTABLE_SECRET_HYGIENE.md",
+          "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
+          "web/runtime-parity-manifest.json"
+        ]
+      }
     ]
   },
-  "findings": [
-    {
-      "id": "S9-10",
-      "severity": "HIGH",
-      "status": "closed-by-ov23",
-      "evidence": "Desktop pairing hints filter loopback and wildcard endpoints before creating QR offers"
-    },
-    {
-      "id": "S9-11",
-      "severity": "HIGH",
-      "status": "closed-by-ov23",
-      "evidence": "Desktop manual and QR peer endpoints reject self-loopback/wildcard addresses"
-    },
-    {
-      "id": "S9-12",
-      "severity": "HIGH",
-      "status": "closed-by-ov23",
-      "evidence": "Desktop sync actions report complete, partial, retryable and terminal outcomes truthfully"
-    },
-    {
-      "id": "S9-13",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov23",
-      "evidence": "Desktop Settings exposes link health, shareable endpoint count and reachable peer state"
-    },
-    {
-      "id": "S9-14",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov23",
-      "evidence": "Desktop pairing expiry is formatted as local user time instead of raw epoch millis"
-    },
-    {
-      "id": "S9-15",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov23",
-      "evidence": "AWT tray action callback failures are isolated and surfaced as bounded StudyFlow failures"
-    },
-    {
-      "id": "S10-01",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov23",
-      "evidence": "Desktop reminder Settings labels format local time from epoch instants"
-    },
-    {
-      "id": "DS2-46",
-      "severity": "MEDIUM",
-      "status": "closed-by-ov23",
-      "evidence": "Desktop restore copy matches immediate memory reload and no longer claims restart required"
-    }
-  ],
-  "validation": {
-    "hook": ".devtool-artifact/validation/validate.sh",
-    "gradle_task": "verifyOv23DesktopRuntimeUxSflpCorrectness",
-    "daemon_stop": false
-  },
   "inventory": {
-    "count": 15,
+    "format": 1,
+    "count": 25,
     "entries": [
       {
-        "path": ".devtool-artifact/validation/validate.sh",
-        "size": 95,
-        "sha256": "8a2a8d5905ee6c54fff4c2e7041cb0e30ed5060b4aeae6360417897989e0e5e5"
-      },
-      {
-        "path": ".devtool.toml",
-        "size": 16231,
-        "sha256": "f9eb81e6ed71daae97e5138da7c570573cc4d78d8e30176bdb374e91ad3aa973"
-      },
-      {
+        "action": "modify",
         "path": "CHANGELOG.md",
-        "size": 80964,
-        "sha256": "9509fea3f44070d5781e9196890892dde86b759d16b54796bf12c4829c03d006"
+        "mode": "0o644",
+        "sha256": "dcbe3f069e7d5dc5b474577f2c3278dc49816b1965c003db970bb42db9a6499c",
+        "size": 81730,
+        "source_mode": "0o644",
+        "source_sha256": "9509fea3f44070d5781e9196890892dde86b759d16b54796bf12c4829c03d006",
+        "source_size": 80964
       },
       {
-        "path": "REMEDIATION_OV_23_IMPLEMENTATION.md",
-        "size": 3624,
-        "sha256": "9fbdf806d776d7494afa4f37cb158033436df462a4f3263f8b4db61f7eee7cfc"
-      },
-      {
+        "action": "modify",
         "path": "build.gradle.kts",
-        "size": 99773,
-        "sha256": "f3ebf5f9893a1f1245e487377898e82ec5397db08ba825927825dc346b31d90d"
+        "mode": "0o644",
+        "sha256": "88d5c5f2599702ec2cd8aa51cc8f4f228937d66257646f1b02dc21c8b109e2f1",
+        "size": 100293,
+        "source_mode": "0o644",
+        "source_sha256": "f3ebf5f9893a1f1245e487377898e82ec5397db08ba825927825dc346b31d90d",
+        "source_size": 99773
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAnalyticsSearchSettingsScreens.kt",
-        "size": 35491,
-        "sha256": "b1364b3b23c1cf598c788f637130249df070d612849dec38c2a575d00715e768"
+        "action": "add",
+        "path": "docs/remediation/OV24_WEB_PERSISTENCE_BOOTSTRAP_PORTABLE_SECRET_HYGIENE.md",
+        "mode": "0o644",
+        "sha256": "1bfd18dbb8bbed62c3dda71c0d458af7b3f720b3103074a6dd856ef54554011f",
+        "size": 5366
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAppState.kt",
-        "size": 37309,
-        "sha256": "8a9812563d85e1674f86ddf19f2aa20e1cca18849b0d9e8c70f2512a1a6f15c5"
+        "action": "modify",
+        "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
+        "mode": "0o644",
+        "sha256": "0895e63988a2f4c7bdee7306f35e95cc6c1cb27f3b86eee23724c5d0ff4c70f6",
+        "size": 26050,
+        "source_mode": "0o644",
+        "source_sha256": "c0fe89e5d57f4d4a5dd1eb6560c01e1291ff39425a8933937a865a45d2e8b0aa",
+        "source_size": 23288
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopNativePlatform.kt",
-        "size": 7311,
-        "sha256": "54d51836849c67cca2a5d288363722c916effe9dced78bfb8d1ad2e79e0dde6d"
+        "action": "add",
+        "path": "scripts/validate_ov24_web_persistence_bootstrap_secret_hygiene.sh",
+        "mode": "0o755",
+        "sha256": "2585f8ab4534d2be94a9709898b9f4ea9dee01bf6b04900b33096fb02dfd9e73",
+        "size": 110
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkService.kt",
-        "size": 16842,
-        "sha256": "772b68430baea12f127fb53188bb2982c767d127233aca87f3c99bc6c9b35639"
+        "action": "add",
+        "path": "scripts/verify_ov24_web_persistence_bootstrap_secret_hygiene.py",
+        "mode": "0o755",
+        "sha256": "8b4600cc402da040e87c5e03bb62df83d763fd5531bf82e2bc1db6b91a78472c",
+        "size": 6613
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopStudyFlowLinkUxPolicy.kt",
-        "size": 4211,
-        "sha256": "f51e6afdfa75651f99baed84ce53a16b378c0f2045f7e33f22372b2395dcd4ef"
+        "action": "modify",
+        "path": "web/runtime/attention.js",
+        "mode": "0o600",
+        "sha256": "791055d8589a4fb6ee1004a1af09df5a10cb167c58fb6025d9e9ea56fe7a6c62",
+        "size": 51399,
+        "source_mode": "0o600",
+        "source_sha256": "1008ad01aac484350776628e96426fdbfbb1baf5612fce8993e77a5e09f52a57",
+        "source_size": 51285
       },
       {
-        "path": "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopWorkflowUiModels.kt",
-        "size": 15222,
-        "sha256": "f978dd9efad2069e1e310f0366b805e8940715ee95d6724884edd63ed4cb3407"
+        "action": "modify",
+        "path": "web/runtime/indexeddb.js",
+        "mode": "0o600",
+        "sha256": "d639be5e018c605e0705841a72e65685819f16df0dc852ea10653904854e04b1",
+        "size": 11419,
+        "source_mode": "0o600",
+        "source_sha256": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
+        "source_size": 9872
       },
       {
-        "path": "desktopApp/src/test/kotlin/com/mikeyphw/studyflow/desktop/DesktopOv23RuntimeUxSflpCorrectnessTest.kt",
-        "size": 4096,
-        "sha256": "99a76b8d283352daa33fe827cfa000b6ec0af940023fe9783f1c7f09c7ba3186"
+        "action": "modify",
+        "path": "web/runtime/main.js",
+        "mode": "0o600",
+        "sha256": "663f9bf516e938163c0153abede4f80ff63f8979b9be68c55a68002e74bb4094",
+        "size": 3972,
+        "source_mode": "0o600",
+        "source_sha256": "d0fc29468241c8e762584053b6ac1be2e3ded30235722f41c955c469d96d4eda",
+        "source_size": 3495
       },
       {
-        "path": "docs/remediation/OV23_DESKTOP_RUNTIME_UX_TRAY_SFLP_CORRECTNESS.md",
-        "size": 3624,
-        "sha256": "9fbdf806d776d7494afa4f37cb158033436df462a4f3263f8b4db61f7eee7cfc"
+        "action": "modify",
+        "path": "web/runtime/portable.js",
+        "mode": "0o600",
+        "sha256": "2e2832522fc88f7a13acf4b6e7ed912abc713b2117366bc0ba0d68251825f8ab",
+        "size": 23107,
+        "source_mode": "0o600",
+        "source_sha256": "c2e49b3e31edda225ed5c3d55401ca0b92e39857557aa8b040e9aff0da1cd837",
+        "source_size": 22127
       },
       {
-        "path": "scripts/validate_ov23_desktop_runtime_ux_sflp_correctness.sh",
-        "size": 105,
-        "sha256": "be94de480cbd45b1754e1157016b4b080b6e52ab44eed25d7b0aa7cd5e8a384f"
+        "action": "modify",
+        "path": "web/runtime/pwa.js",
+        "mode": "0o600",
+        "sha256": "b46e93fd8472a08ad57c73641cb2a464ec2327ecfa8ad04834efcb80c60a6b8b",
+        "size": 7112,
+        "source_mode": "0o600",
+        "source_sha256": "269feb1b6f4994e3a18e597e8a1509a50305bf570ef6eb58b9d2c129a2878aaa",
+        "source_size": 7072
       },
       {
-        "path": "scripts/verify_ov23_desktop_runtime_ux_sflp_correctness.py",
-        "size": 4513,
-        "sha256": "cfaf018d2263ed929e6b4d87c4328ff813d61cf009930a66256b35d593797974"
+        "action": "modify",
+        "path": "web/runtime/react/App.js",
+        "mode": "0o600",
+        "sha256": "48cc315536c3f9220d44ff29608f66c9936a33d0727e77b38ae0e45950883afb",
+        "size": 350860,
+        "source_mode": "0o600",
+        "source_sha256": "886392ceb37bba5937d4aba63d1b511a2d20568d73223ad3e6fb3196eef1d0e2",
+        "source_size": 348832
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/sflp_link.js",
+        "mode": "0o600",
+        "sha256": "289c35f2e3c9f8279350cc331e1c435d95883376bee7e19c38cf5c2bb2493ade",
+        "size": 89074,
+        "source_mode": "0o600",
+        "source_sha256": "26e0cf3b2f4fdcb7aac0589ee7184344e46c207a1f4f31fc0487b0eff43a9676",
+        "source_size": 88287
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/storage.js",
+        "mode": "0o600",
+        "sha256": "38add086bfefb8f7756e9d53d62f04c047c5cb1968f00e7219a28e7317592ffc",
+        "size": 5980,
+        "source_mode": "0o600",
+        "source_sha256": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
+        "source_size": 5409
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime-parity-manifest.json",
+        "mode": "0o600",
+        "sha256": "9599cb0d0901efd4f953a18a44dedf8d5ddf3c05940f96d9d74fab440b8cd255",
+        "size": 8817,
+        "source_mode": "0o600",
+        "source_sha256": "ba65eeeeff12e76790ccdc53059ef4e3bcb93b116da80416ec7b628d1f56617c",
+        "source_size": 8817
+      },
+      {
+        "action": "modify",
+        "path": "web/src/attention.ts",
+        "mode": "0o600",
+        "sha256": "ca3eab2de68e36a2e183077a6d53588d78e88c712b13d40f741a3f4840a92125",
+        "size": 49529,
+        "source_mode": "0o600",
+        "source_sha256": "0fbef46f1244599d5e1f43106c88308fcdd74963398d2b6fe9b057a1b9ad542c",
+        "source_size": 49410
+      },
+      {
+        "action": "modify",
+        "path": "web/src/indexeddb.ts",
+        "mode": "0o600",
+        "sha256": "707fbeaa6a7d44e862cded0b763e03f00545e854fda45234042f8a88a41c1738",
+        "size": 9562,
+        "source_mode": "0o600",
+        "source_sha256": "8b4246832fee1871b28df10c206e26dfe7bb6a994a84dbd32ece7e3d759e626f",
+        "source_size": 8209
+      },
+      {
+        "action": "modify",
+        "path": "web/src/main.tsx",
+        "mode": "0o600",
+        "sha256": "40c0477b9b5de46e96c89e3729e820ac4d582fed948244225a3447898ad00557",
+        "size": 2419,
+        "source_mode": "0o600",
+        "source_sha256": "68c03f7e60b5706eb9d5d861d30515e30baebac830fa5875128c3594192ff5fb",
+        "source_size": 1954
+      },
+      {
+        "action": "modify",
+        "path": "web/src/portable.ts",
+        "mode": "0o600",
+        "sha256": "82bd8c1ed2986b7b5cd3644e3e1c96d36cd2614a93d584cb605c7c106748916b",
+        "size": 17830,
+        "source_mode": "0o600",
+        "source_sha256": "8a05500cc41d149165b7a1fa509af70171bfb78335714facdf4695676fe6b151",
+        "source_size": 17061
+      },
+      {
+        "action": "modify",
+        "path": "web/src/pwa.ts",
+        "mode": "0o600",
+        "sha256": "3efa87bf41f26befa93e6f38cffd95da7c0f700db20c29a05a355912ad0d8138",
+        "size": 5734,
+        "source_mode": "0o600",
+        "source_sha256": "c9d157efaf1daca042d4ef1b61f73e0c9a954f1c835115de8fdcf39b2ef60e89",
+        "source_size": 5694
+      },
+      {
+        "action": "modify",
+        "path": "web/src/react/App.tsx",
+        "mode": "0o600",
+        "sha256": "eb79c995df084773de36474e71d41863403dfe8f7c6015d6eac3440b3e926252",
+        "size": 239937,
+        "source_mode": "0o600",
+        "source_sha256": "4b95f2696f94ecf8e004ed9ba21050bc373a90bdfedfb1afedfc0ff9a526d437",
+        "source_size": 238070
+      },
+      {
+        "action": "modify",
+        "path": "web/src/sflp_link.ts",
+        "mode": "0o600",
+        "sha256": "96ce9a88a84f436098a4cfaff13577ca5bad7ba4d6aaee92fe519d2f49b7ee73",
+        "size": 97265,
+        "source_mode": "0o600",
+        "source_sha256": "96b44d65fdbfe6bb4ab90d1cc95b8412a6bbea7ec044aee38aa96ea3aa48c850",
+        "source_size": 96742
+      },
+      {
+        "action": "modify",
+        "path": "web/src/storage.ts",
+        "mode": "0o600",
+        "sha256": "b594df4c0961ef4bbbc3f51b6fdbb6000f681ea780aa6f48472977c6e2b719ad",
+        "size": 5587,
+        "source_mode": "0o600",
+        "source_sha256": "3eab1b6c4145b5461fb5e41fa4feff2f10b38d414270a635c1055c0ca0e6b5c4",
+        "source_size": 5039
+      },
+      {
+        "action": "modify",
+        "path": "web/tests/fake_indexeddb.mjs",
+        "mode": "0o600",
+        "sha256": "2b0835ba40200f33a1fea938ea1e8a256efba999f62f337e9cd75e888294cb52",
+        "size": 2429,
+        "source_mode": "0o600",
+        "source_sha256": "f5be8e277484c26828edb0ea7ef5c2b02ca4abaa84edd89145517d781e405eaf",
+        "source_size": 2339
+      },
+      {
+        "action": "add",
+        "path": "web/tests/test_ov24_web_persistence_bootstrap_secret_hygiene.py",
+        "mode": "0o644",
+        "sha256": "87da1edb05f5f341ef28a78d9d1d3aff94bbff754922ff5d597e6ded43747b37",
+        "size": 7747
       }
     ]
   }

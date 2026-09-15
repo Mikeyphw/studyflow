@@ -16,6 +16,23 @@ const WEB_TV_CAPABILITIES = ["workspace.read", "workspace.sync", "schedule.read"
 const CLIENT_KINDS = new Set(["android", "desktop", "web", "android_tv", "web_tv"]);
 function requireSecureRandom() { const crypto = globalThis.crypto; if (!(crypto === null || crypto === void 0 ? void 0 : crypto.getRandomValues))
     throw new Error("Secure Web Crypto randomness is required for StudyFlow Link"); return crypto; }
+class StudyFlowMemoryStorage {
+    constructor() {
+        this.values = new Map();
+    }
+    get length() { return this.values.size; }
+    clear() { this.values.clear(); }
+    getItem(key) { var _a; return (_a = this.values.get(key)) !== null && _a !== void 0 ? _a : null; }
+    key(index) { var _a; return (_a = [...this.values.keys()][index]) !== null && _a !== void 0 ? _a : null; }
+    removeItem(key) { this.values.delete(key); }
+    setItem(key, value) { this.values.set(key, String(value)); }
+}
+function safeBrowserLocalStorage() { var _a; try {
+    return (_a = globalThis.localStorage) !== null && _a !== void 0 ? _a : null;
+}
+catch {
+    return null;
+} }
 function requireSubtleCrypto() { const subtle = requireSecureRandom().subtle; if (!subtle)
     throw new Error("Web Crypto SubtleCrypto is required for StudyFlow Link trust"); return subtle; }
 function randomHex(bytes) { const buffer = new Uint8Array(bytes); requireSecureRandom().getRandomValues(buffer); return [...buffer].map(x => x.toString(16).padStart(2, "0")).join(""); }
@@ -164,7 +181,9 @@ async function decryptPairingSecret(privateKey, grant, parsed, peerDeviceId) { i
     throw new Error("Pairing grant decrypted an invalid trust secret"); return secret; }
 async function reconnectProofHex(store, keyId, challenge) { const transcript = ["SFLP-RECONNECT-V1", challenge.challengerDeviceId, challenge.peerDeviceId, challenge.nonce, String(challenge.expiresAtEpochMillis)].join("|"); return store.sign(keyId, utf8(transcript)); }
 class StudyFlowWebPeerPersistence {
-    constructor(storage = globalThis.localStorage) {
+    constructor(storage) {
+        var _a;
+        if (storage === void 0) { storage = (_a = safeBrowserLocalStorage()) !== null && _a !== void 0 ? _a : new StudyFlowMemoryStorage(); }
         this.storage = storage;
     }
     load(kind) { var _a, _b; const key = storageKey(kind); const encoded = this.storage.getItem(key); if (!encoded)
@@ -451,8 +470,8 @@ class StudyFlowWebActivityHandoffController {
 }
 exports.StudyFlowWebActivityHandoffController = StudyFlowWebActivityHandoffController;
 exports.StudyFlowWebHashing = { sha256HexBytes, base64ToBytes, utf8Base64 };
-function installStudyFlowWebSflpPeer(kind = "web") { if (typeof globalThis.localStorage === "undefined")
-    return null; const peer = new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(globalThis.localStorage), kind); globalThis.studyFlowSflpPeer = peer; globalThis.dispatchEvent(new CustomEvent("studyflow:sflp-peer-ready", { detail: { deviceId: peer.identity.deviceId, clientKind: peer.identity.clientKind } })); return peer; }
+function installStudyFlowWebSflpPeer(kind = "web") { const storage = safeBrowserLocalStorage(); if (!storage)
+    return null; const peer = new StudyFlowWebLinkPeer(new StudyFlowWebPeerPersistence(storage), kind); globalThis.studyFlowSflpPeer = peer; globalThis.dispatchEvent(new CustomEvent("studyflow:sflp-peer-ready", { detail: { deviceId: peer.identity.deviceId, clientKind: peer.identity.clientKind } })); return peer; }
 exports.SFLP14_LIVE_CURSOR_WIRE_NAME = "session.live_cursor";
 exports.SFLP15_PROJECTION_CONTROL_WIRE_NAME = "presentation.projection_control";
 class StudyFlowWebLiveSessionContinuityController {

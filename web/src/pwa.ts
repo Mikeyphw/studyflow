@@ -54,7 +54,7 @@ export function registerStudyFlowServiceWorker(
   if (!navigatorObject?.serviceWorker) return Promise.resolve(null);
   if (!registrationPromise) {
     registrationPromise = navigatorObject.serviceWorker.register("./service-worker.js", { scope: "./" })
-      .catch(() => null);
+      .catch(() => { registrationPromise = null; return null; });
   }
   return registrationPromise;
 }

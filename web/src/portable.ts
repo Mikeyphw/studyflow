@@ -1,7 +1,7 @@
 // Portable package v1 compatibility + v2 full local ownership package.
 "use strict";
 
-import { ENTITY_COLLECTIONS, migrateStudyState, validateStudyState } from "./domain.js";
+import { ENTITY_COLLECTIONS, createFocusState, migrateStudyState, validateStudyState } from "./domain.js";
 import type { AttachmentRepository, PortableAttachmentPayload, PortableImportMode, PortableImportPreview, StudyState, StudyStore } from "./types";
 
 export const PORTABLE_FORMAT = "studyflow-local-package";
@@ -9,6 +9,7 @@ export const LEGACY_PORTABLE_FORMAT_VERSION = 1;
 export const PORTABLE_FORMAT_VERSION = 2;
 export const MAX_PORTABLE_V1_BYTES = 5 * 1024 * 1024;
 export const MAX_PORTABLE_V2_BYTES = 200 * 1024 * 1024;
+export const MAX_PLAN_CONTENT_IMPORT_BYTES = 5 * 1024 * 1024;
 
 function clone<T>(value:T):T { return JSON.parse(JSON.stringify(value)) as T; }
 function counts(state:any) { return Object.fromEntries(ENTITY_COLLECTIONS.map((name) => [name, Array.isArray(state[name]) ? state[name].length : 0])); }
@@ -16,6 +17,8 @@ function byId(items:any[]) { return new Map((items ?? []).map((item) => [item.id
 function same(a:any,b:any) { return JSON.stringify(a) === JSON.stringify(b); }
 function byteLength(text:string){return new TextEncoder().encode(text).length;}
 function stableValue(value:any):any{if(Array.isArray(value))return value.map(stableValue);if(value&&typeof value==="object"){const out:Record<string,any>={};for(const key of Object.keys(value).sort())out[key]=stableValue(value[key]);return out;}return value;}
+export function assertPortableByteLength(byteCount:number,maximumBytes:number,label="Portable import"):void{if(!Number.isFinite(byteCount)||byteCount<0)throw new TypeError(`${label} size is unavailable; refusing to import before materialization.`);if(byteCount>maximumBytes)throw new TypeError(`${label} exceeds the ${Math.floor(maximumBytes/(1024*1024))} MiB local import limit.`);}
+export function sanitizePortableRuntimeState<T extends StudyState>(state:T):T{const next=clone(state) as T;next.focus=createFocusState({durationMinutes:state.focus?.durationMinutes??25}) as T["focus"];return next;}
 export function stableStringify(value:any){return JSON.stringify(stableValue(value));}
 function randomSuffix(){return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;}
 function bytesToBase64(bytes:Uint8Array){let binary="";const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(binary);}
@@ -27,7 +30,7 @@ async function sha256Text(text:string){return sha256Bytes(new TextEncoder().enco
 export function createPortablePackage(state:StudyState, { now = () => new Date().toISOString() } = {}) {
     const errors = validateStudyState(state); if (errors.length) throw new TypeError(`Cannot export invalid StudyFlow state: ${errors[0]}`);
     const exportedAt = now();
-    const payload:any = clone(state);
+    const payload:any = sanitizePortableRuntimeState(state);
     const attachmentReferences = payload.materials.filter((material:any) => material.attachmentId).length;
     payload.materials = payload.materials.map((material:any) => ({ ...material, attachmentId: null, locator: String(material.locator ?? "").startsWith("local-blob:") ? null : material.locator }));
     return { format: PORTABLE_FORMAT, formatVersion: LEGACY_PORTABLE_FORMAT_VERSION, exportedAt, stateSchemaVersion: state.schemaVersion, manifest: { activePlanId: state.activePlanId, counts: counts(payload), attachments: { references: attachmentReferences, bytesIncluded: false } }, payload };
@@ -35,7 +38,7 @@ export function createPortablePackage(state:StudyState, { now = () => new Date()
 
 export async function createPortablePackageV2(state:StudyState, attachments:AttachmentRepository|null, { now = () => new Date().toISOString() } = {}) {
     const errors=validateStudyState(state);if(errors.length)throw new TypeError(`Cannot export invalid StudyFlow state: ${errors[0]}`);
-    const payload=clone(state);const exportedAt=now();const refs=[...new Set(payload.materials.map(m=>m.attachmentId).filter(Boolean) as string[])];
+    const payload=sanitizePortableRuntimeState(state);const exportedAt=now();const refs=[...new Set(payload.materials.map(m=>m.attachmentId).filter(Boolean) as string[])];
     if(refs.length&&!attachments)throw new TypeError("Full portable export requires local attachment storage");
     const attachmentPayloads:PortableAttachmentPayload[]=[];let totalBytes=0;
     for(const attachmentId of refs){const record=await attachments!.get(attachmentId);if(!record)throw new TypeError(`Attachment referenced by state is missing: ${attachmentId}`);const bytes=new Uint8Array(await record.blob.arrayBuffer());const sha256=await sha256Bytes(bytes);totalBytes+=bytes.byteLength;attachmentPayloads.push({id:record.id,name:record.name,mimeType:record.mimeType||"application/octet-stream",sizeBytes:bytes.byteLength,lastModified:record.lastModified??null,createdAt:record.createdAt,sha256,base64:bytesToBase64(bytes)});}
@@ -48,7 +51,7 @@ export function portablePackageVersion(text:string):number|null{try{const parsed
 
 function validateParsedState(parsed:any,now:()=>string,stripAttachments:boolean){
     if (!parsed.payload || typeof parsed.payload !== "object" || Array.isArray(parsed.payload)) throw new TypeError("Portable package payload is missing");
-    const candidate:any = migrateStudyState(clone(parsed.payload), { now: now() });
+    const candidate:any = sanitizePortableRuntimeState(migrateStudyState(clone(parsed.payload), { now: now() }) as StudyState);
     if(stripAttachments)candidate.materials=candidate.materials.map((material:any)=>({...material,attachmentId:null,locator:String(material.locator??"").startsWith("local-blob:")?null:material.locator}));
     const errors=validateStudyState(candidate);if(errors.length)throw new TypeError(`Portable package state is invalid: ${errors[0]}`);const actualCounts=counts(candidate);if(parsed.manifest?.counts&&!same(parsed.manifest.counts,actualCounts))throw new TypeError("Portable package manifest counts do not match its payload");return {candidate,actualCounts};
 }

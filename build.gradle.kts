@@ -2517,3 +2517,10 @@ tasks.register<Exec>("verifyOv23DesktopRuntimeUxSflpCorrectness") {
     )
     commandLine("bash", "scripts/validate_ov23_desktop_runtime_ux_sflp_correctness.sh")
 }
+
+// OV24 — Web persistence, bootstrap, portable import & secret hygiene.
+tasks.register<Exec>("verifyOv24WebPersistenceBootstrapSecretHygiene") {
+    group = "verification"
+    description = "Validates OV24 Web IndexedDB durability, multi-tab conflict detection, bootstrap degradation, bounded imports, BFCache attention resume, localStorage-denial safety, orphan blob cleanup, async success handling and secret clearing."
+    commandLine("bash", "scripts/validate_ov24_web_persistence_bootstrap_secret_hygiene.sh")
+}

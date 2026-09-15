@@ -1,3 +1,10 @@
+# OV24 — Web persistence, bootstrap, portable import & secret hygiene
+
+- Changed Web IndexedDB saves to report pending until the durable transaction commits and to reject stale multi-tab writes by committed revision.
+- Made IndexedDB initialization failure visible as persistence-unavailable instead of silently downgrading canonical state to localStorage.
+- Bounded portable and plan-content imports before materialization, sanitized live focus runtime state from portable packages, and cleared encrypted import/export passwords in finally paths.
+- Hardened Web bootstrap against localStorage denial, service-worker retry poisoning, BFCache attention-runtime stop/resume drift, orphan local blobs, unavailable attachment storage and asynchronous success toasts.
+
 # OV23 — Desktop runtime, UX, tray & SFLP correctness
 
 - Hardened Desktop StudyFlow Link UX so pairing offers never advertise loopback-only endpoints and manual/QR endpoints are normalized through a Desktop peer policy.

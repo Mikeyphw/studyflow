@@ -43,6 +43,16 @@ export function createBrowserRepository({
   };
 }
 
+function createUnavailableRepository(reasonText:string): StudyRepository {
+  return {
+    backend: "unavailable",
+    load(){return result("unavailable",{state:null,reason:reasonText});},
+    save(){return result("unavailable",{reason:reasonText});},
+    clear(){return result("unavailable",{reason:reasonText});},
+    async flush(){throw new TypeError(reasonText);},
+  };
+}
+
 function unavailableAttachments(reason:string): AttachmentRepository {
   const fail=async():Promise<never>=>{throw new TypeError(reason);};
   return { put:fail, get:fail, list:async()=>[], delete:async()=>{await fail();}, clear:async()=>undefined };
@@ -54,5 +64,8 @@ export async function createBrowserPersistence({
   const legacyRepository=createBrowserRepository({storage,now});
   if(!indexedDBFactory?.open)return {backend:"localstorage",repository:legacyRepository,attachments:unavailableAttachments("Attachment storage requires IndexedDB."),fallbackReason:"IndexedDB is unavailable; using localStorage compatibility mode."};
   try{return await createIndexedDbPersistence({indexedDBFactory,legacyRepository,now,dbName});}
-  catch(error:unknown){return {backend:"localstorage",repository:legacyRepository,attachments:unavailableAttachments("Attachment storage is unavailable because IndexedDB failed to initialize."),fallbackReason:error instanceof Error?error.message:String(error)};}
+  catch(error:unknown){
+    const message=`IndexedDB failed to initialize; StudyFlow is running with persistence disabled instead of silently falling back: ${error instanceof Error?error.message:String(error)}`;
+    return {backend:"unavailable",repository:createUnavailableRepository(message),attachments:unavailableAttachments("Attachment storage is unavailable because IndexedDB failed to initialize."),fallbackReason:message};
+  }
 }

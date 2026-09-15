@@ -178,3 +178,25 @@ Overlay 21 of 30.
 Closed: `S9-01`, `S9-02`, `S9-03`, `S9-04`, `S9-05`, `S9-06`, `S9-07`, `S9-08`, `S9-09`.
 
 Evidence: signed TV-plane envelopes on authenticated wire requests, receiver/session/operation/body-hash fail-closed admission, cast-scope and STOP_CAST binding, domain-action result binding, TV attention plane evidence, browser relay plane validation without bearer/controller tokens, and apply-time `verifyOv21UnifiedTvControlPlane` validation.
+
+## OV24 — Web persistence, bootstrap, portable import & secret hygiene
+
+Overlay 24 of 30.
+
+| Finding | Production closure | Behavioral evidence |
+|---|---|---|
+| S10-01 | IndexedDB save/clear operations now return pending until the write transaction settles; `flush()` is the durable acknowledgement boundary. | `test_indexeddb_save_is_pending_until_flush_and_stale_tab_is_rejected`; `verifyOv24WebPersistenceBootstrapSecretHygiene`. |
+| S10-02 | IndexedDB writes compare the loaded durable revision inside the write transaction and abort stale tab commits. | `durableWriteConflict`; stale tab rejection test. |
+| S10-03 | IndexedDB open/init failure returns explicit unavailable persistence instead of silently writing canonical state to localStorage. | `test_indexeddb_initialization_failure_is_visible_without_localstorage_downgrade`. |
+| S10-04 | Service-worker registration clears the memoized promise on failure so later registration attempts can retry. | OV24 verifier `OV24-sw-retry`. |
+| S10-09 | Portable, encrypted portable, and plan-content imports check `file.size` before reading text/bytes. | OV24 verifier `OV24-size-bound-imports` and UI bounded-reader checks. |
+| S10-10 | Portable export/import sanitizes focus to a new idle focus state with no live timer identity or timestamps. | `test_portable_runtime_focus_is_sanitized_and_size_is_checked_before_materialization`. |
+| S10-11 | Web attention and SFLP bootstrap safely probe localStorage and tolerate browser denial without crashing. | `test_denied_localstorage_does_not_crash_bootstrap_link_install`. |
+| S10-12 | BFCache `pageshow` resumes attention runtime while terminal `pagehide` still disposes bridge state. | OV24 verifier `OV24-bfcache-resume`. |
+| S10-13 | Material deletion now deletes the linked local attachment blob when attachment storage is available. | OV24 verifier `OV24-attachment-honesty`. |
+| S10-14 | React async action wrapper delays success copy until promise fulfillment and reports async failures. | OV24 verifier `OV24-async-success-copy`. |
+| DS2-04 | Encrypted portable export clears export password and confirmation in `finally` on success and failure. | OV24 verifier `OV24-secret-clearing`. |
+| DS2-36 | Sessions without IndexedDB attachment storage hide file-upload actions and show unavailable attachment copy. | OV24 verifier `OV24-attachment-honesty`. |
+| DS2-46 | Encrypted import and preview clear import password state in `finally`/failure paths. | OV24 verifier `OV24-secret-clearing`. |
+| DS2-48 | Browser persistence reports explicit compatibility/unavailable states so users can distinguish localStorage compatibility from disabled durability. | `test_indexeddb_initialization_failure_is_visible_without_localstorage_downgrade`; OV24 docs. |
+

@@ -25,6 +25,7 @@ class FakeDatabase {
 class FakeTransaction {
   constructor(db,names,mode){ this.db=db; this.names=names; this.mode=mode; this.error=null; this.completed=false; this.scheduled=false; }
   objectStore(name){ if(!this.names.includes(name)) throw new Error(`store not in transaction: ${name}`); return new FakeStore(this,name); }
+  abort(){ this.error=this.error || new Error("transaction aborted"); this.onabort?.(); }
   scheduleComplete(){ if(this.scheduled)return; this.scheduled=true; setTimeout(()=>{this.completed=true; this.oncomplete?.();},0); }
 }
 
