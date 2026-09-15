@@ -2,6 +2,10 @@ package com.mikeyphw.studyflow.core.data
 
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
+import com.mikeyphw.studyflow.core.database.entity.CodingExerciseEntity
+import com.mikeyphw.studyflow.core.database.entity.MiniProjectEntity
+import com.mikeyphw.studyflow.core.database.entity.LanguageExpressionEntity
+import com.mikeyphw.studyflow.core.database.entity.LanguageReviewAttemptEntity
 import com.mikeyphw.studyflow.core.database.entity.MockExamEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyGoalEntity
 import com.mikeyphw.studyflow.core.database.entity.StudySessionEntity
@@ -41,6 +45,8 @@ internal class RoomStudyAnalyticsRepository(
     private val planningDao = database.studyPlanningDao()
     private val practiceDao = database.studyPracticeDao()
     private val structureDao = database.studyStructureDao()
+    private val programmingDao = database.programmingCourseDao()
+    private val languageDao = database.languageLearningDao()
     private val sharedSnapshots = ConcurrentHashMap<String, Flow<StudyAnalyticsSnapshot>>()
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -77,6 +83,10 @@ internal class RoomStudyAnalyticsRepository(
             mockExams = practiceDao.findAllMockExams(plan),
             topics = structureDao.findTopics(plan),
             goals = planningDao.findStudyGoals(plan),
+            programmingExercises = programmingDao.findCodingExercises(plan),
+            programmingProjects = programmingDao.findMiniProjects(plan),
+            languageExpressions = languageDao.findExpressions(plan),
+            languageReviewAttempts = languageDao.findLanguageReviewAttempts(plan),
             sevenDayWindowStart = sevenDayWindowStart,
         )
     }
@@ -121,6 +131,12 @@ internal class RoomStudyAnalyticsRepository(
         val libraryProgress = if (libraryItemCount == 0) 0 else {
             (aggregate.materialProgressScoreSum + aggregate.completedVideoCount * 100) / libraryItemCount
         }
+        val specializedProgress = specializedContentProgressPercent(inputs) ?: aggregate.contentProgressAverage.toInt()
+        val specializedAccuracy = specializedQuestionAccuracyPercent(inputs) ?: StudyAnalyticsCalculator.percent(
+            aggregate.correctAnswers,
+            aggregate.answeredQuestions,
+        )
+        val specializedAnsweredQuestions = specializedAnsweredQuestionCount(inputs) ?: aggregate.answeredQuestions
         val snapshot = StudyAnalyticsSnapshot(
             studyPlanId = planId,
             studiedMinutesLastSevenDays = aggregate.studiedMinutesLastSevenDays,
@@ -129,22 +145,59 @@ internal class RoomStudyAnalyticsRepository(
                 aggregate.completedPlannedCount,
                 aggregate.elapsedPlannedCount,
             ),
-            questionAccuracyPercent = StudyAnalyticsCalculator.percent(
-                aggregate.correctAnswers,
-                aggregate.answeredQuestions,
-            ),
-            answeredQuestions = aggregate.answeredQuestions,
+            questionAccuracyPercent = specializedAccuracy,
+            answeredQuestions = specializedAnsweredQuestions,
             dueReviewCount = aggregate.dueReviewCount,
             overdueReviewCount = aggregate.overdueReviewCount,
             retentionEaseAverage = aggregate.retentionEaseAverage,
             goalCompletionPercent = goalPercent,
-            contentProgressPercent = aggregate.contentProgressAverage.toInt(),
+            contentProgressPercent = specializedProgress,
             libraryProgressPercent = libraryProgress,
             consistencyScorePercent = StudyAnalyticsCalculator.consistencyScore(activeDays),
             weakAreas = weakAreas,
             insights = emptyList(),
         )
         return snapshot.copy(insights = StudyAnalyticsCalculator.buildInsights(snapshot))
+    }
+
+
+    private fun specializedContentProgressPercent(inputs: AnalyticsInputs): Int? {
+        val programmingTotal = inputs.programmingExercises.size + inputs.programmingProjects.size
+        if (programmingTotal > 0) {
+            val completed = inputs.programmingExercises.count { exercise ->
+                exercise.status == "COMPLETED" || exercise.status == "RAN_SUCCESSFULLY"
+            } + inputs.programmingProjects.count { project -> project.status == "COMPLETED" }
+            return StudyAnalyticsCalculator.percent(completed, programmingTotal)
+        }
+        if (inputs.languageExpressions.isNotEmpty()) {
+            val learnedExpressionIds = inputs.languageReviewAttempts
+                .filter { attempt -> attempt.outcome == "CORRECT" }
+                .map { attempt -> attempt.expressionId }
+                .distinct()
+                .size
+            return StudyAnalyticsCalculator.percent(learnedExpressionIds, inputs.languageExpressions.size)
+        }
+        return null
+    }
+
+    private fun specializedQuestionAccuracyPercent(inputs: AnalyticsInputs): Int? {
+        if (inputs.languageReviewAttempts.isNotEmpty()) {
+            val correct = inputs.languageReviewAttempts.count { attempt -> attempt.outcome == "CORRECT" }
+            return StudyAnalyticsCalculator.percent(correct, inputs.languageReviewAttempts.size)
+        }
+        if (inputs.programmingExercises.isNotEmpty()) {
+            val successful = inputs.programmingExercises.count { exercise ->
+                exercise.status == "COMPLETED" || exercise.status == "RAN_SUCCESSFULLY"
+            }
+            return StudyAnalyticsCalculator.percent(successful, inputs.programmingExercises.size)
+        }
+        return null
+    }
+
+    private fun specializedAnsweredQuestionCount(inputs: AnalyticsInputs): Int? = when {
+        inputs.languageReviewAttempts.isNotEmpty() -> inputs.languageReviewAttempts.size
+        inputs.programmingExercises.isNotEmpty() -> inputs.programmingExercises.size
+        else -> null
     }
 
     private fun localSevenDayWindowStart(now: Long): Long = Instant.ofEpochMilli(now)
@@ -162,6 +215,10 @@ internal class RoomStudyAnalyticsRepository(
         val mockExams: List<MockExamEntity>,
         val topics: List<TopicEntity>,
         val goals: List<StudyGoalEntity>,
+        val programmingExercises: List<CodingExerciseEntity>,
+        val programmingProjects: List<MiniProjectEntity>,
+        val languageExpressions: List<LanguageExpressionEntity>,
+        val languageReviewAttempts: List<LanguageReviewAttemptEntity>,
         val sevenDayWindowStart: Long,
     )
 

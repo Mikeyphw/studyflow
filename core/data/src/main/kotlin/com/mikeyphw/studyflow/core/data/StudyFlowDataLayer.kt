@@ -7,6 +7,8 @@ import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder
 import com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder
 import com.mikeyphw.studyflow.core.domain.AnnexFileStorageRepository
 import com.mikeyphw.studyflow.core.domain.PublicExamRepository
+import com.mikeyphw.studyflow.core.domain.LanguageLearningRepository
+import com.mikeyphw.studyflow.core.domain.ProgrammingCourseRepository
 import com.mikeyphw.studyflow.core.domain.SamplePlanProvisioningRepository
 import com.mikeyphw.studyflow.core.domain.StudyAnalyticsRepository
 import com.mikeyphw.studyflow.core.domain.StudyContentRepository
@@ -45,6 +47,8 @@ class StudyFlowDataLayer internal constructor(
     val studyReviewRepository: StudyReviewRepository,
     val studyProgressRepository: StudyProgressRepository,
     val studyAnalyticsRepository: StudyAnalyticsRepository,
+    val programmingCourseRepository: ProgrammingCourseRepository,
+    val languageLearningRepository: LanguageLearningRepository,
     val publicExamRepository: PublicExamRepository,
     val annexFileStorageRepository: AnnexFileStorageRepository,
     val sflpProductStateBridge: StudyFlowProductStateBridge,
@@ -86,6 +90,8 @@ fun createStudyFlowDataLayer(
     val studyReviewRepository = RoomStudyReviewRepository(database, diagnosticRecorder)
     val studyProgressRepository = RoomStudyProgressRepository(database)
     val studyAnalyticsRepository = RoomStudyAnalyticsRepository(database, dataSharingScope, clock)
+    val programmingCourseRepository = RoomProgrammingCourseRepository(database, clock)
+    val languageLearningRepository = RoomLanguageLearningRepository(database, clock)
     val publicExamRepository = RoomPublicExamRepository(database, clock)
     val annexFileStorageRepository = RoomAnnexFileStorageRepository(
         context = context.applicationContext,
@@ -113,6 +119,8 @@ fun createStudyFlowDataLayer(
         studyReviewRepository = studyReviewRepository,
         studyProgressRepository = studyProgressRepository,
         studyAnalyticsRepository = studyAnalyticsRepository,
+        programmingCourseRepository = programmingCourseRepository,
+        languageLearningRepository = languageLearningRepository,
         publicExamRepository = publicExamRepository,
         annexFileStorageRepository = annexFileStorageRepository,
         sflpProductStateBridge = RoomStudyFlowSflpProductStateBridge(database),

@@ -1,9 +1,24 @@
+# OV25 — Web attention, push, Web-TV timing & route safety
+## Overlay 26 of 30 — Specialized content production data & UI
+
+- Added Room-backed Programming Course and Language Deck repositories, mappers, data-layer wiring, and app container managers.
+- Replaced synthetic Programming Course dashboard counts with persisted programming snapshots and added the Language Deck workspace panel.
+- Made programming run/test command templates explicit and provided safe default Termux command templates for every supported language bucket.
+- Routed specialized analytics through programming/language evidence and added mode-gated specialized import apply workflow boundaries.
+- Added `scripts/validate_ov26_specialized_content_data_ui.sh` for Devtool-friendly OV26 validation.
+
+
+- Required explicit same-origin relay acknowledgement before a browser PushSubscription counts as background delivery evidence, while exposing browser-only subscriptions as local-only.
+- Added durable crash-recoverable Browser-TV timed-mock checkpoints and disabled timed TV starts when durable browser storage is unavailable.
+- Added per-IP and per-code LAN pairing throttles with Retry-After responses, plus acknowledgement-based service-worker attention draining.
+- Hardened notification route/workspace/capability/source/target/schedule admission, fenced terminal attention actions, restricted notification navigation to internal hashes, and made normal-Web delivery depend on a visible surface.
+
 # OV24 — Web persistence, bootstrap, portable import & secret hygiene
 
-- Changed Web IndexedDB saves to report pending until the durable transaction commits and to reject stale multi-tab writes by committed revision.
-- Made IndexedDB initialization failure visible as persistence-unavailable instead of silently downgrading canonical state to localStorage.
-- Bounded portable and plan-content imports before materialization, sanitized live focus runtime state from portable packages, and cleared encrypted import/export passwords in finally paths.
-- Hardened Web bootstrap against localStorage denial, service-worker retry poisoning, BFCache attention-runtime stop/resume drift, orphan local blobs, unavailable attachment storage and asynchronous success toasts.
+- Made IndexedDB save/clear completion transactional and visible as pending until durable commit, with revision CAS protection against stale-tab lost updates.
+- Failed visibly on IndexedDB corruption/open errors, resumed attention after BFCache restoration, and made service-worker registration retryable after transient failure.
+- Bounded browser imports before materialization, isolated one-second focus ticking from the React root, and made shared async success copy wait for operation/persistence completion.
+- Coupled local attachment blob cleanup to durable metadata mutation, disabled impossible attachment UI in localStorage compatibility mode, sanitized portable focus state, guarded denied localStorage, and cleared backup password fields after every terminal attempt.
 
 # OV23 — Desktop runtime, UX, tray & SFLP correctness
 

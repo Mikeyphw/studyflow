@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowEmptyState
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
+import com.mikeyphw.studyflow.core.domain.ApplySpecializedContentImport
 import com.mikeyphw.studyflow.core.domain.ExamNoticeDiffKind
 import com.mikeyphw.studyflow.core.domain.ExamNoticeImportPreview
 import com.mikeyphw.studyflow.core.domain.ExamNoticeRevisionPlanner
@@ -112,6 +113,7 @@ fun StudyContentScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     publicExamManager: ManagePublicExam? = null,
+    specializedImportWorkflow: ApplySpecializedContentImport? = null,
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }

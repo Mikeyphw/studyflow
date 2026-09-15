@@ -42,6 +42,11 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowSectionTitle
 import com.mikeyphw.studyflow.core.designsystem.StudyFlowTimelineItem
 import com.mikeyphw.studyflow.core.designsystem.workspaceContentPadding
 import com.mikeyphw.studyflow.core.domain.ManagePublicExam
+import com.mikeyphw.studyflow.core.model.LanguageDeckDashboardSummary
+import com.mikeyphw.studyflow.core.domain.LanguageLearningSnapshot
+import com.mikeyphw.studyflow.core.domain.ProgrammingCourseSnapshot
+import com.mikeyphw.studyflow.core.domain.ManageLanguageLearning
+import com.mikeyphw.studyflow.core.domain.ManageProgrammingCourse
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.StudyCycleAction
 import com.mikeyphw.studyflow.core.domain.StudyActivityLaunchDestination
@@ -58,7 +63,6 @@ import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.ProgrammingCourseDashboardSummary
 import com.mikeyphw.studyflow.core.model.StudyContentMode
-import com.mikeyphw.studyflow.core.model.capabilities
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudySessionId
@@ -75,6 +79,8 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Composable
@@ -86,6 +92,8 @@ fun TodayWorkspaceScreen(
     analyticsManager: ManageStudyAnalytics,
     discoveryManager: ManageStudyDiscovery,
     publicExamManager: ManagePublicExam,
+    programmingManager: ManageProgrammingCourse,
+    languageManager: ManageLanguageLearning,
     onSwitchPlan: () -> Unit,
     onSearch: () -> Unit,
     onSystem: () -> Unit,
@@ -113,10 +121,26 @@ fun TodayWorkspaceScreen(
     val analyticsFlow = remember(plan.id, loadAttempt) {
         analyticsManager.observeSnapshot(plan.id).asStudyFlowLoadState()
     }
+    val programmingSnapshotFlow = remember(plan.id, plan.contentMode, loadAttempt) {
+        if (plan.contentMode == StudyContentMode.PROGRAMMING_COURSE) {
+            programmingManager.observeSnapshot(plan.id).map { snapshot -> snapshot as ProgrammingCourseSnapshot? }
+        } else {
+            flowOf(null)
+        }
+    }
+    val languageSnapshotFlow = remember(plan.id, plan.contentMode, loadAttempt) {
+        if (plan.contentMode == StudyContentMode.LANGUAGE_DECK) {
+            languageManager.observeSnapshot(plan.id).map { snapshot -> snapshot as LanguageLearningSnapshot? }
+        } else {
+            flowOf(null)
+        }
+    }
     val scheduleState by scheduleFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val sessionsState by sessionsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val reviewState by reviewFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
     val analyticsState by analyticsFlow.collectAsStateWithLifecycle(initialValue = StudyFlowLoadState.Loading)
+    val programmingSnapshot by programmingSnapshotFlow.collectAsStateWithLifecycle(initialValue = null)
+    val languageSnapshot by languageSnapshotFlow.collectAsStateWithLifecycle(initialValue = null)
     var recommendations by remember(plan.id) { mutableStateOf<List<StudyRecommendation>>(emptyList()) }
     var recommendationUnavailable by remember(plan.id) { mutableStateOf(false) }
     val cycleFlow = remember(plan.id) { publicExamManager.observeStudyCycle(plan.id) }
@@ -320,16 +344,50 @@ fun TodayWorkspaceScreen(
                 if (plan.contentMode == StudyContentMode.PROGRAMMING_COURSE) {
                     item(key = "programming-course-panel", contentType = "programming-course-panel") {
                         ProgrammingCourseWorkspacePanel(
-                            summary = ProgrammingCourseDashboardSummary(
-                                moduleCount = readySchedule.plannedActivities.size,
-                                exerciseCount = readyAnalytics.answeredQuestions,
-                                projectCount = readySchedule.plannedActivities.count { activity ->
-                                    activity.title.contains("project", ignoreCase = true)
-                                },
-                                weakConceptCount = readyAnalytics.weakAreas.size,
-                                termuxRuntimeReady = plan.contentMode.capabilities.supportsTermuxRuntime,
+                            summary = programmingSnapshot?.let { snapshot ->
+                                ProgrammingCourseDashboardSummary(
+                                    moduleCount = snapshot.moduleCount,
+                                    exerciseCount = snapshot.exerciseCount,
+                                    projectCount = snapshot.projectCount,
+                                    weakConceptCount = snapshot.codingExercises.count { exercise ->
+                                        exercise.status.name == "FAILED_TESTS" || exercise.status.name == "NEEDS_REVIEW"
+                                    },
+                                    termuxRuntimeReady = snapshot.termuxRuntimeReady,
+                                )
+                            } ?: ProgrammingCourseDashboardSummary(
+                                moduleCount = 0,
+                                exerciseCount = 0,
+                                projectCount = 0,
+                                weakConceptCount = 0,
+                                termuxRuntimeReady = false,
                             ),
                             onOpenPractice = { onOpenReviews(null, null) },
+                            onOpenPlan = onOpenSchedule,
+                        )
+                    }
+                }
+
+                if (plan.contentMode == StudyContentMode.LANGUAGE_DECK) {
+                    item(key = "language-deck-panel", contentType = "language-deck-panel") {
+                        LanguageDeckWorkspacePanel(
+                            summary = languageSnapshot?.let { snapshot ->
+                                LanguageDeckDashboardSummary(
+                                    expressionCount = snapshot.expressions.size,
+                                    idiomCount = snapshot.idiomCount,
+                                    vocabularyCount = snapshot.vocabularyCount,
+                                    dueCount = snapshot.dueCount,
+                                    learnedCount = snapshot.learnedCount,
+                                    usageAccuracyPercent = snapshot.usageAccuracyPercent,
+                                )
+                            } ?: LanguageDeckDashboardSummary(
+                                expressionCount = 0,
+                                idiomCount = 0,
+                                vocabularyCount = 0,
+                                dueCount = 0,
+                                learnedCount = 0,
+                                usageAccuracyPercent = 0,
+                            ),
+                            onOpenReview = { onOpenReviews(null, null) },
                             onOpenPlan = onOpenSchedule,
                         )
                     }

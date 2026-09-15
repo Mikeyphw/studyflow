@@ -9,10 +9,13 @@ import com.mikeyphw.studyflow.core.diagnostics.DiagnosticArea
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorderProvider
 import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticStore
+import com.mikeyphw.studyflow.core.domain.ApplySpecializedContentImport
 import com.mikeyphw.studyflow.core.domain.CreateStudyPlan
 import com.mikeyphw.studyflow.core.domain.ManageAdaptiveReschedule
 import com.mikeyphw.studyflow.core.domain.ManageExamReadiness
 import com.mikeyphw.studyflow.core.domain.ManagePublicExam
+import com.mikeyphw.studyflow.core.domain.ManageProgrammingCourse
+import com.mikeyphw.studyflow.core.domain.ManageLanguageLearning
 import com.mikeyphw.studyflow.core.domain.ManageAnnexFileStorage
 import com.mikeyphw.studyflow.core.domain.ManageStudyAnalytics
 import com.mikeyphw.studyflow.core.domain.ManageStudyCloudSync
@@ -144,6 +147,9 @@ interface AppContainer : DiagnosticRecorderProvider {
     val samplePlanProvisioner: SamplePlanProvisioner
     val manageStudyPlan: ManageStudyPlan
     val manageStudyContent: ManageStudyContent
+    val applySpecializedContentImport: ApplySpecializedContentImport
+    val manageProgrammingCourse: ManageProgrammingCourse
+    val manageLanguageLearning: ManageLanguageLearning
     val manageStudyDiscovery: ManageStudyDiscovery
     val manageStudyCloudSync: ManageStudyCloudSync
     val manageStudySchedule: ManageStudySchedule
@@ -195,6 +201,8 @@ private class DefaultAppContainer(
     private val studyReviewRepository = dataLayer.studyReviewRepository
     private val studyProgressRepository = dataLayer.studyProgressRepository
     private val studyAnalyticsRepository = dataLayer.studyAnalyticsRepository
+    private val programmingCourseRepository = dataLayer.programmingCourseRepository
+    private val languageLearningRepository = dataLayer.languageLearningRepository
     private val annexFileStorageRepository = dataLayer.annexFileStorageRepository
     override val appPreferencesRepository: AppPreferencesRepository =
         DataStoreAppPreferencesRepository(application)
@@ -239,6 +247,12 @@ private class DefaultAppContainer(
     )
     override val manageStudyPlan = ManageStudyPlan(studyPlanRepository)
     override val manageStudyContent = ManageStudyContent(studyContentRepository)
+    override val manageProgrammingCourse = ManageProgrammingCourse(programmingCourseRepository)
+    override val manageLanguageLearning = ManageLanguageLearning(languageLearningRepository)
+    override val applySpecializedContentImport = ApplySpecializedContentImport(
+        programmingCourse = manageProgrammingCourse,
+        languageLearning = manageLanguageLearning,
+    )
     override val manageStudyDiscovery = ManageStudyDiscovery(studyDiscoveryRepository)
     override val manageStudyCloudSync = ManageStudyCloudSync(studyCloudSyncRepository)
     override val manageStudySchedule = ManageStudySchedule(studyScheduleRepository)

@@ -1,325 +1,375 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov24_web_persistence_bootstrap_portable_secret_hygiene_v1",
+  "name": "studyflow_ov26_specialized_content_production_data_ui_v1",
   "target": "studyflow_android",
-  "description": "Overlay 24 of 30: close S10-01, S10-02, S10-03, S10-04, S10-09, S10-10, S10-11, S10-12, S10-13, S10-14, DS2-04, DS2-36, DS2-46 and DS2-48 by hardening Web/PWA IndexedDB durability and multi-tab conflicts, explicit persistence degradation, service-worker retry, bounded local imports, portable focus sanitization, denied-storage bootstrap safety, BFCache attention resume, attachment cleanup, async success copy and encrypted portable secret lifecycle.",
-  "commit_message": "OV24: harden web persistence bootstrap portable secret hygiene",
+  "description": "Overlay 26 of 30: close seven S11 specialized content findings with production Room-backed programming and language repositories, real workspace product flows, explicit Termux command templates/defaults, truthful specialized analytics evidence, and mode-gated specialized import apply workflows.",
+  "commit_message": "OV26: add specialized content production data and UI",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV24: harden web persistence bootstrap portable secret hygiene"
+    "message": "OV26: add specialized content production data and UI"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV24: harden web persistence bootstrap portable secret hygiene"
+      "message": "OV26: add specialized content production data and UI"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "notes": "Built against the supplied StudyFlow snapshot after OV23. Overlay 24 of 30 for the normal Web/PWA remediation track. Apply with --commit \"OV24: harden web persistence bootstrap portable secret hygiene\"; run scripts/validate_ov24_web_persistence_bootstrap_secret_hygiene.sh or ./gradlew --no-daemon --offline verifyOv24WebPersistenceBootstrapSecretHygiene when the Gradle wrapper/cache is available."
+    "previous_overlay": "studyflow_ov25_web_attention_push_tv_timing_route_safety_v2",
+    "previous_commit": "user-applied OV25 cumulative state",
+    "roadmap_overlay": "26 of 30",
+    "notes": "Built cumulatively against the supplied post-OV23 snapshot plus OV24 and OV25 v2. The embedded validator is Gradle-independent for Devtool/Termux and the model syntax portion uses kotlinc when available."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov24_web_persistence_bootstrap_portable_secret_hygiene_v1",
+    "name": "studyflow_ov26_specialized_content_production_data_ui_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "ov24-indexeddb-durability-conflicts",
-        "purpose": "Make Web IndexedDB save/clear acknowledgement durable and reject stale multi-tab writes before transaction commit.",
+        "id": "programming-production-data",
+        "purpose": "Add canonical Room-backed programming repositories, entity mappers, and managers.",
         "paths": [
-          "web/src/indexeddb.ts",
-          "web/runtime/indexeddb.js",
-          "web/tests/fake_indexeddb.mjs"
+          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ProgrammingCourseRepository.kt",
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomProgrammingCourseRepository.kt",
+          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/ProgrammingCourseEntityMapper.kt"
         ]
       },
       {
-        "id": "ov24-bootstrap-degradation-attention",
-        "purpose": "Make persistence degradation explicit, avoid denied localStorage boot crashes, retry service-worker registration and resume attention runtime from BFCache.",
+        "id": "language-production-data",
+        "purpose": "Add canonical Room-backed language deck repositories, entity mappers, and managers.",
         "paths": [
-          "web/src/storage.ts",
-          "web/runtime/storage.js",
-          "web/src/pwa.ts",
-          "web/runtime/pwa.js",
-          "web/src/main.tsx",
-          "web/runtime/main.js",
-          "web/src/attention.ts",
-          "web/runtime/attention.js",
-          "web/src/sflp_link.ts",
-          "web/runtime/sflp_link.js"
+          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/LanguageLearningRepository.kt",
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomLanguageLearningRepository.kt",
+          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/LanguageLearningEntityMapper.kt"
         ]
       },
       {
-        "id": "ov24-portable-secret-attachment-ui",
-        "purpose": "Bound imports before materialization, sanitize focus runtime from portable packages, clear encrypted portable passwords, hide unsupported attachment upload and clean local blobs.",
+        "id": "specialized-product-ui",
+        "purpose": "Render programming and language dashboards from persisted snapshots instead of synthetic generic metrics.",
         "paths": [
-          "web/src/portable.ts",
-          "web/runtime/portable.js",
-          "web/src/react/App.tsx",
-          "web/runtime/react/App.js"
+          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt",
+          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/LanguageDeckWorkspacePanel.kt"
         ]
       },
       {
-        "id": "ov24-evidence-validation-docs",
-        "purpose": "Add focused behavior tests, verifier, Gradle validation task, remediation documentation, changelog and closure ledger evidence for all OV24 findings.",
+        "id": "termux-command-defaults",
+        "purpose": "Make programming command templates explicit and provide safe defaults for all supported language buckets.",
         "paths": [
-          "web/tests/test_ov24_web_persistence_bootstrap_secret_hygiene.py",
-          "scripts/verify_ov24_web_persistence_bootstrap_secret_hygiene.py",
-          "scripts/validate_ov24_web_persistence_bootstrap_secret_hygiene.sh",
-          "build.gradle.kts",
-          "CHANGELOG.md",
-          "docs/remediation/OV24_WEB_PERSISTENCE_BOOTSTRAP_PORTABLE_SECRET_HYGIENE.md",
-          "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-          "web/runtime-parity-manifest.json"
+          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/ProgrammingCourse.kt",
+          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntime.kt"
+        ]
+      },
+      {
+        "id": "specialized-analytics-import",
+        "purpose": "Derive analytics from specialized evidence and provide mode-gated specialized import application.",
+        "paths": [
+          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyAnalyticsRepository.kt",
+          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/SpecializedContentImportWorkflow.kt"
         ]
       }
     ]
   },
+  "findings": [
+    {
+      "id": "S11-01",
+      "severity": "CRITICAL",
+      "status": "closed",
+      "summary": "Android specialized Room data now has production programming and language repositories."
+    },
+    {
+      "id": "S11-05",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "Programming Course UI now reads persisted programming snapshots instead of schedule/generic analytics facades."
+    },
+    {
+      "id": "S11-06",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "Language Deck plans now have a product workspace panel backed by language snapshot data."
+    },
+    {
+      "id": "S11-07",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "Programming run/test templates are explicit mandatory invariants."
+    },
+    {
+      "id": "S11-08",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "Termux defaults now provide safe templates for every supported language bucket."
+    },
+    {
+      "id": "S11-17",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "Specialized analytics now derives progress and accuracy from programming/language evidence."
+    },
+    {
+      "id": "S11-18",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed",
+      "summary": "Specialized template previews now have mode-gated apply workflow boundaries."
+    }
+  ],
+  "validation": {
+    "hook": ".devtool-artifact/validation/validate.sh",
+    "manual": "bash scripts/validate_ov26_specialized_content_data_ui.sh",
+    "gradle_task": null,
+    "daemon_stop": true,
+    "notes": "Uses source contracts plus model syntax compile; no network or Gradle wrapper download required."
+  },
   "inventory": {
     "format": 1,
-    "count": 25,
+    "count": 28,
     "entries": [
+      {
+        "action": "modify",
+        "path": ".devtool-artifact/validation/validate.sh",
+        "mode": "0o755",
+        "sha256": "5adfd2ac8fc41b0bb401accd34abeb4ad8350c2d3a5c50cc771348b16b9a95d5",
+        "size": 123,
+        "source_mode": "0o755",
+        "source_sha256": "479ba557e2a609cccd5a0cfedfc9a967a21b904a4adb5d5028a91afc1f8aa0f8",
+        "source_size": 110
+      },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o644",
-        "sha256": "dcbe3f069e7d5dc5b474577f2c3278dc49816b1965c003db970bb42db9a6499c",
-        "size": 81730,
+        "sha256": "9535e0a8ce096576d34531ac21218374cda040528d8aa8cab4444fcff8416de0",
+        "size": 83293,
         "source_mode": "0o644",
-        "source_sha256": "9509fea3f44070d5781e9196890892dde86b759d16b54796bf12c4829c03d006",
-        "source_size": 80964
-      },
-      {
-        "action": "modify",
-        "path": "build.gradle.kts",
-        "mode": "0o644",
-        "sha256": "88d5c5f2599702ec2cd8aa51cc8f4f228937d66257646f1b02dc21c8b109e2f1",
-        "size": 100293,
-        "source_mode": "0o644",
-        "source_sha256": "f3ebf5f9893a1f1245e487377898e82ec5397db08ba825927825dc346b31d90d",
-        "source_size": 99773
+        "source_sha256": "142aa8796042e860c5e0a013187db0e1985d7f954a09b0c034142c1068da654f",
+        "source_size": 82580
       },
       {
         "action": "add",
-        "path": "docs/remediation/OV24_WEB_PERSISTENCE_BOOTSTRAP_PORTABLE_SECRET_HYGIENE.md",
+        "path": "REMEDIATION_OV_26_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "1bfd18dbb8bbed62c3dda71c0d458af7b3f720b3103074a6dd856ef54554011f",
-        "size": 5366
+        "sha256": "f635b15414ba2e6264b09e4d47ffbff34effba181aec0c4d3494ee2ee50c94b9",
+        "size": 1515
       },
       {
         "action": "modify",
-        "path": "docs/roadmap/FINAL_AUDIT_REMEDIATION_CLOSURE_LEDGER.md",
-        "mode": "0o644",
-        "sha256": "0895e63988a2f4c7bdee7306f35e95cc6c1cb27f3b86eee23724c5d0ff4c70f6",
-        "size": 26050,
-        "source_mode": "0o644",
-        "source_sha256": "c0fe89e5d57f4d4a5dd1eb6560c01e1291ff39425a8933937a865a45d2e8b0aa",
-        "source_size": 23288
+        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
+        "mode": "0o600",
+        "sha256": "7e2ea7977228aacf703e24920ce184481c953ed381116e20e3c1ea216b5f494f",
+        "size": 27105,
+        "source_mode": "0o600",
+        "source_sha256": "f879b3aefd3498c3b8b0ab2d8b652a62e2b4bbba1e18c0eb0d8d32ce9bf7d428",
+        "source_size": 26176
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+        "mode": "0o600",
+        "sha256": "cbea019ab05c04802463bcd8571f26bc711895584ba0c8f910b5fb1c00d67911",
+        "size": 41694,
+        "source_mode": "0o600",
+        "source_sha256": "f5cf4b9550010d5e264490e75e1d03aa78885eca0cc9dff3d90b1449fb9e62a7",
+        "source_size": 41384
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov24_web_persistence_bootstrap_secret_hygiene.sh",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomLanguageLearningRepository.kt",
+        "mode": "0o644",
+        "sha256": "efb216dac8079752e4016150e7d2d7783d3dabfc4e79f3e9b7dff16384c19c71",
+        "size": 7913
+      },
+      {
+        "action": "add",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomProgrammingCourseRepository.kt",
+        "mode": "0o644",
+        "sha256": "017772815d301be326c8a678c2fda16accf723b2d23e082546aac7134c134059",
+        "size": 13181
+      },
+      {
+        "action": "modify",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyAnalyticsRepository.kt",
+        "mode": "0o600",
+        "sha256": "49f95c7cb6f9f1f89f285387d9737863f67505395800ea9ddb2f3625676f5a8b",
+        "size": 11500,
+        "source_mode": "0o600",
+        "source_sha256": "cdd81361ad97922f198edb0f89f88378839205ea0104267a54fd3e788679a99d",
+        "source_size": 8191
+      },
+      {
+        "action": "modify",
+        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt",
+        "mode": "0o600",
+        "sha256": "db680a8e1143e48cfbe979f12d3661e7163379abdab95e7b1b1bc6b57c85875b",
+        "size": 6975,
+        "source_mode": "0o600",
+        "source_sha256": "5d9c16c1c9f4c97452aebf2b1f2af6424cbc91e0214fb46e820eff394dcf4756",
+        "source_size": 6402
+      },
+      {
+        "action": "modify",
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/LanguageLearningDao.kt",
+        "mode": "0o600",
+        "sha256": "c94afe4358d115bbaa8bb3ea4ad96f06fbd9006f00239e538589801bfbfddc62",
+        "size": 3090,
+        "source_mode": "0o600",
+        "source_sha256": "08b49aaa5181a59fe3e4c77a973bb1de18a29f9901b2c68cd3663a3cdfa036ec",
+        "source_size": 2529
+      },
+      {
+        "action": "modify",
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/ProgrammingCourseDao.kt",
+        "mode": "0o600",
+        "sha256": "55f443fa509e684074bbd53602dbae5e0acf056105aaed4a47ac6c34ad6e3a3a",
+        "size": 4434,
+        "source_mode": "0o600",
+        "source_sha256": "7542403307e1457dccafb9d106999a9aea824f714dd41be6f045f0990f1fed24",
+        "source_size": 3884
+      },
+      {
+        "action": "add",
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/LanguageLearningEntityMapper.kt",
+        "mode": "0o644",
+        "sha256": "4deb8f14b8f14e45fdb0b89a9be9c068404be887a4caf5276bb4fb68c6226df9",
+        "size": 9509
+      },
+      {
+        "action": "add",
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/ProgrammingCourseEntityMapper.kt",
+        "mode": "0o644",
+        "sha256": "25141a31e74c9732d374b2b821a62a3f564d084c4a3cfb9709405b110135871b",
+        "size": 15365
+      },
+      {
+        "action": "add",
+        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/LanguageLearningRepository.kt",
+        "mode": "0o644",
+        "sha256": "a90307e38e55995ea7922d1d5fcde83ac9ffc0a5c528c9e5306546fd46aa5b17",
+        "size": 3967
+      },
+      {
+        "action": "add",
+        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ProgrammingCourseRepository.kt",
+        "mode": "0o644",
+        "sha256": "039a318a5d174176d070ff2fece4fd276650cc98c64b2e245b3e2a420e8a9299",
+        "size": 4743
+      },
+      {
+        "action": "add",
+        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/SpecializedContentImportWorkflow.kt",
+        "mode": "0o644",
+        "sha256": "64d4830a4a3975f9324f3dc3a16e0128c92220e274d4f1bfb2b1b921ca6f925a",
+        "size": 1855
+      },
+      {
+        "action": "add",
+        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/LanguageDeckPresentation.kt",
+        "mode": "0o644",
+        "sha256": "6c8e881d300e6e7d4e9e5f1c9abf4547042db0667bb8f03ec6a6859f8b81c898",
+        "size": 742
+      },
+      {
+        "action": "modify",
+        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/ProgrammingCourse.kt",
+        "mode": "0o600",
+        "sha256": "b46e86815ce4b8793f015869f2d71625f6a530173da59eb9cda7faa896e043cf",
+        "size": 10246,
+        "source_mode": "0o600",
+        "source_sha256": "934077f9c850888b7a0693d73695280e57a4db3d8a2eed3728a7edca2cd42308",
+        "source_size": 9788
+      },
+      {
+        "action": "modify",
+        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntime.kt",
+        "mode": "0o600",
+        "sha256": "d8d4e85fb7912ce422054a59cc447a3d7461cdc1dd25e4a7f4b6b9301d2c7da0",
+        "size": 9655,
+        "source_mode": "0o600",
+        "source_sha256": "e16b091386446072834fbadb0cede2ab8a67d7c5f61858b81cd9f9b30391b865",
+        "source_size": 8934
+      },
+      {
+        "action": "add",
+        "path": "docs/remediation/OV26_SPECIALIZED_CONTENT_DATA_UI.md",
+        "mode": "0o644",
+        "sha256": "27416457acef0f87ac2048449eb4b5c470999afba87a4834bf1bf4ea03e530a2",
+        "size": 847
+      },
+      {
+        "action": "modify",
+        "path": "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt",
+        "mode": "0o600",
+        "sha256": "e8685f9668346fa1432e5287594f178a21cc78f55db904d89ede6fee484695b3",
+        "size": 42605,
+        "source_mode": "0o600",
+        "source_sha256": "969052df4b563f319fdca562bd496083886f6a210fe32c96843117a7c0c3c94d",
+        "source_size": 42463
+      },
+      {
+        "action": "add",
+        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/LanguageDeckWorkspacePanel.kt",
+        "mode": "0o644",
+        "sha256": "d2057bf65fb4e46766a14c5508f447c76e96840c2b32485a0f8293d88f0ec5b2",
+        "size": 2290
+      },
+      {
+        "action": "modify",
+        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt",
+        "mode": "0o600",
+        "sha256": "ca3cbc70099938371885968fec11ba7c240513e4dd8be0b830863074f27e67e8",
+        "size": 29898,
+        "source_mode": "0o600",
+        "source_sha256": "de304145b26cf802c5d54b42cd03b310f60aaa848bcd0ff0c285d5a210568079",
+        "source_size": 26724
+      },
+      {
+        "action": "modify",
+        "path": "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
+        "mode": "0o600",
+        "sha256": "97938e627f5b9c2368b75b3b381d5957cba7a19a5b22bf0307dc571532ead0f2",
+        "size": 64091,
+        "source_mode": "0o600",
+        "source_sha256": "1f68394acb4dc781b4f029497a0724024de20494d4d7954118028dc332f45f2f",
+        "source_size": 63338
+      },
+      {
+        "action": "modify",
+        "path": "feature/workspace/src/main/res/values/strings.xml",
+        "mode": "0o600",
+        "sha256": "6d4a01a68b3c09a7d68cb338c8594f7d6497b487dace238b45a800c5c8626bf0",
+        "size": 56948,
+        "source_mode": "0o600",
+        "source_sha256": "5bcb23eae3018a9345deaf2011ee40a4f24b0286148b92c928909f9ad3db4898",
+        "source_size": 56239
+      },
+      {
+        "action": "add",
+        "path": "scripts/validate_ov26_specialized_content_data_ui.sh",
         "mode": "0o755",
-        "sha256": "2585f8ab4534d2be94a9709898b9f4ea9dee01bf6b04900b33096fb02dfd9e73",
-        "size": 110
+        "sha256": "6d761ec34cbfd8b7e28248629c04c31d572960c33af36f1c78a89bd0c9346dc8",
+        "size": 121
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov24_web_persistence_bootstrap_secret_hygiene.py",
+        "path": "scripts/verify_ov26_specialized_content_data_ui.py",
         "mode": "0o755",
-        "sha256": "8b4600cc402da040e87c5e03bb62df83d763fd5531bf82e2bc1db6b91a78472c",
-        "size": 6613
+        "sha256": "5e005d6ce192ea407c7037849c6ddc18b85f18b2dab063a4262dc8878dcf5ae0",
+        "size": 8676
       },
       {
         "action": "modify",
-        "path": "web/runtime/attention.js",
+        "path": "scripts/verify_programming_course_ui.py",
         "mode": "0o600",
-        "sha256": "791055d8589a4fb6ee1004a1af09df5a10cb167c58fb6025d9e9ea56fe7a6c62",
-        "size": 51399,
+        "sha256": "b7b7ec98e0060950e3cf15f4c005d20f27a5c45b95abf5a2b36d57c5a907c101",
+        "size": 3600,
         "source_mode": "0o600",
-        "source_sha256": "1008ad01aac484350776628e96426fdbfbb1baf5612fce8993e77a5e09f52a57",
-        "source_size": 51285
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/indexeddb.js",
-        "mode": "0o600",
-        "sha256": "d639be5e018c605e0705841a72e65685819f16df0dc852ea10653904854e04b1",
-        "size": 11419,
-        "source_mode": "0o600",
-        "source_sha256": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
-        "source_size": 9872
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/main.js",
-        "mode": "0o600",
-        "sha256": "663f9bf516e938163c0153abede4f80ff63f8979b9be68c55a68002e74bb4094",
-        "size": 3972,
-        "source_mode": "0o600",
-        "source_sha256": "d0fc29468241c8e762584053b6ac1be2e3ded30235722f41c955c469d96d4eda",
-        "source_size": 3495
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/portable.js",
-        "mode": "0o600",
-        "sha256": "2e2832522fc88f7a13acf4b6e7ed912abc713b2117366bc0ba0d68251825f8ab",
-        "size": 23107,
-        "source_mode": "0o600",
-        "source_sha256": "c2e49b3e31edda225ed5c3d55401ca0b92e39857557aa8b040e9aff0da1cd837",
-        "source_size": 22127
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/pwa.js",
-        "mode": "0o600",
-        "sha256": "b46e93fd8472a08ad57c73641cb2a464ec2327ecfa8ad04834efcb80c60a6b8b",
-        "size": 7112,
-        "source_mode": "0o600",
-        "source_sha256": "269feb1b6f4994e3a18e597e8a1509a50305bf570ef6eb58b9d2c129a2878aaa",
-        "source_size": 7072
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/react/App.js",
-        "mode": "0o600",
-        "sha256": "48cc315536c3f9220d44ff29608f66c9936a33d0727e77b38ae0e45950883afb",
-        "size": 350860,
-        "source_mode": "0o600",
-        "source_sha256": "886392ceb37bba5937d4aba63d1b511a2d20568d73223ad3e6fb3196eef1d0e2",
-        "source_size": 348832
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/sflp_link.js",
-        "mode": "0o600",
-        "sha256": "289c35f2e3c9f8279350cc331e1c435d95883376bee7e19c38cf5c2bb2493ade",
-        "size": 89074,
-        "source_mode": "0o600",
-        "source_sha256": "26e0cf3b2f4fdcb7aac0589ee7184344e46c207a1f4f31fc0487b0eff43a9676",
-        "source_size": 88287
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/storage.js",
-        "mode": "0o600",
-        "sha256": "38add086bfefb8f7756e9d53d62f04c047c5cb1968f00e7219a28e7317592ffc",
-        "size": 5980,
-        "source_mode": "0o600",
-        "source_sha256": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
-        "source_size": 5409
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime-parity-manifest.json",
-        "mode": "0o600",
-        "sha256": "9599cb0d0901efd4f953a18a44dedf8d5ddf3c05940f96d9d74fab440b8cd255",
-        "size": 8817,
-        "source_mode": "0o600",
-        "source_sha256": "ba65eeeeff12e76790ccdc53059ef4e3bcb93b116da80416ec7b628d1f56617c",
-        "source_size": 8817
-      },
-      {
-        "action": "modify",
-        "path": "web/src/attention.ts",
-        "mode": "0o600",
-        "sha256": "ca3eab2de68e36a2e183077a6d53588d78e88c712b13d40f741a3f4840a92125",
-        "size": 49529,
-        "source_mode": "0o600",
-        "source_sha256": "0fbef46f1244599d5e1f43106c88308fcdd74963398d2b6fe9b057a1b9ad542c",
-        "source_size": 49410
-      },
-      {
-        "action": "modify",
-        "path": "web/src/indexeddb.ts",
-        "mode": "0o600",
-        "sha256": "707fbeaa6a7d44e862cded0b763e03f00545e854fda45234042f8a88a41c1738",
-        "size": 9562,
-        "source_mode": "0o600",
-        "source_sha256": "8b4246832fee1871b28df10c206e26dfe7bb6a994a84dbd32ece7e3d759e626f",
-        "source_size": 8209
-      },
-      {
-        "action": "modify",
-        "path": "web/src/main.tsx",
-        "mode": "0o600",
-        "sha256": "40c0477b9b5de46e96c89e3729e820ac4d582fed948244225a3447898ad00557",
-        "size": 2419,
-        "source_mode": "0o600",
-        "source_sha256": "68c03f7e60b5706eb9d5d861d30515e30baebac830fa5875128c3594192ff5fb",
-        "source_size": 1954
-      },
-      {
-        "action": "modify",
-        "path": "web/src/portable.ts",
-        "mode": "0o600",
-        "sha256": "82bd8c1ed2986b7b5cd3644e3e1c96d36cd2614a93d584cb605c7c106748916b",
-        "size": 17830,
-        "source_mode": "0o600",
-        "source_sha256": "8a05500cc41d149165b7a1fa509af70171bfb78335714facdf4695676fe6b151",
-        "source_size": 17061
-      },
-      {
-        "action": "modify",
-        "path": "web/src/pwa.ts",
-        "mode": "0o600",
-        "sha256": "3efa87bf41f26befa93e6f38cffd95da7c0f700db20c29a05a355912ad0d8138",
-        "size": 5734,
-        "source_mode": "0o600",
-        "source_sha256": "c9d157efaf1daca042d4ef1b61f73e0c9a954f1c835115de8fdcf39b2ef60e89",
-        "source_size": 5694
-      },
-      {
-        "action": "modify",
-        "path": "web/src/react/App.tsx",
-        "mode": "0o600",
-        "sha256": "eb79c995df084773de36474e71d41863403dfe8f7c6015d6eac3440b3e926252",
-        "size": 239937,
-        "source_mode": "0o600",
-        "source_sha256": "4b95f2696f94ecf8e004ed9ba21050bc373a90bdfedfb1afedfc0ff9a526d437",
-        "source_size": 238070
-      },
-      {
-        "action": "modify",
-        "path": "web/src/sflp_link.ts",
-        "mode": "0o600",
-        "sha256": "96ce9a88a84f436098a4cfaff13577ca5bad7ba4d6aaee92fe519d2f49b7ee73",
-        "size": 97265,
-        "source_mode": "0o600",
-        "source_sha256": "96b44d65fdbfe6bb4ab90d1cc95b8412a6bbea7ec044aee38aa96ea3aa48c850",
-        "source_size": 96742
-      },
-      {
-        "action": "modify",
-        "path": "web/src/storage.ts",
-        "mode": "0o600",
-        "sha256": "b594df4c0961ef4bbbc3f51b6fdbb6000f681ea780aa6f48472977c6e2b719ad",
-        "size": 5587,
-        "source_mode": "0o600",
-        "source_sha256": "3eab1b6c4145b5461fb5e41fa4feff2f10b38d414270a635c1055c0ca0e6b5c4",
-        "source_size": 5039
-      },
-      {
-        "action": "modify",
-        "path": "web/tests/fake_indexeddb.mjs",
-        "mode": "0o600",
-        "sha256": "2b0835ba40200f33a1fea938ea1e8a256efba999f62f337e9cd75e888294cb52",
-        "size": 2429,
-        "source_mode": "0o600",
-        "source_sha256": "f5be8e277484c26828edb0ea7ef5c2b02ca4abaa84edd89145517d781e405eaf",
-        "source_size": 2339
-      },
-      {
-        "action": "add",
-        "path": "web/tests/test_ov24_web_persistence_bootstrap_secret_hygiene.py",
-        "mode": "0o644",
-        "sha256": "87da1edb05f5f341ef28a78d9d1d3aff94bbff754922ff5d597e6ded43747b37",
-        "size": 7747
+        "source_sha256": "ebf5c4a7b2ef5cfe36568ceff53802a3581fa88bb24588973dd2a0eae29f2ae2",
+        "source_size": 3227
       }
     ]
   }

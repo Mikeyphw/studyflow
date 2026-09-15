@@ -280,6 +280,8 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 analyticsManager = container.manageStudyAnalytics,
                 discoveryManager = container.manageStudyDiscovery,
                 publicExamManager = container.managePublicExam,
+                programmingManager = container.manageProgrammingCourse,
+                languageManager = container.manageLanguageLearning,
                 onSwitchPlan = {
                     navController.navigate(PlanPickerRoute(StudyFlowWorkspaceRoot.TODAY, plan.id.value))
                 },
@@ -568,6 +570,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 scheduleManager = container.manageStudySchedule,
                 contentManager = container.manageStudyContent,
                 publicExamManager = container.managePublicExam,
+                specializedImportWorkflow = container.applySpecializedContentImport,
                 onBack = navController::popBackStack,
             )
         }
@@ -584,6 +587,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 plan = plan,
                 content = container.manageStudyContent,
                 publicExamManager = container.managePublicExam,
+                specializedImportWorkflow = container.applySpecializedContentImport,
                 onBack = navController::popBackStack,
             )
         }

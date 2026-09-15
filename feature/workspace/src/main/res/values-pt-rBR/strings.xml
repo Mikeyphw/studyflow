@@ -856,4 +856,13 @@
     <string name="dashboard_details_collapsed">Detalhes recolhidos</string>
 
     <string name="session_load_failed">A sessão de foco não pôde ser carregada. Volte e tente novamente por Sessões.</string>
+    <string name="language_deck_mode_label">Deck de idiomas</string>
+    <string name="language_deck_workspace_title">Área do deck de idiomas</string>
+    <string name="language_deck_workspace_message">Revise expressões, vocabulário, registro e uso natural a partir do deck salvo.</string>
+    <string name="language_deck_review_now">Revisar cards de idioma</string>
+    <string name="language_deck_plan">Abrir plano de idioma</string>
+    <string name="language_deck_expressions">Expressões</string>
+    <string name="language_deck_idiom_count">%1$d expressões idiomáticas</string>
+    <string name="language_deck_due">Cards pendentes</string>
+    <string name="language_deck_learned_count">%1$d aprendidas · %2$d cards de vocabulário</string>
 </resources>

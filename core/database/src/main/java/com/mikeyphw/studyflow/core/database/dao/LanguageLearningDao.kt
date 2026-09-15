@@ -30,6 +30,15 @@ interface LanguageLearningDao {
     @Query("SELECT * FROM language_deck_profiles WHERE studyPlanId = :planId LIMIT 1")
     fun observeDeck(planId: String): Flow<LanguageDeckProfileEntity?>
 
+    @Query("SELECT * FROM language_deck_profiles WHERE studyPlanId = :planId LIMIT 1")
+    suspend fun findDeck(planId: String): LanguageDeckProfileEntity?
+
+    @Query("SELECT * FROM language_expressions WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
+    suspend fun findExpressions(planId: String): List<LanguageExpressionEntity>
+
+    @Query("SELECT * FROM language_review_attempts WHERE studyPlanId = :planId ORDER BY createdAtEpochMillis DESC")
+    suspend fun findLanguageReviewAttempts(planId: String): List<LanguageReviewAttemptEntity>
+
     @Query("SELECT * FROM language_expressions WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
     fun observeExpressions(planId: String): Flow<List<LanguageExpressionEntity>>
 

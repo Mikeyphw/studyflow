@@ -164,6 +164,8 @@ data class CodingExercise(
         require(prompt.isNotBlank()) { "Coding exercise prompt cannot be blank." }
         require(difficulty in 1..5) { "Coding exercise difficulty must be between 1 and 5." }
         require(retryAtEpochMillis == null || retryAtEpochMillis >= 0) { "Retry timestamp cannot be negative." }
+        require(!runCommandTemplate.isNullOrBlank()) { "Run command template is mandatory for coding exercises." }
+        require(!testCommandTemplate.isNullOrBlank()) { "Test command template is mandatory for coding exercises." }
         require(isAllowedTermuxCommandTemplate(runCommandTemplate)) { "Run command template is not Termux-allowed." }
         require(isAllowedTermuxCommandTemplate(testCommandTemplate)) { "Test command template is not Termux-allowed." }
         require(createdAtEpochMillis >= 0) { "Created timestamp cannot be negative." }
@@ -204,6 +206,8 @@ data class MiniProject(
         require(workspaceRelativePath.isNotBlank()) { "Mini project workspace path cannot be blank." }
         require(!workspaceRelativePath.startsWith("/")) { "Mini project workspace path must be relative." }
         require(".." !in workspaceRelativePath.split('/')) { "Mini project workspace cannot escape its course root." }
+        require(!runCommandTemplate.isNullOrBlank()) { "Run command template is mandatory for mini projects." }
+        require(!testCommandTemplate.isNullOrBlank()) { "Test command template is mandatory for mini projects." }
         require(isAllowedTermuxCommandTemplate(runCommandTemplate)) { "Run command template is not Termux-allowed." }
         require(isAllowedTermuxCommandTemplate(testCommandTemplate)) { "Test command template is not Termux-allowed." }
         require(createdAtEpochMillis >= 0) { "Created timestamp cannot be negative." }

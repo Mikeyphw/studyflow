@@ -44,6 +44,16 @@ interface ProgrammingCourseDao {
     @Query("SELECT * FROM mini_projects WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
     fun observeMiniProjects(planId: String): Flow<List<MiniProjectEntity>>
 
+
+    @Query("SELECT * FROM code_snippets WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
+    suspend fun findCodeSnippets(planId: String): List<CodeSnippetEntity>
+
+    @Query("SELECT * FROM coding_exercises WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
+    suspend fun findCodingExercises(planId: String): List<CodingExerciseEntity>
+
+    @Query("SELECT * FROM mini_projects WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
+    suspend fun findMiniProjects(planId: String): List<MiniProjectEntity>
+
     @Query("SELECT * FROM termux_runtime_preferences WHERE studyPlanId = :planId LIMIT 1")
     fun observeTermuxRuntimePreference(planId: String): Flow<TermuxRuntimePreferenceEntity?>
 

@@ -49,8 +49,15 @@ def main() -> None:
         "StudyContentMode.PROGRAMMING_COURSE",
         "ProgrammingCourseWorkspacePanel",
         "ProgrammingCourseDashboardSummary",
-        "termuxRuntimeReady = plan.contentMode.capabilities.supportsTermuxRuntime",
+        "programmingManager.observeSnapshot(plan.id)",
+        "termuxRuntimeReady = snapshot.termuxRuntimeReady",
     )
+    today = read("feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt")
+    require(
+        "termuxRuntimeReady = plan.contentMode.capabilities.supportsTermuxRuntime" not in today,
+        "programming Today panel must use persisted snapshot readiness, not content-mode capability flags",
+    )
+
     require_contains(
         "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PlanWorkspaceScreen.kt",
         "planPrimaryDateLabel(plan)",

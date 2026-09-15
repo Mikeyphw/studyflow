@@ -18,6 +18,8 @@ private val AllowedTermuxExecutables = setOf(
     "go",
     "cargo",
     "pytest",
+    "bash",
+    "sqlite3",
 )
 
 enum class TermuxBridgeAction {
@@ -245,7 +247,26 @@ fun defaultTermuxTemplates(language: ProgrammingLanguage): List<TermuxCommandTem
     ProgrammingLanguage.RUST -> listOf(
         TermuxCommandTemplate("cargo-test", "Run Cargo tests", language, "cargo test"),
     )
-    else -> emptyList()
+    ProgrammingLanguage.SHELL -> listOf(
+        TermuxCommandTemplate("shell-run", "Run shell script", language, "bash main.sh"),
+    )
+    ProgrammingLanguage.SQL -> listOf(
+        TermuxCommandTemplate("sql-open", "Open SQLite shell", language, "sqlite3 studyflow.db"),
+    )
+    ProgrammingLanguage.HTML,
+    ProgrammingLanguage.CSS,
+    ProgrammingLanguage.JSON,
+    ProgrammingLanguage.YAML,
+    ProgrammingLanguage.MARKDOWN,
+    ProgrammingLanguage.OTHER,
+    -> listOf(
+        TermuxCommandTemplate(
+            id = "${language.name.lowercase()}-workspace-check",
+            label = "Check workspace runtime",
+            language = language,
+            commandLine = "python --version",
+        ),
+    )
 }
 
 private fun isSafeRelativeTermuxPath(path: String): Boolean {

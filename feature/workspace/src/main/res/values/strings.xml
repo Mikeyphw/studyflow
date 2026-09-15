@@ -803,4 +803,13 @@
     <string name="dashboard_details_collapsed">Details collapsed</string>
 
     <string name="session_load_failed">The focus session could not be loaded. Go back and retry from Sessions.</string>
+    <string name="language_deck_mode_label">Language deck</string>
+    <string name="language_deck_workspace_title">Language deck workspace</string>
+    <string name="language_deck_workspace_message">Review idioms, vocabulary, register, and natural usage from your saved deck.</string>
+    <string name="language_deck_review_now">Review language cards</string>
+    <string name="language_deck_plan">Open language plan</string>
+    <string name="language_deck_expressions">Expressions</string>
+    <string name="language_deck_idiom_count">%1$d idioms</string>
+    <string name="language_deck_due">Due cards</string>
+    <string name="language_deck_learned_count">%1$d learned · %2$d vocabulary cards</string>
 </resources>
